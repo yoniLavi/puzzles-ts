@@ -53,8 +53,9 @@ export function initSentry() {
       },
       beforeSend(event, hint) {
         // An error in wasm loaded from the worker will be incorrectly identified
-        // as third-party: https://github.com/getsentry/sentry-javascript/issues/18779.
-        // Undo that if any stack frame's filename is (roughly):
+        // as third-party. This is fixed in @sentry/browser and @sentry/wasm 10.38.0,
+        // but wasm must be generated with build_id (and ideally DWARF alongside).
+        // Until then, undo third_party_code if any stack frame's filename is (roughly):
         //   /assets/[puzzleid]-[hash].wasm
         //   /src/assets/puzzles/[puzzleid].wasm  (dev)
         const reWasm = /\/(assets|src\/assets\/puzzles)\/[^/]+\.wasm/;

@@ -3,9 +3,11 @@
 declare var self: DedicatedWorkerGlobalScope;
 
 import * as Sentry from "@sentry/browser";
+import { registerWebWorkerWasm } from "@sentry/wasm";
 
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.registerWebWorker({ self });
+  registerWebWorkerWasm({ self });
 }
 
 import { expose, proxy, type Remote, transfer } from "comlink";
