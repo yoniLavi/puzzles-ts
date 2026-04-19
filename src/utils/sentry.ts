@@ -11,6 +11,9 @@ const ignoreErrors: (string | RegExp)[] = [
   // Chrome iOS "Translate" bug (in anonymous script):
   /^RangeError: Maximum call stack size exceeded.*at \?.*undefined:/,
   /^RangeError: Maximum call stack size exceeded.*at findTopmostVisibleElement/,
+  // Older Chrome bugs (e.g., Huawei Browser 16.0.9 on Android 10)
+  "ResizeObserver loop limit exceeded",
+  "Failed to execute 'hidePopover' on 'HTMLElement': Invalid on popover elements that aren't already showing.",
 ];
 
 export function initSentry() {
