@@ -167,7 +167,7 @@ header {
     animation-range: 0 var(--scroll-range-end);
   }
 
-  h1 {
+  .title h1 {
     animation: scroll-h1 var(--scroll-animation-options);
     animation-timeline: scroll();
     animation-range: 0 var(--scroll-range-end);

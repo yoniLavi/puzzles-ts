@@ -36,9 +36,7 @@ export function installErrorHandlers() {
       const errorMessage = [
         `${String(event.reason).trim()} [unhandled rejection]`,
         // Chrome includes the error message in the stack, others don't:
-        (error?.stack || "")
-          .replace(String(error), "")
-          .trim(),
+        (error?.stack || "").replace(String(error), "").trim(),
       ]
         .filter(Boolean)
         .join("\n");
