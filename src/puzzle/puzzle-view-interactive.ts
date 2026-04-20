@@ -319,19 +319,18 @@ export class PuzzleViewInteractive extends PuzzleView {
         // The pointer is already up (pointerId is no longer active).
         // Probably a tap that's completed -- pointer capture isn't needed.
       }
+
+      if (unhandledEvent?.pointerId === pointerId) {
+        ({
+          pointermove: this.handlePointerMove,
+          pointerup: this.handlePointerUp,
+          pointercancel: this.handlePointerCancel,
+        })[unhandledEvent.type]?.call(this, unhandledEvent);
+      }
     } else {
       // Puzzle doesn't want this mouse button, so don't bother tracking.
       // But the midend requires a release event for every press.
       await this.puzzle.processMouse(location, release);
-    }
-
-    if (consumed && unhandledEvent?.pointerId === pointerId) {
-      const handler: Record<string, (e: PointerEvent) => void> = {
-        pointermove: this.handlePointerMove,
-        pointerup: this.handlePointerUp,
-        pointercancel: this.handlePointerCancel,
-      } as const;
-      handler[unhandledEvent.type]?.call(this, unhandledEvent);
     }
   }
 
@@ -366,15 +365,18 @@ export class PuzzleViewInteractive extends PuzzleView {
     // click or drag, but many puzzles treat dragging outside the drawing area
     // as "cancel."
     if (this.pointerTracking) {
-      if (this.puzzle) {
-        const location = { x: -100, y: -100 };
-        await this.puzzle.processMouse(location, this.pointerTracking.drag);
-        await this.puzzle.processMouse(location, this.pointerTracking.release);
-      }
+      const { drag, release } = this.pointerTracking;
       if (this.canvas?.hasPointerCapture(this.pointerTracking.pointerId)) {
         this.canvas.releasePointerCapture(this.pointerTracking.pointerId);
       }
       this.pointerTracking = undefined;
+      if (this.puzzle) {
+        const location = { x: -100, y: -100 };
+        await Promise.all([
+          this.puzzle.processMouse(location, drag),
+          this.puzzle.processMouse(location, release),
+        ]);
+      }
     }
   }
 

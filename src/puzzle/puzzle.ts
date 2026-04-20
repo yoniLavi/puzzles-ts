@@ -165,6 +165,20 @@ export class Puzzle {
     this.captureSentryContext();
   };
 
+  private inputQueue: Promise<void> = Promise.resolve();
+
+  /**
+   * Keep events that end up in midend_process_key() strictly ordered.
+   */
+  protected enqueueInput<T>(fn: () => Promise<T>): Promise<T> {
+    const result = this.inputQueue.then(fn);
+    this.inputQueue = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
+  }
+
   // Static properties (no reactivity needed)
   public readonly displayName: string;
   public readonly isUnfinished: boolean; // "experimental" puzzle status
@@ -262,24 +276,24 @@ export class Puzzle {
     await this.workerPuzzle.restartGame();
   }
 
-  public async undo(): Promise<void> {
-    await this.workerPuzzle.undo();
+  public undo(): Promise<void> {
+    return this.enqueueInput(() => this.workerPuzzle.undo());
   }
 
-  public async redo(): Promise<void> {
-    await this.workerPuzzle.redo();
+  public redo(): Promise<void> {
+    return this.enqueueInput(() => this.workerPuzzle.redo());
   }
 
   public async solve(): Promise<string | undefined> {
     return this.workerPuzzle.solve();
   }
 
-  public async processKey(key: number): Promise<boolean> {
-    return this.workerPuzzle.processKey(key);
+  public processKey(key: number): Promise<boolean> {
+    return this.enqueueInput(() => this.workerPuzzle.processKey(key));
   }
 
-  public async processMouse({ x, y }: Point, button: number): Promise<boolean> {
-    return this.workerPuzzle.processMouse({ x, y }, button);
+  public processMouse({ x, y }: Point, button: number): Promise<boolean> {
+    return this.enqueueInput(() => this.workerPuzzle.processMouse({ x, y }, button));
   }
 
   public async requestKeys(): Promise<KeyLabel[]> {
