@@ -1,1 +1,6 @@
-npx lint-staged
+# Run type checking, linter, and tests before commit.
+# Modelled on /Users/yoni/codeliance/mathliance/.husky/pre-commit
+# (knip not introduced here — no dead-code rule in this repo yet).
+npx tsc -b --noEmit
+npm run lint
+npm run test:run

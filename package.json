@@ -11,6 +11,8 @@
     "format": "biome format --write .",
     "lint": "biome lint .",
     "check": "biome check --write .",
+    "test": "vitest",
+    "test:run": "vitest run --passWithNoTests",
     "prepare": "husky"
   },
   "dependencies": {
@@ -47,6 +49,7 @@
     "vite": "^7.3.2",
     "vite-plugin-pwa": "^1.2.0",
     "vite-plugin-sitemap": "^0.8.2",
+    "vitest": "^4.1.6",
     "workbox-core": "^7.3.0",
     "workbox-precaching": "^7.3.0",
     "workbox-routing": "^7.3.0",

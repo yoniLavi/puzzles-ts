@@ -25,5 +25,8 @@ node_modules/
 /src/assets/icons/
 /src/assets/puzzles/
 
+# TypeScript incremental build info (from `tsc -b`)
+*.tsbuildinfo
+
 # Other scratch directories
 /patches/
