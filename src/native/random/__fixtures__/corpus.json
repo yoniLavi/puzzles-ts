@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "name": "mixed_small_bits",
+      "seed": "fixture-mixed-small-bits-seed",
+      "calls": [
+      {"op":"bits","bits":1,"out":1},
+      {"op":"bits","bits":3,"out":5},
+      {"op":"bits","bits":7,"out":120},
+      {"op":"bits","bits":8,"out":96},
+      {"op":"bits","bits":15,"out":14281},
+      {"op":"bits","bits":16,"out":25409},
+      {"op":"bits","bits":24,"out":15111221},
+      {"op":"bits","bits":31,"out":1543965683}
+      ]
+    },
+    {
+      "name": "thirtytwo_bit",
+      "seed": "fixture-thirtytwo-bit-seed",
+      "calls": [
+      {"op":"bits","bits":32,"out":149993142},
+      {"op":"bits","bits":32,"out":1102135052},
+      {"op":"bits","bits":32,"out":849273058},
+      {"op":"bits","bits":32,"out":2494427897},
+      {"op":"bits","bits":32,"out":1219412456},
+      {"op":"bits","bits":32,"out":3268911356},
+      {"op":"bits","bits":32,"out":1873639941},
+      {"op":"bits","bits":32,"out":4226024778}
+      ]
+    },
+    {
+      "name": "upto_various",
+      "seed": "fixture-upto-various-seed",
+      "calls": [
+      {"op":"upto","limit":2,"out":0},
+      {"op":"upto","limit":3,"out":2},
+      {"op":"upto","limit":5,"out":1},
+      {"op":"upto","limit":7,"out":1},
+      {"op":"upto","limit":10,"out":9},
+      {"op":"upto","limit":17,"out":12},
+      {"op":"upto","limit":100,"out":30},
+      {"op":"upto","limit":257,"out":108},
+      {"op":"upto","limit":1000,"out":549},
+      {"op":"upto","limit":65537,"out":27777}
+      ]
+    },
+    {
+      "name": "sha_rollover",
+      "seed": "fixture-sha-rollover-seed",
+      "calls": [
+      {"op":"bits","bits":8,"out":69},
+      {"op":"bits","bits":8,"out":77},
+      {"op":"bits","bits":8,"out":38},
+      {"op":"bits","bits":8,"out":119},
+      {"op":"bits","bits":8,"out":12},
+      {"op":"bits","bits":8,"out":82},
+      {"op":"bits","bits":8,"out":244},
+      {"op":"bits","bits":8,"out":98},
+      {"op":"bits","bits":8,"out":106},
+      {"op":"bits","bits":8,"out":153},
+      {"op":"bits","bits":8,"out":24},
+      {"op":"bits","bits":8,"out":201},
+      {"op":"bits","bits":8,"out":71},
+      {"op":"bits","bits":8,"out":36},
+      {"op":"bits","bits":8,"out":143},
+      {"op":"bits","bits":8,"out":44},
+      {"op":"bits","bits":8,"out":173},
+      {"op":"bits","bits":8,"out":183},
+      {"op":"bits","bits":8,"out":15},
+      {"op":"bits","bits":8,"out":248},
+      {"op":"bits","bits":8,"out":172},
+      {"op":"bits","bits":8,"out":203},
+      {"op":"bits","bits":8,"out":177},
+      {"op":"bits","bits":8,"out":249},
+      {"op":"bits","bits":8,"out":117}
+      ]
+    },
+    {
+      "name": "copy_independence",
+      "seed": "fixture-copy-independence-seed",
+      "calls": [
+      {"op":"bits","bits":16,"out":17751},
+      {"op":"bits","bits":16,"out":43942},
+      {"op":"copy_bits","bits":16,"out":43942},
+      {"op":"bits","bits":16,"out":37777},
+      {"op":"copy_bits","bits":16,"out":37777},
+      {"op":"bits","bits":16,"out":13648},
+      {"op":"copy_bits","bits":16,"out":13648},
+      {"op":"bits","bits":16,"out":31036},
+      {"op":"copy_bits","bits":16,"out":31036}
+      ]
+    },
+    {
+      "name": "encode_decode_roundtrip",
+      "seed": "fixture-encode-decode-seed",
+      "calls": [
+      {"op":"bits","bits":16,"out":50361},
+      {"op":"bits","bits":16,"out":31695},
+      {"op":"encode","out":"d026ab4a9c5e9d9710180b804ea1290854f2a4a8afd85eaa945b6b590bf4f3286eb96ff2e48cc571c4b97bcff1b634f1802ced08ba2a9928601c75be04"},
+      {"op":"decode","input":"d026ab4a9c5e9d9710180b804ea1290854f2a4a8afd85eaa945b6b590bf4f3286eb96ff2e48cc571c4b97bcff1b634f1802ced08ba2a9928601c75be04","out":null},
+      {"op":"bits","bits":16,"out":61878},
+      {"op":"upto","limit":100,"out":24}
+      ]
+    }
+  ]
+}

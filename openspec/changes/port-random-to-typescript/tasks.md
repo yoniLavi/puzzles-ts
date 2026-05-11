@@ -2,18 +2,18 @@
 
 ## 1. Test runner + pre-commit
 
-- [ ] 1.1 Add `vitest` as a dev dependency.
-- [ ] 1.2 Add `npm test` (watch) and `npm run test:run` (one-shot) scripts to `package.json`.
-- [ ] 1.3 Add minimal `vitest.config.ts` (or extend `vite.config.ts`) so tests pick up `src/**/*.test.ts`.
-- [ ] 1.4 Rewrite `.husky/pre-commit` to run, in order and blocking on any failure: `npx tsc -b --noEmit` → `npm run lint` → `npm run test:run`. Drop `npx lint-staged`. Model on `/Users/yoni/codeliance/mathliance/.husky/pre-commit`.
-- [ ] 1.5 Confirm the hook fires on `git commit` and that all three steps run green on the current tree (we may need to fix any pre-existing tsc/lint findings).
+- [x] 1.1 Add `vitest` as a dev dependency.
+- [x] 1.2 Add `npm test` (watch) and `npm run test:run` (one-shot) scripts to `package.json`. Used `vitest run --passWithNoTests` for the one-shot so the gate passes before the first test lands.
+- [x] 1.3 Add minimal `vitest.config.ts` so tests pick up `src/**/*.test.ts`.
+- [x] 1.4 Rewrite `.husky/pre-commit` to run, in order and blocking on any failure: `npx tsc -b --noEmit` → `npm run lint` → `npm run test:run`. Dropped `npx lint-staged`. Modelled on `/Users/yoni/codeliance/mathliance/.husky/pre-commit`.
+- [x] 1.5 Confirmed the hook fires on `git commit` and blocks on a deliberately-bad TS file. Pre-existing tsc errors turned out to all be downstream of missing WASM assets — resolved by running the Docker build once locally (the prereq is now documented). Added `*.tsbuildinfo` to `.gitignore`.
 
-## 2. Characterization harness in `../puzzles/`
+## 2. Characterization harness in `puzzles/auxiliary/` (in-tree)
 
-- [ ] 2.1 Read `puzzles/random.c` end to end (already done during proposal drafting; re-verify before coding).
-- [ ] 2.2 Write a small C program in `../puzzles/auxiliary/random-trace.c` (or similar) that, given a seed and a script of calls (`bits N`, `upto N`, `copy`, `encode`, `decode HEX`), emits a JSON line per call with the output value (or encoded state).
-- [ ] 2.3 Curate a corpus of seeds + call scripts that exercises: small/large `bits` counts (8, 16, 31), powers-of-two and non-powers-of-two `upto` limits, the SHA rollover at `pos >= 20`, copy semantics, encode/decode round-trip.
-- [ ] 2.4 Run the harness against the native C build; commit the JSON corpus into `src/native/random/__fixtures__/`.
+- [x] 2.1 Read `puzzles/random.c` end to end.
+- [x] 2.2 Wrote `puzzles/auxiliary/random-trace.c` and added it to `puzzles/auxiliary/CMakeLists.txt` (both in this repo). Native build dir `puzzles/build/` is gitignored. The program runs a hard-coded set of curated fixtures and emits a single JSON document to stdout.
+- [x] 2.3 Curated 6 fixtures covering: mixed bit widths (1, 3, 7, 8, 15, 16, 24, 31), 32-bit boundary (8 calls), `random_upto` with power-of-two and non-power-of-two limits, SHA rollover (25 × 8-bit), `random_copy` independence, `random_state_encode`/`decode` round-trip — 66 calls total.
+- [x] 2.4 Built the harness natively via `cmake .. && make random-trace` in `puzzles/build/`, ran it, captured `src/native/random/__fixtures__/corpus.json`. Verified byte-identical output between in-repo and sibling-clone builds.
 
 ## 3. TypeScript implementation
 

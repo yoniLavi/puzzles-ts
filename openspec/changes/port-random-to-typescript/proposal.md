@@ -7,7 +7,7 @@
 Beyond the unit itself, this change is the **pilot for the seam-replacement workflow**: it establishes the characterization-test pattern, the corpus-storage convention, the Embind handle-ownership pattern for opaque C state, and the build-flag mechanism for toggling between C and TS implementations. Every subsequent seam will follow the patterns this change sets down.
 
 - **Add Vitest** as the project's first test runner (Vite-native, jest-compatible API). Add `npm test` and `npm run test:run` (one-shot) scripts.
-- **Characterization harness in `../puzzles/`** — a small C program that exercises the public random API (`random_new`, `random_bits`, `random_upto`, `random_copy`, `random_state_encode`, `random_state_decode`) over a curated set of seeds and call sequences, emitting a JSON corpus.
+- **Characterization harness in `puzzles/auxiliary/`** (the in-tree upstream subtree) — a small C program that exercises the public random API (`random_new`, `random_bits`, `random_upto`, `random_copy`, `random_state_encode`, `random_state_decode`) over a curated set of seeds and call sequences, emitting a JSON corpus. Native build artifacts go in `puzzles/build/` (gitignored).
 - **Corpus committed to this repo** under `src/native/random/__fixtures__/` (or equivalent). Inputs + expected outputs.
 - **`src/native/random.ts`** — TypeScript implementation, including a self-contained SHA-1, that replays byte-identically against the corpus.
 - **Vitest replay test** that loads the corpus and asserts byte-for-byte equality against the TS impl.
