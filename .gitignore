@@ -1,3 +1,7 @@
+# IDE
+.claude/commands/openspec/
+.vscode/
+
 # Logs
 logs
 *.log
