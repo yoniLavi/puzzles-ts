@@ -81,6 +81,7 @@
       "seed": "fixture-copy-independence-seed",
       "calls": [
       {"op":"bits","bits":16,"out":17751},
+      {"op":"copy","out":null},
       {"op":"bits","bits":16,"out":43942},
       {"op":"copy_bits","bits":16,"out":43942},
       {"op":"bits","bits":16,"out":37777},

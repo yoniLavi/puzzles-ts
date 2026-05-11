@@ -145,13 +145,17 @@ static void fx_sha_rollover(FILE *out, random_state *st)
 
 /* random_copy: the copy must advance independently of the original. We
  * record both streams interleaved so a replay catches divergence on
- * either side. */
+ * either side. An explicit `copy` op marks the exact point at which
+ * the copy is taken, so the replay can snapshot state at the same
+ * place without guessing. */
 static void fx_copy_independence(FILE *out, random_state *st)
 {
     random_state *copy;
     int i;
     emit_bits(out, st, 16);
     copy = random_copy(st);
+    start_call(out);
+    fputs("{\"op\":\"copy\",\"out\":null}", out);
     /* Advance the original and the copy alternately. */
     for (i = 0; i < 4; i++) {
         emit_bits(out, st, 16);
