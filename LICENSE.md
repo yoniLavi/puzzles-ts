@@ -1,4 +1,20 @@
-Copyright © 2025–2026 Mike Edmunds
+# License
+
+This project (`puzzles-ts`) layers work from three sources, all under the MIT
+License. Copyright is held by the respective contributors of each layer:
+
+- Copyright © 2004–2024 Simon Tatham and the upstream Portable Puzzle
+  Collection contributors. See [`puzzles/LICENCE`](./puzzles/LICENCE) for the
+  full list of upstream contributors.
+- Copyright © 2025–2026 Mike Edmunds, for the
+  [puzzles-web](https://github.com/medmunds/puzzles-web) PWA shell that this
+  project forks from.
+- Copyright © 2025– Yoni Lavi, for the TypeScript port work in this project.
+
+The single MIT permission grant, conditions, and warranty disclaimer below
+apply to all three layers above.
+
+---
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
