@@ -17,16 +17,17 @@
 
 ## 3. TypeScript implementation
 
-- [ ] 3.1 Create `src/native/` directory.
-- [ ] 3.2 Implement SHA-1 in `src/native/sha1.ts` (internal to the `random` module; not exported as a public seam yet — misc.c's SHA callers stay on C).
-- [ ] 3.3 Implement `src/native/random.ts` mirroring the C `random_state` layout (40-byte seedbuf + 20-byte databuf + pos) and the public API.
-- [ ] 3.4 Pay particular attention to JS-vs-C arithmetic differences: `random_bits` returns up to 32 bits and the C uses a careful `(1UL << (bits-1)) * 2 - 1` to avoid undefined shift behaviour. The TS impl SHALL produce the same bit-pattern values, using `>>> 0` and bigint as needed.
+- [x] 3.1 Created `src/native/` directory.
+- [x] 3.2 Implemented SHA-1 in `src/native/sha1.ts`. Internal to the `random` module; not exported as a public seam yet — misc.c's SHA callers stay on C.
+- [x] 3.3 Implemented `src/native/random.ts` mirroring the C `random_state` layout (40-byte seedbuf + 20-byte databuf + pos) and the public API: `randomNew`, `randomBits`, `randomUpto`, `randomCopy`, `randomFree`, `randomStateEncode`, `randomStateDecode`.
+- [x] 3.4 JS-vs-C arithmetic: `randomBits` accumulates via multiplication (`ret * 256 + byte`) instead of left-shift, so the 32-bit path doesn't get clobbered by JS bitwise semantics. Final trim is `ret % (2 ** bits)`, which works cleanly for `bits` 1–32 inclusive without ever overflowing JS Number precision.
 
 ## 4. Replay test
 
-- [ ] 4.1 Write `src/native/random/random.test.ts`. Load each corpus file, replay against the TS impl, assert byte-for-byte equality on every call.
-- [ ] 4.2 Add an explicit test for the `state->pos >= 20` SHA-rollover path (corpus should already cover it; assert it does).
-- [ ] 4.3 Run via `npm run test:run` — must be green.
+- [x] 4.1 Wrote `src/native/random/random.test.ts`. Loads the corpus, replays against the TS impl, asserts byte-for-byte equality on every call.
+- [x] 4.2 The `sha_rollover` fixture (25 × 8-bit calls) drives the `state.pos >= 20` path. The fixture passes.
+- [x] 4.3 `npm run test:run` is green — all 6 fixtures (66 calls) pass.
+- [x] 4.4 (Added during implementation): harness gained an explicit `copy` op so the replay snapshot point is in the corpus itself, not inferred from call ordering.
 
 ## 5. Embind bridge + build flag
 
