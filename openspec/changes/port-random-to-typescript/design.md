@@ -47,15 +47,49 @@ SHA-1 is implemented in `src/native/sha1.ts` but only consumed by `random.ts`. `
 
 **Why**: keeps the random.c port a single self-contained piece. Pulling SHA out into its own seam would multiply the bridge surface and dilute the pilot's value as a workflow exercise.
 
-### Decision (deferred): Embind handle-ownership for random_state
+### Decision: Embind handle-ownership — Option A (TS owns, C holds integer handle)
 
-Three options on the table. We'll spike the simplest first; if it works for random_state it likely works for later seams too.
+Three options were considered:
 
-- **Option A — TS owns, C holds an integer handle.** TS keeps a `Map<number, RandomState>`; the C side gets back an opaque integer it passes to bridged `random_bits(handle, bits)` etc. Simplest mental model; matches what medmunds already does for `game_state` in `webapp.cpp`. Memory lifetime is explicit (`random_free` removes from the map).
+- **Option A — TS owns, C holds an integer handle.** TS keeps a `Map<number, RandomState>`; the C side gets back an opaque integer it passes to bridged `random_bits(handle, bits)` etc. Memory lifetime is explicit (`random_free` removes from the map).
 - **Option B — C owns the bytes, TS reads/writes via Embind getters/setters.** TS state functions take the C pointer, decode the 61-byte state on each call. No handle table needed. Higher per-call cost.
 - **Option C — Shared memory view.** TS gets a `Uint8Array` view directly into the WASM heap at the C-allocated address. Lowest overhead, but ownership semantics across `random_copy`/`random_free` become tricky and easy to get wrong.
 
-**Default choice for the spike**: Option A. It's the pattern most likely to generalise to the richer state of tree234/dsf. Re-evaluate after implementation; if A turns out clunky for a future seam, the cost of revisiting is bounded to this one module.
+**Decision: Option A**, applied to the upcoming `wire-random-to-wasm` change.
+
+Reasons it wins:
+- Simplest mental model and the closest match to what medmunds already does for `game_state` in `webapp.cpp` — we're staying on a paved path.
+- The TS impl already maintains canonical state in idiomatic JS (Uint8Array fields). Options B and C would require either re-serialising on every call (B) or carefully aliasing WASM memory (C), neither of which buys us anything for a module this small.
+- Generalises to the richer state of upcoming seams (tree234, dsf): the integer-handle protocol carries over unchanged; only the JS side's value type changes.
+
+### Decision: Bridge mechanism — `--js-library`, not EM_JS or Embind
+
+The web-app build already uses `em_link_js_library` for `emcclib.js` (drawing glue). We follow that pattern: a new `puzzles/random_bridge.js` (kept in the upstream subtree, but the only edit there) is linked into each puzzle's WASM. It calls into a `Module.tsRandomBridge` object that the worker installs at module pre-init time.
+
+Bridge function shapes (per upstream's `puzzles.h` prototypes):
+
+| C signature                                                        | JS implementation                                                         |
+|--------------------------------------------------------------------|---------------------------------------------------------------------------|
+| `random_state *random_new(const char *seed, int len)`              | `(seedPtr, len) => handleForState(randomNew(UTF8ToString(seedPtr, len)))` |
+| `random_state *random_copy(random_state *st)`                      | `(handle) => handleForState(randomCopy(stateForHandle(handle)))`          |
+| `unsigned long random_bits(random_state *st, int bits)`            | `(handle, bits) => randomBits(stateForHandle(handle), bits)`              |
+| `unsigned long random_upto(random_state *st, unsigned long limit)` | `(handle, limit) => randomUpto(stateForHandle(handle), limit)`            |
+| `void random_free(random_state *st)`                               | `(handle) => releaseHandle(handle)`                                       |
+| `char *random_state_encode(random_state *st)`                      | `(handle) => mallocCString(randomStateEncode(stateForHandle(handle)))`    |
+| `random_state *random_state_decode(const char *input)`             | `(inputPtr) => handleForState(randomStateDecode(UTF8ToString(inputPtr)))` |
+
+The handle table is `Map<number, RandomState>` keyed by a monotonically increasing 32-bit int. `mallocCString` uses Emscripten's `_malloc` to allocate WASM heap memory the C caller will `sfree`/`free`.
+
+### Decision: Build flag — `USE_TS_RANDOM`, default OFF
+
+A single CMake option in `puzzles/CMakeLists.txt`. When ON:
+- `random.c` is excluded from the `core_obj` source list.
+- `em_link_js_library(<target> .../random_bridge.js)` is added to each WASM target.
+- A compile-time define is passed to `webapp.cpp` if it needs to know (probably not; the C symbols look the same to the rest of the engine).
+
+Default OFF preserves byte-for-byte parity with the pre-change build. The Docker `build-emcc.sh` script gains an env var that maps to the CMake option, so `USE_TS_RANDOM=1 ./Docker/build-emcc.sh` flips it.
+
+A runtime toggle was considered and rejected: it would require both implementations to coexist in the same binary plus a function-pointer indirection. Build-time is simpler and matches how puzzles-web already does WASM configuration.
 
 ## Risks / Trade-offs
 

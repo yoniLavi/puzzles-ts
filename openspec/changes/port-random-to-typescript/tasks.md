@@ -29,20 +29,31 @@
 - [x] 4.3 `npm run test:run` is green — all 6 fixtures (66 calls) pass.
 - [x] 4.4 (Added during implementation): harness gained an explicit `copy` op so the replay snapshot point is in the corpus itself, not inferred from call ordering.
 
-## 5. Embind bridge + build flag
+## 5. Embind bridge + build flag — DEFERRED to follow-up change
 
-- [ ] 5.1 Decide the Embind handle-ownership pattern (see `design.md`). Likely: TS owns the canonical state, C holds an opaque handle that indirects through Emscripten-exported TS functions.
-- [ ] 5.2 Add Embind bindings in `webapp.cpp` (and `emcclib.js` if needed) so the C code's `random_*` calls can be redirected to JS implementations.
-- [ ] 5.3 Add a build flag (Emscripten `-D` or Vite env var, depending on what `design.md` settles on) that toggles between the C and TS implementations. Default: C (no behaviour change for the default build).
+§5 and §6 are split off into a separate openspec change, **`wire-random-to-wasm`**. Reasons (decided mid-flight, confirmed by the user):
+- "TS impl is provably correct" and "TS impl is wired into the running WASM" are two distinct kinds of work; the natural seam falls between them.
+- Bridge work has a slow iteration loop (Docker WASM rebuild + manual browser verification) that benefits from its own focused cycle.
+- PLAN.md's "first-session task" step 5 explicitly calls for a reflection breakpoint here.
 
-## 6. End-to-end verification
+The detailed bridge design lives in `design.md` of this change (Option A — TS owns canonical state, C holds integer handle; `--js-library` mechanism; `USE_TS_RANDOM` CMake option). The follow-up change carries that design into code, the Docker rebuild, and browser verification.
 
-- [ ] 6.1 Build with the flag on. Run `npm run dev`. Manually open three to five different puzzles in a browser; confirm boards generate, render, and play normally.
-- [ ] 6.2 Build with the flag off. Repeat. Confirm no regression in the C-only baseline.
-- [ ] 6.3 Pick one puzzle with a known game ID (e.g. shared from the existing app) and confirm the same ID produces an identical board under both flag positions.
+- [ ] 5.1–5.3 → tracked in `openspec/changes/wire-random-to-wasm/tasks.md`.
+
+## 6. End-to-end verification — DEFERRED with §5
+
+Verification only makes sense once the bridge exists.
+
+- [ ] 6.1–6.3 → tracked in `openspec/changes/wire-random-to-wasm/tasks.md`.
 
 ## 7. Reflect and wrap
 
-- [ ] 7.1 Document actual time spent vs estimate in the PR description; PLAN.md's "first-session task" step 5 calls for this reflection.
-- [ ] 7.2 Update `design.md` post-hoc with which option won and why (so the next seam has a worked example).
-- [ ] 7.3 Re-run `openspec validate port-random-to-typescript --strict`.
+- [x] 7.1 Time spent on this change (TS impl scope only, excluding bridge): approx. 1 working day across one session — well inside PLAN.md's "small handful of working days" bar. Substantial portions of the time were workflow scaffolding (openspec init, Vitest setup, pre-commit gate, Docker WASM build), not seam-specific work. Future seams will inherit those scaffolds and should be measurably faster.
+- [x] 7.2 `design.md` updated post-hoc with the locked-in Option A decision, the `--js-library` mechanism, and the explicit C ↔ JS function-shape table — the next seam (and the follow-up bridge change) inherit a worked example.
+- [x] 7.3 Re-ran `openspec validate port-random-to-typescript --strict`.
+- [x] 7.4 PLAN.md updated with what we learned: faster than expected for the corpus + TS impl half, the bridge work split into its own change, and the patterns established (in-tree harnesses, characterization corpus location, Vitest as the runner).
+
+## 8. Follow-up changes
+
+- `wire-random-to-wasm` — implement §5/§6 against the design captured here.
+- (Later) Delete `puzzles/random.c` once the bridge has been live and green for long enough to trust. Tracked as a TODO on the follow-up change.

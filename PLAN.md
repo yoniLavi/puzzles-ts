@@ -47,7 +47,7 @@ The bit-identical RNG requirement is **important** for characterization tests (s
 
 Bottom-up, leaves first, to maximize how much downstream code benefits from each replacement:
 
-1. **`random.c`** — first, as the pilot. ~700 lines, pure state machine (SHA-1 based), every puzzle uses it. If we can't get this one green within a small handful of working days, the larger plan needs reconsidering before we commit further.
+1. **`random.c`** — first, as the pilot. ~350 lines (SHA-1 based pure state machine), every puzzle uses it. Each seam splits naturally into two openspec changes: **`port-random-to-typescript`** (characterize → TS impl → corpus replay), then **`wire-random-to-wasm`** (`--js-library` bridge + build flag, WASM rebuild, browser verification). The first half completed faster than feared; if both halves can't finish within a small handful of working days, the larger plan needs reconsidering. Patterns established here — in-tree harnesses, JSON corpus replay via Vitest, the integer-handle bridge — carry to every later seam.
 2. **Leaf libraries**: `tree234.c`, `dsf.c`, `combi.c`, `sort.c`, `findloop.c`, `matching.c`, `divvy.c`. Each has a clear interface; most have existing C unit tests.
 3. **Mid-level shared logic**: `latin.c`, `loopgen.c`, `grid.c`, `laydomino.c`, `penrose.c`, `hat.c`, `spectre.c`.
 4. **Drawing API**: `drawing.c` is already a function-pointer dispatcher — a natural seam. In the WASM build, per-frontend drawing handlers are already JS (in `emcclib.js`); displacing the C wrapper is mostly removing a layer.
@@ -58,43 +58,32 @@ Bottom-up, leaves first, to maximize how much downstream code benefits from each
 
 Keep `puzzles/LICENCE` (Simon + upstream contributors, MIT) intact wherever the upstream subtree lives. This satisfies MIT's "include in all copies" obligation.
 
-Replace the top-level `LICENSE` with a layered version that explicitly credits, in chronological layers:
-- Simon Tatham + upstream contributors (covered in detail by `puzzles/LICENCE`)
-- Mike Edmunds (the puzzles-web web-app code we inherit)
-- Yoni Lavi (new TS implementation in this project)
-
-Single MIT body below. Add a top-level `AUTHORS` or `CREDITS` file with explicit thanks and links to upstream + puzzles-web. Legal compliance is satisfied by the layered MIT notice alone; CREDITS is the graceful gesture.
+Top-level `LICENSE.md` carries a layered MIT notice crediting, in chronological order: Simon Tatham + upstream contributors (deferring to `puzzles/LICENCE` for the full list), Mike Edmunds (puzzles-web), Yoni Lavi (this project). Single MIT body covers all three. Top-level `CREDITS.md` is the graceful gesture with explicit thanks and links to upstream and puzzles-web. Legal compliance is satisfied by the layered MIT notice alone.
 
 ## Reference directories
 
-Sibling to this project, not part of it:
+Two roles to keep distinct:
 
-- **`../puzzles/`** — standalone clone of upstream, configured with cmake for native builds. Used as the **reference oracle** for capturing characterization traces and running native `benchmark.sh` comparisons. Much faster than running everything through the WASM toolchain.
-- **`../puzzles-web/`** — original medmunds clone, kept as the pre-fork baseline reference.
-
-This project is **`../puzzles-ts/`** (current directory).
+- **`puzzles/`** (in-tree subtree of upstream). The full upstream source, including `auxiliary/`. **All project work** — characterization harnesses, fixtures, any auxiliary tooling — lives here. Native builds use `puzzles/build/` (gitignored). The harness pattern is established by `puzzles/auxiliary/random-trace.c`.
+- **`../puzzles/`** (sibling clone). Useful only for running upstream's own tools (`benchmark.sh`, future upstream auxiliary tests) unmodified. **Not** a place to put our work.
+- **`../puzzles-web/`** (sibling clone). The pre-fork baseline; useful as a diff reference in early phases.
 
 ## Work management
 
 We will manage this work via **openspec**. Specs, conventions, and per-seam tasks will be set up at the start of implementation. Treat PLAN.md as the durable strategic context; openspec carries the granular per-task structure.
 
-## First-session task (when work begins)
+## What's been done
 
-1. Confirm the puzzles-web baseline still builds and runs locally: `npm install`, dev server, plus the Docker-based WASM build.
-2. Set up openspec for the project.
-3. Rewrite the top-level LICENSE (layered) and add CREDITS.
-4. Begin **`random.c` → `random.ts`**:
-   - Read `puzzles/random.c` carefully. It is SHA-1 based; the SHA-1 implementation is part of the port.
-   - Build a small C harness in the reference `../puzzles/` clone that captures (seed, call sequence) → output traces for the public API (`random_new`, `random_upto`, `random_bits`, …). Save the corpus as JSON inside this repo.
-   - Implement `src/.../random.ts`.
-   - Write the replay test: load corpus, run TS, assert byte-identical.
-   - Bridge: Embind binding so `webapp.cpp` (or a successor adapter) can route `random_*` calls to TS instead of C. Add a build flag to toggle.
-   - Run the puzzles-web app end-to-end with the bridge enabled. Confirm no behavior regression on a sampling of puzzles.
-5. Reflect: how long did this actually take? Confirm or adjust the plan before moving to the next seam.
+Recorded here as durable reference, not as a changelog (commit history carries the detail):
+
+- **Project setup**: openspec initialised; layered `LICENSE.md` + `CREDITS.md`; Vitest + a strict pre-commit gate (`tsc -b --noEmit` → `npm run lint` → `npm run test:run`).
+- **`random.c` (TS impl half)**: corpus harness in-tree at `puzzles/auxiliary/random-trace.c`; corpus at `src/native/random/__fixtures__/corpus.json` (6 fixtures, 66 calls); TS port in `src/native/{sha1,random}.ts`; replay test passes byte-for-byte.
+- **`random.c` (bridge half)**: deferred to follow-up openspec change `wire-random-to-wasm`. Design locked: TS owns canonical state, C holds integer handles, bridge via Emscripten `--js-library`, gated by a `USE_TS_RANDOM` CMake option (default OFF).
 
 ## Known unresolved questions
 
-- Exact Embind binding strategy for **opaque types where C currently owns the handle** and TS would take over. Will likely need a handle-table on the TS side mirroring what medmunds already does for game_state. random_state is a good test case because it's simple.
 - Whether to keep the WASM in a Web Worker (via Comlink) as TS replacements grow, or migrate logic to the main thread. Likely keep the worker until midend ports, then re-evaluate.
-- How long to keep tracking medmunds upstream. Useful in early phases; less useful as our TS layer grows materially. Track upstream Simon-Tatham always.
+- How long to keep tracking medmunds upstream. Useful in early phases; less useful as our TS layer grows materially. Track upstream Simon Tatham always.
 - Performance budget once enough seams have crossed the wasm/JS boundary. Each crossing has fixed cost; at some point it may make sense to batch or to flip whole subsystems at once.
+
+(*The Embind handle-ownership question that lived here originally is resolved: Option A — TS owns, C holds an integer handle. See `port-random-to-typescript/design.md`.*)

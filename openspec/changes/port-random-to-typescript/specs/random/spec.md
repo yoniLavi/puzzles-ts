@@ -29,22 +29,6 @@ The TS module SHALL bundle its own SHA-1 internally; the C `SHA_*` functions rem
 - **WHEN** a state is encoded with `random_state_encode` and decoded with `random_state_decode`
 - **THEN** subsequent `random_bits` and `random_upto` calls on the decoded state produce the same outputs as on the original
 
-### Requirement: Build flag toggles between C and TypeScript implementations
-
-The build SHALL support a flag that selects whether `random_*` calls in the WASM puzzles engine resolve to the C implementation (default) or to the TypeScript implementation via the Embind bridge. The default-off setting SHALL preserve byte-identical behaviour with the pre-change build.
-
-#### Scenario: Default build keeps C implementation
-
-- **WHEN** the project is built without the flag set
-- **THEN** the WASM puzzles engine calls `puzzles/random.c` for all `random_*` invocations
-- **AND** observable behaviour is unchanged from the pre-change build
-
-#### Scenario: Flag-on build routes to TypeScript
-
-- **WHEN** the project is built with the flag set to use the TS implementation
-- **THEN** the WASM puzzles engine routes all `random_*` calls to `src/native/random.ts`
-- **AND** a given game ID produces the same board as it would under the flag-off build
-
 ### Requirement: Characterization corpus is committed to the repository
 
 The repository SHALL contain a JSON corpus under `src/native/random/__fixtures__/` (or equivalent) capturing input seeds, call scripts, and recorded outputs from the native C implementation. The corpus SHALL cover varied bit counts (including 32), varied `random_upto` limits (including non-powers-of-two), the SHA-rollover path, `random_copy` independence, and `random_state_encode`/`decode` round-trips.
