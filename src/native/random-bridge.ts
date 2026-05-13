@@ -14,10 +14,10 @@
  */
 
 import {
+  type RandomState,
   randomBits,
   randomCopy,
   randomNew,
-  type RandomState,
   randomStateDecode,
   randomStateEncode,
   randomUpto,

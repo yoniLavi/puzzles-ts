@@ -15,8 +15,7 @@ export type ShaState = {
   lenlo: number; // bottom 32 bits of total length (in bytes)
 };
 
-const rol = (x: number, n: number): number =>
-  ((x << n) | (x >>> (32 - n))) >>> 0;
+const rol = (x: number, n: number): number => ((x << n) | (x >>> (32 - n))) >>> 0;
 
 const u32 = (x: number): number => x >>> 0;
 

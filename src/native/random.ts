@@ -119,9 +119,12 @@ export function randomStateDecode(input: string): RandomState {
   for (let k = 0; k < input.length; k++) {
     const c = input.charCodeAt(k);
     let v: number;
-    if (c >= 0x30 && c <= 0x39) v = c - 0x30; // 0-9
-    else if (c >= 0x41 && c <= 0x46) v = c - 0x41 + 10; // A-F
-    else if (c >= 0x61 && c <= 0x66) v = c - 0x61 + 10; // a-f
+    if (c >= 0x30 && c <= 0x39)
+      v = c - 0x30; // 0-9
+    else if (c >= 0x41 && c <= 0x46)
+      v = c - 0x41 + 10; // A-F
+    else if (c >= 0x61 && c <= 0x66)
+      v = c - 0x61 + 10; // a-f
     else v = 0;
     byte = (byte << 4) | v;
     digits++;
