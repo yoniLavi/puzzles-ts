@@ -71,7 +71,7 @@ The repository SHALL contain a JSON corpus under `src/native/random/__fixtures__
 
 The build SHALL support a `USE_TS_RANDOM` CMake option (default OFF) that selects whether `random_*` calls in the WASM puzzles engine resolve to the C implementation (`puzzles/random.c`) or to the TypeScript implementation (`src/native/random.ts`) via the JS-library bridge. The default-off setting SHALL preserve byte-identical behaviour with the pre-change build.
 
-The `Docker/build-emcc.sh` script SHALL honour a `USE_TS_RANDOM` environment variable, mapping it to the CMake option.
+The host-native wasm build script (`scripts/build-emcc.sh`, also exposed as `npm run build:wasm`) SHALL honour a `USE_TS_RANDOM` environment variable, mapping it to the CMake option.
 
 #### Scenario: Default build keeps C implementation
 

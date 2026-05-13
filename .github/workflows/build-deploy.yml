@@ -1,9 +1,12 @@
 name: Build and deploy
 
+# Inherited from upstream (medmunds/puzzles-web) and currently disabled in
+# this fork: it deploys to a Cloudflare Pages account that this fork does
+# not have configured. The build steps still target the (now deleted)
+# Docker/build-{emcc,icons}.{sh,Dockerfile} pipeline; rewiring against
+# scripts/build-emcc.sh + scripts/build-icons.sh is left for whenever this
+# fork wants its own CI/CD.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions: {}

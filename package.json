@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:wasm": "scripts/build-emcc.sh",
+    "build:icons": "scripts/build-icons.sh",
+    "build:assets": "npm run build:wasm && npm run build:icons",
     "preview": "vite preview",
     "preview:pages": "wrangler pages dev dist",
     "format": "biome format --write .",

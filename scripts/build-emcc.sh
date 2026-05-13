@@ -1,6 +1,11 @@
 #!/bin/bash
-# This script runs inside the build-emcc container.
-# The puzzles directory is expected to be at /app/puzzles.
+# Build the wasm puzzles + manual on the host machine using brew-installed
+# Emscripten (see Brewfile). Writes deliverables into src/assets/puzzles/.
+#
+# Run from the repo root:
+#   ./scripts/build-emcc.sh
+# or via the npm wrapper:
+#   npm run build:wasm
 
 set -euo pipefail
 if [ "${DEBUG:-0}" != "0" ]; then
@@ -20,27 +25,38 @@ BUILD_UNFINISHED=${BUILD_UNFINISHED:-}
 # GENERATE_SOURCE_MAPS: set to "ON" to generate source maps
 # (will disable several optimizations)
 GENERATE_SOURCE_MAPS=${GENERATE_SOURCE_MAPS:-}
-# JOBS: number of parallel builds to run, default is number of processors
-JOBS=${JOBS:-$(nproc 2>/dev/null || echo 1)}
+# JOBS: number of parallel builds to run, default is number of processors.
+# `nproc` ships with coreutils on macOS (see Brewfile); fall back to
+# `sysctl` and finally to 1.
+JOBS=${JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)}
 # USE_TS_RANDOM: set to "1"/"ON" to route random_* calls to the TypeScript
 # implementation in src/native/random.ts via puzzles/random_bridge.js.
 # When set, also set VITE_USE_TS_RANDOM=1 when running vite so the worker
-# installs the JS-side handle table. See openspec/changes/wire-random-to-wasm/.
+# installs the JS-side handle table. See openspec/specs/random/spec.md.
 USE_TS_RANDOM=${USE_TS_RANDOM:-}
 
 
 # --- Directories ---
-# Puzzles source code (directory containing CMakeFiles.txt):
-SRC_DIR=/app/puzzles
-# Generated build files:
-BUILD_DIR=/app/build
-# Deliverables output:
-DIST_DIR=/app/assets/puzzles
+# Resolve repo root from this script's location, so the script works no matter
+# the cwd of the caller (npm run, IDE, etc.).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+SRC_DIR="${REPO_ROOT}/puzzles"
+BUILD_DIR="${REPO_ROOT}/build/emcc"
+DIST_DIR="${REPO_ROOT}/src/assets/puzzles"
 DIST_DIR_MANUAL="${DIST_DIR}/manual"
 
 if [ ! -d "${SRC_DIR}" ]; then
-  echo "Puzzles source must be mounted on /app/puzzles (can be read-only)"
+  echo "Puzzles source not found at ${SRC_DIR}" >&2
   exit 2
+fi
+
+# Confirm emcmake is on PATH; give a helpful pointer if not.
+if ! command -v emcmake >/dev/null 2>&1; then
+  echo "emcmake not found. Install via: brew bundle install" >&2
+  echo "(or set EMSDK_DIR / activate your own emsdk install before running.)" >&2
+  exit 3
 fi
 
 

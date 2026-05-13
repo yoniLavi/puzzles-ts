@@ -236,7 +236,7 @@ def group_dependencies(license_infos: list[LicenseInfo | None]) -> list[Dependen
         if len(items) == 1:
             # Singleton group
             name = item.source_path.name
-        elif isinstance(key, Path):
+        elif isinstance(key, Path) and item.license_path:
             # All items have the same license file; use its directory name
             name = item.license_path.parent.name
         else:
@@ -287,19 +287,46 @@ def main():
 
     emscripten_dir = args.emscripten_dir
     if not emscripten_dir:
-        # Find emcc on PATH and use its directory
         emcc_path = shutil.which("emcc")
         if emcc_path:
-            emscripten_dir = Path(emcc_path).parent
+            # Brew installs the emcc launcher in /opt/homebrew/bin/emcc as a
+            # symlink to /opt/homebrew/Cellar/emscripten/<ver>/bin/emcc, and
+            # ships LICENSE one dir above the resolved bin/. The Docker emsdk
+            # layout instead puts LICENSE alongside the binary. Search both.
+            real_bin = Path(emcc_path).resolve().parent
+            for candidate in (real_bin, real_bin.parent):
+                if (candidate / "LICENSE").is_file():
+                    emscripten_dir = candidate
+                    break
+            else:
+                emscripten_dir = real_bin
 
     emscripten_license_path = emscripten_dir / "LICENSE"
     if not emscripten_license_path.is_file():
         print(f"Unable to locate LICENSE in {emscripten_dir}", file=sys.stderr)
         exit(1)
 
+    # The wasm source maps reference Emscripten's bundled C/C++ stdlib sources
+    # via paths baked into the prebuilt libcxxabi/libcxx/musl etc. — typically
+    # `/emsdk/(upstream/)?(emscripten|lib)/...`. Those exist as real files in
+    # the upstream emsdk Docker image, but on a brew install the equivalent
+    # files live under `<emscripten_dir>/libexec/...`. Build a rewrite so we
+    # can locate license files for those entries regardless of layout.
+    emscripten_libexec = emscripten_dir / "libexec"
+    def remap_emsdk_path(p: Path) -> Path:
+        if p.is_file():
+            return p
+        s = str(p)
+        for prefix in ("/emsdk/upstream/emscripten/", "/emsdk/emscripten/"):
+            if s.startswith(prefix):
+                candidate = emscripten_libexec / s[len(prefix):]
+                if candidate.is_file():
+                    return candidate
+        return p
+
     try:
         source_paths = [
-            Path(source.strip()) for source in args.sources.readlines()
+            remap_emsdk_path(Path(source.strip())) for source in args.sources.readlines()
         ]
         license_infos = [
             find_license_info(source_path) for source_path in source_paths

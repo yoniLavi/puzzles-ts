@@ -13,13 +13,13 @@ The non-negotiable bar is **fidelity** (byte-identical behavior at every replace
 - **State / reactivity**: `@lit-labs/signals`, `signal-utils`, `@lit/context`
 - **Persistence**: Dexie (IndexedDB)
 - **Workers / IPC**: Comlink wraps the WASM puzzle worker
-- **WASM toolchain**: Emscripten via a Dockerized build (`Docker/`)
+- **WASM toolchain**: Emscripten installed via Homebrew (`Brewfile`), driven by `scripts/build-emcc.sh`
 - **Bridging C ↔ JS**: Embind (`webapp.cpp`) plus `emcclib.js` for drawing
 - **Telemetry**: Sentry browser + WASM source-map plugin
 - **PWA**: `vite-plugin-pwa` + Workbox
 - **Tooling**: Biome (format + lint), Husky + lint-staged, Wrangler for Pages preview
 
-There is currently **no test runner installed**. Adding one (likely Vitest, to match the Vite-based stack) is part of the random.c seam work — characterization replay tests need somewhere to live.
+Vitest runs both the TS unit tests under `src/**/*.test.ts` and the in-tree characterization harnesses (added during the random.c seam work; see `vitest.config.ts`).
 
 ## Project Conventions
 
@@ -72,7 +72,8 @@ Bit-identical RNG is **important**: characterization replays depend on it, and p
 
 - `puzzles/` — upstream C subtree (drawing, midend, ~40 puzzle back ends, libraries). **Do not restyle.**
 - `src/` — the TS web app (Lit components, routing, worker, drawing adapter). The TS replacements for C modules will live here too, organized by capability.
-- `Docker/` — Emscripten toolchain image for the WASM build.
+- `scripts/` — host-native build entry points (`build-emcc.sh`, `build-icons.sh`).
+- `Brewfile` — pinned dependency list for the wasm + icons pipelines (Emscripten, GTK+3, ImageMagick, halibut, jq, oxipng, …).
 - `public/`, `help/`, `*.html.hbs`, `vite-*.ts` — the PWA + Vite plugins.
 - `openspec/` — spec-driven change management (this directory).
 - `PLAN.md` — durable strategic context (the why behind this whole effort).
@@ -88,5 +89,5 @@ Bit-identical RNG is **important**: characterization replays depend on it, and p
 
 - **Upstream Simon Tatham** (`../puzzles/` sibling clone): reference oracle for characterization traces and native `benchmark.sh` runs. Much faster than going through WASM. Always track upstream.
 - **medmunds/puzzles-web** (`../puzzles-web/` sibling clone): pre-fork baseline. Useful in early phases; less useful as the TS layer grows.
-- **Emscripten** (via `Docker/`): the WASM toolchain. Required for builds until the C side is fully displaced.
+- **Emscripten** (host-native via Homebrew, see `Brewfile`): the WASM toolchain. Required for builds until the C side is fully displaced.
 - **Cloudflare Pages / Wrangler**: hosting target (see `wrangler.toml`).
