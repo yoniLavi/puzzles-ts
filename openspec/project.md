@@ -14,7 +14,8 @@ The non-negotiable bar is **fidelity** (byte-identical behavior at every replace
 - **Persistence**: Dexie (IndexedDB)
 - **Workers / IPC**: Comlink wraps the WASM puzzle worker
 - **WASM toolchain**: Emscripten installed via Homebrew (`Brewfile`), driven by `scripts/build-emcc.sh`
-- **Bridging C ↔ JS**: Embind (`webapp.cpp`) plus `emcclib.js` for drawing
+- **Bridging C ↔ JS**: Embind via `webapp.cpp` (the frontend adapter that
+  replaces upstream's Emscripten glue for the web build)
 - **Telemetry**: Sentry browser + WASM source-map plugin
 - **PWA**: `vite-plugin-pwa` + Workbox
 - **Tooling**: Biome (format + lint), Husky + lint-staged, Wrangler for Pages preview

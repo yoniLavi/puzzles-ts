@@ -30,20 +30,19 @@ string(REPLACE "-DNDEBUG" "" CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWI
 #  - define set_platform_puzzle_target_properties(), used below
 #  - define build_platform_extras(), called from the top-level CMakeLists.txt
 #  - override the above build_* settings, if necessary
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-  include(cmake/platforms/windows.cmake)
-elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-  include(cmake/platforms/osx.cmake)
-elseif(CMAKE_SYSTEM_NAME MATCHES "NestedVM")
-  include(cmake/platforms/nestedvm.cmake)
-elseif(CMAKE_C_COMPILER MATCHES "emcc")
-  option(WEB_APP "build for web app (rather than KaiOS etc.)")
-  if(WEB_APP)
-    include(cmake/platforms/webapp.cmake)
-  else()
-  include(cmake/platforms/emscripten.cmake)
-  endif()
-else() # assume Unix
+#
+# This fork supports two targets:
+#  - WEB_APP=ON  -> webapp.cmake (wasm + Embind via webapp.cpp, driven by
+#    scripts/build-emcc.sh; consumed by src/assets/puzzles/).
+#  - default     -> unix.cmake   (GTK puzzle binaries that scripts/build-icons.sh
+#    screenshots for src/assets/icons/, plus native characterization
+#    harnesses in puzzles/auxiliary/).
+# Other upstream platforms (Windows, macOS, NestedVM, KaiOS, Java applet)
+# were dropped in the prune-unsupported-frontends openspec change.
+option(WEB_APP "build for web app (wasm) rather than the unix/GTK icon path")
+if(WEB_APP)
+  include(cmake/platforms/webapp.cmake)
+else()
   include(cmake/platforms/unix.cmake)
 endif()
 
@@ -245,7 +244,10 @@ macro(export_variables_to_parent_scope)
 endmacro()
 
 macro(build_extras)
-  # Write out a list of the game names, for benchmark.sh to use.
+  # Write out a list of the game names. Upstream's benchmark.sh consumed
+  # this; benchmark.sh was dropped in the prune-unsupported-frontends
+  # openspec change, but gamelist.txt is still a handy artefact for any
+  # external soak harness, so we keep emitting it.
   file(WRITE ${CMAKE_BINARY_DIR}/gamelist.txt "")
   list(SORT puzzle_names)
   foreach(name ${puzzle_names})

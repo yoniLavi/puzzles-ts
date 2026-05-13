@@ -281,7 +281,7 @@ export class PuzzleViewInteractive extends PuzzleView {
         ? event.button
         : DOMMouseButton.Main; // Treat extra buttons as main
 
-    // Handle Ctrl and Shift like emcclib.js, where they remap physical buttons.
+    // Handle Ctrl and Shift like upstream's emcclib.js, where they remap physical buttons.
     if (hasCtrlKey(event)) {
       button = swapButtons(button);
     } else if (event.shiftKey) {

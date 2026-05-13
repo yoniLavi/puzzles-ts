@@ -93,13 +93,20 @@ There are a few other directories whose names should mostly be self explanatory.
 
 ### Puzzles code
 
-The puzzles directory includes a subtree of the upstream repo plus some local
-changes and additions:
+The puzzles directory is a subtree of the upstream repo, restricted to the
+files this fork actually builds (the engine plus the GTK frontend, which we
+only run headless to screenshot icons). Upstream platforms that this fork
+doesn't ship — Windows, macOS, KaiOS, NestedVM, Java applet, the KaiOS-targeted
+Emscripten adapter, and the upstream Linux .desktop / packaging files — were
+removed in the `prune-unsupported-frontends` openspec change. Refer to
+upstream for those.
+
+Local changes and additions:
 
 * [webapp.cpp](puzzles/webapp.cpp) is a puzzles [frontend] for the PWA. Or
   really, a frontend *adapter* that allows most of the actual frontend to be
-  implemented in TypeScript. (This port does not use upstream's emcclib.js,
-  emccpre.js and emcc.c.)
+  implemented in TypeScript. (This is what replaces upstream's Emscripten
+  glue for the web build.)
 
   C++ is necessary to leverage emcc's [Embind][embind]. My original goal was to
   automate TypeScript type declarations to ensure the TS app code matched the

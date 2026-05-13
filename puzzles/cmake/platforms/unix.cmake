@@ -98,36 +98,16 @@ function(set_platform_gui_target_properties TARGET)
 endfunction()
 
 function(set_platform_puzzle_target_properties NAME TARGET)
-  get_target_property(official ${TARGET} official)
-  get_target_property(exename ${TARGET} exename)
-  get_target_property(displayname ${TARGET} displayname)
-  get_target_property(description ${TARGET} description)
   set(binary_name ${NAME_PREFIX}${NAME})
-
   set_target_properties(${TARGET} PROPERTIES
     OUTPUT_NAME ${binary_name})
-
-  if(${official})
-    if(CMAKE_VERSION VERSION_LESS 3.14)
-      # CMake 3.13 and earlier required an explicit install destination.
-      install(TARGETS ${TARGET} RUNTIME DESTINATION bin)
-    else()
-      # 3.14 and above selects a sensible default, which we should avoid
-      # overriding here so that end users can override it using
-      # CMAKE_INSTALL_BINDIR.
-      install(TARGETS ${TARGET})
-    endif()
-    configure_file(${PUZZLES_ROOT_DIR}/puzzle.desktop.in ${binary_name}.desktop)
-    foreach(icon_size ${all_icon_sizes})
-      install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/icons/${NAME}-${icon_size}d24.png
-        DESTINATION share/icons/hicolor/${icon_size}x${icon_size}/apps
-        OPTIONAL
-        RENAME ${binary_name}.png)
-    endforeach()
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${binary_name}.desktop
-      DESTINATION share/applications)
-  endif()
+  # Upstream's unix.cmake also installs .desktop files and icon PNGs into
+  # /share/applications and /share/icons/hicolor/.../apps. This fork does
+  # not ship a Linux package: the unix/GTK target exists only so
+  # scripts/build-icons.sh can run each puzzle with --screenshot to
+  # capture a PNG for src/assets/icons/. The Linux-packaging side
+  # (puzzle.desktop.in, desktop.pl) was dropped in the
+  # prune-unsupported-frontends openspec change.
 endfunction()
 
 function(build_platform_extras)

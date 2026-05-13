@@ -144,7 +144,7 @@ export class Drawing implements DrawingImpl<Blitter> {
       let offset = this.mathematicalBaselineOffset[this.context.font];
       if (offset === undefined) {
         // Measure digits only: puzzles tend to center digits or digits+lowercase,
-        // not uppercase. (Compare js_canvas_find_font_midpoint in emcclib.js.)
+        // not uppercase. (Compare js_canvas_find_font_midpoint in upstream's emcclib.js.)
         const { actualBoundingBoxAscent, actualBoundingBoxDescent } =
           this.context.measureText("0123456789");
         offset = (actualBoundingBoxAscent + actualBoundingBoxDescent) / 2;
@@ -178,7 +178,7 @@ export class Drawing implements DrawingImpl<Blitter> {
     this.context.lineTo(p2.x + 0.5, p2.y + 0.5);
     this.setUpContext({ strokeColor: colour, fillColor: colour, lineWidth: thickness });
     this.context.stroke();
-    // Draw the pixel at each end of the line (copied from emcclib.js).
+    // Draw the pixel at each end of the line (copied from upstream's emcclib.js).
     this.context.fillRect(p1.x, p1.y, 1, 1);
     this.context.fillRect(p2.x, p2.y, 1, 1);
   }

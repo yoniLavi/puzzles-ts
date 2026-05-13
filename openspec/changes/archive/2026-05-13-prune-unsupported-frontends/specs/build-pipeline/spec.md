@@ -1,8 +1,7 @@
-# build-pipeline Specification
+# build-pipeline spec delta
 
-## Purpose
-TBD - created by archiving change remove-docker-emcc-build. Update Purpose after archive.
-## Requirements
+## MODIFIED Requirements
+
 ### Requirement: WASM and icon builds run on host-native tooling
 
 The wasm and icon build pipelines SHALL execute on the developer's host
@@ -82,4 +81,3 @@ remains the canonical source for anyone building those platforms.
 - **AND** any future need for an end-to-end soak benchmark (per PLAN.md
   "Test discipline" layer 3) is satisfied by a TS implementation, not by
   reviving the dropped Perl/shell scripts
-

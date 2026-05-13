@@ -2,7 +2,7 @@
 # Generate dependencies.json from a list of source files in the Emscripten-
 # generated wasm. To use, first build with `-gsource-map` and extract the
 # list of source files from the generated map files: `jq -r '.sources[]' *.map`.
-# (See emcccopy.but for more details.) You may need to adjust relative paths
+# You may need to adjust relative paths
 # and otherwise patch up the list. E.g., with the emsdk docker container:
 #
 #   jq -r '.sources[]' *.map \

@@ -18,17 +18,20 @@ implementation, MIT-licensed, and still actively maintained.
   list (Simon Tatham plus a long roster of contributors).
 
 The `puzzles/` directory in this repository is a subtree of upstream,
-preserved as-is to honour the MIT obligation and to keep future upstream
-merges viable.
+restricted to the files this fork actually builds (the engine plus the
+GTK frontend, used headless for icon generation). Upstream platforms
+this fork doesn't ship were removed in the
+`prune-unsupported-frontends` openspec change; `puzzles/LICENCE` is
+preserved verbatim to honour the MIT obligation.
 
 ## Direct parent: `puzzles-web` by Mike Edmunds
 
 The PWA shell — Vite + Lit + Web Awesome, Comlink-wrapped WASM worker,
-Embind/`webapp.cpp` adapter, Cloudflare Pages deployment, drawing
-integration via `emcclib.js`, and much else — is Mike Edmunds' work in
-[`puzzles-web`](https://github.com/medmunds/puzzles-web). This project
-forks from there and pushes the TS/WASM seam progressively deeper into the
-C code.
+Embind/`webapp.cpp` frontend adapter, the drawing/JS bridging that
+replaced upstream's Emscripten glue, and much else — is Mike Edmunds'
+work in [`puzzles-web`](https://github.com/medmunds/puzzles-web). This
+project forks from there and pushes the TS/WASM seam progressively
+deeper into the C code.
 
 - Source: <https://github.com/medmunds/puzzles-web>
 
