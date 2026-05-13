@@ -130,16 +130,18 @@ Local changes and additions:
 
 The web app is a vite multipage app (MPA). Most of the entry pages are rendered
 at build time (or on-the-fly in vite's dev server) via this project's custom
-[vite-extra-pages.ts](vite-extra-pages.ts) plugin. There are two main templates:
+[vite-plugins/extra-pages.ts](vite-plugins/extra-pages.ts) plugin. There are
+two main templates under [templates/](templates/):
 
-* [index.html.hbs](index.html.hbs) is the template for the main screen with the
-  list of puzzles. It's meant to render *something* useful with JavaScript 
-  disabled, but most of the interesting functionality is in src/home-screen.ts.
+* [templates/index.html.hbs](templates/index.html.hbs) is the template for the
+  main screen with the list of puzzles. It's meant to render *something* useful
+  with JavaScript disabled, but most of the interesting functionality is in
+  src/home-screen.ts.
 
-* [puzzle.html.hbs](puzzle.html.hbs) is the template used for generating all
-  individual puzzle pages (e.g., `/blackbox`, `/bridges`, etc.). The puzzle
-  pages don't work without JavaScript, and nearly all of the interesting 
-  functionality is in src/puzzle-screen.ts.
+* [templates/puzzle.html.hbs](templates/puzzle.html.hbs) is the template used
+  for generating all individual puzzle pages (e.g., `/blackbox`, `/bridges`,
+  etc.). The puzzle pages don't work without JavaScript, and nearly all of the
+  interesting functionality is in src/puzzle-screen.ts.
 
 The src directory is a little in flux right now, but it may help to know that:
 
@@ -172,7 +174,7 @@ The src directory is a little in flux right now, but it may help to know that:
   [design tokens] to use throughout this app's CSS.
 
 * The help system is assembled from three different areas (also using the
-  vite-extra-pages plugin):
+  extra-pages plugin):
   [help](help) for the main help pages; [puzzles/html](puzzles/html) (from the
   upstream repo) for the initial overview help for each puzzle; and the manual
   (sourced from [puzzles/puzzles.but](puzzles/puzzles.but) and built into html

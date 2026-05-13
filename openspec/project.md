@@ -18,7 +18,7 @@ The non-negotiable bar is **fidelity** (byte-identical behavior at every replace
   replaces upstream's Emscripten glue for the web build)
 - **Telemetry**: Sentry browser + WASM source-map plugin
 - **PWA**: `vite-plugin-pwa` + Workbox
-- **Tooling**: Biome (format + lint), Husky + lint-staged, Wrangler for Pages preview
+- **Tooling**: Biome (format + lint), Husky + lint-staged
 
 Vitest runs both the TS unit tests under `src/**/*.test.ts` and the in-tree characterization harnesses (added during the random.c seam work; see `vitest.config.ts`).
 
@@ -91,4 +91,4 @@ Bit-identical RNG is **important**: characterization replays depend on it, and p
 - **Upstream Simon Tatham** (`../puzzles/` sibling clone): reference oracle for characterization traces and native `benchmark.sh` runs. Much faster than going through WASM. Always track upstream.
 - **medmunds/puzzles-web** (`../puzzles-web/` sibling clone): pre-fork baseline. Useful in early phases; less useful as the TS layer grows.
 - **Emscripten** (host-native via Homebrew, see `Brewfile`): the WASM toolchain. Required for builds until the C side is fully displaced.
-- **Cloudflare Pages / Wrangler**: hosting target (see `wrangler.toml`).
+- **Hosting**: TBD for this fork. The CF Pages setup inherited from puzzles-web is no longer wired here — `wrangler.toml` and the `preview:pages` script were dropped in the `reorganize-repo-tooling` openspec change. Some Cloudflare-flavoured comments and CSP entries (for CF Insights) remain in `vite.config.ts` / `templates/_headers.txt.hbs` as known-format references in case CF Pages is revisited.

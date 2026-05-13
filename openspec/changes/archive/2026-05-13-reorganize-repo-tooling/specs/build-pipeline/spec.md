@@ -1,8 +1,7 @@
-# build-pipeline Specification
+# build-pipeline spec delta
 
-## Purpose
-TBD - created by archiving change remove-docker-emcc-build. Update Purpose after archive.
-## Requirements
+## MODIFIED Requirements
+
 ### Requirement: WASM and icon builds run on host-native tooling
 
 The wasm and icon build pipelines SHALL execute on the developer's host
@@ -73,4 +72,3 @@ for harness binaries) is gone.
   `puzzles/auxiliary/`) configure cmake with `-B /build/native`
 - **AND** `.gitignore` matches the consolidated layout via the
   pre-existing `/build/` rule, with no `/puzzles/build/` rule needed
-

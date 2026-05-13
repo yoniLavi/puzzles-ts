@@ -40,7 +40,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 SRC_DIR="${REPO_ROOT}/puzzles"
-BUILD_DIR="${REPO_ROOT}/build/emcc"
+BUILD_DIR="${REPO_ROOT}/build/wasm"
 DIST_DIR="${REPO_ROOT}/src/assets/puzzles"
 DIST_DIR_MANUAL="${DIST_DIR}/manual"
 
@@ -104,18 +104,18 @@ cp "${BUILD_DIR}"/help/en/*.html "${DIST_DIR_MANUAL}" || echo "[WARN] No HTML do
 # of the imported wasm file). Pick an arbitrary one to use as a shared runtime.
 # (See loadPuzzleModule() in src/puzzle.)
 cp "${BUILD_DIR}"/nullgame.js "${DIST_DIR}/emcc-runtime.js" \
-  || echo "[WARN] nullgame.js not found in puzzles/build-webapp."
+  || echo "[WARN] nullgame.js not found in ${BUILD_DIR}."
 # Clean up EmbindString in emit-tsd output. (Yes, any embind-wrapped function that
 # accepts a string can also take an ArrayBuffer, etc., but return values and
 # value object fields are always standard JS strings.)
 sed -e '/type EmbindString/d' -e 's/EmbindString/string/g' \
   "${BUILD_DIR}"/nullgame.d.ts > "${DIST_DIR}/emcc-runtime.d.ts" \
-  || echo "[WARN] nullgame.d.ts found in puzzles/build-webapp."
+  || echo "[WARN] nullgame.d.ts found in ${BUILD_DIR}."
 
 # Then deliver all of the puzzle-specific wasm files (and related sourcemaps).
 shopt -s nullglob  # (release builds don't generate .map files)
 cp "${BUILD_DIR}"/*.{wasm,map} "${DIST_DIR}/" \
-  || echo "[WARN] No .wasm files found in puzzles/build-webapp."
+  || echo "[WARN] No .wasm files found in ${BUILD_DIR}."
 if [[ -d "${BUILD_DIR}/unfinished" ]]; then
   cp "${BUILD_DIR}"/unfinished/*.{wasm,map} "${DIST_DIR}/" \
     || echo "[WARN] No unfinished .wasm files found."

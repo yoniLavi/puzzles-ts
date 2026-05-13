@@ -14,8 +14,8 @@ import {
   renderHandlebars,
   renderMarkdown,
   type Transform,
-} from "./vite-extra-pages";
-import { wasmSourcemaps } from "./vite-wasm-sourcemaps";
+} from "./vite-plugins/extra-pages";
+import { wasmSourcemaps } from "./vite-plugins/wasm-sourcemaps";
 
 type Env = Record<string, string>;
 type Headers = Record<string, string>;
@@ -430,7 +430,7 @@ export default defineConfig(async ({ command, mode }) => {
                 },
               },
             ],
-            transforms: [renderHandlebars({ file: "index.html.hbs" })],
+            transforms: [renderHandlebars({ file: "templates/index.html.hbs" })],
           },
           {
             virtualPages: Object.entries(puzzles).map(([id, puzzleData]) => {
@@ -455,7 +455,7 @@ export default defineConfig(async ({ command, mode }) => {
                 },
               };
             }),
-            transforms: [renderHandlebars({ file: "puzzle.html.hbs" })],
+            transforms: [renderHandlebars({ file: "templates/puzzle.html.hbs" })],
           },
           {
             // Our own help pages, served at /help/...
@@ -547,7 +547,7 @@ export default defineConfig(async ({ command, mode }) => {
                 },
               },
             ],
-            transforms: [renderHandlebars({ file: "_headers.txt.hbs" })],
+            transforms: [renderHandlebars({ file: "templates/_headers.txt.hbs" })],
             entryPoint: false,
           },
         ],

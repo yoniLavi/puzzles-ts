@@ -64,7 +64,7 @@ Top-level `LICENSE.md` carries a layered MIT notice crediting, in chronological 
 
 Two roles to keep distinct:
 
-- **`puzzles/`** (in-tree subtree of upstream). The full upstream source, including `auxiliary/`. **All project work** — characterization harnesses, fixtures, any auxiliary tooling — lives here. Native builds use `puzzles/build/` (gitignored). The harness pattern is established by `puzzles/auxiliary/random-trace.c`.
+- **`puzzles/`** (in-tree subtree of upstream). The trimmed upstream source (engine + GTK frontend), including `auxiliary/`. **All project work** — characterization harnesses, fixtures, any auxiliary tooling — lives here. Native harness builds use `/build/native/` (gitignored, alongside `/build/wasm/` and `/build/icons/`). The harness pattern is established by `puzzles/auxiliary/random-trace.c`.
 - **`../puzzles/`** (sibling clone). Useful only for running upstream's own tools (`benchmark.sh`, future upstream auxiliary tests) unmodified. **Not** a place to put our work.
 - **`../puzzles-web/`** (sibling clone). The pre-fork baseline; useful as a diff reference in early phases.
 

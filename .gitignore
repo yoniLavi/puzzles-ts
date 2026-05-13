@@ -33,10 +33,6 @@ node_modules/
 # TypeScript incremental build info (from `tsc -b`)
 *.tsbuildinfo
 
-# Native build dir for puzzles/ subtree (cmake out-of-source).
-# Used by per-seam characterization harnesses, e.g. random-trace.
-/puzzles/build/
-
 # Other scratch directories
 /patches/
 
