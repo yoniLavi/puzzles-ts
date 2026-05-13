@@ -186,3 +186,76 @@ describe("Combi API surface", () => {
     expect(c.nleft).toBe(0);
   });
 });
+
+// -----------------------------------------------------------------------------
+// Property tests, per the AGENTS.md "for pure deterministic seams, also add a
+// property-test layer" rule. These invariants hold for every valid (r, n) —
+// they catch regressions which happen to pass the recorded fixtures but break
+// on unrecorded inputs. Cheap, exhaustive over a small grid.
+
+describe("Combi properties (exhaustive over small grid)", () => {
+  const pairs: [number, number][] = [];
+  for (let n = 1; n <= 8; n++) {
+    for (let r = 0; r <= n; r++) {
+      pairs.push([r, n]);
+    }
+  }
+
+  function choose(n: number, r: number): number {
+    let result = 1;
+    for (let k = 1; k <= r; k++) result = (result * (n - r + k)) / k;
+    return result;
+  }
+
+  it.each(pairs)("(%i, %i): tuple count equals C(n, r)", (r, n) => {
+    const tuples = [...new Combi(r, n)];
+    expect(tuples.length).toBe(choose(n, r));
+    expect(tuples.length).toBe(new Combi(r, n).total);
+  });
+
+  it.each(pairs)("(%i, %i): every tuple is strictly ascending", (r, n) => {
+    for (const tuple of new Combi(r, n)) {
+      for (let i = 1; i < tuple.length; i++) {
+        expect(tuple[i], `tuple ${JSON.stringify(tuple)}`).toBeGreaterThan(tuple[i - 1]);
+      }
+    }
+  });
+
+  it.each(pairs)("(%i, %i): every tuple is drawn from {0..n-1}", (r, n) => {
+    for (const tuple of new Combi(r, n)) {
+      for (const x of tuple) {
+        expect(x).toBeGreaterThanOrEqual(0);
+        expect(x).toBeLessThan(n);
+      }
+    }
+  });
+
+  it.each(pairs)("(%i, %i): every tuple has length r", (r, n) => {
+    for (const tuple of new Combi(r, n)) {
+      expect(tuple.length).toBe(r);
+    }
+  });
+
+  it.each(pairs)("(%i, %i): tuples are emitted in strict lex order", (r, n) => {
+    const tuples = [...new Combi(r, n)];
+    for (let i = 1; i < tuples.length; i++) {
+      expect(lexCompare(tuples[i - 1], tuples[i]), `at #${i}`).toBeLessThan(0);
+    }
+  });
+
+  it.each(pairs)("(%i, %i): tuples are all distinct", (r, n) => {
+    const seen = new Set<string>();
+    for (const tuple of new Combi(r, n)) {
+      const key = tuple.join(",");
+      expect(seen.has(key), `duplicate ${key}`).toBe(false);
+      seen.add(key);
+    }
+  });
+});
+
+function lexCompare(a: readonly number[], b: readonly number[]): number {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    if (a[i] !== b[i]) return a[i] - b[i];
+  }
+  return a.length - b.length;
+}

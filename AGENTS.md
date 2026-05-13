@@ -69,7 +69,27 @@ Three layers of testing, in increasing scope:
 2. **Upstream per-module unit tests, ported.** Where upstream's `auxiliary/*-test.c` covers a module we're replacing (tree234, latin, dsf-via-findloop, sort, combi, hat, penrose, spectre), port the test to TS alongside the module. The C test becomes the spec.
 3. **Benchmark soak (end-to-end).** Per-preset board generation across every puzzle, replacing upstream's `benchmark.sh` with a TS implementation that drives both the pure-WASM and hybrid TS/WASM builds. Both must stay green.
 
+**For pure, deterministic seams**, also add a property-test layer alongside the corpus replay: a small set of invariant assertions that hold for *every* input in the input space, not just the recorded fixtures. For example, "the combi iterator emits exactly `C(n, r)` distinct lex-ordered `r`-tuples" is a 10-line property that catches future regressions which happen to pass the recorded fixtures but break on unrecorded `(r, n)` pairs. Property tests are additive to (not a replacement for) the corpus; they're cheap to add and meaningfully tighten the safety net. Stateful seams (e.g. `random.c`) and seams with no closed-form invariant fall back to corpus + ported upstream tests only.
+
 Bit-identical RNG is **important** for characterization tests (so traces replay deterministically), and is also a product-side win (existing game IDs and shared puzzles keep working in the TS build).
+
+## C is never deleted until the rewrite is complete
+
+`puzzles/<module>.c` files are **not removed** when their TS port goes live. The C implementation stays in the upstream subtree as a permanent fallback, behind whatever build flag toggles between C and TS for that module. C is deleted only when the entire rewrite project is declared complete — *and* "complete" has a concrete trigger, not a vibe.
+
+Concrete trigger for deletion (subject to revision; this is the standing definition):
+
+- All six layers of the seam-order list below have been ported (random → leaf libs → mid-level → drawing → per-puzzle → midend).
+- The benchmark soak (test-discipline layer 3) shows zero behavioral diff between the hybrid TS+C build and the pure-WASM build for N consecutive CI runs (N TBD when the soak lands).
+- The hybrid build has shipped to production for a settled period without a fidelity-related issue.
+
+Costs we're accepting in exchange for the safety net:
+
+- **Upstream-subtree merges stay coupled to TS.** When a future upstream patch refactors `<module>.c`'s interface, we update both the C file (via subtree merge) and the TS port. Worth it: subtree fidelity stays high, upstream bug-fixes still apply.
+- **The build matrix grows.** Pure-WASM, hybrid (umbrella flag ON), and any per-module overrides are all first-class. The benchmark soak runs against each.
+- **Readers must understand both implementations.** Mitigation: this file and per-module `design.md`s document which mode ships in production.
+
+The point of the rule: never trade away a working fallback for code cleanliness mid-port. Cleanliness comes once.
 
 ## TS port style: idiomatic surface, faithful internals
 
@@ -165,6 +185,8 @@ Source tree under `src/`:
 ## Work management
 
 Tracked via **openspec**. See `openspec/OPENSPEC_AGENTS.md` for the workflow (proposal → tasks → design → spec deltas → validate → implement → archive). Treat this `AGENTS.md` and `openspec/project.md` as durable context; per-seam tasks live in `openspec/changes/`.
+
+**One openspec change per seam is the default**, not a rule. The first two leaf-library ports (`random.c`, `combi.c`) each got their own change because the pattern was still establishing itself. Once the pattern is well-trodden — by roughly seam 3 or 4 of the leaf-library list — straightforward seams that follow the established template (small module, single upstream interface, clean harness, no surprises in `design.md`) can be bundled into a single openspec change covering several modules at once (`port-leaves-batch-1`, etc.). Bundling is appropriate when each seam's `design.md` content would otherwise be "same as the last one"; it's *not* appropriate when a seam has its own non-obvious decisions (those still get their own change). The bridge half (`wire-X-to-wasm`) follows the same rule: bundle when the bridges are mechanical mirrors of the established `--js-library` pattern, separate when a seam's bridge has its own twist.
 
 ## What's been done
 
