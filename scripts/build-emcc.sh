@@ -22,9 +22,6 @@ BUILDTYPE=${BUILDTYPE:-Release}
 # BUILD_UNFINISHED: semicolon-separated list of unfinished puzzles to also build
 #   -- e.g., BUILD_UNFINISHED="group;sokoban"
 BUILD_UNFINISHED=${BUILD_UNFINISHED:-}
-# GENERATE_SOURCE_MAPS: set to "ON" to generate source maps
-# (will disable several optimizations)
-GENERATE_SOURCE_MAPS=${GENERATE_SOURCE_MAPS:-}
 # JOBS: number of parallel builds to run, default is number of processors.
 # `nproc` ships with coreutils on macOS (see Brewfile); fall back to
 # `sysctl` and finally to 1.
