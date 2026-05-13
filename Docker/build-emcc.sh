@@ -22,6 +22,11 @@ BUILD_UNFINISHED=${BUILD_UNFINISHED:-}
 GENERATE_SOURCE_MAPS=${GENERATE_SOURCE_MAPS:-}
 # JOBS: number of parallel builds to run, default is number of processors
 JOBS=${JOBS:-$(nproc 2>/dev/null || echo 1)}
+# USE_TS_RANDOM: set to "1"/"ON" to route random_* calls to the TypeScript
+# implementation in src/native/random.ts via puzzles/random_bridge.js.
+# When set, also set VITE_USE_TS_RANDOM=1 when running vite so the worker
+# installs the JS-side handle table. See openspec/changes/wire-random-to-wasm/.
+USE_TS_RANDOM=${USE_TS_RANDOM:-}
 
 
 # --- Directories ---
@@ -54,6 +59,15 @@ CMAKE_ARGS=(
   -DPUZZLES_ENABLE_UNFINISHED="${BUILD_UNFINISHED}"
   -DVCSID="${VCSID}"
 )
+
+case "${USE_TS_RANDOM}" in
+  ""|"0"|"OFF"|"off")
+    ;;
+  *)
+    CMAKE_ARGS+=(-DUSE_TS_RANDOM=ON)
+    echo "[INFO] USE_TS_RANDOM=ON: random.c excluded; bridging to TS via random_bridge.js"
+    ;;
+esac
 
 emcmake cmake "${CMAKE_ARGS[@]}"
 (

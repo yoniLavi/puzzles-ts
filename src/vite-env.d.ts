@@ -13,6 +13,10 @@ interface ImportMetaEnv {
   readonly VITE_GIT_SHA?: string;
   readonly VITE_SENTRY_DSN?: string;
   readonly VITE_SENTRY_FILTER_APPLICATION_ID?: string;
+  // Set when the WASM bundle was built with -DUSE_TS_RANDOM=ON. Installs
+  // the JS-side random bridge on the Emscripten Module; harmless to omit
+  // when the WASM has the C random implementation.
+  readonly VITE_USE_TS_RANDOM?: string;
 }
 
 interface ImportMeta {

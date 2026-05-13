@@ -90,6 +90,9 @@ function(set_platform_puzzle_target_properties NAME TARGET)
         $<$<CONFIG:Debug>:-gsource-map=inline>
         -gsource-map
     )
+    if(USE_TS_RANDOM)
+        em_link_js_library(${TARGET} ${PUZZLES_ROOT_DIR}/random_bridge.js)
+    endif()
 endfunction()
 
 function(build_platform_extras)

@@ -6,10 +6,23 @@ project(puzzles
 set(PUZZLES_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}")
 include(cmake/setup.cmake)
 
+option(USE_TS_RANDOM
+  "Route random_* calls to the TypeScript implementation via --js-library"
+  OFF)
+
+# When USE_TS_RANDOM=ON we drop random.c in favour of the TS bridge, but
+# misc.c still needs the SHA_* helpers that live in random.c — so we
+# substitute a sha.c that carries just the SHA-1 portion.
+if(USE_TS_RANDOM)
+  set(random_or_sha_source sha.c)
+else()
+  set(random_or_sha_source random.c)
+endif()
+
 add_library(core_obj OBJECT
   combi.c divvy.c draw-poly.c drawing.c dsf.c findloop.c grid.c
   latin.c laydomino.c loopgen.c malloc.c matching.c midend.c misc.c
-  penrose.c penrose-legacy.c ps.c random.c sort.c tdq.c tree234.c
+  penrose.c penrose-legacy.c ps.c ${random_or_sha_source} sort.c tdq.c tree234.c
   version.c
   ${platform_common_sources})
 add_library(core STATIC $<TARGET_OBJECTS:core_obj>)

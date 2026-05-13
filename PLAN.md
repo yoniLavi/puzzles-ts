@@ -78,7 +78,9 @@ Recorded here as durable reference, not as a changelog (commit history carries t
 
 - **Project setup**: openspec initialised; layered `LICENSE.md` + `CREDITS.md`; Vitest + a strict pre-commit gate (`tsc -b --noEmit` → `npm run lint` → `npm run test:run`).
 - **`random.c` (TS impl half)**: corpus harness in-tree at `puzzles/auxiliary/random-trace.c`; corpus at `src/native/random/__fixtures__/corpus.json` (6 fixtures, 66 calls); TS port in `src/native/{sha1,random}.ts`; replay test passes byte-for-byte.
-- **`random.c` (bridge half)**: deferred to follow-up openspec change `wire-random-to-wasm`. Design locked: TS owns canonical state, C holds integer handles, bridge via Emscripten `--js-library`, gated by a `USE_TS_RANDOM` CMake option (default OFF).
+- **`random.c` (bridge half)**: shipped as `wire-random-to-wasm`. TS owns canonical state, C holds integer handles, bridge via Emscripten `--js-library`, gated by `USE_TS_RANDOM` (CMake) + `VITE_USE_TS_RANDOM` (worker) (both default OFF). Five puzzles verified end-to-end through the bridge (cube/flip/mines/loopy/solo, 0 console errors).
+
+  **Sizing data for the next seam's "wire it up" half** (~40 min elapsed in the implementing session, dominated by ~25 min of docker rebuild latency across ~6 cold builds). Each of the 4 surprises captured in `wire-random-to-wasm/design.md` cost roughly one rebuild loop to diagnose: (1) random.c carries `misc.c`'s SHA-1 dep; (2) `build-emcc.sh` is baked into the docker image; (3) `tee` swallowed the docker exit code, masking a silent link failure; (4) `--js-library` only emits an env import when a C reference is live — needs `__attribute__((used))` keep-alive in webapp.cpp. Tooling commands for the inner debug loop are in that design.md. **Implication**: shrinking iteration latency (Docker → native emsdk, deferred to its own change) is the single biggest lever for future seams.
 
 ## Known unresolved questions
 

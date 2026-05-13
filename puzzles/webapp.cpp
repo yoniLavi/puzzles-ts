@@ -24,6 +24,35 @@ extern "C" {
 
 using namespace emscripten;
 
+// Force-link every public random_* symbol into every puzzle's wasm.
+//
+// Background: build-emcc.sh ships a single emcc-runtime.js (copied from
+// nullgame.js) to load every puzzle's wasm. That works only when the JS
+// imports are uniform across puzzles. With USE_TS_RANDOM=ON, the
+// random_* functions come from puzzles/random_bridge.js via --js-library,
+// and emcc inlines a JS body for each one *only if the puzzle's wasm
+// imports it*. Puzzles vary in which random_* they call (nullgame: 3
+// of 7, mines: 6 of 7, no puzzle calls random_copy at all), so the
+// generated .js files diverge — and loading mines.wasm via nullgame.js's
+// runtime would throw LinkError for the missing imports.
+//
+// A `__attribute__((used))` function with calls to all seven is the
+// minimum the wasm linker won't DCE: the function is kept, its callees
+// (the random_* symbols) become live, and emcc inlines all seven JS
+// bodies into every per-puzzle .js. Harmless at runtime — the function
+// is never invoked. Costs ~30 bytes of wasm import declarations and
+// seven JS-library bodies in every runtime.
+extern "C" __attribute__((used))
+void puzzles_ts_force_link_random_bridge(void) {
+    (void)random_new(nullptr, 0);
+    (void)random_copy(nullptr);
+    (void)random_bits(nullptr, 0);
+    (void)random_upto(nullptr, 0);
+    random_free(nullptr);
+    (void)random_state_encode(nullptr);
+    (void)random_state_decode(nullptr);
+}
+
 EM_JS(void, throw_js_error, (const char* message), {
     throw new Error(UTF8ToString(message));
 });

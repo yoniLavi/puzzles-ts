@@ -220,6 +220,23 @@ podman run --rm \
 
 (See the comments in the Dockerfiles for some additional build options.)
 
+To build with the TypeScript random module bridged in (see
+`openspec/changes/wire-random-to-wasm/`), pass `USE_TS_RANDOM=1` to the
+container *and* set `VITE_USE_TS_RANDOM=1` when running vite — both halves
+have to agree. Also mount `Docker/build-emcc.sh` so the script picks up
+the env-var support (the image bakes a copy at build time):
+
+```shell
+podman run --rm \
+  -v ./puzzles:/app/puzzles:ro \
+  -v ./Docker/build-emcc.sh:/app/build-emcc.sh:ro \
+  -v ./src/assets:/app/assets \
+  -e USE_TS_RANDOM=1 \
+  build-emcc
+
+VITE_USE_TS_RANDOM=1 npm run dev
+```
+
 ### Building the web app
 
 Install the tooling and dependencies:

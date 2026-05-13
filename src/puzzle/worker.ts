@@ -12,6 +12,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 
 import { expose, proxy, type Remote, transfer } from "comlink";
 import createModule from "../assets/puzzles/emcc-runtime";
+import { createTsRandomBridge } from "../native/random-bridge.ts";
 import { installErrorHandlersInWorker } from "../utils/errors-worker.ts";
 import { Drawing } from "./drawing.ts";
 import type {
@@ -47,7 +48,15 @@ const addBreadcrumb = (breadcrumb: Sentry.Breadcrumb) => {
 export class WorkerPuzzle implements FrontendConstructorArgs {
   static async create(puzzleId: string): Promise<WorkerPuzzle> {
     const url = new URL(`../assets/puzzles/${puzzleId}.wasm`, import.meta.url).href;
+    // When the WASM was built with USE_TS_RANDOM=ON, its random_* imports come
+    // from puzzles/random_bridge.js, which dispatches to Module.tsRandomBridge.
+    // Install before WASM instantiation so the bridge is in place by the time
+    // any C code calls random_new.
+    const tsRandomBridge = import.meta.env.VITE_USE_TS_RANDOM
+      ? createTsRandomBridge()
+      : undefined;
     const module = await createModule({
+      tsRandomBridge,
       // Emscripten's generated wasm loading includes code that (in workers only)
       // falls back to XHR and ignores any HTTP error. That leads to cryptic errors
       // like "expected magic word 00 61 73 6d, found 46 69 6c 65" for 404 responses.
