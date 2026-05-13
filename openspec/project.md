@@ -4,7 +4,7 @@
 
 `puzzles-ts` is an ongoing port of [Simon Tatham's Portable Puzzle Collection](https://git.tartarus.org/?p=simon/puzzles.git) from C/WASM to native TypeScript. The eventual goal is to replace the C engine entirely while keeping the app green at every step.
 
-The non-negotiable bar is **fidelity** (byte-identical behavior at every replaced seam, verified by characterization tests) combined with **incremental risk** (no big-bang rewrite, no sustained red bar). See `PLAN.md` for the durable strategic context — this file is read by AI assistants every session; PLAN.md is the deeper background.
+The non-negotiable bar is **fidelity** (byte-identical behavior at every replaced seam, verified by characterization tests) combined with **incremental risk** (no big-bang rewrite, no sustained red bar). The full strategic context — goal, lineage, approach, test discipline, seam order, what's been done — lives in `AGENTS.md` (project root). This `project.md` is the openspec-flavoured slice that openspec tooling reads; `AGENTS.md` is the broader brief.
 
 ## Tech Stack
 
@@ -40,7 +40,7 @@ Vitest runs both the TS unit tests under `src/**/*.test.ts` and the in-tree char
   5. Bridge via Embind/cwrap so the rest of C can call TS instead of its own implementation. Build flag toggles which side is live.
   6. Delete the C impl when stable.
 
-  See PLAN.md "Approach" and "Seam order" for the full rationale and the planned bottom-up sequence (random.c → leaf libs → mid-level → drawing → per-puzzle → midend).
+  See `AGENTS.md` "Approach" and "Seam order" for the full rationale and the planned bottom-up sequence (random.c → leaf libs → mid-level → drawing → per-puzzle → midend).
 
 - **WASM stays in a Web Worker** via Comlink for now. Re-evaluate after midend ports.
 - **Subtree, not submodule.** `puzzles/` is a git subtree of upstream Simon Tatham, kept in sync over time; `puzzles/LICENCE` must stay intact in place.
@@ -77,14 +77,14 @@ Bit-identical RNG is **important**: characterization replays depend on it, and p
 - `Brewfile` — pinned dependency list for the wasm + icons pipelines (Emscripten, GTK+3, ImageMagick, halibut, jq, oxipng, …).
 - `public/`, `help/`, `*.html.hbs`, `vite-*.ts` — the PWA + Vite plugins.
 - `openspec/` — spec-driven change management (this directory).
-- `PLAN.md` — durable strategic context (the why behind this whole effort).
+- `AGENTS.md` — durable strategic context + conventions for AI assistants and human contributors. Symlinked as `CLAUDE.md`.
 
 ## Important Constraints
 
 - **Fidelity > speed.** Every seam must produce byte-identical output to the C original on its characterization corpus before it can replace the C side. SHA-1-based RNG must reproduce bit-for-bit, so existing game IDs keep working.
 - **Always-green bar.** No sustained red. Hybrid (TS + remaining WASM) and pure-WASM builds must both pass at every step.
 - **Don't restructure upstream.** `puzzles/LICENCE` and the subtree's style must remain untouched to satisfy MIT obligations and to keep future upstream merges viable.
-- **No big-bang rewrite.** Bottom-up, leaves first. The seam order in PLAN.md is the plan of record; deviations need justification.
+- **No big-bang rewrite.** Bottom-up, leaves first. The seam order in `AGENTS.md` is the plan of record; deviations need justification.
 
 ## External Dependencies
 

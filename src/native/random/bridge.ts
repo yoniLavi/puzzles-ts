@@ -21,7 +21,7 @@ import {
   randomStateDecode,
   randomStateEncode,
   randomUpto,
-} from "./random.ts";
+} from "./index.ts";
 
 export interface TsRandomBridge {
   randomNew(seed: Uint8Array): number;

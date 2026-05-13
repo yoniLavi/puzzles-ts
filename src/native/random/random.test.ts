@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import corpus from "./__fixtures__/corpus.json" with { type: "json" };
 import {
   type RandomState,
   randomBits,
@@ -16,8 +17,7 @@ import {
   randomStateDecode,
   randomStateEncode,
   randomUpto,
-} from "../random.ts";
-import corpus from "./__fixtures__/corpus.json" with { type: "json" };
+} from "./index.ts";
 
 type Call =
   | { op: "bits"; bits: number; out: number }

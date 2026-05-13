@@ -27,7 +27,7 @@ BUILD_UNFINISHED=${BUILD_UNFINISHED:-}
 # `sysctl` and finally to 1.
 JOBS=${JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)}
 # USE_TS_RANDOM: set to "1"/"ON" to route random_* calls to the TypeScript
-# implementation in src/native/random.ts via puzzles/random_bridge.js.
+# implementation in src/native/random/index.ts via puzzles/random_bridge.js.
 # When set, also set VITE_USE_TS_RANDOM=1 when running vite so the worker
 # installs the JS-side handle table. See openspec/specs/random/spec.md.
 USE_TS_RANDOM=${USE_TS_RANDOM:-}

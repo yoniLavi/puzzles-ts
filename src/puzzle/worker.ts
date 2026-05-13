@@ -12,7 +12,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 
 import { expose, proxy, type Remote, transfer } from "comlink";
 import createModule from "../assets/puzzles/emcc-runtime";
-import { createTsRandomBridge } from "../native/random-bridge.ts";
+import { createTsRandomBridge } from "../native/random/bridge.ts";
 import { installErrorHandlersInWorker } from "../utils/errors-worker.ts";
 import { Drawing } from "./drawing.ts";
 import type {

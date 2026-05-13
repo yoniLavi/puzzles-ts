@@ -4,7 +4,7 @@
  * Part of the puzzles-ts port. This program exercises the public
  * random.c API over a curated set of fixtures and emits a JSON
  * corpus to stdout. The TS port replays the corpus against its
- * `src/native/random.ts` implementation and asserts byte-for-byte
+ * `src/native/random/index.ts` implementation and asserts byte-for-byte
  * equality.
  *
  * Build via puzzles/auxiliary/CMakeLists.txt:

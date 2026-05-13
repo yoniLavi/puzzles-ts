@@ -5,15 +5,15 @@ TBD - created by archiving change port-random-to-typescript. Update Purpose afte
 ## Requirements
 ### Requirement: TypeScript random module reproduces C output byte-for-byte
 
-The TypeScript implementation in `src/native/random.ts` SHALL produce byte-identical output to `puzzles/random.c` for every call in the characterization corpus. Bit-identical reproducibility is a product requirement: existing game IDs and shared seeds must keep working when the TS implementation is live.
+The TypeScript implementation in `src/native/random/index.ts` SHALL produce byte-identical output to `puzzles/random.c` for every call in the characterization corpus. Bit-identical reproducibility is a product requirement: existing game IDs and shared seeds must keep working when the TS implementation is live.
 
 The implementation SHALL expose, at minimum, the public surface used by upstream puzzles: `random_new(seed)`, `random_bits(state, bits)`, `random_upto(state, limit)`, `random_copy(state)`, `random_free(state)`, `random_state_encode(state)`, `random_state_decode(encoded)`.
 
-The TS module SHALL bundle its own SHA-1 internally; the C `SHA_*` functions remain in `puzzles/misc.c` for their non-random callers and are out of scope for this requirement.
+The TS module SHALL bundle its own SHA-1 internally (currently at `src/native/random/sha1.ts`); the C `SHA_*` functions remain in `puzzles/misc.c` for their non-random callers and are out of scope for this requirement.
 
 #### Scenario: Corpus replay passes byte-for-byte
 
-- **WHEN** the Vitest replay loads each fixture in `src/native/random/__fixtures__/` and replays the recorded call sequence against `src/native/random.ts`
+- **WHEN** the Vitest replay loads each fixture in `src/native/random/__fixtures__/` and replays the recorded call sequence against `src/native/random/index.ts`
 - **THEN** every returned value matches the C-recorded value byte-for-byte
 - **AND** every `random_state_encode` output matches the C-recorded hex string character-for-character
 
@@ -69,7 +69,7 @@ The repository SHALL contain a JSON corpus under `src/native/random/__fixtures__
 
 ### Requirement: Build flag toggles between C and TypeScript implementations
 
-The build SHALL support a `USE_TS_RANDOM` CMake option (default OFF) that selects whether `random_*` calls in the WASM puzzles engine resolve to the C implementation (`puzzles/random.c`) or to the TypeScript implementation (`src/native/random.ts`) via the JS-library bridge. The default-off setting SHALL preserve byte-identical behaviour with the pre-change build.
+The build SHALL support a `USE_TS_RANDOM` CMake option (default OFF) that selects whether `random_*` calls in the WASM puzzles engine resolve to the C implementation (`puzzles/random.c`) or to the TypeScript implementation (`src/native/random/index.ts`) via the JS-library bridge. The default-off setting SHALL preserve byte-identical behaviour with the pre-change build.
 
 The host-native wasm build script (`scripts/build-emcc.sh`, also exposed as `npm run build:wasm`) SHALL honour a `USE_TS_RANDOM` environment variable, mapping it to the CMake option.
 

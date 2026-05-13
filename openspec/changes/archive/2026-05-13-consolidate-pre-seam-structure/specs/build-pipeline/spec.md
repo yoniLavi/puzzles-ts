@@ -1,8 +1,7 @@
-# build-pipeline Specification
+# build-pipeline spec delta
 
-## Purpose
-TBD - created by archiving change remove-docker-emcc-build. Update Purpose after archive.
-## Requirements
+## MODIFIED Requirements
+
 ### Requirement: WASM and icon builds run on host-native tooling
 
 The wasm and icon build pipelines SHALL execute on the developer's host
@@ -96,4 +95,3 @@ characterization-harness consumers to `/build/native/` (produced by
   identical to `src/native/random/__fixtures__/corpus.json` (every
   recorded value matches; the committed file may differ only in
   whitespace from being run through `biome format`)
-

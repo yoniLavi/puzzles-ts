@@ -1,8 +1,7 @@
-# repo-layout Specification
+# repo-layout spec delta
 
-## Purpose
-TBD - created by archiving change reorganize-repo-tooling. Update Purpose after archive.
-## Requirements
+## MODIFIED Requirements
+
 ### Requirement: Repo root holds product-level config only
 
 The repository root SHALL hold only files that conventionally belong at
@@ -61,41 +60,6 @@ NOT live loose at the root. Specifically:
 - **THEN** `git ls-files PLAN.md` returns no rows
 - **AND** the strategic content formerly in `PLAN.md` is discoverable
   by reading `AGENTS.md`
-
-### Requirement: Cloudflare Pages tooling is not maintained in-tree
-
-The repository SHALL NOT ship Cloudflare Pages configuration or local
-preview tooling. The CF Pages workflow is disabled in this fork (per
-PLAN.md "What's been done"), and the user's current hosting plan does
-not include CF Pages.
-
-Specifically:
-
-- No `wrangler.toml` at the repository root.
-- No `wrangler` package in `dependencies` or `devDependencies` of
-  `package.json`.
-- No `preview:pages` (or similarly named) script that invokes
-  `wrangler`.
-
-Standard Vite preview (`npm run preview`) covers the local-preview
-need for the PWA.
-
-#### Scenario: Wrangler is absent from the repo
-
-- **WHEN** the change has landed
-- **THEN** `git grep -i 'wrangler\|cloudflare'` returns no hits in
-  tracked files outside `openspec/changes/archive/` (where historical
-  proposals may reference removed setups)
-- **AND** `npm install` does not pull wrangler into `node_modules/`
-
-#### Scenario: Reviving CF Pages is a new proposal
-
-- **WHEN** a contributor wants to restore CF Pages support
-- **THEN** they SHALL open a new openspec change that re-adds
-  `wrangler.toml`, the wrangler devDep, and a `preview:pages` script,
-  along with whatever production deploy workflow is intended
-- **AND** they SHALL NOT just resurrect the removed files in a regular
-  PR
 
 ### Requirement: Source tree under `src/` groups files by UI role
 
@@ -179,6 +143,8 @@ module folder SHALL contain:
   at `__fixtures__/`, and replay tests at `tree234.test.ts`
 - **AND** they are NOT added loose at `src/native/` root
 
+## ADDED Requirements
+
 ### Requirement: Agent-facing documentation lives in a single AGENTS.md
 
 The repository SHALL keep agent-facing documentation (strategic
@@ -217,4 +183,3 @@ project-root `AGENTS.md` for tools or contributors that scan for
 - **AND** the managed block in the project-root `AGENTS.md`/`CLAUDE.md`
   pair SHALL be re-pointed at `@/openspec/OPENSPEC_AGENTS.md` if
   `openspec update` reset it
-
