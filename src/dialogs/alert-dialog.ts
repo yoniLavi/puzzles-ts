@@ -1,7 +1,7 @@
 import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property } from "lit/decorators.js";
-import { cssWATweaks } from "./utils/css.ts";
+import { cssWATweaks } from "../utils/css.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";

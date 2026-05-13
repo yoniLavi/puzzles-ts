@@ -2,8 +2,8 @@ import * as Sentry from "@sentry/browser";
 import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
-import { cssWATweaks } from "./utils/css.ts";
-import { sleep } from "./utils/timing.ts";
+import { cssWATweaks } from "../utils/css.ts";
+import { sleep } from "../utils/timing.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";

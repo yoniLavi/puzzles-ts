@@ -1,6 +1,6 @@
 // Last-resort error handling.
 
-import { reportError } from "../crash-dialog.ts";
+import { reportError } from "../dialogs/crash-dialog.ts";
 import {
   type WorkerUnhandledErrorMessage,
   workerUnhandledErrorMessageType,

@@ -2,15 +2,15 @@ import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, nothing, unsafeCSS } from "lit";
 import { customElement } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
-import type { FavoriteChangeEvent } from "./catalog-card.ts";
-import rawHomeScreenCSS from "./css/home-screen.css?inline";
-import { puzzleDataMap, puzzleIds } from "./puzzle/catalog.ts";
-import { puzzlePageUrl } from "./routing.ts";
+import type { FavoriteChangeEvent } from "../components/catalog-card.ts";
+import rawHomeScreenCSS from "../css/home-screen.css?inline";
+import { puzzleDataMap, puzzleIds } from "../puzzle/catalog.ts";
+import { puzzlePageUrl } from "../routing.ts";
+import { savedGames } from "../store/saved-games.ts";
+import { settings } from "../store/settings.ts";
+import { cssNative, cssWATweaks } from "../utils/css.ts";
+import { ScrollAnimationController } from "../utils/scroll-animation-controller.ts";
 import { Screen } from "./screen.ts";
-import { savedGames } from "./store/saved-games.ts";
-import { settings } from "./store/settings.ts";
-import { cssNative, cssWATweaks } from "./utils/css.ts";
-import { ScrollAnimationController } from "./utils/scroll-animation-controller.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -18,9 +18,9 @@ import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/dropdown/dropdown.js";
 import "@awesome.me/webawesome/dist/components/dropdown-item/dropdown-item.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
-import "./catalog-card.ts";
-import "./command-link";
-import "./dynamic-content.ts";
+import "../components/catalog-card.ts";
+import "../components/command-link";
+import "../components/dynamic-content.ts";
 
 @customElement("home-screen")
 export class HomeScreen extends SignalWatcher(Screen) {

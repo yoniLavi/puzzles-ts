@@ -2,8 +2,8 @@ import type WaDrawer from "@awesome.me/webawesome/dist/components/drawer/drawer.
 import { css, html, LitElement, nothing, unsafeCSS } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
-import cssHelpRaw from "./css/help.css?inline";
-import { cssNative, cssWATweaks } from "./utils/css.ts";
+import cssHelpRaw from "../css/help.css?inline";
+import { cssNative, cssWATweaks } from "../utils/css.ts";
 
 // Components
 import "@awesome.me/webawesome/dist/components/button/button.js";

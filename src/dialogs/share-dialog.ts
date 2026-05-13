@@ -3,11 +3,11 @@ import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
-import { puzzleDataMap } from "./puzzle/catalog.ts";
-import { puzzleContext } from "./puzzle/contexts.ts";
-import type { Puzzle } from "./puzzle/puzzle.ts";
-import { puzzlePageUrl } from "./routing.ts";
-import { cssNative, cssWATweaks } from "./utils/css.ts";
+import { puzzleDataMap } from "../puzzle/catalog.ts";
+import { puzzleContext } from "../puzzle/contexts.ts";
+import type { Puzzle } from "../puzzle/puzzle.ts";
+import { puzzlePageUrl } from "../routing.ts";
+import { cssNative, cssWATweaks } from "../utils/css.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";

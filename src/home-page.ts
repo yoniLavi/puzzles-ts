@@ -1,4 +1,4 @@
 import "./main.ts";
 
 // Register components
-import "./home-screen.ts";
+import "./screens/home-screen.ts";

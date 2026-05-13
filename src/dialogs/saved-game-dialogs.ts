@@ -1,8 +1,8 @@
 import { css, html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property } from "lit/decorators.js";
-import { cssWATweaks } from "./utils/css.ts";
-import { isRunningAsApp } from "./utils/pwa.ts";
+import { cssWATweaks } from "../utils/css.ts";
+import { isRunningAsApp } from "../utils/pwa.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -11,7 +11,7 @@ import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/input/input.js";
 import "@awesome.me/webawesome/dist/components/popover/popover.js";
-import "./saved-game-list.ts";
+import "../components/saved-game-list.ts";
 
 interface GameDialogEventDetail {
   filename: string;

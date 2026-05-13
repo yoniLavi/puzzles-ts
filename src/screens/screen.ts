@@ -3,8 +3,8 @@ import type { PropertyValues } from "@lit/reactive-element";
 import { html, LitElement, nothing } from "lit";
 import { query } from "lit/decorators/query.js";
 import { property, state } from "lit/decorators.js";
-import { helpUrl, homePageUrl, isHelpUrl, navigateToHomePage } from "./routing.ts";
-import { hasAnyModifier } from "./utils/events.ts";
+import { helpUrl, homePageUrl, isHelpUrl, navigateToHomePage } from "../routing.ts";
+import { hasAnyModifier } from "../utils/events.ts";
 
 export class Screen extends LitElement {
   constructor() {
@@ -185,7 +185,7 @@ export class Screen extends LitElement {
   protected dynamicContent?: HTMLElementTagNameMap["dynamic-content"];
 
   protected async showAboutDialog(panel?: string) {
-    await import("./about-dialog.ts");
+    await import("../dialogs/about-dialog.ts");
     const dialog = await this.dynamicContent?.addItem({
       tagName: "about-dialog",
       render: () => html`<about-dialog></about-dialog>`,
@@ -203,7 +203,7 @@ export class Screen extends LitElement {
   protected defaultHelpLabel: string | undefined = "Help"; // for pages with no <title>
 
   protected async showHelpViewer(href?: string) {
-    await import("./help-viewer.ts");
+    await import("../components/help-viewer.ts");
     const helpViewer = await this.dynamicContent?.addItem({
       tagName: "help-viewer",
       render: () => html`
@@ -222,7 +222,7 @@ export class Screen extends LitElement {
   }
 
   protected async showSettingsDialog(panel?: string) {
-    await import("./settings-dialog.ts");
+    await import("../dialogs/settings-dialog.ts");
     const dialog = await this.dynamicContent?.addItem({
       tagName: "settings-dialog",
       render: () => html`<settings-dialog></settings-dialog>`,

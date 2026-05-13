@@ -9,8 +9,8 @@ import {
 import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { version as puzzlesVersion } from "./puzzle/catalog.ts";
-import { cssNative, cssWATweaks } from "./utils/css.ts";
+import { version as puzzlesVersion } from "../puzzle/catalog.ts";
+import { cssNative, cssWATweaks } from "../utils/css.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -18,13 +18,13 @@ import "@awesome.me/webawesome/dist/components/details/details.js";
 import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
-import "./command-link"; // may appear in embedded text (e.g., privacy.html)
+import "../components/command-link"; // may appear in embedded text (e.g., privacy.html)
 
+import privacyHtml from "../assets/privacy.html?raw";
 // Raw content
 import appLicenseText from "../LICENSE?raw";
 import puzzlesLicenseText from "../puzzles/LICENCE?raw";
 import unreleasedLicenseText from "../puzzles/unreleased/LICENCE?raw";
-import privacyHtml from "./assets/privacy.html?raw";
 
 // The name of this repo's project (which is covered by its LICENSE)
 const repoName = "Puzzles web app";
@@ -150,7 +150,9 @@ export class AboutDialog extends LitElement {
           // package.json dependencies, from rollup-plugin-license via vite:
           loadJson(`${import.meta.env.BASE_URL}dependencies-app.json`),
           // Emscripten/WASM dependencies, from puzzles/emcc-dependency-info.py:
-          loadJson(new URL("./assets/puzzles/dependencies.json", import.meta.url).href),
+          loadJson(
+            new URL("../assets/puzzles/dependencies.json", import.meta.url).href,
+          ),
         ])
       ).flat();
 

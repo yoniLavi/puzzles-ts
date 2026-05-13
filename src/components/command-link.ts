@@ -1,8 +1,8 @@
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import type { Screen } from "./screen.ts";
-import { cssWATweaks } from "./utils/css.ts";
-import { closest } from "./utils/dom.ts";
+import type { Screen } from "../screens/screen.ts";
+import { cssWATweaks } from "../utils/css.ts";
+import { closest } from "../utils/dom.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/icon/icon.js";

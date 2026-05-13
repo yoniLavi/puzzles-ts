@@ -2,17 +2,17 @@ import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
-import { showAlert } from "./alert-dialog.ts";
-import { type PuzzleData, puzzleDataMap } from "./puzzle/catalog.ts";
-import type { Puzzle } from "./puzzle/puzzle.ts";
-import type { PuzzleEvent } from "./puzzle/puzzle-context.ts";
-import { helpUrl, homePageUrl } from "./routing.ts";
+import { showAlert } from "../dialogs/alert-dialog.ts";
+import { type PuzzleData, puzzleDataMap } from "../puzzle/catalog.ts";
+import type { Puzzle } from "../puzzle/puzzle.ts";
+import type { PuzzleEvent } from "../puzzle/puzzle-context.ts";
+import { helpUrl, homePageUrl } from "../routing.ts";
+import { savedGames } from "../store/saved-games.ts";
+import { settings } from "../store/settings.ts";
+import { cssWATweaks } from "../utils/css.ts";
+import { preventDoubleTapZoomOnButtons } from "../utils/events.ts";
+import { debounced, sleep } from "../utils/timing.ts";
 import { Screen } from "./screen.ts";
-import { savedGames } from "./store/saved-games.ts";
-import { settings } from "./store/settings.ts";
-import { cssWATweaks } from "./utils/css.ts";
-import { preventDoubleTapZoomOnButtons } from "./utils/events.ts";
-import { debounced, sleep } from "./utils/timing.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -23,13 +23,13 @@ import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "@awesome.me/webawesome/dist/components/radio/radio.js";
 import "@awesome.me/webawesome/dist/components/radio-group/radio-group.js";
 import "@awesome.me/webawesome/dist/components/skeleton/skeleton.js";
-import "./dynamic-content.ts";
-import "./puzzle/puzzle-context.ts";
-import "./puzzle/puzzle-history.ts";
-import "./puzzle/puzzle-keys.ts";
-import "./puzzle/puzzle-type-menu.ts";
-import "./puzzle/puzzle-view-interactive.ts";
-import "./puzzle/puzzle-end-notification.ts";
+import "../components/dynamic-content.ts";
+import "../puzzle/puzzle-context.ts";
+import "../puzzle/puzzle-history.ts";
+import "../puzzle/puzzle-keys.ts";
+import "../puzzle/puzzle-type-menu.ts";
+import "../puzzle/puzzle-view-interactive.ts";
+import "../puzzle/puzzle-end-notification.ts";
 
 // How often to show the warning for unfinished puzzles, in milliseconds.
 // (Maybe make this a setting: hourly, daily, weekly, never. Then default to 1 hour.)
@@ -357,7 +357,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   }
 
   private async showShareDialog(panel?: string) {
-    await import("./share-dialog.ts");
+    await import("../dialogs/share-dialog.ts");
     const dialog = await this.dynamicContent?.addItem({
       tagName: "share-dialog",
       render: () => html`<share-dialog></share-dialog>`,
@@ -373,7 +373,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   }
 
   private async showLoadGameDialog() {
-    await import("./saved-game-dialogs.ts");
+    await import("../dialogs/saved-game-dialogs.ts");
     const dialog = await this.dynamicContent?.addItem({
       tagName: "load-game-dialog",
       render: () => html`
@@ -392,7 +392,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   }
 
   private async showSaveGameDialog() {
-    await import("./saved-game-dialogs.ts");
+    await import("../dialogs/saved-game-dialogs.ts");
     const dialog = await this.dynamicContent?.addItem({
       tagName: "save-game-dialog",
       render: () => html`
@@ -411,7 +411,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   }
 
   private async showEnterGameIDDialog() {
-    await import("./enter-gameid-dialog.ts");
+    await import("../dialogs/enter-gameid-dialog.ts");
     const dialog = await this.dynamicContent?.addItem({
       tagName: "enter-gameid-dialog",
       render: () => html`<enter-gameid-dialog></enter-gameid-dialog>`,

@@ -3,7 +3,7 @@ import "./main.ts";
 import { navigateToHomePage, type PuzzleUrlParams, parsePuzzleUrl } from "./routing.ts";
 
 // Register components
-import "./puzzle-screen.ts";
+import "./screens/puzzle-screen.ts";
 
 function initialize({ puzzleId, puzzleParams, puzzleGameId }: PuzzleUrlParams) {
   const appRoot = document.getElementById("app");
