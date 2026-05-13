@@ -8,14 +8,14 @@ Canonical output per triple SHALL consist of three SHA-256 hex digests:
 
 - `gameId` — the game ID string the engine emits for that `(puzzle, preset, seed)`.
 - `postGenerateStateHash` — SHA-256 of the engine's serialised game state immediately after generation.
-- `solveTraceHash` — SHA-256 of the concatenated solver-move sequence (newline-separated). Falls back to `"unsolved"` when the puzzle's solver is unreachable from the engine API, and to `"timeout"` when the solver exceeds the configured per-call timeout.
+- `solvedStateHash` — SHA-256 of the serialised game state after `midend_solve`. Falls back to `"unsolvable:<err>"` when `midend_solve` returns an error (puzzle has no solver, or the engine can't solve from the current state), and to `"timeout"` when the solve exceeds the configured wall-clock budget. Driven from `webapp.cpp`; no edits to `midend.c` (see AGENTS.md "Upstream policy").
 
 The committed corpus at `src/soak/__fixtures__/corpus.json` SHALL be recorded against the pure-WASM build. The soak SHALL assert hybrid-build outputs equal the committed corpus row-for-row; pure-WASM-build outputs SHALL also equal the committed corpus (any drift indicates either an upstream-subtree change or a tooling regression, and triggers an explicit re-record review).
 
 #### Scenario: Hybrid build matches the committed corpus
 
 - **WHEN** the soak runs the smoke or full corpus under `USE_TS_LEAVES=ON`
-- **THEN** every recorded `(gameId, postGenerateStateHash, solveTraceHash)` triple matches the committed corpus exactly
+- **THEN** every recorded `(gameId, postGenerateStateHash, solvedStateHash)` triple matches the committed corpus exactly
 - **AND** the runner exits with status 0
 
 #### Scenario: Hybrid drift fails loudly

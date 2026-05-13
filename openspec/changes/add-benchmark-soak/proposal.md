@@ -13,11 +13,11 @@ This change depends on `add-use-ts-leaves-umbrella-flag` (the soak needs one swi
 
 ## What Changes
 
-- **New `src/soak/` module**: the TS runner. Entry points: `runSoak({ mode, corpus })`, `compareSoakResults(a, b)`. Canonical output per `(puzzle, preset, seed)` is `{ gameId, postGenerateState, solveTraceHash }` — concrete shape locked in `design.md`.
+- **New `src/soak/` module**: the TS runner. Entry points: `runSoak({ mode, corpus })`, `compareSoakResults(a, b)`. Canonical output per `(puzzle, preset, seed)` is `{ gameId, postGenerateStateHash, solvedStateHash }` — concrete shape locked in `design.md`.
 - **Soak corpus** at `src/soak/__fixtures__/corpus.json`: the static `(puzzle, preset, seed)` triples plus expected canonical outputs (recorded once against the pure-WASM build; the soak then asserts hybrid matches). Tiered into `smoke` (subset for pre-commit) and `full` (everything else).
 - **Build-mode driver**: a small npm script (`npm run soak`) that builds WASM under both modes (cached aggressively — incremental rebuild is ~2s once both modes have been built once), runs the soak, diffs.
 - **Pre-commit integration**: `.husky/pre-commit` gains a `soak:smoke` step after `test:run`. Skipped with a non-blocking warning if WASM artifacts for either mode are missing or stale (avoids forcing a cold rebuild on every commit). Full soak moves to a new pre-push hook (or equivalent).
-- **Puzzle-side surface**: minor additions to `webapp.cpp` (or `puzzles/midend.c` if cleaner) to expose a `solveAndHashTrace(gameId)` Embind method — so the soak can capture a deterministic solve trace without per-puzzle hooks. Falls back to "is solvable?" boolean for puzzles whose solver isn't reachable from the engine API today.
+- **Puzzle-side surface**: additions to `webapp.cpp` only (per AGENTS.md "Upstream policy" — the C source is immutable). The new Embind method drives the existing `midend_solve` and hashes the resulting solved state's byte-serialisation. Falls back to a sentinel hash for puzzles whose solver isn't reachable via the existing midend API.
 
 **Out of scope**:
 

@@ -28,7 +28,7 @@ Vitest runs both the TS unit tests under `src/**/*.test.ts` and the in-tree char
 
 - Biome is the source of truth — run `npm run check` (which runs `biome check --write .`). Husky enforces `biome check --write --no-errors-on-unmatched` on staged files.
 - TypeScript: strict mode; no `any` unless justified.
-- C code in `puzzles/` is upstream's. Keep its style (`puzzles/.clang-format`) untouched.
+- C code in `puzzles/` is upstream's and is treated as immutable: it's the fidelity oracle for the rewrite. See `AGENTS.md` "Upstream policy" for the full rule and its narrow instrumentation exception. Files we added in that directory (`webapp.cpp`, `*_bridge.js`, `auxiliary/*-trace.c`) are exempt and edit-able as our own.
 
 ### Architecture Patterns
 
@@ -43,7 +43,7 @@ Vitest runs both the TS unit tests under `src/**/*.test.ts` and the in-tree char
   See `AGENTS.md` "Approach" and "Seam order" for the full rationale and the planned bottom-up sequence (random.c → leaf libs → mid-level → drawing → per-puzzle → midend).
 
 - **WASM stays in a Web Worker** via Comlink for now. Re-evaluate after midend ports.
-- **Subtree, not submodule.** `puzzles/` is a git subtree of upstream Simon Tatham, kept in sync over time; `puzzles/LICENCE` must stay intact in place.
+- **Subtree, not submodule, and not tracked.** `puzzles/` is a git subtree of upstream Simon Tatham, frozen at the version this project forked from. We are not pulling future upstream changes. `puzzles/LICENCE` must stay intact in place (MIT obligation, independent of tracking). See `AGENTS.md` "Upstream policy".
 
 ### Testing Strategy
 
@@ -83,12 +83,12 @@ Bit-identical RNG is **important**: characterization replays depend on it, and p
 
 - **Fidelity > speed.** Every seam must produce byte-identical output to the C original on its characterization corpus before it can replace the C side. SHA-1-based RNG must reproduce bit-for-bit, so existing game IDs keep working.
 - **Always-green bar.** No sustained red. Hybrid (TS + remaining WASM) and pure-WASM builds must both pass at every step.
-- **Don't restructure upstream.** `puzzles/LICENCE` and the subtree's style must remain untouched to satisfy MIT obligations and to keep future upstream merges viable.
+- **Don't edit upstream C.** The C source under `puzzles/` is the fidelity oracle and is immutable (see `AGENTS.md` "Upstream policy"); `puzzles/LICENCE` stays intact per MIT.
 - **No big-bang rewrite.** Bottom-up, leaves first. The seam order in `AGENTS.md` is the plan of record; deviations need justification.
 
 ## External Dependencies
 
-- **Upstream Simon Tatham** (`../puzzles/` sibling clone): reference oracle for characterization traces and native `benchmark.sh` runs. Much faster than going through WASM. Always track upstream.
+- **Upstream Simon Tatham** (`../puzzles/` sibling clone): historical reference for running upstream's own tools (`benchmark.sh`) unmodified. *Not* tracked — this project froze the `puzzles/` subtree at a specific upstream version (see `AGENTS.md` "Upstream policy"). The in-tree subtree is the fidelity oracle; the sibling is just a convenience for invoking upstream's own utilities.
 - **medmunds/puzzles-web** (`../puzzles-web/` sibling clone): pre-fork baseline. Useful in early phases; less useful as the TS layer grows.
 - **Emscripten** (host-native via Homebrew, see `Brewfile`): the WASM toolchain. Required for builds until the C side is fully displaced.
 - **Hosting**: TBD for this fork. The CF Pages setup inherited from puzzles-web is no longer wired here — `wrangler.toml` and the `preview:pages` script were dropped in the `reorganize-repo-tooling` openspec change. Some Cloudflare-flavoured comments and CSP entries (for CF Insights) remain in `vite.config.ts` / `templates/_headers.txt.hbs` as known-format references in case CF Pages is revisited.

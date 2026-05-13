@@ -2,20 +2,20 @@
 
 ## 1. Engine-side surface
 
-- [ ] 1.1 Add a `solveAndHashTrace(midend_handle): string` Embind binding in `puzzles/webapp.cpp`. Internal implementation walks the solver, accumulates move strings, returns `SHA-256(concat with newlines)`; returns `"unsolved"` for puzzles whose solver isn't reachable; returns `"timeout"` if the solver exceeds the timeout.
-- [ ] 1.2 Add a per-call timeout (configurable; default 5s for smoke, 30s for full). Mechanism TBD — likely a step counter inside the solver loop checked against wall clock.
-- [ ] 1.3 Confirm `new_game_id_from_random_seed` is already exposed via Embind (likely yes; verify and document).
+- [ ] 1.1 Add a `solveAndHashState(midend_handle): string` Embind binding in `puzzles/webapp.cpp`. Implementation calls existing `midend_solve` + `midend_serialise` (no edits to `midend.c` — see AGENTS.md "Upstream policy"), returns `SHA-256(serialised solved state)`; returns `"unsolvable:<err>"` if `midend_solve` returns an error; returns `"timeout"` if the call exceeds the configured wall-clock budget.
+- [ ] 1.2 Add a wall-clock-based timeout wrapper around the solve call (configurable; default 5s for smoke, 30s for full). Implemented entirely in `webapp.cpp`; no midend changes.
+- [ ] 1.3 Confirm `new_game_id_from_random_seed` and `midend_serialise` (or equivalents) are already exposed via Embind. Verify and document; they should be since the save/load and share-link features already use them.
 
 ## 2. Soak runner
 
 - [ ] 2.1 Create `src/soak/` directory.
-- [ ] 2.2 Implement `runSoak({ mode: 'pure' | 'hybrid', scope: 'smoke' | 'full' }): Promise<SoakResult[]>` in `src/soak/runner.ts`. Iterates the corpus, calls into the appropriate WASM build via Comlink, captures `{ gameId, postGenerateStateHash, solveTraceHash }` per triple.
+- [ ] 2.2 Implement `runSoak({ mode: 'pure' | 'hybrid', scope: 'smoke' | 'full' }): Promise<SoakResult[]>` in `src/soak/runner.ts`. Iterates the corpus, calls into the appropriate WASM build via Comlink, captures `{ gameId, postGenerateStateHash, solvedStateHash }` per triple.
 - [ ] 2.3 Implement `compareSoakResults(a: SoakResult[], b: SoakResult[]): SoakDiff[]` — returns the per-row diffs (or empty for identity).
 - [ ] 2.4 Implement `assertCorpusMatch(actual: SoakResult[], corpus: SoakCorpus): void` — throws with a readable diff if any row drifts.
 
 ## 3. Corpus
 
-- [ ] 3.1 Define `src/soak/__fixtures__/corpus.json` schema: `{ version, smoke: SoakRow[], full: SoakRow[] }` where `SoakRow = { puzzle, preset, seed, gameId, postGenerateStateHash, solveTraceHash }`.
+- [ ] 3.1 Define `src/soak/__fixtures__/corpus.json` schema: `{ version, smoke: SoakRow[], full: SoakRow[] }` where `SoakRow = { puzzle, preset, seed, gameId, postGenerateStateHash, solvedStateHash }`.
 - [ ] 3.2 Hand-pick the smoke triple per `design.md` — 2 puzzles × 1 preset × 3 seeds (including the existing Solo `3x3#786954740169111` canary).
 - [ ] 3.3 Generate the full corpus programmatically: enumerate every `gamelist[]` entry × every preset × 5 fixed seeds. Record against the pure-WASM build.
 - [ ] 3.4 Add `npm run soak:rerecord` which regenerates the corpus and prints a unified diff against the previous version before overwriting. The diff is the review artifact for the PR.
@@ -42,7 +42,7 @@
 ## 7. Tests for the soak itself
 
 - [ ] 7.1 Vitest tests for `compareSoakResults` — synthetic identical/divergent inputs, asserting the diff is correctly computed.
-- [ ] 7.2 Vitest tests for the timeout path of `solveAndHashTrace` — feed a known-hard seed, assert the trace records `"timeout"`.
+- [ ] 7.2 Vitest tests for the timeout path of `solveAndHashState` — feed a known-hard seed, assert the hash records `"timeout"`.
 
 ## 8. OpenSpec hygiene
 

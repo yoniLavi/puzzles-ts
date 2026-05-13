@@ -40,6 +40,31 @@ Gradually replace the C/WASM puzzle engine in this project with a native TypeScr
 - **Direct parent**: [medmunds/puzzles-web]. A PWA shell over upstream's C compiled to WASM via Emscripten, using a C++ `webapp.cpp` + Embind as a typed frontend adapter, running the WASM in a Web Worker (via Comlink), with a Lit/Web-Awesome/Vite TS app. The `puzzles/` directory is a git subtree of upstream with a small number of local patches.
 - **This project**: forked from puzzles-web. Pushes the TS/WASM seam progressively deeper into the C code, eventually displacing it entirely.
 
+## Upstream policy: no merges; C source is the fidelity oracle
+
+This project is **not tracking upstream**. We forked from medmunds/puzzles-web at a specific point, which forked from Simon Tatham's puzzles at a specific point, and we're porting *those particular versions*. No future merges from either upstream into the `puzzles/` subtree.
+
+Two practical consequences:
+
+1. **The C source under `puzzles/` is immutable** for the lifetime of the port (until the eventual mass deletion when the rewrite is complete — see "C is never deleted until the rewrite is complete"). The C is our fidelity oracle: the characterization corpora are recorded against it; the benchmark soak compares hybrid output against pure-WASM output of *this* C; "did the TS port match the original?" is only a meaningful question if "the original" stays fixed across the entire project. Editing the C source changes our oracle and erodes the parity bar that makes this a port rather than a rewrite.
+
+   The narrow exception: **trivial, observably-neutral instrumentation** is permitted when it lets the soak or a future harness reach engine state that isn't otherwise exposed. The bar: stripping the instrumentation from a build SHALL produce byte-identical output to the instrumented build. Examples that pass: a `#ifdef SOAK_INSTRUMENTATION` block exposing a counter through Embind. Examples that don't: bug fixes, refactors, "improvements," or anything that changes what the engine computes for any input.
+
+2. **Files we added live in `puzzles/` too but follow our rules, not upstream's.** `puzzles/webapp.cpp` (the Embind adapter), `puzzles/random_bridge.js` and future per-module bridges, the harnesses under `puzzles/auxiliary/*-trace.c`, and project-side CMake edits are *our code in upstream's directory*. Edit them freely.
+
+   Test whether a file is ours or upstream's: does it appear in the original Simon Tatham repository? If yes, it's the oracle — hands off. If no, it's ours.
+
+**Constraints that relax under this policy:**
+
+- "Keep `puzzles/.clang-format` style untouched" was a subtree-merge argument; it now follows trivially from "C source isn't edited at all."
+- "Small subtree diff; upstreamable" framing in prior commit messages reflects the old policy. Drop it going forward.
+- The previously-unresolved question "how long to keep tracking medmunds upstream" is resolved: we don't.
+
+**Constraints that don't relax:**
+
+- `puzzles/LICENCE` stays intact (MIT obligation, independent of tracking policy).
+- The C is still the fidelity oracle, so "don't touch it" is *stronger* than under the prior framing, not weaker. Confidence in the rewrite comes from parity with the original, which only holds if "the original" doesn't move.
+
 ## Approach: Feathers-style seam replacement
 
 Treat each C module as a unit to "characterize, seam, replace" per Michael Feathers' *Working Effectively with Legacy Code*:
@@ -131,12 +156,12 @@ Both `src/assets/icons/` and `src/assets/puzzles/` are gitignored — regenerate
 - **Persistence**: IndexedDB via Dexie.js (`src/store/db.ts`).
 - **WASM**: runs in a web worker, exposed via Comlink (`src/puzzle/`).
 - **Styling**: Web Awesome design tokens.
-- **C code in `/puzzles`**: keep upstream's style (`puzzles/.clang-format`) untouched. Subtree fidelity matters for future upstream merges.
+- **C code in `/puzzles`**: don't edit it. The C is our fidelity oracle (see "Upstream policy"); changes erode the parity bar the whole port relies on. Files we added in that directory (`webapp.cpp`, `*_bridge.js`, `auxiliary/*-trace.c`) are exempt — those are our code.
 
 ## Constraints
 
 DO NOT:
-- Modify `/puzzles` or `/puzzles/unreleased` without considering upstream impact (these are git subtrees pulled from upstream — see `puzzles/auxiliary/` for our own additions/harnesses that live alongside).
+- Modify the upstream C source under `/puzzles` or `/puzzles/unreleased`. The C is our fidelity oracle (see "Upstream policy"). Our own additions in those directories (`webapp.cpp`, `*_bridge.js`, `auxiliary/*-trace.c`) are fine to edit. Trivial observably-neutral instrumentation is the only narrow exception.
 - Break Baseline 2023 browser compatibility.
 - Use top-level await, dynamic `import()`, or `import.meta` in `src/preflight.ts` — preflight runs on older browsers to gate the rest of the app.
 - Add dependencies without considering bundle size and offline (PWA) support.
@@ -205,7 +230,6 @@ Recorded here as durable reference, not a changelog (commit history carries the 
 ## Known unresolved questions
 
 - Whether to keep the WASM in a Web Worker (via Comlink) as TS replacements grow, or migrate logic to the main thread. Likely keep the worker until midend ports, then re-evaluate.
-- How long to keep tracking medmunds upstream. Useful in early phases; less useful as our TS layer grows materially. Track upstream Simon Tatham always.
 - Performance budget once enough seams have crossed the wasm/JS boundary. Each crossing has fixed cost; at some point it may make sense to batch or to flip whole subsystems at once.
 - The `~/codeliance/codeliance-stack/evaluator` doc convention this fork now mirrors expects `openspec update` to be run rarely; if upstream openspec adds a way to configure the instruction filename, prefer that over the rename dance.
 

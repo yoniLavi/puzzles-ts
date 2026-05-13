@@ -20,13 +20,13 @@ This is the **biggest single piece of new infrastructure** since the random.c po
 
 ## Decisions
 
-### Decision: Canonical output is `{ gameId, postGenerateStateHash, solveTraceHash }`
+### Decision: Canonical output is `{ gameId, postGenerateStateHash, solvedStateHash }`
 
 Per `(puzzle, preset, seed)` triple, the runner records three SHA-256 hex digests:
 
 1. **`gameId`**: the string returned by the engine after `new_game_id_from_random_seed`. RNG drift surfaces here.
 2. **`postGenerateStateHash`**: a SHA-256 of the engine's serialised game state right after generation (the same byte-string that powers `save game`). Catches drift in any allocation-order-dependent generator code.
-3. **`solveTraceHash`**: a SHA-256 of the engine's solver-move sequence. For puzzles whose solver is reachable via the embind surface; falls back to the literal string `"unsolved"` for puzzles where the solver is unreachable.
+3. **`solvedStateHash`**: a SHA-256 of the engine's serialised game state *after* `midend_solve`. Catches solver drift via its observable output. Falls back to `"unsolvable:<err>"` if `midend_solve` returns an error; falls back to `"timeout"` if the solve exceeds the wall-clock budget. Driven from `webapp.cpp` using the existing midend API; no edits to `midend.c` (see AGENTS.md "Upstream policy").
 
 **Why three hashes, not one**: different layers of drift surface at different points. Bundling them obscures *what* drifted; separating them makes failures diagnosable from the test output alone.
 
@@ -37,25 +37,36 @@ Per `(puzzle, preset, seed)` triple, the runner records three SHA-256 hex digest
 - Full state diff in-corpus. Bloats the repo; harder to read diffs.
 - A single combined hash. Loses diagnosability.
 
-### Decision: Solve trace via a new `midend_run_solver_and_emit_trace` Embind method
+### Decision: Solve hash via `webapp.cpp` calling existing midend API
 
-Rather than per-puzzle solver hooks, expose one method on the midend that runs the existing solver and emits the sequence of move strings it generates. The hash function chains those strings. Concrete shape (pseudocode):
+Per AGENTS.md "Upstream policy", `puzzles/midend.c` is immutable; we don't add anything to it. Instead, expose a new Embind function in `puzzles/webapp.cpp` (our adapter, freely editable) that drives the existing `midend_solve` and hashes the resulting solved state's serialised bytes:
 
 ```cpp
 EMSCRIPTEN_BINDINGS(soak_extras) {
-    function("solveAndHashTrace", &solve_and_hash_trace);
+    function("solveAndHashState", &solve_and_hash_state);
 }
 
-std::string solve_and_hash_trace(intptr_t midend_handle) {
-    // Walk the puzzle's solver, accumulating move strings.
-    // Return SHA-256 of the concatenation (separator: newline).
-    // Return "unsolved" if the puzzle has no solver, or solver doesn't terminate.
+std::string solve_and_hash_state(intptr_t midend_handle) {
+    midend *me = reinterpret_cast<midend *>(midend_handle);
+    const char *err = midend_solve(me);
+    if (err != nullptr) return "unsolvable:" + std::string(err);
+    char *serialised = midend_serialise_to_string(me);
+    std::string hash = sha256_hex(serialised);
+    sfree(serialised);
+    return hash;
 }
 ```
 
-**Why this shape**: keeps soak-specific surface in one place (`webapp.cpp`), doesn't require per-puzzle C changes (so subtree fidelity stays untouched), works uniformly across all ~40 puzzles.
+(Pseudocode — exact serialisation helper TBD during implementation; midend exposes save/load primitives we can drive without modifying them.)
 
-**Risk**: some puzzles' solvers are heuristic and may take an unbounded amount of time on certain seeds. Mitigation: hard timeout per solve (~5s for smoke, ~30s for full); on timeout, the trace records `"timeout"` as the hash. Documented as a known coverage gap for those (puzzle, seed) cases.
+**Why this shape**:
+- One soak-specific Embind addition in our adapter; no edits to upstream C.
+- Works uniformly across all ~40 puzzles via the existing midend interface.
+- The hash captures *what was solved to*, which is the right fidelity bar — two builds that solve to different states have drifted, regardless of whether their internal solve traces differ.
+
+**Trade-off vs the earlier "hash the move trace" idea**: hashing the solved state is a slightly coarser signal than hashing the move sequence (two algorithms that arrive at the same state via different move sequences will hash identically). That's acceptable because the soak's job is to catch *observable* drift; an internal move-sequence change that arrives at the same answer isn't drift we care about. The earlier formulation would have required modifying midend.c to expose move-sequence hooks; under the upstream policy, that's not on the table.
+
+**Risk**: some puzzles' solvers are heuristic and may take an unbounded amount of time on certain seeds. Mitigation: hard timeout via the existing midend timer mechanism if available, or wall-clock check from the Embind side; on timeout, the hash records `"timeout"`. Documented as a known coverage gap for those (puzzle, seed) cases.
 
 ### Decision: Smoke subset is `(2 puzzles) × (1 preset each) × (3 seeds) × (2 modes) = 12 runs`
 
@@ -103,9 +114,9 @@ The soak driver expects `/build/wasm-pure/` and `/build/wasm-hybrid/` as separat
 
 - **Pre-commit budget creep.** The smoke step is 8s today; as we add seams, the per-mode WASM initialisation cost might grow. Mitigation: explicit budget assertion in the runner — emit a warning to stderr if smoke exceeds 12s, and a hard failure at 20s with a "scope down the corpus" message.
 - **Solver non-termination on hostile seeds.** A puzzle's heuristic solver might loop forever on a pathological seed. Mitigation: hard timeout, documented. The corpus avoids pathological seeds by construction (recorded against a stable build that terminated).
-- **Embind boilerplate.** Exposing `solveAndHashTrace` requires careful Embind work, including pointer-handle management. This is the same machinery as `wire-random-to-wasm`'s `Module.tsRandomBridge`. Mitigation: reuse the pattern, don't reinvent.
+- **Embind boilerplate.** Exposing `solveAndHashState` requires careful Embind work, including pointer-handle management. This is the same machinery as `wire-random-to-wasm`'s `Module.tsRandomBridge`. Mitigation: reuse the pattern, don't reinvent.
 - **The corpus becomes load-bearing.** If `corpus.json` is silently wrong (e.g. recorded against a temporarily-broken pure-WASM), every soak run will green-light a regression. Mitigation: re-recording is explicit; the re-record command prints a diff against the previous corpus before overwriting, and the resulting diff is reviewed in the PR.
-- **Coverage gap for puzzles with unreachable solvers.** Falls back to "solveTraceHash = unsolved" for those — meaning the soak only catches RNG and post-generate drift for them, not solver drift. Documented; acceptable until a future per-puzzle port exposes the solver.
+- **Coverage gap for puzzles with no reachable solver.** `midend_solve` returns an error for those; `solvedStateHash` records `"unsolvable:<err>"`. The soak still catches RNG and post-generate drift for those puzzles, just not solver drift. Acceptable until a future per-puzzle port exposes a solver path.
 
 ## Migration Plan
 
