@@ -71,6 +71,12 @@ Three layers of testing, in increasing scope:
 
 Bit-identical RNG is **important** for characterization tests (so traces replay deterministically), and is also a product-side win (existing game IDs and shared puzzles keep working in the TS build).
 
+## TS port style: idiomatic surface, faithful internals
+
+When porting a C module to TypeScript, **the public surface should be the most idiomatic TS shape that still lets the characterization corpus drive it byte-for-byte.** Prefer classes over handle-passing free functions when the C surface is morally a constructor + methods + destructor; prefer `[Symbol.iterator]()` over `while (next() !== null)`; prefer `boolean` over `0|1`; prefer `readonly T[]` over raw `Int32Array`; prefer GC over an explicit `free()`. Fall back to a closer C mirror only if the idiomatic shape would let a regression hide behind type coercion or would force the corpus harness into contortions. Document any such trade-off in the seam's `design.md`.
+
+Module **internals** are a separate question. Mirror the C control flow exactly during the initial port — loop conditions, increment order, branch shape — because that's how byte-identical fidelity is most easily reasoned about. Refactor internals to more idiomatic TS only *after* the corpus is green and only if the corpus stays green.
+
 ## Seam order
 
 Bottom-up, leaves first, to maximize how much downstream code benefits from each replacement:
