@@ -114,7 +114,7 @@ describe("new URL(..., import.meta.url) references resolve", () => {
 
 describe("every cataloged puzzle has its generated icons", () => {
   it.each(puzzleIds)("%s", (puzzleId) => {
-    for (const suffix of ["64d8", "128d8", "base"] as const) {
+    for (const suffix of ["64d8", "128d8"] as const) {
       const path = `./assets/icons/${puzzleId}-${suffix}.png`;
       expect(knownPaths.has(path), `missing icon: src/${path.slice(2)}`).toBe(
         true,

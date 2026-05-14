@@ -71,14 +71,25 @@ for no measurable benefit. Defer until the broader rewrite reaches a
 natural deletion checkpoint (per AGENTS.md "C is never deleted until
 the rewrite is complete").
 
-### Decision: WEB_APP option vanishes
+### Decision: WEB_APP option vanishes; toolchain auto-selects the platform
 
-After this change, `puzzles/cmake/platforms/` contains exactly one file
-(`webapp.cmake`). The conditional in `setup.cmake` becomes the
-unconditional `include(cmake/platforms/webapp.cmake)`. The `WEB_APP`
-option no longer toggles anything; remove it. Anyone who relied on
-`-DWEB_APP=OFF` was getting the icon-screenshot path, which no longer
-exists.
+After this change, `puzzles/cmake/platforms/` contains two files:
+`webapp.cmake` (the wasm path) and a new minimal `native.cmake` (a
+GTK-less native path that supports `scripts/build-native.sh`'s
+characterization harnesses — the previous unix.cmake covered that too,
+but only at the cost of carrying GTK as a hard dependency). `setup.cmake`
+selects between them automatically: `CMAKE_SYSTEM_NAME == "Emscripten"`
+(set by `emcmake`) → webapp.cmake; anything else → native.cmake. The
+`WEB_APP` option is gone; nothing toggles it any more. Anyone who
+relied on `-DWEB_APP=OFF` was getting the icon-screenshot path, which
+no longer exists.
+
+`native.cmake` is intentionally tiny (a few empty stubs for the
+`get_platform_*` / `set_platform_*` hooks plus `platform_libs = -lm`).
+It only has to satisfy the `cliprogram()` plumbing in `setup.cmake`
+so that `puzzles/auxiliary/CMakeLists.txt` can build its harnesses with
+the host's native compiler; it does *not* build per-puzzle GUI binaries
+(`build_individual_puzzles = FALSE`).
 
 ### Decision: Drop `*-base.png` files entirely (not just from the test)
 

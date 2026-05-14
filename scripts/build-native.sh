@@ -1,7 +1,7 @@
 #!/bin/bash
 # Build the characterization-harness binaries from puzzles/auxiliary/ on the
-# host machine, into /build/native/. Modelled on scripts/build-icons.sh; see
-# openspec/specs/build-pipeline/spec.md for the partitioning rationale.
+# host machine, into /build/native/. See openspec/specs/build-pipeline/spec.md
+# for the partitioning rationale.
 #
 # Run from the repo root:
 #   ./scripts/build-native.sh                  # builds the default target (random-trace)
@@ -11,10 +11,11 @@
 # no npm wrapper for this script — it's only invoked by humans/agents
 # refreshing a corpus, not by `npm run build:assets`.
 #
-# On macOS, CMake's platform autodetection would normally pick
-# puzzles/cmake/platforms/osx.cmake (now removed). Force CMAKE_SYSTEM_NAME=Linux
-# so the unix platform file is used; also force CMAKE_CROSSCOMPILING=FALSE since
-# CMake otherwise auto-flips it to TRUE when SYSTEM_NAME is overridden.
+# This script invokes cmake directly (no emcmake), which leaves
+# CMAKE_SYSTEM_NAME at its native value (Darwin/Linux/etc.). setup.cmake
+# routes any non-Emscripten system name to platforms/native.cmake, which
+# is the minimal GTK-less path that supports the cliprogram() targets
+# under puzzles/auxiliary/.
 
 set -euo pipefail
 if [ "${DEBUG:-0}" != "0" ]; then
@@ -57,8 +58,6 @@ fi
 CMAKE_ARGS=(
   -B "${BUILD_DIR}"
   -S "${SRC_DIR}"
-  -DCMAKE_SYSTEM_NAME=Linux
-  -DCMAKE_CROSSCOMPILING=FALSE
 )
 
 cmake "${CMAKE_ARGS[@]}"

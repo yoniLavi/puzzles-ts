@@ -24,12 +24,3 @@ brew "cmake"
 # (The scripts fall back to `sysctl -n hw.ncpu` if missing, but coreutils
 # is small and keeps the script identical to the Linux invocation.)
 brew "coreutils"
-
-# --- Icon regeneration only ---
-# The PNGs under src/assets/icons/ are committed snapshots; only install
-# the deps below if you actually need to regenerate them via
-# scripts/build-icons.sh (e.g. when adding a new puzzle to the catalog).
-brew "imagemagick"   # icon rasterisation: convert + identify
-brew "oxipng"        # PNG re-compression at the end of build-icons
-brew "gtk+3"         # GTK puzzle binaries for headless --screenshot
-brew "pkgconf"       # locate gtk+3 during cmake configure

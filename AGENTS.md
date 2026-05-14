@@ -136,8 +136,7 @@ Bottom-up, leaves first, to maximize how much downstream code benefits from each
 ## Build commands
 
 - `npm run build:wasm` — compiles the puzzle wasm + manual into `src/assets/puzzles/` via `scripts/build-emcc.sh`. Honours `USE_TS_RANDOM=1` (must be paired with `VITE_USE_TS_RANDOM=1` for vite).
-- `npm run build:assets` — alias for `build:wasm`. Icons used to live here too, but they're now committed (see below); kept as a script alias so existing muscle memory and the `npm run build` doc-string still work.
-- `npm run build:icons` — regenerates puzzle icons into `src/assets/icons/` via `scripts/build-icons.sh` (uses brew GTK+3 + ImageMagick + oxipng). **Run on demand only** — the PNGs are committed to git, and the upstream C source the screenshots come from is frozen, so a routine checkout doesn't need to run this. Use it when adding a puzzle to the catalog or otherwise changing the icon set, then `git add src/assets/icons/`.
+- `npm run build:assets` — alias for `build:wasm`. Kept as a wrapper so existing muscle memory and the `npm run build` doc-string still work; per-puzzle thumbnail icons are a committed snapshot (see `openspec/specs/puzzle-icons/spec.md`), not a build output.
 - `scripts/build-native.sh [target...]` — host-native build of the characterization harnesses in `puzzles/auxiliary/` (default target: `random-trace`). Output: `build/native/`. Run on demand when fixtures need regenerating; no npm wrapper because it's not part of `build:assets`.
 - `npm run dev` — vite dev server.
 - `npm run build` — production app build (tsc + vite). Assumes `build:assets` already ran.
@@ -145,7 +144,7 @@ Bottom-up, leaves first, to maximize how much downstream code benefits from each
 - `npm run check` — biome format + lint with autofix.
 - `npm run test` / `npm run test:run` — vitest.
 
-`src/assets/puzzles/` is gitignored (regenerate via `build:wasm`). `src/assets/icons/` is **committed** as snapshots of the GTK screenshot output — see scripts/build-icons.sh for the regenerate-on-demand rationale. `src/asset-integrity.test.ts` asserts every catalog `puzzleId` has its three PNGs and that every `new URL(<path>, import.meta.url)` reference in `src/` resolves. Everything under `build/` is gitignored too.
+`src/assets/puzzles/` is gitignored (regenerate via `build:wasm`). `src/assets/icons/` is **committed** as a frozen snapshot of per-puzzle thumbnails; adding a new puzzle requires producing two PNGs by hand (see `openspec/specs/puzzle-icons/spec.md`). `src/asset-integrity.test.ts` asserts every catalog `puzzleId` has both its PNGs (64×64 and 128×128) and that every `new URL(<path>, import.meta.url)` reference in `src/` resolves. Everything under `build/` is gitignored too.
 
 ## Code conventions
 
@@ -165,7 +164,7 @@ DO NOT:
 - Break Baseline 2023 browser compatibility.
 - Use top-level await, dynamic `import()`, or `import.meta` in `src/preflight.ts` — preflight runs on older browsers to gate the rest of the app.
 - Add dependencies without considering bundle size and offline (PWA) support.
-- Commit generated assets in `src/assets/puzzles/` or anything under `build/`. (`src/assets/icons/` is the exception — it's a snapshot of GTK screenshot output, committed because the upstream C source it depends on is frozen; only regenerate via `npm run build:icons` when the catalog changes.)
+- Commit generated assets in `src/assets/puzzles/` or anything under `build/`. (`src/assets/icons/` is the exception — it's a committed snapshot maintained per `openspec/specs/puzzle-icons/spec.md`; add the two required PNGs by hand when a new puzzle joins the catalog.)
 - Catch unrecoverable errors only to log them — let them propagate so Sentry records them.
 
 DO:
@@ -178,14 +177,13 @@ DO:
 
 Three roles to keep distinct:
 
-- **`puzzles/`** (in-tree subtree of upstream). The trimmed upstream source (engine + GTK frontend), including `auxiliary/`. **All project work** — characterization harnesses, fixtures, any auxiliary tooling — lives here. The harness pattern is established by `puzzles/auxiliary/random-trace.c`.
+- **`puzzles/`** (in-tree subtree of upstream). The trimmed upstream source (engine only; the GTK frontend was removed in `drop-icon-generation`), including `auxiliary/`. **All project work** — characterization harnesses, fixtures, any auxiliary tooling — lives here. The harness pattern is established by `puzzles/auxiliary/random-trace.c`.
 - **`../puzzles/`** (sibling clone). Useful only for running upstream's own tools (`benchmark.sh`, future upstream auxiliary tests) unmodified. **Not** a place to put our work.
 - **`../puzzles-web/`** (sibling clone). The pre-fork baseline; useful as a diff reference in early phases.
 
 Build outputs are partitioned under `/build/` (all gitignored):
 
 - `/build/wasm/` — Emscripten cmake build (from `build-emcc.sh`).
-- `/build/icons/` — Unix/GTK cmake build for icons (from `build-icons.sh`).
 - `/build/native/` — characterization-harness binaries (from `build-native.sh`).
 
 Source tree under `src/`:

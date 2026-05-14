@@ -73,8 +73,8 @@ Bit-identical RNG is **important**: characterization replays depend on it, and p
 
 - `puzzles/` — upstream C subtree (drawing, midend, ~40 puzzle back ends, libraries). **Do not restyle.**
 - `src/` — the TS web app (Lit components, routing, worker, drawing adapter). The TS replacements for C modules will live here too, organized by capability.
-- `scripts/` — host-native build entry points (`build-emcc.sh`, `build-icons.sh`).
-- `Brewfile` — pinned dependency list for the wasm + icons pipelines (Emscripten, GTK+3, ImageMagick, halibut, jq, oxipng, …).
+- `scripts/` — host-native build entry points (`build-emcc.sh`, `build-native.sh`).
+- `Brewfile` — pinned dependency list for the wasm pipeline (Emscripten, halibut, jq, cmake, coreutils).
 - `public/`, `help/`, `*.html.hbs`, `vite-*.ts` — the PWA + Vite plugins.
 - `openspec/` — spec-driven change management (this directory).
 - `AGENTS.md` — durable strategic context + conventions for AI assistants and human contributors. Symlinked as `CLAUDE.md`.

@@ -7,7 +7,6 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "build:wasm": "scripts/build-emcc.sh",
-    "build:icons": "scripts/build-icons.sh",
     "build:assets": "npm run build:wasm",
     "preview": "vite preview",
     "format": "biome format --write .",

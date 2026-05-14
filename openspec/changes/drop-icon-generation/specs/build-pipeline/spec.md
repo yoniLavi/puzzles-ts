@@ -79,10 +79,13 @@ for harness binaries) is gone.
 - **THEN** `git ls-files` shows no rows for `puzzles/gtk.c`,
   `puzzles/printing.c`, `puzzles/cmake/platforms/unix.cmake`, or
   `scripts/build-icons.sh`
-- **AND** `puzzles/cmake/setup.cmake` includes `webapp.cmake`
-  unconditionally (no `WEB_APP` option, no `unix.cmake` branch)
-- **AND** `puzzles/cmake/platforms/` contains exactly one file:
-  `webapp.cmake`
+- **AND** `puzzles/cmake/setup.cmake` has no `WEB_APP` option and no
+  `unix.cmake` branch
+- **AND** `puzzles/cmake/platforms/` contains exactly two files:
+  `webapp.cmake` (selected automatically when emscripten is the
+  toolchain, i.e. `CMAKE_SYSTEM_NAME == "Emscripten"`) and `native.cmake`
+  (a minimal GTK-less native path used by `scripts/build-native.sh` for
+  the auxiliary characterization harnesses)
 
 #### Scenario: Generated artefacts live under a single `/build/` root
 

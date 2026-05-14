@@ -25,25 +25,28 @@ string(REPLACE "/DNDEBUG" "" CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWI
 string(REPLACE "-DNDEBUG" "" CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
 
 # Include one of platforms/*.cmake to define platform-specific stuff.
-# Each of these is expected to:
+# Each is expected to:
 #  - define get_platform_puzzle_extra_source_files(), used below
 #  - define set_platform_puzzle_target_properties(), used below
 #  - define build_platform_extras(), called from the top-level CMakeLists.txt
 #  - override the above build_* settings, if necessary
 #
-# This fork supports two targets:
-#  - WEB_APP=ON  -> webapp.cmake (wasm + Embind via webapp.cpp, driven by
-#    scripts/build-emcc.sh; consumed by src/assets/puzzles/).
-#  - default     -> unix.cmake   (GTK puzzle binaries that scripts/build-icons.sh
-#    screenshots for src/assets/icons/, plus native characterization
-#    harnesses in puzzles/auxiliary/).
+# This fork ships two cmake paths:
+#  - webapp.cmake — wasm + Embind via webapp.cpp, driven by
+#    scripts/build-emcc.sh; consumed by src/assets/puzzles/. Active when
+#    emscripten is the toolchain (emcmake sets CMAKE_SYSTEM_NAME=Emscripten).
+#  - native.cmake — minimal native build path used by scripts/build-native.sh
+#    to compile the characterization harnesses in puzzles/auxiliary/ on the
+#    host (no GTK, no icons).
 # Other upstream platforms (Windows, macOS, NestedVM, KaiOS, Java applet)
-# were dropped in the prune-unsupported-frontends openspec change.
-option(WEB_APP "build for web app (wasm) rather than the unix/GTK icon path")
-if(WEB_APP)
+# were dropped in the prune-unsupported-frontends openspec change; the
+# unix/GTK platform was dropped in drop-icon-generation when the icon
+# pipeline became unnecessary (icons are now a committed snapshot — see
+# openspec/specs/puzzle-icons/spec.md).
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   include(cmake/platforms/webapp.cmake)
 else()
-  include(cmake/platforms/unix.cmake)
+  include(cmake/platforms/native.cmake)
 endif()
 
 # Accumulate lists of the puzzles' bare names and source file
