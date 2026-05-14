@@ -173,6 +173,7 @@ DO:
 - Check changes work with keyboard, mouse, and touch input.
 - Consider accessibility.
 - Take ownership of everything in this repo. Never describe a problem you observe as "pre-existing", "unrelated", or "out of scope" — that framing assumes a baseline blamelessness this project doesn't grant. If you see it, you own it: either fix it now, file it as a follow-up with a clear handoff, or surface it to the user with a recommendation. The framing matters because "unrelated" is also how a regression you actually caused gets misclassified and shipped.
+- Don't ask the user "should I continue?" or "want me to commit and move on?" at every checkpoint. Continue by default once a task is complete and the next step is obvious. Reserve `AskUserQuestion` (and inline questions) for *actual decisions* — choices where there's a real trade-off, the course is genuinely unclear, or an action carries non-trivial risk (destructive, irreversible, affects shared state, or could surprise the user). Status pings at every step are friction, not diligence.
 
 ## Repo layout
 
