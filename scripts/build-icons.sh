@@ -1,6 +1,15 @@
 #!/bin/bash
-# Build the puzzle icons on the host machine using brew-installed GTK+3 and
-# ImageMagick (see Brewfile). Writes deliverables into src/assets/icons/.
+# Regenerate the puzzle icons on the host machine using brew-installed GTK+3
+# and ImageMagick (see Brewfile). Writes deliverables into src/assets/icons/.
+#
+# This is a *regenerate-on-demand* script. The PNGs it produces are committed
+# to git (see .gitignore + AGENTS.md "Icons"), and the upstream C source the
+# screenshots come from is frozen (see AGENTS.md "Upstream policy"), so the
+# normal contributor path does NOT need to run this. Run it only when:
+#   - adding a new puzzle to the catalog,
+#   - changing icon sizes, the screenshot seed, or the optimisation pipeline,
+#   - investigating a rendering regression caused by a brew GTK upgrade.
+# Then `git add src/assets/icons/` and commit the diff.
 #
 # Run from the repo root:
 #   ./scripts/build-icons.sh

@@ -136,8 +136,8 @@ Bottom-up, leaves first, to maximize how much downstream code benefits from each
 ## Build commands
 
 - `npm run build:wasm` — compiles the puzzle wasm + manual into `src/assets/puzzles/` via `scripts/build-emcc.sh`. Honours `USE_TS_RANDOM=1` (must be paired with `VITE_USE_TS_RANDOM=1` for vite).
-- `npm run build:icons` — generates puzzle icons into `src/assets/icons/` via `scripts/build-icons.sh` (uses brew GTK+3 + ImageMagick + oxipng).
-- `npm run build:assets` — both, in series.
+- `npm run build:assets` — alias for `build:wasm`. Icons used to live here too, but they're now committed (see below); kept as a script alias so existing muscle memory and the `npm run build` doc-string still work.
+- `npm run build:icons` — regenerates puzzle icons into `src/assets/icons/` via `scripts/build-icons.sh` (uses brew GTK+3 + ImageMagick + oxipng). **Run on demand only** — the PNGs are committed to git, and the upstream C source the screenshots come from is frozen, so a routine checkout doesn't need to run this. Use it when adding a puzzle to the catalog or otherwise changing the icon set, then `git add src/assets/icons/`.
 - `scripts/build-native.sh [target...]` — host-native build of the characterization harnesses in `puzzles/auxiliary/` (default target: `random-trace`). Output: `build/native/`. Run on demand when fixtures need regenerating; no npm wrapper because it's not part of `build:assets`.
 - `npm run dev` — vite dev server.
 - `npm run build` — production app build (tsc + vite). Assumes `build:assets` already ran.
@@ -145,7 +145,7 @@ Bottom-up, leaves first, to maximize how much downstream code benefits from each
 - `npm run check` — biome format + lint with autofix.
 - `npm run test` / `npm run test:run` — vitest.
 
-Both `src/assets/icons/` and `src/assets/puzzles/` are gitignored — regenerate via the scripts above when stale. Everything under `build/` is gitignored too.
+`src/assets/puzzles/` is gitignored (regenerate via `build:wasm`). `src/assets/icons/` is **committed** as snapshots of the GTK screenshot output — see scripts/build-icons.sh for the regenerate-on-demand rationale. `src/asset-integrity.test.ts` asserts every catalog `puzzleId` has its three PNGs and that every `new URL(<path>, import.meta.url)` reference in `src/` resolves. Everything under `build/` is gitignored too.
 
 ## Code conventions
 
@@ -165,7 +165,7 @@ DO NOT:
 - Break Baseline 2023 browser compatibility.
 - Use top-level await, dynamic `import()`, or `import.meta` in `src/preflight.ts` — preflight runs on older browsers to gate the rest of the app.
 - Add dependencies without considering bundle size and offline (PWA) support.
-- Commit generated assets in `src/assets/icons/`, `src/assets/puzzles/`, or anything under `build/`.
+- Commit generated assets in `src/assets/puzzles/` or anything under `build/`. (`src/assets/icons/` is the exception — it's a snapshot of GTK screenshot output, committed because the upstream C source it depends on is frozen; only regenerate via `npm run build:icons` when the catalog changes.)
 - Catch unrecoverable errors only to log them — let them propagate so Sentry records them.
 
 DO:

@@ -1,4 +1,4 @@
-# Native build dependencies for the puzzles wasm + icons pipelines.
+# Native build dependencies for the puzzles wasm pipeline.
 #
 # Install with:
 #   brew bundle install
@@ -17,17 +17,6 @@ brew "halibut"
 # JSON munging in the dependency-info / catalog post-processing.
 brew "jq"
 
-# Icon rasterisation: convert + identify.
-brew "imagemagick"
-
-# PNG re-compression at the end of build-icons.
-brew "oxipng"
-
-# Required to render the GTK puzzle binaries that the icon target screenshots.
-# Headless (--screenshot) goes through Cairo and does not need a display.
-brew "gtk+3"
-brew "pkgconf"
-
 # Build harness.
 brew "cmake"
 
@@ -35,3 +24,12 @@ brew "cmake"
 # (The scripts fall back to `sysctl -n hw.ncpu` if missing, but coreutils
 # is small and keeps the script identical to the Linux invocation.)
 brew "coreutils"
+
+# --- Icon regeneration only ---
+# The PNGs under src/assets/icons/ are committed snapshots; only install
+# the deps below if you actually need to regenerate them via
+# scripts/build-icons.sh (e.g. when adding a new puzzle to the catalog).
+brew "imagemagick"   # icon rasterisation: convert + identify
+brew "oxipng"        # PNG re-compression at the end of build-icons
+brew "gtk+3"         # GTK puzzle binaries for headless --screenshot
+brew "pkgconf"       # locate gtk+3 during cmake configure

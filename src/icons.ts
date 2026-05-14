@@ -74,7 +74,6 @@ const defaultIcons: IconMap = {
   "game": boxIcon,
   "game-in-progress": playIcon,
   "gameid": hashIcon,
-  "generic-puzzle": boxIcon,
   "help": circleQuestionMarkIcon,
   "history": historyIcon,
   "history-checkpoint": circleCheckIcon,

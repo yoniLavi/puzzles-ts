@@ -219,22 +219,23 @@ script just shells out to whatever `emcmake`/`emcc` are first on `PATH`.
 
 ### Building puzzles
 
-All commands are run from the repo root. The two scripts write into
-`src/assets/icons/` and `src/assets/puzzles/`, both gitignored.
+All commands are run from the repo root.
 
-Build the icon images:
-```shell
-npm run build:icons
-```
-
-Build the puzzles wasm, manual, catalog.json and dependencies.json:
+Build the puzzles wasm, manual, catalog.json and dependencies.json (writes
+into `src/assets/puzzles/`, gitignored — regenerate any time):
 ```shell
 npm run build:wasm
 ```
 
-Or both, in series:
+(`npm run build:assets` is an alias.)
+
+The puzzle thumbnail PNGs under `src/assets/icons/` are committed snapshots
+of the GTK screenshot output, so a normal checkout doesn't need to regenerate
+them. When you add a puzzle to the catalog or otherwise change the icon set,
+regenerate and commit the diff:
 ```shell
-npm run build:assets
+npm run build:icons
+git add src/assets/icons/
 ```
 
 The scripts (`scripts/build-emcc.sh`, `scripts/build-icons.sh`) honour a few
@@ -253,8 +254,9 @@ VITE_USE_TS_RANDOM=1 npm run dev
 
 On Linux the Brewfile still works under Linuxbrew, but distro packages
 typically suffice — install your distro's equivalents of `emscripten`,
-`gtk+3-dev`, `pkg-config`, `imagemagick`, `oxipng`, `halibut`, `jq`. The
-scripts assume `emcmake`/`emcc` are on `PATH`.
+`halibut`, `jq` (and, only if you're regenerating icons, `gtk+3-dev`,
+`pkg-config`, `imagemagick`, `oxipng`). The scripts assume `emcmake`/`emcc`
+are on `PATH`.
 
 ### Building the web app
 

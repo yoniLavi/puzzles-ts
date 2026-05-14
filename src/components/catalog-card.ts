@@ -39,50 +39,39 @@ export class CatalogCard extends LitElement {
   favorite = false;
 
   @state()
-  private icon1x?: string;
+  private icon1x = "";
 
   @state()
-  private icon2x?: string;
+  private icon2x = "";
 
   @state()
   private iconLoaded = false;
 
-  @state()
-  private iconMissing = false;
-
   protected override willUpdate(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("puzzleId")) {
-      const icon1x = new URL(
-        `./assets/icons/${this.puzzleId}-64d8.png?no-inline`,
+      // Presence of these PNGs is asserted by src/asset-integrity.test.ts.
+      this.icon1x = new URL(
+        `../assets/icons/${this.puzzleId}-64d8.png?no-inline`,
         import.meta.url,
       ).href;
-      const icon2x = new URL(
-        `./assets/icons/${this.puzzleId}-128d8.png?no-inline`,
+      this.icon2x = new URL(
+        `../assets/icons/${this.puzzleId}-128d8.png?no-inline`,
         import.meta.url,
       ).href;
-      // Vite's dynamic import generates ".../undefined" if no matching file
-      this.icon1x = icon1x.endsWith("/undefined") ? undefined : icon1x;
-      this.icon2x = icon2x.endsWith("/undefined") ? undefined : icon2x;
       this.iconLoaded = false;
     }
   }
 
   private renderIcon() {
-    if (this.iconMissing || !this.icon1x || !this.icon2x) {
-      const iconName = this.unfinished ? "unfinished" : "generic-puzzle";
-      return html`<wa-icon part="icon" auto-width name=${iconName}></wa-icon>`;
-    }
-
     return html`
-      <img 
+      <img
           part="icon"
           class=${this.iconLoaded ? nothing : "loading"}
-          srcset="${this.icon1x}, ${this.icon2x} 2x" 
+          srcset="${this.icon1x}, ${this.icon2x} 2x"
           src=${this.icon2x}
           alt=""
           loading="lazy"
           @load=${this.handleIconLoaded}
-          @error=${this.handleIconError}
       >`;
   }
 
@@ -140,10 +129,6 @@ export class CatalogCard extends LitElement {
 
   private handleIconLoaded() {
     this.iconLoaded = true;
-  }
-
-  private handleIconError() {
-    this.iconMissing = true;
   }
 
   static styles = [
