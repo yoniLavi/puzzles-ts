@@ -26,12 +26,16 @@ BUILD_UNFINISHED=${BUILD_UNFINISHED:-}
 # `nproc` ships with coreutils on macOS (see Brewfile); fall back to
 # `sysctl` and finally to 1.
 JOBS=${JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)}
-# USE_TS_LEAVES: set to "1"/"ON" to route every leaf-library call to its
-# TypeScript port. This is the primary "give me the hybrid TS+C build"
-# toggle and is equivalent to setting every per-module USE_TS_<MODULE>
-# flag (USE_TS_RANDOM, future USE_TS_COMBI, …). When set, also set
-# VITE_USE_TS_LEAVES=1 when running vite — the worker's coherence check
-# will refuse to start otherwise. See openspec/specs/build-pipeline/spec.md.
+# USE_TS_LEAVES: tri-state umbrella that routes every leaf-library call
+# to its TypeScript port (USE_TS_RANDOM, future USE_TS_COMBI, …).
+#   unset → inherit CMake's default (currently ON; the operational mode)
+#   "0"/"OFF"/"off" → force pure C (escape hatch for bisecting or
+#       running against the upstream C oracle)
+#   truthy → force hybrid TS+C (redundant with default; useful for
+#       overriding a previously-cached OFF)
+# The Vite/worker side mirrors the same default via VITE_USE_TS_LEAVES;
+# the coherence check refuses to start if WASM and Vite disagree. See
+# openspec/specs/build-pipeline/spec.md.
 USE_TS_LEAVES=${USE_TS_LEAVES:-}
 # USE_TS_RANDOM: per-module override for the random.c bridge. "1"/"ON"
 # turns random on even when the umbrella is off; "0"/"OFF" turns it off
@@ -81,11 +85,15 @@ CMAKE_ARGS=(
 )
 
 case "${USE_TS_LEAVES}" in
-  ""|"0"|"OFF"|"off")
+  "")
+    ;;
+  "0"|"OFF"|"off")
+    CMAKE_ARGS+=(-DUSE_TS_LEAVES=OFF)
+    echo "[INFO] USE_TS_LEAVES=OFF: every leaf stays on C (pure-C escape hatch; pair with VITE_USE_TS_LEAVES=0 on the worker side, or accept the silent reverse-coherence path)"
     ;;
   *)
     CMAKE_ARGS+=(-DUSE_TS_LEAVES=ON)
-    echo "[INFO] USE_TS_LEAVES=ON: every leaf-library C implementation excluded; bridging to TS (pair with VITE_USE_TS_LEAVES=1 on the worker side)"
+    echo "[INFO] USE_TS_LEAVES=ON: every leaf-library C implementation excluded; bridging to TS (redundant with default; useful when overriding a cached OFF)"
     ;;
 esac
 

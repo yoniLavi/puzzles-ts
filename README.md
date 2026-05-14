@@ -240,35 +240,46 @@ for the manual screenshot workflow.
 `scripts/build-emcc.sh` honours a few environment variables — see the comments
 at the top of the script.
 
-To build with **every leaf-library** routed to its TypeScript port (today
-that's just `random`; future seams add to the set automatically), set
-`USE_TS_LEAVES=1` for `build:wasm` *and* `VITE_USE_TS_LEAVES=1` when
-running vite — both halves have to agree:
+**By default, every leaf-library is routed to its TypeScript port**
+(today that's just `random`; future seams add to the set
+automatically). `USE_TS_LEAVES` defaults ON on both halves, so
+zero-arg `npm run build:wasm && npm run dev` runs the hybrid build
+that production ships:
 
 ```shell
-USE_TS_LEAVES=1 npm run build:wasm
-VITE_USE_TS_LEAVES=1 npm run dev
+npm run build:wasm
+npm run dev
 ```
 
-`USE_TS_LEAVES` is the umbrella that activates every per-module
-`USE_TS_<MODULE>` flag at once. Per-module flags (`USE_TS_RANDOM` today;
-future: `USE_TS_COMBI`, …) survive as debugging overrides — set them
-explicitly to flip an individual seam against the umbrella:
+To fall back to pure C — useful when bisecting whether a regression
+came from a TS port or the upstream C oracle — set the escape hatch
+on both halves:
 
 ```shell
-# Random TS only; nothing else.
-USE_TS_RANDOM=1 npm run build:wasm
-VITE_USE_TS_RANDOM=1 npm run dev
+USE_TS_LEAVES=0 npm run build:wasm
+VITE_USE_TS_LEAVES=0 npm run dev
+```
 
+Per-module flags (`USE_TS_RANDOM` today; future: `USE_TS_COMBI`, …)
+survive as debugging overrides — flip an individual seam against the
+umbrella in either direction:
+
+```shell
 # Every leaf TS except random.
-USE_TS_LEAVES=1 USE_TS_RANDOM=0 npm run build:wasm
-VITE_USE_TS_LEAVES=1 VITE_USE_TS_RANDOM=0 npm run dev
+USE_TS_RANDOM=0 npm run build:wasm
+VITE_USE_TS_RANDOM=0 npm run dev
+
+# Random TS only; everything else C.
+USE_TS_LEAVES=0 USE_TS_RANDOM=1 npm run build:wasm
+VITE_USE_TS_LEAVES=0 VITE_USE_TS_RANDOM=1 npm run dev
 ```
 
-If the WASM and Vite flag sets disagree, the worker fails closed at
-WASM instantiation with a templated error pointing at the fix. When
-*transitioning* between flag combinations, reset cmake's cache first —
-`rm -rf build/wasm/` before the next `npm run build:wasm` — because
+If the WASM and Vite flag sets disagree in the WASM-has-bridge,
+Vite-doesn't direction, the worker fails closed at WASM instantiation
+with a templated error pointing at the fix. The reverse direction
+(Vite expects bridge, WASM is pure C) is harmless and silent. When
+*transitioning* between flag combinations, reset cmake's cache first
+— `rm -rf build/wasm/` before the next `npm run build:wasm` — because
 cmake's `option()` honours previously-cached values and a stale cache
 silently wins.
 

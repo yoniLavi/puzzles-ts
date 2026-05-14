@@ -53,7 +53,7 @@ function explicit(v: unknown): boolean | undefined {
   return true;
 }
 
-const useTsLeaves = explicit(import.meta.env.VITE_USE_TS_LEAVES) ?? false;
+const useTsLeaves = explicit(import.meta.env.VITE_USE_TS_LEAVES) ?? true;
 const useTsRandom = explicit(import.meta.env.VITE_USE_TS_RANDOM) ?? useTsLeaves;
 
 // Per-module bridge symbols imported by the WASM when USE_TS_<MODULE>=ON.

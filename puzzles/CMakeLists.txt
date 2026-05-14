@@ -13,7 +13,7 @@ include(cmake/setup.cmake)
 # openspec/specs/build-pipeline/spec.md.
 option(USE_TS_LEAVES
   "Route every leaf-library call to its TypeScript port (umbrella for USE_TS_<MODULE>)"
-  OFF)
+  ON)
 
 if(USE_TS_LEAVES)
   set(_default_ts_module ON)
