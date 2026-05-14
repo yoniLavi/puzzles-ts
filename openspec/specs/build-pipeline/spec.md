@@ -3,58 +3,53 @@
 ## Purpose
 TBD - created by archiving change remove-docker-emcc-build. Update Purpose after archive.
 ## Requirements
-### Requirement: WASM and icon builds run on host-native tooling
+### Requirement: WASM build runs on host-native tooling
 
-The wasm and icon build pipelines SHALL execute on the developer's host
-machine using brew-installed tooling (Emscripten, GTK+3, ImageMagick,
-halibut, jq, oxipng, coreutils), with no dependency on a container
-runtime (Docker, Podman, etc.). A `Brewfile` at the repository root
-SHALL enumerate every external dependency needed to build the
-deliverables from a clean checkout.
+The wasm build pipeline SHALL execute on the developer's host machine
+using brew-installed tooling (Emscripten, halibut, jq, cmake,
+coreutils), with no dependency on a container runtime (Docker, Podman,
+etc.) and no dependency on a GTK / ImageMagick / oxipng toolchain. A
+`Brewfile` at the repository root SHALL enumerate every external
+dependency needed to build the wasm deliverable from a clean checkout.
 
 The pipeline SHALL preserve the env-var surface and consumer-visible
-output locations of the prior Docker-based scripts so that downstream
-code (npm scripts, the in-tree characterization harnesses, future
-seam-port changes) needs no adjustment beyond invoking the host-native
-scripts. Consumer-visible outputs are the `src/assets/puzzles/` and
-`src/assets/icons/` directories.
+output location of the prior pipeline (`src/assets/puzzles/`) so that
+downstream code (npm scripts, the in-tree characterization harnesses,
+future seam-port changes) needs no adjustment beyond invoking the
+host-native script.
+
+Per-puzzle thumbnail icons under `src/assets/icons/` are NOT a
+build-pipeline output; they are committed snapshots maintained per the
+separate `puzzle-icons` capability. No build script writes to
+`src/assets/icons/`.
 
 Intermediate (cmake out-of-source) build directories SHALL live under a
 single `/build/` parent at the repository root, partitioned by target:
 
 - `/build/wasm/` — Emscripten / webapp cmake build (output of
   `scripts/build-emcc.sh`)
-- `/build/icons/` — unix/GTK cmake build for icon screenshots (output
-  of `scripts/build-icons.sh`)
 - `/build/native/` — characterization-harness binaries built from
   `puzzles/CMakeLists.txt` on the host (e.g. `random-trace`; future
   ported `auxiliary/*-test.c` programs). Owned by
-  `scripts/build-native.sh`, modelled on `scripts/build-icons.sh`
-  (forces `CMAKE_SYSTEM_NAME=Linux` so the unix platform file is used
-  on every host) and accepting target name(s) as positional arguments
-  (default `random-trace`).
+  `scripts/build-native.sh`, accepting target name(s) as positional
+  arguments (default `random-trace`).
 
 No build directory SHALL live under `/puzzles/`. The `puzzles/` subtree
 remains read-only-ish source code; `puzzles/build/` (used historically
 for harness binaries) is gone.
 
-The icons build incidentally compiles `puzzles/auxiliary/*` into
-`/build/icons/auxiliary/` as a side-effect of cmake's `add_subdirectory`
-recursion. This side-effect is harmless but is NOT the canonical home
-for harness binaries; tooling and documentation SHALL refer
-characterization-harness consumers to `/build/native/` (produced by
-`scripts/build-native.sh`).
-
-#### Scenario: Clean-checkout build succeeds with brew bundle only
+#### Scenario: Clean-checkout wasm build succeeds with brew bundle only
 
 - **WHEN** a contributor clones the repository on a machine with only
   brew installed
-- **AND** runs `brew bundle install && npm install` followed by the
-  documented `build:wasm` and `build:icons` commands
-- **THEN** `src/assets/puzzles/` and `src/assets/icons/` are populated
-  with the same set of artifacts the Docker pipeline previously produced
-- **AND** no `docker`/`podman` invocation appears anywhere in the build
-  path
+- **AND** runs `brew bundle install && npm install` followed by
+  `npm run build:wasm`
+- **THEN** `src/assets/puzzles/` is populated with the same set of
+  artifacts the pipeline previously produced
+- **AND** no `docker` / `podman` invocation appears anywhere in the
+  build path
+- **AND** no `gtk+3`, `pkgconf`, `imagemagick`, or `oxipng` brew package
+  is required for the build to succeed
 
 #### Scenario: USE_TS_RANDOM still toggles the TS random bridge
 
@@ -74,12 +69,26 @@ characterization-harness consumers to `/build/native/` (produced by
   `podman run` invocations in README or scripts, and no references to
   `/app/puzzles` or `/app/build` container paths in build tooling
 
+#### Scenario: GTK icon-build artefacts are gone from the tree
+
+- **WHEN** the change has landed
+- **THEN** `git ls-files` shows no rows for `puzzles/gtk.c`,
+  `puzzles/printing.c`, `puzzles/cmake/platforms/unix.cmake`, or
+  `scripts/build-icons.sh`
+- **AND** `puzzles/cmake/setup.cmake` has no `WEB_APP` option and no
+  `unix.cmake` branch
+- **AND** `puzzles/cmake/platforms/` contains exactly two files:
+  `webapp.cmake` (selected automatically when emscripten is the
+  toolchain, i.e. `CMAKE_SYSTEM_NAME == "Emscripten"`) and `native.cmake`
+  (a minimal GTK-less native path used by `scripts/build-native.sh` for
+  the auxiliary characterization harnesses)
+
 #### Scenario: Generated artefacts live under a single `/build/` root
 
-- **WHEN** the build scripts run
-- **THEN** their cmake `-B` directories are `/build/wasm` and
-  `/build/icons` respectively
-- **AND** no script writes or reads from `/puzzles/build`
+- **WHEN** the build script runs
+- **THEN** its cmake `-B` directory is `/build/wasm`
+- **AND** no script writes or reads from `/puzzles/build` or
+  `/build/icons`
 - **AND** characterization harnesses (the `random-trace` pattern in
   `puzzles/auxiliary/`) are built by `scripts/build-native.sh`, which
   configures cmake with `-B /build/native`
