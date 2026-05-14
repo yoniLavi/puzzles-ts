@@ -6,9 +6,24 @@ project(puzzles
 set(PUZZLES_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}")
 include(cmake/setup.cmake)
 
-option(USE_TS_RANDOM
-  "Route random_* calls to the TypeScript implementation via --js-library"
+# Umbrella flag: turn on every leaf-library TS bridge in one switch. This
+# is the primary operator-facing toggle for "give me the hybrid TS+C
+# build." Per-module USE_TS_<MODULE> flags below default to this umbrella's
+# value and can override it individually. See
+# openspec/specs/build-pipeline/spec.md.
+option(USE_TS_LEAVES
+  "Route every leaf-library call to its TypeScript port (umbrella for USE_TS_<MODULE>)"
   OFF)
+
+if(USE_TS_LEAVES)
+  set(_default_ts_module ON)
+else()
+  set(_default_ts_module OFF)
+endif()
+
+option(USE_TS_RANDOM
+  "Route random_* calls to the TypeScript implementation via --js-library (overrides USE_TS_LEAVES for this module)"
+  ${_default_ts_module})
 
 # When USE_TS_RANDOM=ON we drop random.c in favour of the TS bridge, but
 # misc.c still needs the SHA_* helpers that live in random.c — so we

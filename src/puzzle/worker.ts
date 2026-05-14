@@ -42,19 +42,72 @@ const addBreadcrumb = (breadcrumb: Sentry.Breadcrumb) => {
   }
 };
 
+// Tri-state env-var read: `true | false | undefined`. Vite leaves env vars
+// as raw strings (or undefined), so distinguish "unset" from "explicitly
+// off" by hand. Used to let per-module VITE_USE_TS_<MODULE> override the
+// umbrella VITE_USE_TS_LEAVES individually (cf. build-pipeline spec).
+function explicit(v: unknown): boolean | undefined {
+  if (v === undefined || v === null || v === "") return undefined;
+  const s = String(v).toLowerCase();
+  if (s === "0" || s === "false" || s === "off") return false;
+  return true;
+}
+
+const useTsLeaves = explicit(import.meta.env.VITE_USE_TS_LEAVES) ?? false;
+const useTsRandom = explicit(import.meta.env.VITE_USE_TS_RANDOM) ?? useTsLeaves;
+
+// Per-module bridge symbols imported by the WASM when USE_TS_<MODULE>=ON.
+// Used by the coherence check to detect WASM-vs-Vite flag mismatches that
+// would otherwise crash with a cryptic "Cannot read properties of
+// undefined (reading 'randomNew')" the first time the C code calls
+// random_new. Forward mismatches (WASM imports a bridge symbol but the
+// worker hasn't installed the bridge object) throw at instantiation;
+// reverse mismatches (worker installed a bridge but WASM doesn't need
+// it) are harmless and silent — see build-pipeline spec for the
+// reasoning.
+const FORWARD_MISMATCH_PROBES = [
+  {
+    symbol: "random_new",
+    cmakeFlag: "USE_TS_RANDOM",
+    viteFlag: "VITE_USE_TS_RANDOM",
+    installed: () => useTsRandom,
+  },
+] as const;
+
+function assertWasmBridgesCoherent(module: WebAssembly.Module): void {
+  const envImports = new Set(
+    WebAssembly.Module.imports(module)
+      .filter((imp) => imp.module === "env")
+      .map((imp) => imp.name),
+  );
+  for (const probe of FORWARD_MISMATCH_PROBES) {
+    if (envImports.has(probe.symbol) && !probe.installed()) {
+      throw new Error(
+        `Build flag mismatch: WASM imports \`${probe.symbol}\` ` +
+          `(compiled with ${probe.cmakeFlag}=ON or USE_TS_LEAVES=ON) but ` +
+          `the worker has no matching bridge installed (neither ` +
+          `${probe.viteFlag} nor VITE_USE_TS_LEAVES is set). Fix: either ` +
+          `rebuild WASM without that flag, or set VITE_USE_TS_LEAVES=1 in ` +
+          `your Vite environment and restart the dev server. See ` +
+          `openspec/specs/build-pipeline/spec.md.`,
+      );
+    }
+  }
+}
+
 /**
  * Worker-side implementation of main-thread Puzzle class
  */
 export class WorkerPuzzle implements FrontendConstructorArgs {
   static async create(puzzleId: string): Promise<WorkerPuzzle> {
     const url = new URL(`../assets/puzzles/${puzzleId}.wasm`, import.meta.url).href;
-    // When the WASM was built with USE_TS_RANDOM=ON, its random_* imports come
-    // from puzzles/random_bridge.js, which dispatches to Module.tsRandomBridge.
-    // Install before WASM instantiation so the bridge is in place by the time
-    // any C code calls random_new.
-    const tsRandomBridge = import.meta.env.VITE_USE_TS_RANDOM
-      ? createTsRandomBridge()
-      : undefined;
+    // When the WASM was built with USE_TS_RANDOM=ON (or USE_TS_LEAVES=ON),
+    // its random_* imports come from puzzles/random_bridge.js, which
+    // dispatches to Module.tsRandomBridge. Install before WASM instantiation
+    // so the bridge is in place by the time any C code calls random_new.
+    // The Vite-side decision is `useTsRandom`, resolved from
+    // VITE_USE_TS_RANDOM (per-module) ?? VITE_USE_TS_LEAVES (umbrella).
+    const tsRandomBridge = useTsRandom ? createTsRandomBridge() : undefined;
     const module = await createModule({
       tsRandomBridge,
       // Emscripten's generated wasm loading includes code that (in workers only)
@@ -86,6 +139,11 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
           );
         }
         const result = await WebAssembly.instantiateStreaming(response, imports);
+        // Refuse to start if WASM imports a bridge symbol the worker
+        // hasn't installed — clearer failure than the cryptic
+        // "Cannot read properties of undefined (reading 'randomNew')"
+        // that surfaces on the first C → JS bridge call otherwise.
+        assertWasmBridgesCoherent(result.module);
         successCallback(result.instance);
       },
     });

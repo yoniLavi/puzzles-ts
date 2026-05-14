@@ -26,10 +26,18 @@ BUILD_UNFINISHED=${BUILD_UNFINISHED:-}
 # `nproc` ships with coreutils on macOS (see Brewfile); fall back to
 # `sysctl` and finally to 1.
 JOBS=${JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)}
-# USE_TS_RANDOM: set to "1"/"ON" to route random_* calls to the TypeScript
-# implementation in src/native/random/index.ts via puzzles/random_bridge.js.
-# When set, also set VITE_USE_TS_RANDOM=1 when running vite so the worker
-# installs the JS-side handle table. See openspec/specs/random/spec.md.
+# USE_TS_LEAVES: set to "1"/"ON" to route every leaf-library call to its
+# TypeScript port. This is the primary "give me the hybrid TS+C build"
+# toggle and is equivalent to setting every per-module USE_TS_<MODULE>
+# flag (USE_TS_RANDOM, future USE_TS_COMBI, …). When set, also set
+# VITE_USE_TS_LEAVES=1 when running vite — the worker's coherence check
+# will refuse to start otherwise. See openspec/specs/build-pipeline/spec.md.
+USE_TS_LEAVES=${USE_TS_LEAVES:-}
+# USE_TS_RANDOM: per-module override for the random.c bridge. "1"/"ON"
+# turns random on even when the umbrella is off; "0"/"OFF" turns it off
+# even when the umbrella is on. Bridge dispatches via
+# puzzles/random_bridge.js (see openspec/specs/random/spec.md). Pair the
+# worker side with VITE_USE_TS_RANDOM if you set this without the umbrella.
 USE_TS_RANDOM=${USE_TS_RANDOM:-}
 
 
@@ -72,8 +80,25 @@ CMAKE_ARGS=(
   -DVCSID="${VCSID}"
 )
 
-case "${USE_TS_RANDOM}" in
+case "${USE_TS_LEAVES}" in
   ""|"0"|"OFF"|"off")
+    ;;
+  *)
+    CMAKE_ARGS+=(-DUSE_TS_LEAVES=ON)
+    echo "[INFO] USE_TS_LEAVES=ON: every leaf-library C implementation excluded; bridging to TS (pair with VITE_USE_TS_LEAVES=1 on the worker side)"
+    ;;
+esac
+
+# Per-module USE_TS_RANDOM is tri-state:
+#   unset → inherit from USE_TS_LEAVES (default OFF)
+#   "0"/"OFF"/"off" → explicit override OFF (even under the umbrella)
+#   anything else → explicit override ON
+case "${USE_TS_RANDOM}" in
+  "")
+    ;;
+  "0"|"OFF"|"off")
+    CMAKE_ARGS+=(-DUSE_TS_RANDOM=OFF)
+    echo "[INFO] USE_TS_RANDOM=OFF: random.c stays on C (per-module override of USE_TS_LEAVES)"
     ;;
   *)
     CMAKE_ARGS+=(-DUSE_TS_RANDOM=ON)
