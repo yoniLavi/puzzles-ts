@@ -172,6 +172,7 @@ DO:
 - Verify offline functionality still works (PWA / service worker).
 - Check changes work with keyboard, mouse, and touch input.
 - Consider accessibility.
+- Take ownership of everything in this repo. Never describe a problem you observe as "pre-existing", "unrelated", or "out of scope" — that framing assumes a baseline blamelessness this project doesn't grant. If you see it, you own it: either fix it now, file it as a follow-up with a clear handoff, or surface it to the user with a recommendation. The framing matters because "unrelated" is also how a regression you actually caused gets misclassified and shipped.
 
 ## Repo layout
 
