@@ -6,10 +6,10 @@ AGENTS.md "Test discipline" defines three layers; only the first two exist. Laye
 
 Two halves of this change:
 
-1. **The soak itself**: a TS runner that drives the WASM build over a fixed `(puzzle, preset, seed)` corpus, capturing canonical outputs (game ID, generated state, solve trace), and a comparison driver that runs the corpus under both modes (pure-WASM and hybrid `USE_TS_LEAVES=ON`) and asserts identical outputs.
+1. **The soak itself**: a TS runner that drives the WASM build over a fixed `(puzzle, preset, seed)` corpus, capturing canonical outputs (game ID, generated state, solve trace), and a comparison driver that runs the corpus under both modes (pure-WASM via explicit `USE_TS_LEAVES=0`, and hybrid TS+C which is now the default) and asserts identical outputs.
 2. **Integration into the pre-commit gate**: a smoke subset of the soak runs as part of `.husky/pre-commit`, gated on WASM artifacts being present. The full soak runs in pre-push (or eventually CI). See `design.md` for the latency-vs-coverage trade-off — the user directive is "into the pre-commit," and the smoke-subset structure honours that within a realistic latency budget.
 
-This change depends on `add-use-ts-leaves-umbrella-flag` (the soak needs one switch to flip between modes). If the umbrella isn't approved first, the comparison driver becomes much uglier — N per-module flag flips per run, with no single "give me the hybrid build" toggle.
+This change depended on `add-use-ts-leaves-umbrella-flag` (the soak needs one switch to flip between modes); that umbrella has since landed, and `flip-ts-leaves-default-on` has flipped the default to hybrid — so the comparison driver gets to be very small: a single `USE_TS_LEAVES=0` flips to pure-WASM, omitting it stays in hybrid.
 
 ## What Changes
 
@@ -39,4 +39,4 @@ This change depends on `add-use-ts-leaves-umbrella-flag` (the soak needs one swi
   - Commits get marginally slower in the happy path (5–15s for the smoke subset, see `design.md` for budget rationale). Slower-but-skipped path when WASM is missing.
   - `git push` gets meaningfully slower (full soak, expected ≤ 2 minutes). Mitigation: `--no-verify` documented as the escape hatch for in-flight branches that consciously want to defer fidelity assertions.
 - **Risk**: medium. Two real risks: (1) the canonical-output shape might miss the subtle drift it's meant to catch (mitigation: pick game IDs and state-hashes that surface RNG, solver, and serialization separately); (2) pre-commit latency could grow until developers reach for `--no-verify` reflexively (mitigation: explicit budget, see `design.md` "Risks"; revisit smoke scope if median commit-time exceeds the budget).
-- **Dependency**: This change blocks on `add-use-ts-leaves-umbrella-flag` being implemented (it relies on `USE_TS_LEAVES` as the one switch the comparison driver flips). The proposal can be approved before the umbrella lands, but implementation cannot begin until the umbrella is wired.
+- **Dependency**: This change *depended* on `add-use-ts-leaves-umbrella-flag` being implemented; that has since landed (along with `flip-ts-leaves-default-on`), so the soak's comparison driver can now treat hybrid as the default and `USE_TS_LEAVES=0` as the explicit pure-WASM flip.
