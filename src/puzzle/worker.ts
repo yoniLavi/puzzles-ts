@@ -12,6 +12,8 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 
 import { expose, proxy, type Remote, transfer } from "comlink";
 import createModule from "../assets/puzzles/emcc-runtime";
+import { createTsEngine } from "../native/engine/index.ts";
+import { TsWorkerPuzzle } from "../native/engine/worker-adapter.ts";
 import { createTsRandomBridge } from "../native/random/bridge.ts";
 import { installErrorHandlersInWorker } from "../utils/errors-worker.ts";
 import { Drawing } from "./drawing.ts";
@@ -456,6 +458,19 @@ interface WorkerPuzzleFactory {
 }
 const workerPuzzleFactory: WorkerPuzzleFactory = {
   async create(puzzleId: string) {
+    // Per-game hybrid dispatch seam (ts-engine spec): a registered TS
+    // game is served by the midend-backed adapter; otherwise the
+    // existing C/WASM path. The registry ships empty, so this branch
+    // is never taken until a game-port change registers an impl —
+    // production behaviour is byte-for-byte the old all-WASM path.
+    // TsWorkerPuzzle deliberately mirrors WorkerPuzzle's consumed
+    // Comlink surface; the structural bridge is asserted by that
+    // shared shape, so the app's `RemoteWorkerPuzzle` type is stable.
+    const engine = createTsEngine(puzzleId);
+    if (engine) {
+      const tsPuzzle = new TsWorkerPuzzle(puzzleId, engine);
+      return proxy(tsPuzzle as unknown as WorkerPuzzle);
+    }
     const workerPuzzle = await WorkerPuzzle.create(puzzleId);
     return proxy(workerPuzzle);
   },
