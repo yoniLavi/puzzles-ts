@@ -110,10 +110,21 @@ for harness binaries) is gone.
 
 The build SHALL support a `USE_TS_LEAVES` CMake option (default ON)
 that, when set to ON, activates every per-module `USE_TS_<MODULE>` flag
-for the leaf-library layer of the seam-order list. The umbrella is the
-primary operator-facing toggle and the default operational mode;
-per-module flags remain as debugging overrides. Pure C remains
-available as the escape hatch via explicit `USE_TS_LEAVES=OFF`.
+for any leaf-library bridge that exists. The umbrella is the primary
+operator-facing toggle and the default operational mode; per-module
+flags remain as debugging overrides. Pure C remains available as the
+escape hatch via explicit `USE_TS_LEAVES=OFF`.
+
+This requirement governs the umbrella *mechanics* only. The migration
+*strategy* — what gets ported, in what order, and against what
+acceptance bar — is owned by the `ts-migration` capability. Under that
+capability the migration is **per-game**, not per-leaf-library: the
+leaf-library umbrella is retained as working machinery (it correctly
+toggles the `random` bridge and the fail-closed coherence check), but
+it is no longer the description of how the project migrates. Future
+ports do NOT have to add a per-leaf bridge or document a byte-identical
+fidelity corpus; acceptance is governed by `ts-migration` (game plays
+correctly + dev-time differential spot-check).
 
 Per-module flag precedence: when both `USE_TS_LEAVES` and an individual
 `USE_TS_<MODULE>` are specified on the cmake command line, the
@@ -128,18 +139,10 @@ as appropriate.
 
 The Vite/worker side SHALL mirror the same structure via
 `VITE_USE_TS_LEAVES`, defaulting to ON when unset. Each per-module
-Vite env var (`VITE_USE_TS_RANDOM`, future `VITE_USE_TS_COMBI`, …)
-defaults to the umbrella's value when unset; explicit per-module env
-vars override.
+Vite env var (`VITE_USE_TS_RANDOM`, …) defaults to the umbrella's
+value when unset; explicit per-module env vars override.
 
-Future leaf-library bridges (each archived under its own change) ship
-default-enabled by inheriting this umbrella's value. Per-seam
-proposals SHALL document the fidelity bar (corpus replay green +
-property tests where applicable + a `FORWARD_MISMATCH_PROBES` entry
-in `src/puzzle/worker.ts`) before archiving, because archiving means
-the bridge ships in the default-on set.
-
-#### Scenario: Default build is hybrid TS+C
+#### Scenario: Default build routes ported leaves through TS
 
 - **WHEN** the project is built with neither `USE_TS_LEAVES` nor any
   `USE_TS_<MODULE>` set
@@ -147,9 +150,9 @@ the bridge ships in the default-on set.
   excluded from `core_obj`
 - **AND** the corresponding JS-library bridges are linked into each
   WASM target
-- **AND** observable per-game behaviour stays byte-identical to the
-  pure-C path (per the random capability's fidelity guarantee for the
-  modules that have shipped TS ports)
+- **AND** observable per-game behaviour is correct (validated by
+  ordinary behavioural tests and the `ts-migration` dev-time
+  differential spot-check, NOT by a byte-identical corpus gate)
 
 #### Scenario: Explicit umbrella OFF gives pure C
 
