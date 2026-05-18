@@ -20,11 +20,11 @@ import "@awesome.me/webawesome/dist/components/divider/divider.js";
 import "@awesome.me/webawesome/dist/components/icon/icon.js";
 import "../components/command-link"; // may appear in embedded text (e.g., privacy.html)
 
-import privacyHtml from "../assets/privacy.html?raw";
 // Raw content
-import appLicenseText from "../LICENSE?raw";
-import puzzlesLicenseText from "../puzzles/LICENCE?raw";
-import unreleasedLicenseText from "../puzzles/unreleased/LICENCE?raw";
+import appLicenseText from "../../LICENSE.md?raw";
+import puzzlesLicenseText from "../../puzzles/LICENCE?raw";
+import unreleasedLicenseText from "../../puzzles/unreleased/LICENCE?raw";
+import privacyHtml from "../assets/privacy.html?raw";
 
 // The name of this repo's project (which is covered by its LICENSE)
 const repoName = "Puzzles web app";

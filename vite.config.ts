@@ -579,24 +579,30 @@ export default defineConfig(async ({ command, mode }) => {
         },
       }),
       createSentryVitePlugin(), // Must be last plugin
-      Sitemap({
-        // readable: true, // formatted XML
-        hostname: canonicalBaseUrl ? canonicalBaseUrl.replace(/\/$/, "") : undefined,
-        changefreq: "weekly",
-        generateRobotsTxt: true,
-        exclude: [
-          // Skip 404.html and unsupported.html
-          "/404",
-          "/unsupported",
-          // vite-plugin-sitemap clean urls bug: .../docindex.html becomes .../doc.
-          // Strip it here, add it back in manually below:
-          "/help/manual/doc",
-        ],
-        dynamicRoutes: [
-          // See bug above:
-          "/help/manual/docindex",
-        ],
-      }),
+      // sitemap.xml and robots.txt are SEO deploy artifacts that require the
+      // canonical URL; without it the plugin crashes (it calls
+      // hostname.endsWith on undefined) and its output would be meaningless
+      // anyway. Only register it when VITE_CANONICAL_BASE_URL is set.
+      canonicalBaseUrl
+        ? Sitemap({
+            // readable: true, // formatted XML
+            hostname: canonicalBaseUrl.replace(/\/$/, ""),
+            changefreq: "weekly",
+            generateRobotsTxt: true,
+            exclude: [
+              // Skip 404.html and unsupported.html
+              "/404",
+              "/unsupported",
+              // vite-plugin-sitemap clean urls bug: .../docindex.html becomes .../doc.
+              // Strip it here, add it back in manually below:
+              "/help/manual/doc",
+            ],
+            dynamicRoutes: [
+              // See bug above:
+              "/help/manual/docindex",
+            ],
+          })
+        : undefined,
     ],
     worker: {
       plugins: () => [createSentryVitePlugin()],
