@@ -43,9 +43,9 @@
 
 ## 4. Docs + archive
 
-- [ ] 4.1 `AGENTS.md` — add "What's been done" entry; resolve the
+- [x] 4.1 `AGENTS.md` — add "What's been done" entry; resolve the
   "per-game switch shape" and "src/ engine location" known questions;
   point migration-order item 1 at this landed change
-- [ ] 4.2 Mark every task above `- [x]`; archive via
+- [x] 4.2 Mark every task above `- [x]`; archive via
   `openspec archive ts-midend-and-game-interface --yes`; confirm
   `openspec validate --strict` passes post-archive

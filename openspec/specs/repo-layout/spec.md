@@ -131,22 +131,31 @@ Existing subdirectories with non-UI scope SHALL keep their shape:
 runtime + Comlink worker), `src/store/` (Dexie schema), `src/utils/`
 (general-purpose helpers).
 
-`src/native/` SHALL group ported C modules one folder per module. Each
-module folder SHALL contain:
+`src/native/` SHALL hold the native-TS engine and the ported games:
 
-- `index.ts` — the TS implementation, exporting the module's public
-  surface.
-- `bridge.ts` (optional) — the worker-side bridge to the wasm-resident
-  C callers, present only when the module has a wasm-side bridge (e.g.
-  the `--js-library` shim consumers for `random`).
-- `__fixtures__/` — the characterization corpus captured from the
-  native C build.
-- `*.test.ts` — Vitest replay tests; named descriptively (e.g.
-  `random.test.ts`), not `index.test.ts`.
-- Internal dependencies that are not yet their own seam MAY live
-  inside the same folder (e.g. `src/native/random/sha1.ts`), and SHALL
-  be lifted out to their own `src/native/<dep>/` folder if/when they
-  become a public seam.
+- `src/native/engine/` — the TS midend, the `Game` interface, the
+  per-game registry, and the clean save codec, with behavioural
+  `*.test.ts` colocated.
+- `src/native/games/<game>/` — one folder per ported game (the `Game`
+  implementation and its behavioural `*.test.ts`), named by catalog
+  `puzzleId`.
+- `src/native/<module>/` — one folder per ported shared/leaf module
+  (e.g. `random/`), containing `index.ts` (the TS implementation
+  exporting the module's public surface), an optional `bridge.ts`
+  (present only when the module has a wasm-side `--js-library` bridge,
+  e.g. `random`), and behavioural `*.test.ts` named descriptively
+  (e.g. `random.test.ts`, not `index.test.ts`). Internal dependencies
+  that are not yet their own module MAY live inside the same folder
+  (e.g. `src/native/random/sha1.ts`) and SHALL be lifted to their own
+  `src/native/<dep>/` folder if/when they become a public seam.
+
+A ported module under `src/native/` SHALL NOT be required to carry a
+`__fixtures__/` characterization corpus captured from the native C
+build: per the `ts-migration` doctrine, correctness is established by
+behavioural and property tests, with the C build used only as a
+dev-time differential spot-check, not a recorded golden corpus. A
+module MAY keep fixtures where they aid behavioural testing, but they
+are not a mandated layout element and are not an acceptance gate.
 
 #### Scenario: A new Lit component lands in the right bucket
 
@@ -170,13 +179,24 @@ module folder SHALL contain:
 - **THEN** `git mv` is used (not delete + add) so
   `git log --follow <new path>` walks back into pre-move history
 
-#### Scenario: A new ported C module lands in `src/native/`
+#### Scenario: The TS engine and a ported game land in the right place
 
-- **WHEN** a contributor adds a new ported leaf library (e.g.
+- **WHEN** the engine layer is added and, later, a game is ported
+- **THEN** the midend, `Game` interface, registry, and save codec live
+  under `src/native/engine/`
+- **AND** the ported game lives under `src/native/games/<puzzleId>/`
+  with its behavioural tests colocated
+- **AND** neither is added loose at `src/native/` root
+
+#### Scenario: A new ported leaf module lands in `src/native/`
+
+- **WHEN** a contributor adds a new ported shared/leaf module (e.g.
   `tree234`)
 - **THEN** the files land under `src/native/tree234/`, with the TS
-  impl at `index.ts`, the bridge (if any) at `bridge.ts`, the corpus
-  at `__fixtures__/`, and replay tests at `tree234.test.ts`
+  impl at `index.ts`, the bridge (if any) at `bridge.ts`, and
+  behavioural tests at `tree234.test.ts`
+- **AND** no `__fixtures__/` characterization corpus captured from the
+  native C build is required for acceptance
 - **AND** they are NOT added loose at `src/native/` root
 
 ### Requirement: Agent-facing documentation lives in a single AGENTS.md

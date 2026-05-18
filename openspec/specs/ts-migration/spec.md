@@ -1,7 +1,13 @@
 # ts-migration Specification
 
 ## Purpose
-TBD - created by archiving change pivot-to-top-down-ts. Update Purpose after archive.
+The authoritative doctrine for replacing the C/WASM puzzle engine with
+native TypeScript: top-down and product-value-first ordering, C as a
+readable reference and dev-time differential check (not a byte-oracle),
+the per-game hybrid with per-game C deletion, a clean TS save format,
+and the explicit stance that deliberate divergence from upstream is the
+goal. `AGENTS.md` is the readable summary; this spec is the contract.
+
 ## Requirements
 ### Requirement: Migration proceeds top-down, product-value first
 
