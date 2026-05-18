@@ -28,116 +28,76 @@ PWA port of [Simon Tatham's Portable Puzzle Collection][sgt-puzzles]. Two halves
 - **C/C++ puzzles** in `/puzzles` (git subtree of upstream + `puzzles/unreleased`), compiled to WebAssembly via host-native Emscripten (see `Brewfile`).
 - **TypeScript web app** in `/src` using Lit web components and Vite. Targets Baseline 2023 (see `src/preflight.ts`).
 
-The long-term goal is to progressively replace the C engine with native TypeScript while keeping the app green at every step. See *Goal*, *Approach*, and *Seam order* below for the why and the shape.
+The long-term goal is to replace the C engine with native TypeScript, **top-down and product-value-first**. The authoritative statement of the migration approach is the `ts-migration` capability spec (`openspec/specs/ts-migration/spec.md`); this section is the readable summary. The prior bottom-up, byte-identical-fidelity doctrine was superseded on 2026-05-18 by the `pivot-to-top-down-ts` change and is preserved on branch `legacy/seam-by-seam-fidelity` + tag `pre-ts-pivot` in case of reversal.
 
 ## Goal
 
-Gradually replace the C/WASM puzzle engine in this project with a native TypeScript implementation, while keeping the app green at every step. The non-negotiable bar is **fidelity** (byte-identical behavior at every replaced seam, verified by characterization tests) combined with **incremental risk** (no big-bang rewrite, no sustained red bar).
+Replace the C/WASM puzzle engine with native TypeScript, ordered so that **user-facing value lands early** and the codebase becomes one where new games and cross-game features are cheap to build. Deliberate divergence from upstream (quick-save, mistake-checking, explained hints, per-game gameplay aids) is the *point*, not a fidelity regression. The bar for a ported game is "plays correctly, behavioural tests green, dev-time spot-check against C looks right" — **not** byte-identical reproduction of a recorded corpus.
 
 ## Lineage
 
 - **Upstream**: [Simon Tatham's Portable Puzzle Collection][sgt-puzzles]. ~40 puzzles, MIT-licensed, actively maintained by Simon and a long list of contributors.
 - **Direct parent**: [medmunds/puzzles-web]. A PWA shell over upstream's C compiled to WASM via Emscripten, using a C++ `webapp.cpp` + Embind as a typed frontend adapter, running the WASM in a Web Worker (via Comlink), with a Lit/Web-Awesome/Vite TS app. The `puzzles/` directory is a git subtree of upstream with a small number of local patches.
-- **This project**: forked from puzzles-web. Pushes the TS/WASM seam progressively deeper into the C code, eventually displacing it entirely.
+- **This project**: forked from puzzles-web. Replaces the C engine with native TypeScript, top-down, eventually displacing it entirely while deliberately growing beyond upstream's feature set.
 
-## Upstream policy: no merges; C source is the fidelity oracle
+## Upstream policy: no merges; C is a reference, not an oracle
 
-This project is **not tracking upstream**. We forked from medmunds/puzzles-web at a specific point, which forked from Simon Tatham's puzzles at a specific point, and we're porting *those particular versions*. No future merges from either upstream into the `puzzles/` subtree.
+This project is **not tracking upstream**. We forked from medmunds/puzzles-web at a specific point, which forked from Simon Tatham's puzzles at a specific point. No future merges from either upstream into the `puzzles/` subtree.
 
-Two practical consequences:
+1. **The C source under `puzzles/` is a readable *reference* and a dev-time *differential-check* source — not an immutable byte-oracle.** It encodes years of subtle generator/solver logic (uniqueness, difficulty grading, symmetry) that is priceless to *read* when porting and to *spot-check against* in dev. It is still not casually edited (it's a stable reference and the no-merge subtree), but the reason is "don't churn the reference," not "byte parity is a release gate." There is no characterization-corpus parity bar.
 
-1. **The C source under `puzzles/` is immutable** for the lifetime of the port (until the eventual mass deletion when the rewrite is complete — see "C is never deleted until the rewrite is complete"). The C is our fidelity oracle: the characterization corpora are recorded against it; the benchmark soak compares hybrid output against pure-WASM output of *this* C; "did the TS port match the original?" is only a meaningful question if "the original" stays fixed across the entire project. Editing the C source changes our oracle and erodes the parity bar that makes this a port rather than a rewrite.
-
-   The narrow exception: **trivial, observably-neutral instrumentation** is permitted when it lets the soak or a future harness reach engine state that isn't otherwise exposed. The bar: stripping the instrumentation from a build SHALL produce byte-identical output to the instrumented build. Examples that pass: a `#ifdef SOAK_INSTRUMENTATION` block exposing a counter through Embind. Examples that don't: bug fixes, refactors, "improvements," or anything that changes what the engine computes for any input.
-
-2. **Files we added live in `puzzles/` too but follow our rules, not upstream's.** `puzzles/webapp.cpp` (the Embind adapter), `puzzles/random_bridge.js` and future per-module bridges, the harnesses under `puzzles/auxiliary/*-trace.c`, and project-side CMake edits are *our code in upstream's directory*. Edit them freely.
-
-   Test whether a file is ours or upstream's: does it appear in the original Simon Tatham repository? If yes, it's the oracle — hands off. If no, it's ours.
-
-**Constraints that relax under this policy:**
-
-- "Keep `puzzles/.clang-format` style untouched" was a subtree-merge argument; it now follows trivially from "C source isn't edited at all."
-- "Small subtree diff; upstreamable" framing in prior commit messages reflects the old policy. Drop it going forward.
-- The previously-unresolved question "how long to keep tracking medmunds upstream" is resolved: we don't.
-
-**Constraints that don't relax:**
+2. **Files we added live in `puzzles/` too but follow our rules.** `puzzles/webapp.cpp` (the Embind adapter), `puzzles/random_bridge.js`, the harnesses under `puzzles/auxiliary/*`, and project-side CMake edits are *our code in upstream's directory*. Edit them freely. Test: does the file appear in the original Simon Tatham repository? If yes, it's the reference — change it only with cause. If no, it's ours.
 
 - `puzzles/LICENCE` stays intact (MIT obligation, independent of tracking policy).
-- The C is still the fidelity oracle, so "don't touch it" is *stronger* than under the prior framing, not weaker. Confidence in the rewrite comes from parity with the original, which only holds if "the original" doesn't move.
+- A game's C source **is deleted when that game's TS port ships** (per-game, not deferred to a whole-rewrite endpoint — see "C deletion" below). `puzzles/` goes away entirely only when the last game is ported.
 
-## Approach: Feathers-style seam replacement
+## Approach: top-down, product-value first
 
-Treat each C module as a unit to "characterize, seam, replace" per Michael Feathers' *Working Effectively with Legacy Code*:
-
-1. Pick a seam — typically a single C module with a clean, well-bounded interface.
-2. Generate **characterization tests**: feed the existing C implementation a corpus of inputs, capture outputs as golden data.
-3. Implement a TS equivalent.
-4. Replay the corpus against the TS impl; assert byte-identical outputs.
-5. Add an Embind/cwrap bridge so the rest of the C code can call the TS impl instead of its own. Verify benchmark-style integration tests still pass.
-6. Once stable, delete the C impl; the TS impl becomes the only implementation.
-
-This pattern is already proven for the frontend boundary in puzzles-web (`webapp.cpp` + Embind + Comlink). The work here extends it inward.
+1. **Build the TS midend + a clean `Game` interface first.** Undo/redo/timer/preset/serialise (clean TS save format) plus the interface every ported game implements. This is the keystone — every product goal (new games, quick-save, mistake-check, hints, per-game aids) needs it. It is *first*, not last.
+2. **Port games top-down, by behaviour.** Simplest first (Cube/Flip/Pegs) to establish the pattern, then the games we want to enhance (Galaxies for the cell↔dot aid), then outward to the rest. A game is "done" when it plays correctly under manual + behavioural tests and a dev-time differential spot-check against the C build looks right.
+3. **Per-game hybrid.** C/WASM remains the runtime for every not-yet-ported game; ported games run their TS implementation; the app presents both uniformly. C for a game is deleted when its port ships.
+4. **Leaf libraries are ported lazily, idiomatically, on demand.** When a game being ported needs dsf / tree234 / sort / findloop, write an idiomatic TS equivalent as an ordinary module dependency (dsf ≈ a ~20-line union-find; tree234 ≈ a Map or sorted structure). No standalone bridged seams, no corpora.
 
 ### Why this approach (alternatives considered and rejected)
 
-- **Full native TS rewrite from scratch.** Rejected. ~100–150 KLOC of subtle generator/solver logic with no fidelity bar during the journey; loses upstream's bug-fix lineage; multi-person-year effort with no incremental green bar.
-- **Port one whole puzzle end-to-end, side-by-side with WASM.** Simpler infra and a quicker first ship, but each puzzle requires re-deriving its dependencies (midend slice, drawing, library helpers). Higher per-puzzle cost and no shared TS library to amortize across puzzles.
-- **Seam-by-seam (this plan).** Most disciplined. Highest fidelity (golden tests at every step). Keeps upstream integration viable for un-displaced modules. The cost is real bridge boilerplate per seam and the obligation to maintain two parallel implementations during each transition.
+- **Bottom-up seam-by-seam with byte-identical corpora (the prior plan).** Rejected/superseded. It delivered infrastructure first and user value last, and its byte-identical-fidelity bar directly conflicts with deliberately diverging from upstream (you cannot be byte-identical *and* add hints/aids). Preserved on `legacy/seam-by-seam-fidelity` if ever needed.
+- **Full scratch rewrite, no C reference.** Rejected. The generators/solvers are genuinely hard; the C is a priceless *reference* even when not a byte-oracle. Keep it readable and diff-able, not deleted up front.
+- **Top-down, C-as-reference, per-game (this plan).** Delivers a hot-reloading, enhanceable game (Galaxies) in weeks instead of after the entire leaf+mid+drawing layers; the irreducibly-hard part (faithful-enough generators) is identical in every plan, so don't also pay for a corpus on top.
 
 ## Test discipline
 
-There is **no inherited test suite** of any depth. Upstream has per-module unit tests in `puzzles/auxiliary/` (e.g. `tree234-test.c`, `latin-test.c`) and used to ship a `benchmark.sh` smoke test (dropped in the `prune-unsupported-frontends` change; the equivalent will be re-implemented in TS). puzzles-web shipped no tests at v0.0.1. We are building this discipline from scratch.
+There is **no inherited test suite**. We build the discipline from scratch, now without a byte-corpus layer:
 
-Three layers of testing, in increasing scope:
+1. **Behavioural tests per ported game / module.** Ordinary unit/integration tests asserting the thing behaves correctly (generates solvable boards, solver solves them, input transitions are right, serialise/deserialise round-trips). Property tests where there's a closed-form invariant ("combi emits exactly C(n,r) lex-ordered tuples") — cheap, additive, catches unrecorded-input regressions.
+2. **Dev-time differential spot-check.** An advisory harness that generates N boards from both the C build and the TS port for the same seed and surfaces diffs for human review. Review signal, **not** a pass/fail gate. Per-game tightening (a stricter check for a generator with brutal uniqueness constraints) is allowed but is not the default.
+3. **Pre-commit gate stays:** `tsc -b --noEmit` → `biome lint` → `vitest run`.
 
-1. **Characterization tests per seam.** Golden input/output corpora captured from the native C binary; replayed against the TS impl with byte-identical assertions. Each new seam ships with its corpus. This is the primary fidelity guarantee.
-2. **Upstream per-module unit tests, ported.** Where upstream's `auxiliary/*-test.c` covers a module we're replacing (tree234, latin, dsf-via-findloop, sort, combi, hat, penrose, spectre), port the test to TS alongside the module. The C test becomes the spec.
-3. **Benchmark soak (end-to-end).** Per-preset board generation across every puzzle, replacing upstream's `benchmark.sh` with a TS implementation that drives both the pure-WASM and hybrid TS/WASM builds. Both must stay green.
+Bit-identical RNG (`random.ts`, already ported) is retained so *future* shared game IDs reproduce across builds. Old C-format saves and pre-pivot shared IDs are expendable by decision.
 
-**For pure, deterministic seams**, also add a property-test layer alongside the corpus replay: a small set of invariant assertions that hold for *every* input in the input space, not just the recorded fixtures. For example, "the combi iterator emits exactly `C(n, r)` distinct lex-ordered `r`-tuples" is a 10-line property that catches future regressions which happen to pass the recorded fixtures but break on unrecorded `(r, n)` pairs. Property tests are additive to (not a replacement for) the corpus; they're cheap to add and meaningfully tighten the safety net. Stateful seams (e.g. `random.c`) and seams with no closed-form invariant fall back to corpus + ported upstream tests only.
+## C deletion: per game, when its port ships
 
-Bit-identical RNG is **important** for characterization tests (so traces replay deterministically), and is also a product-side win (existing game IDs and shared puzzles keep working in the TS build).
+A game's `puzzles/<game>.c` is deleted once that game's TS port has landed and shipped — deletion is **per game**, not deferred to a whole-collection endpoint. C/WASM remains the runtime for unported games until each is ported. The collection is fully migrated, and `puzzles/` removed entirely, only when the last game lands. The point: don't carry a per-game C fallback past the moment its TS replacement is trusted in production.
 
-## C is never deleted until the rewrite is complete
+## TS port style: idiomatic throughout
 
-`puzzles/<module>.c` files are **not removed** when their TS port goes live. The C implementation stays in the upstream subtree as a permanent fallback, behind whatever build flag toggles between C and TS for that module. C is deleted only when the entire rewrite project is declared complete — *and* "complete" has a concrete trigger, not a vibe.
+Port to the most idiomatic TS shape — classes over handle-passing, `[Symbol.iterator]()` over `while (next())`, `boolean` over `0|1`, GC over explicit `free()`, modern data structures over C-array mirrors. Use the C as a *reference for the logic* (what deductions the solver makes, how the generator ensures uniqueness), not as a control-flow template to mirror line-for-line. There is no corpus that a refactor could break, so write it clean the first time; the dev-time differential spot-check catches gross divergence.
 
-Concrete trigger for deletion (subject to revision; this is the standing definition):
+## Migration order
 
-- All six layers of the seam-order list below have been ported (random → leaf libs → mid-level → drawing → per-puzzle → midend).
-- The benchmark soak (test-discipline layer 3) shows zero behavioral diff between the hybrid TS+C build and the pure-WASM build for N consecutive CI runs (N TBD when the soak lands).
-- The hybrid build has shipped to production for a settled period without a fidelity-related issue.
+Top-down, product-value first:
 
-Costs we're accepting in exchange for the safety net:
-
-- **Upstream-subtree merges stay coupled to TS.** When a future upstream patch refactors `<module>.c`'s interface, we update both the C file (via subtree merge) and the TS port. Worth it: subtree fidelity stays high, upstream bug-fixes still apply.
-- **The build matrix grows.** Pure-WASM, hybrid (umbrella flag ON), and any per-module overrides are all first-class. The benchmark soak runs against each.
-- **Readers must understand both implementations.** Mitigation: this file and per-module `design.md`s document which mode ships in production.
-
-The point of the rule: never trade away a working fallback for code cleanliness mid-port. Cleanliness comes once.
-
-## TS port style: idiomatic surface, faithful internals
-
-When porting a C module to TypeScript, **the public surface should be the most idiomatic TS shape that still lets the characterization corpus drive it byte-for-byte.** Prefer classes over handle-passing free functions when the C surface is morally a constructor + methods + destructor; prefer `[Symbol.iterator]()` over `while (next() !== null)`; prefer `boolean` over `0|1`; prefer `readonly T[]` over raw `Int32Array`; prefer GC over an explicit `free()`. Fall back to a closer C mirror only if the idiomatic shape would let a regression hide behind type coercion or would force the corpus harness into contortions. Document any such trade-off in the seam's `design.md`.
-
-Module **internals** are a separate question. Mirror the C control flow exactly during the initial port — loop conditions, increment order, branch shape — because that's how byte-identical fidelity is most easily reasoned about. Refactor internals to more idiomatic TS only *after* the corpus is green and only if the corpus stays green.
-
-## Seam order
-
-Bottom-up, leaves first, to maximize how much downstream code benefits from each replacement:
-
-1. **`random.c`** — done. ~350 lines (SHA-1 based pure state machine), every puzzle uses it. Shipped in two openspec changes: `port-random-to-typescript` (characterize → TS impl → corpus replay) and `wire-random-to-wasm` (`--js-library` bridge + build flag, WASM rebuild, browser verification). Patterns established here — in-tree harnesses, JSON corpus replay via Vitest, the integer-handle bridge — carry to every later seam.
-2. **Leaf libraries**: `tree234.c`, `dsf.c`, `combi.c`, `sort.c`, `findloop.c`, `matching.c`, `divvy.c`. Each has a clear interface; most have existing C unit tests.
-3. **Mid-level shared logic**: `latin.c`, `loopgen.c`, `grid.c`, `laydomino.c`, `penrose.c`, `hat.c`, `spectre.c`.
-4. **Drawing API**: `drawing.c` is already a function-pointer dispatcher — a natural seam. In the WASM build, per-frontend drawing handlers are already JS (callbacks dispatched from `webapp.cpp` via Embind); displacing the C wrapper is mostly removing a layer.
-5. **Per-puzzle back ends**: ~40 files, smallest first (Cube, Pegs, Flip). Each back end's `const game thegame` table is a natural seam.
-6. **`midend.c`** — last. ~3.2 KLOC of stateful undo/redo/timing/serialisation. The biggest single port; benefits enormously from having all its transitive callees already in TS.
+1. **TS midend + `Game` interface** — the keystone (`ts-midend-and-game-interface`, next).
+2. **Pattern-establishing game** — smallest (Cube/Flip/Pegs) end-to-end through the new midend; shakes out the interface, the per-game hybrid loader, the dev differential harness.
+3. **Galaxies** — the goal-4 game; once TS, the cell↔dot aid is a small follow-up.
+4. **Cross-game features** — quick-save (app-shell, small), optional `findMistakes()` / `hint()` hooks on the `Game` interface implemented per-game as games land.
+5. **Outward** — remaining games, simplest-first; leaf libs pulled in idiomatically as needed; worker existence re-evaluated once games are TS (it exists for heavy WASM; light TS games may not need it).
+6. **`random.c`** is already TS (`random.ts`); keep it.
 
 ## Build commands
 
-- `npm run build:wasm` — compiles the puzzle wasm + manual into `src/assets/puzzles/` via `scripts/build-emcc.sh`. **Defaults to hybrid TS+C**: `USE_TS_LEAVES` defaults ON (CMake) and `VITE_USE_TS_LEAVES` defaults ON (worker), so zero-arg `npm run build:wasm && npm run dev` ships the hybrid build that production runs. Set `USE_TS_LEAVES=0` (paired with `VITE_USE_TS_LEAVES=0` on the worker side) to fall back to pure C — useful when bisecting whether a regression came from a TS port or the upstream C oracle. Per-module overrides (`USE_TS_RANDOM`, future `USE_TS_COMBI`, …) flip individual seams against the umbrella in either direction; per-module Vite env vars similarly override `VITE_USE_TS_LEAVES`. The worker fails closed at WASM instantiation if the CMake and Vite flag sets disagree (`assertWasmBridgesCoherent` in `src/puzzle/worker.ts`). When transitioning between flag combinations, reset cmake's cache with `rm -rf build/wasm/` before the next `npm run build:wasm` — cmake's `option()` honours previously-cached values, so a stale cache will silently win.
+- `npm run build:wasm` — compiles the puzzle wasm + manual into `src/assets/puzzles/` via `scripts/build-emcc.sh`. **Defaults to hybrid TS+C**: `USE_TS_LEAVES` defaults ON (CMake) and `VITE_USE_TS_LEAVES` defaults ON (worker), so zero-arg `npm run build:wasm && npm run dev` ships the hybrid build that production runs. Set `USE_TS_LEAVES=0` (paired with `VITE_USE_TS_LEAVES=0` on the worker side) to fall back to pure C — useful when bisecting whether a regression came from a TS port or the C reference. (Note: this umbrella is *runtime mechanics*; the migration strategy is per-game per the `ts-migration` spec, not per-leaf.) Per-module overrides (`USE_TS_RANDOM`, future `USE_TS_COMBI`, …) flip individual seams against the umbrella in either direction; per-module Vite env vars similarly override `VITE_USE_TS_LEAVES`. The worker fails closed at WASM instantiation if the CMake and Vite flag sets disagree (`assertWasmBridgesCoherent` in `src/puzzle/worker.ts`). When transitioning between flag combinations, reset cmake's cache with `rm -rf build/wasm/` before the next `npm run build:wasm` — cmake's `option()` honours previously-cached values, so a stale cache will silently win.
 - `npm run build:assets` — alias for `build:wasm`. Kept as a wrapper so existing muscle memory and the `npm run build` doc-string still work; per-puzzle thumbnail icons are a committed snapshot (see `openspec/specs/puzzle-icons/spec.md`), not a build output.
-- `scripts/build-native.sh [target...]` — host-native build of the characterization harnesses in `puzzles/auxiliary/` (default target: `random-trace`). Output: `build/native/`. Run on demand when fixtures need regenerating; no npm wrapper because it's not part of `build:assets`.
+- `scripts/build-native.sh [target...]` — host-native build of the harness sources in `puzzles/auxiliary/` (default target: `random-trace`). Output: `build/native/`. These back the dev-time differential spot-check (C vs TS port); run on demand, no npm wrapper because it's not part of `build:assets`.
 - `npm run dev` — vite dev server.
 - `npm run build` — production app build (tsc + vite). Assumes `build:assets` already ran.
 - `npm run preview` — preview production build.
@@ -155,12 +115,12 @@ Bottom-up, leaves first, to maximize how much downstream code benefits from each
 - **Persistence**: IndexedDB via Dexie.js (`src/store/db.ts`).
 - **WASM**: runs in a web worker, exposed via Comlink (`src/puzzle/`).
 - **Styling**: Web Awesome design tokens.
-- **C code in `/puzzles`**: don't edit it. The C is our fidelity oracle (see "Upstream policy"); changes erode the parity bar the whole port relies on. Files we added in that directory (`webapp.cpp`, `*_bridge.js`, `auxiliary/*-trace.c`) are exempt — those are our code.
+- **C code in `/puzzles`**: it's a *reference*, not an oracle (see "Upstream policy"). Don't churn it casually — it's a stable reference and a no-merge subtree — but it carries no byte-parity release gate. A game's C is deleted when its TS port ships. Files we added there (`webapp.cpp`, `*_bridge.js`, `auxiliary/*`) are ours — edit freely.
 
 ## Constraints
 
 DO NOT:
-- Modify the upstream C source under `/puzzles` or `/puzzles/unreleased`. The C is our fidelity oracle (see "Upstream policy"). Our own additions in those directories (`webapp.cpp`, `*_bridge.js`, `auxiliary/*-trace.c`) are fine to edit. Trivial observably-neutral instrumentation is the only narrow exception.
+- Casually churn the upstream C source under `/puzzles` or `/puzzles/unreleased` — it's a stable reference and a no-merge subtree (see "Upstream policy"). Reading it to port a game is the *expected* use. Deleting a game's C when its TS port ships is also expected. Our own additions there (`webapp.cpp`, `*_bridge.js`, `auxiliary/*`) are fine to edit.
 - Break Baseline 2023 browser compatibility.
 - Use top-level await, dynamic `import()`, or `import.meta` in `src/preflight.ts` — preflight runs on older browsers to gate the rest of the app.
 - Add dependencies without considering bundle size and offline (PWA) support.
@@ -179,7 +139,7 @@ DO:
 
 Three roles to keep distinct:
 
-- **`puzzles/`** (in-tree subtree of upstream). The trimmed upstream source (engine only; the GTK frontend was removed in `drop-icon-generation`), including `auxiliary/`. **All project work** — characterization harnesses, fixtures, any auxiliary tooling — lives here. The harness pattern is established by `puzzles/auxiliary/random-trace.c`.
+- **`puzzles/`** (in-tree subtree of upstream). The trimmed upstream source (engine only; the GTK frontend was removed in `drop-icon-generation`), including `auxiliary/`. Reference + dev-time differential-check source; a game's C is deleted when its TS port ships. Project tooling (the differential-check harness, any auxiliary tooling) lives under `puzzles/auxiliary/`.
 - **`../puzzles/`** (sibling clone). Useful only for running upstream's own tools (`benchmark.sh`, future upstream auxiliary tests) unmodified. **Not** a place to put our work.
 - **`../puzzles-web/`** (sibling clone). The pre-fork baseline; useful as a diff reference in early phases.
 
@@ -193,7 +153,7 @@ Source tree under `src/`:
 - `src/screens/` — top-level screen components.
 - `src/dialogs/` — modal/popover Lit components.
 - `src/components/` — reusable leaf Lit components.
-- `src/native/<module>/` — one folder per ported C module. Holds the TS impl (`index.ts`), the worker-side bridge (`bridge.ts`, when wasm callers exist), per-module fixtures (`__fixtures__/`), Vitest tests (`*.test.ts`), and any internal deps that aren't yet their own seam (e.g. `src/native/random/sha1.ts`).
+- `src/native/<module>/` — TS ports of shared engine modules (today: `random/{index.ts, bridge.ts, sha1.ts, *.test.ts}`). The TS midend and per-game ports introduced by the top-down plan will land here / under a sibling games dir; exact layout is decided in `ts-midend-and-game-interface`.
 - `src/assets/` (generated), `src/css/` (styles), `src/puzzle/` (puzzle runtime + Comlink worker), `src/store/` (Dexie schema), `src/utils/` (general-purpose helpers).
 - HTML page entries, main bootstrap (`main.ts`), preflight gate (`preflight.ts`), service worker (`sw.ts`), and cross-cutting modules (`routing.ts`, `color-scheme.ts`, `color-scheme-init.ts`, `icons.ts`) live at `src/` root.
 
@@ -205,13 +165,13 @@ Source tree under `src/`:
 - `src/preflight.ts` — Baseline 2023 capability checks.
 - `src/store/db.ts` — Dexie schema.
 - `src/sw.ts` — service worker (Workbox + vite-plugin-pwa).
-- `puzzles/auxiliary/random-trace.c` — pattern-establishing characterization harness for the random seam; the model future seams copy from.
+- `puzzles/auxiliary/` — host-native harness sources (e.g. `random-trace.c`). Under the new plan these back the dev-time *differential spot-check* (generate N boards from C vs the TS port for the same seed, surface diffs) — an advisory dev aid, not a gating corpus.
 
 ## Work management
 
-Tracked via **openspec**. See `openspec/OPENSPEC_AGENTS.md` for the workflow (proposal → tasks → design → spec deltas → validate → implement → archive). Treat this `AGENTS.md` and `openspec/project.md` as durable context; per-seam tasks live in `openspec/changes/`.
+Tracked via **openspec**. See `openspec/OPENSPEC_AGENTS.md` for the workflow (proposal → tasks → design → spec deltas → validate → implement → archive). Treat this `AGENTS.md` and `openspec/project.md` as durable context; the authoritative migration approach is the `ts-migration` capability spec. Change-scoped tasks live in `openspec/changes/`.
 
-**One openspec change per seam is the default**, not a rule. The first two leaf-library ports (`random.c`, `combi.c`) each got their own change because the pattern was still establishing itself. Once the pattern is well-trodden — by roughly seam 3 or 4 of the leaf-library list — straightforward seams that follow the established template (small module, single upstream interface, clean harness, no surprises in `design.md`) can be bundled into a single openspec change covering several modules at once (`port-leaves-batch-1`, etc.). Bundling is appropriate when each seam's `design.md` content would otherwise be "same as the last one"; it's *not* appropriate when a seam has its own non-obvious decisions (those still get their own change). The bridge half (`wire-X-to-wasm`) follows the same rule: bundle when the bridges are mechanical mirrors of the established `--js-library` pattern, separate when a seam's bridge has its own twist.
+**One openspec change per coherent unit of work** — the TS midend is one change; each game port is one change; a cross-game feature (quick-save) is one change. Bundle only when several items share genuinely identical `design.md` reasoning (e.g. three trivially-similar small games after the pattern is well-trodden); keep separate when an item has its own non-obvious decisions. A game port that ships its C deletion does both in the one change.
 
 ## What's been done
 
@@ -228,13 +188,15 @@ Recorded here as durable reference, not a changelog (commit history carries the 
 - **Pre-seam structure consolidation** (`consolidate-pre-seam-structure`): `src/native/` regrouped per ported module (`src/native/random/{index.ts, bridge.ts, sha1.ts, __fixtures__/, random.test.ts}`); `PLAN.md` folded into this `AGENTS.md`; `CLAUDE.md` symlinked to `AGENTS.md`; `openspec/AGENTS.md` renamed to `openspec/OPENSPEC_AGENTS.md` to avoid collision; `scripts/build-native.sh` added so harness binaries actually land in `/build/native/` as the build-pipeline spec already said they should.
 - **Icon pipeline drop** (`drop-icon-generation`): deleted `scripts/build-icons.sh`, `puzzles/gtk.c`, `puzzles/printing.c`, `puzzles/cmake/platforms/unix.cmake`; dropped `gtk+3`/`pkgconf`/`imagemagick`/`oxipng` from `Brewfile`. `puzzles/cmake/setup.cmake` now auto-routes by `CMAKE_SYSTEM_NAME`: emscripten → `webapp.cmake`, native → new `platforms/native.cmake` (a minimal GTK-less platform file that keeps `scripts/build-native.sh` building the auxiliary harnesses). Per-puzzle thumbnails under `src/assets/icons/` are now a committed snapshot maintained per the new `puzzle-icons` spec — new puzzles need two PNGs produced by hand from the running PWA.
 - **USE_TS_LEAVES umbrella + worker coherence check** (`add-use-ts-leaves-umbrella-flag`): one CMake option (`USE_TS_LEAVES`) and one Vite env var (`VITE_USE_TS_LEAVES`) gate the entire leaf-library bridge family at once. Per-module flags (`USE_TS_RANDOM`, future `USE_TS_COMBI`, …) survive as debugging overrides — set them explicitly to flip an individual seam against the umbrella in either direction. The worker enumerates WASM imports at instantiation (`assertWasmBridgesCoherent` in `src/puzzle/worker.ts`) and fails closed with a templated error if the CMake and Vite sides disagree (forward mismatch); reverse mismatch is silent by design. Each new bridge ports add one row to `FORWARD_MISMATCH_PROBES` and one `option(USE_TS_<MODULE> ... ${_default_ts_module})` line — that's the whole boilerplate.
-- **Umbrella default flipped to ON** (`flip-ts-leaves-default-on`): zero-arg `npm run build:wasm && npm run dev` now produces the hybrid TS+C build that production runs. Pure C is now opt-in via `USE_TS_LEAVES=0` (paired with `VITE_USE_TS_LEAVES=0` on the worker side) — useful for bisecting "is this a TS-port regression or upstream-C behaviour?" Per-module flags inherit the new umbrella default via `${_default_ts_module}` automatically, so every future leaf-library bridge ships default-on by inheriting — landed proposals must document their fidelity bar before archiving, because archiving means the bridge starts shipping in the default-on set.
+- **Umbrella default flipped to ON** (`flip-ts-leaves-default-on`): zero-arg `npm run build:wasm && npm run dev` now produces the hybrid TS+C build that production runs. Pure C is now opt-in via `USE_TS_LEAVES=0` (paired with `VITE_USE_TS_LEAVES=0` on the worker side) — useful for bisecting "is this a TS-port regression or upstream-C behaviour?"
+- **Doctrine pivot to top-down TS** (`pivot-to-top-down-ts`, 2026-05-18): the migration strategy was inverted. C went from immutable byte-oracle to readable reference + dev-time differential-check source; byte-identical characterization corpora dropped for behavioural tests + an advisory spot-check; seam order inverted from bottom-up (random→leaves→…→midend) to top-down (TS midend + `Game` interface first, then games simplest→Galaxies→outward, leaf libs lazily as idiomatic TS); C deletion is now per-game when each port ships; clean TS save format (old saves / pre-pivot shared IDs expendable; `random.ts` keeps future IDs stable); deliberate divergence from upstream is the point. Authoritative spec: `openspec/specs/ts-migration/spec.md`. The prior approach is preserved on branch `legacy/seam-by-seam-fidelity` + tag `pre-ts-pivot`. The obsolete `add-benchmark-soak` proposal (byte-diff hybrid-vs-pure) was retired. The `USE_TS_LEAVES` umbrella + coherence check still function as runtime mechanics but are no longer the migration *strategy* (migration is per-game now); a per-game switch is designed in the next change.
 
 ## Known unresolved questions
 
-- Whether to keep the WASM in a Web Worker (via Comlink) as TS replacements grow, or migrate logic to the main thread. Likely keep the worker until midend ports, then re-evaluate.
-- Performance budget once enough seams have crossed the wasm/JS boundary. Each crossing has fixed cost; at some point it may make sense to batch or to flip whole subsystems at once.
-- The `~/codeliance/codeliance-stack/evaluator` doc convention this fork now mirrors expects `openspec update` to be run rarely; if upstream openspec adds a way to configure the instruction filename, prefer that over the rename dance.
+- Per-game switch shape (a `USE_TS_<GAME>` flag vs a catalog-level toggle vs build-time tree-shake) — decided in `ts-midend-and-game-interface`.
+- Whether the Web Worker survives once games are TS. It exists for heavy WASM; light TS games may not need it. Re-evaluate after the first few game ports (flagged in the `ts-migration` spec).
+- Whether any single game ever warrants reinstating a stricter (corpus-like) differential check — a generator with brutal uniqueness constraints might. Left as a per-game tightening option, not a global default.
+- The `~/codeliance/codeliance-stack/evaluator` doc convention this fork mirrors expects `openspec update` to be run rarely; if upstream openspec adds a way to configure the instruction filename, prefer that over the rename dance.
 
 ## License & attribution
 

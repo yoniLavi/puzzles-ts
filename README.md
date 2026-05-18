@@ -2,328 +2,177 @@
 
 ### ▶ [Play the puzzles][play] in your browser
 
-This is a progressive web application (PWA) port of [Simon Tatham’s Portable
-Puzzle Collection][sgt-puzzles], with additional puzzles from Lennard Sprong's
+A progressive web app (PWA) of [Simon Tatham's Portable Puzzle
+Collection][sgt-puzzles], plus additional puzzles from Lennard Sprong's
 [puzzles-unreleased][puzzles-unreleased].
 
-The code targets Baseline 2023, so should run in any reasonably recent browser.
-It's meant to work with a variety of input devices (including touch screens)
-and display sizes.
+It started as a faithful browser adaptation of the upstream C collection
+(compiled to WebAssembly), and is now being **rewritten to native
+TypeScript, top-down**, so that the codebase can grow *beyond* upstream:
+fast iteration on the UI and games, cheap addition of new games, and
+cross-game features upstream doesn't have (quick-save, mistake-checking,
+explained hints, per-game play aids). Targets Baseline 2023; works with
+touch, mouse, and keyboard across screen sizes.
 
-The app is, for the most part, a faithful adaptation of the original puzzle
-collection, modulo UI changes for touch input and smaller screens. It does also
-include a few [features and UI changes][differences] that I either wanted for
-my own play, or wanted to experiment with before submitting patches upstream.
-
-[differences]: https://puzzles.twistymaze.com/help/differences
 [play]: https://puzzles.twistymaze.com/
 [puzzles-unreleased]: https://github.com/x-sheep/puzzles-unreleased
 [sgt-puzzles]: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/
 
 ## Status
 
-The *app* is working. There are definitely some bugs and planned improvements,
-but you should be able to play all the puzzles without major problems.
+**The app works.** Every puzzle is playable today. Under the hood it's a
+hybrid: each game runs either its original C/WASM implementation or its
+new TypeScript port, presented uniformly. `random` (the RNG) is already
+native TS; the rest of the engine is mid-migration.
 
-The *code* is a bit rough and ready. I'm planning to substantially rework large
-parts of it. There are still TODO comments scattered throughout. There are no
-tests yet. I wouldn't really recommend using it as a starting point for your
-own code right now, other than maybe seeing how I worked around certain browser
-bugs. (The package.json version is 0.0.1. That's not a mistake.)
+**The migration is deliberate divergence, not a faithful port.** We are
+not tracking upstream and not preserving byte-identical behaviour or old
+save-game / shared-ID compatibility from before the pivot. Going forward,
+game IDs stay stable (the RNG is bit-identical) so shared seeds keep
+reproducing boards.
+
+The code is still rough in places (`package.json` says `0.0.1` — not a
+mistake). The full strategic context lives in [`AGENTS.md`](AGENTS.md);
+the authoritative migration rules are the `ts-migration` capability spec
+at [`openspec/specs/ts-migration/spec.md`](openspec/specs/ts-migration/spec.md).
 
 ## Bug reports
 
-If you have a **question** about a puzzle or the collection, please use the
-[*Discussion forum*][discussions] rather than creating a bug report.
+If you have a **question** about a puzzle, please use the [*Discussion
+forum*][discussions] rather than a bug report. For a bug, click
+[*Issues*][issues] → *New Issue*. Helpful to include:
 
-If you came here because you've encountered a bug, thanks for helping.
-Click [*Issues*][issues] above, then the green *New Issue* button.
+* App version (from the *About* box), browser, and device/OS.
+* A screenshot if something looks wrong.
+* For a game-specific bug, the game ID or seed (from *Share*), or an
+  exported saved game (*Save…* → *Export…*).
+* If you got the red "Uh-oh" crash dialog, an error report was already
+  filed — add the Sentry "event ID" if you open an issue.
 
-A few requests:
-
-* Please include the app version (from the *About* box), and say what web
-  browser you're using (Chrome, Firefox, etc.) and what device or OS.
-
-* A screenshot is often helpful, especially if something looks wrong.
-
-* If the bug is specific to a particular game, please include the game ID
-  or random seed (from _Share_ in the game menu). Or better yet export a saved
-  game file and upload that with the bug report (_Save…_ in the game menu, then
-  click _Export…_).
-
-* If you got the red "Uh-oh" crash dialog, an error report has already been
-  filed. If you have some information to add (or an idea on how to fix the
-  problem) you can open an issue here; otherwise there's no need for a separate
-  bug report. (If you *do* open an issue here, please include the Sentry "event
-  ID" from the crash dialog.)
-
-Simon Tatham has some really useful tips for [*How to Report Bugs
-Effectively*][sgt-bugs], available in several languages.
+Simon Tatham's [*How to Report Bugs Effectively*][sgt-bugs] is worth a
+read.
 
 [discussions]: https://github.com/medmunds/puzzles-web/discussions
-[issues]:https://github.com/medmunds/puzzles-web/issues
+[issues]: https://github.com/medmunds/puzzles-web/issues
 [sgt-bugs]: https://www.chiark.greenend.org.uk/~sgtatham/bugs.html
 
 # Technical details
 
-Everything below this point is technical info for people who want to build
-their own version of this app or help contribute code.
+Everything below is for building or contributing.
+
+## How the migration works
+
+- **`puzzles/`** is a frozen git subtree of the upstream C collection
+  (engine + the back ends; non-web frontends pruned). It is a **reference
+  and a dev-time differential-check source** — not a byte-for-byte
+  fidelity oracle. A game's C is read to port it, spot-checked against in
+  dev, and **deleted when that game's TS port ships**. `puzzles/` goes
+  away entirely only when the last game is ported.
+
+- **`src/`** is the TypeScript web app and the growing native engine.
+  The plan is top-down: a TS midend + a clean `Game` interface first,
+  then games ported by user-facing priority (simplest first to establish
+  the pattern, then the games we want to enhance, then outward), with
+  leaf libraries pulled in lazily as idiomatic TS when a game needs them.
+
+- **Per-game hybrid.** Unported games run C/WASM (via `webapp.cpp` +
+  Embind, in a Comlink web worker); ported games run their TS
+  implementation; the app shell presents both the same way.
+
+This replaced an earlier bottom-up, byte-identical-fidelity plan
+(preserved on branch `legacy/seam-by-seam-fidelity` + tag
+`pre-ts-pivot`). The why is in [`AGENTS.md`](AGENTS.md) "Approach".
 
 ## Structure
 
-There are two main parts to the code:
+The web app is a Vite multipage app. Entry pages render at build time
+(or in the dev server) via the custom
+[vite-plugins/extra-pages.ts](vite-plugins/extra-pages.ts) plugin, from
+templates under [templates/](templates/). `src/` is organised by role:
 
-* The [`/puzzles`](puzzles) directory is a git subtree of the upstream
-  [portable puzzle collection repo][upstream], with some local changes.
-  Code is written in C and C++ and compiled to WASM using [Emscripten]
-  (installed via Homebrew — see [Brewfile](Brewfile)).
-
-* The [`/src`](src) directory is the web app. Code is written in TypeScript
-  using [Lit] and [Web Awesome] components. It's built using [vite], with a few
-  custom plugins.
-
-There are a few other directories whose names should mostly be self explanatory.
-
-[Emscripten]: https://emscripten.org/
-[emsdk]: https://github.com/emscripten-core/emsdk
-[Lit]: https://lit.dev/
-[vite]: https://vite.dev/
-[upstream]: https://git.tartarus.org/?p=simon/puzzles.git
-[Web Awesome]: https://webawesome.com/docs/
-
-### Puzzles code
-
-The puzzles directory is a subtree of the upstream repo, restricted to the
-files this fork actually builds (the engine compiled to wasm via Emscripten).
-Upstream platforms that this fork doesn't ship — Windows, macOS, KaiOS,
-NestedVM, Java applet, the KaiOS-targeted Emscripten adapter, and the upstream
-Linux .desktop / packaging files — were removed in the
-`prune-unsupported-frontends` openspec change. The GTK frontend (used as a
-headless icon screenshotter) was removed in `drop-icon-generation`. Refer to
-upstream for those.
-
-Local changes and additions:
-
-* [webapp.cpp](puzzles/webapp.cpp) is a puzzles [frontend] for the PWA. Or
-  really, a frontend *adapter* that allows most of the actual frontend to be
-  implemented in TypeScript. (This is what replaces upstream's Emscripten
-  glue for the web build.)
-
-  C++ is necessary to leverage emcc's [Embind][embind]. My original goal was to
-  automate TypeScript type declarations to ensure the TS app code matched the
-  C-side frontend adapter. (This works, but requires a lot of boilerplate in the
-  C++, and isn't exactly automatic.) Embind also helps coordinate pointer
-  ownership and memory management between WASM and JS, which has been helpful.
-
-* [emcc-dependency-info.py](puzzles/emcc-dependency-info.py) is an attempt
-  to automate license notice extraction.
-
-* Most of the individual puzzle backends have been modified to support a
-  NARROW_BORDERS compile option, which eliminates most padding space within
-  the puzzle's drawing area so that we can manage it in CSS (for tight screens).
-
-* I've made a few additions to midend.c to support some UI features.
-
-[embind]: https://emscripten.org/docs/porting/connecting_cpp_and_javascript/embind.html
-[frontend]: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/devel/intro.html#intro-frontend
-
-### Web app code
-
-The web app is a vite multipage app (MPA). Most of the entry pages are rendered
-at build time (or on-the-fly in vite's dev server) via this project's custom
-[vite-plugins/extra-pages.ts](vite-plugins/extra-pages.ts) plugin. There are
-two main templates under [templates/](templates/):
-
-* [templates/index.html.hbs](templates/index.html.hbs) is the template for the
-  main screen with the list of puzzles. It's meant to render *something* useful
-  with JavaScript disabled, but most of the interesting functionality is in
-  src/screens/home-screen.ts.
-
-* [templates/puzzle.html.hbs](templates/puzzle.html.hbs) is the template used
-  for generating all individual puzzle pages (e.g., `/blackbox`, `/bridges`,
-  etc.). The puzzle pages don't work without JavaScript, and nearly all of the
-  interesting functionality is in src/screens/puzzle-screen.ts.
-
-The src directory is organised by role:
-
-* `src/screens/` — top-level screen components (one per HTML page) and the
-  base `Screen` class.
+* `src/screens/` — top-level screen components (one per page).
 * `src/dialogs/` — modal / popover overlays.
 * `src/components/` — reusable leaf Lit components.
-* HTML page entry points (`home-page.ts`, `puzzle-page.ts`), main bootstrap
-  (`main.ts`), the old-browser preflight gate (`preflight.ts`), the service
-  worker (`sw.ts`), and cross-cutting modules (`routing.ts`, `color-scheme.ts`,
-  `icons.ts`) live at `src/` root.
-* `src/assets/puzzles` is generated by `npm run build:wasm`
-  ([see below](#building-puzzles)) and is not included in the repo.
-  `src/assets/icons` is the exception: per-puzzle thumbnails are a
-  committed snapshot maintained per
-  [openspec/specs/puzzle-icons/spec.md](openspec/specs/puzzle-icons/spec.md).
+* `src/puzzle/` — the puzzle runtime + the Comlink worker boundary.
+* `src/native/` — native TS ports of engine modules (today: `random/`;
+  the TS midend + per-game ports land here / under a sibling games dir,
+  layout decided in the `ts-midend-and-game-interface` change).
+* `src/store/` — Dexie (IndexedDB) schema for settings and saved games.
+* Page entries, `main.ts`, the old-browser `preflight.ts` gate, the
+  `sw.ts` service worker, and cross-cutting modules at `src/` root.
+* `src/assets/puzzles/` is generated by `npm run build:wasm` (gitignored).
+  `src/assets/icons/` is a committed thumbnail snapshot (see
+  [openspec/specs/puzzle-icons/spec.md](openspec/specs/puzzle-icons/spec.md)).
 
-* The app uses custom web elements built with Lit. The rough idea is that
-  components in [src/puzzle](src/puzzle) would eventually be reusable in other
-  contexts (e.g., to display a static puzzle in a help system, or embed a
-  particular puzzle in some other app or site). PWA-specific components live
-  under `src/screens/`, `src/dialogs/`, and `src/components/`.
+The UI uses Lit web components and [Web Awesome][Web Awesome] design
+tokens; reactive state via `@lit-labs/signals`; offline via a Workbox
+service worker; telemetry via Sentry. The in-app help is assembled from
+[help/](help) (this fork's pages), `puzzles/html` (upstream per-puzzle
+overviews), and the upstream manual built from `puzzles/puzzles.but`.
 
-* The compiled wasm is run in a web worker, exposed in the main thread via
-  [Comlink]. (See [src/puzzle/README.md](src/puzzle/README.md) for more info.)
-
-* Offline capability is provided by a service worker ([src/sw.ts](src/sw.ts))
-  built using [Workbox] and [vite-plugin-pwa].
-
-* Settings and saved games are stored in IndexedDB managed by [Dexie.js].
-  (See [src/store](src/store).)
-
-* I'm currently using [@lit-labs/signals] for reactive data that doesn't belong
-  to some specific custom element (mainly the puzzle state and user settings).
-  It seems to be working fine, but I may change to lit-mobx at some point
-  for something less experimental.
-
-* I'm using [Web Awesome] web components, and have just borrowed their
-  [design tokens] to use throughout this app's CSS.
-
-* The help system is assembled from three different areas (also using the
-  extra-pages plugin):
-  [help](help) for the main help pages; [puzzles/html](puzzles/html) (from the
-  upstream repo) for the initial overview help for each puzzle; and the manual
-  (sourced from [puzzles/puzzles.but](puzzles/puzzles.but) and built into html
-  in src/assets/puzzles/manual).
-
-[Comlink]: https://github.com/GoogleChromeLabs/comlink
-[design tokens]: https://webawesome.com/docs/tokens/
-[Dexie.js]: https://dexie.org/
-[@lit-labs/signals]: https://lit.dev/docs/data/signals/
-[vite-plugin-pwa]: https://vite-pwa-org.netlify.app/
-[Workbox]: https://developer.chrome.com/docs/workbox/
+[Web Awesome]: https://webawesome.com/docs/
 
 ## Building
 
-The build has two halves: a host-native shell script produces the puzzles'
-wasm assets; vite bundles the TypeScript PWA around them.
-
-See the [build-deploy.yml](.github/workflows/build-deploy.yml) GitHub Workflow
-for the exact options used to produce the production build that appears on the
-website.
+A host-native shell script produces the puzzle WASM (for not-yet-ported
+games); Vite bundles the TypeScript PWA around it.
 
 ### Prerequisites
 
-All native build dependencies (Emscripten, halibut, jq, cmake, coreutils)
-are listed in the repo-root [Brewfile](Brewfile). On macOS or Linuxbrew:
+All native build deps (Emscripten, halibut, jq, cmake, coreutils) are in
+the repo-root [Brewfile](Brewfile). On macOS or Linuxbrew:
 
 ```shell
 brew bundle install
+npm install
 ```
 
-If you maintain your own emsdk install (or need a specific Emscripten version
-not yet in Homebrew), activate it before running `npm run build:wasm` — the
-script just shells out to whatever `emcmake`/`emcc` are first on `PATH`.
+If you maintain your own emsdk, activate it before `npm run build:wasm`
+— the script uses whatever `emcmake`/`emcc` are first on `PATH`. On
+Linux, distro packages for `emscripten`/`halibut`/`jq`/`cmake` work too.
 
-### Building puzzles
-
-All commands are run from the repo root.
-
-Build the puzzles wasm, manual, catalog.json and dependencies.json (writes
-into `src/assets/puzzles/`, gitignored — regenerate any time):
-```shell
-npm run build:wasm
-```
-
-(`npm run build:assets` is an alias.)
-
-The puzzle thumbnail PNGs under `src/assets/icons/` are a committed snapshot.
-Adding a new puzzle to the catalog requires producing two PNGs (64×64 and
-128×128) by hand — see
-[openspec/specs/puzzle-icons/spec.md](openspec/specs/puzzle-icons/spec.md)
-for the manual screenshot workflow.
-
-`scripts/build-emcc.sh` honours a few environment variables — see the comments
-at the top of the script.
-
-**By default, every leaf-library is routed to its TypeScript port**
-(today that's just `random`; future seams add to the set
-automatically). `USE_TS_LEAVES` defaults ON on both halves, so
-zero-arg `npm run build:wasm && npm run dev` runs the hybrid build
-that production ships:
+### Commands
 
 ```shell
-npm run build:wasm
-npm run dev
+npm run build:wasm   # build the puzzle WASM + manual into src/assets/puzzles/
+npm run dev          # Vite dev server (the app shell hot-reloads)
+npm run build        # production build (assumes build:wasm has run)
+npm run preview      # preview the production build
+npm run check        # Biome format + lint
+npm run test:run     # Vitest
 ```
 
-To fall back to pure C — useful when bisecting whether a regression
-came from a TS port or the upstream C oracle — set the escape hatch
-on both halves:
+Zero-arg `npm run build:wasm && npm run dev` is the normal path: every
+engine module that has a TS port runs as TS; unported games run C/WASM.
+
+To force **pure C** (handy when bisecting whether something is a TS-port
+issue or matches the C reference), set the escape hatch on both halves:
 
 ```shell
 USE_TS_LEAVES=0 npm run build:wasm
 VITE_USE_TS_LEAVES=0 npm run dev
 ```
 
-Per-module flags (`USE_TS_RANDOM` today; future: `USE_TS_COMBI`, …)
-survive as debugging overrides — flip an individual seam against the
-umbrella in either direction:
+`USE_TS_LEAVES` / `VITE_USE_TS_LEAVES` and the per-module
+`USE_TS_<MODULE>` overrides are *build-time mechanics* (the worker fails
+closed if the two halves disagree). They are **not** the migration
+strategy — the migration is per-game, governed by the `ts-migration`
+spec. When switching flag combinations, `rm -rf build/wasm/` first;
+cmake's `option()` honours a stale cache otherwise. Full mechanics in
+[openspec/specs/build-pipeline/spec.md](openspec/specs/build-pipeline/spec.md).
 
-```shell
-# Every leaf TS except random.
-USE_TS_RANDOM=0 npm run build:wasm
-VITE_USE_TS_RANDOM=0 npm run dev
+## Contributing / work tracking
 
-# Random TS only; everything else C.
-USE_TS_LEAVES=0 USE_TS_RANDOM=1 npm run build:wasm
-VITE_USE_TS_LEAVES=0 VITE_USE_TS_RANDOM=1 npm run dev
-```
-
-If the WASM and Vite flag sets disagree in the WASM-has-bridge,
-Vite-doesn't direction, the worker fails closed at WASM instantiation
-with a templated error pointing at the fix. The reverse direction
-(Vite expects bridge, WASM is pure C) is harmless and silent. When
-*transitioning* between flag combinations, reset cmake's cache first
-— `rm -rf build/wasm/` before the next `npm run build:wasm` — because
-cmake's `option()` honours previously-cached values and a stale cache
-silently wins.
-
-See `openspec/specs/build-pipeline/spec.md` for the full umbrella
-semantics and `openspec/specs/random/` for the random bridge in
-particular.
-
-#### Linux notes
-
-On Linux the Brewfile still works under Linuxbrew, but distro packages
-typically suffice — install your distro's equivalents of `emscripten`,
-`halibut`, `jq`, `cmake`. The script assumes `emcmake`/`emcc` are on `PATH`.
-
-### Building the web app
-
-Install the tooling and dependencies:
-```shell
-npm install
-```
-
-Run the dev server:
-```
-npm run dev
-```
-
-Build for production:
-```
-npm run build
-```
-
-Preview the production build:
-```
-npm run preview
-```
+Work is tracked with **openspec** (`openspec/`): a change is proposed,
+specced, implemented, then archived. Durable context is
+[`AGENTS.md`](AGENTS.md) + [`openspec/project.md`](openspec/project.md);
+the migration rules of record are the `ts-migration` capability spec.
 
 ## License
 
-This web app code (including local modifications and additions to the original
-puzzles code) is made available under the MIT License. See [LICENSE](./LICENSE).
-
-The [puzzles/LICENCE](puzzles/LICENCE) file covers the upstream puzzles code
-pulled into that subtree. And the license text in the upstream manual covers
-that manual (puzzles/puzzles.but). Both use the MIT License.
-
-The built app incorporates portions of several open source packages. Required
-notices can be found in the app's _About_ dialog. (Please open an issue if any
-seem missing.)
+The web app code (including local modifications/additions to the puzzles
+code) is MIT — see [LICENSE](./LICENSE). [puzzles/LICENCE](puzzles/LICENCE)
+covers the upstream subtree and the upstream manual
+(`puzzles/puzzles.but`), also MIT. The built app bundles several open
+source packages; required notices are in the app's *About* dialog (open
+an issue if any seem missing).

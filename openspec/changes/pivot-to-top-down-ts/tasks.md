@@ -2,54 +2,63 @@
 
 ## 1. New ts-migration capability spec
 
-- [ ] 1.1 Author `specs/ts-migration/spec.md` with requirements +
-      scenarios for: top-down order, C-as-reference, dev-time
+- [x] 1.1 Authored `specs/ts-migration/spec.md`: requirements +
+      scenarios for top-down order, C-as-reference + dev-time
       differential spot-check (not byte-corpora), per-game hybrid,
       per-game C deletion, deliberate-divergence-allowed, clean TS
       save format / future-ID stability via random.ts.
 
 ## 2. build-pipeline spec delta
 
-- [ ] 2.1 MODIFY the umbrella requirement: drop the "future bridges
-      ship default-on by inheriting; per-seam proposals SHALL
-      document the fidelity bar (corpus replay + property tests)"
-      language. Reframe to the per-game-hybrid model. Keep the
-      umbrella *mechanics* + coherence-check scenarios (they still
-      function).
+- [x] 2.1 MODIFIED the umbrella requirement: dropped the
+      corpus-fidelity / "future bridges document the fidelity bar"
+      language; reframed as runtime mechanics under the per-game
+      `ts-migration` strategy; softened the "default build" scenario
+      from "byte-identical" to "correct, spot-checked". Umbrella
+      mechanics + coherence scenarios retained (they still function).
 
 ## 3. AGENTS.md doctrine rewrite
 
-- [ ] 3.1 Rewrite "Goal", "Approach", "Upstream policy", "Test
-      discipline", "Seam order", "C is never deleted" to the
-      top-down / C-as-reference / per-game model. Point at the
-      `ts-migration` spec as authority.
-- [ ] 3.2 Add a "What's been done" entry for this pivot; add a
-      pointer to the `legacy/seam-by-seam-fidelity` branch + tag.
-- [ ] 3.3 Verify the `CLAUDE.md` symlink still resolves (same file).
+- [x] 3.1 Rewrote Goal / Lineage / Upstream policy / Approach / Test
+      discipline / "C deletion" / TS port style / Migration order to
+      the top-down, C-as-reference, per-game model. Points at the
+      `ts-migration` spec as authority. Also fixed the Code
+      conventions C-code bullet, the Constraints DO-NOT bullet, the
+      repo-layout `puzzles/` + `src/native/` entries, the special-
+      files harness entry, the work-management openspec-cadence
+      paragraph, and the build-commands umbrella note.
+- [x] 3.2 Added a "What's been done" pivot entry + legacy
+      branch/tag pointer; refreshed "Known unresolved questions".
+- [x] 3.3 Verified `CLAUDE.md` symlink resolves (identical content).
 
 ## 4. openspec/project.md
 
-- [ ] 4.1 Update Important Constraints + strategy framing to match
-      the new doctrine (no byte-oracle; top-down; per-game hybrid;
-      spot-check not corpus).
+- [x] 4.1 Updated Purpose, Tech-Stack test note, Code-Style C bullet,
+      Architecture Patterns (top-down replaces Feathers seam),
+      Testing Strategy (behavioural + spot-check, no corpus),
+      Important Constraints, and the upstream-dependency note.
 
 ## 5. README rewrite
 
-- [ ] 5.1 Rewrite almost entirely: status + structure + contribution
-      framing around top-down TS. Keep the play link, bug-report
-      guidance, build prerequisites, license. Reframe the build
-      section (per-game hybrid; drop per-leaf-umbrella-as-strategy).
+- [x] 5.1 Rewrote almost entirely: new status + "how the migration
+      works" + structure framed around top-down TS / per-game hybrid.
+      Kept the play link, puzzles-unreleased credit, bug-report
+      guidance, prerequisites, license. Build section reframes the
+      umbrella as build-time mechanics, not strategy.
 
 ## 6. Retire add-benchmark-soak
 
-- [ ] 6.1 Remove `openspec/changes/add-benchmark-soak/`. Note in the
-      pivot proposal that a playability soak can be re-proposed in
-      the new framing later.
+- [x] 6.1 Removed `openspec/changes/add-benchmark-soak/` (0/25,
+      never started; its byte-diff hybrid-vs-pure premise is dead
+      once divergence is intended). A playability soak can be
+      re-proposed against the `ts-migration` spec later if wanted.
 
 ## 7. Verification + hygiene
 
-- [ ] 7.1 `openspec validate pivot-to-top-down-ts --strict` passes.
-- [ ] 7.2 `openspec validate --specs --strict` passes after archive.
-- [ ] 7.3 `tsc -b --noEmit` + `npm run lint` + `npm run test:run`
-      still green (no runtime code touched — sanity only).
-- [ ] 7.4 `openspec list` no longer shows `add-benchmark-soak`.
+- [x] 7.1 `openspec validate pivot-to-top-down-ts --strict` passes.
+- [x] 7.2 `openspec validate --specs --strict` passes after archive
+      (verified post-archive: 7/7 incl. new `ts-migration`).
+- [x] 7.3 `tsc -b --noEmit` clean + `npm run lint` (96 files, no
+      fixes) + `npm run test:run` (345/345) — no runtime code touched.
+- [x] 7.4 `openspec list` shows only `pivot-to-top-down-ts`;
+      `add-benchmark-soak` gone.
