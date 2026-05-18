@@ -43,6 +43,12 @@ const EMPTY_CONFIG: ConfigDescription = { title: "", items: {} };
 export class TsWorkerPuzzle implements PuzzleEngineSurface {
   private readonly engine: EngineCore;
   private drawing?: Drawing;
+  /** The canvas `Drawing` throws if asked to paint before a palette is
+   * installed. The midend now repaints on every transition (incl. the
+   * initial one), which can fire before `setDrawingPalette`; gate
+   * `redraw()` until the palette is ready (the app always sets it as
+   * part of canvas setup, mirroring the C path). */
+  private paletteReady = false;
   private timerActive = false;
   private lastTimeMs = 0;
   private notifyTimerStateRemote?: (isActive: boolean) => void;
@@ -61,10 +67,16 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
     notifyTimerState: (isActive: boolean) => void,
   ): void {
     this.notifyTimerStateRemote = notifyTimerState;
-    this.engine.setCallbacks(notifyChange, (active) => {
-      if (active) this.activateTimer();
-      else this.deactivateTimer();
-    });
+    this.engine.setCallbacks(
+      notifyChange,
+      (active) => {
+        if (active) this.activateTimer();
+        else this.deactivateTimer();
+      },
+      // Repaint into the canvas this adapter owns (the engine has no
+      // Drawing; this is the C frontend's draw-after-input role).
+      () => this.redraw(),
+    );
   }
 
   getStaticProperties(): PuzzleStaticAttributes {
@@ -189,6 +201,7 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   }
   setDrawingPalette(colors: string[]): void {
     if (!this.drawing) throw new Error("setDrawingPalette: no canvas attached");
+    if (colors.length > 0) this.paletteReady = true;
     if (this.drawing.setPalette(colors)) this.redraw();
   }
   setDrawingFontInfo(fontInfo: FontInfo): void {
@@ -200,7 +213,7 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
     return this.drawing.getImage(options);
   }
   redraw(): void {
-    if (this.drawing) this.engine.redraw(this.drawing);
+    if (this.drawing && this.paletteReady) this.engine.redraw(this.drawing);
   }
 
   // --- timer ------------------------------------------------------

@@ -29,13 +29,21 @@ import { decodeSave, encodeSave, type SaveEnvelope } from "./save.ts";
 
 export type NotifyChange = (message: ChangeNotification) => void;
 export type NotifyTimerState = (isActive: boolean) => void;
+/** "Repaint the canvas now" — the worker adapter draws via the
+ * `Drawing` it owns. Mirrors the C frontend redrawing after every
+ * processed input and on each animation tick. */
+export type NotifyRedraw = () => void;
 
 /** The non-generic surface the worker adapter drives. Every method is
  * expressed in transport types (strings/numbers/notifications) — no
  * game-internal type escapes the midend. */
 export interface EngineCore {
   getStaticProperties(): PuzzleStaticAttributes;
-  setCallbacks(notify: NotifyChange, notifyTimer: NotifyTimerState): void;
+  setCallbacks(
+    notify: NotifyChange,
+    notifyTimer: NotifyTimerState,
+    notifyRedraw?: NotifyRedraw,
+  ): void;
   newGame(): void;
   newGameFromId(id: string): string | undefined;
   restartGame(): void;
@@ -82,7 +90,19 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private timerElapsed = 0;
   private notify?: NotifyChange;
   private notifyTimer?: NotifyTimerState;
+  private notifyRedraw?: NotifyRedraw;
   private timerWanted = false;
+
+  // Animation/flash state, mirroring midend.c. While a move is
+  // animating, `animPrev` is the state being animated *from*; the game
+  // is drawn with (animPrev, state, animTime, flashTime). Outside
+  // animation all are zero/null and the game draws its final state.
+  private animPrev: State | null = null;
+  private animTime = 0;
+  private animLength = 0;
+  private flashTime = 0;
+  private flashLength = 0;
+  private animDir = 1;
 
   constructor(private readonly game: Game<Params, State, Move, Ui, DrawState>) {
     this.params = game.defaultParams();
@@ -102,9 +122,14 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     };
   }
 
-  setCallbacks(notify: NotifyChange, notifyTimer: NotifyTimerState): void {
+  setCallbacks(
+    notify: NotifyChange,
+    notifyTimer: NotifyTimerState,
+    notifyRedraw?: NotifyRedraw,
+  ): void {
     this.notify = notify;
     this.notifyTimer = notifyTimer;
+    this.notifyRedraw = notifyRedraw;
   }
 
   newGame(): void {
@@ -158,10 +183,12 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     }
     this.usedSolve = false;
     this.timerElapsed = 0;
+    this.clearAnimation();
     this.emitIdChange();
     this.emitParamsChange();
     this.emitStateChange();
     this.emitStatusBar();
+    this.requestRedraw();
     this.syncTimer();
   }
 
@@ -171,8 +198,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.moveLog = [];
     this.pos = 0;
     this.usedSolve = false;
+    this.clearAnimation();
     this.emitStateChange();
     this.emitStatusBar();
+    this.requestRedraw();
     this.syncTimer();
   }
 
@@ -192,7 +221,9 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     );
     if (move === null) return false;
     if (move === UI_UPDATE) {
-      // UI/cursor changed in place: redraw + notify, no history entry.
+      // UI/cursor changed in place: redraw + notify, no history entry,
+      // no animation.
+      this.clearAnimation();
       this.afterTransition();
       return true;
     }
@@ -200,7 +231,8 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   }
 
   private applyMove(move: Move): boolean {
-    const next = this.game.executeMove(this.state, move);
+    const prev = this.state;
+    const next = this.game.executeMove(prev, move);
     // A new move after an undo truncates the redo branch (history and
     // the parallel move log stay in lockstep: moveLog[i] is the move
     // that turns history[i] into history[i+1]).
@@ -209,19 +241,24 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.history.push(next);
     this.moveLog.push(move);
     this.pos = this.history.length - 1;
+    this.setupAnimation(prev, next, 1);
     this.afterTransition();
     return true;
   }
 
   undo(): void {
     if (this.pos === 0) return;
+    const prev = this.state;
     this.pos -= 1;
+    this.setupAnimation(prev, this.state, -1);
     this.afterTransition();
   }
 
   redo(): void {
     if (this.pos >= this.history.length - 1) return;
+    const prev = this.state;
     this.pos += 1;
+    this.setupAnimation(prev, this.state, 1);
     this.afterTransition();
   }
 
@@ -239,7 +276,45 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private afterTransition(): void {
     this.emitStateChange();
     this.emitStatusBar();
+    // Paint immediately (the C frontend redraws after every processed
+    // input), then run the animation timer if this transition animates.
+    this.requestRedraw();
     this.syncTimer();
+  }
+
+  // --- animation (mirrors midend.c) --------------------------------
+
+  /** Arm animation/flash for a state transition. The game decides the
+   * durations via `animLength`/`flashLength`; absent ⇒ 0 ⇒ no
+   * animation (the transition just paints its final state). */
+  private setupAnimation(prev: State, next: State, dir: number): void {
+    this.animDir = dir;
+    const a = this.game.animLength?.(prev, next, dir, this.ui) ?? 0;
+    const f = this.game.flashLength?.(prev, next, dir, this.ui) ?? 0;
+    this.animLength = a;
+    this.animTime = 0;
+    this.flashLength = f;
+    this.flashTime = 0;
+    // Keep the from-state only while a move is actually animating; a
+    // flash-only transition draws the final state with a flash overlay.
+    this.animPrev = a > 0 ? prev : null;
+  }
+
+  private clearAnimation(): void {
+    this.animPrev = null;
+    this.animTime = 0;
+    this.animLength = 0;
+    this.flashTime = 0;
+    this.flashLength = 0;
+    this.animDir = 1;
+  }
+
+  private get animating(): boolean {
+    return this.animTime < this.animLength || this.flashTime < this.flashLength;
+  }
+
+  private requestRedraw(): void {
+    this.notifyRedraw?.();
   }
 
   // --- status ------------------------------------------------------
@@ -362,20 +437,28 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.pos = Math.min(env.pos, this.history.length - 1);
     this.usedSolve = env.usedSolve;
     this.timerElapsed = env.timerElapsed;
+    // Replay armed animations for each step; a restored game should
+    // appear settled, not mid-animation.
+    this.clearAnimation();
     this.afterTransition();
     return undefined;
   }
 
   // --- timer -------------------------------------------------------
 
-  private timingActive(): boolean {
+  /** A timed-clock game with its clock running (e.g. Mines), distinct
+   * from animation. */
+  private timedClockActive(): boolean {
     if (!this.game.isTimed) return false;
     if (this.game.timingState) return this.game.timingState(this.state, this.ui);
     return this.currentStatus() === "ongoing";
   }
 
+  /** The timer must run while either the game clock is ticking or an
+   * animation/flash is in progress (the worker adapter drives a
+   * rAF loop that calls `timer()` while this is true). */
   private syncTimer(): void {
-    const want = this.timingActive();
+    const want = this.timedClockActive() || this.animating;
     if (want !== this.timerWanted) {
       this.timerWanted = want;
       this.notifyTimer?.(want);
@@ -383,9 +466,26 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   }
 
   timer(tplus: number): void {
-    if (this.timingActive()) {
+    if (this.timedClockActive()) {
       this.timerElapsed += tplus;
       this.emitStatusBar();
+    }
+    if (this.animating) {
+      this.animTime += tplus;
+      this.flashTime += tplus;
+      if (this.animLength > 0 && this.animTime >= this.animLength) {
+        // Move animation finished; flash (if any) continues without
+        // the from-state, exactly as midend.c drops oldstate.
+        this.animPrev = null;
+      }
+      if (this.animating) {
+        this.requestRedraw();
+      } else {
+        // Both animation and flash done: settle and paint once clean.
+        this.clearAnimation();
+        this.requestRedraw();
+        this.syncTimer();
+      }
     }
   }
 
@@ -397,12 +497,12 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.game.redraw(
       dr,
       this.drawState,
-      this.pos > 0 ? this.history[this.pos - 1] : null,
+      this.animPrev,
       this.state,
-      1,
+      this.animDir,
       this.ui,
-      0,
-      0,
+      this.animTime,
+      this.flashTime,
     );
     dr.endDraw();
   }

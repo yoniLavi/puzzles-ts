@@ -7,11 +7,15 @@ import { Midend } from "./midend.ts";
 function harness() {
   const notes: ChangeNotification[] = [];
   let timerActive = false;
+  let redraws = 0;
   const m = new Midend(fakeGame);
   m.setCallbacks(
     (n) => notes.push(n),
     (active) => {
       timerActive = active;
+    },
+    () => {
+      redraws++;
     },
   );
   const last = <T extends ChangeNotification["type"]>(type: T) =>
@@ -20,7 +24,14 @@ function harness() {
     last("game-state-change") as
       | Extract<ChangeNotification, { type: "game-state-change" }>
       | undefined;
-  return { m, notes, state, timerActive: () => timerActive, last };
+  return {
+    m,
+    notes,
+    state,
+    timerActive: () => timerActive,
+    redraws: () => redraws,
+    last,
+  };
 }
 
 describe("Midend lifecycle + notifications", () => {
@@ -60,6 +71,40 @@ describe("Midend lifecycle + notifications", () => {
     >;
     expect(id.currentGameId).toMatch(/^t3:g3-\d+$/);
     expect(id.randomSeed).toMatch(/^t3#[0-9a-f]+$/);
+  });
+});
+
+describe("Midend repaints on every transition (regression: TS games rendered no moves)", () => {
+  let h: ReturnType<typeof harness>;
+  beforeEach(() => {
+    h = harness();
+    h.m.newGame();
+  });
+
+  it("a processed move requests a redraw", () => {
+    const before = h.redraws();
+    expect(h.m.processInput(0, 0, LEFT_BUTTON)).toBe(true);
+    expect(h.redraws()).toBeGreaterThan(before);
+  });
+
+  it("undo, redo and restart each request a redraw", () => {
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    let before = h.redraws();
+    h.m.undo();
+    expect(h.redraws()).toBeGreaterThan(before);
+    before = h.redraws();
+    h.m.redo();
+    expect(h.redraws()).toBeGreaterThan(before);
+    before = h.redraws();
+    h.m.restartGame();
+    expect(h.redraws()).toBeGreaterThan(before);
+  });
+
+  it("a non-animated game does not start the animation timer", () => {
+    // fakeGame has no animLength/flashLength ⇒ move paints once,
+    // no rAF loop requested.
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    expect(h.timerActive()).toBe(false);
   });
 });
 

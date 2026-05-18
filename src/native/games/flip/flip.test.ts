@@ -128,6 +128,43 @@ describe("Flip params", () => {
   });
 });
 
+describe("Flip animation/redraw lifecycle (regression: clicks not rendered)", () => {
+  it("a click repaints, runs the anim timer, then settles", () => {
+    const params: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
+    const { desc } = flipGame.newDesc(params, randomNew("flip-anim-seed"));
+    let timerActive = false;
+    let redraws = 0;
+    const me = new Midend(flipGame);
+    me.setCallbacks(
+      () => {},
+      (a) => {
+        timerActive = a;
+      },
+      () => {
+        redraws++;
+      },
+    );
+    expect(me.newGameFromId(`3x3c:${desc}`)).toBeUndefined();
+    expect(timerActive).toBe(false); // settled, no animation yet
+    const afterLoad = redraws;
+
+    const tile = flipGame.preferredTileSize ?? 32;
+    const border = tile >> 1;
+    // Click cell (0,0): a crosses cell always toggles ⇒ a real move.
+    expect(me.processInput(border + 1, border + 1, 0x0200)).toBe(true);
+    expect(redraws).toBeGreaterThan(afterLoad); // painted immediately
+    expect(timerActive).toBe(true); // ANIM_TIME>0 ⇒ rAF loop requested
+
+    const midAnim = redraws;
+    me.timer(0.1); // partway through ANIM_TIME (0.25)
+    expect(redraws).toBeGreaterThan(midAnim);
+    expect(timerActive).toBe(true);
+
+    me.timer(0.3); // past ANIM_TIME ⇒ animation ends, timer released
+    expect(timerActive).toBe(false);
+  });
+});
+
 describe("Flip through the midend", () => {
   it("plays to solved-with-help and round-trips a save", () => {
     const params: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
