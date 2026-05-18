@@ -10,18 +10,20 @@
  * Drawing reuses the existing canvas `Drawing` directly — no Embind
  * binding, since there is no WASM module on the TS path.
  *
- * The custom-params / preferences / request-keys surface returns the
- * empty-but-valid shape: the keystone `Game` interface intentionally
- * does not yet model upstream's `config_item` UI machinery. The first
- * real port refines the `Game` contract for these (an explicitly
- * deferred design decision, see the change's design.md "Open
- * Questions") — this is the correct "no custom config yet" behaviour,
- * not a stub masking a defect, and it is unreachable until a game is
- * registered.
+ * The drawing / colour / UI-feedback contract the keystone left
+ * minimal was resolved by the first port (`add-flip-ts-port`): the
+ * full `GameDrawing` API, `colours(defaultBackground)`, and the
+ * `UI_UPDATE` input result. The custom-params / preferences /
+ * request-keys surface still returns the empty-but-valid shape:
+ * upstream's `config_item` UI machinery is a later cross-cutting
+ * change, not modelled here yet. For a game whose only configuration
+ * is reachable via presets and game IDs (e.g. Flip) this is the
+ * correct behaviour, not a stub masking a defect.
  */
 
 import { transfer } from "comlink";
 import { Drawing } from "../../puzzle/drawing.ts";
+import type { PuzzleEngineSurface } from "../../puzzle/engine-surface.ts";
 import type {
   ChangeNotification,
   Colour,
@@ -38,7 +40,7 @@ import type { EngineCore } from "./midend.ts";
 
 const EMPTY_CONFIG: ConfigDescription = { title: "", items: {} };
 
-export class TsWorkerPuzzle {
+export class TsWorkerPuzzle implements PuzzleEngineSurface {
   private readonly engine: EngineCore;
   private drawing?: Drawing;
   private timerActive = false;
@@ -147,8 +149,8 @@ export class TsWorkerPuzzle {
 
   // --- rendering --------------------------------------------------
 
-  getColourPalette(_defaultBackground: Colour): Colour[] {
-    return this.engine.getColourPalette();
+  getColourPalette(defaultBackground: Colour): Colour[] {
+    return this.engine.getColourPalette(defaultBackground);
   }
   size(maxSize: Size, isUserSize: boolean, devicePixelRatio: number): Size {
     return this.engine.size(maxSize, isUserSize, devicePixelRatio);

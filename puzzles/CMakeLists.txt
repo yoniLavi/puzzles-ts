@@ -83,6 +83,7 @@ puzzle(filling
 solver(filling)
 
 puzzle(flip
+  TS_PORTED  # native-TS port (openspec add-flip-ts-port); no flip.c/wasm
   DISPLAYNAME "Flip"
   DESCRIPTION "Tile inversion puzzle"
   OBJECTIVE "Flip groups of squares to light them all up at once.")

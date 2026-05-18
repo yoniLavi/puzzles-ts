@@ -11,7 +11,9 @@ export type {
   GameDrawing,
   PresetMenu,
   SolveResult,
+  UiUpdate,
 } from "./game.ts";
+export { UI_UPDATE } from "./game.ts";
 export {
   type EngineCore,
   Midend,

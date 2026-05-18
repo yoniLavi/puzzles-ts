@@ -111,11 +111,14 @@ function(build_platform_extras)
                 DEPENDS ${help_dir}/en/index.html)
     endif()
 
-    # Generate catalog.json
-    list(SORT puzzle_names)
+    # Generate catalog.json. TS-ported games (ts_ported_names) have no
+    # wasm but must still appear in the catalog — the app serves them
+    # via the TS midend (ts-engine spec).
+    set(catalog_names ${puzzle_names} ${ts_ported_names})
+    list(SORT catalog_names)
     set(puzzles_map "{}")
     set(puzzle_ids_arr "[]")
-    foreach(name ${puzzle_names})
+    foreach(name ${catalog_names})
         # Build puzzles[name]: {name: displayname, description, objective, unfinished?}
         string(JSON obj SET "{}" "name" "\"${displayname_${name}}\"")
         string(JSON obj SET "${obj}" "description" "\"${description_${name}}\"")

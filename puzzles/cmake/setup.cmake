@@ -54,6 +54,13 @@ endif()
 # they want to build things based on all the puzzles at once.
 set(puzzle_names)
 set(puzzle_sources)
+# Games whose engine has been ported to native TypeScript (project
+# fork): they carry catalog metadata but build NO <name>.c / wasm —
+# the app serves them via the TS midend (see openspec ts-engine /
+# ts-migration specs). Kept distinct from puzzle_names so the
+# per-puzzle wasm/deps build skips them while the catalog still lists
+# them.
+set(ts_ported_names)
 
 include(CheckIncludeFile)
 check_include_file(stdint.h HAVE_STDINT_H)
@@ -100,7 +107,7 @@ include(icons/icons.cmake)
 # each puzzle.
 function(puzzle NAME)
   cmake_parse_arguments(OPT
-    "" "DISPLAYNAME;DESCRIPTION;OBJECTIVE;WINDOWS_EXE_NAME" "" ${ARGN})
+    "TS_PORTED" "DISPLAYNAME;DESCRIPTION;OBJECTIVE;WINDOWS_EXE_NAME" "" ${ARGN})
 
   if(NOT DEFINED OPT_WINDOWS_EXE_NAME)
     set(OPT_WINDOWS_EXE_NAME ${NAME})
@@ -123,6 +130,13 @@ function(puzzle NAME)
     set(collection "original")
   endif()
   set(collection_${NAME} "${collection}" PARENT_SCOPE)
+
+  if(OPT_TS_PORTED)
+    # TS-ported: metadata only. No <name>.c, no wasm/dep targets, not
+    # in puzzle_names. The catalog generator unions ts_ported_names.
+    set(ts_ported_names ${ts_ported_names} ${NAME} PARENT_SCOPE)
+    return()
+  endif()
 
   set(official TRUE)
   if(NAME STREQUAL nullgame)
@@ -237,8 +251,15 @@ endfunction()
 macro(export_variables_to_parent_scope)
   set(puzzle_names ${puzzle_names} PARENT_SCOPE)
   set(puzzle_sources ${puzzle_sources} PARENT_SCOPE)
+  set(ts_ported_names ${ts_ported_names} PARENT_SCOPE)
   foreach(name ${puzzle_names})
     set(exename_${name} ${exename_${name}} PARENT_SCOPE)
+    set(displayname_${name} ${displayname_${name}} PARENT_SCOPE)
+    set(description_${name} ${description_${name}} PARENT_SCOPE)
+    set(objective_${name} ${objective_${name}} PARENT_SCOPE)
+    set(collection_${name} ${collection_${name}} PARENT_SCOPE)
+  endforeach()
+  foreach(name ${ts_ported_names})
     set(displayname_${name} ${displayname_${name}} PARENT_SCOPE)
     set(description_${name} ${description_${name}} PARENT_SCOPE)
     set(objective_${name} ${objective_${name}} PARENT_SCOPE)

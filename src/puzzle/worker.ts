@@ -14,9 +14,12 @@ import { expose, proxy, type Remote, transfer } from "comlink";
 import createModule from "../assets/puzzles/emcc-runtime";
 import { createTsEngine } from "../native/engine/index.ts";
 import { TsWorkerPuzzle } from "../native/engine/worker-adapter.ts";
+// Side-effect import: registers every native-TS game port.
+import "../native/games/index.ts";
 import { createTsRandomBridge } from "../native/random/bridge.ts";
 import { installErrorHandlersInWorker } from "../utils/errors-worker.ts";
 import { Drawing } from "./drawing.ts";
+import type { PuzzleEngineSurface } from "./engine-surface.ts";
 import type {
   ChangeNotification,
   Colour,
@@ -100,7 +103,7 @@ function assertWasmBridgesCoherent(module: WebAssembly.Module): void {
 /**
  * Worker-side implementation of main-thread Puzzle class
  */
-export class WorkerPuzzle implements FrontendConstructorArgs {
+export class WorkerPuzzle implements FrontendConstructorArgs, PuzzleEngineSurface {
   static async create(puzzleId: string): Promise<WorkerPuzzle> {
     const url = new URL(`../assets/puzzles/${puzzleId}.wasm`, import.meta.url).href;
     // When the WASM was built with USE_TS_RANDOM=ON (or USE_TS_LEAVES=ON),
@@ -454,25 +457,22 @@ export class WorkerPuzzle implements FrontendConstructorArgs {
 
 // Factory function to create puzzle instances
 interface WorkerPuzzleFactory {
-  create(puzzleId: string): Promise<WorkerPuzzle>;
+  create(puzzleId: string): Promise<PuzzleEngineSurface>;
 }
 const workerPuzzleFactory: WorkerPuzzleFactory = {
-  async create(puzzleId: string) {
+  async create(puzzleId: string): Promise<PuzzleEngineSurface> {
     // Per-game hybrid dispatch seam (ts-engine spec): a registered TS
     // game is served by the midend-backed adapter; otherwise the
     // existing C/WASM path. The registry ships empty, so this branch
     // is never taken until a game-port change registers an impl —
     // production behaviour is byte-for-byte the old all-WASM path.
-    // TsWorkerPuzzle deliberately mirrors WorkerPuzzle's consumed
-    // Comlink surface; the structural bridge is asserted by that
-    // shared shape, so the app's `RemoteWorkerPuzzle` type is stable.
+    // Both implementations `implements PuzzleEngineSurface`, so either
+    // is proxied with no cast and any drift is a compile error.
     const engine = createTsEngine(puzzleId);
     if (engine) {
-      const tsPuzzle = new TsWorkerPuzzle(puzzleId, engine);
-      return proxy(tsPuzzle as unknown as WorkerPuzzle);
+      return proxy(new TsWorkerPuzzle(puzzleId, engine));
     }
-    const workerPuzzle = await WorkerPuzzle.create(puzzleId);
-    return proxy(workerPuzzle);
+    return proxy(await WorkerPuzzle.create(puzzleId));
   },
 };
 
@@ -484,5 +484,5 @@ type ComlinkRemoteFactory<T> = {
     : T[K];
 };
 
-export type RemoteWorkerPuzzle = Remote<WorkerPuzzle>;
+export type RemoteWorkerPuzzle = Remote<PuzzleEngineSurface>;
 export type RemoteWorkerPuzzleFactory = ComlinkRemoteFactory<WorkerPuzzleFactory>;

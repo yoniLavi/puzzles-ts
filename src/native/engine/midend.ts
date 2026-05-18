@@ -24,7 +24,7 @@ import type {
   Size,
 } from "../../puzzle/types.ts";
 import { randomNew } from "../random/index.ts";
-import type { Game, GameDrawing, PresetMenu } from "./game.ts";
+import { type Game, type GameDrawing, type PresetMenu, UI_UPDATE } from "./game.ts";
 import { decodeSave, encodeSave, type SaveEnvelope } from "./save.ts";
 
 export type NotifyChange = (message: ChangeNotification) => void;
@@ -46,7 +46,7 @@ export interface EngineCore {
   getParams(): string;
   setParams(params: string): string | undefined;
   getPresets(): PresetMenuEntry[];
-  getColourPalette(): Colour[];
+  getColourPalette(defaultBackground: Colour): Colour[];
   preferredSize(): Size;
   size(maxSize: Size, isUserSize: boolean, devicePixelRatio: number): Size;
   formatAsText(): string | undefined;
@@ -77,6 +77,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private pos = 0;
   private ui!: Ui;
   private drawState: DrawState | null = null;
+  private currentTileSize: number;
   private usedSolve = false;
   private timerElapsed = 0;
   private notify?: NotifyChange;
@@ -85,6 +86,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   constructor(private readonly game: Game<Params, State, Move, Ui, DrawState>) {
     this.params = game.defaultParams();
+    this.currentTileSize = game.preferredTileSize ?? 32;
   }
 
   // --- lifecycle ---------------------------------------------------
@@ -151,6 +153,9 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.pos = 0;
     this.ui = this.game.newUi(initial);
     this.drawState = this.game.newDrawState?.(initial) ?? null;
+    if (this.drawState !== null) {
+      this.game.setTileSize?.(this.drawState, this.currentTileSize);
+    }
     this.usedSolve = false;
     this.timerElapsed = 0;
     this.emitIdChange();
@@ -186,6 +191,11 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       button,
     );
     if (move === null) return false;
+    if (move === UI_UPDATE) {
+      // UI/cursor changed in place: redraw + notify, no history entry.
+      this.afterTransition();
+      return true;
+    }
     return this.applyMove(move);
   }
 
@@ -276,26 +286,31 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     return root.submenu ?? [root];
   }
 
-  getColourPalette(): Colour[] {
-    return this.game.colours();
+  getColourPalette(defaultBackground: Colour): Colour[] {
+    return this.game.colours(defaultBackground);
   }
 
-  private get tileSize(): number {
+  private get preferredTileSize(): number {
     return this.game.preferredTileSize ?? 32;
   }
 
   preferredSize(): Size {
-    return this.game.computeSize(this.params, this.tileSize);
+    return this.game.computeSize(this.params, this.preferredTileSize);
   }
 
   /** Pick the largest integer tile size whose board fits `maxSize`
    * (mirrors midend_size's fit-to-window behaviour, minus the
-   * user-size persistence the first port will refine). */
+   * user-size persistence a later change will add), record it, and
+   * inform the draw state (upstream's `game_set_size`). */
   size(maxSize: Size, _isUserSize: boolean, _dpr: number): Size {
-    const base = this.game.computeSize(this.params, this.tileSize);
+    const base = this.game.computeSize(this.params, this.preferredTileSize);
     if (base.w <= 0 || base.h <= 0) return base;
     const scale = Math.min(maxSize.w / base.w, maxSize.h / base.h, 1);
-    const tile = Math.max(1, Math.floor(this.tileSize * scale));
+    const tile = Math.max(1, Math.floor(this.preferredTileSize * scale));
+    this.currentTileSize = tile;
+    if (this.drawState !== null) {
+      this.game.setTileSize?.(this.drawState, tile);
+    }
     return this.game.computeSize(this.params, tile);
   }
 

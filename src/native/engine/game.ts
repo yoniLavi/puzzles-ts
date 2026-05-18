@@ -17,8 +17,22 @@
  * not a stub.
  */
 
-import type { Colour, GameStatus, Point, Size } from "../../puzzle/types.ts";
+import type {
+  Colour,
+  DrawTextOptions,
+  GameStatus,
+  Point,
+  Rect,
+  Size,
+} from "../../puzzle/types.ts";
 import type { RandomState } from "../random/index.ts";
+
+/** Returned by `interpretMove` when input changed UI/cursor state in
+ * place but produced no history move (upstream's `MOVE_UI_UPDATE`).
+ * The midend redraws and notifies but pushes no history entry. A
+ * unique symbol so it can never be confused with a game's `Move`. */
+export const UI_UPDATE: unique symbol = Symbol("ui-update");
+export type UiUpdate = typeof UI_UPDATE;
 
 /** Result of a solver attempt — discriminated so a string `Move`
  * cannot be mistaken for an error message. */
@@ -34,15 +48,40 @@ export interface PresetMenu<Params> {
   submenu?: PresetMenu<Params>[];
 }
 
-/** The minimal drawing surface a game's `redraw` may use. The concrete
- * canvas `Drawing` (src/puzzle/drawing.ts) satisfies this; the keystone
- * does not constrain the optimisation contract (full vs incremental
- * redraw) — that is shaped by the first real port. */
-export interface GameDrawing {
+/**
+ * The full puzzle drawing API a game's `redraw` may use. This is the
+ * long-stable upstream `drawing_api`, rendered in TS; the concrete
+ * canvas `Drawing` (src/puzzle/drawing.ts) satisfies it structurally
+ * with no change to `Drawing`. The engine does NOT impose a
+ * full-vs-incremental redraw policy — per-element diffing and
+ * first-draw-only setup are the game's own concern, exactly as
+ * upstream. `Blitter` is opaque to games (saved/restored as-is).
+ */
+export interface GameDrawing<Blitter = unknown> {
   startDraw(): void;
   endDraw(): void;
-  drawRect(rect: { x: number; y: number; w: number; h: number }, colour: number): void;
-  drawText(origin: Point, options: unknown, colour: number, text: string): void;
+  drawUpdate(rect: Rect): void;
+  clip(rect: Rect): void;
+  unclip(): void;
+  drawRect(rect: Rect, colour: number): void;
+  drawLine(p1: Point, p2: Point, colour: number, thickness: number): void;
+  drawPolygon(coords: Point[], fillColour: number, outlineColour: number): void;
+  drawCircle(
+    centre: Point,
+    radius: number,
+    fillColour: number,
+    outlineColour: number,
+  ): void;
+  drawText(
+    origin: Point,
+    options: DrawTextOptions,
+    colour: number,
+    text: string,
+  ): void;
+  blitterNew(size: Size): Blitter;
+  blitterFree(blitter: Blitter): void;
+  blitterSave(blitter: Blitter, origin: Point): void;
+  blitterLoad(blitter: Blitter, origin: Point): void;
 }
 
 export interface Game<Params, State, Move, Ui = unknown, DrawState = unknown> {
@@ -66,14 +105,16 @@ export interface Game<Params, State, Move, Ui = unknown, DrawState = unknown> {
   newState(p: Params, desc: string): State;
   newUi(state: State): Ui;
 
-  /** Translate a pointer/key event to a move, or `null` for "no move". */
+  /** Translate a pointer/key event to a move, `null` for "nothing
+   * happened", or `UI_UPDATE` for "UI/cursor changed in place, redraw
+   * but add no history entry". */
   interpretMove(
     s: State,
     ui: Ui,
     ds: DrawState | null,
     p: Point,
     button: number,
-  ): Move | null;
+  ): Move | null | UiUpdate;
   /** Pure: returns a NEW state. Throws if the move is illegal. */
   executeMove(s: State, m: Move): State;
 
@@ -86,11 +127,19 @@ export interface Game<Params, State, Move, Ui = unknown, DrawState = unknown> {
   textFormat?(s: State): string;
   statusbarText?(s: State, ui: Ui): string;
 
-  /** RGB palette (each component 0..1), index 0 is conventionally bg. */
-  colours(): Colour[];
+  /** RGB palette (each component 0..1), index 0 is conventionally the
+   * background. Receives the frontend default background so a game can
+   * derive its palette from the host (upstream's
+   * `frontend_default_colour`). */
+  colours(defaultBackground: Colour): Colour[];
   /** Upstream's `preferred_tilesize`; the size baseline. Default 32. */
   readonly preferredTileSize?: number;
   computeSize(p: Params, tileSize: number): Size;
+  /** Upstream's `game_set_size`: tell the draw state the chosen tile
+   * size so coordinate mapping (`interpretMove`) and `redraw` agree.
+   * The midend calls this after `newDrawState` (at the preferred
+   * size) and again whenever `size()` picks a new tile size. */
+  setTileSize?(ds: DrawState, tileSize: number): void;
   newDrawState?(s: State): DrawState;
   redraw?(
     dr: GameDrawing,
