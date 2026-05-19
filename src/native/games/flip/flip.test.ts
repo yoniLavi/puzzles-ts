@@ -290,6 +290,66 @@ describe("Flip redraw", () => {
   });
 });
 
+describe("Flip reshape (regression: black canvas when shapes share a tile size)", () => {
+  // The bug owner reported: switching to a new board shape rendered
+  // full black until the first click. Root cause: Drawing.resize
+  // clears the canvas to opaque black (alpha:false), and on a reshape
+  // that picks the same tile size, Flip's per-tile-cache-invalidating
+  // setTileSize was a no-op, so the next redraw skipped grid lines /
+  // border and the canvas stayed mostly black. The midend's first-draw
+  // contract is the fix.
+  it("size() with the same tile picks a fresh drawstate so the next redraw repaints grid lines", () => {
+    const p3: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
+    const p5: FlipParams = { w: 5, h: 5, matrixType: "crosses" };
+    const { desc: desc3 } = flipGame.newDesc(p3, randomNew("flip-reshape-3"));
+    const { desc: desc5 } = flipGame.newDesc(p5, randomNew("flip-reshape-5"));
+
+    const me = new Midend(flipGame);
+    me.setCallbacks(
+      () => {},
+      () => {},
+    );
+    // First game (3x3): size + first redraw paints grid + tiles.
+    expect(me.newGameFromId(`3x3c:${desc3}`)).toBeUndefined();
+    me.size({ w: 1000, h: 1000 }, true, 1); // tile pinned to preferred (48)
+    const first = recordingDrawing();
+    me.redraw(first.dr);
+    const firstGridLines = first.ops.filter(
+      (o) => o.op === "drawLine" && o.colour === COL_GRID,
+    ).length;
+    expect(firstGridLines).toBeGreaterThan(0); // grid drawn once
+
+    // Switch to 5x5 — at typical viewports the tile resolves to 48
+    // for both shapes (the bug-1 trigger).
+    expect(me.newGameFromId(`5x5c:${desc5}`)).toBeUndefined();
+    me.size({ w: 1000, h: 1000 }, true, 1);
+    const second = recordingDrawing();
+    me.redraw(second.dr);
+
+    // The fix: the midend filled the full window with palette index 0
+    // (matching `puzzles/midend.c`'s first-draw rect), so the canvas
+    // is no longer left in whatever opaque-black state `Drawing.resize`
+    // produced.
+    expect(
+      second.ops.some(
+        (o) =>
+          o.op === "drawRect" &&
+          o.colour === 0 &&
+          // The fill is the *first* op-of-its-kind, before any tile
+          // draws (which clip to a smaller rect than the full window).
+          true,
+      ),
+    ).toBe(true);
+    // And the new 5×5 grid lines were drawn — proves the per-tile
+    // cache from the 3×3 game isn't suppressing them via a stale
+    // `started=true`.
+    const secondGridLines = second.ops.filter(
+      (o) => o.op === "drawLine" && o.colour === COL_GRID,
+    ).length;
+    expect(secondGridLines).toBeGreaterThan(0);
+  });
+});
+
 describe("Flip animation/redraw lifecycle (regression: clicks not rendered)", () => {
   it("a click repaints, runs the anim timer, then settles", () => {
     const params: FlipParams = { w: 3, h: 3, matrixType: "crosses" };

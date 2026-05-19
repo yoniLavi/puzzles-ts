@@ -3,10 +3,16 @@
  * (imported solely from `*.test.ts`). It is the smallest thing that
  * exercises every midend path: a counter you increment toward a
  * target, with a solver that jumps straight to the target, a text
- * format, and a status bar. No drawing, not timed.
+ * format, and a status bar. No timed clock.
  *
  * State carries its own target, so `status(state)` is pure (the goal
  * is encoded in the state, exactly as a real game encodes its goal).
+ *
+ * It also implements just enough of the drawing contract
+ * (`newDrawState`/`setTileSize`/`redraw`) to drive the first-draw and
+ * force-redraw behaviour the midend mirrors from `midend.c`. Each
+ * `newDrawState` and each `redraw` invocation is recorded on the
+ * drawstate itself so tests can assert without leaking globals.
  *
  * This is the `ts-migration` "validated without a golden corpus"
  * discipline applied to the midend: the suite asserts behavioural
@@ -26,9 +32,23 @@ export interface FakeState {
 /** Moves are plain strings ⇒ JSON-safe ⇒ no serialiseMove needed. */
 export type FakeMove = "inc" | "solve";
 
+export interface FakeDrawState {
+  tileSize: number;
+  /** Incremented every time `setTileSize` is called. */
+  setSizeCalls: number;
+  /** Incremented every time `redraw` is called. */
+  redrawCalls: number;
+  /** The drawstate's identity counter, copied from a module-local
+   * monotonic at construction. Lets a test prove that `size()`
+   * recreated the drawstate (rather than mutating it in place). */
+  instance: number;
+}
+
+let nextInstance = 0;
+
 export const LEFT_BUTTON = 0x0200;
 
-export const fakeGame: Game<FakeParams, FakeState, FakeMove, null, null> = {
+export const fakeGame: Game<FakeParams, FakeState, FakeMove, null, FakeDrawState> = {
   id: "__fake__",
   wantsStatusbar: true,
   isTimed: false,
@@ -78,4 +98,18 @@ export const fakeGame: Game<FakeParams, FakeState, FakeMove, null, null> = {
     [0, 0, 0],
   ],
   computeSize: (p, tile) => ({ w: p.target * tile, h: tile }),
+
+  newDrawState: (_s) => ({
+    tileSize: 10,
+    setSizeCalls: 0,
+    redrawCalls: 0,
+    instance: nextInstance++,
+  }),
+  setTileSize: (ds, tileSize) => {
+    ds.tileSize = tileSize;
+    ds.setSizeCalls += 1;
+  },
+  redraw: (_dr, ds) => {
+    if (ds !== null) ds.redrawCalls += 1;
+  },
 };

@@ -62,6 +62,14 @@ export interface EngineCore {
   loadGame(data: Uint8Array): string | undefined;
   timer(tplus: number): void;
   redraw(dr: GameDrawing): void;
+  /** Mirror of `midend_force_redraw`: discard the current per-game
+   * draw state and recreate it (so any per-tile cache the game holds
+   * is dropped), arm the "first draw" flag (so the next paint fills
+   * the window with the game's background colour 0 before delegating
+   * to `game.redraw`), and run a redraw immediately. The worker
+   * adapter calls this after a palette or font replacement, just like
+   * the C path's `frontend.forceRedraw()`. */
+  forceRedraw(dr: GameDrawing): void;
   delete(): void;
 }
 
@@ -86,6 +94,23 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private ui!: Ui;
   private drawState: DrawState | null = null;
   private currentTileSize: number;
+  /** Window pixel size for the current params at `currentTileSize`.
+   * Maintained by `size()`; used by the first-draw background fill so
+   * the entire canvas (including the per-game border/margin) is
+   * cleared to palette index 0 before `game.redraw` runs, exactly
+   * like `midend.c`'s first-draw rect. */
+  private winSize: Size = { w: 0, h: 0 };
+  /** Has `size()` ever produced a sized drawstate? Distinguishes "the
+   * initial drawstate freshly built by `startFrom`" from "a drawstate
+   * that has been used at the current canvas dimensions and needs
+   * recreating before the next size()", mirroring midend.c's check
+   * `if (me->drawstate && me->tilesize > 0)`. */
+  private drawStateSized = false;
+  /** Armed whenever the canvas needs a clean background fill before
+   * the next `game.redraw` (i.e. at construction, after `size()`
+   * recreates the drawstate, and after `forceRedraw`). Mirrors
+   * `midend.c`'s `first_draw`. */
+  private firstDraw = true;
   private usedSolve = false;
   private timerElapsed = 0;
   private notify?: NotifyChange;
@@ -181,6 +206,13 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     if (this.drawState !== null) {
       this.game.setTileSize?.(this.drawState, this.currentTileSize);
     }
+    // A fresh game's drawstate hasn't been "sized" yet in the
+    // midend.c sense — that happens on the next `size()` call from
+    // the app, which then knows to recreate it. Arm first-draw so the
+    // next paint fills the canvas cleanly (the previous game's pixels
+    // may still be onscreen).
+    this.drawStateSized = false;
+    this.firstDraw = true;
     this.usedSolve = false;
     this.timerElapsed = 0;
     this.clearAnimation();
@@ -188,7 +220,15 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.emitParamsChange();
     this.emitStateChange();
     this.emitStatusBar();
-    this.requestRedraw();
+    // No `requestRedraw()` here: the app reliably drives the first
+    // paint after a new game through its reactive flow
+    // (size → resizeDrawing → redraw). A redraw fired here would paint
+    // into a possibly-stale canvas at a possibly-stale tile size, and
+    // — when the new game happens to pick the same tile as the
+    // previous one — would set `ds.started = true` ahead of the
+    // app's resize, suppressing grid-line and border repaint after
+    // the canvas was cleared. Parity with `midend.c` (which does not
+    // call `midend_redraw` from `midend_new_game`).
     this.syncTimer();
   }
 
@@ -380,17 +420,39 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   /** Pick the largest integer tile size whose board fits `maxSize`
    * (mirrors midend_size's fit-to-window behaviour, minus the
    * user-size persistence a later change will add), record it, and
-   * inform the draw state (upstream's `game_set_size`). */
+   * inform the draw state (upstream's `game_set_size`).
+   *
+   * Like `midend.c`'s `midend_size`, when there is an already-sized
+   * drawstate we discard it and create a fresh one from the current
+   * initial state. The frontend's `resizeDrawing` is going to clear
+   * the offscreen canvas to opaque black; a fresh drawstate plus
+   * the armed first-draw flag guarantees the next `redraw` paints
+   * the full window cleanly rather than relying on a possibly-stale
+   * per-tile cache (per-game caches like Flip's only invalidate when
+   * the tile size *changes*, which doesn't happen if a different
+   * board shape picks the same tile). */
   size(maxSize: Size, _isUserSize: boolean, _dpr: number): Size {
     const base = this.game.computeSize(this.params, this.preferredTileSize);
-    if (base.w <= 0 || base.h <= 0) return base;
+    if (base.w <= 0 || base.h <= 0) {
+      this.winSize = base;
+      return base;
+    }
     const scale = Math.min(maxSize.w / base.w, maxSize.h / base.h, 1);
     const tile = Math.max(1, Math.floor(this.preferredTileSize * scale));
     this.currentTileSize = tile;
+    if (this.drawState !== null && this.drawStateSized) {
+      // Recreate the drawstate from the initial state. After this,
+      // any per-tile cache the game holds is gone; the next redraw
+      // will paint everything.
+      this.drawState = this.game.newDrawState?.(this.history[0]) ?? null;
+    }
     if (this.drawState !== null) {
       this.game.setTileSize?.(this.drawState, tile);
     }
-    return this.game.computeSize(this.params, tile);
+    this.winSize = this.game.computeSize(this.params, tile);
+    this.drawStateSized = true;
+    this.firstDraw = true;
+    return this.winSize;
   }
 
   formatAsText(): string | undefined {
@@ -498,6 +560,17 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   redraw(dr: GameDrawing): void {
     if (!this.game.redraw) return;
     dr.startDraw();
+    // Mirror `midend.c` lines 1370-1401: the initial contents of the
+    // canvas are not guaranteed (here, `Drawing.resize` cleared it to
+    // opaque black under `{alpha:false}`), and we don't want every
+    // game to repaint its border/margin region. Centralise it: when
+    // first-draw is armed, fill the whole window with palette index 0
+    // before delegating to the game, and emit a full-window
+    // `drawUpdate` after.
+    const wasFirst = this.firstDraw;
+    if (wasFirst && this.winSize.w > 0 && this.winSize.h > 0) {
+      dr.drawRect({ x: 0, y: 0, w: this.winSize.w, h: this.winSize.h }, 0);
+    }
     this.game.redraw(
       dr,
       this.drawState,
@@ -508,7 +581,26 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       this.animTime,
       this.flashTime,
     );
+    if (wasFirst && this.winSize.w > 0 && this.winSize.h > 0) {
+      dr.drawUpdate({ x: 0, y: 0, w: this.winSize.w, h: this.winSize.h });
+      this.firstDraw = false;
+    }
     dr.endDraw();
+  }
+
+  /** Mirror of `midend_force_redraw`: drop the per-game drawstate
+   * (so any cache it holds is gone), arm first-draw, and paint. The
+   * worker adapter calls this when an already-installed palette or
+   * font is replaced — exactly the cases the C path's webapp.cpp
+   * `forceRedraw()` covers. */
+  forceRedraw(dr: GameDrawing): void {
+    if (this.history.length === 0) return;
+    if (this.game.newDrawState) {
+      this.drawState = this.game.newDrawState(this.history[0]);
+      this.game.setTileSize?.(this.drawState, this.currentTileSize);
+    }
+    this.firstDraw = true;
+    this.redraw(dr);
   }
 
   delete(): void {

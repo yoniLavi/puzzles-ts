@@ -1,7 +1,35 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ChangeNotification } from "../../puzzle/types.ts";
-import { fakeGame, LEFT_BUTTON } from "./fake-game.ts";
+import { type FakeDrawState, fakeGame, LEFT_BUTTON } from "./fake-game.ts";
+import type { GameDrawing } from "./game.ts";
 import { Midend } from "./midend.ts";
+
+/** Recording fake `GameDrawing` for engine-level redraw assertions —
+ * mirrors `src/native/games/flip/flip.test.ts`'s helper. */
+function recordingDrawing() {
+  const ops: Array<{
+    op: string;
+    colour?: number;
+    rect?: { x: number; y: number; w: number; h: number };
+  }> = [];
+  const dr: GameDrawing = {
+    startDraw: () => ops.push({ op: "startDraw" }),
+    endDraw: () => ops.push({ op: "endDraw" }),
+    drawUpdate: (rect) => ops.push({ op: "drawUpdate", rect }),
+    clip: () => ops.push({ op: "clip" }),
+    unclip: () => ops.push({ op: "unclip" }),
+    drawRect: (rect, colour) => ops.push({ op: "drawRect", rect, colour }),
+    drawLine: (_a, _b, colour) => ops.push({ op: "drawLine", colour }),
+    drawPolygon: (_p, colour) => ops.push({ op: "drawPolygon", colour }),
+    drawCircle: (_p, _r, colour) => ops.push({ op: "drawCircle", colour }),
+    drawText: (_p, _o, colour) => ops.push({ op: "drawText", colour }),
+    blitterNew: () => ({}),
+    blitterFree: () => {},
+    blitterSave: () => {},
+    blitterLoad: () => {},
+  };
+  return { dr, ops };
+}
 
 /** Drive a fresh midend and record every notification it emits. */
 function harness() {
@@ -238,5 +266,134 @@ describe("Midend timer", () => {
     expect(h.timerActive()).toBe(false);
     // No status-bar churn from the inert tick beyond the newGame ones.
     expect(h.m.formatAsText()).toBe("count=0");
+  });
+});
+
+describe("Midend size + first-draw (regression: black canvas on reshape)", () => {
+  function midend() {
+    const m = new Midend(fakeGame);
+    m.setCallbacks(
+      () => {},
+      () => {},
+    );
+    m.newGame();
+    return m;
+  }
+
+  it("the very first redraw fills the window with palette index 0", () => {
+    const m = midend();
+    m.size({ w: 200, h: 200 }, true, 1);
+    const { dr, ops } = recordingDrawing();
+    m.redraw(dr);
+    // The first op after startDraw should be a full-window background
+    // fill (colour 0). winSize = computeSize(target=3, tile=10).
+    const bg = ops.find((o) => o.op === "drawRect" && o.colour === 0);
+    expect(bg?.rect).toEqual({ x: 0, y: 0, w: 30, h: 10 });
+    // And a full-window drawUpdate fires after.
+    const updates = ops.filter((o) => o.op === "drawUpdate");
+    expect(updates.at(-1)?.rect).toEqual({ x: 0, y: 0, w: 30, h: 10 });
+  });
+
+  it("size() after a prior size() recreates the drawstate (different instance)", () => {
+    const m = midend();
+    m.size({ w: 200, h: 200 }, true, 1);
+    // Drive a paint so the drawstate is "in use".
+    const a = recordingDrawing();
+    m.redraw(a.dr);
+    // FakeDrawState's redrawCalls counter persists across redraws of
+    // the same drawstate. After a reshape, the next redraw should
+    // see a *fresh* drawstate (counter starts at 0).
+    const stateAfterFirst = (
+      m as unknown as { drawState: FakeDrawState }
+    ).drawState;
+    expect(stateAfterFirst.redrawCalls).toBeGreaterThan(0);
+    const oldInstance = stateAfterFirst.instance;
+
+    m.size({ w: 400, h: 400 }, true, 1); // re-size
+    const stateAfterResize = (
+      m as unknown as { drawState: FakeDrawState }
+    ).drawState;
+    expect(stateAfterResize.instance).not.toBe(oldInstance);
+    expect(stateAfterResize.redrawCalls).toBe(0);
+  });
+
+  it("a second size() arms first-draw again so the next redraw refills the window", () => {
+    const m = midend();
+    m.size({ w: 200, h: 200 }, true, 1);
+    const a = recordingDrawing();
+    m.redraw(a.dr); // consumes the first-draw fill
+
+    // A subsequent redraw without an intervening size() does NOT
+    // refill (cache-friendly redraw, the usual case in midend.c).
+    const b = recordingDrawing();
+    m.redraw(b.dr);
+    expect(b.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(false);
+
+    // But after a reshape, the fill is back.
+    m.size({ w: 400, h: 400 }, true, 1);
+    const c = recordingDrawing();
+    m.redraw(c.dr);
+    expect(c.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(true);
+  });
+
+});
+
+describe("Midend forceRedraw (regression: stale per-tile cache after palette/font change)", () => {
+  function midend() {
+    const m = new Midend(fakeGame);
+    m.setCallbacks(
+      () => {},
+      () => {},
+    );
+    m.newGame();
+    m.size({ w: 200, h: 200 }, true, 1);
+    // Consume the initial first-draw fill.
+    const { dr } = recordingDrawing();
+    m.redraw(dr);
+    return m;
+  }
+
+  it("recreates the drawstate", () => {
+    const m = midend();
+    const oldInstance = (m as unknown as { drawState: FakeDrawState }).drawState
+      .instance;
+    const { dr } = recordingDrawing();
+    m.forceRedraw(dr);
+    const newInstance = (m as unknown as { drawState: FakeDrawState }).drawState
+      .instance;
+    expect(newInstance).not.toBe(oldInstance);
+  });
+
+  it("paints the full-window background-fill rectangle as part of the redraw", () => {
+    const m = midend();
+    const { dr, ops } = recordingDrawing();
+    m.forceRedraw(dr);
+    const bg = ops.find((o) => o.op === "drawRect" && o.colour === 0);
+    expect(bg?.rect).toEqual({ x: 0, y: 0, w: 30, h: 10 });
+  });
+
+  it("is a no-op without a game (defensive guard)", () => {
+    const fresh = new Midend(fakeGame);
+    fresh.setCallbacks(
+      () => {},
+      () => {},
+    );
+    const { dr, ops } = recordingDrawing();
+    expect(() => fresh.forceRedraw(dr)).not.toThrow();
+    expect(ops.filter((o) => o.op === "drawRect").length).toBe(0);
+  });
+});
+
+describe("Midend startFrom no longer fires an early redraw (was racing the app's resize)", () => {
+  it("newGame emits notifications but does NOT request a redraw", () => {
+    const h = harness();
+    h.m.newGame();
+    // Before this fix, startFrom called requestRedraw(); now the app
+    // drives the first paint after newGame through its reactive flow
+    // (size → resizeDrawing → redraw). The notifications still fire
+    // — that part is unchanged.
+    expect(h.redraws()).toBe(0);
+    const types = new Set(h.notes.map((n) => n.type));
+    expect(types).toContain("game-id-change");
   });
 });

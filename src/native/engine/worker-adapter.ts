@@ -202,11 +202,19 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   setDrawingPalette(colors: string[]): void {
     if (!this.drawing) throw new Error("setDrawingPalette: no canvas attached");
     if (colors.length > 0) this.paletteReady = true;
-    if (this.drawing.setPalette(colors)) this.redraw();
+    // `setPalette` returns true only when an already-installed
+    // palette was replaced (light/dark toggle). In that case the
+    // per-tile cache any game holds was keyed against the old
+    // palette and is stale — drop the drawstate, arm first-draw and
+    // repaint, matching `puzzles/webapp.cpp`'s
+    // `setDrawingPalette → forceRedraw()`.
+    if (this.drawing.setPalette(colors)) this.forceRedraw();
   }
   setDrawingFontInfo(fontInfo: FontInfo): void {
     if (!this.drawing) throw new Error("setDrawingFontInfo: no canvas attached");
-    if (this.drawing.setFontInfo(fontInfo)) this.redraw();
+    // Same reasoning: a font change invalidates any per-tile cache;
+    // C path calls `forceRedraw()` here too.
+    if (this.drawing.setFontInfo(fontInfo)) this.forceRedraw();
   }
   async getImage(options?: ImageEncodeOptions): Promise<Blob> {
     if (!this.drawing) throw new Error("getImage: no canvas attached");
@@ -214,6 +222,17 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   }
   redraw(): void {
     if (this.drawing && this.paletteReady) this.engine.redraw(this.drawing);
+  }
+
+  /** Internal-only mirror of `WorkerPuzzle.frontend.forceRedraw()`
+   * — the canvas-invalidating paths (palette/font replacement) want
+   * a full repaint with the per-game drawstate dropped, not just a
+   * plain `engine.redraw` that would honour the now-stale cache. Not
+   * on `PuzzleEngineSurface`: the app's own redraw path goes through
+   * `redraw()` plus `Midend.size`-driven first-draw, same as the C
+   * path. */
+  private forceRedraw(): void {
+    if (this.drawing && this.paletteReady) this.engine.forceRedraw(this.drawing);
   }
 
   // --- timer ------------------------------------------------------
