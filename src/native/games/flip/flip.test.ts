@@ -1,8 +1,34 @@
 import { describe, expect, it } from "vitest";
 import { type ChangeNotification, PuzzleButton } from "../../../puzzle/types.ts";
-import { Midend } from "../../engine/index.ts";
+import { type GameDrawing, Midend, UI_UPDATE } from "../../engine/index.ts";
 import { randomNew } from "../../random/index.ts";
 import { type FlipParams, type FlipState, flipGame } from "./index.ts";
+
+/** Recording fake of the full `GameDrawing` surface. */
+function recordingDrawing() {
+  const ops: Array<{ op: string; colour?: number }> = [];
+  const rec = (op: string, colour?: number) => ops.push({ op, colour });
+  const dr: GameDrawing = {
+    startDraw: () => rec("startDraw"),
+    endDraw: () => rec("endDraw"),
+    drawUpdate: () => rec("drawUpdate"),
+    clip: () => rec("clip"),
+    unclip: () => rec("unclip"),
+    drawRect: (_r, c) => rec("drawRect", c),
+    drawLine: (_a, _b, c) => rec("drawLine", c),
+    drawPolygon: (_p, f) => rec("drawPolygon", f),
+    drawCircle: (_p, _r, f) => rec("drawCircle", f),
+    drawText: (_p, _o, c) => rec("drawText", c),
+    blitterNew: () => ({}),
+    blitterFree: () => rec("blitterFree"),
+    blitterSave: () => rec("blitterSave"),
+    blitterLoad: () => rec("blitterLoad"),
+  };
+  return { dr, ops };
+}
+
+const COL_GRID = 3;
+const COL_HINT = 5;
 
 // `solve` is optional on the `Game` interface; Flip always has one.
 const solveFlip = flipGame.solve as NonNullable<typeof flipGame.solve>;
@@ -128,6 +154,142 @@ describe("Flip params", () => {
   });
 });
 
+describe("Flip interpretMove", () => {
+  const p: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
+  const desc = flipGame.newDesc(p, randomNew("flip-im")).desc;
+  const tile = flipGame.preferredTileSize ?? 32;
+  const border = tile >> 1;
+  const at = (cx: number, cy: number) =>
+    ({ x: cx * tile + border + 1, y: cy * tile + border + 1 }) as const;
+
+  it("left-click in a cell yields a flip move at that cell", () => {
+    const s = flipGame.newState(p, desc);
+    const ui = flipGame.newUi(s);
+    const m = flipGame.interpretMove(s, ui, null, at(2, 1), 0x0200);
+    expect(m).toEqual({ kind: "flip", x: 2, y: 1 });
+    expect(ui.cursorVisible).toBe(false);
+  });
+
+  it("left-click outside the grid is a UI update, not a move", () => {
+    const s = flipGame.newState(p, desc);
+    const ui = flipGame.newUi(s);
+    expect(flipGame.interpretMove(s, ui, null, { x: 9999, y: 9999 }, 0x0200))
+      .toBe(UI_UPDATE);
+  });
+
+  it("cursor move is a UI update and advances the cursor; select acts", () => {
+    const s = flipGame.newState(p, desc);
+    const ui = flipGame.newUi(s);
+    expect(flipGame.interpretMove(s, ui, null, { x: 0, y: 0 }, 0x0200 + 12))
+      .toBe(UI_UPDATE); // CURSOR_RIGHT
+    expect(ui.cx).toBe(1);
+    expect(ui.cursorVisible).toBe(true);
+    const m = flipGame.interpretMove(s, ui, null, { x: 0, y: 0 }, 0x0200 + 13);
+    expect(m).toEqual({ kind: "flip", x: 1, y: 0 }); // CURSOR_SELECT
+  });
+
+  it("a cell whose matrix row is empty makes no move (no-effect)", () => {
+    const wh = 4;
+    const s: FlipState = {
+      w: 2,
+      h: 2,
+      matrix: new Uint8Array(wh * wh), // all zero ⇒ nothing toggles
+      grid: new Uint8Array(wh),
+      moves: 0,
+      completed: false,
+      cheated: false,
+      hintsActive: false,
+    };
+    expect(flipGame.interpretMove(s, flipGame.newUi(s), null, at(0, 0), 0x0200))
+      .toBeNull();
+  });
+
+  it("an unhandled button yields null", () => {
+    const s = flipGame.newState(p, desc);
+    expect(flipGame.interpretMove(s, flipGame.newUi(s), null, at(0, 0), 0x0201))
+      .toBeNull();
+  });
+});
+
+describe("Flip executeMove is pure and toggles the matrix row", () => {
+  const p: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
+  const desc = flipGame.newDesc(p, randomNew("flip-em")).desc;
+
+  it("returns a new state, shares the matrix, never mutates input", () => {
+    const from = flipGame.newState(p, desc);
+    const gridBefore = from.grid.slice();
+    const next = flipGame.executeMove(from, { kind: "flip", x: 1, y: 1 });
+    expect(next).not.toBe(from);
+    expect(next.matrix).toBe(from.matrix); // shared by reference
+    expect(next.grid).not.toBe(from.grid);
+    expect([...from.grid]).toEqual([...gridBefore]); // input untouched
+    // Clicking (1,1) XORs the matrix row for cell 4 into the grid.
+    const wh = 9;
+    for (let j = 0; j < wh; j++) {
+      const expected = (gridBefore[j] ^ from.matrix[4 * wh + j]) & 1;
+      expect(next.grid[j] & 1).toBe(expected);
+    }
+    expect(next.moves).toBe(from.moves + 1);
+  });
+
+  it("a solve move marks the hint bit per the mask and sets cheated", () => {
+    const from = flipGame.newState(p, desc);
+    const mask = [1, 0, 1, 0, 0, 0, 0, 0, 1];
+    const next = flipGame.executeMove(from, { kind: "solve", mask });
+    expect(next.cheated).toBe(true);
+    expect(next.hintsActive).toBe(true);
+    mask.forEach((bit, i) => {
+      expect((next.grid[i] >> 1) & 1).toBe(bit);
+    });
+  });
+});
+
+describe("Flip redraw", () => {
+  const p: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
+  const desc = flipGame.newDesc(p, randomNew("flip-rd")).desc;
+
+  it("draws the grid once, then the per-tile cache suppresses redundant redraws", () => {
+    const s = flipGame.newState(p, desc);
+    const ui = flipGame.newUi(s);
+    const ds = flipGame.newDrawState?.(s);
+    if (!ds || !flipGame.redraw) throw new Error("flip has redraw + drawState");
+    flipGame.setTileSize?.(ds, flipGame.preferredTileSize ?? 32);
+
+    const a = recordingDrawing();
+    flipGame.redraw(a.dr, ds, null, s, 1, ui, 0, 0);
+    // (w+1)+(h+1) = 8 grid lines, all COL_GRID, drawn once.
+    const gridLines = a.ops.filter(
+      (o) => o.op === "drawLine" && o.colour === COL_GRID,
+    );
+    expect(gridLines.length).toBe(8);
+    expect(a.ops.some((o) => o.op === "drawRect")).toBe(true);
+
+    // Re-drawing the identical state: grid already started, every tile
+    // unchanged ⇒ no new tile/grid ops (the cache that keeps animation
+    // from repainting the whole board every frame).
+    const b = recordingDrawing();
+    flipGame.redraw(b.dr, ds, null, s, 1, ui, 0, 0);
+    expect(b.ops.filter((o) => o.op === "drawLine").length).toBe(0);
+    expect(b.ops.filter((o) => o.op === "drawRect").length).toBe(0);
+  });
+
+  it("renders solver hint outlines when hints are active", () => {
+    const base = flipGame.newState(p, desc);
+    const hinted = flipGame.executeMove(base, {
+      kind: "solve",
+      mask: [1, 1, 1, 1, 1, 1, 1, 1, 1],
+    });
+    const ui = flipGame.newUi(hinted);
+    const ds = flipGame.newDrawState?.(hinted);
+    if (!ds || !flipGame.redraw) throw new Error("flip has redraw + drawState");
+    flipGame.setTileSize?.(ds, flipGame.preferredTileSize ?? 32);
+    const a = recordingDrawing();
+    flipGame.redraw(a.dr, ds, null, hinted, 1, ui, 0, 0);
+    expect(a.ops.some((o) => o.op === "drawLine" && o.colour === COL_HINT))
+      .toBe(true);
+  });
+});
+
 describe("Flip animation/redraw lifecycle (regression: clicks not rendered)", () => {
   it("a click repaints, runs the anim timer, then settles", () => {
     const params: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
@@ -152,15 +314,18 @@ describe("Flip animation/redraw lifecycle (regression: clicks not rendered)", ()
     const border = tile >> 1;
     // Click cell (0,0): a crosses cell always toggles ⇒ a real move.
     expect(me.processInput(border + 1, border + 1, 0x0200)).toBe(true);
-    expect(redraws).toBeGreaterThan(afterLoad); // painted immediately
+    // An animated move does NOT paint synchronously (that frame-0 paint
+    // is the flicker we removed); it arms the rAF timer instead.
+    expect(redraws).toBe(afterLoad);
     expect(timerActive).toBe(true); // ANIM_TIME>0 ⇒ rAF loop requested
 
-    const midAnim = redraws;
-    me.timer(0.1); // partway through ANIM_TIME (0.25)
-    expect(redraws).toBeGreaterThan(midAnim);
+    me.timer(0.1); // first timer tick paints the first animation frame
+    expect(redraws).toBeGreaterThan(afterLoad);
     expect(timerActive).toBe(true);
 
-    me.timer(0.3); // past ANIM_TIME ⇒ animation ends, timer released
+    const midAnim = redraws;
+    me.timer(0.3); // past ANIM_TIME ⇒ final settle paint, timer released
+    expect(redraws).toBeGreaterThan(midAnim);
     expect(timerActive).toBe(false);
   });
 });

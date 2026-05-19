@@ -276,9 +276,13 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private afterTransition(): void {
     this.emitStateChange();
     this.emitStatusBar();
-    // Paint immediately (the C frontend redraws after every processed
-    // input), then run the animation timer if this transition animates.
-    this.requestRedraw();
+    // A non-animated transition paints immediately (the C frontend
+    // redraws after every processed input). An animated one does NOT
+    // paint synchronously here: that would show a degenerate
+    // animTime=0 frame and race the rAF loop one frame later
+    // (visible flicker). The timer drives every animation frame,
+    // including the first — exactly as midend.c's frontend timer does.
+    if (!this.animating) this.requestRedraw();
     this.syncTimer();
   }
 
