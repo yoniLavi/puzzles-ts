@@ -197,7 +197,15 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   }
   resizeDrawing({ w, h }: Size, dpr: number): void {
     if (!this.drawing) throw new Error("resizeDrawing: no canvas attached");
+    // `Drawing.resize` sets `canvas.width`/`height`, which under
+    // `{alpha:false}` resets the backing store to opaque black. The
+    // engine's per-tile cache (what the game's `redraw` consults to
+    // skip unchanged cells) is now stale — every cached entry's
+    // pixels are gone. Tell the engine, so it drops the drawstate
+    // and the next `redraw` paints from scratch via the game's
+    // `!ds.started` branch.
     this.drawing.resize(w, h, dpr);
+    this.engine.canvasCleared();
   }
   setDrawingPalette(colors: string[]): void {
     if (!this.drawing) throw new Error("setDrawingPalette: no canvas attached");

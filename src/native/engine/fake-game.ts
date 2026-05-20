@@ -34,13 +34,20 @@ export type FakeMove = "inc" | "solve";
 
 export interface FakeDrawState {
   tileSize: number;
+  /** Mirrors the per-game first-paint flag every real game keeps
+   * (`ds.started` in Flip/upstream). The fake's `redraw` paints a
+   * one-off background rect when this is false, then sets it true —
+   * exactly the pattern the engine now relies on every game to
+   * implement (since the engine itself no longer paints pixels). */
+  started: boolean;
   /** Incremented every time `setTileSize` is called. */
   setSizeCalls: number;
   /** Incremented every time `redraw` is called. */
   redrawCalls: number;
   /** The drawstate's identity counter, copied from a module-local
-   * monotonic at construction. Lets a test prove that `size()`
-   * recreated the drawstate (rather than mutating it in place). */
+   * monotonic at construction. Lets a test prove that
+   * `canvasCleared`/`forceRedraw` recreated the drawstate (rather
+   * than mutating it in place). */
   instance: number;
 }
 
@@ -101,6 +108,7 @@ export const fakeGame: Game<FakeParams, FakeState, FakeMove, null, FakeDrawState
 
   newDrawState: (_s) => ({
     tileSize: 10,
+    started: false,
     setSizeCalls: 0,
     redrawCalls: 0,
     instance: nextInstance++,
@@ -109,7 +117,18 @@ export const fakeGame: Game<FakeParams, FakeState, FakeMove, null, FakeDrawState
     ds.tileSize = tileSize;
     ds.setSizeCalls += 1;
   },
-  redraw: (_dr, ds) => {
-    if (ds !== null) ds.redrawCalls += 1;
+  redraw: (dr, ds, _prev, s) => {
+    if (ds === null) return;
+    ds.redrawCalls += 1;
+    if (!ds.started) {
+      // First paint of this drawstate — game owns the background
+      // fill (no engine-emitted pixels). winSize = state.target *
+      // tileSize wide × tileSize tall, matching `computeSize`.
+      dr.drawRect(
+        { x: 0, y: 0, w: s.target * ds.tileSize, h: ds.tileSize },
+        0,
+      );
+      ds.started = true;
+    }
   },
 };

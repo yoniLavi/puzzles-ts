@@ -19,34 +19,48 @@ animation completes. A non-animated transition SHALL paint once;
 animation frames (including the first) SHALL be driven by the timer
 rather than by an extra synchronous paint that would race the timer.
 
-**Background-fill / fresh-drawstate parity with `midend_size` and
-`midend_force_redraw`:** the midend SHALL also reproduce upstream's
-"first draw" contract that gives a game a clean canvas after the
-backing store has been invalidated. Specifically:
+**The engine emits no pixels of its own.** `Midend.redraw(dr)`
+SHALL delegate the entire frame to `game.redraw` (between
+`startDraw`/`endDraw`). It SHALL NOT emit a background-fill rectangle,
+a clear, or any other paint operation that overwrites what the game
+last drew. Background and one-time setup (grid lines, board border,
+fixed-position artwork) SHALL be the game's responsibility, painted
+in its `!ds.started` branch and re-fired on a fresh drawstate.
 
-- `Midend.size()` SHALL, when a drawstate has already been sized,
-  discard it and construct a fresh one from the current state via
-  `game.newDrawState`, apply `setTileSize` to that new drawstate, and
-  arm a first-draw flag. This mirrors `midend_size`'s
-  free-drawstate-and-recreate / `first_draw = true` step (see
-  `puzzles/midend.c`).
-- `Midend.redraw(dr)` SHALL, while the first-draw flag is armed, fill
-  the entire window with the game's background colour (palette index
-  0) **before** calling `game.redraw`, and SHALL emit a full-window
-  `drawUpdate` **after** the game's redraw completes. The flag SHALL
-  be cleared by the redraw it covers.
-- The midend SHALL expose `forceRedraw(dr)` that performs the
-  drawstate recreation, arms the first-draw flag, and runs a redraw —
-  mirroring `midend_force_redraw`. The worker adapter SHALL call this
-  when an already-installed palette or font is replaced (those
-  invalidate any per-tile cache the game holds), matching the
-  C-path's `frontend.forceRedraw()` invocations from
-  `setDrawingPalette` / `setDrawingFontInfo`.
+**Canvas-cleared / cache-stale signals.** The engine SHALL expose:
 
-A startup invariant: the first-draw flag SHALL be armed by default so
-the very first `redraw` after game/canvas setup paints a clean
-background — independently of whether the per-game `redraw` itself
-paints the border / margin area.
+- `Midend.size(maxSize, isUserSize, dpr): Size` — **purely
+  informational**. It SHALL compute and return the puzzle's preferred
+  pixel size at the resolved tile size and SHALL inform the game via
+  `setTileSize`, but SHALL NOT recreate the drawstate, invalidate any
+  per-tile cache, or schedule any framework-emitted overpaint. The
+  frontend may call `size()` on every layout perturbation (any
+  element-size change goes through it via `puzzle-view.ts`'s
+  `ResizeController`); a side-effecting call here would wipe caches
+  at unrelated moments and cause spurious full repaints.
+
+- `Midend.canvasCleared()` — the signal that the canvas backing
+  store has been reset by `Drawing.resize` (`alpha:false` clears to
+  opaque black on every `canvas.width=` write). The midend SHALL
+  discard the per-game drawstate and construct a fresh one via
+  `game.newDrawState`, applying `setTileSize`. The next `redraw`
+  SHALL therefore see `!ds.started` and the game SHALL paint from
+  scratch, including its own background. The worker adapter SHALL
+  invoke this from `resizeDrawing` immediately after `Drawing.resize`.
+
+- `Midend.forceRedraw(dr)` — palette or font replacement does not
+  clear the canvas but invalidates the colour/font choices baked
+  into cached tiles. `forceRedraw` SHALL discard the drawstate (the
+  same effect as `canvasCleared`) and immediately call `redraw(dr)`;
+  the game's `!ds.started` branch paints a fresh frame over the
+  old pixels, in the new palette/font. The worker adapter SHALL
+  invoke `forceRedraw` when `setDrawingPalette` or
+  `setDrawingFontInfo` replaces an already-installed value.
+
+A startup invariant: a drawstate created by `startFrom` (newGame /
+newGameFromId / loadGame) SHALL have `started=false` (or its
+per-game equivalent), so the first `redraw` after a new game paints
+the bg + one-time setup via the game's first-paint branch.
 
 #### Scenario: A processed move repaints
 
@@ -72,27 +86,42 @@ paints the border / margin area.
 - **AND** the game is not eligible for parity registration until it
   repaints and animates to parity with the C build
 
-#### Scenario: A reshape that picks the same tile size still repaints from scratch
+#### Scenario: `Midend.size` is purely informational
 
-- **WHEN** the app calls `size()` after a previous successful `size()`
-  call — for example because the user switched to a new board shape
-  whose pixel size differs from before, but the per-tile size resolves
-  to the same value as the previous game
-- **THEN** the midend discards the existing drawstate, constructs a
-  fresh one from the new game's initial state, and arms first-draw
-- **AND** the next `redraw(dr)` fills the entire window with palette
-  index 0 before delegating to `game.redraw`, so the canvas is not
-  left in whatever state `Drawing.resize` (which clears to opaque
-  black under `{alpha:false}`) left it
+- **WHEN** the frontend calls `size()` repeatedly (e.g. on every
+  ResizeController tick, including ones with no actual canvas-size
+  change)
+- **THEN** the midend computes and returns the preferred pixel size
+  but DOES NOT recreate the drawstate, change drawstate identity, or
+  cause the next `redraw` to emit a background fill
+- **AND** the per-tile cache the game holds survives unchanged
 
-#### Scenario: A palette change after first install repaints from scratch
+#### Scenario: A real canvas clear invalidates the drawstate
+
+- **WHEN** the worker adapter calls `Midend.canvasCleared()` after
+  `Drawing.resize` reset the canvas backing store
+- **THEN** the midend discards the per-game drawstate and constructs
+  a fresh one (with `started=false` and any cache cleared)
+- **AND** the next `redraw(dr)` causes the game's `!ds.started`
+  branch to run, painting the bg + one-time setup + every tile
+  fresh
+
+#### Scenario: A palette replacement repaints without clearing the canvas
 
 - **WHEN** the worker adapter receives a `setDrawingPalette` call that
   replaces an already-installed palette (e.g. the user toggles
   light/dark mode)
-- **THEN** the adapter calls `engine.forceRedraw(dr)` rather than the
-  plain `engine.redraw(dr)`
-- **AND** the redraw fills the window with the new palette's index 0
-  before the game's own `redraw` runs, so any per-tile cache the game
-  holds against the old palette is invalidated and the canvas is
-  repainted cleanly
+- **THEN** the adapter calls `engine.forceRedraw(dr)`, which discards
+  the drawstate and runs `redraw`
+- **AND** the game's `!ds.started` branch paints the full frame in
+  the new palette over the existing canvas content — the framework
+  itself emits no overpaint
+
+#### Scenario: `Midend.redraw` emits no draw ops of its own
+
+- **WHEN** `Midend.redraw(dr)` is called
+- **THEN** the only ops it emits directly are `startDraw` and
+  `endDraw`; every other paint operation in the recording originates
+  from `game.redraw`
+- **AND** there is no framework-level background fill, clear, or
+  full-window overpaint

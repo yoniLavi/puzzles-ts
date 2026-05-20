@@ -292,13 +292,16 @@ describe("Flip redraw", () => {
 
 describe("Flip reshape (regression: black canvas when shapes share a tile size)", () => {
   // The bug owner reported: switching to a new board shape rendered
-  // full black until the first click. Root cause: Drawing.resize
+  // full black until the first click. Root cause: `Drawing.resize`
   // clears the canvas to opaque black (alpha:false), and on a reshape
-  // that picks the same tile size, Flip's per-tile-cache-invalidating
-  // setTileSize was a no-op, so the next redraw skipped grid lines /
-  // border and the canvas stayed mostly black. The midend's first-draw
-  // contract is the fix.
-  it("size() with the same tile picks a fresh drawstate so the next redraw repaints grid lines", () => {
+  // where the per-tile size happens to stay the same, Flip's
+  // cache-invalidating `setTileSize` was a no-op — so the next redraw
+  // skipped the grid lines + border and the canvas stayed mostly
+  // black. The architectural fix: the engine treats `resizeDrawing`
+  // (via `canvasCleared`) as the only real canvas-invalidation
+  // signal; Flip's `!ds.started` branch paints the bg + grid lines
+  // from scratch on the recreated drawstate.
+  it("canvasCleared after a same-tile reshape repaints bg + grid lines", () => {
     const p3: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
     const p5: FlipParams = { w: 5, h: 5, matrixType: "crosses" };
     const { desc: desc3 } = flipGame.newDesc(p3, randomNew("flip-reshape-3"));
@@ -309,7 +312,7 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
       () => {},
       () => {},
     );
-    // First game (3x3): size + first redraw paints grid + tiles.
+    // First game (3x3): size + first redraw paints bg + grid + tiles.
     expect(me.newGameFromId(`3x3c:${desc3}`)).toBeUndefined();
     me.size({ w: 1000, h: 1000 }, true, 1); // tile pinned to preferred (48)
     const first = recordingDrawing();
@@ -320,29 +323,21 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
     expect(firstGridLines).toBeGreaterThan(0); // grid drawn once
 
     // Switch to 5x5 — at typical viewports the tile resolves to 48
-    // for both shapes (the bug-1 trigger).
+    // for both shapes (the bug-1 trigger). `newGameFromId` builds a
+    // fresh drawstate for the new game; the app's reshape would
+    // then call `resizeDrawing` → engine.canvasCleared (we invoke
+    // it directly here since this is a midend-level test).
     expect(me.newGameFromId(`5x5c:${desc5}`)).toBeUndefined();
     me.size({ w: 1000, h: 1000 }, true, 1);
+    me.canvasCleared(); // app calls this from `resizeDrawing`
     const second = recordingDrawing();
     me.redraw(second.dr);
 
-    // The fix: the midend filled the full window with palette index 0
-    // (matching `puzzles/midend.c`'s first-draw rect), so the canvas
-    // is no longer left in whatever opaque-black state `Drawing.resize`
-    // produced.
+    // Flip's `!ds.started` branch fired: full-window bg fill +
+    // grid lines.
     expect(
-      second.ops.some(
-        (o) =>
-          o.op === "drawRect" &&
-          o.colour === 0 &&
-          // The fill is the *first* op-of-its-kind, before any tile
-          // draws (which clip to a smaller rect than the full window).
-          true,
-      ),
+      second.ops.some((o) => o.op === "drawRect" && o.colour === 0),
     ).toBe(true);
-    // And the new 5×5 grid lines were drawn — proves the per-tile
-    // cache from the 3×3 game isn't suppressing them via a stale
-    // `started=true`.
     const secondGridLines = second.ops.filter(
       (o) => o.op === "drawLine" && o.colour === COL_GRID,
     ).length;

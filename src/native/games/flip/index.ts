@@ -817,6 +817,17 @@ export const flipGame: Game<
     const border = tile >> 1;
 
     if (!ds.started) {
+      // First paint of this drawstate: own the background. The
+      // engine's redraw deliberately paints no pixels of its own
+      // (we don't want the framework to overpaint cached tiles), so
+      // any time the drawstate is fresh — initial setup, canvas
+      // resize, palette replacement — this branch is responsible
+      // for clearing the whole window to the puzzle's background
+      // colour. (Mirrors `midend.c`'s first-draw rect, just located
+      // where it belongs: in the game.)
+      const winW = tile * w + 2 * border;
+      const winH = tile * h + 2 * border;
+      dr.drawRect({ x: 0, y: 0, w: winW, h: winH }, COL_BACKGROUND);
       for (let i = 0; i <= w; i++) {
         dr.drawLine(
           { x: i * tile + border, y: border },
@@ -833,12 +844,7 @@ export const flipGame: Game<
           1,
         );
       }
-      dr.drawUpdate({
-        x: 0,
-        y: 0,
-        w: tile * w + 2 * border,
-        h: tile * h + 2 * border,
-      });
+      dr.drawUpdate({ x: 0, y: 0, w: winW, h: winH });
       ds.started = true;
     }
 

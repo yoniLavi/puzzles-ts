@@ -269,7 +269,15 @@ describe("Midend timer", () => {
   });
 });
 
-describe("Midend size + first-draw (regression: black canvas on reshape)", () => {
+describe("Midend.size is purely informational (regression: ResizeObserver flicker)", () => {
+  // `puzzle-view.ts`'s `ResizeController` calls `puzzle.size()` on
+  // every element-size change — including CSS transitions, mobile
+  // address-bar show/hide, and other layout perturbations unrelated
+  // to actual canvas resizing. Side-effecting `size()` (wiping the
+  // per-tile cache + arming a full-canvas overpaint) caused a
+  // user-visible "everything flickers" regression. Locking it in:
+  // size() must not touch drawstate identity, and must not cause the
+  // next `redraw` to emit a background fill.
   function midend() {
     const m = new Midend(fakeGame);
     m.setCallbacks(
@@ -280,65 +288,66 @@ describe("Midend size + first-draw (regression: black canvas on reshape)", () =>
     return m;
   }
 
-  it("the very first redraw fills the window with palette index 0", () => {
+  it("returns a sensible window size from computeSize(params, tile)", () => {
     const m = midend();
-    m.size({ w: 200, h: 200 }, true, 1);
-    const { dr, ops } = recordingDrawing();
-    m.redraw(dr);
-    // The first op after startDraw should be a full-window background
-    // fill (colour 0). winSize = computeSize(target=3, tile=10).
-    const bg = ops.find((o) => o.op === "drawRect" && o.colour === 0);
-    expect(bg?.rect).toEqual({ x: 0, y: 0, w: 30, h: 10 });
-    // And a full-window drawUpdate fires after.
-    const updates = ops.filter((o) => o.op === "drawUpdate");
-    expect(updates.at(-1)?.rect).toEqual({ x: 0, y: 0, w: 30, h: 10 });
+    const out = m.size({ w: 200, h: 200 }, true, 1);
+    // fakeGame.computeSize: w = target*tile, h = tile.
+    // At maxSize 200×200 the preferred tile (10) fits unscaled.
+    expect(out).toEqual({ w: 30, h: 10 });
   });
 
-  it("size() after a prior size() recreates the drawstate (different instance)", () => {
+  it("does NOT recreate the drawstate when called repeatedly at the same size", () => {
     const m = midend();
     m.size({ w: 200, h: 200 }, true, 1);
-    // Drive a paint so the drawstate is "in use".
+    const ds0 = (m as unknown as { drawState: FakeDrawState }).drawState;
+    const instance0 = ds0.instance;
+
+    m.size({ w: 200, h: 200 }, true, 1);
+    m.size({ w: 200, h: 200 }, true, 1);
+    const ds1 = (m as unknown as { drawState: FakeDrawState }).drawState;
+    expect(ds1).toBe(ds0); // same object reference
+    expect(ds1.instance).toBe(instance0);
+  });
+
+  it("does NOT recreate the drawstate even when called with a different size", () => {
+    // The size() call is informational; the *actual* canvas
+    // invalidation signal is `canvasCleared()` (fired by the
+    // adapter from `resizeDrawing` only when the canvas backing
+    // store really got reset).
+    const m = midend();
+    m.size({ w: 200, h: 200 }, true, 1);
+    const instance0 = (m as unknown as { drawState: FakeDrawState }).drawState
+      .instance;
+    m.size({ w: 400, h: 400 }, true, 1);
+    const instance1 = (m as unknown as { drawState: FakeDrawState }).drawState
+      .instance;
+    expect(instance1).toBe(instance0);
+  });
+
+  it("a redraw after only size() preserves the per-tile cache (no bg fill emitted)", () => {
+    const m = midend();
+    m.size({ w: 200, h: 200 }, true, 1);
+
+    // First redraw: game's `!ds.started` branch paints its bg.
     const a = recordingDrawing();
     m.redraw(a.dr);
-    // FakeDrawState's redrawCalls counter persists across redraws of
-    // the same drawstate. After a reshape, the next redraw should
-    // see a *fresh* drawstate (counter starts at 0).
-    const stateAfterFirst = (
-      m as unknown as { drawState: FakeDrawState }
-    ).drawState;
-    expect(stateAfterFirst.redrawCalls).toBeGreaterThan(0);
-    const oldInstance = stateAfterFirst.instance;
+    expect(a.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(true);
 
-    m.size({ w: 400, h: 400 }, true, 1); // re-size
-    const stateAfterResize = (
-      m as unknown as { drawState: FakeDrawState }
-    ).drawState;
-    expect(stateAfterResize.instance).not.toBe(oldInstance);
-    expect(stateAfterResize.redrawCalls).toBe(0);
-  });
-
-  it("a second size() arms first-draw again so the next redraw refills the window", () => {
-    const m = midend();
+    // Subsequent `size()` calls do NOT cause the next redraw to
+    // re-emit a bg fill — the drawstate is preserved, so the game's
+    // `!ds.started` branch doesn't fire again.
     m.size({ w: 200, h: 200 }, true, 1);
-    const a = recordingDrawing();
-    m.redraw(a.dr); // consumes the first-draw fill
-
-    // A subsequent redraw without an intervening size() does NOT
-    // refill (cache-friendly redraw, the usual case in midend.c).
+    m.size({ w: 400, h: 400 }, true, 1);
     const b = recordingDrawing();
     m.redraw(b.dr);
     expect(b.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(false);
-
-    // But after a reshape, the fill is back.
-    m.size({ w: 400, h: 400 }, true, 1);
-    const c = recordingDrawing();
-    m.redraw(c.dr);
-    expect(c.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(true);
   });
-
 });
 
-describe("Midend forceRedraw (regression: stale per-tile cache after palette/font change)", () => {
+describe("Midend.canvasCleared invalidates the drawstate (the only real signal)", () => {
+  // The adapter calls this from `resizeDrawing`, which is the only
+  // path that actually clears the canvas backing store. The next
+  // redraw must paint fresh via the game's `!ds.started` branch.
   function midend() {
     const m = new Midend(fakeGame);
     m.setCallbacks(
@@ -347,29 +356,69 @@ describe("Midend forceRedraw (regression: stale per-tile cache after palette/fon
     );
     m.newGame();
     m.size({ w: 200, h: 200 }, true, 1);
-    // Consume the initial first-draw fill.
+    const { dr } = recordingDrawing();
+    m.redraw(dr); // consumes the game's first-paint bg fill
+    return m;
+  }
+
+  it("recreates the drawstate (different instance)", () => {
+    const m = midend();
+    const before = (m as unknown as { drawState: FakeDrawState }).drawState
+      .instance;
+    m.canvasCleared();
+    const after = (m as unknown as { drawState: FakeDrawState }).drawState
+      .instance;
+    expect(after).not.toBe(before);
+  });
+
+  it("the next redraw paints a fresh background (game's `!ds.started` branch fires)", () => {
+    const m = midend();
+    // Pre-clear: redraws are cache-suppressed for unchanged state.
+    const pre = recordingDrawing();
+    m.redraw(pre.dr);
+    expect(pre.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(
+      false,
+    );
+
+    m.canvasCleared();
+    const post = recordingDrawing();
+    m.redraw(post.dr);
+    expect(post.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(
+      true,
+    );
+  });
+
+  it("is a no-op without a game (defensive guard)", () => {
+    const fresh = new Midend(fakeGame);
+    expect(() => fresh.canvasCleared()).not.toThrow();
+  });
+});
+
+describe("Midend.forceRedraw is canvasCleared + redraw (palette/font replacement)", () => {
+  function midend() {
+    const m = new Midend(fakeGame);
+    m.setCallbacks(
+      () => {},
+      () => {},
+    );
+    m.newGame();
+    m.size({ w: 200, h: 200 }, true, 1);
     const { dr } = recordingDrawing();
     m.redraw(dr);
     return m;
   }
 
-  it("recreates the drawstate", () => {
+  it("recreates the drawstate and immediately paints", () => {
     const m = midend();
-    const oldInstance = (m as unknown as { drawState: FakeDrawState }).drawState
+    const before = (m as unknown as { drawState: FakeDrawState }).drawState
       .instance;
-    const { dr } = recordingDrawing();
-    m.forceRedraw(dr);
-    const newInstance = (m as unknown as { drawState: FakeDrawState }).drawState
-      .instance;
-    expect(newInstance).not.toBe(oldInstance);
-  });
-
-  it("paints the full-window background-fill rectangle as part of the redraw", () => {
-    const m = midend();
     const { dr, ops } = recordingDrawing();
     m.forceRedraw(dr);
-    const bg = ops.find((o) => o.op === "drawRect" && o.colour === 0);
-    expect(bg?.rect).toEqual({ x: 0, y: 0, w: 30, h: 10 });
+    const after = (m as unknown as { drawState: FakeDrawState }).drawState
+      .instance;
+    expect(after).not.toBe(before);
+    // game's bg paint runs as part of the forced redraw.
+    expect(ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(true);
   });
 
   it("is a no-op without a game (defensive guard)", () => {
@@ -381,6 +430,39 @@ describe("Midend forceRedraw (regression: stale per-tile cache after palette/fon
     const { dr, ops } = recordingDrawing();
     expect(() => fresh.forceRedraw(dr)).not.toThrow();
     expect(ops.filter((o) => o.op === "drawRect").length).toBe(0);
+  });
+});
+
+describe("Engine emits no pixels of its own (game owns the canvas content)", () => {
+  // Locks in the directional cleanup: the framework reconciles
+  // *when* to call `game.redraw` but never paints behind the game's
+  // back. The whole-canvas bg fill that briefly lived in
+  // `Midend.redraw` is gone — every draw op in a `redraw()` call
+  // originates from `game.redraw`.
+  it("Midend.redraw emits only startDraw/endDraw around game.redraw", () => {
+    const m = new Midend(fakeGame);
+    m.setCallbacks(
+      () => {},
+      () => {},
+    );
+    m.newGame();
+    m.size({ w: 200, h: 200 }, true, 1);
+
+    // Replace fake game's `!ds.started` branch with one that paints
+    // a distinctive marker, so we can prove every op in the
+    // recording came from the game (not the engine).
+    const ds = (m as unknown as { drawState: FakeDrawState }).drawState;
+    ds.started = true; // pretend the game already did its first paint
+
+    const { dr, ops } = recordingDrawing();
+    m.redraw(dr);
+    // The fake's redraw with `started=true` emits no draw ops — so
+    // the only ops we see are `startDraw` and `endDraw` (the engine
+    // frame brackets).
+    const drawing = ops.filter(
+      (o) => o.op !== "startDraw" && o.op !== "endDraw",
+    );
+    expect(drawing).toEqual([]);
   });
 });
 
