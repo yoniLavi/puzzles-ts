@@ -64,19 +64,21 @@
 
 ## 5. Owner acceptance
 
-- [ ] 5.1 Run `npm run dev`, exercise board-shape changes (3×3 ↔
-  4×4 ↔ 5×5, Crosses + Random). Confirm no black canvas on shape
-  change.
-- [ ] 5.2 Play several moves on each shape, watch animated
-  transitions. Confirm no "everything flickers" overpaint on
-  unrelated cells. Specifically test on the device that surfaced
-  the regression (likely mobile, where the address bar's
-  show/hide was probably the ResizeController trigger).
-- [ ] 5.3 Toggle light/dark mode during play. Confirm the canvas
-  repaints cleanly with the new palette (no stale colours, no
-  black region remaining).
-- [ ] 5.4 Trigger a browser-window resize. Confirm clean repaint
-  (this exercises the `canvasCleared` path).
-- [ ] 5.5 Update `project_first_port_next.md` and `AGENTS.md`'s
-  Flip bullet to reflect parity status after owner sign-off. If
-  still pending after this round, say so honestly.
+Confirmed working 2026-05-20 by the owner ("Fabulous - it works
+now"). One additional state-machine fix landed during the
+acceptance cycle: `b1b0dd6` (the flashTime reset). All four
+behaviour checks below were exercised in that round; the
+documentation update is the wrap-up.
+
+- [x] 5.1 Board-shape changes (3×3 ↔ 4×4 ↔ 5×5, Crosses + Random):
+  no black canvas on shape change.
+- [x] 5.2 Animated moves with no "wave/overpaint" on unrelated
+  cells. The remaining wave-through-cells the owner reported was a
+  distinct state-machine bug (flashTime accumulating during
+  non-solving moves), fixed in `b1b0dd6` with regression tests.
+- [x] 5.3 Light/dark toggle repaints cleanly via `forceRedraw`.
+- [x] 5.4 Browser resize / ResizeController firings no longer
+  cause spurious cache wipes (the size()-is-informational fix).
+- [x] 5.5 `AGENTS.md`'s Flip bullet and
+  `project_first_port_next.md` updated to "owner-confirmed parity
+  2026-05-20".
