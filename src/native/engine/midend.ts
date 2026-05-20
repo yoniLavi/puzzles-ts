@@ -550,6 +550,18 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     if (this.animating) {
       this.animTime += tplus;
       this.flashTime += tplus;
+      // Mirror `midend.c` lines 1429-1432 exactly: reset flashTime
+      // when it's caught up to flashLength (flash done) OR when no
+      // flash was ever armed (flashLength === 0). Without this
+      // reset, flashTime grows unbounded on every animated move and
+      // the game's redraw — which checks `flashTime ? ... : -1` —
+      // activates the flash overlay during non-solving animations
+      // too. That was the bug behind the "wave through every cell"
+      // flicker the owner reported on 2026-05-20.
+      if (this.flashTime >= this.flashLength || this.flashLength === 0) {
+        this.flashTime = 0;
+        this.flashLength = 0;
+      }
       if (this.animLength > 0 && this.animTime >= this.animLength) {
         // Move animation finished; flash (if any) continues without
         // the from-state, exactly as midend.c drops oldstate.

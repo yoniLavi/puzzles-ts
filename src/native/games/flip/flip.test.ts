@@ -345,6 +345,115 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
   });
 });
 
+describe("Flip flash-overlay isolation (regression: wave through every cell)", () => {
+  // The owner reported (2026-05-20) "a wave causing every single
+  // cell to briefly switch between white and black before settling
+  // back to its original value" on every animated move. Root cause:
+  // Midend.timer was incrementing flashTime on every tick during
+  // animation, even when flashLength === 0 (non-solving moves).
+  // Flip's redraw checks `flashTime ? Math.floor(... / FLASH_FRAME)
+  // : -1` and activated its flash-ring overlay whenever flashTime >
+  // 0, drawing the solve-celebration wave across every cell during
+  // every animation. The fix mirrors `midend.c` lines 1429-1432:
+  // reset flashTime when the flash is done OR was never armed.
+  it("flashTime stays 0 throughout a non-solving move's animation", () => {
+    const params: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
+    const { desc } = flipGame.newDesc(params, randomNew("flip-flash-iso"));
+    const me = new Midend(flipGame);
+    me.setCallbacks(
+      () => {},
+      () => {},
+    );
+    expect(me.newGameFromId(`3x3c:${desc}`)).toBeUndefined();
+
+    // Pick a cell that does NOT solve the puzzle. We click (0,0)
+    // and verify the state is still ongoing — the specific seed
+    // shouldn't matter for a 3x3 Crosses where a single click
+    // rarely solves it.
+    const tile = flipGame.preferredTileSize ?? 32;
+    const border = tile >> 1;
+    expect(me.processInput(border + 1, border + 1, 0x0200)).toBe(true);
+    // Sanity: the click didn't solve (so flashLength should be 0).
+    // If it did solve, pick a different seed for this test.
+    const state = (me as unknown as { history: FlipState[]; pos: number });
+    expect(state.history[state.pos].completed).toBe(false);
+
+    // Drive the animation timer through its whole 0.25s lifecycle.
+    // After each tick, midend's flashTime/flashLength must both
+    // remain 0 — Flip's redraw computes
+    // `flashFrame = flashTime ? ... : -1`, so any positive
+    // flashTime would activate the flash-ring overlay.
+    const internals = me as unknown as {
+      flashTime: number;
+      flashLength: number;
+    };
+    for (let t = 0; t < 20; t++) {
+      me.timer(0.02);
+      expect(internals.flashTime).toBe(0);
+      expect(internals.flashLength).toBe(0);
+    }
+  });
+
+  it("flashTime accumulates only for a solving move", () => {
+    // Solve a 3x3 Crosses puzzle to completion, then verify the
+    // final solving click activates flashLength > 0 — the
+    // overlay is *supposed* to fire here (it's the
+    // solve-celebration wave). This is the positive case the
+    // regression test above is the complement of.
+    const params: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
+    const { desc } = flipGame.newDesc(params, randomNew("flip-flash-solve"));
+    const me = new Midend(flipGame);
+    me.setCallbacks(
+      () => {},
+      () => {},
+    );
+    expect(me.newGameFromId(`3x3c:${desc}`)).toBeUndefined();
+
+    // Use the solver to find the moves, then play each in turn.
+    const initial = flipGame.newState(params, desc);
+    const result = solveFlip(initial, initial);
+    expect(result.ok).toBe(true);
+    if (!result.ok || result.move.kind !== "solve") return;
+    const tile = flipGame.preferredTileSize ?? 32;
+    const border = tile >> 1;
+    const cells: Array<{ x: number; y: number }> = [];
+    result.move.mask.forEach((bit, idx) => {
+      if (bit) cells.push({ x: idx % params.w, y: (idx / params.w) | 0 });
+    });
+    expect(cells.length).toBeGreaterThan(0);
+
+    const internals = me as unknown as {
+      flashLength: number;
+      history: FlipState[];
+      pos: number;
+    };
+    // Play all but the last hinted cell; flashLength stays 0
+    // because each move keeps `completed=false`.
+    for (let i = 0; i < cells.length - 1; i++) {
+      me.processInput(
+        cells[i].x * tile + border + 1,
+        cells[i].y * tile + border + 1,
+        0x0200,
+      );
+      // Drain the timer between clicks so the next setupAnimation
+      // starts from a settled state.
+      for (let t = 0; t < 20; t++) me.timer(0.02);
+      expect(internals.history[internals.pos].completed).toBe(false);
+      expect(internals.flashLength).toBe(0);
+    }
+
+    // Final click solves the puzzle ⇒ flashLength must be positive.
+    const last = cells[cells.length - 1];
+    me.processInput(
+      last.x * tile + border + 1,
+      last.y * tile + border + 1,
+      0x0200,
+    );
+    expect(internals.history[internals.pos].completed).toBe(true);
+    expect(internals.flashLength).toBeGreaterThan(0);
+  });
+});
+
 describe("Flip animation/redraw lifecycle (regression: clicks not rendered)", () => {
   it("a click repaints, runs the anim timer, then settles", () => {
     const params: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
