@@ -1,5 +1,21 @@
 # Change: Scaffold a scene-graph `Game.scene()` contract (long-term)
 
+> **Status: WITHDRAWN 2026-05-21.** This design and its
+> implementation follow-up (`add-scene-graph-reconciler`) were tried
+> and backed out. The full rationale lives in
+> `openspec/postmortems/2026-05-21-scene-graph-withdrawal.md`: owner
+> acceptance surfaced a visible animation perf regression on the
+> Flip-rewrite pilot, and the broader question — does the pivot pay
+> back inside the migration window? — concluded no. The doctrine
+> fixes from `fix-flip-canvas-reshape` (engine emits no pixels,
+> side-effect-free `Midend.size`, `canvasCleared` as the only
+> cache-stale signal) carry the cache-fragility weight on their own.
+> The experimental implementation is preserved on
+> `origin/withdrawn/scene-graph-reconciler`. This proposal is
+> retained in `openspec/changes/` as the design history for future
+> reference; the direction is **not** scheduled to be revisited
+> unless a real game creates concrete cross-game-rendering pressure.
+
 ## Why
 
 The presentation layer for puzzle pixels is imperative — every game
