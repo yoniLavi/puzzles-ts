@@ -25,7 +25,9 @@ import type {
 } from "../../puzzle/types.ts";
 import { randomNew } from "../random/index.ts";
 import { type Game, type GameDrawing, type PresetMenu, UI_UPDATE } from "./game.ts";
+import { reconcile } from "./reconciler.ts";
 import { decodeSave, encodeSave, type SaveEnvelope } from "./save.ts";
+import type { SceneNode } from "./scene.ts";
 
 export type NotifyChange = (message: ChangeNotification) => void;
 export type NotifyTimerState = (isActive: boolean) => void;
@@ -139,6 +141,12 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private flashLength = 0;
   private animDir = 1;
 
+  // Previous-frame scene tree for `scene`-rendering games. `null` ⇒
+  // the next reconcile treats every node as new (the equivalent of
+  // the imperative path's `!ds.started` cold start). `canvasCleared`
+  // and `forceRedraw` reset this to null.
+  private lastScene: SceneNode[] | null = null;
+
   constructor(private readonly game: Game<Params, State, Move, Ui, DrawState>) {
     this.params = game.defaultParams();
     this.currentTileSize = game.preferredTileSize ?? 32;
@@ -214,11 +222,15 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.ui = this.game.newUi(initial);
     // A fresh drawstate ensures the per-tile cache reflects the new
     // game; the game's `!ds.started` branch covers the
-    // background/grid setup on its next paint.
+    // background/grid setup on its next paint. For `scene`-rendering
+    // games (where the drawstate may be null), `lastScene = null`
+    // plays the same role — the next reconcile sees every node as
+    // new and paints the whole frame.
     this.drawState = this.game.newDrawState?.(initial) ?? null;
     if (this.drawState !== null) {
       this.game.setTileSize?.(this.drawState, this.currentTileSize);
     }
+    this.lastScene = null;
     this.usedSolve = false;
     this.timerElapsed = 0;
     this.clearAnimation();
@@ -464,6 +476,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       this.drawState = this.game.newDrawState(this.history[0]);
       this.game.setTileSize?.(this.drawState, this.currentTileSize);
     }
+    // For `scene` games: discard the previous-frame tree so the next
+    // reconcile against null repaints every node, equivalent to the
+    // imperative path's `!ds.started` cold start.
+    this.lastScene = null;
   }
 
   formatAsText(): string | undefined {
@@ -581,15 +597,32 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   // --- drawing -----------------------------------------------------
 
   redraw(dr: GameDrawing): void {
-    if (!this.game.redraw) return;
     // The engine paints no pixels of its own — it just orchestrates
-    // the game's `redraw`. The background fill that used to live
-    // here (mirroring `midend.c`'s first-draw rect) moved into each
-    // game's `!ds.started` branch, so the framework no longer paints
-    // behind the game's back. The canvas-cleared / palette-replaced
-    // signals reach the game via a fresh drawstate (ds.started=false
-    // ⇒ game's first-draw branch fires), set up by `canvasCleared`
-    // and `forceRedraw`.
+    // the game's `scene` (preferred) or `redraw`. The background fill
+    // that used to live here (mirroring `midend.c`'s first-draw rect)
+    // moved into each game's `!ds.started` branch (imperative path)
+    // or into a scene-graph node (declarative path), so the framework
+    // no longer paints behind the game's back. The canvas-cleared /
+    // palette-replaced signals reach the game via a fresh drawstate
+    // and a null `lastScene` (set up by `canvasCleared` /
+    // `forceRedraw`); next paint then runs from scratch.
+    if (this.game.scene) {
+      dr.startDraw();
+      const next = this.game.scene(
+        this.state,
+        this.ui,
+        this.drawState,
+        this.animTime,
+        this.flashTime,
+        this.animPrev,
+        this.animDir,
+      );
+      reconcile(this.lastScene, next, dr);
+      this.lastScene = next;
+      dr.endDraw();
+      return;
+    }
+    if (!this.game.redraw) return;
     dr.startDraw();
     this.game.redraw(
       dr,

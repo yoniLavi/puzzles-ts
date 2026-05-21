@@ -26,6 +26,7 @@ import type {
   Size,
 } from "../../puzzle/types.ts";
 import type { RandomState } from "../random/index.ts";
+import type { SceneNode } from "./scene.ts";
 
 /** Returned by `interpretMove` when input changed UI/cursor state in
  * place but produced no history move (upstream's `MOVE_UI_UPDATE`).
@@ -151,6 +152,24 @@ export interface Game<Params, State, Move, Ui = unknown, DrawState = unknown> {
     animTime: number,
     flashTime: number,
   ): void;
+  /** Declarative rendering: return a `SceneNode[]` describing the
+   * current frame; the framework reconciles against the previous
+   * frame's tree and emits canvas writes. A game implementing `scene`
+   * SHALL NOT also write to the canvas itself — the framework owns
+   * the writes. The drawstate `ds` is passed for symmetry with
+   * `interpretMove` (e.g. a scene-rendering game may keep a tile
+   * size mirror or a per-tile memo cache there); the game MUST NOT
+   * use `ds` to drive canvas writes. When both `scene` and `redraw`
+   * are defined, the midend dispatches through `scene`. */
+  scene?(
+    s: State,
+    ui: Ui,
+    ds: DrawState | null,
+    animTime: number,
+    flashTime: number,
+    prev: State | null,
+    dir: number,
+  ): SceneNode[];
   animLength?(a: State, b: State, dir: number, ui: Ui): number;
   flashLength?(a: State, b: State, dir: number, ui: Ui): number;
   timingState?(s: State, ui: Ui): boolean;

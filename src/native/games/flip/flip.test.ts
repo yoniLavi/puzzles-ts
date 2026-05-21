@@ -244,63 +244,143 @@ describe("Flip executeMove is pure and toggles the matrix row", () => {
   });
 });
 
-describe("Flip redraw", () => {
-  const p: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
-  const desc = flipGame.newDesc(p, randomNew("flip-rd")).desc;
+/** Build a Midend with Flip loaded onto a known board, sized so the
+ * preferred tile size applies. Returns the midend and a "render to
+ * recording GameDrawing" helper. */
+function flipMidend(p: FlipParams, descSeed: string) {
+  const { desc } = flipGame.newDesc(p, randomNew(descSeed));
+  const me = new Midend(flipGame);
+  me.setCallbacks(
+    () => {},
+    () => {},
+  );
+  // newGameFromId needs full params (including matrix-type letter).
+  const id = `${flipGame.encodeParams(p, true)}:${desc}`;
+  expect(me.newGameFromId(id)).toBeUndefined();
+  me.size({ w: 1000, h: 1000 }, true, 1);
+  return { me, desc };
+}
 
-  it("draws the grid once, then the per-tile cache suppresses redundant redraws", () => {
-    const s = flipGame.newState(p, desc);
-    const ui = flipGame.newUi(s);
-    const ds = flipGame.newDrawState?.(s);
-    if (!ds || !flipGame.redraw) throw new Error("flip has redraw + drawState");
-    flipGame.setTileSize?.(ds, flipGame.preferredTileSize ?? 32);
+describe("Flip scene (was: Flip redraw)", () => {
+  it("first scene paints the bg + grid lines + tiles; second is a no-op", () => {
+    const { me } = flipMidend({ w: 3, h: 3, matrixType: "crosses" }, "flip-rd");
 
     const a = recordingDrawing();
-    flipGame.redraw(a.dr, ds, null, s, 1, ui, 0, 0);
+    me.redraw(a.dr);
     // (w+1)+(h+1) = 8 grid lines, all COL_GRID, drawn once.
-    const gridLines = a.ops.filter(
+    const firstGridLines = a.ops.filter(
       (o) => o.op === "drawLine" && o.colour === COL_GRID,
     );
-    expect(gridLines.length).toBe(8);
-    expect(a.ops.some((o) => o.op === "drawRect")).toBe(true);
+    expect(firstGridLines.length).toBe(8);
+    // The bg rect (palette index 0) appears as the first drawn fill.
+    expect(
+      a.ops.some((o) => o.op === "drawRect" && o.colour === 0),
+    ).toBe(true);
 
-    // Re-drawing the identical state: grid already started, every tile
-    // unchanged ⇒ no new tile/grid ops (the cache that keeps animation
-    // from repainting the whole board every frame).
+    // Same state, second redraw: the reconciler short-circuits every
+    // tile (per-tile memo returns the same node refs; bg/grid are
+    // deep-equal). Only the midend's frame brackets remain.
     const b = recordingDrawing();
-    flipGame.redraw(b.dr, ds, null, s, 1, ui, 0, 0);
-    expect(b.ops.filter((o) => o.op === "drawLine").length).toBe(0);
-    expect(b.ops.filter((o) => o.op === "drawRect").length).toBe(0);
+    me.redraw(b.dr);
+    const drawing = b.ops.filter(
+      (o) => o.op !== "startDraw" && o.op !== "endDraw",
+    );
+    expect(drawing).toEqual([]);
   });
 
   it("renders solver hint outlines when hints are active", () => {
-    const base = flipGame.newState(p, desc);
-    const hinted = flipGame.executeMove(base, {
-      kind: "solve",
-      mask: [1, 1, 1, 1, 1, 1, 1, 1, 1],
-    });
-    const ui = flipGame.newUi(hinted);
-    const ds = flipGame.newDrawState?.(hinted);
-    if (!ds || !flipGame.redraw) throw new Error("flip has redraw + drawState");
-    flipGame.setTileSize?.(ds, flipGame.preferredTileSize ?? 32);
+    const { me } = flipMidend({ w: 3, h: 3, matrixType: "crosses" }, "flip-rd");
+    // Apply a solve move (sets hint markers + hintsActive) by going
+    // through Midend.solve which marks the position and applies the
+    // hint move.
+    expect(me.solve()).toBeUndefined();
     const a = recordingDrawing();
-    flipGame.redraw(a.dr, ds, null, hinted, 1, ui, 0, 0);
+    me.redraw(a.dr);
     expect(a.ops.some((o) => o.op === "drawLine" && o.colour === COL_HINT))
       .toBe(true);
+  });
+
+  it("a per-tile change repaints only that tile (clip stays narrow)", () => {
+    const p: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
+    const { me } = flipMidend(p, "flip-narrow-clip");
+
+    // Paint the initial frame so memo is populated.
+    const a = recordingDrawing();
+    me.redraw(a.dr);
+    expect(a.ops.length).toBeGreaterThan(0);
+
+    // Move the keyboard cursor: a UI_UPDATE that doesn't push a move
+    // but changes one tile's appearance (cursor highlight). Pick
+    // cursor-right so the cursor lands on (1,0). Mirror previous
+    // tile (0,0) gets uncursored.
+    me.processInput(0, 0, 0x0200 + 12); // CURSOR_RIGHT
+    me.processInput(0, 0, 0x0200 + 9); // CURSOR_UP (cursor visible at 1,0)
+
+    // Repaint. Only the tiles whose cursor state changed should
+    // produce clip+draws. There are at most 2 affected tiles (the
+    // one losing the cursor and the one gaining it), so we should
+    // see at most a small number of clip ops — definitely fewer than
+    // the 9 a wholesale repaint would emit.
+    const b = recordingDrawing();
+    me.redraw(b.dr);
+    const tileClips = b.ops.filter((o) => o.op === "clip");
+    expect(tileClips.length).toBeLessThanOrEqual(2);
+    expect(tileClips.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("returns the same tile node reference across frames when its visible state is unchanged", () => {
+    const p: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
+    const { me } = flipMidend(p, "flip-ref-eq");
+    // Drive one redraw to populate the memo cache.
+    me.redraw(recordingDrawing().dr);
+
+    // Call scene() twice in a row with the same midend state — the
+    // returned scene's tile group at each position must be the same
+    // JS object reference across the two invocations.
+    // (Scene is purposefully pure of any external state mutation, so
+    // calling it directly through the game is safe.)
+    const internals = me as unknown as {
+      state: FlipState;
+      ui: { cx: number; cy: number; cursorVisible: boolean };
+      drawState: import("./index.ts").FlipDrawState;
+    };
+    if (!flipGame.scene) throw new Error("flip should define scene");
+    const s1 = flipGame.scene(
+      internals.state,
+      internals.ui,
+      internals.drawState,
+      0,
+      0,
+      null,
+      1,
+    );
+    const s2 = flipGame.scene(
+      internals.state,
+      internals.ui,
+      internals.drawState,
+      0,
+      0,
+      null,
+      1,
+    );
+    // Compare every tile-* group by reference.
+    for (let i = 0; i < s1.length; i++) {
+      if (s1[i].id.startsWith("tile-")) {
+        expect(s2[i]).toBe(s1[i]);
+      }
+    }
   });
 });
 
 describe("Flip reshape (regression: black canvas when shapes share a tile size)", () => {
   // The bug owner reported: switching to a new board shape rendered
-  // full black until the first click. Root cause: `Drawing.resize`
-  // clears the canvas to opaque black (alpha:false), and on a reshape
-  // where the per-tile size happens to stay the same, Flip's
-  // cache-invalidating `setTileSize` was a no-op — so the next redraw
-  // skipped the grid lines + border and the canvas stayed mostly
-  // black. The architectural fix: the engine treats `resizeDrawing`
-  // (via `canvasCleared`) as the only real canvas-invalidation
-  // signal; Flip's `!ds.started` branch paints the bg + grid lines
-  // from scratch on the recreated drawstate.
+  // full black until the first click. Root cause (imperative-redraw
+  // era): same-tile-size reshape was a no-op for setTileSize, so the
+  // next redraw skipped the grid lines + border and the canvas stayed
+  // mostly black. The scene-graph era structurally avoids this — there
+  // is no per-tile pixel cache and no `!ds.started` branch; the
+  // framework reconciles the new scene against null (after
+  // canvasCleared resets `lastScene`) and paints everything.
   it("canvasCleared after a same-tile reshape repaints bg + grid lines", () => {
     const p3: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
     const p5: FlipParams = { w: 5, h: 5, matrixType: "crosses" };
@@ -314,7 +394,7 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
     );
     // First game (3x3): size + first redraw paints bg + grid + tiles.
     expect(me.newGameFromId(`3x3c:${desc3}`)).toBeUndefined();
-    me.size({ w: 1000, h: 1000 }, true, 1); // tile pinned to preferred (48)
+    me.size({ w: 1000, h: 1000 }, true, 1);
     const first = recordingDrawing();
     me.redraw(first.dr);
     const firstGridLines = first.ops.filter(
@@ -324,17 +404,18 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
 
     // Switch to 5x5 — at typical viewports the tile resolves to 48
     // for both shapes (the bug-1 trigger). `newGameFromId` builds a
-    // fresh drawstate for the new game; the app's reshape would
-    // then call `resizeDrawing` → engine.canvasCleared (we invoke
-    // it directly here since this is a midend-level test).
+    // fresh drawstate for the new game and nulls `lastScene`; the
+    // app's reshape would then call `resizeDrawing` →
+    // engine.canvasCleared (we invoke it directly here since this is
+    // a midend-level test).
     expect(me.newGameFromId(`5x5c:${desc5}`)).toBeUndefined();
     me.size({ w: 1000, h: 1000 }, true, 1);
     me.canvasCleared(); // app calls this from `resizeDrawing`
     const second = recordingDrawing();
     me.redraw(second.dr);
 
-    // Flip's `!ds.started` branch fired: full-window bg fill +
-    // grid lines.
+    // The reconciler paints the bg rect + grid lines from scratch
+    // because lastScene was null after canvasCleared.
     expect(
       second.ops.some((o) => o.op === "drawRect" && o.colour === 0),
     ).toBe(true);
@@ -351,11 +432,13 @@ describe("Flip flash-overlay isolation (regression: wave through every cell)", (
   // back to its original value" on every animated move. Root cause:
   // Midend.timer was incrementing flashTime on every tick during
   // animation, even when flashLength === 0 (non-solving moves).
-  // Flip's redraw checks `flashTime ? Math.floor(... / FLASH_FRAME)
-  // : -1` and activated its flash-ring overlay whenever flashTime >
-  // 0, drawing the solve-celebration wave across every cell during
-  // every animation. The fix mirrors `midend.c` lines 1429-1432:
-  // reset flashTime when the flash is done OR was never armed.
+  // Flip's redraw used to check `flashTime ? Math.floor(... /
+  // FLASH_FRAME) : -1` and activated its flash-ring overlay whenever
+  // flashTime > 0. The fix (preserved here in the midend) mirrors
+  // `midend.c` lines 1429-1432: reset flashTime when the flash is
+  // done OR was never armed. This test reaches into midend internals
+  // — independent of the redraw vs scene path — so it survives the
+  // scene-graph rewrite.
   it("flashTime stays 0 throughout a non-solving move's animation", () => {
     const params: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
     const { desc } = flipGame.newDesc(params, randomNew("flip-flash-iso"));
@@ -380,7 +463,7 @@ describe("Flip flash-overlay isolation (regression: wave through every cell)", (
 
     // Drive the animation timer through its whole 0.25s lifecycle.
     // After each tick, midend's flashTime/flashLength must both
-    // remain 0 — Flip's redraw computes
+    // remain 0 — Flip's scene computes
     // `flashFrame = flashTime ? ... : -1`, so any positive
     // flashTime would activate the flash-ring overlay.
     const internals = me as unknown as {
@@ -510,7 +593,7 @@ describe("Flip through the midend", () => {
       () => {},
     );
     expect(
-      me.newGameFromId(`${flipGame.encodeParams(params, false)}:${desc}`),
+      me.newGameFromId(`${flipGame.encodeParams(params, true)}:${desc}`),
     ).toBeUndefined();
 
     // Reveal the solution (a hint move; marks usedSolve), then click
@@ -545,5 +628,44 @@ describe("Flip through the midend", () => {
     );
     expect(me2.loadGame(saved)).toBeUndefined();
     expect(me2.formatAsText()).toContain("+");
+  });
+});
+
+describe("Flip scene shape (spec scenarios)", () => {
+  it("emits one group per tile with id 'tile-x,y' and explicit clip", () => {
+    const p: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
+    const { me } = flipMidend(p, "flip-shape");
+    if (!flipGame.scene) throw new Error("flip should define scene");
+    const internals = me as unknown as {
+      state: FlipState;
+      ui: { cx: number; cy: number; cursorVisible: boolean };
+      drawState: import("./index.ts").FlipDrawState;
+    };
+    const scene = flipGame.scene(
+      internals.state,
+      internals.ui,
+      internals.drawState,
+      0,
+      0,
+      null,
+      1,
+    );
+    const tileGroups = scene.filter((n) => n.id.startsWith("tile-"));
+    expect(tileGroups).toHaveLength(p.w * p.h);
+    for (const t of tileGroups) {
+      expect(t.kind).toBe("group");
+      if (t.kind !== "group") return;
+      expect(t.clip).toBeDefined();
+    }
+    // bg + grid present as separate top-level nodes.
+    expect(scene.some((n) => n.id === "bg")).toBe(true);
+    expect(scene.some((n) => n.id === "grid")).toBe(true);
+  });
+
+  it("has no imperative redraw on flipGame", () => {
+    // Spec scenario: "Flip has no imperative redraw" — the post-port
+    // shape exposes scene, not redraw.
+    expect(flipGame.redraw).toBeUndefined();
+    expect(flipGame.scene).toBeDefined();
   });
 });

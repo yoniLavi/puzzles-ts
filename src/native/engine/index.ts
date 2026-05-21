@@ -26,8 +26,18 @@ export {
   hasTsGame,
   registerGame,
 } from "./registry.ts";
+export { reconcile } from "./reconciler.ts";
 export {
   decodeSave,
   encodeSave,
   type SaveEnvelope,
 } from "./save.ts";
+export type {
+  CircleNode,
+  GroupNode,
+  LineNode,
+  PolygonNode,
+  RectNode,
+  SceneNode,
+  TextNode,
+} from "./scene.ts";

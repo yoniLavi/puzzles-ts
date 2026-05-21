@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ChangeNotification } from "../../puzzle/types.ts";
 import { type FakeDrawState, fakeGame, LEFT_BUTTON } from "./fake-game.ts";
-import type { GameDrawing } from "./game.ts";
+import type { Game, GameDrawing } from "./game.ts";
 import { Midend } from "./midend.ts";
+import type { SceneNode } from "./scene.ts";
 
 /** Recording fake `GameDrawing` for engine-level redraw assertions —
  * mirrors `src/native/games/flip/flip.test.ts`'s helper. */
@@ -477,5 +478,222 @@ describe("Midend startFrom no longer fires an early redraw (was racing the app's
     expect(h.redraws()).toBe(0);
     const types = new Set(h.notes.map((n) => n.type));
     expect(types).toContain("game-id-change");
+  });
+});
+
+// --- scene-graph dispatch ---------------------------------------------
+
+interface SceneFakeState {
+  count: number;
+}
+type SceneFakeMove = "inc";
+
+/** A minimal `scene`-rendering fake: every `scene()` call returns a
+ * single-rect `SceneNode[]` whose `fill` mirrors the state. Each call
+ * is also counted on the fake itself (via a closure on the test) so
+ * tests can prove which path the midend chose without inspecting the
+ * recording GameDrawing. */
+function makeSceneFake(opts: {
+  withRedraw?: boolean;
+  withScene?: boolean;
+} = { withScene: true }) {
+  const calls = { scene: 0, redraw: 0 };
+  // Cache the rect node so referential equality short-circuits when
+  // the state is unchanged (mirrors Flip's per-tile memoisation).
+  let lastFor = -1;
+  let lastNode: SceneNode | null = null;
+  const game: Game<object, SceneFakeState, SceneFakeMove, null, null> = {
+    id: "__scene_fake__",
+    wantsStatusbar: false,
+    isTimed: false,
+    canSolve: false,
+    canFormatAsText: false,
+    preferredTileSize: 10,
+    defaultParams: () => ({}),
+    presets: () => ({ title: "root", params: {} }),
+    encodeParams: () => "p",
+    decodeParams: () => ({}),
+    validateParams: () => null,
+    newDesc: () => ({ desc: "d" }),
+    validateDesc: () => null,
+    newState: () => ({ count: 0 }),
+    newUi: () => null,
+    interpretMove: (_s, _ui, _ds, _p, button) =>
+      button === LEFT_BUTTON ? "inc" : null,
+    executeMove: (s) => ({ count: s.count + 1 }),
+    status: () => "ongoing",
+    colours: () => [
+      [1, 1, 1],
+      [0, 0, 0],
+    ],
+    computeSize: (_p, tile) => ({ w: tile, h: tile }),
+  };
+  if (opts.withScene !== false) {
+    game.scene = (s) => {
+      calls.scene += 1;
+      if (s.count !== lastFor) {
+        lastFor = s.count;
+        lastNode = {
+          kind: "rect",
+          id: "sole",
+          x: 0,
+          y: 0,
+          w: 10,
+          h: 10,
+          fill: s.count,
+        };
+      }
+      return [lastNode as SceneNode];
+    };
+  }
+  if (opts.withRedraw) {
+    game.redraw = () => {
+      calls.redraw += 1;
+    };
+  }
+  return { game, calls };
+}
+
+function recordingDrawingOps() {
+  const ops: Array<{ op: string }> = [];
+  const dr: GameDrawing = {
+    startDraw: () => ops.push({ op: "startDraw" }),
+    endDraw: () => ops.push({ op: "endDraw" }),
+    drawUpdate: () => ops.push({ op: "drawUpdate" }),
+    clip: () => ops.push({ op: "clip" }),
+    unclip: () => ops.push({ op: "unclip" }),
+    drawRect: () => ops.push({ op: "drawRect" }),
+    drawLine: () => ops.push({ op: "drawLine" }),
+    drawPolygon: () => ops.push({ op: "drawPolygon" }),
+    drawCircle: () => ops.push({ op: "drawCircle" }),
+    drawText: () => ops.push({ op: "drawText" }),
+    blitterNew: () => ({}),
+    blitterFree: () => {},
+    blitterSave: () => {},
+    blitterLoad: () => {},
+  };
+  return { dr, ops };
+}
+
+describe("Midend dispatch: scene vs redraw", () => {
+  it("a scene-defining game runs through the reconciler", () => {
+    const { game, calls } = makeSceneFake();
+    const m = new Midend(game);
+    m.setCallbacks(
+      () => {},
+      () => {},
+    );
+    m.newGame();
+    const { dr, ops } = recordingDrawingOps();
+    m.redraw(dr);
+    expect(calls.scene).toBe(1);
+    expect(calls.redraw).toBe(0);
+    // First frame ⇒ prev=null ⇒ reconciler paints the sole node.
+    expect(ops.some((o) => o.op === "drawRect")).toBe(true);
+    // The midend always frames the call with startDraw/endDraw.
+    expect(ops[0].op).toBe("startDraw");
+    expect(ops[ops.length - 1].op).toBe("endDraw");
+  });
+
+  it("a redraw-only game is unchanged (the reconciler is not invoked)", () => {
+    // The existing `fakeGame` defines `redraw` and not `scene`; assert
+    // that the redraw is what the midend calls and no reconciler ops
+    // appear beyond what fakeGame.redraw itself emits.
+    const m = new Midend(fakeGame);
+    m.setCallbacks(
+      () => {},
+      () => {},
+    );
+    m.newGame();
+    const { dr, ops } = recordingDrawingOps();
+    m.redraw(dr);
+    // fakeGame's first-paint emits exactly one drawRect (its bg).
+    expect(ops.filter((o) => o.op === "drawRect")).toHaveLength(1);
+    // No clip/unclip — the reconciler never ran.
+    expect(ops.some((o) => o.op === "clip")).toBe(false);
+  });
+
+  it("a game defining both scene and redraw uses scene", () => {
+    const { game, calls } = makeSceneFake({ withScene: true, withRedraw: true });
+    const m = new Midend(game);
+    m.setCallbacks(
+      () => {},
+      () => {},
+    );
+    m.newGame();
+    const { dr } = recordingDrawingOps();
+    m.redraw(dr);
+    expect(calls.scene).toBe(1);
+    expect(calls.redraw).toBe(0);
+  });
+
+  it("emits zero draw ops on the second redraw of an unchanged scene", () => {
+    const { game } = makeSceneFake();
+    const m = new Midend(game);
+    m.setCallbacks(
+      () => {},
+      () => {},
+    );
+    m.newGame();
+    // First redraw paints everything.
+    const first = recordingDrawingOps();
+    m.redraw(first.dr);
+    expect(first.ops.some((o) => o.op === "drawRect")).toBe(true);
+
+    // Second redraw with the same state ⇒ scene returns the same
+    // referentially-equal node ⇒ reconciler short-circuits. The only
+    // ops the midend emits are its frame brackets.
+    const second = recordingDrawingOps();
+    m.redraw(second.dr);
+    const drawing = second.ops.filter(
+      (o) => o.op !== "startDraw" && o.op !== "endDraw",
+    );
+    expect(drawing).toEqual([]);
+  });
+
+  it("canvasCleared discards the previous-frame scene so the next redraw repaints all", () => {
+    const { game } = makeSceneFake();
+    const m = new Midend(game);
+    m.setCallbacks(
+      () => {},
+      () => {},
+    );
+    m.newGame();
+    m.size({ w: 100, h: 100 }, true, 1);
+    // Paint once.
+    const a = recordingDrawingOps();
+    m.redraw(a.dr);
+    expect(a.ops.some((o) => o.op === "drawRect")).toBe(true);
+
+    // Clear the canvas (simulates the app's `resizeDrawing` invoking
+    // the engine's `canvasCleared`). The next redraw should treat the
+    // scene as if from scratch — every node painted.
+    m.canvasCleared();
+    const b = recordingDrawingOps();
+    m.redraw(b.dr);
+    expect(b.ops.some((o) => o.op === "drawRect")).toBe(true);
+  });
+
+  it("forceRedraw repaints the entire scene", () => {
+    const { game } = makeSceneFake();
+    const m = new Midend(game);
+    m.setCallbacks(
+      () => {},
+      () => {},
+    );
+    m.newGame();
+    const a = recordingDrawingOps();
+    m.redraw(a.dr);
+    // Same state, second paint: zero drawing ops.
+    const b = recordingDrawingOps();
+    m.redraw(b.dr);
+    expect(
+      b.ops.filter((o) => o.op !== "startDraw" && o.op !== "endDraw"),
+    ).toEqual([]);
+
+    // forceRedraw should clear lastScene and repaint:
+    const c = recordingDrawingOps();
+    m.forceRedraw(c.dr);
+    expect(c.ops.some((o) => o.op === "drawRect")).toBe(true);
   });
 });

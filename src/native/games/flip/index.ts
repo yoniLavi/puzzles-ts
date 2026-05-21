@@ -1,15 +1,24 @@
 /**
  * Flip — native TS port (the pattern-establishing first game; change
- * `add-flip-ts-port`). Light-toggling over GF(2): clicking a cell
- * toggles an overlapping set of lights defined by a per-cell matrix;
- * win when every light is off.
+ * `add-flip-ts-port` originally, then ported to the scene-graph
+ * contract by `add-scene-graph-reconciler`). Light-toggling over
+ * GF(2): clicking a cell toggles an overlapping set of lights defined
+ * by a per-cell matrix; win when every light is off.
  *
  * Idiomatic rendering of `puzzles/flip.c` (deleted when this ships):
  * immutable state, discriminated `FlipMove`, GC instead of
  * dup/free, the `random.ts` we already ported for `random_upto`, and
  * the on-demand `SortedMultiset` standing in for `tree234` in the
  * RANDOM matrix generator. The logic mirrors the C reference; it is
- * not a control-flow transliteration.
+ * not a control-flow transliteration. The rendering shape is the
+ * declarative scene-graph contract: `scene()` returns a fresh
+ * `SceneNode[]` per frame and the framework reconciles. There is no
+ * imperative `redraw`, no per-tile `Int16Array` pixel cache, no
+ * `started` first-paint flag — only a minimal drawstate carrying the
+ * current tile size (for click→cell mapping in `interpretMove`) and a
+ * per-tile referential-equality memo (so unchanged tiles return the
+ * same JS object reference frame-over-frame and the reconciler
+ * short-circuits without comparison).
  */
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
@@ -27,8 +36,8 @@ const CURSOR_SELECT = 0x0200 + 13;
 const CURSOR_SELECT2 = 0x0200 + 14;
 import {
   type Game,
-  type GameDrawing,
   registerGame,
+  type SceneNode,
   type SolveResult,
   UI_UPDATE,
   type UiUpdate,
@@ -70,13 +79,24 @@ export interface FlipUi {
   cursorVisible: boolean;
 }
 
+/** Minimal drawstate. `tileSize` is the click→cell mapping anchor
+ * read by `interpretMove`; `tiles` is the per-tile scene-node memo
+ * for referential-equality short-circuit in the reconciler. The old
+ * per-tile `Int16Array` pixel cache and `started` first-paint flag
+ * are gone — `scene()` is pure state→tree, so there is nothing
+ * imperative to invalidate. */
 export interface FlipDrawState {
-  w: number;
-  h: number;
-  started: boolean;
   tileSize: number;
-  /** Per-cell render cache; -1 = never drawn, 255 = animating. */
-  tiles: Int16Array;
+  tiles: Array<TileMemo | undefined>;
+}
+
+interface TileMemo {
+  /** Key encoding the visible state that produced `node`: tile value
+   * (lit/hint/cursor bits) packed with tile size. `-1` is a sentinel
+   * meaning "always invalidate" (used for animating tiles, which
+   * change every frame). */
+  key: number;
+  node: SceneNode;
 }
 
 // Colour palette indices (mirror flip.c's enum).
@@ -525,20 +545,13 @@ export const flipGame: Game<
 
   newDrawState(s): FlipDrawState {
     return {
-      w: s.w,
-      h: s.h,
-      started: false,
       tileSize: PREFERRED_TILE_SIZE,
-      tiles: new Int16Array(s.w * s.h).fill(-1),
+      tiles: new Array(s.w * s.h),
     };
   },
 
   setTileSize(ds, tileSize): void {
-    if (ds.tileSize !== tileSize) {
-      ds.tileSize = tileSize;
-      ds.started = false;
-      ds.tiles.fill(-1);
-    }
+    ds.tileSize = tileSize;
   },
 
   interpretMove(s, ui, ds, point, button): FlipMove | null | UiUpdate {
@@ -809,54 +822,85 @@ export const flipGame: Game<
     return 0;
   },
 
-  redraw(dr, ds, prev, s, _dir, ui, animTime, flashTime): void {
-    if (ds === null) return;
+  scene(s, ui, ds, animTime, flashTime, prev, _dir): SceneNode[] {
     const { w, h } = s;
     const wh = w * h;
-    const tile = ds.tileSize;
+    const tile = ds?.tileSize ?? PREFERRED_TILE_SIZE;
     const border = tile >> 1;
-
-    if (!ds.started) {
-      // First paint of this drawstate: own the background. The
-      // engine's redraw deliberately paints no pixels of its own
-      // (we don't want the framework to overpaint cached tiles), so
-      // any time the drawstate is fresh — initial setup, canvas
-      // resize, palette replacement — this branch is responsible
-      // for clearing the whole window to the puzzle's background
-      // colour. (Mirrors `midend.c`'s first-draw rect, just located
-      // where it belongs: in the game.)
-      const winW = tile * w + 2 * border;
-      const winH = tile * h + 2 * border;
-      dr.drawRect({ x: 0, y: 0, w: winW, h: winH }, COL_BACKGROUND);
-      for (let i = 0; i <= w; i++) {
-        dr.drawLine(
-          { x: i * tile + border, y: border },
-          { x: i * tile + border, y: h * tile + border },
-          COL_GRID,
-          1,
-        );
-      }
-      for (let i = 0; i <= h; i++) {
-        dr.drawLine(
-          { x: border, y: i * tile + border },
-          { x: w * tile + border, y: i * tile + border },
-          COL_GRID,
-          1,
-        );
-      }
-      dr.drawUpdate({ x: 0, y: 0, w: winW, h: winH });
-      ds.started = true;
-    }
+    const winW = tile * w + 2 * border;
+    const winH = tile * h + 2 * border;
 
     const flashFrame = flashTime ? Math.floor(flashTime / FLASH_FRAME) : -1;
-    const anim = animTime / ANIM_TIME;
-    // The engine renders statically until it drives timed redraws; with
-    // animTime 0 the prior state is irrelevant (final state is drawn).
-    const animating = animTime > 0 && prev != null;
+    const animProgress = animTime / ANIM_TIME;
+    const animating = animTime > 0 && prev !== null;
 
+    const nodes: SceneNode[] = [];
+
+    // Background fill. Owned by the game (the engine paints no pixels
+    // of its own). On the first frame after canvasCleared/forceRedraw
+    // this paints the whole window; on subsequent unchanged frames
+    // it short-circuits via deep-equality (constant node literal).
+    nodes.push({
+      kind: "rect",
+      id: "bg",
+      x: 0,
+      y: 0,
+      w: winW,
+      h: winH,
+      fill: COL_BACKGROUND,
+    });
+
+    // Grid lines, wrapped in one group so the reconciler treats them
+    // as a single unit. The group's clip is the whole board interior
+    // — this group never partial-repaints in practice (the only thing
+    // that would change it is a board reshape, which triggers
+    // canvasCleared anyway).
+    const gridChildren: SceneNode[] = [];
+    for (let i = 0; i <= w; i++) {
+      gridChildren.push({
+        kind: "line",
+        id: `v${i}`,
+        from: { x: i * tile + border, y: border },
+        to: { x: i * tile + border, y: h * tile + border },
+        colour: COL_GRID,
+        thickness: 1,
+      });
+    }
+    for (let i = 0; i <= h; i++) {
+      gridChildren.push({
+        kind: "line",
+        id: `h${i}`,
+        from: { x: border, y: i * tile + border },
+        to: { x: w * tile + border, y: i * tile + border },
+        colour: COL_GRID,
+        thickness: 1,
+      });
+    }
+    nodes.push({
+      kind: "group",
+      id: "grid",
+      clip: { x: 0, y: 0, w: winW, h: winH },
+      children: gridChildren,
+    });
+
+    // Per-tile groups, each with explicit clip = the tile interior
+    // (one pixel inside the border so the grid lines stay intact).
+    // Memoised by (tileVal, tileSize) so an unchanged tile returns
+    // the same JS object reference frame-over-frame; the reconciler
+    // then short-circuits via referential equality without deep
+    // comparison.
+    if (ds && ds.tiles.length !== wh) {
+      // Drawstate created with a different w*h (e.g. via loadGame /
+      // newGameFromId for a different shape). Rebuild the memo array.
+      ds.tiles = new Array(wh);
+    }
     for (let i = 0; i < wh; i++) {
       const x = i % w;
       const y = (i / w) | 0;
+
+      // Tile value: lit (bit 0), hint (bit 1), cursor (bit 2). The
+      // flash overlay overlays its wave-front lit/unlit on top of
+      // the static value; this matches flip.c's redraw.
       let v = s.grid[i];
       if (flashFrame >= 0) {
         const fx = (((w + 1) / 2) | 0) - Math.min(x + 1, w - x);
@@ -868,53 +912,92 @@ export const flipGame: Game<
       if (!s.hintsActive) v &= ~2;
       if (ui.cursorVisible && ui.cx === x && ui.cy === y) v |= 4;
 
-      const vv =
-        animating && prev && ((s.grid[i] ^ prev.grid[i]) & ~2) ? 255 : v;
-      if (ds.tiles[i] === 255 || vv === 255 || ds.tiles[i] !== vv) {
-        drawTile(dr, ds, s, x, y, v, vv === 255, anim);
-        ds.tiles[i] = vv;
+      // This specific tile is animating iff its lit/cursor bits
+      // changed between prev and current state (the `& ~2` ignores
+      // hint-bit changes — matches flip.c's `(s.grid[i] ^
+      // prev.grid[i]) & ~2`).
+      const thisAnim =
+        animating && prev !== null
+          ? ((s.grid[i] ^ prev.grid[i]) & ~2) !== 0
+          : false;
+
+      // Memo key: animating tiles invalidate every frame (their
+      // polygon shape varies); static tiles cache by (tileVal,
+      // tileSize). Including tileSize in the key is defensive — a
+      // size change without canvasCleared would otherwise produce
+      // stale geometry; in practice canvasCleared always follows a
+      // real resize.
+      const key = thisAnim ? -1 : v | (tile << 4);
+      const cached = ds?.tiles[i];
+      if (cached !== undefined && cached.key === key) {
+        nodes.push(cached.node);
+        continue;
       }
+      const node = buildTileNode(s, x, y, tile, border, v, thisAnim, animProgress);
+      if (ds) ds.tiles[i] = { key, node };
+      nodes.push(node);
     }
+
+    return nodes;
   },
 };
 
-function drawTile(
-  dr: GameDrawing,
-  ds: FlipDrawState,
+function buildTileNode(
   s: FlipState,
   x: number,
   y: number,
-  tile: number,
+  ts: number,
+  border: number,
+  tileVal: number,
   anim: boolean,
-  animTime: number,
-): void {
+  animProgress: number,
+): SceneNode {
   const { w, h } = s;
   const wh = w * h;
-  const ts = ds.tileSize;
-  const border = ts >> 1;
   const bx = x * ts + border;
   const by = y * ts + border;
-  const dcol = tile & 4 ? COL_CURSOR : COL_DIAG;
+  const dcol = tileVal & 4 ? COL_CURSOR : COL_DIAG;
 
-  dr.clip({ x: bx + 1, y: by + 1, w: ts - 1, h: ts - 1 });
-  dr.drawRect(
-    { x: bx + 1, y: by + 1, w: ts - 1, h: ts - 1 },
-    anim ? COL_BACKGROUND : tile & 1 ? COL_WRONG : COL_RIGHT,
-  );
+  // The tile clip exactly matches flip.c's drawTile clip — one pixel
+  // inside the grid border so the grid lines on this tile's edges
+  // stay intact when the tile repaints.
+  const clip = { x: bx + 1, y: by + 1, w: ts - 1, h: ts - 1 };
+
+  const children: SceneNode[] = [];
+
+  // Tile background fill (or transparent during animation — the
+  // animating polygon below paints the visible part).
+  children.push({
+    kind: "rect",
+    id: "fill",
+    x: bx + 1,
+    y: by + 1,
+    w: ts - 1,
+    h: ts - 1,
+    fill: anim ? COL_BACKGROUND : tileVal & 1 ? COL_WRONG : COL_RIGHT,
+  });
 
   if (anim) {
-    const at = Math.floor(ts * animTime);
+    const at = Math.floor(ts * animProgress);
     const coords: Point[] = [
       { x: bx + ts, y: by },
       { x: bx + at, y: by + at },
       { x: bx, y: by + ts },
       { x: bx + ts - at, y: by + ts - at },
     ];
-    let colour = tile & 1 ? COL_WRONG : COL_RIGHT;
-    if (animTime < 0.5) colour = COL_WRONG + COL_RIGHT - colour;
-    dr.drawPolygon(coords, colour, COL_GRID);
+    let colour = tileVal & 1 ? COL_WRONG : COL_RIGHT;
+    if (animProgress < 0.5) colour = COL_WRONG + COL_RIGHT - colour;
+    children.push({
+      kind: "polygon",
+      id: "anim",
+      points: coords,
+      fill: colour,
+      outline: COL_GRID,
+    });
   }
 
+  // Matrix-arrow markers for cells this tile toggles. Center cell is
+  // a filled square; orthogonal/diagonal cells are 4-sided "U" marks.
   for (let i = 0; i < h; i++) {
     for (let j = 0; j < w; j++) {
       if (!s.matrix[(y * w + x) * wh + i * w + j]) continue;
@@ -923,37 +1006,96 @@ function drawTile(
       const td = Math.max(1, (ts / 16) | 0);
       const cx = bx + ((ts / 2) | 0) + (2 * ox - 1) * td;
       const cy = by + ((ts / 2) | 0) + (2 * oy - 1) * td;
+      const id = `m${i}-${j}`;
       if (ox === 0 && oy === 0) {
-        dr.drawRect({ x: cx, y: cy, w: 2 * td + 1, h: 2 * td + 1 }, dcol);
+        children.push({
+          kind: "rect",
+          id,
+          x: cx,
+          y: cy,
+          w: 2 * td + 1,
+          h: 2 * td + 1,
+          fill: dcol,
+        });
       } else {
-        dr.drawLine({ x: cx, y: cy }, { x: cx + 2 * td, y: cy }, dcol, 1);
-        dr.drawLine(
-          { x: cx, y: cy + 2 * td },
-          { x: cx + 2 * td, y: cy + 2 * td },
-          dcol,
-          1,
-        );
-        dr.drawLine({ x: cx, y: cy }, { x: cx, y: cy + 2 * td }, dcol, 1);
-        dr.drawLine(
-          { x: cx + 2 * td, y: cy },
-          { x: cx + 2 * td, y: cy + 2 * td },
-          dcol,
-          1,
-        );
+        children.push({
+          kind: "line",
+          id: `${id}-t`,
+          from: { x: cx, y: cy },
+          to: { x: cx + 2 * td, y: cy },
+          colour: dcol,
+          thickness: 1,
+        });
+        children.push({
+          kind: "line",
+          id: `${id}-b`,
+          from: { x: cx, y: cy + 2 * td },
+          to: { x: cx + 2 * td, y: cy + 2 * td },
+          colour: dcol,
+          thickness: 1,
+        });
+        children.push({
+          kind: "line",
+          id: `${id}-l`,
+          from: { x: cx, y: cy },
+          to: { x: cx, y: cy + 2 * td },
+          colour: dcol,
+          thickness: 1,
+        });
+        children.push({
+          kind: "line",
+          id: `${id}-r`,
+          from: { x: cx + 2 * td, y: cy },
+          to: { x: cx + 2 * td, y: cy + 2 * td },
+          colour: dcol,
+          thickness: 1,
+        });
       }
     }
   }
 
-  if (tile & 2) {
+  if (tileVal & 2) {
+    // Three nested rectangle outlines around the tile (the solver
+    // hint marker). flip.c draws them as four lines each, three
+    // iterations with shrinking insets.
     let x1 = bx + ((ts / 20) | 0);
     let x2 = bx + ts - ((ts / 20) | 0);
     let y1 = by + ((ts / 20) | 0);
     let y2 = by + ts - ((ts / 20) | 0);
     for (let k = 0; k < 3; k++) {
-      dr.drawLine({ x: x1, y: y1 }, { x: x2, y: y1 }, COL_HINT, 1);
-      dr.drawLine({ x: x1, y: y2 }, { x: x2, y: y2 }, COL_HINT, 1);
-      dr.drawLine({ x: x1, y: y1 }, { x: x1, y: y2 }, COL_HINT, 1);
-      dr.drawLine({ x: x2, y: y1 }, { x: x2, y: y2 }, COL_HINT, 1);
+      const id = `hint${k}`;
+      children.push({
+        kind: "line",
+        id: `${id}-t`,
+        from: { x: x1, y: y1 },
+        to: { x: x2, y: y1 },
+        colour: COL_HINT,
+        thickness: 1,
+      });
+      children.push({
+        kind: "line",
+        id: `${id}-b`,
+        from: { x: x1, y: y2 },
+        to: { x: x2, y: y2 },
+        colour: COL_HINT,
+        thickness: 1,
+      });
+      children.push({
+        kind: "line",
+        id: `${id}-l`,
+        from: { x: x1, y: y1 },
+        to: { x: x1, y: y2 },
+        colour: COL_HINT,
+        thickness: 1,
+      });
+      children.push({
+        kind: "line",
+        id: `${id}-r`,
+        from: { x: x2, y: y1 },
+        to: { x: x2, y: y2 },
+        colour: COL_HINT,
+        thickness: 1,
+      });
       x1++;
       y1++;
       x2--;
@@ -961,8 +1103,12 @@ function drawTile(
     }
   }
 
-  dr.unclip();
-  dr.drawUpdate({ x: bx + 1, y: by + 1, w: ts - 1, h: ts - 1 });
+  return {
+    kind: "group",
+    id: `tile-${x},${y}`,
+    clip,
+    children,
+  };
 }
 
 registerGame(flipGame);

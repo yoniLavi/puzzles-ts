@@ -14,10 +14,15 @@ requirements are untouched; games may continue to implement
 ### Requirement: Games MAY describe their canvas via a scene-graph function
 
 The `Game` interface SHALL support an optional method
-`scene(s: State, ui: Ui, animTime: number, flashTime: number,
-prev?: State, dir?: number): SceneNode[]` returning a list of
-scene nodes that describe the canvas for the current frame, in
-draw order.
+`scene(s: State, ui: Ui, ds: DrawState | null, animTime: number,
+flashTime: number, prev: State | null, dir: number): SceneNode[]`
+returning a list of scene nodes that describe the canvas for the
+current frame, in draw order. `ds` is passed for symmetry with
+`interpretMove`: a scene-rendering game MAY keep a minimal
+drawstate (e.g. carrying tile size for click-to-cell mapping in
+`interpretMove`, or per-tile referential-equality memo entries the
+scene function uses) — it MUST NOT use the drawstate to issue
+canvas writes.
 
 A `SceneNode` SHALL be a discriminated union with at least these
 variants:
@@ -197,10 +202,14 @@ JavaScript object reference is returned across frames for
 unchanged tiles — so the reconciler's referential-equality
 fast-path applies.
 
-Flip's `FlipDrawState`, `newDrawState`, `setTileSize`, and
-per-tile `Int16Array` cache SHALL be removed. The midend's
-existing tile-size plumbing (set via `Midend.size`) SHALL be
-what `scene` reads to compute geometry.
+Flip's per-tile `Int16Array` render cache, the `started`
+first-paint flag, the imperative `drawTile` helper, and
+`flipGame.redraw` SHALL be removed. A minimal `FlipDrawState`
+carrying `tileSize` (so `interpretMove` can map pixel coordinates
+to cells) and per-tile referential-equality memo entries SHALL
+remain. `setTileSize` SHALL be a one-line tile-size assignment
+with no other side effects — the imperative cache-wipe and
+first-paint-reset concerns are gone with the imperative redraw.
 
 Flip's behavioural tests SHALL be updated to assert against the
 recording `GameDrawing` op stream produced by the
@@ -232,6 +241,9 @@ confirmed parity with the pre-change Flip.
 #### Scenario: Flip has no imperative redraw
 
 - **WHEN** the project compiles
-- **THEN** `flipGame.redraw`, `flipGame.setTileSize`,
-  `flipGame.newDrawState`, and `FlipDrawState` are absent
+- **THEN** `flipGame.redraw` and the per-tile `Int16Array` render
+  cache are absent
 - **AND** the midend dispatches Flip through the `scene` path
+- **AND** any retained `FlipDrawState` is minimal (e.g. tile size +
+  memo entries) and carries no per-tile pixel cache or first-paint
+  flag
