@@ -83,6 +83,12 @@ export enum PuzzleButton {
   MOD_MASK = 0x7800 /* mask for all modifiers */,
 }
 
+/** Which engine implementation backs this puzzle instance. Surfaced
+ * for the dev-mode "TS" / "C" badge in the puzzle header, so an owner
+ * doing parity testing can see at a glance which path they're playing
+ * on. Fixed at construction time per puzzle. */
+export type PuzzleEngineType = "ts" | "wasm";
+
 export interface PuzzleStaticAttributes {
   displayName: string;
   canConfigure: boolean;
@@ -91,6 +97,7 @@ export interface PuzzleStaticAttributes {
   needsRightButton: boolean;
   isTimed: boolean;
   wantsStatusbar: boolean;
+  engineType: PuzzleEngineType;
 }
 
 /**

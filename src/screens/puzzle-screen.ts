@@ -139,7 +139,8 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         <main>
           <header>
             ${this.renderGameMenu()}
-            <puzzle-type-menu 
+            ${this.renderEngineBadge()}
+            <puzzle-type-menu
                 appearance="plain" 
                 variant="brand"
                 placement=${this.orientation === "vertical" ? "bottom" : "right"}
@@ -214,6 +215,22 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         </wa-button>
       </puzzle-end-notification>
     `;
+  }
+
+  private renderEngineBadge() {
+    // Surfaces which implementation the worker constructed for this
+    // game — "TS" for the native-TS midend, "C" for the C/WASM
+    // build. Lets owner-acceptance testing see at a glance whether
+    // the live page is the port or the reference (see `ts-migration`
+    // spec's per-game hybrid + parity-gated registration rule).
+    const engineType = this.puzzle?.engineType;
+    if (!engineType) return nothing;
+    const isTs = engineType === "ts";
+    const label = isTs ? "TS" : "C";
+    const title = isTs
+      ? "This game is running on the native TypeScript engine"
+      : "This game is running on the C/WASM engine";
+    return html`<span class="engine-badge" data-engine=${engineType} title=${title} aria-label=${title}>${label}</span>`;
   }
 
   private renderGameMenu(): TemplateResult {
@@ -739,6 +756,28 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         puzzle-type-menu {
           flex: 0 1 auto;
           min-width: 1rem;
+        }
+
+        .engine-badge {
+          /* Small chip flagging which engine implementation is live —
+             "TS" for the native port, "C" for C/WASM. Lets owner-
+             acceptance testing see at a glance which path is on. */
+          align-self: center;
+          margin-inline-start: var(--wa-space-xs);
+          padding-inline: 0.4em;
+          padding-block: 0.1em;
+          border-radius: var(--wa-border-radius-s, 0.25em);
+          font-size: 0.7em;
+          font-weight: var(--wa-font-weight-semibold, 600);
+          line-height: 1.4;
+          letter-spacing: 0.04em;
+          color: var(--wa-color-neutral-on-loud, white);
+          background-color: var(--wa-color-neutral-fill-loud, #555);
+          user-select: none;
+
+          &[data-engine="ts"] {
+            background-color: var(--wa-color-success-fill-loud, #2e7d32);
+          }
         }
 
         wa-button::part(base),

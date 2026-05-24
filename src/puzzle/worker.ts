@@ -209,6 +209,7 @@ export class WorkerPuzzle implements FrontendConstructorArgs, PuzzleEngineSurfac
       needsRightButton: this.frontend.needsRightButton,
       isTimed: this.frontend.isTimed,
       wantsStatusbar: this.frontend.wantsStatusbar,
+      engineType: "wasm",
     };
   }
 
