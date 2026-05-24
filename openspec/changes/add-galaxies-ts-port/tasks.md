@@ -142,20 +142,28 @@
       the board and the solver returns a unique solution at exactly
       the snapshot's recorded difficulty.
 
-## 9. Catalog seam and C deletion (parity-gated; LAST)
+## 9. Catalog seam and C deletion (parity-gated)
 
-- [ ] 9.1 Dev-server smoke test: `npm run dev`, exercise all 6
+Doctrine (updated 2026-05-23, owner-explicit): **register the game as
+soon as the automated suite is green so the owner can smoke-test the
+TS path in `npm run dev`.** Marking `TS_PORTED` in CMake and deleting
+`.c` files still wait on owner-confirmed parity. See memory note
+`feedback_parity_gated_no_premature_done.md` (updated same day).
+
+- [x] 9.1 `registerGame(galaxiesGame)` from the Galaxies module;
+      module imported by `src/native/games/index.ts`.
+- [ ] 9.2 Dev-server smoke test: `npm run dev`, exercise all 6
       presets for generation, drag-to-associate, edge toggle,
       undo/redo, keyboard cursor, solve, win flash, dot-move
       animation. Save/load round-trip through the UI.
-- [ ] 9.2 Side-by-side feel check vs C build using
+- [ ] 9.3 Side-by-side feel check vs C build using
       `USE_TS_LEAVES=0` (paired with `VITE_USE_TS_LEAVES=0`) to flip
       to pure C on demand; surface any subjective regressions.
-- [ ] 9.3 Owner-acceptance signal recorded (commit message or
-      explicit conversation note). Do NOT proceed to 9.4/9.5/9.6
-      without it.
-- [ ] 9.4 `registerGame(galaxiesGame)` from the Galaxies module;
-      module imported in the worker.
+- [ ] 9.4 Owner-acceptance signal recorded (commit message or
+      explicit conversation note). Do NOT proceed to 9.5/9.6
+      without it. If parity is rejected, unregister (remove the
+      import in `src/native/games/index.ts`) to restore the C
+      fallback while fixes land.
 - [ ] 9.5 `puzzles/CMakeLists.txt`: `puzzle(galaxies TS_PORTED …)`;
       catalog continues to list `galaxies`, no `galaxies.wasm`,
       app routes `galaxies` to the TS engine.

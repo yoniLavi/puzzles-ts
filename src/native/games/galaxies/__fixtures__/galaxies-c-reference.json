@@ -1,0 +1,68 @@
+{
+  "fixtures": [
+    {
+      "w": 7,
+      "h": 7,
+      "diff": "n",
+      "seed": "galaxies-trace-7-n-0",
+      "desc": "geofvbozfbsugk",
+      "solverDiff": "n"
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "diff": "n",
+      "seed": "galaxies-trace-7-n-1",
+      "desc": "aihqdbzgroiqhhjh",
+      "solverDiff": "n"
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "diff": "u",
+      "seed": "galaxies-trace-7-u-0",
+      "desc": "axcrqdkzhqiiq",
+      "solverDiff": "u"
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "diff": "u",
+      "seed": "galaxies-trace-7-u-1",
+      "desc": "jedzedlxpbcqpv",
+      "solverDiff": "u"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "diff": "n",
+      "seed": "galaxies-trace-10-n-0",
+      "desc": "adkfiphzodzecmzuzgwcfyztcjmi",
+      "solverDiff": "n"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "diff": "n",
+      "seed": "galaxies-trace-10-n-1",
+      "desc": "mjckjbzglvegzrjmuzvcubhzhqdhc",
+      "solverDiff": "n"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "diff": "u",
+      "seed": "galaxies-trace-10-u-0",
+      "desc": "eezdhcdympgwdzcpkzxbzaoiuczd",
+      "solverDiff": "u"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "diff": "u",
+      "seed": "galaxies-trace-10-u-1",
+      "desc": "gmlizqewmcffpqpgdjznigfizgzcim",
+      "solverDiff": "u"
+    }
+  ]
+}
