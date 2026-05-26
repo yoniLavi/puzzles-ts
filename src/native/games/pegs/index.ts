@@ -35,7 +35,7 @@ import {
   LEFT_RELEASE,
 } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
-import { SortedMultiset } from "./sorted-multiset.ts";
+import { SortedMultiset } from "../../engine/sorted-multiset.ts";
 
 // --- grid cell values ------------------------------------------------
 
