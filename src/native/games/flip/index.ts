@@ -14,17 +14,6 @@
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 
-// Stable upstream button codes (mirror `PuzzleButton` in
-// src/puzzle/types.ts). Kept as plain consts so this module's import
-// graph has no runtime enum — it lets the advisory `scripts/diff-flip.ts`
-// run under Node's strip-only TS loader.
-const LEFT_BUTTON = 0x0200;
-const CURSOR_UP = 0x0200 + 9;
-const CURSOR_DOWN = 0x0200 + 10;
-const CURSOR_LEFT = 0x0200 + 11;
-const CURSOR_RIGHT = 0x0200 + 12;
-const CURSOR_SELECT = 0x0200 + 13;
-const CURSOR_SELECT2 = 0x0200 + 14;
 import {
   type Game,
   type GameDrawing,
@@ -33,6 +22,15 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
+import {
+  CURSOR_DOWN,
+  CURSOR_LEFT,
+  CURSOR_RIGHT,
+  CURSOR_SELECT,
+  CURSOR_SELECT2,
+  CURSOR_UP,
+  LEFT_BUTTON,
+} from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 import { SortedMultiset } from "./sorted-multiset.ts";
 

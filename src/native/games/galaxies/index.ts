@@ -18,6 +18,19 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
+import { mkhighlightBackground } from "../../engine/colour-mkhighlight.ts";
+import {
+  CURSOR_DOWN,
+  CURSOR_LEFT,
+  CURSOR_RIGHT,
+  CURSOR_SELECT,
+  CURSOR_SELECT2,
+  CURSOR_UP,
+  LEFT_BUTTON,
+  RIGHT_BUTTON,
+  RIGHT_DRAG,
+  RIGHT_RELEASE,
+} from "../../engine/pointer.ts";
 import type { RandomState } from "../../random/index.ts";
 import { newGameDesc } from "./generator.ts";
 import {
@@ -60,72 +73,10 @@ import {
   tileOpposite,
 } from "./state.ts";
 
-// Local copies of upstream button codes, mirroring src/puzzle/types.ts
-// PuzzleButton — kept as plain consts so this module's import graph has
-// no runtime enum dependency (matches Flip's posture). Galaxies uses
-// LEFT_BUTTON for edge-toggle, RIGHT_BUTTON/RIGHT_DRAG/RIGHT_RELEASE
-// for drag-to-associate, and the cursor keys for keyboard input. The
-// LEFT_DRAG / LEFT_RELEASE codes are deliberately not handled.
-const LEFT_BUTTON = 0x0200;
-const RIGHT_BUTTON = 0x0202;
-const RIGHT_DRAG = 0x0205;
-const RIGHT_RELEASE = 0x0208;
-const CURSOR_UP = 0x0200 + 9;
-const CURSOR_DOWN = 0x0200 + 10;
-const CURSOR_LEFT = 0x0200 + 11;
-const CURSOR_RIGHT = 0x0200 + 12;
-const CURSOR_SELECT = 0x0200 + 13;
-const CURSOR_SELECT2 = 0x0200 + 14;
 
 const PREFERRED_TILE_SIZE = 32;
 const FLASH_TIME = 0.15;
 
-/** Idiomatic TS port of upstream's `game_mkhighlight_specific` —
- * but returning only the (possibly-shifted) background colour. We
- * derive WHITEBG/BLACKBG ourselves in `colours()` rather than via
- * the highlight-toward-white/lowlight-toward-black formula. The
- * adjustment matters only when the host background is too close to
- * pure white (or pure black, which Galaxies' palette also breaks on);
- * in that case we shift the background toward the opposite end so a
- * pure-white `COL_WHITEBG` is visibly brighter than `COL_BACKGROUND`.
- * Mirrors `misc.c` lines 232-288. */
-function mkhighlightBackground(bg: Colour): Colour {
-  const K = Math.sqrt(3) / 6;
-  const colourDistance = (a: Colour, b: Colour) =>
-    Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2);
-  const colourMix = (a: Colour, b: Colour, t: number): Colour => [
-    a[0] + (b[0] - a[0]) * t,
-    a[1] + (b[1] - a[1]) * t,
-    a[2] + (b[2] - a[2]) * t,
-  ];
-  const black: Colour = [0, 0, 0];
-  const white: Colour = [1, 1, 1];
-
-  // Treat anything within IEEE round-trip drift of exact equality
-  // as equal. The C path operates in float32 where a JS-side pure
-  // white round-trips exactly (so its `dw == 0.0F` branch fires),
-  // but our doubles pick up ~1e-15 drift from `oklchToColour([1, 0, 0])`
-  // — without this epsilon, `K / dw` overflows to ~2.89e14 and shifts
-  // the background wildly past white into out-of-gamut pink. (Bug
-  // surfaced as a heavily-pink puzzle area on a near-white host on
-  // 2026-05-23.)
-  const EPS = 1e-9;
-  let out: Colour = [bg[0], bg[1], bg[2]];
-  // First, the lowlight pass (matching upstream order so the shifted
-  // background ends up identical when only one pass triggers).
-  const db = colourDistance(out, black);
-  if (db < K) {
-    if (db < EPS) out = colourMix(black, white, K / Math.sqrt(3));
-    else out = colourMix(black, out, K / db);
-  }
-  // Then the highlight pass.
-  const dw = colourDistance(out, white);
-  if (dw < K) {
-    if (dw < EPS) out = colourMix(white, black, K / Math.sqrt(3));
-    else out = colourMix(white, out, K / dw);
-  }
-  return out;
-}
 
 // --- types -----------------------------------------------------------
 

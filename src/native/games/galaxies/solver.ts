@@ -3,7 +3,7 @@
  * recursion for `Unreasonable`. Idiomatic TS port of `solver_state`
  * and friends in galaxies.c.
  */
-import { Dsf } from "./dsf.ts";
+import { Dsf } from "../../engine/dsf.ts";
 import {
   addAssoc,
   adjacencies,

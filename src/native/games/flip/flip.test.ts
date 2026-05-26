@@ -96,7 +96,7 @@ describe("Flip generation", () => {
 });
 
 describe("Flip button codes", () => {
-  it("flip's local button consts still match PuzzleButton", () => {
+  it("shared button consts still match PuzzleButton", () => {
     // Flip mirrors these as plain consts (enum-free import graph); pin
     // the upstream codes so any drift is caught here, not silently.
     expect(PuzzleButton.LEFT_BUTTON).toBe(0x0200);

@@ -187,6 +187,19 @@ class SavedGames {
       filename: autoSaveFilename,
     });
     if (error) {
+      // C-format autosaves from before a game's TS migration are
+      // expendable per the ts-migration doctrine. Silently delete
+      // and fall through to a new game rather than crashing.
+      const isCFormat =
+        error.includes("pre-pivot C-format") ||
+        error.includes("not a recognised TS save envelope");
+      if (isCFormat) {
+        console.warn(
+          `Dropping stale C-format autosave ${autoSaveFilename} for ${puzzle.puzzleId}`,
+        );
+        await this.removeAutoSavedGame(puzzle.puzzleId, autoSaveFilename);
+        return false;
+      }
       throw new Error(`Error restoring autosave ${autoSaveFilename}: ${error}`);
     }
     return found;

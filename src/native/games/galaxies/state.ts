@@ -9,7 +9,7 @@
  * `type` (tile/edge/vertex) and `(x, y)` per cell are derivable from
  * the index, so we elide them.
  */
-import { Dsf } from "./dsf.ts";
+import { Dsf } from "../../engine/dsf.ts";
 
 // --- flag bits (mirrors the C #defines we care about) --------------
 

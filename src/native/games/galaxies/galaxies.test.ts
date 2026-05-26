@@ -292,7 +292,7 @@ describe("Galaxies palette: mkhighlight background shift", () => {
 });
 
 describe("Galaxies button code stability", () => {
-  it("local button consts still match PuzzleButton", () => {
+  it("shared button consts still match PuzzleButton", () => {
     expect(PuzzleButton.LEFT_BUTTON).toBe(0x0200);
     expect(PuzzleButton.RIGHT_BUTTON).toBe(0x0202);
     expect(PuzzleButton.LEFT_DRAG).toBe(0x0203);

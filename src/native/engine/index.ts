@@ -31,3 +31,25 @@ export {
   encodeSave,
   type SaveEnvelope,
 } from "./save.ts";
+export { mkhighlightBackground } from "./colour-mkhighlight.ts";
+export {
+  CURSOR_DOWN,
+  CURSOR_LEFT,
+  CURSOR_RIGHT,
+  CURSOR_SELECT,
+  CURSOR_SELECT2,
+  CURSOR_UP,
+  LEFT_BUTTON,
+  LEFT_DRAG,
+  LEFT_RELEASE,
+  MIDDLE_BUTTON,
+  MIDDLE_DRAG,
+  MIDDLE_RELEASE,
+  RIGHT_BUTTON,
+  RIGHT_DRAG,
+  RIGHT_RELEASE,
+  type PointerAction,
+  type PointerButton,
+  parsePointerAction,
+} from "./pointer.ts";
+export { Dsf } from "./dsf.ts";
