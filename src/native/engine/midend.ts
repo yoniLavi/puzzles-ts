@@ -227,10 +227,13 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.emitParamsChange();
     this.emitStateChange();
     this.emitStatusBar();
-    // No `requestRedraw()` here: the app drives the first paint after
-    // a new game through its reactive flow (size → resizeDrawing →
-    // redraw). Parity with `midend.c` (which does not call
-    // `midend_redraw` from `midend_new_game`).
+    // Request a repaint even though the app's reactive flow would
+    // normally trigger one via the game-id-change notification.
+    // Deterministic boards (e.g. English Pegs) produce the same
+    // desc every time, so currentGameId doesn't change and the app
+    // never detects a change to repaint. The drawstate is fresh
+    // (ds.started=false), so the game will do a full repaint.
+    this.requestRedraw();
     this.syncTimer();
   }
 

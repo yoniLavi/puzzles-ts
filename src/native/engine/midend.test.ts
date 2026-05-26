@@ -128,6 +128,12 @@ describe("Midend repaints on every transition (regression: TS games rendered no 
     expect(h.redraws()).toBeGreaterThan(before);
   });
 
+  it("newGame requests a redraw (deterministic boards may produce the same game ID)", () => {
+    const before = h.redraws();
+    h.m.newGame();
+    expect(h.redraws()).toBeGreaterThan(before);
+  });
+
   it("a non-animated game does not start the animation timer", () => {
     // fakeGame has no animLength/flashLength ⇒ move paints once,
     // no rAF loop requested.
@@ -466,15 +472,15 @@ describe("Engine emits no pixels of its own (game owns the canvas content)", () 
   });
 });
 
-describe("Midend startFrom no longer fires an early redraw (was racing the app's resize)", () => {
-  it("newGame emits notifications but does NOT request a redraw", () => {
+describe("Midend newGame requests a redraw (deterministic boards may produce the same game ID)", () => {
+  it("newGame requests a redraw even when the game ID is unchanged", () => {
     const h = harness();
     h.m.newGame();
-    // Before this fix, startFrom called requestRedraw(); now the app
-    // drives the first paint after newGame through its reactive flow
-    // (size → resizeDrawing → redraw). The notifications still fire
-    // — that part is unchanged.
-    expect(h.redraws()).toBe(0);
+    // Deterministic boards (e.g. English Pegs) produce the same
+    // desc every time, so the app's reactive flow may not detect a
+    // game-id-change. The midend must request a redraw to ensure
+    // the canvas repaints after a new game.
+    expect(h.redraws()).toBeGreaterThan(0);
     const types = new Set(h.notes.map((n) => n.type));
     expect(types).toContain("game-id-change");
   });
