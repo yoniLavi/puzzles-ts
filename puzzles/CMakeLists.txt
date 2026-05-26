@@ -196,6 +196,7 @@ solver(pearl)
 cliprogram(pearlbench pearl.c COMPILE_DEFINITIONS STANDALONE_SOAK_TEST)
 
 puzzle(pegs
+  TS_PORTED  # native-TS port (openspec add-pegs-ts-port); no pegs.c/wasm
   DISPLAYNAME "Pegs"
   DESCRIPTION "Peg solitaire puzzle"
   OBJECTIVE "Jump pegs over each other to remove all but one.")
