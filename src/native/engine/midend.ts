@@ -403,7 +403,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       }
       return {
         title: menu.title,
-        params: menu.params ? this.game.encodeParams(menu.params, false) : "",
+        params: menu.params ? this.game.encodeParams(menu.params, true) : "",
       };
     };
     const root = walk(this.game.presets());
