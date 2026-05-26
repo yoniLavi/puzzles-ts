@@ -94,15 +94,11 @@ puzzle(flood
   OBJECTIVE "Turn the grid the same colour in as few flood fills as possible.")
 
 puzzle(galaxies
+  TS_PORTED  # native-TS port (openspec add-galaxies-ts-port); no galaxies.c/wasm
   DISPLAYNAME "Galaxies"
   DESCRIPTION "Symmetric polyomino puzzle"
   OBJECTIVE "Divide the grid into rotationally symmetric regions each \
 centred on a dot.")
-solver(galaxies)
-cliprogram(galaxiespicture galaxies.c
-  COMPILE_DEFINITIONS STANDALONE_PICTURE_GENERATOR)
-guiprogram(galaxieseditor galaxies.c
-  COMPILE_DEFINITIONS EDITOR)
 
 puzzle(guess
   DISPLAYNAME "Guess"

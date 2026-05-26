@@ -372,8 +372,29 @@ function solverExtendExclaves(s: GalaxiesState): number {
     }
   }
 
+  // Count the 'liberties' of each connected component, in the Go
+  // sense: the number of currently unassociated squares adjacent to
+  // the component. If an exclave has just one liberty, that square
+  // _must_ extend the exclave, or the exclave gets cut off from its
+  // home dot.
+  //
+  // We count each adjacent square just once even if it borders the
+  // component on multiple edges, so we walk each unassociated square
+  // and de-duplicate its neighbours (not the other way round).
+  //
+  // Storage trick (from upstream's solver_extend_exclaves): we store
+  // the liberty count in `iscratch[i]` at the centre of each square
+  // (odd coords), and use `iscratch[i-1]` (an even-coord cell to the
+  // left, which never carries any tile data itself) to remember the
+  // *index* of the single liberty when there is exactly one. The
+  // i-1 slot is a free sidecar — no overlap is possible because no
+  // two square centres share the same i-1 neighbour.
+  //
+  // Non-canonical square centres are marked with iscratch[i] = -1,
+  // so the later loop can detect "this square has since become
+  // associated and is no longer the canonical dsf element it was
+  // when the dsf was built" without re-walking the dsf.
   const iscratch = new Int32Array(sz);
-  // -1: not canonical, 0+: liberty count.
   for (let x = 1; x < s.sx; x += 2) {
     for (let y = 1; y < s.sy; y += 2) {
       const i = idx(s, x, y);

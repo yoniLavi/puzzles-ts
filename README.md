@@ -22,8 +22,9 @@ touch, mouse, and keyboard across screen sizes.
 
 **The app works.** Every puzzle is playable today. Under the hood it's a
 hybrid: each game runs either its original C/WASM implementation or its
-new TypeScript port, presented uniformly. `random` (the RNG) is already
-native TS; the rest of the engine is mid-migration.
+new TypeScript port, presented uniformly. The TS midend + `Game`
+interface, the `random` RNG, and two game ports (**Flip**, **Galaxies**)
+are native TS; the rest of the engine is mid-migration.
 
 **The migration is deliberate divergence, not a faithful port.** We are
 not tracking upstream and not preserving byte-identical behaviour or old
@@ -94,9 +95,11 @@ templates under [templates/](templates/). `src/` is organised by role:
 * `src/dialogs/` — modal / popover overlays.
 * `src/components/` — reusable leaf Lit components.
 * `src/puzzle/` — the puzzle runtime + the Comlink worker boundary.
-* `src/native/` — native TS ports of engine modules (today: `random/`;
-  the TS midend + per-game ports land here / under a sibling games dir,
-  layout decided in the `ts-midend-and-game-interface` change).
+* `src/native/` — native TS engine and ports. `src/native/engine/`
+  holds the `Game` interface, the `Midend`, the runtime per-game
+  registry, and the save codec. `src/native/games/<id>/` holds each
+  ported game (today: `flip/`, `galaxies/`). `src/native/random/` is
+  the bit-identical RNG port.
 * `src/store/` — Dexie (IndexedDB) schema for settings and saved games.
 * Page entries, `main.ts`, the old-browser `preflight.ts` gate, the
   `sw.ts` service worker, and cross-cutting modules at `src/` root.

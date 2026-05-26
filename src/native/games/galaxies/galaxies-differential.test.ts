@@ -15,10 +15,12 @@
  * the same seed; that's surfaced (advisorially) by
  * `scripts/diff-galaxies.test.ts`.
  *
- * Re-generate this fixture when the C source's generator behaviour
- * changes (i.e., on an upstream merge — not something this fork plans):
- *   scripts/build-native.sh galaxies-trace
- *   build/native/auxiliary/galaxies-trace > src/native/games/galaxies/__fixtures__/galaxies-c-reference.json
+ * The fixture is a frozen snapshot — both `puzzles/galaxies.c` and
+ * `puzzles/auxiliary/galaxies-trace.c` were deleted in the same change
+ * that registered the TS port (per the per-game C-deletion doctrine).
+ * If ever regenerating is needed (e.g. to broaden the snapshot), the
+ * trace harness can be recovered from git history at
+ * `puzzles/auxiliary/galaxies-trace.c` prior to its deletion commit.
  */
 import { describe, expect, it } from "vitest";
 import cReference from "./__fixtures__/galaxies-c-reference.json" with { type: "json" };

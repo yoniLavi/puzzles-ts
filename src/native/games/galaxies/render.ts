@@ -40,10 +40,12 @@ export interface GalaxiesDrawState {
   h: number;
   tileSize: number;
   started: boolean;
-  /** Per-tile cache key from the last paint; -1 = never drawn,
-   * triggers a full redraw of that tile next time. */
-  cache: BigInt64Array;
-  /** Per-tile arrow dx/dy cache. */
+  /** Per-tile cache key (flags | dots) from the last paint; -1 = never
+   * drawn, triggers a full redraw of that tile next time. Fits in
+   * 30 bits, so an Int32Array is enough. ddx/ddy live in `dx`/`dy`
+   * and are compared as separate cache-miss conditions. */
+  cache: Int32Array;
+  /** Per-tile arrow dx/dy cache; part of the cache-miss comparison. */
   dx: Int16Array;
   dy: Int16Array;
 }
@@ -52,8 +54,8 @@ const PREFERRED_TILE_SIZE = 32;
 
 export function newDrawState(s: GalaxiesState): GalaxiesDrawState {
   const n = s.w * s.h;
-  const cache = new BigInt64Array(n);
-  for (let i = 0; i < n; i++) cache[i] = -1n;
+  const cache = new Int32Array(n);
+  for (let i = 0; i < n; i++) cache[i] = -1;
   return {
     w: s.w,
     h: s.h,
@@ -69,7 +71,7 @@ export function setTileSize(ds: GalaxiesDrawState, tileSize: number): void {
   if (ds.tileSize === tileSize) return;
   ds.tileSize = tileSize;
   ds.started = false;
-  for (let i = 0; i < ds.cache.length; i++) ds.cache[i] = -1n;
+  for (let i = 0; i < ds.cache.length; i++) ds.cache[i] = -1;
 }
 
 // --- flags encoded into the per-tile cache key ---------------------
@@ -86,10 +88,11 @@ const DRAW_WHITE = 1 << 8;
 const DRAW_BLACK = 1 << 9;
 const DRAW_ARROW = 1 << 10;
 const DRAW_CURSOR = 1 << 11;
-const DOT_SHIFT_C = 12n;
-const DOT_SHIFT_M = 2n;
-const DOT_WHITE = 1n;
-const DOT_BLACK = 2n;
+// Dots: 9 positions per tile × 2 bits = bits 12-29 of the key.
+const DOT_SHIFT_C = 12;
+const DOT_SHIFT_M = 2;
+const DOT_WHITE = 1;
+const DOT_BLACK = 2;
 
 // --- rendering helpers ---------------------------------------------
 
@@ -129,7 +132,7 @@ function drawSquare(
   tileSize: number,
   border: number,
   flags: number,
-  dots: bigint,
+  dots: number,
   ddx: number,
   ddy: number,
 ): void {
@@ -256,8 +259,8 @@ function drawSquare(
   // Dots — 9 possible positions per tile (grid-aligned).
   for (let dy0 = 0; dy0 < 3; dy0++) {
     for (let dx0 = 0; dx0 < 3; dx0++) {
-      const shift = DOT_SHIFT_C + DOT_SHIFT_M * BigInt(dy0 * 3 + dx0);
-      const val = Number((dots >> shift) & ((1n << DOT_SHIFT_M) - 1n));
+      const shift = DOT_SHIFT_C + DOT_SHIFT_M * (dy0 * 3 + dx0);
+      const val = (dots >>> shift) & ((1 << DOT_SHIFT_M) - 1);
       if (val) {
         dr.drawCircle(
           { x: lx + ((dx0 * tileSize) >> 1), y: ly + ((dy0 * tileSize) >> 1) },
@@ -335,7 +338,7 @@ export function redraw(
       let flags = 0;
       let ddx = 0;
       let ddy = 0;
-      let dots = 0n;
+      let dots = 0;
 
       // Edge flags.
       if (s.flags[idx(s, 2 * x, 2 * y + 1)] & F_EDGE_SET) flags |= DRAW_EDGE_L;
@@ -399,7 +402,7 @@ export function redraw(
           const f = s.flags[idx(s, 2 * x + dx0, 2 * y + dy0)];
           if (f & F_DOT) {
             const v = f & F_DOT_BLACK ? DOT_BLACK : DOT_WHITE;
-            dots |= v << (DOT_SHIFT_C + DOT_SHIFT_M * BigInt(dy0 * 3 + dx0));
+            dots |= v << (DOT_SHIFT_C + DOT_SHIFT_M * (dy0 * 3 + dx0));
           }
         }
       }
@@ -414,14 +417,16 @@ export function redraw(
         flags |= DRAW_CURSOR;
       }
 
-      // Cache key: 16 bits of flags + 64-bit dots field + dx/dy.
-      // Pack into a bigint for the cache.
-      const key =
-        (BigInt(flags) | (dots & ~0xfffn)) ^
-        (BigInt(ddx & 0xff) << 56n) ^
-        (BigInt(ddy & 0xff) << 48n);
+      // Cache key: flags (bits 0-11) | dots (bits 12-29), all in 30
+      // bits — fits in an Int32. ddx/ddy live in `ds.dx`/`ds.dy` and
+      // form part of the cache-miss check below.
+      const key = flags | dots;
       const cacheI = y * w + x;
-      if (ds.cache[cacheI] !== key) {
+      if (
+        ds.cache[cacheI] !== key ||
+        ds.dx[cacheI] !== ddx ||
+        ds.dy[cacheI] !== ddy
+      ) {
         drawSquare(dr, x, y, tile, border, flags, dots, ddx, ddy);
         ds.cache[cacheI] = key;
         ds.dx[cacheI] = ddx;
@@ -482,7 +487,7 @@ export function redraw(
     const aTileX = Math.floor((ax - border) / ts) | 0;
     const aTileY = Math.floor((ay - border) / ts) | 0;
     if (aTileX >= 0 && aTileX < w && aTileY >= 0 && aTileY < h) {
-      ds.cache[aTileY * w + aTileX] = -1n;
+      ds.cache[aTileY * w + aTileX] = -1;
     }
     dr.drawUpdate({ x: 0, y: 0, w: drawWidth, h: drawHeight });
   }

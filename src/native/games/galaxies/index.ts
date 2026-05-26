@@ -62,12 +62,13 @@ import {
 
 // Local copies of upstream button codes, mirroring src/puzzle/types.ts
 // PuzzleButton — kept as plain consts so this module's import graph has
-// no runtime enum dependency (matches Flip's posture).
+// no runtime enum dependency (matches Flip's posture). Galaxies uses
+// LEFT_BUTTON for edge-toggle, RIGHT_BUTTON/RIGHT_DRAG/RIGHT_RELEASE
+// for drag-to-associate, and the cursor keys for keyboard input. The
+// LEFT_DRAG / LEFT_RELEASE codes are deliberately not handled.
 const LEFT_BUTTON = 0x0200;
 const RIGHT_BUTTON = 0x0202;
-const LEFT_DRAG = 0x0203;
 const RIGHT_DRAG = 0x0205;
-const LEFT_RELEASE = 0x0206;
 const RIGHT_RELEASE = 0x0208;
 const CURSOR_UP = 0x0200 + 9;
 const CURSOR_DOWN = 0x0200 + 10;
@@ -78,7 +79,6 @@ const CURSOR_SELECT2 = 0x0200 + 14;
 
 const PREFERRED_TILE_SIZE = 32;
 const FLASH_TIME = 0.15;
-const CORNER_TOLERANCE = 0.15;
 
 /** Idiomatic TS port of upstream's `game_mkhighlight_specific` —
  * but returning only the (possibly-shifted) background colour. We
@@ -704,11 +704,6 @@ function statusbarText(s: GalaxiesState, _ui: GalaxiesUi): string {
 }
 
 // --- the Game object -----------------------------------------------
-
-void CORNER_TOLERANCE; // reserved for finer click rounding work
-void RIGHT_DRAG;
-void LEFT_DRAG;
-void LEFT_RELEASE;
 
 export const galaxiesGame: Game<
   GalaxiesParams,
