@@ -232,6 +232,7 @@ puzzle(singles
 solver(singles)
 
 puzzle(sixteen
+  TS_PORTED  # native-TS port (openspec add-sixteen-ts-port); no sixteen.c/wasm
   DISPLAYNAME "Sixteen"
   DESCRIPTION "Toroidal sliding block puzzle"
   OBJECTIVE "Slide a row at a time to arrange the tiles into order.")
