@@ -149,8 +149,9 @@ describe("Flip params", () => {
     const p: FlipParams = { w: 4, h: 6, matrixType: "random" };
     expect(flipGame.decodeParams(flipGame.encodeParams(p, true))).toEqual(p);
     expect(flipGame.encodeParams(p, false)).toBe("4x6");
-    expect(flipGame.validateParams({ w: 0, h: 3, matrixType: "crosses" }, true))
-      .toMatch(/greater than zero/);
+    expect(
+      flipGame.validateParams({ w: 0, h: 3, matrixType: "crosses" }, true),
+    ).toMatch(/greater than zero/);
   });
 });
 
@@ -173,15 +174,17 @@ describe("Flip interpretMove", () => {
   it("left-click outside the grid is a UI update, not a move", () => {
     const s = flipGame.newState(p, desc);
     const ui = flipGame.newUi(s);
-    expect(flipGame.interpretMove(s, ui, null, { x: 9999, y: 9999 }, 0x0200))
-      .toBe(UI_UPDATE);
+    expect(flipGame.interpretMove(s, ui, null, { x: 9999, y: 9999 }, 0x0200)).toBe(
+      UI_UPDATE,
+    );
   });
 
   it("cursor move is a UI update and advances the cursor; select acts", () => {
     const s = flipGame.newState(p, desc);
     const ui = flipGame.newUi(s);
-    expect(flipGame.interpretMove(s, ui, null, { x: 0, y: 0 }, 0x0200 + 12))
-      .toBe(UI_UPDATE); // CURSOR_RIGHT
+    expect(flipGame.interpretMove(s, ui, null, { x: 0, y: 0 }, 0x0200 + 12)).toBe(
+      UI_UPDATE,
+    ); // CURSOR_RIGHT
     expect(ui.cx).toBe(1);
     expect(ui.cursorVisible).toBe(true);
     const m = flipGame.interpretMove(s, ui, null, { x: 0, y: 0 }, 0x0200 + 13);
@@ -200,14 +203,16 @@ describe("Flip interpretMove", () => {
       cheated: false,
       hintsActive: false,
     };
-    expect(flipGame.interpretMove(s, flipGame.newUi(s), null, at(0, 0), 0x0200))
-      .toBeNull();
+    expect(
+      flipGame.interpretMove(s, flipGame.newUi(s), null, at(0, 0), 0x0200),
+    ).toBeNull();
   });
 
   it("an unhandled button yields null", () => {
     const s = flipGame.newState(p, desc);
-    expect(flipGame.interpretMove(s, flipGame.newUi(s), null, at(0, 0), 0x0201))
-      .toBeNull();
+    expect(
+      flipGame.interpretMove(s, flipGame.newUi(s), null, at(0, 0), 0x0201),
+    ).toBeNull();
   });
 });
 
@@ -258,9 +263,7 @@ describe("Flip redraw", () => {
     const a = recordingDrawing();
     flipGame.redraw(a.dr, ds, null, s, 1, ui, 0, 0);
     // (w+1)+(h+1) = 8 grid lines, all COL_GRID, drawn once.
-    const gridLines = a.ops.filter(
-      (o) => o.op === "drawLine" && o.colour === COL_GRID,
-    );
+    const gridLines = a.ops.filter((o) => o.op === "drawLine" && o.colour === COL_GRID);
     expect(gridLines.length).toBe(8);
     expect(a.ops.some((o) => o.op === "drawRect")).toBe(true);
 
@@ -285,8 +288,7 @@ describe("Flip redraw", () => {
     flipGame.setTileSize?.(ds, flipGame.preferredTileSize ?? 32);
     const a = recordingDrawing();
     flipGame.redraw(a.dr, ds, null, hinted, 1, ui, 0, 0);
-    expect(a.ops.some((o) => o.op === "drawLine" && o.colour === COL_HINT))
-      .toBe(true);
+    expect(a.ops.some((o) => o.op === "drawLine" && o.colour === COL_HINT)).toBe(true);
   });
 });
 
@@ -335,9 +337,7 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
 
     // Flip's `!ds.started` branch fired: full-window bg fill +
     // grid lines.
-    expect(
-      second.ops.some((o) => o.op === "drawRect" && o.colour === 0),
-    ).toBe(true);
+    expect(second.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(true);
     const secondGridLines = second.ops.filter(
       (o) => o.op === "drawLine" && o.colour === COL_GRID,
     ).length;
@@ -375,7 +375,7 @@ describe("Flip flash-overlay isolation (regression: wave through every cell)", (
     expect(me.processInput(border + 1, border + 1, 0x0200)).toBe(true);
     // Sanity: the click didn't solve (so flashLength should be 0).
     // If it did solve, pick a different seed for this test.
-    const state = (me as unknown as { history: FlipState[]; pos: number });
+    const state = me as unknown as { history: FlipState[]; pos: number };
     expect(state.history[state.pos].completed).toBe(false);
 
     // Drive the animation timer through its whole 0.25s lifecycle.
@@ -444,11 +444,7 @@ describe("Flip flash-overlay isolation (regression: wave through every cell)", (
 
     // Final click solves the puzzle ⇒ flashLength must be positive.
     const last = cells[cells.length - 1];
-    me.processInput(
-      last.x * tile + border + 1,
-      last.y * tile + border + 1,
-      0x0200,
-    );
+    me.processInput(last.x * tile + border + 1, last.y * tile + border + 1, 0x0200);
     expect(internals.history[internals.pos].completed).toBe(true);
     expect(internals.flashLength).toBeGreaterThan(0);
   });
@@ -530,9 +526,7 @@ describe("Flip through the midend", () => {
       }
     });
 
-    const last = [...notes]
-      .reverse()
-      .find((n) => n.type === "game-state-change");
+    const last = [...notes].reverse().find((n) => n.type === "game-state-change");
     expect(last && last.type === "game-state-change" && last.status).toBe(
       "solved-with-help",
     );

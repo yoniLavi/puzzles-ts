@@ -1,16 +1,13 @@
+import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import { mkhighlightBackground } from "../../engine/colour-mkhighlight.ts";
 import type {
-  Colour,
-  Point,
-  Size,
-} from "../../../puzzle/types.ts";
-import type {
+  ActiveHint,
   Game,
   GameDrawing,
+  HintResult,
   UiUpdate,
 } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
-import { registerGame } from "../../engine/registry.ts";
-import { mkhighlightBackground } from "../../engine/colour-mkhighlight.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -21,21 +18,22 @@ import {
   LEFT_BUTTON,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
+import { registerGame } from "../../engine/registry.ts";
 import {
+  CursorMode,
+  decodeParams,
+  defaultParams,
+  encodeParams,
+  newDesc,
+  newState,
+  presets,
   type SixteenMove,
   type SixteenParams,
   type SixteenState,
   type SixteenUi,
-  CursorMode,
-  defaultParams,
-  encodeParams,
-  decodeParams,
-  validateParams,
-  presets,
-  validateDesc,
-  newState,
   textFormat,
-  newDesc,
+  validateDesc,
+  validateParams,
 } from "./state.ts";
 
 // --- constants --------------------------------------------------------
@@ -51,6 +49,19 @@ const COL_BACKGROUND = 0;
 const COL_TEXT = 1;
 const COL_HIGHLIGHT = 2;
 const COL_LOWLIGHT = 3;
+const COL_HINT = 4;
+
+// --- hint highlights --------------------------------------------------
+
+/** Highlight data for a Sixteen hint: which tile to move and where
+ * it should go. The renderer highlights the tile's current cell and
+ * its target cell so the player can figure out the right slides. */
+export interface SixteenHintHighlights {
+  /** The tile number being moved closer to its target. */
+  tile: number;
+  /** The position (flat index) where this tile should end up. */
+  targetPos: number;
+}
 
 // --- move logic -------------------------------------------------------
 
@@ -72,12 +83,12 @@ export function executeMove(state: SixteenState, move: SixteenMove): SixteenStat
 
   if (axis === "row") {
     for (let x = 0; x < state.w; x++) {
-      const srcX = ((x - delta) % state.w + state.w) % state.w;
+      const srcX = (((x - delta) % state.w) + state.w) % state.w;
       tiles[index * state.w + x] = state.tiles[index * state.w + srcX];
     }
   } else {
     for (let y = 0; y < state.h; y++) {
-      const srcY = ((y - delta) % state.h + state.h) % state.h;
+      const srcY = (((y - delta) % state.h) + state.h) % state.h;
       tiles[y * state.w + index] = state.tiles[srcY * state.w + index];
     }
   }
@@ -87,7 +98,10 @@ export function executeMove(state: SixteenState, move: SixteenMove): SixteenStat
   if (!completed) {
     let done = true;
     for (let i = 0; i < state.n; i++) {
-      if (tiles[i] !== i + 1) { done = false; break; }
+      if (tiles[i] !== i + 1) {
+        done = false;
+        break;
+      }
     }
     if (done) completed = moveCount;
   }
@@ -140,17 +154,37 @@ function interpretMove(
         return null;
 
       const { x: nx, y: ny } = moveCursor(
-        rawButton | pad, ui.curX, ui.curY, state.w, state.h, false,
+        rawButton | pad,
+        ui.curX,
+        ui.curY,
+        state.w,
+        state.h,
+        false,
       );
       const { x: nwx, y: nwy } = moveCursor(
-        rawButton | pad, ui.curX, ui.curY, state.w, state.h, true,
+        rawButton | pad,
+        ui.curX,
+        ui.curY,
+        state.w,
+        state.h,
+        true,
       );
 
       let move: SixteenMove;
       if (nx !== nwx) {
-        move = { type: "slide", axis: "row", index: ui.curY, delta: nx > ui.curX ? 1 : -1 };
+        move = {
+          type: "slide",
+          axis: "row",
+          index: ui.curY,
+          delta: nx > ui.curX ? 1 : -1,
+        };
       } else if (ny !== nwy) {
-        move = { type: "slide", axis: "column", index: ui.curX, delta: ny > ui.curY ? 1 : -1 };
+        move = {
+          type: "slide",
+          axis: "column",
+          index: ui.curX,
+          delta: ny > ui.curY ? 1 : -1,
+        };
       } else if (nx === ui.curX) {
         move = { type: "slide", axis: "column", index: ui.curX, delta: ny - ui.curY };
       } else {
@@ -165,7 +199,12 @@ function interpretMove(
       return move;
     } else {
       const { x: nx, y: ny } = moveCursor(
-        rawButton | pad, ui.curX + 1, ui.curY + 1, state.w + 2, state.h + 2, false,
+        rawButton | pad,
+        ui.curX + 1,
+        ui.curY + 1,
+        state.w + 2,
+        state.h + 2,
+        false,
       );
 
       if (nx === 0 && ny === 0) {
@@ -174,12 +213,12 @@ function interpretMove(
         ui.curY = t;
       } else if (nx === 0 && ny === state.h + 1) {
         const t = ui.curX;
-        ui.curX = (state.h - 1) - ui.curY;
-        ui.curY = (state.h - 1) - t;
+        ui.curX = state.h - 1 - ui.curY;
+        ui.curY = state.h - 1 - t;
       } else if (nx === state.w + 1 && ny === 0) {
         const t = ui.curX;
-        ui.curX = (state.w - 1) - ui.curY;
-        ui.curY = (state.w - 1) - t;
+        ui.curX = state.w - 1 - ui.curY;
+        ui.curY = state.w - 1 - t;
       } else if (nx === state.w + 1 && ny === state.h + 1) {
         const t = ui.curX;
         ui.curX = state.w - state.h + ui.curY;
@@ -195,7 +234,8 @@ function interpretMove(
   }
 
   // Mouse click / cursor select.
-  let cx = -1, cy = -1;
+  let cx = -1,
+    cy = -1;
   if (rawButton === LEFT_BUTTON || rawButton === RIGHT_BUTTON) {
     const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
     cx = fromCoord(p.x, ts);
@@ -203,14 +243,17 @@ function interpretMove(
     ui.curVisible = false;
   } else if (rawButton === CURSOR_SELECT || rawButton === CURSOR_SELECT2) {
     if (ui.curVisible) {
-      if (ui.curX === -1 || ui.curX === state.w ||
-          ui.curY === -1 || ui.curY === state.h) {
+      if (
+        ui.curX === -1 ||
+        ui.curX === state.w ||
+        ui.curY === -1 ||
+        ui.curY === state.h
+      ) {
         cx = ui.curX;
         cy = ui.curY;
       } else {
-        const m = rawButton === CURSOR_SELECT2
-          ? CursorMode.LockPosition
-          : CursorMode.LockTile;
+        const m =
+          rawButton === CURSOR_SELECT2 ? CursorMode.LockPosition : CursorMode.LockTile;
         ui.curMode = ui.curMode === m ? CursorMode.Unlocked : m;
         return UI_UPDATE;
       }
@@ -223,12 +266,21 @@ function interpretMove(
   }
 
   // Determine slide direction from click position.
-  let dx = 0, dy = 0;
-  if (cx === -1 && cy >= 0 && cy < state.h) { dx = -1; dy = 0; }
-  else if (cx === state.w && cy >= 0 && cy < state.h) { dx = 1; dy = 0; }
-  else if (cy === -1 && cx >= 0 && cx < state.w) { dy = -1; dx = 0; }
-  else if (cy === state.h && cx >= 0 && cx < state.w) { dy = 1; dx = 0; }
-  else return UI_UPDATE;
+  let dx = 0,
+    dy = 0;
+  if (cx === -1 && cy >= 0 && cy < state.h) {
+    dx = -1;
+    dy = 0;
+  } else if (cx === state.w && cy >= 0 && cy < state.h) {
+    dx = 1;
+    dy = 0;
+  } else if (cy === -1 && cx >= 0 && cx < state.w) {
+    dy = -1;
+    dx = 0;
+  } else if (cy === state.h && cx >= 0 && cx < state.w) {
+    dy = 1;
+    dx = 0;
+  } else return UI_UPDATE;
 
   // Reverse direction for right button / CURSOR_SELECT2.
   if (rawButton === RIGHT_BUTTON || rawButton === CURSOR_SELECT2) {
@@ -252,7 +304,8 @@ function moveCursor(
   h: number,
   wrap: boolean,
 ): { x: number; y: number } {
-  let nx = x, ny = y;
+  let nx = x,
+    ny = y;
   if (button === CURSOR_UP) ny--;
   else if (button === CURSOR_DOWN) ny++;
   else if (button === CURSOR_LEFT) nx--;
@@ -292,6 +345,13 @@ interface SixteenDrawState {
   tilesize: number;
   curX: number;
   curY: number;
+  /** Tile number currently highlighted as hint, or null. */
+  hintTile: number | null;
+  /** Target position currently highlighted as hint, or null. */
+  hintTarget: number | null;
+  /** Arrow currently highlighted as hint, or null. */
+  hintArrowX: number | null;
+  hintArrowY: number | null;
 }
 
 function newDrawState(state: SixteenState): SixteenDrawState {
@@ -304,6 +364,10 @@ function newDrawState(state: SixteenState): SixteenDrawState {
     tilesize: 0,
     curX: -1,
     curY: -1,
+    hintTile: null,
+    hintTarget: null,
+    hintArrowX: null,
+    hintArrowY: null,
   };
 }
 
@@ -334,19 +398,17 @@ function colours(defaultBackground: Colour): Colour[] {
   // Highlight: shift toward white by K.
   const dw = colourDistance(bg, white);
   const hi: Colour =
-    dw < K
-      ? colourMix(white, black, K / Math.sqrt(3))
-      : colourMix(bg, white, K / dw);
+    dw < K ? colourMix(white, black, K / Math.sqrt(3)) : colourMix(bg, white, K / dw);
 
   // Lowlight: shift toward black by K.
   const db = colourDistance(bg, black);
   const lo: Colour =
-    db < K
-      ? colourMix(black, white, K / Math.sqrt(3))
-      : colourMix(bg, black, K / db);
+    db < K ? colourMix(black, white, K / Math.sqrt(3)) : colourMix(bg, black, K / db);
 
   const text: Colour = [0, 0, 0];
-  return [bg, text, hi, lo];
+  // Hint colour: a clear blue for highlighting hint tiles.
+  const hint: Colour = [0.3, 0.5, 0.9];
+  return [bg, text, hi, lo, hint];
 }
 
 function redraw(
@@ -358,6 +420,7 @@ function redraw(
   ui: SixteenUi,
   animTime: number,
   flashTime: number,
+  activeHint?: ActiveHint<SixteenMove, SixteenHintHighlights>,
 ): void {
   if (!ds) return;
   const ts = ds.tilesize;
@@ -372,23 +435,83 @@ function redraw(
   if (!ds.started) {
     drawRecessedBorder(dr, state, ts, hw);
     for (let i = 0; i < state.w; i++) {
-      drawArrow(dr, ts, coord(i, ts), coord(0, ts), 1, 0, false);
-      drawArrow(dr, ts, coord(i + 1, ts), coord(state.h, ts), -1, 0, false);
+      drawArrow(dr, ts, coord(i, ts), coord(0, ts), 1, 0, COL_LOWLIGHT);
+      drawArrow(dr, ts, coord(i + 1, ts), coord(state.h, ts), -1, 0, COL_LOWLIGHT);
     }
     for (let i = 0; i < state.h; i++) {
-      drawArrow(dr, ts, coord(state.w, ts), coord(i, ts), 0, 1, false);
-      drawArrow(dr, ts, coord(0, ts), coord(i + 1, ts), 0, -1, false);
+      drawArrow(dr, ts, coord(state.w, ts), coord(i, ts), 0, 1, COL_LOWLIGHT);
+      drawArrow(dr, ts, coord(0, ts), coord(i + 1, ts), 0, -1, COL_LOWLIGHT);
     }
     ds.started = true;
   }
 
   // Cursor.
-  let curX = -1, curY = -1;
-  if (ui.curVisible) { curX = ui.curX; curY = ui.curY; }
+  let curX = -1,
+    curY = -1;
+  if (ui.curVisible) {
+    curX = ui.curX;
+    curY = ui.curY;
+  }
+
+  // Hint arrow highlight.
+  let hintArrowX: number | null = null;
+  let hintArrowY: number | null = null;
+  if (activeHint?.move && activeHint.move.type === "slide") {
+    const m = activeHint.move;
+    if (m.axis === "row") {
+      hintArrowX = m.delta === -1 ? -1 : state.w;
+      hintArrowY = m.index;
+    } else {
+      hintArrowX = m.index;
+      hintArrowY = m.delta === -1 ? -1 : state.h;
+    }
+  }
+
+  if (hintArrowX !== ds.hintArrowX || hintArrowY !== ds.hintArrowY) {
+    // Erase old arrow highlight.
+    if (ds.hintArrowX !== null && ds.hintArrowY !== null) {
+      const isCur = ds.hintArrowX === curX && ds.hintArrowY === curY;
+      const fill = isCur ? COL_HIGHLIGHT : COL_LOWLIGHT;
+      drawArrowAt(dr, ts, state.w, state.h, ds.hintArrowX, ds.hintArrowY, fill);
+    }
+    // Draw new arrow highlight.
+    if (hintArrowX !== null && hintArrowY !== null) {
+      drawArrowAt(dr, ts, state.w, state.h, hintArrowX, hintArrowY, COL_HINT);
+    }
+    ds.hintArrowX = hintArrowX;
+    ds.hintArrowY = hintArrowY;
+  }
 
   if (curX !== ds.curX || curY !== ds.curY) {
     drawArrowForCursor(dr, ts, ds, curX, curY, true);
     drawArrowForCursor(dr, ts, ds, ds.curX, ds.curY, false);
+  }
+
+  // Hint highlights: highlight the tile to move and its target position.
+  // Track in drawstate so we can repaint when the hint changes.
+  const hl = activeHint?.highlights;
+  const hintTile = hl?.tile ?? null;
+  const hintTarget = hl?.targetPos ?? null;
+  if (hintTile !== ds.hintTile || hintTarget !== ds.hintTarget) {
+    // Erase old highlights by repainting those tiles.
+    if (ds.hintTile !== null) {
+      const oldPos = state.tiles.indexOf(ds.hintTile);
+      if (oldPos >= 0)
+        drawHintOverlay(dr, ts, hw, state, oldPos, COL_BACKGROUND, false);
+    }
+    if (ds.hintTarget !== null) {
+      drawHintOverlay(dr, ts, hw, state, ds.hintTarget, COL_BACKGROUND, true);
+    }
+    // Draw new highlights (same colour for both source and target).
+    if (hintTile !== null) {
+      const pos = state.tiles.indexOf(hintTile);
+      if (pos >= 0) drawHintOverlay(dr, ts, hw, state, pos, COL_HINT, false);
+    }
+    if (hintTarget !== null) {
+      drawHintOverlay(dr, ts, hw, state, hintTarget, COL_HINT, true);
+    }
+    ds.hintTile = hintTile;
+    ds.hintTarget = hintTarget;
   }
 
   // Clip to the tile area.
@@ -401,12 +524,18 @@ function redraw(
 
     const t0 = t;
 
-    if (ds.bgcolour !== bgcolour ||
-        ds.tiles[i] !== t || ds.tiles[i] === -1 || t === -1 ||
-        ((ds.curX !== curX || ds.curY !== curY) &&
-         (tileCursor(i, state, ds.curX, ds.curY) ||
-          tileCursor(i, state, curX, curY)))) {
-      let drawX: number, drawY: number, drawX2 = -1, drawY2 = -1;
+    if (
+      ds.bgcolour !== bgcolour ||
+      ds.tiles[i] !== t ||
+      ds.tiles[i] === -1 ||
+      t === -1 ||
+      ((ds.curX !== curX || ds.curY !== curY) &&
+        (tileCursor(i, state, ds.curX, ds.curY) || tileCursor(i, state, curX, curY)))
+    ) {
+      let drawX: number,
+        drawY: number,
+        drawX2 = -1,
+        drawY2 = -1;
 
       if (t === -1 && prev) {
         // Animating tile.
@@ -451,8 +580,8 @@ function redraw(
         drawY = coord(Math.floor(i / state.w), ts);
       }
 
-      const tileBg = (drawX2 === -1 && tileCursor(i, state, curX, curY))
-        ? COL_LOWLIGHT : bgcolour;
+      const tileBg =
+        drawX2 === -1 && tileCursor(i, state, curX, curY) ? COL_LOWLIGHT : bgcolour;
       drawTile(dr, ts, hw, drawX, drawY, t, tileBg);
 
       if (drawX2 !== -1 || drawY2 !== -1) {
@@ -492,7 +621,8 @@ function drawTile(
         { x: x + ts - 1, y },
         { x, y: y + ts - 1 },
       ],
-      COL_LOWLIGHT, COL_LOWLIGHT,
+      COL_LOWLIGHT,
+      COL_LOWLIGHT,
     );
     // Highlight triangle (top-left).
     dr.drawPolygon(
@@ -501,13 +631,11 @@ function drawTile(
         { x, y: y + ts - 1 },
         { x: x + ts - 1, y },
       ],
-      COL_HIGHLIGHT, COL_HIGHLIGHT,
+      COL_HIGHLIGHT,
+      COL_HIGHLIGHT,
     );
     // Centre fill.
-    dr.drawRect(
-      { x: x + hw, y: y + hw, w: ts - 2 * hw, h: ts - 2 * hw },
-      bgColour,
-    );
+    dr.drawRect({ x: x + hw, y: y + hw, w: ts - 2 * hw, h: ts - 2 * hw }, bgColour);
     // Number.
     dr.drawText(
       { x: x + ts / 2, y: y + ts / 2 },
@@ -526,7 +654,7 @@ function drawArrow(
   y: number,
   xdx: number,
   xdy: number,
-  cur: boolean,
+  fillColour: number,
 ): void {
   const ydy = -xdx;
   const ydx = xdy;
@@ -537,20 +665,86 @@ function drawArrow(
   });
 
   const coords: Point[] = [
-    point(ts / 2, 3 * ts / 4),     // top of arrow
-    point(3 * ts / 4, ts / 2),     // right corner
-    point(5 * ts / 8, ts / 2),     // right concave
-    point(5 * ts / 8, ts / 4),     // bottom right
-    point(3 * ts / 8, ts / 4),     // bottom left
-    point(3 * ts / 8, ts / 2),     // left concave
-    point(ts / 4, ts / 2),         // left corner
+    point(ts / 2, (3 * ts) / 4), // top of arrow
+    point((3 * ts) / 4, ts / 2), // right corner
+    point((5 * ts) / 8, ts / 2), // right concave
+    point((5 * ts) / 8, ts / 4), // bottom right
+    point((3 * ts) / 8, ts / 4), // bottom left
+    point((3 * ts) / 8, ts / 2), // left concave
+    point(ts / 4, ts / 2), // left corner
   ];
 
-  dr.drawPolygon(
-    coords,
-    cur ? COL_HIGHLIGHT : COL_LOWLIGHT,
-    COL_TEXT,
-  );
+  dr.drawPolygon(coords, fillColour, COL_TEXT);
+}
+
+function drawArrowAt(
+  dr: GameDrawing,
+  ts: number,
+  w: number,
+  h: number,
+  ax: number,
+  ay: number,
+  fillColour: number,
+): void {
+  if (ax === -1) {
+    drawArrow(dr, ts, coord(0, ts), coord(ay + 1, ts), 0, -1, fillColour);
+  } else if (ax === w) {
+    drawArrow(dr, ts, coord(w, ts), coord(ay, ts), 0, 1, fillColour);
+  } else if (ay === -1) {
+    drawArrow(dr, ts, coord(ax, ts), coord(0, ts), 1, 0, fillColour);
+  } else if (ay === h) {
+    drawArrow(dr, ts, coord(ax + 1, ts), coord(h, ts), -1, 0, fillColour);
+  } else return;
+
+  dr.drawUpdate({ x: coord(ax, ts), y: coord(ay, ts), w: ts, h: ts });
+}
+
+/** Draw a border-only highlight on a tile cell (target position).
+ * Draws a 3-pixel outline so the tile number remains fully readable. */
+function drawHintBorder(
+  dr: GameDrawing,
+  ts: number,
+  state: SixteenState,
+  pos: number,
+  colour: number,
+): void {
+  const x = coord(pos % state.w, ts);
+  const y = coord(Math.floor(pos / state.w), ts);
+  const b = 3; // 3-pixel border
+  // Draw outline: top, bottom, left, right.
+  dr.drawRect({ x, y, w: ts, h: b }, colour);
+  dr.drawRect({ x, y: y + ts - b, w: ts, h: b }, colour);
+  dr.drawRect({ x, y: y + b, w: b, h: ts - 2 * b }, colour);
+  dr.drawRect({ x: x + ts - b, y: y + b, w: b, h: ts - 2 * b }, colour);
+  dr.drawUpdate({ x, y, w: ts, h: ts });
+}
+
+/** Draw or erase a hint highlight for a tile. Source tiles are highlighted
+ * with a filled colour using drawTile (keeping the number visible), while
+ * target positions are highlighted with a 3-pixel border. */
+function drawHintOverlay(
+  dr: GameDrawing,
+  ts: number,
+  hw: number,
+  state: SixteenState,
+  pos: number,
+  colour: number,
+  isTarget: boolean,
+): void {
+  const x = coord(pos % state.w, ts);
+  const y = coord(Math.floor(pos / state.w), ts);
+  const tile = state.tiles[pos];
+
+  if (colour === COL_BACKGROUND) {
+    // Erase highlight: just redraw the tile with normal background.
+    drawTile(dr, ts, hw, x, y, tile, COL_BACKGROUND);
+  } else if (isTarget) {
+    // Draw target border.
+    drawHintBorder(dr, ts, state, pos, colour);
+  } else {
+    // Draw source fill: draw the tile with COL_HINT as the background!
+    drawTile(dr, ts, hw, x, y, tile, COL_HINT);
+  }
 }
 
 function drawArrowForCursor(
@@ -562,17 +756,12 @@ function drawArrowForCursor(
   cur: boolean,
 ): void {
   if (curX === -1 && curY === -1) return;
-  if (curX === -1) {
-    drawArrow(dr, ts, coord(0, ts), coord(curY + 1, ts), 0, -1, cur);
-  } else if (curX === ds.w) {
-    drawArrow(dr, ts, coord(ds.w, ts), coord(curY, ts), 0, 1, cur);
-  } else if (curY === -1) {
-    drawArrow(dr, ts, coord(curX, ts), coord(0, ts), 1, 0, cur);
-  } else if (curY === ds.h) {
-    drawArrow(dr, ts, coord(curX + 1, ts), coord(ds.h, ts), -1, 0, cur);
-  } else return;
-
-  dr.drawUpdate({ x: coord(curX, ts), y: coord(curY, ts), w: ts, h: ts });
+  const fill = cur
+    ? COL_HIGHLIGHT
+    : curX === ds.hintArrowX && curY === ds.hintArrowY
+      ? COL_HINT
+      : COL_LOWLIGHT;
+  drawArrowAt(dr, ts, ds.w, ds.h, curX, curY, fill);
 }
 
 function drawRecessedBorder(
@@ -593,7 +782,8 @@ function drawRecessedBorder(
       { x: coord(0, ts) - hw + ts, y: coord(h, ts) + hw - 1 - ts },
       { x: coord(0, ts) - hw, y: coord(h, ts) + hw - 1 },
     ],
-    COL_HIGHLIGHT, COL_HIGHLIGHT,
+    COL_HIGHLIGHT,
+    COL_HIGHLIGHT,
   );
 
   // Lowlight border (inner).
@@ -605,7 +795,8 @@ function drawRecessedBorder(
       { x: coord(w, ts) + hw - 1 - ts, y: coord(0, ts) - hw + ts },
       { x: coord(w, ts) + hw - 1, y: coord(0, ts) - hw },
     ],
-    COL_LOWLIGHT, COL_LOWLIGHT,
+    COL_LOWLIGHT,
+    COL_LOWLIGHT,
   );
 }
 
@@ -622,9 +813,167 @@ function statusbarText(state: SixteenState, _ui: SixteenUi): string {
   return s;
 }
 
+// --- hint heuristic ----------------------------------------------------
+
+/** Toroidal distance: shortest distance on a wrap-around axis of length `len`. */
+function toroidalDist(from: number, to: number, len: number): number {
+  const d = Math.abs(from - to);
+  return Math.min(d, len - d);
+}
+
+function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlights> {
+  const { w, h, n, tiles } = state;
+
+  // Already solved?
+  let solved = true;
+  for (let i = 0; i < n; i++) {
+    if (tiles[i] !== i + 1) {
+      solved = false;
+      break;
+    }
+  }
+  if (solved) return { ok: false, error: "Already solved" };
+
+  // Pre-compute per-move benefits: for each candidate slide, record
+  // the benefit for every tile and the total net benefit.
+  interface Candidate {
+    move: Extract<SixteenMove, { type: "slide" }>;
+    benefits: Map<number, number>; // tile → benefit (positive = closer)
+    net: number;
+  }
+  const candidates: Candidate[] = [];
+
+  // Evaluate row slides.
+  for (let r = 0; r < h; r++) {
+    for (const delta of [1, -1]) {
+      const benefits = new Map<number, number>();
+      let net = 0;
+      for (let c = 0; c < w; c++) {
+        const i = r * w + c;
+        const tile = tiles[i];
+        const targetCol = (tile - 1) % w;
+        const newCol = (c + delta + w) % w;
+        const benefit =
+          toroidalDist(c, targetCol, w) - toroidalDist(newCol, targetCol, w);
+        if (benefit !== 0) benefits.set(tile, benefit);
+        net += benefit;
+      }
+      candidates.push({
+        move: { type: "slide", axis: "row", index: r, delta },
+        benefits,
+        net,
+      });
+    }
+  }
+
+  // Evaluate column slides.
+  for (let c = 0; c < w; c++) {
+    for (const delta of [1, -1]) {
+      const benefits = new Map<number, number>();
+      let net = 0;
+      for (let r = 0; r < h; r++) {
+        const i = r * w + c;
+        const tile = tiles[i];
+        const targetRow = Math.floor((tile - 1) / w);
+        const newRow = (r + delta + h) % h;
+        const benefit =
+          toroidalDist(r, targetRow, h) - toroidalDist(newRow, targetRow, h);
+        if (benefit !== 0) benefits.set(tile, benefit);
+        net += benefit;
+      }
+      candidates.push({
+        move: { type: "slide", axis: "column", index: c, delta },
+        benefits,
+        net,
+      });
+    }
+  }
+
+  // Strategy: solve tiles in numeric order. Find the lowest-numbered
+  // out-of-place tile, then pick the move that brings it closest to
+  // its target. If no move helps that tile, try the next out-of-place
+  // tile, and so on. Among moves that equally help the priority tile,
+  // break ties by overall net benefit.
+  let bestMove: Extract<SixteenMove, { type: "slide" }> | null = null;
+  let bestTile = 0;
+
+  for (let tile = 1; tile <= n; tile++) {
+    // Is this tile in its correct position?
+    const pos = tiles.indexOf(tile);
+    if (pos === tile - 1) continue; // already placed
+
+    // Among candidates that help this tile, pick the best.
+    let bestBenefit = 0;
+    let bestNet = -Infinity;
+    for (const c of candidates) {
+      const benefit = c.benefits.get(tile) ?? 0;
+      if (
+        benefit > bestBenefit ||
+        (benefit === bestBenefit && benefit > 0 && c.net > bestNet)
+      ) {
+        bestBenefit = benefit;
+        bestNet = c.net;
+        bestMove = c.move;
+        bestTile = tile;
+      }
+    }
+    if (bestBenefit > 0) break; // found a move that helps this tile
+  }
+
+  // Fallback: if no out-of-place tile can be helped, pick the best
+  // net-benefit move overall.
+  if (!bestMove) {
+    let bestNet = 0;
+    for (const c of candidates) {
+      if (c.net > bestNet) {
+        bestNet = c.net;
+        bestMove = c.move;
+        // Pick the tile with the highest individual benefit for the explanation.
+        let topBenefit = 0;
+        for (const [tile, benefit] of c.benefits) {
+          if (benefit > topBenefit) {
+            topBenefit = benefit;
+            bestTile = tile;
+          }
+        }
+      }
+    }
+  }
+
+  if (!bestMove) {
+    return { ok: false, error: "No helpful hint found" };
+  }
+
+  const dirWord =
+    bestMove.delta > 0
+      ? bestMove.axis === "row"
+        ? "right"
+        : "down"
+      : bestMove.axis === "row"
+        ? "left"
+        : "up";
+  const axisWord = bestMove.axis === "row" ? "row" : "column";
+  const targetRow = Math.floor((bestTile - 1) / w) + 1;
+  const targetCol = ((bestTile - 1) % w) + 1;
+  const explanation = `Slide ${axisWord} ${bestMove.index + 1} ${dirWord} — move tile ${bestTile} toward (${targetRow},${targetCol})`;
+
+  return {
+    ok: true,
+    move: bestMove,
+    explanation,
+    highlights: { tile: bestTile, targetPos: bestTile - 1 },
+  };
+}
+
 // --- Game object ------------------------------------------------------
 
-export const sixteenGame: Game<SixteenParams, SixteenState, SixteenMove, SixteenUi, SixteenDrawState> = {
+export const sixteenGame: Game<
+  SixteenParams,
+  SixteenState,
+  SixteenMove,
+  SixteenUi,
+  SixteenDrawState
+> = {
   id: "sixteen",
   wantsStatusbar: true,
   isTimed: false,
@@ -644,11 +993,13 @@ export const sixteenGame: Game<SixteenParams, SixteenState, SixteenMove, Sixteen
 
   interpretMove,
   executeMove,
-  status: (s) => s.completed > 0 ? "solved" : "ongoing",
+  status: (s) => (s.completed > 0 ? "solved" : "ongoing"),
 
   solve(_orig, _curr) {
     return { ok: true, move: { type: "solve" as const } };
   },
+
+  hint,
 
   textFormat,
   statusbarText,
@@ -656,14 +1007,20 @@ export const sixteenGame: Game<SixteenParams, SixteenState, SixteenMove, Sixteen
   colours,
   preferredTileSize: PREFERRED_TILE_SIZE,
   computeSize,
-  setTileSize: (ds, ts) => { ds.tilesize = ts; },
+  setTileSize: (ds, ts) => {
+    ds.tilesize = ts;
+  },
   newDrawState,
   redraw,
 
   animLength: () => ANIM_TIME,
   flashLength: (oldState, newState) => {
-    if (!oldState.completed && newState.completed &&
-        !oldState.usedSolve && !newState.usedSolve)
+    if (
+      !oldState.completed &&
+      newState.completed &&
+      !oldState.usedSolve &&
+      !newState.usedSolve
+    )
       return 2 * FLASH_FRAME;
     return 0;
   },

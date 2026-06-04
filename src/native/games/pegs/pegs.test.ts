@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../random/index.ts";
-import {
-  type PegsMove,
-  type PegsParams,
-  pegsGame,
-} from "./index.ts";
+import { type PegsMove, type PegsParams, pegsGame } from "./index.ts";
 
 const G = pegsGame;
 
@@ -37,13 +33,17 @@ describe("Pegs params", () => {
 
   it("validates cross board sizes", () => {
     expect(G.validateParams({ w: 5, h: 7, type: 0 }, true)).toBeNull();
-    expect(G.validateParams({ w: 3, h: 3, type: 0 }, true)).toMatch(/greater than three/);
+    expect(G.validateParams({ w: 3, h: 3, type: 0 }, true)).toMatch(
+      /greater than three/,
+    );
     expect(G.validateParams({ w: 6, h: 6, type: 0 }, true)).toMatch(/only supported/);
   });
 
   it("validates octagon is 7x7 only", () => {
     expect(G.validateParams({ w: 7, h: 7, type: 1 }, true)).toBeNull();
-    expect(G.validateParams({ w: 5, h: 7, type: 1 }, true)).toMatch(/only supported at 7×7/);
+    expect(G.validateParams({ w: 5, h: 7, type: 1 }, true)).toMatch(
+      /only supported at 7×7/,
+    );
   });
 
   it("rejects zero/negative dimensions", () => {
@@ -95,7 +95,9 @@ describe("Pegs desc and state", () => {
   });
 
   it("validates desc characters", () => {
-    expect(G.validateDesc({ w: 2, h: 2, type: 0 }, "PPXH")).toMatch(/Invalid character/);
+    expect(G.validateDesc({ w: 2, h: 2, type: 0 }, "PPXH")).toMatch(
+      /Invalid character/,
+    );
   });
 
   it("validates desc has enough pegs and holes", () => {

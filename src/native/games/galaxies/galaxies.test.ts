@@ -255,9 +255,7 @@ describe("Galaxies palette: mkhighlight background shift", () => {
     expect(whiteBg).toEqual([1, 1, 1]);
     // The shifted background must be visibly darker than white.
     const distance = Math.sqrt(
-      (bg[0] - whiteBg[0]) ** 2 +
-        (bg[1] - whiteBg[1]) ** 2 +
-        (bg[2] - whiteBg[2]) ** 2,
+      (bg[0] - whiteBg[0]) ** 2 + (bg[1] - whiteBg[1]) ** 2 + (bg[2] - whiteBg[2]) ** 2,
     );
     expect(distance).toBeGreaterThan(0.25);
   });

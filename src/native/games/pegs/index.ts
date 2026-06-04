@@ -15,6 +15,7 @@
  */
 
 import type { Colour, GameStatus, Point, Size } from "../../../puzzle/types.ts";
+import { mkhighlightBackground } from "../../engine/colour-mkhighlight.ts";
 import {
   type Game,
   type GameDrawing,
@@ -22,7 +23,6 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { mkhighlightBackground } from "../../engine/colour-mkhighlight.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -34,8 +34,8 @@ import {
   LEFT_DRAG,
   LEFT_RELEASE,
 } from "../../engine/pointer.ts";
-import { type RandomState, randomUpto } from "../../random/index.ts";
 import { SortedMultiset } from "../../engine/sorted-multiset.ts";
+import { type RandomState, randomUpto } from "../../random/index.ts";
 
 // --- grid cell values ------------------------------------------------
 
@@ -276,8 +276,7 @@ function updateMoves(
       const v2 = grid[(my + ddy) * w + (mx + ddx)];
       const v3 = grid[ey * w + ex];
 
-      const newCost =
-        (v2 === GRID_OBST ? 1 : 0) + (v3 === GRID_OBST ? 1 : 0);
+      const newCost = (v2 === GRID_OBST ? 1 : 0) + (v3 === GRID_OBST ? 1 : 0);
 
       // Probe for the existing move by position (cost doesn't matter
       // for the byMove comparator).
@@ -317,12 +316,7 @@ function updateMoves(
  * Build a random board by reverse-moves. Mirrors C's `pegs_genmoves`.
  * The grid is mutated in place.
  */
-function genMoves(
-  grid: Uint8Array,
-  w: number,
-  h: number,
-  rng: RandomState,
-): void {
+function genMoves(grid: Uint8Array, w: number, h: number, rng: RandomState): void {
   const byMove = new SortedMultiset<GenMove>(genMoveCmpByMove);
   const byCost = new SortedMultiset<GenMove>(genMoveCmpByCost);
 
@@ -383,12 +377,7 @@ function genMoves(
  * Generate a random board, retrying until it touches all four edges.
  * Mirrors C's `pegs_generate`.
  */
-function generate(
-  grid: Uint8Array,
-  w: number,
-  h: number,
-  rng: RandomState,
-): void {
+function generate(grid: Uint8Array, w: number, h: number, rng: RandomState): void {
   while (true) {
     grid.fill(GRID_OBST);
     grid[Math.floor(h / 2) * w + Math.floor(w / 2)] = GRID_PEG;
@@ -504,8 +493,7 @@ function validateDesc(p: PegsParams, desc: string): string | null {
 function newState(p: PegsParams, desc: string): PegsState {
   const grid = new Uint8Array(p.w * p.h);
   for (let i = 0; i < desc.length; i++) {
-    grid[i] =
-      desc[i] === "P" ? GRID_PEG : desc[i] === "H" ? GRID_HOLE : GRID_OBST;
+    grid[i] = desc[i] === "P" ? GRID_PEG : desc[i] === "H" ? GRID_HOLE : GRID_OBST;
   }
   return { w: p.w, h: p.h, completed: false, grid };
 }
@@ -655,7 +643,13 @@ function interpretMove(
     ) {
       ui.curX = jx;
       ui.curY = jy;
-      return { type: "jump", sx: ui.curX - 2 * ddx, sy: ui.curY - 2 * ddy, tx: jx, ty: jy };
+      return {
+        type: "jump",
+        sx: ui.curX - 2 * ddx,
+        sy: ui.curY - 2 * ddy,
+        tx: jx,
+        ty: jy,
+      };
     }
     return UI_UPDATE;
   }
@@ -808,16 +802,12 @@ function colours(defaultBackground: Colour): Colour[] {
   // Highlight: shift toward white by K.
   const dw = colourDistance(bg, white);
   const hi: Colour =
-    dw < K
-      ? colourMix(white, black, K / Math.sqrt(3))
-      : colourMix(bg, white, K / dw);
+    dw < K ? colourMix(white, black, K / Math.sqrt(3)) : colourMix(bg, white, K / dw);
 
   // Lowlight: shift toward black by K.
   const db = colourDistance(bg, black);
   const lo: Colour =
-    db < K
-      ? colourMix(black, white, K / Math.sqrt(3))
-      : colourMix(bg, black, K / db);
+    db < K ? colourMix(black, white, K / Math.sqrt(3)) : colourMix(bg, black, K / db);
 
   const peg: Colour = [0, 0, 1];
   const cursor: Colour = [0.5, 0.5, 1];
@@ -892,7 +882,7 @@ function drawTile(
     dr.drawCircle({ x: x + ts / 2, y: y + ts / 2 }, ts / 4, bg, bg);
   } else if (v === GRID_PEG) {
     const outerBg = cursor || jumping ? COL_CURSOR : COL_PEG;
-    const innerBg = (!cursor || jumping) ? COL_PEG : COL_CURSOR;
+    const innerBg = !cursor || jumping ? COL_PEG : COL_CURSOR;
     dr.drawCircle({ x: x + ts / 2, y: y + ts / 2 }, ts / 3, outerBg, outerBg);
     dr.drawCircle({ x: x + ts / 2, y: y + ts / 2 }, ts / 4, innerBg, innerBg);
   }
@@ -977,10 +967,7 @@ function redraw(
             { x: cx - hw, y: cy - hw, w: ts + hw, h: ts + hw },
             COL_HIGHLIGHT,
           );
-          dr.drawRect(
-            { x: cx, y: cy, w: ts + hw, h: ts + hw },
-            COL_LOWLIGHT,
-          );
+          dr.drawRect({ x: cx, y: cy, w: ts + hw, h: ts + hw }, COL_LOWLIGHT);
         }
       }
     }
@@ -1050,10 +1037,7 @@ function redraw(
       if (ui.curVisible && ui.curX === x && ui.curY === y) {
         v += ui.curJumping ? GRID_JUMPING : GRID_CURSOR;
       }
-      if (
-        v !== GRID_OBST &&
-        (bgColour !== ds.bgColour || v !== ds.grid[y * w + x])
-      ) {
+      if (v !== GRID_OBST && (bgColour !== ds.bgColour || v !== ds.grid[y * w + x])) {
         drawTile(dr, ds, coord(x, ts), coord(y, ts), v, bgColour);
         ds.grid[y * w + x] = v;
       }

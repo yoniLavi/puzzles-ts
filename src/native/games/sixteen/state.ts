@@ -70,10 +70,8 @@ export function decodeParams(s: string): SixteenParams {
 }
 
 export function validateParams(p: SixteenParams, _full: boolean): string | null {
-  if (p.w < 2 || p.h < 2)
-    return "Width and height must both be at least two";
-  if (p.movetarget < 0)
-    return "Number of shuffling moves may not be negative";
+  if (p.w < 2 || p.h < 2) return "Width and height must both be at least two";
+  if (p.movetarget < 0) return "Number of shuffling moves may not be negative";
   return null;
 }
 
@@ -99,18 +97,14 @@ export function presets() {
 
 // --- desc / state -----------------------------------------------------
 
-export function validateDesc(
-  p: SixteenParams,
-  desc: string,
-): string | null {
+export function validateDesc(p: SixteenParams, desc: string): string | null {
   const area = p.w * p.h;
   const parts = desc.split(",");
   if (parts.length !== area) return "Not enough numbers in string";
   const used = new Set<number>();
   for (let i = 0; i < parts.length; i++) {
     const n = Number(parts[i]);
-    if (!Number.isInteger(n) || n < 1 || n > area)
-      return "Number out of range";
+    if (!Number.isInteger(n) || n < 1 || n > area) return "Number out of range";
     if (used.has(n)) return "Number used twice";
     used.add(n);
   }
@@ -182,10 +176,7 @@ export function textFormat(state: SixteenState): string {
 
 // --- generator --------------------------------------------------------
 
-export function newDesc(
-  p: SixteenParams,
-  rng: RandomState,
-): { desc: string } {
+export function newDesc(p: SixteenParams, rng: RandomState): { desc: string } {
   const n = p.w * p.h;
   const tiles = new Int32Array(n);
 
@@ -251,7 +242,7 @@ export function newDesc(
     let x = 0;
 
     // If both dimensions are odd, there's a parity constraint.
-    const stop = (p.w & 1) & (p.h & 1) ? 2 : 0;
+    const stop = p.w & 1 & (p.h & 1) ? 2 : 0;
 
     // Place everything except (possibly) the last two tiles.
     for (let i = n; i > stop; i--) {
@@ -270,7 +261,8 @@ export function newDesc(
       while (tiles[x] !== 0) x++;
       const x2 = x;
 
-      let p1 = -1, p2 = -1;
+      let p1 = -1,
+        p2 = -1;
       for (let i = 0; i < n; i++) {
         if (!used[i]) {
           if (p1 < 0) p1 = i;

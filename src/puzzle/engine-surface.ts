@@ -41,6 +41,7 @@ export interface PuzzleEngineSurface {
   undo(): void;
   redo(): void;
   solve(): string | undefined;
+  hint(): string | undefined;
 
   processKey(key: number): boolean;
   processMouse(point: Point, button: number): boolean;

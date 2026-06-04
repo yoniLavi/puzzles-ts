@@ -422,11 +422,7 @@ export function redraw(
       // form part of the cache-miss check below.
       const key = flags | dots;
       const cacheI = y * w + x;
-      if (
-        ds.cache[cacheI] !== key ||
-        ds.dx[cacheI] !== ddx ||
-        ds.dy[cacheI] !== ddy
-      ) {
+      if (ds.cache[cacheI] !== key || ds.dx[cacheI] !== ddx || ds.dy[cacheI] !== ddy) {
         drawSquare(dr, x, y, tile, border, flags, dots, ddx, ddy);
         ds.cache[cacheI] = key;
         ds.dx[cacheI] = ddx;

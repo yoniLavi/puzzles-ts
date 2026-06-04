@@ -93,6 +93,7 @@ export interface PuzzleStaticAttributes {
   displayName: string;
   canConfigure: boolean;
   canSolve: boolean;
+  canHint: boolean;
   // TODO: canFormatAsTextEver: boolean;
   needsRightButton: boolean;
   isTimed: boolean;

@@ -52,8 +52,7 @@ function resolveAgainst(sourceFile: string, relPath: string): string {
   return `.${resolved}`;
 }
 
-const URL_REF_RE =
-  /new\s+URL\s*\(\s*(['"`])([\s\S]*?)\1\s*,\s*import\.meta\.url\s*\)/g;
+const URL_REF_RE = /new\s+URL\s*\(\s*(['"`])([\s\S]*?)\1\s*,\s*import\.meta\.url\s*\)/g;
 
 interface UrlRef {
   source: string;
@@ -94,31 +93,32 @@ describe("new URL(..., import.meta.url) references resolve", () => {
     expect(refs.length).toBeGreaterThanOrEqual(2);
   });
 
-  it.each(refs)(
-    "$source:$line — $rawPath",
-    ({ isDynamic, resolvedPath, source, line, rawPath }) => {
-      if (isDynamic) {
-        expect(
-          knownDirs.has(resolvedPath),
-          `${source}:${line}: directory does not exist for ${rawPath} → ${resolvedPath}`,
-        ).toBe(true);
-      } else {
-        expect(
-          knownPaths.has(resolvedPath),
-          `${source}:${line}: file does not exist for ${rawPath} → ${resolvedPath}`,
-        ).toBe(true);
-      }
-    },
-  );
+  it.each(refs)("$source:$line — $rawPath", ({
+    isDynamic,
+    resolvedPath,
+    source,
+    line,
+    rawPath,
+  }) => {
+    if (isDynamic) {
+      expect(
+        knownDirs.has(resolvedPath),
+        `${source}:${line}: directory does not exist for ${rawPath} → ${resolvedPath}`,
+      ).toBe(true);
+    } else {
+      expect(
+        knownPaths.has(resolvedPath),
+        `${source}:${line}: file does not exist for ${rawPath} → ${resolvedPath}`,
+      ).toBe(true);
+    }
+  });
 });
 
 describe("every cataloged puzzle has its generated icons", () => {
   it.each(puzzleIds)("%s", (puzzleId) => {
     for (const suffix of ["64d8", "128d8"] as const) {
       const path = `./assets/icons/${puzzleId}-${suffix}.png`;
-      expect(knownPaths.has(path), `missing icon: src/${path.slice(2)}`).toBe(
-        true,
-      );
+      expect(knownPaths.has(path), `missing icon: src/${path.slice(2)}`).toBe(true);
     }
   });
 });

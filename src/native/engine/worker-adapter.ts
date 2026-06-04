@@ -101,6 +101,9 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   solve(): string | undefined {
     return this.engine.solve();
   }
+  hint(): string | undefined {
+    return this.engine.hint();
+  }
 
   // --- input ------------------------------------------------------
 

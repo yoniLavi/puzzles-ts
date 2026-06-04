@@ -55,9 +55,7 @@ describe("Flip live differential (advisory)", () => {
           expect(ts, `${tag}: CROSSES must match C exactly`).toBe(c);
         } else {
           const st = flipGame.newState(p, ts);
-          expect(solveFlip(st, st).ok, `${tag}: TS board must be solvable`).toBe(
-            true,
-          );
+          expect(solveFlip(st, st).ok, `${tag}: TS board must be solvable`).toBe(true);
           // RANDOM divergence from C is expected; surface as a note.
           console.log(
             `  ${tag}: ${ts === c ? "matched C" : "differs from C (expected)"}`,

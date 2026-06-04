@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ChangeNotification } from "../../../puzzle/types.ts";
-import {
-  CURSOR_RIGHT,
-  CURSOR_SELECT,
-} from "../../engine/pointer.ts";
 import { Midend } from "../../engine/midend.ts";
+import { CURSOR_RIGHT, CURSOR_SELECT } from "../../engine/pointer.ts";
 import { sixteenGame } from "./index.ts";
 
 function harness() {
@@ -14,7 +11,9 @@ function harness() {
   m.setCallbacks(
     (n) => notes.push(n),
     () => {},
-    () => { redraws++; },
+    () => {
+      redraws++;
+    },
   );
   const last = <T extends ChangeNotification["type"]>(type: T) =>
     [...notes].reverse().find((n) => n.type === type);

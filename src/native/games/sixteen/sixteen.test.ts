@@ -1,24 +1,25 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import type { GameDrawing } from "../../engine/index.ts";
 import { randomNew } from "../../random/index.ts";
+import { executeMove, type SixteenHintHighlights, sixteenGame } from "./index.ts";
 import {
+  decodeParams,
+  defaultParams,
+  deserialiseMove,
+  encodeParams,
+  isCompleted,
+  newDesc,
+  newState,
+  presets,
+  type SixteenMove,
   type SixteenParams,
   type SixteenState,
-  type SixteenMove,
-  defaultParams,
-  encodeParams,
-  decodeParams,
-  validateParams,
-  presets,
-  validateDesc,
-  newState,
-  isCompleted,
-  status,
   serialiseMove,
-  deserialiseMove,
+  status,
   textFormat,
-  newDesc,
+  validateDesc,
+  validateParams,
 } from "./state.ts";
-import { sixteenGame, executeMove } from "./index.ts";
 
 // --- helpers ----------------------------------------------------------
 
@@ -27,7 +28,10 @@ function solvedState(w: number, h: number): SixteenState {
   const tiles = new Int32Array(n);
   for (let i = 0; i < n; i++) tiles[i] = i + 1;
   return {
-    w, h, n, tiles,
+    w,
+    h,
+    n,
+    tiles,
     completed: 0,
     usedSolve: false,
     moveCount: 0,
@@ -289,9 +293,185 @@ describe("Sixteen move execution", () => {
 // --- colours ----------------------------------------------------------
 
 describe("Sixteen colours", () => {
-  it("returns 4 colours from the game", () => {
+  it("returns 5 colours from the game (including hint)", () => {
     const bg: [number, number, number] = [0.9, 0.9, 0.9];
     const palette = sixteenGame.colours(bg);
-    expect(palette).toHaveLength(4);
+    expect(palette).toHaveLength(5);
+  });
+});
+
+// --- hint heuristic -------------------------------------------------------
+
+describe("Sixteen hint", () => {
+  it("returns an error for a solved state", () => {
+    const s = solvedState(4, 4);
+    const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(false);
+    if (result && !result.ok) expect(result.error).toBe("Already solved");
+  });
+
+  it("returns a valid slide move for an unsolved state", () => {
+    const rng = randomNew("hint-test");
+    const { desc } = newDesc(defaultParams(), rng);
+    const s = newState(defaultParams(), desc);
+    const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) return;
+    expect(result.move.type).toBe("slide");
+    expect(result.explanation.length).toBeGreaterThan(0);
+  });
+
+  it("the hinted move is a legal move that changes the state", () => {
+    const rng = randomNew("hint-legal");
+    const { desc } = newDesc(defaultParams(), rng);
+    const s = newState(defaultParams(), desc);
+    const result = sixteenGame.hint?.(s);
+    if (!result?.ok) return;
+    const next = executeMove(s, result.move);
+    // The state should have changed (tiles rearranged).
+    let changed = false;
+    for (let i = 0; i < s.n; i++) {
+      if (s.tiles[i] !== next.tiles[i]) {
+        changed = true;
+        break;
+      }
+    }
+    expect(changed).toBe(true);
+  });
+
+  it("the explanation mentions the axis, direction, and a tile number", () => {
+    const rng = randomNew("hint-explanation");
+    const { desc } = newDesc(defaultParams(), rng);
+    const s = newState(defaultParams(), desc);
+    const result = sixteenGame.hint?.(s);
+    if (!result?.ok) return;
+    // Explanation format: "Slide row/column N direction — moves tile T closer to its target"
+    expect(result.explanation).toMatch(
+      /Slide (row|column) \d+ (left|right|up|down) — move tile \d+ toward \(\d+,\d+\)/,
+    );
+  });
+
+  it("the hinted move actually improves the state (net tiles-closer > 0)", () => {
+    const rng = randomNew("hint-improves");
+    const { desc } = newDesc(defaultParams(), rng);
+    const s = newState(defaultParams(), desc);
+    const result = sixteenGame.hint?.(s);
+    if (!result?.ok) return;
+    const next = executeMove(s, result.move);
+    // Count total toroidal distance for all tiles before and after.
+    const dist = (st: SixteenState) => {
+      let total = 0;
+      for (let i = 0; i < st.n; i++) {
+        const tile = st.tiles[i];
+        const targetR = Math.floor((tile - 1) / st.w);
+        const targetC = (tile - 1) % st.w;
+        const curR = Math.floor(i / st.w);
+        const curC = i % st.w;
+        const dr = Math.abs(curR - targetR);
+        const dc = Math.abs(curC - targetC);
+        total += Math.min(dr, st.h - dr) + Math.min(dc, st.w - dc);
+      }
+      return total;
+    };
+    expect(dist(next)).toBeLessThan(dist(s));
+  });
+
+  it("returns highlights with the tile number and target position", () => {
+    const rng = randomNew("hint-highlights");
+    const { desc } = newDesc(defaultParams(), rng);
+    const s = newState(defaultParams(), desc);
+    const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(true);
+    if (result?.ok) {
+      const hl = result.highlights as SixteenHintHighlights;
+      expect(hl).toBeDefined();
+      expect(hl.tile).toBeGreaterThan(0);
+      expect(hl.tile).toBeLessThanOrEqual(s.n);
+      // Target position is tile-1 (tile N belongs at position N-1).
+      expect(hl.targetPos).toBe(hl.tile - 1);
+    }
+  });
+
+  it("prioritizes the lowest-numbered out-of-place tile", () => {
+    // Construct a 4×4 state where tile 1 is out of place.
+    // Place tile 1 at position (0,1) — one column away from its target (0,0).
+    // Place tile 5 at position (1,0) — one row away from its target (1,0)... wait, that IS its target.
+    // Let's make tile 2 at position (0,2) — two columns away.
+    // A row-0 slide right moves tile 1 closer (benefit 1) but also moves tile 2 farther (cost 1).
+    // Net benefit = 0. But the heuristic should still prefer it because tile 1
+    // is the lowest out-of-place tile.
+    const w = 4,
+      h = 4,
+      n = 16;
+    const tiles = new Int32Array(n);
+    for (let i = 0; i < n; i++) tiles[i] = i + 1; // solved
+    // Swap tile 1 and tile 2: tile 1 at position 1, tile 2 at position 0.
+    tiles[0] = 2;
+    tiles[1] = 1;
+    const s: SixteenState = {
+      w,
+      h,
+      n,
+      tiles,
+      completed: 0,
+      usedSolve: false,
+      moveCount: 0,
+      moveTarget: 0,
+      lastMovementSense: 0,
+    };
+    const result = sixteenGame.hint?.(s);
+    if (!result?.ok) return;
+    // The hint should mention tile 1 (the lowest out-of-place tile).
+    expect(result.explanation).toContain("tile 1");
+  });
+});
+
+describe("Sixteen hint rendering", () => {
+  function recordingDrawing() {
+    const ops: Array<{ op: string; colour?: number }> = [];
+    const rec = (op: string, colour?: number) => ops.push({ op, colour });
+    const dr: GameDrawing = {
+      startDraw: () => rec("startDraw"),
+      endDraw: () => rec("endDraw"),
+      drawUpdate: () => rec("drawUpdate"),
+      clip: () => rec("clip"),
+      unclip: () => rec("unclip"),
+      drawRect: (_r, c) => rec("drawRect", c),
+      drawLine: (_a, _b, c) => rec("drawLine", c),
+      drawPolygon: (_p, f) => rec("drawPolygon", f),
+      drawCircle: (_p, _r, f) => rec("drawCircle", f),
+      drawText: (_p, _o, c) => rec("drawText", c),
+      blitterNew: () => ({}),
+      blitterFree: () => rec("blitterFree"),
+      blitterSave: () => rec("blitterSave"),
+      blitterLoad: () => rec("blitterLoad"),
+    };
+    return { dr, ops };
+  }
+
+  it("highlights hint tiles and arrow in COL_HINT", () => {
+    const rng = randomNew("render-test");
+    const { desc } = newDesc(defaultParams(), rng);
+    const s = newState(defaultParams(), desc);
+    const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) return;
+
+    const ui = sixteenGame.newUi(s);
+    const ds = sixteenGame.newDrawState?.(s);
+    expect(ds).toBeDefined();
+    if (!ds) return;
+    sixteenGame.setTileSize?.(ds, 32);
+
+    const { dr, ops } = recordingDrawing();
+    sixteenGame.redraw?.(dr, ds, null, s, 1, ui, 0, 0, result);
+
+    // We should see drawTile (using COL_HINT rect/polygon fill) or drawHintBorder (drawRect)
+    // and drawArrow (drawPolygon) using COL_HINT (which is color index 4).
+    const COL_HINT_INDEX = 4;
+
+    // Check for hint highlight operations
+    const hintOps = ops.filter((o) => o.colour === COL_HINT_INDEX);
+    expect(hintOps.length).toBeGreaterThan(0);
   });
 });

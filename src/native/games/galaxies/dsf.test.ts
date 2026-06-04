@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { randomNew, randomUpto } from "../../random/index.ts";
 import { Dsf } from "../../engine/dsf.ts";
+import { randomNew, randomUpto } from "../../random/index.ts";
 
 /**
  * Brute-force reference: a plain parent array, walked to a root each

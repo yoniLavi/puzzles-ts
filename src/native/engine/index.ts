@@ -6,9 +6,13 @@
  * See `openspec/specs/ts-engine/spec.md` for the capability contract.
  */
 
+export { mkhighlightBackground } from "./colour-mkhighlight.ts";
+export { Dsf } from "./dsf.ts";
 export type {
+  ActiveHint,
   Game,
   GameDrawing,
+  HintResult,
   PresetMenu,
   SolveResult,
   UiUpdate,
@@ -20,18 +24,6 @@ export {
   type NotifyChange,
   type NotifyTimerState,
 } from "./midend.ts";
-export {
-  _resetRegistry,
-  createTsEngine,
-  hasTsGame,
-  registerGame,
-} from "./registry.ts";
-export {
-  decodeSave,
-  encodeSave,
-  type SaveEnvelope,
-} from "./save.ts";
-export { mkhighlightBackground } from "./colour-mkhighlight.ts";
 export {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -45,11 +37,21 @@ export {
   MIDDLE_BUTTON,
   MIDDLE_DRAG,
   MIDDLE_RELEASE,
-  RIGHT_BUTTON,
-  RIGHT_DRAG,
-  RIGHT_RELEASE,
   type PointerAction,
   type PointerButton,
   parsePointerAction,
+  RIGHT_BUTTON,
+  RIGHT_DRAG,
+  RIGHT_RELEASE,
 } from "./pointer.ts";
-export { Dsf } from "./dsf.ts";
+export {
+  _resetRegistry,
+  createTsEngine,
+  hasTsGame,
+  registerGame,
+} from "./registry.ts";
+export {
+  decodeSave,
+  encodeSave,
+  type SaveEnvelope,
+} from "./save.ts";

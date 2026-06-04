@@ -97,6 +97,10 @@ export const fakeGame: Game<FakeParams, FakeState, FakeMove, null, FakeDrawState
 
   status: (s) => (s.count >= s.target ? "solved" : "ongoing"),
   solve: () => ({ ok: true, move: "solve" }),
+  hint: (s) =>
+    s.count >= s.target
+      ? { ok: false, error: "Already solved" }
+      : { ok: true, move: "inc" as FakeMove, explanation: "Increment the counter" },
   textFormat: (s) => `count=${s.count}`,
   statusbarText: (s) => `count ${s.count}/${s.target}`,
 
@@ -124,10 +128,7 @@ export const fakeGame: Game<FakeParams, FakeState, FakeMove, null, FakeDrawState
       // First paint of this drawstate — game owns the background
       // fill (no engine-emitted pixels). winSize = state.target *
       // tileSize wide × tileSize tall, matching `computeSize`.
-      dr.drawRect(
-        { x: 0, y: 0, w: s.target * ds.tileSize, h: ds.tileSize },
-        0,
-      );
+      dr.drawRect({ x: 0, y: 0, w: s.target * ds.tileSize, h: ds.tileSize }, 0);
       ds.started = true;
     }
   },

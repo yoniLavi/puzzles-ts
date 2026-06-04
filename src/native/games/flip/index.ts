@@ -31,8 +31,8 @@ import {
   CURSOR_UP,
   LEFT_BUTTON,
 } from "../../engine/pointer.ts";
-import { type RandomState, randomUpto } from "../../random/index.ts";
 import { SortedMultiset } from "../../engine/sorted-multiset.ts";
+import { type RandomState, randomUpto } from "../../random/index.ts";
 
 // --- types ----------------------------------------------------------
 
@@ -126,10 +126,7 @@ function decodeBitmap(bmp: Uint8Array, len: number, hex: string): void {
 
 // --- params ---------------------------------------------------------
 
-function parseLeadingInt(
-  s: string,
-  start: number,
-): { value: number; next: number } {
+function parseLeadingInt(s: string, start: number): { value: number; next: number } {
   let i = start;
   while (i < s.length && s[i] >= "0" && s[i] <= "9") i++;
   return { value: Number.parseInt(s.slice(start, i) || "0", 10), next: i };
@@ -235,11 +232,7 @@ function addneighbours(
   addsq(t, w, h, cx, cy, x, y + 1, matrix);
 }
 
-function genRandomMatrix(
-  w: number,
-  h: number,
-  rng: RandomState,
-): Uint8Array {
+function genRandomMatrix(w: number, h: number, rng: RandomState): Uint8Array {
   const wh = w * h;
   const matrix = new Uint8Array(wh * wh);
   for (;;) {
@@ -287,12 +280,7 @@ function genRandomMatrix(
       };
       for (;;) {
         const sq2 = t.cov.firstGreaterThan(covProbe);
-        if (
-          !sq2 ||
-          sq2.coverage !== sq.coverage ||
-          sq2.x !== sq.x ||
-          sq2.y !== sq.y
-        ) {
+        if (!sq2 || sq2.coverage !== sq.coverage || sq2.x !== sq.x || sq2.y !== sq.y) {
           break;
         }
         t.pick.delete(sq2);
@@ -378,13 +366,7 @@ function dupGrid(g: Uint8Array): Uint8Array {
   return g.slice();
 }
 
-export const flipGame: Game<
-  FlipParams,
-  FlipState,
-  FlipMove,
-  FlipUi,
-  FlipDrawState
-> = {
+export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawState> = {
   id: "flip",
   wantsStatusbar: true,
   isTimed: false,
@@ -452,9 +434,7 @@ export const flipGame: Game<
     const { w, h } = p;
     const wh = w * h;
     const matrix =
-      p.matrixType === "crosses"
-        ? genCrossesMatrix(w, h)
-        : genRandomMatrix(w, h, rng);
+      p.matrixType === "crosses" ? genCrossesMatrix(w, h) : genRandomMatrix(w, h, rng);
 
     // Random soluble starting lights: choosing equiprobably from the
     // input space and pushing through the matrix is equiprobable over
@@ -544,11 +524,9 @@ export const flipGame: Game<
     const wh = w * h;
     const tile = ds?.tileSize ?? PREFERRED_TILE_SIZE;
     const border = tile >> 1;
-    const fromCoord = (v: number) =>
-      Math.floor((v - border + tile) / tile) - 1;
+    const fromCoord = (v: number) => Math.floor((v - border + tile) / tile) - 1;
 
-    const isSelect =
-      button === CURSOR_SELECT || button === CURSOR_SELECT2;
+    const isSelect = button === CURSOR_SELECT || button === CURSOR_SELECT2;
 
     if (button === LEFT_BUTTON || isSelect) {
       let tx: number;
@@ -734,11 +712,7 @@ export const flipGame: Game<
         const center = cell + ((ch / 2) | 0) * DOWN + ((cw / 2) | 0) * RIGHT;
         const flip = s.grid[r * w + c] & 1 ? "#" : ".";
         for (let dy = -1 + (r === 0 ? 1 : 0); dy <= 1 - (r === h - 1 ? 1 : 0); dy++) {
-          for (
-            let dx = -1 + (c === 0 ? 1 : 0);
-            dx <= 1 - (c === w - 1 ? 1 : 0);
-            dx++
-          ) {
+          for (let dx = -1 + (c === 0 ? 1 : 0); dx <= 1 - (c === w - 1 ? 1 : 0); dx++) {
             if (s.matrix[(r * w + c) * wh + ((r + dy) * w + c + dx)]) {
               board[center + dy * DOWN + dx * RIGHT] = flip;
             }
@@ -866,8 +840,7 @@ export const flipGame: Game<
       if (!s.hintsActive) v &= ~2;
       if (ui.cursorVisible && ui.cx === x && ui.cy === y) v |= 4;
 
-      const vv =
-        animating && prev && ((s.grid[i] ^ prev.grid[i]) & ~2) ? 255 : v;
+      const vv = animating && prev && (s.grid[i] ^ prev.grid[i]) & ~2 ? 255 : v;
       if (ds.tiles[i] === 255 || vv === 255 || ds.tiles[i] !== vv) {
         drawTile(dr, ds, s, x, y, v, vv === 255, anim);
         ds.tiles[i] = vv;

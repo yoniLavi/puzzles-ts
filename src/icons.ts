@@ -30,6 +30,7 @@ import historyIcon from "lucide-static/icons/history.svg";
 import imagesIcon from "lucide-static/icons/images.svg";
 import infoIcon from "lucide-static/icons/info.svg";
 import laughIcon from "lucide-static/icons/laugh.svg";
+import lightbulbIcon from "lucide-static/icons/lightbulb.svg";
 import octagonAlertIcon from "lucide-static/icons/octagon-alert.svg";
 import partyPopperIcon from "lucide-static/icons/party-popper.svg";
 import playIcon from "lucide-static/icons/play.svg";
@@ -75,6 +76,7 @@ const defaultIcons: IconMap = {
   "game-in-progress": playIcon,
   "gameid": hashIcon,
   "help": circleQuestionMarkIcon,
+  "hint": lightbulbIcon,
   "history": historyIcon,
   "history-checkpoint": circleCheckIcon,
   "history-current-move": playIcon,

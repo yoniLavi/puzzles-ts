@@ -80,6 +80,7 @@ export class Puzzle {
       displayName,
       canConfigure,
       canSolve,
+      canHint,
       needsRightButton,
       isTimed,
       wantsStatusbar,
@@ -93,6 +94,7 @@ export class Puzzle {
     this.isUnfinished = catalogData?.unfinished ?? false;
     this.canConfigure = canConfigure;
     this.canSolve = canSolve;
+    this.canHint = canHint;
     this.needsRightButton = needsRightButton;
     this.isTimed = isTimed;
     this.wantsStatusbar = wantsStatusbar;
@@ -186,6 +188,7 @@ export class Puzzle {
   public readonly isUnfinished: boolean; // "experimental" puzzle status
   public readonly canConfigure: boolean;
   public readonly canSolve: boolean;
+  public readonly canHint: boolean;
   public readonly needsRightButton: boolean;
   public readonly isTimed: boolean;
   public readonly wantsStatusbar: boolean;
@@ -289,6 +292,10 @@ export class Puzzle {
 
   public async solve(): Promise<string | undefined> {
     return this.workerPuzzle.solve();
+  }
+
+  public async hint(): Promise<string | undefined> {
+    return this.workerPuzzle.hint();
   }
 
   public processKey(key: number): Promise<boolean> {

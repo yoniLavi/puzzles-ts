@@ -11,6 +11,7 @@
  * transliteration.
  */
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import { mkhighlightBackground } from "../../engine/colour-mkhighlight.ts";
 import {
   type Game,
   registerGame,
@@ -18,7 +19,6 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { mkhighlightBackground } from "../../engine/colour-mkhighlight.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -73,10 +73,8 @@ import {
   tileOpposite,
 } from "./state.ts";
 
-
 const PREFERRED_TILE_SIZE = 32;
 const FLASH_TIME = 0.15;
-
 
 // --- types -----------------------------------------------------------
 

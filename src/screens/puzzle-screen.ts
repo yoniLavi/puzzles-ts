@@ -278,6 +278,16 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
               `
             : nothing
         }
+        ${
+          this.puzzle?.canHint
+            ? html`
+              <wa-dropdown-item data-command="hint" ?disabled=${this.puzzle?.status === "solved"}>
+                <wa-icon slot="icon" name="hint"></wa-icon>
+                Hint
+              </wa-dropdown-item>
+              `
+            : nothing
+        }
         <wa-divider></wa-divider>
         <wa-dropdown-item data-command="share">
           <wa-icon slot="icon" name="share"></wa-icon>
@@ -370,6 +380,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       "save-game": this.showSaveGameDialog,
       share: this.showShareDialog,
       solve: () => this.puzzle?.solve(),
+      hint: () => this.puzzle?.hint(),
     });
   }
 

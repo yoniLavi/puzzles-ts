@@ -206,6 +206,7 @@ export class WorkerPuzzle implements FrontendConstructorArgs, PuzzleEngineSurfac
       displayName: this.frontend.name,
       canConfigure: this.frontend.canConfigure,
       canSolve: this.frontend.canSolve,
+      canHint: false,
       needsRightButton: this.frontend.needsRightButton,
       isTimed: this.frontend.isTimed,
       wantsStatusbar: this.frontend.wantsStatusbar,
@@ -235,6 +236,11 @@ export class WorkerPuzzle implements FrontendConstructorArgs, PuzzleEngineSurfac
 
   solve(): string | undefined {
     return this.frontend.solve();
+  }
+
+  hint(): string | undefined {
+    // C/WASM games don't support hints.
+    return "This game does not support hints";
   }
 
   processKey(key: number): boolean {

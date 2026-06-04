@@ -36,9 +36,25 @@ export type UiUpdate = typeof UI_UPDATE;
 
 /** Result of a solver attempt — discriminated so a string `Move`
  * cannot be mistaken for an error message. */
-export type SolveResult<Move> =
-  | { ok: true; move: Move }
+export type SolveResult<Move> = { ok: true; move: Move } | { ok: false; error: string };
+
+/** Result of a hint attempt — a single next-step move with a
+ * human-readable explanation, or an error. The move is NOT
+ * auto-applied; the midend stores it as an active hint and the
+ * renderer displays it. */
+export type HintResult<Move, Highlights = unknown> =
+  | { ok: true; move: Move; explanation: string; highlights?: Highlights }
   | { ok: false; error: string };
+
+/** A hint currently being displayed. Stored in the midend (not in
+ * game state), passed to the game's `redraw` so it can render the
+ * hint visually. Cleared when the player makes any move, undoes,
+ * redoes, or starts a new game. */
+export interface ActiveHint<Move, Highlights = unknown> {
+  move: Move;
+  explanation: string;
+  highlights?: Highlights;
+}
 
 /** A node in the preset/difficulty menu tree. */
 export interface PresetMenu<Params> {
@@ -72,12 +88,7 @@ export interface GameDrawing<Blitter = unknown> {
     fillColour: number,
     outlineColour: number,
   ): void;
-  drawText(
-    origin: Point,
-    options: DrawTextOptions,
-    colour: number,
-    text: string,
-  ): void;
+  drawText(origin: Point, options: DrawTextOptions, colour: number, text: string): void;
   blitterNew(size: Size): Blitter;
   blitterFree(blitter: Blitter): void;
   blitterSave(blitter: Blitter, origin: Point): void;
@@ -124,6 +135,13 @@ export interface Game<Params, State, Move, Ui = unknown, DrawState = unknown> {
    * `canSolve`. Returns a discriminated result so a `Move` that is
    * itself a string can't be confused with an error message. */
   solve?(orig: State, curr: State, aux?: string): SolveResult<Move>;
+
+  /** Compute a heuristic hint for the current state. Returns a
+   * single move + human-readable explanation, or an error. The
+   * move is NOT auto-applied — the midend stores it as an active
+   * hint and the renderer displays it. The player executes the
+   * move themselves. */
+  hint?(state: State): HintResult<Move>;
   textFormat?(s: State): string;
   statusbarText?(s: State, ui: Ui): string;
 
@@ -150,6 +168,7 @@ export interface Game<Params, State, Move, Ui = unknown, DrawState = unknown> {
     ui: Ui,
     animTime: number,
     flashTime: number,
+    hint?: ActiveHint<Move>,
   ): void;
   animLength?(a: State, b: State, dir: number, ui: Ui): number;
   flashLength?(a: State, b: State, dir: number, ui: Ui): number;

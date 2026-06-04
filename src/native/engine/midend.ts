@@ -24,7 +24,13 @@ import type {
   Size,
 } from "../../puzzle/types.ts";
 import { randomNew } from "../random/index.ts";
-import { type Game, type GameDrawing, type PresetMenu, UI_UPDATE } from "./game.ts";
+import {
+  type ActiveHint,
+  type Game,
+  type GameDrawing,
+  type PresetMenu,
+  UI_UPDATE,
+} from "./game.ts";
 import { decodeSave, encodeSave, type SaveEnvelope } from "./save.ts";
 
 export type NotifyChange = (message: ChangeNotification) => void;
@@ -50,6 +56,7 @@ export interface EngineCore {
   undo(): void;
   redo(): void;
   solve(): string | undefined;
+  hint(): string | undefined;
   processInput(x: number, y: number, button: number): boolean;
   getParams(): string;
   setParams(params: string): string | undefined;
@@ -122,6 +129,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * `!ds.started` branch). */
   private winSize: Size = { w: 0, h: 0 };
   private usedSolve = false;
+  private activeHint: ActiveHint<Move> | null = null;
   private timerElapsed = 0;
   private notify?: NotifyChange;
   private notifyTimer?: NotifyTimerState;
@@ -151,6 +159,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       displayName: this.game.id,
       canConfigure: true,
       canSolve: this.game.canSolve,
+      canHint: this.game.hint !== undefined,
       needsRightButton: false,
       isTimed: this.game.isTimed,
       wantsStatusbar: this.game.wantsStatusbar,
@@ -221,6 +230,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       this.game.setTileSize?.(this.drawState, this.currentTileSize);
     }
     this.usedSolve = false;
+    this.activeHint = null;
     this.timerElapsed = 0;
     this.clearAnimation();
     this.emitIdChange();
@@ -243,6 +253,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.moveLog = [];
     this.pos = 0;
     this.usedSolve = false;
+    this.activeHint = null;
     this.clearAnimation();
     this.emitStateChange();
     this.emitStatusBar();
@@ -272,6 +283,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       this.afterTransition();
       return true;
     }
+    this.activeHint = null;
     return this.applyMove(move);
   }
 
@@ -293,6 +305,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   undo(): void {
     if (this.pos === 0) return;
+    this.activeHint = null;
     const prev = this.state;
     this.pos -= 1;
     this.setupAnimation(prev, this.state, -1);
@@ -301,6 +314,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   redo(): void {
     if (this.pos >= this.history.length - 1) return;
+    this.activeHint = null;
     const prev = this.state;
     this.pos += 1;
     this.setupAnimation(prev, this.state, 1);
@@ -315,6 +329,22 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     if (!result.ok) return result.error;
     this.usedSolve = true;
     this.applyMove(result.move);
+    return undefined;
+  }
+
+  hint(): string | undefined {
+    if (!this.game.hint) {
+      return "This game does not support hints";
+    }
+    const result = this.game.hint(this.state);
+    if (!result.ok) return result.error;
+    this.activeHint = {
+      move: result.move,
+      explanation: result.explanation,
+      highlights: result.highlights,
+    };
+    this.clearAnimation();
+    this.afterTransition();
     return undefined;
   }
 
@@ -604,6 +634,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       this.ui,
       this.animTime,
       this.flashTime,
+      this.activeHint ?? undefined,
     );
     dr.endDraw();
   }
@@ -662,7 +693,12 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   private emitStatusBar(): void {
     if (!this.game.wantsStatusbar) return;
-    const text = this.game.statusbarText?.(this.state, this.ui) ?? "";
+    let text = this.game.statusbarText?.(this.state, this.ui) ?? "";
+    if (this.activeHint) {
+      text = text
+        ? `${text} — ${this.activeHint.explanation}`
+        : this.activeHint.explanation;
+    }
     this.emit({ type: "status-bar-change", statusBarText: text });
   }
 }

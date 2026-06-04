@@ -322,11 +322,9 @@ describe("Midend.size is purely informational (regression: ResizeObserver flicke
     // store really got reset).
     const m = midend();
     m.size({ w: 200, h: 200 }, true, 1);
-    const instance0 = (m as unknown as { drawState: FakeDrawState }).drawState
-      .instance;
+    const instance0 = (m as unknown as { drawState: FakeDrawState }).drawState.instance;
     m.size({ w: 400, h: 400 }, true, 1);
-    const instance1 = (m as unknown as { drawState: FakeDrawState }).drawState
-      .instance;
+    const instance1 = (m as unknown as { drawState: FakeDrawState }).drawState.instance;
     expect(instance1).toBe(instance0);
   });
 
@@ -369,11 +367,9 @@ describe("Midend.canvasCleared invalidates the drawstate (the only real signal)"
 
   it("recreates the drawstate (different instance)", () => {
     const m = midend();
-    const before = (m as unknown as { drawState: FakeDrawState }).drawState
-      .instance;
+    const before = (m as unknown as { drawState: FakeDrawState }).drawState.instance;
     m.canvasCleared();
-    const after = (m as unknown as { drawState: FakeDrawState }).drawState
-      .instance;
+    const after = (m as unknown as { drawState: FakeDrawState }).drawState.instance;
     expect(after).not.toBe(before);
   });
 
@@ -382,16 +378,12 @@ describe("Midend.canvasCleared invalidates the drawstate (the only real signal)"
     // Pre-clear: redraws are cache-suppressed for unchanged state.
     const pre = recordingDrawing();
     m.redraw(pre.dr);
-    expect(pre.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(
-      false,
-    );
+    expect(pre.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(false);
 
     m.canvasCleared();
     const post = recordingDrawing();
     m.redraw(post.dr);
-    expect(post.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(
-      true,
-    );
+    expect(post.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(true);
   });
 
   it("is a no-op without a game (defensive guard)", () => {
@@ -416,12 +408,10 @@ describe("Midend.forceRedraw is canvasCleared + redraw (palette/font replacement
 
   it("recreates the drawstate and immediately paints", () => {
     const m = midend();
-    const before = (m as unknown as { drawState: FakeDrawState }).drawState
-      .instance;
+    const before = (m as unknown as { drawState: FakeDrawState }).drawState.instance;
     const { dr, ops } = recordingDrawing();
     m.forceRedraw(dr);
-    const after = (m as unknown as { drawState: FakeDrawState }).drawState
-      .instance;
+    const after = (m as unknown as { drawState: FakeDrawState }).drawState.instance;
     expect(after).not.toBe(before);
     // game's bg paint runs as part of the forced redraw.
     expect(ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(true);
@@ -465,9 +455,7 @@ describe("Engine emits no pixels of its own (game owns the canvas content)", () 
     // The fake's redraw with `started=true` emits no draw ops — so
     // the only ops we see are `startDraw` and `endDraw` (the engine
     // frame brackets).
-    const drawing = ops.filter(
-      (o) => o.op !== "startDraw" && o.op !== "endDraw",
-    );
+    const drawing = ops.filter((o) => o.op !== "startDraw" && o.op !== "endDraw");
     expect(drawing).toEqual([]);
   });
 });
@@ -483,5 +471,95 @@ describe("Midend newGame requests a redraw (deterministic boards may produce the
     expect(h.redraws()).toBeGreaterThan(0);
     const types = new Set(h.notes.map((n) => n.type));
     expect(types).toContain("game-id-change");
+  });
+});
+
+describe("Midend hint lifecycle", () => {
+  let h: ReturnType<typeof harness>;
+  beforeEach(() => {
+    h = harness();
+    h.m.newGame();
+  });
+
+  it("hint() returns undefined and stores an active hint", () => {
+    expect(h.m.hint()).toBeUndefined();
+    // The hint should appear in the status bar.
+    const sb = h.last("status-bar-change") as Extract<
+      ChangeNotification,
+      { type: "status-bar-change" }
+    >;
+    expect(sb.statusBarText).toContain("Increment the counter");
+  });
+
+  it("hint() on a solved game returns an error", () => {
+    h.m.solve(); // jumps to solved
+    expect(h.m.hint()).toBe("Already solved");
+  });
+
+  it("making a move clears the active hint", () => {
+    h.m.hint();
+    // Status bar should show the hint explanation.
+    const sbBefore = h.last("status-bar-change") as Extract<
+      ChangeNotification,
+      { type: "status-bar-change" }
+    >;
+    expect(sbBefore.statusBarText).toContain("Increment the counter");
+
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    // Status bar should no longer show the hint.
+    const sbAfter = h.last("status-bar-change") as Extract<
+      ChangeNotification,
+      { type: "status-bar-change" }
+    >;
+    expect(sbAfter.statusBarText).not.toContain("Increment the counter");
+  });
+
+  it("undo clears the active hint", () => {
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    h.m.hint();
+    h.m.undo();
+    const sb = h.last("status-bar-change") as Extract<
+      ChangeNotification,
+      { type: "status-bar-change" }
+    >;
+    expect(sb.statusBarText).not.toContain("Increment the counter");
+  });
+
+  it("redo clears the active hint", () => {
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    h.m.undo();
+    h.m.hint();
+    h.m.redo();
+    const sb = h.last("status-bar-change") as Extract<
+      ChangeNotification,
+      { type: "status-bar-change" }
+    >;
+    expect(sb.statusBarText).not.toContain("Increment the counter");
+  });
+
+  it("newGame clears the active hint", () => {
+    h.m.hint();
+    h.m.newGame();
+    const sb = h.last("status-bar-change") as Extract<
+      ChangeNotification,
+      { type: "status-bar-change" }
+    >;
+    expect(sb.statusBarText).not.toContain("Increment the counter");
+  });
+
+  it("restartGame clears the active hint", () => {
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    h.m.hint();
+    h.m.restartGame();
+    const sb = h.last("status-bar-change") as Extract<
+      ChangeNotification,
+      { type: "status-bar-change" }
+    >;
+    expect(sb.statusBarText).not.toContain("Increment the counter");
+  });
+
+  it("canHint is true when the game implements hint()", () => {
+    const props = h.m.getStaticProperties();
+    expect(props.canHint).toBe(true);
   });
 });

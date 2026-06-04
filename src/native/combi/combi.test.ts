@@ -36,7 +36,9 @@ describe("Combi vs C corpus", () => {
 
       if (fixture.reset) {
         if (!fixture.enumeration_after_reset) {
-          throw new Error(`[${fixture.name}]: reset fixture missing enumeration_after_reset`);
+          throw new Error(
+            `[${fixture.name}]: reset fixture missing enumeration_after_reset`,
+          );
         }
         c.reset();
         assertEnumerationMatches(
@@ -45,7 +47,9 @@ describe("Combi vs C corpus", () => {
           `${fixture.name} (after reset)`,
         );
         // Sanity: the two recorded passes should themselves be identical.
-        expect(fixture.enumeration_after_reset, fixture.name).toEqual(fixture.enumeration);
+        expect(fixture.enumeration_after_reset, fixture.name).toEqual(
+          fixture.enumeration,
+        );
       }
     });
   }
@@ -216,7 +220,9 @@ describe("Combi properties (exhaustive over small grid)", () => {
   it.each(pairs)("(%i, %i): every tuple is strictly ascending", (r, n) => {
     for (const tuple of new Combi(r, n)) {
       for (let i = 1; i < tuple.length; i++) {
-        expect(tuple[i], `tuple ${JSON.stringify(tuple)}`).toBeGreaterThan(tuple[i - 1]);
+        expect(tuple[i], `tuple ${JSON.stringify(tuple)}`).toBeGreaterThan(
+          tuple[i - 1],
+        );
       }
     }
   });
