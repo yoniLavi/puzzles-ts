@@ -79,6 +79,18 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
           <wa-icon name="undo" label="Undo"></wa-icon>
         </wa-button>
         ${this.renderHistoryButton()}
+        ${
+          this.puzzle?.canHint
+            ? html`
+            <wa-button
+                ?disabled=${this.puzzle?.status === "solved"}
+                @pointerdown=${this.handleUndoRedoPointerDown}
+                @click=${this.handleHint}>
+              <wa-icon name="hint" label="Hint"></wa-icon>
+            </wa-button>
+            `
+            : nothing
+        }
         <wa-button
             ?disabled=${!this.puzzle?.canRedo}
             @pointerdown=${this.handleUndoRedoPointerDown}
@@ -260,6 +272,10 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
 
   private async handleRedo() {
     await this.puzzle?.redo();
+  }
+
+  private async handleHint() {
+    await this.puzzle?.hint();
   }
 
   private async handleSelectCheckpoint(event: CustomEvent<{ item: WaDropdownItem }>) {
