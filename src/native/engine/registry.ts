@@ -15,6 +15,7 @@ import type { Game } from "./game.ts";
 import { type EngineCore, Midend } from "./midend.ts";
 
 const factories = new Map<string, () => EngineCore>();
+const games = new Map<string, Game<unknown, unknown, unknown, unknown, unknown>>();
 
 /**
  * Register a game's TS implementation. Generics are inferred from the
@@ -26,11 +27,19 @@ export function registerGame<P, S, M, U, D>(game: Game<P, S, M, U, D>): void {
     throw new Error(`A TS game is already registered for "${game.id}"`);
   }
   factories.set(game.id, () => new Midend(game));
+  games.set(game.id, game);
 }
 
 /** True iff `puzzleId` should be served by the TS engine. */
 export function hasTsGame(puzzleId: string): boolean {
   return factories.has(puzzleId);
+}
+
+/** Get the registered Game instance for the given puzzle ID. */
+export function getTsGame(
+  puzzleId: string,
+): Game<unknown, unknown, unknown, unknown, unknown> | undefined {
+  return games.get(puzzleId);
 }
 
 /**
@@ -44,4 +53,5 @@ export function createTsEngine(puzzleId: string): EngineCore | undefined {
 /** Test-only: drop all registrations. */
 export function _resetRegistry(): void {
   factories.clear();
+  games.clear();
 }

@@ -37,6 +37,7 @@ import type {
   Size,
 } from "../../puzzle/types.ts";
 import type { EngineCore } from "./midend.ts";
+import { getTsGame } from "./registry.ts";
 
 const EMPTY_CONFIG: ConfigDescription = { title: "", items: {} };
 
@@ -139,8 +140,47 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   setCustomParams(_values: ConfigValues): string | undefined {
     return undefined;
   }
-  decodeCustomParams(_params: string): ConfigValues | string {
-    return {};
+  decodeCustomParams(params: string): ConfigValues | string {
+    const game = getTsGame(this.puzzleId);
+    if (!game) {
+      return {};
+    }
+    try {
+      const p = game.decodeParams(params) as Record<string, unknown> | null | undefined;
+      if (!p) {
+        return {};
+      }
+      const config: ConfigValues = {};
+
+      if ("w" in p && p.w !== undefined) {
+        config.width = String(p.w);
+      }
+      if ("h" in p && p.h !== undefined) {
+        config.height = String(p.h);
+      }
+
+      if (this.puzzleId === "pegs") {
+        if ("type" in p && p.type !== undefined) {
+          config["board-type"] = String(p.type);
+        }
+      } else if (this.puzzleId === "sixteen") {
+        if ("movetarget" in p && p.movetarget !== undefined) {
+          config["number-of-shuffling-moves"] = String(p.movetarget);
+        }
+      } else if (this.puzzleId === "flip") {
+        if ("matrixType" in p && p.matrixType !== undefined) {
+          config["shape-type"] = p.matrixType === "crosses" ? "0" : "1";
+        }
+      } else if (this.puzzleId === "galaxies") {
+        if ("diff" in p && p.diff !== undefined) {
+          config.difficulty = String(p.diff);
+        }
+      }
+
+      return config;
+    } catch (e) {
+      return String(e);
+    }
   }
   encodeCustomParams(_values: ConfigValues): string {
     return this.engine.getParams();
