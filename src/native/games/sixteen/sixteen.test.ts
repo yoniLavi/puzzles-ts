@@ -420,9 +420,80 @@ describe("Sixteen hint", () => {
       lastMovementSense: 0,
     };
     const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(true);
     if (!result?.ok) return;
-    // The hint should mention tile 1 (the lowest out-of-place tile).
-    expect(result.explanation).toContain("tile 1");
+    // The hint should mention tile 1 or 2 (the lowest out-of-place tiles on row 0).
+    expect(result.explanation).toMatch(/tile (1|2)/);
+  });
+
+  it("can solve a puzzle using sequential hints", () => {
+    const p = { w: 3, h: 3, movetarget: 3 };
+    const rng = randomNew("hint-solve-test");
+    const { desc } = newDesc(p, rng);
+    let s = newState(p, desc);
+
+    let steps = 0;
+    const maxSteps = 50;
+    while (s.completed === 0 && steps < maxSteps) {
+      const result = sixteenGame.hint?.(s);
+      if (!result?.ok) break;
+      s = executeMove(s, result.move);
+      steps++;
+    }
+    expect(s.completed).toBeGreaterThan(0);
+  });
+
+  it("can solve a 4x4 puzzle using sequential hints", () => {
+    const p = { w: 4, h: 4, movetarget: 0 };
+    const rng = randomNew("hint-solve-test-4x4");
+    const { desc } = newDesc(p, rng);
+    let s = newState(p, desc);
+
+    let steps = 0;
+    const maxSteps = 100;
+    while (s.completed === 0 && steps < maxSteps) {
+      const result = sixteenGame.hint?.(s);
+      if (!result?.ok) {
+        console.log(
+          "Failed at step",
+          steps,
+          "with error:",
+          result?.error,
+          "board:",
+          s.tiles.join(","),
+        );
+        break;
+      }
+      s = executeMove(s, result.move);
+      steps++;
+    }
+    expect(s.completed).toBeGreaterThan(0);
+  });
+
+  describe("backtracking and oscillation prevention", () => {
+    it("never recommends immediately undoing or contradicting a slide on the same axis/index", () => {
+      const s0 = solvedState(4, 4);
+
+      // 1. If user does slide right by 1, next hint must not be slide left by 1.
+      const s1 = executeMove(s0, { type: "slide", axis: "row", index: 0, delta: 1 });
+      const hint1 = sixteenGame.hint?.(s1);
+      expect(hint1?.ok).toBe(true);
+      if (hint1?.ok && hint1.move.type === "slide") {
+        expect(
+          hint1.move.axis === "row" &&
+            hint1.move.index === 0 &&
+            hint1.move.delta === -1,
+        ).toBe(false);
+      }
+
+      // 2. If user does slide right by 2 (e.g. via dragging or half-grid shift), next hint must not be ANY slide on row 0.
+      const s2 = executeMove(s0, { type: "slide", axis: "row", index: 0, delta: 2 });
+      const hint2 = sixteenGame.hint?.(s2);
+      expect(hint2?.ok).toBe(true);
+      if (hint2?.ok && hint2.move.type === "slide") {
+        expect(hint2.move.axis === "row" && hint2.move.index === 0).toBe(false);
+      }
+    });
   });
 });
 

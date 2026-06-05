@@ -109,6 +109,7 @@ export class Puzzle {
   }
 
   public async delete(): Promise<void> {
+    this.stopAutoHint();
     await this.detachCanvas();
     await this.workerPuzzle.delete();
     this.workerPuzzle[releaseProxy]();
@@ -212,6 +213,16 @@ export class Puzzle {
   private _canFormatAsText = signal(false);
   private _statusbarText = signal<string>("");
   private _generatingGame = signal<boolean>(false);
+  private _autoHintActive = signal<boolean>(false);
+  private _autoHintMessage = signal<string>("");
+
+  public get autoHintActive(): boolean {
+    return this._autoHintActive.get();
+  }
+
+  public get autoHintMessage(): string {
+    return this._autoHintMessage.get();
+  }
 
   public get status(): GameStatus {
     return this._status.get();
@@ -269,40 +280,93 @@ export class Puzzle {
 
   // Methods
   public async newGame(): Promise<void> {
+    this.stopAutoHint("");
+    this._autoHintMessage.set("");
     this._generatingGame.set(true);
     await this.workerPuzzle.newGame();
     this._generatingGame.set(false);
   }
 
   public async newGameFromId(id: string): Promise<string | undefined> {
+    this.stopAutoHint("");
+    this._autoHintMessage.set("");
     return this.workerPuzzle.newGameFromId(id);
   }
 
   public async restartGame(): Promise<void> {
+    this.stopAutoHint("");
+    this._autoHintMessage.set("");
     await this.workerPuzzle.restartGame();
   }
 
   public undo(): Promise<void> {
+    this.stopAutoHint("Cancelled by manual move");
     return this.enqueueInput(() => this.workerPuzzle.undo());
   }
 
   public redo(): Promise<void> {
+    this.stopAutoHint("Cancelled by manual move");
     return this.enqueueInput(() => this.workerPuzzle.redo());
   }
 
   public async solve(): Promise<string | undefined> {
+    this.stopAutoHint("Cancelled by manual move");
     return this.workerPuzzle.solve();
   }
 
   public async hint(): Promise<string | undefined> {
+    this.stopAutoHint("Cancelled by manual move");
     return this.workerPuzzle.hint();
   }
 
+  public async executeHint(): Promise<string | undefined> {
+    return this.enqueueInput(() => this.workerPuzzle.executeHint());
+  }
+
+  public startAutoHint(): void {
+    if (!this.canHint) return;
+    if (this.isSolved) {
+      this._autoHintMessage.set("Already solved!");
+      return;
+    }
+    this._autoHintMessage.set("");
+    this._autoHintActive.set(true);
+    void this.runAutoHintLoop();
+  }
+
+  public stopAutoHint(reason?: string): void {
+    if (this._autoHintActive.get()) {
+      this._autoHintActive.set(false);
+      if (reason !== "") {
+        this._autoHintMessage.set(reason ?? "Paused");
+      }
+    } else if (reason !== undefined && reason !== "") {
+      this._autoHintMessage.set(reason);
+    }
+  }
+
+  private async runAutoHintLoop(): Promise<void> {
+    while (this._autoHintActive.get() && !this.isSolved) {
+      const err = await this.executeHint();
+      if (err) {
+        this.stopAutoHint(err);
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    }
+    if (this.isSolved) {
+      this._autoHintMessage.set("Solved!");
+    }
+    this.stopAutoHint("");
+  }
+
   public processKey(key: number): Promise<boolean> {
+    this.stopAutoHint("Cancelled by manual move");
     return this.enqueueInput(() => this.workerPuzzle.processKey(key));
   }
 
   public processMouse({ x, y }: Point, button: number): Promise<boolean> {
+    this.stopAutoHint("Cancelled by manual move");
     return this.enqueueInput(() => this.workerPuzzle.processMouse({ x, y }, button));
   }
 

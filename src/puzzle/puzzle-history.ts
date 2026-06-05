@@ -71,33 +71,47 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
 
   protected override render() {
     return html`
-      <wa-button-group>
-        <wa-button
-            ?disabled=${!this.puzzle?.canUndo}
-            @pointerdown=${this.handleUndoRedoPointerDown}
-            @click=${this.handleUndo}>
-          <wa-icon name="undo" label="Undo"></wa-icon>
-        </wa-button>
-        ${this.renderHistoryButton()}
+      <div class="history-container">
+        <wa-button-group>
+          <wa-button
+              ?disabled=${!this.puzzle?.canUndo}
+              @pointerdown=${this.handleUndoRedoPointerDown}
+              @click=${this.handleUndo}>
+            <wa-icon name="undo" label="Undo"></wa-icon>
+          </wa-button>
+          ${this.renderHistoryButton()}
+          ${
+            this.puzzle?.canHint
+              ? html`
+              <wa-button
+                  ?disabled=${this.puzzle?.status === "solved"}
+                  @pointerdown=${this.handleUndoRedoPointerDown}
+                  @click=${this.handleHint}>
+                <wa-icon name="hint" label="Hint"></wa-icon>
+              </wa-button>
+              <wa-button
+                  ?disabled=${this.puzzle?.status === "solved"}
+                  variant=${this.puzzle?.autoHintActive ? "brand" : "default"}
+                  @pointerdown=${this.handleUndoRedoPointerDown}
+                  @click=${this.handleAutoHintToggle}>
+                <wa-icon name=${this.puzzle?.autoHintActive ? "pause" : "play"} label="Auto Hint"></wa-icon>
+              </wa-button>
+              `
+              : nothing
+          }
+          <wa-button
+              ?disabled=${!this.puzzle?.canRedo}
+              @pointerdown=${this.handleUndoRedoPointerDown}
+              @click=${this.handleRedo}>
+            <wa-icon name="redo" label="Redo"></wa-icon>
+          </wa-button>
+        </wa-button-group>
         ${
-          this.puzzle?.canHint
-            ? html`
-            <wa-button
-                ?disabled=${this.puzzle?.status === "solved"}
-                @pointerdown=${this.handleUndoRedoPointerDown}
-                @click=${this.handleHint}>
-              <wa-icon name="hint" label="Hint"></wa-icon>
-            </wa-button>
-            `
+          this.puzzle?.autoHintMessage
+            ? html`<div class="auto-hint-message">${this.puzzle.autoHintMessage}</div>`
             : nothing
         }
-        <wa-button
-            ?disabled=${!this.puzzle?.canRedo}
-            @pointerdown=${this.handleUndoRedoPointerDown}
-            @click=${this.handleRedo}>
-          <wa-icon name="redo" label="Redo"></wa-icon>
-        </wa-button>
-      </wa-button-group>
+      </div>
     `;
   }
 
@@ -278,6 +292,15 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
     await this.puzzle?.hint();
   }
 
+  private handleAutoHintToggle() {
+    if (!this.puzzle) return;
+    if (this.puzzle.autoHintActive) {
+      this.puzzle.stopAutoHint();
+    } else {
+      this.puzzle.startAutoHint();
+    }
+  }
+
   private async handleSelectCheckpoint(event: CustomEvent<{ item: WaDropdownItem }>) {
     const value = event.detail.item.value;
     const checkpoint = Number.parseInt(value, 10);
@@ -313,6 +336,21 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
         --timeline-color: var(--wa-color-neutral-border-normal);
         --background-color: var(--wa-color-surface-raised); /* match wa-dropdown */
         --dot-size: 5px;
+      }
+
+      .history-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .auto-hint-message {
+        font-size: var(--wa-font-size-xs, 12px);
+        color: var(--wa-color-neutral-text-secondary, #666);
+        font-weight: var(--wa-font-weight-semibold, 600);
+        margin-top: 2px;
+        text-align: center;
       }
       
       wa-button-group {

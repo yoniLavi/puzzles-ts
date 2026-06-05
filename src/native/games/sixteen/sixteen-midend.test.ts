@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { ChangeNotification } from "../../../puzzle/types.ts";
 import { Midend } from "../../engine/midend.ts";
-import { CURSOR_RIGHT, CURSOR_SELECT } from "../../engine/pointer.ts";
+import {
+  CURSOR_RIGHT,
+  CURSOR_SELECT,
+  LEFT_BUTTON,
+  LEFT_DRAG,
+  LEFT_RELEASE,
+} from "../../engine/pointer.ts";
 import { sixteenGame } from "./index.ts";
 
 function harness() {
@@ -122,5 +128,65 @@ describe("Sixteen midend integration — presets", () => {
       | Extract<ChangeNotification, { type: "params-change" }>
       | undefined;
     expect(params?.params).toContain("3x3");
+  });
+});
+
+describe("Sixteen midend integration — drag-to-slide support", () => {
+  it("dragging row 0 to the right by more than half a tile moves it", () => {
+    const h = harness();
+    h.m.newGame();
+    const before = h.state()?.currentMove ?? 0;
+
+    // Press on tile (0, 0), which is at x = 72, y = 72
+    h.m.processInput(72, 72, LEFT_BUTTON);
+
+    // Drag right by 30 pixels (72 + 30 = 102), which is more than half of 48 (24 pixels)
+    h.m.processInput(102, 72, LEFT_DRAG);
+
+    // Release the drag
+    h.m.processInput(102, 72, LEFT_RELEASE);
+
+    const after = h.state()?.currentMove ?? 0;
+    expect(after).toBe(before + 1);
+  });
+
+  it("dragging row 0 to the right by less than half a tile does not move it", () => {
+    const h = harness();
+    h.m.newGame();
+    const before = h.state()?.currentMove ?? 0;
+
+    // Press on tile (0, 0)
+    h.m.processInput(72, 72, LEFT_BUTTON);
+
+    // Drag right by 10 pixels (72 + 10 = 82), which is less than half of 48 (24 pixels)
+    h.m.processInput(82, 72, LEFT_DRAG);
+
+    // Release the drag
+    h.m.processInput(82, 72, LEFT_RELEASE);
+
+    const after = h.state()?.currentMove ?? 0;
+    expect(after).toBe(before);
+  });
+});
+
+// --- executeHint ------------------------------------------------------
+
+describe("Sixteen midend integration — executeHint auto-play", () => {
+  it("sequential executeHint calls solve a generated 3x3 board", () => {
+    const h = harness();
+    h.m.setParams("3x3");
+    h.m.newGame();
+    expect(h.state()?.status).toBe("ongoing");
+
+    let steps = 0;
+    const maxSteps = 100;
+    while (h.state()?.status === "ongoing" && steps < maxSteps) {
+      const hintErr = h.m.executeHint();
+      expect(hintErr).toBeUndefined();
+      steps++;
+    }
+
+    expect(h.state()?.status).toBe("solved");
+    expect(steps).toBeGreaterThan(0);
   });
 });

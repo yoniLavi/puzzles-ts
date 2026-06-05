@@ -22,6 +22,7 @@ export interface SixteenState {
   readonly moveTarget: number;
   /** dx+dy of the last move, used for animation direction */
   readonly lastMovementSense: number;
+  readonly lastMove?: SixteenMove;
 }
 
 export type SixteenMove =
@@ -39,6 +40,16 @@ export interface SixteenUi {
   curY: number;
   curVisible: boolean;
   curMode: CursorMode;
+  dragging?: boolean;
+  dragStartX?: number;
+  dragStartY?: number;
+  dragX?: number;
+  dragY?: number;
+  dragAxis?: "row" | "column" | null;
+  dragIndex?: number;
+  dragStartCellX?: number;
+  dragStartCellY?: number;
+  justDragged?: boolean;
 }
 
 // --- params ----------------------------------------------------------

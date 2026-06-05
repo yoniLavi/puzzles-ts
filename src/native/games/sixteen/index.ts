@@ -16,6 +16,8 @@ import {
   CURSOR_SELECT2,
   CURSOR_UP,
   LEFT_BUTTON,
+  LEFT_DRAG,
+  LEFT_RELEASE,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -112,6 +114,7 @@ export function executeMove(state: SixteenState, move: SixteenMove): SixteenStat
     moveCount,
     completed,
     lastMovementSense: axis === "row" ? delta : 0 + (axis === "column" ? delta : 0),
+    lastMove: move,
   };
 }
 
@@ -233,6 +236,71 @@ function interpretMove(
     }
   }
 
+  if (ui.dragging) {
+    if (rawButton === LEFT_DRAG) {
+      ui.dragX = p.x;
+      ui.dragY = p.y;
+
+      if (!ui.dragAxis) {
+        const dx = p.x - (ui.dragStartX ?? p.x);
+        const dy = p.y - (ui.dragStartY ?? p.y);
+        const threshold = 5; // pixels
+        if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            ui.dragAxis = "row";
+            ui.dragIndex = ui.dragStartCellY;
+          } else {
+            ui.dragAxis = "column";
+            ui.dragIndex = ui.dragStartCellX;
+          }
+        }
+      }
+      return UI_UPDATE;
+    }
+
+    if (rawButton === LEFT_RELEASE) {
+      const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+      const axis = ui.dragAxis;
+      const index = ui.dragIndex;
+      const startX = ui.dragStartX ?? p.x;
+      const startY = ui.dragStartY ?? p.y;
+
+      // Reset drag state
+      ui.dragging = false;
+      ui.dragStartX = undefined;
+      ui.dragStartY = undefined;
+      ui.dragX = undefined;
+      ui.dragY = undefined;
+      ui.dragAxis = undefined;
+      ui.dragIndex = undefined;
+      ui.dragStartCellX = undefined;
+      ui.dragStartCellY = undefined;
+
+      if (axis && index !== undefined && index >= 0) {
+        const dist = axis === "row" ? p.x - startX : p.y - startY;
+        const delta = Math.round(dist / ts);
+
+        if (delta !== 0) {
+          const lim = axis === "row" ? state.w : state.h;
+          let normalizedDelta = ((delta % lim) + lim) % lim;
+          if (normalizedDelta > lim / 2) {
+            normalizedDelta -= lim;
+          }
+          if (normalizedDelta !== 0) {
+            ui.justDragged = true;
+            return {
+              type: "slide",
+              axis,
+              index,
+              delta: normalizedDelta,
+            };
+          }
+        }
+      }
+      return UI_UPDATE;
+    }
+  }
+
   // Mouse click / cursor select.
   let cx = -1,
     cy = -1;
@@ -241,6 +309,25 @@ function interpretMove(
     cx = fromCoord(p.x, ts);
     cy = fromCoord(p.y, ts);
     ui.curVisible = false;
+
+    if (
+      rawButton === LEFT_BUTTON &&
+      cx >= 0 &&
+      cx < state.w &&
+      cy >= 0 &&
+      cy < state.h
+    ) {
+      ui.dragging = true;
+      ui.dragStartX = p.x;
+      ui.dragStartY = p.y;
+      ui.dragX = p.x;
+      ui.dragY = p.y;
+      ui.dragAxis = null;
+      ui.dragIndex = -1;
+      ui.dragStartCellX = cx;
+      ui.dragStartCellY = cy;
+      return UI_UPDATE;
+    }
   } else if (rawButton === CURSOR_SELECT || rawButton === CURSOR_SELECT2) {
     if (ui.curVisible) {
       if (
@@ -352,6 +439,11 @@ interface SixteenDrawState {
   /** Arrow currently highlighted as hint, or null. */
   hintArrowX: number | null;
   hintArrowY: number | null;
+  dragging?: boolean;
+  dragAxis?: "row" | "column" | null;
+  dragIndex?: number;
+  dragX?: number;
+  dragY?: number;
 }
 
 function newDrawState(state: SixteenState): SixteenDrawState {
@@ -524,7 +616,33 @@ function redraw(
 
     const t0 = t;
 
+    const isDraggedNow = !!(
+      ui.dragging &&
+      ui.dragAxis &&
+      ui.dragIndex !== undefined &&
+      ui.dragIndex >= 0 &&
+      (ui.dragAxis === "row"
+        ? Math.floor(i / state.w) === ui.dragIndex
+        : i % state.w === ui.dragIndex)
+    );
+
+    const wasDraggedPrev = !!(
+      ds.dragging &&
+      ds.dragAxis &&
+      ds.dragIndex !== undefined &&
+      ds.dragIndex >= 0 &&
+      (ds.dragAxis === "row"
+        ? Math.floor(i / state.w) === ds.dragIndex
+        : i % state.w === ds.dragIndex)
+    );
+
+    const mustRedraw =
+      isDraggedNow ||
+      wasDraggedPrev ||
+      (isDraggedNow && (ui.dragX !== ds.dragX || ui.dragY !== ds.dragY));
+
     if (
+      mustRedraw ||
       ds.bgcolour !== bgcolour ||
       ds.tiles[i] !== t ||
       ds.tiles[i] === -1 ||
@@ -575,6 +693,48 @@ function redraw(
         drawY = y0 + Math.round(c * dy);
         drawX2 = x1 - dx + Math.round(c * dx);
         drawY2 = y1 - dy + Math.round(c * dy);
+      } else if (isDraggedNow) {
+        if (ui.dragAxis === "row") {
+          const offset = (ui.dragX ?? 0) - (ui.dragStartX ?? 0);
+          const totalSize = state.w * ts;
+          let dragOffset = ((offset % totalSize) + totalSize) % totalSize;
+          if (dragOffset > totalSize / 2) {
+            dragOffset -= totalSize;
+          }
+
+          drawX = coord(i % state.w, ts) + dragOffset;
+          drawY = coord(Math.floor(i / state.w), ts);
+
+          const minCoord = coord(0, ts);
+          const maxCoord = minCoord + totalSize;
+          if (drawX < minCoord) {
+            drawX2 = drawX + totalSize;
+            drawY2 = drawY;
+          } else if (drawX + ts > maxCoord) {
+            drawX2 = drawX - totalSize;
+            drawY2 = drawY;
+          }
+        } else {
+          const offset = (ui.dragY ?? 0) - (ui.dragStartY ?? 0);
+          const totalSize = state.h * ts;
+          let dragOffset = ((offset % totalSize) + totalSize) % totalSize;
+          if (dragOffset > totalSize / 2) {
+            dragOffset -= totalSize;
+          }
+
+          drawX = coord(i % state.w, ts);
+          drawY = coord(Math.floor(i / state.w), ts) + dragOffset;
+
+          const minCoord = coord(0, ts);
+          const maxCoord = minCoord + totalSize;
+          if (drawY < minCoord) {
+            drawX2 = drawX;
+            drawY2 = drawY + totalSize;
+          } else if (drawY + ts > maxCoord) {
+            drawX2 = drawX;
+            drawY2 = drawY - totalSize;
+          }
+        }
       } else {
         drawX = coord(i % state.w, ts);
         drawY = coord(Math.floor(i / state.w), ts);
@@ -593,6 +753,11 @@ function redraw(
 
   ds.curX = curX;
   ds.curY = curY;
+  ds.dragging = ui.dragging;
+  ds.dragAxis = ui.dragAxis;
+  ds.dragIndex = ui.dragIndex;
+  ds.dragX = ui.dragX;
+  ds.dragY = ui.dragY;
   dr.unclip();
   ds.bgcolour = bgcolour;
 }
@@ -821,6 +986,29 @@ function toroidalDist(from: number, to: number, len: number): number {
   return Math.min(d, len - d);
 }
 
+function slideTiles(
+  tiles: Int32Array,
+  w: number,
+  h: number,
+  move: Extract<SixteenMove, { type: "slide" }>,
+): Int32Array {
+  const nextTiles = new Int32Array(tiles);
+  const { axis, index, delta } = move;
+
+  if (axis === "row") {
+    for (let x = 0; x < w; x++) {
+      const srcX = (((x - delta) % w) + w) % w;
+      nextTiles[index * w + x] = tiles[index * w + srcX];
+    }
+  } else {
+    for (let y = 0; y < h; y++) {
+      const srcY = (((y - delta) % h) + h) % h;
+      nextTiles[y * w + index] = tiles[srcY * w + index];
+    }
+  }
+  return nextTiles;
+}
+
 function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlights> {
   const { w, h, n, tiles } = state;
 
@@ -834,114 +1022,207 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   }
   if (solved) return { ok: false, error: "Already solved" };
 
-  // Pre-compute per-move benefits: for each candidate slide, record
-  // the benefit for every tile and the total net benefit.
-  interface Candidate {
-    move: Extract<SixteenMove, { type: "slide" }>;
-    benefits: Map<number, number>; // tile → benefit (positive = closer)
-    net: number;
+  let outOfPlace = 0;
+  for (let i = 0; i < n; i++) {
+    if (tiles[i] !== i + 1) {
+      outOfPlace++;
+    }
   }
-  const candidates: Candidate[] = [];
 
-  // Evaluate row slides.
+  // A* Search settings
+  // Near the solved state, we increase the search budget to resolve local minima (plateaus)
+  // and find the final path to solution. For highly scrambled states, we keep it small
+  // for performance.
+  const maxStates = outOfPlace <= 4 ? 25000 : 4000;
+
+  const getHeuristic = (board: Int32Array): number => {
+    let total = 0;
+    for (let i = 0; i < n; i++) {
+      const tile = board[i];
+      const targetR = Math.floor((tile - 1) / w);
+      const targetC = (tile - 1) % w;
+      const curR = Math.floor(i / w);
+      const curC = i % w;
+      total += toroidalDist(curR, targetR, h) + toroidalDist(curC, targetC, w);
+    }
+    return total;
+  };
+
+  const startH = getHeuristic(tiles);
+
+  // Store visited states and their best g values
+  const visited = new Map<string, number>();
+  visited.set(tiles.join(","), 0);
+
+  // Priority Queue / Sorted Array for search nodes
+  interface SearchNode {
+    tiles: Int32Array;
+    g: number;
+    h: number;
+    f: number;
+    firstMove: Extract<SixteenMove, { type: "slide" }> | null;
+  }
+
+  const queue: SearchNode[] = [
+    {
+      tiles,
+      g: 0,
+      h: startH,
+      f: startH,
+      firstMove: null,
+    },
+  ];
+
+  // Helper to insert into sorted queue
+  const insertSorted = (node: SearchNode) => {
+    let low = 0;
+    let high = queue.length;
+    while (low < high) {
+      const mid = (low + high) >> 1;
+      if (queue[mid].f <= node.f) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+    queue.splice(low, 0, node);
+  };
+
+  let expanded = 0;
+  let bestNode: SearchNode = queue[0];
+
+  // Pre-generate all legal moves from any state
+  const moves: Extract<SixteenMove, { type: "slide" }>[] = [];
   for (let r = 0; r < h; r++) {
-    for (const delta of [1, -1]) {
-      const benefits = new Map<number, number>();
-      let net = 0;
-      for (let c = 0; c < w; c++) {
-        const i = r * w + c;
-        const tile = tiles[i];
-        const targetCol = (tile - 1) % w;
-        const newCol = (c + delta + w) % w;
-        const benefit =
-          toroidalDist(c, targetCol, w) - toroidalDist(newCol, targetCol, w);
-        if (benefit !== 0) benefits.set(tile, benefit);
-        net += benefit;
-      }
-      candidates.push({
-        move: { type: "slide", axis: "row", index: r, delta },
-        benefits,
-        net,
-      });
-    }
+    moves.push({ type: "slide", axis: "row", index: r, delta: 1 });
+    moves.push({ type: "slide", axis: "row", index: r, delta: -1 });
   }
-
-  // Evaluate column slides.
   for (let c = 0; c < w; c++) {
-    for (const delta of [1, -1]) {
-      const benefits = new Map<number, number>();
-      let net = 0;
-      for (let r = 0; r < h; r++) {
-        const i = r * w + c;
-        const tile = tiles[i];
-        const targetRow = Math.floor((tile - 1) / w);
-        const newRow = (r + delta + h) % h;
-        const benefit =
-          toroidalDist(r, targetRow, h) - toroidalDist(newRow, targetRow, h);
-        if (benefit !== 0) benefits.set(tile, benefit);
-        net += benefit;
-      }
-      candidates.push({
-        move: { type: "slide", axis: "column", index: c, delta },
-        benefits,
-        net,
-      });
-    }
+    moves.push({ type: "slide", axis: "column", index: c, delta: 1 });
+    moves.push({ type: "slide", axis: "column", index: c, delta: -1 });
   }
 
-  // Strategy: solve tiles in numeric order. Find the lowest-numbered
-  // out-of-place tile, then pick the move that brings it closest to
-  // its target. If no move helps that tile, try the next out-of-place
-  // tile, and so on. Among moves that equally help the priority tile,
-  // break ties by overall net benefit.
-  let bestMove: Extract<SixteenMove, { type: "slide" }> | null = null;
-  let bestTile = 0;
+  while (queue.length > 0 && expanded < maxStates) {
+    const curr = queue.shift();
+    if (!curr) break;
+    expanded++;
 
-  for (let tile = 1; tile <= n; tile++) {
-    // Is this tile in its correct position?
-    const pos = tiles.indexOf(tile);
-    if (pos === tile - 1) continue; // already placed
-
-    // Among candidates that help this tile, pick the best.
-    let bestBenefit = 0;
-    let bestNet = -Infinity;
-    for (const c of candidates) {
-      const benefit = c.benefits.get(tile) ?? 0;
-      if (
-        benefit > bestBenefit ||
-        (benefit === bestBenefit && benefit > 0 && c.net > bestNet)
-      ) {
-        bestBenefit = benefit;
-        bestNet = c.net;
-        bestMove = c.move;
-        bestTile = tile;
-      }
+    // Check if solved
+    if (curr.h === 0) {
+      bestNode = curr;
+      break;
     }
-    if (bestBenefit > 0) break; // found a move that helps this tile
-  }
 
-  // Fallback: if no out-of-place tile can be helped, pick the best
-  // net-benefit move overall.
-  if (!bestMove) {
-    let bestNet = 0;
-    for (const c of candidates) {
-      if (c.net > bestNet) {
-        bestNet = c.net;
-        bestMove = c.move;
-        // Pick the tile with the highest individual benefit for the explanation.
-        let topBenefit = 0;
-        for (const [tile, benefit] of c.benefits) {
-          if (benefit > topBenefit) {
-            topBenefit = benefit;
-            bestTile = tile;
+    // Track state with absolute lowest heuristic value
+    if (curr.h < bestNode.h) {
+      bestNode = curr;
+    }
+
+    for (const move of moves) {
+      // Avoid immediately undoing or contradicting the last move on the first step of the path.
+      // If the user slid a row/column, then sliding that same row/column is a backtrack or contradiction
+      // if the net slide from the original state has a smaller absolute normalized distance than the
+      // user's original slide itself.
+      if (curr.g === 0 && state.lastMove && state.lastMove.type === "slide") {
+        const last = state.lastMove;
+        if (move.axis === last.axis && move.index === last.index) {
+          const lim = move.axis === "row" ? w : h;
+          const normalize = (d: number) => {
+            let nd = ((d % lim) + lim) % lim;
+            if (nd > lim / 2) nd -= lim;
+            return nd;
+          };
+          const nd1 = normalize(last.delta);
+          const ndSum = normalize(last.delta + move.delta);
+          if (Math.abs(ndSum) < Math.abs(nd1)) {
+            continue;
           }
+        }
+      }
+
+      const nextTiles = slideTiles(curr.tiles, w, h, move);
+      const key = nextTiles.join(",");
+      const nextG = curr.g + 1;
+
+      const prevG = visited.get(key);
+      if (prevG !== undefined && prevG <= nextG) {
+        continue;
+      }
+
+      visited.set(key, nextG);
+      const nextH = getHeuristic(nextTiles);
+      const nextNode: SearchNode = {
+        tiles: nextTiles,
+        g: nextG,
+        h: nextH,
+        f: nextG + nextH,
+        firstMove: curr.firstMove || move,
+      };
+
+      insertSorted(nextNode);
+    }
+  }
+
+  const bestMove = bestNode.firstMove;
+  if (!bestMove) {
+    return { ok: false, error: "No helpful hint found" };
+  }
+
+  // Pick the tile on the moved row/column that benefits the most from this move,
+  // or simply the lowest-numbered out-of-place tile on that row/column.
+  let bestTile = 0;
+  let maxTileBenefit = -Infinity;
+
+  if (bestMove.axis === "row") {
+    const r = bestMove.index;
+    for (let c = 0; c < w; c++) {
+      const tile = tiles[r * w + c];
+      const targetCol = (tile - 1) % w;
+      const targetRow = Math.floor((tile - 1) / w);
+      if (targetRow !== r || targetCol !== c) {
+        const curDist = toroidalDist(c, targetCol, w);
+        const newCol = (c + bestMove.delta + w) % w;
+        const newDist = toroidalDist(newCol, targetCol, w);
+        const benefit = curDist - newDist;
+        if (
+          benefit > maxTileBenefit ||
+          (benefit === maxTileBenefit && tile < bestTile)
+        ) {
+          maxTileBenefit = benefit;
+          bestTile = tile;
+        }
+      }
+    }
+  } else {
+    const colIndex = bestMove.index;
+    for (let r = 0; r < h; r++) {
+      const tile = tiles[r * w + colIndex];
+      const targetCol = (tile - 1) % w;
+      const targetRow = Math.floor((tile - 1) / w);
+      if (targetRow !== r || targetCol !== colIndex) {
+        const curDist = toroidalDist(r, targetRow, h);
+        const newRow = (r + bestMove.delta + h) % h;
+        const newDist = toroidalDist(newRow, targetRow, h);
+        const benefit = curDist - newDist;
+        if (
+          benefit > maxTileBenefit ||
+          (benefit === maxTileBenefit && tile < bestTile)
+        ) {
+          maxTileBenefit = benefit;
+          bestTile = tile;
         }
       }
     }
   }
 
-  if (!bestMove) {
-    return { ok: false, error: "No helpful hint found" };
+  // Fallback if no tile is moving closer on that axis
+  if (bestTile === 0) {
+    for (let i = 0; i < n; i++) {
+      if (tiles[i] !== i + 1) {
+        bestTile = tiles[i];
+        break;
+      }
+    }
   }
 
   const dirWord =
@@ -1013,7 +1294,13 @@ export const sixteenGame: Game<
   newDrawState,
   redraw,
 
-  animLength: () => ANIM_TIME,
+  animLength: (_oldState, _newState, _dir, ui) => {
+    if (ui.justDragged) {
+      ui.justDragged = false;
+      return 0;
+    }
+    return ANIM_TIME;
+  },
   flashLength: (oldState, newState) => {
     if (
       !oldState.completed &&

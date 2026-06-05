@@ -243,6 +243,11 @@ export class WorkerPuzzle implements FrontendConstructorArgs, PuzzleEngineSurfac
     return "This game does not support hints";
   }
 
+  executeHint(): string | undefined {
+    // C/WASM games don't support hints.
+    return "This game does not support hints";
+  }
+
   processKey(key: number): boolean {
     return this.frontend.processKey(0, 0, key);
   }

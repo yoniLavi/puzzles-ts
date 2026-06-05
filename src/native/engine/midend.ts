@@ -57,6 +57,7 @@ export interface EngineCore {
   redo(): void;
   solve(): string | undefined;
   hint(): string | undefined;
+  executeHint(): string | undefined;
   processInput(x: number, y: number, button: number): boolean;
   getParams(): string;
   setParams(params: string): string | undefined;
@@ -345,6 +346,17 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     };
     this.clearAnimation();
     this.afterTransition();
+    return undefined;
+  }
+
+  executeHint(): string | undefined {
+    if (!this.game.hint) {
+      return "This game does not support hints";
+    }
+    const result = this.game.hint(this.state);
+    if (!result.ok) return result.error;
+    this.activeHint = null;
+    this.applyMove(result.move);
     return undefined;
   }
 
