@@ -1321,11 +1321,11 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
 
   if (bestMove.axis === "row") {
     const r = bestMove.index;
+    // Strategy 1: prefer tiles out of place on the moved axis (columns)
     for (let c = 0; c < w; c++) {
       const tile = tiles[r * w + c];
       const targetCol = (tile - 1) % w;
-      const targetRow = Math.floor((tile - 1) / w);
-      if (targetRow !== r || targetCol !== c) {
+      if (targetCol !== c) {
         const curDist = toroidalDist(c, targetCol, w);
         const newCol = (c + bestMove.delta + w) % w;
         const newDist = toroidalDist(newCol, targetCol, w);
@@ -1339,13 +1339,34 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
         }
       }
     }
+    // Strategy 2: fallback to any out-of-place tile on this row
+    if (bestTile === 0) {
+      for (let c = 0; c < w; c++) {
+        const tile = tiles[r * w + c];
+        const targetCol = (tile - 1) % w;
+        const targetRow = Math.floor((tile - 1) / w);
+        if (targetRow !== r || targetCol !== c) {
+          const curDist = toroidalDist(c, targetCol, w);
+          const newCol = (c + bestMove.delta + w) % w;
+          const newDist = toroidalDist(newCol, targetCol, w);
+          const benefit = curDist - newDist;
+          if (
+            benefit > maxTileBenefit ||
+            (benefit === maxTileBenefit && tile < bestTile)
+          ) {
+            maxTileBenefit = benefit;
+            bestTile = tile;
+          }
+        }
+      }
+    }
   } else {
     const colIndex = bestMove.index;
+    // Strategy 1: prefer tiles out of place on the moved axis (rows)
     for (let r = 0; r < h; r++) {
       const tile = tiles[r * w + colIndex];
-      const targetCol = (tile - 1) % w;
       const targetRow = Math.floor((tile - 1) / w);
-      if (targetRow !== r || targetCol !== colIndex) {
+      if (targetRow !== r) {
         const curDist = toroidalDist(r, targetRow, h);
         const newRow = (r + bestMove.delta + h) % h;
         const newDist = toroidalDist(newRow, targetRow, h);
@@ -1356,6 +1377,27 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
         ) {
           maxTileBenefit = benefit;
           bestTile = tile;
+        }
+      }
+    }
+    // Strategy 2: fallback to any out-of-place tile on this column
+    if (bestTile === 0) {
+      for (let r = 0; r < h; r++) {
+        const tile = tiles[r * w + colIndex];
+        const targetCol = (tile - 1) % w;
+        const targetRow = Math.floor((tile - 1) / w);
+        if (targetRow !== r || targetCol !== colIndex) {
+          const curDist = toroidalDist(r, targetRow, h);
+          const newRow = (r + bestMove.delta + h) % h;
+          const newDist = toroidalDist(newRow, targetRow, h);
+          const benefit = curDist - newDist;
+          if (
+            benefit > maxTileBenefit ||
+            (benefit === maxTileBenefit && tile < bestTile)
+          ) {
+            maxTileBenefit = benefit;
+            bestTile = tile;
+          }
         }
       }
     }
