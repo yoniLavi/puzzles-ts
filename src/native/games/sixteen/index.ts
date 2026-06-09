@@ -1413,14 +1413,14 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     }
   }
 
-  const targetRow = Math.floor((bestTile - 1) / w) + 1;
-  const targetCol = ((bestTile - 1) % w) + 1;
+  let targetRow = Math.floor((bestTile - 1) / w) + 1;
+  let targetCol = ((bestTile - 1) % w) + 1;
   let explanation =
     bestMove.axis === "row"
       ? `Move tile ${bestTile} to column ${targetCol}`
       : `Move tile ${bestTile} to row ${targetRow}`;
 
-  const targetPos =
+  let targetPos =
     bestMove.axis === "row"
       ? bestMove.index * w + (targetCol - 1)
       : (targetRow - 1) * w + bestMove.index;
@@ -1448,6 +1448,31 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
         explanation = `Move tile ${bestTile} to row ${targetRow}, then to column ${targetCol}`;
         ultimatePos = finalSolvedPos;
         secondMove = second;
+      }
+    }
+  }
+
+  if (!secondMove) {
+    let currentIdx = -1;
+    for (let i = 0; i < n; i++) {
+      if (tiles[i] === bestTile) {
+        currentIdx = i;
+        break;
+      }
+    }
+    if (currentIdx !== -1) {
+      const curR = Math.floor(currentIdx / w);
+      const curC = currentIdx % w;
+      if (bestMove.axis === "row" && targetCol === curC + 1) {
+        const destCol = ((curC + bestMove.delta + w) % w) + 1;
+        targetCol = destCol;
+        explanation = `Move tile ${bestTile} to column ${targetCol}`;
+        targetPos = bestMove.index * w + (targetCol - 1);
+      } else if (bestMove.axis === "column" && targetRow === curR + 1) {
+        const destRow = ((curR + bestMove.delta + h) % h) + 1;
+        targetRow = destRow;
+        explanation = `Move tile ${bestTile} to row ${targetRow}`;
+        targetPos = (targetRow - 1) * w + bestMove.index;
       }
     }
   }

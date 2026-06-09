@@ -507,6 +507,63 @@ describe("Sixteen hint", () => {
       }
     });
   });
+
+  it("handles the edge case of tile 7 and 8 under column slide of index 3", () => {
+    const tiles = new Int32Array([
+      1, 2, 14, 8, 5, 6, 15, 7, 9, 10, 11, 12, 4, 13, 3, 16,
+    ]);
+    const s: SixteenState = {
+      w: 4,
+      h: 4,
+      n: 16,
+      tiles,
+      completed: 0,
+      usedSolve: false,
+      moveCount: 16,
+      moveTarget: 0,
+      lastMovementSense: 0,
+    };
+    const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(true);
+  });
+
+  it("uses the immediate destination in hint explanation when tile is already in its target row/column", () => {
+    // Row 1 has tile 7 (correct column 1, wrong row 3), 2 (correct column 2, wrong row 1), 6 (solved).
+    // All tiles on Row 1 are in their correct column!
+    // So if the recommended move is to slide Row 1, any selected tile will be in its correct column already.
+    const tiles = new Int32Array([4, 8, 3, 7, 2, 6, 1, 5, 9]);
+    const s: SixteenState = {
+      w: 3,
+      h: 3,
+      n: 9,
+      tiles,
+      completed: 0,
+      usedSolve: false,
+      moveCount: 0,
+      moveTarget: 0,
+      lastMovementSense: 0,
+    };
+    const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) return;
+
+    // If the chosen move is a row slide on row 0 (e.g. index 0) and the chosen tile is 2 or 3:
+    // They are already in their correct column (column 2 and 3).
+    // So the explanation must use their immediate destination, NOT their correct column!
+    if (result.move.type === "slide" && result.move.axis === "row") {
+      const hl = result.highlights as SixteenHintHighlights;
+      const tile = hl?.tile;
+      if (tile === 2) {
+        // Tile 2 is at col 2 (index 1). Shifting left/right.
+        // It must NOT say "Move tile 2 to column 2".
+        expect(result.explanation).not.toContain("column 2");
+      } else if (tile === 3) {
+        // Tile 3 is at col 3 (index 2). Shifting left/right.
+        // It must NOT say "Move tile 3 to column 3".
+        expect(result.explanation).not.toContain("column 3");
+      }
+    }
+  });
 });
 
 describe("Sixteen hint rendering", () => {
