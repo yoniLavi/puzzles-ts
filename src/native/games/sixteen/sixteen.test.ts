@@ -339,16 +339,14 @@ describe("Sixteen hint", () => {
     expect(changed).toBe(true);
   });
 
-  it("the explanation mentions the axis, direction, and a tile number", () => {
+  it("the explanation mentions the tile and target location", () => {
     const rng = randomNew("hint-explanation");
     const { desc } = newDesc(defaultParams(), rng);
     const s = newState(defaultParams(), desc);
     const result = sixteenGame.hint?.(s);
     if (!result?.ok) return;
-    // Explanation format: "Slide row/column N direction — moves tile T closer to its target"
-    expect(result.explanation).toMatch(
-      /Slide (row|column) \d+ (left|right|up|down) — move tile \d+ toward \(\d+,\d+\)/,
-    );
+    // Explanation format: "Move tile T to row R" or "Move tile T to column C"
+    expect(result.explanation).toMatch(/Move tile \d+ to (row|column) \d+/);
   });
 
   it("the hinted move actually improves the state (net tiles-closer > 0)", () => {
@@ -387,8 +385,22 @@ describe("Sixteen hint", () => {
       expect(hl).toBeDefined();
       expect(hl.tile).toBeGreaterThan(0);
       expect(hl.tile).toBeLessThanOrEqual(s.n);
-      // Target position is tile-1 (tile N belongs at position N-1).
-      expect(hl.targetPos).toBe(hl.tile - 1);
+
+      const row = Math.floor(hl.targetPos / s.w);
+      const col = hl.targetPos % s.w;
+      const expectedRow = Math.floor((hl.tile - 1) / s.w);
+      const expectedCol = (hl.tile - 1) % s.w;
+
+      if (result.move.type === "slide") {
+        const move = result.move;
+        if (move.axis === "row") {
+          expect(row).toBe(move.index);
+          expect(col).toBe(expectedCol);
+        } else {
+          expect(row).toBe(expectedRow);
+          expect(col).toBe(move.index);
+        }
+      }
     }
   });
 
@@ -544,5 +556,23 @@ describe("Sixteen hint rendering", () => {
     // Check for hint highlight operations
     const hintOps = ops.filter((o) => o.colour === COL_HINT_INDEX);
     expect(hintOps.length).toBeGreaterThan(0);
+  });
+
+  it("supports generating 2-move hints and double-target highlights", () => {
+    const rng = randomNew("two-move-hint");
+    const { desc } = newDesc(defaultParams(), rng);
+    const s = newState(defaultParams(), desc);
+    const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) return;
+
+    if (result.explanation.includes("then to")) {
+      expect(result.explanation).toMatch(
+        /Move tile \d+ to (row|column) \d+, then to (row|column) \d+/,
+      );
+      const hl = result.highlights as SixteenHintHighlights;
+      expect(hl.ultimatePos).toBeDefined();
+      expect(hl.ultimatePos).not.toBe(hl.targetPos);
+    }
   });
 });

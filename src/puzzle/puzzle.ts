@@ -161,6 +161,7 @@ export class Puzzle {
         break;
       case "status-bar-change":
         update(this._statusbarText, message.statusBarText);
+        update(this._activeHintExplanation, message.activeHintExplanation ?? "");
         break;
       default:
         // @ts-expect-error: message.type never
@@ -215,6 +216,24 @@ export class Puzzle {
   private _generatingGame = signal<boolean>(false);
   private _autoHintActive = signal<boolean>(false);
   private _autoHintMessage = signal<string>("");
+  private _activeHintExplanation = signal<string>("");
+  private _autoHintMessageTimeoutId?: ReturnType<typeof setTimeout>;
+
+  private setAutoHintMessage(msg: string, temp = false): void {
+    if (this._autoHintMessageTimeoutId !== undefined) {
+      clearTimeout(this._autoHintMessageTimeoutId);
+      this._autoHintMessageTimeoutId = undefined;
+    }
+    this._autoHintMessage.set(msg);
+    if (temp && msg !== "") {
+      this._autoHintMessageTimeoutId = setTimeout(() => {
+        if (this._autoHintMessage.get() === msg) {
+          this._autoHintMessage.set("");
+        }
+        this._autoHintMessageTimeoutId = undefined;
+      }, 3000);
+    }
+  }
 
   public get autoHintActive(): boolean {
     return this._autoHintActive.get();
@@ -222,6 +241,10 @@ export class Puzzle {
 
   public get autoHintMessage(): string {
     return this._autoHintMessage.get();
+  }
+
+  public get activeHintExplanation(): string {
+    return this._activeHintExplanation.get();
   }
 
   public get status(): GameStatus {
@@ -281,7 +304,8 @@ export class Puzzle {
   // Methods
   public async newGame(): Promise<void> {
     this.stopAutoHint("");
-    this._autoHintMessage.set("");
+    this.setAutoHintMessage("");
+    this._activeHintExplanation.set("");
     this._generatingGame.set(true);
     await this.workerPuzzle.newGame();
     this._generatingGame.set(false);
@@ -289,13 +313,15 @@ export class Puzzle {
 
   public async newGameFromId(id: string): Promise<string | undefined> {
     this.stopAutoHint("");
-    this._autoHintMessage.set("");
+    this.setAutoHintMessage("");
+    this._activeHintExplanation.set("");
     return this.workerPuzzle.newGameFromId(id);
   }
 
   public async restartGame(): Promise<void> {
     this.stopAutoHint("");
-    this._autoHintMessage.set("");
+    this.setAutoHintMessage("");
+    this._activeHintExplanation.set("");
     await this.workerPuzzle.restartGame();
   }
 
@@ -326,10 +352,10 @@ export class Puzzle {
   public startAutoHint(): void {
     if (!this.canHint) return;
     if (this.isSolved) {
-      this._autoHintMessage.set("Already solved!");
+      this.setAutoHintMessage("Already solved!", true);
       return;
     }
-    this._autoHintMessage.set("");
+    this.setAutoHintMessage("");
     this._autoHintActive.set(true);
     void this.runAutoHintLoop();
   }
@@ -338,10 +364,8 @@ export class Puzzle {
     if (this._autoHintActive.get()) {
       this._autoHintActive.set(false);
       if (reason !== "") {
-        this._autoHintMessage.set(reason ?? "Paused");
+        this.setAutoHintMessage(reason ?? "Paused", true);
       }
-    } else if (reason !== undefined && reason !== "") {
-      this._autoHintMessage.set(reason);
     }
   }
 
@@ -354,10 +378,11 @@ export class Puzzle {
       }
       await new Promise((resolve) => setTimeout(resolve, 350));
     }
-    if (this.isSolved) {
-      this._autoHintMessage.set("Solved!");
-    }
+    const solved = this.isSolved;
     this.stopAutoHint("");
+    if (solved) {
+      this.setAutoHintMessage("Solved!", true);
+    }
   }
 
   public processKey(key: number): Promise<boolean> {

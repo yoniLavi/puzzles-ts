@@ -106,11 +106,6 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
             <wa-icon name="redo" label="Redo"></wa-icon>
           </wa-button>
         </wa-button-group>
-        ${
-          this.puzzle?.autoHintMessage
-            ? html`<div class="auto-hint-message">${this.puzzle.autoHintMessage}</div>`
-            : nothing
-        }
       </div>
     `;
   }
@@ -345,14 +340,7 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
         gap: 6px;
       }
 
-      .auto-hint-message {
-        font-size: var(--wa-font-size-xs, 12px);
-        color: var(--wa-color-neutral-text-secondary, #666);
-        font-weight: var(--wa-font-weight-semibold, 600);
-        margin-top: 2px;
-        text-align: center;
-      }
-      
+
       wa-button-group {
         /* Collapse the gap between buttons, overlapping the borders.
          * Stack the dropdown trigger (which is never disabled) above

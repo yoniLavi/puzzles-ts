@@ -10,7 +10,6 @@ import type {
   NotifyGameIdChange,
   NotifyGameStateChange,
   NotifyParamsChange,
-  NotifyStatusBarChange,
   Point,
   Size,
 } from "../assets/puzzles/emcc-runtime";
@@ -27,12 +26,17 @@ export type {
   NotifyGameIdChange,
   NotifyGameStateChange,
   NotifyParamsChange,
-  NotifyStatusBarChange,
   Point,
   PresetMenuEntry,
   Rect,
   Size,
 } from "../assets/puzzles/emcc-runtime";
+
+export interface NotifyStatusBarChange {
+  type: "status-bar-change";
+  statusBarText: string;
+  activeHintExplanation?: string;
+}
 
 export type PuzzleId = string;
 export type EncodedParams = string;

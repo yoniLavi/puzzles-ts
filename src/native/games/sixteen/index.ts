@@ -63,6 +63,8 @@ export interface SixteenHintHighlights {
   tile: number;
   /** The position (flat index) where this tile should end up. */
   targetPos: number;
+  /** The ultimate solved destination of this tile (if different from targetPos). */
+  ultimatePos?: number;
 }
 
 // --- move logic -------------------------------------------------------
@@ -436,6 +438,8 @@ interface SixteenDrawState {
   hintTile: number | null;
   /** Target position currently highlighted as hint, or null. */
   hintTarget: number | null;
+  /** Ultimate destination currently highlighted as hint, or null. */
+  hintUltimate: number | null;
   /** Arrow currently highlighted as hint, or null. */
   hintArrowX: number | null;
   hintArrowY: number | null;
@@ -458,6 +462,7 @@ function newDrawState(state: SixteenState): SixteenDrawState {
     curY: -1,
     hintTile: null,
     hintTarget: null,
+    hintUltimate: null,
     hintArrowX: null,
     hintArrowY: null,
   };
@@ -584,7 +589,12 @@ function redraw(
   const hl = activeHint?.highlights;
   const hintTile = hl?.tile ?? null;
   const hintTarget = hl?.targetPos ?? null;
-  if (hintTile !== ds.hintTile || hintTarget !== ds.hintTarget) {
+  const hintUltimate = hl?.ultimatePos ?? null;
+  if (
+    hintTile !== ds.hintTile ||
+    hintTarget !== ds.hintTarget ||
+    hintUltimate !== ds.hintUltimate
+  ) {
     // Erase old highlights by repainting those tiles.
     if (ds.hintTile !== null) {
       const oldPos = state.tiles.indexOf(ds.hintTile);
@@ -594,6 +604,9 @@ function redraw(
     if (ds.hintTarget !== null) {
       drawHintOverlay(dr, ts, hw, state, ds.hintTarget, COL_BACKGROUND, true);
     }
+    if (ds.hintUltimate !== null) {
+      drawHintOverlay(dr, ts, hw, state, ds.hintUltimate, COL_BACKGROUND, true);
+    }
     // Draw new highlights (same colour for both source and target).
     if (hintTile !== null) {
       const pos = state.tiles.indexOf(hintTile);
@@ -602,8 +615,12 @@ function redraw(
     if (hintTarget !== null) {
       drawHintOverlay(dr, ts, hw, state, hintTarget, COL_HINT, true);
     }
+    if (hintUltimate !== null) {
+      drawHintOverlay(dr, ts, hw, state, hintUltimate, COL_HINT, true);
+    }
     ds.hintTile = hintTile;
     ds.hintTarget = hintTarget;
+    ds.hintUltimate = hintUltimate;
   }
 
   // Clip to the tile area.
@@ -986,27 +1003,37 @@ function toroidalDist(from: number, to: number, len: number): number {
   return Math.min(d, len - d);
 }
 
-function slideTiles(
-  tiles: Int32Array,
+function slideTilesInto(
+  src: Int32Array,
+  dest: Int32Array,
   w: number,
   h: number,
   move: Extract<SixteenMove, { type: "slide" }>,
-): Int32Array {
-  const nextTiles = new Int32Array(tiles);
+): void {
   const { axis, index, delta } = move;
+  dest.set(src);
 
   if (axis === "row") {
+    const offset = index * w;
     for (let x = 0; x < w; x++) {
       const srcX = (((x - delta) % w) + w) % w;
-      nextTiles[index * w + x] = tiles[index * w + srcX];
+      dest[offset + x] = src[offset + srcX];
     }
   } else {
     for (let y = 0; y < h; y++) {
       const srcY = (((y - delta) % h) + h) % h;
-      nextTiles[y * w + index] = tiles[srcY * w + index];
+      dest[y * w + index] = src[srcY * w + index];
     }
   }
-  return nextTiles;
+}
+
+function arrayToKey(arr: Int32Array): string {
+  let s = "";
+  const len = arr.length;
+  for (let i = 0; i < len; i++) {
+    s += String.fromCharCode(arr[i]);
+  }
+  return s;
 }
 
 function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlights> {
@@ -1035,15 +1062,37 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   // for performance.
   const maxStates = outOfPlace <= 4 ? 25000 : 4000;
 
+  const targetR = new Int32Array(n + 1);
+  const targetC = new Int32Array(n + 1);
+  for (let tile = 1; tile <= n; tile++) {
+    targetR[tile] = Math.floor((tile - 1) / w);
+    targetC[tile] = (tile - 1) % w;
+  }
+
+  const cellR = new Int32Array(n);
+  const cellC = new Int32Array(n);
+  for (let i = 0; i < n; i++) {
+    cellR[i] = Math.floor(i / w);
+    cellC[i] = i % w;
+  }
+
+  // Precompute static toroidal Manhattan distances once for this board configuration.
+  // distTable[cellIndex * (n + 1) + tile] holds the distance from cell cellIndex to target of tile.
+  const distTable = new Int32Array(n * (n + 1));
+  for (let i = 0; i < n; i++) {
+    for (let tile = 1; tile <= n; tile++) {
+      distTable[i * (n + 1) + tile] =
+        toroidalDist(cellR[i], targetR[tile], h) +
+        toroidalDist(cellC[i], targetC[tile], w);
+    }
+  }
+
   const getHeuristic = (board: Int32Array): number => {
     let total = 0;
-    for (let i = 0; i < n; i++) {
-      const tile = board[i];
-      const targetR = Math.floor((tile - 1) / w);
-      const targetC = (tile - 1) % w;
-      const curR = Math.floor(i / w);
-      const curC = i % w;
-      total += toroidalDist(curR, targetR, h) + toroidalDist(curC, targetC, w);
+    const len = board.length;
+    const rowStride = n + 1;
+    for (let i = 0; i < len; i++) {
+      total += distTable[i * rowStride + board[i]];
     }
     return total;
   };
@@ -1052,44 +1101,46 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
 
   // Store visited states and their best g values
   const visited = new Map<string, number>();
-  visited.set(tiles.join(","), 0);
+  visited.set(arrayToKey(tiles), 0);
 
-  // Priority Queue / Sorted Array for search nodes
+  // Priority Queue using Bucket Queue for O(1) state management.
+  // Since f = g + h is always a small integer, we can bucket nodes by their f value.
   interface SearchNode {
     tiles: Int32Array;
     g: number;
     h: number;
     f: number;
     firstMove: Extract<SixteenMove, { type: "slide" }> | null;
+    secondMove: Extract<SixteenMove, { type: "slide" }> | null;
   }
 
-  const queue: SearchNode[] = [
-    {
-      tiles,
-      g: 0,
-      h: startH,
-      f: startH,
-      firstMove: null,
-    },
-  ];
+  const buckets: SearchNode[][] = [];
+  let minF = startH;
+  let queueSize = 0;
 
-  // Helper to insert into sorted queue
   const insertSorted = (node: SearchNode) => {
-    let low = 0;
-    let high = queue.length;
-    while (low < high) {
-      const mid = (low + high) >> 1;
-      if (queue[mid].f <= node.f) {
-        low = mid + 1;
-      } else {
-        high = mid;
-      }
+    const f = node.f;
+    if (!buckets[f]) {
+      buckets[f] = [];
     }
-    queue.splice(low, 0, node);
+    buckets[f].push(node);
+    if (f < minF) {
+      minF = f;
+    }
+    queueSize++;
   };
 
+  insertSorted({
+    tiles,
+    g: 0,
+    h: startH,
+    f: startH,
+    firstMove: null,
+    secondMove: null,
+  });
+
   let expanded = 0;
-  let bestNode: SearchNode = queue[0];
+  let bestNode: SearchNode = buckets[startH][0];
 
   // Pre-generate all legal moves from any state
   const moves: Extract<SixteenMove, { type: "slide" }>[] = [];
@@ -1102,8 +1153,24 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     moves.push({ type: "slide", axis: "column", index: c, delta: -1 });
   }
 
-  while (queue.length > 0 && expanded < maxStates) {
-    const curr = queue.shift();
+  const popMin = (): SearchNode | null => {
+    while (minF < buckets.length) {
+      const bucket = buckets[minF];
+      if (bucket && bucket.length > 0) {
+        queueSize--;
+        const nextNode = bucket.pop();
+        if (nextNode !== undefined) return nextNode;
+      }
+      minF++;
+    }
+    return null;
+  };
+
+  // Reusable scratch buffer to generate move states and check visited list BEFORE allocating arrays.
+  const scratchTiles = new Int32Array(n);
+
+  while (queueSize > 0 && expanded < maxStates) {
+    const curr = popMin();
     if (!curr) break;
     expanded++;
 
@@ -1120,9 +1187,6 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
 
     for (const move of moves) {
       // Avoid immediately undoing or contradicting the last move on the first step of the path.
-      // If the user slid a row/column, then sliding that same row/column is a backtrack or contradiction
-      // if the net slide from the original state has a smaller absolute normalized distance than the
-      // user's original slide itself.
       if (curr.g === 0 && state.lastMove && state.lastMove.type === "slide") {
         const last = state.lastMove;
         if (move.axis === last.axis && move.index === last.index) {
@@ -1140,8 +1204,8 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
         }
       }
 
-      const nextTiles = slideTiles(curr.tiles, w, h, move);
-      const key = nextTiles.join(",");
+      slideTilesInto(curr.tiles, scratchTiles, w, h, move);
+      const key = arrayToKey(scratchTiles);
       const nextG = curr.g + 1;
 
       const prevG = visited.get(key);
@@ -1150,13 +1214,24 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
       }
 
       visited.set(key, nextG);
-      const nextH = getHeuristic(nextTiles);
+      const nextH = getHeuristic(scratchTiles);
+      let nextFirstMove = curr.firstMove;
+      let nextSecondMove = curr.secondMove;
+      if (curr.g === 0) {
+        nextFirstMove = move;
+      } else if (curr.g === 1) {
+        nextSecondMove = move;
+      }
+
+      // Lazy Allocation: Only construct new Int32Array and node object when actually accepted into queue!
+      const nextTiles = new Int32Array(scratchTiles);
       const nextNode: SearchNode = {
         tiles: nextTiles,
         g: nextG,
         h: nextH,
         f: nextG + nextH,
-        firstMove: curr.firstMove || move,
+        firstMove: nextFirstMove,
+        secondMove: nextSecondMove,
       };
 
       insertSorted(nextNode);
@@ -1225,24 +1300,47 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     }
   }
 
-  const dirWord =
-    bestMove.delta > 0
-      ? bestMove.axis === "row"
-        ? "right"
-        : "down"
-      : bestMove.axis === "row"
-        ? "left"
-        : "up";
-  const axisWord = bestMove.axis === "row" ? "row" : "column";
   const targetRow = Math.floor((bestTile - 1) / w) + 1;
   const targetCol = ((bestTile - 1) % w) + 1;
-  const explanation = `Slide ${axisWord} ${bestMove.index + 1} ${dirWord} — move tile ${bestTile} toward (${targetRow},${targetCol})`;
+  let explanation =
+    bestMove.axis === "row"
+      ? `Move tile ${bestTile} to column ${targetCol}`
+      : `Move tile ${bestTile} to row ${targetRow}`;
+
+  const targetPos =
+    bestMove.axis === "row"
+      ? bestMove.index * w + (targetCol - 1)
+      : (targetRow - 1) * w + bestMove.index;
+
+  let ultimatePos: number | undefined;
+
+  if (bestNode.secondMove) {
+    const second = bestNode.secondMove;
+    const finalSolvedPos = (targetRow - 1) * w + (targetCol - 1);
+    if (finalSolvedPos !== targetPos) {
+      if (
+        bestMove.axis === "row" &&
+        second.axis === "column" &&
+        second.index === targetCol - 1
+      ) {
+        explanation = `Move tile ${bestTile} to column ${targetCol}, then to row ${targetRow}`;
+        ultimatePos = finalSolvedPos;
+      } else if (
+        bestMove.axis === "column" &&
+        second.axis === "row" &&
+        second.index === targetRow - 1
+      ) {
+        explanation = `Move tile ${bestTile} to row ${targetRow}, then to column ${targetCol}`;
+        ultimatePos = finalSolvedPos;
+      }
+    }
+  }
 
   return {
     ok: true,
     move: bestMove,
     explanation,
-    highlights: { tile: bestTile, targetPos: bestTile - 1 },
+    highlights: { tile: bestTile, targetPos, ultimatePos },
   };
 }
 

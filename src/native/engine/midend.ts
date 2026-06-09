@@ -705,12 +705,11 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   private emitStatusBar(): void {
     if (!this.game.wantsStatusbar) return;
-    let text = this.game.statusbarText?.(this.state, this.ui) ?? "";
-    if (this.activeHint) {
-      text = text
-        ? `${text} — ${this.activeHint.explanation}`
-        : this.activeHint.explanation;
-    }
-    this.emit({ type: "status-bar-change", statusBarText: text });
+    const text = this.game.statusbarText?.(this.state, this.ui) ?? "";
+    this.emit({
+      type: "status-bar-change",
+      statusBarText: text,
+      activeHintExplanation: this.activeHint?.explanation ?? undefined,
+    });
   }
 }

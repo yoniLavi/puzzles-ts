@@ -142,11 +142,24 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
   protected contentTabIndex: string | typeof nothing = nothing;
 
+  protected get bannerMessage(): string {
+    return this.puzzle?.activeHintExplanation || this.puzzle?.autoHintMessage || "";
+  }
+
   protected override render() {
     return html`
       <div part="content" tabindex=${this.contentTabIndex}>
         ${this.statusbarPlacement === "start" ? this.renderStatusbar() : nothing}
         ${this.renderPuzzle()}
+        ${
+          this.bannerMessage
+            ? html`
+            <div class="hint-banner" role="status">
+              ${this.bannerMessage}
+            </div>
+          `
+            : nothing
+        }
         ${this.statusbarPlacement === "end" ? this.renderStatusbar() : nothing}
         ${this.renderLoadingIndicator()}
       </div>
@@ -155,7 +168,9 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
   protected renderPuzzle() {
     return html`
-      <div part="puzzle">${this.renderCanvas()}</div>
+      <div part="puzzle">
+        ${this.renderCanvas()}
+      </div>
     `;
   }
 
@@ -502,6 +517,27 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       [part="puzzle"] {
         box-sizing: border-box;
         padding: var(--spacing);
+        position: relative;
+      }
+
+      .hint-banner {
+        text-align: center;
+        padding-inline: var(--spacing);
+        padding-block: 0 var(--spacing);
+        color: var(--wa-color-brand-fill-loud, var(--app-theme-color, var(--wa-color-brand-fill-normal, var(--wa-color-text-normal))));
+        font-size: var(--wa-font-size-s, 14px);
+        font-weight: var(--wa-font-weight-bold, 700);
+        line-height: 1.4;
+        animation: hintFadeIn 0.15s ease-out;
+      }
+
+      @keyframes hintFadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
       
       [part="statusbar"] {

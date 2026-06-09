@@ -483,12 +483,12 @@ describe("Midend hint lifecycle", () => {
 
   it("hint() returns undefined and stores an active hint", () => {
     expect(h.m.hint()).toBeUndefined();
-    // The hint should appear in the status bar.
+    // The hint should appear in the status-bar change.
     const sb = h.last("status-bar-change") as Extract<
       ChangeNotification,
       { type: "status-bar-change" }
     >;
-    expect(sb.statusBarText).toContain("Increment the counter");
+    expect(sb.activeHintExplanation).toBe("Increment the counter");
   });
 
   it("hint() on a solved game returns an error", () => {
@@ -498,20 +498,20 @@ describe("Midend hint lifecycle", () => {
 
   it("making a move clears the active hint", () => {
     h.m.hint();
-    // Status bar should show the hint explanation.
+    // Status-bar change should show the active hint explanation.
     const sbBefore = h.last("status-bar-change") as Extract<
       ChangeNotification,
       { type: "status-bar-change" }
     >;
-    expect(sbBefore.statusBarText).toContain("Increment the counter");
+    expect(sbBefore.activeHintExplanation).toBe("Increment the counter");
 
     h.m.processInput(0, 0, LEFT_BUTTON);
-    // Status bar should no longer show the hint.
+    // Status-bar change should no longer show the active hint.
     const sbAfter = h.last("status-bar-change") as Extract<
       ChangeNotification,
       { type: "status-bar-change" }
     >;
-    expect(sbAfter.statusBarText).not.toContain("Increment the counter");
+    expect(sbAfter.activeHintExplanation).toBeUndefined();
   });
 
   it("undo clears the active hint", () => {
@@ -522,7 +522,7 @@ describe("Midend hint lifecycle", () => {
       ChangeNotification,
       { type: "status-bar-change" }
     >;
-    expect(sb.statusBarText).not.toContain("Increment the counter");
+    expect(sb.activeHintExplanation).toBeUndefined();
   });
 
   it("redo clears the active hint", () => {
@@ -534,7 +534,7 @@ describe("Midend hint lifecycle", () => {
       ChangeNotification,
       { type: "status-bar-change" }
     >;
-    expect(sb.statusBarText).not.toContain("Increment the counter");
+    expect(sb.activeHintExplanation).toBeUndefined();
   });
 
   it("newGame clears the active hint", () => {
@@ -544,7 +544,7 @@ describe("Midend hint lifecycle", () => {
       ChangeNotification,
       { type: "status-bar-change" }
     >;
-    expect(sb.statusBarText).not.toContain("Increment the counter");
+    expect(sb.activeHintExplanation).toBeUndefined();
   });
 
   it("restartGame clears the active hint", () => {
@@ -555,7 +555,7 @@ describe("Midend hint lifecycle", () => {
       ChangeNotification,
       { type: "status-bar-change" }
     >;
-    expect(sb.statusBarText).not.toContain("Increment the counter");
+    expect(sb.activeHintExplanation).toBeUndefined();
   });
 
   it("canHint is true when the game implements hint()", () => {
