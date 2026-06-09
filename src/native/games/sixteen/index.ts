@@ -65,6 +65,8 @@ export interface SixteenHintHighlights {
   targetPos: number;
   /** The ultimate solved destination of this tile (if different from targetPos). */
   ultimatePos?: number;
+  /** The subsequent move recommended by the active hint. */
+  secondMove?: SixteenMove;
 }
 
 // --- move logic -------------------------------------------------------
@@ -555,12 +557,44 @@ function redraw(
   let hintArrowY: number | null = null;
   if (activeHint?.move && activeHint.move.type === "slide") {
     const m = activeHint.move;
-    if (m.axis === "row") {
-      hintArrowX = m.delta === -1 ? -1 : state.w;
-      hintArrowY = m.index;
-    } else {
-      hintArrowX = m.index;
-      hintArrowY = m.delta === -1 ? -1 : state.h;
+    const hl = activeHint.highlights;
+    if (hl) {
+      const tilePos = state.tiles.indexOf(hl.tile);
+      if (tilePos >= 0) {
+        if (m.axis === "row") {
+          const curCol = tilePos % state.w;
+          const targetCol = hl.targetPos % state.w;
+          let d = m.delta;
+          if (curCol < targetCol) {
+            d = 1; // right
+          } else if (curCol > targetCol) {
+            d = -1; // left
+          }
+          hintArrowX = d === -1 ? -1 : state.w;
+          hintArrowY = m.index;
+        } else {
+          const curRow = Math.floor(tilePos / state.w);
+          const targetRow = Math.floor(hl.targetPos / state.w);
+          let d = m.delta;
+          if (curRow < targetRow) {
+            d = 1; // down
+          } else if (curRow > targetRow) {
+            d = -1; // up
+          }
+          hintArrowX = m.index;
+          hintArrowY = d === -1 ? -1 : state.h;
+        }
+      }
+    }
+    // Fallback if highlights or tile not found
+    if (hintArrowX === null || hintArrowY === null) {
+      if (m.axis === "row") {
+        hintArrowX = m.delta === -1 ? -1 : state.w;
+        hintArrowY = m.index;
+      } else {
+        hintArrowX = m.index;
+        hintArrowY = m.delta === -1 ? -1 : state.h;
+      }
     }
   }
 
@@ -607,16 +641,10 @@ function redraw(
     if (ds.hintUltimate !== null) {
       drawHintOverlay(dr, ts, hw, state, ds.hintUltimate, COL_BACKGROUND, true);
     }
-    // Draw new highlights (same colour for both source and target).
+    // Draw new highlights (source fill).
     if (hintTile !== null) {
       const pos = state.tiles.indexOf(hintTile);
       if (pos >= 0) drawHintOverlay(dr, ts, hw, state, pos, COL_HINT, false);
-    }
-    if (hintTarget !== null) {
-      drawHintOverlay(dr, ts, hw, state, hintTarget, COL_HINT, true);
-    }
-    if (hintUltimate !== null) {
-      drawHintOverlay(dr, ts, hw, state, hintUltimate, COL_HINT, true);
     }
     ds.hintTile = hintTile;
     ds.hintTarget = hintTarget;
@@ -757,12 +785,19 @@ function redraw(
         drawY = coord(Math.floor(i / state.w), ts);
       }
 
-      const tileBg =
+      let tileBg =
         drawX2 === -1 && tileCursor(i, state, curX, curY) ? COL_LOWLIGHT : bgcolour;
+      if (hintTile !== null && t === hintTile) {
+        tileBg = COL_HINT;
+      }
       drawTile(dr, ts, hw, drawX, drawY, t, tileBg);
 
       if (drawX2 !== -1 || drawY2 !== -1) {
-        drawTile(dr, ts, hw, drawX2, drawY2, t, bgcolour);
+        let wrapBg = bgcolour;
+        if (hintTile !== null && t === hintTile) {
+          wrapBg = COL_HINT;
+        }
+        drawTile(dr, ts, hw, drawX2, drawY2, t, wrapBg);
       }
     }
     ds.tiles[i] = t0;
@@ -775,6 +810,13 @@ function redraw(
   ds.dragIndex = ui.dragIndex;
   ds.dragX = ui.dragX;
   ds.dragY = ui.dragY;
+  if (hintTarget !== null) {
+    const isIntermediate = hintUltimate !== null;
+    drawHintBorder(dr, ts, state, hintTarget, COL_HINT, isIntermediate);
+  }
+  if (hintUltimate !== null) {
+    drawHintBorder(dr, ts, state, hintUltimate, COL_HINT, false);
+  }
   dr.unclip();
   ds.bgcolour = bgcolour;
 }
@@ -889,15 +931,44 @@ function drawHintBorder(
   state: SixteenState,
   pos: number,
   colour: number,
+  dashed = false,
 ): void {
   const x = coord(pos % state.w, ts);
   const y = coord(Math.floor(pos / state.w), ts);
   const b = 3; // 3-pixel border
-  // Draw outline: top, bottom, left, right.
-  dr.drawRect({ x, y, w: ts, h: b }, colour);
-  dr.drawRect({ x, y: y + ts - b, w: ts, h: b }, colour);
-  dr.drawRect({ x, y: y + b, w: b, h: ts - 2 * b }, colour);
-  dr.drawRect({ x: x + ts - b, y: y + b, w: b, h: ts - 2 * b }, colour);
+
+  if (dashed) {
+    const dashLen = 6;
+    const gapLen = 4;
+    const step = dashLen + gapLen;
+
+    // Draw top border (horizontal)
+    for (let cx = x; cx < x + ts; cx += step) {
+      const w = Math.min(dashLen, x + ts - cx);
+      dr.drawRect({ x: cx, y, w, h: b }, colour);
+    }
+    // Draw bottom border (horizontal)
+    for (let cx = x; cx < x + ts; cx += step) {
+      const w = Math.min(dashLen, x + ts - cx);
+      dr.drawRect({ x: cx, y: y + ts - b, w, h: b }, colour);
+    }
+    // Draw left border (vertical)
+    for (let cy = y + b; cy < y + ts - b; cy += step) {
+      const h = Math.min(dashLen, y + ts - b - cy);
+      dr.drawRect({ x, y: cy, w: b, h }, colour);
+    }
+    // Draw right border (vertical)
+    for (let cy = y + b; cy < y + ts - b; cy += step) {
+      const h = Math.min(dashLen, y + ts - b - cy);
+      dr.drawRect({ x: x + ts - b, y: cy, w: b, h }, colour);
+    }
+  } else {
+    // Draw outline: top, bottom, left, right.
+    dr.drawRect({ x, y, w: ts, h: b }, colour);
+    dr.drawRect({ x, y: y + ts - b, w: ts, h: b }, colour);
+    dr.drawRect({ x, y: y + b, w: b, h: ts - 2 * b }, colour);
+    dr.drawRect({ x: x + ts - b, y: y + b, w: b, h: ts - 2 * b }, colour);
+  }
   dr.drawUpdate({ x, y, w: ts, h: ts });
 }
 
@@ -1313,6 +1384,7 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
       : (targetRow - 1) * w + bestMove.index;
 
   let ultimatePos: number | undefined;
+  let secondMove: SixteenMove | undefined;
 
   if (bestNode.secondMove) {
     const second = bestNode.secondMove;
@@ -1325,6 +1397,7 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
       ) {
         explanation = `Move tile ${bestTile} to column ${targetCol}, then to row ${targetRow}`;
         ultimatePos = finalSolvedPos;
+        secondMove = second;
       } else if (
         bestMove.axis === "column" &&
         second.axis === "row" &&
@@ -1332,6 +1405,7 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
       ) {
         explanation = `Move tile ${bestTile} to row ${targetRow}, then to column ${targetCol}`;
         ultimatePos = finalSolvedPos;
+        secondMove = second;
       }
     }
   }
@@ -1340,7 +1414,7 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     ok: true,
     move: bestMove,
     explanation,
-    highlights: { tile: bestTile, targetPos, ultimatePos },
+    highlights: { tile: bestTile, targetPos, ultimatePos, secondMove },
   };
 }
 
@@ -1379,6 +1453,55 @@ export const sixteenGame: Game<
   },
 
   hint,
+
+  hintKeepTrack(
+    m: SixteenMove,
+    h: ActiveHint<SixteenMove, SixteenHintHighlights>,
+    state: SixteenState,
+  ): boolean {
+    if (m.type !== "slide") return false;
+    if (h.move.type !== "slide") return false;
+
+    // Check if the user is manipulating the row/col recommended by the active hint
+    if (m.axis !== h.move.axis || m.index !== h.move.index) {
+      return false;
+    }
+
+    // Check if applying the move completes the hint
+    const nextState = executeMove(state, m);
+    const hl = h.highlights;
+    if (hl) {
+      const tilePos = nextState.tiles.indexOf(hl.tile);
+      const targetPos = hl.targetPos;
+      const ultimatePos = hl.ultimatePos;
+
+      // If the tile reaches the intermediate target of a 2D move,
+      // transition the active hint to the subsequent move.
+      if (tilePos === targetPos && ultimatePos !== undefined) {
+        if (hl.secondMove) {
+          h.move = hl.secondMove;
+          hl.targetPos = ultimatePos;
+          hl.ultimatePos = undefined;
+          hl.secondMove = undefined;
+          const finalCol = (ultimatePos % state.w) + 1;
+          const finalRow = Math.floor(ultimatePos / state.w) + 1;
+          h.explanation = `Move tile ${hl.tile} to row ${finalRow}, column ${finalCol}`;
+          return true;
+        }
+      }
+
+      // If the tile reaches either its targetPos or ultimatePos, the hint is applied
+      if (
+        tilePos === targetPos ||
+        (ultimatePos !== undefined && tilePos === ultimatePos)
+      ) {
+        return false;
+      }
+    }
+
+    // Otherwise they are on track
+    return true;
+  },
 
   textFormat,
   statusbarText,

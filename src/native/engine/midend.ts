@@ -284,7 +284,13 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       this.afterTransition();
       return true;
     }
-    this.activeHint = null;
+    if (this.activeHint) {
+      const keep =
+        this.game.hintKeepTrack?.(move, this.activeHint, this.state) ?? false;
+      if (!keep) {
+        this.activeHint = null;
+      }
+    }
     return this.applyMove(move);
   }
 

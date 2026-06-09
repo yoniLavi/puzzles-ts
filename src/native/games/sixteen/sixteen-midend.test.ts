@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ChangeNotification } from "../../../puzzle/types.ts";
 import { Midend } from "../../engine/midend.ts";
 import {
+  CURSOR_DOWN,
   CURSOR_RIGHT,
   CURSOR_SELECT,
   LEFT_BUTTON,
@@ -9,6 +10,7 @@ import {
   LEFT_RELEASE,
 } from "../../engine/pointer.ts";
 import { sixteenGame } from "./index.ts";
+import type { SixteenMove } from "./state.ts";
 
 function harness() {
   const notes: ChangeNotification[] = [];
@@ -166,6 +168,75 @@ describe("Sixteen midend integration — drag-to-slide support", () => {
 
     const after = h.state()?.currentMove ?? 0;
     expect(after).toBe(before);
+  });
+});
+
+describe("Sixteen midend integration — hint persistence", () => {
+  it("keeps target cell highlighted as long as user is on-track, and clears on finish or unrelated move", () => {
+    const h = harness();
+    h.m.newGameFromId("3x3:3,1,2,4,5,6,7,8,9"); // row 0 is shifted left by 1
+
+    // Request a hint
+    const exp = h.m.hint();
+    expect(exp).toBeUndefined(); // Returns undefined on success
+
+    // activeHint should be set
+    const mPrivate = h.m as unknown as { activeHint: { move: SixteenMove } | null };
+    expect(mPrivate.activeHint).toBeDefined();
+    expect(mPrivate.activeHint).not.toBeNull();
+
+    // Verify activeHint is row 0
+    const activeHint = mPrivate.activeHint;
+    expect(activeHint).not.toBeNull();
+    if (activeHint && activeHint.move.type === "slide") {
+      expect(activeHint.move.axis).toBe("row");
+      expect(activeHint.move.index).toBe(0);
+    } else {
+      expect.fail("Expected active hint move to be a slide");
+    }
+
+    // Make an on-track move: slide row 0 right by 1
+    h.m.processInput(0, 0, CURSOR_SELECT); // Show cursor first at (0, 0)
+    h.m.processInput(0, 0, 0x2000 | CURSOR_RIGHT); // Shift+CURSOR_RIGHT: slide row 0 right
+
+    // Since it's on-track and hasn't solved the tile position yet, the hint should STILL be active!
+    expect(mPrivate.activeHint).toBeDefined();
+    expect(mPrivate.activeHint).not.toBeNull();
+
+    // Now make an unrelated move: slide row 1 right.
+    h.m.processInput(0, 0, CURSOR_DOWN); // Move cursor down to row 1
+    h.m.processInput(0, 0, 0x2000 | CURSOR_RIGHT); // Shift+CURSOR_RIGHT: slide row 1 right
+
+    // Now activeHint should be cleared because we manipulated an unrelated row!
+    expect(mPrivate.activeHint).toBeNull();
+  });
+
+  it("keeps target cell highlighted as long as user is on-track, and clears when the hint is applied", () => {
+    const h = harness();
+    h.m.newGameFromId("3x3:3,1,2,4,5,6,7,8,9"); // row 0 is shifted left by 1
+
+    // Request a hint
+    const exp = h.m.hint();
+    expect(exp).toBeUndefined(); // Returns undefined on success
+
+    // activeHint should be set
+    const mPrivate = h.m as unknown as { activeHint: { move: SixteenMove } | null };
+    expect(mPrivate.activeHint).toBeDefined();
+    expect(mPrivate.activeHint).not.toBeNull();
+
+    // Slide row 0 right by 1 step.
+    h.m.processInput(0, 0, CURSOR_SELECT); // Show cursor first at (0, 0)
+    h.m.processInput(0, 0, 0x2000 | CURSOR_RIGHT); // Shift+CURSOR_RIGHT: slide row 0 right
+
+    // Still active
+    expect(mPrivate.activeHint).toBeDefined();
+    expect(mPrivate.activeHint).not.toBeNull();
+
+    // Slide row 0 right by 1 step again. Now tile 3 will reach its target col 2!
+    h.m.processInput(0, 0, 0x2000 | CURSOR_RIGHT); // Shift+CURSOR_RIGHT: slide row 0 right
+
+    // Since the hint was applied, activeHint should be cleared!
+    expect(mPrivate.activeHint).toBeNull();
   });
 });
 

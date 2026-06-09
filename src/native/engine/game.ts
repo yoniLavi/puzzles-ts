@@ -142,6 +142,9 @@ export interface Game<Params, State, Move, Ui = unknown, DrawState = unknown> {
    * hint and the renderer displays it. The player executes the
    * move themselves. */
   hint?(state: State): HintResult<Move>;
+  /** Check if a move keeps the active hint on track. If returned true,
+   * the active hint won't be cleared when the move is applied. */
+  hintKeepTrack?(m: Move, hint: ActiveHint<Move>, state: State): boolean;
   textFormat?(s: State): string;
   statusbarText?(s: State, ui: Ui): string;
 

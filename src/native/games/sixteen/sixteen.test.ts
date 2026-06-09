@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { GameDrawing } from "../../engine/index.ts";
+import type { ActiveHint, GameDrawing } from "../../engine/index.ts";
 import { randomNew } from "../../random/index.ts";
 import { executeMove, type SixteenHintHighlights, sixteenGame } from "./index.ts";
 import {
@@ -574,5 +574,143 @@ describe("Sixteen hint rendering", () => {
       expect(hl.ultimatePos).toBeDefined();
       expect(hl.ultimatePos).not.toBe(hl.targetPos);
     }
+  });
+});
+
+describe("Sixteen hint track and direction fixes", () => {
+  function recordingDrawing() {
+    const ops: Array<{ op: string; colour?: number }> = [];
+    const rec = (op: string, colour?: number) => ops.push({ op, colour });
+    const dr: GameDrawing = {
+      startDraw: () => rec("startDraw"),
+      endDraw: () => rec("endDraw"),
+      drawUpdate: () => rec("drawUpdate"),
+      clip: () => rec("clip"),
+      unclip: () => rec("unclip"),
+      drawRect: (_r, c) => rec("drawRect", c),
+      drawLine: (_a, _b, c) => rec("drawLine", c),
+      drawPolygon: (_p, f) => rec("drawPolygon", f),
+      drawCircle: (_p, _r, f) => rec("drawCircle", f),
+      drawText: (_p, _o, c) => rec("drawText", c),
+      blitterNew: () => ({}),
+      blitterFree: () => rec("blitterFree"),
+      blitterSave: () => rec("blitterSave"),
+      blitterLoad: () => rec("blitterLoad"),
+    };
+    return { dr, ops };
+  }
+
+  it("always overrides arrow direction to point in-grid (avoiding wrapping arrow)", () => {
+    // Case 1: tile 1 at col 0, target at col 2.
+    // Recommended move was left (delta: -1), but in-grid direction is right (delta: 1).
+    const s1 = solvedState(3, 3); // Tile 1 is at index 0 (col 0, row 0).
+    const ui1 = sixteenGame.newUi(s1);
+    const ds1 = sixteenGame.newDrawState?.(s1);
+    expect(ds1).toBeDefined();
+    if (!ds1) return;
+    sixteenGame.setTileSize?.(ds1, 32);
+
+    const activeHint1: ActiveHint<SixteenMove, SixteenHintHighlights> = {
+      move: { type: "slide", axis: "row", index: 0, delta: -1 },
+      explanation: "",
+      highlights: {
+        tile: 1,
+        targetPos: 2, // col 2, row 0
+      },
+    };
+
+    const { dr: dr1 } = recordingDrawing();
+    sixteenGame.redraw?.(dr1, ds1, null, s1, 1, ui1, 0, 0, activeHint1);
+    // Since curCol (0) < targetCol (2), it should point right (ds1.hintArrowX = 3)
+    const ds1Typed = ds1 as unknown as {
+      hintArrowX: number | null;
+      hintArrowY: number | null;
+    };
+    expect(ds1Typed.hintArrowX).toBe(3);
+    expect(ds1Typed.hintArrowY).toBe(0);
+
+    // Case 2: tile 1 at col 2, target at col 0.
+    // Recommended move was right (delta: 1), but in-grid direction is left (delta: -1).
+    const s2 = solvedState(3, 3);
+    // Move tile 1 to index 2 (col 2, row 0)
+    s2.tiles[0] = 3;
+    s2.tiles[1] = 2;
+    s2.tiles[2] = 1;
+
+    const ui2 = sixteenGame.newUi(s2);
+    const ds2 = sixteenGame.newDrawState?.(s2);
+    expect(ds2).toBeDefined();
+    if (!ds2) return;
+    sixteenGame.setTileSize?.(ds2, 32);
+
+    const activeHint2: ActiveHint<SixteenMove, SixteenHintHighlights> = {
+      move: { type: "slide", axis: "row", index: 0, delta: 1 },
+      explanation: "",
+      highlights: {
+        tile: 1,
+        targetPos: 0, // col 0, row 0
+      },
+    };
+
+    const { dr: dr2 } = recordingDrawing();
+    sixteenGame.redraw?.(dr2, ds2, null, s2, 1, ui2, 0, 0, activeHint2);
+    // Since curCol (2) > targetCol (0), it should point left (ds2.hintArrowX = -1)
+    const ds2Typed = ds2 as unknown as {
+      hintArrowX: number | null;
+      hintArrowY: number | null;
+    };
+    expect(ds2Typed.hintArrowX).toBe(-1);
+    expect(ds2Typed.hintArrowY).toBe(0);
+  });
+
+  it("hintKeepTrack determines whether to keep the active hint highlight", () => {
+    const s = solvedState(3, 3); // Tile 1 is at index 0 (col 0, row 0).
+    const h: ActiveHint<SixteenMove, SixteenHintHighlights> = {
+      move: { type: "slide", axis: "row", index: 0, delta: 1 },
+      explanation: "",
+      highlights: {
+        tile: 1,
+        targetPos: 2,
+      },
+    };
+
+    // Case 1: Same axis/row but move does not reach target. Should keep hint (true).
+    const m1: SixteenMove = { type: "slide", axis: "row", index: 0, delta: 1 };
+    const keep1 = sixteenGame.hintKeepTrack?.(m1, h, s);
+    expect(keep1).toBe(true);
+
+    // Case 2: Same axis/row but move reaches target (e.g. from pos 1 to pos 2). Should clear (false).
+    const sWithTileAt1 = solvedState(3, 3);
+    sWithTileAt1.tiles[0] = 2;
+    sWithTileAt1.tiles[1] = 1; // Tile 1 is at index 1
+    const m2: SixteenMove = { type: "slide", axis: "row", index: 0, delta: 1 };
+    const keep2 = sixteenGame.hintKeepTrack?.(m2, h, sWithTileAt1);
+    expect(keep2).toBe(false);
+
+    // Case 3: Different axis/index (unrelated move). Should clear (false).
+    const m3: SixteenMove = { type: "slide", axis: "row", index: 1, delta: 1 };
+    const keep3 = sixteenGame.hintKeepTrack?.(m3, h, s);
+    expect(keep3).toBe(false);
+
+    // Case 4: 2D move intermediate target reached. Should transition and keep hint (true).
+    const s2d = solvedState(3, 3); // Tile 1 is at index 0 (col 0, row 0).
+    const h2d: ActiveHint<SixteenMove, SixteenHintHighlights> = {
+      move: { type: "slide", axis: "row", index: 0, delta: 1 },
+      explanation: "Initial explanation",
+      highlights: {
+        tile: 1,
+        targetPos: 1,
+        ultimatePos: 4, // intermediate is (1, 0) = 1, ultimate is (1, 1) = 4 on a 3x3
+        secondMove: { type: "slide", axis: "column", index: 1, delta: 1 },
+      },
+    };
+    const m4: SixteenMove = { type: "slide", axis: "row", index: 0, delta: 1 };
+    const keep4 = sixteenGame.hintKeepTrack?.(m4, h2d, s2d);
+    expect(keep4).toBe(true);
+    expect(h2d.move).toEqual({ type: "slide", axis: "column", index: 1, delta: 1 });
+    expect(h2d.highlights?.targetPos).toBe(4);
+    expect(h2d.highlights?.ultimatePos).toBeUndefined();
+    expect(h2d.highlights?.secondMove).toBeUndefined();
+    expect(h2d.explanation).toContain("Move tile 1 to row 2, column 2");
   });
 });
