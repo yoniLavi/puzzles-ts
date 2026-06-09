@@ -1217,15 +1217,21 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   let expanded = 0;
   let bestNode: SearchNode = buckets[startH][0];
 
-  // Pre-generate all legal moves from any state
+  // Pre-generate all legal moves from any state. A slide by any distance
+  // is a single move — the same granularity as a player's drag and the
+  // move counter — so the planner's first move is directly executable as
+  // one full slide (executing a longer journey than the plan's first
+  // step deviated from the plan and caused auto-hint cycles).
   const moves: Extract<SixteenMove, { type: "slide" }>[] = [];
   for (let r = 0; r < h; r++) {
-    moves.push({ type: "slide", axis: "row", index: r, delta: 1 });
-    moves.push({ type: "slide", axis: "row", index: r, delta: -1 });
+    for (let delta = 1; delta < w; delta++) {
+      moves.push({ type: "slide", axis: "row", index: r, delta });
+    }
   }
   for (let c = 0; c < w; c++) {
-    moves.push({ type: "slide", axis: "column", index: c, delta: 1 });
-    moves.push({ type: "slide", axis: "column", index: c, delta: -1 });
+    for (let delta = 1; delta < h; delta++) {
+      moves.push({ type: "slide", axis: "column", index: c, delta });
+    }
   }
 
   const popMin = (): SearchNode | null => {
@@ -1367,21 +1373,13 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     }
   }
 
-  let targetRow = Math.floor((bestTile - 1) / w) + 1;
-  let targetCol = ((bestTile - 1) % w) + 1;
-  let explanation =
-    bestMove.axis === "row"
-      ? `Move tile ${bestTile} to column ${targetCol}`
-      : `Move tile ${bestTile} to row ${targetRow}`;
-
-  let targetPos =
-    bestMove.axis === "row"
-      ? bestMove.index * w + (targetCol - 1)
-      : (targetRow - 1) * w + bestMove.index;
-
-  let ultimatePos: number | undefined;
-  let secondMove: SixteenMove | undefined;
-
+  // Narrate what the plan actually does: the tile's landing cell under
+  // the plan's first move and, when the plan continues with a
+  // perpendicular slide of the line the tile lands on, the cell after
+  // that leg too. (An earlier version narrated the tile's *solved*
+  // row/column regardless of what the move achieved; once hints started
+  // executing the narrated slide, that overpromise pushed the game off
+  // the solver's path and auto-play could cycle.)
   let currentIdx = -1;
   for (let i = 0; i < n; i++) {
     if (tiles[i] === bestTile) {
@@ -1389,86 +1387,47 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
       break;
     }
   }
+  // bestTile is selected from the moved line, so it is always found.
+  const curR = Math.floor(currentIdx / w);
+  const curC = currentIdx % w;
 
-  const curR = currentIdx !== -1 ? Math.floor(currentIdx / w) : -1;
-  const curC = currentIdx !== -1 ? currentIdx % w : -1;
+  const landR = bestMove.axis === "row" ? curR : (curR + bestMove.delta + h) % h;
+  const landC = bestMove.axis === "row" ? (curC + bestMove.delta + w) % w : curC;
+  const targetPos = landR * w + landC;
 
-  if (bestNode.secondMove && currentIdx !== -1) {
-    const second = bestNode.secondMove;
-    const finalSolvedPos = (targetRow - 1) * w + (targetCol - 1);
-    if (finalSolvedPos !== targetPos) {
-      if (
-        bestMove.axis === "row" &&
-        second.axis === "column" &&
-        second.index === targetCol - 1 &&
-        curC !== targetCol - 1
-      ) {
-        explanation = `Move tile ${bestTile} to column ${targetCol}, then to row ${targetRow}`;
-        ultimatePos = finalSolvedPos;
+  let explanation =
+    bestMove.axis === "row"
+      ? `Move tile ${bestTile} to column ${landC + 1}`
+      : `Move tile ${bestTile} to row ${landR + 1}`;
+
+  let ultimatePos: number | undefined;
+  let secondMove: SixteenMove | undefined;
+
+  const second = bestNode.secondMove;
+  if (second && second.axis !== bestMove.axis) {
+    const onSecondLine =
+      second.axis === "column" ? second.index === landC : second.index === landR;
+    if (onSecondLine) {
+      const ultR = second.axis === "column" ? (landR + second.delta + h) % h : landR;
+      const ultC = second.axis === "row" ? (landC + second.delta + w) % w : landC;
+      const ult = ultR * w + ultC;
+      if (ult !== targetPos && ult !== currentIdx) {
+        ultimatePos = ult;
         secondMove = second;
-      } else if (
-        bestMove.axis === "column" &&
-        second.axis === "row" &&
-        second.index === targetRow - 1 &&
-        curR !== targetRow - 1
-      ) {
-        explanation = `Move tile ${bestTile} to row ${targetRow}, then to column ${targetCol}`;
-        ultimatePos = finalSolvedPos;
-        secondMove = second;
+        explanation =
+          bestMove.axis === "row"
+            ? `Move tile ${bestTile} to column ${landC + 1}, then to row ${ultR + 1}`
+            : `Move tile ${bestTile} to row ${landR + 1}, then to column ${ultC + 1}`;
       }
     }
   }
 
-  if (!secondMove && currentIdx !== -1) {
-    if (bestMove.axis === "row" && targetCol === curC + 1) {
-      const destCol = ((curC + bestMove.delta + w) % w) + 1;
-      targetCol = destCol;
-      explanation = `Move tile ${bestTile} to column ${targetCol}`;
-      targetPos = bestMove.index * w + (targetCol - 1);
-    } else if (bestMove.axis === "column" && targetRow === curR + 1) {
-      const destRow = ((curR + bestMove.delta + h) % h) + 1;
-      targetRow = destRow;
-      explanation = `Move tile ${bestTile} to row ${targetRow}`;
-      targetPos = (targetRow - 1) * w + bestMove.index;
-    }
-  }
-
-  // Post-generation safeguard: assert targetPos and ultimatePos are not collocated with currentIdx.
-  if (currentIdx !== -1) {
-    if (targetPos === currentIdx || ultimatePos === currentIdx) {
-      ultimatePos = undefined;
-      secondMove = undefined;
-
-      if (bestMove.axis === "row") {
-        const destCol = ((curC + bestMove.delta + w) % w) + 1;
-        targetCol = destCol;
-        explanation = `Move tile ${bestTile} to column ${targetCol}`;
-        targetPos = bestMove.index * w + (targetCol - 1);
-      } else {
-        const destRow = ((curR + bestMove.delta + h) % h) + 1;
-        targetRow = destRow;
-        explanation = `Move tile ${bestTile} to row ${targetRow}`;
-        targetPos = (targetRow - 1) * w + bestMove.index;
-      }
-    }
-  }
-
-  // Return the full move the narration asks for: one slide that carries
-  // the tile from its current cell all the way to the target box, in the
-  // in-grid direction the hint arrow shows. A player following the hint
-  // makes that one long slide, not repeated single steps — and the slide
-  // animation glides the whole distance. (Equivalent mod w/h to repeating
-  // the solver's ±1 step, so solver progress is unchanged.)
-  let move: SixteenMove = bestMove;
-  if (currentIdx !== -1) {
-    const fullDelta =
-      bestMove.axis === "row"
-        ? (targetPos % w) - (currentIdx % w)
-        : Math.floor(targetPos / w) - Math.floor(currentIdx / w);
-    if (fullDelta !== 0) {
-      move = { ...bestMove, delta: fullDelta };
-    }
-  }
+  // Normalize the returned delta to the in-grid direction of travel
+  // (same permutation mod w/h) so the slide animation glides the tile
+  // straight to its target box rather than wrapping across the edge.
+  const inGridDelta = bestMove.axis === "row" ? landC - curC : landR - curR;
+  const move: SixteenMove =
+    inGridDelta === bestMove.delta ? bestMove : { ...bestMove, delta: inGridDelta };
 
   return {
     ok: true,

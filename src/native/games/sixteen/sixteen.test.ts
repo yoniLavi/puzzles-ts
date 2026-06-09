@@ -388,20 +388,45 @@ describe("Sixteen hint", () => {
 
       const row = Math.floor(hl.targetPos / s.w);
       const col = hl.targetPos % s.w;
-      const expectedRow = Math.floor((hl.tile - 1) / s.w);
-      const expectedCol = (hl.tile - 1) % s.w;
 
       if (result.move.type === "slide") {
         const move = result.move;
+        // The target is on the moved line…
         if (move.axis === "row") {
           expect(row).toBe(move.index);
-          expect(col).toBe(expectedCol);
         } else {
-          expect(row).toBe(expectedRow);
           expect(col).toBe(move.index);
         }
+        // …and is exactly where the hinted move lands the tile.
+        const next = executeMove(s, result.move);
+        expect(next.tiles.indexOf(hl.tile)).toBe(hl.targetPos);
       }
     }
+  });
+
+  it("solves the board that previously cycled tile 2 back and forth", () => {
+    // Regression: with 6 tiles out of place the A* search planned in
+    // single-step slides while hints executed multi-step ones, so each
+    // executed hint left the planned path and auto-play looped through
+    // the same four states forever. Planning in full slides fixes it.
+    let s: SixteenState = {
+      w: 4,
+      h: 4,
+      n: 16,
+      tiles: new Int32Array([3, 4, 1, 8, 5, 6, 2, 7, 9, 10, 11, 12, 13, 14, 15, 16]),
+      completed: 0,
+      usedSolve: false,
+      moveCount: 0,
+      moveTarget: 0,
+      lastMovementSense: 0,
+    };
+    for (let step = 0; step < 10 && s.completed === 0; step++) {
+      const result = sixteenGame.hint?.(s);
+      expect(result?.ok).toBe(true);
+      if (!result?.ok) return;
+      s = executeMove(s, result.move);
+    }
+    expect(s.completed).toBeGreaterThan(0);
   });
 
   it("prioritizes the lowest-numbered out-of-place tile", () => {
