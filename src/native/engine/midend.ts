@@ -33,6 +33,12 @@ import {
 } from "./game.ts";
 import { decodeSave, encodeSave, type SaveEnvelope } from "./save.ts";
 
+/** How many times slower a hint-executed move animates compared to the
+ * game's normal move animation. The slow motion is what lets the user
+ * follow what the hint did; the auto-hint loop in `puzzle.ts` paces
+ * itself to just over the stretched duration. */
+const HINT_ANIM_SCALE = 2.5;
+
 export type NotifyChange = (message: ChangeNotification) => void;
 export type NotifyTimerState = (isActive: boolean) => void;
 /** "Repaint the canvas now" — the worker adapter draws via the
@@ -145,6 +151,12 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private animPrev: State | null = null;
   private animTime = 0;
   private animLength = 0;
+  // Hint-executed moves play the game's own move animation in slow
+  // motion so the user can follow what the hint did: the duration is
+  // stretched by `animScale` and the game is shown proportionally
+  // scaled time, so it needs no awareness of the stretch.
+  private animScale = 1;
+  private pendingAnimScale = 1;
   private flashTime = 0;
   private flashLength = 0;
   private animDir = 1;
@@ -371,6 +383,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       highlights: result.highlights,
     };
     this.clearHintOnAnimationEnd = true;
+    this.pendingAnimScale = HINT_ANIM_SCALE;
     this.applyMove(result.move);
     return undefined;
   }
@@ -397,7 +410,9 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.animDir = dir;
     const a = this.game.animLength?.(prev, next, dir, this.ui) ?? 0;
     const f = this.game.flashLength?.(prev, next, dir, this.ui) ?? 0;
-    this.animLength = a;
+    this.animScale = this.pendingAnimScale;
+    this.pendingAnimScale = 1;
+    this.animLength = a * this.animScale;
     this.animTime = 0;
     this.flashLength = f;
     this.flashTime = 0;
@@ -410,6 +425,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.animPrev = null;
     this.animTime = 0;
     this.animLength = 0;
+    this.animScale = 1;
     this.flashTime = 0;
     this.flashLength = 0;
     this.animDir = 1;
@@ -663,7 +679,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       this.state,
       this.animDir,
       this.ui,
-      this.animTime,
+      // Report time at the game's own scale: a slow-motion (hint) move
+      // has a stretched `animLength`, and dividing by the same factor
+      // keeps the game's `animTime / its-anim-length` progress correct.
+      this.animTime / this.animScale,
       this.flashTime,
       this.activeHint ?? undefined,
     );

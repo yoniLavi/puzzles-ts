@@ -376,10 +376,11 @@ export class Puzzle {
         this.stopAutoHint(err);
         return;
       }
-      // Rest between auto-played moves: long enough that the 0.4s slide
-      // animation completes and the user can digest the move before the
-      // next hint fires.
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Pace just past the slow-motion hint animation (game anim time ×
+      // HINT_ANIM_SCALE in the midend; 0.4s × 2.5 = 1s for Sixteen) so
+      // each move plays out fully but the next one follows almost
+      // immediately.
+      await new Promise((resolve) => setTimeout(resolve, 1100));
     }
     const solved = this.isSolved;
     this.stopAutoHint("");

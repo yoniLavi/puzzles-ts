@@ -270,16 +270,28 @@ describe("Sixteen midend integration — executeHint auto-play", () => {
     const err = h.m.executeHint();
     expect(err).toBeUndefined();
 
-    const mPrivate = h.m as unknown as { activeHint: { move: SixteenMove } | null };
+    const mPrivate = h.m as unknown as {
+      activeHint: { move: SixteenMove } | null;
+      animLength: number;
+    };
     expect(mPrivate.activeHint).not.toBeNull();
     expect(mPrivate.activeHint?.move).toBeDefined();
 
-    // Tick animation (0.15 < 0.40 ANIM_TIME)
-    h.m.timer(0.15);
+    // Hint-executed moves animate in slow motion: 0.4s ANIM_TIME
+    // stretched by HINT_ANIM_SCALE (2.5) to 1.0s.
+    expect(mPrivate.animLength).toBeCloseTo(1.0);
+
+    // Still animating well past the normal 0.4s settle point.
+    h.m.timer(0.45);
     expect(mPrivate.activeHint).not.toBeNull();
 
-    // Settle animation (0.30 more, total 0.45 > 0.40)
-    h.m.timer(0.3);
+    // Settle the stretched animation (total 1.05 > 1.0).
+    h.m.timer(0.6);
     expect(mPrivate.activeHint).toBeNull();
+
+    // A manual move is NOT stretched: it settles at the game's own 0.4s.
+    h.m.processInput(0, 0, CURSOR_SELECT);
+    h.m.processInput(0, 0, 0x2000 | CURSOR_RIGHT); // shift + cursor_right
+    expect(mPrivate.animLength).toBeCloseTo(0.4);
   });
 });
