@@ -498,6 +498,35 @@ describe("Sixteen hint", () => {
     }
   });
 
+  it("solves the two-swap 5x5 endgame that previously halted auto-hint", () => {
+    // Regression: tiles 1↔6 and 16↔20 swapped, everything else solved.
+    // Every single slide makes the distance heuristic worse (strict local
+    // minimum ~8 plies deep), so the forward search finds nothing and
+    // hint() returned "No helpful hint found", halting auto-play. The
+    // exact bidirectional fallback crosses the hill.
+    let s: SixteenState = {
+      w: 5,
+      h: 5,
+      n: 25,
+      tiles: new Int32Array([
+        6, 2, 3, 4, 5, 1, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 17, 18, 19, 16,
+        21, 22, 23, 24, 25,
+      ]),
+      completed: 0,
+      usedSolve: false,
+      moveCount: 0,
+      moveTarget: 0,
+      lastMovementSense: 0,
+    };
+    for (let step = 0; step < 20 && s.completed === 0; step++) {
+      const result = sixteenGame.hint?.(s);
+      expect(result?.ok).toBe(true);
+      if (!result?.ok) return;
+      s = executeMove(s, result.move);
+    }
+    expect(s.completed).toBeGreaterThan(0);
+  });
+
   it("can solve a puzzle using sequential hints", () => {
     const p = { w: 3, h: 3, movetarget: 3 };
     const rng = randomNew("hint-solve-test");

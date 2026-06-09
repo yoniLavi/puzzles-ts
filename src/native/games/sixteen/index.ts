@@ -1111,6 +1111,122 @@ function arrayToKey(arr: Int32Array): string {
   return s;
 }
 
+type SlideMove = Extract<SixteenMove, { type: "slide" }>;
+
+interface ExactPlan {
+  first: SlideMove;
+  second: SlideMove | null;
+}
+
+/** Exact bidirectional BFS (in full-slide moves) from `start` to the
+ * solved board: expand level by level from both ends, always growing the
+ * smaller frontier, until the visited sets meet. Returns the first (and,
+ * when determinable, second) move of a shortest solution, or null when
+ * no meeting point is found within the depth/state caps. */
+function bidirectionalPlan(
+  start: Int32Array,
+  w: number,
+  h: number,
+  n: number,
+  moves: SlideMove[],
+): ExactPlan | null {
+  const MAX_TOTAL_DEPTH = 10;
+  const MAX_STATES = 1_500_000;
+
+  const goal = new Int32Array(n);
+  for (let i = 0; i < n; i++) goal[i] = i + 1;
+
+  const invert = (m: SlideMove): SlideMove => ({ ...m, delta: -m.delta });
+
+  interface FwdInfo {
+    g: number;
+    first: SlideMove | null;
+    second: SlideMove | null;
+  }
+  /** `out` is the forward-direction move leaving this node toward the goal. */
+  interface BwdInfo {
+    g: number;
+    out: SlideMove | null;
+  }
+  interface FrontierNode {
+    tiles: Int32Array;
+    key: string;
+  }
+
+  const startKey = arrayToKey(start);
+  const goalKey = arrayToKey(goal);
+  const fwdSeen = new Map<string, FwdInfo>([
+    [startKey, { g: 0, first: null, second: null }],
+  ]);
+  const bwdSeen = new Map<string, BwdInfo>([[goalKey, { g: 0, out: null }]]);
+  let fwdFrontier: FrontierNode[] = [{ tiles: start, key: startKey }];
+  let bwdFrontier: FrontierNode[] = [{ tiles: goal, key: goalKey }];
+  let depth = 0;
+
+  const scratch = new Int32Array(n);
+
+  while (
+    fwdFrontier.length > 0 &&
+    bwdFrontier.length > 0 &&
+    depth < MAX_TOTAL_DEPTH &&
+    fwdSeen.size + bwdSeen.size < MAX_STATES
+  ) {
+    const forward = fwdFrontier.length <= bwdFrontier.length;
+    const frontier = forward ? fwdFrontier : bwdFrontier;
+    const next: FrontierNode[] = [];
+    for (const node of frontier) {
+      if (forward) {
+        const parent = fwdSeen.get(node.key) as FwdInfo;
+        for (const move of moves) {
+          slideTilesInto(node.tiles, scratch, w, h, move);
+          const key = arrayToKey(scratch);
+          if (fwdSeen.has(key)) continue;
+          const info: FwdInfo = {
+            g: parent.g + 1,
+            first: parent.g === 0 ? move : parent.first,
+            second: parent.g === 1 ? move : parent.second,
+          };
+          fwdSeen.set(key, info);
+          const met = bwdSeen.get(key);
+          if (met) {
+            if (!info.first) return null; // unreachable: g >= 1 here
+            return { first: info.first, second: info.second ?? met.out };
+          }
+          next.push({ tiles: new Int32Array(scratch), key });
+        }
+      } else {
+        const parent = bwdSeen.get(node.key) as BwdInfo;
+        for (const move of moves) {
+          slideTilesInto(node.tiles, scratch, w, h, move);
+          const key = arrayToKey(scratch);
+          if (bwdSeen.has(key)) continue;
+          // In forward direction, this edge runs successor --inv(move)--> node.
+          const info: BwdInfo = { g: parent.g + 1, out: invert(move) };
+          bwdSeen.set(key, info);
+          const met = fwdSeen.get(key);
+          if (met) {
+            // The forward path reaches this node in met.g moves; the
+            // remaining moves toward the goal start with info.out.
+            const first = met.g === 0 ? info.out : met.first;
+            if (!first) return null; // unreachable: solved board never gets here
+            const second =
+              met.g === 0 ? parent.out : met.g === 1 ? info.out : met.second;
+            return { first, second };
+          }
+          next.push({ tiles: new Int32Array(scratch), key });
+        }
+      }
+    }
+    if (forward) {
+      fwdFrontier = next;
+    } else {
+      bwdFrontier = next;
+    }
+    depth++;
+  }
+  return null;
+}
+
 function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlights> {
   const { w, h, n, tiles } = state;
 
@@ -1132,10 +1248,11 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   }
 
   // A* Search settings
-  // Near the solved state, we increase the search budget to resolve local minima (plateaus)
-  // and find the final path to solution. For highly scrambled states, we keep it small
-  // for performance.
-  const maxStates = outOfPlace <= 4 ? 25000 : 4000;
+  // Near the solved state, a somewhat larger budget resolves shallow
+  // plateaus; deep local minima (e.g. swapped pairs) are beyond ANY
+  // sane forward budget and are handled by the exact bidirectional
+  // fallback below, so there is no point burning a huge budget here.
+  const maxStates = outOfPlace <= 8 ? 6000 : 4000;
 
   const targetR = new Int32Array(n + 1);
   const targetC = new Int32Array(n + 1);
@@ -1319,7 +1436,25 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     }
   }
 
-  const bestMove = bestNode.firstMove;
+  // Plan selection: use the heuristic search's path when it reached the
+  // goal (or at least improved on the start position); otherwise, for
+  // near-solved boards, fall back to an exact bidirectional search.
+  // Strict local minima — e.g. two swapped pairs, where every single
+  // slide makes the distance heuristic worse — sit ~8 plies uphill,
+  // beyond any sane forward budget, but meeting in the middle crosses
+  // them at ~4 plies per side. Exact (shortest) plans also guarantee
+  // auto-play progress: each replan is strictly one move shorter.
+  let planFirst = bestNode.firstMove;
+  let planSecond = bestNode.secondMove;
+  if (bestNode.h !== 0 && outOfPlace <= 8) {
+    const exact = bidirectionalPlan(tiles, w, h, n, moves);
+    if (exact) {
+      planFirst = exact.first;
+      planSecond = exact.second;
+    }
+  }
+
+  const bestMove = planFirst;
   if (!bestMove) {
     return { ok: false, error: "No helpful hint found" };
   }
@@ -1403,7 +1538,7 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   let ultimatePos: number | undefined;
   let secondMove: SixteenMove | undefined;
 
-  const second = bestNode.secondMove;
+  const second = planSecond;
   if (second && second.axis !== bestMove.axis) {
     const onSecondLine =
       second.axis === "column" ? second.index === landC : second.index === landR;
