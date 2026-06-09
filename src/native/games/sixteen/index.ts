@@ -1453,9 +1453,26 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     }
   }
 
+  // Return the full move the narration asks for: one slide that carries
+  // the tile from its current cell all the way to the target box, in the
+  // in-grid direction the hint arrow shows. A player following the hint
+  // makes that one long slide, not repeated single steps — and the slide
+  // animation glides the whole distance. (Equivalent mod w/h to repeating
+  // the solver's ±1 step, so solver progress is unchanged.)
+  let move: SixteenMove = bestMove;
+  if (currentIdx !== -1) {
+    const fullDelta =
+      bestMove.axis === "row"
+        ? (targetPos % w) - (currentIdx % w)
+        : Math.floor(targetPos / w) - Math.floor(currentIdx / w);
+    if (fullDelta !== 0) {
+      move = { ...bestMove, delta: fullDelta };
+    }
+  }
+
   return {
     ok: true,
-    move: bestMove,
+    move,
     explanation,
     highlights: { tile: bestTile, targetPos, ultimatePos, secondMove },
   };

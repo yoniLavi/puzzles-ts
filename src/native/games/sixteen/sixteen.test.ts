@@ -464,6 +464,9 @@ describe("Sixteen hint", () => {
           expect(hl.targetPos).not.toBe(cur);
           if (hl.ultimatePos !== undefined) expect(hl.ultimatePos).not.toBe(cur);
           s = executeMove(s, result.move);
+          // The hint move is the full slide its narration describes:
+          // applying it lands the tile exactly on the highlighted target.
+          expect(s.tiles.indexOf(hl.tile)).toBe(hl.targetPos);
         }
         expect(s.completed).toBeGreaterThan(0);
       }
