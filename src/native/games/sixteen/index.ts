@@ -41,7 +41,7 @@ import {
 // --- constants --------------------------------------------------------
 
 const PREFERRED_TILE_SIZE = 48;
-const ANIM_TIME = 0.13;
+const ANIM_TIME = 0.4;
 const FLASH_FRAME = 0.13;
 const HIGHLIGHT_WIDTH_DIV = 20;
 
@@ -561,6 +561,10 @@ function redraw(
     if (hl) {
       const tilePos = state.tiles.indexOf(hl.tile);
       if (tilePos >= 0) {
+        // Deliberately point in-grid toward the target (not the shorter
+        // toroidal wrap): the tile then visibly travels toward the target
+        // instead of jumping across the board edge, even when that costs
+        // an extra move versus the solver's wrapping slide.
         if (m.axis === "row") {
           const curCol = tilePos % state.w;
           const targetCol = hl.targetPos % state.w;
@@ -1314,101 +1318,51 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     return { ok: false, error: "No helpful hint found" };
   }
 
-  // Pick the tile on the moved row/column that benefits the most from this move,
-  // or simply the lowest-numbered out-of-place tile on that row/column.
+  // Pick the lowest-numbered candidate tile on the moved row/column.
   let bestTile = 0;
-  let maxTileBenefit = -Infinity;
 
   if (bestMove.axis === "row") {
     const r = bestMove.index;
-    // Strategy 1: prefer tiles out of place on the moved axis (columns)
+    // Select the lowest-numbered out-of-place tile on this row (ascending numeric order)
     for (let c = 0; c < w; c++) {
       const tile = tiles[r * w + c];
       const targetCol = (tile - 1) % w;
-      if (targetCol !== c) {
-        const curDist = toroidalDist(c, targetCol, w);
-        const newCol = (c + bestMove.delta + w) % w;
-        const newDist = toroidalDist(newCol, targetCol, w);
-        const benefit = curDist - newDist;
-        if (
-          benefit > maxTileBenefit ||
-          (benefit === maxTileBenefit && tile < bestTile)
-        ) {
-          maxTileBenefit = benefit;
+      const targetRow = Math.floor((tile - 1) / w);
+      if (targetRow !== r || targetCol !== c) {
+        if (bestTile === 0 || tile < bestTile) {
           bestTile = tile;
         }
       }
     }
-    // Strategy 2: fallback to any out-of-place tile on this row
+    // Fallback: if no out-of-place tile on this row, select the lowest-numbered tile on this row
     if (bestTile === 0) {
       for (let c = 0; c < w; c++) {
         const tile = tiles[r * w + c];
-        const targetCol = (tile - 1) % w;
-        const targetRow = Math.floor((tile - 1) / w);
-        if (targetRow !== r || targetCol !== c) {
-          const curDist = toroidalDist(c, targetCol, w);
-          const newCol = (c + bestMove.delta + w) % w;
-          const newDist = toroidalDist(newCol, targetCol, w);
-          const benefit = curDist - newDist;
-          if (
-            benefit > maxTileBenefit ||
-            (benefit === maxTileBenefit && tile < bestTile)
-          ) {
-            maxTileBenefit = benefit;
-            bestTile = tile;
-          }
+        if (bestTile === 0 || tile < bestTile) {
+          bestTile = tile;
         }
       }
     }
   } else {
     const colIndex = bestMove.index;
-    // Strategy 1: prefer tiles out of place on the moved axis (rows)
+    // Select the lowest-numbered out-of-place tile on this column (ascending numeric order)
     for (let r = 0; r < h; r++) {
       const tile = tiles[r * w + colIndex];
+      const targetCol = (tile - 1) % w;
       const targetRow = Math.floor((tile - 1) / w);
-      if (targetRow !== r) {
-        const curDist = toroidalDist(r, targetRow, h);
-        const newRow = (r + bestMove.delta + h) % h;
-        const newDist = toroidalDist(newRow, targetRow, h);
-        const benefit = curDist - newDist;
-        if (
-          benefit > maxTileBenefit ||
-          (benefit === maxTileBenefit && tile < bestTile)
-        ) {
-          maxTileBenefit = benefit;
+      if (targetRow !== r || targetCol !== colIndex) {
+        if (bestTile === 0 || tile < bestTile) {
           bestTile = tile;
         }
       }
     }
-    // Strategy 2: fallback to any out-of-place tile on this column
+    // Fallback: if no out-of-place tile on this column, select the lowest-numbered tile on this column
     if (bestTile === 0) {
       for (let r = 0; r < h; r++) {
         const tile = tiles[r * w + colIndex];
-        const targetCol = (tile - 1) % w;
-        const targetRow = Math.floor((tile - 1) / w);
-        if (targetRow !== r || targetCol !== colIndex) {
-          const curDist = toroidalDist(r, targetRow, h);
-          const newRow = (r + bestMove.delta + h) % h;
-          const newDist = toroidalDist(newRow, targetRow, h);
-          const benefit = curDist - newDist;
-          if (
-            benefit > maxTileBenefit ||
-            (benefit === maxTileBenefit && tile < bestTile)
-          ) {
-            maxTileBenefit = benefit;
-            bestTile = tile;
-          }
+        if (bestTile === 0 || tile < bestTile) {
+          bestTile = tile;
         }
-      }
-    }
-  }
-
-  // Fallback if no tile is moving closer on that axis
-  if (bestTile === 0) {
-    for (let i = 0; i < n; i++) {
-      if (tiles[i] !== i + 1) {
-        bestTile = tiles[i];
-        break;
       }
     }
   }
@@ -1428,14 +1382,26 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   let ultimatePos: number | undefined;
   let secondMove: SixteenMove | undefined;
 
-  if (bestNode.secondMove) {
+  let currentIdx = -1;
+  for (let i = 0; i < n; i++) {
+    if (tiles[i] === bestTile) {
+      currentIdx = i;
+      break;
+    }
+  }
+
+  const curR = currentIdx !== -1 ? Math.floor(currentIdx / w) : -1;
+  const curC = currentIdx !== -1 ? currentIdx % w : -1;
+
+  if (bestNode.secondMove && currentIdx !== -1) {
     const second = bestNode.secondMove;
     const finalSolvedPos = (targetRow - 1) * w + (targetCol - 1);
     if (finalSolvedPos !== targetPos) {
       if (
         bestMove.axis === "row" &&
         second.axis === "column" &&
-        second.index === targetCol - 1
+        second.index === targetCol - 1 &&
+        curC !== targetCol - 1
       ) {
         explanation = `Move tile ${bestTile} to column ${targetCol}, then to row ${targetRow}`;
         ultimatePos = finalSolvedPos;
@@ -1443,7 +1409,8 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
       } else if (
         bestMove.axis === "column" &&
         second.axis === "row" &&
-        second.index === targetRow - 1
+        second.index === targetRow - 1 &&
+        curR !== targetRow - 1
       ) {
         explanation = `Move tile ${bestTile} to row ${targetRow}, then to column ${targetCol}`;
         ultimatePos = finalSolvedPos;
@@ -1452,23 +1419,32 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     }
   }
 
-  if (!secondMove) {
-    let currentIdx = -1;
-    for (let i = 0; i < n; i++) {
-      if (tiles[i] === bestTile) {
-        currentIdx = i;
-        break;
-      }
+  if (!secondMove && currentIdx !== -1) {
+    if (bestMove.axis === "row" && targetCol === curC + 1) {
+      const destCol = ((curC + bestMove.delta + w) % w) + 1;
+      targetCol = destCol;
+      explanation = `Move tile ${bestTile} to column ${targetCol}`;
+      targetPos = bestMove.index * w + (targetCol - 1);
+    } else if (bestMove.axis === "column" && targetRow === curR + 1) {
+      const destRow = ((curR + bestMove.delta + h) % h) + 1;
+      targetRow = destRow;
+      explanation = `Move tile ${bestTile} to row ${targetRow}`;
+      targetPos = (targetRow - 1) * w + bestMove.index;
     }
-    if (currentIdx !== -1) {
-      const curR = Math.floor(currentIdx / w);
-      const curC = currentIdx % w;
-      if (bestMove.axis === "row" && targetCol === curC + 1) {
+  }
+
+  // Post-generation safeguard: assert targetPos and ultimatePos are not collocated with currentIdx.
+  if (currentIdx !== -1) {
+    if (targetPos === currentIdx || ultimatePos === currentIdx) {
+      ultimatePos = undefined;
+      secondMove = undefined;
+
+      if (bestMove.axis === "row") {
         const destCol = ((curC + bestMove.delta + w) % w) + 1;
         targetCol = destCol;
         explanation = `Move tile ${bestTile} to column ${targetCol}`;
         targetPos = bestMove.index * w + (targetCol - 1);
-      } else if (bestMove.axis === "column" && targetRow === curR + 1) {
+      } else {
         const destRow = ((curR + bestMove.delta + h) % h) + 1;
         targetRow = destRow;
         explanation = `Move tile ${bestTile} to row ${targetRow}`;

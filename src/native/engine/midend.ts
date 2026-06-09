@@ -131,6 +131,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private winSize: Size = { w: 0, h: 0 };
   private usedSolve = false;
   private activeHint: ActiveHint<Move> | null = null;
+  private clearHintOnAnimationEnd = false;
   private timerElapsed = 0;
   private notify?: NotifyChange;
   private notifyTimer?: NotifyTimerState;
@@ -334,6 +335,8 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     }
     const result = this.game.solve(this.history[0], this.state);
     if (!result.ok) return result.error;
+    this.activeHint = null;
+    this.clearHintOnAnimationEnd = false;
     this.usedSolve = true;
     this.applyMove(result.move);
     return undefined;
@@ -350,6 +353,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       explanation: result.explanation,
       highlights: result.highlights,
     };
+    this.clearHintOnAnimationEnd = false;
     this.clearAnimation();
     this.afterTransition();
     return undefined;
@@ -361,7 +365,12 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     }
     const result = this.game.hint(this.state);
     if (!result.ok) return result.error;
-    this.activeHint = null;
+    this.activeHint = {
+      move: result.move,
+      explanation: result.explanation,
+      highlights: result.highlights,
+    };
+    this.clearHintOnAnimationEnd = true;
     this.applyMove(result.move);
     return undefined;
   }
@@ -624,6 +633,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       } else {
         // Both animation and flash done: settle and paint once clean.
         this.clearAnimation();
+        if (this.clearHintOnAnimationEnd || this.game.status(this.state) === "solved") {
+          this.activeHint = null;
+        }
+        this.clearHintOnAnimationEnd = false;
         this.requestRedraw();
         this.syncTimer();
       }

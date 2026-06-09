@@ -260,4 +260,26 @@ describe("Sixteen midend integration — executeHint auto-play", () => {
     expect(h.state()?.status).toBe("solved");
     expect(steps).toBeGreaterThan(0);
   });
+
+  it("keeps activeHint highlights during move animation and clears them on completion", () => {
+    const h = harness();
+    h.m.setParams("3x3");
+    h.m.newGame();
+    expect(h.state()?.status).toBe("ongoing");
+
+    const err = h.m.executeHint();
+    expect(err).toBeUndefined();
+
+    const mPrivate = h.m as unknown as { activeHint: { move: SixteenMove } | null };
+    expect(mPrivate.activeHint).not.toBeNull();
+    expect(mPrivate.activeHint?.move).toBeDefined();
+
+    // Tick animation (0.15 < 0.40 ANIM_TIME)
+    h.m.timer(0.15);
+    expect(mPrivate.activeHint).not.toBeNull();
+
+    // Settle animation (0.30 more, total 0.45 > 0.40)
+    h.m.timer(0.3);
+    expect(mPrivate.activeHint).toBeNull();
+  });
 });

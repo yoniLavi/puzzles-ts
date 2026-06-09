@@ -406,20 +406,16 @@ describe("Sixteen hint", () => {
 
   it("prioritizes the lowest-numbered out-of-place tile", () => {
     // Construct a 4×4 state where tile 1 is out of place.
-    // Place tile 1 at position (0,1) — one column away from its target (0,0).
-    // Place tile 5 at position (1,0) — one row away from its target (1,0)... wait, that IS its target.
-    // Let's make tile 2 at position (0,2) — two columns away.
-    // A row-0 slide right moves tile 1 closer (benefit 1) but also moves tile 2 farther (cost 1).
-    // Net benefit = 0. But the heuristic should still prefer it because tile 1
-    // is the lowest out-of-place tile.
     const w = 4,
       h = 4,
       n = 16;
     const tiles = new Int32Array(n);
-    for (let i = 0; i < n; i++) tiles[i] = i + 1; // solved
-    // Swap tile 1 and tile 2: tile 1 at position 1, tile 2 at position 0.
-    tiles[0] = 2;
+    for (let i = 0; i < n; i++) tiles[i] = i + 1;
+    // Shift row 0 right by 1 step: 4, 1, 2, 3. All tiles on row 0 are out of place.
+    tiles[0] = 4;
     tiles[1] = 1;
+    tiles[2] = 2;
+    tiles[3] = 3;
     const s: SixteenState = {
       w,
       h,
@@ -434,8 +430,44 @@ describe("Sixteen hint", () => {
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(true);
     if (!result?.ok) return;
-    // The hint should mention tile 1 or 2 (the lowest out-of-place tiles on row 0).
-    expect(result.explanation).toMatch(/tile (1|2)/);
+    // The hint should recommend sliding row 0, prioritizing tile 1 (the lowest out-of-place tile on row 0).
+    expect(result.explanation).toMatch(/tile 1/);
+  });
+
+  it("never highlights a tile off the moved line or a target on the tile itself", () => {
+    // Property test over full hint-driven playthroughs: every hint must be
+    // geometrically coherent — the highlighted tile sits on the row/column
+    // being slid, and neither the (intermediate) target nor the ultimate
+    // target is the tile's own current cell. Regression: a 2D hint once
+    // drew its intermediate target around the tile's starting position.
+    for (const [w, h, seeds] of [
+      [3, 3, ["hint-geom-a", "hint-geom-b"]],
+      [4, 4, ["hint-geom-c", "hint-geom-d"]],
+    ] as const) {
+      for (const seed of seeds) {
+        const p = { w, h, movetarget: 0 };
+        const { desc } = newDesc(p, randomNew(seed));
+        let s = newState(p, desc);
+        for (let step = 0; step < 150 && s.completed === 0; step++) {
+          const result = sixteenGame.hint?.(s);
+          if (!result?.ok) break;
+          const hl = result.highlights as SixteenHintHighlights;
+          const cur = s.tiles.indexOf(hl.tile);
+          expect(cur).toBeGreaterThanOrEqual(0);
+          if (result.move.type === "slide") {
+            const onLine =
+              result.move.axis === "row"
+                ? Math.floor(cur / w) === result.move.index
+                : cur % w === result.move.index;
+            expect(onLine).toBe(true);
+          }
+          expect(hl.targetPos).not.toBe(cur);
+          if (hl.ultimatePos !== undefined) expect(hl.ultimatePos).not.toBe(cur);
+          s = executeMove(s, result.move);
+        }
+        expect(s.completed).toBeGreaterThan(0);
+      }
+    }
   });
 
   it("can solve a puzzle using sequential hints", () => {
@@ -562,6 +594,42 @@ describe("Sixteen hint", () => {
         // It must NOT say "Move tile 3 to column 3".
         expect(result.explanation).not.toContain("column 3");
       }
+    }
+  });
+
+  it("always prefers candidates in ascending numeric order regardless of whether they are out-of-place on the moved axis", () => {
+    // Row 0 has:
+    // Index 0: Tile 1 (solved)
+    // Index 1: Tile 4 (target Row 1, Col 1. Currently at Row 0, Col 1. Column is correct, row is wrong -> Strategy 2 candidate)
+    // Index 2: Tile 8 (target Row 2, Col 0. Currently at Row 0, Col 2. Column is wrong, row is wrong -> Strategy 1 candidate)
+    // Board: [1, 4, 8, ...]
+    const tiles = new Int32Array([1, 4, 8, 2, 5, 6, 7, 3, 9]);
+    const s: SixteenState = {
+      w: 3,
+      h: 3,
+      n: 9,
+      tiles,
+      completed: 0,
+      usedSolve: false,
+      moveCount: 0,
+      moveTarget: 0,
+      lastMovementSense: 0,
+    };
+    const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) return;
+
+    // The recommended move should be a row slide on Row 0 (since both Tile 4 and Tile 8 can be moved/aligned).
+    // And since we now strictly prefer ascending numeric order, Tile 4 (lowest-numbered out-of-place tile on Row 0)
+    // must be selected over Tile 8, even though Tile 8 is out-of-place on the moved axis (wrong column)
+    // and Tile 4 is not (correct column, wrong row).
+    if (
+      result.move.type === "slide" &&
+      result.move.axis === "row" &&
+      result.move.index === 0
+    ) {
+      const hl = result.highlights as SixteenHintHighlights;
+      expect(hl?.tile).toBe(4);
     }
   });
 });

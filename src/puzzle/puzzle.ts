@@ -376,7 +376,10 @@ export class Puzzle {
         this.stopAutoHint(err);
         return;
       }
-      await new Promise((resolve) => setTimeout(resolve, 350));
+      // Rest between auto-played moves: long enough that the 0.4s slide
+      // animation completes and the user can digest the move before the
+      // next hint fires.
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
     const solved = this.isSolved;
     this.stopAutoHint("");
