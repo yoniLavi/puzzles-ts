@@ -1442,11 +1442,21 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
 
   // Narrate each step against the simulated board it applies to: the
   // plan is computed once, so every step's story must already be told
-  // from the state its predecessors produce.
+  // from the state its predecessors produce. A step that the previous
+  // step previewed as the continuation of a tile's journey ("then to
+  // column 2") is narrated around that same tile — the user who
+  // follows the journey must see its second leg, not an unrelated
+  // story about whichever tile happens to be lowest-numbered on the
+  // line.
   const steps: HintStep<SixteenMove, SixteenHintHighlights>[] = [];
   let board = tiles;
   for (let k = 0; k < path.length; k++) {
-    steps.push(narrateStep(board, w, h, path[k], path[k + 1] ?? null));
+    const prev = steps[k - 1]?.highlights;
+    const journey =
+      prev && prev.ultimatePos !== undefined
+        ? { tile: prev.tile, ultimatePos: prev.ultimatePos }
+        : null;
+    steps.push(narrateStep(board, w, h, path[k], path[k + 1] ?? null, journey));
     const next = new Int32Array(n);
     slideTilesInto(board, next, w, h, path[k]);
     board = next;
@@ -1457,26 +1467,46 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
 
 /** Narrate one plan step against the board it applies to. The
  * highlighted tile is the lowest-numbered out-of-place tile on the
- * moved line; the target is that tile's landing cell under the move
- * (with a second-leg preview when the next planned move continues the
- * same tile's journey perpendicular to this one); the returned move's
- * delta is normalized to the in-grid direction of travel. (An earlier
- * version narrated the tile's *solved* row/column regardless of what
- * the move achieved; once hints started executing the narrated slide,
- * that overpromise pushed the game off the solver's path and
- * auto-play could cycle.) */
+ * moved line — unless the previous step previewed this move as the
+ * continuation of a tile's journey, in which case that journey tile
+ * carries the narration through its second leg. The target is the
+ * narrated tile's landing cell under the move (with a second-leg
+ * preview when the next planned move continues the same tile's
+ * journey perpendicular to this one); the returned move's delta is
+ * normalized to the in-grid direction of travel. (An earlier version
+ * narrated the tile's *solved* row/column regardless of what the move
+ * achieved; once hints started executing the narrated slide, that
+ * overpromise pushed the game off the solver's path and auto-play
+ * could cycle.) */
 function narrateStep(
   tiles: Int32Array,
   w: number,
   h: number,
   move: SlideMove,
   nextMove: SlideMove | null,
+  journey: { tile: number; ultimatePos: number } | null = null,
 ): HintStep<SixteenMove, SixteenHintHighlights> {
-  // Pick the lowest-numbered out-of-place tile on the moved
+  // A previewed journey continuation keeps narrating the same tile,
+  // provided this move really does carry it to the previewed cell.
+  let bestTile = 0;
+  if (journey) {
+    const idx = tiles.indexOf(journey.tile);
+    const r = Math.floor(idx / w);
+    const c = idx % w;
+    const onLine = move.axis === "row" ? r === move.index : c === move.index;
+    if (onLine) {
+      const jLandR = move.axis === "row" ? r : (r + move.delta + h) % h;
+      const jLandC = move.axis === "row" ? (c + move.delta + w) % w : c;
+      if (jLandR * w + jLandC === journey.ultimatePos) {
+        bestTile = journey.tile;
+      }
+    }
+  }
+
+  // Otherwise pick the lowest-numbered out-of-place tile on the moved
   // row/column; if every tile on the line is in place (the move only
   // serves another line's journey), the lowest-numbered tile on it.
-  let bestTile = 0;
-  if (move.axis === "row") {
+  if (bestTile === 0 && move.axis === "row") {
     const r = move.index;
     for (let c = 0; c < w; c++) {
       const tile = tiles[r * w + c];
@@ -1496,7 +1526,7 @@ function narrateStep(
         }
       }
     }
-  } else {
+  } else if (bestTile === 0) {
     const colIndex = move.index;
     for (let r = 0; r < h; r++) {
       const tile = tiles[r * w + colIndex];

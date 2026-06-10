@@ -579,6 +579,58 @@ describe("Sixteen hint", () => {
     expect(elapsed).toBeLessThan(1500);
   });
 
+  it("a previewed two-leg journey tracks and narrates the same tile through both legs", () => {
+    // Owner flow: the hint says "Move tile 7 to row 1, then to column
+    // 2". Following it leg by leg must (a) keep the plan alive with
+    // "completed" verdicts — including equivalent wrap-around deltas —
+    // and (b) narrate the second leg around the SAME tile, not switch
+    // to whichever tile is lowest-numbered on the second line (the
+    // switcheroo made a re-requested mid-journey hint look like an
+    // unrelated fresh hint).
+    let s: SixteenState = {
+      w: 5,
+      h: 5,
+      n: 25,
+      tiles: new Int32Array([
+        1, 2, 3, 4, 6, 7, 12, 8, 9, 5, 11, 18, 13, 14, 15, 16, 17, 24, 19, 20, 21,
+        22, 23, 10, 25,
+      ]),
+      completed: 0,
+      usedSolve: false,
+      moveCount: 34,
+      moveTarget: 0,
+      lastMovementSense: 0,
+    };
+    const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) return;
+    const [step1, step2] = result.steps;
+    const hl1 = step1.highlights as SixteenHintHighlights;
+    const hl2 = step2.highlights as SixteenHintHighlights;
+    expect(step1.explanation).toBe("Move tile 7 to row 1, then to column 2");
+    expect(hl1.ultimatePos).toBe(1);
+
+    // (b) journey continuity: the second leg narrates tile 7's journey.
+    expect(step2.explanation).toBe("Move tile 7 to column 2");
+    expect(hl2.tile).toBe(7);
+    expect(hl2.targetPos).toBe(1);
+
+    // Doing the second leg before the first genuinely diverges (row and
+    // column slides do not commute) and must drop the plan.
+    expect(sixteenGame.hintKeepTrack?.(step2.move, step1, s)).toBe("off");
+
+    // (a) faithful in-order following: leg 1 completes step 1...
+    expect(sixteenGame.hintKeepTrack?.(step1.move, step1, s)).toBe("completed");
+    s = executeMove(s, step1.move);
+    // ...and leg 2 completes step 2, whether played as planned or as
+    // the equivalent wrap-around slide of the same line.
+    expect(sixteenGame.hintKeepTrack?.(step2.move, step2, s)).toBe("completed");
+    if (step2.move.type === "slide") {
+      const equivalent = { ...step2.move, delta: step2.move.delta + 5 };
+      expect(sixteenGame.hintKeepTrack?.(equivalent, step2, s)).toBe("completed");
+    }
+  });
+
   it("can solve a puzzle using sequential hints", () => {
     const p = { w: 3, h: 3, movetarget: 3 };
     const rng = randomNew("hint-solve-test");

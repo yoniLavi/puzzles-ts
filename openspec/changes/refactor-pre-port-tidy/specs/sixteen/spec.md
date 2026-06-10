@@ -30,10 +30,12 @@ hint request continues from the improved position) without engaging the
 exact search. The planner SHALL return the whole path as a plan
 of narrated steps. Each step's narration SHALL describe what its move
 actually does: the highlighted tile is the lowest-numbered out-of-place tile
-on the moved line, the target is that tile's **landing cell** under the
-step's move (with a second-leg preview when the next step continues the same
-tile's journey perpendicular to the first), and the returned delta is
-normalized to the in-grid direction of travel. The Sixteen `redraw` method
+on the moved line — except when the previous step previewed this move as the
+continuation of a tile's journey, in which case the same journey tile SHALL
+carry the narration through its second leg — the target is the narrated
+tile's **landing cell** under the step's move (with a second-leg preview when
+the next step continues the same tile's journey perpendicular to the first),
+and the returned delta is normalized to the in-grid direction of travel. The Sixteen `redraw` method
 SHALL render the current step by highlighting the tile to move (filled
 overlay), its landing cell (border highlight), and the corresponding slide
 arrow (using `COL_HINT`). Sixteen's `hintKeepTrack` SHALL report
