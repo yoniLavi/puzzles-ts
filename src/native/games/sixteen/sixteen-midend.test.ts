@@ -3,6 +3,7 @@ import type { ChangeNotification } from "../../../puzzle/types.ts";
 import { Midend } from "../../engine/midend.ts";
 import {
   CURSOR_DOWN,
+  CURSOR_LEFT,
   CURSOR_RIGHT,
   CURSOR_SELECT,
   LEFT_BUTTON,
@@ -239,6 +240,46 @@ describe("Sixteen midend integration — hint persistence", () => {
     h.m.processInput(0, 0, 0x2000 | CURSOR_RIGHT); // Shift+CURSOR_RIGHT: slide row 0 right
 
     expect(mPrivate.activeHint).toBeNull();
+  });
+
+  it("a multi-leg journey stays displayed through its legs (owner board, 2026-06-10)", () => {
+    // Owner-reported: landing the tile on the intermediate target made
+    // the hint "reset" — the display hid mid-journey. A journey is one
+    // hint: its flagged continuation steps must stay displayed; only
+    // the step after the journey waits for a fresh request.
+    const h = harness();
+    h.m.newGameFromId(
+      "5x5:1,2,3,4,6,7,13,8,9,5,11,12,18,14,15,16,17,24,19,20,21,22,23,10,25",
+    );
+    const banner = () => {
+      const n = h.last("status-bar-change") as
+        | Extract<ChangeNotification, { type: "status-bar-change" }>
+        | undefined;
+      return n?.activeHintExplanation;
+    };
+    expect(h.m.hint()).toBeUndefined();
+    expect(banner()).toBe("Move tile 6 to column 4, then to row 2");
+
+    // Leg 1: slide row 0 left by 1 (cursor at (0,0), shift+left).
+    h.m.processInput(0, 0, CURSOR_SELECT);
+    h.m.processInput(0, 0, 0x2000 | CURSOR_LEFT);
+    // The journey continues: leg 2 is displayed without a new request.
+    expect(banner()).toBe("Move tile 6 to row 2, then to column 5");
+
+    // Leg 2: slide column 3 down by 1 (cursor right ×3, shift+down).
+    h.m.processInput(0, 0, CURSOR_RIGHT);
+    h.m.processInput(0, 0, CURSOR_RIGHT);
+    h.m.processInput(0, 0, CURSOR_RIGHT);
+    h.m.processInput(0, 0, 0x2000 | CURSOR_DOWN);
+    expect(banner()).toBe("Move tile 6 to column 5");
+
+    // Leg 3 ends the journey: slide row 1 right by 1.
+    h.m.processInput(0, 0, CURSOR_DOWN);
+    h.m.processInput(0, 0, 0x2000 | CURSOR_RIGHT);
+    // Tile 6 is home; the next (unrelated) step waits to be asked for.
+    expect(banner()).toBeUndefined();
+    const mPrivate = h.m as unknown as PrivateHintView;
+    expect(mPrivate.activeHint).not.toBeNull();
   });
 });
 

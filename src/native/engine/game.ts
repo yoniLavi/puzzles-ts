@@ -47,6 +47,14 @@ export interface HintStep<Move, Highlights = unknown> {
   move: Move;
   explanation: string;
   highlights?: Highlights;
+  /** True when this step is the continuation of the journey the
+   * previous step previewed (e.g. the "then to column 5" leg of
+   * "Move tile 10 to row 2, then to column 5"). The midend keeps the
+   * hint displayed across a manual completion into such a step — the
+   * journey was presented as one hint, so it stays on screen through
+   * its legs — whereas an unflagged next step waits for the user to
+   * ask again. */
+  continuesPrevious?: boolean;
 }
 
 /** Result of a hint attempt — the whole computed plan as a non-empty

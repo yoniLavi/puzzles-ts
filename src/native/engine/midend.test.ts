@@ -539,6 +539,40 @@ describe("Midend hint plan lifecycle", () => {
     expect(c.hintCalls()).toBe(1);
   });
 
+  it("completing into a journey-continuation step keeps the hint displayed", () => {
+    // A two-leg journey is presented as ONE hint: completing the first
+    // leg must transition the display to the flagged continuation step
+    // instead of hiding. The unflagged step after the journey hides as
+    // usual.
+    const c = countingHintGame();
+    const game = {
+      ...c.game,
+      hint: (s: Parameters<NonNullable<typeof fakeGame.hint>>[0]) => {
+        const base = c.game.hint?.(s);
+        if (!base?.ok) return base ?? { ok: false as const, error: "no hint" };
+        return {
+          ok: true as const,
+          steps: base.steps.map((step, i) =>
+            i === 1 ? { ...step, continuesPrevious: true } : step,
+          ),
+        };
+      },
+    };
+    h = harness(game);
+    h.m.newGame(); // target 3 ⇒ steps 1,2,3; step 2 continues step 1
+    h.m.hint();
+    expect(explanation()).toBe("Increment the counter to 1");
+    // Completing step 1 flows straight into its journey continuation.
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    expect(explanation()).toBe("Increment the counter to 2");
+    // Completing the journey's last leg hides (step 3 is unflagged).
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    expect(explanation()).toBeUndefined();
+    expect(h.m.hint()).toBeUndefined();
+    expect(explanation()).toBe("Increment the counter to 3");
+    expect(c.hintCalls()).toBe(1);
+  });
+
   it("a hidden plan keeps tracking moves: completions advance it silently", () => {
     const c = countingHintGame();
     h = harness(c.game);

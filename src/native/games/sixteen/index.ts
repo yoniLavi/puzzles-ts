@@ -1489,6 +1489,7 @@ function narrateStep(
   // A previewed journey continuation keeps narrating the same tile,
   // provided this move really does carry it to the previewed cell.
   let bestTile = 0;
+  let continuesPrevious = false;
   if (journey) {
     const idx = tiles.indexOf(journey.tile);
     const r = Math.floor(idx / w);
@@ -1499,6 +1500,7 @@ function narrateStep(
       const jLandC = move.axis === "row" ? (c + move.delta + w) % w : c;
       if (jLandR * w + jLandC === journey.ultimatePos) {
         bestTile = journey.tile;
+        continuesPrevious = true;
       }
     }
   }
@@ -1593,6 +1595,7 @@ function narrateStep(
     move: outMove,
     explanation,
     highlights: { tile: bestTile, targetPos, ultimatePos },
+    ...(continuesPrevious ? { continuesPrevious } : {}),
   };
 }
 

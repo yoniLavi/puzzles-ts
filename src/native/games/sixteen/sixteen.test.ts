@@ -610,10 +610,14 @@ describe("Sixteen hint", () => {
     expect(step1.explanation).toBe("Move tile 7 to row 1, then to column 2");
     expect(hl1.ultimatePos).toBe(1);
 
-    // (b) journey continuity: the second leg narrates tile 7's journey.
+    // (b) journey continuity: the second leg narrates tile 7's journey
+    // and is flagged so the midend keeps it displayed when leg 1
+    // completes (the journey was presented as one hint).
     expect(step2.explanation).toBe("Move tile 7 to column 2");
     expect(hl2.tile).toBe(7);
     expect(hl2.targetPos).toBe(1);
+    expect(step2.continuesPrevious).toBe(true);
+    expect(step1.continuesPrevious).toBeUndefined();
 
     // Doing the second leg before the first genuinely diverges (row and
     // column slides do not commute) and must drop the plan.

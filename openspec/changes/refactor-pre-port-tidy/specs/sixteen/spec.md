@@ -32,7 +32,9 @@ of narrated steps. Each step's narration SHALL describe what its move
 actually does: the highlighted tile is the lowest-numbered out-of-place tile
 on the moved line — except when the previous step previewed this move as the
 continuation of a tile's journey, in which case the same journey tile SHALL
-carry the narration through its second leg — the target is the narrated
+carry the narration through its second leg and the step SHALL be flagged
+`continuesPrevious` so the midend keeps the hint displayed across the legs —
+the target is the narrated
 tile's **landing cell** under the step's move (with a second-leg preview when
 the next step continues the same tile's journey perpendicular to the first),
 and the returned delta is normalized to the in-grid direction of travel. The Sixteen `redraw` method

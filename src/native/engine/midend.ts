@@ -313,10 +313,13 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       if (verdict === "completed") {
         // The game asserts the post-move state matches the plan's
         // expectation after this step, so the rest stays valid —
-        // advance, but hide the display: manual play surfaces one
-        // hint per request, the next `hint()` call re-shows.
+        // advance. Manual play surfaces one hint per request, so the
+        // display hides until the next `hint()` call — unless the
+        // next step continues the journey this step previewed
+        // ("then to column 5"): that was presented as one hint, so
+        // it stays on screen through its legs.
         this.advanceHint();
-        this.hintDisplayed = false;
+        this.hintDisplayed = this.currentHintStep?.continuesPrevious === true;
       } else if (verdict === "off") {
         this.clearHint();
       }

@@ -25,11 +25,15 @@ Plan lifecycle:
   `hintKeepTrack(move, currentStep, state)` verdict, whether or not the plan
   is currently displayed: `"completed"` advances the plan to the next step
   and **hides the display** (the user asks again to see the next step — one
-  hint per request in manual play), `"onTrack"` keeps the current step
-  displayed (the game MAY adjust the step's move in place to reflect partial
-  progress), and `"off"` drops the plan. A game returning `"completed"` is
-  asserting that the resulting state matches the plan's expectation, so the
-  remaining steps stay valid.
+  hint per request in manual play) — unless the next step is flagged
+  `continuesPrevious` (the continuation of a journey the completed step
+  previewed, e.g. the "then to column 5" leg), in which case the display
+  SHALL stay on and transition to that step: a journey is presented as one
+  hint and stays on screen through its legs. `"onTrack"` keeps the current
+  step displayed (the game MAY adjust the step's move in place to reflect
+  partial progress), and `"off"` drops the plan. A game returning
+  `"completed"` is asserting that the resulting state matches the plan's
+  expectation, so the remaining steps stay valid.
 - The plan SHALL be cleared on undo, redo, restart, new game, solve, when the
   last step completes, and when the board reaches the solved state.
 
@@ -43,12 +47,23 @@ Plan lifecycle:
 #### Scenario: Following a hint manually shows one step per request
 
 - **WHEN** the user makes a move that completes the displayed hint step
-  (`hintKeepTrack` returns `"completed"`)
+  (`hintKeepTrack` returns `"completed"`) and the next step is not a
+  journey continuation
 - **THEN** the midend advances the stored plan without recomputing and hides
   the hint display (no explanation, no highlights)
 - **WHEN** the user requests a hint again via `midend.hint()`
 - **THEN** the already-advanced current step is displayed instantly, still
   without recomputing the plan
+
+#### Scenario: A multi-leg journey stays displayed through its legs
+
+- **WHEN** the displayed step previews a journey continuation ("Move tile 10
+  to row 2, then to column 5") and the user's move completes the first leg
+- **THEN** the midend advances to the flagged continuation step and keeps the
+  hint displayed, narrating the second leg, without a fresh hint request
+- **WHEN** the journey's final leg completes and the following step is not a
+  continuation
+- **THEN** the display hides and the next step waits to be asked for
 
 #### Scenario: An off-plan move drops the plan
 
