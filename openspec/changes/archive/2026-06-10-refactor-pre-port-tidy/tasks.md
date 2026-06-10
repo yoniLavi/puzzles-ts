@@ -57,5 +57,5 @@
       theme: done 2026-06-10 via playwright (Pegs cross bevel and Sixteen
       tile bevels render pure white; Flip and Galaxies load with zero
       console errors).
-- [ ] 6.3 Owner acceptance of the mkhighlight fallback fix (visible
-      rendering change on light themes), then archive this change.
+- [x] 6.3 Owner acceptance of the mkhighlight fallback fix (visible
+      rendering change on light themes): signed off 2026-06-10.

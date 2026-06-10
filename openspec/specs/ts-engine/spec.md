@@ -371,22 +371,6 @@ The engine SHALL provide `mkhighlightBackground(bg: Colour): Colour` in `src/nat
 - **THEN** `mkhighlightBackground` shifts the background away from pure white so that a pure-white tile colour is visibly brighter
 - **AND** the game does not contain a local copy of the highlight logic
 
-### Requirement: The engine provides shared pointer button constants and action categorisation
-
-The engine SHALL provide button code constants (`LEFT_BUTTON`, `RIGHT_BUTTON`, `RIGHT_DRAG`, `RIGHT_RELEASE`, cursor keys, etc.) in `src/native/engine/pointer.ts`, matching the values in `src/puzzle/types.ts` `PuzzleButton`. These SHALL be plain `const` values (not an enum) so advisory diff scripts can import them under Node's strip-only TS loader. The engine SHALL also provide a `PointerAction` discriminated union type and a `parsePointerAction(button: number): PointerAction` function that categorises a raw button number into a typed action.
-
-#### Scenario: A game imports shared button constants
-
-- **WHEN** a game's `interpretMove` function receives a button number
-- **THEN** it compares against the shared constants from `pointer.ts` instead of locally-declared values
-- **AND** no game file contains duplicate button code declarations
-
-#### Scenario: A game uses PointerAction categorisation
-
-- **WHEN** a game calls `parsePointerAction(button)`
-- **THEN** it receives a discriminated union with `type: "press" | "drag" | "release" | "cursor"`
-- **AND** the compiler tracks unhandled action types
-
 ### Requirement: The engine provides a shared disjoint-set forest (dsf)
 
 The engine SHALL provide the `Dsf` class in `src/native/engine/dsf.ts`, promoted from the Galaxies local implementation. The class SHALL support `constructor(n)`, `reinit()`, `canonify(i)`, and `merge(a, b)` with path compression and union-by-size. Games that need union-find SHALL import from this shared location.
@@ -478,56 +462,38 @@ Plan lifecycle:
   displaying the next step as the auto-play preview and clearing after the
   final step
 
-### Requirement: The Sixteen port implements heuristic hints and rendering
+### Requirement: The engine provides shared pointer button constants
 
-The Sixteen TS port SHALL implement a hint planner that searches in
-**full-slide moves** (a slide by any distance is one move, matching player
-drags and the move counter): a heuristic forward search first, and — only when
-that makes no progress at all on a near-solved board (a strict local minimum,
-where every slide worsens the heuristic) — an exact bidirectional search that
-meets in the middle, so deep local minima (e.g. two swapped pairs) still
-yield plans. When the forward search improves the board without reaching the
-goal, its partial path SHALL be returned immediately as the plan (the next
-hint request continues from the improved position) without engaging the
-exact search. The planner SHALL return the whole path as a plan
-of narrated steps. Each step's narration SHALL describe what its move
-actually does: the highlighted tile is the lowest-numbered out-of-place tile
-on the moved line — except when the previous step previewed this move as the
-continuation of a tile's journey, in which case the same journey tile SHALL
-carry the narration through its second leg and the step SHALL be flagged
-`continuesPrevious` so the midend keeps the hint displayed across the legs —
-the target is the narrated
-tile's **landing cell** under the step's move (with a second-leg preview when
-the next step continues the same tile's journey perpendicular to the first),
-and the returned delta is normalized to the in-grid direction of travel. The Sixteen `redraw` method
-SHALL render the current step by highlighting the tile to move (filled
-overlay), its landing cell (border highlight), and the corresponding slide
-arrow (using `COL_HINT`). Sixteen's `hintKeepTrack` SHALL report
-`"completed"` when a slide of the hinted line lands the tile on the step's
-target, `"onTrack"` for other slides of that line (adjusting the step's
-remaining delta in place), and `"off"` otherwise.
+The engine SHALL provide button code constants (`LEFT_BUTTON`, `RIGHT_BUTTON`, `RIGHT_DRAG`, `RIGHT_RELEASE`, cursor keys, etc.) in `src/native/engine/pointer.ts`, matching the values in `src/puzzle/types.ts` `PuzzleButton`. These SHALL be plain `const` values (not an enum) so advisory diff scripts can import them under Node's strip-only TS loader.
 
-#### Scenario: Sixteen generates a hint plan
+#### Scenario: A game imports shared button constants
 
-- **WHEN** a user asks for a hint on an unsolved Sixteen board
-- **THEN** the planner returns a plan of one or more slide moves whose steps
-  each land the highlighted tile exactly on that step's highlighted target,
-  and the current step renders the tile, target, and slide arrow in the hint
-  colour
+- **WHEN** a game's `interpretMove` function receives a button number
+- **THEN** it compares against the shared constants from `pointer.ts` instead of locally-declared values
+- **AND** no game file contains duplicate button code declarations
 
-#### Scenario: A local-minimum endgame still yields a plan
+### Requirement: The engine provides a full mkhighlight palette helper
 
-- **WHEN** a user asks for a hint on a near-solved board where every single
-  slide worsens the distance heuristic (e.g. two disjoint swapped pairs)
-- **THEN** the exact bidirectional fallback produces a shortest full-slide
-  plan once, and following or auto-playing the stored plan reaches the solved
-  state without recomputation
+The engine SHALL provide `mkhighlight(bg: Colour): { background: Colour; highlight: Colour; lowlight: Colour }` in `src/native/engine/colour-mkhighlight.ts`, implementing the full `misc.c` `game_mkhighlight` derivation: the background is adjusted via `mkhighlightBackground`, then the highlight is shifted from the adjusted background toward white by K = sqrt(3)/6 and the lowlight toward black by K. Per upstream, when the background is within K of white the highlight SHALL saturate to pure white, and when within K of black the lowlight SHALL saturate to pure black. Games needing the standard bg/highlight/lowlight trio SHALL destructure this helper instead of re-deriving the colours locally.
 
-### Requirement: The Sixteen port supports direct row and column dragging
+#### Scenario: A game derives its palette from the shared helper
 
-The Sixteen TS port SHALL support direct touch and mouse row/column dragging. When a user drags on a tile in the grid, the game SHALL track the horizontal or vertical drag vector and visually offset the dragged row/column in real-time. When released, the slide SHALL snap to the nearest cell alignment and execute the move if the drag distance exceeds half of a tile width.
+- **WHEN** a game's `colours()` method calls `mkhighlight(defaultBackground)`
+- **THEN** it receives background, highlight, and lowlight colours matching upstream `game_mkhighlight`, with the highlight strictly brighter and the lowlight strictly darker than the background
+- **AND** the game contains no local copy of the highlight/lowlight math
 
-#### Scenario: Dragging a row to slide it right
-- **WHEN** a user pointerdowns on tile (0, 1), pointermoves right by 1.2 tiles, and pointerups
-- **THEN** the game executes a slide move on row 1 with a delta of +1 (shifting right by 1)
+#### Scenario: Light host backgrounds get a pure-white highlight
+
+- **WHEN** the host background is white or near-white
+- **THEN** the highlight saturates to pure white instead of collapsing into the adjusted background (the defect the previous per-game inline copies had)
+
+### Requirement: The engine provides a shared leading-integer param parser
+
+The engine SHALL provide `parseLeadingInt(s: string, start: number): { value: number; next: number }` in `src/native/engine/params.ts`, returning the integer formed by the maximal digit run starting at `start` (0 when the run is empty) and the index of the first non-digit character. Games whose `decodeParams` walks an upstream-format param string SHALL import this instead of declaring a local copy.
+
+#### Scenario: A game decodes a WxH param string
+
+- **WHEN** a game's `decodeParams` parses `"10x7"` using `parseLeadingInt`
+- **THEN** the first call returns `{ value: 10, next: 2 }` and a second call starting after the `"x"` returns `{ value: 7, next: 5 }`
+- **AND** no game file contains a duplicate `parseLeadingInt` declaration
 
