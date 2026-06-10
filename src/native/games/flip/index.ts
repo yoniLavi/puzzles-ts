@@ -31,6 +31,7 @@ import {
   CURSOR_UP,
   LEFT_BUTTON,
 } from "../../engine/pointer.ts";
+import { parseLeadingInt } from "../../engine/params.ts";
 import { SortedMultiset } from "../../engine/sorted-multiset.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 
@@ -122,14 +123,6 @@ function decodeBitmap(bmp: Uint8Array, len: number, hex: string): void {
       if (i * 4 + j < len) bmp[i * 4 + j] = v & (8 >> j) ? 1 : 0;
     }
   }
-}
-
-// --- params ---------------------------------------------------------
-
-function parseLeadingInt(s: string, start: number): { value: number; next: number } {
-  let i = start;
-  while (i < s.length && s[i] >= "0" && s[i] <= "9") i++;
-  return { value: Number.parseInt(s.slice(start, i) || "0", 10), next: i };
 }
 
 // --- RANDOM matrix generator (flip.c new_game_desc RANDOM branch) ---

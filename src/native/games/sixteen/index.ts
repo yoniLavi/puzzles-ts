@@ -1,5 +1,5 @@
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
-import { mkhighlightBackground } from "../../engine/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type {
   Game,
   GameDrawing,
@@ -479,30 +479,7 @@ function computeSize(p: SixteenParams, ts: number): Size {
 }
 
 function colours(defaultBackground: Colour): Colour[] {
-  const bg = mkhighlightBackground(defaultBackground);
-
-  // Derive highlight and lowlight from the adjusted background,
-  // matching C's game_mkhighlight which shifts toward white/black.
-  const K = Math.sqrt(3) / 6;
-  const colourDistance = (a: Colour, b: Colour) =>
-    Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2);
-  const colourMix = (a: Colour, b: Colour, t: number): Colour => [
-    a[0] + (b[0] - a[0]) * t,
-    a[1] + (b[1] - a[1]) * t,
-    a[2] + (b[2] - a[2]) * t,
-  ];
-  const black: Colour = [0, 0, 0];
-  const white: Colour = [1, 1, 1];
-
-  // Highlight: shift toward white by K.
-  const dw = colourDistance(bg, white);
-  const hi: Colour =
-    dw < K ? colourMix(white, black, K / Math.sqrt(3)) : colourMix(bg, white, K / dw);
-
-  // Lowlight: shift toward black by K.
-  const db = colourDistance(bg, black);
-  const lo: Colour =
-    db < K ? colourMix(black, white, K / Math.sqrt(3)) : colourMix(bg, black, K / db);
+  const { background: bg, highlight: hi, lowlight: lo } = mkhighlight(defaultBackground);
 
   const text: Colour = [0, 0, 0];
   // Hint colour: a clear blue for highlighting hint tiles.

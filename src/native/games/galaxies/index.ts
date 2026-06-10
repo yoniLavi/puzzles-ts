@@ -12,6 +12,7 @@
  */
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { mkhighlightBackground } from "../../engine/colour-mkhighlight.ts";
+import { parseLeadingInt } from "../../engine/params.ts";
 import {
   type Game,
   registerGame,
@@ -120,15 +121,6 @@ export { GalaxiesDiff };
 // --- params ---------------------------------------------------------
 
 const DIFFCHARS = "nu";
-
-function parseLeadingInt(s: string, start: number): { value: number; next: number } {
-  let i = start;
-  while (i < s.length && s[i] >= "0" && s[i] <= "9") i++;
-  return {
-    value: Number.parseInt(s.slice(start, i) || "0", 10),
-    next: i,
-  };
-}
 
 function decodeParams(s: string): GalaxiesParams {
   const a = parseLeadingInt(s, 0);

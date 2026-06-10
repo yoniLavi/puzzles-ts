@@ -6,7 +6,7 @@
  * See `openspec/specs/ts-engine/spec.md` for the capability contract.
  */
 
-export { mkhighlightBackground } from "./colour-mkhighlight.ts";
+export { mkhighlight, mkhighlightBackground } from "./colour-mkhighlight.ts";
 export { Dsf } from "./dsf.ts";
 export type {
   ActiveHint,
@@ -26,6 +26,7 @@ export {
   type NotifyChange,
   type NotifyTimerState,
 } from "./midend.ts";
+export { parseLeadingInt } from "./params.ts";
 export {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -39,9 +40,6 @@ export {
   MIDDLE_BUTTON,
   MIDDLE_DRAG,
   MIDDLE_RELEASE,
-  type PointerAction,
-  type PointerButton,
-  parsePointerAction,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
