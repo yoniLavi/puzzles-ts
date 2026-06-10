@@ -6,6 +6,7 @@ import { showAlert } from "../dialogs/alert-dialog.ts";
 import { type PuzzleData, puzzleDataMap } from "../puzzle/catalog.ts";
 import type { Puzzle } from "../puzzle/puzzle.ts";
 import type { PuzzleEvent } from "../puzzle/puzzle-context.ts";
+import { checkAndSave, quickLoadPuzzle } from "../puzzle/quick-save-actions.ts";
 import { helpUrl, homePageUrl } from "../routing.ts";
 import { savedGames } from "../store/saved-games.ts";
 import { settings } from "../store/settings.ts";
@@ -48,6 +49,11 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   /** Encoded params (ignored when puzzle-gameid provided) */
   @property({ type: String, attribute: "params" })
   params?: string;
+
+  /** Dev-only icon-capture mode (set by `?screenshot`; see
+   * `src/puzzle/icon-capture.ts`). Honoured only in dev builds. */
+  @property({ type: Boolean })
+  screenshot = false;
 
   @state()
   private puzzleData?: PuzzleData;
@@ -129,6 +135,10 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       throw new Error("PuzzleScreen.render without puzzleData");
     }
 
+    if (this.screenshot && import.meta.env.DEV) {
+      return this.renderCaptureMode();
+    }
+
     return html`
       <puzzle-context 
           puzzleid=${this.puzzleId}
@@ -183,6 +193,57 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         </main>
 
         ${settings.showEndNotification ? this.renderEndNotification() : nothing}
+        <dynamic-content></dynamic-content>
+      </puzzle-context>
+    `;
+  }
+
+  /**
+   * Minimal dev-only layout for `?screenshot` icon capture: just the
+   * canvas plus a capture bar (re-roll the board, then capture both
+   * committed icon PNGs). Keeps `puzzle-context` so the puzzle still
+   * loads and renders. See `src/puzzle/icon-capture.ts`.
+   */
+  private renderCaptureMode(): TemplateResult {
+    return html`
+      <puzzle-context
+          puzzleid=${this.puzzleId}
+          @puzzle-loaded=${this.handlePuzzleLoaded}
+          @puzzle-params-change=${this.handlePuzzleParamsChange}
+          @puzzle-game-state-change=${this.handlePuzzleGameStateChange}
+      >
+        <main class="capture-mode">
+          <header class="capture-bar">
+            <span class="capture-title">Icon capture · ${
+              this.puzzleData?.name ?? this.puzzleId
+            }</span>
+            <wa-button
+                size="small" appearance="filled" variant="neutral"
+                data-command="new-game"
+            >
+              <wa-icon slot="start" name="new-game"></wa-icon>
+              New game
+            </wa-button>
+            <wa-button
+                size="small" appearance="filled" variant="brand"
+                data-command="capture-icons"
+                ?disabled=${!this.puzzleLoaded}
+            >
+              <wa-icon slot="start" name="copy-image"></wa-icon>
+              Capture icons
+            </wa-button>
+          </header>
+
+          <puzzle-view-interactive
+              role="figure"
+              aria-label="interactive puzzle displayed as an image"
+              statusbar-placement="hidden"
+              max-scale=${settings.maxScale}
+          >
+            <wa-skeleton slot="loading" effect="sheen"></wa-skeleton>
+          </puzzle-view-interactive>
+        </main>
+
         <dynamic-content></dynamic-content>
       </puzzle-context>
     `;
@@ -288,6 +349,23 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
               `
             : nothing
         }
+        ${
+          this.puzzle
+            ? html`
+              <wa-dropdown-item data-command="check-and-save">
+                <wa-icon slot="icon" name="check-and-save"></wa-icon>
+                ${this.puzzle.canFindMistakes ? "Check & save" : "Quick-save"}
+              </wa-dropdown-item>
+              <wa-dropdown-item
+                  data-command="quick-load"
+                  ?disabled=${!savedGames.hasQuickSave(this.puzzleId)}
+              >
+                <wa-icon slot="icon" name="load-game"></wa-icon>
+                Quick-load
+              </wa-dropdown-item>
+              `
+            : nothing
+        }
         <wa-divider></wa-divider>
         <wa-dropdown-item data-command="share">
           <wa-icon slot="icon" name="share"></wa-icon>
@@ -370,7 +448,10 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   protected override registerCommandHandlers() {
     super.registerCommandHandlers();
     Object.assign(this.commandMap, {
+      "capture-icons": this.handleCaptureIcons,
       "change-type": this.showTypeMenu,
+      "check-and-save": this.handleCheckAndSave,
+      "quick-load": this.handleQuickLoad,
       "copy-image": () => this.puzzle?.copyImage(),
       "enter-gameid": this.showEnterGameIDDialog,
       "load-game": this.showLoadGameDialog,
@@ -544,6 +625,31 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     }
   };
 
+  private async handleCaptureIcons() {
+    // Dev-only: produce the two committed icon PNGs from the live board.
+    // (A prototype method, not an arrow field, so it is defined when the
+    // base-class constructor calls registerCommandHandlers.)
+    const puzzle = this.puzzle;
+    if (!puzzle) return;
+    const { captureIcons } = await import("../puzzle/icon-capture.ts");
+    await captureIcons(puzzle, this.puzzleId);
+  }
+
+  /**
+   * Combined Check-&-Save (shared with the toolbar button and Cmd/Ctrl+S
+   * — logic in `quick-save-actions.ts`). A prototype method, not an arrow
+   * field, so it is defined when the base-class constructor calls
+   * `registerCommandHandlers`.
+   */
+  private async handleCheckAndSave() {
+    if (this.puzzle) await checkAndSave(this.puzzle);
+  }
+
+  /** Restore the quick-save slot for the current puzzle. */
+  private async handleQuickLoad() {
+    if (this.puzzle) await quickLoadPuzzle(this.puzzle);
+  }
+
   private async showTypeMenu() {
     // (from the button in the puzzle-end-notification)
     await this.shadowRoot?.querySelector("puzzle-end-notification")?.hide();
@@ -661,6 +767,14 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   }
 
   private handleBubbledKeyDown = async (event: KeyboardEvent) => {
+    // Cmd/Ctrl+S → Check-&-Save (suppress the browser "save page"
+    // dialog). The intuitive "save now" chord; the Cmd/Ctrl modifier
+    // never collides with per-puzzle letter input.
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+      event.preventDefault();
+      await this.handleCheckAndSave();
+      return;
+    }
     // If a key event arrives at the document when nothing else is focused,
     // focus the puzzle and redirect the event to it.
     if (event.key === "Tab") {
@@ -731,7 +845,20 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         background-color: var(--wa-color-brand-fill-quiet);
         color: var(--wa-color-text-normal);
       }
-  
+
+      /* Dev-only icon-capture mode (?screenshot). */
+      .capture-bar {
+        align-items: center;
+        gap: var(--wa-space-s);
+        padding: var(--wa-space-xs) var(--wa-space-s);
+        background-color: var(--app-theme-color);
+
+        .capture-title {
+          margin-inline-end: auto;
+          font-weight: var(--wa-font-weight-semibold);
+        }
+      }
+
       header, footer {
         box-sizing: border-box;
         width: 100%;

@@ -10,6 +10,7 @@ export interface PuzzleUrlParams {
   puzzleId: string; // from path
   puzzleParams?: string; // from type param
   puzzleGameId?: string; // from id param
+  screenshot?: boolean; // from presence of the `screenshot` param (dev icon capture)
 }
 
 export const puzzlePageUrl = ({
@@ -70,6 +71,7 @@ export function parsePuzzleUrl(href?: string | URL): PuzzleUrlParams | undefined
     puzzleId: path,
     puzzleParams: url.searchParams.get("type") ?? undefined,
     puzzleGameId: url.searchParams.get("id") ?? undefined,
+    screenshot: url.searchParams.has("screenshot"),
   };
 }
 

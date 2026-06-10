@@ -81,6 +81,7 @@ export class Puzzle {
       canConfigure,
       canSolve,
       canHint,
+      canFindMistakes,
       needsRightButton,
       isTimed,
       wantsStatusbar,
@@ -95,6 +96,7 @@ export class Puzzle {
     this.canConfigure = canConfigure;
     this.canSolve = canSolve;
     this.canHint = canHint;
+    this.canFindMistakes = canFindMistakes;
     this.needsRightButton = needsRightButton;
     this.isTimed = isTimed;
     this.wantsStatusbar = wantsStatusbar;
@@ -191,6 +193,7 @@ export class Puzzle {
   public readonly canConfigure: boolean;
   public readonly canSolve: boolean;
   public readonly canHint: boolean;
+  public readonly canFindMistakes: boolean;
   public readonly needsRightButton: boolean;
   public readonly isTimed: boolean;
   public readonly wantsStatusbar: boolean;
@@ -347,6 +350,12 @@ export class Puzzle {
 
   public async executeHint(): Promise<string | undefined> {
     return this.enqueueInput(() => this.workerPuzzle.executeHint());
+  }
+
+  /** Check the board for mistakes: display them and return how many.
+   * 0 for games without mistake-checking. */
+  public async findMistakes(): Promise<number> {
+    return this.workerPuzzle.findMistakes();
   }
 
   public startAutoHint(): void {

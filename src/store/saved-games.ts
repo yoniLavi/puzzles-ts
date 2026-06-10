@@ -215,6 +215,84 @@ class SavedGames {
       .delete();
   }
 
+  // --- quick-save: one dedicated slot per puzzle --------------------
+
+  /** The constant filename for the single quick-save slot. With
+   * `SaveType.Quick`, `[puzzleId, Quick, QUICK_SAVE_FILENAME]` is a
+   * unique key, so there is exactly one quick-save per puzzle. */
+  private static readonly QUICK_SAVE_FILENAME = "quicksave";
+
+  /** Create or overwrite the quick-save slot for `puzzle`. */
+  async quickSave(puzzle: Puzzle) {
+    await this.saveToDB({
+      puzzle,
+      filename: SavedGames.QUICK_SAVE_FILENAME,
+      saveType: SaveType.Quick,
+    });
+  }
+
+  /**
+   * Restore the quick-save slot into `puzzle`. Returns `found: false`
+   * when no slot exists, or an error string when the slot is present
+   * but unreadable.
+   */
+  async quickLoad(
+    puzzle: Puzzle,
+  ): Promise<{ found: boolean; error?: string; gameId?: string }> {
+    return this.loadFromDB({
+      puzzle,
+      filename: SavedGames.QUICK_SAVE_FILENAME,
+      saveType: SaveType.Quick,
+    });
+  }
+
+  async removeQuickSave(puzzleOrId: Puzzle | PuzzleId) {
+    const puzzleId = typeof puzzleOrId === "string" ? puzzleOrId : puzzleOrId.puzzleId;
+    await db.savedGames.delete([
+      puzzleId,
+      SaveType.Quick,
+      SavedGames.QUICK_SAVE_FILENAME,
+    ]);
+  }
+
+  async removeAllQuickSaves() {
+    await db.savedGames
+      .where("[saveType+puzzleId+timestamp]")
+      .between(
+        [SaveType.Quick, PUZZLE_ID_MIN, TIMESTAMP_MIN],
+        [SaveType.Quick, PUZZLE_ID_MAX, TIMESTAMP_MAX],
+      )
+      .delete();
+  }
+
+  /** Reactive set of each PuzzleId that currently has a quick-save, so
+   * a Quick-load control can enable/disable itself. Mirrors
+   * `autoSavedPuzzles`. */
+  get quickSavedPuzzles(): Set<PuzzleId> {
+    return this._quickSavedPuzzles.get();
+  }
+
+  hasQuickSave(puzzleId: PuzzleId): boolean {
+    return this.quickSavedPuzzles.has(puzzleId);
+  }
+
+  private _quickSavedPuzzles = liveQuerySignal<Set<PuzzleId>>(
+    new Set(),
+    async () => {
+      const keys = (await db.savedGames
+        .where("[saveType+puzzleId+timestamp]")
+        .between(
+          [SaveType.Quick, PUZZLE_ID_MIN, TIMESTAMP_MIN],
+          [SaveType.Quick, PUZZLE_ID_MAX, TIMESTAMP_MAX],
+        )
+        .uniqueKeys()) as unknown as [SaveType, PuzzleId, number][];
+      return new Set(keys.map((key) => key[1]));
+    },
+    {
+      equals: equalSet,
+    },
+  );
+
   /**
    * Delete all saved games of any type (clear the savedGames table)
    */

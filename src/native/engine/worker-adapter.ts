@@ -108,6 +108,9 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   executeHint(): string | undefined {
     return this.engine.executeHint();
   }
+  findMistakes(): number {
+    return this.engine.findMistakes();
+  }
 
   // --- input ------------------------------------------------------
 

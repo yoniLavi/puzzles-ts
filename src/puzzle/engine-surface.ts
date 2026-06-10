@@ -43,6 +43,9 @@ export interface PuzzleEngineSurface {
   solve(): string | undefined;
   hint(): string | undefined;
   executeHint(): string | undefined;
+  /** Display the current board's mistakes and return how many; 0 when
+   * the game has no mistake-checking. */
+  findMistakes(): number;
 
   processKey(key: number): boolean;
   processMouse(point: Point, button: number): boolean;

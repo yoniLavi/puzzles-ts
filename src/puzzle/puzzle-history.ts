@@ -10,6 +10,7 @@ import { currentColorScheme } from "../color-scheme.ts";
 import { cssWATweaks } from "../utils/css.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
+import { checkAndSave } from "./quick-save-actions.ts";
 
 // Component registration
 import "@awesome.me/webawesome/dist/components/button/button.js";
@@ -105,6 +106,20 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
               @click=${this.handleRedo}>
             <wa-icon name="redo" label="Redo"></wa-icon>
           </wa-button>
+          ${
+            this.puzzle
+              ? html`
+              <wa-button
+                  @pointerdown=${this.handleUndoRedoPointerDown}
+                  @click=${this.handleCheckAndSave}>
+                <wa-icon
+                  name="check-and-save"
+                  label=${this.puzzle.canFindMistakes ? "Check and save" : "Quick-save"}
+                ></wa-icon>
+              </wa-button>
+              `
+              : nothing
+          }
         </wa-button-group>
       </div>
     `;
@@ -281,6 +296,10 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
 
   private async handleRedo() {
     await this.puzzle?.redo();
+  }
+
+  private async handleCheckAndSave() {
+    if (this.puzzle) await checkAndSave(this.puzzle);
   }
 
   private async handleHint() {

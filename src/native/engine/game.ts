@@ -127,7 +127,14 @@ export interface GameDrawing<Blitter = unknown> {
   blitterLoad(blitter: Blitter, origin: Point): void;
 }
 
-export interface Game<Params, State, Move, Ui = unknown, DrawState = unknown> {
+export interface Game<
+  Params,
+  State,
+  Move,
+  Ui = unknown,
+  DrawState = unknown,
+  Mistake = unknown,
+> {
   /** Catalog puzzleId; the registry key. */
   readonly id: string;
   readonly wantsStatusbar: boolean;
@@ -180,6 +187,18 @@ export interface Game<Params, State, Move, Ui = unknown, DrawState = unknown> {
    * game to ensure the resulting state matches the plan's
    * expectation after this step — return `"off"` when in doubt. */
   hintKeepTrack?(m: Move, step: HintStep<Move>, state: State): HintTrackVerdict;
+
+  /** Compute the cells of the current state that contradict the
+   * puzzle's unique solution — the mistake-checking divergence from
+   * upstream. Pure (no state mutation). Returns game-specific highlight
+   * data; an empty result means "no detectable mistakes". Absent ⇒ the
+   * game has no notion of a mistake (every reachable state is legal,
+   * e.g. a permutation puzzle), and the midend reports the capability
+   * as unavailable. The midend stores the result as an ephemeral,
+   * never-persisted overlay (cleared on the next transition) and passes
+   * it to `redraw`, exactly like a displayed hint step. */
+  findMistakes?(state: State): readonly Mistake[];
+
   textFormat?(s: State): string;
   statusbarText?(s: State, ui: Ui): string;
 
@@ -207,6 +226,7 @@ export interface Game<Params, State, Move, Ui = unknown, DrawState = unknown> {
     animTime: number,
     flashTime: number,
     hint?: HintStep<Move>,
+    mistakes?: readonly Mistake[],
   ): void;
   animLength?(a: State, b: State, dir: number, ui: Ui): number;
   flashLength?(a: State, b: State, dir: number, ui: Ui): number;

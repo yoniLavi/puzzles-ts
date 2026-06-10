@@ -8,6 +8,7 @@ import arrowLeftToLineIcon from "lucide-static/icons/arrow-left-to-line.svg";
 import arrowRightIcon from "lucide-static/icons/arrow-right.svg";
 import awardIcon from "lucide-static/icons/award.svg";
 import badgeQuestionMarkIcon from "lucide-static/icons/badge-question-mark.svg";
+import bookmarkCheckIcon from "lucide-static/icons/bookmark-check.svg";
 import boxIcon from "lucide-static/icons/box.svg";
 import boxesIcon from "lucide-static/icons/boxes.svg";
 import checkIcon from "lucide-static/icons/check.svg";
@@ -69,6 +70,7 @@ const defaultIcons: IconMap = {
   //            (only necessary for icons used in help docs).
   // general
   "back-to-catalog": boxesIcon,
+  "check-and-save": bookmarkCheckIcon,
   "checkpoint-add": shieldCheckIcon,
   "checkpoint-remove": trash2Icon,
   "copy-image": imagesIcon,

@@ -12,7 +12,6 @@
  */
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { mkhighlightBackground } from "../../engine/colour-mkhighlight.ts";
-import { parseLeadingInt } from "../../engine/params.ts";
 import {
   type Game,
   registerGame,
@@ -20,6 +19,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
+import { parseLeadingInt } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -42,6 +42,7 @@ import {
   COL_CURSOR,
   COL_EDGE,
   COL_GRID,
+  COL_MISTAKE,
   COL_WHITEBG,
   COL_WHITEDOT,
   type GalaxiesDrawState,
@@ -72,6 +73,7 @@ import {
   spaceOppositeDot,
   spaceTypeAt,
   tileOpposite,
+  tilesFromEdge,
 } from "./state.ts";
 
 const PREFERRED_TILE_SIZE = 32;
@@ -97,6 +99,14 @@ export interface GalaxiesMove {
    * semantics, matching the C "S;…" solve-mode prefix. */
   solving: boolean;
 }
+
+/** A cell flagged by `findMistakes`. `(x, y)` are grid coords: a
+ * `"tile"` is a tile centre (odd/odd) the player associated with the
+ * wrong dot; an `"edge"` is a wall (one even coord) the player set
+ * inside what the unique solution leaves as a single region. */
+export type GalaxiesMistake =
+  | { kind: "tile"; x: number; y: number }
+  | { kind: "edge"; x: number; y: number };
 
 export interface GalaxiesUi {
   dragging: boolean;
@@ -591,6 +601,73 @@ function solveGalaxies(
   return { ok: true, move: diffSolveMoves(curr, attempt) };
 }
 
+// --- mistake checking ----------------------------------------------
+
+/**
+ * Flag every player action the unique solution contradicts — both the
+ * two ways Galaxies is played (association arrows and walls):
+ *
+ *  - a **tile** associated with a dot other than the one the solution
+ *    assigns it;
+ *  - a **wall** the player set *inside* a region the solution leaves
+ *    whole (its two adjacent tiles belong to the same solution galaxy).
+ *
+ * The unique solution needs no stored aux: the dots are immutable clues,
+ * so re-solving a cleared copy (dots only) recovers the canonical
+ * tile→dot partition. A wrongly-associated tile and its 180° partner
+ * (the player sets both atomically) are both genuinely wrong, so both
+ * are flagged. Unassociated tiles are *incomplete*, not mistaken, and
+ * are skipped. Walls are checked independently of associations, so a
+ * board built entirely from walls (zero arrows) is still validated —
+ * the case the association-only first cut missed. A board that does not
+ * solve uniquely (only reachable by a hand-entered non-unique ID) yields
+ * no flags — we cannot prove any cell wrong, and the "save only when
+ * provably clean" contract must not block on an unprovable board.
+ */
+function findMistakes(s: GalaxiesState): readonly GalaxiesMistake[] {
+  const sol = cloneState(s);
+  clearForSolve(sol);
+  sol.dots = rebuildDots(sol);
+  const diff = solverState(sol, GalaxiesDiff.Unreasonable);
+  if (diff !== GalaxiesDiff.Normal && diff !== GalaxiesDiff.Unreasonable) {
+    return [];
+  }
+  const mistakes: GalaxiesMistake[] = [];
+  // Wrong associations: a tile pointed at a dot the solution disagrees with.
+  for (let y = 1; y < s.sy - 1; y += 2) {
+    for (let x = 1; x < s.sx - 1; x += 2) {
+      const i = idx(s, x, y);
+      if (!(s.flags[i] & F_TILE_ASSOC)) continue;
+      const si = idx(sol, x, y);
+      // If the solver left this tile undetermined (shouldn't happen for
+      // a uniquely-solvable board), don't claim it's wrong.
+      if (!(sol.flags[si] & F_TILE_ASSOC)) continue;
+      if (s.dotx[i] !== sol.dotx[si] || s.doty[i] !== sol.doty[si]) {
+        mistakes.push({ kind: "tile", x, y });
+      }
+    }
+  }
+  // Wrong walls: an interior edge the player set whose two tiles share a
+  // solution dot — i.e. a wall slicing through a single galaxy. (Only
+  // interior edges qualify: the outer perimeter has a tile off-grid on
+  // one side, so `tilesFromEdge` yields a null and we skip it.)
+  for (let y = 1; y < s.sy - 1; y++) {
+    for (let x = 1; x < s.sx - 1; x++) {
+      if (spaceTypeAt(x, y) !== SpaceType.Edge) continue;
+      if (!(s.flags[idx(s, x, y)] & F_EDGE_SET)) continue;
+      const [t0, t1] = tilesFromEdge(s, x, y);
+      if (!t0 || !t1) continue;
+      const a = idx(sol, t0.x, t0.y);
+      const b = idx(sol, t1.x, t1.y);
+      if (!(sol.flags[a] & F_TILE_ASSOC) || !(sol.flags[b] & F_TILE_ASSOC)) continue;
+      if (sol.dotx[a] === sol.dotx[b] && sol.doty[a] === sol.doty[b]) {
+        mistakes.push({ kind: "edge", x, y });
+      }
+    }
+  }
+  return mistakes;
+}
+
 // --- text format and statusbar -------------------------------------
 
 function textFormat(s: GalaxiesState): string {
@@ -651,7 +728,8 @@ export const galaxiesGame: Game<
   GalaxiesState,
   GalaxiesMove,
   GalaxiesUi,
-  GalaxiesDrawState
+  GalaxiesDrawState,
+  GalaxiesMistake
 > = {
   id: "galaxies",
   wantsStatusbar: true,
@@ -731,6 +809,7 @@ export const galaxiesGame: Game<
   },
 
   solve: solveGalaxies,
+  findMistakes,
   textFormat,
   statusbarText,
 
@@ -757,6 +836,9 @@ export const galaxiesGame: Game<
     ret[COL_EDGE] = [0, 0, 0];
     ret[COL_ARROW] = [0, 0, 0];
     ret[COL_CURSOR] = [Math.min(bg[0] * 1.4, 1), bg[1] * 0.8, bg[2] * 0.8];
+    // Mistake highlight: a strong red that reads on both white and black
+    // region fills and the page background.
+    ret[COL_MISTAKE] = [0.85, 0.1, 0.1];
     return ret;
   },
 

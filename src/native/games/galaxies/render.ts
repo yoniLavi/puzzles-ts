@@ -31,7 +31,8 @@ export const COL_GRID = 5;
 export const COL_EDGE = 6;
 export const COL_ARROW = 7;
 export const COL_CURSOR = 8;
-export const NCOLOURS = 9;
+export const COL_MISTAKE = 9;
+export const NCOLOURS = 10;
 
 // --- DrawState ------------------------------------------------------
 
@@ -48,6 +49,11 @@ export interface GalaxiesDrawState {
   /** Per-tile arrow dx/dy cache; part of the cache-miss comparison. */
   dx: Int16Array;
   dy: Int16Array;
+  /** Per-tile wrong-wall mask (DRAW_EDGE_L/R/U/D bits) for the mistake
+   * overlay — a sidecar rather than a cache-key bit because there are no
+   * free bits left in the Int32 key for four more edge flags. Part of
+   * the cache-miss comparison, so walls repaint clean when it clears. */
+  wrongEdges: Int32Array;
 }
 
 const PREFERRED_TILE_SIZE = 32;
@@ -64,6 +70,7 @@ export function newDrawState(s: GalaxiesState): GalaxiesDrawState {
     cache,
     dx: new Int16Array(n),
     dy: new Int16Array(n),
+    wrongEdges: new Int32Array(n),
   };
 }
 
@@ -72,6 +79,7 @@ export function setTileSize(ds: GalaxiesDrawState, tileSize: number): void {
   ds.tileSize = tileSize;
   ds.started = false;
   for (let i = 0; i < ds.cache.length; i++) ds.cache[i] = -1;
+  ds.wrongEdges.fill(0);
 }
 
 // --- flags encoded into the per-tile cache key ---------------------
@@ -88,6 +96,10 @@ const DRAW_WHITE = 1 << 8;
 const DRAW_BLACK = 1 << 9;
 const DRAW_ARROW = 1 << 10;
 const DRAW_CURSOR = 1 << 11;
+// Mistake highlight (a wrong association). Bit 30 — above the dot bits
+// (12-29) and below the sign bit, so it folds into the Int32 cache key
+// and the tile repaints clean when the mistake overlay is cleared.
+const DRAW_MISTAKE = 1 << 30;
 // Dots: 9 positions per tile × 2 bits = bits 12-29 of the key.
 const DOT_SHIFT_C = 12;
 const DOT_SHIFT_M = 2;
@@ -135,6 +147,7 @@ function drawSquare(
   dots: number,
   ddx: number,
   ddy: number,
+  wrongEdges: number,
 ): void {
   const lx = x * tileSize + border;
   const ly = y * tileSize + border;
@@ -190,11 +203,14 @@ function drawSquare(
     );
   }
 
-  // Edges
+  // Edges. A wall the player set inside a single solution galaxy is
+  // painted in COL_MISTAKE instead of COL_EDGE (the wrong-wall overlay).
   if (flags & DRAW_EDGE_L) {
-    dr.drawRect({ x: lx, y: ly, w: edgeThickness, h: tileSize }, COL_EDGE);
+    const col = wrongEdges & DRAW_EDGE_L ? COL_MISTAKE : COL_EDGE;
+    dr.drawRect({ x: lx, y: ly, w: edgeThickness, h: tileSize }, col);
   }
   if (flags & DRAW_EDGE_R) {
+    const col = wrongEdges & DRAW_EDGE_R ? COL_MISTAKE : COL_EDGE;
     dr.drawRect(
       {
         x: lx + tileSize - edgeThickness + 1,
@@ -202,13 +218,15 @@ function drawSquare(
         w: edgeThickness - 1,
         h: tileSize,
       },
-      COL_EDGE,
+      col,
     );
   }
   if (flags & DRAW_EDGE_U) {
-    dr.drawRect({ x: lx, y: ly, w: tileSize, h: edgeThickness }, COL_EDGE);
+    const col = wrongEdges & DRAW_EDGE_U ? COL_MISTAKE : COL_EDGE;
+    dr.drawRect({ x: lx, y: ly, w: tileSize, h: edgeThickness }, col);
   }
   if (flags & DRAW_EDGE_D) {
+    const col = wrongEdges & DRAW_EDGE_D ? COL_MISTAKE : COL_EDGE;
     dr.drawRect(
       {
         x: lx,
@@ -216,7 +234,7 @@ function drawSquare(
         w: tileSize,
         h: edgeThickness - 1,
       },
-      COL_EDGE,
+      col,
     );
   }
   if (flags & DRAW_CORNER_UL) {
@@ -272,6 +290,24 @@ function drawSquare(
     }
   }
 
+  // Mistake highlight: an inset red outline marking a wrong
+  // association, drawn last so it sits above the region fill / arrow.
+  if (flags & DRAW_MISTAKE) {
+    const inset = Math.max(edgeThickness, (tileSize / 12) | 0);
+    const t = Math.max(2, (tileSize / 12) | 0);
+    const span = tileSize - 2 * inset;
+    dr.drawRect({ x: lx + inset, y: ly + inset, w: span, h: t }, COL_MISTAKE);
+    dr.drawRect(
+      { x: lx + inset, y: ly + tileSize - inset - t, w: span, h: t },
+      COL_MISTAKE,
+    );
+    dr.drawRect({ x: lx + inset, y: ly + inset, w: t, h: span }, COL_MISTAKE);
+    dr.drawRect(
+      { x: lx + tileSize - inset - t, y: ly + inset, w: t, h: span },
+      COL_MISTAKE,
+    );
+  }
+
   dr.unclip();
   dr.drawUpdate({ x: lx, y: ly, w: tileSize, h: tileSize });
 }
@@ -298,11 +334,31 @@ export function redraw(
   },
   _animTime: number,
   flashTime: number,
+  _hint?: unknown,
+  mistakes?: readonly { kind: "tile" | "edge"; x: number; y: number }[],
 ): void {
   if (ds === null) return;
   const w = ds.w;
   const h = ds.h;
   const tile = ds.tileSize;
+
+  // Split the mistake overlay into wrong-association tiles (folded into
+  // the cache key as DRAW_MISTAKE) and wrong walls (kept in the
+  // `wrongEdges` sidecar). Empty when the engine supplies no overlay;
+  // both feed the cache-miss check so cells repaint clean once cleared.
+  const mistakeTiles = new Set<number>();
+  const wrongEdgeCells = new Set<number>();
+  if (mistakes) {
+    for (const m of mistakes) {
+      if (m.kind === "edge") {
+        wrongEdgeCells.add(m.y * (2 * w + 1) + m.x);
+      } else {
+        const tx = (m.x - 1) >> 1;
+        const ty = (m.y - 1) >> 1;
+        if (tx >= 0 && tx < w && ty >= 0 && ty < h) mistakeTiles.add(ty * w + tx);
+      }
+    }
+  }
   const border = tile;
   const drawWidth = w * tile + 2 * border;
   const drawHeight = h * tile + 2 * border;
@@ -417,16 +473,40 @@ export function redraw(
         flags |= DRAW_CURSOR;
       }
 
-      // Cache key: flags (bits 0-11) | dots (bits 12-29), all in 30
-      // bits — fits in an Int32. ddx/ddy live in `ds.dx`/`ds.dy` and
-      // form part of the cache-miss check below.
+      // Wrong-association highlight (bit 30 of the key).
+      if (mistakeTiles.has(y * w + x)) flags |= DRAW_MISTAKE;
+
+      // Wrong-wall mask: which of this tile's four edges the overlay
+      // flags as a wall inside a single galaxy (recoloured in drawSquare).
+      let wrongEdges = 0;
+      if (wrongEdgeCells.size) {
+        const stride = 2 * w + 1;
+        if (wrongEdgeCells.has((2 * y + 1) * stride + 2 * x)) wrongEdges |= DRAW_EDGE_L;
+        if (wrongEdgeCells.has((2 * y + 1) * stride + 2 * x + 2)) {
+          wrongEdges |= DRAW_EDGE_R;
+        }
+        if (wrongEdgeCells.has(2 * y * stride + 2 * x + 1)) wrongEdges |= DRAW_EDGE_U;
+        if (wrongEdgeCells.has((2 * y + 2) * stride + 2 * x + 1)) {
+          wrongEdges |= DRAW_EDGE_D;
+        }
+      }
+
+      // Cache key: flags (bits 0-11, 30) | dots (bits 12-29), within 31
+      // bits — fits a positive Int32. ddx/ddy and the wrong-wall mask
+      // live in their sidecar arrays and form part of the cache-miss check.
       const key = flags | dots;
       const cacheI = y * w + x;
-      if (ds.cache[cacheI] !== key || ds.dx[cacheI] !== ddx || ds.dy[cacheI] !== ddy) {
-        drawSquare(dr, x, y, tile, border, flags, dots, ddx, ddy);
+      if (
+        ds.cache[cacheI] !== key ||
+        ds.dx[cacheI] !== ddx ||
+        ds.dy[cacheI] !== ddy ||
+        ds.wrongEdges[cacheI] !== wrongEdges
+      ) {
+        drawSquare(dr, x, y, tile, border, flags, dots, ddx, ddy, wrongEdges);
         ds.cache[cacheI] = key;
         ds.dx[cacheI] = ddx;
         ds.dy[cacheI] = ddy;
+        ds.wrongEdges[cacheI] = wrongEdges;
       }
     }
   }

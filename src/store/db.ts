@@ -59,6 +59,11 @@ export type SettingsRecord =
 export enum SaveType {
   User = 0,
   Auto = 1,
+  /** The single one-action quick-save slot per puzzle (one record per
+   * puzzleId, constant filename). New enum value, no schema bump —
+   * it is just data under the existing `[puzzleId+saveType+filename]`
+   * and `[saveType+puzzleId+timestamp]` indexes. */
+  Quick = 2,
 }
 
 export const TIMESTAMP_MIN = Dexie.minKey;

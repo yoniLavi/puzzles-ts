@@ -370,7 +370,13 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
         await savedGames.removeAllAutoSavedGames();
         break;
       case "clear-games-user":
-        await savedGames.removeAllSavedGames();
+        // Quick-saves are user-initiated checkpoints, so clearing the
+        // user's saved games clears them too. (clear-all already wipes
+        // the whole table.)
+        await Promise.all([
+          savedGames.removeAllSavedGames(),
+          savedGames.removeAllQuickSaves(),
+        ]);
         break;
       case "clear-all":
         await Promise.all([

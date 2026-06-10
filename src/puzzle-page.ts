@@ -5,7 +5,12 @@ import { navigateToHomePage, type PuzzleUrlParams, parsePuzzleUrl } from "./rout
 // Register components
 import "./screens/puzzle-screen.ts";
 
-function initialize({ puzzleId, puzzleParams, puzzleGameId }: PuzzleUrlParams) {
+function initialize({
+  puzzleId,
+  puzzleParams,
+  puzzleGameId,
+  screenshot,
+}: PuzzleUrlParams) {
   const appRoot = document.getElementById("app");
   if (!appRoot) {
     throw new Error("Missing #app in puzzle page");
@@ -26,6 +31,11 @@ function initialize({ puzzleId, puzzleParams, puzzleGameId }: PuzzleUrlParams) {
   }
   if (puzzleGameId) {
     puzzleScreen.setAttribute("gameid", puzzleGameId);
+  }
+  // Dev-only icon-capture mode (see src/puzzle/icon-capture.ts). Left in
+  // the URL so reload / New-game keep capture mode; inert in production.
+  if (screenshot && import.meta.env.DEV) {
+    puzzleScreen.setAttribute("screenshot", "");
   }
   puzzleScreen.replaceChildren(...appRoot.childNodes);
 

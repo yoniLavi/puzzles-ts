@@ -98,6 +98,9 @@ export interface PuzzleStaticAttributes {
   canConfigure: boolean;
   canSolve: boolean;
   canHint: boolean;
+  /** The game can check the board for mistakes (the TS `findMistakes`
+   * hook). False for C/WASM games. */
+  canFindMistakes: boolean;
   // TODO: canFormatAsTextEver: boolean;
   needsRightButton: boolean;
   isTimed: boolean;

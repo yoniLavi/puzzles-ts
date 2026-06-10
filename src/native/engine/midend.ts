@@ -65,6 +65,10 @@ export interface EngineCore {
   solve(): string | undefined;
   hint(): string | undefined;
   executeHint(): string | undefined;
+  /** Compute and display the current board's mistakes; return how
+   * many. 0 (and no display change) when the game has no
+   * mistake-checking. */
+  findMistakes(): number;
   processInput(x: number, y: number, button: number): boolean;
   getParams(): string;
   setParams(params: string): string | undefined;
@@ -148,6 +152,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * Auto-play (`executeHint`) keeps the display on through its
    * settle-advance so back-to-back steps preview naturally. */
   private hintDisplayed = false;
+  /** The mistake overlay currently displayed (game-specific highlight
+   * data), or null. Midend-only, never in game state, never persisted;
+   * shown until the next transition, exactly like a displayed hint. */
+  private activeMistakes: readonly unknown[] | null = null;
   private timerElapsed = 0;
   private notify?: NotifyChange;
   private notifyTimer?: NotifyTimerState;
@@ -184,6 +192,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       canConfigure: true,
       canSolve: this.game.canSolve,
       canHint: this.game.hint !== undefined,
+      canFindMistakes: this.game.findMistakes !== undefined,
       needsRightButton: false,
       isTimed: this.game.isTimed,
       wantsStatusbar: this.game.wantsStatusbar,
@@ -255,6 +264,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     }
     this.usedSolve = false;
     this.clearHint();
+    this.clearMistakes();
     this.timerElapsed = 0;
     this.clearAnimation();
     this.emitIdChange();
@@ -278,6 +288,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.pos = 0;
     this.usedSolve = false;
     this.clearHint();
+    this.clearMistakes();
     this.clearAnimation();
     this.emitStateChange();
     this.emitStatusBar();
@@ -397,6 +408,24 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.hintDisplayed = false;
   }
 
+  /** Drop the mistake overlay. Called on every transition (a move,
+   * undo, redo, new/restart game) so a stale "you were wrong here"
+   * highlight never outlives the move that might have fixed it. */
+  private clearMistakes(): void {
+    this.activeMistakes = null;
+  }
+
+  /** Compute the current board's mistakes via the game's hook, store
+   * them as the ephemeral overlay, repaint, and return the count. A
+   * game with no `findMistakes` reports 0 and changes nothing. */
+  findMistakes(): number {
+    if (!this.game.findMistakes) return 0;
+    const mistakes = this.game.findMistakes(this.state);
+    this.activeMistakes = mistakes.length > 0 ? mistakes : null;
+    this.requestRedraw();
+    return mistakes.length;
+  }
+
   /** Advance the plan past its current step; the plan clears when the
    * last step completes. */
   private advanceHint(): void {
@@ -483,6 +512,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   }
 
   private afterTransition(): void {
+    // Any transition (move/undo/redo/UI update/solve, and a hint
+    // request) invalidates a displayed mistake overlay — the board has
+    // changed, so the old "wrong here" marks no longer describe it.
+    this.clearMistakes();
     this.emitStateChange();
     this.emitStatusBar();
     // A non-animated transition paints immediately (the C frontend
@@ -782,6 +815,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       this.animTime / this.animScale,
       this.flashTime,
       this.displayedHintStep,
+      this.activeMistakes ?? undefined,
     );
     dr.endDraw();
   }

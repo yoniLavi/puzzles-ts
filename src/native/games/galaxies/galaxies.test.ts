@@ -4,14 +4,21 @@ import { UI_UPDATE } from "../../engine/index.ts";
 import { randomNew } from "../../random/index.ts";
 import { newGameDesc } from "./generator.ts";
 import { GalaxiesDiff, type GalaxiesParams, galaxiesGame } from "./index.ts";
+import { COL_MISTAKE } from "./render.ts";
 import { clearForSolve, solverState } from "./solver.ts";
 import {
+  addAssoc,
   blankGame,
   checkComplete,
+  cloneState,
   decodeGame,
+  F_EDGE_SET,
   F_TILE_ASSOC,
   idx,
   rebuildDots,
+  SpaceType,
+  spaceTypeAt,
+  tilesFromEdge,
 } from "./state.ts";
 
 const SMOKE_PARAMS: GalaxiesParams[] = [
@@ -343,5 +350,132 @@ describe("Galaxies solver: hand-crafted small positions", () => {
     // impossible because every empty tile is unreachable.
     expect(diff).toBe(GalaxiesDiff.Impossible);
     void F_TILE_ASSOC;
+  });
+});
+
+describe("Galaxies findMistakes", () => {
+  // Recover the unique solution (with associations) the same way the
+  // hook does, so the tests can build correct/wrong player states.
+  function solutionOf(init: ReturnType<typeof galaxiesGame.newState>) {
+    const sol = cloneState(init);
+    clearForSolve(sol);
+    sol.dots = rebuildDots(sol);
+    const diff = solverState(sol, GalaxiesDiff.Unreasonable);
+    expect([GalaxiesDiff.Normal, GalaxiesDiff.Unreasonable]).toContain(diff);
+    return sol;
+  }
+
+  const p: GalaxiesParams = { w: 5, h: 5, diff: GalaxiesDiff.Normal };
+  const rng = randomNew("mistakes-5x5");
+  const { desc } = galaxiesGame.newDesc(p, rng);
+  const init = galaxiesGame.newState(p, desc);
+  const sol = solutionOf(init);
+
+  it("flags a tile associated to the wrong dot", () => {
+    const s = cloneState(init);
+    // Pick the first interior tile and a dot that is NOT its solution dot.
+    const tx = 1;
+    const ty = 1;
+    const si = idx(sol, tx, ty);
+    const wrong = sol.dots.find((d) => d.x !== sol.dotx[si] || d.y !== sol.doty[si]);
+    expect(wrong).toBeDefined();
+    if (!wrong) return;
+    addAssoc(s, tx, ty, wrong.x, wrong.y);
+
+    const mistakes = galaxiesGame.findMistakes?.(s) ?? [];
+    expect(mistakes).toContainEqual({ kind: "tile", x: tx, y: ty });
+  });
+
+  it("flags nothing when an association matches the solution", () => {
+    const s = cloneState(init);
+    const tx = 1;
+    const ty = 1;
+    const si = idx(sol, tx, ty);
+    addAssoc(s, tx, ty, sol.dotx[si], sol.doty[si]);
+
+    expect(galaxiesGame.findMistakes?.(s)).toEqual([]);
+  });
+
+  it("flags nothing on a freshly generated (empty) board", () => {
+    expect(galaxiesGame.findMistakes?.(init)).toEqual([]);
+  });
+
+  it("flags nothing on a correctly solved board", () => {
+    const result = galaxiesGame.solve?.(init, init);
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) return;
+    const solved = galaxiesGame.executeMove(init, result.move);
+    expect(galaxiesGame.status(solved)).toBe("solved");
+    expect(galaxiesGame.findMistakes?.(solved)).toEqual([]);
+  });
+
+  // --- walls (the bug the association-only first cut missed) --------
+
+  /** An interior edge whose two tiles share a solution dot (a wall here
+   * would slice a single galaxy) and one whose tiles belong to different
+   * galaxies (a legitimate boundary), derived from the unique solution. */
+  function classifyEdges(solution: typeof sol) {
+    let interior: { x: number; y: number } | null = null;
+    let boundary: { x: number; y: number } | null = null;
+    for (let y = 1; y < solution.sy - 1 && (!interior || !boundary); y++) {
+      for (let x = 1; x < solution.sx - 1 && (!interior || !boundary); x++) {
+        if (spaceTypeAt(x, y) !== SpaceType.Edge) continue;
+        const [t0, t1] = tilesFromEdge(solution, x, y);
+        if (!t0 || !t1) continue;
+        const a = idx(solution, t0.x, t0.y);
+        const b = idx(solution, t1.x, t1.y);
+        if (!(solution.flags[a] & F_TILE_ASSOC)) continue;
+        if (!(solution.flags[b] & F_TILE_ASSOC)) continue;
+        const same =
+          solution.dotx[a] === solution.dotx[b] &&
+          solution.doty[a] === solution.doty[b];
+        if (same && !interior) interior = { x, y };
+        if (!same && !boundary) boundary = { x, y };
+      }
+    }
+    return { interior, boundary };
+  }
+
+  const { interior, boundary } = classifyEdges(sol);
+
+  it("flags a wall placed inside a single solution galaxy — with zero associations", () => {
+    expect(interior).not.toBeNull();
+    if (!interior) return;
+    // Pure-wall play: no association arrows at all, just one wrong wall.
+    const s = cloneState(init);
+    s.flags[idx(s, interior.x, interior.y)] |= F_EDGE_SET;
+    const mistakes = galaxiesGame.findMistakes?.(s) ?? [];
+    expect(mistakes).toContainEqual({ kind: "edge", x: interior.x, y: interior.y });
+    // And nothing of kind "tile" — there are no associations to be wrong.
+    expect(mistakes.every((m) => m.kind === "edge")).toBe(true);
+  });
+
+  it("does not flag a wall on a true galaxy boundary", () => {
+    expect(boundary).not.toBeNull();
+    if (!boundary) return;
+    const s = cloneState(init);
+    s.flags[idx(s, boundary.x, boundary.y)] |= F_EDGE_SET;
+    const mistakes = galaxiesGame.findMistakes?.(s) ?? [];
+    expect(
+      mistakes.some(
+        (m) => m.kind === "edge" && m.x === boundary.x && m.y === boundary.y,
+      ),
+    ).toBe(false);
+  });
+
+  it("renders a flagged wall in COL_MISTAKE", () => {
+    expect(interior).not.toBeNull();
+    if (!interior) return;
+    const s = cloneState(init);
+    s.flags[idx(s, interior.x, interior.y)] |= F_EDGE_SET;
+    const mistakes = galaxiesGame.findMistakes?.(s) ?? [];
+    const ui = galaxiesGame.newUi(s);
+    const ds = newDrawState(s);
+    const { dr, ops } = recordingDrawing();
+    galaxiesRedraw(dr, ds, null, s, 1, ui, 0, 0, undefined, mistakes);
+    // The only COL_MISTAKE consumer reachable from this state is the
+    // wrong-wall recolour (no tile mistakes present), so any such rect
+    // proves the wall was painted in the mistake colour.
+    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_MISTAKE)).toBe(true);
   });
 });

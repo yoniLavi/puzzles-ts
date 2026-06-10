@@ -772,3 +772,54 @@ describe("Midend executeHint plays the stored plan", () => {
     expect(h.m.formatAsText()).toBe("count=2");
   });
 });
+
+describe("Midend mistake overlay (findMistakes lifecycle)", () => {
+  // A game that flags exactly one mistake when count === 1, and whose
+  // redraw emits a sentinel op (drawCircle colour 999) iff the engine
+  // handed it a non-empty mistakes overlay — so a test can observe the
+  // overlay being shown and then cleared on the next transition.
+  const MISTAKE_SENTINEL = 999;
+  const mistakeGame: typeof fakeGame = {
+    ...fakeGame,
+    findMistakes: (s) => (s.count === 1 ? [{ x: 1, y: 1 }] : []),
+    redraw: (dr, ds, prev, s, dir, ui, at, ft, hint, mistakes) => {
+      fakeGame.redraw?.(dr, ds, prev, s, dir, ui, at, ft, hint);
+      if (mistakes && mistakes.length > 0) {
+        dr.drawCircle({ x: 0, y: 0 }, 1, MISTAKE_SENTINEL, MISTAKE_SENTINEL);
+      }
+    },
+  };
+  const sawSentinel = (ops: ReturnType<typeof recordingDrawing>["ops"]) =>
+    ops.some((o) => o.op === "drawCircle" && o.colour === MISTAKE_SENTINEL);
+
+  it("reports the capability and count, and displays then clears the overlay", () => {
+    const h = harness(mistakeGame);
+    h.m.newGame();
+    expect(h.m.getStaticProperties().canFindMistakes).toBe(true);
+
+    // count 0 → no mistakes.
+    expect(h.m.findMistakes()).toBe(0);
+
+    // Move to count 1 → one mistake.
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    expect(h.m.findMistakes()).toBe(1);
+
+    // The overlay is now displayed: a redraw hands the game the list.
+    const a = recordingDrawing();
+    h.m.redraw(a.dr);
+    expect(sawSentinel(a.ops)).toBe(true);
+
+    // Any move clears the overlay: the next redraw has no mistakes.
+    h.m.processInput(0, 0, LEFT_BUTTON); // count → 2
+    const b = recordingDrawing();
+    h.m.redraw(b.dr);
+    expect(sawSentinel(b.ops)).toBe(false);
+  });
+
+  it("a game without findMistakes reports no capability and zero", () => {
+    const h = harness();
+    h.m.newGame();
+    expect(h.m.getStaticProperties().canFindMistakes).toBe(false);
+    expect(h.m.findMistakes()).toBe(0);
+  });
+});

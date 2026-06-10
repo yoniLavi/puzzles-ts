@@ -207,6 +207,7 @@ export class WorkerPuzzle implements FrontendConstructorArgs, PuzzleEngineSurfac
       canConfigure: this.frontend.canConfigure,
       canSolve: this.frontend.canSolve,
       canHint: false,
+      canFindMistakes: false,
       needsRightButton: this.frontend.needsRightButton,
       isTimed: this.frontend.isTimed,
       wantsStatusbar: this.frontend.wantsStatusbar,
@@ -246,6 +247,11 @@ export class WorkerPuzzle implements FrontendConstructorArgs, PuzzleEngineSurfac
   executeHint(): string | undefined {
     // C/WASM games don't support hints.
     return "This game does not support hints";
+  }
+
+  findMistakes(): number {
+    // C/WASM games have no mistake-checking hook.
+    return 0;
   }
 
   processKey(key: number): boolean {
