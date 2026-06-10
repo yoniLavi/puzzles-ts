@@ -1407,14 +1407,18 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   }
 
   // Plan selection: use the heuristic search's path when it reached the
-  // goal (or at least improved on the start position); otherwise, for
-  // near-solved boards, fall back to an exact bidirectional search.
-  // Strict local minima — e.g. two swapped pairs, where every single
-  // slide makes the distance heuristic worse — sit ~8 plies uphill,
-  // beyond any sane forward budget, but meeting in the middle crosses
-  // them at ~4 plies per side. The bidirectional search costs ~0.5-2s
-  // when it engages; with plan-carrying hints that price is paid once
-  // for the whole endgame, not per step.
+  // goal or at least improved on the start position; only when it made
+  // NO progress at all — a strict local minimum, e.g. two swapped
+  // pairs, where every single slide makes the distance heuristic worse
+  // and `bestNode` is still the start node — fall back to an exact
+  // bidirectional search on near-solved boards. Those minima sit ~8
+  // plies uphill, beyond any sane forward budget, but meeting in the
+  // middle crosses them at ~4 plies per side for ~0.5-2s, paid once
+  // for the whole endgame thanks to plan-carrying. The no-progress
+  // gate matters: mid-game boards with few-but-deep displacements
+  // (e.g. a 7-cycle needing 12 slides) used to engage the fallback
+  // too, burning ~3s hitting its depth cap before returning the
+  // forward search's partial plan anyway.
   const pathTo = (node: SearchNode): SlideMove[] => {
     const path: SlideMove[] = [];
     for (let p: SearchNode | null = node; p !== null && p.move !== null; p = p.parent) {
@@ -1428,7 +1432,7 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   // is fine: the plan runs out and the next request recomputes from
   // the better position.
   let path: SlideMove[] | null = null;
-  if (bestNode.h !== 0 && outOfPlace <= 8) {
+  if (bestNode.h !== 0 && bestNode.move === null && outOfPlace <= 8) {
     path = bidirectionalPlan(tiles, w, h, n, moves);
   }
   path ??= pathTo(bestNode);

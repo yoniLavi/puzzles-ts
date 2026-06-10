@@ -537,6 +537,48 @@ describe("Sixteen hint", () => {
     expect(s.completed).toBeGreaterThan(0);
   });
 
+  it("a mid-game board with deep displacements hints fast from the forward search", () => {
+    // Regression (owner-reported, 2026-06-10): 7 tiles out of place in
+    // one 7-cycle needing a 12-slide solution. The exact bidirectional
+    // fallback (depth cap 10) could never solve it, but used to engage
+    // anyway — burning ~3s hitting its caps before the forward search's
+    // partial plan was returned regardless. The no-progress gate skips
+    // it: the forward search improves the board substantially, so its
+    // partial plan is returned at forward-search cost (~0.2s).
+    const s: SixteenState = {
+      w: 5,
+      h: 5,
+      n: 25,
+      tiles: new Int32Array([
+        1, 2, 3, 4, 6, 7, 12, 8, 9, 5, 11, 18, 13, 14, 15, 16, 17, 24, 19, 20, 21,
+        22, 23, 10, 25,
+      ]),
+      completed: 0,
+      usedSolve: false,
+      moveCount: 34,
+      moveTarget: 0,
+      lastMovementSense: 0,
+    };
+    const t0 = performance.now();
+    const result = sixteenGame.hint?.(s);
+    const elapsed = performance.now() - t0;
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) return;
+    expect(result.steps.length).toBeGreaterThan(0);
+    // Each step must net-improve tile placement (partial plans from the
+    // forward search are useful, not noise).
+    let board = s;
+    for (const step of result.steps) board = executeMove(board, step.move);
+    const outOfPlace = (st: SixteenState) => {
+      let k = 0;
+      for (let i = 0; i < st.n; i++) if (st.tiles[i] !== i + 1) k++;
+      return k;
+    };
+    expect(outOfPlace(board)).toBeLessThan(outOfPlace(s));
+    // Generous bound: ~0.2s post-fix, ~3.3s pre-fix on the same machine.
+    expect(elapsed).toBeLessThan(1500);
+  });
+
   it("can solve a puzzle using sequential hints", () => {
     const p = { w: 3, h: 3, movetarget: 3 };
     const rng = randomNew("hint-solve-test");

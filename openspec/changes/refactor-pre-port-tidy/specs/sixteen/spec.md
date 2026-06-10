@@ -20,10 +20,14 @@ The engine SHALL provide a registered `sixteen` game implementing `Game<SixteenP
 
 The Sixteen TS port SHALL implement a hint planner that searches in
 **full-slide moves** (a slide by any distance is one move, matching player
-drags and the move counter): a heuristic forward search first, and — when that
-fails to reach the goal on a near-solved board — an exact bidirectional
-search that meets in the middle, so deep local minima (e.g. two swapped
-pairs) still yield plans. The planner SHALL return the whole path as a plan
+drags and the move counter): a heuristic forward search first, and — only when
+that makes no progress at all on a near-solved board (a strict local minimum,
+where every slide worsens the heuristic) — an exact bidirectional search that
+meets in the middle, so deep local minima (e.g. two swapped pairs) still
+yield plans. When the forward search improves the board without reaching the
+goal, its partial path SHALL be returned immediately as the plan (the next
+hint request continues from the improved position) without engaging the
+exact search. The planner SHALL return the whole path as a plan
 of narrated steps. Each step's narration SHALL describe what its move
 actually does: the highlighted tile is the lowest-numbered out-of-place tile
 on the moved line, the target is that tile's **landing cell** under the
