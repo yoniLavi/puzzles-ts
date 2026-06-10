@@ -33,9 +33,13 @@
   two-swap-endgame regression tests green; add a test that the endgame plan is
   computed once (no per-step bidirectional recompute, e.g. via a hint-call
   counter or timing-free spy seam).
-- [ ] 8. Owner acceptance in `npm run dev`: follow a manual hint sequence to
+- [x] 8. Owner acceptance in `npm run dev`: follow a manual hint sequence to
   completion (step auto-advance), watch auto-play cross the two-swap endgame
   without wobble, verify a manual off-plan move drops the hint and the next
   Hint press recomputes.
-- [ ] 9. Full gate (`tsc -b --noEmit`, `biome lint`, `vitest run`,
+- [x] 9. Full gate (`tsc -b --noEmit`, `biome lint`, `vitest run`,
   `vite build`) and archive the change.
+
+Owner acceptance 2026-06-10: behaviour confirmed; minor visual
+glitches observed and explicitly deferred by owner decision (not
+worth fixing at the moment).

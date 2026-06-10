@@ -2,6 +2,7 @@
 .claude/commands/openspec/
 .claude/scheduled_tasks.lock
 .vscode/
+.antigravitycli/
 
 # Logs
 logs
