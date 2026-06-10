@@ -142,6 +142,12 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * the last step clears the plan instead). */
   private activeHint: ActiveHint<Move> | null = null;
   private advanceHintOnAnimationEnd = false;
+  /** Whether the stored plan's current step is on display. Manual
+   * play shows one hint per request: completing a step manually
+   * advances the plan but hides it until the next `hint()` call.
+   * Auto-play (`executeHint`) keeps the display on through its
+   * settle-advance so back-to-back steps preview naturally. */
+  private hintDisplayed = false;
   private timerElapsed = 0;
   private notify?: NotifyChange;
   private notifyTimer?: NotifyTimerState;
@@ -306,8 +312,11 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       const verdict = this.game.hintKeepTrack?.(move, step, this.state) ?? "off";
       if (verdict === "completed") {
         // The game asserts the post-move state matches the plan's
-        // expectation after this step, so the rest stays valid.
+        // expectation after this step, so the rest stays valid —
+        // advance, but hide the display: manual play surfaces one
+        // hint per request, the next `hint()` call re-shows.
         this.advanceHint();
+        this.hintDisplayed = false;
       } else if (verdict === "off") {
         this.clearHint();
       }
@@ -365,16 +374,24 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   // --- hints ---------------------------------------------------------
 
-  /** The step of the stored plan currently on display (`undefined`
-   * when no plan is active). This is what `redraw` and the status
-   * bar narrate. */
+  /** The stored plan's current step (`undefined` when no plan is
+   * active) — what `hintKeepTrack` classifies moves against and what
+   * `executeHint` plays, displayed or not. */
   private get currentHintStep(): HintStep<Move> | undefined {
     return this.activeHint?.steps[this.activeHint.index];
+  }
+
+  /** The step on display (`undefined` when no plan is active or the
+   * plan is hidden). This is what `redraw` and the status bar
+   * narrate. */
+  private get displayedHintStep(): HintStep<Move> | undefined {
+    return this.hintDisplayed ? this.currentHintStep : undefined;
   }
 
   private clearHint(): void {
     this.activeHint = null;
     this.advanceHintOnAnimationEnd = false;
+    this.hintDisplayed = false;
   }
 
   /** Advance the plan past its current step; the plan clears when the
@@ -398,6 +415,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     if (result.steps.length === 0) return "Game returned an empty hint plan";
     this.activeHint = { steps: result.steps, index: 0 };
     this.advanceHintOnAnimationEnd = false;
+    this.hintDisplayed = true;
     return undefined;
   }
 
@@ -405,7 +423,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * instantly in a game with no animation): advance past an
    * executed-hint step, and drop any plan once the board is solved. */
   private settleHint(): void {
-    const before = this.currentHintStep;
+    const before = this.displayedHintStep;
     if (this.advanceHintOnAnimationEnd) {
       this.advanceHintOnAnimationEnd = false;
       this.advanceHint();
@@ -413,15 +431,18 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     if (this.activeHint && this.game.status(this.state) === "solved") {
       this.clearHint();
     }
-    if (this.currentHintStep !== before) this.emitStatusBar();
+    if (this.displayedHintStep !== before) this.emitStatusBar();
   }
 
   hint(): string | undefined {
     if (this.activeHint) {
-      // A valid plan is on display: refresh, don't recompute and
-      // don't advance — advancing is driven only by moves (manual or
-      // executed), which is what makes "recompute only when
-      // invalidated" hold for the manual flow.
+      // A valid plan is stored: (re-)display its current step, don't
+      // recompute and don't advance — advancing is driven only by
+      // moves (manual or executed), which is what makes "recompute
+      // only when invalidated" hold for the manual flow. A plan
+      // hidden by a manual step completion re-shows here: one hint
+      // per request.
+      this.hintDisplayed = true;
       this.emitStatusBar();
       this.requestRedraw();
       return undefined;
@@ -449,6 +470,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     // animation (the banner describes the move in flight); the plan
     // advances when the animation settles, so the *next* step is
     // previewed during the auto-play rest period.
+    this.hintDisplayed = true;
     this.advanceHintOnAnimationEnd = true;
     this.pendingAnimScale = HINT_ANIM_SCALE;
     // A game with no move animation settles synchronously inside
@@ -756,7 +778,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       // keeps the game's `animTime / its-anim-length` progress correct.
       this.animTime / this.animScale,
       this.flashTime,
-      this.currentHintStep,
+      this.displayedHintStep,
     );
     dr.endDraw();
   }
@@ -819,7 +841,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.emit({
       type: "status-bar-change",
       statusBarText: text,
-      activeHintExplanation: this.currentHintStep?.explanation,
+      activeHintExplanation: this.displayedHintStep?.explanation,
     });
   }
 }

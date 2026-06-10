@@ -520,17 +520,49 @@ describe("Midend hint plan lifecycle", () => {
     expect(h.m.hint()).toBe("Already solved");
   });
 
-  it("a move completing the current step advances the plan (no recompute)", () => {
+  it("completing a step manually hides the hint; the next hint() shows the advanced step (no recompute)", () => {
     const c = countingHintGame();
     h = harness(c.game);
     h.m.newGame();
     h.m.hint();
     expect(explanation()).toBe("Increment the counter to 1");
+    // One hint per request: the follow-up step is not presented unasked.
     h.m.processInput(0, 0, LEFT_BUTTON);
+    expect(explanation()).toBeUndefined();
+    // Asking again re-displays from the stored plan instantly.
+    expect(h.m.hint()).toBeUndefined();
     expect(explanation()).toBe("Increment the counter to 2");
     h.m.processInput(0, 0, LEFT_BUTTON);
+    expect(explanation()).toBeUndefined();
+    expect(h.m.hint()).toBeUndefined();
     expect(explanation()).toBe("Increment the counter to 3");
     expect(c.hintCalls()).toBe(1);
+  });
+
+  it("a hidden plan keeps tracking moves: completions advance it silently", () => {
+    const c = countingHintGame();
+    h = harness(c.game);
+    h.m.newGame();
+    h.m.hint();
+    // Two on-plan moves with no hint request in between: the stored
+    // plan advances past both while hidden.
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    expect(explanation()).toBeUndefined();
+    expect(h.m.hint()).toBeUndefined();
+    expect(explanation()).toBe("Increment the counter to 3");
+    expect(c.hintCalls()).toBe(1);
+  });
+
+  it("a hidden plan is still dropped by an off-plan move", () => {
+    const c = countingHintGame();
+    h = harness(c.game);
+    h.m.newGame();
+    h.m.hint();
+    h.m.processInput(0, 0, LEFT_BUTTON); // completes step 1, hides
+    h.m.processInput(0, 0, RIGHT_BUTTON); // off-plan ⇒ plan dropped
+    expect(h.m.hint()).toBeUndefined();
+    expect(c.hintCalls()).toBe(2); // recomputed from the new state
   });
 
   it("hint() while a plan is active is a refresh, not a recompute or advance", () => {
