@@ -38,23 +38,47 @@ export type UiUpdate = typeof UI_UPDATE;
  * cannot be mistaken for an error message. */
 export type SolveResult<Move> = { ok: true; move: Move } | { ok: false; error: string };
 
-/** Result of a hint attempt — a single next-step move with a
- * human-readable explanation, or an error. The move is NOT
- * auto-applied; the midend stores it as an active hint and the
- * renderer displays it. */
-export type HintResult<Move, Highlights = unknown> =
-  | { ok: true; move: Move; explanation: string; highlights?: Highlights }
-  | { ok: false; error: string };
-
-/** A hint currently being displayed. Stored in the midend (not in
- * game state), passed to the game's `redraw` so it can render the
- * hint visually. Cleared when the player makes any move, undoes,
- * redoes, or starts a new game. */
-export interface ActiveHint<Move, Highlights = unknown> {
+/** One step of a hint plan: a move plus a human-readable explanation
+ * and optional visual highlights, narrated for the state the step
+ * applies to (i.e. the state after every earlier step of the plan).
+ * The current step is what the renderer displays and the status bar
+ * narrates. */
+export interface HintStep<Move, Highlights = unknown> {
   move: Move;
   explanation: string;
   highlights?: Highlights;
 }
+
+/** Result of a hint attempt — the whole computed plan as a non-empty
+ * ordered sequence of steps, or an error. No move is auto-applied;
+ * the midend stores the plan as the active hint, displays one step
+ * at a time, and advances as steps complete. Returning the full plan
+ * (rather than one move per request) avoids replan drift between
+ * steps and pays any expensive search once. */
+export type HintResult<Move, Highlights = unknown> =
+  | { ok: true; steps: HintStep<Move, Highlights>[] }
+  | { ok: false; error: string };
+
+/** The hint plan currently being followed. Stored in the midend (not
+ * in game state, never persisted); `steps[index]` is the step being
+ * displayed. Advanced by `hintKeepTrack` verdicts and executed-hint
+ * animation settles; cleared on undo/redo/restart/new game/solve,
+ * when the last step completes, and when the board is solved. */
+export interface ActiveHint<Move, Highlights = unknown> {
+  steps: HintStep<Move, Highlights>[];
+  index: number;
+}
+
+/** How a player move relates to the current hint step:
+ * - `"completed"` — the move finishes the step; the midend advances
+ *   the plan. By returning this the game asserts the resulting state
+ *   matches what the plan expected after this step, so the remaining
+ *   steps stay valid.
+ * - `"onTrack"` — progress toward the step without finishing it; the
+ *   midend keeps the step displayed.
+ * - `"off"` — the move deviates from the plan; the midend drops it
+ *   (the next hint request recomputes). */
+export type HintTrackVerdict = "completed" | "onTrack" | "off";
 
 /** A node in the preset/difficulty menu tree. */
 export interface PresetMenu<Params> {
@@ -136,15 +160,18 @@ export interface Game<Params, State, Move, Ui = unknown, DrawState = unknown> {
    * itself a string can't be confused with an error message. */
   solve?(orig: State, curr: State, aux?: string): SolveResult<Move>;
 
-  /** Compute a heuristic hint for the current state. Returns a
-   * single move + human-readable explanation, or an error. The
-   * move is NOT auto-applied — the midend stores it as an active
-   * hint and the renderer displays it. The player executes the
-   * move themselves. */
+  /** Compute a hint plan for the current state: a non-empty ordered
+   * sequence of narrated moves, or an error. Nothing is auto-applied
+   * — the midend stores the plan and displays one step at a time;
+   * the player follows it (or `executeHint` plays it) step by step. */
   hint?(state: State): HintResult<Move>;
-  /** Check if a move keeps the active hint on track. If returned true,
-   * the active hint won't be cleared when the move is applied. */
-  hintKeepTrack?(m: Move, hint: ActiveHint<Move>, state: State): boolean;
+  /** Classify a player move against the current hint step. The game
+   * MAY adjust `step.move` in place on `"onTrack"` (e.g. shrink a
+   * slide's remaining distance after partial manual progress) so a
+   * later `executeHint` doesn't overshoot. `"completed"` obliges the
+   * game to ensure the resulting state matches the plan's
+   * expectation after this step — return `"off"` when in doubt. */
+  hintKeepTrack?(m: Move, step: HintStep<Move>, state: State): HintTrackVerdict;
   textFormat?(s: State): string;
   statusbarText?(s: State, ui: Ui): string;
 
@@ -171,7 +198,7 @@ export interface Game<Params, State, Move, Ui = unknown, DrawState = unknown> {
     ui: Ui,
     animTime: number,
     flashTime: number,
-    hint?: ActiveHint<Move>,
+    hint?: HintStep<Move>,
   ): void;
   animLength?(a: State, b: State, dir: number, ui: Ui): number;
   flashLength?(a: State, b: State, dir: number, ui: Ui): number;

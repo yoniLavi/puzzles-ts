@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ChangeNotification } from "../../puzzle/types.ts";
-import { type FakeDrawState, fakeGame, LEFT_BUTTON } from "./fake-game.ts";
+import {
+  type FakeDrawState,
+  fakeGame,
+  LEFT_BUTTON,
+  RIGHT_BUTTON,
+} from "./fake-game.ts";
 import type { GameDrawing } from "./game.ts";
 import { Midend } from "./midend.ts";
 
@@ -32,11 +37,11 @@ function recordingDrawing() {
 }
 
 /** Drive a fresh midend and record every notification it emits. */
-function harness() {
+function harness(game: typeof fakeGame = fakeGame) {
   const notes: ChangeNotification[] = [];
   let timerActive = false;
   let redraws = 0;
-  const m = new Midend(fakeGame);
+  const m = new Midend(game);
   m.setCallbacks(
     (n) => notes.push(n),
     (active) => {
@@ -474,21 +479,40 @@ describe("Midend newGame requests a redraw (deterministic boards may produce the
   });
 });
 
-describe("Midend hint lifecycle", () => {
+/** fakeGame with a counting `hint` so tests can assert how many times
+ * a plan was (re)computed. */
+function countingHintGame(): { game: typeof fakeGame; hintCalls: () => number } {
+  let calls = 0;
+  const game: typeof fakeGame = {
+    ...fakeGame,
+    hint: (s) => {
+      calls += 1;
+      const base = fakeGame.hint;
+      if (!base) throw new Error("fakeGame.hint missing");
+      return base(s);
+    },
+  };
+  return { game, hintCalls: () => calls };
+}
+
+describe("Midend hint plan lifecycle", () => {
   let h: ReturnType<typeof harness>;
+  const explanation = () =>
+    (
+      h.last("status-bar-change") as Extract<
+        ChangeNotification,
+        { type: "status-bar-change" }
+      >
+    ).activeHintExplanation;
+
   beforeEach(() => {
     h = harness();
-    h.m.newGame();
+    h.m.newGame(); // default target 3 ⇒ a 3-step plan from count 0
   });
 
-  it("hint() returns undefined and stores an active hint", () => {
+  it("hint() stores a plan and displays its first step", () => {
     expect(h.m.hint()).toBeUndefined();
-    // The hint should appear in the status-bar change.
-    const sb = h.last("status-bar-change") as Extract<
-      ChangeNotification,
-      { type: "status-bar-change" }
-    >;
-    expect(sb.activeHintExplanation).toBe("Increment the counter");
+    expect(explanation()).toBe("Increment the counter to 1");
   });
 
   it("hint() on a solved game returns an error", () => {
@@ -496,70 +520,189 @@ describe("Midend hint lifecycle", () => {
     expect(h.m.hint()).toBe("Already solved");
   });
 
-  it("making a move clears the active hint", () => {
+  it("a move completing the current step advances the plan (no recompute)", () => {
+    const c = countingHintGame();
+    h = harness(c.game);
+    h.m.newGame();
     h.m.hint();
-    // Status-bar change should show the active hint explanation.
-    const sbBefore = h.last("status-bar-change") as Extract<
-      ChangeNotification,
-      { type: "status-bar-change" }
-    >;
-    expect(sbBefore.activeHintExplanation).toBe("Increment the counter");
-
+    expect(explanation()).toBe("Increment the counter to 1");
     h.m.processInput(0, 0, LEFT_BUTTON);
-    // Status-bar change should no longer show the active hint.
-    const sbAfter = h.last("status-bar-change") as Extract<
-      ChangeNotification,
-      { type: "status-bar-change" }
-    >;
-    expect(sbAfter.activeHintExplanation).toBeUndefined();
+    expect(explanation()).toBe("Increment the counter to 2");
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    expect(explanation()).toBe("Increment the counter to 3");
+    expect(c.hintCalls()).toBe(1);
   });
 
-  it("undo clears the active hint", () => {
+  it("hint() while a plan is active is a refresh, not a recompute or advance", () => {
+    const c = countingHintGame();
+    h = harness(c.game);
+    h.m.newGame();
+    h.m.hint();
+    expect(h.m.hint()).toBeUndefined();
+    expect(h.m.hint()).toBeUndefined();
+    expect(explanation()).toBe("Increment the counter to 1");
+    expect(c.hintCalls()).toBe(1);
+  });
+
+  it("an off-plan move drops the plan", () => {
+    h.m.hint();
+    expect(explanation()).toBe("Increment the counter to 1");
+    h.m.processInput(0, 0, RIGHT_BUTTON); // "dec" ⇒ verdict "off"
+    expect(explanation()).toBeUndefined();
+  });
+
+  it("the next hint request after invalidation recomputes from the new state", () => {
+    const c = countingHintGame();
+    h = harness(c.game);
+    h.m.newGame();
+    h.m.hint();
+    h.m.processInput(0, 0, RIGHT_BUTTON); // drops the plan (count now -1)
+    expect(h.m.hint()).toBeUndefined();
+    expect(c.hintCalls()).toBe(2);
+    expect(explanation()).toBe("Increment the counter to 0");
+  });
+
+  it("an onTrack move keeps the current step displayed", () => {
+    h = harness({ ...fakeGame, hintKeepTrack: () => "onTrack" });
+    h.m.newGame();
+    h.m.hint();
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    expect(explanation()).toBe("Increment the counter to 1");
+  });
+
+  it("following the plan to the end clears it (exhaustion + solved)", () => {
+    h.m.hint();
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    h.m.processInput(0, 0, LEFT_BUTTON); // completes the last step
+    expect(h.state()?.status).toBe("solved");
+    expect(explanation()).toBeUndefined();
+  });
+
+  it("a game returning an empty plan is rejected", () => {
+    h = harness({ ...fakeGame, hint: () => ({ ok: true, steps: [] }) });
+    h.m.newGame();
+    expect(h.m.hint()).toBe("Game returned an empty hint plan");
+    expect(explanation()).toBeUndefined();
+  });
+
+  it("undo clears the active plan", () => {
     h.m.processInput(0, 0, LEFT_BUTTON);
     h.m.hint();
     h.m.undo();
-    const sb = h.last("status-bar-change") as Extract<
-      ChangeNotification,
-      { type: "status-bar-change" }
-    >;
-    expect(sb.activeHintExplanation).toBeUndefined();
+    expect(explanation()).toBeUndefined();
   });
 
-  it("redo clears the active hint", () => {
+  it("redo clears the active plan", () => {
     h.m.processInput(0, 0, LEFT_BUTTON);
     h.m.undo();
     h.m.hint();
     h.m.redo();
-    const sb = h.last("status-bar-change") as Extract<
-      ChangeNotification,
-      { type: "status-bar-change" }
-    >;
-    expect(sb.activeHintExplanation).toBeUndefined();
+    expect(explanation()).toBeUndefined();
   });
 
-  it("newGame clears the active hint", () => {
+  it("newGame clears the active plan", () => {
     h.m.hint();
     h.m.newGame();
-    const sb = h.last("status-bar-change") as Extract<
-      ChangeNotification,
-      { type: "status-bar-change" }
-    >;
-    expect(sb.activeHintExplanation).toBeUndefined();
+    expect(explanation()).toBeUndefined();
   });
 
-  it("restartGame clears the active hint", () => {
+  it("restartGame clears the active plan", () => {
     h.m.processInput(0, 0, LEFT_BUTTON);
     h.m.hint();
     h.m.restartGame();
-    const sb = h.last("status-bar-change") as Extract<
-      ChangeNotification,
-      { type: "status-bar-change" }
-    >;
-    expect(sb.activeHintExplanation).toBeUndefined();
+    expect(explanation()).toBeUndefined();
+  });
+
+  it("solve() clears the active plan", () => {
+    h.m.hint();
+    h.m.solve();
+    expect(explanation()).toBeUndefined();
   });
 
   it("canHint is true when the game implements hint()", () => {
     const props = h.m.getStaticProperties();
     expect(props.canHint).toBe(true);
+  });
+});
+
+describe("Midend executeHint plays the stored plan", () => {
+  let h: ReturnType<typeof harness>;
+  const explanation = () =>
+    (
+      h.last("status-bar-change") as Extract<
+        ChangeNotification,
+        { type: "status-bar-change" }
+      >
+    ).activeHintExplanation;
+
+  it("executes the whole plan verbatim — hint() is computed once, not per step", () => {
+    const c = countingHintGame();
+    h = harness(c.game);
+    h.m.newGame(); // target 3
+    expect(h.m.executeHint()).toBeUndefined();
+    expect(h.m.executeHint()).toBeUndefined();
+    expect(h.m.executeHint()).toBeUndefined();
+    expect(c.hintCalls()).toBe(1);
+    expect(h.m.formatAsText()).toBe("count=3");
+    expect(h.state()?.status).toBe("solved");
+    // Plan exhausted + board solved ⇒ cleared.
+    expect(explanation()).toBeUndefined();
+  });
+
+  it("computes a plan when none is stored, then previews the next step", () => {
+    const c = countingHintGame();
+    h = harness(c.game);
+    h.m.newGame();
+    expect(h.m.executeHint()).toBeUndefined();
+    expect(c.hintCalls()).toBe(1);
+    expect(h.m.formatAsText()).toBe("count=1");
+    // fakeGame has no animation ⇒ the step settles synchronously and
+    // the *next* step is already on display.
+    expect(explanation()).toBe("Increment the counter to 2");
+  });
+
+  it("executes the stored plan's current step after manual progress", () => {
+    const c = countingHintGame();
+    h = harness(c.game);
+    h.m.newGame();
+    h.m.hint();
+    h.m.processInput(0, 0, LEFT_BUTTON); // completes step 1 manually
+    expect(h.m.executeHint()).toBeUndefined(); // plays step 2
+    expect(c.hintCalls()).toBe(1);
+    expect(h.m.formatAsText()).toBe("count=2");
+    expect(explanation()).toBe("Increment the counter to 3");
+  });
+
+  it("recomputes after the plan was invalidated", () => {
+    const c = countingHintGame();
+    h = harness(c.game);
+    h.m.newGame();
+    h.m.hint();
+    h.m.undo(); // no-op at pos 0 — use an off-plan move instead
+    h.m.processInput(0, 0, RIGHT_BUTTON); // drops the plan
+    expect(h.m.executeHint()).toBeUndefined();
+    expect(c.hintCalls()).toBe(2);
+  });
+
+  it("hint errors pass through (solved board)", () => {
+    h = harness();
+    h.m.newGame();
+    h.m.solve();
+    expect(h.m.executeHint()).toBe("Already solved");
+  });
+
+  it("does not replay a step whose animation has not settled yet", () => {
+    // An animated game: executeHint normally advances at animation
+    // settle. Calling executeHint again *before* the settle must
+    // advance past the in-flight step (its move is already applied),
+    // not execute the same move twice.
+    const c = countingHintGame();
+    h = harness({ ...c.game, animLength: () => 1 });
+    h.m.newGame();
+    h.m.executeHint(); // step 1 in flight, no timer ticks driven
+    h.m.executeHint(); // must play step 2, not step 1 again
+    expect(c.hintCalls()).toBe(1);
+    expect(h.m.formatAsText()).toBe("count=2");
   });
 });

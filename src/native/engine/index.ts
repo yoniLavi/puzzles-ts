@@ -13,6 +13,8 @@ export type {
   Game,
   GameDrawing,
   HintResult,
+  HintStep,
+  HintTrackVerdict,
   PresetMenu,
   SolveResult,
   UiUpdate,

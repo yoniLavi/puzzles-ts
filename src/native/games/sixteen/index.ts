@@ -1,10 +1,11 @@
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { mkhighlightBackground } from "../../engine/colour-mkhighlight.ts";
 import type {
-  ActiveHint,
   Game,
   GameDrawing,
   HintResult,
+  HintStep,
+  HintTrackVerdict,
   UiUpdate,
 } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
@@ -55,18 +56,17 @@ const COL_HINT = 4;
 
 // --- hint highlights --------------------------------------------------
 
-/** Highlight data for a Sixteen hint: which tile to move and where
- * it should go. The renderer highlights the tile's current cell and
- * its target cell so the player can figure out the right slides. */
+/** Highlight data for a Sixteen hint step: which tile to move and
+ * where it should go. The renderer highlights the tile's current cell
+ * and its target cell so the player can figure out the right slides. */
 export interface SixteenHintHighlights {
   /** The tile number being moved closer to its target. */
   tile: number;
   /** The position (flat index) where this tile should end up. */
   targetPos: number;
-  /** The ultimate solved destination of this tile (if different from targetPos). */
+  /** Where the *next* plan step takes this tile when it continues the
+   * same journey perpendicular to this one (two-leg preview). */
   ultimatePos?: number;
-  /** The subsequent move recommended by the active hint. */
-  secondMove?: SixteenMove;
 }
 
 // --- move logic -------------------------------------------------------
@@ -519,7 +519,7 @@ function redraw(
   ui: SixteenUi,
   animTime: number,
   flashTime: number,
-  activeHint?: ActiveHint<SixteenMove, SixteenHintHighlights>,
+  activeHint?: HintStep<SixteenMove, SixteenHintHighlights>,
 ): void {
   if (!ds) return;
   const ts = ds.tilesize;
@@ -1113,23 +1113,18 @@ function arrayToKey(arr: Int32Array): string {
 
 type SlideMove = Extract<SixteenMove, { type: "slide" }>;
 
-interface ExactPlan {
-  first: SlideMove;
-  second: SlideMove | null;
-}
-
 /** Exact bidirectional BFS (in full-slide moves) from `start` to the
  * solved board: expand level by level from both ends, always growing the
- * smaller frontier, until the visited sets meet. Returns the first (and,
- * when determinable, second) move of a shortest solution, or null when
- * no meeting point is found within the depth/state caps. */
+ * smaller frontier, until the visited sets meet. Returns the full move
+ * path of a shortest solution, or null when no meeting point is found
+ * within the depth/state caps. */
 function bidirectionalPlan(
   start: Int32Array,
   w: number,
   h: number,
   n: number,
   moves: SlideMove[],
-): ExactPlan | null {
+): SlideMove[] | null {
   const MAX_TOTAL_DEPTH = 10;
   const MAX_STATES = 1_500_000;
 
@@ -1138,14 +1133,16 @@ function bidirectionalPlan(
 
   const invert = (m: SlideMove): SlideMove => ({ ...m, delta: -m.delta });
 
+  /** `parent` walks toward the start; `move` is the forward-direction
+   * move that leads from the parent to this node. */
   interface FwdInfo {
-    g: number;
-    first: SlideMove | null;
-    second: SlideMove | null;
+    parent: string | null;
+    move: SlideMove | null;
   }
-  /** `out` is the forward-direction move leaving this node toward the goal. */
+  /** `parent` walks toward the goal; `out` is the forward-direction
+   * move that leads from this node to the parent. */
   interface BwdInfo {
-    g: number;
+    parent: string | null;
     out: SlideMove | null;
   }
   interface FrontierNode {
@@ -1155,15 +1152,36 @@ function bidirectionalPlan(
 
   const startKey = arrayToKey(start);
   const goalKey = arrayToKey(goal);
-  const fwdSeen = new Map<string, FwdInfo>([
-    [startKey, { g: 0, first: null, second: null }],
-  ]);
-  const bwdSeen = new Map<string, BwdInfo>([[goalKey, { g: 0, out: null }]]);
+  const fwdSeen = new Map<string, FwdInfo>([[startKey, { parent: null, move: null }]]);
+  const bwdSeen = new Map<string, BwdInfo>([[goalKey, { parent: null, out: null }]]);
   let fwdFrontier: FrontierNode[] = [{ tiles: start, key: startKey }];
   let bwdFrontier: FrontierNode[] = [{ tiles: goal, key: goalKey }];
   let depth = 0;
 
   const scratch = new Int32Array(n);
+
+  /** The shortest path start→goal through a meeting key present in
+   * both visited maps: the forward parent chain (reversed) followed by
+   * the backward parent chain's outgoing moves. */
+  const joinPaths = (meetKey: string): SlideMove[] => {
+    const path: SlideMove[] = [];
+    for (
+      let info = fwdSeen.get(meetKey);
+      info !== undefined && info.move !== null && info.parent !== null;
+      info = fwdSeen.get(info.parent)
+    ) {
+      path.push(info.move);
+    }
+    path.reverse();
+    for (
+      let info = bwdSeen.get(meetKey);
+      info !== undefined && info.out !== null && info.parent !== null;
+      info = bwdSeen.get(info.parent)
+    ) {
+      path.push(info.out);
+    }
+    return path;
+  };
 
   while (
     fwdFrontier.length > 0 &&
@@ -1176,43 +1194,22 @@ function bidirectionalPlan(
     const next: FrontierNode[] = [];
     for (const node of frontier) {
       if (forward) {
-        const parent = fwdSeen.get(node.key) as FwdInfo;
         for (const move of moves) {
           slideTilesInto(node.tiles, scratch, w, h, move);
           const key = arrayToKey(scratch);
           if (fwdSeen.has(key)) continue;
-          const info: FwdInfo = {
-            g: parent.g + 1,
-            first: parent.g === 0 ? move : parent.first,
-            second: parent.g === 1 ? move : parent.second,
-          };
-          fwdSeen.set(key, info);
-          const met = bwdSeen.get(key);
-          if (met) {
-            if (!info.first) return null; // unreachable: g >= 1 here
-            return { first: info.first, second: info.second ?? met.out };
-          }
+          fwdSeen.set(key, { parent: node.key, move });
+          if (bwdSeen.has(key)) return joinPaths(key);
           next.push({ tiles: new Int32Array(scratch), key });
         }
       } else {
-        const parent = bwdSeen.get(node.key) as BwdInfo;
         for (const move of moves) {
           slideTilesInto(node.tiles, scratch, w, h, move);
           const key = arrayToKey(scratch);
           if (bwdSeen.has(key)) continue;
           // In forward direction, this edge runs successor --inv(move)--> node.
-          const info: BwdInfo = { g: parent.g + 1, out: invert(move) };
-          bwdSeen.set(key, info);
-          const met = fwdSeen.get(key);
-          if (met) {
-            // The forward path reaches this node in met.g moves; the
-            // remaining moves toward the goal start with info.out.
-            const first = met.g === 0 ? info.out : met.first;
-            if (!first) return null; // unreachable: solved board never gets here
-            const second =
-              met.g === 0 ? parent.out : met.g === 1 ? info.out : met.second;
-            return { first, second };
-          }
+          bwdSeen.set(key, { parent: node.key, out: invert(move) });
+          if (fwdSeen.has(key)) return joinPaths(key);
           next.push({ tiles: new Int32Array(scratch), key });
         }
       }
@@ -1297,13 +1294,16 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
 
   // Priority Queue using Bucket Queue for O(1) state management.
   // Since f = g + h is always a small integer, we can bucket nodes by their f value.
+  // Parent pointers reconstruct the full move path; nodes are already
+  // retained by the bucket queue, so the chains add two references per
+  // node and no new allocation pattern.
   interface SearchNode {
     tiles: Int32Array;
     g: number;
     h: number;
     f: number;
-    firstMove: Extract<SixteenMove, { type: "slide" }> | null;
-    secondMove: Extract<SixteenMove, { type: "slide" }> | null;
+    parent: SearchNode | null;
+    move: SlideMove | null;
   }
 
   const buckets: SearchNode[][] = [];
@@ -1327,8 +1327,8 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     g: 0,
     h: startH,
     f: startH,
-    firstMove: null,
-    secondMove: null,
+    parent: null,
+    move: null,
   });
 
   let expanded = 0;
@@ -1413,13 +1413,6 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
 
       visited.set(key, nextG);
       const nextH = getHeuristic(scratchTiles);
-      let nextFirstMove = curr.firstMove;
-      let nextSecondMove = curr.secondMove;
-      if (curr.g === 0) {
-        nextFirstMove = move;
-      } else if (curr.g === 1) {
-        nextSecondMove = move;
-      }
 
       // Lazy Allocation: Only construct new Int32Array and node object when actually accepted into queue!
       const nextTiles = new Int32Array(scratchTiles);
@@ -1428,8 +1421,8 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
         g: nextG,
         h: nextH,
         f: nextG + nextH,
-        firstMove: nextFirstMove,
-        secondMove: nextSecondMove,
+        parent: curr,
+        move,
       };
 
       insertSorted(nextNode);
@@ -1442,29 +1435,68 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   // Strict local minima — e.g. two swapped pairs, where every single
   // slide makes the distance heuristic worse — sit ~8 plies uphill,
   // beyond any sane forward budget, but meeting in the middle crosses
-  // them at ~4 plies per side. Exact (shortest) plans also guarantee
-  // auto-play progress: each replan is strictly one move shorter.
-  let planFirst = bestNode.firstMove;
-  let planSecond = bestNode.secondMove;
-  if (bestNode.h !== 0 && outOfPlace <= 8) {
-    const exact = bidirectionalPlan(tiles, w, h, n, moves);
-    if (exact) {
-      planFirst = exact.first;
-      planSecond = exact.second;
+  // them at ~4 plies per side. The bidirectional search costs ~0.5-2s
+  // when it engages; with plan-carrying hints that price is paid once
+  // for the whole endgame, not per step.
+  const pathTo = (node: SearchNode): SlideMove[] => {
+    const path: SlideMove[] = [];
+    for (let p: SearchNode | null = node; p !== null && p.move !== null; p = p.parent) {
+      path.push(p.move);
     }
-  }
+    return path.reverse();
+  };
 
-  const bestMove = planFirst;
-  if (!bestMove) {
+  // The myopic case (search failed to reach the goal but improved on
+  // the start) yields a *partial* plan — the path to `bestNode`. That
+  // is fine: the plan runs out and the next request recomputes from
+  // the better position.
+  let path: SlideMove[] | null = null;
+  if (bestNode.h !== 0 && outOfPlace <= 8) {
+    path = bidirectionalPlan(tiles, w, h, n, moves);
+  }
+  path ??= pathTo(bestNode);
+  if (path.length === 0) {
     return { ok: false, error: "No helpful hint found" };
   }
 
-  // Pick the lowest-numbered candidate tile on the moved row/column.
-  let bestTile = 0;
+  // Narrate each step against the simulated board it applies to: the
+  // plan is computed once, so every step's story must already be told
+  // from the state its predecessors produce.
+  const steps: HintStep<SixteenMove, SixteenHintHighlights>[] = [];
+  let board = tiles;
+  for (let k = 0; k < path.length; k++) {
+    steps.push(narrateStep(board, w, h, path[k], path[k + 1] ?? null));
+    const next = new Int32Array(n);
+    slideTilesInto(board, next, w, h, path[k]);
+    board = next;
+  }
 
-  if (bestMove.axis === "row") {
-    const r = bestMove.index;
-    // Select the lowest-numbered out-of-place tile on this row (ascending numeric order)
+  return { ok: true, steps };
+}
+
+/** Narrate one plan step against the board it applies to. The
+ * highlighted tile is the lowest-numbered out-of-place tile on the
+ * moved line; the target is that tile's landing cell under the move
+ * (with a second-leg preview when the next planned move continues the
+ * same tile's journey perpendicular to this one); the returned move's
+ * delta is normalized to the in-grid direction of travel. (An earlier
+ * version narrated the tile's *solved* row/column regardless of what
+ * the move achieved; once hints started executing the narrated slide,
+ * that overpromise pushed the game off the solver's path and
+ * auto-play could cycle.) */
+function narrateStep(
+  tiles: Int32Array,
+  w: number,
+  h: number,
+  move: SlideMove,
+  nextMove: SlideMove | null,
+): HintStep<SixteenMove, SixteenHintHighlights> {
+  // Pick the lowest-numbered out-of-place tile on the moved
+  // row/column; if every tile on the line is in place (the move only
+  // serves another line's journey), the lowest-numbered tile on it.
+  let bestTile = 0;
+  if (move.axis === "row") {
+    const r = move.index;
     for (let c = 0; c < w; c++) {
       const tile = tiles[r * w + c];
       const targetCol = (tile - 1) % w;
@@ -1475,7 +1507,6 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
         }
       }
     }
-    // Fallback: if no out-of-place tile on this row, select the lowest-numbered tile on this row
     if (bestTile === 0) {
       for (let c = 0; c < w; c++) {
         const tile = tiles[r * w + c];
@@ -1485,8 +1516,7 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
       }
     }
   } else {
-    const colIndex = bestMove.index;
-    // Select the lowest-numbered out-of-place tile on this column (ascending numeric order)
+    const colIndex = move.index;
     for (let r = 0; r < h; r++) {
       const tile = tiles[r * w + colIndex];
       const targetCol = (tile - 1) % w;
@@ -1497,7 +1527,6 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
         }
       }
     }
-    // Fallback: if no out-of-place tile on this column, select the lowest-numbered tile on this column
     if (bestTile === 0) {
       for (let r = 0; r < h; r++) {
         const tile = tiles[r * w + colIndex];
@@ -1508,49 +1537,34 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
     }
   }
 
-  // Narrate what the plan actually does: the tile's landing cell under
-  // the plan's first move and, when the plan continues with a
-  // perpendicular slide of the line the tile lands on, the cell after
-  // that leg too. (An earlier version narrated the tile's *solved*
-  // row/column regardless of what the move achieved; once hints started
-  // executing the narrated slide, that overpromise pushed the game off
-  // the solver's path and auto-play could cycle.)
-  let currentIdx = -1;
-  for (let i = 0; i < n; i++) {
-    if (tiles[i] === bestTile) {
-      currentIdx = i;
-      break;
-    }
-  }
   // bestTile is selected from the moved line, so it is always found.
+  const currentIdx = tiles.indexOf(bestTile);
   const curR = Math.floor(currentIdx / w);
   const curC = currentIdx % w;
 
-  const landR = bestMove.axis === "row" ? curR : (curR + bestMove.delta + h) % h;
-  const landC = bestMove.axis === "row" ? (curC + bestMove.delta + w) % w : curC;
+  const landR = move.axis === "row" ? curR : (curR + move.delta + h) % h;
+  const landC = move.axis === "row" ? (curC + move.delta + w) % w : curC;
   const targetPos = landR * w + landC;
 
   let explanation =
-    bestMove.axis === "row"
+    move.axis === "row"
       ? `Move tile ${bestTile} to column ${landC + 1}`
       : `Move tile ${bestTile} to row ${landR + 1}`;
 
   let ultimatePos: number | undefined;
-  let secondMove: SixteenMove | undefined;
 
-  const second = planSecond;
-  if (second && second.axis !== bestMove.axis) {
+  if (nextMove && nextMove.axis !== move.axis) {
     const onSecondLine =
-      second.axis === "column" ? second.index === landC : second.index === landR;
+      nextMove.axis === "column" ? nextMove.index === landC : nextMove.index === landR;
     if (onSecondLine) {
-      const ultR = second.axis === "column" ? (landR + second.delta + h) % h : landR;
-      const ultC = second.axis === "row" ? (landC + second.delta + w) % w : landC;
+      const ultR =
+        nextMove.axis === "column" ? (landR + nextMove.delta + h) % h : landR;
+      const ultC = nextMove.axis === "row" ? (landC + nextMove.delta + w) % w : landC;
       const ult = ultR * w + ultC;
       if (ult !== targetPos && ult !== currentIdx) {
         ultimatePos = ult;
-        secondMove = second;
         explanation =
-          bestMove.axis === "row"
+          move.axis === "row"
             ? `Move tile ${bestTile} to column ${landC + 1}, then to row ${ultR + 1}`
             : `Move tile ${bestTile} to row ${landR + 1}, then to column ${ultC + 1}`;
       }
@@ -1560,15 +1574,14 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   // Normalize the returned delta to the in-grid direction of travel
   // (same permutation mod w/h) so the slide animation glides the tile
   // straight to its target box rather than wrapping across the edge.
-  const inGridDelta = bestMove.axis === "row" ? landC - curC : landR - curR;
-  const move: SixteenMove =
-    inGridDelta === bestMove.delta ? bestMove : { ...bestMove, delta: inGridDelta };
+  const inGridDelta = move.axis === "row" ? landC - curC : landR - curR;
+  const outMove: SixteenMove =
+    inGridDelta === move.delta ? move : { ...move, delta: inGridDelta };
 
   return {
-    ok: true,
-    move,
+    move: outMove,
     explanation,
-    highlights: { tile: bestTile, targetPos, ultimatePos, secondMove },
+    highlights: { tile: bestTile, targetPos, ultimatePos },
   };
 }
 
@@ -1610,51 +1623,39 @@ export const sixteenGame: Game<
 
   hintKeepTrack(
     m: SixteenMove,
-    h: ActiveHint<SixteenMove, SixteenHintHighlights>,
+    step: HintStep<SixteenMove, SixteenHintHighlights>,
     state: SixteenState,
-  ): boolean {
-    if (m.type !== "slide") return false;
-    if (h.move.type !== "slide") return false;
+  ): HintTrackVerdict {
+    if (m.type !== "slide" || step.move.type !== "slide") return "off";
 
-    // Check if the user is manipulating the row/col recommended by the active hint
-    if (m.axis !== h.move.axis || m.index !== h.move.index) {
-      return false;
+    // Only slides of the hinted row/column relate to the step at all.
+    if (m.axis !== step.move.axis || m.index !== step.move.index) {
+      return "off";
     }
 
-    // Check if applying the move completes the hint
+    const hl = step.highlights;
+    if (!hl) return "off";
+
+    // A slide of the hinted line that lands the tile on the step's
+    // target completes the step. This is safe exactly because a line
+    // slide is determined by its displacement: any slide landing the
+    // tile there produces the same permutation as the planned move,
+    // so the post-move state matches the plan and the remaining
+    // steps stay valid.
     const nextState = executeMove(state, m);
-    const hl = h.highlights;
-    if (hl) {
-      const tilePos = nextState.tiles.indexOf(hl.tile);
-      const targetPos = hl.targetPos;
-      const ultimatePos = hl.ultimatePos;
+    const tilePos = nextState.tiles.indexOf(hl.tile);
+    if (tilePos === hl.targetPos) return "completed";
 
-      // If the tile reaches the intermediate target of a 2D move,
-      // transition the active hint to the subsequent move.
-      if (tilePos === targetPos && ultimatePos !== undefined) {
-        if (hl.secondMove) {
-          h.move = hl.secondMove;
-          hl.targetPos = ultimatePos;
-          hl.ultimatePos = undefined;
-          hl.secondMove = undefined;
-          const finalCol = (ultimatePos % state.w) + 1;
-          const finalRow = Math.floor(ultimatePos / state.w) + 1;
-          h.explanation = `Move tile ${hl.tile} to row ${finalRow}, column ${finalCol}`;
-          return true;
-        }
-      }
-
-      // If the tile reaches either its targetPos or ultimatePos, the hint is applied
-      if (
-        tilePos === targetPos ||
-        (ultimatePos !== undefined && tilePos === ultimatePos)
-      ) {
-        return false;
-      }
-    }
-
-    // Otherwise they are on track
-    return true;
+    // Any other slide of the line is partial progress (or a detour):
+    // shrink the step's move to the remaining in-grid distance so a
+    // later executeHint doesn't overshoot.
+    const curR = Math.floor(tilePos / state.w);
+    const curC = tilePos % state.w;
+    const tgtR = Math.floor(hl.targetPos / state.w);
+    const tgtC = hl.targetPos % state.w;
+    const remaining = step.move.axis === "row" ? tgtC - curC : tgtR - curR;
+    step.move = { ...step.move, delta: remaining };
+    return "onTrack";
   },
 
   textFormat,

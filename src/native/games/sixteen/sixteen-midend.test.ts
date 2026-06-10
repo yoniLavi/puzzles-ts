@@ -12,10 +12,17 @@ import {
 import { sixteenGame } from "./index.ts";
 import type { SixteenMove } from "./state.ts";
 
-function harness() {
+/** The midend stores the hint plan privately; tests reach in to
+ * assert the stored plan's shape and current step. */
+interface PrivateHintView {
+  activeHint: { steps: { move: SixteenMove }[]; index: number } | null;
+  animLength: number;
+}
+
+function harness(game: typeof sixteenGame = sixteenGame) {
   const notes: ChangeNotification[] = [];
   let redraws = 0;
-  const m = new Midend(sixteenGame);
+  const m = new Midend(game);
   m.setCallbacks(
     (n) => notes.push(n),
     () => {},
@@ -180,27 +187,24 @@ describe("Sixteen midend integration — hint persistence", () => {
     const exp = h.m.hint();
     expect(exp).toBeUndefined(); // Returns undefined on success
 
-    // activeHint should be set
-    const mPrivate = h.m as unknown as { activeHint: { move: SixteenMove } | null };
-    expect(mPrivate.activeHint).toBeDefined();
+    // activeHint should hold a stored plan
+    const mPrivate = h.m as unknown as PrivateHintView;
     expect(mPrivate.activeHint).not.toBeNull();
 
-    // Verify activeHint is row 0
-    const activeHint = mPrivate.activeHint;
-    expect(activeHint).not.toBeNull();
-    if (activeHint && activeHint.move.type === "slide") {
-      expect(activeHint.move.axis).toBe("row");
-      expect(activeHint.move.index).toBe(0);
+    // Verify the current step slides row 0
+    const stepMove = mPrivate.activeHint?.steps[mPrivate.activeHint.index].move;
+    if (stepMove?.type === "slide") {
+      expect(stepMove.axis).toBe("row");
+      expect(stepMove.index).toBe(0);
     } else {
-      expect.fail("Expected active hint move to be a slide");
+      expect.fail("Expected the current hint step's move to be a slide");
     }
 
     // Make an on-track move: slide row 0 right by 1
     h.m.processInput(0, 0, CURSOR_SELECT); // Show cursor first at (0, 0)
     h.m.processInput(0, 0, 0x2000 | CURSOR_RIGHT); // Shift+CURSOR_RIGHT: slide row 0 right
 
-    // Since it's on-track and hasn't solved the tile position yet, the hint should STILL be active!
-    expect(mPrivate.activeHint).toBeDefined();
+    // Since it's on-track and hasn't landed the tile yet, the plan should STILL be active!
     expect(mPrivate.activeHint).not.toBeNull();
 
     // Now make an unrelated move: slide row 1 right.
@@ -219,9 +223,8 @@ describe("Sixteen midend integration — hint persistence", () => {
     const exp = h.m.hint();
     expect(exp).toBeUndefined(); // Returns undefined on success
 
-    // activeHint should be set
-    const mPrivate = h.m as unknown as { activeHint: { move: SixteenMove } | null };
-    expect(mPrivate.activeHint).toBeDefined();
+    // activeHint should hold a stored plan
+    const mPrivate = h.m as unknown as PrivateHintView;
     expect(mPrivate.activeHint).not.toBeNull();
 
     // Slide row 0 right by 1 step.
@@ -229,13 +232,12 @@ describe("Sixteen midend integration — hint persistence", () => {
     h.m.processInput(0, 0, 0x2000 | CURSOR_RIGHT); // Shift+CURSOR_RIGHT: slide row 0 right
 
     // Still active
-    expect(mPrivate.activeHint).toBeDefined();
     expect(mPrivate.activeHint).not.toBeNull();
 
-    // Slide row 0 right by 1 step again. Now tile 3 will reach its target col 2!
+    // Slide row 0 right by 1 step again. Now tile 1 reaches the step's
+    // target, completing the (single-step) plan: cleared.
     h.m.processInput(0, 0, 0x2000 | CURSOR_RIGHT); // Shift+CURSOR_RIGHT: slide row 0 right
 
-    // Since the hint was applied, activeHint should be cleared!
     expect(mPrivate.activeHint).toBeNull();
   });
 });
@@ -261,7 +263,7 @@ describe("Sixteen midend integration — executeHint auto-play", () => {
     expect(steps).toBeGreaterThan(0);
   });
 
-  it("keeps activeHint highlights during move animation and clears them on completion", () => {
+  it("keeps the executed step displayed through the animation, then advances", () => {
     const h = harness();
     h.m.setParams("3x3");
     h.m.newGame();
@@ -270,28 +272,71 @@ describe("Sixteen midend integration — executeHint auto-play", () => {
     const err = h.m.executeHint();
     expect(err).toBeUndefined();
 
-    const mPrivate = h.m as unknown as {
-      activeHint: { move: SixteenMove } | null;
-      animLength: number;
-    };
+    const mPrivate = h.m as unknown as PrivateHintView;
     expect(mPrivate.activeHint).not.toBeNull();
-    expect(mPrivate.activeHint?.move).toBeDefined();
+    const planLength = mPrivate.activeHint?.steps.length ?? 0;
+    expect(planLength).toBeGreaterThan(0);
+    expect(mPrivate.activeHint?.index).toBe(0);
 
     // Hint-executed moves animate in slow motion: 0.4s ANIM_TIME
     // stretched by HINT_ANIM_SCALE (2.5) to 1.0s.
     expect(mPrivate.animLength).toBeCloseTo(1.0);
 
-    // Still animating well past the normal 0.4s settle point.
+    // Still animating well past the normal 0.4s settle point — the
+    // executed step stays on display, describing the move in flight.
     h.m.timer(0.45);
-    expect(mPrivate.activeHint).not.toBeNull();
+    expect(mPrivate.activeHint?.index).toBe(0);
 
-    // Settle the stretched animation (total 1.05 > 1.0).
+    // Settle the stretched animation (total 1.05 > 1.0): the plan
+    // advances so the *next* step is previewed during the auto-play
+    // rest period (or clears when the plan had a single step).
     h.m.timer(0.6);
-    expect(mPrivate.activeHint).toBeNull();
+    if (planLength > 1) {
+      expect(mPrivate.activeHint?.index).toBe(1);
+    } else {
+      expect(mPrivate.activeHint).toBeNull();
+    }
 
     // A manual move is NOT stretched: it settles at the game's own 0.4s.
     h.m.processInput(0, 0, CURSOR_SELECT);
     h.m.processInput(0, 0, 0x2000 | CURSOR_RIGHT); // shift + cursor_right
     expect(mPrivate.animLength).toBeCloseTo(0.4);
+  });
+
+  // The bidirectional search itself takes a few seconds when it
+  // engages — that is the very cost this test pins to once-per-plan.
+  it("crosses the two-swap 5x5 endgame on one stored plan (no per-step recompute)", {
+    timeout: 30_000,
+  }, () => {
+    // Regression guard for the cost model: the exact bidirectional
+    // fallback (~0.5-2s when it engages) must run once for the whole
+    // endgame, not once per auto-played step — and executing one
+    // stored plan verbatim is also what eliminates replan wobble.
+    let hintCalls = 0;
+    const countingGame: typeof sixteenGame = {
+      ...sixteenGame,
+      hint: (s) => {
+        hintCalls += 1;
+        const base = sixteenGame.hint;
+        if (!base) throw new Error("sixteenGame.hint missing");
+        return base(s);
+      },
+    };
+    const h = harness(countingGame);
+    // Tiles 1↔6 and 16↔20 swapped, everything else solved: a strict
+    // local minimum the forward search cannot cross.
+    const err = h.m.newGameFromId(
+      "5x5:6,2,3,4,5,1,7,8,9,10,11,12,13,14,15,20,17,18,19,16,21,22,23,24,25",
+    );
+    expect(err).toBeUndefined();
+
+    let guard = 0;
+    while (h.state()?.status === "ongoing" && guard < 30) {
+      expect(h.m.executeHint()).toBeUndefined();
+      h.m.timer(1.5); // settle the slow-motion animation (1.0s) + flash
+      guard++;
+    }
+    expect(h.state()?.status).toBe("solved");
+    expect(hintCalls).toBe(1);
   });
 });

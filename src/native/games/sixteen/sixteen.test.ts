@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ActiveHint, GameDrawing } from "../../engine/index.ts";
+import type { GameDrawing, HintStep } from "../../engine/index.ts";
 import { randomNew } from "../../random/index.ts";
 import { executeMove, type SixteenHintHighlights, sixteenGame } from "./index.ts";
 import {
@@ -310,15 +310,18 @@ describe("Sixteen hint", () => {
     if (result && !result.ok) expect(result.error).toBe("Already solved");
   });
 
-  it("returns a valid slide move for an unsolved state", () => {
+  it("returns a non-empty plan of slide moves for an unsolved state", () => {
     const rng = randomNew("hint-test");
     const { desc } = newDesc(defaultParams(), rng);
     const s = newState(defaultParams(), desc);
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(true);
     if (!result?.ok) return;
-    expect(result.move.type).toBe("slide");
-    expect(result.explanation.length).toBeGreaterThan(0);
+    expect(result.steps.length).toBeGreaterThan(0);
+    for (const step of result.steps) {
+      expect(step.move.type).toBe("slide");
+      expect(step.explanation.length).toBeGreaterThan(0);
+    }
   });
 
   it("the hinted move is a legal move that changes the state", () => {
@@ -327,7 +330,7 @@ describe("Sixteen hint", () => {
     const s = newState(defaultParams(), desc);
     const result = sixteenGame.hint?.(s);
     if (!result?.ok) return;
-    const next = executeMove(s, result.move);
+    const next = executeMove(s, result.steps[0].move);
     // The state should have changed (tiles rearranged).
     let changed = false;
     for (let i = 0; i < s.n; i++) {
@@ -346,7 +349,7 @@ describe("Sixteen hint", () => {
     const result = sixteenGame.hint?.(s);
     if (!result?.ok) return;
     // Explanation format: "Move tile T to row R" or "Move tile T to column C"
-    expect(result.explanation).toMatch(/Move tile \d+ to (row|column) \d+/);
+    expect(result.steps[0].explanation).toMatch(/Move tile \d+ to (row|column) \d+/);
   });
 
   it("the hinted move actually improves the state (net tiles-closer > 0)", () => {
@@ -355,7 +358,7 @@ describe("Sixteen hint", () => {
     const s = newState(defaultParams(), desc);
     const result = sixteenGame.hint?.(s);
     if (!result?.ok) return;
-    const next = executeMove(s, result.move);
+    const next = executeMove(s, result.steps[0].move);
     // Count total toroidal distance for all tiles before and after.
     const dist = (st: SixteenState) => {
       let total = 0;
@@ -381,7 +384,8 @@ describe("Sixteen hint", () => {
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(true);
     if (result?.ok) {
-      const hl = result.highlights as SixteenHintHighlights;
+      const step = result.steps[0];
+      const hl = step.highlights as SixteenHintHighlights;
       expect(hl).toBeDefined();
       expect(hl.tile).toBeGreaterThan(0);
       expect(hl.tile).toBeLessThanOrEqual(s.n);
@@ -389,8 +393,8 @@ describe("Sixteen hint", () => {
       const row = Math.floor(hl.targetPos / s.w);
       const col = hl.targetPos % s.w;
 
-      if (result.move.type === "slide") {
-        const move = result.move;
+      if (step.move.type === "slide") {
+        const move = step.move;
         // The target is on the moved line…
         if (move.axis === "row") {
           expect(row).toBe(move.index);
@@ -398,7 +402,7 @@ describe("Sixteen hint", () => {
           expect(col).toBe(move.index);
         }
         // …and is exactly where the hinted move lands the tile.
-        const next = executeMove(s, result.move);
+        const next = executeMove(s, step.move);
         expect(next.tiles.indexOf(hl.tile)).toBe(hl.targetPos);
       }
     }
@@ -420,11 +424,11 @@ describe("Sixteen hint", () => {
       moveTarget: 0,
       lastMovementSense: 0,
     };
-    for (let step = 0; step < 10 && s.completed === 0; step++) {
+    for (let round = 0; round < 10 && s.completed === 0; round++) {
       const result = sixteenGame.hint?.(s);
       expect(result?.ok).toBe(true);
       if (!result?.ok) return;
-      s = executeMove(s, result.move);
+      for (const step of result.steps) s = executeMove(s, step.move);
     }
     expect(s.completed).toBeGreaterThan(0);
   });
@@ -456,15 +460,18 @@ describe("Sixteen hint", () => {
     expect(result?.ok).toBe(true);
     if (!result?.ok) return;
     // The hint should recommend sliding row 0, prioritizing tile 1 (the lowest out-of-place tile on row 0).
-    expect(result.explanation).toMatch(/tile 1/);
+    expect(result.steps[0].explanation).toMatch(/tile 1/);
   });
 
   it("never highlights a tile off the moved line or a target on the tile itself", () => {
-    // Property test over full hint-driven playthroughs: every hint must be
-    // geometrically coherent — the highlighted tile sits on the row/column
-    // being slid, and neither the (intermediate) target nor the ultimate
-    // target is the tile's own current cell. Regression: a 2D hint once
-    // drew its intermediate target around the tile's starting position.
+    // Property test over full plan-following playthroughs: every step of
+    // every plan must be geometrically coherent against the board it
+    // applies to — the highlighted tile sits on the row/column being
+    // slid, neither the (intermediate) target nor the ultimate target is
+    // the tile's own current cell, and applying the step's move lands
+    // the tile exactly on its highlighted target. Plans are re-requested
+    // only on exhaustion. Regression: a 2D hint once drew its
+    // intermediate target around the tile's starting position.
     for (const [w, h, seeds] of [
       [3, 3, ["hint-geom-a", "hint-geom-b"]],
       [4, 4, ["hint-geom-c", "hint-geom-d"]],
@@ -473,25 +480,27 @@ describe("Sixteen hint", () => {
         const p = { w, h, movetarget: 0 };
         const { desc } = newDesc(p, randomNew(seed));
         let s = newState(p, desc);
-        for (let step = 0; step < 150 && s.completed === 0; step++) {
+        for (let round = 0; round < 150 && s.completed === 0; round++) {
           const result = sixteenGame.hint?.(s);
           if (!result?.ok) break;
-          const hl = result.highlights as SixteenHintHighlights;
-          const cur = s.tiles.indexOf(hl.tile);
-          expect(cur).toBeGreaterThanOrEqual(0);
-          if (result.move.type === "slide") {
-            const onLine =
-              result.move.axis === "row"
-                ? Math.floor(cur / w) === result.move.index
-                : cur % w === result.move.index;
-            expect(onLine).toBe(true);
+          for (const step of result.steps) {
+            const hl = step.highlights as SixteenHintHighlights;
+            const cur = s.tiles.indexOf(hl.tile);
+            expect(cur).toBeGreaterThanOrEqual(0);
+            if (step.move.type === "slide") {
+              const onLine =
+                step.move.axis === "row"
+                  ? Math.floor(cur / w) === step.move.index
+                  : cur % w === step.move.index;
+              expect(onLine).toBe(true);
+            }
+            expect(hl.targetPos).not.toBe(cur);
+            if (hl.ultimatePos !== undefined) expect(hl.ultimatePos).not.toBe(cur);
+            s = executeMove(s, step.move);
+            // The step's move is the full slide its narration describes:
+            // applying it lands the tile exactly on the highlighted target.
+            expect(s.tiles.indexOf(hl.tile)).toBe(hl.targetPos);
           }
-          expect(hl.targetPos).not.toBe(cur);
-          if (hl.ultimatePos !== undefined) expect(hl.ultimatePos).not.toBe(cur);
-          s = executeMove(s, result.move);
-          // The hint move is the full slide its narration describes:
-          // applying it lands the tile exactly on the highlighted target.
-          expect(s.tiles.indexOf(hl.tile)).toBe(hl.targetPos);
         }
         expect(s.completed).toBeGreaterThan(0);
       }
@@ -509,8 +518,8 @@ describe("Sixteen hint", () => {
       h: 5,
       n: 25,
       tiles: new Int32Array([
-        6, 2, 3, 4, 5, 1, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 17, 18, 19, 16,
-        21, 22, 23, 24, 25,
+        6, 2, 3, 4, 5, 1, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 17, 18, 19, 16, 21, 22,
+        23, 24, 25,
       ]),
       completed: 0,
       usedSolve: false,
@@ -518,12 +527,13 @@ describe("Sixteen hint", () => {
       moveTarget: 0,
       lastMovementSense: 0,
     };
-    for (let step = 0; step < 20 && s.completed === 0; step++) {
-      const result = sixteenGame.hint?.(s);
-      expect(result?.ok).toBe(true);
-      if (!result?.ok) return;
-      s = executeMove(s, result.move);
-    }
+    const result = sixteenGame.hint?.(s);
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) return;
+    // The exact bidirectional fallback runs once and returns the whole
+    // path out of the local minimum: following the single stored plan
+    // reaches the solved state with no recomputation.
+    for (const step of result.steps) s = executeMove(s, step.move);
     expect(s.completed).toBeGreaterThan(0);
   });
 
@@ -533,13 +543,13 @@ describe("Sixteen hint", () => {
     const { desc } = newDesc(p, rng);
     let s = newState(p, desc);
 
-    let steps = 0;
-    const maxSteps = 50;
-    while (s.completed === 0 && steps < maxSteps) {
+    let rounds = 0;
+    const maxRounds = 50;
+    while (s.completed === 0 && rounds < maxRounds) {
       const result = sixteenGame.hint?.(s);
       if (!result?.ok) break;
-      s = executeMove(s, result.move);
-      steps++;
+      for (const step of result.steps) s = executeMove(s, step.move);
+      rounds++;
     }
     expect(s.completed).toBeGreaterThan(0);
   });
@@ -550,14 +560,14 @@ describe("Sixteen hint", () => {
     const { desc } = newDesc(p, rng);
     let s = newState(p, desc);
 
-    let steps = 0;
-    const maxSteps = 100;
-    while (s.completed === 0 && steps < maxSteps) {
+    let rounds = 0;
+    const maxRounds = 100;
+    while (s.completed === 0 && rounds < maxRounds) {
       const result = sixteenGame.hint?.(s);
       if (!result?.ok) {
         console.log(
-          "Failed at step",
-          steps,
+          "Failed at round",
+          rounds,
           "with error:",
           result?.error,
           "board:",
@@ -565,8 +575,8 @@ describe("Sixteen hint", () => {
         );
         break;
       }
-      s = executeMove(s, result.move);
-      steps++;
+      for (const step of result.steps) s = executeMove(s, step.move);
+      rounds++;
     }
     expect(s.completed).toBeGreaterThan(0);
   });
@@ -579,20 +589,20 @@ describe("Sixteen hint", () => {
       const s1 = executeMove(s0, { type: "slide", axis: "row", index: 0, delta: 1 });
       const hint1 = sixteenGame.hint?.(s1);
       expect(hint1?.ok).toBe(true);
-      if (hint1?.ok && hint1.move.type === "slide") {
-        expect(
-          hint1.move.axis === "row" &&
-            hint1.move.index === 0 &&
-            hint1.move.delta === -1,
-        ).toBe(false);
+      if (hint1?.ok && hint1.steps[0].move.type === "slide") {
+        const move1 = hint1.steps[0].move;
+        expect(move1.axis === "row" && move1.index === 0 && move1.delta === -1).toBe(
+          false,
+        );
       }
 
       // 2. If user does slide right by 2 (e.g. via dragging or half-grid shift), next hint must not be ANY slide on row 0.
       const s2 = executeMove(s0, { type: "slide", axis: "row", index: 0, delta: 2 });
       const hint2 = sixteenGame.hint?.(s2);
       expect(hint2?.ok).toBe(true);
-      if (hint2?.ok && hint2.move.type === "slide") {
-        expect(hint2.move.axis === "row" && hint2.move.index === 0).toBe(false);
+      if (hint2?.ok && hint2.steps[0].move.type === "slide") {
+        const move2 = hint2.steps[0].move;
+        expect(move2.axis === "row" && move2.index === 0).toBe(false);
       }
     });
   });
@@ -639,17 +649,18 @@ describe("Sixteen hint", () => {
     // If the chosen move is a row slide on row 0 (e.g. index 0) and the chosen tile is 2 or 3:
     // They are already in their correct column (column 2 and 3).
     // So the explanation must use their immediate destination, NOT their correct column!
-    if (result.move.type === "slide" && result.move.axis === "row") {
-      const hl = result.highlights as SixteenHintHighlights;
+    const step = result.steps[0];
+    if (step.move.type === "slide" && step.move.axis === "row") {
+      const hl = step.highlights as SixteenHintHighlights;
       const tile = hl?.tile;
       if (tile === 2) {
         // Tile 2 is at col 2 (index 1). Shifting left/right.
         // It must NOT say "Move tile 2 to column 2".
-        expect(result.explanation).not.toContain("column 2");
+        expect(step.explanation).not.toContain("column 2");
       } else if (tile === 3) {
         // Tile 3 is at col 3 (index 2). Shifting left/right.
         // It must NOT say "Move tile 3 to column 3".
-        expect(result.explanation).not.toContain("column 3");
+        expect(step.explanation).not.toContain("column 3");
       }
     }
   });
@@ -680,12 +691,13 @@ describe("Sixteen hint", () => {
     // And since we now strictly prefer ascending numeric order, Tile 4 (lowest-numbered out-of-place tile on Row 0)
     // must be selected over Tile 8, even though Tile 8 is out-of-place on the moved axis (wrong column)
     // and Tile 4 is not (correct column, wrong row).
+    const step = result.steps[0];
     if (
-      result.move.type === "slide" &&
-      result.move.axis === "row" &&
-      result.move.index === 0
+      step.move.type === "slide" &&
+      step.move.axis === "row" &&
+      step.move.index === 0
     ) {
-      const hl = result.highlights as SixteenHintHighlights;
+      const hl = step.highlights as SixteenHintHighlights;
       expect(hl?.tile).toBe(4);
     }
   });
@@ -729,7 +741,7 @@ describe("Sixteen hint rendering", () => {
     sixteenGame.setTileSize?.(ds, 32);
 
     const { dr, ops } = recordingDrawing();
-    sixteenGame.redraw?.(dr, ds, null, s, 1, ui, 0, 0, result);
+    sixteenGame.redraw?.(dr, ds, null, s, 1, ui, 0, 0, result.steps[0]);
 
     // We should see drawTile (using COL_HINT rect/polygon fill) or drawHintBorder (drawRect)
     // and drawArrow (drawPolygon) using COL_HINT (which is color index 4).
@@ -740,7 +752,7 @@ describe("Sixteen hint rendering", () => {
     expect(hintOps.length).toBeGreaterThan(0);
   });
 
-  it("supports generating 2-move hints and double-target highlights", () => {
+  it("supports two-leg step narration and double-target highlights", () => {
     const rng = randomNew("two-move-hint");
     const { desc } = newDesc(defaultParams(), rng);
     const s = newState(defaultParams(), desc);
@@ -748,13 +760,15 @@ describe("Sixteen hint rendering", () => {
     expect(result?.ok).toBe(true);
     if (!result?.ok) return;
 
-    if (result.explanation.includes("then to")) {
-      expect(result.explanation).toMatch(
-        /Move tile \d+ to (row|column) \d+, then to (row|column) \d+/,
-      );
-      const hl = result.highlights as SixteenHintHighlights;
-      expect(hl.ultimatePos).toBeDefined();
-      expect(hl.ultimatePos).not.toBe(hl.targetPos);
+    for (const step of result.steps) {
+      if (step.explanation.includes("then to")) {
+        expect(step.explanation).toMatch(
+          /Move tile \d+ to (row|column) \d+, then to (row|column) \d+/,
+        );
+        const hl = step.highlights as SixteenHintHighlights;
+        expect(hl.ultimatePos).toBeDefined();
+        expect(hl.ultimatePos).not.toBe(hl.targetPos);
+      }
     }
   });
 });
@@ -792,7 +806,7 @@ describe("Sixteen hint track and direction fixes", () => {
     if (!ds1) return;
     sixteenGame.setTileSize?.(ds1, 32);
 
-    const activeHint1: ActiveHint<SixteenMove, SixteenHintHighlights> = {
+    const activeHint1: HintStep<SixteenMove, SixteenHintHighlights> = {
       move: { type: "slide", axis: "row", index: 0, delta: -1 },
       explanation: "",
       highlights: {
@@ -825,7 +839,7 @@ describe("Sixteen hint track and direction fixes", () => {
     if (!ds2) return;
     sixteenGame.setTileSize?.(ds2, 32);
 
-    const activeHint2: ActiveHint<SixteenMove, SixteenHintHighlights> = {
+    const activeHint2: HintStep<SixteenMove, SixteenHintHighlights> = {
       move: { type: "slide", axis: "row", index: 0, delta: 1 },
       explanation: "",
       highlights: {
@@ -845,54 +859,50 @@ describe("Sixteen hint track and direction fixes", () => {
     expect(ds2Typed.hintArrowY).toBe(0);
   });
 
-  it("hintKeepTrack determines whether to keep the active hint highlight", () => {
-    const s = solvedState(3, 3); // Tile 1 is at index 0 (col 0, row 0).
-    const h: ActiveHint<SixteenMove, SixteenHintHighlights> = {
-      move: { type: "slide", axis: "row", index: 0, delta: 1 },
+  it("hintKeepTrack classifies moves against the current step", () => {
+    const step = (): HintStep<SixteenMove, SixteenHintHighlights> => ({
+      move: { type: "slide", axis: "row", index: 0, delta: 2 },
       explanation: "",
       highlights: {
         tile: 1,
         targetPos: 2,
       },
-    };
+    });
 
-    // Case 1: Same axis/row but move does not reach target. Should keep hint (true).
+    // Case 1: same line, target not reached yet — onTrack, and the
+    // step's move shrinks in place to the remaining in-grid distance
+    // (tile 1: col 0 → col 1, one more column to go).
+    const s = solvedState(3, 3); // Tile 1 is at index 0 (col 0, row 0).
     const m1: SixteenMove = { type: "slide", axis: "row", index: 0, delta: 1 };
-    const keep1 = sixteenGame.hintKeepTrack?.(m1, h, s);
-    expect(keep1).toBe(true);
+    const h1 = step();
+    expect(sixteenGame.hintKeepTrack?.(m1, h1, s)).toBe("onTrack");
+    expect(h1.move).toEqual({ type: "slide", axis: "row", index: 0, delta: 1 });
 
-    // Case 2: Same axis/row but move reaches target (e.g. from pos 1 to pos 2). Should clear (false).
+    // Case 2: same line and the move lands the tile on the target —
+    // completed.
     const sWithTileAt1 = solvedState(3, 3);
     sWithTileAt1.tiles[0] = 2;
     sWithTileAt1.tiles[1] = 1; // Tile 1 is at index 1
     const m2: SixteenMove = { type: "slide", axis: "row", index: 0, delta: 1 };
-    const keep2 = sixteenGame.hintKeepTrack?.(m2, h, sWithTileAt1);
-    expect(keep2).toBe(false);
+    expect(sixteenGame.hintKeepTrack?.(m2, step(), sWithTileAt1)).toBe("completed");
 
-    // Case 3: Different axis/index (unrelated move). Should clear (false).
+    // Case 3: a different line (unrelated move) — off.
     const m3: SixteenMove = { type: "slide", axis: "row", index: 1, delta: 1 };
-    const keep3 = sixteenGame.hintKeepTrack?.(m3, h, s);
-    expect(keep3).toBe(false);
+    expect(sixteenGame.hintKeepTrack?.(m3, step(), s)).toBe("off");
 
-    // Case 4: 2D move intermediate target reached. Should transition and keep hint (true).
-    const s2d = solvedState(3, 3); // Tile 1 is at index 0 (col 0, row 0).
-    const h2d: ActiveHint<SixteenMove, SixteenHintHighlights> = {
-      move: { type: "slide", axis: "row", index: 0, delta: 1 },
-      explanation: "Initial explanation",
-      highlights: {
-        tile: 1,
-        targetPos: 1,
-        ultimatePos: 4, // intermediate is (1, 0) = 1, ultimate is (1, 1) = 4 on a 3x3
-        secondMove: { type: "slide", axis: "column", index: 1, delta: 1 },
-      },
+    // Case 4: same line but sliding *away* — still onTrack, with the
+    // remaining delta grown to compensate (tile 1: col 0 → col 2 is
+    // the target… sliding left puts it at col 2 via wrap, which IS
+    // the target on a 3-wide row, so use a 4-wide board instead).
+    const s4 = solvedState(4, 4); // tile 1 at col 0
+    const h4: HintStep<SixteenMove, SixteenHintHighlights> = {
+      move: { type: "slide", axis: "row", index: 0, delta: 2 },
+      explanation: "",
+      highlights: { tile: 1, targetPos: 2 },
     };
-    const m4: SixteenMove = { type: "slide", axis: "row", index: 0, delta: 1 };
-    const keep4 = sixteenGame.hintKeepTrack?.(m4, h2d, s2d);
-    expect(keep4).toBe(true);
-    expect(h2d.move).toEqual({ type: "slide", axis: "column", index: 1, delta: 1 });
-    expect(h2d.highlights?.targetPos).toBe(4);
-    expect(h2d.highlights?.ultimatePos).toBeUndefined();
-    expect(h2d.highlights?.secondMove).toBeUndefined();
-    expect(h2d.explanation).toContain("Move tile 1 to row 2, column 2");
+    const m4: SixteenMove = { type: "slide", axis: "row", index: 0, delta: -1 };
+    expect(sixteenGame.hintKeepTrack?.(m4, h4, s4)).toBe("onTrack");
+    // tile 1 now at col 3; target col 2 ⇒ remaining in-grid delta -1.
+    expect(h4.move).toEqual({ type: "slide", axis: "row", index: 0, delta: -1 });
   });
 });

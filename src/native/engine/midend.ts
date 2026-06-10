@@ -28,6 +28,7 @@ import {
   type ActiveHint,
   type Game,
   type GameDrawing,
+  type HintStep,
   type PresetMenu,
   UI_UPDATE,
 } from "./game.ts";
@@ -136,8 +137,11 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * `!ds.started` branch). */
   private winSize: Size = { w: 0, h: 0 };
   private usedSolve = false;
+  /** The stored hint plan; `steps[index]` is the step on display.
+   * Invariant: when non-null, `index < steps.length` (advancing past
+   * the last step clears the plan instead). */
   private activeHint: ActiveHint<Move> | null = null;
-  private clearHintOnAnimationEnd = false;
+  private advanceHintOnAnimationEnd = false;
   private timerElapsed = 0;
   private notify?: NotifyChange;
   private notifyTimer?: NotifyTimerState;
@@ -244,7 +248,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       this.game.setTileSize?.(this.drawState, this.currentTileSize);
     }
     this.usedSolve = false;
-    this.activeHint = null;
+    this.clearHint();
     this.timerElapsed = 0;
     this.clearAnimation();
     this.emitIdChange();
@@ -267,7 +271,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.moveLog = [];
     this.pos = 0;
     this.usedSolve = false;
-    this.activeHint = null;
+    this.clearHint();
     this.clearAnimation();
     this.emitStateChange();
     this.emitStatusBar();
@@ -297,12 +301,18 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       this.afterTransition();
       return true;
     }
-    if (this.activeHint) {
-      const keep =
-        this.game.hintKeepTrack?.(move, this.activeHint, this.state) ?? false;
-      if (!keep) {
-        this.activeHint = null;
+    const step = this.currentHintStep;
+    if (step !== undefined) {
+      const verdict = this.game.hintKeepTrack?.(move, step, this.state) ?? "off";
+      if (verdict === "completed") {
+        // The game asserts the post-move state matches the plan's
+        // expectation after this step, so the rest stays valid.
+        this.advanceHint();
+      } else if (verdict === "off") {
+        this.clearHint();
       }
+      // "onTrack": keep the current step (the game may have adjusted
+      // its move in place to the remaining distance).
     }
     return this.applyMove(move);
   }
@@ -325,7 +335,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   undo(): void {
     if (this.pos === 0) return;
-    this.activeHint = null;
+    this.clearHint();
     const prev = this.state;
     this.pos -= 1;
     this.setupAnimation(prev, this.state, -1);
@@ -334,7 +344,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   redo(): void {
     if (this.pos >= this.history.length - 1) return;
-    this.activeHint = null;
+    this.clearHint();
     const prev = this.state;
     this.pos += 1;
     this.setupAnimation(prev, this.state, 1);
@@ -347,44 +357,103 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     }
     const result = this.game.solve(this.history[0], this.state);
     if (!result.ok) return result.error;
-    this.activeHint = null;
-    this.clearHintOnAnimationEnd = false;
+    this.clearHint();
     this.usedSolve = true;
     this.applyMove(result.move);
     return undefined;
   }
 
-  hint(): string | undefined {
+  // --- hints ---------------------------------------------------------
+
+  /** The step of the stored plan currently on display (`undefined`
+   * when no plan is active). This is what `redraw` and the status
+   * bar narrate. */
+  private get currentHintStep(): HintStep<Move> | undefined {
+    return this.activeHint?.steps[this.activeHint.index];
+  }
+
+  private clearHint(): void {
+    this.activeHint = null;
+    this.advanceHintOnAnimationEnd = false;
+  }
+
+  /** Advance the plan past its current step; the plan clears when the
+   * last step completes. */
+  private advanceHint(): void {
+    if (!this.activeHint) return;
+    this.activeHint.index += 1;
+    if (this.activeHint.index >= this.activeHint.steps.length) {
+      this.clearHint();
+    }
+  }
+
+  /** Compute and store a fresh plan at index 0. Returns the error
+   * message when no plan is available. */
+  private computeHintPlan(): string | undefined {
     if (!this.game.hint) {
       return "This game does not support hints";
     }
     const result = this.game.hint(this.state);
     if (!result.ok) return result.error;
-    this.activeHint = {
-      move: result.move,
-      explanation: result.explanation,
-      highlights: result.highlights,
-    };
-    this.clearHintOnAnimationEnd = false;
+    if (result.steps.length === 0) return "Game returned an empty hint plan";
+    this.activeHint = { steps: result.steps, index: 0 };
+    this.advanceHintOnAnimationEnd = false;
+    return undefined;
+  }
+
+  /** Settle bookkeeping after a move finishes animating (or applies
+   * instantly in a game with no animation): advance past an
+   * executed-hint step, and drop any plan once the board is solved. */
+  private settleHint(): void {
+    const before = this.currentHintStep;
+    if (this.advanceHintOnAnimationEnd) {
+      this.advanceHintOnAnimationEnd = false;
+      this.advanceHint();
+    }
+    if (this.activeHint && this.game.status(this.state) === "solved") {
+      this.clearHint();
+    }
+    if (this.currentHintStep !== before) this.emitStatusBar();
+  }
+
+  hint(): string | undefined {
+    if (this.activeHint) {
+      // A valid plan is on display: refresh, don't recompute and
+      // don't advance — advancing is driven only by moves (manual or
+      // executed), which is what makes "recompute only when
+      // invalidated" hold for the manual flow.
+      this.emitStatusBar();
+      this.requestRedraw();
+      return undefined;
+    }
+    const err = this.computeHintPlan();
+    if (err) return err;
     this.clearAnimation();
     this.afterTransition();
     return undefined;
   }
 
   executeHint(): string | undefined {
-    if (!this.game.hint) {
-      return "This game does not support hints";
+    // A previously executed step may still be animating (e.g. the
+    // user outpaces the auto-play settle). Its move is already
+    // applied to the state, so advance past it now rather than
+    // replaying it.
+    if (this.advanceHintOnAnimationEnd) this.settleHint();
+    if (!this.activeHint) {
+      const err = this.computeHintPlan();
+      if (err) return err;
     }
-    const result = this.game.hint(this.state);
-    if (!result.ok) return result.error;
-    this.activeHint = {
-      move: result.move,
-      explanation: result.explanation,
-      highlights: result.highlights,
-    };
-    this.clearHintOnAnimationEnd = true;
+    const step = this.currentHintStep;
+    if (step === undefined) return "Game returned an empty hint plan"; // unreachable
+    // The executed step stays displayed through the slow-motion
+    // animation (the banner describes the move in flight); the plan
+    // advances when the animation settles, so the *next* step is
+    // previewed during the auto-play rest period.
+    this.advanceHintOnAnimationEnd = true;
     this.pendingAnimScale = HINT_ANIM_SCALE;
-    this.applyMove(result.move);
+    // A game with no move animation settles synchronously inside
+    // `afterTransition` (the timer's settle path never runs for it).
+    this.applyMove(step.move);
     return undefined;
   }
 
@@ -397,7 +466,13 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     // animTime=0 frame and race the rAF loop one frame later
     // (visible flicker). The timer drives every animation frame,
     // including the first — exactly as midend.c's frontend timer does.
-    if (!this.animating) this.requestRedraw();
+    if (!this.animating) {
+      // Settled instantly: run the same hint bookkeeping the timer's
+      // settle path runs (advance an executed step, drop the plan on
+      // a solved board), then paint.
+      this.settleHint();
+      this.requestRedraw();
+    }
     this.syncTimer();
   }
 
@@ -649,10 +724,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       } else {
         // Both animation and flash done: settle and paint once clean.
         this.clearAnimation();
-        if (this.clearHintOnAnimationEnd || this.game.status(this.state) === "solved") {
-          this.activeHint = null;
-        }
-        this.clearHintOnAnimationEnd = false;
+        this.settleHint();
         this.requestRedraw();
         this.syncTimer();
       }
@@ -684,7 +756,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       // keeps the game's `animTime / its-anim-length` progress correct.
       this.animTime / this.animScale,
       this.flashTime,
-      this.activeHint ?? undefined,
+      this.currentHintStep,
     );
     dr.endDraw();
   }
@@ -747,7 +819,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.emit({
       type: "status-bar-change",
       statusBarText: text,
-      activeHintExplanation: this.activeHint?.explanation ?? undefined,
+      activeHintExplanation: this.currentHintStep?.explanation,
     });
   }
 }
