@@ -271,6 +271,7 @@ puzzle(tracks
 solver(tracks)
 
 puzzle(twiddle
+  TS_PORTED  # native-TS port (openspec add-twiddle-ts-port); no twiddle.c/wasm
   DISPLAYNAME "Twiddle"
   DESCRIPTION "Rotational sliding block puzzle"
   OBJECTIVE "Rotate the tiles around themselves to arrange them into order.")

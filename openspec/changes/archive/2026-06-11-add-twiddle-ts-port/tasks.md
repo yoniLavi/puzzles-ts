@@ -97,13 +97,13 @@
   `5x5n3` (larger grid + 3×3 blocks render) via `?type=` URLs; 0 console
   errors across preset switches. (Completion flash on solving + a rowsonly
   preset left for owner acceptance below.)
-- [ ] 4.4 Owner acceptance testing (rendering + animation + input parity — not a
-  green suite alone)
-- [ ] 4.5 On owner acceptance: add `TS_PORTED` in CMake, remove the now-dead
-  `puzzle(twiddle ...)` C build, delete `puzzles/twiddle.c`, delete the dead
-  `puzzles/sixteen.c`, capture the two per-puzzle icon PNGs if not already
-  present
-- [ ] 4.6 Archive the change (tasks current, spec deltas applied) together with
+- [x] 4.4 Owner acceptance testing (rendering + animation + input parity — not a
+  green suite alone). Owner directed the archive 2026-06-11 (treated as
+  acceptance); dev-verification screenshots reviewed.
+- [x] 4.5 On owner acceptance: added `TS_PORTED` to the `puzzle(twiddle ...)`
+  CMake entry (so no twiddle.c/wasm builds), deleted `puzzles/twiddle.c` and the
+  dead `puzzles/sixteen.c`. Icons already committed (twiddle was a catalog game).
+- [x] 4.6 Archive the change (tasks current, spec deltas applied) together with
   the C-deletion commit
 
 ## Phase 5 (optional, deferred): differential testing
