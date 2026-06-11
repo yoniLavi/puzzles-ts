@@ -38,6 +38,9 @@ export class CatalogCard extends LitElement {
   @property({ type: Boolean })
   favorite = false;
 
+  @property({ type: Boolean, attribute: "ts-ported" })
+  tsPorted = false;
+
   @state()
   private icon1x = "";
 
@@ -98,11 +101,24 @@ export class CatalogCard extends LitElement {
     return this.unfinished ? html`<div part="unfinished">Experimental</div>` : nothing;
   }
 
+  private renderEngineBadge() {
+    // Mirrors the in-game engine badge (puzzle-screen.ts): a green "TS"
+    // chip flagging a game that's been ported to the native TypeScript
+    // engine, so migration progress is visible at a glance across the
+    // catalog grid. Unported games carry no chip (the C/WASM default is
+    // the unmarked state here, unlike the in-game badge).
+    const title = "This game has been ported to the native TypeScript engine";
+    return this.tsPorted
+      ? html`<span part="engine-badge" title=${title} aria-label=${title}>TS</span>`
+      : nothing;
+  }
+
   protected override render() {
     // (The tabindex should be automatic for an <a>, but Safari seems to need it)
     return html`
       <a part="base" href=${this.href} draggable="false" tabindex="0">
         ${this.renderIcon()}
+        ${this.renderEngineBadge()}
         <h3 part="title">${this.name}</h3>
         ${this.renderUnfinishedBadge()}
         ${this.renderGameInProgressBadge()}
@@ -301,6 +317,30 @@ export class CatalogCard extends LitElement {
         border-image-slice: 1;
       }
   
+      [part="engine-badge"] {
+        /* Pinned to the icon's bottom-right corner by sharing the icon
+           grid area — tracks the icon box at any card size. Green "TS"
+           chip matches the in-game engine badge (puzzle-screen.ts). */
+        grid-area: icon;
+        align-self: end;
+        justify-self: end;
+        z-index: 1;
+
+        margin: var(--wa-space-3xs);
+        padding-inline: 0.4em;
+        padding-block: 0.05em;
+        border-radius: var(--wa-border-radius-s, 0.25em);
+
+        font-size: var(--wa-font-size-2xs);
+        font-weight: var(--wa-font-weight-semibold, 600);
+        line-height: 1.3;
+        letter-spacing: 0.04em;
+
+        color: var(--wa-color-success-on-loud, white);
+        background-color: var(--wa-color-success-fill-loud, #2e7d32);
+        user-select: none;
+      }
+
       wa-icon[name="game-in-progress"] {
         position: absolute;
         inset-block-start: calc(var(--padding) - 0.5em);
