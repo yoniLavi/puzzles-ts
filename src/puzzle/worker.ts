@@ -249,6 +249,12 @@ export class WorkerPuzzle implements FrontendConstructorArgs, PuzzleEngineSurfac
     return "This game does not support hints";
   }
 
+  currentAnimationMs(): number {
+    // C/WASM games report `canHint: false`, so the auto-hint loop never
+    // runs for them and never calls this. Return 0 to satisfy the surface.
+    return 0;
+  }
+
   findMistakes(): number {
     // C/WASM games have no mistake-checking hook.
     return 0;

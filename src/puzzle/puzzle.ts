@@ -385,11 +385,14 @@ export class Puzzle {
         this.stopAutoHint(err);
         return;
       }
-      // Pace just past the slow-motion hint animation (game anim time ×
-      // HINT_ANIM_SCALE in the midend; 0.4s × 2.5 = 1s for Sixteen) so
-      // each move plays out fully but the next one follows almost
-      // immediately.
-      await new Promise((resolve) => setTimeout(resolve, 1100));
+      // Pace just past the slow-motion hint animation the midend armed
+      // (game anim time × HINT_ANIM_SCALE) so each move plays out fully
+      // but the next follows almost immediately — for every game, not
+      // just one whose animation happens to match a fixed delay. A short
+      // base animation (e.g. Fifteen's 0.13s) no longer sits through a
+      // gap tuned for a longer one (e.g. Sixteen's 0.4s).
+      const animMs = await this.workerPuzzle.currentAnimationMs();
+      await new Promise((resolve) => setTimeout(resolve, Math.max(animMs, 0) + 100));
     }
     const solved = this.isSolved;
     this.stopAutoHint("");

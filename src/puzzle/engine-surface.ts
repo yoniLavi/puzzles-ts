@@ -43,6 +43,10 @@ export interface PuzzleEngineSurface {
   solve(): string | undefined;
   hint(): string | undefined;
   executeHint(): string | undefined;
+  /** Milliseconds of the animation currently armed (e.g. the slow-motion
+   * move `executeHint` just played), or 0 when nothing is animating. The
+   * auto-hint loop paces each step by this. */
+  currentAnimationMs(): number;
   /** Display the current board's mistakes and return how many; 0 when
    * the game has no mistake-checking. */
   findMistakes(): number;

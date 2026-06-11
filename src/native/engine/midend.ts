@@ -65,6 +65,12 @@ export interface EngineCore {
   solve(): string | undefined;
   hint(): string | undefined;
   executeHint(): string | undefined;
+  /** Duration in milliseconds of the animation currently armed (e.g. by
+   * the slow-motion move `executeHint` just played), or 0 when nothing
+   * is animating. The auto-hint loop paces each step by this so a move
+   * with a short base animation does not sit through a fixed gap tuned
+   * for a longer one. */
+  currentAnimationMs(): number;
   /** Compute and display the current board's mistakes; return how
    * many. 0 (and no display change) when the game has no
    * mistake-checking. */
@@ -509,6 +515,12 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     // `afterTransition` (the timer's settle path never runs for it).
     this.applyMove(step.move);
     return undefined;
+  }
+
+  currentAnimationMs(): number {
+    // `animLength` is already the scaled duration (base × animScale), in
+    // seconds; the auto-hint loop wants milliseconds.
+    return this.animLength * 1000;
   }
 
   private afterTransition(): void {
