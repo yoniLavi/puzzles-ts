@@ -13,3 +13,4 @@ import "./flip/index.ts";
 import "./galaxies/index.ts";
 import "./pegs/index.ts";
 import "./sixteen/index.ts";
+import "./twiddle/index.ts";

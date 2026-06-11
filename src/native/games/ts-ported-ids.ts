@@ -20,6 +20,7 @@ export const TS_PORTED_PUZZLE_IDS: ReadonlySet<string> = new Set([
   "galaxies",
   "pegs",
   "sixteen",
+  "twiddle",
 ]);
 
 /** True iff `puzzleId` has a native-TS port (see {@link TS_PORTED_PUZZLE_IDS}). */
