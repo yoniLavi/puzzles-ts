@@ -67,12 +67,12 @@
   undo/redo reverse a slide, 0 console errors, TS badge shown
 - [x] Smoke-test a non-square preset (custom `5x4` via params) in dev — slides
   along both axes, animation correct, 0 console errors
-- [ ] Owner acceptance testing (rendering + animation + input parity — not a
+- [x] Owner acceptance testing (rendering + animation + input parity — not a
   green suite alone)
-- [ ] On owner acceptance: add `TS_PORTED` in CMake, remove the now-dead
+- [x] On owner acceptance: add `TS_PORTED` in CMake, remove the now-dead
   `solver(fifteen)` line, delete `puzzles/fifteen.c`, capture the two
   per-puzzle icon PNGs if not already present
-- [ ] Archive the change (tasks current, spec deltas applied) together with the
+- [x] Archive the change (tasks current, spec deltas applied) together with the
   C-deletion commit
 
 ## Phase 6 (optional, deferred): differential testing

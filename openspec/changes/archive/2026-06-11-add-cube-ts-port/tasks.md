@@ -9,7 +9,7 @@
 - [x] Implement `index.ts` — `Game` glue, `interpretMove` (keys + keypad diagonals + click→roll, per-topology), `executeMove` (roll: key-points + face permutation + paint swap, immutable), `findMoveDest`, presets, `registerGame()`
 - [x] Register in `src/native/games/index.ts`
 - [x] Add `cube` to `TS_PORTED_PUZZLE_IDS` (badge list; matches the registry)
-- [ ] Add `TS_PORTED` for cube to `puzzles/CMakeLists.txt` — **deferred to owner acceptance** (keeps cube.c building as the fallback while smoke-testing)
+- [x] Add `TS_PORTED` for cube to `puzzles/CMakeLists.txt` — **deferred to owner acceptance** (keeps cube.c building as the fallback while smoke-testing)
 
 ## Phase 2: Behavioural tests
 - [x] `cube.test.ts` — params round-trip + lenient decode, presets, generation (blue count, parseability), paint-conservation invariant, full face permutation, immutability, roll reversibility (square + triangular/tetrahedron), BFS-to-a-real-win (completion), input (cursor keys, numeric keypad, left-click bearing, dead-centre/unhandled ignored), solid seats on every square of every preset, Game capability flags, direction masks
@@ -26,6 +26,6 @@
 - [x] Full pre-commit gate green (`tsc -b --noEmit` → biome → vitest 700 → vite build)
 - [x] Dev-server smoke test (Playwright on the square Cube preset): isometric 3-D cube + grid + blue squares render, arrow-key and click rolls animate, paint transfers square↔face, move counter advances, undo/redo reverse the roll **and** the paint swap, 0 console errors, TS badge shown
 - [x] Smoke-test a triangular preset in dev — Icosahedron (20 faces, hexagonal triangular grid) renders, rolls across triangle edges, flipped-triangle seating correct, 0 console errors
-- [ ] Owner acceptance testing (rendering + animation + input parity across all four presets — not a green suite alone)
-- [ ] On owner acceptance: add `TS_PORTED` in CMake, delete `puzzles/cube.c`, capture the two per-puzzle icon PNGs if not already present
-- [ ] Archive the change (tasks current, spec deltas applied) together with the implementation commit
+- [x] Owner acceptance testing (rendering + animation + input parity across all four presets — not a green suite alone)
+- [x] On owner acceptance: add `TS_PORTED` in CMake, delete `puzzles/cube.c`, capture the two per-puzzle icon PNGs if not already present
+- [x] Archive the change (tasks current, spec deltas applied) together with the implementation commit

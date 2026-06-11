@@ -60,6 +60,7 @@ puzzle(bridges
   OBJECTIVE "Connect all the islands with a network of bridges.")
 
 puzzle(cube
+  TS_PORTED  # native-TS port (openspec add-cube-ts-port); no cube.c/wasm
   DISPLAYNAME "Cube"
   DESCRIPTION "Rolling cube puzzle"
   OBJECTIVE "Pick up all the blue squares by rolling the cube over them.")
@@ -71,10 +72,10 @@ puzzle(dominosa
 solver(dominosa)
 
 puzzle(fifteen
+  TS_PORTED  # native-TS port (openspec add-fifteen-ts-port); no fifteen.c/wasm
   DISPLAYNAME "Fifteen"
   DESCRIPTION "Sliding block puzzle"
   OBJECTIVE "Slide the tiles around to arrange them into order.")
-solver(fifteen)
 
 puzzle(filling
   DISPLAYNAME "Filling"
