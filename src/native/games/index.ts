@@ -7,6 +7,7 @@
  * the unchanged all-WASM path (see `ts-engine` spec).
  */
 
+import "./cube/index.ts";
 import "./flip/index.ts";
 import "./galaxies/index.ts";
 import "./pegs/index.ts";
