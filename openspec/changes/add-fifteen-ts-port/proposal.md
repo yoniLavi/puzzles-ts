@@ -52,11 +52,13 @@ parity-gated-registration doctrine).
   is a per-user config item; the TS engine has no preferences hook yet, so we
   ship upstream's default ("the arrow moves a tile") and omit the toggle. A
   documented divergence, recoverable when a prefs hook lands.
-- **No multi-step hint plan / `hintKeepTrack`.** Fifteen's natural hint
-  granularity is one gap-move at a time (`compute_hint` is inherently
-  incremental); a single-step plan recomputed per request matches upstream's
-  one-move-per-`h`-press behaviour without the narration/tracking machinery
-  Sixteen needed for its full-slide planner.
+- **No bespoke hint search.** Fifteen reuses its own greedy `compute_hint`
+  solver for hints rather than a separate A*/bidirectional planner (Sixteen
+  needed one because its toroidal slides have no comparably simple human
+  solver). The hint *does* carry the full greedy solution as a multi-step plan
+  (see design D4) so the hint banner persists through an auto-hint run exactly
+  like Sixteen's — that consistency was an explicit owner request after the
+  first cut shipped a one-step plan that flickered.
 - **No new shared engine helpers** beyond what already exists. If the greedy
   solver turns out reusable it can be extracted later; Fifteen is its only
   consumer today.

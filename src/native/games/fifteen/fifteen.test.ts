@@ -11,6 +11,7 @@ import {
   decodeParams,
   defaultParams,
   encodeParams,
+  type FifteenMove,
   type FifteenParams,
   type FifteenState,
   isCompletedTiles,
@@ -268,6 +269,54 @@ describe("Fifteen input", () => {
       x: 3,
       y: 2,
     });
+  });
+});
+
+// --- hint -------------------------------------------------------------
+
+describe("Fifteen hint", () => {
+  it("returns a full multi-step plan that solves the board", () => {
+    const p = { w: 4, h: 4 };
+    let state = newState(p, newDesc(p, randomNew("hint-plan")).desc);
+    const result = fifteenGame.hint?.(state);
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) throw new Error("expected a plan");
+    // Like Sixteen, the plan is the whole solution, not a single step.
+    expect(result.steps.length).toBeGreaterThan(1);
+    expect(result.steps[0].explanation).toMatch(/^Slide tile \d+ into the space$/);
+    // Following every step reaches the solved board.
+    for (const step of result.steps) state = executeMove(state, step.move);
+    expect(isCompletedTiles(state.tiles, state.n)).toBe(true);
+  });
+
+  it("reports no plan on an already-solved board", () => {
+    expect(fifteenGame.hint?.(solvedState(4, 4))).toEqual({
+      ok: false,
+      error: "Already solved",
+    });
+  });
+
+  it("hintKeepTrack completes the step on the hinted move and drops it otherwise", () => {
+    const p = { w: 4, h: 4 };
+    const state = newState(p, newDesc(p, randomNew("hint-track")).desc);
+    const result = fifteenGame.hint?.(state);
+    if (!result?.ok) throw new Error("expected a plan");
+    const step = result.steps[0];
+    // Making exactly the hinted move completes the step (plan advances).
+    expect(fifteenGame.hintKeepTrack?.(step.move, step, state)).toBe("completed");
+    // A different legal slide (toward a cell sharing the other gap axis)
+    // deviates from the plan and drops it.
+    const gx = state.gapPos % p.w;
+    const gy = Math.floor(state.gapPos / p.w);
+    const hinted = step.move.type === "move" ? step.move : null;
+    // Pick a legal move that differs from the hinted one: slide the gap
+    // the other way along whichever axis the hint did not use.
+    const other: FifteenMove =
+      hinted && hinted.y === gy
+        ? { type: "move", x: gx, y: gy === 0 ? gy + 1 : gy - 1 } // vertical instead
+        : { type: "move", x: gx === 0 ? gx + 1 : gx - 1, y: gy }; // horizontal instead
+    const verdict = fifteenGame.hintKeepTrack?.(other, step, state);
+    expect(verdict).toBe("off");
   });
 });
 

@@ -151,15 +151,13 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       <div part="content" tabindex=${this.contentTabIndex}>
         ${this.statusbarPlacement === "start" ? this.renderStatusbar() : nothing}
         ${this.renderPuzzle()}
-        ${
-          this.bannerMessage
-            ? html`
-            <div class="hint-banner" role="status">
-              ${this.bannerMessage}
-            </div>
-          `
-            : nothing
-        }
+        <div class="hint-banner" role="status">
+          ${
+            this.bannerMessage
+              ? html`<span class="hint-banner-text">${this.bannerMessage}</span>`
+              : nothing
+          }
+        </div>
         ${this.statusbarPlacement === "end" ? this.renderStatusbar() : nothing}
         ${this.renderLoadingIndicator()}
       </div>
@@ -528,6 +526,15 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         font-size: var(--wa-font-size-s, 14px);
         font-weight: var(--wa-font-weight-bold, 700);
         line-height: 1.4;
+        /* Always reserve one line of space so the puzzle does not jump
+         * vertically when a hint message appears or disappears (the
+         * content area is centred, so any height change reflows it). */
+        box-sizing: border-box;
+        min-height: calc(1.4em + var(--spacing));
+      }
+
+      .hint-banner-text {
+        display: inline-block;
         animation: hintFadeIn 0.15s ease-out;
       }
 

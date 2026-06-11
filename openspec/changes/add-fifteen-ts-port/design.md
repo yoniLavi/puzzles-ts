@@ -46,19 +46,34 @@ the gap in the arrow direction". The TS engine has no preferences hook, so we
 hard-code the default (`invertCursor = false`) and drop the toggle. Documented
 divergence; trivially restored when a prefs hook exists.
 
-### D4 — Hint: one greedy step per request, no plan tracking
+### D4 — Hint: the whole greedy solution as a multi-step plan (+ `hintKeepTrack`)
 
-`hint()` runs a faithful port of `compute_hint` (the greedy human solver: fill
-the shorter of "top row L→R" / "left column T→B", moving the next tile toward
-its home via `next_move`, with a hard-coded shortest-move `next_move_3x2` table
-for the 3×2 end-of-row/column corner) to get the single next gap-move, and
-returns a **one-step plan**: `{ move: {type:"move", x, y}, explanation:
-"Slide tile N", highlights }`. No `hintKeepTrack` — once the player moves, the
-displayed hint clears and the next request recomputes from the new position.
-This matches upstream's one-move-per-`h` behaviour exactly and avoids the
-full-plan narration/tracking Sixteen needed. The greedy solver is also the
-basis of a behavioural test: from any solvable board, repeatedly applying the
-hinted move reaches the solved state within the upstream `5·n³` bound.
+`hint()` simulates the greedy human solver (`compute_hint`: fill the shorter of
+"top row L→R" / "left column T→B", moving the next tile home via `next_move`,
+with a hard-coded shortest-move `next_move_3x2` table for the 3×2 corner)
+forward from the current board, emitting one narrated step per single-cell gap
+slide — `{ move: {type:"move", x, y}, explanation: "Slide tile N into the
+space", highlights: { tile } }` — until the board is solved. It returns the
+**whole plan**, and `hintKeepTrack` classifies a player move by simulating it:
+the move that yields exactly the board the plan expects after this step returns
+`"completed"` (advance); anything else returns `"off"` (drop and recompute next
+request).
+
+This deliberately mirrors **Sixteen**, where a single multi-step plan stays on
+display while it is followed. The first cut returned a *one-step* plan
+recomputed per request; during an auto-hint run that cleared `activeHint` after
+every step, emptying the hint banner each cycle (a visible flicker, and — with
+the centred content area — a vertical jump). Owner feedback asked for the two
+games to behave consistently, so Fifteen now carries the full plan like
+Sixteen. The plan is cheap (the greedy solver is fast) and is recomputed only
+on deviation. The same greedy walk backs a behavioural test: from any solvable
+board, following the plan reaches the solved state within the upstream `5·n³`
+bound.
+
+The shared layout jump (the hint banner being added to / removed from the
+centred content area) is fixed in the app shell, not here: `puzzle-view.ts`
+always renders the banner container with a reserved one-line `min-height`, so
+neither game's board moves when a hint message appears or disappears.
 
 ### D5 — `solve()` snaps to solved (upstream semantics)
 

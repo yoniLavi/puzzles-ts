@@ -64,28 +64,38 @@ suppress the completion flash.
 - **THEN** the new state is the solved permutation with `usedSolve` set, and
   the completion flash is suppressed on the following redraw
 
-### Requirement: Fifteen offers a greedy one-step hint
+### Requirement: Fifteen offers a greedy full-solution hint plan
 
-The Fifteen `hint()` SHALL return a single-step plan computed by the greedy
-human solver (fill the shorter of the top row / left column tile-by-tile,
-moving the next tile toward its home, with a hard-coded shortest-move table for
-the end-of-line corner): the move is the next single-cell gap slide, narrated
-by the tile it slides, with that tile and its destination highlighted. Each
-hint request SHALL recompute from the current position (one move at a time, no
-carried multi-step plan). Repeatedly applying the hinted move from any solvable
-board SHALL reach the solved state.
+The Fifteen `hint()` SHALL return the whole greedy solution as a multi-step
+plan: each step is the next single-cell gap slide chosen by the greedy human
+solver (fill the shorter of the top row / left column tile-by-tile, moving the
+next tile toward its home, with a hard-coded shortest-move table for the
+end-of-line corner), narrated by the tile it slides and highlighting that tile.
+Following the plan from any solvable board SHALL reach the solved state.
+`hintKeepTrack` SHALL return `"completed"` for a player move that produces
+exactly the board the current step expects (advancing the plan), and `"off"`
+otherwise (dropping the plan so the next request recomputes). Returning the
+whole plan — rather than one step per request — keeps the hint displayed while
+it is followed, consistent with the other sliding-tile game.
 
-#### Scenario: Hint advances a solvable board to completion
+#### Scenario: Hint plan solves a solvable board
 
-- **WHEN** the hinted move is applied repeatedly from any solvable board
-- **THEN** each step is a legal single-cell gap slide and the board reaches the
+- **WHEN** `hint()` is requested on an unsolved board and every step's move is
+  applied in order
+- **THEN** the steps are legal single-cell gap slides and the board reaches the
   solved arrangement within the upstream `5·n³` move bound
 
 #### Scenario: Hint highlights the tile it moves
 
 - **WHEN** `hint()` is requested on an unsolved board
-- **THEN** the returned step's move is a slide whose target is one cell from the
+- **THEN** the first step's move is a slide whose target is one cell from the
   gap, and its highlight names the tile that will slide into the gap
+
+#### Scenario: Following the plan keeps it displayed; deviating drops it
+
+- **WHEN** the player makes exactly the move the current step describes
+- **THEN** `hintKeepTrack` reports the step completed and the plan advances
+- **AND** a different move reports `"off"`, dropping the plan
 
 ### Requirement: Fifteen renders tiles, border, and slide animation
 

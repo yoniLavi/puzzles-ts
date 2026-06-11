@@ -5,6 +5,7 @@ import type {
   GameDrawing,
   HintResult,
   HintStep,
+  HintTrackVerdict,
   UiUpdate,
 } from "../../engine/game.ts";
 import {
@@ -445,22 +446,59 @@ function statusbarText(state: FifteenState, _ui: FifteenUi): string {
 
 // --- hint -------------------------------------------------------------
 
+/** Compute the *whole* greedy solution as a hint plan: one narrated
+ * single-cell gap slide per step, simulated forward from the current
+ * board. Returning the full plan (rather than one step per request) is
+ * what keeps the hint banner populated through an auto-hint run instead
+ * of clearing and recomputing on every step — matching Sixteen, where a
+ * single multi-step plan stays on display while it is followed. The plan
+ * is cheap (the greedy solver is fast) and recomputed only when the
+ * player deviates (see `hintKeepTrack`). */
 function hint(state: FifteenState): HintResult<FifteenMove, FifteenHintHighlights> {
   if (isCompletedTiles(state.tiles, state.n)) {
     return { ok: false, error: "Already solved" };
   }
-  const dest = computeHint(state);
-  if (!dest) return { ok: false, error: "No helpful hint found" };
 
-  // The tile at the hinted destination cell is the one that slides into
-  // the gap.
-  const tile = state.tiles[dest.y * state.w + dest.x];
-  const step: HintStep<FifteenMove, FifteenHintHighlights> = {
-    move: { type: "move", x: dest.x, y: dest.y },
-    explanation: `Slide tile ${tile} into the space`,
-    highlights: { tile },
-  };
-  return { ok: true, steps: [step] };
+  const steps: HintStep<FifteenMove, FifteenHintHighlights>[] = [];
+  let board = state;
+  // The greedy solver terminates within the upstream 5·n³ bound; the
+  // guard is a belt-and-braces cap against an unexpected non-terminating
+  // board, never reached for a solvable one.
+  let guard = 5 * state.n * state.n * state.n;
+  while (!isCompletedTiles(board.tiles, board.n) && guard-- > 0) {
+    const dest = computeHint(board);
+    if (!dest) break;
+    const tile = board.tiles[dest.y * board.w + dest.x];
+    const move: FifteenMove = { type: "move", x: dest.x, y: dest.y };
+    steps.push({
+      move,
+      explanation: `Slide tile ${tile} into the space`,
+      highlights: { tile },
+    });
+    board = executeMove(board, move);
+  }
+
+  if (steps.length === 0) return { ok: false, error: "No helpful hint found" };
+  return { ok: true, steps };
+}
+
+/** Classify a player move against the current plan step. A move that
+ * produces exactly the board the plan expects after this step completes
+ * it (so the remaining steps stay valid); anything else is a deviation,
+ * which drops the plan and lets the next hint request recompute. */
+function hintKeepTrack(
+  m: FifteenMove,
+  step: HintStep<FifteenMove, FifteenHintHighlights>,
+  state: FifteenState,
+): HintTrackVerdict {
+  if (m.type !== "move" || step.move.type !== "move") return "off";
+  const expected = executeMove(state, step.move);
+  const actual = executeMove(state, m);
+  if (actual.gapPos !== expected.gapPos) return "off";
+  for (let i = 0; i < expected.n; i++) {
+    if (actual.tiles[i] !== expected.tiles[i]) return "off";
+  }
+  return "completed";
 }
 
 // --- Game object ------------------------------------------------------
@@ -498,6 +536,7 @@ export const fifteenGame: Game<
   },
 
   hint,
+  hintKeepTrack,
 
   textFormat,
   statusbarText,
