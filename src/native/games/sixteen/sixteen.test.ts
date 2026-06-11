@@ -535,7 +535,11 @@ describe("Sixteen hint", () => {
     // reaches the solved state with no recomputation.
     for (const step of result.steps) s = executeMove(s, step.move);
     expect(s.completed).toBeGreaterThan(0);
-  });
+    // Explicit generous timeout: the exact bidirectional BFS over ~1.5M
+    // states is inherently ~2-3s solo and slower under full-suite CPU
+    // contention; the default 5s is fragile when other heavy suites run
+    // in parallel.
+  }, 20000);
 
   it("a mid-game board with deep displacements hints fast from the forward search", () => {
     // Regression (owner-reported, 2026-06-10): 7 tiles out of place in
