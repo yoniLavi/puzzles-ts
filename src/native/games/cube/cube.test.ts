@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
+import {
+  CURSOR_DOWN,
+  CURSOR_LEFT,
+  CURSOR_RIGHT,
+  CURSOR_UP,
+  LEFT_BUTTON,
+} from "../../engine/pointer.ts";
 import { randomNew } from "../../random/index.ts";
 import { newDesc } from "./generator.ts";
 import { Direction, enumGridSquares, gridArea } from "./grid.ts";
-import { cubeGame, executeMove } from "./index.ts";
+import { type CubeUi, cubeGame, executeMove } from "./index.ts";
+import type { CubeDrawState } from "./render.ts";
 import { SOLIDS, SolidType } from "./solids.ts";
 import {
   type CubeParams,
@@ -261,5 +269,130 @@ describe("cube Game wiring", () => {
     const squares = enumGridSquares(SolidType.Tetrahedron, 1, 2);
     // At least one triangle exposes a diagonal roll.
     expect(squares.some((s) => s.directions[Direction.UpLeft] !== 0)).toBe(true);
+  });
+});
+
+// --- input -----------------------------------------------------------
+
+const newUi = cubeGame.newUi.bind(cubeGame);
+const interpretMove = cubeGame.interpretMove.bind(cubeGame);
+const newDrawState = cubeGame.newDrawState as NonNullable<typeof cubeGame.newDrawState>;
+const setTileSize = cubeGame.setTileSize as NonNullable<typeof cubeGame.setTileSize>;
+
+/** A 4×4 cube board with the solid on the interior square (1,1) (index 5)
+ * where all four orthogonal rolls are legal, sized so `ds` has a real
+ * grid scale + origin for click-bearing maths. */
+function interiorCube(): { state: CubeState; ui: CubeUi; ds: CubeDrawState } {
+  const p: CubeParams = { solid: SolidType.Cube, d1: 4, d2: 4 };
+  const area = gridArea(p.d1, p.d2, SOLIDS[p.solid].order);
+  const state = newState(p, `${"0".repeat(Math.floor((area + 3) / 4))},5`);
+  const ds = newDrawState(state);
+  setTileSize(ds, cubeGame.preferredTileSize ?? 48);
+  return { state, ui: newUi(state), ds };
+}
+
+describe("cube input", () => {
+  it("maps cursor keys to the matching roll", () => {
+    const { state, ui, ds } = interiorCube();
+    expect(interpretMove(state, ui, ds, { x: 0, y: 0 }, CURSOR_RIGHT)).toEqual({
+      dir: "R",
+    });
+    expect(interpretMove(state, ui, ds, { x: 0, y: 0 }, CURSOR_LEFT)).toEqual({
+      dir: "L",
+    });
+    expect(interpretMove(state, ui, ds, { x: 0, y: 0 }, CURSOR_UP)).toEqual({
+      dir: "U",
+    });
+    expect(interpretMove(state, ui, ds, { x: 0, y: 0 }, CURSOR_DOWN)).toEqual({
+      dir: "D",
+    });
+  });
+
+  it("maps the numeric keypad to rolls", () => {
+    const { state, ui, ds } = interiorCube();
+    const MOD_NUM_KEYPAD = 0x4000;
+    // '6' = right, '4' = left, '8' = up, '2' = down on the keypad.
+    expect(interpretMove(state, ui, ds, { x: 0, y: 0 }, MOD_NUM_KEYPAD | 0x36)).toEqual(
+      {
+        dir: "R",
+      },
+    );
+    expect(interpretMove(state, ui, ds, { x: 0, y: 0 }, MOD_NUM_KEYPAD | 0x38)).toEqual(
+      {
+        dir: "U",
+      },
+    );
+  });
+
+  it("rolls toward a left-click's bearing from the square centre", () => {
+    const { state, ui, ds } = interiorCube();
+    // Square 5 centre in pixels: x*gs+ox, y*gs+oy.
+    const sq = state.grid[5];
+    const cx = Math.trunc(sq.x * ds.gridscale) + ds.ox;
+    const cy = Math.trunc(sq.y * ds.gridscale) + ds.oy;
+    const click = (dx: number, dy: number) =>
+      interpretMove(state, ui, ds, { x: cx + dx, y: cy + dy }, LEFT_BUTTON);
+    expect(click(40, 0)).toEqual({ dir: "R" });
+    expect(click(-40, 0)).toEqual({ dir: "L" });
+    expect(click(0, 40)).toEqual({ dir: "D" });
+    expect(click(0, -40)).toEqual({ dir: "U" });
+  });
+
+  it("ignores a dead-centre click and unhandled buttons", () => {
+    const { state, ui, ds } = interiorCube();
+    const sq = state.grid[5];
+    const cx = Math.trunc(sq.x * ds.gridscale) + ds.ox;
+    const cy = Math.trunc(sq.y * ds.gridscale) + ds.oy;
+    expect(interpretMove(state, ui, ds, { x: cx, y: cy }, LEFT_BUTTON)).toBeNull();
+    expect(interpretMove(state, ui, ds, { x: 0, y: 0 }, 0x9999)).toBeNull();
+  });
+});
+
+describe("cube rolling on triangular grids", () => {
+  // Rolling over an edge and back must restore the solid exactly — on
+  // the triangular grid this exercises the flipped-triangle seating
+  // (`flipPoly`/`alignPolyKeys`) the square-grid cube never hits.
+  it("a roll is reversible across the shared edge (tetrahedron)", () => {
+    const rng = randomNew("cube-tri-reverse");
+    const p: CubeParams = { solid: SolidType.Tetrahedron, d1: 1, d2: 2 };
+    const { desc } = newDesc(p, rng);
+    const start = newState(p, desc);
+
+    const out = anyLegalRoll(start);
+    expect(out).not.toBeNull();
+    if (!out) return;
+
+    // Find the roll from `out` that lands back on the start square.
+    let back: CubeState | null = null;
+    for (const dir of ["L", "R", "U", "D"] as const) {
+      try {
+        const cand = executeMove(out, { dir });
+        if (cand.current === start.current) {
+          back = cand;
+          break;
+        }
+      } catch {
+        // illegal from here
+      }
+    }
+    expect(back).not.toBeNull();
+    if (!back) return;
+    // Orientation and paint are exactly restored.
+    expect(Array.from(back.faceColours)).toEqual(Array.from(start.faceColours));
+    expect(Array.from(back.blue)).toEqual(Array.from(start.blue));
+  });
+
+  it("every preset's solid seats on every grid square (alignment never fails)", () => {
+    // newState aligns the solid on its start square; do it for *every*
+    // square to prove the geometry seats across the whole arena, both
+    // triangle orientations included.
+    for (const p of PRESETS) {
+      const area = gridArea(p.d1, p.d2, SOLIDS[p.solid].order);
+      const hexlen = Math.floor((area + 3) / 4);
+      for (let sq = 0; sq < area; sq++) {
+        // No blue squares; start the solid on square `sq`.
+        expect(() => newState(p, `${"0".repeat(hexlen)},${sq}`)).not.toThrow();
+      }
+    }
   });
 });

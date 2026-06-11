@@ -5,6 +5,7 @@
  * bitset, typed key-point pairs, and GC instead of dup/free.
  */
 
+import { parseLeadingInt } from "../../engine/params.ts";
 import { enumGridSquares, type GridSquare, gridArea } from "./grid.ts";
 import { alignPolyKeys, SOLIDS, type Solid, SolidType } from "./solids.ts";
 
@@ -91,7 +92,8 @@ export function decodeParams(s: string): CubeParams {
     ret.solid = letter;
     i = 1;
   }
-  // atoi: leading integer, lenient.
+  // Leading integer (shared engine helper, atoi-like); the `next` index
+  // lets us look for the optional `x<d2>` separator after d1.
   const d1 = parseLeadingInt(s, i);
   ret.d1 = ret.d2 = d1.value;
   i = d1.next;
@@ -99,28 +101,6 @@ export function decodeParams(s: string): CubeParams {
     ret.d2 = parseLeadingInt(s, i + 1).value;
   }
   return ret;
-}
-
-function parseLeadingInt(s: string, from: number): { value: number; next: number } {
-  let i = from;
-  // Skip nothing; atoi tolerates a leading sign then digits.
-  let sign = 1;
-  if (s[i] === "-") {
-    sign = -1;
-    i++;
-  } else if (s[i] === "+") {
-    i++;
-  }
-  let value = 0;
-  let any = false;
-  while (i < s.length && s[i] >= "0" && s[i] <= "9") {
-    value = value * 10 + (s.charCodeAt(i) - 48);
-    i++;
-    any = true;
-  }
-  // Advance `next` past the original digit run for the d1 case (which
-  // needs to find the following 'x'); when no digits, stay put.
-  return { value: any ? sign * value : 0, next: i };
 }
 
 export function validateParams(p: CubeParams, _full: boolean): string | null {
