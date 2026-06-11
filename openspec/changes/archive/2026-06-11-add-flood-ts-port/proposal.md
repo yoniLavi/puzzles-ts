@@ -1,6 +1,7 @@
 # Proposal: Port Flood to TypeScript
 
-**Status**: Proposed (stub — scaffolded ahead of implementation; not started)
+**Status**: Implemented, parity-gated (registered + dev-verified; owner
+acceptance pending → then flip `TS_PORTED`, delete `flood.c`, archive)
 
 ## Why
 
@@ -44,9 +45,33 @@ which broadens coverage. It also exercises two things no ported game has yet:
 
 ## Impact
 
-- **Affected specs:** new `flood` capability. (Likely none on `ts-engine` — the
-  `"lost"` status already exists; confirm during implementation.)
+- **Affected specs:** new `flood` capability. Confirmed **no** `ts-engine`
+  change — the `"lost"` status already exists and flows through the midend and
+  app shell unchanged (dev-verified: the "Out of moves" lost-state dialog fires
+  on the TS path exactly as for a WASM game — design D6).
 - **Affected code:** new `src/native/games/flood/`; one import line in
-  `src/native/games/index.ts`; one entry in `ts-ported-ids.ts`; (on owner
-  acceptance) `TS_PORTED` in `puzzles/CMakeLists.txt` + deletion of
-  `puzzles/flood.c`.
+  `src/native/games/index.ts`; one entry in `ts-ported-ids.ts`; one transient
+  harness `puzzles/auxiliary/flood-trace.c` + its `CMakeLists.txt` line + the
+  frozen fixture; **plus a `flood` branch in `worker-adapter.ts`
+  `decodeCustomParams`** (newly discovered: without it the type-summary
+  template's `{colours}`/`{extra-moves-permitted}` placeholders rendered as raw
+  tokens on the TS path — every other ported game with non-`w`/`h` params has
+  the same branch); (on owner acceptance) `TS_PORTED` in `puzzles/CMakeLists.txt`
+  + deletion of `puzzles/flood.c` and `flood-trace.c`.
+
+### Implementation notes
+
+- **`status()` follows `flood.c` exactly, not design D6's wording.** Upstream
+  `game_status` returns defeat once `moves >= movelimit` *regardless of
+  `complete`* — so completing the grid one move over the limit is still a loss.
+  D6's prose ("complete takes priority") was imprecise; the port mirrors the C,
+  and `statusbarText` mirrors the C status string (`COMPLETED!` / `FAILED!` /
+  `Auto-solved` / `Auto-solver used.`). Solve-snaps suppress the flash and the
+  common case (Solve from a fresh board) stays within the limit → `solved` →
+  `solved-with-help` → "Auto-solved".
+- **Known pre-existing limitation (not introduced here, shared with WASM):**
+  the top-bar type summary derives from `currentParams`, which is the game-id's
+  *short* params form (`WxH`); flood's `encode_params(full=false)` omits
+  colours/leniency on both the TS and WASM paths, so a non-default-colour board
+  shows the default "6 colours, 5 extra moves". Surfaced for a possible separate
+  cross-cutting fix; out of scope for this port.

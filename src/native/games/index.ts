@@ -10,6 +10,7 @@
 import "./cube/index.ts";
 import "./fifteen/index.ts";
 import "./flip/index.ts";
+import "./flood/index.ts";
 import "./galaxies/index.ts";
 import "./pegs/index.ts";
 import "./sixteen/index.ts";

@@ -184,6 +184,13 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
         if ("diff" in p && p.diff !== undefined) {
           config.difficulty = String(p.diff);
         }
+      } else if (this.puzzleId === "flood") {
+        if ("colours" in p && p.colours !== undefined) {
+          config.colours = String(p.colours);
+        }
+        if ("leniency" in p && p.leniency !== undefined) {
+          config["extra-moves-permitted"] = String(p.leniency);
+        }
       }
 
       return config;

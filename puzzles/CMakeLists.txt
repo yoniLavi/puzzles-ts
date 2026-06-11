@@ -90,6 +90,7 @@ puzzle(flip
   OBJECTIVE "Flip groups of squares to light them all up at once.")
 
 puzzle(flood
+  TS_PORTED  # native-TS port (openspec add-flood-ts-port); no flood.c/wasm
   DISPLAYNAME "Flood"
   DESCRIPTION "Flood-filling puzzle"
   OBJECTIVE "Turn the grid the same colour in as few flood fills as possible.")
