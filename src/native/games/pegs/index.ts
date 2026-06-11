@@ -17,6 +17,8 @@
 import type { Colour, GameStatus, Point, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import {
+  coord as coordE,
+  fromCoord as fromCoordE,
   type Game,
   type GameDrawing,
   registerGame,
@@ -24,12 +26,9 @@ import {
   type UiUpdate,
 } from "../../engine/index.ts";
 import {
-  CURSOR_DOWN,
-  CURSOR_LEFT,
-  CURSOR_RIGHT,
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  CURSOR_UP,
+  cursorDelta,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
@@ -599,18 +598,13 @@ function interpretMove(
   }
 
   // Cursor movement.
-  if (
-    button === CURSOR_UP ||
-    button === CURSOR_DOWN ||
-    button === CURSOR_LEFT ||
-    button === CURSOR_RIGHT
-  ) {
+  const cursorMove = cursorDelta(button);
+  if (cursorMove) {
+    const { dx: ddx, dy: ddy } = cursorMove;
     if (!ui.curJumping) {
       // Normal cursor movement: try to move, skip OBST cells.
       const cx = ui.curX;
       const cy = ui.curY;
-      const ddx = button === CURSOR_RIGHT ? 1 : button === CURSOR_LEFT ? -1 : 0;
-      const ddy = button === CURSOR_DOWN ? 1 : button === CURSOR_UP ? -1 : 0;
       const nx = cx + ddx;
       const ny = cy + ddy;
       if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
@@ -625,8 +619,6 @@ function interpretMove(
     }
 
     // Jumping mode: attempt a jump in the given direction.
-    const ddx = button === CURSOR_RIGHT ? 1 : button === CURSOR_LEFT ? -1 : 0;
-    const ddy = button === CURSOR_DOWN ? 1 : button === CURSOR_UP ? -1 : 0;
     const mx = ui.curX + ddx;
     const my = ui.curY + ddy;
     const jx = mx + ddx;
@@ -774,11 +766,11 @@ function border(ts: number): number {
 }
 
 function coord(x: number, ts: number): number {
-  return border(ts) + x * ts;
+  return coordE(x, ts, border(ts));
 }
 
 function fromCoordWithTileSize(x: number, ts: number): number {
-  return Math.floor((x + ts - border(ts)) / ts) - 1;
+  return fromCoordE(x, ts, border(ts));
 }
 
 // --- colours ---------------------------------------------------------

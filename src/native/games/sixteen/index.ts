@@ -10,12 +10,15 @@ import type {
 } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import {
-  CURSOR_DOWN,
-  CURSOR_LEFT,
+  coord as coordE,
+  fromCoord as fromCoordE,
+} from "../../engine/geometry.ts";
+import {
   CURSOR_RIGHT,
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
+  cursorDelta,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
@@ -395,12 +398,9 @@ function moveCursor(
   h: number,
   wrap: boolean,
 ): { x: number; y: number } {
-  let nx = x,
-    ny = y;
-  if (button === CURSOR_UP) ny--;
-  else if (button === CURSOR_DOWN) ny++;
-  else if (button === CURSOR_LEFT) nx--;
-  else if (button === CURSOR_RIGHT) nx++;
+  const d = cursorDelta(button) ?? { dx: 0, dy: 0 };
+  let nx = x + d.dx,
+    ny = y + d.dy;
   if (wrap) {
     nx = ((nx % w) + w) % w;
     ny = ((ny % h) + h) % h;
@@ -414,11 +414,11 @@ function moveCursor(
 // --- coordinate helpers -----------------------------------------------
 
 function coord(pos: number, ts: number): number {
-  return pos * ts + border(ts);
+  return coordE(pos, ts, border(ts));
 }
 
 function fromCoord(pixel: number, ts: number): number {
-  return Math.floor((pixel - border(ts) + 2 * ts) / ts) - 2;
+  return fromCoordE(pixel, ts, border(ts));
 }
 
 function border(ts: number): number {

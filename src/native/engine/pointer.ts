@@ -23,3 +23,24 @@ export const CURSOR_LEFT = 0x020b;
 export const CURSOR_RIGHT = 0x020c;
 export const CURSOR_SELECT = 0x020d;
 export const CURSOR_SELECT2 = 0x020e;
+
+// --- cursor movement -----------------------------------------------
+
+/** Unit grid delta for a cursor-direction button, or `null` for any
+ * other button. Per-game clamping, bounds, obstacle-skipping, and lock
+ * modes stay local to each game; only the button→delta mapping is
+ * shared. */
+export function cursorDelta(button: number): { dx: number; dy: number } | null {
+  switch (button) {
+    case CURSOR_UP:
+      return { dx: 0, dy: -1 };
+    case CURSOR_DOWN:
+      return { dx: 0, dy: 1 };
+    case CURSOR_LEFT:
+      return { dx: -1, dy: 0 };
+    case CURSOR_RIGHT:
+      return { dx: 1, dy: 0 };
+    default:
+      return null;
+  }
+}

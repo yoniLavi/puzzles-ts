@@ -21,12 +21,9 @@ import {
 } from "../../engine/index.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
 import {
-  CURSOR_DOWN,
-  CURSOR_LEFT,
-  CURSOR_RIGHT,
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  CURSOR_UP,
+  cursorDelta,
   LEFT_BUTTON,
   RIGHT_BUTTON,
   RIGHT_DRAG,
@@ -425,16 +422,10 @@ function interpretMove(
     return dropDrag(s, ui, px, py);
   }
 
-  if (
-    button === CURSOR_UP ||
-    button === CURSOR_DOWN ||
-    button === CURSOR_LEFT ||
-    button === CURSOR_RIGHT
-  ) {
-    const dx = button === CURSOR_LEFT ? -1 : button === CURSOR_RIGHT ? 1 : 0;
-    const dy = button === CURSOR_UP ? -1 : button === CURSOR_DOWN ? 1 : 0;
-    let nx = ui.curX + dx;
-    let ny = ui.curY + dy;
+  const cursorMove = cursorDelta(button);
+  if (cursorMove) {
+    let nx = ui.curX + cursorMove.dx;
+    let ny = ui.curY + cursorMove.dy;
     if (nx < 1) nx = 1;
     if (ny < 1) ny = 1;
     if (nx > s.sx - 2) nx = s.sx - 2;

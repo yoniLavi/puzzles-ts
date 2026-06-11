@@ -8,6 +8,7 @@
 
 export { mkhighlight, mkhighlightBackground } from "./colour-mkhighlight.ts";
 export { Dsf } from "./dsf.ts";
+export { coord, fromCoord } from "./geometry.ts";
 export type {
   ActiveHint,
   Game,
@@ -34,6 +35,7 @@ export {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
+  cursorDelta,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,

@@ -15,6 +15,7 @@
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 
 import {
+  fromCoord as fromCoordE,
   type Game,
   type GameDrawing,
   registerGame,
@@ -23,12 +24,9 @@ import {
   type UiUpdate,
 } from "../../engine/index.ts";
 import {
-  CURSOR_DOWN,
-  CURSOR_LEFT,
-  CURSOR_RIGHT,
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  CURSOR_UP,
+  cursorDelta,
   LEFT_BUTTON,
 } from "../../engine/pointer.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
@@ -517,7 +515,7 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
     const wh = w * h;
     const tile = ds?.tileSize ?? PREFERRED_TILE_SIZE;
     const border = tile >> 1;
-    const fromCoord = (v: number) => Math.floor((v - border + tile) / tile) - 1;
+    const fromCoord = (v: number) => fromCoordE(v, tile, border);
 
     const isSelect = button === CURSOR_SELECT || button === CURSOR_SELECT2;
 
@@ -548,16 +546,11 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
       return UI_UPDATE;
     }
 
-    let dx = 0;
-    let dy = 0;
-    if (button === CURSOR_UP) dy = -1;
-    else if (button === CURSOR_DOWN) dy = 1;
-    else if (button === CURSOR_LEFT) dx = -1;
-    else if (button === CURSOR_RIGHT) dx = 1;
-    else return null;
+    const d = cursorDelta(button);
+    if (!d) return null;
 
-    const nx = Math.min(w - 1, Math.max(0, ui.cx + dx));
-    const ny = Math.min(h - 1, Math.max(0, ui.cy + dy));
+    const nx = Math.min(w - 1, Math.max(0, ui.cx + d.dx));
+    const ny = Math.min(h - 1, Math.max(0, ui.cy + d.dy));
     const changed = nx !== ui.cx || ny !== ui.cy || !ui.cursorVisible;
     ui.cx = nx;
     ui.cy = ny;

@@ -9,10 +9,15 @@ import type {
   UiUpdate,
 } from "../../engine/game.ts";
 import {
+  coord as coordE,
+  fromCoord as fromCoordE,
+} from "../../engine/geometry.ts";
+import {
   CURSOR_DOWN,
   CURSOR_LEFT,
   CURSOR_RIGHT,
   CURSOR_UP,
+  cursorDelta,
   LEFT_BUTTON,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -69,11 +74,11 @@ function border(ts: number): number {
 }
 
 function coord(pos: number, ts: number): number {
-  return pos * ts + border(ts);
+  return coordE(pos, ts, border(ts));
 }
 
 function fromCoord(pixel: number, ts: number): number {
-  return Math.floor((pixel - border(ts) + ts) / ts) - 1;
+  return fromCoordE(pixel, ts, border(ts));
 }
 
 // --- move logic -------------------------------------------------------
@@ -166,14 +171,9 @@ function moveCursorClamped(
   w: number,
   h: number,
 ): { x: number; y: number } {
-  let nx = x;
-  let ny = y;
-  if (button === CURSOR_UP) ny--;
-  else if (button === CURSOR_DOWN) ny++;
-  else if (button === CURSOR_LEFT) nx--;
-  else if (button === CURSOR_RIGHT) nx++;
-  nx = Math.max(0, Math.min(w - 1, nx));
-  ny = Math.max(0, Math.min(h - 1, ny));
+  const d = cursorDelta(button) ?? { dx: 0, dy: 0 };
+  const nx = Math.max(0, Math.min(w - 1, x + d.dx));
+  const ny = Math.max(0, Math.min(h - 1, y + d.dy));
   return { x: nx, y: ny };
 }
 
