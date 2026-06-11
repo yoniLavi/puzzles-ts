@@ -4,6 +4,7 @@
 // mounts into a polite live region, replaces rather than stacks, and
 // auto-dismisses — driven in-process under happy-dom, no browser.
 import { afterEach, describe, expect, it } from "vitest";
+import "../test-setup/icons.ts"; // no-fetch wa-icon libraries (avoid teardown AbortError noise)
 import { showToast } from "./toast.ts";
 
 const region = () => document.getElementById("app-toast-region");
