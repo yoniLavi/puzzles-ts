@@ -168,7 +168,17 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
         config.height = String(p.h);
       }
 
-      if (this.puzzleId === "pegs") {
+      if (this.puzzleId === "blackbox") {
+        // width/height set above; map the ball count to the type-summary
+        // key `no-of-balls` (single number, or `min-max` for a range) —
+        // see augmentation.ts `{width}x{height}, {no-of-balls}`.
+        if ("minballs" in p && "maxballs" in p) {
+          config["no-of-balls"] =
+            p.minballs === p.maxballs
+              ? String(p.minballs)
+              : `${String(p.minballs)}-${String(p.maxballs)}`;
+        }
+      } else if (this.puzzleId === "pegs") {
         if ("type" in p && p.type !== undefined) {
           config["board-type"] = String(p.type);
         }

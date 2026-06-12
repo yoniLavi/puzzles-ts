@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { blackboxGame } from "../games/blackbox/index.ts";
 import { flipGame } from "../games/flip/index.ts";
 import { galaxiesGame } from "../games/galaxies/index.ts";
 import { pegsGame } from "../games/pegs/index.ts";
@@ -48,6 +49,23 @@ describe("TsWorkerPuzzle — decodeCustomParams", () => {
       width: "4",
       height: "4",
       "number-of-shuffling-moves": "10",
+    });
+  });
+
+  it("decodes blackbox custom params with a ball range summary", () => {
+    registerGame(blackboxGame);
+    const midend = new Midend(blackboxGame);
+    const worker = new TsWorkerPuzzle("blackbox", midend);
+
+    expect(worker.decodeCustomParams("w8h8m3M6")).toEqual({
+      width: "8",
+      height: "8",
+      "no-of-balls": "3-6",
+    });
+    expect(worker.decodeCustomParams("w8h8m5M5")).toEqual({
+      width: "8",
+      height: "8",
+      "no-of-balls": "5",
     });
   });
 

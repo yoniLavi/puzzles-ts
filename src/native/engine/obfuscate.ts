@@ -1,11 +1,11 @@
 /**
  * Faithful TS port of `puzzles/misc.c`'s `obfuscate_bitmap` +
- * `bin2hex`/`hex2bin`, used by Guess to mask its solution into the game
- * description. Kept local to Guess (the "lazy, idiomatic, local until a
- * second consumer" doctrine, like Galaxies' `dsf.ts` started local); it
- * is a clear promotion candidate — Mosaic, Mines and others obfuscate
- * their descs too — so it is written as a standalone module that could
- * move to `engine/` unchanged.
+ * `bin2hex`/`hex2bin`, used to mask a solution into the game description
+ * so the shareable game id does not spell out the answer. Started local
+ * to Guess (the "lazy, idiomatic, local until a second consumer"
+ * doctrine, like Galaxies' `dsf.ts`); promoted here when Black Box became
+ * its second consumer (same rule as `Dsf`/`SortedMultiset`). Mosaic,
+ * Mines and others obfuscate their descs too and will reuse it unchanged.
  *
  * The obfuscation is an OAEP-style reversible masking: split the byte
  * stream in half (rounding down), mask the first half with a SHA-1
@@ -16,7 +16,7 @@
  * `shaCopy` fork of the seed-primed base state per 20-byte block.
  */
 
-import { shaBytes, shaCopy, shaFinal, shaInit } from "../../random/sha1.ts";
+import { shaBytes, shaCopy, shaFinal, shaInit } from "../random/sha1.ts";
 
 interface MaskStep {
   seedStart: number;

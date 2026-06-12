@@ -9,7 +9,7 @@
 
 import type { GameStatus } from "../../../puzzle/types.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
-import { bin2hex, hex2bin, obfuscateBitmap } from "./obfuscate.ts";
+import { bin2hex, hex2bin, obfuscateBitmap } from "../../engine/obfuscate.ts";
 
 // --- feedback codes (upstream FEEDBACK_*) -----------------------------
 

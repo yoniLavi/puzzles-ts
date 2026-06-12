@@ -14,6 +14,7 @@
  * or the gate fails.
  */
 export const TS_PORTED_PUZZLE_IDS: ReadonlySet<string> = new Set([
+  "blackbox",
   "cube",
   "fifteen",
   "flip",
