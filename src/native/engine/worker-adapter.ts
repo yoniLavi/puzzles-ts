@@ -209,6 +209,22 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
         if ("allowMultiple" in p && p.allowMultiple !== undefined) {
           config["allow-duplicates"] = p.allowMultiple ? "true" : "false";
         }
+      } else if (this.puzzleId === "samegame") {
+        // width/height set above. Booleans/choices must match the C config
+        // value types (`config_values_from_config`): a C_BOOLEAN surfaces as
+        // a real JS boolean and a C_CHOICES as its selected index — the
+        // type-summary formatter does `Number(value)`, so a "true"/"false"
+        // string would NaN out the annotation.
+        if ("ncols" in p && p.ncols !== undefined) {
+          config["no-of-colours"] = String(p.ncols);
+        }
+        if ("scoresub" in p && p.scoresub !== undefined) {
+          // C_CHOICES `selected = scoresub - 1` (0 = "(n-1)^2", 1 = "(n-2)^2").
+          config["scoring-system"] = Number(p.scoresub) - 1;
+        }
+        if ("soluble" in p && p.soluble !== undefined) {
+          config["ensure-solubility"] = Boolean(p.soluble);
+        }
       }
 
       return config;
