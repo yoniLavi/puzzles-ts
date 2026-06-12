@@ -64,6 +64,6 @@
   now registered, but `blackbox.c` is retained until acceptance.)
 
 ## 6. Owner acceptance → C deletion (separate step)
-- [ ] 6.1 On owner-accepted parity: add `TS_PORTED` for `blackbox` in
-  `puzzles/CMakeLists.txt`, delete `puzzles/blackbox.c`, rebuild assets.
-- [ ] 6.2 Archive the change.
+- [x] 6.1 On owner-accepted parity (2026-06-12): added `TS_PORTED` for `blackbox`
+  in `puzzles/CMakeLists.txt`, deleted `puzzles/blackbox.c`.
+- [x] 6.2 Archived the change.

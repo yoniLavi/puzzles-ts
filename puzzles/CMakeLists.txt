@@ -49,6 +49,7 @@ cliprogram(polygon-test draw-poly.c
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 puzzle(blackbox
+  TS_PORTED  # native-TS port (openspec add-blackbox-ts-port); no blackbox.c/wasm
   DISPLAYNAME "Black Box"
   DESCRIPTION "Ball-finding puzzle"
   OBJECTIVE "Find the hidden balls in the box by bouncing laser beams \
