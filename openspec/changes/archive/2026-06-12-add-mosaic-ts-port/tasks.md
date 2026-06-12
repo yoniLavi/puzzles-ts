@@ -61,6 +61,6 @@
 - [x] 6.6 Commit (registered, parity-gated; `mosaic.c` kept as fallback).
 
 ## 7. Owner acceptance → C deletion (separate step)
-- [ ] 7.1 On owner-accepted parity: add `TS_PORTED` for `mosaic` in
+- [x] 7.1 On owner-accepted parity: add `TS_PORTED` for `mosaic` in
   `puzzles/CMakeLists.txt`, delete `puzzles/mosaic.c`.
-- [ ] 7.2 Archive the change.
+- [x] 7.2 Archive the change.

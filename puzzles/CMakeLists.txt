@@ -155,6 +155,7 @@ puzzle(mines
 cliprogram(mineobfusc mines.c COMPILE_DEFINITIONS STANDALONE_OBFUSCATOR)
 
 puzzle(mosaic
+  TS_PORTED  # native-TS port (openspec add-mosaic-ts-port); no mosaic.c/wasm
   DISPLAYNAME "Mosaic"
   DESCRIPTION "Grid-filling puzzle"
   OBJECTIVE "Fill in the grid given clues about number of \
