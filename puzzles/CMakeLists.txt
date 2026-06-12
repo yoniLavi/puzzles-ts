@@ -220,7 +220,9 @@ puzzle(samegame
   DISPLAYNAME "Same Game"
   DESCRIPTION "Block-clearing puzzle"
   OBJECTIVE "Clear the grid by removing touching groups of the same \
-colour squares.")
+colour squares."
+  TS_PORTED  # native-TS port (openspec add-samegame-ts-port); no samegame.c/wasm
+)
 
 puzzle(signpost
   DISPLAYNAME "Signpost"

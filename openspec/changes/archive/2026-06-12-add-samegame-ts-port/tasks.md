@@ -114,9 +114,9 @@
   `vitest run` → `vite build`.
 
 ## 7. On owner acceptance (separate commit, then archive)
-- [ ] 7.1 Add `TS_PORTED` to the `samegame` `puzzle(...)` block in
+- [x] 7.1 Add `TS_PORTED` to the `samegame` `puzzle(...)` block in
   `puzzles/CMakeLists.txt`; remove the `samegame-trace` `CMakeLists.txt` line.
-- [ ] 7.2 Delete `puzzles/samegame.c` + `puzzles/auxiliary/samegame-trace.c`.
-- [ ] 7.3 Clean `npm run build:wasm` — catalog still lists Same Game via
+- [x] 7.2 Delete `puzzles/samegame.c` + `puzzles/auxiliary/samegame-trace.c`.
+- [x] 7.3 Clean `npm run build:wasm` — catalog still lists Same Game via
   `ts_ported_names`, no `samegame.wasm` artifact.
-- [ ] 7.4 `openspec validate add-samegame-ts-port --strict`; archive the change.
+- [x] 7.4 `openspec validate add-samegame-ts-port --strict`; archive the change.
