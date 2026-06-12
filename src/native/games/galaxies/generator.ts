@@ -4,7 +4,8 @@
  * retries until it is. Idiomatic TS port of `new_game_desc` and
  * `generate_pass` in galaxies.c (D6).
  */
-import { type RandomState, randomUpto } from "../../random/index.ts";
+import { shuffle } from "../../engine/shuffle.ts";
+import type { RandomState } from "../../random/index.ts";
 import { clearForSolve, type GalaxiesDiff, solverState } from "./solver.ts";
 import {
   addAssoc,
@@ -26,19 +27,6 @@ import {
   spaceOppositeDot,
   spaceTypeAt,
 } from "./state.ts";
-
-// --- Fisher-Yates over the engine's RandomState --------------------
-
-function shuffle<T>(arr: T[], rng: RandomState): void {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = randomUpto(rng, i + 1);
-    if (i !== j) {
-      const t = arr[i];
-      arr[i] = arr[j];
-      arr[j] = t;
-    }
-  }
-}
 
 // --- dot/region utility helpers (mirror galaxies.c) ----------------
 

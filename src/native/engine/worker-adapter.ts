@@ -219,6 +219,20 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
         if ("allowMultiple" in p && p.allowMultiple !== undefined) {
           config["allow-duplicates"] = p.allowMultiple ? "true" : "false";
         }
+      } else if (this.puzzleId === "mosaic") {
+        // Mosaic's params use `width`/`height` (not `w`/`h`), so the
+        // generic mapping above didn't fire. `aggressive-generation`
+        // must be a real boolean — augmentation.ts compares it to a
+        // computed boolean default to decide whether to annotate.
+        if ("width" in p && p.width !== undefined) {
+          config.width = String(p.width);
+        }
+        if ("height" in p && p.height !== undefined) {
+          config.height = String(p.height);
+        }
+        if ("aggressive" in p && p.aggressive !== undefined) {
+          config["aggressive-generation"] = Boolean(p.aggressive);
+        }
       } else if (this.puzzleId === "samegame") {
         // width/height set above. Booleans/choices must match the C config
         // value types (`config_values_from_config`): a C_BOOLEAN surfaces as
