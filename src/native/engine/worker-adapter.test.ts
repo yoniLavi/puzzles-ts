@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { blackboxGame } from "../games/blackbox/index.ts";
 import { flipGame } from "../games/flip/index.ts";
 import { galaxiesGame } from "../games/galaxies/index.ts";
+import { guessGame } from "../games/guess/index.ts";
 import { pegsGame } from "../games/pegs/index.ts";
 import { sixteenGame } from "../games/sixteen/index.ts";
 import { Midend } from "./midend.ts";
@@ -66,6 +67,23 @@ describe("TsWorkerPuzzle — decodeCustomParams", () => {
       width: "8",
       height: "8",
       "no-of-balls": "5",
+    });
+  });
+
+  it("decodes guess custom params with real booleans", () => {
+    registerGame(guessGame);
+    const midend = new Midend(guessGame);
+    const worker = new TsWorkerPuzzle("guess", midend);
+
+    // Booleans must be real booleans, not "true"/"false" strings — the
+    // type-summary formatter indexes options via Number(value), and
+    // Number("true") is NaN (the annotation silently renders empty).
+    expect(worker.decodeCustomParams("c6p4g10bM")).toEqual({
+      colours: "6",
+      "pegs-per-guess": "4",
+      guesses: "10",
+      "allow-blanks": true,
+      "allow-duplicates": false,
     });
   });
 

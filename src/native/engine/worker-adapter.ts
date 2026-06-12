@@ -213,11 +213,14 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
         if ("nguesses" in p && p.nguesses !== undefined) {
           config.guesses = String(p.nguesses);
         }
+        // Booleans must be real booleans (see the samegame comment below):
+        // the type-summary formatter does `Number(value)`, and a
+        // "true"/"false" string NaNs out the `{allow-blanks:...}` annotation.
         if ("allowBlank" in p && p.allowBlank !== undefined) {
-          config["allow-blanks"] = p.allowBlank ? "true" : "false";
+          config["allow-blanks"] = Boolean(p.allowBlank);
         }
         if ("allowMultiple" in p && p.allowMultiple !== undefined) {
-          config["allow-duplicates"] = p.allowMultiple ? "true" : "false";
+          config["allow-duplicates"] = Boolean(p.allowMultiple);
         }
       } else if (this.puzzleId === "mosaic") {
         // Mosaic's params use `width`/`height` (not `w`/`h`), so the
