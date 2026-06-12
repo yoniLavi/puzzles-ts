@@ -6,7 +6,8 @@ import {
   LEFT_BUTTON,
   RIGHT_BUTTON,
 } from "./fake-game.ts";
-import type { GameDrawing } from "./game.ts";
+import type { Game, GameDrawing } from "./game.ts";
+import { UI_UPDATE } from "./game.ts";
 import { Midend } from "./midend.ts";
 
 /** Recording fake `GameDrawing` for engine-level redraw assertions —
@@ -821,5 +822,86 @@ describe("Midend mistake overlay (findMistakes lifecycle)", () => {
     h.m.newGame();
     expect(h.m.getStaticProperties().canFindMistakes).toBe(false);
     expect(h.m.findMistakes()).toBe(0);
+  });
+});
+
+describe("Midend changedState hook (upstream game_changed_state)", () => {
+  /** A fake game with a recording `changedState`, a real Ui, and an
+   * input that can return UI_UPDATE (RIGHT) or a move (LEFT). */
+  function makeRecordingGame() {
+    const calls: Array<{ old: number | null; next: number }> = [];
+    const game: Game<
+      { target: number },
+      { count: number; target: number },
+      "inc",
+      { edits: number },
+      FakeDrawState
+    > = {
+      ...(fakeGame as unknown as Game<
+        { target: number },
+        { count: number; target: number },
+        "inc",
+        { edits: number },
+        FakeDrawState
+      >),
+      newUi: () => ({ edits: 0 }),
+      changedState: (_ui, oldState, newState) => {
+        calls.push({ old: oldState ? oldState.count : null, next: newState.count });
+      },
+      interpretMove: (_s, _ui, _ds, _p, button) =>
+        button === RIGHT_BUTTON ? UI_UPDATE : button === LEFT_BUTTON ? "inc" : null,
+      executeMove: (s) => ({ ...s, count: s.count + 1 }),
+    };
+    return { game, calls };
+  }
+
+  function drive<P, S, M, U, D>(game: Game<P, S, M, U, D>) {
+    const m = new Midend(game);
+    m.setCallbacks(
+      () => {},
+      () => {},
+      () => {},
+    );
+    return m;
+  }
+
+  it("fires once at new-game with oldState = null", () => {
+    const { game, calls } = makeRecordingGame();
+    const m = drive(game);
+    m.newGame();
+    expect(calls).toHaveLength(1);
+    expect(calls[0].old).toBeNull();
+    expect(calls[0].next).toBe(0);
+  });
+
+  it("fires on move, undo, redo, and restart", () => {
+    const { game, calls } = makeRecordingGame();
+    const m = drive(game);
+    m.newGame();
+    calls.length = 0;
+
+    m.processInput(0, 0, LEFT_BUTTON); // move: count 0 -> 1
+    expect(calls.at(-1)).toEqual({ old: 0, next: 1 });
+
+    m.undo(); // 1 -> 0
+    expect(calls.at(-1)).toEqual({ old: 1, next: 0 });
+
+    m.redo(); // 0 -> 1
+    expect(calls.at(-1)).toEqual({ old: 0, next: 1 });
+
+    const before = calls.length;
+    m.restartGame(); // back to the initial state
+    expect(calls.length).toBe(before + 1);
+    expect(calls.at(-1)?.next).toBe(0);
+  });
+
+  it("does NOT fire on a bare UI_UPDATE", () => {
+    const { game, calls } = makeRecordingGame();
+    const m = drive(game);
+    m.newGame();
+    calls.length = 0;
+    const handled = m.processInput(0, 0, RIGHT_BUTTON); // UI_UPDATE
+    expect(handled).toBe(true);
+    expect(calls).toHaveLength(0);
   });
 });

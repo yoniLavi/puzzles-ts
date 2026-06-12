@@ -149,6 +149,23 @@ export function shaFinal(s: ShaState, output: Uint8Array): void {
   }
 }
 
+/**
+ * Deep-clone a SHA state. Mirrors the C `final = base;` struct copy in
+ * `misc.c`'s `obfuscate_bitmap`, which forks a partially-hashed base
+ * state and finalises each fork independently. `shaFinal` mutates its
+ * argument (it appends padding via `shaBytes`), so a caller that needs
+ * to keep hashing the base after finalising a fork MUST copy first.
+ */
+export function shaCopy(s: ShaState): ShaState {
+  return {
+    h: Uint32Array.from(s.h),
+    block: Uint8Array.from(s.block),
+    blkused: s.blkused,
+    lenhi: s.lenhi,
+    lenlo: s.lenlo,
+  };
+}
+
 export function shaSimple(input: Uint8Array, output: Uint8Array): void {
   const s = shaInit();
   shaBytes(s, input);

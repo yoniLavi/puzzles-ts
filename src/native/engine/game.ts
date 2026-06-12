@@ -155,6 +155,16 @@ export interface Game<
   newState(p: Params, desc: string): State;
   newUi(state: State): Ui;
 
+  /** Reconcile persisted Ui against a state transition (upstream
+   * `game_changed_state`). The midend calls this — mutating `ui` in
+   * place — after every real move/undo/redo/solve/restart and once at
+   * new-game setup (`oldState = null`), before animation timing and the
+   * repaint, and never on a bare `UI_UPDATE` (the user is mid-edit
+   * then). A game whose Ui tracks the current state (e.g. a
+   * working-input row reconstructed from the latest move's holds)
+   * derives it here. Absent ⇒ the midend treats it as a no-op. */
+  changedState?(ui: Ui, oldState: State | null, newState: State): void;
+
   /** Translate a pointer/key event to a move, `null` for "nothing
    * happened", or `UI_UPDATE` for "UI/cursor changed in place, redraw
    * but add no history entry". */

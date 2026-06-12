@@ -261,6 +261,9 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.moveLog = [];
     this.pos = 0;
     this.ui = this.game.newUi(initial);
+    // Upstream `game_changed_state` with oldstate == NULL: let a game
+    // whose Ui tracks the current state seed it from the fresh board.
+    this.game.changedState?.(this.ui, null, initial);
     // A fresh drawstate ensures the per-tile cache reflects the new
     // game; the game's `!ds.started` branch covers the
     // background/grid setup on its next paint.
@@ -289,9 +292,11 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   restartGame(): void {
     if (this.history.length === 0) return;
+    const prev = this.state;
     this.history = [this.history[0]];
     this.moveLog = [];
     this.pos = 0;
+    this.game.changedState?.(this.ui, prev, this.state);
     this.usedSolve = false;
     this.clearHint();
     this.clearMistakes();
@@ -357,6 +362,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.history.push(next);
     this.moveLog.push(move);
     this.pos = this.history.length - 1;
+    this.game.changedState?.(this.ui, prev, next);
     this.setupAnimation(prev, next, 1);
     this.afterTransition();
     return true;
@@ -367,6 +373,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.clearHint();
     const prev = this.state;
     this.pos -= 1;
+    this.game.changedState?.(this.ui, prev, this.state);
     this.setupAnimation(prev, this.state, -1);
     this.afterTransition();
   }
@@ -376,6 +383,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.clearHint();
     const prev = this.state;
     this.pos += 1;
+    this.game.changedState?.(this.ui, prev, this.state);
     this.setupAnimation(prev, this.state, 1);
     this.afterTransition();
   }

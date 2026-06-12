@@ -191,6 +191,24 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
         if ("leniency" in p && p.leniency !== undefined) {
           config["extra-moves-permitted"] = String(p.leniency);
         }
+      } else if (this.puzzleId === "guess") {
+        // Guess has no w/h; map its custom params to the type-summary
+        // config keys (upstream `game_configure` field names, kebabed).
+        if ("ncolours" in p && p.ncolours !== undefined) {
+          config.colours = String(p.ncolours);
+        }
+        if ("npegs" in p && p.npegs !== undefined) {
+          config["pegs-per-guess"] = String(p.npegs);
+        }
+        if ("nguesses" in p && p.nguesses !== undefined) {
+          config.guesses = String(p.nguesses);
+        }
+        if ("allowBlank" in p && p.allowBlank !== undefined) {
+          config["allow-blanks"] = p.allowBlank ? "true" : "false";
+        }
+        if ("allowMultiple" in p && p.allowMultiple !== undefined) {
+          config["allow-duplicates"] = p.allowMultiple ? "true" : "false";
+        }
       }
 
       return config;
