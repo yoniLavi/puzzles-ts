@@ -1,7 +1,9 @@
 # Proposal: Port Guess to TypeScript
 
-**Status**: Implemented, parity-gated (registered + dev-verified; owner
-acceptance pending → then flip `TS_PORTED`, delete `guess.c`, archive)
+**Status**: Owner-accepted 2026-06-12 — `TS_PORTED` flipped, `guess.c` +
+`guess-trace.c` deleted, archived. (The unified `hint()` follow-up named in
+"Out of scope" was declined by the owner — Guess keeps the upstream `'h'`-key
+working-row fill only.)
 
 ## Why
 

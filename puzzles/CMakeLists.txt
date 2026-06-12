@@ -103,6 +103,7 @@ puzzle(galaxies
 centred on a dot.")
 
 puzzle(guess
+  TS_PORTED  # native-TS port (openspec add-guess-ts-port); no guess.c/wasm
   DISPLAYNAME "Guess"
   DESCRIPTION "Combination-guessing puzzle"
   OBJECTIVE "Guess the hidden combination of colours.")

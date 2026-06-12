@@ -100,9 +100,9 @@
   `vitest run` → `vite build`.
 
 ## 8. On owner acceptance (separate commit, then archive)
-- [ ] 8.1 Add `TS_PORTED` to the `guess` `puzzle(...)` block in
-  `puzzles/CMakeLists.txt`; remove the `guess-trace.c` `CMakeLists.txt` line.
-- [ ] 8.2 Delete `puzzles/guess.c` and `puzzles/auxiliary/guess-trace.c`.
-- [ ] 8.3 `npm run build:wasm` (confirm catalog still lists Guess via
-  `ts_ported_names`), dev re-check.
-- [ ] 8.4 `openspec validate add-guess-ts-port --strict`; archive the change.
+- [x] 8.1 Added `TS_PORTED` to the `guess` `puzzle(...)` block in
+  `puzzles/CMakeLists.txt`; removed the `guess-trace` `CMakeLists.txt` lines.
+- [x] 8.2 Deleted `puzzles/guess.c` and `puzzles/auxiliary/guess-trace.c`.
+- [x] 8.3 Clean `npm run build:wasm` — catalog still lists Guess via
+  `ts_ported_names`, no `guess.wasm` artifact, icons already committed.
+- [x] 8.4 `openspec validate add-guess-ts-port --strict`; change archived.

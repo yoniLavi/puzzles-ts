@@ -2,11 +2,6 @@ cliprogram(combi-test combi-test.c)
 cliprogram(combi-trace combi-trace.c)
 cliprogram(divvy-test divvy-test.c)
 cliprogram(findloop-test findloop-test.c)
-# Transient: removed together with guess.c when the Guess TS port ships.
-cliprogram(guess-trace guess-trace.c ${CMAKE_CURRENT_SOURCE_DIR}/../guess.c)
-if(TARGET guess-trace)
-  target_link_libraries(guess-trace core) # random_* live in core, guess.c in common
-endif()
 cliprogram(hatgen hatgen.c CORE_LIB COMPILE_DEFINITIONS TEST_HAT)
 cliprogram(hat-test hat-test.c)
 cliprogram(latin-test latin-test.c)
