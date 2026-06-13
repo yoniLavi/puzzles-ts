@@ -80,9 +80,9 @@
   draws/erases a wall, right-click toggles a no-wall mark, an over-large region
   reddens its walls; keyboard cursor + Enter toggles an edge; Solve fills a
   correct division and flashes; 0 console errors.
-- [ ] 7.6 Commit (registered, parity-gated; `palisade.c` kept as fallback).
+- [x] 7.6 Commit (registered, parity-gated; `palisade.c` kept as fallback).
 
 ## 8. Owner acceptance → C deletion (separate step)
-- [ ] 8.1 On owner-accepted parity: add `TS_PORTED` for `palisade` in
+- [x] 8.1 On owner-accepted parity: add `TS_PORTED` for `palisade` in
   `puzzles/CMakeLists.txt`, delete `puzzles/palisade.c`.
-- [ ] 8.2 Archive the change.
+- [x] 8.2 Archive the change.

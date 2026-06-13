@@ -178,6 +178,7 @@ puzzle(netslide
 puzzle(nullgame)
 
 puzzle(palisade
+  TS_PORTED  # native-TS port (openspec add-palisade-ts-port); no palisade.c/wasm
   DISPLAYNAME "Palisade"
   DESCRIPTION "Grid-division puzzle"
   OBJECTIVE "Divide the grid into equal-sized areas in accordance with\
