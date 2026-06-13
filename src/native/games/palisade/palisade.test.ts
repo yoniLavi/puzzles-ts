@@ -16,6 +16,7 @@ import {
   isSolved,
   newState,
   type PalisadeParams,
+  type PalisadeState,
   validateDesc,
   validateParams,
 } from "./state.ts";
@@ -84,22 +85,18 @@ describe("palisade divvy", () => {
 describe("palisade solver + generator", () => {
   // Generation is CPU-heavy (the 15×12 preset is ~0.7s/board); the
   // explicit timeout keeps it robust under parallel-suite load.
-  it(
-    "generates uniquely solvable boards across presets",
-    () => {
-      for (const p of PRESETS) {
-        const rng = randomNew(`palisade-gen-${p.w}x${p.h}`);
-        const { desc } = newDesc(p, rng);
-        const state = newState(p, desc);
-        const sol = solveToBorders(p, state.clues);
-        expect(sol).not.toBeNull();
-        if (sol) {
-          expect(isSolved(p.w, p.h, p.k, state.clues, sol)).toBe(true);
-        }
+  it("generates uniquely solvable boards across presets", () => {
+    for (const p of PRESETS) {
+      const rng = randomNew(`palisade-gen-${p.w}x${p.h}`);
+      const { desc } = newDesc(p, rng);
+      const state = newState(p, desc);
+      const sol = solveToBorders(p, state.clues);
+      expect(sol).not.toBeNull();
+      if (sol) {
+        expect(isSolved(p.w, p.h, p.k, state.clues, sol)).toBe(true);
       }
-    },
-    30000,
-  );
+    }
+  }, 30000);
 
   it("the solver fills the rim into a valid division", () => {
     const p = { w: 5, h: 5, k: 5 };
@@ -212,6 +209,74 @@ describe("palisade findMistakes", () => {
         }
       }
     }
+  });
+});
+
+describe("palisade win flash", () => {
+  const base = (over: Partial<PalisadeState>): PalisadeState => ({
+    w: 5,
+    h: 5,
+    k: 5,
+    clues: new Int8Array(25).fill(-1),
+    borders: new Uint8Array(25),
+    completed: false,
+    cheated: false,
+    ...over,
+  });
+  const flash = (oldOver: Partial<PalisadeState>, newOver: Partial<PalisadeState>) =>
+    palisadeGame.flashLength?.(base(oldOver), base(newOver), 0, {
+      x: 1,
+      y: 1,
+      show: false,
+    });
+
+  it("fires on a fresh manual completion", () => {
+    expect(flash({ completed: false }, { completed: true })).toBeGreaterThan(0);
+  });
+
+  it("does not fire on the Solve command (cheated flips this move)", () => {
+    expect(
+      flash({ completed: false, cheated: false }, { completed: true, cheated: true }),
+    ).toBe(0);
+  });
+
+  it("fires again on a manual re-completion after a prior Solve", () => {
+    // cheated already true from the earlier Solve; this move completes by hand.
+    expect(
+      flash({ completed: false, cheated: true }, { completed: true, cheated: true }),
+    ).toBeGreaterThan(0);
+  });
+
+  it("does not fire when a move breaks a solved board", () => {
+    expect(flash({ completed: true }, { completed: false })).toBe(0);
+  });
+
+  it("un-sticks completed: breaking a solved board reverts to unsolved", () => {
+    const p = { w: 5, h: 5, k: 5 };
+    const s0 = newState(p, newDesc(p, randomNew("palisade-unstick")).desc);
+    const sol = solveToBorders(p, s0.clues);
+    if (!sol) return;
+    const solved = { ...s0, borders: sol.slice(), completed: true, cheated: true };
+    // Remove an interior wall → no longer a valid division → completed false.
+    let broke = false;
+    for (let y = 0; y < p.h && !broke; y++) {
+      for (let x = 0; x + 1 < p.w && !broke; x++) {
+        const i = y * p.w + x;
+        if (sol[i] & BORDER(1)) {
+          const next = palisadeGame.executeMove(solved, {
+            type: "edges",
+            edits: [
+              { x, y, flag: BORDER(1) },
+              { x: x + 1, y, flag: BORDER(3) },
+            ],
+          });
+          expect(next.completed).toBe(false); // un-stuck
+          expect(next.cheated).toBe(true); // cheat record preserved
+          broke = true;
+        }
+      }
+    }
+    expect(broke).toBe(true);
   });
 });
 

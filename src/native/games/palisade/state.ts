@@ -328,7 +328,14 @@ export function executeMove(state: PalisadeState, move: PalisadeMove): PalisadeS
     ret.borders[y * w + x] ^= flag;
   }
 
-  if (!ret.completed) ret.completed = isSolved(w, h, k, ret.clues, ret.borders);
+  // Recompute completion every move (deliberate divergence from upstream's
+  // sticky `if (!completed)` guard): breaking a solved board reverts to
+  // unsolved, so a later genuine re-completion is a real transition the win
+  // flash can fire on — even after a Solve. `cheated` stays sticky (it's the
+  // permanent "you peeked" record the status bar reads); only the flash gate
+  // distinguishes a player completion from the Solve command (see
+  // `flashLength` in index.ts).
+  ret.completed = isSolved(w, h, k, ret.clues, ret.borders);
   return ret;
 }
 

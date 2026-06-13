@@ -197,8 +197,15 @@ function flashLength(
   _dir: number,
   _ui: PalisadeUi,
 ): number {
-  if (newState_.completed && !newState_.cheated && !oldState.completed)
-    return FLASH_TIME;
+  // Flash whenever a *player* move brings the board into a solved state —
+  // including a fresh manual completion after a prior Solve (the
+  // owner-requested behaviour). The Solve command itself must not flash;
+  // it's the move where `cheated` flips false→true, so suppress exactly
+  // that transition. (`completed` is recomputed every move — see
+  // `executeMove` — so re-breaking and re-solving is a real transition.)
+  const becameSolved = newState_.completed && !oldState.completed;
+  const thisMoveWasSolve = newState_.cheated && !oldState.cheated;
+  if (becameSolved && !thisMoveWasSolve) return FLASH_TIME;
   return 0;
 }
 

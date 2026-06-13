@@ -119,17 +119,25 @@ edges coloured wall/no-wall/unknown, the clue text, and the half-grid cursor
 box. It SHALL redden, from the current borders, any wall whose region is too
 large or too small and any wall dangling within a single region, and redden a
 clue whose wall count is already impossible. `flashLength` SHALL return a
-0.7-second flash on a fresh, non-cheated completion.
+0.7-second flash whenever a *player* move brings the board into a solved state
+— including a genuine manual completion after a prior Solve — and SHALL NOT
+flash on the Solve command itself (the move where `cheated` flips false→true).
+To make re-completion a real transition, `executeMove` recomputes `completed`
+every move (it is not sticky); `cheated` stays set as the permanent
+"used Solve" record.
 
 #### Scenario: An over-large region reddens its walls
 
 - **WHEN** the player's walls enclose a region larger than `k`
 - **THEN** `redraw` emits the boundary walls of that region in the error colour
 
-#### Scenario: A solve flash fires once
+#### Scenario: A player completion flashes; the Solve command does not
 
-- **WHEN** a move completes the board without cheating
-- **THEN** `flashLength` returns 0.7 (and 0 when the completion came from Solve)
+- **WHEN** a player move brings the board into a solved state — whether a first
+  manual completion or a manual re-completion after a prior Solve
+- **THEN** `flashLength` returns 0.7
+- **AND** returns 0 on the Solve command itself, and 0 when a move breaks a
+  previously-solved board
 
 ### Requirement: Palisade checks mistakes against the unique solution
 
