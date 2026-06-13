@@ -22,6 +22,7 @@ export const TS_PORTED_PUZZLE_IDS: ReadonlySet<string> = new Set([
   "galaxies",
   "guess",
   "mosaic",
+  "palisade",
   "pegs",
   "samegame",
   "sixteen",

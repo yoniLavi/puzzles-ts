@@ -76,6 +76,21 @@ describe("Dsf", () => {
     expect(d.canonify(1)).toBe(root);
   });
 
+  it("size and equivalent reflect the merges", () => {
+    const d = new Dsf(6);
+    d.merge(0, 1);
+    d.merge(2, 3);
+    d.merge(1, 2);
+    // {0,1,2,3} together; {4}; {5}.
+    for (const i of [0, 1, 2, 3]) expect(d.size(i)).toBe(4);
+    expect(d.size(4)).toBe(1);
+    expect(d.size(5)).toBe(1);
+    expect(d.equivalent(0, 3)).toBe(true);
+    expect(d.equivalent(1, 2)).toBe(true);
+    expect(d.equivalent(0, 4)).toBe(false);
+    expect(d.equivalent(4, 5)).toBe(false);
+  });
+
   it("reinit restores n singletons", () => {
     const d = new Dsf(5);
     d.merge(0, 1);
@@ -88,22 +103,28 @@ describe("Dsf", () => {
     }
   });
 
-  it("matches brute-force reference over long random sequences", () => {
-    const n = 20;
-    const rng = randomNew("dsf-property");
-    for (let trial = 0; trial < 5; trial++) {
-      const d = new Dsf(n);
-      const ref = new RefDsf(n);
-      for (let op = 0; op < 200; op++) {
-        const a = randomUpto(rng, n);
-        const b = randomUpto(rng, n);
-        d.merge(a, b);
-        ref.merge(a, b);
+  // O(n²) cross-check after every op — legitimately CPU-heavy; the
+  // explicit timeout keeps it robust when the parallel suite starves it.
+  it(
+    "matches brute-force reference over long random sequences",
+    () => {
+      const n = 20;
+      const rng = randomNew("dsf-property");
+      for (let trial = 0; trial < 5; trial++) {
+        const d = new Dsf(n);
+        const ref = new RefDsf(n);
+        for (let op = 0; op < 200; op++) {
+          const a = randomUpto(rng, n);
+          const b = randomUpto(rng, n);
+          d.merge(a, b);
+          ref.merge(a, b);
+          classesEqual(d, ref, n);
+        }
+        d.reinit();
+        ref.reinit();
         classesEqual(d, ref, n);
       }
-      d.reinit();
-      ref.reinit();
-      classesEqual(d, ref, n);
-    }
-  });
+    },
+    30000,
+  );
 });

@@ -3,18 +3,19 @@
  *
  * Lazy idiomatic leaf port per the `ts-migration` spec: ported when a
  * game (Galaxies) needs it, kept local to the game until a second
- * caller appears, then promoted. Galaxies needs four operations only —
- * construct, reinit, canonify, merge — so we port those four. Path
- * compression + union-by-size; ~30 lines.
+ * caller appears, then promoted. The original four operations —
+ * construct, reinit, canonify, merge — cover Galaxies/Pegs; Palisade
+ * added the two read accessors upstream's `dsf.c` also exposes
+ * (`size`, `equivalent`). Path compression + union-by-size; ~40 lines.
  */
 export class Dsf {
   private readonly parent: Int32Array;
   /** Tree size for union-by-size; only meaningful at a root. */
-  private readonly size: Int32Array;
+  private readonly classSize: Int32Array;
 
   constructor(n: number) {
     this.parent = new Int32Array(n);
-    this.size = new Int32Array(n);
+    this.classSize = new Int32Array(n);
     this.reinit();
   }
 
@@ -22,7 +23,7 @@ export class Dsf {
   reinit(): void {
     for (let i = 0; i < this.parent.length; i++) {
       this.parent[i] = i;
-      this.size[i] = 1;
+      this.classSize[i] = 1;
     }
   }
 
@@ -45,12 +46,22 @@ export class Dsf {
     const ra = this.canonify(a);
     const rb = this.canonify(b);
     if (ra === rb) return;
-    if (this.size[ra] < this.size[rb]) {
+    if (this.classSize[ra] < this.classSize[rb]) {
       this.parent[ra] = rb;
-      this.size[rb] += this.size[ra];
+      this.classSize[rb] += this.classSize[ra];
     } else {
       this.parent[rb] = ra;
-      this.size[ra] += this.size[rb];
+      this.classSize[ra] += this.classSize[rb];
     }
+  }
+
+  /** Number of elements in `i`'s equivalence class. */
+  size(i: number): number {
+    return this.classSize[this.canonify(i)];
+  }
+
+  /** True iff `a` and `b` are in the same equivalence class. */
+  equivalent(a: number, b: number): boolean {
+    return this.canonify(a) === this.canonify(b);
   }
 }

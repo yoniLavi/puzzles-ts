@@ -15,6 +15,7 @@ import "./flood/index.ts";
 import "./galaxies/index.ts";
 import "./guess/index.ts";
 import "./mosaic/index.ts";
+import "./palisade/index.ts";
 import "./pegs/index.ts";
 import "./samegame/index.ts";
 import "./sixteen/index.ts";
