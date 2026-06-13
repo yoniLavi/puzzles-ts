@@ -15,3 +15,20 @@ export function shuffle<T>(arr: T[], rng: RandomState): void {
     }
   }
 }
+
+/**
+ * Parity (0 or 1) of the number of inversions in the first `n` entries of
+ * `perm` — the shared generator check used by sliding-tile puzzles to
+ * decide whether a shuffled permutation is reachable. Per-game parity
+ * *correction* (which entries to swap, under what condition) stays local
+ * to each game's generator.
+ */
+export function permParity(perm: Int32Array, n: number): number {
+  let ret = 0;
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (perm[i] > perm[j]) ret = 1 - ret;
+    }
+  }
+  return ret;
+}

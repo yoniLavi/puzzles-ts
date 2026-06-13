@@ -271,6 +271,12 @@ export const samegameGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  describeParams: (p) => ({
+    "no-of-colours": String(p.ncols),
+    // C_CHOICES `selected = scoresub - 1` (0 = "(n-1)^2", 1 = "(n-2)^2").
+    "scoring-system": p.scoresub - 1,
+    "ensure-solubility": p.soluble,
+  }),
 
   newDesc: (p, rng) => newDesc(p, rng),
   validateDesc,

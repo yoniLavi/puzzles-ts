@@ -1,3 +1,4 @@
+import { permParity } from "../../engine/shuffle.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 
 // --- types -----------------------------------------------------------
@@ -295,14 +296,4 @@ export function newDesc(p: SixteenParams, rng: RandomState): { desc: string } {
   const parts: string[] = [];
   for (let i = 0; i < n; i++) parts.push(String(tiles[i]));
   return { desc: parts.join(",") };
-}
-
-function permParity(perm: Int32Array, n: number): number {
-  let ret = 0;
-  for (let i = 0; i < n - 1; i++) {
-    for (let j = i + 1; j < n; j++) {
-      if (perm[i] > perm[j]) ret = 1 - ret;
-    }
-  }
-  return ret;
 }

@@ -6,7 +6,7 @@
  * 2026-05-21; ports stay on imperative `Game.redraw` with the
  * cache-fragility doctrine fixes from `fix-flip-canvas-reshape`.
  */
-import type { GameDrawing } from "../../engine/index.ts";
+import { drawRectOutline, type GameDrawing } from "../../engine/index.ts";
 import {
   checkComplete,
   F_DOT,
@@ -183,24 +183,10 @@ function drawSquare(
       flags & DRAW_CURSOR ? COL_CURSOR : COL_ARROW,
     );
   } else if (flags & DRAW_CURSOR) {
-    // draw_rect_outline equivalent (4 lines).
     const cx = lx + (tileSize >> 1) - cursorSize;
     const cy = ly + (tileSize >> 1) - cursorSize;
     const sz = 2 * cursorSize + 1;
-    dr.drawLine({ x: cx, y: cy }, { x: cx + sz - 1, y: cy }, COL_CURSOR, 1);
-    dr.drawLine(
-      { x: cx, y: cy + sz - 1 },
-      { x: cx + sz - 1, y: cy + sz - 1 },
-      COL_CURSOR,
-      1,
-    );
-    dr.drawLine({ x: cx, y: cy }, { x: cx, y: cy + sz - 1 }, COL_CURSOR, 1);
-    dr.drawLine(
-      { x: cx + sz - 1, y: cy },
-      { x: cx + sz - 1, y: cy + sz - 1 },
-      COL_CURSOR,
-      1,
-    );
+    drawRectOutline(dr, cx, cy, sz, sz, COL_CURSOR);
   }
 
   // Edges. A wall the player set inside a single solution galaxy is

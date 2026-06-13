@@ -1,5 +1,9 @@
-import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import {
+  drawRecessedBorder as drawBevel,
+  drawRectOutline,
+} from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fill } from "./solver.ts";
 import { FILLX, FILLY, type FloodMove, type FloodParams, type FloodState } from "./state.ts";
@@ -147,8 +151,8 @@ function drawTile(
       dr,
       tx + inset,
       ty + inset,
-      ts - 1 - inset * 2,
-      ts - 1 - inset * 2,
+      ts - inset * 2,
+      ts - inset * 2,
       COL_SEPARATOR,
     );
   }
@@ -165,21 +169,6 @@ function drawTile(
   dr.drawUpdate({ x: tx, y: ty, w: ts, h: ts });
 }
 
-/** Upstream `draw_rect_outline`: four 1px-thick edges of a rectangle. */
-function drawRectOutline(
-  dr: GameDrawing,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  colour: number,
-): void {
-  dr.drawLine({ x, y }, { x: x + w, y }, colour, 1);
-  dr.drawLine({ x: x + w, y }, { x: x + w, y: y + h }, colour, 1);
-  dr.drawLine({ x: x + w, y: y + h }, { x, y: y + h }, colour, 1);
-  dr.drawLine({ x, y: y + h }, { x, y }, colour, 1);
-}
-
 function drawRecessedFrame(
   dr: GameDrawing,
   w: number,
@@ -189,25 +178,19 @@ function drawRecessedFrame(
   const hw = highlightWidth(ts);
   const sep = sepWidth(ts);
 
-  // Recessed bevel around the whole playfield (cloned from fifteen):
-  // a highlight polygon (top/right) and a lowlight polygon (bottom/left).
-  const hi: Point[] = [
-    { x: coord(w, ts) + hw - 1, y: coord(h, ts) + hw - 1 },
-    { x: coord(w, ts) + hw - 1, y: coord(0, ts) - hw },
-    { x: coord(w, ts) + hw - 1 - ts, y: coord(0, ts) - hw + ts },
-    { x: coord(0, ts) - hw + ts, y: coord(h, ts) + hw - 1 - ts },
-    { x: coord(0, ts) - hw, y: coord(h, ts) + hw - 1 },
-  ];
-  dr.drawPolygon(hi, COL_HIGHLIGHT, COL_HIGHLIGHT);
-
-  const lo: Point[] = [
-    { x: coord(0, ts) - hw, y: coord(0, ts) - hw },
-    { x: coord(w, ts) + hw - 1, y: coord(0, ts) - hw },
-    { x: coord(w, ts) + hw - 1 - ts, y: coord(0, ts) - hw + ts },
-    { x: coord(0, ts) - hw + ts, y: coord(h, ts) + hw - 1 - ts },
-    { x: coord(0, ts) - hw, y: coord(h, ts) + hw - 1 },
-  ];
-  dr.drawPolygon(lo, COL_LOWLIGHT, COL_LOWLIGHT);
+  // Recessed bevel around the whole playfield (cloned from fifteen).
+  drawBevel(
+    dr,
+    {
+      left: coord(0, ts) - hw,
+      top: coord(0, ts) - hw,
+      right: coord(w, ts) + hw - 1,
+      bottom: coord(h, ts) + hw - 1,
+    },
+    ts,
+    COL_HIGHLIGHT,
+    COL_LOWLIGHT,
+  );
 
   // Separator frame just outside the grid.
   dr.drawRect(

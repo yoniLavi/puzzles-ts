@@ -754,6 +754,7 @@ export const galaxiesGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  describeParams: (p) => ({ difficulty: String(p.diff) }),
 
   newDesc(p: GalaxiesParams, rng: RandomState) {
     const desc = newGameDesc(p, rng);

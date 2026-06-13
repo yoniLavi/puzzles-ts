@@ -1,5 +1,6 @@
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
 import type {
   Game,
   GameDrawing,
@@ -311,28 +312,16 @@ function drawRecessedBorder(
   ts: number,
   hw: number,
 ): void {
-  // Highlight bevel (top/right).
-  dr.drawPolygon(
-    [
-      { x: coord(w, ts) + hw - 1, y: coord(h, ts) + hw - 1 },
-      { x: coord(w, ts) + hw - 1, y: coord(0, ts) - hw },
-      { x: coord(w, ts) + hw - 1 - ts, y: coord(0, ts) - hw + ts },
-      { x: coord(0, ts) - hw + ts, y: coord(h, ts) + hw - 1 - ts },
-      { x: coord(0, ts) - hw, y: coord(h, ts) + hw - 1 },
-    ],
+  drawBevel(
+    dr,
+    {
+      left: coord(0, ts) - hw,
+      top: coord(0, ts) - hw,
+      right: coord(w, ts) + hw - 1,
+      bottom: coord(h, ts) + hw - 1,
+    },
+    ts,
     COL_HIGHLIGHT,
-    COL_HIGHLIGHT,
-  );
-  // Lowlight bevel (bottom/left).
-  dr.drawPolygon(
-    [
-      { x: coord(0, ts) - hw, y: coord(0, ts) - hw },
-      { x: coord(0, ts) - hw, y: coord(h, ts) + hw - 1 },
-      { x: coord(0, ts) - hw + ts, y: coord(h, ts) + hw - 1 - ts },
-      { x: coord(w, ts) + hw - 1 - ts, y: coord(0, ts) - hw + ts },
-      { x: coord(w, ts) + hw - 1, y: coord(0, ts) - hw },
-    ],
-    COL_LOWLIGHT,
     COL_LOWLIGHT,
   );
 }

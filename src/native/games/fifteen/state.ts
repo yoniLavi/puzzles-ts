@@ -1,4 +1,7 @@
+import { permParity } from "../../engine/shuffle.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
+
+export { permParity };
 
 // --- types -----------------------------------------------------------
 
@@ -86,18 +89,6 @@ export function isCompletedTiles(tiles: Int32Array, n: number): boolean {
 
 export function isCompleted(state: FifteenState): boolean {
   return isCompletedTiles(state.tiles, state.n);
-}
-
-/** Parity (0/1) of the permutation, by inversion count. Includes the
- * gap value (0), matching upstream's `perm_parity`. */
-export function permParity(perm: Int32Array, n: number): number {
-  let ret = 0;
-  for (let i = 0; i < n - 1; i++) {
-    for (let j = i + 1; j < n; j++) {
-      if (perm[i] > perm[j]) ret = 1 - ret;
-    }
-  }
-  return ret;
 }
 
 /** Required permutation parity for a board whose gap sits at flat index

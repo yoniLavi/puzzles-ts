@@ -1,5 +1,6 @@
-import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { SamegameState, SamegameUi } from "./state.ts";
 
@@ -193,28 +194,18 @@ function tileRedraw(
 function drawRecessedFrame(dr: GameDrawing, w: number, h: number, ts: number): void {
   const HW = HIGHLIGHT_WIDTH;
   const g = gap(ts);
-  const right = coord(w, ts) + HW - 1 - g;
-  const bottom = coord(h, ts) + HW - 1 - g;
-  const left = coord(0, ts) - HW;
-  const top = coord(0, ts) - HW;
-
-  const highlight: Point[] = [
-    { x: right, y: bottom },
-    { x: right, y: top },
-    { x: right - ts, y: top + ts },
-    { x: left + ts, y: bottom - ts },
-    { x: left, y: bottom },
-  ];
-  dr.drawPolygon(highlight, COL_HIGHLIGHT, COL_HIGHLIGHT);
-
-  const lowlight: Point[] = [
-    { x: left, y: top },
-    { x: right, y: top },
-    { x: right - ts, y: top + ts },
-    { x: left + ts, y: bottom - ts },
-    { x: left, y: bottom },
-  ];
-  dr.drawPolygon(lowlight, COL_LOWLIGHT, COL_LOWLIGHT);
+  drawBevel(
+    dr,
+    {
+      left: coord(0, ts) - HW,
+      top: coord(0, ts) - HW,
+      right: coord(w, ts) + HW - 1 - g,
+      bottom: coord(h, ts) + HW - 1 - g,
+    },
+    ts,
+    COL_HIGHLIGHT,
+    COL_LOWLIGHT,
+  );
 }
 
 export function redraw(

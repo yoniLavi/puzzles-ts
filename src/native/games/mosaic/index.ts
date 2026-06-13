@@ -234,6 +234,11 @@ export const mosaicGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  describeParams: (p) => ({
+    width: String(p.width),
+    height: String(p.height),
+    "aggressive-generation": p.aggressive,
+  }),
 
   newDesc: (p, rng) => newDesc(p, rng),
   validateDesc,

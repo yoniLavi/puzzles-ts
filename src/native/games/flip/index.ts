@@ -421,6 +421,10 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
     return null;
   },
 
+  describeParams(p) {
+    return { "shape-type": p.matrixType === "crosses" ? "0" : "1" };
+  },
+
   newDesc(p, rng) {
     const { w, h } = p;
     const wh = w * h;

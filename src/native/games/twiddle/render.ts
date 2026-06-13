@@ -7,6 +7,7 @@
  */
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import type { TwiddleParams, TwiddleState, TwiddleUi } from "./state.ts";
@@ -307,33 +308,16 @@ function drawTile(
 
 function drawRecessedBorder(dr: GameDrawing, w: number, h: number, ts: number): void {
   const hw = highlightWidth(ts);
-  const right = coord(w, ts) + hw - 1;
-  const bottom = coord(h, ts) + hw - 1;
-  const left = coord(0, ts) - hw;
-  const top = coord(0, ts) - hw;
-
-  // Highlight bevel.
-  dr.drawPolygon(
-    [
-      { x: right, y: bottom },
-      { x: right, y: top },
-      { x: right - ts, y: top + ts },
-      { x: left + ts, y: bottom - ts },
-      { x: left, y: bottom },
-    ],
+  drawBevel(
+    dr,
+    {
+      left: coord(0, ts) - hw,
+      top: coord(0, ts) - hw,
+      right: coord(w, ts) + hw - 1,
+      bottom: coord(h, ts) + hw - 1,
+    },
+    ts,
     COL_HIGHLIGHT,
-    COL_HIGHLIGHT,
-  );
-  // Lowlight bevel (same polygon with the first point moved to top-left).
-  dr.drawPolygon(
-    [
-      { x: left, y: top },
-      { x: right, y: top },
-      { x: right - ts, y: top + ts },
-      { x: left + ts, y: bottom - ts },
-      { x: left, y: bottom },
-    ],
-    COL_LOWLIGHT,
     COL_LOWLIGHT,
   );
 }

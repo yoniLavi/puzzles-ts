@@ -353,6 +353,12 @@ export const blackboxGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  describeParams: (p) => ({
+    "no-of-balls":
+      p.minballs === p.maxballs
+        ? String(p.minballs)
+        : `${p.minballs}-${p.maxballs}`,
+  }),
 
   newDesc: (p, rng) => newDesc(p, rng),
   validateDesc,

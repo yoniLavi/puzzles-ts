@@ -261,6 +261,10 @@ export const floodGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  describeParams: (p) => ({
+    colours: String(p.colours),
+    "extra-moves-permitted": String(p.leniency),
+  }),
 
   newDesc: (p, rng) => newDesc(p, rng),
   validateDesc,

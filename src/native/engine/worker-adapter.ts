@@ -155,106 +155,23 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
       return {};
     }
     try {
-      const p = game.decodeParams(params) as Record<string, unknown> | null | undefined;
+      const p = game.decodeParams(params);
       if (!p) {
         return {};
       }
-      const config: ConfigValues = {};
-
-      if ("w" in p && p.w !== undefined) {
-        config.width = String(p.w);
+      // A generic width/height base from `w`/`h` params (most games), then
+      // the game's own type-summary mapping spread over it. A game whose
+      // params aren't `w`/`h` (e.g. Mosaic) supplies width/height from its
+      // own `describeParams`, replacing the empty base.
+      const rec = p as Record<string, unknown>;
+      const base: ConfigValues = {};
+      if ("w" in rec && rec.w !== undefined) {
+        base.width = String(rec.w);
       }
-      if ("h" in p && p.h !== undefined) {
-        config.height = String(p.h);
+      if ("h" in rec && rec.h !== undefined) {
+        base.height = String(rec.h);
       }
-
-      if (this.puzzleId === "blackbox") {
-        // width/height set above; map the ball count to the type-summary
-        // key `no-of-balls` (single number, or `min-max` for a range) —
-        // see augmentation.ts `{width}x{height}, {no-of-balls}`.
-        if ("minballs" in p && "maxballs" in p) {
-          config["no-of-balls"] =
-            p.minballs === p.maxballs
-              ? String(p.minballs)
-              : `${String(p.minballs)}-${String(p.maxballs)}`;
-        }
-      } else if (this.puzzleId === "pegs") {
-        if ("type" in p && p.type !== undefined) {
-          config["board-type"] = String(p.type);
-        }
-      } else if (this.puzzleId === "sixteen") {
-        if ("movetarget" in p && p.movetarget !== undefined) {
-          config["number-of-shuffling-moves"] = String(p.movetarget);
-        }
-      } else if (this.puzzleId === "flip") {
-        if ("matrixType" in p && p.matrixType !== undefined) {
-          config["shape-type"] = p.matrixType === "crosses" ? "0" : "1";
-        }
-      } else if (this.puzzleId === "galaxies") {
-        if ("diff" in p && p.diff !== undefined) {
-          config.difficulty = String(p.diff);
-        }
-      } else if (this.puzzleId === "flood") {
-        if ("colours" in p && p.colours !== undefined) {
-          config.colours = String(p.colours);
-        }
-        if ("leniency" in p && p.leniency !== undefined) {
-          config["extra-moves-permitted"] = String(p.leniency);
-        }
-      } else if (this.puzzleId === "guess") {
-        // Guess has no w/h; map its custom params to the type-summary
-        // config keys (upstream `game_configure` field names, kebabed).
-        if ("ncolours" in p && p.ncolours !== undefined) {
-          config.colours = String(p.ncolours);
-        }
-        if ("npegs" in p && p.npegs !== undefined) {
-          config["pegs-per-guess"] = String(p.npegs);
-        }
-        if ("nguesses" in p && p.nguesses !== undefined) {
-          config.guesses = String(p.nguesses);
-        }
-        // Booleans must be real booleans (see the samegame comment below):
-        // the type-summary formatter does `Number(value)`, and a
-        // "true"/"false" string NaNs out the `{allow-blanks:...}` annotation.
-        if ("allowBlank" in p && p.allowBlank !== undefined) {
-          config["allow-blanks"] = Boolean(p.allowBlank);
-        }
-        if ("allowMultiple" in p && p.allowMultiple !== undefined) {
-          config["allow-duplicates"] = Boolean(p.allowMultiple);
-        }
-      } else if (this.puzzleId === "mosaic") {
-        // Mosaic's params use `width`/`height` (not `w`/`h`), so the
-        // generic mapping above didn't fire. `aggressive-generation`
-        // must be a real boolean — augmentation.ts compares it to a
-        // computed boolean default to decide whether to annotate.
-        if ("width" in p && p.width !== undefined) {
-          config.width = String(p.width);
-        }
-        if ("height" in p && p.height !== undefined) {
-          config.height = String(p.height);
-        }
-        if ("aggressive" in p && p.aggressive !== undefined) {
-          config["aggressive-generation"] = Boolean(p.aggressive);
-        }
-      } else if (this.puzzleId === "samegame") {
-        // width/height set above. Booleans/choices must match the C config
-        // value types (`config_values_from_config`): a C_BOOLEAN surfaces as
-        // a real JS boolean and a C_CHOICES as its selected index — the
-        // type-summary formatter does `Number(value)`, so a "true"/"false"
-        // string would NaN out the annotation.
-        if ("ncols" in p && p.ncols !== undefined) {
-          config["no-of-colours"] = String(p.ncols);
-        }
-        if ("scoresub" in p && p.scoresub !== undefined) {
-          // C_CHOICES `selected = scoresub - 1` (0 = "(n-1)^2", 1 = "(n-2)^2").
-          config["scoring-system"] = Number(p.scoresub) - 1;
-        }
-        if ("soluble" in p && p.soluble !== undefined) {
-          config["ensure-solubility"] = Boolean(p.soluble);
-        }
-      }
-
-      return config;
+      return { ...base, ...game.describeParams?.(p) };
     } catch (e) {
       return String(e);
     }

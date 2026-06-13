@@ -1050,6 +1050,7 @@ export const pegsGame: Game<PegsParams, PegsState, PegsMove, PegsUi, PegsDrawSta
   encodeParams,
   decodeParams,
   validateParams,
+  describeParams: (p) => ({ "board-type": String(p.type) }),
 
   newDesc: (p, rng) => newDesc(p, rng),
   validateDesc,

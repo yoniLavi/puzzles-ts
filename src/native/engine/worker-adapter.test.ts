@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { blackboxGame } from "../games/blackbox/index.ts";
 import { flipGame } from "../games/flip/index.ts";
+import { floodGame } from "../games/flood/index.ts";
 import { galaxiesGame } from "../games/galaxies/index.ts";
 import { guessGame } from "../games/guess/index.ts";
+import { mosaicGame } from "../games/mosaic/index.ts";
+import { samegameGame } from "../games/samegame/index.ts";
 import { pegsGame } from "../games/pegs/index.ts";
 import { sixteenGame } from "../games/sixteen/index.ts";
 import { Midend } from "./midend.ts";
@@ -67,6 +70,39 @@ describe("TsWorkerPuzzle — decodeCustomParams", () => {
       width: "8",
       height: "8",
       "no-of-balls": "5",
+    });
+  });
+
+  it("decodes flood custom params (width/height base + extras)", () => {
+    registerGame(floodGame);
+    const worker = new TsWorkerPuzzle("flood", new Midend(floodGame));
+    expect(worker.decodeCustomParams("12x12c6m5")).toEqual({
+      width: "12",
+      height: "12",
+      colours: "6",
+      "extra-moves-permitted": "5",
+    });
+  });
+
+  it("decodes mosaic custom params (own width/height keys + real boolean)", () => {
+    registerGame(mosaicGame);
+    const worker = new TsWorkerPuzzle("mosaic", new Midend(mosaicGame));
+    expect(worker.decodeCustomParams("10x10h1")).toEqual({
+      width: "10",
+      height: "10",
+      "aggressive-generation": true,
+    });
+  });
+
+  it("decodes samegame custom params (numeric choice index, real boolean)", () => {
+    registerGame(samegameGame);
+    const worker = new TsWorkerPuzzle("samegame", new Midend(samegameGame));
+    expect(worker.decodeCustomParams("5x5c3s2r")).toEqual({
+      width: "5",
+      height: "5",
+      "no-of-colours": "3",
+      "scoring-system": 1,
+      "ensure-solubility": false,
     });
   });
 

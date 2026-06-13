@@ -427,6 +427,13 @@ export const guessGame: Game<GuessParams, GuessState, GuessMove, GuessUi, GuessD
   encodeParams,
   decodeParams,
   validateParams,
+  describeParams: (p) => ({
+    colours: String(p.ncolours),
+    "pegs-per-guess": String(p.npegs),
+    guesses: String(p.nguesses),
+    "allow-blanks": p.allowBlank,
+    "allow-duplicates": p.allowMultiple,
+  }),
 
   newDesc: (p, rng) => newDesc(p, rng),
   validateDesc,

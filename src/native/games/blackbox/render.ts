@@ -12,6 +12,7 @@
 
 import type { Colour, Point, Rect, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import {
   BALL_CORRECT,
@@ -126,21 +127,6 @@ function todraw(ds: BlackboxDrawState, x: number): number {
 
 function gridIdx(w: number, x: number, y: number): number {
   return y * (w + 2) + x;
-}
-
-/** `draw_rect_outline` — a 1px rectangle border via four lines. */
-function drawRectOutline(
-  dr: GameDrawing,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  col: number,
-): void {
-  dr.drawLine(pt(x, y), pt(x + w - 1, y), col, 1);
-  dr.drawLine(pt(x + w - 1, y), pt(x + w - 1, y + h - 1), col, 1);
-  dr.drawLine(pt(x + w - 1, y + h - 1), pt(x, y + h - 1), col, 1);
-  dr.drawLine(pt(x, y + h - 1), pt(x, y), col, 1);
 }
 
 function drawSquareCursor(

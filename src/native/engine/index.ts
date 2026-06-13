@@ -8,6 +8,7 @@
 
 export { mkhighlight, mkhighlightBackground } from "./colour-mkhighlight.ts";
 export { Dsf } from "./dsf.ts";
+export { type BevelBounds, drawRecessedBorder, drawRectOutline } from "./draw.ts";
 export { coord, fromCoord } from "./geometry.ts";
 export type {
   ActiveHint,

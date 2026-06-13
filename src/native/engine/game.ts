@@ -19,6 +19,7 @@
 
 import type {
   Colour,
+  ConfigValues,
   DrawTextOptions,
   GameStatus,
   Point,
@@ -148,6 +149,16 @@ export interface Game<
   decodeParams(s: string): Params;
   /** `null` when valid, else a human-readable reason. */
   validateParams(p: Params, full: boolean): string | null;
+
+  /** Map this game's params to the type-summary `ConfigValues` the app's
+   * `describeConfig` formatter (`src/puzzle/augmentation.ts`) renders for a
+   * custom (non-preset) game. The worker adapter supplies a generic
+   * `{ width, height }` base from `w`/`h` params and spreads this result over
+   * it, so a game whose params are exactly `w`/`h` may omit this hook.
+   * Boolean values MUST be real booleans and choice values numeric indices
+   * (never their string renderings) — the formatter coerces via
+   * `Number(value)`, which NaNs out a `"true"`/`"false"` string. */
+  describeParams?(p: Params): ConfigValues;
 
   newDesc(p: Params, rng: RandomState): { desc: string; aux?: string };
   /** `null` when valid, else why `desc` is rejected for `p`. */
