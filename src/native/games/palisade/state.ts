@@ -88,6 +88,20 @@ export interface PalisadeMistake {
   dir: number;
 }
 
+/** A displayed hint step's highlight: the edge the player should set
+ * (`(x,y)` + `dir`, `kind` = wall to draw / no-wall to mark), the cells
+ * the explanation references (clue pair / the region — shaded), and any
+ * sibling edges it names ("these two edges" — highlighted alongside the
+ * primary). */
+export interface PalisadeHint {
+  x: number;
+  y: number;
+  dir: number;
+  kind: "wall" | "nowall";
+  cells?: ReadonlyArray<{ x: number; y: number }>;
+  edges?: ReadonlyArray<{ x: number; y: number; dir: number }>;
+}
+
 // --- params ---------------------------------------------------------------
 
 const PRESETS: PalisadeParams[] = [

@@ -17,6 +17,7 @@ import { divvyRectangle } from "./divvy.ts";
 import {
   BORDER,
   bitcount,
+  DISABLED,
   DX,
   DY,
   EMPTY,
@@ -28,6 +29,41 @@ import {
   type PalisadeParams,
 } from "./state.ts";
 
+// --- hint-mode deduction trace --------------------------------------------
+
+/** Which of the six deductions forced an edge (for hint narration). */
+export type SolverRule =
+  | "cluesVersusRegionSize"
+  | "numberExhausted"
+  | "notTooBig"
+  | "notTooSmall"
+  | "noDanglingEdges"
+  | "equivalentEdges";
+
+/** Context the explanation references, for highlighting: the cells it
+ * names (a clue pair, the region) and any sibling edges ("these two
+ * edges"). Cells are cell indices; sibling edges are `(cell, dir)`. */
+export interface EdgeContext {
+  cells?: number[];
+  siblings?: Array<{ cell: number; dir: number }>;
+}
+
+/** A single edge the solver forced, in player-visible terms: a `"wall"`
+ * (a `disconnect`) or a `"nowall"` (an individually-forced `connect`),
+ * named by the rule that produced it. `(x,y)` + `dir` is the edge on the
+ * primary cell; the deduction always records it on that cell's `dir`
+ * side. Interior only (the rim is never re-decided). `cells`/`siblings`
+ * carry the deduction's evidence for highlighting (hint mode only). */
+export interface ForcedEdge {
+  x: number;
+  y: number;
+  dir: number;
+  kind: "wall" | "nowall";
+  rule: SolverRule;
+  cells?: number[];
+  siblings?: Array<{ cell: number; dir: number }>;
+}
+
 class SolverCtx {
   readonly w: number;
   readonly h: number;
@@ -35,6 +71,12 @@ class SolverCtx {
   readonly clues: Int8Array;
   readonly borders: Uint8Array;
   readonly dsf: Dsf;
+  /** Hint mode: when set, `disconnect`/`connectEdge`/`notTooSmall` push
+   * the player-visible edges they force here. Left null on the
+   * solve/findMistakes/generator paths, which then behave unchanged. */
+  record: ForcedEdge[] | null = null;
+  /** The rule currently sweeping — stamped on each recorded edge. */
+  private rule: SolverRule = "cluesVersusRegionSize";
 
   constructor(p: PalisadeParams, clues: Int8Array, borders: Uint8Array) {
     this.w = p.w;
@@ -43,6 +85,56 @@ class SolverCtx {
     this.clues = clues;
     this.borders = borders;
     this.dsf = new Dsf(p.w * p.h);
+  }
+
+  /** Begin a rule sweep: subsequent recorded edges are tagged `rule`. */
+  beginRule(rule: SolverRule): void {
+    this.rule = rule;
+  }
+
+  /** Seed the DSF from a player's no-wall marks (the `DISABLED` bits),
+   * mirroring `buildDsf(black=false)`, so the hint reasons from where
+   * the player actually is. */
+  seedNoWall(playerBorders: Uint8Array): void {
+    const { w, h } = this;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x;
+        if (x + 1 < w && playerBorders[i] & DISABLED(BORDER(1)))
+          this.dsf.merge(i, i + 1);
+        if (y + 1 < h && playerBorders[i] & DISABLED(BORDER(2)))
+          this.dsf.merge(i, i + w);
+      }
+    }
+  }
+
+  private recordEdge(
+    i: number,
+    dir: number,
+    kind: "wall" | "nowall",
+    extra?: EdgeContext,
+  ): void {
+    if (!this.record) return;
+    this.record.push({
+      x: i % this.w,
+      y: Math.floor(i / this.w),
+      dir,
+      kind,
+      rule: this.rule,
+      cells: extra?.cells,
+      siblings: extra?.siblings,
+    });
+  }
+
+  /** All cells the DSF currently puts in the same region as `cell`. Hint
+   * mode only (callers guard with `this.record`); O(w·h). */
+  regionCells(cell: number): number[] {
+    const rep = this.dsf.canonify(cell);
+    const out: number[] = [];
+    for (let c = 0; c < this.w * this.h; c++) {
+      if (this.dsf.canonify(c) === rep) out.push(c);
+    }
+    return out;
   }
 
   /** Neighbour cell in direction `dir`, or -1 if off the grid. */
@@ -55,6 +147,24 @@ class SolverCtx {
 
   connect(i: number, j: number): void {
     this.dsf.merge(i, j);
+  }
+
+  /** Merge across edge `dir` of `i` and, in hint mode, record it as a
+   * forced no-wall. Callers guard with `maybe(i, dir)` first, so the edge
+   * is genuinely undecided (a player's seeded no-wall mark is already
+   * `connectedDir` and so never `maybe`); the record is captured before
+   * the merge so a sibling edge made transitively-connected by this merge
+   * is still recorded on its own `connectEdge` call. */
+  connectEdge(i: number, dir: number, extra?: EdgeContext): void {
+    this.recordEdge(i, dir, "nowall", extra);
+    this.connect(i, this.nbr(i, dir));
+  }
+
+  /** Record the unique forced no-wall edge for an under-sized region (used
+   * by `notTooSmall` when a region's single growth target is reached by
+   * exactly one undecided edge). */
+  recordNoWall(i: number, dir: number, extra?: EdgeContext): void {
+    this.recordEdge(i, dir, "nowall", extra);
   }
 
   /** Is there a wall on edge `dir` of `i`? Bounds-safe (the rim is
@@ -76,11 +186,14 @@ class SolverCtx {
     return !this.disconnectedDir(i, dir) && !this.connectedDir(i, dir);
   }
 
-  /** Set a wall on edge `dir` of `i`, recording both shared sides. */
-  disconnect(i: number, dir: number): void {
+  /** Set a wall on edge `dir` of `i`, recording both shared sides. In
+   * hint mode, record a genuinely-new wall as a forced edge. */
+  disconnect(i: number, dir: number, extra?: EdgeContext): void {
+    const newWall = !(this.borders[i] & BORDER(dir));
     const j = this.nbr(i, dir);
     this.borders[i] |= BORDER(dir);
     if (j >= 0) this.borders[j] |= BORDER(FLIP(dir));
+    if (newWall) this.recordEdge(i, dir, "wall", extra);
   }
 }
 
@@ -88,6 +201,7 @@ class SolverCtx {
 
 /** `solver_connected_clues_versus_region_size` — idempotent, run once. */
 function connectedCluesVersusRegionSize(ctx: SolverCtx): void {
+  ctx.beginRule("cluesVersusRegionSize");
   const { w, h, k, clues } = ctx;
   const wh = w * h;
   for (let i = 0; i < wh; i++) {
@@ -100,7 +214,7 @@ function connectedCluesVersusRegionSize(ctx: SolverCtx): void {
         8 - clues[i] - clues[j] > k ||
         (clues[i] === 3 && clues[j] === 3 && k !== 2)
       ) {
-        ctx.disconnect(i, dir);
+        ctx.disconnect(i, dir, ctx.record ? { cells: [i, j] } : undefined);
       }
     }
   }
@@ -108,6 +222,7 @@ function connectedCluesVersusRegionSize(ctx: SolverCtx): void {
 
 /** `solver_number_exhausted`. */
 function numberExhausted(ctx: SolverCtx): boolean {
+  ctx.beginRule("numberExhausted");
   const { w, h, clues, borders } = ctx;
   const wh = w * h;
   let changed = false;
@@ -118,7 +233,7 @@ function numberExhausted(ctx: SolverCtx): boolean {
       // All this clue's walls are placed: the rest are non-walls.
       for (let dir = 0; dir < 4; dir++) {
         if (!ctx.maybe(i, dir)) continue;
-        ctx.connect(i, ctx.nbr(i, dir));
+        ctx.connectEdge(i, dir, ctx.record ? { cells: [i] } : undefined);
         changed = true;
       }
       continue;
@@ -132,7 +247,7 @@ function numberExhausted(ctx: SolverCtx): boolean {
       // Every remaining edge must be a wall to reach the clue.
       for (let dir = 0; dir < 4; dir++) {
         if (!ctx.maybe(i, dir)) continue;
-        ctx.disconnect(i, dir);
+        ctx.disconnect(i, dir, ctx.record ? { cells: [i] } : undefined);
         changed = true;
       }
     }
@@ -142,6 +257,7 @@ function numberExhausted(ctx: SolverCtx): boolean {
 
 /** `solver_not_too_big`. */
 function notTooBig(ctx: SolverCtx): boolean {
+  ctx.beginRule("notTooBig");
   const { w, h, k } = ctx;
   const wh = w * h;
   let changed = false;
@@ -151,7 +267,13 @@ function notTooBig(ctx: SolverCtx): boolean {
       if (!ctx.maybe(i, dir)) continue;
       const j = ctx.nbr(i, dir);
       if (size + ctx.dsf.size(j) <= k) continue;
-      ctx.disconnect(i, dir);
+      ctx.disconnect(
+        i,
+        dir,
+        ctx.record
+          ? { cells: [...ctx.regionCells(i), ...ctx.regionCells(j)] }
+          : undefined,
+      );
       changed = true;
     }
   }
@@ -160,9 +282,15 @@ function notTooBig(ctx: SolverCtx): boolean {
 
 /** `solver_not_too_small` — a region with a single way to grow grows. */
 function notTooSmall(ctx: SolverCtx): boolean {
+  ctx.beginRule("notTooSmall");
   const { w, h, k } = ctx;
   const wh = w * h;
   const outs = new Int32Array(wh).fill(-1); // -1 none, -2 several
+  // The undecided growth edge(s) toward `outs[ci]`: count + the last one,
+  // so a region with a single way out can record that forced no-wall.
+  const outCount = new Int32Array(wh);
+  const outCell = new Int32Array(wh).fill(-1);
+  const outDir = new Int32Array(wh).fill(-1);
   let changed = false;
 
   for (let i = 0; i < wh; i++) {
@@ -171,8 +299,14 @@ function notTooSmall(ctx: SolverCtx): boolean {
     for (let dir = 0; dir < 4; dir++) {
       if (!ctx.maybe(i, dir)) continue;
       const cj = ctx.dsf.canonify(ctx.nbr(i, dir));
-      if (outs[ci] === -1) outs[ci] = cj;
-      else if (outs[ci] !== cj) outs[ci] = -2;
+      if (outs[ci] === -1) {
+        outs[ci] = cj;
+        outCount[ci] = 1;
+        outCell[ci] = i;
+        outDir[ci] = dir;
+      } else if (outs[ci] === cj) {
+        outCount[ci]++;
+      } else outs[ci] = -2;
     }
   }
 
@@ -180,6 +314,14 @@ function notTooSmall(ctx: SolverCtx): boolean {
     const j = outs[i];
     if (i !== ctx.dsf.canonify(i)) continue;
     if (j < 0) continue;
+    // A single undecided exit means that exact edge is forced no-wall.
+    if (outCount[i] === 1) {
+      ctx.recordNoWall(
+        outCell[i],
+        outDir[i],
+        ctx.record ? { cells: ctx.regionCells(i) } : undefined,
+      );
+    }
     ctx.connect(i, j);
     changed = true;
   }
@@ -188,6 +330,7 @@ function notTooSmall(ctx: SolverCtx): boolean {
 
 /** `solver_no_dangling_edges` — vertex parity of incident walls. */
 function noDanglingEdges(ctx: SolverCtx): boolean {
+  ctx.beginRule("noDanglingEdges");
   const { w, h, borders } = ctx;
   let changed = false;
   for (let r = 1; r < h; r++) {
@@ -212,8 +355,13 @@ function noDanglingEdges(ctx: SolverCtx): boolean {
         } else noline++;
       }
 
+      // The four cells meeting at this vertex, highlighting "this corner".
+      const corner: EdgeContext | undefined = ctx.record
+        ? { cells: [i, i - 1, i - w, j] }
+        : undefined;
+
       if (4 - noline === 1) {
-        ctx.disconnect(e, de);
+        ctx.disconnect(e, de, corner);
         changed = true;
         continue;
       }
@@ -221,11 +369,11 @@ function noDanglingEdges(ctx: SolverCtx): boolean {
 
       if (borders[e] & BORDER(de)) {
         if (!(borders[f] & BORDER(df))) {
-          ctx.disconnect(f, df);
+          ctx.disconnect(f, df, corner);
           changed = true;
         }
       } else if (borders[f] & BORDER(df)) {
-        ctx.disconnect(e, de);
+        ctx.disconnect(e, de, corner);
         changed = true;
       }
     }
@@ -235,6 +383,7 @@ function noDanglingEdges(ctx: SolverCtx): boolean {
 
 /** `solver_equivalent_edges` — two edges to one region share a fate. */
 function equivalentEdges(ctx: SolverCtx): boolean {
+  ctx.beginRule("equivalentEdges");
   const { w, h, clues } = ctx;
   const wh = w * h;
   let changed = false;
@@ -256,13 +405,24 @@ function equivalentEdges(ctx: SolverCtx): boolean {
         if (!ctx.maybe(i, dirk)) continue;
         const kk = ctx.nbr(i, dirk);
         if (!ctx.dsf.equivalent(j, kk)) continue;
+        // The shared region the two edges lead into (captured before any
+        // merge; the clue cell `i` is deliberately excluded — it's the
+        // decider, not part of the region). Each edge cites the *other* as
+        // its sibling ("these two edges").
+        const region = ctx.record ? ctx.regionCells(j) : undefined;
+        const ctxJ: EdgeContext | undefined = region
+          ? { cells: region, siblings: [{ cell: i, dir: dirk }] }
+          : undefined;
+        const ctxK: EdgeContext | undefined = region
+          ? { cells: region, siblings: [{ cell: i, dir: dirj }] }
+          : undefined;
         if (nOn + 2 > clues[i]) {
-          ctx.connect(i, j);
-          ctx.connect(i, kk);
+          ctx.connectEdge(i, dirj, ctxJ);
+          ctx.connectEdge(i, dirk, ctxK);
           changed = true;
         } else if (nOff + 2 > 4 - clues[i]) {
-          ctx.disconnect(i, dirj);
-          ctx.disconnect(i, dirk);
+          ctx.disconnect(i, dirj, ctxJ);
+          ctx.disconnect(i, dirk, ctxK);
           changed = true;
         }
       }
@@ -299,6 +459,49 @@ export function solver(
 export function solveToBorders(p: PalisadeParams, clues: Int8Array): Uint8Array | null {
   const borders = initBorders(p.w, p.h);
   return solver(p, clues, borders) ? borders : null;
+}
+
+/**
+ * Hint mode: seed the solver from the player's `playerBorders` (their
+ * walls copied in, their no-wall marks pre-merged into the DSF) and run
+ * the deductions to a fixpoint, returning every player-visible edge they
+ * force, in discovery order. Pure: `playerBorders` is not mutated. The
+ * physical edges are de-duplicated (two under-sized regions can each
+ * record the shared edge between them).
+ */
+export function deduceForcedEdges(
+  p: PalisadeParams,
+  clues: Int8Array,
+  playerBorders: Uint8Array,
+): ForcedEdge[] {
+  const ctx = new SolverCtx(p, clues, playerBorders.slice());
+  ctx.record = [];
+  ctx.seedNoWall(playerBorders);
+
+  connectedCluesVersusRegionSize(ctx); // idempotent, run once
+  let changed = true;
+  while (changed) {
+    changed = false;
+    if (numberExhausted(ctx)) changed = true;
+    if (notTooBig(ctx)) changed = true;
+    if (notTooSmall(ctx)) changed = true;
+    if (noDanglingEdges(ctx)) changed = true;
+    if (equivalentEdges(ctx)) changed = true;
+  }
+
+  const seen = new Set<number>();
+  const out: ForcedEdge[] = [];
+  for (const e of ctx.record) {
+    const i = e.y * p.w + e.x;
+    const j = i + DY[e.dir] * p.w + DX[e.dir];
+    const lo = Math.min(i, j);
+    const horizontal = Math.max(i, j) - lo === 1;
+    const id = lo * 2 + (horizontal ? 0 : 1); // unique per physical edge
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(e);
+  }
+  return out;
 }
 
 // --- generator ------------------------------------------------------------

@@ -10,7 +10,7 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import {
   BORDER,
   BORDER_MASK,
@@ -21,7 +21,9 @@ import {
   DY,
   EMPTY,
   outOfBounds,
+  type PalisadeHint,
   type PalisadeMistake,
+  type PalisadeMove,
   type PalisadeParams,
   type PalisadeState,
   type PalisadeUi,
@@ -38,6 +40,9 @@ export const COL_GRID = 2; // == COL_CLUE == COL_LINE_YES
 export const COL_LINE_MAYBE = 3;
 export const COL_LINE_NO = 4;
 export const COL_ERROR = 5;
+export const COL_HINT = 6; // the edge to act on this step (a clear blue)
+export const COL_HINT_CELL = 7; // referenced-cell shading (a light blue)
+export const COL_HINT_SIBLING = 8; // a *related* edge, not the one to act on (orange)
 
 const DARKER = 0.9;
 
@@ -48,6 +53,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_FLASH] = highlight;
   out[COL_GRID] = [0, 0, 0];
   out[COL_ERROR] = [1, 0, 0];
+  out[COL_HINT] = [0.13, 0.5, 0.85];
+  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
+  out[COL_HINT_SIBLING] = [0.95, 0.5, 0.05];
   out[COL_LINE_MAYBE] = [background[0] * DARKER, background[1] * DARKER, 0];
   out[COL_LINE_NO] = [
     background[0] * DARKER,
@@ -82,6 +90,8 @@ const BORDER_ERROR = (border: number): number => border << 8; // bits 8..11
 const F_ERROR_CLUE = 1 << 12;
 const F_FLASH = 1 << 13;
 const CONTAINS_CURSOR = (x: number): number => x << 14; // 9 bits, 14..22
+const HINT_EDGE = (border: number): number => border << 23; // bits 23..26
+const F_HINT_CELL = 1 << 27; // a hint-referenced cell (clue pair / region)
 
 // --- draw state ------------------------------------------------------------
 
@@ -92,6 +102,10 @@ export interface PalisadeDrawState {
   h: number;
   /** w·h cache of last-drawn packed tile flags; -1 forces a draw. */
   cache: Int32Array;
+  /** Per-tile sibling-edge border mask last drawn (the hint's *related*
+   * edges, coloured distinctly from the action edge). Sidecar because the
+   * packed flags have no free bits left; -1 forces a draw. */
+  sibCache: Int32Array;
 }
 
 export function newDrawState(state: PalisadeState): PalisadeDrawState {
@@ -101,14 +115,20 @@ export function newDrawState(state: PalisadeState): PalisadeDrawState {
     w: state.w,
     h: state.h,
     cache: new Int32Array(state.w * state.h).fill(-1),
+    sibCache: new Int32Array(state.w * state.h).fill(-1),
   };
 }
 
 // --- tile drawing ----------------------------------------------------------
 
-/** Colour for edge `dir`, given the tile's packed flags. */
-function edgeColour(flags: number, dir: number): number {
+/** Colour for edge `dir`, given the tile's packed flags and sibling-edge
+ * mask. The action edge (`COL_HINT`) and a related sibling edge
+ * (`COL_HINT_SIBLING`) both win over the normal edge states — they mark
+ * the hint; an edge is never both at once. */
+function edgeColour(flags: number, dir: number, sib: number): number {
   const b = BORDER(dir);
+  if (flags & HINT_EDGE(b)) return COL_HINT;
+  if (sib & b) return COL_HINT_SIBLING;
   if (flags & BORDER_ERROR(b)) return COL_ERROR;
   if (flags & b) return COL_GRID; // wall (COL_LINE_YES)
   if (flags & DISABLED(b)) return COL_LINE_NO;
@@ -122,6 +142,7 @@ function drawTile(
   c: number,
   flags: number,
   clue: number,
+  sib: number,
 ): void {
   const w = tileWidth(ts);
   const x = margin(ts) + ts * c;
@@ -131,7 +152,7 @@ function drawTile(
 
   dr.drawRect(
     { x: x + w, y: y + w, w: ts - w, h: ts - w },
-    flags & F_FLASH ? COL_FLASH : COL_BACKGROUND,
+    flags & F_FLASH ? COL_FLASH : flags & F_HINT_CELL ? COL_HINT_CELL : COL_BACKGROUND,
   );
 
   if (clue !== EMPTY) {
@@ -149,10 +170,10 @@ function drawTile(
   }
 
   // Four border edges (U, R, D, L).
-  dr.drawRect({ x: x + w, y, w: ts - w, h: w }, edgeColour(flags, 0));
-  dr.drawRect({ x: x + ts, y: y + w, w, h: ts - w }, edgeColour(flags, 1));
-  dr.drawRect({ x: x + w, y: y + ts, w: ts - w, h: w }, edgeColour(flags, 2));
-  dr.drawRect({ x, y: y + w, w, h: ts - w }, edgeColour(flags, 3));
+  dr.drawRect({ x: x + w, y, w: ts - w, h: w }, edgeColour(flags, 0, sib));
+  dr.drawRect({ x: x + ts, y: y + w, w, h: ts - w }, edgeColour(flags, 1, sib));
+  dr.drawRect({ x: x + w, y: y + ts, w: ts - w, h: w }, edgeColour(flags, 2, sib));
+  dr.drawRect({ x, y: y + w, w, h: ts - w }, edgeColour(flags, 3, sib));
 
   dr.unclip();
   dr.drawUpdate({ x, y, w: ts + w, h: ts + w });
@@ -197,7 +218,7 @@ export function redraw(
   ui: PalisadeUi,
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<PalisadeMove, PalisadeHint>,
   mistakes?: readonly PalisadeMistake[],
 ): void {
   if (!ds) return;
@@ -205,6 +226,28 @@ export function redraw(
   const { w, h, k, clues, borders } = state;
   const wh = w * h;
   const flash = Math.floor((flashTime * 5) / FLASH_TIME) % 2;
+
+  // Fold the displayed hint step into per-tile hint channels: the action
+  // edge (the one to set this step → COL_HINT), any *related* sibling
+  // edges (COL_HINT_SIBLING — a distinct colour so "this edge" is never
+  // ambiguous), and the referenced cells (the clue pair / region, shaded).
+  // Both sides of each edge are marked (same pixels).
+  const hintEdgeMask = new Int32Array(wh);
+  const hintSibMask = new Int32Array(wh);
+  const hintCellMask = new Int32Array(wh);
+  const hl = hint?.highlights;
+  if (hl) {
+    const markEdge = (mask: Int32Array, ex: number, ey: number, edir: number): void => {
+      mask[ey * w + ex] |= BORDER(edir);
+      const nx = ex + DX[edir];
+      const ny = ey + DY[edir];
+      if (!outOfBounds(nx, ny, w, h)) mask[ny * w + nx] |= BORDER(edir ^ 2);
+    };
+    markEdge(hintEdgeMask, hl.x, hl.y, hl.dir);
+    if (hl.edges) for (const e of hl.edges) markEdge(hintSibMask, e.x, e.y, e.dir);
+    if (hl.cells)
+      for (const cell of hl.cells) hintCellMask[cell.y * w + cell.x] |= F_HINT_CELL;
+  }
 
   if (!ds.started) {
     const size = computeSize({ w, h, k }, ts);
@@ -235,7 +278,8 @@ export function redraw(
     for (let c = 0; c < w; c++) {
       const i = r * w + c;
       const clue = clues[i];
-      let flags = borders[i] | mistakeMask[i];
+      let flags =
+        borders[i] | mistakeMask[i] | HINT_EDGE(hintEdgeMask[i]) | hintCellMask[i];
 
       if (flash) flags |= F_FLASH;
 
@@ -270,9 +314,11 @@ export function redraw(
         if (tooLarge || tooSmall || dangling) flags |= BORDER_ERROR(BORDER(dir));
       }
 
-      if (ds.cache[i] !== flags) {
+      const sib = hintSibMask[i];
+      if (ds.cache[i] !== flags || ds.sibCache[i] !== sib) {
         ds.cache[i] = flags;
-        drawTile(dr, ts, r, c, flags, clue);
+        ds.sibCache[i] = sib;
+        drawTile(dr, ts, r, c, flags, clue, sib);
       }
     }
   }

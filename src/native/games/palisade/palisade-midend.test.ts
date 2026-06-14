@@ -112,6 +112,27 @@ describe("Palisade midend lifecycle", () => {
     expect(h.m.findMistakes()).toBe(0);
   });
 
+  it("computes a hint plan and auto-solves it via executeHint", () => {
+    const h = harness();
+    expect(h.m.newGameFromId(ID)).toBeUndefined();
+
+    // A hint is available on a fresh board.
+    expect(h.m.hint()).toBeUndefined();
+
+    // Auto-playing the deduction plan (Palisade has no move animation, so
+    // each step settles synchronously) drives the board to solved.
+    let guard = 0;
+    while (h.status() !== "solved" && guard < 500) {
+      const err = h.m.executeHint();
+      if (err) break;
+      guard++;
+    }
+    expect(h.status()).toBe("solved");
+    // (The game-level "refuse on a solved board" path is unit-tested in
+    // palisade.test.ts; through the midend the win-flash keeps the plan
+    // displayed until the animation timer settles it.)
+  });
+
   it("round-trips through save/load", () => {
     const h = harness();
     expect(h.m.newGameFromId(ID)).toBeUndefined();

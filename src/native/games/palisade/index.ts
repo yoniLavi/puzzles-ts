@@ -10,7 +10,14 @@
  * and there is a half-grid keyboard cursor.
  */
 import type { Colour, ConfigValues, Point, Size } from "../../../puzzle/types.ts";
-import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
+import {
+  type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
+  UI_UPDATE,
+  type UiUpdate,
+} from "../../engine/game.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -30,7 +37,12 @@ import {
   PREFERRED_TILE_SIZE,
   redraw,
 } from "./render.ts";
-import { newDesc, solveToBorders } from "./solver.ts";
+import {
+  deduceForcedEdges,
+  type ForcedEdge,
+  newDesc,
+  solveToBorders,
+} from "./solver.ts";
 import {
   BORDER,
   BORDER_MASK,
@@ -44,6 +56,7 @@ import {
   FLIP,
   newState,
   outOfBounds,
+  type PalisadeHint,
   type PalisadeMistake,
   type PalisadeMove,
   type PalisadeParams,
@@ -230,6 +243,121 @@ function findMistakes(state: PalisadeState): readonly PalisadeMistake[] {
   return out;
 }
 
+// --- hint ------------------------------------------------------------------
+
+/** Narrate a forced edge by the rule that produced it, phrased as advice
+ * (the move has *not* been applied yet — "must be a wall" / "can't be a
+ * wall", never "is a wall" / "has none"). `kind` distinguishes the
+ * two-branch rules. The referenced cells/edges are highlighted alongside
+ * (see `forcedEdgeToStep`), so phrases like "these two edges" and "the
+ * same region" have a visible referent. */
+function explain(fe: ForcedEdge, clues: Int8Array, w: number): string {
+  const c = clues[fe.y * w + fe.x];
+  switch (fe.rule) {
+    case "cluesVersusRegionSize": {
+      const j = (fe.y + DY[fe.dir]) * w + (fe.x + DX[fe.dir]);
+      return `Clues ${c} and ${clues[j]} can't share a region, so the edge between them must be a wall.`;
+    }
+    case "numberExhausted":
+      return fe.kind === "wall"
+        ? `Clue ${c} needs all its remaining edges to be walls, so this one must be a wall.`
+        : `Clue ${c} already has all ${c} of its walls, so this edge can't be one.`;
+    case "notTooBig":
+      return "Joining these regions would exceed the target size, so this edge must be a wall.";
+    case "notTooSmall":
+      return "This region is too small and can only grow this way, so this edge can't be a wall.";
+    case "noDanglingEdges":
+      return "A wall can't stop in mid-air at this corner, so this edge must be a wall.";
+    case "equivalentEdges":
+      // The two highlighted edges (this one + its orange sibling) both
+      // border the shaded region, which is a single connected group — so
+      // clue ${c} either joins all of it (both edges open) or is walled
+      // off from all of it (both edges walled); it can't do one of each.
+      return fe.kind === "wall"
+        ? `Both highlighted edges border the same shaded region; clue ${c} can't open both, so this edge must be a wall.`
+        : `Both highlighted edges border the same shaded region; clue ${c} can't wall off both, so this edge can't be a wall.`;
+  }
+}
+
+/** Translate a forced edge into a narrated, highlighted hint step: the
+ * two-sided `edges` edit that sets it, plus the edge/cell highlights the
+ * narration references (the primary edge, any sibling edges, and the
+ * referenced cells — a clue pair or the region). */
+function forcedEdgeToStep(
+  fe: ForcedEdge,
+  clues: Int8Array,
+  w: number,
+): HintStep<PalisadeMove, PalisadeHint> {
+  const { x, y, dir, kind } = fe;
+  const hx = x + DX[dir];
+  const hy = y + DY[dir];
+  const bit = kind === "wall" ? BORDER(dir) : DISABLED(BORDER(dir));
+  const flip = kind === "wall" ? BORDER(FLIP(dir)) : DISABLED(BORDER(FLIP(dir)));
+  return {
+    move: {
+      type: "edges",
+      edits: [
+        { x, y, flag: bit },
+        { x: hx, y: hy, flag: flip },
+      ],
+    },
+    explanation: explain(fe, clues, w),
+    highlights: {
+      x,
+      y,
+      dir,
+      kind,
+      cells: fe.cells?.map((i) => ({ x: i % w, y: Math.floor(i / w) })),
+      edges: fe.siblings?.map((s) => ({
+        x: s.cell % w,
+        y: Math.floor(s.cell / w),
+        dir: s.dir,
+      })),
+    },
+  };
+}
+
+/** Compute the next deductions as a hint plan, seeded from the player's
+ * current borders and no-wall marks. Refuses on a solved board or one
+ * carrying a mistake, so a hint is never built on a wrong wall. */
+function hint(state: PalisadeState): HintResult<PalisadeMove, PalisadeHint> {
+  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (findMistakes(state).length > 0)
+    return {
+      ok: false,
+      error: "There's a mistake on the board — fix it before asking for a hint.",
+    };
+  const forced = deduceForcedEdges(paramsOf(state), state.clues, state.borders);
+  if (forced.length === 0)
+    return { ok: false, error: "I can't find a deduction from here." };
+  return {
+    ok: true,
+    steps: forced.map((fe) => forcedEdgeToStep(fe, state.clues, state.w)),
+  };
+}
+
+/** The player's move completes the step iff its edit on the hinted cell
+ * toggles the hinted bit *on*. Side-agnostic (the shared edge is always
+ * recorded on the hinted cell's `dir` side) and button-checked (a
+ * wrong-button click sets the other bit → `"off"`). */
+function hintKeepTrack(
+  m: PalisadeMove,
+  step: HintStep<PalisadeMove>,
+  state: PalisadeState,
+): HintTrackVerdict {
+  if (m.type !== "edges" || step.move.type !== "edges") return "off";
+  const hl = step.highlights as PalisadeHint | undefined;
+  if (!hl) return "off";
+  const i = hl.y * state.w + hl.x;
+  const bit = hl.kind === "wall" ? BORDER(hl.dir) : DISABLED(BORDER(hl.dir));
+  for (const e of m.edits) {
+    if (e.x === hl.x && e.y === hl.y) {
+      return (state.borders[i] ^ e.flag) & bit ? "completed" : "off";
+    }
+  }
+  return "off";
+}
+
 // --- Game object -----------------------------------------------------------
 
 export const palisadeGame: Game<
@@ -274,6 +402,8 @@ export const palisadeGame: Game<
   },
 
   findMistakes,
+  hint,
+  hintKeepTrack,
 
   textFormat,
   statusbarText: (s) => `Region size: ${s.k}`,

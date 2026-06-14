@@ -1,20 +1,26 @@
 import { describe, expect, it } from "vitest";
+import type { HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../random/index.ts";
 import { divvyRectangle } from "./divvy.ts";
 import { palisadeGame } from "./index.ts";
-import { newDesc, solver, solveToBorders } from "./solver.ts";
+import { deduceForcedEdges, newDesc, solver, solveToBorders } from "./solver.ts";
 import {
   BORDER,
   BORDER_MASK,
   bitcount,
   buildDsf,
   DISABLED,
+  DX,
+  DY,
   decodeParams,
   encodeDesc,
   encodeParams,
+  FLIP,
   initBorders,
   isSolved,
   newState,
+  type PalisadeHint,
+  type PalisadeMove,
   type PalisadeParams,
   type PalisadeState,
   validateDesc,
@@ -277,6 +283,134 @@ describe("palisade win flash", () => {
       }
     }
     expect(broke).toBe(true);
+  });
+});
+
+describe("palisade hint", () => {
+  const P = { w: 5, h: 5, k: 5 };
+  const hlOf = (step: HintStep<PalisadeMove>): PalisadeHint =>
+    step.highlights as PalisadeHint;
+  const physicalEdge = (
+    h: { x: number; y: number; dir: number },
+    w: number,
+  ): number => {
+    const i = h.y * w + h.x;
+    const j = i + DY[h.dir] * w + DX[h.dir];
+    const lo = Math.min(i, j);
+    return lo * 2 + (Math.max(i, j) - lo === 1 ? 0 : 1);
+  };
+
+  it("deduces a chain whose moves solve the board", () => {
+    const s0 = newState(P, newDesc(P, randomNew("palisade-hint-chain")).desc);
+    const r = palisadeGame.hint?.(s0);
+    expect(r?.ok).toBe(true);
+    if (!r?.ok) return;
+    expect(r.steps.length).toBeGreaterThan(0);
+
+    let s = s0;
+    for (const step of r.steps) s = palisadeGame.executeMove(s, step.move);
+    expect(s.completed).toBe(true);
+  });
+
+  it("records de-duplicated interior edges (rim-seeded)", () => {
+    const s0 = newState(P, newDesc(P, randomNew("palisade-hint-rec")).desc);
+    const forced = deduceForcedEdges(P, s0.clues, s0.borders);
+    expect(forced.length).toBeGreaterThan(0);
+    const ids = forced.map((e) => physicalEdge(e, P.w));
+    // No physical edge appears twice (the dedup pass) and every edge is
+    // interior (its neighbour is on the grid).
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const e of forced) {
+      const nx = e.x + DX[e.dir];
+      const ny = e.y + DY[e.dir];
+      expect(nx >= 0 && nx < P.w && ny >= 0 && ny < P.h).toBe(true);
+    }
+  });
+
+  it("captures referenced cells (and siblings) for highlighting", () => {
+    const s0 = newState(P, newDesc(P, randomNew("palisade-hint-ctx")).desc);
+    const forced = deduceForcedEdges(P, s0.clues, s0.borders);
+    // Clue-pair / region deductions name cells; equivalentEdges names a
+    // sibling edge. The fresh-board opener is a clue-vs-region wall, so at
+    // least one forced edge carries a non-empty `cells` reference.
+    expect(forced.some((e) => (e.cells?.length ?? 0) > 0)).toBe(true);
+    const cvr = forced.find((e) => e.rule === "cluesVersusRegionSize");
+    if (cvr) {
+      // The two named cells are the two adjacent clues sharing the wall.
+      expect(cvr.cells).toHaveLength(2);
+      for (const i of cvr.cells ?? []) expect(s0.clues[i]).not.toBe(-1);
+    }
+  });
+
+  it("does not re-hint an edge the player already marked no-wall", () => {
+    const s0 = newState(P, newDesc(P, randomNew("palisade-hint-mark")).desc);
+    const r = palisadeGame.hint?.(s0);
+    if (!r?.ok) return;
+    const nowall = r.steps.find((s) => hlOf(s).kind === "nowall");
+    expect(nowall).toBeDefined();
+    if (!nowall) return;
+    const target = physicalEdge(hlOf(nowall), P.w);
+
+    const s1 = palisadeGame.executeMove(s0, nowall.move);
+    const r2 = palisadeGame.hint?.(s1);
+    expect(r2?.ok).toBe(true);
+    if (!r2?.ok) return;
+    expect(r2.steps.some((s) => physicalEdge(hlOf(s), P.w) === target)).toBe(false);
+  });
+
+  it("refuses on an already-solved board", () => {
+    const s0 = newState(P, newDesc(P, randomNew("palisade-hint-solved")).desc);
+    const sol = solveToBorders(P, s0.clues);
+    if (!sol) return;
+    const solved: PalisadeState = { ...s0, borders: sol.slice(), completed: true };
+    const r = palisadeGame.hint?.(solved);
+    expect(r?.ok).toBe(false);
+  });
+
+  it("refuses when the board carries a wall the solution lacks", () => {
+    const s0 = newState(P, newDesc(P, randomNew("palisade-hint-bad")).desc);
+    const sol = solveToBorders(P, s0.clues);
+    if (!sol) return;
+    // Draw a wall on an interior edge the solution does not have.
+    for (let y = 0; y < P.h; y++) {
+      for (let x = 0; x + 1 < P.w; x++) {
+        const i = y * P.w + x;
+        if (!(sol[i] & BORDER(1))) {
+          const bad = s0.borders.slice();
+          bad[i] |= BORDER(1);
+          bad[i + 1] |= BORDER(3);
+          const r = palisadeGame.hint?.({ ...s0, borders: bad });
+          expect(r?.ok).toBe(false);
+          return;
+        }
+      }
+    }
+  });
+
+  it("hintKeepTrack completes on the hinted edit and rejects the wrong one", () => {
+    const s0 = newState(P, newDesc(P, randomNew("palisade-hint-track")).desc);
+    const r = palisadeGame.hint?.(s0);
+    if (!r?.ok) return;
+    const step = r.steps[0];
+    const hl = hlOf(step);
+
+    // The exact hinted edit completes the step.
+    expect(palisadeGame.hintKeepTrack?.(step.move, step, s0)).toBe("completed");
+
+    // The wrong button on the same edge (other bit) deviates.
+    const wrongFlag = hl.kind === "wall" ? DISABLED(BORDER(hl.dir)) : BORDER(hl.dir);
+    const wrong: PalisadeMove = {
+      type: "edges",
+      edits: [{ x: hl.x, y: hl.y, flag: wrongFlag }],
+    };
+    expect(palisadeGame.hintKeepTrack?.(wrong, step, s0)).toBe("off");
+
+    // An edit on an unrelated edge deviates.
+    const other: PalisadeMove = {
+      type: "edges",
+      edits: [{ x: hl.x === 0 ? P.w - 1 : 0, y: hl.y, flag: BORDER(FLIP(hl.dir)) }],
+    };
+    expect(palisadeGame.hintKeepTrack?.(other, step, s0)).toBe("off");
   });
 });
 

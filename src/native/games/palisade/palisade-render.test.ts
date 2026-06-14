@@ -3,18 +3,28 @@
 // live error reddening for an over-large region, the findMistakes
 // overlay edge, the clue text, and the cursor outline.
 import { describe, expect, it } from "vitest";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../random/index.ts";
 import {
   COL_ERROR,
   COL_GRID,
+  COL_HINT,
+  COL_HINT_CELL,
+  COL_HINT_SIBLING,
   COL_LINE_MAYBE,
   newDrawState,
   type PalisadeDrawState,
   redraw,
 } from "./render.ts";
 import { newDesc } from "./solver.ts";
-import { BORDER, newState, type PalisadeState, type PalisadeUi } from "./state.ts";
+import {
+  BORDER,
+  newState,
+  type PalisadeHint,
+  type PalisadeMove,
+  type PalisadeState,
+  type PalisadeUi,
+} from "./state.ts";
 
 interface Op {
   op: string;
@@ -109,6 +119,48 @@ describe("Palisade redraw", () => {
       { x: 1, y: 1, dir: 1 },
     ]);
     expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_ERROR)).toBe(true);
+  });
+
+  it("paints the action edge, its sibling, and referenced cells distinctly", () => {
+    const state = makeState();
+    const hint: HintStep<PalisadeMove, PalisadeHint> = {
+      move: { type: "edges", edits: [] },
+      explanation: "test",
+      highlights: {
+        x: 1,
+        y: 1,
+        dir: 1,
+        kind: "nowall",
+        cells: [
+          { x: 1, y: 1 },
+          { x: 2, y: 1 },
+        ],
+        edges: [{ x: 1, y: 1, dir: 2 }],
+      },
+    };
+    const { dr, ops } = recordingDrawing();
+    redraw(dr, freshDs(state), null, state, 0, freshUi(), 0, 0, hint);
+    // The action edge is COL_HINT, the sibling is COL_HINT_SIBLING (a
+    // distinct colour), and referenced cells get a COL_HINT_CELL fill.
+    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_HINT)).toBe(true);
+    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_HINT_SIBLING)).toBe(
+      true,
+    );
+    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_HINT_CELL)).toBe(
+      true,
+    );
+
+    // With no hint, none of the hint colours appear.
+    const { dr: dr2, ops: ops2 } = recordingDrawing();
+    redraw(dr2, freshDs(state), null, state, 0, freshUi(), 0, 0);
+    expect(
+      ops2.some(
+        (o) =>
+          o.colour === COL_HINT ||
+          o.colour === COL_HINT_CELL ||
+          o.colour === COL_HINT_SIBLING,
+      ),
+    ).toBe(false);
   });
 
   it("draws the cursor outline when shown", () => {

@@ -151,7 +151,14 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       <div part="content" tabindex=${this.contentTabIndex}>
         ${this.statusbarPlacement === "start" ? this.renderStatusbar() : nothing}
         ${this.renderPuzzle()}
-        <div class="hint-banner" role="status">
+        <div
+          class="hint-banner"
+          role="status"
+          style=${
+            this.canvasSize
+              ? styleMap({ "max-width": `${this.canvasSize.w}px` })
+              : nothing
+          }>
           ${
             this.bannerMessage
               ? html`<span class="hint-banner-text">${this.bannerMessage}</span>`
@@ -520,6 +527,12 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
       .hint-banner {
         text-align: center;
+        /* Cap the banner to the board width (inline max-width set from the
+         * canvas size) and centre it, so a long hint sentence wraps within
+         * the board instead of widening the whole game element. It may grow
+         * taller (extra lines) — that's fine; only horizontal growth is. */
+        margin-inline: auto;
+        overflow-wrap: break-word;
         padding-inline: var(--spacing);
         padding-block: 0 var(--spacing);
         color: var(--wa-color-brand-fill-loud, var(--app-theme-color, var(--wa-color-brand-fill-normal, var(--wa-color-text-normal))));
