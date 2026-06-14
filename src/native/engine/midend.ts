@@ -388,6 +388,22 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.afterTransition();
   }
 
+  /** Replay a list of game `Move`s directly, as if the player had made
+   * them, bypassing the `interpretMove` pointer mapping. Each goes
+   * through the same transition path as a real move (history, the
+   * parallel move log, `changedState`, animation arming, save/undo
+   * support), so the resulting midend is indistinguishable from one
+   * reached by clicking. This is the engine's scriptable-replay
+   * primitive: the in-process render-scenario harness uses it to reach
+   * a target frame without synthesising pointer events (no coordinate
+   * math, no right-button quirks), and it is a natural entry for any
+   * future move-scripting feature. It does NOT consult the active hint
+   * plan (`hintKeepTrack`) — replayed moves are setup, not player
+   * input answering a displayed hint. */
+  playMoves(moves: readonly Move[]): void {
+    for (const move of moves) this.applyMove(move);
+  }
+
   solve(): string | undefined {
     if (!this.game.canSolve || !this.game.solve) {
       return "This game does not support solving";
@@ -498,6 +514,17 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.clearAnimation();
     this.afterTransition();
     return undefined;
+  }
+
+  /** The hint step currently on display (`undefined` when no plan is
+   * active or the plan is hidden) — the same step `redraw` is handed
+   * and the status bar narrates. Exposed so the render-scenario harness
+   * and tests can assert on the structured step (its `highlights`,
+   * `explanation`) rather than only the draw ops it produces, and so a
+   * scenario can walk the plan with `executeHint` until a step of
+   * interest is reached. */
+  activeHintStep(): HintStep<Move> | undefined {
+    return this.displayedHintStep;
   }
 
   executeHint(): string | undefined {
