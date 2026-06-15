@@ -245,23 +245,46 @@ function findMistakes(state: PalisadeState): readonly PalisadeMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-/** Narrate a forced edge by the rule that produced it, phrased as advice
- * (the move has *not* been applied yet — "must be a wall" / "can't be a
- * wall", never "is a wall" / "has none"). `kind` distinguishes the
- * two-branch rules. The referenced cells/edges are highlighted alongside
- * (see `forcedEdgeToStep`), so phrases like "these two edges" and "the
- * same region" have a visible referent. */
-function explain(fe: ForcedEdge, clues: Int8Array, w: number): string {
+/** Narrate one leg of a deduction, phrased as advice (the move has *not*
+ * been applied yet — "must be a wall" / "can't be a wall", never "is a
+ * wall" / "has none"). `leg`/`groupSize` describe the firing this edge
+ * belongs to: a multi-edge deduction (`equivalentEdges` pair,
+ * `numberExhausted` sweep) narrates the coupling on its first leg and a
+ * short continuation on the rest. The referenced cells/edges are
+ * highlighted alongside (see `buildStep`), so "both highlighted edges"
+ * and "the same region" have a visible referent. */
+function explain(
+  fe: ForcedEdge,
+  clues: Int8Array,
+  w: number,
+  leg: number,
+  groupSize: number,
+): string {
   const c = clues[fe.y * w + fe.x];
+
+  // Continuation legs of a multi-edge firing: short and kind-specific
+  // (the first leg already gave the full reason, still on screen).
+  if (leg > 0) {
+    return fe.kind === "wall"
+      ? "…and this edge must be a wall too."
+      : "…and this edge can't be a wall either.";
+  }
+
+  const multi = groupSize > 1;
   switch (fe.rule) {
     case "cluesVersusRegionSize": {
       const j = (fe.y + DY[fe.dir]) * w + (fe.x + DX[fe.dir]);
       return `Clues ${c} and ${clues[j]} can't share a region, so the edge between them must be a wall.`;
     }
     case "numberExhausted":
+      if (multi) {
+        return fe.kind === "wall"
+          ? `Clue ${c} reaches its count only if every remaining edge is a wall — draw them all.`
+          : `Clue ${c} already has all its walls, so its remaining edges can't be walls — clear them.`;
+      }
       return fe.kind === "wall"
         ? `Clue ${c} needs all its remaining edges to be walls, so this one must be a wall.`
-        : `Clue ${c} already has all ${c} of its walls, so this edge can't be one.`;
+        : `Clue ${c} already has all its walls, so this edge can't be one.`;
     case "notTooBig":
       return "Joining these regions would exceed the target size, so this edge must be a wall.";
     case "notTooSmall":
@@ -269,30 +292,43 @@ function explain(fe: ForcedEdge, clues: Int8Array, w: number): string {
     case "noDanglingEdges":
       return "A wall can't stop in mid-air at this corner, so this edge must be a wall.";
     case "equivalentEdges":
-      // The two highlighted edges (this one + its orange sibling) both
-      // border the shaded region, which is a single connected group — so
-      // clue ${c} either joins all of it (both edges open) or is walled
-      // off from all of it (both edges walled); it can't do one of each.
+      // The crux: both highlighted edges border the same connected region,
+      // so the clue cell is either inside all of it (both edges open) or
+      // walled off from all of it (both walled) — it can't do one of each.
+      // That coupling is what makes the clue's count force the edges; the
+      // earlier narration omitted it and read as a non-sequitur.
+      if (multi) {
+        return fe.kind === "wall"
+          ? `Both edges border the same region, so they share a fate: both walls or both open. Leaving both open would leave clue ${c} short of walls — so both must be walls.`
+          : `Both edges border the same region, so they share a fate: both walls or both open. Walling both would exceed clue ${c} — so neither can be a wall.`;
+      }
+      // Rare post-dedup singleton (the partner edge was already shown).
       return fe.kind === "wall"
-        ? `Both highlighted edges border the same shaded region; clue ${c} can't open both, so this edge must be a wall.`
-        : `Both highlighted edges border the same shaded region; clue ${c} can't wall off both, so this edge can't be a wall.`;
+        ? `This edge borders a region clue ${c} can't fully open, so it must be a wall.`
+        : `This edge borders a region clue ${c} can't wall off, so it can't be a wall.`;
   }
 }
 
-/** Translate a forced edge into a narrated, highlighted hint step: the
- * two-sided `edges` edit that sets it, plus the edge/cell highlights the
- * narration references (the primary edge, any sibling edges, and the
- * referenced cells — a clue pair or the region). */
-function forcedEdgeToStep(
-  fe: ForcedEdge,
+/** Translate one leg of a firing into a narrated, highlighted hint step:
+ * the two-sided `edges` edit that sets this edge, the firing's still-to-do
+ * edges as sibling highlights, the referenced cells (a clue pair or the
+ * region), and `continuesPrevious` on every leg past the first — so a
+ * multi-edge deduction reads and plays as one journey. */
+function buildStep(
+  group: ForcedEdge[],
+  leg: number,
   clues: Int8Array,
   w: number,
 ): HintStep<PalisadeMove, PalisadeHint> {
+  const fe = group[leg];
   const { x, y, dir, kind } = fe;
   const hx = x + DX[dir];
   const hy = y + DY[dir];
   const bit = kind === "wall" ? BORDER(dir) : DISABLED(BORDER(dir));
   const flip = kind === "wall" ? BORDER(FLIP(dir)) : DISABLED(BORDER(FLIP(dir)));
+  // Siblings = the firing's edges not yet acted on, so leg 0 shows the
+  // whole set and the orange siblings drop off as the legs complete.
+  const siblings = group.slice(leg + 1);
   return {
     move: {
       type: "edges",
@@ -301,25 +337,27 @@ function forcedEdgeToStep(
         { x: hx, y: hy, flag: flip },
       ],
     },
-    explanation: explain(fe, clues, w),
+    explanation: explain(fe, clues, w, leg, group.length),
+    ...(leg > 0 ? { continuesPrevious: true } : {}),
     highlights: {
       x,
       y,
       dir,
       kind,
       cells: fe.cells?.map((i) => ({ x: i % w, y: Math.floor(i / w) })),
-      edges: fe.siblings?.map((s) => ({
-        x: s.cell % w,
-        y: Math.floor(s.cell / w),
-        dir: s.dir,
-      })),
+      edges: siblings.length
+        ? siblings.map((s) => ({ x: s.x, y: s.y, dir: s.dir }))
+        : undefined,
     },
   };
 }
 
 /** Compute the next deductions as a hint plan, seeded from the player's
  * current borders and no-wall marks. Refuses on a solved board or one
- * carrying a mistake, so a hint is never built on a wrong wall. */
+ * carrying a mistake, so a hint is never built on a wrong wall. Edges
+ * forced by one firing (the `equivalentEdges` pair, a `numberExhausted`
+ * sweep) form one multi-leg journey; distinct firings stay separate
+ * hints. */
 function hint(state: PalisadeState): HintResult<PalisadeMove, PalisadeHint> {
   if (state.completed) return { ok: false, error: "This board is already solved." };
   if (findMistakes(state).length > 0)
@@ -330,10 +368,21 @@ function hint(state: PalisadeState): HintResult<PalisadeMove, PalisadeHint> {
   const forced = deduceForcedEdges(paramsOf(state), state.clues, state.borders);
   if (forced.length === 0)
     return { ok: false, error: "I can't find a deduction from here." };
-  return {
-    ok: true,
-    steps: forced.map((fe) => forcedEdgeToStep(fe, state.clues, state.w)),
-  };
+
+  // Split the flat, discovery-ordered list into contiguous runs of one
+  // firing (a firing's surviving edges stay contiguous after dedup), and
+  // emit one journey per run.
+  const steps: HintStep<PalisadeMove, PalisadeHint>[] = [];
+  for (let g = 0; g < forced.length; ) {
+    let end = g + 1;
+    while (end < forced.length && forced[end].group === forced[g].group) end++;
+    const groupEdges = forced.slice(g, end);
+    for (let leg = 0; leg < groupEdges.length; leg++) {
+      steps.push(buildStep(groupEdges, leg, state.clues, state.w));
+    }
+    g = end;
+  }
+  return { ok: true, steps };
 }
 
 /** The player's move completes the step iff its edit on the hinted cell

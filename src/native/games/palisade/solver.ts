@@ -41,19 +41,22 @@ export type SolverRule =
   | "equivalentEdges";
 
 /** Context the explanation references, for highlighting: the cells it
- * names (a clue pair, the region) and any sibling edges ("these two
- * edges"). Cells are cell indices; sibling edges are `(cell, dir)`. */
+ * names (a clue pair, the region). Cells are cell indices. Sibling edges
+ * are no longer carried here — the hint derives them from the firing
+ * group (a multi-edge deduction's other edges). */
 export interface EdgeContext {
   cells?: number[];
-  siblings?: Array<{ cell: number; dir: number }>;
 }
 
 /** A single edge the solver forced, in player-visible terms: a `"wall"`
  * (a `disconnect`) or a `"nowall"` (an individually-forced `connect`),
  * named by the rule that produced it. `(x,y)` + `dir` is the edge on the
  * primary cell; the deduction always records it on that cell's `dir`
- * side. Interior only (the rim is never re-decided). `cells`/`siblings`
- * carry the deduction's evidence for highlighting (hint mode only). */
+ * side. Interior only (the rim is never re-decided). `cells` carries the
+ * deduction's evidence for highlighting (hint mode only). `group` is the
+ * firing — a single logical deduction — that forced it: edges sharing a
+ * `group` are one deduction (the `equivalentEdges` pair, a
+ * `numberExhausted` sweep) and the hint presents them as one journey. */
 export interface ForcedEdge {
   x: number;
   y: number;
@@ -61,7 +64,7 @@ export interface ForcedEdge {
   kind: "wall" | "nowall";
   rule: SolverRule;
   cells?: number[];
-  siblings?: Array<{ cell: number; dir: number }>;
+  group: number;
 }
 
 class SolverCtx {
@@ -77,6 +80,24 @@ class SolverCtx {
   record: ForcedEdge[] | null = null;
   /** The rule currently sweeping — stamped on each recorded edge. */
   private rule: SolverRule = "cluesVersusRegionSize";
+  /** Firing grouping for hint journeys: edges recorded inside one
+   * `firing(...)` call share an id; edges recorded outside one each get a
+   * fresh id (a one-edge group = an ordinary single step). */
+  private nextGroup = 0;
+  private currentGroup = -1;
+  private inFiring = false;
+
+  /** Run `fn` as a single logical deduction: every edge it records shares
+   * one firing id, so the hint groups them into one multi-leg journey. */
+  firing(fn: () => void): void {
+    const prevIn = this.inFiring;
+    const prevGroup = this.currentGroup;
+    this.currentGroup = this.nextGroup++;
+    this.inFiring = true;
+    fn();
+    this.inFiring = prevIn;
+    this.currentGroup = prevGroup;
+  }
 
   constructor(p: PalisadeParams, clues: Int8Array, borders: Uint8Array) {
     this.w = p.w;
@@ -122,7 +143,7 @@ class SolverCtx {
       kind,
       rule: this.rule,
       cells: extra?.cells,
-      siblings: extra?.siblings,
+      group: this.inFiring ? this.currentGroup : this.nextGroup++,
     });
   }
 
@@ -230,12 +251,15 @@ function numberExhausted(ctx: SolverCtx): boolean {
     if (clues[i] === EMPTY) continue;
 
     if (bitcount(borders[i]) === clues[i]) {
-      // All this clue's walls are placed: the rest are non-walls.
-      for (let dir = 0; dir < 4; dir++) {
-        if (!ctx.maybe(i, dir)) continue;
-        ctx.connectEdge(i, dir, ctx.record ? { cells: [i] } : undefined);
-        changed = true;
-      }
+      // All this clue's walls are placed: the rest are non-walls — one
+      // firing (the clue's remaining edges are forced together).
+      ctx.firing(() => {
+        for (let dir = 0; dir < 4; dir++) {
+          if (!ctx.maybe(i, dir)) continue;
+          ctx.connectEdge(i, dir, ctx.record ? { cells: [i] } : undefined);
+          changed = true;
+        }
+      });
       continue;
     }
 
@@ -244,12 +268,14 @@ function numberExhausted(ctx: SolverCtx): boolean {
       if (!ctx.disconnectedDir(i, dir) && ctx.connectedDir(i, dir)) off++;
     }
     if (clues[i] === 4 - off) {
-      // Every remaining edge must be a wall to reach the clue.
-      for (let dir = 0; dir < 4; dir++) {
-        if (!ctx.maybe(i, dir)) continue;
-        ctx.disconnect(i, dir, ctx.record ? { cells: [i] } : undefined);
-        changed = true;
-      }
+      // Every remaining edge must be a wall to reach the clue — one firing.
+      ctx.firing(() => {
+        for (let dir = 0; dir < 4; dir++) {
+          if (!ctx.maybe(i, dir)) continue;
+          ctx.disconnect(i, dir, ctx.record ? { cells: [i] } : undefined);
+          changed = true;
+        }
+      });
     }
   }
   return changed;
@@ -407,22 +433,22 @@ function equivalentEdges(ctx: SolverCtx): boolean {
         if (!ctx.dsf.equivalent(j, kk)) continue;
         // The shared region the two edges lead into (captured before any
         // merge; the clue cell `i` is deliberately excluded — it's the
-        // decider, not part of the region). Each edge cites the *other* as
-        // its sibling ("these two edges").
+        // decider, not part of the region). The pair is one firing, so the
+        // hint groups them into one journey and derives each leg's sibling
+        // edge from the other group member.
         const region = ctx.record ? ctx.regionCells(j) : undefined;
-        const ctxJ: EdgeContext | undefined = region
-          ? { cells: region, siblings: [{ cell: i, dir: dirk }] }
-          : undefined;
-        const ctxK: EdgeContext | undefined = region
-          ? { cells: region, siblings: [{ cell: i, dir: dirj }] }
-          : undefined;
+        const ext: EdgeContext | undefined = region ? { cells: region } : undefined;
         if (nOn + 2 > clues[i]) {
-          ctx.connectEdge(i, dirj, ctxJ);
-          ctx.connectEdge(i, dirk, ctxK);
+          ctx.firing(() => {
+            ctx.connectEdge(i, dirj, ext);
+            ctx.connectEdge(i, dirk, ext);
+          });
           changed = true;
         } else if (nOff + 2 > 4 - clues[i]) {
-          ctx.disconnect(i, dirj, ctxJ);
-          ctx.disconnect(i, dirk, ctxK);
+          ctx.firing(() => {
+            ctx.disconnect(i, dirj, ext);
+            ctx.disconnect(i, dirk, ext);
+          });
           changed = true;
         }
       }

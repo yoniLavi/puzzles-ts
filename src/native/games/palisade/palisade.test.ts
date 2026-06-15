@@ -330,9 +330,10 @@ describe("palisade hint", () => {
   it("captures referenced cells (and siblings) for highlighting", () => {
     const s0 = newState(P, newDesc(P, randomNew("palisade-hint-ctx")).desc);
     const forced = deduceForcedEdges(P, s0.clues, s0.borders);
-    // Clue-pair / region deductions name cells; equivalentEdges names a
-    // sibling edge. The fresh-board opener is a clue-vs-region wall, so at
-    // least one forced edge carries a non-empty `cells` reference.
+    // Clue-pair / region deductions name cells (the hint derives sibling
+    // edges from the firing group, not from the forced edge). The
+    // fresh-board opener is a clue-vs-region wall, so at least one forced
+    // edge carries a non-empty `cells` reference.
     expect(forced.some((e) => (e.cells?.length ?? 0) > 0)).toBe(true);
     const cvr = forced.find((e) => e.rule === "cluesVersusRegionSize");
     if (cvr) {
@@ -340,6 +341,69 @@ describe("palisade hint", () => {
       expect(cvr.cells).toHaveLength(2);
       for (const i of cvr.cells ?? []) expect(s0.clues[i]).not.toBe(-1);
     }
+  });
+
+  // Scan deterministic boards for the first whose full hint plan contains a
+  // step matching `pred`; returns that plan. Fixed-seed, so it resolves to
+  // the same board every run (the idiom used by the render-scenario seed).
+  const scanPlan = (
+    pred: (steps: HintStep<PalisadeMove>[]) => boolean,
+  ): HintStep<PalisadeMove>[] | undefined => {
+    for (const [preset, count] of [
+      [P, 250],
+      [{ w: 8, h: 6, k: 6 }, 40],
+    ] as const) {
+      for (let i = 0; i < count; i++) {
+        const desc = newDesc(preset, randomNew(`pal-scan-${preset.w}-${i}`)).desc;
+        const r = palisadeGame.hint?.(newState(preset, desc));
+        if (r?.ok && pred(r.steps)) return r.steps;
+      }
+    }
+    return undefined;
+  };
+
+  it("groups a multi-edge deduction into one continuesPrevious journey", () => {
+    const steps = scanPlan((ss) => ss.some((s) => s.continuesPrevious));
+    expect(steps).toBeDefined();
+    if (!steps) return;
+    // A plan never opens on a continuation, and every continuation leg is
+    // preceded by the unflagged start of its journey, which surfaces its
+    // still-to-do edges as siblings (so leg 0 shows the whole set).
+    expect(steps[0].continuesPrevious).toBeUndefined();
+    const firstCont = steps.findIndex((s) => s.continuesPrevious);
+    expect(firstCont).toBeGreaterThan(0);
+    const start = steps[firstCont - 1];
+    expect(start.continuesPrevious).toBeUndefined();
+    expect(hlOf(start).edges?.length ?? 0).toBeGreaterThan(0);
+    // The continuation's narration is the short "…and this edge…" form.
+    expect(steps[firstCont].explanation).toMatch(/^…and this edge/);
+  });
+
+  it("equivalentEdges opens a journey stating the shared-fate coupling", () => {
+    // equivalentEdges shades a region (cells > 1, vs numberExhausted's
+    // single clue cell) and pairs two edges into one journey; its opener
+    // leg must spell out the coupling the earlier narration omitted.
+    const steps = scanPlan((ss) =>
+      ss.some(
+        (s, k) =>
+          !s.continuesPrevious &&
+          ss[k + 1]?.continuesPrevious === true &&
+          (hlOf(s).cells?.length ?? 0) > 1,
+      ),
+    );
+    expect(steps).toBeDefined();
+    if (!steps) return;
+    const opener = steps.find(
+      (s, k) =>
+        !s.continuesPrevious &&
+        steps[k + 1]?.continuesPrevious === true &&
+        (hlOf(s).cells?.length ?? 0) > 1,
+    );
+    expect(opener).toBeDefined();
+    if (!opener) return;
+    expect(opener.explanation).toMatch(/share a fate/);
+    expect(hlOf(opener).edges?.length ?? 0).toBeGreaterThan(0);
+    expect(hlOf(opener).cells?.length ?? 0).toBeGreaterThan(1);
   });
 
   it("does not re-hint an edge the player already marked no-wall", () => {

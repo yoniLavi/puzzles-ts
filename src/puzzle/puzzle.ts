@@ -31,6 +31,14 @@ if (sentryWebWorkerIntegration) {
 }
 
 /**
+ * Uniform dwell per auto-hint step (ms). Every game's auto-play paces at
+ * this rate; a move with a longer slow-motion animation dwells for the
+ * animation instead (see `runAutoHintLoop`). One place tunes the feel of
+ * auto-hint across the whole collection.
+ */
+const AUTO_HINT_STEP_MS = 1000;
+
+/**
  * Public API to the remote WASM puzzle module running in a worker.
  * Exposes reactive properties for puzzle state.
  * Exposes async methods for calling WASM Frontend APIs.
@@ -385,14 +393,15 @@ export class Puzzle {
         this.stopAutoHint(err);
         return;
       }
-      // Pace just past the slow-motion hint animation the midend armed
-      // (game anim time × HINT_ANIM_SCALE) so each move plays out fully
-      // but the next follows almost immediately — for every game, not
-      // just one whose animation happens to match a fixed delay. A short
-      // base animation (e.g. Fifteen's 0.13s) no longer sits through a
-      // gap tuned for a longer one (e.g. Sixteen's 0.4s).
+      // Dwell a uniform AUTO_HINT_STEP_MS on each step so every game's
+      // auto-hint reads at the same comfortable pace — but never shorter
+      // than the move's own slow-motion animation (game anim time ×
+      // HINT_ANIM_SCALE), so an animated move still plays out fully before
+      // the next begins.
       const animMs = await this.workerPuzzle.currentAnimationMs();
-      await new Promise((resolve) => setTimeout(resolve, Math.max(animMs, 0) + 100));
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.max(animMs, AUTO_HINT_STEP_MS)),
+      );
     }
     const solved = this.isSolved;
     this.stopAutoHint("");

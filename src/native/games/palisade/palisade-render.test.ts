@@ -10,7 +10,6 @@ import {
   COL_GRID,
   COL_HINT,
   COL_HINT_CELL,
-  COL_HINT_SIBLING,
   COL_LINE_MAYBE,
   newDrawState,
   type PalisadeDrawState,
@@ -121,7 +120,7 @@ describe("Palisade redraw", () => {
     expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_ERROR)).toBe(true);
   });
 
-  it("paints the action edge, its sibling, and referenced cells distinctly", () => {
+  it("paints every forced edge of the firing in COL_HINT, plus the shaded cells", () => {
     const state = makeState();
     const hint: HintStep<PalisadeMove, PalisadeHint> = {
       move: { type: "edges", edits: [] },
@@ -140,12 +139,11 @@ describe("Palisade redraw", () => {
     };
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(state), null, state, 0, freshUi(), 0, 0, hint);
-    // The action edge is COL_HINT, the sibling is COL_HINT_SIBLING (a
-    // distinct colour), and referenced cells get a COL_HINT_CELL fill.
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_HINT)).toBe(true);
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_HINT_SIBLING)).toBe(
-      true,
-    );
+    // The action edge AND its sibling both paint COL_HINT (they share a
+    // fate, so they share a colour); referenced cells get a COL_HINT_CELL
+    // fill. The two distinct edges → at least two COL_HINT rects.
+    const hintRects = ops.filter((o) => o.op === "drawRect" && o.colour === COL_HINT);
+    expect(hintRects.length).toBeGreaterThanOrEqual(2);
     expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_HINT_CELL)).toBe(
       true,
     );
@@ -154,12 +152,7 @@ describe("Palisade redraw", () => {
     const { dr: dr2, ops: ops2 } = recordingDrawing();
     redraw(dr2, freshDs(state), null, state, 0, freshUi(), 0, 0);
     expect(
-      ops2.some(
-        (o) =>
-          o.colour === COL_HINT ||
-          o.colour === COL_HINT_CELL ||
-          o.colour === COL_HINT_SIBLING,
-      ),
+      ops2.some((o) => o.colour === COL_HINT || o.colour === COL_HINT_CELL),
     ).toBe(false);
   });
 

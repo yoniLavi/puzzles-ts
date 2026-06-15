@@ -17,12 +17,16 @@ import { describe, expect, it } from "vitest";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { palisadeGame } from "./index.ts";
-import { COL_HINT, COL_HINT_CELL, COL_HINT_SIBLING } from "./render.ts";
+import { COL_HINT, COL_HINT_CELL } from "./render.ts";
 import { newDesc } from "./solver.ts";
 import type { PalisadeHint } from "./state.ts";
 
-const hasSiblings = (hl: PalisadeHint | undefined): boolean =>
-  (hl?.edges?.length ?? 0) > 0;
+// The equivalentEdges frame: a sibling edge AND a shaded *region* (more
+// than one referenced cell). numberExhausted legs now also carry a sibling
+// (they're grouped into a journey too), but reference a single clue cell —
+// so the multi-cell region distinguishes the rule we're hunting.
+const isEquivalentEdgesFrame = (hl: PalisadeHint | undefined): boolean =>
+  (hl?.edges?.length ?? 0) > 0 && (hl?.cells?.length ?? 0) > 1;
 
 /**
  * Deterministically find a board whose hint plan reaches an
@@ -41,7 +45,8 @@ function equivalentEdgesFrame() {
         game: palisadeGame,
         id,
         showHint: true,
-        hintUntil: (step) => hasSiblings(step.highlights as PalisadeHint | undefined),
+        hintUntil: (step) =>
+          isEquivalentEdgesFrame(step.highlights as PalisadeHint | undefined),
       });
     } catch {
       return null;
@@ -52,7 +57,10 @@ function equivalentEdgesFrame() {
     for (let i = 0; i < 200; i++) {
       const id = `${preset}#eq-${i}`;
       const result = tryScenario(id);
-      if (result && hasSiblings(result.hint?.highlights as PalisadeHint | undefined)) {
+      if (
+        result &&
+        isEquivalentEdgesFrame(result.hint?.highlights as PalisadeHint | undefined)
+      ) {
         return { id, result };
       }
     }
@@ -67,29 +75,30 @@ describe("Palisade render scenarios", () => {
   it("reaches the equivalentEdges hint frame in-process and paints it", () => {
     const { result } = equivalentEdgesFrame();
     const ops = result.recording.ops;
-    const paintsRect = (colour: number): boolean =>
-      ops.some((o) => o.op === "rect" && o.colour === colour);
+    const rectsOf = (colour: number): number =>
+      ops.filter((o) => o.op === "rect" && o.colour === colour).length;
 
-    // The action edge (blue), its related sibling edge (orange), and the
-    // shaded referenced region (light blue) are all painted, distinctly.
-    expect(paintsRect(COL_HINT)).toBe(true);
-    expect(paintsRect(COL_HINT_SIBLING)).toBe(true);
-    expect(paintsRect(COL_HINT_CELL)).toBe(true);
+    // Both forced edges paint COL_HINT (they share a fate, so they share a
+    // colour) — at least two blue rects — over a COL_HINT_CELL-shaded region.
+    expect(rectsOf(COL_HINT)).toBeGreaterThanOrEqual(2);
+    expect(rectsOf(COL_HINT_CELL)).toBeGreaterThan(0);
 
     // Shading the region does not erase the clues: digits are still drawn.
     expect(ops.some((o) => o.op === "text")).toBe(true);
 
     // The displayed step really is the equivalentEdges one (a sibling
-    // edge, and a non-empty referenced region).
+    // edge, and a multi-cell referenced region).
     const hl = result.hint?.highlights as PalisadeHint | undefined;
-    expect(hasSiblings(hl)).toBe(true);
-    expect(hl?.cells?.length ?? 0).toBeGreaterThan(0);
+    expect(isEquivalentEdgesFrame(hl)).toBe(true);
+    expect(hl?.cells?.length ?? 0).toBeGreaterThan(1);
   });
 
   it("matches the opener-frame snapshot", () => {
-    // A fixed descriptive board → a stable frame. The opener deduction is
-    // a simpler rule than equivalentEdges (no sibling edge), exercising a
-    // second rule's rendering.
+    // A fixed descriptive board → a stable frame, exercising a different
+    // rule than equivalentEdges. This board's opening deduction forces
+    // more than one edge, so its first leg surfaces a COL_HINT_SIBLING
+    // edge (the firing's other edge) alongside the COL_HINT action edge —
+    // the grouped-journey rendering.
     const P = { w: 5, h: 5, k: 5 };
     const id = `5x5n5:${newDesc(P, randomNew("palisade-render-opener")).desc}`;
     const { recording, hint } = renderScenario({

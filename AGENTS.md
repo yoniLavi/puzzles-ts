@@ -87,6 +87,17 @@ Bit-identical RNG (`random.ts`, already ported) is retained so *future* shared g
 
 A game's `puzzles/<game>.c` is deleted once that game's TS port has landed and shipped — deletion is **per game**, not deferred to a whole-collection endpoint. C/WASM remains the runtime for unported games until each is ported. The collection is fully migrated, and `puzzles/` removed entirely, only when the last game lands. The point: don't carry a per-game C fallback past the moment its TS replacement is trusted in production.
 
+## Hint quality bar (exemplar: Palisade)
+
+Explained hints are a core deliberate-divergence product value of this fork, not a nicety. The **Palisade deduction hint** (`group-palisade-hint-deductions`, owner-endorsed 2026-06-15) is the **exemplar every game's `hint()` should meet** — it is not enough to point at the next move:
+
+1. **Explain *why* the move is forced, not just *what* to do.** Narrate the actual deduction: *"Both edges border the same region, so they share a fate: both walls or both open. Walling both would exceed clue 2 — so neither can be a wall."* — never just "set this edge". If a narration's conclusion doesn't follow from its own stated premises, the deductive coupling is missing; surface it (Palisade's `equivalentEdges` text was an unreadable non-sequitur until the "share a fate" premise was added). A *good* hint teaches the player the technique.
+2. **One deduction firing = one journey.** A single deduction that forces several moves is emitted as one multi-leg `HintStep` journey (continuation legs flagged `continuesPrevious`), so it reads and auto-plays as one coherent hint rather than N disjoint ones. This is codified as a cross-game convention in the `ts-engine` Hint System requirement; the `Midend` mechanism (`continuesPrevious` + `executeHint`) is already generic — a game just emits grouped steps.
+3. **Equivalent moves share a colour.** When a firing's moves share a fate, render them identically (Palisade: all `COL_HINT` blue), not in distinct colours — a distinct colour reads as "different roles" and misleads.
+4. **Pace auto-hint uniformly.** `AUTO_HINT_STEP_MS` (1s) per step in `src/puzzle/puzzle.ts`, floored by the move's own animation so animated moves still play out fully.
+
+Aspirational next step (owner-flagged 2026-06-15, not yet committed): lift Fifteen/Sixteen hints from "Slide tile 10 into the space" to a Palisade-grade *why* — does the move place a tile in its final home, or is it a helper/setup move toward sorting another tile?
+
 ## TS port style: idiomatic throughout
 
 Port to the most idiomatic TS shape — classes over handle-passing, `[Symbol.iterator]()` over `while (next())`, `boolean` over `0|1`, GC over explicit `free()`, modern data structures over C-array mirrors. Use the C as a *reference for the logic* (what deductions the solver makes, how the generator ensures uniqueness), not as a control-flow template to mirror line-for-line. There is no corpus that a refactor could break, so write it clean the first time; the dev-time differential spot-check catches gross divergence.

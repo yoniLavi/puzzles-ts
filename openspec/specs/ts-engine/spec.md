@@ -424,6 +424,20 @@ Plan lifecycle:
 - The plan SHALL be cleared on undo, redo, restart, new game, solve, when the
   last step completes, and when the board reaches the solved state.
 
+**Hint-authoring convention — one deduction firing = one journey.** When a
+game's `hint()` derives its plan from a solver/deduction engine, a **single
+logical deduction that forces more than one move** (e.g. a coupled pair of
+edges, or a clue that simultaneously resolves several of its sides) SHALL be
+emitted as **one journey**: an ordered run of `HintStep`s whose first leg
+carries the full explanation of the deduction (and SHOULD surface the whole set
+visually, e.g. the other forced moves as sibling highlights) and whose
+subsequent legs are flagged `continuesPrevious` with abbreviated narration.
+Distinct deductions remain separate hints (the first leg of each is
+unflagged, so the user asks again to see the next deduction). This keeps the
+manual flow ("clear this one, then the rest" stays on screen through its legs)
+and the auto-play flow (the legs animate back-to-back as one multi-part move)
+consistent across every game whose hints group naturally.
+
 #### Scenario: Requesting a hint from the midend
 
 - **WHEN** the user requests a hint via `midend.hint()` with no active plan,
@@ -451,6 +465,17 @@ Plan lifecycle:
 - **WHEN** the journey's final leg completes and the following step is not a
   continuation
 - **THEN** the display hides and the next step waits to be asked for
+
+#### Scenario: A multi-move deduction is grouped into one journey
+
+- **WHEN** a game's `hint()` derives a step from a single deduction that forces
+  more than one move
+- **THEN** those moves are returned as a contiguous run of `HintStep`s whose
+  first leg is unflagged and carries the full deduction explanation, and whose
+  remaining legs each set `continuesPrevious` to `true`
+- **AND** completing one leg manually keeps the hint displayed and transitions
+  to the next leg, while the next *distinct* deduction's first leg waits to be
+  asked for
 
 #### Scenario: An off-plan move drops the plan
 
