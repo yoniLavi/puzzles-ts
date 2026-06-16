@@ -30,6 +30,15 @@ PWA port of [Simon Tatham's Portable Puzzle Collection][sgt-puzzles]. Two halves
 
 The long-term goal is to replace the C engine with native TypeScript, **top-down and product-value-first**. The authoritative statement of the migration approach is the `ts-migration` capability spec (`openspec/specs/ts-migration/spec.md`); this section is the readable summary. The prior bottom-up, byte-identical-fidelity doctrine was superseded on 2026-05-18 by the `pivot-to-top-down-ts` change and is preserved on branch `legacy/seam-by-seam-fidelity` + tag `pre-ts-pivot` in case of reversal.
 
+## Dev guides under `docs/porting/` — consult *and* maintain them (live wiki)
+
+**Whenever you work on a game — porting it, adding or iterating a hint, fixing a render/input bug, or any other change under `src/native/games/` — read the relevant guide first and keep it current as you go.** The guides are the followable *how*; the specs remain the normative *what*.
+
+- [`docs/porting/game-port-playbook.md`](docs/porting/game-port-playbook.md) — porting a game (file layout, idiomatic rules, cache-key pattern, the two-stage parity gate, differential check, test tiers).
+- [`docs/porting/hint-authoring.md`](docs/porting/hint-authoring.md) — adding/iterating an explained `hint()` (the Palisade bar, plan mechanics, refusal→`findMistakes`+banner, render conventions, tier-2.5 verification).
+
+**Treat these as a live wiki, not frozen docs.** They are provisional v1 (change `add-game-dev-guides`) and *expected to grow*: every time you hit something the guide didn't tell you, get wrong because it was missing, or learn a better pattern, **update the guide in the same change** — that is part of "done," not a separate chore. Keep them link-only to the specs (state a normative rule briefly + link it; point at an exemplar file rather than pasting code that rots) so they can go stale but never silently contradict a spec. The section pointers below ("TS port style", "Hint quality bar") are entry points into these guides.
+
 ## Goal
 
 Replace the C/WASM puzzle engine with native TypeScript, ordered so that **user-facing value lands early** and the codebase becomes one where new games and cross-game features are cheap to build. Deliberate divergence from upstream (quick-save, mistake-checking, explained hints, per-game gameplay aids) is the *point*, not a fidelity regression. The bar for a ported game is "plays correctly, behavioural tests green, dev-time spot-check against C looks right" — **not** byte-identical reproduction of a recorded corpus.

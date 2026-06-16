@@ -1,8 +1,11 @@
 # Hint Authoring Guide
 
-> **Provisional v1 (2026-06-16).** Codified from the Sixteen, Palisade, and
-> Range hints. Battle-tested next time a ported game gains a hint; fix gaps here
-> as you hit them. See change `add-game-dev-guides`.
+> **Provisional v1 (2026-06-16) — live wiki.** Codified from the Sixteen,
+> Palisade, and Range hints. **Update this file whenever you work on a hint** (a
+> new one, but also iterating an existing one — e.g. the in-flight Range
+> refinements) and hit something it didn't tell you, got wrong, or could say
+> better — that edit is part of "done," in the same change. See
+> `add-game-dev-guides`.
 >
 > **This guide is the *how*. The *what* lives in the specs — links are
 > authoritative.** Anti-drift rule: state a normative rule briefly + link it;

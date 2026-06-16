@@ -31,6 +31,12 @@
 - [x] 4.2 Add one-line pointers from the relevant `AGENTS.md` sections to the
   guides ("TS port style" → playbook, "Hint quality bar" → hint guide; the
   playbook links onward to "Test discipline" and "Long-tail risks").
+- [x] 4.3 Add a prominent standing-instruction section to `AGENTS.md` ("Dev
+  guides … consult *and* maintain them (live wiki)"): for ANY game work
+  (porting, hint, render/input fix, iteration) read the relevant guide first
+  and update it in the same change when it falls short. Guide headers reworded
+  to "live wiki" — applies to iterating an existing game/hint, not just fresh
+  ports (owner-directed 2026-06-16: Range iteration uses the docs too).
 
 ## 5. Validate + gate
 - [x] 5.1 `openspec validate add-game-dev-guides --strict`.

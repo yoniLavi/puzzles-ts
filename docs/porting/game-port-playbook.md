@@ -1,8 +1,11 @@
 # Game Port Playbook
 
-> **Provisional v1 (2026-06-16).** Codified from the first 14 ports but not yet
-> battle-tested by *following* it on a fresh port. Port #15 validates it; fix
-> any gap here as you hit it. See change `add-game-dev-guides`.
+> **Provisional v1 (2026-06-16) — live wiki.** Codified from the first 14 ports
+> but not yet battle-tested by *following* it on a fresh port. Port #15 validates
+> it. **Update this file whenever you work on a game** (a new port, but also
+> iterating an existing one) and hit something it didn't tell you, got wrong, or
+> could say better — that edit is part of "done," in the same change. See
+> `add-game-dev-guides`.
 >
 > **This guide is the *how*. The *what* lives in the specs — links below are
 > authoritative; this file paraphrases for flow and must not be trusted over

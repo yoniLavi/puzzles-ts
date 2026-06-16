@@ -40,10 +40,14 @@ honestly.
 - **`repo-layout` spec delta.** Sanction `docs/` as a top-level directory and
   add a requirement that developer guides live there and are link-only to
   specs (no duplicated normative content).
-- **`AGENTS.md` pointers.** The relevant `AGENTS.md` sections (TS port style,
-  Test discipline, Hint quality bar, Long-tail risks) gain a one-line pointer
-  to the corresponding guide. The sections stay; the guides carry the
-  followable detail.
+- **`AGENTS.md` pointers + a standing "live wiki" directive.** The relevant
+  sections (TS port style, Hint quality bar) gain a one-line pointer to the
+  corresponding guide. A prominent new section near the top makes consulting
+  *and maintaining* the guides a standing instruction: for **any** game work
+  (porting, hint, render/input fix, iterating an existing game) read the
+  relevant guide first and update it in the same change whenever it falls
+  short — that edit is part of "done." The guides are an evolving live wiki,
+  not frozen docs.
 
 ## Impact
 
