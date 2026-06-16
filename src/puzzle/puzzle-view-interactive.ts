@@ -14,6 +14,18 @@ import { PuzzleView } from "./puzzle-view.ts";
 import { type Point, PuzzleButton } from "./types.ts";
 
 /**
+ * Whether the user currently has a non-empty text selection on the page
+ * (e.g. they dragged across the hint banner). `window.getSelection()` reports
+ * selections inside shadow roots too, so this catches a banner selection even
+ * though the banner lives in this component's shadow DOM. Used to let a native
+ * text copy win over the puzzle's copy-as-image shortcut.
+ */
+function hasTextSelection(): boolean {
+  const sel = typeof window !== "undefined" ? window.getSelection?.() : null;
+  return !!sel && !sel.isCollapsed && sel.toString().trim().length > 0;
+}
+
+/**
  * The `<puzzle-view-interactive>` component subclasses `<puzzle-view>`
  * to add handling for mouse and keyboard events directed at the puzzle.
  * (It does not provide any other UI for the game.)
@@ -160,6 +172,15 @@ export class PuzzleViewInteractive extends PuzzleView {
    */
   wantsKeyEvent(event: KeyboardEvent): boolean {
     const isCtrl = hasCtrlKey(event);
+    // Don't claim Ctrl/Cmd+C (copy-as-image) while the user has a text
+    // selection — leave it to the browser's native copy so the redirect in
+    // `handleBubbledKeyDown` doesn't steal focus and clear the selection.
+    if (
+      (event.key === "Copy" || (event.key === "c" && isCtrl)) &&
+      hasTextSelection()
+    ) {
+      return false;
+    }
     return (
       event.key === "Escape" ||
       event.key === "Copy" ||
@@ -182,6 +203,11 @@ export class PuzzleViewInteractive extends PuzzleView {
     }
 
     if (event.key === "Copy" || (event.key === "c" && hasCtrlKey(event))) {
+      // A real text selection (e.g. the hint banner) takes precedence: let the
+      // browser perform its native text copy instead of copying the board image.
+      if (hasTextSelection()) {
+        return;
+      }
       event.preventDefault();
       await this.puzzle.copyImage();
       return;

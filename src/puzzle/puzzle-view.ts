@@ -549,6 +549,13 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       .hint-banner-text {
         display: inline-block;
         animation: hintFadeIn 0.15s ease-out;
+        /* Make the hint sentence selectable/copyable as text. Without this it
+         * inherits the puzzle area's non-selectable behaviour and a copy grabs
+         * the canvas image instead of the words. */
+        -webkit-user-select: text;
+        -moz-user-select: text;
+        user-select: text;
+        cursor: text;
       }
 
       @keyframes hintFadeIn {
