@@ -355,7 +355,13 @@ export class Puzzle {
 
   public async hint(): Promise<string | undefined> {
     this.stopAutoHint("Cancelled by manual move");
-    return this.workerPuzzle.hint();
+    const err = await this.workerPuzzle.hint();
+    // Surface a refusal ("fix the highlighted mistakes first", "already
+    // solved", …) in the same transient banner the auto-hint flow uses, so a
+    // manual Hint press explains why nothing happened rather than failing
+    // silently. The midend also lights up any mistakes behind the message.
+    if (err) this.setAutoHintMessage(err, true);
+    return err;
   }
 
   public async executeHint(): Promise<string | undefined> {

@@ -42,6 +42,10 @@
   `ts-engine` spec delta + midend tests (refusal-with-mistake highlights;
   refusal-without-mistake highlights nothing). Owner-found on Range
   (Auto-Hint claimed a highlight that never rendered); verified live.
+- [x] 4b.2 The manual Hint button surfaces the refusal message too: `Puzzle.hint`
+  routes a returned error into the same transient banner the auto-hint flow
+  uses (`setAutoHintMessage`), so a manual press explains why nothing happened
+  instead of failing silently — message + highlight together. Verified live.
 
 ## 5. Gate + smoke
 - [x] 5.1 Full gate: `tsc -b --noEmit` → `biome lint` → `vitest run` →
