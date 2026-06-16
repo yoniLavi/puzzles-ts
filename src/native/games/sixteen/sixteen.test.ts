@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { GameDrawing, HintStep } from "../../engine/index.ts";
 import { randomNew } from "../../random/index.ts";
-import { executeMove, type SixteenHintHighlights, sixteenGame } from "./index.ts";
+import {
+  __lastHintEngagedFallback,
+  executeMove,
+  type SixteenHintHighlights,
+  sixteenGame,
+} from "./index.ts";
 import {
   decodeParams,
   defaultParams,
@@ -532,16 +537,19 @@ describe("Sixteen hint", () => {
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(true);
     if (!result?.ok) return;
-    // The exact bidirectional fallback runs once and returns the whole
-    // path out of the local minimum: following the single stored plan
-    // reaches the solved state with no recomputation.
+    // This strict local minimum is exactly the case the exact bidirectional
+    // fallback exists for — it must have engaged.
+    expect(__lastHintEngagedFallback()).toBe(true);
+    // The fallback runs once and returns the whole path out of the local
+    // minimum: following the single stored plan reaches the solved state
+    // with no recomputation.
     for (const step of result.steps) s = executeMove(s, step.move);
     expect(s.completed).toBeGreaterThan(0);
-    // Explicit generous timeout: the exact bidirectional BFS over ~1.5M
-    // states is inherently ~2-3s solo and slower under full-suite CPU
-    // contention; the default 5s is fragile when other heavy suites run
-    // in parallel.
-  }, 20000);
+    // Generous timeout: the exact bidirectional BFS over ~1.5M states is
+    // inherently ~2-3s solo and much slower under full-suite CPU contention
+    // (seen >29s); a high ceiling keeps a correct-but-slow search from
+    // flaking when other heavy suites run in parallel.
+  }, 60000);
 
   it("a mid-game board with deep displacements hints fast from the forward search", () => {
     // Regression (owner-reported, 2026-06-10): 7 tiles out of place in
@@ -565,11 +573,15 @@ describe("Sixteen hint", () => {
       moveTarget: 0,
       lastMovementSense: 0,
     };
-    const t0 = performance.now();
     const result = sixteenGame.hint?.(s);
-    const elapsed = performance.now() - t0;
     expect(result?.ok).toBe(true);
     if (!result?.ok) return;
+    // The point of the no-progress gate: the forward search makes progress
+    // here, so the expensive bidirectional fallback must NOT engage. Assert
+    // that mechanism directly rather than timing a wall-clock proxy (which
+    // flaked under full-suite CPU contention — a starved fast path can still
+    // exceed any tight millisecond bound).
+    expect(__lastHintEngagedFallback()).toBe(false);
     expect(result.steps.length).toBeGreaterThan(0);
     // Each step must net-improve tile placement (partial plans from the
     // forward search are useful, not noise).
@@ -581,8 +593,6 @@ describe("Sixteen hint", () => {
       return k;
     };
     expect(outOfPlace(board)).toBeLessThan(outOfPlace(s));
-    // Generous bound: ~0.2s post-fix, ~3.3s pre-fix on the same machine.
-    expect(elapsed).toBeLessThan(1500);
   });
 
   it("a previewed two-leg journey tracks and narrates the same tile through both legs", () => {

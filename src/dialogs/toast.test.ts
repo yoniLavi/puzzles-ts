@@ -3,7 +3,7 @@
 // Tier-3 component test (see the `repo-layout` spec): the transient toast
 // mounts into a polite live region, replaces rather than stacks, and
 // auto-dismisses — driven in-process under happy-dom, no browser.
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import "../test-setup/icons.ts"; // no-fetch wa-icon libraries (avoid teardown AbortError noise)
 import { showToast } from "./toast.ts";
 
@@ -33,8 +33,12 @@ describe("showToast", () => {
   it("auto-dismisses after its duration", async () => {
     showToast({ message: "transient", duration: 10 });
     expect(region()?.querySelectorAll("app-toast").length).toBe(1);
-    // duration (10ms) + the fade-out fallback removal (250ms).
-    await new Promise((r) => setTimeout(r, 350));
-    expect(region()?.querySelectorAll("app-toast").length).toBe(0);
+    // Removal = duration (10ms) + the fade-out fallback (250ms). Poll until
+    // it's gone rather than sleeping a fixed margin: a loaded machine that
+    // fires the timers late must not flake (and a fast one needn't wait).
+    await vi.waitFor(
+      () => expect(region()?.querySelectorAll("app-toast").length).toBe(0),
+      { timeout: 2000, interval: 20 },
+    );
   });
 });

@@ -1080,6 +1080,16 @@ function arrayToKey(arr: Int32Array): string {
 
 type SlideMove = Extract<SixteenMove, { type: "slide" }>;
 
+/** Test-only diagnostic: whether the most recent `hint()` engaged the exact
+ * bidirectional fallback — the expensive (~0.5-2s) path the no-progress gate
+ * exists to avoid on boards the forward search can already make progress on.
+ * Tests assert this directly instead of timing a wall-clock proxy (which
+ * flakes under full-suite CPU contention). Unused in production. */
+let lastHintEngagedFallback = false;
+export function __lastHintEngagedFallback(): boolean {
+  return lastHintEngagedFallback;
+}
+
 /** Exact bidirectional BFS (in full-slide moves) from `start` to the
  * solved board: expand level by level from both ends, always growing the
  * smaller frontier, until the visited sets meet. Returns the full move
@@ -1422,7 +1432,9 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   // is fine: the plan runs out and the next request recomputes from
   // the better position.
   let path: SlideMove[] | null = null;
+  lastHintEngagedFallback = false;
   if (bestNode.h !== 0 && bestNode.move === null && outOfPlace <= 8) {
+    lastHintEngagedFallback = true;
     path = bidirectionalPlan(tiles, w, h, n, moves);
   }
   path ??= pathTo(bestNode);
