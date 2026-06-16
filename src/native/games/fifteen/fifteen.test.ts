@@ -283,10 +283,124 @@ describe("Fifteen hint", () => {
     if (!result?.ok) throw new Error("expected a plan");
     // Like Sixteen, the plan is the whole solution, not a single step.
     expect(result.steps.length).toBeGreaterThan(1);
-    expect(result.steps[0].explanation).toMatch(/^Slide tile \d+ into the space$/);
+    expect(result.steps[0].explanation).toMatch(
+      /^Working on tile \d+: (slide it into place|slide it closer|reposition it|slide tile \d+ into place|slide tile \d+ out of the way)$/,
+    );
     // Following every step reaches the solved board.
     for (const step of result.steps) state = executeMove(state, step.move);
     expect(isCompletedTiles(state.tiles, state.n)).toBe(true);
+  });
+
+  it("narrates a final-placement step as 'home' and a maneuvering step otherwise", () => {
+    const p = { w: 4, h: 4 };
+    const state = newState(p, newDesc(p, randomNew("hint-why")).desc);
+    const result = fifteenGame.hint?.(state);
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) throw new Error("expected a plan");
+
+    let sawHelper = false;
+    let board = state;
+    for (const step of result.steps) {
+      if (step.move.type !== "move") continue;
+      const tile = board.tiles[step.move.y * board.w + step.move.x];
+      const after = executeMove(board, step.move);
+      // Every step names the goal tile it is working toward home.
+      expect(step.explanation).toMatch(/^Working on tile \d+: /);
+      if (step.explanation.includes("into place")) {
+        // Any "into place" wording (goal or a restored tile) must really
+        // land the slid tile in its own solved cell.
+        expect(after.tiles[tile - 1]).toBe(tile);
+      } else {
+        // A non-placing step is a nudge, a reposition, or a clear-the-way move.
+        expect(step.explanation).toMatch(
+          /slide it closer|reposition it|slide tile \d+ out of the way/,
+        );
+        sawHelper = true;
+      }
+      board = after;
+    }
+    // The final greedy step always homes the last tile.
+    expect(result.steps.at(-1)?.explanation).toContain("slide it into place");
+    // A scrambled board needs maneuvering (helper) moves too.
+    expect(sawHelper).toBe(true);
+  });
+
+  it("never says 'closer' when the target tile is being pushed away (owner board)", () => {
+    // Owner report 2026-06-15: tile 8 sits one cell below its home (the spot
+    // 12 occupies); the greedy step slides 8 DOWN, away from home, to walk the
+    // gap around it. The hint must not claim "closer".
+    const p = { w: 4, h: 4 };
+    const state = newState(p, "1,2,3,4,5,6,7,12,9,11,15,8,13,10,14,0");
+    const result = fifteenGame.hint?.(state);
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) throw new Error("expected a plan");
+    const first = result.steps[0];
+    expect(first.explanation).toContain("Working on tile 8");
+    expect(first.explanation).not.toContain("closer");
+    // The move really does take tile 8 farther from its solved cell (index 7).
+    const dist = (idx: number) =>
+      Math.abs((idx % 4) - (7 % 4)) + Math.abs(Math.floor(idx / 4) - Math.floor(7 / 4));
+    const before = state.tiles.indexOf(8);
+    const after = executeMove(state, first.move).tiles.indexOf(8);
+    expect(dist(after)).toBeGreaterThan(dist(before));
+  });
+
+  it("holds the goal steady through the end-of-row rotation (owner board)", () => {
+    // Owner report 2026-06-15: with tile 8 in the bottom-right and the gap at
+    // tile 8's home (index 7), the greedy solver displaces the already-home
+    // tile 7 to route the gap, then re-homes 7 before finally homing 8. The
+    // banner must keep reading "Working on tile 8" across the whole rotation
+    // (not flip to "tile 7"), and narrate 7's restoration as "slide tile 7
+    // into place".
+    const p = { w: 4, h: 4 };
+    const state = newState(p, "1,2,3,4,5,6,7,0,9,11,15,12,13,10,14,8");
+    const result = fifteenGame.hint?.(state);
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) throw new Error("expected a plan");
+
+    // Walk the plan until tile 8 lands home; the goal must stay "tile 8".
+    let board = state;
+    let sawSevenRestored = false;
+    let homedEight = false;
+    for (const step of result.steps) {
+      expect(step.explanation.startsWith("Working on tile 8:")).toBe(true);
+      if (step.explanation === "Working on tile 8: slide tile 7 into place") {
+        sawSevenRestored = true;
+      }
+      board = executeMove(board, step.move);
+      if (board.tiles[7] === 8) {
+        // 8 is home; this step closed the goal — narrated as placing 8.
+        expect(step.explanation).toBe("Working on tile 8: slide it into place");
+        homedEight = true;
+        break;
+      }
+    }
+    expect(sawSevenRestored).toBe(true);
+    expect(homedEight).toBe(true);
+  });
+
+  it("a 'closer' label means the target really moved nearer its home", () => {
+    // Across a whole greedy plan, every "slide it closer" step must shrink the
+    // target tile's Manhattan distance to its solved cell.
+    const p = { w: 4, h: 4 };
+    for (let s = 0; s < 20; s++) {
+      let board = newState(p, newDesc(p, randomNew(`closer-${s}`)).desc);
+      const result = fifteenGame.hint?.(board);
+      if (!result?.ok) continue;
+      for (const step of result.steps) {
+        if (step.move.type !== "move") continue;
+        if (step.explanation.includes("slide it closer")) {
+          const target = Number(step.explanation.match(/Working on tile (\d+):/)?.[1]);
+          const dist = (idx: number) =>
+            Math.abs((idx % 4) - ((target - 1) % 4)) +
+            Math.abs(Math.floor(idx / 4) - Math.floor((target - 1) / 4));
+          const before = board.tiles.indexOf(target);
+          const after = executeMove(board, step.move).tiles.indexOf(target);
+          expect(dist(after)).toBeLessThan(dist(before));
+        }
+        board = executeMove(board, step.move);
+      }
+    }
   });
 
   it("reports no plan on an already-solved board", () => {

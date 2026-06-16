@@ -32,9 +32,11 @@ if (sentryWebWorkerIntegration) {
 
 /**
  * Uniform dwell per auto-hint step (ms). Every game's auto-play paces at
- * this rate; a move with a longer slow-motion animation dwells for the
- * animation instead (see `runAutoHintLoop`). One place tunes the feel of
- * auto-hint across the whole collection.
+ * this rate. The engine stretches each animated hint move to the *same*
+ * duration (`HINT_ANIM_S` in `midend.ts` — keep the two equal), so an
+ * animated step is continuous motion with no frozen gap before the next;
+ * a non-animated game has no animation to stretch and is paced purely by
+ * this dwell. One place tunes the feel of auto-hint across the collection.
  */
 const AUTO_HINT_STEP_MS = 1000;
 
@@ -395,9 +397,9 @@ export class Puzzle {
       }
       // Dwell a uniform AUTO_HINT_STEP_MS on each step so every game's
       // auto-hint reads at the same comfortable pace — but never shorter
-      // than the move's own slow-motion animation (game anim time ×
-      // HINT_ANIM_SCALE), so an animated move still plays out fully before
-      // the next begins.
+      // than the move's own slow-motion animation (stretched to
+      // HINT_ANIM_S, which equals this dwell for animated games), so an
+      // animated move plays out fully and flows straight into the next.
       const animMs = await this.workerPuzzle.currentAnimationMs();
       await new Promise((resolve) =>
         setTimeout(resolve, Math.max(animMs, AUTO_HINT_STEP_MS)),

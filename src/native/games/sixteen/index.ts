@@ -10,10 +10,8 @@ import type {
   UiUpdate,
 } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
-import {
-  coord as coordE,
-  fromCoord as fromCoordE,
-} from "../../engine/geometry.ts";
+import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
+import { HINT_SETTING_UP, workingOn } from "../../engine/hint-vocab.ts";
 import {
   CURSOR_RIGHT,
   CURSOR_SELECT,
@@ -480,7 +478,11 @@ function computeSize(p: SixteenParams, ts: number): Size {
 }
 
 function colours(defaultBackground: Colour): Colour[] {
-  const { background: bg, highlight: hi, lowlight: lo } = mkhighlight(defaultBackground);
+  const {
+    background: bg,
+    highlight: hi,
+    lowlight: lo,
+  } = mkhighlight(defaultBackground);
 
   const text: Colour = [0, 0, 0];
   // Hint colour: a clear blue for highlighting hint tiles.
@@ -1465,7 +1467,10 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
  * narrated the tile's *solved* row/column regardless of what the move
  * achieved; once hints started executing the narrated slide, that
  * overpromise pushed the game off the solver's path and auto-play
- * could cycle.) */
+ * could cycle.) The narration reads "Working on tile N: move it to
+ * <line>[, then <line>]" and explains *why* via a trailing clause —
+ * ", its final spot" when the journey ends in the tile's solved cell,
+ * else "(setting up)" — per the shared sliding-tile hint vocabulary. */
 function narrateStep(
   tiles: Int32Array,
   w: number,
@@ -1547,10 +1552,12 @@ function narrateStep(
   const landC = move.axis === "row" ? (curC + move.delta + w) % w : curC;
   const targetPos = landR * w + landC;
 
-  let explanation =
-    move.axis === "row"
-      ? `Move tile ${bestTile} to column ${landC + 1}`
-      : `Move tile ${bestTile} to row ${landR + 1}`;
+  // Goal:tactic narration. The prefix names the tile being worked toward
+  // home; the tactic states the destination line this move sends it to.
+  // A continuation leg ("then to …") repeats neither the verb nor the why
+  // — leg 0 of its journey already carried both and is still on screen.
+  const firstDest = move.axis === "row" ? `column ${landC + 1}` : `row ${landR + 1}`;
+  let tactic = continuesPrevious ? `then to ${firstDest}` : `move it to ${firstDest}`;
 
   let ultimatePos: number | undefined;
 
@@ -1564,13 +1571,27 @@ function narrateStep(
       const ult = ultR * w + ultC;
       if (ult !== targetPos && ult !== currentIdx) {
         ultimatePos = ult;
-        explanation =
-          move.axis === "row"
-            ? `Move tile ${bestTile} to column ${landC + 1}, then to row ${ultR + 1}`
-            : `Move tile ${bestTile} to row ${landR + 1}, then to column ${ultC + 1}`;
+        const secondDest =
+          move.axis === "row" ? `row ${ultR + 1}` : `column ${ultC + 1}`;
+        tactic += `, then ${secondDest}`;
       }
     }
   }
+
+  // Explain *why* the move matters (per the hint quality bar): a move
+  // that lands the narrated tile in its solved cell (index tile-1) is a
+  // **home** move; one that leaves it out of place is a **staging** move.
+  // The why attaches to the journey's *end* — for a previewed two-leg
+  // journey use the ultimate landing cell, so a first leg that merely
+  // stages but whose second leg homes the tile reads as a home move. A
+  // continuation leg carries no why (leg 0 of its journey already did).
+  let suffix = "";
+  if (!continuesPrevious) {
+    const finalPos = ultimatePos ?? targetPos;
+    suffix = finalPos === bestTile - 1 ? ", its final spot" : ` ${HINT_SETTING_UP}`;
+  }
+
+  const explanation = `${workingOn(bestTile)}${tactic}${suffix}`;
 
   // Normalize the returned delta to the in-grid direction of travel
   // (same permutation mod w/h) so the slide animation glides the tile

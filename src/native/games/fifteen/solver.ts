@@ -179,9 +179,14 @@ function nextMove(
 
 /** The overall greedy solving process: find the next piece to place,
  * then move the gap one cell toward where that piece needs to go.
- * Returns the gap's next destination cell, or `null` when the board is
- * already solved (no hint). Faithful port of upstream `compute_hint`. */
-export function computeHint(state: FifteenState): { x: number; y: number } | null {
+ * Returns the gap's next destination cell plus `target` — the tile the
+ * solver is currently working toward its home (upstream's `nextpiece`),
+ * which the hint narration uses to explain *which* tile a maneuvering
+ * move serves — or `null` when the board is already solved (no hint).
+ * Faithful port of upstream `compute_hint`. */
+export function computeHint(
+  state: FifteenState,
+): { x: number; y: number; target: number } | null {
   const { w, h, n, tiles } = state;
   const gx = state.gapPos % w;
   const gy = Math.floor(state.gapPos / w);
@@ -249,5 +254,5 @@ export function computeHint(state: FifteenState): { x: number; y: number } | nul
     dx = r.dy;
   }
 
-  return { x: gx + dx, y: gy + dy };
+  return { x: gx + dx, y: gy + dy, target: nextPiece };
 }

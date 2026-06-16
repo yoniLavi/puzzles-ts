@@ -40,7 +40,19 @@ carry the narration through its second leg and the step SHALL be flagged
 the target is the narrated
 tile's **landing cell** under the step's move (with a second-leg preview when
 the next step continues the same tile's journey perpendicular to the first),
-and the returned delta is normalized to the in-grid direction of travel. The Sixteen `redraw` method
+and the returned delta is normalized to the in-grid direction of travel.
+
+Each step's narration SHALL also explain **why** the move matters: a move (or, for
+a journey, its final leg) that lands the narrated tile in its solved cell SHALL
+narrate it as placing the tile in its **final place**; a move that leaves the
+tile out of its solved cell SHALL narrate it as a **setup/staging** move. The
+home-vs-helper wording SHALL be consistent with the project hint quality bar
+(the Palisade exemplar) and with the sibling Fifteen hint, and the *why* SHALL
+attach to a journey's end state (a journey whose later leg homes the tile reads
+as a home move). The plan's moves, highlights, `hintKeepTrack`, and pacing SHALL
+be unchanged by the narration enrichment.
+
+The Sixteen `redraw` method
 SHALL render the current step by highlighting the tile to move (filled
 overlay), its landing cell (border highlight), and the corresponding slide
 arrow (using `COL_HINT`). Sixteen's `hintKeepTrack` SHALL report
@@ -63,6 +75,14 @@ remaining delta in place), and `"off"` otherwise.
 - **THEN** the exact bidirectional fallback produces a shortest full-slide
   plan once, and following or auto-playing the stored plan reaches the solved
   state without recomputation
+
+#### Scenario: Narration distinguishes a final placement from a staging move
+
+- **WHEN** a step (or a journey's final leg) lands the narrated tile in its
+  solved cell
+- **THEN** its narration states the tile is being moved into its final place
+- **WHEN** a step leaves the narrated tile out of its solved cell
+- **THEN** its narration states it is a setup/staging move
 
 ### Requirement: The Sixteen port supports direct row and column dragging
 

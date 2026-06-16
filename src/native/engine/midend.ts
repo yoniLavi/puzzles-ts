@@ -34,11 +34,16 @@ import {
 } from "./game.ts";
 import { decodeSave, encodeSave, type SaveEnvelope } from "./save.ts";
 
-/** How many times slower a hint-executed move animates compared to the
- * game's normal move animation. The slow motion is what lets the user
- * follow what the hint did; the auto-hint loop in `puzzle.ts` paces
- * itself to just over the stretched duration. */
-const HINT_ANIM_SCALE = 2.5;
+/** Target wall-clock duration (seconds) for a hint-executed move's
+ * slow-motion animation, *independent of the game's own (often very
+ * short) move-animation time*. Stretching every game's hint move to the
+ * same duration is what makes auto-hint flow as continuous motion: the
+ * `puzzle.ts` auto-hint loop dwells `AUTO_HINT_STEP_MS` per step, so
+ * matching that here (1s) leaves no frozen gap between the animation
+ * finishing and the next step starting. Keep this equal to
+ * `AUTO_HINT_STEP_MS`. (A game with no move animation — `animLength` 0 —
+ * stays un-stretched; the dwell's floor paces it instead.) */
+const HINT_ANIM_S = 1.0;
 
 export type NotifyChange = (message: ChangeNotification) => void;
 export type NotifyTimerState = (isActive: boolean) => void;
@@ -177,10 +182,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private animLength = 0;
   // Hint-executed moves play the game's own move animation in slow
   // motion so the user can follow what the hint did: the duration is
-  // stretched by `animScale` and the game is shown proportionally
-  // scaled time, so it needs no awareness of the stretch.
+  // stretched to `HINT_ANIM_S` and the game is shown proportionally
+  // scaled time (`animScale`), so it needs no awareness of the stretch.
   private animScale = 1;
-  private pendingAnimScale = 1;
+  private pendingHintAnim = false;
   private flashTime = 0;
   private flashLength = 0;
   private animDir = 1;
@@ -545,7 +550,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     // previewed during the auto-play rest period.
     this.hintDisplayed = true;
     this.advanceHintOnAnimationEnd = true;
-    this.pendingAnimScale = HINT_ANIM_SCALE;
+    this.pendingHintAnim = true;
     // A game with no move animation settles synchronously inside
     // `afterTransition` (the timer's settle path never runs for it).
     this.applyMove(step.move);
@@ -590,9 +595,19 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.animDir = dir;
     const a = this.game.animLength?.(prev, next, dir, this.ui) ?? 0;
     const f = this.game.flashLength?.(prev, next, dir, this.ui) ?? 0;
-    this.animScale = this.pendingAnimScale;
-    this.pendingAnimScale = 1;
-    this.animLength = a * this.animScale;
+    // A hint move stretches the game's base animation to the uniform
+    // `HINT_ANIM_S`; `animScale` (= stretched / base) is what `redraw`
+    // divides `animTime` by so the game, which only knows its own base
+    // anim length, still spans the full stretched duration. A
+    // non-animated game (a = 0) can't be stretched — leave it instant.
+    if (this.pendingHintAnim && a > 0) {
+      this.animLength = HINT_ANIM_S;
+      this.animScale = HINT_ANIM_S / a;
+    } else {
+      this.animLength = a;
+      this.animScale = 1;
+    }
+    this.pendingHintAnim = false;
     this.animTime = 0;
     this.flashLength = f;
     this.flashTime = 0;

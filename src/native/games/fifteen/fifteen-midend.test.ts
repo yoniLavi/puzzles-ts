@@ -91,4 +91,21 @@ describe("Fifteen midend lifecycle", () => {
     // The hinted tile is filled with COL_HINT (palette index 4).
     expect(ops.some((o) => o.op === "drawRect" && o.colour === 4)).toBe(true);
   });
+
+  it("stretches a hint-executed move to the uniform 1s, despite Fifteen's 0.13s base", () => {
+    // Owner report 2026-06-16: Fifteen's normal slide animation (0.13s) is far
+    // shorter than the auto-hint dwell, leaving a long frozen gap between
+    // steps. A hint move must now stretch to HINT_ANIM_S (1.0s) so the dwell
+    // is filled by continuous motion, not a pause.
+    const mPrivate = h.m as unknown as { animLength: number };
+
+    // A manual slide is NOT stretched — it keeps Fifteen's own 0.13s.
+    h.m.processInput(0, 0, CURSOR_LEFT);
+    expect(mPrivate.animLength).toBeCloseTo(0.13);
+
+    // A hint-executed move stretches to the uniform 1s.
+    expect(h.m.executeHint()).toBeUndefined();
+    expect(mPrivate.animLength).toBeCloseTo(1.0);
+    expect(h.m.currentAnimationMs()).toBeCloseTo(1000);
+  });
 });

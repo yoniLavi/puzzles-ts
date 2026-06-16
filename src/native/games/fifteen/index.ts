@@ -9,10 +9,8 @@ import type {
   HintTrackVerdict,
   UiUpdate,
 } from "../../engine/game.ts";
-import {
-  coord as coordE,
-  fromCoord as fromCoordE,
-} from "../../engine/geometry.ts";
+import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
+import { workingOn } from "../../engine/hint-vocab.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -435,6 +433,57 @@ function statusbarText(state: FifteenState, _ui: FifteenUi): string {
 
 // --- hint -------------------------------------------------------------
 
+/** Narrate one greedy step, explaining *why* it matters (per the hint
+ * quality bar). The tile being slid lands at the old gap (`board.gapPos`),
+ * and tile `t`'s solved cell is index `t - 1`.
+ *
+ * The narration is framed around a **stable goal** tile (see `hint`): the
+ * one we are working toward home right now. Crucially this is *not* the
+ * solver's memoryless `nextpiece`, which flips around during the
+ * end-of-row/column rotation. To place the last tiles of a line the solver
+ * temporarily displaces an already-home tile and then restores it; if we
+ * re-narrated the goal as whatever `nextpiece` currently is, the banner
+ * would read "Working on tile 8" then "Working on tile 7" and look like it
+ * lost the plot (the owner-reported case). Holding the goal steady, the
+ * displaced tile's restoration reads as a sub-step ("slide tile 7 into
+ * place") of the same goal.
+ *
+ * Cases, given the stable `goal`:
+ * - the goal tile lands in its solved cell → "slide it into place" (home);
+ * - the goal tile slides but not home → compare its Manhattan distance to
+ *   home before vs after and say "slide it closer" only when it actually
+ *   decreases, else "reposition it" (the solver often pushes the goal
+ *   *away* to route the gap to the far side of it — tile 8 sliding *down*);
+ * - a non-goal tile lands in *its* solved cell → "slide tile N into place"
+ *   (restoring a tile displaced earlier in the rotation);
+ * - any other non-goal slide → "slide tile N out of the way". */
+function narrateFifteenStep(
+  board: FifteenState,
+  tile: number,
+  goal: number,
+  dest: { x: number; y: number },
+): string {
+  const prefix = workingOn(goal);
+  const w = board.w;
+  const landsAtOwnHome = board.gapPos === tile - 1;
+
+  if (tile === goal) {
+    if (landsAtOwnHome) return `${prefix}slide it into place`;
+    // The goal sits at `dest` before the slide and at the old gap after it.
+    const hx = (goal - 1) % w;
+    const hy = Math.floor((goal - 1) / w);
+    const distBefore = Math.abs(dest.x - hx) + Math.abs(dest.y - hy);
+    const distAfter =
+      Math.abs((board.gapPos % w) - hx) + Math.abs(Math.floor(board.gapPos / w) - hy);
+    return distAfter < distBefore
+      ? `${prefix}slide it closer`
+      : `${prefix}reposition it`;
+  }
+
+  if (landsAtOwnHome) return `${prefix}slide tile ${tile} into place`;
+  return `${prefix}slide tile ${tile} out of the way`;
+}
+
 /** Compute the *whole* greedy solution as a hint plan: one narrated
  * single-cell gap slide per step, simulated forward from the current
  * board. Returning the full plan (rather than one step per request) is
@@ -454,17 +503,28 @@ function hint(state: FifteenState): HintResult<FifteenMove, FifteenHintHighlight
   // guard is a belt-and-braces cap against an unexpected non-terminating
   // board, never reached for a solvable one.
   let guard = 5 * state.n * state.n * state.n;
+  // The *stable* goal tile: the one we are working toward home. The solver's
+  // per-step `nextpiece` drops to a lower tile mid-rotation when it displaces
+  // an already-home tile, so we hold the goal at the running maximum until it
+  // is actually homed, then let the next step pick a fresh one. This keeps the
+  // banner from flip-flopping (e.g. "tile 8" → "tile 7" → "tile 8") through the
+  // end-of-line corner dance.
+  let goal: number | null = null;
   while (!isCompletedTiles(board.tiles, board.n) && guard-- > 0) {
     const dest = computeHint(board);
     if (!dest) break;
     const tile = board.tiles[dest.y * board.w + dest.x];
+    goal = goal === null ? dest.target : Math.max(goal, dest.target);
     const move: FifteenMove = { type: "move", x: dest.x, y: dest.y };
     steps.push({
       move,
-      explanation: `Slide tile ${tile} into the space`,
+      explanation: narrateFifteenStep(board, tile, goal, dest),
       highlights: { tile },
     });
+    // Reset the goal once it lands home so the next pursuit starts fresh.
+    const homedGoal = tile === goal && board.gapPos === goal - 1;
     board = executeMove(board, move);
+    if (homedGoal) goal = null;
   }
 
   if (steps.length === 0) return { ok: false, error: "No helpful hint found" };

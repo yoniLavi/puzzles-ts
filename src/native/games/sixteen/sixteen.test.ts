@@ -348,8 +348,10 @@ describe("Sixteen hint", () => {
     const s = newState(defaultParams(), desc);
     const result = sixteenGame.hint?.(s);
     if (!result?.ok) return;
-    // Explanation format: "Move tile T to row R" or "Move tile T to column C"
-    expect(result.steps[0].explanation).toMatch(/Move tile \d+ to (row|column) \d+/);
+    // Format: "Working on tile T: move it to row R" / "… to column C".
+    expect(result.steps[0].explanation).toMatch(
+      /^Working on tile \d+: move it to (row|column) \d+/,
+    );
   });
 
   it("the hinted move actually improves the state (net tiles-closer > 0)", () => {
@@ -554,8 +556,8 @@ describe("Sixteen hint", () => {
       h: 5,
       n: 25,
       tiles: new Int32Array([
-        1, 2, 3, 4, 6, 7, 12, 8, 9, 5, 11, 18, 13, 14, 15, 16, 17, 24, 19, 20, 21,
-        22, 23, 10, 25,
+        1, 2, 3, 4, 6, 7, 12, 8, 9, 5, 11, 18, 13, 14, 15, 16, 17, 24, 19, 20, 21, 22,
+        23, 10, 25,
       ]),
       completed: 0,
       usedSolve: false,
@@ -584,8 +586,8 @@ describe("Sixteen hint", () => {
   });
 
   it("a previewed two-leg journey tracks and narrates the same tile through both legs", () => {
-    // Owner flow: the hint says "Move tile 7 to row 1, then to column
-    // 2". Following it leg by leg must (a) keep the plan alive with
+    // Owner flow: the hint says "Working on tile 7: move it to row 1,
+    // then column 2". Following it leg by leg must (a) keep the plan alive with
     // "completed" verdicts — including equivalent wrap-around deltas —
     // and (b) narrate the second leg around the SAME tile, not switch
     // to whichever tile is lowest-numbered on the second line (the
@@ -596,8 +598,8 @@ describe("Sixteen hint", () => {
       h: 5,
       n: 25,
       tiles: new Int32Array([
-        1, 2, 3, 4, 6, 7, 12, 8, 9, 5, 11, 18, 13, 14, 15, 16, 17, 24, 19, 20, 21,
-        22, 23, 10, 25,
+        1, 2, 3, 4, 6, 7, 12, 8, 9, 5, 11, 18, 13, 14, 15, 16, 17, 24, 19, 20, 21, 22,
+        23, 10, 25,
       ]),
       completed: 0,
       usedSolve: false,
@@ -611,13 +613,17 @@ describe("Sixteen hint", () => {
     const [step1, step2] = result.steps;
     const hl1 = step1.highlights as SixteenHintHighlights;
     const hl2 = step2.highlights as SixteenHintHighlights;
-    expect(step1.explanation).toBe("Move tile 7 to row 1, then to column 2");
+    // Tile 7's journey ends at index 1 (its home is index 6), so the
+    // first leg carries the "(setting up)" why for the whole journey.
+    expect(step1.explanation).toBe(
+      "Working on tile 7: move it to row 1, then column 2 (setting up)",
+    );
     expect(hl1.ultimatePos).toBe(1);
 
     // (b) journey continuity: the second leg narrates tile 7's journey
     // and is flagged so the midend keeps it displayed when leg 1
     // completes (the journey was presented as one hint).
-    expect(step2.explanation).toBe("Move tile 7 to column 2");
+    expect(step2.explanation).toBe("Working on tile 7: then to column 2");
     expect(hl2.tile).toBe(7);
     expect(hl2.targetPos).toBe(1);
     expect(step2.continuesPrevious).toBe(true);
@@ -637,6 +643,57 @@ describe("Sixteen hint", () => {
       const equivalent = { ...step2.move, delta: step2.move.delta + 5 };
       expect(sixteenGame.hintKeepTrack?.(equivalent, step2, s)).toBe("completed");
     }
+  });
+
+  it("narrates a home move as 'final spot' and a staging move as 'setting up'", () => {
+    // Row 0 rotated one cell out of place: the single solving slide lands
+    // tile 1 in its solved cell, so the hint must read as a home move.
+    const homeBoard: SixteenState = {
+      w: 4,
+      h: 4,
+      n: 16,
+      // biome-ignore format: keep the 4×4 grid readable.
+      tiles: new Int32Array([
+        4, 1, 2, 3,
+        5, 6, 7, 8,
+        9, 10, 11, 12,
+        13, 14, 15, 16,
+      ]),
+      completed: 0,
+      usedSolve: false,
+      moveCount: 0,
+      moveTarget: 0,
+      lastMovementSense: 0,
+    };
+    const homeRes = sixteenGame.hint?.(homeBoard);
+    expect(homeRes?.ok).toBe(true);
+    if (!homeRes?.ok) return;
+    const homeStep = homeRes.steps[0];
+    expect(homeStep.explanation).toContain("its final spot");
+    const hl = homeStep.highlights as SixteenHintHighlights;
+    expect(hl.ultimatePos ?? hl.targetPos).toBe(hl.tile - 1);
+
+    // The label must never lie: across a scrambled plan, a non-continuation
+    // step says "its final spot" iff its journey ends in the tile's solved
+    // cell, and otherwise says "(setting up)"; at least one staging step is
+    // present on a scrambled board.
+    const { desc } = newDesc(defaultParams(), randomNew("hint-why-sixteen"));
+    const s = newState(defaultParams(), desc);
+    const res = sixteenGame.hint?.(s);
+    expect(res?.ok).toBe(true);
+    if (!res?.ok) return;
+    let sawStaging = false;
+    for (const step of res.steps) {
+      if (step.continuesPrevious) continue;
+      const sh = step.highlights as SixteenHintHighlights;
+      const finalPos = sh.ultimatePos ?? sh.targetPos;
+      const labelHome = step.explanation.includes("its final spot");
+      const labelStage = step.explanation.includes("(setting up)");
+      expect(labelHome || labelStage).toBe(true);
+      expect(labelHome).toBe(finalPos === sh.tile - 1);
+      if (labelStage) sawStaging = true;
+    }
+    expect(sawStaging).toBe(true);
   });
 
   it("can solve a puzzle using sequential hints", () => {
@@ -757,11 +814,11 @@ describe("Sixteen hint", () => {
       const tile = hl?.tile;
       if (tile === 2) {
         // Tile 2 is at col 2 (index 1). Shifting left/right.
-        // It must NOT say "Move tile 2 to column 2".
+        // It must NOT claim to move it to its correct "column 2".
         expect(step.explanation).not.toContain("column 2");
       } else if (tile === 3) {
         // Tile 3 is at col 3 (index 2). Shifting left/right.
-        // It must NOT say "Move tile 3 to column 3".
+        // It must NOT claim to move it to its correct "column 3".
         expect(step.explanation).not.toContain("column 3");
       }
     }
@@ -863,12 +920,13 @@ describe("Sixteen hint rendering", () => {
     if (!result?.ok) return;
 
     for (const step of result.steps) {
-      if (step.explanation.includes("then to")) {
+      const hl = step.highlights as SixteenHintHighlights;
+      // A previewed two-leg journey (first leg, not a continuation) reads
+      // "move it to <line>, then <line>" and carries a distinct ultimatePos.
+      if (hl.ultimatePos !== undefined && !step.continuesPrevious) {
         expect(step.explanation).toMatch(
-          /Move tile \d+ to (row|column) \d+, then to (row|column) \d+/,
+          /^Working on tile \d+: move it to (row|column) \d+, then (row|column) \d+/,
         );
-        const hl = step.highlights as SixteenHintHighlights;
-        expect(hl.ultimatePos).toBeDefined();
         expect(hl.ultimatePos).not.toBe(hl.targetPos);
       }
     }
