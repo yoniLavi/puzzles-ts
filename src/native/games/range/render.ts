@@ -28,12 +28,13 @@ export const FLASH_TIME = 0.7;
 
 // --- palette (upstream COL_* enum) -----------------------------------------
 
-export const COL_BACKGROUND = 0;
+export const COL_BACKGROUND = 0; // an undecided (EMPTY) cell — a soft grey
 export const COL_GRID = 1; // == COL_BLACK == COL_TEXT == COL_USER
 export const COL_ERROR = 2;
 export const COL_LOWLIGHT = 3; // == COL_CURSOR
 export const COL_HINT = 4; // the cell the displayed hint forces (blue)
-export const COL_HINT_CELL = 5; // premise cells (clue / adjacent black) (light blue)
+export const COL_HINT_CELL = 5; // the deduction's premise/area cells (light blue)
+export const COL_WHITEBG = 6; // a known-white cell: a clue or the player's white mark
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, lowlight } = mkhighlight(defaultBackground);
@@ -44,6 +45,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_LOWLIGHT] = lowlight;
   out[COL_HINT] = [0.13, 0.5, 0.85];
   out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
+  // Pure white — `mkhighlight` has shifted COL_BACKGROUND off pure white,
+  // so a known-white cell reads as visibly white against undecided cells.
+  out[COL_WHITEBG] = [1, 1, 1];
   return out;
 }
 
@@ -65,7 +69,8 @@ const F_FLASH = 1 << 18;
 const F_MISTAKE = 1 << 19;
 const F_HINT_TARGET = 1 << 20; // this cell is the displayed hint's target
 const F_HINT_WHITE = 1 << 21; // …and the forced mark is white (else black)
-const F_HINT_REF = 1 << 22; // this cell is a hint premise (light shade)
+const F_HINT_REF = 1 << 22; // this cell is a hint area cell (light shade)
+const F_HINT_BLACKREF = 1 << 23; // a black premise cell, outlined in COL_HINT
 
 export interface RangeDrawState {
   started: boolean;
@@ -92,8 +97,10 @@ export function setTileSize(ds: RangeDrawState, ts: number): void {
 // --- cell drawing ----------------------------------------------------------
 
 /** Hint highlight for a cell: 0 none, 1 forced-black target, 2
- * forced-white target, 3 premise (reference) cell. */
-type HintKind = 0 | 1 | 2 | 3;
+ * forced-white target, 3 area (premise) cell, 4 black premise cell
+ * (kept black, outlined in COL_HINT — e.g. the adjacent black that
+ * forces a neighbour white). */
+type HintKind = 0 | 1 | 2 | 3 | 4;
 
 function drawCell(
   dr: GameDrawing,
@@ -113,8 +120,12 @@ function drawCell(
   const ty = y + Math.floor(ts / 2);
   const dotsz = Math.floor((ts + 9) / 10);
 
-  // A hint target paints the whole cell blue; a black square keeps its
-  // identity; a premise cell shades light blue; otherwise normal.
+  // Fill precedence: a hint target paints the whole cell blue; a black
+  // square keeps its identity (even when it is a black premise cell —
+  // kind 4 only adds an outline); a hint area cell shades light blue;
+  // the cursor/flash overlay is a lowlight; a known-white cell (clue or
+  // white mark) is pure white; an undecided cell is the soft-grey
+  // background.
   const fill =
     hintKind === 1 || hintKind === 2
       ? COL_HINT
@@ -126,11 +137,20 @@ function drawCell(
           ? COL_HINT_CELL
           : flash || cursor
             ? COL_LOWLIGHT
-            : COL_BACKGROUND;
+            : value === WHITE || value > 0
+              ? COL_WHITEBG
+              : COL_BACKGROUND;
 
   drawRectOutline(dr, x, y, ts + 1, ts + 1, COL_GRID);
   dr.drawRect({ x: x + 1, y: y + 1, w: ts - 1, h: ts - 1 }, fill);
   if (error) drawRectOutline(dr, x + 1, y + 1, ts - 1, ts - 1, COL_ERROR);
+
+  // A black premise cell stays black; ring it in COL_HINT (a doubled
+  // 2px inset outline) so "this black square is the reason" is visible.
+  if (hintKind === 4) {
+    drawRectOutline(dr, x + 1, y + 1, ts - 1, ts - 1, COL_HINT);
+    drawRectOutline(dr, x + 2, y + 2, ts - 3, ts - 3, COL_HINT);
+  }
 
   // Preview the mark the hint forces, on top of the blue target cell.
   if (hintKind === 1) {
@@ -215,11 +235,15 @@ export function redraw(
   // highlighted the same red as live rule violations.
   const mistakeSet = mistakes ? new Set(mistakes.map((m) => idx(m.r, m.c, w))) : null;
 
-  // The displayed hint step: its target cell and its premise cells.
+  // The displayed hint step: the target cell, the deduction's area cells
+  // (light-blue shade) and any black premise cells (outlined).
   const hl = hint?.highlights;
   const hintTarget = hl ? idx(hl.target.r, hl.target.c, w) : -1;
   const hintWhite = hl?.target.value === "white";
-  const hintRefSet = hl ? new Set(hl.refs.map((m) => idx(m.r, m.c, w))) : null;
+  const hintAreaSet = hl ? new Set(hl.area.map((m) => idx(m.r, m.c, w))) : null;
+  const hintBlackSet = hl?.blackRefs
+    ? new Set(hl.blackRefs.map((m) => idx(m.r, m.c, w)))
+    : null;
 
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < w; c++) {
@@ -229,7 +253,15 @@ export function redraw(
       const mistake = mistakeSet?.has(i) ?? false;
       const cursor = ui.cursorShow && r === ui.r && c === ui.c;
       const hintKind: HintKind =
-        i === hintTarget ? (hintWhite ? 2 : 1) : hintRefSet?.has(i) ? 3 : 0;
+        i === hintTarget
+          ? hintWhite
+            ? 2
+            : 1
+          : hintBlackSet?.has(i)
+            ? 4
+            : hintAreaSet?.has(i)
+              ? 3
+              : 0;
 
       let packed = value + 2;
       if (error) packed |= F_ERROR;
@@ -239,6 +271,7 @@ export function redraw(
       if (hintKind === 1 || hintKind === 2) packed |= F_HINT_TARGET;
       if (hintKind === 2) packed |= F_HINT_WHITE;
       if (hintKind === 3) packed |= F_HINT_REF;
+      if (hintKind === 4) packed |= F_HINT_BLACKREF;
 
       if (ds.cache[i] !== packed) {
         drawCell(dr, ts, r, c, value, error || mistake, cursor, flash, hintKind);

@@ -70,6 +70,27 @@ describe("hint", () => {
     expect(cur.wasSolved).toBe(true);
   });
 
+  it("gives every step visible evidence (an area to shade or a black to ring)", () => {
+    // The product goal: a hint shows *why*, not just *what*. Across the
+    // whole plan, no step may be a bare conclusion — each carries either a
+    // shaded area (a clue's line of sight / a reach run / the white cells a
+    // cut would isolate) or a ringed black premise cell.
+    for (const seed of ["range-hint-plan", "range-evidence-2", "range-evidence-3"]) {
+      const st = fromSeed("9x6", seed);
+      const res = rangeGame.hint?.(st);
+      if (!res?.ok) throw new Error("expected a plan");
+      for (const step of res.steps) {
+        const hl = step.highlights as RangeHint;
+        const hasEvidence = hl.area.length > 0 || (hl.blackRefs?.length ?? 0) > 0;
+        expect(hasEvidence).toBe(true);
+        // The area never includes the target cell itself.
+        expect(
+          hl.area.some((a) => a.r === hl.target.r && a.c === hl.target.c),
+        ).toBe(false);
+      }
+    }
+  });
+
   it("refuses on a solved board", () => {
     const st = fromSeed("9x6", "range-hint-solved");
     const res0 = rangeGame.hint?.(st);

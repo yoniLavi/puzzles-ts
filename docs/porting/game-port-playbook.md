@@ -95,6 +95,16 @@ run out, add a parallel sidecar typed-array checked in the cache-miss branch
 each game fills its own background in the `!ds.started` branch. `Midend.size` is
 side-effect-free; `canvasCleared()` is the *only* cache-stale signal.
 
+**Make determined state legible (deliberate divergence).** Where upstream leaves
+known cells looking like undecided ones (Range painted every non-black cell the
+same grey, with only a dot marking "white"), give each determined state its own
+fill so the player reads the board at a glance — Range now paints a known-white
+cell (a clue or a white mark) pure white via a dedicated `COL_WHITEBG`, leaving
+only undecided cells grey. Derive the white from
+[`colour-mkhighlight.ts`](../../src/native/engine/colour-mkhighlight.ts): it
+shifts `COL_BACKGROUND` off pure white precisely so a pure-white cell stays
+distinguishable. Exemplar: [`range/render.ts`](../../src/native/games/range/render.ts).
+
 ## 3. The two-stage parity gate (do not skip, do not shortcut)
 
 Registration is gated on **owner-accepted full behavioural parity — rendering,

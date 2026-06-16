@@ -98,6 +98,11 @@ export interface HintMove {
   c: number;
   value: number;
   reason: HintReason;
+  /** The solver's working grid at the moment this move fired (this move
+   * and every prior deduction applied) — the board state the hint's area
+   * highlight is computed against, so the shaded run reflects what the
+   * player sees as they follow the plan. */
+  grid: Int8Array;
 }
 
 /** Invoked at each forced cell when the deduction is run for a hint. */
@@ -342,7 +347,7 @@ export function deduceHintPlan(grid: Int8Array, w: number, h: number): HintMove[
   const dup = grid.slice();
   const moves: HintMove[] = [];
   applyRules(dup, w, h, findClues(dup, w, h), (r, c, value, reason) => {
-    moves.push({ r, c, value, reason });
+    moves.push({ r, c, value, reason, grid: dup.slice() });
   });
   return moves;
 }

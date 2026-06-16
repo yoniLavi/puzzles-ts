@@ -54,8 +54,37 @@
   ("Clue 9 can only reach its 9 cells…") with the blue target + white-dot
   preview + light-blue clue shade; Auto-Hint steps through placing blacks/dots
   and solves the board to the "You got it!" modal; 0 console errors.
-- [ ] 5.3 Commit (parity-gated; owner acceptance testing pending).
+- [x] 5.3 Commit (parity-gated; owner acceptance testing pending).
+
+## 7. Visual iteration — beginner clarity (owner-requested 2026-06-16)
+- [x] 7.1 Known-white cells render pure white. New `COL_WHITEBG` (`[1,1,1]`);
+  `drawCell` fills a clue **or** a white mark with it (clues are implicitly
+  white), leaving only undecided cells the soft-grey `COL_BACKGROUND`. The
+  white dot stays as the explicit "I marked this" indicator. `mkhighlight`
+  already shifts the background off pure white, so the two read apart.
+- [x] 7.2 Per-deduction **area** highlighting (the Palisade region convention,
+  applied to Range's line-of-sight). `buildHighlights` shades the deduction's
+  evidence `COL_HINT_CELL`: a clue's current line of sight (satisfied/overrun),
+  the run it must reach along + that sight (reach), or the non-black cells a cut
+  would isolate (connect). An adjacent **black** premise can't take the fill, so
+  it is **ringed** in `COL_HINT` (`hintKind === 4`). `RangeHint` is now
+  `{ target, area, blackRefs? }`.
+- [x] 7.3 Area computed against the **per-step working grid**, not the original
+  board — `HintMove.grid` carries a `dup.slice()` snapshot taken when each
+  deduction fires, so the shaded run grows as the player follows the plan. The
+  target is filtered out of its own area (the snapshot has the move applied).
+- [x] 7.4 Clearer, evidence-referencing narration for all five rules (the words
+  name the shaded picture: "along the shaded run", "the ringed black square").
+- [x] 7.5 Tests: "every step carries visible evidence" invariant (caught the
+  empty-area `connect` bug); render snapshots rebaselined (white clue bg + area).
+- [x] 7.6 Dev guides updated (live-wiki): hint-authoring §4 (evidence-as-area,
+  per-step-grid, the invariant) + port playbook §2 (legible determined state).
+- [x] 7.7 Full gate green (tsc / biome / 1134 vitest / vite build); live smoke
+  on the real canvas (white clue cells, blue target + dot, narrated banner; 0
+  console errors).
 
 ## 6. Owner acceptance
-- [ ] 6.1 Owner follows hints / Auto-Hint to verify Range plays correctly.
-- [ ] 6.2 Archive the change.
+- [x] 6.1 Owner follows hints / Auto-Hint to verify Range plays correctly,
+  including the white cells + per-deduction area highlighting (accepted
+  2026-06-17, "Incredible work! No comments").
+- [x] 6.2 Archive the change.

@@ -238,29 +238,110 @@ function findMistakes(state: RangeState): readonly RangeMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-/** Highlight data for a Range hint step: the cell the deduction forces
- * (and the mark it forces), plus the premise cells to lightly shade
- * (the clue, or the adjacent black). */
+/** Highlight data for a Range hint step. `target` is the cell the
+ * deduction forces (and the mark it forces). `area` is the deduction's
+ * evidence to shade light-blue — the clue's line of sight, the line it
+ * must reach along, or the white cells a cut would isolate — so a
+ * beginner can *see* the reasoning, not just the conclusion (the
+ * Palisade region-highlight convention). `blackRefs` are black premise
+ * cells (an adjacent black) that stay black and are ringed instead. */
 export interface RangeHint {
   target: { r: number; c: number; value: RangeCellValue };
-  refs: { r: number; c: number }[];
+  area: { r: number; c: number }[];
+  blackRefs?: { r: number; c: number }[];
 }
 
-/** Narrate *why* the move is forced, per the deduction rule. */
+const DR = [1, 0, -1, 0];
+const DC = [0, 1, 0, -1];
+
+/** A cell already known to be white: the player's white mark, or a clue
+ * (clues are implicitly white). Mirrors the solver's RUN_WHITE mask. */
+function knownWhite(v: number): boolean {
+  return v === WHITE || v > 0;
+}
+
+/** The cells a clue currently *sees*: itself plus the run of known-white
+ * cells in each of the four directions, stopping at the first undecided
+ * or black cell (or the edge). This is exactly the count the run-length
+ * rules reason about, made visible. */
+function lineOfSight(
+  grid: Int8Array,
+  w: number,
+  h: number,
+  cr: number,
+  cc: number,
+): { r: number; c: number }[] {
+  const cells = [{ r: cr, c: cc }];
+  for (let j = 0; j < 4; j++) {
+    let r = cr + DR[j];
+    let c = cc + DC[j];
+    while (!outOfBounds(r, c, w, h) && knownWhite(grid[idx(r, c, w)])) {
+      cells.push({ r, c });
+      r += DR[j];
+      c += DC[j];
+    }
+  }
+  return cells;
+}
+
+/** The straight line from a clue toward a target it must reach: the clue
+ * plus every cell between it and the target (target excluded — that one
+ * is the COL_HINT cell). Clue and target are collinear by construction. */
+function reachLine(
+  cr: number,
+  cc: number,
+  tr: number,
+  tc: number,
+): { r: number; c: number }[] {
+  const cells = [{ r: cr, c: cc }];
+  const dr = Math.sign(tr - cr);
+  const dc = Math.sign(tc - cc);
+  let r = cr + dr;
+  let c = cc + dc;
+  while (r !== tr || c !== tc) {
+    cells.push({ r, c });
+    r += dr;
+    c += dc;
+  }
+  return cells;
+}
+
+/** The non-black orthogonal neighbours of a cell — the cells a cut at
+ * this cell would risk isolating from each other. The connectedness rule
+ * treats every non-black cell as part of the one white group, so these
+ * include undecided cells, not only cells already marked white. */
+function nonBlackNeighbours(
+  grid: Int8Array,
+  w: number,
+  h: number,
+  cr: number,
+  cc: number,
+): { r: number; c: number }[] {
+  const out: { r: number; c: number }[] = [];
+  for (let j = 0; j < 4; j++) {
+    const r = cr + DR[j];
+    const c = cc + DC[j];
+    if (!outOfBounds(r, c, w, h) && grid[idx(r, c, w)] !== BLACK) out.push({ r, c });
+  }
+  return out;
+}
+
+/** Narrate *why* the move is forced, per the deduction rule, referencing
+ * the highlighted evidence so the words and the picture agree. */
 function narrate(reason: HintReason, value: RangeCellValue): string {
   switch (reason.kind) {
     case "adjacency":
-      return "This cell touches a black square, and two black squares can't be adjacent — so it must be white.";
+      return "No two black squares may touch. This cell sits right next to the ringed black square, so it has to be white.";
     case "satisfied":
-      return `Clue ${reason.n} already sees all ${reason.n} of its white cells, so the run must stop here — this cell is black.`;
+      return `Clue ${reason.n} can already see exactly ${reason.n} white cells (shaded). That count is complete, so the line of sight must stop here — this cell is black.`;
     case "overrun":
-      return `Leaving this cell white would let clue ${reason.n} see more than ${reason.n} cells, so it must be black.`;
+      return `Clue ${reason.n} already sees the shaded white cells. Leaving this cell white would let it see more than ${reason.n}, so this cell must be black.`;
     case "reach":
-      return `Clue ${reason.n} can only reach its ${reason.n} cells by extending white this way — so this cell must be white.`;
+      return `Clue ${reason.n} can't yet see ${reason.n} cells. The only way to reach ${reason.n} is to extend its line of sight along the shaded run, so this cell must be white.`;
     case "connect":
       return value === "white"
-        ? "Painting this cell black would cut the white cells into two groups, but they must all stay connected — so it must be white."
-        : "This cell must be white to keep the white region connected.";
+        ? "Every white cell must join one connected group. Painting this cell black would cut off the shaded cells from the rest, so it must stay white."
+        : "This cell must be white to keep the white cells connected.";
   }
 }
 
@@ -268,16 +349,49 @@ function gridValueToCell(v: number): RangeCellValue {
   return v === BLACK ? "black" : v === WHITE ? "white" : "empty";
 }
 
-function refsFor(reason: HintReason): { r: number; c: number }[] {
+/** Build the highlight payload for a forced move: the area to shade and
+ * any black premise cells to ring, derived from the deduction's reason. */
+function buildHighlights(
+  grid: Int8Array,
+  w: number,
+  h: number,
+  reason: HintReason,
+  target: { r: number; c: number; value: RangeCellValue },
+): RangeHint {
+  const hint = buildHighlightsInner(grid, w, h, reason, target);
+  // The working-grid snapshot already has this move applied, so a
+  // line-of-sight area could include the target; the target owns the
+  // blue COL_HINT cell, never the light-blue area.
+  hint.area = hint.area.filter((a) => !(a.r === target.r && a.c === target.c));
+  return hint;
+}
+
+function buildHighlightsInner(
+  grid: Int8Array,
+  w: number,
+  h: number,
+  reason: HintReason,
+  target: { r: number; c: number; value: RangeCellValue },
+): RangeHint {
   switch (reason.kind) {
     case "adjacency":
-      return [reason.from];
+      return { target, area: [], blackRefs: [reason.from] };
     case "satisfied":
     case "overrun":
-    case "reach":
-      return [reason.clue];
+      return { target, area: lineOfSight(grid, w, h, reason.clue.r, reason.clue.c) };
+    case "reach": {
+      // Show the clue's whole current line of sight *and* the path it is
+      // extending toward this target, so the shaded run the narration
+      // names is actually visible even when the target is adjacent.
+      const seen = lineOfSight(grid, w, h, reason.clue.r, reason.clue.c);
+      const path = reachLine(reason.clue.r, reason.clue.c, target.r, target.c);
+      const key = (cell: { r: number; c: number }) => idx(cell.r, cell.c, w);
+      const byKey = new Map<number, { r: number; c: number }>();
+      for (const cell of [...seen, ...path]) byKey.set(key(cell), cell);
+      return { target, area: [...byKey.values()] };
+    }
     case "connect":
-      return [];
+      return { target, area: nonBlackNeighbours(grid, w, h, target.r, target.c) };
   }
 }
 
@@ -296,10 +410,11 @@ function hint(state: RangeState): HintResult<RangeMove, RangeHint> {
   }
   const steps: HintStep<RangeMove, RangeHint>[] = plan.map((m) => {
     const value = gridValueToCell(m.value);
+    const target = { r: m.r, c: m.c, value };
     return {
       move: { sets: [{ r: m.r, c: m.c, value }] },
       explanation: narrate(m.reason, value),
-      highlights: { target: { r: m.r, c: m.c, value }, refs: refsFor(m.reason) },
+      highlights: buildHighlights(m.grid, state.w, state.h, m.reason, target),
     };
   });
   return { ok: true, steps };

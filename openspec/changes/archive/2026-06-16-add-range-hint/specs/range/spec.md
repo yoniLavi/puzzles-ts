@@ -19,7 +19,22 @@ white to keep the white cells connected). `hintKeepTrack` SHALL report
 `"completed"` when the player's move sets the hinted cell to the hinted value
 and `"off"` otherwise. `redraw` SHALL render the displayed step: the target
 cell highlighted in the hint colour with a preview of the forced mark, and the
-premise cells lightly shaded.
+deduction's **evidence shaded as an area** in a lighter hint colour — the
+clue's line of sight (satisfied/overrun), the run it must reach along (reach),
+or the non-black cells a cut would isolate (connect) — so the shaded picture
+the narration names is visible, not merely a single premise cell. A premise
+that cannot take the area shade (an adjacent **black** square, which must stay
+black) SHALL instead be **ringed** in the hint colour. The shaded area SHALL be
+computed against the board state as each step's deduction fires (the prior
+steps applied), so the run grows as the player follows the plan, and SHALL
+never include the target cell itself.
+
+Independently of hints, `redraw` SHALL render a **known-white cell — a clue or
+a player white mark — with a distinct white fill** (clues are implicitly
+white), leaving only undecided cells the neutral background, so a beginner
+reads determined state at a glance. The white is derived from the
+background-shifting palette helper so it stays distinguishable from the
+background.
 
 #### Scenario: Hint explains the next forced move
 
@@ -28,6 +43,13 @@ premise cells lightly shaded.
 - **AND** the first step's move is a legal `executeMove` whose narration names
   the deduction (adjacency / clue / connectedness) that forces its cell
 - **AND** applying every step's move in order solves the board
+
+#### Scenario: Every hint step shows visible evidence
+
+- **WHEN** `hint` returns a plan for a generated board
+- **THEN** every step carries either a non-empty shaded area or a ringed black
+  premise cell — never a bare conclusion — and no step's area contains its own
+  target cell
 
 #### Scenario: Hint refuses on a solved or mistaken board
 
