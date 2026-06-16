@@ -89,6 +89,8 @@ A game's `puzzles/<game>.c` is deleted once that game's TS port has landed and s
 
 ## Hint quality bar (exemplar: Palisade)
 
+> **Followable how-to:** [`docs/porting/hint-authoring.md`](docs/porting/hint-authoring.md) — the procedure for adding an explained `hint()` to a ported game. This section is the bar; the guide is the steps.
+
 Explained hints are a core deliberate-divergence product value of this fork, not a nicety. The **Palisade deduction hint** (`group-palisade-hint-deductions`, owner-endorsed 2026-06-15) is the **exemplar every game's `hint()` should meet** — it is not enough to point at the next move:
 
 1. **Explain *why* the move is forced, not just *what* to do.** Narrate the actual deduction: *"Both edges border the same region, so they share a fate: both walls or both open. Walling both would exceed clue 2 — so neither can be a wall."* — never just "set this edge". If a narration's conclusion doesn't follow from its own stated premises, the deductive coupling is missing; surface it (Palisade's `equivalentEdges` text was an unreadable non-sequitur until the "share a fate" premise was added). A *good* hint teaches the player the technique.
@@ -99,6 +101,8 @@ Explained hints are a core deliberate-divergence product value of this fork, not
 Aspirational next step (owner-flagged 2026-06-15, not yet committed): lift Fifteen/Sixteen hints from "Slide tile 10 into the space" to a Palisade-grade *why* — does the move place a tile in its final home, or is it a helper/setup move toward sorting another tile?
 
 ## TS port style: idiomatic throughout
+
+> **Followable how-to:** [`docs/porting/game-port-playbook.md`](docs/porting/game-port-playbook.md) — the ordered game-port procedure (file layout, idiomatic rules, cache-key pattern, parity gate, test tiers). This section is the style bar; the guide is the steps.
 
 Port to the most idiomatic TS shape — classes over handle-passing, `[Symbol.iterator]()` over `while (next())`, `boolean` over `0|1`, GC over explicit `free()`, modern data structures over C-array mirrors. Use the C as a *reference for the logic* (what deductions the solver makes, how the generator ensures uniqueness), not as a control-flow template to mirror line-for-line. There is no corpus that a refactor could break, so write it clean the first time; the dev-time differential spot-check catches gross divergence.
 
