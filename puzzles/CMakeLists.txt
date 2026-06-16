@@ -208,6 +208,7 @@ puzzle(pegs
   OBJECTIVE "Jump pegs over each other to remove all but one.")
 
 puzzle(range
+  TS_PORTED  # native-TS port (openspec add-range-ts-port); no range.c/wasm
   DISPLAYNAME "Range"
   DESCRIPTION "Visible-distance puzzle"
   OBJECTIVE "Place black squares to limit the visible distance from \

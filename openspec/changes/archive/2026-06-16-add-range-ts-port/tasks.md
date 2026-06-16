@@ -77,9 +77,12 @@
   midend's `mistakes` overlay arg, so Check & Save claimed cells were
   highlighted but drew nothing — now rendered red with an `F_MISTAKE` cache
   bit (tier-2 test added).
-- [ ] 5.5 Commit (registered, parity-gated; `range.c` kept as fallback).
+- [x] 5.5 Commit (registered, parity-gated; `range.c` kept as fallback).
 
 ## 6. Owner acceptance → C deletion (separate step)
-- [ ] 6.1 On owner-accepted parity: add `TS_PORTED` for `range` in
-  `puzzles/CMakeLists.txt`, delete `puzzles/range.c`.
-- [ ] 6.2 Archive the change.
+- [x] 6.1 On owner-accepted parity: add `TS_PORTED` for `range` in
+  `puzzles/CMakeLists.txt`, delete `puzzles/range.c`. (Owner directed the
+  archive 2026-06-16 — treated as acceptance of the base port; full
+  acceptance testing deferred to after the hint follow-up lands, since the
+  owner wants the hint to follow the solution while testing.)
+- [x] 6.2 Archive the change.
