@@ -34,6 +34,15 @@
   banner. `ts-engine` spec delta + a midend test (banner appears, then clears
   on a real `processInput` move).
 
+## 4b. Engine fix — a refused hint highlights the board's mistakes
+- [x] 4b.1 `Midend.computeHintPlan` calls `findMistakes()` on a refusal, so a
+  hint refused because the board is wrong lights up the same overlay Check &
+  Save uses (the refusal message promised "fix the highlighted mistakes" but
+  highlighted nothing). Generic across all refusal paths (manual + Auto-Hint).
+  `ts-engine` spec delta + midend tests (refusal-with-mistake highlights;
+  refusal-without-mistake highlights nothing). Owner-found on Range
+  (Auto-Hint claimed a highlight that never rendered); verified live.
+
 ## 5. Gate + smoke
 - [x] 5.1 Full gate: `tsc -b --noEmit` → `biome lint` → `vitest run` →
   `vite build` — all green.

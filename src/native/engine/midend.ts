@@ -478,7 +478,16 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       return "This game does not support hints";
     }
     const result = this.game.hint(this.state);
-    if (!result.ok) return result.error;
+    if (!result.ok) {
+      // Keep the refusal's promise. A hint is typically refused because the
+      // board has mistakes ("fix the highlighted mistakes first") — but the
+      // message alone highlights nothing. Surface them in the same overlay
+      // Check & Save uses, so the offending cells actually light up. Refusals
+      // with no mistakes (already solved, nothing deducible) find zero and
+      // highlight nothing; a game without `findMistakes` is a no-op.
+      this.findMistakes();
+      return result.error;
+    }
     if (result.steps.length === 0) return "Game returned an empty hint plan";
     this.activeHint = { steps: result.steps, index: 0 };
     this.advanceHintOnAnimationEnd = false;

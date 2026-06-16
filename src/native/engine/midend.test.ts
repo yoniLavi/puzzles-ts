@@ -823,6 +823,48 @@ describe("Midend mistake overlay (findMistakes lifecycle)", () => {
     expect(h.m.getStaticProperties().canFindMistakes).toBe(false);
     expect(h.m.findMistakes()).toBe(0);
   });
+
+  it("a refused hint surfaces the mistake overlay (the refusal's promise)", () => {
+    // A hint refused because the board has a mistake must light up the same
+    // overlay Check & Save uses, so "fix the highlighted mistakes" is true.
+    const refusingHintGame: typeof fakeGame = {
+      ...mistakeGame,
+      hint: (s) =>
+        s.count === 1
+          ? { ok: false, error: "Fix the highlighted mistakes first." }
+          : { ok: true, steps: [] },
+    };
+    const h = harness(refusingHintGame);
+    h.m.newGame();
+    // Move to count 1 → the board now has a mistake, and no overlay yet.
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    const before = recordingDrawing();
+    h.m.redraw(before.dr);
+    expect(sawSentinel(before.ops)).toBe(false);
+
+    // Ask for a hint: it refuses and returns the message...
+    expect(h.m.hint()).toBe("Fix the highlighted mistakes first.");
+    // ...and the refusal lit up the overlay: the next redraw shows it.
+    const after = recordingDrawing();
+    h.m.redraw(after.dr);
+    expect(sawSentinel(after.ops)).toBe(true);
+  });
+
+  it("a refused hint with no mistakes highlights nothing", () => {
+    // A refusal unrelated to mistakes (e.g. already solved) must not invent
+    // an overlay: findMistakes finds zero and nothing lights up.
+    const refusingHintGame: typeof fakeGame = {
+      ...mistakeGame,
+      // count 0 ⇒ no mistakes; refuse anyway (as if "already solved").
+      hint: () => ({ ok: false, error: "This board is already solved." }),
+    };
+    const h = harness(refusingHintGame);
+    h.m.newGame(); // count 0 ⇒ findMistakes returns []
+    expect(h.m.hint()).toBe("This board is already solved.");
+    const after = recordingDrawing();
+    h.m.redraw(after.dr);
+    expect(sawSentinel(after.ops)).toBe(false);
+  });
 });
 
 describe("Midend changedState hook (upstream game_changed_state)", () => {
