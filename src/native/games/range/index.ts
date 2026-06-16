@@ -13,6 +13,9 @@
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   type SolveResult,
   UI_UPDATE,
   type UiUpdate,
@@ -36,7 +39,13 @@ import {
   redraw,
   setTileSize,
 } from "./render.ts";
-import { findErrors, fullSolve, generateGrid } from "./solver.ts";
+import {
+  deduceHintPlan,
+  findErrors,
+  fullSolve,
+  generateGrid,
+  type HintReason,
+} from "./solver.ts";
 import {
   BLACK,
   cellValueToGrid,
@@ -227,6 +236,90 @@ function findMistakes(state: RangeState): readonly RangeMistake[] {
   return out;
 }
 
+// --- hint ------------------------------------------------------------------
+
+/** Highlight data for a Range hint step: the cell the deduction forces
+ * (and the mark it forces), plus the premise cells to lightly shade
+ * (the clue, or the adjacent black). */
+export interface RangeHint {
+  target: { r: number; c: number; value: RangeCellValue };
+  refs: { r: number; c: number }[];
+}
+
+/** Narrate *why* the move is forced, per the deduction rule. */
+function narrate(reason: HintReason, value: RangeCellValue): string {
+  switch (reason.kind) {
+    case "adjacency":
+      return "This cell touches a black square, and two black squares can't be adjacent — so it must be white.";
+    case "satisfied":
+      return `Clue ${reason.n} already sees all ${reason.n} of its white cells, so the run must stop here — this cell is black.`;
+    case "overrun":
+      return `Leaving this cell white would let clue ${reason.n} see more than ${reason.n} cells, so it must be black.`;
+    case "reach":
+      return `Clue ${reason.n} can only reach its ${reason.n} cells by extending white this way — so this cell must be white.`;
+    case "connect":
+      return value === "white"
+        ? "Painting this cell black would cut the white cells into two groups, but they must all stay connected — so it must be white."
+        : "This cell must be white to keep the white region connected.";
+  }
+}
+
+function gridValueToCell(v: number): RangeCellValue {
+  return v === BLACK ? "black" : v === WHITE ? "white" : "empty";
+}
+
+function refsFor(reason: HintReason): { r: number; c: number }[] {
+  switch (reason.kind) {
+    case "adjacency":
+      return [reason.from];
+    case "satisfied":
+    case "overrun":
+    case "reach":
+      return [reason.clue];
+    case "connect":
+      return [];
+  }
+}
+
+function hint(state: RangeState): HintResult<RangeMove, RangeHint> {
+  if (state.wasSolved) return { ok: false, error: "This board is already solved." };
+  if (findMistakes(state).length > 0) {
+    return {
+      ok: false,
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+  }
+  const plan = deduceHintPlan(state.grid, state.w, state.h);
+  if (plan.length === 0) {
+    return { ok: false, error: "No further move can be deduced from this position." };
+  }
+  const steps: HintStep<RangeMove, RangeHint>[] = plan.map((m) => {
+    const value = gridValueToCell(m.value);
+    return {
+      move: { sets: [{ r: m.r, c: m.c, value }] },
+      explanation: narrate(m.reason, value),
+      highlights: { target: { r: m.r, c: m.c, value }, refs: refsFor(m.reason) },
+    };
+  });
+  return { ok: true, steps };
+}
+
+/** A move completes the hint step iff it sets the hinted cell to the
+ * hinted value; anything else drops the plan to recompute. */
+function hintKeepTrack(
+  m: RangeMove,
+  step: HintStep<RangeMove, RangeHint>,
+  _state: RangeState,
+): HintTrackVerdict {
+  if (m.solve) return "off";
+  const t = step.highlights?.target;
+  if (!t) return "off";
+  const sets = m.sets.filter((s) => s.r === t.r && s.c === t.c);
+  if (sets.length === 0) return "off";
+  return sets[sets.length - 1].value === t.value ? "completed" : "off";
+}
+
 function flashLength(
   from: RangeState,
   to: RangeState,
@@ -267,6 +360,8 @@ export const rangeGame: Game<
   status,
 
   solve,
+  hint,
+  hintKeepTrack,
   findMistakes,
 
   textFormat,

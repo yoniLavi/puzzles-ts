@@ -80,6 +80,34 @@ export interface Clue {
   c: number;
 }
 
+export interface Cell {
+  r: number;
+  c: number;
+}
+
+/** Why a cell is forced — the premise the hint narrates and highlights. */
+export type HintReason =
+  | { kind: "adjacency"; from: Cell } // a neighbour of this black must be white
+  | { kind: "satisfied"; clue: Cell; n: number } // clue's run is full → cap it black
+  | { kind: "overrun"; clue: Cell; n: number } // white here would exceed the clue
+  | { kind: "reach"; clue: Cell; n: number } // clue can only reach its count this way
+  | { kind: "connect" }; // black here would disconnect the white region
+
+export interface HintMove {
+  r: number;
+  c: number;
+  value: number;
+  reason: HintReason;
+}
+
+/** Invoked at each forced cell when the deduction is run for a hint. */
+export type Recorder = (
+  r: number,
+  c: number,
+  value: number,
+  reason: HintReason,
+) => void;
+
 export function findClues(grid: Int8Array, w: number, h: number): Clue[] {
   const clues: Clue[] = [];
   for (let r = 0; r < h; r++) {
@@ -93,13 +121,18 @@ export function findClues(grid: Int8Array, w: number, h: number): Clue[] {
 // --- the three deductive rules ---------------------------------------------
 
 /** A cell orthogonally adjacent to a black cell must be white. */
-function ruleAdjacency(grid: Int8Array, w: number, h: number): number {
+function ruleAdjacency(grid: Int8Array, w: number, h: number, rec?: Recorder): number {
   let made = 0;
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < w; c++) {
       if (grid[idx(r, c, w)] !== BLACK) continue;
       for (let j = 0; j < 4; j++) {
-        if (makeMove(grid, w, h, r + DR[j], c + DC[j], WHITE)) made++;
+        const rr = r + DR[j];
+        const cc = c + DC[j];
+        if (makeMove(grid, w, h, rr, cc, WHITE)) {
+          made++;
+          rec?.(rr, cc, WHITE, { kind: "adjacency", from: { r, c } });
+        }
       }
     }
   }
@@ -121,7 +154,13 @@ const RUN_SPACE = 3;
 /** A clue's run-length arithmetic: place forced blacks where the clue is
  * already satisfied or would be overrun, and forced whites the clue must
  * still reach. Faithful port of `solver_reasoning_not_too_big`. */
-function ruleNotTooBig(grid: Int8Array, w: number, h: number, clues: Clue[]): number {
+function ruleNotTooBig(
+  grid: Int8Array,
+  w: number,
+  h: number,
+  clues: Clue[],
+  rec?: Recorder,
+): number {
   let made = 0;
   // runlengths[k][j]: run of kind k in direction j.
   const rl: number[][] = [
@@ -157,21 +196,31 @@ function ruleNotTooBig(grid: Int8Array, w: number, h: number, clues: Clue[]): nu
       const r = row + delta * DR[j];
       const c = col + delta * DC[j];
 
+      const clueCell: Cell = { r: row, c: col };
       if (whites === clue) {
-        if (makeMove(grid, w, h, r, c, BLACK)) made++;
+        if (makeMove(grid, w, h, r, c, BLACK)) {
+          made++;
+          rec?.(r, c, BLACK, { kind: "satisfied", clue: clueCell, n: clue });
+        }
         continue;
       }
       if (
         rl[RUN_EMPTY][j] === 1 &&
         whites + rl[RUN_EMPTY][j] + rl[RUN_BEYOND][j] > clue
       ) {
-        if (makeMove(grid, w, h, r, c, BLACK)) made++;
+        if (makeMove(grid, w, h, r, c, BLACK)) {
+          made++;
+          rec?.(r, c, BLACK, { kind: "overrun", clue: clueCell, n: clue });
+        }
         continue;
       }
       if (whites + rl[RUN_EMPTY][j] + rl[RUN_BEYOND][j] > clue) {
         rl[RUN_SPACE][j] = rl[RUN_WHITE][j] + rl[RUN_EMPTY][j] - 1;
         if (rl[RUN_EMPTY][j] === 1) {
-          if (makeMove(grid, w, h, r, c, BLACK)) made++;
+          if (makeMove(grid, w, h, r, c, BLACK)) {
+            made++;
+            rec?.(r, c, BLACK, { kind: "overrun", clue: clueCell, n: clue });
+          }
         }
       }
     }
@@ -184,7 +233,10 @@ function ruleNotTooBig(grid: Int8Array, w: number, h: number, clues: Clue[]): nu
       let k = space - rl[RUN_SPACE][j];
       if (k >= clue) continue;
       for (; k < clue; k++, r += DR[j], c += DC[j]) {
-        if (makeMove(grid, w, h, r, c, WHITE)) made++;
+        if (makeMove(grid, w, h, r, c, WHITE)) {
+          made++;
+          rec?.(r, c, WHITE, { kind: "reach", clue: { r: row, c: col }, n: clue });
+        }
       }
     }
   }
@@ -197,7 +249,12 @@ const NOT_VISITED = -1;
  * cut vertex of the white graph) must be white. DFS lowpoint
  * articulation-point detection, port of `solver_reasoning_connectedness`
  * / `dfs_biconnect_visit`. */
-function ruleConnectedness(grid: Int8Array, w: number, h: number): number {
+function ruleConnectedness(
+  grid: Int8Array,
+  w: number,
+  h: number,
+  rec?: Recorder,
+): number {
   const n = w * h;
   const parentR = new Int32Array(n).fill(NOT_VISITED);
   const parentC = new Int32Array(n);
@@ -231,7 +288,10 @@ function ruleConnectedness(grid: Int8Array, w: number, h: number): number {
         depth[cell] = mydepth + 1;
         const childLow = visit(rr, cc);
         if (childLow >= mydepth && mydepth > 0) {
-          if (makeMove(grid, w, h, r, c, WHITE)) made++;
+          if (makeMove(grid, w, h, r, c, WHITE)) {
+            made++;
+            rec?.(r, c, WHITE, { kind: "connect" });
+          }
         }
         low = Math.min(low, childLow);
         nchildren++;
@@ -241,7 +301,10 @@ function ruleConnectedness(grid: Int8Array, w: number, h: number): number {
     }
 
     if (mydepth === 0 && nchildren >= 2) {
-      if (makeMove(grid, w, h, r, c, WHITE)) made++;
+      if (makeMove(grid, w, h, r, c, WHITE)) {
+        made++;
+        rec?.(r, c, WHITE, { kind: "connect" });
+      }
     }
     return low;
   };
@@ -258,17 +321,30 @@ export function applyRules(
   w: number,
   h: number,
   clues: Clue[],
+  rec?: Recorder,
 ): number {
   let total = 0;
   for (;;) {
     const made =
-      ruleNotTooBig(grid, w, h, clues) +
-      ruleAdjacency(grid, w, h) +
-      ruleConnectedness(grid, w, h);
+      ruleNotTooBig(grid, w, h, clues, rec) +
+      ruleAdjacency(grid, w, h, rec) +
+      ruleConnectedness(grid, w, h, rec);
     if (made === 0) break;
     total += made;
   }
   return total;
+}
+
+/** Run the deductive solver from `grid` (the player's current marks),
+ * recording every forced cell in deduction order with the reason that
+ * forces it — the data a hint plan narrates. Operates on a clone. */
+export function deduceHintPlan(grid: Int8Array, w: number, h: number): HintMove[] {
+  const dup = grid.slice();
+  const moves: HintMove[] = [];
+  applyRules(dup, w, h, findClues(dup, w, h), (r, c, value, reason) => {
+    moves.push({ r, c, value, reason });
+  });
+  return moves;
 }
 
 // --- error checking (solved-detection + live highlight) --------------------

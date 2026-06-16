@@ -10,11 +10,13 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import type { RangeHint } from "./index.ts";
 import { findErrors } from "./solver.ts";
 import {
   BLACK,
   idx,
+  type RangeMove,
   type RangeParams,
   type RangeState,
   type RangeUi,
@@ -30,6 +32,8 @@ export const COL_BACKGROUND = 0;
 export const COL_GRID = 1; // == COL_BLACK == COL_TEXT == COL_USER
 export const COL_ERROR = 2;
 export const COL_LOWLIGHT = 3; // == COL_CURSOR
+export const COL_HINT = 4; // the cell the displayed hint forces (blue)
+export const COL_HINT_CELL = 5; // premise cells (clue / adjacent black) (light blue)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, lowlight } = mkhighlight(defaultBackground);
@@ -38,6 +42,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_GRID] = [0, 0, 0];
   out[COL_ERROR] = [1, 0, 0];
   out[COL_LOWLIGHT] = lowlight;
+  out[COL_HINT] = [0.13, 0.5, 0.85];
+  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
   return out;
 }
 
@@ -57,6 +63,9 @@ const F_ERROR = 1 << 16;
 const F_CURSOR = 1 << 17;
 const F_FLASH = 1 << 18;
 const F_MISTAKE = 1 << 19;
+const F_HINT_TARGET = 1 << 20; // this cell is the displayed hint's target
+const F_HINT_WHITE = 1 << 21; // …and the forced mark is white (else black)
+const F_HINT_REF = 1 << 22; // this cell is a hint premise (light shade)
 
 export interface RangeDrawState {
   started: boolean;
@@ -82,6 +91,10 @@ export function setTileSize(ds: RangeDrawState, ts: number): void {
 
 // --- cell drawing ----------------------------------------------------------
 
+/** Hint highlight for a cell: 0 none, 1 forced-black target, 2
+ * forced-white target, 3 premise (reference) cell. */
+type HintKind = 0 | 1 | 2 | 3;
+
 function drawCell(
   dr: GameDrawing,
   ts: number,
@@ -91,6 +104,7 @@ function drawCell(
   error: boolean,
   cursor: boolean,
   flash: boolean,
+  hintKind: HintKind,
 ): void {
   const b = border(ts);
   const x = b + ts * c;
@@ -99,18 +113,45 @@ function drawCell(
   const ty = y + Math.floor(ts / 2);
   const dotsz = Math.floor((ts + 9) / 10);
 
+  // A hint target paints the whole cell blue; a black square keeps its
+  // identity; a premise cell shades light blue; otherwise normal.
   const fill =
-    value === BLACK
-      ? error
-        ? COL_ERROR
-        : COL_GRID
-      : flash || cursor
-        ? COL_LOWLIGHT
-        : COL_BACKGROUND;
+    hintKind === 1 || hintKind === 2
+      ? COL_HINT
+      : value === BLACK
+        ? error
+          ? COL_ERROR
+          : COL_GRID
+        : hintKind === 3
+          ? COL_HINT_CELL
+          : flash || cursor
+            ? COL_LOWLIGHT
+            : COL_BACKGROUND;
 
   drawRectOutline(dr, x, y, ts + 1, ts + 1, COL_GRID);
   dr.drawRect({ x: x + 1, y: y + 1, w: ts - 1, h: ts - 1 }, fill);
   if (error) drawRectOutline(dr, x + 1, y + 1, ts - 1, ts - 1, COL_ERROR);
+
+  // Preview the mark the hint forces, on top of the blue target cell.
+  if (hintKind === 1) {
+    // Forced black: an inset black square.
+    const inset = Math.max(2, Math.floor(ts / 5));
+    dr.drawRect(
+      { x: x + inset, y: y + inset, w: ts - 2 * inset, h: ts - 2 * inset },
+      COL_GRID,
+    );
+  } else if (hintKind === 2) {
+    // Forced white: the white dot.
+    dr.drawRect(
+      {
+        x: tx - Math.floor(dotsz / 2),
+        y: ty - Math.floor(dotsz / 2),
+        w: dotsz,
+        h: dotsz,
+      },
+      COL_GRID,
+    );
+  }
 
   if (value === WHITE) {
     dr.drawRect(
@@ -150,7 +191,7 @@ export function redraw(
   ui: RangeUi,
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<RangeMove, RangeHint>,
   mistakes?: readonly { r: number; c: number }[],
 ): void {
   if (!ds) return;
@@ -174,6 +215,12 @@ export function redraw(
   // highlighted the same red as live rule violations.
   const mistakeSet = mistakes ? new Set(mistakes.map((m) => idx(m.r, m.c, w))) : null;
 
+  // The displayed hint step: its target cell and its premise cells.
+  const hl = hint?.highlights;
+  const hintTarget = hl ? idx(hl.target.r, hl.target.c, w) : -1;
+  const hintWhite = hl?.target.value === "white";
+  const hintRefSet = hl ? new Set(hl.refs.map((m) => idx(m.r, m.c, w))) : null;
+
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < w; c++) {
       const i = idx(r, c, w);
@@ -181,15 +228,20 @@ export function redraw(
       const error = errors[i];
       const mistake = mistakeSet?.has(i) ?? false;
       const cursor = ui.cursorShow && r === ui.r && c === ui.c;
+      const hintKind: HintKind =
+        i === hintTarget ? (hintWhite ? 2 : 1) : hintRefSet?.has(i) ? 3 : 0;
 
       let packed = value + 2;
       if (error) packed |= F_ERROR;
       if (cursor) packed |= F_CURSOR;
       if (flash) packed |= F_FLASH;
       if (mistake) packed |= F_MISTAKE;
+      if (hintKind === 1 || hintKind === 2) packed |= F_HINT_TARGET;
+      if (hintKind === 2) packed |= F_HINT_WHITE;
+      if (hintKind === 3) packed |= F_HINT_REF;
 
       if (ds.cache[i] !== packed) {
-        drawCell(dr, ts, r, c, value, error || mistake, cursor, flash);
+        drawCell(dr, ts, r, c, value, error || mistake, cursor, flash, hintKind);
         ds.cache[i] = packed;
       }
     }

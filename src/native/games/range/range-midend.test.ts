@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import type { ChangeNotification, GameStatus } from "../../../puzzle/types.ts";
 import { Midend } from "../../engine/midend.ts";
+import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
 import { randomNew } from "../../random/index.ts";
 import { rangeGame } from "./index.ts";
 import { fullSolve } from "./solver.ts";
@@ -23,7 +24,13 @@ function harness() {
         | Extract<ChangeNotification, { type: "game-state-change" }>
         | undefined
     )?.status;
-  return { m, status };
+  const hintBanner = (): string | undefined =>
+    (
+      [...notes].reverse().find((n) => n.type === "status-bar-change") as
+        | Extract<ChangeNotification, { type: "status-bar-change" }>
+        | undefined
+    )?.activeHintExplanation;
+  return { m, status, hintBanner };
 }
 
 describe("midend integration", () => {
@@ -54,6 +61,34 @@ describe("midend integration", () => {
     }
     m.playMoves(moves);
     expect(status()).toBe("solved");
+  });
+
+  it("surfaces the hint explanation without a status bar and clears it on a move", () => {
+    // Range has wantsStatusbar=false but explained hints; the banner
+    // (activeHintExplanation) must still be emitted, and cleared by a move.
+    const params = decodeParams("9x6");
+    const { desc } = rangeGame.newDesc(params, randomNew("range-hint-banner"));
+    const { m, hintBanner } = harness();
+    expect(m.newGameFromId(`9x6:${desc}`)).toBeUndefined();
+
+    expect(m.hint()).toBeUndefined();
+    const banner = hintBanner();
+    expect(banner).toBeTruthy();
+    expect((banner ?? "").length).toBeGreaterThan(0);
+
+    // Make the hinted move as a real click (processInput runs the hint
+    // keep-track, which advances+hides the plan) → the banner clears.
+    const plan = rangeGame.hint?.(newState(params, desc));
+    if (!plan?.ok) throw new Error("expected a plan");
+    const t = (
+      plan.steps[0].highlights as { target: { r: number; c: number; value: string } }
+    ).target;
+    const ts = 32;
+    const b = ts / 2;
+    const x = b + ts * t.c + ts / 2;
+    const y = b + ts * t.r + ts / 2;
+    m.processInput(x, y, t.value === "white" ? RIGHT_BUTTON : LEFT_BUTTON);
+    expect(hintBanner() ?? "").toBe("");
   });
 
   it("reports mistakes against the solution and clears when corrected", () => {

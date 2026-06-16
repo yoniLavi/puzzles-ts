@@ -10,6 +10,8 @@ import { rangeGame } from "./index.ts";
 import {
   COL_ERROR,
   COL_GRID,
+  COL_HINT,
+  COL_HINT_CELL,
   colours,
   newDrawState,
   redraw,
@@ -87,6 +89,22 @@ describe("render scenario snapshot", () => {
     // Background + grid lines + clue text are all present.
     expect(ops.some((o) => o.op === "rect")).toBe(true);
     expect(ops.some((o) => o.op === "line" && o.colour === COL_GRID)).toBe(true);
+    expect(ops.some((o) => o.op === "text")).toBe(true);
+    expect(result.recording.ops).toMatchSnapshot();
+  });
+
+  it("draws the hint target and premise highlight on the first hint step", () => {
+    const result = renderScenario({
+      game: rangeGame,
+      id: "9x6#range-render",
+      showHint: true,
+    });
+    expect(result.hint).toBeDefined();
+    const ops = result.recording.ops;
+    // The hint target cell is filled COL_HINT; premise cells COL_HINT_CELL.
+    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
+    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(true);
+    // Clues are still drawn.
     expect(ops.some((o) => o.op === "text")).toBe(true);
     expect(result.recording.ops).toMatchSnapshot();
   });

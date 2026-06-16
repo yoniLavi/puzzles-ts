@@ -935,8 +935,19 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   }
 
   private emitStatusBar(): void {
-    if (!this.game.wantsStatusbar) return;
-    const text = this.game.statusbarText?.(this.state, this.ui) ?? "";
+    // The status-bar-change notification carries BOTH the status-bar text
+    // and the active hint explanation (the banner). A game may want the
+    // hint banner without a status bar (e.g. Range — `wantsStatusbar`
+    // false, but it has explained hints), so a hint-capable game always
+    // emits (so the explanation both appears and, on the next move,
+    // clears); only a game with neither a status bar nor a hint is
+    // skipped. The status-bar DOM is gated on `wantsStatusbar`
+    // independently (puzzle-view.ts), so the empty text emitted here for
+    // a no-status-bar game is inert.
+    if (!this.game.wantsStatusbar && !this.game.hint) return;
+    const text = this.game.wantsStatusbar
+      ? (this.game.statusbarText?.(this.state, this.ui) ?? "")
+      : "";
     this.emit({
       type: "status-bar-change",
       statusBarText: text,
