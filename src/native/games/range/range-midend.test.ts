@@ -101,7 +101,7 @@ describe("midend integration", () => {
     expect(m.newGameFromId(`9x6:${desc}`)).toBeUndefined();
 
     // Dot (white) a cell that is black in the solution → a mistake.
-    const blackCell = solution.findIndex((v) => v === BLACK);
+    const blackCell = solution.indexOf(BLACK);
     const r = Math.floor(blackCell / params.w);
     const c = blackCell % params.w;
     m.playMoves([{ sets: [{ r, c, value: "white" }] }]);

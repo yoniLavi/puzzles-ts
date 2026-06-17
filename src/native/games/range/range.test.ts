@@ -152,7 +152,7 @@ describe("solve + findMistakes", () => {
     expect(rangeGame.findMistakes?.(solved)).toEqual([]);
 
     // Flip the first solution-black cell to white (a dot) → a mistake.
-    const blackCell = solved.grid.findIndex((v) => v === BLACK);
+    const blackCell = solved.grid.indexOf(BLACK);
     const r = Math.floor(blackCell / st.w);
     const c = blackCell % st.w;
     const wrong = rangeGame.executeMove(st, { sets: [{ r, c, value: "white" }] });

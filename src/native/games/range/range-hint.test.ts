@@ -106,7 +106,7 @@ describe("hint", () => {
     const solution = rangeGame.solve?.(st, st);
     if (!solution?.ok) throw new Error("expected solvable");
     const solved = rangeGame.executeMove(st, solution.move);
-    const blackCell = solved.grid.findIndex((v) => v === BLACK);
+    const blackCell = solved.grid.indexOf(BLACK);
     const r = Math.floor(blackCell / st.w);
     const c = blackCell % st.w;
     // Dot a solution-black cell white on the fresh board → a mistake.
