@@ -13,7 +13,7 @@ declarations (`.gitignore`, `.gitattributes`, `.husky/`, `Brewfile`),
 top-level documentation (`README.md`, `LICENSE.md`, `CREDITS.md`,
 `AGENTS.md`, `CLAUDE.md`), and entry-point directories (`src/`,
 `public/`, `help/`, `puzzles/`, `scripts/`, `openspec/`, `templates/`,
-`vite-plugins/`, `build/`).
+`vite-plugins/`, `build/`, `docs/`).
 
 `PLAN.md` is no longer a top-level file: its strategic content (Goal,
 Lineage, Approach, Test discipline, Seam order, What's been done,
@@ -37,14 +37,17 @@ NOT live loose at the root. Specifically:
   `vite-plugin-sitemap` enumerates rollup outputs in a way that breaks
   when this input lives under a subdirectory.
 
+Developer-facing prose guides (the *how-to* of porting and feature work,
+distinct from the `/help` in-app user docs) SHALL live under `docs/`.
+
 #### Scenario: New top-level files are flagged for review
 
 - **WHEN** a change proposes a new file at the repository root
 - **THEN** the file MUST fit one of the categories listed above (config,
   manifest, top-level docs, or entry-point directory)
 - **AND** if it does not, the proposal MUST justify why an existing
-  subdirectory (`vite-plugins/`, `templates/`, `scripts/`, or a new
-  named directory) is not the right home
+  subdirectory (`vite-plugins/`, `templates/`, `scripts/`, `docs/`, or a
+  new named directory) is not the right home
 
 #### Scenario: Templates are not entry points
 
@@ -315,4 +318,35 @@ for genuine full-integration and real-canvas smoke checks.
   baseline after a rendering change
 - **THEN** an unintended visual change surfaces as a text diff an agent reviews,
   and an intended one is re-baselined with `vitest -u`
+
+### Requirement: Developer guides live under docs/ and link to specs
+
+Developer guides under `docs/` SHALL describe procedure (the followable
+*how*) and SHALL NOT restate normative requirements. A guide MUST link to
+the authoritative spec requirement rather than paraphrase it, and MUST name
+exemplar files rather than copy code that would rot. This keeps the specs
+(`ts-migration`, `ts-engine`, `repo-layout`, per-game) the single source of
+truth for *what* is required, so a guide can only ever go stale (a broken
+link or an outdated exemplar pointer, caught by review), never silently
+contradict a requirement.
+
+The initial guides are `docs/porting/game-port-playbook.md` (the ordered
+game-port procedure) and `docs/porting/hint-authoring.md` (the procedure for
+adding an explained `hint()` to a ported game).
+
+#### Scenario: A guide states a normative rule
+
+- **WHEN** a `docs/` guide mentions a rule that a spec owns (e.g. the
+  parity-gated registration rule, or the hint quality bar)
+- **THEN** the guide states it briefly and links to the owning spec
+  requirement
+- **AND** the guide does not contain the authoritative wording such that the
+  two could diverge
+
+#### Scenario: A guide shows a code pattern
+
+- **WHEN** a `docs/` guide describes an implementation pattern (e.g. the
+  `Int32Array` packed-bits render cache key)
+- **THEN** it points at an exemplar file that demonstrates the pattern
+- **AND** it does not paste a code snippet that would drift from the source
 

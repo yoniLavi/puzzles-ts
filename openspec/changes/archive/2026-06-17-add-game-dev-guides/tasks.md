@@ -55,5 +55,6 @@
   dark-mode `paletteOverrides`; (d) the exact-byte-match differential bar is
   achievable and preferable when the generator is a faithful port over the
   bit-identical RNG.
-- [ ] 6.3 Owner sign-off that the guides are now trustworthy; archive
-  (alongside `add-unruly-ts-port` owner acceptance).
+- [x] 6.3 Owner sign-off that the guides are now trustworthy; archive
+  (alongside `add-unruly-ts-port` owner acceptance). Signed off 2026-06-17 after
+  the Unruly port + hint battle-test was owner-accepted.
