@@ -349,7 +349,11 @@ describe("Sixteen midend integration — executeHint auto-play", () => {
   // The bidirectional search itself takes a few seconds when it
   // engages — that is the very cost this test pins to once-per-plan.
   it("crosses the two-swap 5x5 endgame on one stored plan (no per-step recompute)", {
-    timeout: 30_000,
+    // 60s, not 30s: the bidirectional search is ~0.5-2s on its own, but the
+    // whole-test wall clock gets starved under full-suite parallel CPU
+    // contention (it timed out at 30s on a loaded machine). The real
+    // guarantee is the mechanism — hintCalls === 1 — not the milliseconds.
+    timeout: 60_000,
   }, () => {
     // Regression guard for the cost model: the exact bidirectional
     // fallback (~0.5-2s when it engages) must run once for the whole
