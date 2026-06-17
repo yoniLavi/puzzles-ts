@@ -22,10 +22,10 @@
  * (`-DUSE_TS_LEAVES=0` restores the C `random.c`, which the umbrella
  * default drops.) After deletion, recover the harness from git history.
  */
-import { describe, expect, it } from "vitest";
-import { randomNew } from "../../random/index.ts";
+import { expect } from "vitest";
+import { describeDescDifferential } from "../../engine/testing/differential.ts";
 import cReference from "./__fixtures__/samegame-c-reference.json" with { type: "json" };
-import { newDesc, validateDesc } from "./state.ts";
+import { newDesc, type SamegameParams, validateDesc } from "./state.ts";
 
 interface Fixture {
   w: number;
@@ -39,27 +39,20 @@ interface Fixture {
 
 const data = cReference as { fixtures: Fixture[] };
 
-describe("Same Game differential (frozen C reference)", () => {
-  for (const f of data.fixtures) {
-    const label = `${f.w}x${f.h}c${f.ncols}s${f.scoresub}${f.soluble ? "" : "r"} seed=${f.seed}`;
-    it(`${label}: TS desc matches C byte-for-byte`, () => {
-      const { desc } = newDesc(
-        {
-          w: f.w,
-          h: f.h,
-          ncols: f.ncols,
-          scoresub: f.scoresub,
-          soluble: f.soluble,
-        },
-        randomNew(f.seed),
-      );
-      expect(desc).toBe(f.desc);
-      expect(
-        validateDesc(
-          { w: f.w, h: f.h, ncols: f.ncols, scoresub: f.scoresub, soluble: f.soluble },
-          f.desc,
-        ),
-      ).toBeNull();
-    });
-  }
+describeDescDifferential<Fixture, SamegameParams>({
+  title: "Same Game differential (frozen C reference)",
+  fixtures: data.fixtures,
+  label: (f) =>
+    `${f.w}x${f.h}c${f.ncols}s${f.scoresub}${f.soluble ? "" : "r"} seed=${f.seed}`,
+  params: (f) => ({
+    w: f.w,
+    h: f.h,
+    ncols: f.ncols,
+    scoresub: f.scoresub,
+    soluble: f.soluble,
+  }),
+  newDesc,
+  extra: (f, p) => {
+    expect(validateDesc(p, f.desc)).toBeNull();
+  },
 });

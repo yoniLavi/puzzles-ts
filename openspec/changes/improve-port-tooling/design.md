@@ -2,19 +2,24 @@
 
 ## CI must run the full gate (no cheap no-WASM tier)
 
-The instinct is a fast `tsc + lint + test` PR job that skips the ~5-min Emscripten
+The instinct is a fast `tsc + lint + test` job that skips the ~5-min Emscripten
 build. It doesn't work here: `src/puzzle/catalog.ts` imports `catalog.json`,
 `src/puzzle/types.ts` and `worker.ts` import `emcc-runtime` — all generated into
 `src/assets/puzzles/` by `build:wasm`. So `tsc -b`, `vitest`, AND `vite build` all
 fail without the generated assets. CI therefore mirrors the *full* local gate:
 `build:wasm` (emsdk + apt halibut/jq/cmake) then `npm run gate`.
 
+The trigger is push-to-`main` only — this project is trunk-based, so the gate is
+a post-push backstop (catch a `--no-verify` / hook-less commit), not a pre-merge
+check; a `pull_request` trigger is a one-line add if a contributor PR flow is
+adopted later.
+
 Pin emsdk to the Brewfile's emscripten (5.0.7) so CI and local agree — a large
 emscripten jump can shift wasm output (the Brewfile already warns this). The job
-can only be truly validated by a real PR run (Ubuntu apt package names, emsdk
+can only be truly validated by a real run (Ubuntu apt package names, emsdk
 version availability, halibut behaviour) — shipped as best-effort, flagged for a
-first-PR shakedown. This is the honest state: a workflow file is the deliverable;
-green-on-GitHub is a follow-up the owner confirms.
+first-run shakedown. This is the honest state: a workflow file is the deliverable;
+green-on-GitHub is a follow-up the owner confirms after the first push.
 
 ## The differential helper is deliberately narrow
 

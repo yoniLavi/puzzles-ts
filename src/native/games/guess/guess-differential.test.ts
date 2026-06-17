@@ -24,9 +24,15 @@
  * After deletion, recover the harness from git history.
  */
 import { describe, expect, it } from "vitest";
-import { randomNew } from "../../random/index.ts";
+import { describeDescDifferential } from "../../engine/testing/differential.ts";
 import cReference from "./__fixtures__/guess-c-reference.json" with { type: "json" };
-import { decodeParams, newDesc, newState, validateDesc } from "./state.ts";
+import {
+  decodeParams,
+  type GuessParams,
+  newDesc,
+  newState,
+  validateDesc,
+} from "./state.ts";
 
 interface Ref {
   seed: string;
@@ -34,28 +40,29 @@ interface Ref {
   desc: string;
 }
 
-describe("Guess differential (frozen C snapshot)", () => {
-  const refs = cReference as Ref[];
+const refs = cReference as Ref[];
 
+describe("Guess differential corpus", () => {
   it("has a non-trivial frozen corpus", () => {
     expect(refs.length).toBeGreaterThanOrEqual(20);
   });
+});
 
-  for (const ref of refs) {
-    it(`reproduces the C desc for ${ref.params} seed="${ref.seed}"`, () => {
-      const params = decodeParams(ref.params);
-      const rng = randomNew(ref.seed);
-      const { desc } = newDesc(params, rng);
-      // Byte-identical generator path (random.ts + obfuscation).
-      expect(desc).toBe(ref.desc);
-      // The C desc is a valid, decodable solution.
-      expect(validateDesc(params, ref.desc)).toBeNull();
-      const state = newState(params, ref.desc);
-      expect(state.solution).toHaveLength(params.npegs);
-      for (const c of state.solution) {
-        expect(c).toBeGreaterThanOrEqual(1);
-        expect(c).toBeLessThanOrEqual(params.ncolours);
-      }
-    });
-  }
+describeDescDifferential<Ref, GuessParams>({
+  title: "Guess differential (frozen C snapshot)",
+  fixtures: refs,
+  label: (ref) => `${ref.params} seed="${ref.seed}"`,
+  params: (ref) => decodeParams(ref.params),
+  // Byte-identical generator path (random.ts + obfuscation).
+  newDesc,
+  extra: (ref, params) => {
+    // The C desc is a valid, decodable solution.
+    expect(validateDesc(params, ref.desc)).toBeNull();
+    const state = newState(params, ref.desc);
+    expect(state.solution).toHaveLength(params.npegs);
+    for (const c of state.solution) {
+      expect(c).toBeGreaterThanOrEqual(1);
+      expect(c).toBeLessThanOrEqual(params.ncolours);
+    }
+  },
 });

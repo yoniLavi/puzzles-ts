@@ -20,14 +20,15 @@ tidy-3 survey surfaced but left open:
    file from scratch.
 
 ## What Changes
-- **Add CI** (`.github/workflows/ci.yml`): on push to `main` and on every PR, run
-  the *same* gate the husky hook runs — `build:wasm` (Emscripten via
-  `setup-emsdk`, plus apt `halibut`/`jq`/`cmake`) then `npm run gate`
-  (typecheck → lint → test:run → vite build). The whole gate needs the generated
-  WASM/catalog assets (`src/puzzle/{catalog,types,worker}.ts` import from
-  `src/assets/puzzles/`), so a cheap no-WASM tier is not possible — CI mirrors the
-  full local gate. CLAUDE.md previously deferred CI/CD "until this fork wants its
-  own"; the owner has now opted in.
+- **Add CI** (`.github/workflows/ci.yml`): on push to `main` (the project is
+  trunk-based — no PR flow; a `pull_request` trigger can be added later if
+  contributors arrive), run the *same* gate the husky hook runs — `build:wasm`
+  (Emscripten via `setup-emsdk`, plus apt `halibut`/`jq`/`cmake`) then
+  `npm run gate` (typecheck → lint → test:run → vite build). The whole gate needs
+  the generated WASM/catalog assets (`src/puzzle/{catalog,types,worker}.ts` import
+  from `src/assets/puzzles/`), so a cheap no-WASM tier is not possible — CI
+  mirrors the full local gate. CLAUDE.md previously deferred CI/CD "until this
+  fork wants its own"; the owner has now opted in.
 - **Add a focused differential helper** `src/native/engine/testing/differential.ts`
   — `describeDescDifferential({ title, fixtures, params, newDesc, label?, extra? })`
   for the *byte-for-byte desc* shape repeated across samegame/unruly/flood/guess.
@@ -46,7 +47,7 @@ tidy-3 survey surfaced but left open:
   with test scaffolding shaped, not blank.
 
 ## Impact
-- **Affected specs:** `build-pipeline` (ADDED: CI runs the full gate on push/PR);
+- **Affected specs:** `build-pipeline` (ADDED: CI runs the full gate on push to main);
   `repo-layout` (ADDED: shared differential-test helper; MODIFIED: the scaffolder
   requirement now also emits starter test scaffolding).
 - **Affected code:** new `.github/workflows/ci.yml`;
@@ -54,6 +55,6 @@ tidy-3 survey surfaced but left open:
   `src/native/games/{samegame,unruly,flood,guess}/*-differential.test.ts`; delete
   `scripts/diff-{flip,galaxies,unruly}.test.ts`; `scripts/new-game-port.sh`,
   `package.json` (`diff` gains `--passWithNoTests`); `docs/porting/game-port-playbook.md`.
-- **Behaviour:** no runtime change. CI cannot be fully verified without a real PR
-  run (Emscripten/halibut on Ubuntu + emsdk version pinning) — flagged as needing a
-  first-PR shakedown.
+- **Behaviour:** no runtime change. CI cannot be fully verified without a real
+  push-to-main run (Emscripten/halibut on Ubuntu + emsdk version pinning) —
+  flagged as needing a first-run shakedown.

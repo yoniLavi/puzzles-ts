@@ -1,0 +1,66 @@
+# CI backstop for the TS-migration port work.
+#
+# This project is trunk-based (no PRs), so the gate runs post-push on `main`:
+# it runs the SAME gate as the husky pre-commit hook (`npm run gate`:
+# tsc -b --noEmit → biome lint → vitest run → vite build), so a `--no-verify`
+# commit or a fresh clone whose hooks never installed can no longer land
+# breakage on `main` undetected. (If contributors arrive later and PRs become
+# useful, add a `pull_request:` trigger here.)
+#
+# Why it builds WASM first (no cheap no-WASM tier): the typecheck, tests, AND
+# the production build all import generated artifacts from `src/assets/puzzles/`
+# — `src/puzzle/catalog.ts` imports `catalog.json`; `src/puzzle/{types,worker}.ts`
+# import `emcc-runtime`. Without `build:wasm` having populated that directory,
+# `tsc -b`, `vitest`, and `vite build` all fail. So the emsdk + `build:wasm`
+# steps are NOT optional — CI mirrors the full local gate.
+#
+# emsdk is pinned to the Brewfile's emscripten version (5.0.7). A large
+# emscripten jump can shift wasm output (the Brewfile warns this); if the
+# Brewfile's emscripten moves, bump EMSDK_VERSION here to match.
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+# Cancel an in-progress run when a newer commit lands on the same ref — the
+# older run's result is moot.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Keep in sync with the Brewfile's `emscripten` version.
+      EMSDK_VERSION: 5.0.7
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # build:wasm needs halibut (in-app manual), jq (catalog post-processing),
+      # and cmake (build harness) — the same host tools the Brewfile installs.
+      - name: Install wasm build system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends halibut jq cmake
+
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: ${{ env.EMSDK_VERSION }}
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build wasm assets (required by the gate)
+        run: npm run build:wasm
+
+      - name: Run the gate (typecheck → lint → test → prod build)
+        run: npm run gate

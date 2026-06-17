@@ -23,10 +23,9 @@
  * (`-DUSE_TS_LEAVES=0` restores the C `random.c`, which the umbrella
  * default drops.) After deletion, recover the harness from git history.
  */
-import { describe, expect, it } from "vitest";
-import { randomNew } from "../../random/index.ts";
+import { describeDescDifferential } from "../../engine/testing/differential.ts";
 import cReference from "./__fixtures__/flood-c-reference.json" with { type: "json" };
-import { newDesc } from "./state.ts";
+import { type FloodParams, newDesc } from "./state.ts";
 
 interface Fixture {
   w: number;
@@ -39,14 +38,10 @@ interface Fixture {
 
 const data = cReference as { fixtures: Fixture[] };
 
-describe("Flood differential (frozen C reference)", () => {
-  for (const f of data.fixtures) {
-    it(`${f.w}x${f.h}c${f.colours}m${f.leniency} seed=${f.seed}: TS desc matches C byte-for-byte`, () => {
-      const { desc } = newDesc(
-        { w: f.w, h: f.h, colours: f.colours, leniency: f.leniency },
-        randomNew(f.seed),
-      );
-      expect(desc).toBe(f.desc);
-    });
-  }
+describeDescDifferential<Fixture, FloodParams>({
+  title: "Flood differential (frozen C reference)",
+  fixtures: data.fixtures,
+  label: (f) => `${f.w}x${f.h}c${f.colours}m${f.leniency} seed=${f.seed}`,
+  params: (f) => ({ w: f.w, h: f.h, colours: f.colours, leniency: f.leniency }),
+  newDesc,
 });

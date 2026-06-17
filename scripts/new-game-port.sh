@@ -7,10 +7,13 @@
 # Usage:
 #   scripts/new-game-port.sh <gameId>
 #
-# It creates src/native/games/<gameId>/ with typed Game<…> stubs and an
-# empty __fixtures__/, then PRINTS (does not perform) the manual-edit
-# checklist that needs judgement — the C trace harness and the two
-# registration edits. Read the Galaxies port as the exemplar.
+# It creates src/native/games/<gameId>/ with typed Game<…> source stubs, an
+# empty __fixtures__/, a starter <gameId>.test.ts (a save round-trip + a
+# renderScenario render smoke, both `it.skip` so a fresh scaffold stays green),
+# and a commented <gameId>-differential.test.ts stub. It then PRINTS (does not
+# perform) the manual-edit checklist that needs judgement — the C trace
+# harness, the two registration edits, and the icon PNGs. Read the Galaxies
+# port as the exemplar.
 
 set -euo pipefail
 
@@ -131,7 +134,7 @@ import type {
   ${P}Ui,
 } from "./state.ts";
 
-const ${GAME}Game: Game<
+export const ${GAME}Game: Game<
   ${P}Params,
   ${P}State,
   ${P}Move,
@@ -201,8 +204,105 @@ const ${GAME}Game: Game<
 registerGame(${GAME}Game);
 EOF
 
+# Starter tier-1/2.5 test: a save round-trip + a renderScenario render smoke.
+# Both are `it.skip` so a fresh scaffold type-checks, lints, and stays green
+# against the throwing stubs — drop `.skip` and set a real id as you port.
+cat > "${DIR}/${GAME}.test.ts" <<EOF
+/**
+ * Starter tests for the ${GAME} port — scaffolded by scripts/new-game-port.sh.
+ *
+ * SKELETONS: the \`it.skip(...)\` blocks below type-check and lint clean against
+ * the (throwing) stubs, so the gate stays green on a fresh scaffold. As you
+ * fill in the port, drop \`.skip\`, set a real game id, and flesh out the
+ * assertions. Read the galaxies/flip tests as exemplars; the test tiers are in
+ * docs/porting/game-port-playbook.md §4.
+ */
+import { describe, expect, it } from "vitest";
+import { Midend } from "../../engine/index.ts";
+import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { ${GAME}Game } from "./index.ts";
+
+// TODO: a real game id — "<params>:<desc>" (descriptive) or "<params>#<seed>"
+// (random, reproducible via the bit-identical RNG). Replace once newDesc /
+// newState are implemented; until then the skipped tests don't evaluate it.
+const SCAFFOLD_ID = "5x5#scaffold-seed";
+
+describe("${GAME} save round-trip", () => {
+  it.skip("saveGame -> loadGame restores an equivalent game", () => {
+    const me = new Midend(${GAME}Game);
+    expect(me.newGameFromId(SCAFFOLD_ID)).toBeUndefined();
+    // TODO: play a move or two so the save carries real progress.
+    const saved = me.saveGame();
+    const me2 = new Midend(${GAME}Game);
+    expect(me2.loadGame(saved)).toBeUndefined();
+    // TODO: assert me2 matches me (formatAsText / status / a render compare).
+  });
+});
+
+describe("${GAME} render smoke", () => {
+  it.skip("redraws the initial frame without throwing", () => {
+    const { recording } = renderScenario({ game: ${GAME}Game, id: SCAFFOLD_ID });
+    // TODO: assert the ops that matter (a tile rect, the grid lines, …) and add
+    // \`expect(recording.ops).toMatchSnapshot()\` once the frame is stable
+    // (tier 2.5 — see the playbook).
+    expect(recording.ops.length).toBeGreaterThan(0);
+  });
+});
+EOF
+
+# Differential stub: a fresh scaffold has no C fixture yet, so the actual
+# differential (the describeDescDifferential wiring) stays COMMENTED — only a
+# single `it.todo` marker is live, which keeps vitest happy (a fully-commented
+# *.test.ts fails collection) and the file type-checks before any fixture
+# exists. Uncomment the body once __fixtures__/${GAME}-c-reference.json exists.
+cat > "${DIR}/${GAME}-differential.test.ts" <<EOF
+/**
+ * Gated C-vs-TS differential for ${GAME} — SCAFFOLD STUB.
+ *
+ * A differential is per-game OPTIONAL — it earns its place on solver/codec
+ * games (uniqueness/difficulty loops, non-obvious codecs), not every port. If
+ * ${GAME} skips it, delete this file and note the skip in the port's design.md.
+ *
+ * If it earns one, regenerate the frozen fixture while puzzles/${GAME}.c still
+ * exists (the C is deleted at acceptance):
+ *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
+ *   (cd build/native && make ${GAME}-trace)
+ *   build/native/auxiliary/${GAME}-trace \\
+ *     > src/native/games/${GAME}/__fixtures__/${GAME}-c-reference.json
+ *
+ * Then replace the \`it.todo\` below with the wiring commented underneath it.
+ * Most ports use the shared byte-for-byte desc-match helper; solver-agreement
+ * (decode + solve + difficulty) stays inline (playbook §4).
+ */
+import { describe, it } from "vitest";
+
+describe("${GAME} differential (scaffold stub)", () => {
+  it.todo("record a C fixture, then enable the byte-match differential below");
+});
+
+// Uncomment once __fixtures__/${GAME}-c-reference.json exists (delete the
+// \`it.todo\` stub above), and adjust Fixture/params to this game's shape:
+//
+// import { describeDescDifferential } from "../../engine/testing/differential.ts";
+// import cReference from "./__fixtures__/${GAME}-c-reference.json" with { type: "json" };
+// import { new${P}Desc } from "./generator.ts";
+// import type { ${P}Params } from "./state.ts";
+//
+// interface Fixture { seed: string; desc: string; w: number; h: number; }
+// const data = cReference as { fixtures: Fixture[] };
+//
+// describeDescDifferential<Fixture, ${P}Params>({
+//   title: "${GAME} differential (frozen C reference)",
+//   fixtures: data.fixtures,
+//   label: (f) => \`\${f.w}x\${f.h} seed=\${f.seed}\`,
+//   params: (f) => ({ w: f.w, h: f.h }),
+//   newDesc: new${P}Desc,
+// });
+EOF
+
 echo "Scaffolded ${DIR}:"
-echo "  state.ts solver.ts generator.ts render.ts index.ts __fixtures__/"
+echo "  state.ts solver.ts generator.ts render.ts index.ts"
+echo "  ${GAME}.test.ts ${GAME}-differential.test.ts (commented stub) __fixtures__/"
 echo ""
 echo "Now do the parts that need judgement (the script will not):"
 echo "  1. Read puzzles/${GAME}.c as the logic reference; fill the stubs."

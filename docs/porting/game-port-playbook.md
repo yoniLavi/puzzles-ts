@@ -207,17 +207,42 @@ guess); permutation / short-RNG games (cube, fifteen, sixteen, twiddle, pegs,
 blackbox) get their RNG-faithfulness transitively from `random.ts`'s own corpus
 plus the existing differentials, and deliberately ship without one (state the
 skip in the port's `design.md`, as those did). Of the 15 games to date, 6 carry a
-gated test and 3 a live script — by this per-game decision, *not* because the pair
-is mandatory.
+committed gated test — by this per-game decision, *not* because a differential
+is mandatory. (No committed advisory `scripts/diff-*.test.ts` remain: an
+advisory script is dev-time-only and is deleted with the game's `.c` — see the
+lifecycle below.)
 
-The two durable forms (use either or both when a game earns it): a **gated**
-frozen-snapshot test (`<game>-differential.test.ts` vs a `__fixtures__/*.json`
-recorded from C) and an **advisory** live `scripts/diff-<game>.test.ts` (run via
-`npm run diff`, which globs every `scripts/diff-*.test.ts` through the single
-`scripts/diff.vitest.config.mts` — no per-game config). An advisory script earns
-its keep only if it does something the frozen fixture can't, e.g. shelling the
-live C trace binary (`diff-flip`); a script that merely re-reads the same fixture
-the gated test reads adds no signal. Exemplar end-to-end:
+The two forms have **different lifecycles** — get this right or you leave a
+no-signal vestige behind:
+
+- **Gated, committed, durable:** the frozen-snapshot test
+  `src/native/games/<game>/<game>-differential.test.ts` vs a
+  `__fixtures__/*.json` recorded from C. This is the form that *survives* the
+  port. When its shape is the **byte-for-byte desc match** (a faithful
+  generator over the bit-identical RNG — samegame/unruly/flood/guess), don't
+  re-roll the `describe`/`for`/`it`/`expect` loop: call
+  [`describeDescDifferential`](../../src/native/engine/testing/differential.ts)
+  with your fixtures, a `params` mapper, your `newDesc`, an optional `label`,
+  and an optional `extra` for a follow-on check (e.g. `validateDesc`).
+  Solver-agreement (decode a C board, run the TS solver, assert the recorded
+  difficulty — galaxies; unruly's 2nd assertion) is game-specific and stays
+  **inline**; the helper deliberately doesn't model it.
+- **Advisory, dev-time-only, deleted with the C:** a live
+  `scripts/diff-<game>.test.ts` earns its keep *only* while it shells the live
+  C trace binary (`build/native/auxiliary/<game>-trace`) for a true C-vs-TS
+  compare. That binary is built from `puzzles/<game>.c` +
+  `puzzles/auxiliary/<game>-trace.c`, **both deleted at port acceptance** (the
+  per-game C-deletion doctrine). So the moment the port ships, the advisory
+  script can never run live again — it can only skip (no binary) or re-read the
+  frozen fixture the gated test already reads (no signal). **Delete
+  `scripts/diff-<game>.test.ts` in the same commit that deletes the game's
+  `.c`** — don't leave it as a vestige (flip/galaxies/unruly each left one; all
+  three were removed in `improve-port-tooling`). The infrastructure stays for
+  the *next* in-flight port: one `scripts/diff.vitest.config.mts` + `npm run
+  diff` (now `--passWithNoTests`, so it no-ops when no advisory script exists).
+  Recover a deleted script from git history if you ever rebuild the C oracle.
+
+Exemplar end-to-end (while the C still exists):
 [`unruly-trace.c`](../../puzzles/auxiliary/unruly-trace.c) →
 [`unruly-differential.test.ts`](../../src/native/games/unruly/unruly-differential.test.ts).
 
