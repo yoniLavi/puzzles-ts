@@ -41,7 +41,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # Node >= 24: the wasm-sourcemaps vite plugin uses RegExp.escape,
+          # which landed in V8 / Node 24 (vite-plugins/wasm-sourcemaps.ts).
+          # Node 22 builds the app fine until that plugin runs, then fails
+          # `vite build` with "RegExp.escape is not a function".
+          node-version: 24
           cache: npm
 
       # build:wasm needs halibut (in-app manual), jq (catalog post-processing),
