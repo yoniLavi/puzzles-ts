@@ -12,6 +12,13 @@
   version may need bumping if the Brewfile's emscripten moves.
 - [x] 1.4 Validate YAML locally (parse-check). NOTE: end-to-end CI can only be
   verified by a real push-to-main run — flag as needing a first-run shakedown.
+- [x] 1.5 First-run shakedown (run 27685435857 green). Fixes it surfaced: build
+  on Node 24 (the wasm-sourcemaps plugin needs `RegExp.escape`; +`.nvmrc`).
+  Hardening: cache `src/assets/puzzles/` keyed on the wasm inputs (skip
+  apt/emsdk/build:wasm on a hit — ~1 min TS-only push vs ~4 min); add a
+  `workflow_dispatch` trigger with a `force_wasm_rebuild` toggle; bump
+  checkout@v6 / setup-node@v6 / setup-emsdk@v16 (silences the Node-20 action
+  deprecation).
 
 ## 2. Focused differential helper
 - [x] 2.1 Add `src/native/engine/testing/differential.ts` —

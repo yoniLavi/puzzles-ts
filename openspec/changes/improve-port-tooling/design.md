@@ -12,7 +12,21 @@ fail without the generated assets. CI therefore mirrors the *full* local gate:
 The trigger is push-to-`main` only — this project is trunk-based, so the gate is
 a post-push backstop (catch a `--no-verify` / hook-less commit), not a pre-merge
 check; a `pull_request` trigger is a one-line add if a contributor PR flow is
-adopted later.
+adopted later. A `workflow_dispatch` trigger (with a `force_wasm_rebuild` toggle)
+also allows a manual run.
+
+The wasm build dominates the run (~3.5 min: emsdk + apt + `build:wasm`) while the
+gate itself is ~30s. "Make wasm a manual-only job" doesn't work — a no-asset
+default job fails at `tsc -b` (catalog/emcc-runtime imports), the same reason
+there's no no-WASM tier. So instead the generated `src/assets/puzzles/` is
+**cached** (key = `hashFiles('puzzles/**') + build-emcc.sh + emsdk version`) and
+the apt/emsdk/`build:wasm` steps are skipped on a hit. The C under `puzzles/`
+changes only ~once per port (a game's `.c` deleted at acceptance), so the common
+TS-only push is a cache hit (~1 min); a push that touches the C or bumps
+emscripten busts the key and pays the full rebuild, then re-caches. The cache
+restore/save is split (`actions/cache/restore` + a `save` gated on cache-miss,
+placed before the gate) so a real TS regression in the gate doesn't discard a
+good rebuild.
 
 Pin emsdk to the Brewfile's emscripten (5.0.7) so CI and local agree — a large
 emscripten jump can shift wasm output (the Brewfile already warns this). The job

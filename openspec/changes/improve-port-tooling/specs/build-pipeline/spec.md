@@ -7,10 +7,14 @@ The repository SHALL provide a GitHub Actions workflow that, on every push to
 `npm run gate` (`tsc -b --noEmit` → `biome lint` → `vitest run` → `vite build`).
 Because the typecheck, tests, and production build all import generated artifacts
 from `src/assets/puzzles/` (`catalog.json`, `emcc-runtime`), the workflow SHALL
-build the WASM assets first — there is no valid asset-free CI tier. The workflow
-SHALL provision the wasm toolchain (Emscripten via an emsdk action pinned to the
-Brewfile's version, plus the `halibut`/`jq`/`cmake` system packages) so the build
-runs from a clean checkout.
+ensure those assets are present before the gate — there is no valid asset-free CI
+tier (a no-asset job fails at `tsc -b`). When it must build them it SHALL provision
+the wasm toolchain (Emscripten via an emsdk action pinned to the Brewfile's
+version, plus the `halibut`/`jq`/`cmake` system packages) so the build runs from a
+clean checkout. The assets MAY be restored from a cache keyed on the wasm inputs
+(the `puzzles/**` sources, the build script, and the emscripten version) rather
+than rebuilt every run, skipping the toolchain steps on a cache hit; the cache key
+SHALL bust whenever any of those inputs changes, so a stale build is never served.
 
 The project is trunk-based (no pull-request flow), so the gate runs post-push on
 `main` rather than pre-merge; a `pull_request` trigger MAY be added later if a
