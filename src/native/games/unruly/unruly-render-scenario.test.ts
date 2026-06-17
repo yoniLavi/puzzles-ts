@@ -7,8 +7,8 @@ import { describe, expect, it } from "vitest";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { newDesc } from "./generator.ts";
-import { unrulyGame } from "./index.ts";
-import { COL_0, COL_1, COL_ERROR, COL_GRID } from "./render.ts";
+import { type UnrulyHint, unrulyGame } from "./index.ts";
+import { COL_0, COL_1, COL_ERROR, COL_GRID, COL_HINT } from "./render.ts";
 import { solveToString } from "./solver.ts";
 import { type Cell, newState, ONE, type UnrulyMove, ZERO } from "./state.ts";
 
@@ -77,5 +77,37 @@ describe("Unruly render scenarios", () => {
     expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR)).toBe(
       true,
     );
+  });
+
+  it("hint frame: drives a real Midend to a displayed hint and renders it", () => {
+    // A fixed generated board → a deterministic first hint. The harness
+    // computes the hint through a real Midend and passes the step to redraw,
+    // exactly as the app does.
+    const P = { w2: 6, h2: 6, unique: false, diff: 0 };
+    const desc = newDesc(P, randomNew("unruly-hint-frame")).desc;
+    const { recording, hint } = renderScenario({
+      game: unrulyGame,
+      id: `6x6dt:${desc}`,
+      showHint: true,
+    });
+
+    // A hint step is on display.
+    expect(hint).toBeDefined();
+    const hl = hint?.highlights as UnrulyHint | undefined;
+    expect(hl).toBeDefined();
+
+    // The forced cell is painted COL_HINT (both the target fill and any
+    // premise ring use it), so the hint colour is on the frame.
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
+      true,
+    );
+    // Clues are still drawn (the hint overlays, it doesn't erase the board).
+    expect(
+      recording.ops.some(
+        (o) => o.op === "rect" && (o.colour === COL_0 || o.colour === COL_1),
+      ),
+    ).toBe(true);
+
+    expect(recording.ops).toMatchSnapshot();
   });
 });

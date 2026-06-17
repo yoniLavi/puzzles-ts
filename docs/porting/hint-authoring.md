@@ -133,6 +133,54 @@ a `connect` step whose cut-vertex neighbours were all still *undecided* (so a
 known-white filter left the area empty) — the connectivity rule treats every
 non-black cell as white, so shade non-black neighbours, not only marked-white ones.
 
+### When the evidence is *filled*, ring it — don't shade it
+
+Range shades its evidence because its premises are usually *undecided* cells (a
+clue's line of sight, a reach run). Other games are the opposite: Unruly's
+evidence is the **already-placed** cells — the same-colour pair a three-in-a-row
+deduction reads, the completed quota of a finished count, the near-complete
+reserved window. A light-blue fill over a black/white tile would hide the very
+colour that *is* the reason. So split the highlight: **shade only still-empty
+cells** (the journey's forced siblings, so the player sees the whole line fill),
+and **ring filled premise cells in `COL_HINT`** (their colour stays visible).
+This is the general form of Range's "a premise that can't take the area fill is
+ringed" — for a fill-style game it's the *common* case, not the exception.
+Exemplar: `buildHighlights` in
+[`unruly/index.ts`](../../src/native/games/unruly/index.ts) (target / area / ring)
++ the `FF_HINT_*` bits in
+[`unruly/render.ts`](../../src/native/games/unruly/render.ts).
+
+### Grouping a fill-helper firing into one journey
+
+Quality-bar rule 2 (one firing = one journey) has a clean seam when the solver
+fills a whole line through a shared helper: thread the recorder through that
+helper (Unruly's `fillRow`) so its first cell opens a journey
+(`continuesPrevious: false`) and the rest continue it (`true`); per-cell
+techniques (Unruly's threes/unique) emit independent steps. The midend then keeps
+the journey displayed across its legs. See `fillRow` +
+[`unruly/solver.ts`](../../src/native/games/unruly/solver.ts) `deduceHintPlan`.
+
+### Placement animation as hint motion (fill-style games)
+
+A game with no upstream move animation (`animLength` 0) can still make auto-hint
+read as motion by adding a short **geometric** placement animation: `drawRect`
+takes a palette **index**, not RGB, so don't colour-tween — grow the new colour
+from the cell centre over `animTime`, drawing the previous colour beneath
+(animating cells bypass the cache via the Flip 255-sentinel idiom). Return a small
+base `animLength` for a single-cell change (0 for bulk `solve`/no-ops); because
+it's > 0, the midend stretches a hint-executed move to the uniform `HINT_ANIM_S`,
+so each auto-hint step plays as a visible fill with no frozen gap. Exemplar:
+Unruly's `animLength` (count changed cells) + the grow branch in `drawTile`
+([`unruly/render.ts`](../../src/native/games/unruly/render.ts)).
+
+**Testing gotcha — the easiest rule pre-empts hand-crafted boards.** A solver that
+tries techniques easiest-first means a crafted board often fires a *different*
+rule than intended: an alternating `O_E_O_E` Unruly row is a three-in-a-row
+deduction (`O_O`), not a count completion. Craft for the per-cell techniques
+(threes/unique/near-complete have isolating layouts), but validate **grouping**
+on a *generated* board (scan a few seeds for a `continuesPrevious` leg, then check
+it shares its predecessor's firing). See `unruly-hint.test.ts`.
+
 **Verify in-process (no eyeballing)** with the tier-2.5 render-scenario harness
 ([`src/native/engine/testing/render-scenario.ts`](../../src/native/engine/testing/render-scenario.ts)):
 `renderScenario({ game, id, moves?, showHint?, hintUntil? })` drives a real

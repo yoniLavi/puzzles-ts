@@ -33,6 +33,54 @@ export interface GridView {
   grid: Uint8Array;
 }
 
+// --- hint recording (the explained-deduction path) ----------------------
+// Each technique optionally reports every cell it forces, with the premise
+// that forces it, so `deduceHintPlan` can narrate the solve. The generator
+// passes no recorder, so generation pays nothing.
+
+/** Why a cell is forced — the premise the hint narrates and highlights. */
+export type HintReason =
+  // Two of three consecutive cells are `colour`; a third would be three in
+  // a row, so the empty one is the opposite. `refs` are the two filled cells.
+  | { kind: "threes"; horizontal: boolean; refs: [number, number]; colour: number }
+  // A row/column already holds its full count of `full`, so every remaining
+  // empty cell is `fill`. `line` is the row (horizontal) or column index.
+  | { kind: "complete"; line: number; horizontal: boolean; fill: number; full: number }
+  // Unique-rows: row/col `rowA` is full and `rowB` matches it everywhere it is
+  // filled except here; making this cell `fill`'s opposite would duplicate it.
+  | { kind: "unique"; rowA: number; rowB: number; horizontal: boolean; fill: number }
+  // A row/column with one `full` cell left: it is pinned to the `window`
+  // cells (anywhere else forces three `fill` in a row next to `anchor`), so
+  // every other empty cell is `fill`. `anchor` is the abutting fill, or -1.
+  | {
+      kind: "nearcomplete";
+      line: number;
+      horizontal: boolean;
+      fill: number;
+      window: number[];
+      anchor: number;
+    };
+
+/** One forced cell of a hint plan, in deduction order. `continuesPrevious`
+ * marks the 2nd+ legs of a single firing (a whole-line fill) so the midend
+ * presents them as one journey. */
+export interface HintMove {
+  index: number;
+  value: number;
+  reason: HintReason;
+  continuesPrevious: boolean;
+}
+
+/** Invoked at each forced cell when the deduction is run for a hint. */
+export type Recorder = (
+  index: number,
+  value: number,
+  reason: HintReason,
+  continuesPrevious: boolean,
+) => void;
+
+const otherColour = (c: number): number => (c === ONE ? ZERO : ONE);
+
 // --- error-overlay flags (set by validateRows, read by render.ts) -------
 export const FE_HOR_ROW_LEFT = 0x0001;
 export const FE_HOR_ROW_MID = 0x0003;
@@ -96,6 +144,7 @@ function checkThrees(
   horizontal: boolean,
   check: number,
   block: number,
+  rec?: Recorder,
 ): number {
   const { w2, h2, grid } = view;
   const dx = horizontal ? 1 : 0;
@@ -113,6 +162,17 @@ function checkThrees(
       else if (grid[i1] === EMPTY && grid[i2] === check && grid[i3] === check)
         fillAt = i1;
       if (fillAt >= 0) {
+        if (rec) {
+          // The two cells of the window that aren't the one being filled are
+          // the same-colour pair that forces it.
+          const refs = [i1, i2, i3].filter((p) => p !== fillAt) as [number, number];
+          rec(
+            fillAt,
+            block,
+            { kind: "threes", horizontal, refs, colour: check },
+            false,
+          );
+        }
         ret++;
         grid[fillAt] = block;
         rowcount[Math.floor(fillAt / w2)]++;
@@ -123,12 +183,12 @@ function checkThrees(
   return ret;
 }
 
-function checkAllThrees(view: GridView, s: Scratch): number {
+function checkAllThrees(view: GridView, s: Scratch, rec?: Recorder): number {
   let ret = 0;
-  ret += checkThrees(view, s.zerosRows, s.zerosCols, true, ONE, ZERO);
-  ret += checkThrees(view, s.onesRows, s.onesCols, true, ZERO, ONE);
-  ret += checkThrees(view, s.zerosRows, s.zerosCols, false, ONE, ZERO);
-  ret += checkThrees(view, s.onesRows, s.onesCols, false, ZERO, ONE);
+  ret += checkThrees(view, s.zerosRows, s.zerosCols, true, ONE, ZERO, rec);
+  ret += checkThrees(view, s.onesRows, s.onesCols, true, ZERO, ONE, rec);
+  ret += checkThrees(view, s.zerosRows, s.zerosCols, false, ONE, ZERO, rec);
+  ret += checkThrees(view, s.onesRows, s.onesCols, false, ZERO, ONE, rec);
   return ret;
 }
 
@@ -140,6 +200,8 @@ function fillRow(
   rowcount: Int32Array,
   colcount: Int32Array,
   fill: number,
+  rec?: Recorder,
+  reason?: HintReason,
 ): number {
   const { w2, h2, grid } = view;
   let ret = 0;
@@ -147,6 +209,9 @@ function fillRow(
   for (let j = 0; j < n; j++) {
     const p = horizontal ? i * w2 + j : j * w2 + i;
     if (grid[p] === EMPTY) {
+      // The cells of one fillRow call all flow from a single firing, so the
+      // first opens a journey and the rest continue it (`continuesPrevious`).
+      if (rec && reason) rec(p, fill, reason, ret > 0);
       ret++;
       grid[p] = fill;
       rowcount[horizontal ? i : j]++;
@@ -166,6 +231,7 @@ function checkSingleGap(
   rowcount: Int32Array,
   colcount: Int32Array,
   fill: number,
+  rec?: Recorder,
 ): number {
   const { w2, h2 } = view;
   const count = horizontal ? h2 : w2;
@@ -174,18 +240,25 @@ function checkSingleGap(
   let ret = 0;
   for (let i = 0; i < count; i++) {
     if (complete[i] === target && other[i] === target - 1) {
-      ret += fillRow(view, i, horizontal, rowcount, colcount, fill);
+      const reason: HintReason = {
+        kind: "complete",
+        line: i,
+        horizontal,
+        fill,
+        full: otherColour(fill),
+      };
+      ret += fillRow(view, i, horizontal, rowcount, colcount, fill, rec, reason);
     }
   }
   return ret;
 }
 
-function checkAllSingleGap(view: GridView, s: Scratch): number {
+function checkAllSingleGap(view: GridView, s: Scratch, rec?: Recorder): number {
   let ret = 0;
-  ret += checkSingleGap(view, s.onesRows, true, s.zerosRows, s.zerosCols, ZERO);
-  ret += checkSingleGap(view, s.onesCols, false, s.zerosRows, s.zerosCols, ZERO);
-  ret += checkSingleGap(view, s.zerosRows, true, s.onesRows, s.onesCols, ONE);
-  ret += checkSingleGap(view, s.zerosCols, false, s.onesRows, s.onesCols, ONE);
+  ret += checkSingleGap(view, s.onesRows, true, s.zerosRows, s.zerosCols, ZERO, rec);
+  ret += checkSingleGap(view, s.onesCols, false, s.zerosRows, s.zerosCols, ZERO, rec);
+  ret += checkSingleGap(view, s.zerosRows, true, s.onesRows, s.onesCols, ONE, rec);
+  ret += checkSingleGap(view, s.zerosCols, false, s.onesRows, s.onesCols, ONE, rec);
   return ret;
 }
 
@@ -199,6 +272,7 @@ function checkCompleteNums(
   rowcount: Int32Array,
   colcount: Int32Array,
   fill: number,
+  rec?: Recorder,
 ): number {
   const { w2, h2 } = view;
   const count = horizontal ? h2 : w2;
@@ -207,18 +281,33 @@ function checkCompleteNums(
   let ret = 0;
   for (let i = 0; i < count; i++) {
     if (complete[i] === target && other[i] < target) {
-      ret += fillRow(view, i, horizontal, rowcount, colcount, fill);
+      const reason: HintReason = {
+        kind: "complete",
+        line: i,
+        horizontal,
+        fill,
+        full: otherColour(fill),
+      };
+      ret += fillRow(view, i, horizontal, rowcount, colcount, fill, rec, reason);
     }
   }
   return ret;
 }
 
-function checkAllCompleteNums(view: GridView, s: Scratch): number {
+function checkAllCompleteNums(view: GridView, s: Scratch, rec?: Recorder): number {
   let ret = 0;
-  ret += checkCompleteNums(view, s.onesRows, true, s.zerosRows, s.zerosCols, ZERO);
-  ret += checkCompleteNums(view, s.onesCols, false, s.zerosRows, s.zerosCols, ZERO);
-  ret += checkCompleteNums(view, s.zerosRows, true, s.onesRows, s.onesCols, ONE);
-  ret += checkCompleteNums(view, s.zerosCols, false, s.onesRows, s.onesCols, ONE);
+  ret += checkCompleteNums(view, s.onesRows, true, s.zerosRows, s.zerosCols, ZERO, rec);
+  ret += checkCompleteNums(
+    view,
+    s.onesCols,
+    false,
+    s.zerosRows,
+    s.zerosCols,
+    ZERO,
+    rec,
+  );
+  ret += checkCompleteNums(view, s.zerosRows, true, s.onesRows, s.onesCols, ONE, rec);
+  ret += checkCompleteNums(view, s.zerosCols, false, s.onesRows, s.onesCols, ONE, rec);
   return ret;
 }
 
@@ -232,6 +321,7 @@ function checkUniques(
   check: number,
   block: number,
   s: Scratch,
+  rec?: Recorder,
 ): number {
   const { w2, h2, grid } = view;
   const rmult = horizontal ? w2 : 1;
@@ -256,6 +346,12 @@ function checkUniques(
         const i1 = r2 * rmult + nonmatch * cmult;
         if (grid[i1] === block) continue;
         if (grid[i1] !== EMPTY) continue;
+        rec?.(
+          i1,
+          block,
+          { kind: "unique", rowA: r, rowB: r2, horizontal, fill: block },
+          false,
+        );
         grid[i1] = block;
         if (block === ONE) {
           s.onesRows[Math.floor(i1 / w2)]++;
@@ -271,12 +367,12 @@ function checkUniques(
   return ret;
 }
 
-function checkAllUniques(view: GridView, s: Scratch): number {
+function checkAllUniques(view: GridView, s: Scratch, rec?: Recorder): number {
   let ret = 0;
-  ret += checkUniques(view, s.onesRows, true, ONE, ZERO, s);
-  ret += checkUniques(view, s.zerosRows, true, ZERO, ONE, s);
-  ret += checkUniques(view, s.onesCols, false, ONE, ZERO, s);
-  ret += checkUniques(view, s.zerosCols, false, ZERO, ONE, s);
+  ret += checkUniques(view, s.onesRows, true, ONE, ZERO, s, rec);
+  ret += checkUniques(view, s.zerosRows, true, ZERO, ONE, s, rec);
+  ret += checkUniques(view, s.onesCols, false, ONE, ZERO, s, rec);
+  ret += checkUniques(view, s.zerosCols, false, ZERO, ONE, s, rec);
   return ret;
 }
 
@@ -293,6 +389,7 @@ function checkNearComplete(
   rowcount: Int32Array,
   colcount: Int32Array,
   fill: number,
+  rec?: Recorder,
 ): number {
   const { w2, h2, grid } = view;
   const w = w2 / 2;
@@ -312,20 +409,34 @@ function checkNearComplete(
 
       // The four cases (fill adjacent to empties, or three empties) that a
       // forced run could occupy. Mark the run's empties BOGUS, fill the
-      // remainder, then restore.
+      // remainder, then restore. `anchor` is the abutting fill cell (or -1
+      // for the all-empty window) — the cell whose colour makes the threat.
       let bogus: number[] | null = null;
-      if (grid[i1] === fill && grid[i2] === EMPTY && grid[i3] === EMPTY)
+      let anchor = -1;
+      if (grid[i1] === fill && grid[i2] === EMPTY && grid[i3] === EMPTY) {
         bogus = [i2, i3];
-      else if (grid[i1] === EMPTY && grid[i2] === fill && grid[i3] === EMPTY)
+        anchor = i1;
+      } else if (grid[i1] === EMPTY && grid[i2] === fill && grid[i3] === EMPTY) {
         bogus = [i1, i3];
-      else if (grid[i1] === EMPTY && grid[i2] === EMPTY && grid[i3] === fill)
+        anchor = i2;
+      } else if (grid[i1] === EMPTY && grid[i2] === EMPTY && grid[i3] === fill) {
         bogus = [i1, i2];
-      else if (grid[i1] === EMPTY && grid[i2] === EMPTY && grid[i3] === EMPTY)
+        anchor = i3;
+      } else if (grid[i1] === EMPTY && grid[i2] === EMPTY && grid[i3] === EMPTY) {
         bogus = [i1, i2, i3];
+      }
 
       if (bogus) {
+        const reason: HintReason = {
+          kind: "nearcomplete",
+          line: i,
+          horizontal,
+          fill,
+          window: bogus,
+          anchor,
+        };
         for (const b of bogus) grid[b] = BOGUS;
-        ret += fillRow(view, i, horizontal, rowcount, colcount, fill);
+        ret += fillRow(view, i, horizontal, rowcount, colcount, fill, rec, reason);
         for (const b of bogus) grid[b] = EMPTY;
       }
     }
@@ -333,12 +444,20 @@ function checkNearComplete(
   return ret;
 }
 
-function checkAllNearComplete(view: GridView, s: Scratch): number {
+function checkAllNearComplete(view: GridView, s: Scratch, rec?: Recorder): number {
   let ret = 0;
-  ret += checkNearComplete(view, s.onesRows, true, s.zerosRows, s.zerosCols, ZERO);
-  ret += checkNearComplete(view, s.onesCols, false, s.zerosRows, s.zerosCols, ZERO);
-  ret += checkNearComplete(view, s.zerosRows, true, s.onesRows, s.onesCols, ONE);
-  ret += checkNearComplete(view, s.zerosCols, false, s.onesRows, s.onesCols, ONE);
+  ret += checkNearComplete(view, s.onesRows, true, s.zerosRows, s.zerosCols, ZERO, rec);
+  ret += checkNearComplete(
+    view,
+    s.onesCols,
+    false,
+    s.zerosRows,
+    s.zerosCols,
+    ZERO,
+    rec,
+  );
+  ret += checkNearComplete(view, s.zerosRows, true, s.onesRows, s.onesCols, ONE, rec);
+  ret += checkNearComplete(view, s.zerosCols, false, s.onesRows, s.onesCols, ONE, rec);
   return ret;
 }
 
@@ -347,39 +466,70 @@ function checkAllNearComplete(view: GridView, s: Scratch): number {
 /** Run the deductive techniques to a fixpoint, gated by `diff`. Mutates
  * `view.grid` and `scratch`. Returns the maximum difficulty whose
  * technique fired, or `-1` if no progress was made. */
-export function solveGame(view: GridView, scratch: Scratch, diff: number): number {
+export function solveGame(
+  view: GridView,
+  scratch: Scratch,
+  diff: number,
+  rec?: Recorder,
+): number {
   let maxdiff = -1;
   const bump = (d: number) => {
     if (maxdiff < d) maxdiff = d;
   };
   while (true) {
-    if (checkAllThrees(view, scratch)) {
+    if (checkAllThrees(view, scratch, rec)) {
       bump(DIFF_TRIVIAL);
       continue;
     }
-    if (checkAllSingleGap(view, scratch)) {
+    if (checkAllSingleGap(view, scratch, rec)) {
       bump(DIFF_TRIVIAL);
       continue;
     }
     if (diff < DIFF_EASY) break;
 
-    if (checkAllCompleteNums(view, scratch)) {
+    if (checkAllCompleteNums(view, scratch, rec)) {
       bump(DIFF_EASY);
       continue;
     }
-    if (view.unique && checkAllUniques(view, scratch)) {
+    if (view.unique && checkAllUniques(view, scratch, rec)) {
       bump(DIFF_EASY);
       continue;
     }
     if (diff < DIFF_NORMAL) break;
 
-    if (checkAllNearComplete(view, scratch)) {
+    if (checkAllNearComplete(view, scratch, rec)) {
       bump(DIFF_NORMAL);
       continue;
     }
     break;
   }
   return maxdiff;
+}
+
+/**
+ * Run the deduction from the player's current marks at full strength,
+ * recording every forced cell in order — the explained-hint plan. The grid
+ * is copied, so the caller's state is untouched. Returns the ordered forced
+ * moves; the first is the move to surface next.
+ */
+export function deduceHintPlan(state: UnrulyState): HintMove[] {
+  const work: GridView = {
+    w2: state.w2,
+    h2: state.h2,
+    unique: state.unique,
+    grid: Uint8Array.from(state.grid),
+  };
+  const scratch = newScratch(work);
+  const moves: HintMove[] = [];
+  solveGame(
+    work,
+    scratch,
+    Number.MAX_SAFE_INTEGER,
+    (index, value, reason, continues) => {
+      moves.push({ index, value, reason, continuesPrevious: continues });
+    },
+  );
+  return moves;
 }
 
 // --- validators ----------------------------------------------------------

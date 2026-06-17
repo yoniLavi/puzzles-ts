@@ -297,10 +297,10 @@ puzzle(unequal
 solver(unequal latin.c)
 
 puzzle(unruly
+  TS_PORTED  # native-TS port (openspec add-unruly-ts-port); no unruly.c/wasm
   DISPLAYNAME "Unruly"
   DESCRIPTION "Black and white grid puzzle"
   OBJECTIVE "Fill in the black and white grid to avoid runs of three.")
-solver(unruly)
 
 puzzle(untangle
   DISPLAYNAME "Untangle"

@@ -10,7 +10,8 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlightSpecific } from "../../engine/colour-mkhighlight.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import type { UnrulyHint } from "./index.ts";
 import {
   FE_COL_MATCH,
   FE_HOR_ROW_LEFT,
@@ -22,8 +23,10 @@ import {
   validateRows,
 } from "./solver.ts";
 import {
+  EMPTY,
   ONE,
   type UnrulyMistake,
+  type UnrulyMove,
   type UnrulyParams,
   type UnrulyState,
   type UnrulyUi,
@@ -33,6 +36,9 @@ import {
 export const PREFERRED_TILE_SIZE = 32;
 const FLASH_FRAME = 0.12;
 export const FLASH_TIME = FLASH_FRAME * 3;
+/** Base duration (s) of a single-cell placement animation; the midend
+ * stretches it to the uniform hint-step duration for auto-hint. */
+export const PLACE_ANIM_TIME = 0.13;
 
 // --- palette (mirrors the unruly.c colour enum index-for-index) ---------
 export const COL_BACKGROUND = 0;
@@ -46,6 +52,11 @@ export const COL_1_HIGHLIGHT = 7;
 export const COL_1_LOWLIGHT = 8;
 export const COL_CURSOR = 9;
 export const COL_ERROR = 10;
+// Hint colours — appended past the dark-mode override range (3–8), so dark
+// mode leaves them unchanged. The action cell is COL_HINT (blue); the
+// deduction's empty siblings shade COL_HINT_CELL (light blue).
+export const COL_HINT = 11;
+export const COL_HINT_CELL = 12;
 
 const grey = (v: number): Colour => [v, v, v];
 
@@ -66,6 +77,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_0_LOWLIGHT] = zero.lowlight;
   out[COL_CURSOR] = [0, 0.7, 0];
   out[COL_ERROR] = [1, 0, 0];
+  out[COL_HINT] = [0.13, 0.5, 0.85];
+  out[COL_HINT_CELL] = [0.7, 0.84, 0.98];
   return out;
 }
 
@@ -79,6 +92,11 @@ const FF_FLASH2 = 0x800;
 const FF_IMMUTABLE = 0x1000;
 // Our mistake-overlay bit (no upstream analogue), folded into the cache key.
 const FF_MISTAKE = 0x2000;
+// Hint-overlay bits (no upstream analogue), also folded into the cache key.
+const FF_HINT_TARGET = 0x4000; // the forced cell (filled COL_HINT + preview)
+const FF_HINT_ONE = 0x8000; // the forced colour is ONE (else ZERO)
+const FF_HINT_AREA = 0x10000; // a journey-sibling empty cell (light shade)
+const FF_HINT_RING = 0x20000; // a filled premise cell (COL_HINT outline)
 
 // --- geometry -----------------------------------------------------------
 const border = (ts: number) => Math.floor(ts / 2);
@@ -140,6 +158,10 @@ function drawTile(
   py: number,
   ts: number,
   tile: number,
+  // Placement animation: the cell's previous colour index, or -1 if not
+  // animating; `animFrac` is the grow progress 0→1.
+  animPrevColour = -1,
+  animFrac = 1,
 ): void {
   dr.clip({ x: px, y: py, w: ts, h: ts });
 
@@ -152,7 +174,31 @@ function drawTile(
   if (tile & (FF_FLASH1 | FF_FLASH2) && (val === COL_0 || val === COL_1)) {
     val += tile & FF_FLASH1 ? 1 : 2;
   }
-  dr.drawRect({ x: px, y: py, w: ts - 1, h: ts - 1 }, val);
+
+  const inner = { x: px, y: py, w: ts - 1, h: ts - 1 };
+  if (animPrevColour >= 0 && animFrac < 1) {
+    // Placement grow: the previous colour beneath, the new colour growing
+    // from the cell centre (geometric, no colour tween).
+    dr.drawRect(inner, animPrevColour);
+    const sz = Math.max(0, Math.round((ts - 1) * animFrac));
+    if (sz > 0) {
+      const off = Math.floor((ts - 1 - sz) / 2);
+      dr.drawRect({ x: px + off, y: py + off, w: sz, h: sz }, val);
+    }
+  } else if (tile & FF_HINT_TARGET) {
+    // The forced cell: blue fill + an inset preview of the colour it forces.
+    dr.drawRect(inner, COL_HINT);
+    const o = Math.floor(ts / 4);
+    dr.drawRect(
+      { x: px + o, y: py + o, w: ts - 1 - 2 * o, h: ts - 1 - 2 * o },
+      tile & FF_HINT_ONE ? COL_1 : COL_0,
+    );
+  } else if (tile & FF_HINT_AREA) {
+    // A journey-sibling empty cell: light-blue shade.
+    dr.drawRect(inner, COL_HINT_CELL);
+  } else {
+    dr.drawRect(inner, val);
+  }
 
   // Immutable-clue bevel: inset top/left lowlight, bottom/right highlight.
   if ((val === COL_0 || val === COL_1) && tile & FF_IMMUTABLE) {
@@ -234,6 +280,16 @@ function drawTile(
     dr.drawRect({ x: sx + span - t, y: sy, w: t, h: span }, COL_ERROR);
   }
 
+  // Hint ring: a COL_HINT outline around a filled premise cell (its colour
+  // stays visible — that colour *is* the evidence).
+  if (tile & FF_HINT_RING) {
+    const t = Math.max(1, Math.floor(ts / 12));
+    dr.drawRect({ x: px, y: py, w: ts - 1, h: t }, COL_HINT);
+    dr.drawRect({ x: px, y: py + ts - 1 - t, w: ts - 1, h: t }, COL_HINT);
+    dr.drawRect({ x: px, y: py, w: t, h: ts - 1 }, COL_HINT);
+    dr.drawRect({ x: px + ts - 1 - t, y: py, w: t, h: ts - 1 }, COL_HINT);
+  }
+
   // Cursor outline.
   if (tile & FF_CURSOR) {
     const t = Math.floor(ts / 12);
@@ -252,13 +308,13 @@ function drawTile(
 export function redraw(
   dr: GameDrawing,
   ds: UnrulyDrawState | null,
-  _prev: UnrulyState | null,
+  prev: UnrulyState | null,
   state: UnrulyState,
   _dir: number,
   ui: UnrulyUi,
-  _animTime: number,
+  animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<UnrulyMove, UnrulyHint>,
   mistakes?: readonly UnrulyMistake[],
 ): void {
   if (!ds) return;
@@ -269,6 +325,20 @@ export function redraw(
     mistakes && mistakes.length > 0
       ? new Set(mistakes.map((m) => m.y * w2 + m.x))
       : null;
+
+  // Displayed hint step: the forced target, its sibling area, premise rings.
+  const hl = hint?.highlights;
+  const hintTarget = hl ? hl.target.y * w2 + hl.target.x : -1;
+  const hintTargetOne = hl?.target.value === ONE;
+  const hintAreaSet = hl ? new Set(hl.area) : null;
+  const hintRingSet = hl ? new Set(hl.ring) : null;
+
+  // A placement animates only when the engine is driving timed redraws
+  // (animTime > 0) and we have a from-state to grow out of.
+  const animating = animTime > 0 && prev != null;
+  const animFrac = animTime / PLACE_ANIM_TIME;
+  const colourOf = (v: number): number =>
+    v === ONE ? COL_1 : v === ZERO ? COL_0 : COL_EMPTY;
 
   if (!ds.started) {
     // The engine paints no pixels of its own: fill the background, then the
@@ -315,8 +385,32 @@ export function redraw(
       if (immutable[i]) tile |= FF_IMMUTABLE;
       if (ui.cursor && ui.cx === x && ui.cy === y) tile |= FF_CURSOR;
       if (mistakeSet?.has(i)) tile |= FF_MISTAKE;
+      // Hint overlay (target > ring > sibling-area; area only on empty cells).
+      if (i === hintTarget) {
+        tile |= FF_HINT_TARGET;
+        if (hintTargetOne) tile |= FF_HINT_ONE;
+      } else if (hintRingSet?.has(i)) {
+        tile |= FF_HINT_RING;
+      } else if (hintAreaSet?.has(i) && grid[i] === EMPTY) {
+        tile |= FF_HINT_AREA;
+      }
 
-      if (ds.cache[i] !== tile) {
+      // An animating cell can't be captured by the packed key, so it is
+      // redrawn every frame (cache forced stale, Flip's idiom) and grows the
+      // new colour out of its previous colour.
+      const animThis = animating && prev != null && prev.grid[i] !== grid[i];
+      if (animThis) {
+        ds.cache[i] = -1;
+        drawTile(
+          dr,
+          coord(x, ts),
+          coord(y, ts),
+          ts,
+          tile,
+          colourOf(prev.grid[i]),
+          animFrac,
+        );
+      } else if (ds.cache[i] !== tile) {
         ds.cache[i] = tile;
         drawTile(dr, coord(x, ts), coord(y, ts), ts, tile);
       }

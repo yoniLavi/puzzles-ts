@@ -8,7 +8,14 @@
  * right-click cycles the other way; number keys place directly.
  */
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
-import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
+import {
+  type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
+  UI_UPDATE,
+  type UiUpdate,
+} from "../../engine/game.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -28,11 +35,17 @@ import {
   computeSize,
   FLASH_TIME,
   newDrawState,
+  PLACE_ANIM_TIME,
   PREFERRED_TILE_SIZE,
   redraw,
   type UnrulyDrawState,
 } from "./render.ts";
-import { findMistakes, solveToString } from "./solver.ts";
+import {
+  deduceHintPlan,
+  findMistakes,
+  type HintReason,
+  solveToString,
+} from "./solver.ts";
 import {
   type Cell,
   decodeParams,
@@ -180,6 +193,165 @@ function flashLength(
   return 0;
 }
 
+// --- hint -----------------------------------------------------------------
+
+/** Highlight data for an Unruly hint step. `target` is the cell the
+ * deduction forces (filled `COL_HINT` with a preview of the forced colour).
+ * `area` cells are the deduction's other forced cells — the journey's
+ * siblings — light-shaded `COL_HINT_CELL` *where still empty*, so the player
+ * sees the whole "this line fills" deduction at a glance. `ring` cells are
+ * **filled** premise cells whose colour is the evidence (the same-colour
+ * pair, the completed quota, the near-complete reserved window); a light
+ * shade would hide the colour that *is* the reason, so they are ringed in
+ * `COL_HINT` instead. */
+export interface UnrulyHint {
+  target: { x: number; y: number; value: Cell };
+  area: number[];
+  ring: number[];
+}
+
+const colourName = (c: number): string => (c === ONE ? "black" : "white");
+
+/** Every cell index of a row (`horizontal`) or column. */
+function lineCells(
+  line: number,
+  horizontal: boolean,
+  w2: number,
+  h2: number,
+): number[] {
+  const n = horizontal ? w2 : h2;
+  const out: number[] = [];
+  for (let j = 0; j < n; j++) out.push(horizontal ? line * w2 + j : j * w2 + line);
+  return out;
+}
+
+/** Narrate *why* the move is forced, per the deduction technique, so the
+ * words match the highlighted evidence — the fork's explain-why bar. */
+function narrate(reason: HintReason): string {
+  const line = reason.kind === "threes" ? "" : reason.horizontal ? "row" : "column";
+  switch (reason.kind) {
+    case "threes": {
+      const c = colourName(reason.colour);
+      return `Two of these three cells are already ${c}; a third ${c} would make three in a row, which isn't allowed — so this cell must be ${colourName(reason.colour === ONE ? ZERO : ONE)}.`;
+    }
+    case "complete":
+      return `This ${line} already holds all of its ${colourName(reason.full)} cells, so every remaining cell in it must be ${colourName(reason.fill)}.`;
+    case "unique":
+      return `A full ${line} already matches this one everywhere it is filled except this cell; making this cell ${colourName(reason.fill === ONE ? ZERO : ONE)} would make the two ${line}s identical, which the unique-rows variant forbids — so it must be ${colourName(reason.fill)}.`;
+    case "nearcomplete":
+      return `Only one ${colourName(reason.fill === ONE ? ZERO : ONE)} cell is left to place in this ${line}; anywhere but the ringed cells would force three ${colourName(reason.fill)} in a row, so every other empty cell must be ${colourName(reason.fill)}.`;
+  }
+}
+
+/** Build the highlight payload for a forced move from its reason: the
+ * evidence to shade (siblings) and to ring (filled premise cells). */
+function buildHighlights(
+  reason: HintReason,
+  target: { x: number; y: number; value: Cell },
+  state: UnrulyState,
+): UnrulyHint {
+  const { w2, h2, grid } = state;
+  const ti = target.y * w2 + target.x;
+  const notTarget = (i: number) => i !== ti;
+
+  switch (reason.kind) {
+    case "threes":
+      return { target, area: [], ring: [...reason.refs] };
+    case "complete": {
+      const cells = lineCells(reason.line, reason.horizontal, w2, h2);
+      return {
+        target,
+        // Other empty cells of the line are the journey's siblings; the
+        // already-placed `full` cells are the quota evidence — ring them.
+        area: cells.filter((i) => notTarget(i) && grid[i] === EMPTY),
+        ring: cells.filter((i) => grid[i] === reason.full),
+      };
+    }
+    case "unique": {
+      const rowA = lineCells(reason.rowA, reason.horizontal, w2, h2);
+      const rowB = lineCells(reason.rowB, reason.horizontal, w2, h2);
+      return {
+        target,
+        area: rowB.filter((i) => notTarget(i) && grid[i] === EMPTY),
+        ring: rowA, // the full reference row that would be duplicated
+      };
+    }
+    case "nearcomplete": {
+      const cells = lineCells(reason.line, reason.horizontal, w2, h2);
+      const ring =
+        reason.anchor >= 0 ? [...reason.window, reason.anchor] : [...reason.window];
+      const windowSet = new Set(reason.window);
+      return {
+        target,
+        area: cells.filter(
+          (i) => notTarget(i) && grid[i] === EMPTY && !windowSet.has(i),
+        ),
+        ring,
+      };
+    }
+  }
+}
+
+function hint(state: UnrulyState): HintResult<UnrulyMove, UnrulyHint> {
+  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (findMistakes(state).length > 0) {
+    return {
+      ok: false,
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+  }
+  const plan = deduceHintPlan(state);
+  if (plan.length === 0) {
+    return { ok: false, error: "No further move can be deduced from this position." };
+  }
+  const steps: HintStep<UnrulyMove, UnrulyHint>[] = plan.map((m) => {
+    const value = m.value as Cell;
+    const x = m.index % state.w2;
+    const y = Math.floor(m.index / state.w2);
+    const target = { x, y, value };
+    return {
+      move: { type: "place", x, y, value },
+      explanation: narrate(m.reason),
+      highlights: buildHighlights(m.reason, target, state),
+      continuesPrevious: m.continuesPrevious,
+    };
+  });
+  return { ok: true, steps };
+}
+
+/** A move completes the hint step iff it sets the hinted cell to the hinted
+ * value; anything else drops the plan to recompute. */
+function hintKeepTrack(
+  m: UnrulyMove,
+  step: HintStep<UnrulyMove, UnrulyHint>,
+  _state: UnrulyState,
+): HintTrackVerdict {
+  if (m.type !== "place") return "off";
+  const t = step.highlights?.target;
+  if (!t) return "off";
+  if (m.x !== t.x || m.y !== t.y) return "off";
+  return m.value === t.value ? "completed" : "off";
+}
+
+/** Animate a placement that changes exactly one cell (so `solve`'s bulk fill
+ * and no-ops stay instant); the midend stretches this to the uniform
+ * hint-step duration, so auto-hint reads as continuous fills. */
+function animLength(
+  oldState: UnrulyState,
+  newState_: UnrulyState,
+  _dir: number,
+  _ui: UnrulyUi,
+): number {
+  let changed = 0;
+  const g0 = oldState.grid;
+  const g1 = newState_.grid;
+  for (let i = 0; i < g0.length; i++) {
+    if (g0[i] !== g1[i] && ++changed > 1) return 0;
+  }
+  return changed === 1 ? PLACE_ANIM_TIME : 0;
+}
+
 export const unrulyGame: Game<
   UnrulyParams,
   UnrulyState,
@@ -221,6 +393,8 @@ export const unrulyGame: Game<
     return { ok: true, move: { type: "solve", grid } };
   },
 
+  hint,
+  hintKeepTrack,
   findMistakes,
 
   textFormat,
@@ -234,7 +408,7 @@ export const unrulyGame: Game<
   newDrawState,
   redraw,
 
-  animLength: () => 0,
+  animLength,
   flashLength,
 };
 

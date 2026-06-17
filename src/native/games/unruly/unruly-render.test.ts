@@ -3,7 +3,8 @@
 // the count `!`, the immutable-clue bevel, the cursor outline, the
 // completion-flash highlight shift, and the cache suppressing unchanged tiles.
 import { describe, expect, it } from "vitest";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import type { UnrulyHint } from "./index.ts";
 import {
   COL_0,
   COL_0_HIGHLIGHT,
@@ -12,7 +13,10 @@ import {
   COL_CURSOR,
   COL_EMPTY,
   COL_ERROR,
+  COL_HINT,
+  COL_HINT_CELL,
   newDrawState,
+  PLACE_ANIM_TIME,
   redraw,
   type UnrulyDrawState,
 } from "./render.ts";
@@ -22,6 +26,7 @@ import {
   executeMove,
   newState,
   ONE,
+  type UnrulyMove,
   type UnrulyParams,
   type UnrulyState,
   type UnrulyUi,
@@ -190,6 +195,70 @@ describe("Unruly redraw", () => {
     redraw(dr, ds, null, state, 1, freshUi(), 0, 0, undefined, [{ x: 2, y: 2 }]);
     const errorRects = ops.filter((o) => o.op === "drawRect" && o.colour === COL_ERROR);
     expect(errorRects.length).toBe(4);
+  });
+
+  it("grows the new colour from the centre during a placement animation", () => {
+    const prev = blank();
+    const state = place(prev, 0, 0, ONE);
+    const ds = freshDs(state);
+    const { dr, ops } = recordingDrawing();
+    // Mid-animation: the previous colour beneath, the new colour as a smaller
+    // centred square (w < TS-1).
+    redraw(dr, ds, prev, state, 1, freshUi(), PLACE_ANIM_TIME / 2, 0);
+    // The from-colour (EMPTY) is painted full-tile beneath at the cell.
+    expect(ops.some((o) => body(o) && o.colour === COL_EMPTY)).toBe(true);
+    // The new colour appears as a partial (growing) square, not a full body.
+    const grow = ops.filter(
+      (o) =>
+        o.op === "drawRect" &&
+        o.colour === COL_1 &&
+        (o.w ?? 0) > 0 &&
+        (o.w ?? 0) < TS - 1,
+    );
+    expect(grow.length).toBe(1);
+  });
+
+  it("settles to the plain new colour once the animation ends (prev null)", () => {
+    const prev = blank();
+    const state = place(prev, 0, 0, ONE);
+    const ds = freshDs(state);
+    const { dr, ops } = recordingDrawing();
+    redraw(dr, ds, null, state, 1, freshUi(), 0, 0);
+    expect(ops.some((o) => body(o) && o.colour === COL_1)).toBe(true);
+    // No partial growing square remains.
+    expect(
+      ops.some(
+        (o) =>
+          o.op === "drawRect" &&
+          o.colour === COL_1 &&
+          (o.w ?? 0) < TS - 1 &&
+          (o.w ?? 0) > 0,
+      ),
+    ).toBe(false);
+  });
+
+  it("renders a displayed hint: target fill + preview, sibling shade, premise ring", () => {
+    // A black clue at (0,0) (a ring premise), an empty target at (2,0) forced
+    // black, and an empty sibling at (4,0).
+    const state = withClue(ONE);
+    const ds = freshDs(state);
+    const target = { x: 2, y: 0, value: ONE as Cell };
+    const hint: HintStep<UnrulyMove, UnrulyHint> = {
+      move: { type: "place", x: 2, y: 0, value: ONE },
+      explanation: "test",
+      highlights: { target, area: [4], ring: [0] },
+    };
+    const { dr, ops } = recordingDrawing();
+    redraw(dr, ds, null, state, 1, freshUi(), 0, 0, hint);
+    // Target cell: a full COL_HINT body.
+    expect(ops.some((o) => body(o) && o.colour === COL_HINT)).toBe(true);
+    // Sibling area cell: a full COL_HINT_CELL body.
+    expect(ops.some((o) => body(o) && o.colour === COL_HINT_CELL)).toBe(true);
+    // Premise ring: COL_HINT outline strips around the filled clue.
+    expect(
+      ops.filter((o) => o.op === "drawRect" && o.colour === COL_HINT && !body(o))
+        .length,
+    ).toBeGreaterThanOrEqual(4);
   });
 
   it("suppresses unchanged tiles via the cache", () => {
