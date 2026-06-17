@@ -65,6 +65,19 @@ describe("Sixteen params", () => {
     }
   });
 
+  it("decodes a bare square form to w === h", () => {
+    // Regression: the old `indexOf("x")` returned -1 on "4" and mis-sliced
+    // (w became NaN). The square fallback in parseDimensions fixes this.
+    expect(decodeParams("4")).toEqual({ w: 4, h: 4, movetarget: 0 });
+    expect(decodeParams("6")).toEqual({ w: 6, h: 6, movetarget: 0 });
+  });
+
+  it("decodes the rectangular and movetarget forms unchanged", () => {
+    expect(decodeParams("4x4")).toEqual({ w: 4, h: 4, movetarget: 0 });
+    expect(decodeParams("5x4")).toEqual({ w: 5, h: 4, movetarget: 0 });
+    expect(decodeParams("4x4m10")).toEqual({ w: 4, h: 4, movetarget: 10 });
+  });
+
   it("validates minimum dimensions", () => {
     expect(validateParams({ w: 1, h: 3, movetarget: 0 }, true)).toBeTruthy();
     expect(validateParams({ w: 3, h: 1, movetarget: 0 }, true)).toBeTruthy();

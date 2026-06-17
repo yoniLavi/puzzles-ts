@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseLeadingInt } from "./params.ts";
+import { parseDimensions, parseLeadingInt } from "./params.ts";
 
 describe("parseLeadingInt", () => {
   it("parses a WxH param string in two hops", () => {
@@ -19,5 +19,27 @@ describe("parseLeadingInt", () => {
 
   it("handles a digit run extending to the end of the string", () => {
     expect(parseLeadingInt("123", 0)).toEqual({ value: 123, next: 3 });
+  });
+});
+
+describe("parseDimensions", () => {
+  it("parses a rectangular WxH prefix", () => {
+    expect(parseDimensions("10x7")).toEqual({ w: 10, h: 7, next: 4 });
+  });
+
+  it("falls back to a square when there is no x", () => {
+    expect(parseDimensions("4")).toEqual({ w: 4, h: 4, next: 1 });
+  });
+
+  it("leaves next at the trailing suffix for further parsing", () => {
+    const dims = parseDimensions("4x4m10");
+    expect(dims.w).toBe(4);
+    expect(dims.h).toBe(4);
+    expect("4x4m10"[dims.next]).toBe("m");
+  });
+
+  it("honours a non-zero start offset", () => {
+    // e.g. a game that consumed a leading kind-letter first.
+    expect(parseDimensions("c3x3", 1)).toEqual({ w: 3, h: 3, next: 4 });
   });
 });

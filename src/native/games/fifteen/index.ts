@@ -16,8 +16,10 @@ import {
   CURSOR_LEFT,
   CURSOR_RIGHT,
   CURSOR_UP,
-  cursorDelta,
+  gridCursorMove,
+  isCursorMove,
   LEFT_BUTTON,
+  stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { computeHint } from "./solver.ts";
@@ -45,10 +47,6 @@ const PREFERRED_TILE_SIZE = 48;
 const ANIM_TIME = 0.13;
 const FLASH_FRAME = 0.13;
 const HIGHLIGHT_WIDTH_DIV = 20;
-
-// Button-modifier mask (ctrl/shift/numeric-keypad bits), stripped before
-// dispatch — matches upstream `STRIP_BUTTON_MODIFIERS`.
-const MOD_MASK = 0x7800;
 
 // --- colour indices ---------------------------------------------------
 
@@ -142,10 +140,6 @@ function newUi(_state: FifteenState): FifteenUi {
   return { invertCursor: false };
 }
 
-function isCursorMove(button: number): boolean {
-  return button >= CURSOR_UP && button <= CURSOR_RIGHT;
-}
-
 function flipCursor(button: number): number {
   switch (button) {
     case CURSOR_UP:
@@ -159,21 +153,6 @@ function flipCursor(button: number): number {
     default:
       return 0;
   }
-}
-
-/** Move (x, y) one cell in the given cursor direction, clamped to the
- * board (no wrap) — upstream `move_cursor(..., wrap=false)`. */
-function moveCursorClamped(
-  button: number,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-): { x: number; y: number } {
-  const d = cursorDelta(button) ?? { dx: 0, dy: 0 };
-  const nx = Math.max(0, Math.min(w - 1, x + d.dx));
-  const ny = Math.max(0, Math.min(h - 1, y + d.dy));
-  return { x: nx, y: ny };
 }
 
 function interpretMove(
@@ -190,7 +169,7 @@ function interpretMove(
   let nx = cx;
   let ny = cy;
 
-  const raw = button & ~MOD_MASK;
+  const raw = stripModifiers(button);
 
   if (raw === LEFT_BUTTON) {
     const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
@@ -203,7 +182,10 @@ function interpretMove(
     // (never-set) invertCursor preference would undo the flip.
     let b = flipCursor(raw);
     if (ui.invertCursor) b = flipCursor(b);
-    ({ x: nx, y: ny } = moveCursorClamped(b, cx, cy, w, h));
+    // Clamped move (no wrap); a no-op edge move leaves (cx, cy) — which
+    // then fails the share-one-coordinate test below and returns null,
+    // matching upstream `move_cursor(..., wrap=false)`.
+    ({ x: nx, y: ny } = gridCursorMove(b, cx, cy, w, h) ?? { x: cx, y: cy });
   } else {
     return null;
   }

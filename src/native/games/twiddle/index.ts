@@ -18,8 +18,11 @@ import { UI_UPDATE } from "../../engine/game.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  cursorDelta,
+  gridCursorMove,
+  isCursorMove,
   LEFT_BUTTON,
+  MOD_MASK,
+  MOD_NUM_KEYPAD,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -57,10 +60,9 @@ import {
 
 // --- button modifiers -------------------------------------------------
 
-// Stripped before dispatch except the numpad bit (upstream
-// `button & (~MOD_MASK | MOD_NUM_KEYPAD)`).
-const MOD_NUM_KEYPAD = 0x4000;
-const MOD_MASK = 0x7800;
+// Twiddle strips every modifier *except* the numpad bit (upstream
+// `button & (~MOD_MASK | MOD_NUM_KEYPAD)`), since numpad keys drive the
+// corner/edge rotations — so `stripModifiers` is intentionally not used.
 
 // Char codes for the corner-rotation keys.
 const KEY_a = 0x61;
@@ -96,13 +98,14 @@ function interpretMove(
   const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
 
   // Cursor movement over the (w-n+1) × (h-n+1) rotation-origin space.
-  const d = cursorDelta(button);
-  if (d) {
-    const nx = Math.max(0, Math.min(w - n, ui.curX + d.dx));
-    const ny = Math.max(0, Math.min(h - n, ui.curY + d.dy));
-    const changed = nx !== ui.curX || ny !== ui.curY || !ui.curVisible;
-    ui.curX = nx;
-    ui.curY = ny;
+  // No toroidal wrap; the origin space is clamped.
+  if (isCursorMove(button)) {
+    const moved = gridCursorMove(button, ui.curX, ui.curY, w - n + 1, h - n + 1);
+    const changed = moved !== null || !ui.curVisible;
+    if (moved) {
+      ui.curX = moved.x;
+      ui.curY = moved.y;
+    }
     ui.curVisible = true;
     return changed ? UI_UPDATE : null;
   }

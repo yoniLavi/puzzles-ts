@@ -13,14 +13,17 @@ import { UI_UPDATE } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HINT_SETTING_UP, workingOn } from "../../engine/hint-vocab.ts";
 import {
-  CURSOR_RIGHT,
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  CURSOR_UP,
-  cursorDelta,
+  gridCursorMove,
+  isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
+  MOD_CTRL,
+  MOD_MASK,
+  MOD_NUM_KEYPAD,
+  MOD_SHFT,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -142,10 +145,6 @@ function interpretMove(
   p: Point,
   button: number,
 ): SixteenMove | null | UiUpdate {
-  const MOD_CTRL = 0x1000;
-  const MOD_SHFT = 0x2000;
-  const MOD_NUM_KEYPAD = 0x4000;
-  const MOD_MASK = 0x7800;
   const shift = !!(button & MOD_SHFT);
   const control = !!(button & MOD_CTRL);
   const pad = button & MOD_NUM_KEYPAD;
@@ -162,22 +161,22 @@ function interpretMove(
       if (ui.curX < 0 || ui.curX >= state.w || ui.curY < 0 || ui.curY >= state.h)
         return null;
 
-      const { x: nx, y: ny } = moveCursor(
+      const { x: nx, y: ny } = gridCursorMove(
         rawButton | pad,
         ui.curX,
         ui.curY,
         state.w,
         state.h,
         false,
-      );
-      const { x: nwx, y: nwy } = moveCursor(
+      ) ?? { x: ui.curX, y: ui.curY };
+      const { x: nwx, y: nwy } = gridCursorMove(
         rawButton | pad,
         ui.curX,
         ui.curY,
         state.w,
         state.h,
         true,
-      );
+      ) ?? { x: ui.curX, y: ui.curY };
 
       let move: SixteenMove;
       if (nx !== nwx) {
@@ -207,14 +206,14 @@ function interpretMove(
 
       return move;
     } else {
-      const { x: nx, y: ny } = moveCursor(
+      const { x: nx, y: ny } = gridCursorMove(
         rawButton | pad,
         ui.curX + 1,
         ui.curY + 1,
         state.w + 2,
         state.h + 2,
         false,
-      );
+      ) ?? { x: ui.curX + 1, y: ui.curY + 1 };
 
       if (nx === 0 && ny === 0) {
         const t = ui.curX;
@@ -383,31 +382,6 @@ function interpretMove(
 
   if (dx) return { type: "slide", axis: "row", index: cy, delta: dx };
   return { type: "slide", axis: "column", index: cx, delta: dy };
-}
-
-function isCursorMove(button: number): boolean {
-  return button >= CURSOR_UP && button <= CURSOR_RIGHT;
-}
-
-function moveCursor(
-  button: number,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  wrap: boolean,
-): { x: number; y: number } {
-  const d = cursorDelta(button) ?? { dx: 0, dy: 0 };
-  let nx = x + d.dx,
-    ny = y + d.dy;
-  if (wrap) {
-    nx = ((nx % w) + w) % w;
-    ny = ((ny % h) + h) % h;
-  } else {
-    nx = Math.max(0, Math.min(w - 1, nx));
-    ny = Math.max(0, Math.min(h - 1, ny));
-  }
-  return { x: nx, y: ny };
 }
 
 // --- coordinate helpers -----------------------------------------------

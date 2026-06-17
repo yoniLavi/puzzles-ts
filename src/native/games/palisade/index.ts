@@ -24,6 +24,7 @@ import {
   cursorDelta,
   LEFT_BUTTON,
   RIGHT_BUTTON,
+  stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
@@ -69,8 +70,6 @@ import {
   validateParams,
 } from "./state.ts";
 
-const MOD_MASK = 0x7800;
-
 // Edge states for the click toggle cycle.
 const MAYBE = 0;
 const YES = 1;
@@ -97,7 +96,7 @@ function interpretMove(
   rawButton: number,
 ): PalisadeMove | null | UiUpdate {
   const { w, h, borders } = state;
-  const button = rawButton & ~MOD_MASK;
+  const button = stripModifiers(rawButton);
   const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {

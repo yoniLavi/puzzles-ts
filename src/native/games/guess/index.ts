@@ -14,12 +14,10 @@
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import {
-  CURSOR_DOWN,
-  CURSOR_LEFT,
-  CURSOR_RIGHT,
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  CURSOR_UP,
+  gridCursorMove,
+  isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
@@ -211,27 +209,26 @@ function computeHint(state: GuessState, ui: GuessUi): void {
 // --- cursor movement (upstream move_cursor) ---------------------------
 
 /** Move the peg/colour cursor (no wrap; clamp). Returns `UI_UPDATE`
- * when the cursor became visible or moved, else `null`. */
+ * when the cursor became visible or moved, else `null`.
+ *
+ * The peg axis is the grid's x (clamped to `maxPeg`), the colour axis its
+ * y (clamped to `maxColour`); `gridCursorMove` owns the clamp and returns
+ * `null` for a no-op against an edge, which we keep as a position hold so
+ * the `displayCur` reveal still fires. */
 function moveCursor(button: number, ui: GuessUi, maxPeg: number, maxColour: number): UiUpdate | null {
-  let dx = 0;
-  let dy = 0;
-  if (button === CURSOR_UP) dy = -1;
-  else if (button === CURSOR_DOWN) dy = 1;
-  else if (button === CURSOR_RIGHT) dx = 1;
-  else if (button === CURSOR_LEFT) dx = -1;
-  else return null;
+  if (!isCursorMove(button)) return null;
 
-  const ox = ui.pegCur;
-  const oy = ui.colourCur;
-  ui.pegCur = Math.min(Math.max(ui.pegCur + dx, 0), maxPeg - 1);
-  ui.colourCur = Math.min(Math.max(ui.colourCur + dy, 0), maxColour - 1);
+  const moved = gridCursorMove(button, ui.pegCur, ui.colourCur, maxPeg, maxColour);
+  if (moved) {
+    ui.pegCur = moved.x;
+    ui.colourCur = moved.y;
+  }
 
   if (!ui.displayCur) {
     ui.displayCur = true;
     return UI_UPDATE;
   }
-  if (ui.pegCur !== ox || ui.colourCur !== oy) return UI_UPDATE;
-  return null;
+  return moved ? UI_UPDATE : null;
 }
 
 // --- input ------------------------------------------------------------
@@ -335,12 +332,7 @@ function interpretMove(
   }
 
   // --- keyboard ---
-  if (
-    button === CURSOR_UP ||
-    button === CURSOR_DOWN ||
-    button === CURSOR_LEFT ||
-    button === CURSOR_RIGHT
-  ) {
+  if (isCursorMove(button)) {
     const maxcur = npegs + (ui.markable ? 1 : 0);
     return moveCursor(button, ui, maxcur, ncolours);
   }

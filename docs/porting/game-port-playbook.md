@@ -55,6 +55,14 @@ deltas. See the [openspec proposal workflow](../../openspec/OPENSPEC_AGENTS.md).
 
 ## 1. File layout
 
+**Start with the scaffolder:** `scripts/new-game-port.sh <puzzleId>` stamps out
+`src/native/games/<puzzleId>/` with compiling typed `Game<…>` stubs in the file
+shape below (throwing where logic goes) and an empty `__fixtures__/`, then prints
+the manual-edit checklist it deliberately won't do for you (the C trace harness,
+the two registration edits, the icon PNGs). Fill the stubs against the C
+reference; read [`galaxies/`](../../src/native/games/galaxies/) end-to-end as the
+exemplar.
+
 A ported game lives in `src/native/games/<puzzleId>/`. The shape that has held
 across ports (Galaxies is the reference; small games may collapse files):
 
@@ -74,6 +82,24 @@ use the shared [`src/native/engine/`](../../src/native/engine/) helpers
 [`pointer.ts`](../../src/native/engine/pointer.ts),
 [`params.ts`](../../src/native/engine/params.ts)). If a second consumer of a
 game-local helper appears, promote it to `engine/`.
+
+Reach for these in `interpretMove`/`decodeParams` instead of re-rolling the
+idiom (every game grew its own copy until they were consolidated):
+- [`stripModifiers(button)`](../../src/native/engine/pointer.ts) for
+  `button & ~MOD_MASK` (and `MOD_CTRL`/`MOD_SHFT`/`MOD_NUM_KEYPAD` for the bits
+  themselves) — don't redeclare `const MOD_MASK = 0x7800`.
+- [`gridCursorMove(button, x, y, w, h, wrap?)`](../../src/native/engine/pointer.ts)
+  for the bounded (or toroidal) cursor clamp — it returns `null` on a non-cursor
+  button **and** on a clamped-edge no-op, so `?? { x, y }` reproduces the
+  "always returns a position" shape, while the per-game policy (which field
+  holds the cursor, "first arrow reveals it", `UI_UPDATE` vs `null`) stays local.
+  Pair with [`isCursorMove(button)`](../../src/native/engine/pointer.ts) for the
+  `button >= CURSOR_UP && button <= CURSOR_RIGHT` range check. A non-trivial
+  traversal (half-grid cursor, corner-skipping, lock modes) keeps its own logic.
+- [`parseDimensions(s, start?)`](../../src/native/engine/params.ts) for a leading
+  `WxH`-or-square dimension prefix (`next` continues a trailing suffix). It
+  restores the square fallback that `s.indexOf("x")` silently mis-sliced on a
+  bare `"4"`. Not for non-`WxH` formats (e.g. Blackbox's `w<W>h<H>m…M…`).
 
 ## 2. Idiomatic TS, not a C transliteration
 
@@ -172,10 +198,26 @@ discipline is ~zero.
 ## 4. Differential check + tests
 
 **Dev-time differential spot-check** (advisory, *not* a gate): generate N boards
-from the C build and the TS port for the same seed and eyeball the diff. The
-durable forms used by past ports: a **gated** frozen-snapshot test
-(`<game>-differential.test.ts` vs a `__fixtures__/*.json` recorded from C) and an
-**advisory** live `scripts/diff-<game>.test.ts`. Exemplar end-to-end:
+from the C build and the TS port for the same seed and eyeball the diff.
+
+**A differential is per-game optional — it earns its place on solver/codec
+games, not every port.** It pays off where the generator runs a hard
+uniqueness/difficulty loop or a non-obvious codec (galaxies, unruly, flood,
+guess); permutation / short-RNG games (cube, fifteen, sixteen, twiddle, pegs,
+blackbox) get their RNG-faithfulness transitively from `random.ts`'s own corpus
+plus the existing differentials, and deliberately ship without one (state the
+skip in the port's `design.md`, as those did). Of the 15 games to date, 6 carry a
+gated test and 3 a live script — by this per-game decision, *not* because the pair
+is mandatory.
+
+The two durable forms (use either or both when a game earns it): a **gated**
+frozen-snapshot test (`<game>-differential.test.ts` vs a `__fixtures__/*.json`
+recorded from C) and an **advisory** live `scripts/diff-<game>.test.ts` (run via
+`npm run diff`, which globs every `scripts/diff-*.test.ts` through the single
+`scripts/diff.vitest.config.mts` — no per-game config). An advisory script earns
+its keep only if it does something the frozen fixture can't, e.g. shelling the
+live C trace binary (`diff-flip`); a script that merely re-reads the same fixture
+the gated test reads adds no signal. Exemplar end-to-end:
 [`unruly-trace.c`](../../puzzles/auxiliary/unruly-trace.c) →
 [`unruly-differential.test.ts`](../../src/native/games/unruly/unruly-differential.test.ts).
 

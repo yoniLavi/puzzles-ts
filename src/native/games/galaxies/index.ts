@@ -19,7 +19,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { parseLeadingInt } from "../../engine/params.ts";
+import { parseDimensions } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -130,15 +130,8 @@ export { GalaxiesDiff };
 const DIFFCHARS = "nu";
 
 function decodeParams(s: string): GalaxiesParams {
-  const a = parseLeadingInt(s, 0);
-  const w = a.value;
-  let h = w;
-  let i = a.next;
-  if (s[i] === "x") {
-    const b = parseLeadingInt(s, i + 1);
-    h = b.value;
-    i = b.next;
-  }
+  const { w, h, next } = parseDimensions(s, 0);
+  let i = next;
   let diff: GalaxiesDiff = GalaxiesDiff.Normal;
   if (s[i] === "d") {
     i++;

@@ -11,8 +11,10 @@ import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  cursorDelta,
+  gridCursorMove,
+  isCursorMove,
   LEFT_BUTTON,
+  stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
@@ -48,17 +50,6 @@ import {
 
 const VICTORY_FLASH_FRAME = 0.03;
 const DEFEAT_FLASH_FRAME = 0.1;
-
-// Button-modifier mask (ctrl/shift/numeric-keypad bits), stripped before
-// dispatch — matches upstream `STRIP_BUTTON_MODIFIERS`.
-const MOD_MASK = 0x7800;
-
-const CURSOR_UP = 0x0209;
-const CURSOR_RIGHT = 0x020c;
-
-function isCursorMove(button: number): boolean {
-  return button >= CURSOR_UP && button <= CURSOR_RIGHT;
-}
 
 // --- move logic -------------------------------------------------------
 
@@ -117,7 +108,7 @@ function interpretMove(
   button: number,
 ): FloodMove | null | UiUpdate {
   const { w, h } = state;
-  const raw = button & ~MOD_MASK;
+  const raw = stripModifiers(button);
   let tx = -1;
   let ty = -1;
   let uiUpdated = false;
@@ -131,12 +122,12 @@ function interpretMove(
       uiUpdated = true;
     }
   } else if (isCursorMove(raw)) {
-    const d = cursorDelta(raw);
-    if (d) {
-      ui.cx = Math.max(0, Math.min(w - 1, ui.cx + d.dx));
-      ui.cy = Math.max(0, Math.min(h - 1, ui.cy + d.dy));
-      ui.cursorVisible = true;
+    const moved = gridCursorMove(raw, ui.cx, ui.cy, w, h);
+    if (moved) {
+      ui.cx = moved.x;
+      ui.cy = moved.y;
     }
+    ui.cursorVisible = true;
     return UI_UPDATE;
   } else if (raw === CURSOR_SELECT) {
     tx = ui.cx;

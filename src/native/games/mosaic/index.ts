@@ -11,12 +11,14 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   cursorDelta,
+  gridCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
+  stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
@@ -48,10 +50,6 @@ import {
   validateDesc,
   validateParams,
 } from "./state.ts";
-
-// Button-modifier mask (ctrl/shift/numeric-keypad bits), stripped before
-// dispatch — matches upstream `STRIP_BUTTON_MODIFIERS`.
-const MOD_MASK = 0x7800;
 
 function isMouseEvent(button: number): boolean {
   return button >= LEFT_BUTTON && button <= RIGHT_RELEASE;
@@ -106,7 +104,7 @@ function interpretMove(
   p: Point,
   button: number,
 ): MosaicMove | null | UiUpdate {
-  const raw = button & ~MOD_MASK;
+  const raw = stripModifiers(button);
   const { width, height } = state;
   const d = cursorDelta(raw);
 
@@ -171,8 +169,11 @@ function interpretMove(
   }
 
   if (d) {
-    ui.curX = Math.max(0, Math.min(width - 1, ui.curX + d.dx));
-    ui.curY = Math.max(0, Math.min(height - 1, ui.curY + d.dy));
+    const moved = gridCursorMove(raw, ui.curX, ui.curY, width, height);
+    if (moved) {
+      ui.curX = moved.x;
+      ui.curY = moved.y;
+    }
     ui.cursorVisible = true;
     return UI_UPDATE;
   }

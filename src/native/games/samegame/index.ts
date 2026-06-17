@@ -2,14 +2,13 @@ import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import { fromCoord } from "../../engine/geometry.ts";
 import {
-  CURSOR_DOWN,
-  CURSOR_LEFT,
-  CURSOR_RIGHT,
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  CURSOR_UP,
+  gridCursorMove,
+  isCursorMove,
   LEFT_BUTTON,
   RIGHT_BUTTON,
+  stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
@@ -42,10 +41,6 @@ import {
 } from "./state.ts";
 
 const FLASH_FRAME = 0.13;
-
-// Button-modifier mask (ctrl/shift/numeric-keypad bits), stripped before
-// dispatch — matches upstream `STRIP_BUTTON_MODIFIERS`.
-const MOD_MASK = 0x7800;
 
 // --- UI / selection ---------------------------------------------------
 
@@ -123,42 +118,18 @@ function moveCursor(
   w: number,
   h: number,
 ): UiUpdate | null {
-  let dx = 0;
-  let dy = 0;
-  switch (button) {
-    case CURSOR_UP:
-      dy = -1;
-      break;
-    case CURSOR_DOWN:
-      dy = 1;
-      break;
-    case CURSOR_LEFT:
-      dx = -1;
-      break;
-    case CURSOR_RIGHT:
-      dx = 1;
-      break;
-    default:
-      return null;
+  // Cursor wraps toroidally on this board.
+  const moved = gridCursorMove(button, ui.xsel, ui.ysel, w, h, true);
+  const changed = moved !== null;
+  if (moved) {
+    ui.xsel = moved.x;
+    ui.ysel = moved.y;
   }
-  const ox = ui.xsel;
-  const oy = ui.ysel;
-  ui.xsel = (ui.xsel + dx + w) % w;
-  ui.ysel = (ui.ysel + dy + h) % h;
   if (!ui.displaySel) {
     ui.displaySel = true;
     return UI_UPDATE;
   }
-  return ui.xsel !== ox || ui.ysel !== oy ? UI_UPDATE : null;
-}
-
-function isCursorMove(button: number): boolean {
-  return (
-    button === CURSOR_UP ||
-    button === CURSOR_DOWN ||
-    button === CURSOR_LEFT ||
-    button === CURSOR_RIGHT
-  );
+  return changed ? UI_UPDATE : null;
 }
 
 // --- input ------------------------------------------------------------
@@ -171,7 +142,7 @@ function interpretMove(
   rawButton: number,
 ): SamegameMove | null | UiUpdate {
   const { w, h } = state;
-  const button = rawButton & ~MOD_MASK;
+  const button = stripModifiers(rawButton);
   let tx: number;
   let ty: number;
 

@@ -33,6 +33,7 @@ import {
   LEFT_DRAG,
   LEFT_RELEASE,
 } from "../../engine/pointer.ts";
+import { parseDimensions } from "../../engine/params.ts";
 import { SortedMultiset } from "../../engine/sorted-multiset.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 
@@ -156,17 +157,11 @@ function encodeParams(p: PegsParams, full: boolean): string {
 }
 
 function decodeParams(s: string): PegsParams {
-  const xIdx = s.indexOf("x");
-  const w = Number.parseInt(s.slice(0, xIdx), 10);
-  let rest = s.slice(xIdx + 1);
-  let h: number;
-  const hMatch = rest.match(/^\d+/);
-  if (hMatch) {
-    h = Number.parseInt(hMatch[0], 10);
-    rest = rest.slice(hMatch[0].length);
-  } else {
-    h = w;
-  }
+  // `WxH`-or-square dimension prefix via the shared engine helper; the
+  // old `indexOf("x")` + slice mis-sliced a bare square form ("7" → w=7,
+  // h=undefined). `next` is the index of the trailing board-type word.
+  const { w, h, next } = parseDimensions(s, 0);
+  const rest = s.slice(next);
   let type = TYPE_CROSS;
   for (let i = 0; i < BOARD_TYPE_LOWER.length; i++) {
     if (rest === BOARD_TYPE_LOWER[i]) {

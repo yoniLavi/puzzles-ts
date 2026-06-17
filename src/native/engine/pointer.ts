@@ -24,6 +24,19 @@ export const CURSOR_RIGHT = 0x020c;
 export const CURSOR_SELECT = 0x020d;
 export const CURSOR_SELECT2 = 0x020e;
 
+// --- keyboard modifier masks (upstream puzzles.h) ------------------
+
+export const MOD_CTRL = 0x1000;
+export const MOD_SHFT = 0x2000;
+export const MOD_NUM_KEYPAD = 0x4000;
+/** All modifier bits — `button & ~MOD_MASK` recovers the base button. */
+export const MOD_MASK = 0x7800;
+
+/** Strip every keyboard modifier bit, returning the base button code. */
+export function stripModifiers(button: number): number {
+  return button & ~MOD_MASK;
+}
+
 // --- cursor movement -----------------------------------------------
 
 /** Unit grid delta for a cursor-direction button, or `null` for any
@@ -43,4 +56,52 @@ export function cursorDelta(button: number): { dx: number; dy: number } | null {
     default:
       return null;
   }
+}
+
+/** True iff `button` is one of the four cursor-direction keys. */
+export function isCursorMove(button: number): boolean {
+  return (
+    button === CURSOR_UP ||
+    button === CURSOR_DOWN ||
+    button === CURSOR_LEFT ||
+    button === CURSOR_RIGHT
+  );
+}
+
+/**
+ * Move a cursor on an axis-aligned `w × h` grid by a cursor-direction
+ * button. Returns the new coordinates, or `null` when `button` is not a
+ * cursor key or the move is a no-op against a clamped edge.
+ *
+ * Position-only by design: this never owns or mutates a game's `ui`. The
+ * per-game policy that genuinely varies — which field holds the cursor,
+ * `changed`-tracking, the "first arrow-press only reveals the cursor"
+ * idiom, the null-vs-`UI_UPDATE` return — stays in each game. Custom
+ * traversal (obstacle-skipping, lock modes, paint-while-traversing,
+ * rolling cursors) keeps using `cursorDelta` or its own logic.
+ *
+ * With `wrap` false (default) the result is clamped to `[0, w) × [0, h)`;
+ * with `wrap` true it wraps toroidally (so an edge move never no-ops).
+ */
+export function gridCursorMove(
+  button: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  wrap = false,
+): { x: number; y: number } | null {
+  const delta = cursorDelta(button);
+  if (!delta) return null;
+  let nx = x + delta.dx;
+  let ny = y + delta.dy;
+  if (wrap) {
+    nx = ((nx % w) + w) % w;
+    ny = ((ny % h) + h) % h;
+  } else {
+    nx = Math.max(0, Math.min(w - 1, nx));
+    ny = Math.max(0, Math.min(h - 1, ny));
+  }
+  if (nx === x && ny === y) return null;
+  return { x: nx, y: ny };
 }

@@ -16,7 +16,8 @@ import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  cursorDelta,
+  gridCursorMove,
+  isCursorMove,
   LEFT_BUTTON,
   LEFT_RELEASE,
   RIGHT_BUTTON,
@@ -113,11 +114,16 @@ function interpretMove(
   let gy = -1;
   let wouldflash = 0;
 
-  const delta = cursorDelta(button);
-  if (delta) {
-    // Move the cursor over the (w+2)×(h+2) grid, no wrap, no corners.
-    const cx = Math.min(Math.max(ui.curX + delta.dx, 0), state.w + 1);
-    const cy = Math.min(Math.max(ui.curY + delta.dy, 0), state.h + 1);
+  if (isCursorMove(button)) {
+    // Move the cursor over the (w+2)×(h+2) grid, no wrap, no corners. An
+    // edge no-op keeps (curX, curY) but still reveals + repaints, as before.
+    const { x: cx, y: cy } = gridCursorMove(
+      button,
+      ui.curX,
+      ui.curY,
+      state.w + 2,
+      state.h + 2,
+    ) ?? { x: ui.curX, y: ui.curY };
     if (
       (cx === 0 && cy === 0 && !canReveal(state)) ||
       (cx === 0 && cy === state.h + 1) ||

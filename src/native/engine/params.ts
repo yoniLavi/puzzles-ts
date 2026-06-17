@@ -22,3 +22,29 @@ export function parseLeadingInt(
     next: i,
   };
 }
+
+/**
+ * Parse an upstream `WxH`-or-square dimension prefix starting at
+ * `start`: a width, then an optional `"x"` followed by a height, with a
+ * **square** fallback (`h = w`) when no `"x"` is present. `next` is the
+ * index of the first character after the consumed dimensions, so a
+ * caller can continue parsing a trailing suffix (a difficulty letter,
+ * `m<movetarget>`, ...).
+ *
+ * Replaces the three hand-rolled idioms ports grew (a `parseLeadingInt`
+ * pair, a digit-scan loop, `indexOf("x")` + slice). The latter silently
+ * mis-sliced a bare square form (no `"x"`); routing through here restores
+ * the square fallback.
+ */
+export function parseDimensions(
+  s: string,
+  start = 0,
+): { w: number; h: number; next: number } {
+  const wParse = parseLeadingInt(s, start);
+  const w = wParse.value;
+  if (s[wParse.next] === "x") {
+    const hParse = parseLeadingInt(s, wParse.next + 1);
+    return { w, h: hParse.value, next: hParse.next };
+  }
+  return { w, h: w, next: wParse.next };
+}

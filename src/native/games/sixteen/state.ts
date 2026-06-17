@@ -1,3 +1,4 @@
+import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
 import { permParity } from "../../engine/shuffle.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 
@@ -66,17 +67,12 @@ export function encodeParams(p: SixteenParams, _full: boolean): string {
 }
 
 export function decodeParams(s: string): SixteenParams {
-  const xIdx = s.indexOf("x");
-  const w = Number(s.slice(0, xIdx));
-  const rest = s.slice(xIdx + 1);
-  const mIdx = rest.indexOf("m");
-  let h: number;
+  // Upstream: w = h = atoi(s); optional 'x'+h (square fallback when no
+  // 'x'); then an optional 'm'+movetarget suffix.
+  const { w, h, next } = parseDimensions(s);
   let movetarget = 0;
-  if (mIdx >= 0) {
-    h = Number(rest.slice(0, mIdx));
-    movetarget = Number(rest.slice(mIdx + 1));
-  } else {
-    h = Number(rest);
+  if (s[next] === "m") {
+    movetarget = parseLeadingInt(s, next + 1).value;
   }
   return { w, h, movetarget };
 }

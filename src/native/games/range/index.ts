@@ -26,7 +26,9 @@ import {
   cursorDelta,
   LEFT_BUTTON,
   MIDDLE_BUTTON,
+  MOD_SHFT,
   RIGHT_BUTTON,
+  stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
@@ -71,9 +73,6 @@ import {
   WHITE,
 } from "./state.ts";
 
-const MOD_SHFT = 0x2000;
-const MOD_MASK = 0x7800;
-
 export interface RangeMistake {
   r: number;
   c: number;
@@ -112,7 +111,7 @@ function interpretMove(
 ): RangeMove | null | UiUpdate {
   const { w, h, grid } = state;
   const shift = !!(rawButton & MOD_SHFT);
-  const button = rawButton & ~MOD_MASK;
+  const button = stripModifiers(rawButton);
 
   if ((button === CURSOR_SELECT || button === CURSOR_SELECT2) && !ui.cursorShow) {
     return null;

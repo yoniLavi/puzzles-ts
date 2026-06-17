@@ -1,3 +1,4 @@
+import { parseDimensions } from "../../engine/params.ts";
 import { permParity } from "../../engine/shuffle.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 
@@ -54,12 +55,7 @@ export function encodeParams(p: FifteenParams, _full: boolean): string {
 export function decodeParams(s: string): FifteenParams {
   // Upstream: w = h = atoi(s); then if an 'x' follows the leading
   // digits, h = atoi(after-x). A bare "W" yields a square W×W board.
-  const w = Number.parseInt(s, 10) || 0;
-  let h = w;
-  const xIdx = s.indexOf("x");
-  if (xIdx >= 0) {
-    h = Number.parseInt(s.slice(xIdx + 1), 10) || 0;
-  }
+  const { w, h } = parseDimensions(s);
   return { w, h };
 }
 

@@ -15,7 +15,7 @@
 import type { GameStatus } from "../../../puzzle/types.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { PresetMenu } from "../../engine/game.ts";
-import { parseLeadingInt } from "../../engine/params.ts";
+import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
 
 // --- border-flag constants ------------------------------------------------
 
@@ -130,17 +130,12 @@ export function encodeParams(p: PalisadeParams, _full: boolean): string {
 }
 
 export function decodeParams(s: string): PalisadeParams {
-  // Upstream: w = h = k = atoi(s); then optional `x<h>` and `n<k>`.
-  const first = parseLeadingInt(s, 0);
-  const p: PalisadeParams = { w: first.value, h: first.value, k: first.value };
-  let i = first.next;
-  if (s[i] === "x") {
-    const hh = parseLeadingInt(s, i + 1);
-    p.h = hh.value;
-    i = hh.next;
-  }
-  if (s[i] === "n") {
-    p.k = parseLeadingInt(s, i + 1).value;
+  // Upstream: w = h = k = atoi(s); then optional `x<h>` and `n<k>`. The
+  // square fallback (no `x`) also seeds k = w.
+  const { w, h, next } = parseDimensions(s);
+  const p: PalisadeParams = { w, h, k: w };
+  if (s[next] === "n") {
+    p.k = parseLeadingInt(s, next + 1).value;
   }
   return p;
 }

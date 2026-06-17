@@ -17,16 +17,14 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import {
-  CURSOR_DOWN,
-  CURSOR_LEFT,
-  CURSOR_RIGHT,
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  CURSOR_UP,
-  cursorDelta,
+  gridCursorMove,
+  isCursorMove,
   LEFT_BUTTON,
   MIDDLE_BUTTON,
   RIGHT_BUTTON,
+  stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { newDesc } from "./generator.ts";
@@ -68,10 +66,6 @@ import {
   ZERO,
 } from "./state.ts";
 
-// Button-modifier mask (ctrl/shift/numeric-keypad bits), stripped before
-// dispatch — matches upstream `STRIP_BUTTON_MODIFIERS`.
-const MOD_MASK = 0x7800;
-
 function newUi(_state: UnrulyState): UnrulyUi {
   return { cx: 0, cy: 0, cursor: false };
 }
@@ -112,7 +106,7 @@ function interpretMove(
   p: Point,
   rawButton: number,
 ): UnrulyMove | null | UiUpdate {
-  const button = rawButton & ~MOD_MASK;
+  const button = stripModifiers(rawButton);
   const { w2, h2 } = state;
   const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
   const b = border(ts);
@@ -139,19 +133,15 @@ function interpretMove(
     }
   }
 
-  // Keyboard cursor movement.
-  if (
-    button === CURSOR_UP ||
-    button === CURSOR_DOWN ||
-    button === CURSOR_LEFT ||
-    button === CURSOR_RIGHT
-  ) {
-    const d = cursorDelta(button);
-    if (d) {
-      ui.cx = Math.max(0, Math.min(w2 - 1, ui.cx + d.dx));
-      ui.cy = Math.max(0, Math.min(h2 - 1, ui.cy + d.dy));
-      ui.cursor = true;
+  // Keyboard cursor movement (clamped, no wrap). An edge no-op leaves
+  // (cx, cy) but still reveals the cursor and repaints, as before.
+  if (isCursorMove(button)) {
+    const moved = gridCursorMove(button, ui.cx, ui.cy, w2, h2);
+    if (moved) {
+      ui.cx = moved.x;
+      ui.cy = moved.y;
     }
+    ui.cursor = true;
     return UI_UPDATE;
   }
 

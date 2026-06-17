@@ -1,5 +1,6 @@
 import { type RandomState, randomUpto } from "../../random/index.ts";
 import type { GameStatus } from "../../../puzzle/types.ts";
+import { parseDimensions } from "../../engine/params.ts";
 import { choosemove, completed, fill, SolverScratch } from "./solver.ts";
 
 // --- constants --------------------------------------------------------
@@ -65,14 +66,10 @@ export function decodeParams(s: string): FloodParams {
   // h = atoi(after-x). Then scan for 'c<colours>' / 'm<leniency>'
   // anywhere in the remainder. A bare "W" yields a square W×W board.
   const ret = defaultParams();
-  ret.w = ret.h = Number.parseInt(s, 10) || 0;
-  let i = 0;
-  while (i < s.length && isDigit(s[i])) i++;
-  if (s[i] === "x") {
-    i++;
-    ret.h = Number.parseInt(s.slice(i), 10) || 0;
-    while (i < s.length && isDigit(s[i])) i++;
-  }
+  const dims = parseDimensions(s);
+  ret.w = dims.w;
+  ret.h = dims.h;
+  let i = dims.next;
   while (i < s.length) {
     if (s[i] === "c") {
       i++;

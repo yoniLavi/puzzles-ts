@@ -14,8 +14,9 @@ fi
 
 
 # --- Environment configuration options ---
-# VCSID: revision identifier -- e.g., "$(git rev-parse --short HEAD)"
-VCSID=${VCSID:-unknown}
+# VCSID: revision identifier. Defaults to the short git SHA when in a
+# work tree, else "unknown".
+VCSID=${VCSID:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --short HEAD 2>/dev/null || echo unknown)}
 # BUILDDATE: YYYYMMDD
 BUILDDATE=${BUILDDATE:-$(date +%Y%m%d)}
 BUILDTYPE=${BUILDTYPE:-Release}
@@ -84,15 +85,21 @@ CMAKE_ARGS=(
   -DVCSID="${VCSID}"
 )
 
+# Track the explicitly-requested leaf flags so we can detect a stale
+# cmake cache below.
+EXPLICIT_TS_FLAGS=()
+
 case "${USE_TS_LEAVES}" in
   "")
     ;;
   "0"|"OFF"|"off")
     CMAKE_ARGS+=(-DUSE_TS_LEAVES=OFF)
+    EXPLICIT_TS_FLAGS+=("USE_TS_LEAVES=OFF")
     echo "[INFO] USE_TS_LEAVES=OFF: every leaf stays on C (pure-C escape hatch; pair with VITE_USE_TS_LEAVES=0 on the worker side, or accept the silent reverse-coherence path)"
     ;;
   *)
     CMAKE_ARGS+=(-DUSE_TS_LEAVES=ON)
+    EXPLICIT_TS_FLAGS+=("USE_TS_LEAVES=ON")
     echo "[INFO] USE_TS_LEAVES=ON: every leaf-library C implementation excluded; bridging to TS (redundant with default; useful when overriding a cached OFF)"
     ;;
 esac
@@ -106,13 +113,39 @@ case "${USE_TS_RANDOM}" in
     ;;
   "0"|"OFF"|"off")
     CMAKE_ARGS+=(-DUSE_TS_RANDOM=OFF)
+    EXPLICIT_TS_FLAGS+=("USE_TS_RANDOM=OFF")
     echo "[INFO] USE_TS_RANDOM=OFF: random.c stays on C (per-module override of USE_TS_LEAVES)"
     ;;
   *)
     CMAKE_ARGS+=(-DUSE_TS_RANDOM=ON)
+    EXPLICIT_TS_FLAGS+=("USE_TS_RANDOM=ON")
     echo "[INFO] USE_TS_RANDOM=ON: random.c excluded; bridging to TS via random_bridge.js"
     ;;
 esac
+
+# --- Stale leaf-flag cache guard ---
+# cmake's option() honours a *previously-cached* value, so flipping a leaf
+# flag (e.g. USE_TS_LEAVES=0 after a default ON build) against an existing
+# build/wasm/CMakeCache.txt would otherwise silently rebuild the PREVIOUS
+# configuration. Detect any explicitly-requested flag that disagrees with
+# the cache and wipe the build dir so cmake reconfigures from clean.
+# (This is the footgun documented in AGENTS.md as "rm -rf build/wasm/".)
+CACHE_FILE="${BUILD_DIR}/CMakeCache.txt"
+if [ -f "${CACHE_FILE}" ] && [ "${#EXPLICIT_TS_FLAGS[@]}" -gt 0 ]; then
+  stale=0
+  for want in "${EXPLICIT_TS_FLAGS[@]}"; do
+    var="${want%%=*}"
+    val="${want#*=}"
+    cached="$(sed -n "s/^${var}:[A-Z]*=//p" "${CACHE_FILE}" | head -n1)"
+    if [ -n "${cached}" ] && [ "${cached}" != "${val}" ]; then
+      echo "[INFO] ${var}: requested ${val} but cache holds ${cached}; wiping ${BUILD_DIR} to reconfigure cleanly." >&2
+      stale=1
+    fi
+  done
+  if [ "${stale}" -ne 0 ]; then
+    rm -rf "${BUILD_DIR}"
+  fi
+fi
 
 emcmake cmake "${CMAKE_ARGS[@]}"
 (

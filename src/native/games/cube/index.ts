@@ -18,6 +18,8 @@ import {
   CURSOR_RIGHT,
   CURSOR_UP,
   LEFT_BUTTON,
+  MOD_MASK,
+  MOD_NUM_KEYPAD,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { newDesc } from "./generator.ts";
@@ -46,9 +48,6 @@ import {
   validateDesc,
   validateParams,
 } from "./state.ts";
-
-const MOD_NUM_KEYPAD = 0x4000;
-const MOD_MASK = 0x7800;
 
 /** Cube has no per-game UI state (upstream's `new_ui` returns NULL). */
 export type CubeUi = Record<string, never>;

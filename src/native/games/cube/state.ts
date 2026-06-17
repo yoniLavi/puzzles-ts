@@ -5,7 +5,7 @@
  * bitset, typed key-point pairs, and GC instead of dup/free.
  */
 
-import { parseLeadingInt } from "../../engine/params.ts";
+import { parseDimensions } from "../../engine/params.ts";
 import { enumGridSquares, type GridSquare, gridArea } from "./grid.ts";
 import { alignPolyKeys, SOLIDS, type Solid, SolidType } from "./solids.ts";
 
@@ -92,14 +92,11 @@ export function decodeParams(s: string): CubeParams {
     ret.solid = letter;
     i = 1;
   }
-  // Leading integer (shared engine helper, atoi-like); the `next` index
-  // lets us look for the optional `x<d2>` separator after d1.
-  const d1 = parseLeadingInt(s, i);
-  ret.d1 = ret.d2 = d1.value;
-  i = d1.next;
-  if (s[i] === "x") {
-    ret.d2 = parseLeadingInt(s, i + 1).value;
-  }
+  // `WxH`-or-square dimension prefix (shared engine helper, atoi-like),
+  // parsed from just past the optional solid letter.
+  const dims = parseDimensions(s, i);
+  ret.d1 = dims.w;
+  ret.d2 = dims.h;
   return ret;
 }
 

@@ -10,7 +10,7 @@
  */
 import type { GameStatus } from "../../../puzzle/types.ts";
 import type { PresetMenu } from "../../engine/game.ts";
-import { parseLeadingInt } from "../../engine/params.ts";
+import { parseDimensions } from "../../engine/params.ts";
 import { validateCounts, validateRows } from "./solver.ts";
 
 // --- cell values (upstream `enum { EMPTY, N_ONE, N_ZERO, BOGUS }`) -------
@@ -110,16 +110,10 @@ export function encodeParams(p: UnrulyParams, full: boolean): string {
 export function decodeParams(s: string): UnrulyParams {
   const ret = defaultParams();
   ret.unique = false;
-  const w = parseLeadingInt(s, 0);
-  ret.w2 = w.value;
-  let i = w.next;
-  if (s[i] === "x") {
-    const h = parseLeadingInt(s, i + 1);
-    ret.h2 = h.value;
-    i = h.next;
-  } else {
-    ret.h2 = ret.w2;
-  }
+  const dims = parseDimensions(s, 0);
+  ret.w2 = dims.w;
+  ret.h2 = dims.h;
+  let i = dims.next;
   if (s[i] === "u") {
     i++;
     ret.unique = true;

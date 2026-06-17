@@ -1,4 +1,4 @@
-import { parseLeadingInt } from "../../engine/params.ts";
+import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 
 // --- types -----------------------------------------------------------
@@ -82,16 +82,9 @@ export function decodeParams(s: string): TwiddleParams {
   let orientable = false;
   let movetarget = 0;
 
-  const wRun = parseLeadingInt(s, 0);
-  const w = wRun.value;
-  let h = w;
-  let i = wRun.next;
+  const { w, h, next } = parseDimensions(s);
+  let i = next;
 
-  if (s[i] === "x") {
-    const hRun = parseLeadingInt(s, i + 1);
-    h = hRun.value;
-    i = hRun.next;
-  }
   if (s[i] === "n") {
     const nRun = parseLeadingInt(s, i + 1);
     n = nRun.value || 2;

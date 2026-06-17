@@ -31,6 +31,29 @@ describe("Pegs params", () => {
     expect(decoded.h).toBe(7);
   });
 
+  it("decodes the bare square form to w === h", () => {
+    // Regression for the old `indexOf("x")` + slice path, which mis-sliced
+    // a square form with no "x" (dropping the last digit and leaving h
+    // undefined). The shared parseDimensions helper restores h = w.
+    const decoded = G.decodeParams("7");
+    expect(decoded.w).toBe(7);
+    expect(decoded.h).toBe(7);
+    expect(decoded.h).toBe(decoded.w);
+
+    // ...and still applies the board-type suffix after a bare square.
+    const random = G.decodeParams("9random");
+    expect(random.w).toBe(9);
+    expect(random.h).toBe(9);
+    expect(random.type).toBe(2); // TYPE_RANDOM
+  });
+
+  it("decodes the rectangular form unchanged", () => {
+    const decoded = G.decodeParams("5x9cross");
+    expect(decoded.w).toBe(5);
+    expect(decoded.h).toBe(9);
+    expect(decoded.type).toBe(0); // TYPE_CROSS
+  });
+
   it("validates cross board sizes", () => {
     expect(G.validateParams({ w: 5, h: 7, type: 0 }, true)).toBeNull();
     expect(G.validateParams({ w: 3, h: 3, type: 0 }, true)).toMatch(

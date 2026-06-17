@@ -1,4 +1,5 @@
 import type { GameStatus } from "../../../puzzle/types.ts";
+import { parseDimensions } from "../../engine/params.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 
 // --- types ------------------------------------------------------------
@@ -72,16 +73,10 @@ export function encodeParams(p: SamegameParams, full: boolean): string {
 export function decodeParams(s: string): SamegameParams {
   // Faithful to upstream `decode_params`: `W[xH][cN][sS][r]`, lenient.
   const ret = defaultParams();
-  let i = 0;
-  ret.w = Number.parseInt(s, 10) || 0;
-  while (isDigit(s[i])) i++;
-  if (s[i] === "x") {
-    i++;
-    ret.h = Number.parseInt(s.slice(i), 10) || 0;
-    while (isDigit(s[i])) i++;
-  } else {
-    ret.h = ret.w;
-  }
+  const dims = parseDimensions(s);
+  ret.w = dims.w;
+  ret.h = dims.h;
+  let i = dims.next;
   if (s[i] === "c") {
     i++;
     ret.ncols = Number.parseInt(s.slice(i), 10) || 0;

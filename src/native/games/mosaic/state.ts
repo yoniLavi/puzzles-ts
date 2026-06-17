@@ -6,6 +6,7 @@
  */
 import type { GameStatus } from "../../../puzzle/types.ts";
 import type { PresetMenu } from "../../engine/game.ts";
+import { parseDimensions } from "../../engine/params.ts";
 
 // --- cell-state flags (upstream `enum cell_state`) ----------------------
 
@@ -109,10 +110,6 @@ export function presets(): PresetMenu<MosaicParams> {
   };
 }
 
-function isDigit(ch: string | undefined): boolean {
-  return ch !== undefined && ch >= "0" && ch <= "9";
-}
-
 export function encodeParams(p: MosaicParams, full: boolean): string {
   let s = `${p.width}x${p.height}`;
   if (full && p.aggressive !== DEFAULT_AGGRESSIVENESS) {
@@ -123,14 +120,10 @@ export function encodeParams(p: MosaicParams, full: boolean): string {
 
 export function decodeParams(s: string): MosaicParams {
   const ret = defaultParams();
-  ret.width = ret.height = Number.parseInt(s, 10) || 0;
-  let i = 0;
-  while (isDigit(s[i])) i++;
-  if (s[i] === "x") {
-    i++;
-    ret.height = Number.parseInt(s.slice(i), 10) || 0;
-    while (isDigit(s[i])) i++;
-  }
+  const dims = parseDimensions(s);
+  ret.width = dims.w;
+  ret.height = dims.h;
+  let i = dims.next;
   if (s[i] === "h") {
     i++;
     ret.aggressive = (Number.parseInt(s.slice(i), 10) || 0) !== 0;

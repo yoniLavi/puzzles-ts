@@ -29,7 +29,7 @@ import {
   cursorDelta,
   LEFT_BUTTON,
 } from "../../engine/pointer.ts";
-import { parseLeadingInt } from "../../engine/params.ts";
+import { parseDimensions } from "../../engine/params.ts";
 import { SortedMultiset } from "../../engine/sorted-multiset.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 
@@ -392,15 +392,7 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
   },
 
   decodeParams(s): FlipParams {
-    const wParsed = parseLeadingInt(s, 0);
-    const w = wParsed.value;
-    let h = w;
-    let i = wParsed.next;
-    if (s[i] === "x") {
-      const hParsed = parseLeadingInt(s, i + 1);
-      h = hParsed.value;
-      i = hParsed.next;
-    }
+    const { w, h, next: i } = parseDimensions(s);
     let matrixType: MatrixType = "crosses";
     if (s[i] === "r") matrixType = "random";
     else if (s[i] === "c") matrixType = "crosses";
