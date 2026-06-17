@@ -1,11 +1,13 @@
 # Game Port Playbook
 
 > **Provisional v1 (2026-06-16) — live wiki.** Codified from the first 14 ports
-> but not yet battle-tested by *following* it on a fresh port. Port #15 validates
-> it. **Update this file whenever you work on a game** (a new port, but also
-> iterating an existing one) and hit something it didn't tell you, got wrong, or
-> could say better — that edit is part of "done," in the same change. See
-> `add-game-dev-guides`.
+> and first battle-tested by *following* it on port #15 (Unruly, 2026-06-17),
+> which surfaced and fixed the gaps now folded in below (the differential
+> pure-C build flag, the `mkhighlightSpecific` palette helper, the
+> index-mirroring palette gotcha). **Update this file whenever you work on a
+> game** (a new port, but also iterating an existing one) and hit something it
+> didn't tell you, got wrong, or could say better — that edit is part of
+> "done," in the same change. See `add-game-dev-guides`.
 >
 > **This guide is the *how*. The *what* lives in the specs — links below are
 > authoritative; this file paraphrases for flow and must not be trusted over
@@ -95,6 +97,24 @@ run out, add a parallel sidecar typed-array checked in the cache-miss branch
 each game fills its own background in the `!ds.started` branch. `Midend.size` is
 side-effect-free; `canvasCleared()` is the *only* cache-stale signal.
 
+**Palette: mirror the C colour-enum indices when the game has dark-mode
+overrides.** `src/puzzle/augmentation.ts` may carry a `paletteOverrides` map for
+a game keyed by **colour index** (Unruly's `{3..8: false}` preserves its
+black/white tiles + bevels under dark mode). A TS port whose palette reindexes
+the colours silently mis-targets those overrides. Keep the `colours()` array
+index-for-index with the upstream `enum` (Unruly: `0 BACKGROUND, 1 GRID,
+2 EMPTY, 3 COL_0…5, 6 COL_1…8, 9 CURSOR, 10 ERROR`). Exemplar:
+[`unruly/render.ts`](../../src/native/games/unruly/render.ts).
+
+**Highlight/lowlight from a fixed base, not the background:** the existing
+[`mkhighlight(bg)`](../../src/native/engine/colour-mkhighlight.ts) derives its
+trio from the *frontend background* and never extrapolates the base. A game that
+calls upstream `game_mkhighlight_specific` on a **fixed** base colour (Unruly's
+near-white `COL_0` = 0.95 grey, dark `COL_1` = 0.2 grey) needs
+**`mkhighlightSpecific(base)`** instead — it extrapolates the base toward the
+opposite extreme when the base sits within `K` of white/black, exactly as the C.
+Reach for it whenever a tile colour isn't the host background.
+
 **Make determined state legible (deliberate divergence).** Where upstream leaves
 known cells looking like undecided ones (Range painted every non-black cell the
 same grey, with only a dot marking "white"), give each determined state its own
@@ -104,6 +124,23 @@ only undecided cells grey. Derive the white from
 [`colour-mkhighlight.ts`](../../src/native/engine/colour-mkhighlight.ts): it
 shifts `COL_BACKGROUND` off pure white precisely so a pure-white cell stays
 distinguishable. Exemplar: [`range/render.ts`](../../src/native/games/range/render.ts).
+
+**A solvable game must ship `findMistakes` — Check & Save depends on it.** The
+shell's Check & Save control (`quick-save-actions.ts`) hard-blocks a save **only
+when `canFindMistakes` is true**, which is exactly `game.findMistakes !==
+undefined` (`midend.ts`). A game with a unique solution but no `findMistakes`
+therefore reports `canFindMistakes` false: the control silently degrades to a
+plain "Quick-save" and **saves a wrong board without complaint** (this shipped in
+Unruly's first cut and was caught on owner smoke-test). So for any game with a
+unique solution, `findMistakes(state)` is part of "done": re-solve from the fixed
+clues to the unique solution and return every player cell that contradicts it
+(`[]` when the board isn't uniquely deducible). Render the flagged cells with a
+distinct overlay (a packed cache bit + an inset error outline; exemplar
+[`unruly/render.ts`](../../src/native/games/unruly/render.ts) /
+[`unruly/solver.ts`](../../src/native/games/unruly/solver.ts)
+`findMistakes`). The hook + refusal coupling are detailed in
+[hint-authoring.md](./hint-authoring.md); a permutation puzzle with no notion of
+a wrong-but-legal state correctly omits it.
 
 ## 3. The two-stage parity gate (do not skip, do not shortcut)
 
@@ -138,9 +175,36 @@ discipline is ~zero.
 from the C build and the TS port for the same seed and eyeball the diff. The
 durable forms used by past ports: a **gated** frozen-snapshot test
 (`<game>-differential.test.ts` vs a `__fixtures__/*.json` recorded from C) and an
-**advisory** live `scripts/diff-<game>.test.ts`. Tighten the bar (not the
-comparison) per-game only when a generator's uniqueness constraints warrant it
-(Galaxies' D7). See the differential sections of the Flip/Galaxies archives.
+**advisory** live `scripts/diff-<game>.test.ts`. Exemplar end-to-end:
+[`unruly-trace.c`](../../puzzles/auxiliary/unruly-trace.c) →
+[`unruly-differential.test.ts`](../../src/native/games/unruly/unruly-differential.test.ts).
+
+Concretely, the C trace harness lives in `puzzles/auxiliary/<game>-trace.c`,
+`#include`s `../<game>.c` to reach its `static` generator/solver (the same trick
+`STANDALONE_SOLVER` uses), and prints the desc (+ recorded solver difficulty) as
+JSON; add one `cliprogram(<game>-trace <game>-trace.c)` line to
+[`puzzles/auxiliary/CMakeLists.txt`](../../puzzles/auxiliary/CMakeLists.txt).
+
+**Gotcha — build the harness pure-C.** `scripts/build-native.sh` configures with
+the umbrella `USE_TS_LEAVES`/`USE_TS_RANDOM` default **ON**, which swaps
+`random.c` out for a SHA-only `sha.c`; any generator trace then fails to link
+(`random_upto`/`random_new` undefined). Reconfigure pure-C first (the cmake cache
+persists, so pass the flag explicitly):
+
+```
+cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
+(cd build/native && make <game>-trace)
+build/native/auxiliary/<game>-trace > src/native/games/<game>/__fixtures__/<game>-c-reference.json
+```
+
+**The strongest bar is exact byte-match, when achievable.** Because `random.ts`
+is bit-identical to `random.c`, a *faithful* generator port reproduces the C
+desc **exactly** for the same seed — assert `newDesc(p, randomNew(seed)).desc ===
+fixture.desc` (Unruly does this across every difficulty + unique mode; the Flip
+CROSSES path is the precedent). Fall back to the weaker "TS solver agrees at the
+C-recorded difficulty" bar (Galaxies' D7) only when the generator legitimately
+diverges (e.g. extra RNG draws). Either way it's advisory — tighten per-game,
+never gate CI on C.
 
 **Behavioural tests by tier** — reach for the lowest that fits; Playwright is
 visual/integration smoke only. Tiers are codified in

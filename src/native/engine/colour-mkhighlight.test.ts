@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Colour } from "../../puzzle/types.ts";
-import { mkhighlight, mkhighlightBackground } from "./colour-mkhighlight.ts";
+import {
+  mkhighlight,
+  mkhighlightBackground,
+  mkhighlightSpecific,
+} from "./colour-mkhighlight.ts";
 
 /**
  * The exact inline derivation Pegs and Sixteen carried before the
@@ -58,23 +62,21 @@ const EXTREME_BACKGROUNDS: [string, Colour][] = [
 const ALL_BACKGROUNDS = [...MID_RANGE_BACKGROUNDS, ...EXTREME_BACKGROUNDS];
 
 describe("mkhighlight", () => {
-  it.each(MID_RANGE_BACKGROUNDS)(
-    "matches the previous per-game inline derivation on %s",
-    (_name, bg) => {
-      const got = mkhighlight(bg);
-      const want = previousInlineDerivation(bg);
-      expect(got.background).toEqual(want.background);
-      expect(got.highlight).toEqual(want.highlight);
-      expect(got.lowlight).toEqual(want.lowlight);
-    },
-  );
+  it.each(
+    MID_RANGE_BACKGROUNDS,
+  )("matches the previous per-game inline derivation on %s", (_name, bg) => {
+    const got = mkhighlight(bg);
+    const want = previousInlineDerivation(bg);
+    expect(got.background).toEqual(want.background);
+    expect(got.highlight).toEqual(want.highlight);
+    expect(got.lowlight).toEqual(want.lowlight);
+  });
 
-  it.each(ALL_BACKGROUNDS)(
-    "keeps the background equal to mkhighlightBackground on %s",
-    (_name, bg) => {
-      expect(mkhighlight(bg).background).toEqual(mkhighlightBackground(bg));
-    },
-  );
+  it.each(
+    ALL_BACKGROUNDS,
+  )("keeps the background equal to mkhighlightBackground on %s", (_name, bg) => {
+    expect(mkhighlight(bg).background).toEqual(mkhighlightBackground(bg));
+  });
 
   it("saturates the highlight to pure white on light backgrounds (upstream misc.c)", () => {
     for (const [, bg] of [
@@ -92,15 +94,14 @@ describe("mkhighlight", () => {
     expect(lowlight[2]).toBeCloseTo(0, 12);
   });
 
-  it.each(ALL_BACKGROUNDS)(
-    "keeps highlight brighter and lowlight darker than the background on %s",
-    (_name, bg) => {
-      const { background, highlight, lowlight } = mkhighlight(bg);
-      const luma = (c: Colour) => c[0] + c[1] + c[2];
-      expect(luma(highlight)).toBeGreaterThan(luma(background));
-      expect(luma(lowlight)).toBeLessThan(luma(background));
-    },
-  );
+  it.each(
+    ALL_BACKGROUNDS,
+  )("keeps highlight brighter and lowlight darker than the background on %s", (_name, bg) => {
+    const { background, highlight, lowlight } = mkhighlight(bg);
+    const luma = (c: Colour) => c[0] + c[1] + c[2];
+    expect(luma(highlight)).toBeGreaterThan(luma(background));
+    expect(luma(lowlight)).toBeLessThan(luma(background));
+  });
 
   it.each(ALL_BACKGROUNDS)("stays in gamut on %s", (_name, bg) => {
     const { background, highlight, lowlight } = mkhighlight(bg);
@@ -110,5 +111,55 @@ describe("mkhighlight", () => {
         expect(channel).toBeLessThanOrEqual(1);
       }
     }
+  });
+});
+
+describe("mkhighlightSpecific", () => {
+  // Unruly's two fixed bases: near-white COL_0 (0.95 grey) and dark COL_1
+  // (0.2 grey). The near-white base is the case the existing mkhighlight
+  // helper can't reproduce — it must shift the base itself.
+  const COL_0: Colour = [0.95, 0.95, 0.95];
+  const COL_1: Colour = [0.2, 0.2, 0.2];
+
+  it("extrapolates a near-white base away from white and saturates the highlight", () => {
+    const { base, highlight } = mkhighlightSpecific(COL_0);
+    // Highlight saturates to pure white (the base was within K of white).
+    expect(highlight).toEqual([1, 1, 1]);
+    // The base is pushed darker so highlight/lowlight stay in gamut.
+    expect(base[0]).toBeLessThan(COL_0[0]);
+    expect(base[0]).toBeCloseTo(1 - Math.sqrt(3) / 6 / Math.sqrt(3), 6);
+  });
+
+  it("does not shift a base comfortably inside the gamut (dark COL_1)", () => {
+    const { base, highlight, lowlight } = mkhighlightSpecific(COL_1);
+    expect(base).toEqual(COL_1);
+    const luma = (c: Colour) => c[0] + c[1] + c[2];
+    expect(luma(highlight)).toBeGreaterThan(luma(base));
+    expect(luma(lowlight)).toBeLessThan(luma(base));
+  });
+
+  it.each([
+    ["near-white", COL_0],
+    ["dark", COL_1],
+    ["mid grey", [0.5, 0.5, 0.5] as Colour],
+  ])("stays in gamut for the %s base", (_name, base) => {
+    const r = mkhighlightSpecific(base);
+    for (const c of [r.base, r.highlight, r.lowlight]) {
+      for (const channel of c) {
+        expect(channel).toBeGreaterThanOrEqual(0);
+        expect(channel).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  it("equals mkhighlight on a mid-grey base modulo the base-vs-background shift", () => {
+    // For a mid-grey base neither pass shifts, so specific's highlight/lowlight
+    // match mkhighlight's (which also doesn't shift mid grey).
+    const grey: Colour = [0.5, 0.5, 0.5];
+    const spec = mkhighlightSpecific(grey);
+    const full = mkhighlight(grey);
+    expect(spec.base).toEqual(grey);
+    expect(spec.highlight).toEqual(full.highlight);
+    expect(spec.lowlight).toEqual(full.lowlight);
   });
 });

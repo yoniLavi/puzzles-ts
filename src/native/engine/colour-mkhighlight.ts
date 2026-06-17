@@ -31,6 +31,11 @@ const colourMix = (a: Colour, b: Colour, t: number): Colour => [
 const black: Colour = [0, 0, 0];
 const white: Colour = [1, 1, 1];
 
+// Treat anything within IEEE round-trip drift of exact equality as equal,
+// preventing `K / d` from overflowing when a base colour is a hair off an
+// extreme (see `mkhighlightBackground`).
+const EPS = 1e-9;
+
 /**
  * Adjust a background colour away from pure white or pure black so
  * that a highlight (pure white) or lowlight (pure black) is visibly
@@ -47,7 +52,6 @@ export function mkhighlightBackground(bg: Colour): Colour {
   // but our doubles pick up ~1e-15 drift from `oklchToColour([1, 0, 0])`
   // — without this epsilon, `K / dw` overflows to ~2.89e14 and shifts
   // the background wildly past white into out-of-gamut pink.
-  const EPS = 1e-9;
   let out: Colour = [bg[0], bg[1], bg[2]];
   // First, the lowlight pass (matching upstream order so the shifted
   // background ends up identical when only one pass triggers).
@@ -92,4 +96,61 @@ export function mkhighlight(defaultBackground: Colour): {
   const lowlight: Colour = db < K ? [0, 0, 0] : colourMix(bg, black, K / db);
 
   return { background: bg, highlight, lowlight };
+}
+
+/**
+ * Faithful port of `misc.c`'s `game_mkhighlight_specific`: derive a
+ * highlight (toward white) and lowlight (toward black) from an
+ * **arbitrary base colour**, each a distance `K` from the base.
+ *
+ * Unlike {@link mkhighlight} (which starts from the frontend background
+ * and pre-shifts it away from the extremes), this takes a fixed base
+ * — e.g. Unruly's near-white `COL_0` (0.95 grey) or dark `COL_1` (0.2
+ * grey) — and, when that base sits within `K` of white or black,
+ * **extrapolates the base itself** along the line to the extreme so the
+ * highlight/lowlight stay in gamut (saturating to pure white/black).
+ * The returned `base` is therefore the possibly-shifted colour the
+ * caller should paint, exactly as the C writes back into the palette.
+ *
+ * One subtle C detail is preserved: when the highlight pass shifts the
+ * base, the lowlight is recomputed from the new base but using the
+ * **original** black-distance `db` (`colour_mix(bg, black, k/db, …)`),
+ * not a freshly measured one.
+ */
+export function mkhighlightSpecific(base: Colour): {
+  base: Colour;
+  highlight: Colour;
+  lowlight: Colour;
+} {
+  let bg: Colour = [base[0], base[1], base[2]];
+  let lowlight: Colour;
+  let highlight: Colour;
+
+  // Lowlight pass (toward black).
+  const db = colourDistance(bg, black);
+  if (db < K) {
+    lowlight = [0, 0, 0];
+    bg =
+      db < EPS
+        ? colourMix(black, white, K / Math.sqrt(3))
+        : colourMix(black, bg, K / db);
+  } else {
+    lowlight = colourMix(bg, black, K / db);
+  }
+
+  // Highlight pass (toward white).
+  const dw = colourDistance(bg, white);
+  if (dw < K) {
+    highlight = [1, 1, 1];
+    bg =
+      dw < EPS
+        ? colourMix(white, black, K / Math.sqrt(3))
+        : colourMix(white, bg, K / dw);
+    // The base moved; recompute lowlight from it, reusing the original db.
+    lowlight = colourMix(bg, black, K / db);
+  } else {
+    highlight = colourMix(bg, white, K / dw);
+  }
+
+  return { base: bg, highlight, lowlight };
 }

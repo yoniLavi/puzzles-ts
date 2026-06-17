@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "w2": 8,
+      "h2": 8,
+      "unique": false,
+      "diff": 0,
+      "seed": "unruly-trace-0",
+      "desc": "aCaEbibbfGcbDcBHBc",
+      "solverDiff": 0
+    },
+    {
+      "w2": 8,
+      "h2": 8,
+      "unique": false,
+      "diff": 1,
+      "seed": "unruly-trace-1",
+      "desc": "abJCabaKbAdcabcdBBj",
+      "solverDiff": 1
+    },
+    {
+      "w2": 8,
+      "h2": 8,
+      "unique": false,
+      "diff": 2,
+      "seed": "unruly-trace-2",
+      "desc": "bCBBMEaBBBFACEFia",
+      "solverDiff": 2
+    },
+    {
+      "w2": 10,
+      "h2": 10,
+      "unique": false,
+      "diff": 1,
+      "seed": "unruly-trace-3",
+      "desc": "fBcDeBAcbblamBACaEeFFFeBAb",
+      "solverDiff": 1
+    },
+    {
+      "w2": 10,
+      "h2": 10,
+      "unique": false,
+      "diff": 2,
+      "seed": "unruly-trace-4",
+      "desc": "AHAcaFdEGbIBEhbdODeah",
+      "solverDiff": 2
+    },
+    {
+      "w2": 14,
+      "h2": 14,
+      "unique": false,
+      "diff": 2,
+      "seed": "unruly-trace-5",
+      "desc": "AAbceHiGdbeCCGhbAbicALDFCAaeCAocebHBHbDABHgaEb",
+      "solverDiff": 2
+    },
+    {
+      "w2": 8,
+      "h2": 8,
+      "unique": true,
+      "diff": 1,
+      "seed": "unruly-trace-6",
+      "desc": "CCacLDACBKeBAbDh",
+      "solverDiff": 1
+    },
+    {
+      "w2": 8,
+      "h2": 8,
+      "unique": true,
+      "diff": 2,
+      "seed": "unruly-trace-7",
+      "desc": "fbbaFGcjCAJbaEf",
+      "solverDiff": 2
+    }
+  ]
+}

@@ -40,9 +40,20 @@
 
 ## 5. Validate + gate
 - [x] 5.1 `openspec validate add-game-dev-guides --strict`.
-- [ ] 5.2 Full pre-commit gate green; commit (provisional v1).
+- [x] 5.2 Full pre-commit gate green; commit (provisional v1).
 
 ## 6. Battle-test on port #15 (before archive)
-- [ ] 6.1 Execute the next game port by literally following the playbook.
-- [ ] 6.2 Fix every gap / wrong step the port surfaces, in the guide.
-- [ ] 6.3 Owner sign-off that the guides are now trustworthy; archive.
+- [x] 6.1 Execute the next game port by literally following the playbook
+  (Unruly, `add-unruly-ts-port`, 2026-06-17).
+- [x] 6.2 Fix every gap / wrong step the port surfaces, in the guide. Gaps
+  found and folded into `game-port-playbook.md`: (a) the differential C trace
+  harness fails to link unless built pure-C (`-DUSE_TS_RANDOM=0`), because
+  `build-native.sh` inherits the TS-leaves-ON umbrella that swaps out
+  `random.c`; (b) a fixed-base palette needs the new `mkhighlightSpecific`
+  helper, not the background-only `mkhighlight`; (c) the `colours()` array must
+  mirror the C colour-enum indices when `augmentation.ts` carries index-keyed
+  dark-mode `paletteOverrides`; (d) the exact-byte-match differential bar is
+  achievable and preferable when the generator is a faithful port over the
+  bit-identical RNG.
+- [ ] 6.3 Owner sign-off that the guides are now trustworthy; archive
+  (alongside `add-unruly-ts-port` owner acceptance).

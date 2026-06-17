@@ -21,3 +21,4 @@ import "./range/index.ts";
 import "./samegame/index.ts";
 import "./sixteen/index.ts";
 import "./twiddle/index.ts";
+import "./unruly/index.ts";
