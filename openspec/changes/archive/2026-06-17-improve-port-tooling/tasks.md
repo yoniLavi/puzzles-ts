@@ -62,4 +62,4 @@
 ## 5. Validation
 - [x] 5.1 `npm run gate` green (tsc → lint → test:run → vite build).
 - [x] 5.2 `openspec validate improve-port-tooling --strict` passes.
-- [ ] 5.3 Owner acceptance (CI needs a first push-to-main shakedown), then archive.
+- [x] 5.3 Owner acceptance (CI needs a first push-to-main shakedown), then archive.
