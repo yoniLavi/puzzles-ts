@@ -101,6 +101,17 @@ idiom (every game grew its own copy until they were consolidated):
   restores the square fallback that `s.indexOf("x")` silently mis-sliced on a
   bare `"4"`. Not for non-`WxH` formats (e.g. Blackbox's `w<W>h<H>m…M…`).
 
+**Pointer coordinates can be fractional.** Most ports convert a pixel to a cell
+index via [`fromCoord`](../../src/native/engine/geometry.ts) (a `Math.floor`), so
+this never bites. But a game that stores *pixel-space* coordinates in its state —
+Untangle keeps rational vertex positions — must **round pointer input to integers
+at the boundary** (`devicePixelRatio` scaling delivers sub-pixel coords where
+upstream's GUI frontend hands `interpret_move` integers). Untangle's
+exact-integer crossing test threw a `BigInt` `RangeError` on the first in-window
+fractional drop; the fix rounds in `placeDraggedPoint` and re-checks the integer
+invariant in `executeMove` (the single drag/solve/replay/load chokepoint) so a
+bypass fails loudly. Exemplar: [`untangle/index.ts`](../../src/native/games/untangle/index.ts).
+
 ## 2. Idiomatic TS, not a C transliteration
 
 Use the C as a **reference for the logic** (what the solver deduces, how the
@@ -167,6 +178,36 @@ distinct overlay (a packed cache bit + an inset error outline; exemplar
 `findMistakes`). The hook + refusal coupling are detailed in
 [hint-authoring.md](./hint-authoring.md); a permutation puzzle with no notion of
 a wrong-but-legal state correctly omits it.
+
+**Per-game preferences go through the `Game.prefs` hook (since Untangle).** A game
+with upstream `get_prefs`/`set_prefs` declares an optional `prefs: GamePref<Ui>[]`
+— each item is `{ kw, name, type: "boolean" }` or
+`{ kw, name, type: "choices", choices }` plus `get(ui)`/`set(ui, v)` accessors.
+**Preferences live on the `Ui`** (upstream stores them on `game_ui`, and the
+game's `interpretMove`/`redraw` read them off the ui), so `newUi` sets the
+**defaults** — that is the place to ship a deliberate divergence (Untangle's
+crossed-edge highlight defaults ON). The midend builds the app's existing
+preferences dialog from these, persists per-puzzle in IndexedDB, and re-applies a
+player's choices after each `newUi`; the app shell needs **no change**. A
+`choices` value is the **zero-based index** (the form emits `Number.parseInt`), a
+`boolean` value a real boolean. Exemplar:
+[`untangle/index.ts`](../../src/native/games/untangle/index.ts) (`prefs`) — and
+[`untangle/state.ts`](../../src/native/games/untangle/state.ts) for the ui fields.
+**Gotcha (cost a dev-verify cycle):** a pref that changes only rendering moves none
+of the keys a game's `redraw` early-out watches (positions/bg/cursor), so the
+midend drops the drawstate on `setPreferences` to force a full repaint — your
+game's `redraw` doesn't need to do anything special, but don't be surprised the
+repaint is full.
+
+**A `solve()` that needs the generator's `aux` only works on a freshly generated
+game.** The midend retains the `aux` from `newDesc` and passes it to
+`solve(orig, curr, aux)` — but only for `newGame`/`#seed` (a `:desc` id or a
+loaded save has no aux, so Solve correctly reports "not known", faithful to
+upstream). Most ports re-derive the solution in `solve` and ignore `aux`; reach
+for `aux` only when re-derivation is impractical (Untangle stores the untangled
+layout). If you take `aux`, test Solve **through a real `Midend`** (not just the
+game's `solve` directly), since the threading lives in the midend — a direct unit
+test of `solve(…, aux)` passes while the shipped Solve is a no-op.
 
 ## 3. The two-stage parity gate (do not skip, do not shortcut)
 

@@ -17,6 +17,8 @@
 import type {
   ChangeNotification,
   Colour,
+  ConfigDescription,
+  ConfigValues,
   GameStatus,
   Point,
   PresetMenuEntry,
@@ -84,6 +86,13 @@ export interface EngineCore {
   getParams(): string;
   setParams(params: string): string | undefined;
   getPresets(): PresetMenuEntry[];
+  /** The game's preferences as the app's config-dialog shapes. An empty
+   * item set for a game that declares no `prefs`. */
+  getPreferencesConfig(): ConfigDescription;
+  getPreferences(): ConfigValues;
+  /** Apply the supplied preference values (only the keys present),
+   * retaining them across future new games, and repaint. */
+  setPreferences(values: ConfigValues): string | undefined;
   getColourPalette(defaultBackground: Colour): Colour[];
   preferredSize(): Size;
   /** Purely informational: compute the puzzle's preferred pixel size
@@ -135,6 +144,14 @@ function freshSeed(): string {
 export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private params: Params;
   private desc = "";
+  /** The solved-layout hint a generator returns alongside `desc`
+   * (upstream `aux_info`). Retained so `solve()` can hand it to a game
+   * whose solver needs it (e.g. Untangle reconstructs the untangled
+   * positions from it). Set only on a freshly *generated* game; cleared
+   * for a descriptive `:desc` id or a loaded save — exactly like
+   * upstream, where Solve is unavailable unless the game was generated
+   * this session. */
+  private aux?: string;
   private seed?: string;
   /** Immutable-state history; `pos` is the current index. */
   private history: State[] = [];
@@ -152,6 +169,12 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * `!ds.started` branch). */
   private winSize: Size = { w: 0, h: 0 };
   private usedSolve = false;
+  /** Last-applied user preference values, keyed by pref `kw`. Retained
+   * across new games / loads because the midend recreates `ui` (via
+   * `newUi`) on every `startFrom`, which would otherwise reset prefs to
+   * their `newUi` defaults; `applyPrefs()` re-applies these onto each
+   * fresh ui. Never serialised (the app persists prefs per-puzzle). */
+  private prefValues: ConfigValues = {};
   /** The stored hint plan; `steps[index]` is the step on display.
    * Invariant: when non-null, `index < steps.length` (advancing past
    * the last step clears the plan instead). */
@@ -224,8 +247,8 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   newGame(): void {
     this.seed = freshSeed();
     const rng = randomNew(this.seed);
-    const { desc } = this.game.newDesc(this.params, rng);
-    this.startFrom(desc);
+    const { desc, aux } = this.game.newDesc(this.params, rng);
+    this.startFrom(desc, aux);
   }
 
   newGameFromId(id: string): string | undefined {
@@ -245,10 +268,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
     if (id[sep] === "#") {
       const rng = randomNew(rest);
-      const { desc } = this.game.newDesc(params, rng);
+      const { desc, aux } = this.game.newDesc(params, rng);
       this.params = params;
       this.seed = rest;
-      this.startFrom(desc);
+      this.startFrom(desc, aux);
       return undefined;
     }
     const dErr = this.game.validateDesc(params, rest);
@@ -259,8 +282,9 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     return undefined;
   }
 
-  private startFrom(desc: string): void {
+  private startFrom(desc: string, aux?: string): void {
     this.desc = desc;
+    this.aux = aux;
     const initial = this.game.newState(this.params, desc);
     this.history = [initial];
     this.moveLog = [];
@@ -269,6 +293,11 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     // Upstream `game_changed_state` with oldstate == NULL: let a game
     // whose Ui tracks the current state seed it from the fresh board.
     this.game.changedState?.(this.ui, null, initial);
+    // `newUi` reset the ui to its defaults, including any preference
+    // fields; re-apply the player's retained choices so a preference
+    // survives a new game (upstream keeps one `game_ui` across new
+    // games — this reproduces that effect).
+    this.applyPrefs();
     // A fresh drawstate ensures the per-tile cache reflects the new
     // game; the game's `!ds.started` branch covers the
     // background/grid setup on its next paint.
@@ -413,7 +442,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     if (!this.game.canSolve || !this.game.solve) {
       return "This game does not support solving";
     }
-    const result = this.game.solve(this.history[0], this.state);
+    const result = this.game.solve(this.history[0], this.state, this.aux);
     if (!result.ok) return result.error;
     this.clearHint();
     this.usedSolve = true;
@@ -685,6 +714,69 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     };
     const root = walk(this.game.presets());
     return root.submenu ?? [root];
+  }
+
+  // --- preferences -------------------------------------------------
+
+  /** Build the app's preferences config-dialog description from the
+   * game's declarative `prefs` (empty items when the game has none). */
+  getPreferencesConfig(): ConfigDescription {
+    const items: ConfigDescription["items"] = {};
+    for (const p of this.game.prefs ?? []) {
+      items[p.kw] =
+        p.type === "boolean"
+          ? { type: "boolean", name: p.name }
+          : { type: "choices", name: p.name, choicenames: p.choices };
+    }
+    return { title: this.game.id, items };
+  }
+
+  /** Current preference values read off the live ui: a boolean for a
+   * boolean item, the selected zero-based index for a choices item. */
+  getPreferences(): ConfigValues {
+    const values: ConfigValues = {};
+    if (this.history.length === 0) return values;
+    for (const p of this.game.prefs ?? []) {
+      values[p.kw] = p.get(this.ui);
+    }
+    return values;
+  }
+
+  setPreferences(values: ConfigValues): string | undefined {
+    // Merge into the retained set (the form may submit only the changed
+    // keys), then apply onto the live ui and repaint — a preference like
+    // "highlight crossed edges" or "vertex style" changes what `redraw`
+    // paints.
+    this.prefValues = { ...this.prefValues, ...values };
+    if (this.history.length > 0) {
+      this.applyPrefs();
+      // A preference can change anything the game paints, yet it moves
+      // none of the keys a game's redraw early-out watches (positions,
+      // background, cursor) — so a plain repaint would be skipped by
+      // that cache. Drop the drawstate first, exactly as for a
+      // palette/font change, so the next redraw repaints from scratch.
+      this.canvasCleared();
+      this.requestRedraw();
+    }
+    return undefined;
+  }
+
+  /** Write the retained preference values onto the current ui, coercing
+   * each to its item's type (the app form supplies a boolean for a
+   * checkbox and a numeric index for a choice, but DB-loaded JSON or a
+   * legacy value may arrive loosely typed). Applies only keys present in
+   * `prefValues`, leaving the `newUi` default for the rest. */
+  private applyPrefs(): void {
+    for (const p of this.game.prefs ?? []) {
+      const v = this.prefValues[p.kw];
+      if (v === undefined) continue;
+      if (p.type === "boolean") {
+        p.set(this.ui, v === true || v === "true" || v === 1);
+      } else {
+        const n = Number(v);
+        if (!Number.isNaN(n)) p.set(this.ui, n);
+      }
+    }
   }
 
   getColourPalette(defaultBackground: Colour): Colour[] {

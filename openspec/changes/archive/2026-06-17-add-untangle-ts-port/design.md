@@ -82,8 +82,12 @@ count); called in `newState` + `executeMove`; `status()` returns `"solved"` iff
   - mouse-down: nearest vertex within `DRAG_THRESHOLD=12`px → start drag, return
     `UI_UPDATE`; else nothing.
   - drag: update live `newpoint`, `UI_UPDATE`.
-  - release in-bounds: emit `{kind:"place", points:[{i,x,y,d}], solving:false}`;
-    released off-window → cancel (`UI_UPDATE`, no move) — the drag-cancel affordance.
+  - release: emit `{kind:"place", points:[{i,x,y,d}], solving:false}`. **Divergence
+    (owner-requested 2026-06-17):** the drag target is **clamped** to keep the vertex
+    blob inside the play-area border (`PLAY_MARGIN`), so dragging past the edge pins
+    the vertex at the nearest in-bounds spot and a drop **commits there** — upstream's
+    drag-right-off-the-window-to-cancel affordance is dropped. (This also subsumes the
+    integer-rounding boundary: pixel input is clamped+rounded in `placeDraggedPoint`.)
   - `place_dragged_point` (1254-1308): no-snap → `d=tilesize`; snap → half-grid
     `d=(n-1)*2`.
   - keyboard: quadrant nearest-point select (1429-1510, exact rational quadrant
@@ -127,9 +131,10 @@ crossed-red/drag-highlight ops + snapshot a tangled frame and a mid-drag frame).
   real drag a `Move`. Fits our model cleanly.
 - `#ifdef EDITOR` — excluded entirely; don't map `E` moves, no text format.
 - `me` back-reference — not used (only Mines).
-- prefs (`snap_to_grid`/`show_crossed_edges`/`vertex_numbers`) — engine has no prefs
-  hook; ship sensible defaults (crossed-highlight ON, others OFF), document the
-  divergence (Palisade precedent). **Owner-confirm the defaults before coding.**
+- prefs (`snap_to_grid`/`show_crossed_edges`/`vertex_numbers`) — **owner chose to
+  build the real engine prefs hook** (see D10), not fixed defaults. Untangle is the
+  forcing function. Defaults still set in `newUi` (crossed-highlight ON, others
+  OFF); all three togglable in the existing prefs form.
 - no `hint`/`findMistakes` — crossings are the mistakes (red edges); no deductive
   narration exists.
 
@@ -147,10 +152,58 @@ crossed-red/drag-highlight ops + snapshot a tangled frame and a mid-drag frame).
   `describeDescDifferential` (desc byte-match for a seed) + planar+solvable check;
   transient `untangle-trace.c` deleted with `untangle.c` at acceptance.
 
+## D10 — Engine preferences hook (owner-chosen, 2026-06-17)
+
+The owner chose to build a real per-game prefs hook rather than ship fixed
+defaults. Untangle is the forcing function (Mines is for `supersede_desc`).
+
+- **`Game` interface** — an optional declarative `prefs?: GamePref<Ui>[]`. Each
+  item is a discriminated union:
+  - `{ kw, name, type: "boolean", get(ui): boolean, set(ui, v): void }`
+  - `{ kw, name, type: "choices", choices: string[], get(ui): number, set(ui, v): void }`
+
+  The value lives on the `Ui` (upstream stores prefs on `game_ui`, and Untangle's
+  `redraw`/`place_dragged_point` read them off the ui). Declarative get/set
+  closures over `Ui` keep it type-safe with no separate hand-written get/set
+  methods. Boolean ↔ boolean; choices ↔ zero-based numeric index (matches the
+  app form: `wa-option value=${index}`, handler does `Number.parseInt`).
+
+- **`Midend` / `EngineCore`** — `getPreferencesConfig()` builds the
+  `ConfigDescription` (`{title:id, items:{[kw]:{type,name,choicenames?}}}`);
+  `getPreferences()` reads `{[kw]: get(ui)}`; `setPreferences(values)` applies only
+  present keys, coercing per item type, then `requestRedraw()`. **Retention**: the
+  midend recreates `ui` via `newUi` on every `startFrom` (new game / load /
+  from-id), so it keeps a `prefValues: ConfigValues`, merges into it on
+  `setPreferences`, and re-applies via `applyPrefs()` after each `newUi` —
+  reproducing upstream's single-`game_ui`-across-new-games behaviour. Guarded so a
+  `setPreferences` before any game starts just stores (applied when the game
+  starts). Prefs are **not** in the save file (app persists them per-puzzle in
+  IndexedDB already; `puzzle-screen` loads them and calls `setPreferences` on
+  puzzle-loaded).
+
+- **`TsWorkerPuzzle`** — replace the three `getPreferencesConfig`/`getPreferences`/
+  `setPreferences` stubs with engine delegations. Binary `savePreferences`/
+  `loadPreferences` stay no-ops (the app never calls them for persistence —
+  grep-verified; only `get`/`setPreferences` + `ConfigValues` are on the path).
+
+- **No app-shell change**: `puzzle-preferences-form` (`puzzle-config.ts`) and
+  `settings.{get,set}PuzzlePreferences` already consume the surface
+  engine-agnostically. Empty `prefs` ⇒ empty config (current ports unaffected).
+
 ## D9 — Genuinely fiddly parts (where to spend care)
 
 1. The exact integer `cross()` (use `BigInt` accumulator; test exhaustively incl.
    collinear/endpoint cases).
 2. Keyboard quadrant navigation (faithfully port the rational quadrant test,
    1479-1492).
+3. **The `RationalPoint` integer invariant.** `cross()`'s `BigInt` accumulator
+   throws on a fraction, but our pointer pipeline can deliver sub-pixel
+   coordinates (devicePixelRatio scaling) where upstream's GUI frontend hands
+   `interpret_move` integer pixels. Two-layer defence (found in owner dev-verify,
+   a `RangeError` on the first in-window fractional drop): round pixel input to
+   integers at the boundary (`placeDraggedPoint`), and re-check integrality of
+   every applied point in `executeMove` — the single chokepoint for drag/solve/
+   replay/load — so any future bypass fails loudly and locally instead of as a
+   cryptic deep `BigInt` error. Covered by a 250-iteration fuzz test (snap on/off,
+   odd tile size) plus a contract-guard test.
 Everything else is mechanical given this map.

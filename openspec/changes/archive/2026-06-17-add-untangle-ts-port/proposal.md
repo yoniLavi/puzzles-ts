@@ -29,9 +29,10 @@ supersede).
     re-rolled until ≥1 crossing; emits the edges-only desc + the solved-layout
     `aux`.
   - `render.ts` — full-frame redraw with the "did anything visible move?" early-out
-    (no per-tile cache), edges (red when crossed), vertices in z-order
-    (drag/cursor/neighbour highlight), drag live-follow, solve animation `mix`,
-    win flash.
+    (no per-tile cache), a **play-area border** framing the drop zone, edges (red
+    when crossed), vertices in z-order (drag white / cursor grey / **neighbour light
+    blue** — red stays reserved for crossings), drag live-follow, solve animation
+    `mix`, win flash.
   - `index.ts` — params/presets/validate, `newState`/`newUi`/`changedState`,
     `interpretMove` (drag + keyboard quadrant nav + select-to-drag), `executeMove`,
     `status` (solved iff no crossings), `solve` (decode `aux`, pick the closest of 8
@@ -49,6 +50,19 @@ supersede).
 - **No `hint`/`findMistakes`**: Untangle has no deductive solver to narrate, and
   crossings ARE the mistakes — the crossed-edge red colouring is the built-in
   mistake feedback, so a separate `findMistakes` hook is redundant.
+- **A real per-game preferences hook** (engine-level, this change's headline
+  scope addition): Untangle is the forcing function for runtime preferences the
+  way Mines is for `supersede_desc`. Rather than ship fixed defaults with no UI,
+  add an optional declarative `prefs` member to the `Game` interface (each item:
+  `kw`/`name`/`type` + `get`/`set` over the game's `Ui`), implement
+  `getPreferencesConfig`/`getPreferences`/`setPreferences` on the `Midend`, and
+  delegate them from the `TsWorkerPuzzle` adapter (replacing its three stubs).
+  The app's existing `puzzle-preferences-form` + per-puzzle IndexedDB persistence
+  then drive a TS game's preferences with **no app-shell change**. The midend
+  retains the last-applied values and re-applies them after each `newUi` (new
+  game / load), reproducing upstream's single-`game_ui`-across-new-games effect.
+  Untangle is the first consumer (snap-to-grid, show-crossed-edges, vertex-style);
+  future ports with upstream prefs (Solo, Net, …) reuse the same hook.
 - **Differential check**: a transient `puzzles/auxiliary/untangle-trace.c` →
   gated frozen `untangle-differential.test.ts` (desc byte-match for a seed proving
   `random.ts` end-to-end; every generated board planar + solvable), harness deleted
@@ -57,20 +71,31 @@ supersede).
 - **Correct the AGENTS.md long-tail note**: move Untangle out from under the
   supersede_desc risk (it's move-log-handled); Mines/Net remain the forcing
   functions.
+- **Shared shell tweak (capability-based, not Untangle-specific)**: the hint banner
+  in `src/puzzle/puzzle-view.ts` reserves a line so a hint-capable board doesn't jump
+  when a hint appears; for a game that **cannot** hint that line is permanent dead
+  space below the board. Gate the banner on `puzzle.canHint` (mirroring how the
+  status bar is gated on `wantsStatusbar`), so every no-hint game — Untangle included
+  — drops the dead strip. Verified a hint game (Sixteen) still reserves its banner.
 - **Parity-gated**: register + dev-verify under `npm run dev`; flip `TS_PORTED` +
   delete `puzzles/untangle.c` + the trace harness ONLY on owner acceptance.
 
-## Open design decision (resolve at implementation, with owner)
+## Resolved design decision (owner, 2026-06-17)
 Untangle has three upstream preferences (`snap_to_grid`, `show_crossed_edges`,
-`vertex_numbers`) and our engine has no prefs hook. Proposed defaults (documented
-divergence, no prefs UI — Palisade precedent): **crossed-edge highlight ON**
-(doubles as mistake feedback), snap OFF, vertex-numbers OFF. Confirm with owner
-before implementing; full prefs exposure is a possible later enhancement.
+`vertex_numbers`). The owner chose to **build the real engine prefs hook** (above)
+rather than ship fixed defaults — Untangle becomes the prefs forcing function.
+Shipped defaults (set in `newUi`, since the divergence point is the default, not
+the availability): **crossed-edge highlight ON** (doubles as mistake feedback),
+snap OFF, vertex-style Circles. All three are user-togglable in the existing
+puzzle preferences form.
 
 ## Impact
-- **Affected specs:** new `untangle` capability spec (per-game). No `ts-engine`
-  delta — no engine change is required (the supersede_desc finding).
+- **Affected specs:** new `untangle` capability spec (per-game), **plus a
+  `ts-engine` delta** for the per-game preferences hook (the supersede_desc
+  finding still holds — no supersede mechanism needed — but the owner-chosen
+  prefs hook is a genuine engine addition).
 - **Affected code:** new `src/native/games/untangle/` (5 modules + tests),
+  the prefs hook in `src/native/engine/{game,midend,worker-adapter}.ts`,
   registration in `ts-ported-ids.ts` + `games/index.ts` (on acceptance), transient
   `puzzles/auxiliary/untangle-trace.c`, AGENTS.md long-tail-note correction. On
   acceptance: `TS_PORTED` in `puzzles/CMakeLists.txt`, `puzzles/untangle.c` +

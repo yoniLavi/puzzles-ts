@@ -151,20 +151,30 @@ export class PuzzleView extends SignalWatcher(LitElement) {
       <div part="content" tabindex=${this.contentTabIndex}>
         ${this.statusbarPlacement === "start" ? this.renderStatusbar() : nothing}
         ${this.renderPuzzle()}
-        <div
-          class="hint-banner"
-          role="status"
-          style=${
-            this.canvasSize
-              ? styleMap({ "max-width": `${this.canvasSize.w}px` })
-              : nothing
-          }>
-          ${
-            this.bannerMessage
-              ? html`<span class="hint-banner-text">${this.bannerMessage}</span>`
-              : nothing
-          }
-        </div>
+        ${
+          // The hint banner reserves a line (min-height) so the board
+          // doesn't jump when a hint appears/disappears. A game that can't
+          // hint never shows one, so reserving the line would just be dead
+          // space below the board — omit it for those (capability-based,
+          // not per-game). Mirrors how the status bar is gated on
+          // `wantsStatusbar`.
+          this.puzzle?.canHint
+            ? html`<div
+                class="hint-banner"
+                role="status"
+                style=${
+                  this.canvasSize
+                    ? styleMap({ "max-width": `${this.canvasSize.w}px` })
+                    : nothing
+                }>
+                ${
+                  this.bannerMessage
+                    ? html`<span class="hint-banner-text">${this.bannerMessage}</span>`
+                    : nothing
+                }
+              </div>`
+            : nothing
+        }
         ${this.statusbarPlacement === "end" ? this.renderStatusbar() : nothing}
         ${this.renderLoadingIndicator()}
       </div>

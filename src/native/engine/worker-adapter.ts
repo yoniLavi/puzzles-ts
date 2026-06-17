@@ -179,15 +179,23 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   encodeCustomParams(_values: ConfigValues): string {
     return this.engine.getParams();
   }
+  // Preferences ARE modelled on the TS path: the engine builds the
+  // config from the game's declarative `prefs` and reads/writes the
+  // values off the ui. The app's `puzzle-preferences-form` and
+  // per-puzzle IndexedDB persistence drive these unchanged; a game with
+  // no `prefs` yields an empty config (no regression for current ports).
   getPreferencesConfig(): ConfigDescription {
-    return { ...EMPTY_CONFIG, title: this.puzzleId };
+    return this.engine.getPreferencesConfig();
   }
   getPreferences(): ConfigValues {
-    return {};
+    return this.engine.getPreferences();
   }
-  setPreferences(_values: ConfigValues): string | undefined {
-    return undefined;
+  setPreferences(values: ConfigValues): string | undefined {
+    return this.engine.setPreferences(values);
   }
+  // The binary save/load prefs surface is an internal C/WASM
+  // serialisation the app does not use for persistence (it persists
+  // `ConfigValues` per puzzle via get/setPreferences). No-op here.
   savePreferences(): Uint8Array<ArrayBuffer> {
     const data = new Uint8Array(0);
     return transfer(data, [data.buffer]);

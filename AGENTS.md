@@ -279,7 +279,7 @@ Still queued, not blocking:
 
 Things this fork has been avoiding but that will trip future games. Not urgent; on the radar:
 
-- **`midend_supersede_game_desc`**: Galaxies' `me` back-reference was punted (design D5). Mines (first-click-not-a-mine), Net (centre-on-click), Untangle (drag-to-rearrange-then-share) all use this upstream. Will need a `Game`-interface hook (e.g. `canSupersedeDesc()` + a fresh-desc return path) before one of those games is ported.
+- **`midend_supersede_game_desc`**: Galaxies' `me` back-reference was punted (design D5). Mines (first-click-not-a-mine) and Net (centre-on-click) use this upstream and will need a `Game`-interface hook (e.g. `canSupersedeDesc()` + a fresh-desc return path) before one of them is ported. (Untangle was once listed here; its TS port — `add-untangle-ts-port`, landed 2026-06-17 — confirmed it does **not** need supersede: the public desc is edges-only and never changes, and dragged positions are restored from the serialised move log. Mines is the forcing function.)
 - **Undo via state-string equality**: several upstream games detect "did this move actually change anything?" by stringifying state and comparing. Galaxies returns `null` from `interpretMove` instead — fine when locally decidable, problematic when not (Net's rotation cycles is the canonical hard case).
 - **`#ifdef EDITOR` move letters**: Galaxies dodged this by not mapping editor-only letters from input. The stance is right; document it in the next port's design.md so it isn't re-decided each time.
 - **`printing.c` integration**: deleted at fork; future "print this puzzle" cross-game feature will need a TS replacement. Don't promise it without designing it.

@@ -303,11 +303,12 @@ puzzle(unruly
   OBJECTIVE "Fill in the black and white grid to avoid runs of three.")
 
 puzzle(untangle
+  TS_PORTED  # native-TS port (openspec add-untangle-ts-port); no untangle.c/wasm
   DISPLAYNAME "Untangle"
   DESCRIPTION "Planar graph layout puzzle"
   OBJECTIVE "Reposition the points so that the lines do not cross.")
-guiprogram(grapheditor untangle.c
-  COMPILE_DEFINITIONS EDITOR)
+# (The upstream `grapheditor` GTK editor built untangle.c with -DEDITOR; the
+#  editor is excluded from this fork and untangle.c is deleted with this port.)
 
 add_subdirectory(unfinished)
 add_subdirectory(unreleased)

@@ -89,6 +89,33 @@ export interface ActiveHint<Move, Highlights = unknown> {
  *   (the next hint request recomputes). */
 export type HintTrackVerdict = "completed" | "onTrack" | "off";
 
+/** One user preference a game exposes — the idiomatic-TS form of an
+ * upstream `get_prefs`/`set_prefs` config item. The value lives on the
+ * game's `Ui` (upstream stores prefs on `game_ui`, and a game's
+ * `interpretMove`/`redraw` read them straight off the ui), so each item
+ * carries `get`/`set` accessors over `Ui` rather than the engine owning
+ * a separate value store. Discriminated by `type`:
+ * - `"boolean"` ↔ a boolean value (a checkbox in the app form);
+ * - `"choices"` ↔ the selected zero-based index into `choices` (a
+ *   select/radio group in the app form).
+ * `kw` is the stable keyword the app persists per puzzle. */
+export type GamePref<Ui> =
+  | {
+      kw: string;
+      name: string;
+      type: "boolean";
+      get(ui: Ui): boolean;
+      set(ui: Ui, value: boolean): void;
+    }
+  | {
+      kw: string;
+      name: string;
+      type: "choices";
+      choices: string[];
+      get(ui: Ui): number;
+      set(ui: Ui, value: number): void;
+    };
+
 /** A node in the preset/difficulty menu tree. */
 export interface PresetMenu<Params> {
   title: string;
@@ -222,6 +249,16 @@ export interface Game<
 
   textFormat?(s: State): string;
   statusbarText?(s: State, ui: Ui): string;
+
+  /** The game's user preferences (upstream `get_prefs`/`set_prefs`),
+   * declarative: each entry maps a labelled config item to a field on
+   * `Ui`. The midend builds the app's preferences dialog from these,
+   * reads current values via `get`, applies edits via `set` (then
+   * repaints — a pref like "highlight crossed edges" changes
+   * rendering), and re-applies the player's chosen values after each
+   * `newUi` so a preference survives starting a new game. Defaults are
+   * whatever `newUi` sets. Absent ⇒ the game has no preferences. */
+  prefs?: GamePref<Ui>[];
 
   /** RGB palette (each component 0..1), index 0 is conventionally the
    * background. Receives the frontend default background so a game can
