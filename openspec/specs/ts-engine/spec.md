@@ -390,15 +390,18 @@ The engine SHALL provide the `Dsf` class in `src/native/engine/dsf.ts`, promoted
 ### Requirement: The engine supports an ephemeral Hint System
 
 The engine SHALL support a UI-only, ephemeral Hint System built on **plans**.
-The `Game` interface SHALL define an optional `hint(state)` method returning a
-non-empty ordered plan of `HintStep`s — each a move plus a human-readable
+The `Game` interface SHALL define an optional `hint(state, aux?)` method returning
+a non-empty ordered plan of `HintStep`s — each a move plus a human-readable
 explanation and optional visual highlights, narrated for the state that step
-applies to (`HintResult`). The `Midend` SHALL store the whole plan plus a
-current-step index in `activeHint` (midend-only, never in game state, never
-persisted), SHALL display **at most** one step at a time (the displayed step is
-passed to the game's `redraw` and its explanation appended to the status bar;
-a stored plan MAY be hidden, displaying nothing), and SHALL recompute a plan
-only when no valid plan is stored.
+applies to (`HintResult`). The optional second argument `aux` is the generator's
+solution hint (upstream `aux_info`), the same value passed to `solve`; the
+`Midend` SHALL pass its stored `aux` so a game whose best hint derives from the
+known solution can use it when present (and fall back otherwise), while deductive
+games ignore it. The `Midend` SHALL store the whole plan plus a current-step index
+in `activeHint` (midend-only, never in game state, never persisted), SHALL display
+**at most** one step at a time (the displayed step is passed to the game's `redraw`
+and its explanation appended to the status bar; a stored plan MAY be hidden,
+displaying nothing), and SHALL recompute a plan only when no valid plan is stored.
 
 Plan lifecycle:
 - `midend.hint()` SHALL re-display the stored plan's current step (no
@@ -438,12 +441,26 @@ manual flow ("clear this one, then the rest" stays on screen through its legs)
 and the auto-play flow (the legs animate back-to-back as one multi-part move)
 consistent across every game whose hints group naturally.
 
+A non-deductive game (no technique to teach) MAY instead derive its plan from
+the known solution via `aux`: it is a legitimate hint strategy to walk the
+player to the unique solution. Such a game SHOULD prefer the `aux`-derived plan
+when `aux` is present (guaranteeing the plan completes) and MAY fall back to a
+local heuristic when it is absent.
+
 #### Scenario: Requesting a hint from the midend
 
 - **WHEN** the user requests a hint via `midend.hint()` with no active plan,
   on a game that implements the `hint` method
 - **THEN** the midend computes a plan once, stores it with index 0, appends
   the first step's explanation to the status bar, and schedules a repaint
+
+#### Scenario: The midend passes the solution hint to the game
+
+- **WHEN** the midend computes a hint plan for a game whose puzzle was freshly
+  generated (so `aux` is stored)
+- **THEN** it calls `game.hint(state, aux)` with that stored `aux`
+- **AND** a game that derives its plan from the solution produces a plan that
+  reaches the solved state, while a game that ignores `aux` is unaffected
 
 #### Scenario: Following a hint manually shows one step per request
 

@@ -25,6 +25,7 @@ import { untangleGame } from "./index.ts";
 import {
   COL_CROSSEDLINE,
   COL_DRAGPOINT,
+  COL_HINT,
   COL_LINE,
   COL_OUTLINE,
   COL_POINT,
@@ -92,6 +93,30 @@ describe("Untangle render scenarios", () => {
     expect(dragBlobs.length).toBe(1);
 
     expect(rec.ops).toMatchSnapshot();
+  });
+
+  it("hint frame: a COL_HINT line + destination marker are drawn", () => {
+    const n = 10;
+    const id = fixedBoard(n, "untangle-render-hint");
+    const { recording, hint } = renderScenario({
+      game: untangleGame,
+      id,
+      showHint: true,
+    });
+
+    // The displayed step targets a vertex and a destination.
+    expect(hint?.highlights).toBeDefined();
+
+    // A COL_HINT line (the move suggestion) and a COL_HINT marker circle
+    // at the destination.
+    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_HINT)).toBe(
+      true,
+    );
+    expect(recording.ops.some((o) => o.op === "circle" && o.fill === COL_HINT)).toBe(
+      true,
+    );
+
+    expect(recording.ops).toMatchSnapshot();
   });
 
   it("toggling show-crossed-edges off repaints with no red edges (regression)", () => {

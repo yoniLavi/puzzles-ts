@@ -11,6 +11,7 @@
 
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import type { UntangleHint } from "./hint.ts";
 import {
   CIRCLE_RADIUS,
   DRAG_THRESHOLD,
@@ -34,6 +35,7 @@ export const COL_CURSORPOINT = 7;
 export const COL_NEIGHBOUR = 8;
 export const COL_FLASH1 = 9;
 export const COL_FLASH2 = 10;
+export const COL_HINT = 11;
 
 const FLASH_TIME = 0.3;
 
@@ -55,6 +57,7 @@ export function redrawUntangle(
   ui: UntangleUi,
   animTime: number,
   flashTime: number,
+  hint?: UntangleHint,
 ): void {
   if (ds === null) return;
   const n = s.n;
@@ -80,12 +83,21 @@ export function redrawUntangle(
     ds.y[i] = y;
   }
 
+  // Hint marker pixels (or -1 when no hint is displayed). Folded into the
+  // early-out so a manual hint, which moves no vertex, still repaints.
+  const hintVertex = hint ? hint.vertex : -1;
+  const hintTx = hint ? Math.trunc((hint.to.x * ts) / hint.to.d) : -1;
+  const hintTy = hint ? Math.trunc((hint.to.y * ts) / hint.to.d) : -1;
+
   // Early-out: nothing visible changed.
   if (
     ds.started &&
     ds.bg === bg &&
     ds.dragPoint === ui.dragPoint &&
     ds.cursorPoint === ui.cursorPoint &&
+    ds.hintVertex === hintVertex &&
+    ds.hintTx === hintTx &&
+    ds.hintTy === hintTy &&
     !pointsMoved
   ) {
     return;
@@ -93,6 +105,9 @@ export function redrawUntangle(
   ds.dragPoint = ui.dragPoint;
   ds.cursorPoint = ui.cursorPoint;
   ds.bg = bg;
+  ds.hintVertex = hintVertex;
+  ds.hintTx = hintTx;
+  ds.hintTy = hintTy;
   ds.started = true;
 
   // The midend brackets this call with startDraw/endDraw; the game just
@@ -157,6 +172,20 @@ export function redrawUntangle(
         dr.drawCircle({ x: ds.x[i], y: ds.y[i] }, CIRCLE_RADIUS, c, COL_OUTLINE);
       }
     }
+  }
+
+  // Hint: a line from the hinted vertex to its suggested destination, and
+  // a marker at the destination. The source is the vertex's *current*
+  // drawn position (ds.x/y), so during an auto-hint slide the line shrinks
+  // to nothing as the vertex arrives.
+  if (hint && hintVertex >= 0) {
+    dr.drawLine(
+      { x: ds.x[hintVertex], y: ds.y[hintVertex] },
+      { x: hintTx, y: hintTy },
+      COL_HINT,
+      2,
+    );
+    dr.drawCircle({ x: hintTx, y: hintTy }, CIRCLE_RADIUS, COL_HINT, COL_OUTLINE);
   }
 
   dr.drawUpdate({ x: 0, y: 0, w: size, h: size });

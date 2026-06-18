@@ -160,6 +160,78 @@ techniques (Unruly's threes/unique) emit independent steps. The midend then keep
 the journey displayed across its legs. See `fillRow` +
 [`unruly/solver.ts`](../../src/native/games/unruly/solver.ts) `deduceHintPlan`.
 
+### Non-deductive games: a heuristic hint with no narration
+
+Not every game is deductive. **Untangle** has no logical "why" — no move is
+*forced*, you just want fewer crossings — so quality-bar rule 1 (explain *why*)
+doesn't apply, and forcing a narration would only fabricate a non-sequitur.
+By owner approval, such a game ships a hint with an **empty `explanation`**: the
+visual highlight plus the existing move animation *are* the whole hint.
+
+Pattern (exemplar: [`untangle/hint.ts`](../../src/native/games/untangle/hint.ts)):
+
+- **Objective, not deduction.** Pick the move that most improves a cheap scalar
+  objective (Untangle: the number of edge-crossing *pairs*, returned from
+  `findCrossings`). A greedy loop on a *working copy* of the state — take the best
+  strictly-improving single move, apply, repeat until solved / no improvement /
+  step cap — yields a multi-step plan that auto-hint plays as a progressive
+  cleanup. Untangle's per-move candidate is "move a tangled vertex to the centroid
+  of its graph-neighbours" (a barycentric step); any heuristic that reliably
+  improves the objective is fine.
+- **Secondary objectives as a tie-break, not a second pass.** Untangle's plain
+  barycentric step works but *collapses the layout toward the centre* (the Tutte
+  smoothing fixed point with no pinned boundary). Fix it by giving each move
+  several candidate targets (the centroid plus outward-pushed variants) and, among
+  the targets achieving the *best primary score*, picking the one that best
+  satisfies a secondary objective (here: a pairwise anti-clustering score, Σ
+  1/(dist+ε)). Keep the primary strictly primary — the plain centroid stays a
+  candidate, so untangling power isn't sacrificed for spread (verify with a
+  same-board A/B: the enhanced heuristic should stall no more than the plain one).
+  A multi-objective tie-break beats a "untangle, then spread" second pass, since
+  the puzzle ends the instant the primary hits zero (a solved board clears the
+  hint) — the final solved frame must already be spacious.
+- **Refuse honestly.** `{ ok: false }` when solved, and also when *no* single move
+  improves the objective (a local minimum the player must break themselves) —
+  don't emit a no-op or a worsening move.
+- **No `hintKeepTrack`.** The default `"off"` verdict is correct: the greedy tail
+  was computed for exact targets, so any player deviation should drop the plan and
+  the next request recomputes.
+- **Highlight = the suggestion.** Carry a `{ vertex/cell, to }` highlight and, in
+  `redraw`, draw the move (Untangle: a `COL_HINT` line from the piece to its
+  destination + a `COL_HINT` marker at the destination). Read the *source* from
+  the live state so an auto-hint slide shows the line shrink to nothing as the
+  piece arrives. **Fold the hint signature into the redraw early-out** — a manual
+  hint moves no piece, so a full-frame game that early-outs on "nothing moved"
+  would otherwise skip painting the hint entirely.
+- **Animation is often free.** A game that already animates its moves (Untangle's
+  `mix()` vertex interpolation) needs *nothing* extra: a hint-executed move rides
+  that pipeline and the midend stretches it to `HINT_ANIM_S`.
+
+#### Walk to the known solution via `aux` (when a local heuristic can't finish)
+
+A local objective heuristic is appealing but can **stall at a local minimum** and
+look bad doing it (Untangle's centroid heuristic clustered vertices centrally and
+failed to fully untangle larger boards). If the game *knows* its solution — the
+generator's `aux`, the same value `solve` uses — walking the player there is a
+legitimate, robust hint. The `hint(state, aux?)` hook receives `aux` (the midend
+passes its stored value; present for generated games, absent for descriptive ids /
+some loads), so prefer the `aux` plan when present and keep the heuristic as a
+fallback. Pattern (exemplar: `untangle/hint.ts` `deduceAuxPlan`):
+
+- **Match the closest symmetry.** A solution unique up to symmetry has several
+  equivalent layouts; pick the one closest to the current positions so the
+  suggested motion is minimal (`dihedralSolvedUnits` — shared with `solve`).
+- **Rescale to taste — affine maps preserve planarity.** A uniform (or any affine)
+  transform of a crossing-free straight-line layout stays crossing-free, so you can
+  freely **rescale the solution to fill the play box** for spacing without
+  reintroducing crossings. This is how Untangle satisfies "space them apart" while
+  guaranteeing a solved result.
+- **Order for a pleasing reveal.** Emit one move per vertex, greedily choosing the
+  next vertex whose placement keeps intermediate crossings lowest, so auto-hint
+  reads as a steady untangle that ends solved.
+- **Share the solution-decoding with `solve`.** Extract the `aux` parse + symmetry
+  match into the game's `state.ts` so `solve` and `hint` don't duplicate it.
+
 ### Placement animation as hint motion (fill-style games)
 
 A game with no upstream move animation (`animLength` 0) can still make auto-hint

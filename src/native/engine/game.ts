@@ -226,8 +226,14 @@ export interface Game<
   /** Compute a hint plan for the current state: a non-empty ordered
    * sequence of narrated moves, or an error. Nothing is auto-applied
    * — the midend stores the plan and displays one step at a time;
-   * the player follows it (or `executeHint` plays it) step by step. */
-  hint?(state: State): HintResult<Move>;
+   * the player follows it (or `executeHint` plays it) step by step.
+   *
+   * `aux` is the generator's solution hint (upstream `aux_info`), the
+   * same value passed to `solve` — present for freshly-generated games,
+   * absent for descriptive game ids or some loaded saves. A game whose
+   * best hint derives from the known solution (Untangle) uses it when
+   * present and falls back otherwise; deductive games ignore it. */
+  hint?(state: State, aux?: string): HintResult<Move>;
   /** Classify a player move against the current hint step. The game
    * MAY adjust `step.move` in place on `"onTrack"` (e.g. shrink a
    * slide's remaining distance after partial manual progress) so a

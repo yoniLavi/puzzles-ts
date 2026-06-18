@@ -15,8 +15,15 @@
  *    the forcing function for `supersede_desc`.)
  *  - **Editor build excluded**: no `E` add/delete-edge moves, no text
  *    format (`canFormatAsText = false`).
- *  - **No `hint`/`findMistakes`**: there is no deductive solver to
- *    narrate, and crossed edges drawn red ARE the mistake feedback.
+ *  - **No `findMistakes`**: crossed edges drawn red ARE the mistake
+ *    feedback. The `hint` (added by `add-untangle-hint`) is *unnarrated* —
+ *    Untangle has no deduction to teach, so by owner-approved divergence
+ *    from the Palisade quality bar the hint is a suggested move (highlight +
+ *    the existing move animation), not an explained deduction. It walks the
+ *    player to the known solution (`aux`) when one is available — rescaled
+ *    to fill the play box, so guaranteed untangled and well-spaced — and
+ *    falls back to a local crossing-reduction heuristic otherwise. See
+ *    `hint.ts`.
  *  - **Preferences via the engine `prefs` hook**: snap-to-grid,
  *    show-crossed-edges (default ON), vertex-style — the first consumer
  *    of the per-game preferences hook this change adds.
@@ -52,6 +59,7 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../random/index.ts";
 import { newUntangleDesc } from "./generator.ts";
+import { deduceUntangleHintPlan, type UntangleHint } from "./hint.ts";
 import { redrawUntangle } from "./render.ts";
 import {
   buildEdges,
@@ -59,8 +67,10 @@ import {
   coordLimit,
   DRAG_THRESHOLD,
   decodeGame,
+  dihedralSolvedUnits,
   findCrossings,
   makeCircle,
+  parseAux,
   PLAY_MARGIN,
   type RationalPoint,
   type UntangleDrawState,
@@ -401,66 +411,25 @@ export const untangleGame: Game<
 
   status: (s) => (s.completed ? "solved" : "ongoing"),
 
+  // --- hint (aux solution when known, else heuristic; see hint.ts) ---
+  hint: (s, aux) => deduceUntangleHintPlan(s, aux),
+
   // --- solve (decode aux, pick the closest of 8 dihedral symmetries) -
   solve: (orig, curr, aux) => {
-    if (!aux) return { ok: false, error: "Solution not known for this puzzle" };
-    const n = orig.n;
-    if (aux[0] !== "S")
-      return { ok: false, error: "Internal error: aux_info badly formatted" };
-    const parts = aux
-      .slice(1)
-      .split(";")
-      .filter((p) => p.length > 0);
-    if (parts.length !== n) {
-      return { ok: false, error: "Internal error: aux_info badly formatted" };
+    const auxPts = parseAux(aux, orig.n);
+    if (auxPts === null) {
+      return aux
+        ? { ok: false, error: "Internal error: aux_info badly formatted" }
+        : { ok: false, error: "Solution not known for this puzzle" };
     }
-    const pts: RationalPoint[] = [];
-    for (let i = 0; i < n; i++) {
-      const m = /^P(\d+):(-?\d+),(-?\d+)\/(\d+)$/.exec(parts[i]);
-      if (!m || Number(m[1]) !== i) {
-        return { ok: false, error: "Internal error: aux_info badly formatted" };
-      }
-      pts.push({ x: Number(m[2]), y: Number(m[3]), d: Number(m[4]) });
-    }
-
-    const cx = curr.w / 2;
-    const cy = curr.w / 2;
-    const matrixFor = (i: number): [number, number, number, number] => {
-      const mat: [number, number, number, number] = [0, 0, 0, 0];
-      mat[i & 1] = i & 2 ? 1 : -1;
-      mat[3 - (i & 1)] = i & 4 ? 1 : -1;
-      return mat;
-    };
-
-    let besti = -1;
-    let bestd = 0;
-    for (let i = 0; i < 8; i++) {
-      const mat = matrixFor(i);
-      let d = 0;
-      for (let j = 0; j < n; j++) {
-        const px = pts[j].x / pts[j].d - cx;
-        const py = pts[j].y / pts[j].d - cy;
-        const ox = mat[0] * px + mat[1] * py + cx;
-        const oy = mat[2] * px + mat[3] * py + cy;
-        const sx = curr.pts[j].x / curr.pts[j].d;
-        const sy = curr.pts[j].y / curr.pts[j].d;
-        d += (ox - sx) ** 2 + (oy - sy) ** 2;
-      }
-      if (besti < 0 || bestd > d) {
-        besti = i;
-        bestd = d;
-      }
-    }
-
-    const mat = matrixFor(besti);
-    const points = [];
-    for (let i = 0; i < n; i++) {
-      const px = pts[i].x / pts[i].d - cx;
-      const py = pts[i].y / pts[i].d - cy;
-      const ox = (mat[0] * px + mat[1] * py + cx) * 2;
-      const oy = (mat[2] * px + mat[3] * py + cy) * 2;
-      points.push({ i, x: Math.floor(ox + 0.5), y: Math.floor(oy + 0.5), d: 2 });
-    }
+    // Quantise the dihedral-matched model-unit solution to the d=2 grid
+    // upstream's solve emits.
+    const points = dihedralSolvedUnits(curr, auxPts).map((p, i) => ({
+      i,
+      x: Math.floor(p.x * 2 + 0.5),
+      y: Math.floor(p.y * 2 + 0.5),
+      d: 2,
+    }));
     return { ok: true, move: { kind: "place", points, solving: true } };
   },
 
@@ -528,6 +497,10 @@ export const untangleGame: Game<
       [0.45, 0.7, 1], // 8 COL_NEIGHBOUR
       [0.5, 0.5, 0.5], // 9 COL_FLASH1
       [1, 1, 1], // 10 COL_FLASH2
+      // 11 COL_HINT — the suggested move (line + destination marker).
+      // Orange: distinct from blue points, light-blue neighbours, and the
+      // red crossed edges.
+      [1, 0.55, 0], // 11 COL_HINT
     ];
   },
   computeSize: (p: UntangleParams, tileSize: number): Size => {
@@ -543,11 +516,23 @@ export const untangleGame: Game<
     bg: -1,
     dragPoint: -1,
     cursorPoint: -1,
+    hintVertex: -1,
+    hintTx: -1,
+    hintTy: -1,
     x: new Array<number>(s.n).fill(-1),
     y: new Array<number>(s.n).fill(-1),
   }),
-  redraw: (dr, ds, prev, s, _dir, ui, animTime, flashTime) => {
-    redrawUntangle(dr, ds, prev, s, ui, animTime, flashTime);
+  redraw: (dr, ds, prev, s, _dir, ui, animTime, flashTime, hint) => {
+    redrawUntangle(
+      dr,
+      ds,
+      prev,
+      s,
+      ui,
+      animTime,
+      flashTime,
+      hint?.highlights as UntangleHint | undefined,
+    );
   },
 };
 

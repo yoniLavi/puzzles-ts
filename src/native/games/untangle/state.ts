@@ -120,6 +120,12 @@ export interface UntangleDrawState {
   /** Last drag / cursor vertex drawn. */
   dragPoint: number;
   cursorPoint: number;
+  /** Last displayed hint: the hinted vertex (-1 if none) and its target
+   * pixel position. Tracked so a manual hint (which moves no vertex) still
+   * defeats the redraw early-out. */
+  hintVertex: number;
+  hintTx: number;
+  hintTy: number;
   /** Last pixel positions drawn, per vertex (length n). */
   x: number[];
   y: number[];
@@ -234,9 +240,12 @@ export function cross(
 export function findCrossings(
   pts: readonly RationalPoint[],
   edges: readonly Edge[],
-): { crosses: boolean[]; completed: boolean } {
+): { crosses: boolean[]; completed: boolean; count: number } {
   const crosses = new Array<boolean>(edges.length).fill(false);
   let completed = true;
+  // Number of crossing *pairs* — a finer objective for the hint heuristic
+  // than the count of crossed edges (one bad vertex can be on many pairs).
+  let count = 0;
   for (let i = 0; i < edges.length; i++) {
     const e = edges[i];
     for (let j = i + 1; j < edges.length; j++) {
@@ -246,10 +255,11 @@ export function findCrossings(
         completed = false;
         crosses[i] = true;
         crosses[j] = true;
+        count++;
       }
     }
   }
-  return { crosses, completed };
+  return { crosses, completed, count };
 }
 
 /**
@@ -313,6 +323,73 @@ export function decodeGame(desc: string, n: number): Edge[] {
   }
   edges.sort((p, q) => p.a - q.a || p.b - q.b);
   return edges;
+}
+
+/** Parse the generator's `aux` solved layout (`S` then `P<i>:x,y/d`
+ * per vertex, `;`-separated) into rational points, or `null` if it is
+ * absent or malformed. Shared by `solve` and the aux-based hint. */
+export function parseAux(aux: string | undefined, n: number): RationalPoint[] | null {
+  if (!aux || aux[0] !== "S") return null;
+  const parts = aux
+    .slice(1)
+    .split(";")
+    .filter((p) => p.length > 0);
+  if (parts.length !== n) return null;
+  const pts: RationalPoint[] = [];
+  for (let i = 0; i < n; i++) {
+    const m = /^P(\d+):(-?\d+),(-?\d+)\/(\d+)$/.exec(parts[i]);
+    if (!m || Number(m[1]) !== i) return null;
+    pts.push({ x: Number(m[2]), y: Number(m[3]), d: Number(m[4]) });
+  }
+  return pts;
+}
+
+/** The 8 dihedral (rotate/reflect) transforms of the square, as the
+ * 2×2 matrix `[m0 m1; m2 m3]` (upstream `solve`'s `matrix`). */
+function dihedralMatrix(i: number): [number, number, number, number] {
+  const mat: [number, number, number, number] = [0, 0, 0, 0];
+  mat[i & 1] = i & 2 ? 1 : -1;
+  mat[3 - (i & 1)] = i & 4 ? 1 : -1;
+  return mat;
+}
+
+/** The aux solved layout transformed by whichever of the 8 dihedral
+ * symmetries sits closest to the current positions (so the suggested
+ * motion is minimal), returned in **model units** (`x/d` divided out,
+ * centred on the board's `w/2`). Faithful to upstream `solve`'s symmetry
+ * search; `solve` and the aux hint both build on it. */
+export function dihedralSolvedUnits(
+  curr: UntangleState,
+  auxPts: readonly RationalPoint[],
+): { x: number; y: number }[] {
+  const n = curr.n;
+  const cx = curr.w / 2;
+  const cy = curr.w / 2;
+  let besti = -1;
+  let bestd = 0;
+  for (let i = 0; i < 8; i++) {
+    const mat = dihedralMatrix(i);
+    let d = 0;
+    for (let j = 0; j < n; j++) {
+      const px = auxPts[j].x / auxPts[j].d - cx;
+      const py = auxPts[j].y / auxPts[j].d - cy;
+      const ox = mat[0] * px + mat[1] * py + cx;
+      const oy = mat[2] * px + mat[3] * py + cy;
+      const sx = curr.pts[j].x / curr.pts[j].d;
+      const sy = curr.pts[j].y / curr.pts[j].d;
+      d += (ox - sx) ** 2 + (oy - sy) ** 2;
+    }
+    if (besti < 0 || bestd > d) {
+      besti = i;
+      bestd = d;
+    }
+  }
+  const mat = dihedralMatrix(besti);
+  return auxPts.map((p) => {
+    const px = p.x / p.d - cx;
+    const py = p.y / p.d - cy;
+    return { x: mat[0] * px + mat[1] * py + cx, y: mat[2] * px + mat[3] * py + cy };
+  });
 }
 
 /** Clone a state for an `executeMove`: deep-copy the per-move `pts`,
