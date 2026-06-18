@@ -11,11 +11,13 @@
  * no `mkhighlightSpecific` is needed).
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import type { FillingHint } from "./index.ts";
 import {
   DX,
   DY,
   type FillingMistake,
+  type FillingMove,
   type FillingState,
   makeRegionDsf,
 } from "./state.ts";
@@ -31,6 +33,8 @@ export const COL_CORRECT = 3; // completed-region background
 export const COL_ERROR = 4; // overfull / boxed-in region background
 export const COL_USER = 5; // player-filled digit
 export const COL_CURSOR = 6;
+export const COL_HINT = 7; // the cell to fill — a mild "act here" highlight
+export const COL_HINT_CELL = 8; // the deduction's evidence cells (fainter blue)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -42,6 +46,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = [1, 0.85 * bg[1], 0.85 * bg[2]];
   out[COL_USER] = [0, 0.6 * bg[1], 0];
   out[COL_CURSOR] = [0.5 * bg[0], 0.5 * bg[1], 0.5 * bg[2]];
+  out[COL_HINT] = [0.62, 0.81, 0.96];
+  out[COL_HINT_CELL] = [0.85, 0.92, 0.99];
   return out;
 }
 
@@ -61,6 +67,8 @@ const ERROR_BG = 0x4000;
 const USER_COL = 0x8000;
 const CURSOR_SQ = 0x10000;
 const FF_MISTAKE = 0x20000; // fork's Check & Save overlay (no upstream analogue)
+const HINT_TARGET = 0x40000; // the cell the displayed hint points at
+const HINT_AREA = 0x80000; // an evidence cell shaded light blue
 
 // --- geometry (upstream BORDER = TILE_SIZE/2, BORDER_WIDTH = max(TS/32,1)) -
 const border = (ts: number) => Math.floor(ts / 2);
@@ -108,13 +116,17 @@ function drawSquare(
   dr.clip({ x: px, y: py, w: ts, h: ts });
 
   const bg =
-    flags & HIGH_BG
-      ? COL_HIGHLIGHT
-      : flags & ERROR_BG
-        ? COL_ERROR
-        : flags & CORRECT_BG
-          ? COL_CORRECT
-          : COL_BACKGROUND;
+    flags & HINT_TARGET
+      ? COL_HINT
+      : flags & HINT_AREA
+        ? COL_HINT_CELL
+        : flags & HIGH_BG
+          ? COL_HIGHLIGHT
+          : flags & ERROR_BG
+            ? COL_ERROR
+            : flags & CORRECT_BG
+              ? COL_CORRECT
+              : COL_BACKGROUND;
   dr.drawRect({ x: px, y: py, w: ts, h: ts }, bg);
 
   // Thin grid lines on the top and left edges (interior lines come from each
@@ -135,6 +147,9 @@ function drawSquare(
       String(n),
     );
   }
+
+  // The hint leaves the target cell empty with only a mild highlight, so it
+  // reads as a call to action ("input a number here"), not a filled answer.
 
   // Bold region borders.
   if (flags & BORDER_L)
@@ -202,7 +217,7 @@ export function redrawFilling(
   },
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<FillingMove, FillingHint>,
   mistakes?: readonly FillingMistake[],
 ): void {
   if (!ds) return;
@@ -237,6 +252,12 @@ export function redrawFilling(
     mistakes && mistakes.length > 0
       ? new Set(mistakes.map((m) => m.y * w + m.x))
       : null;
+
+  // The displayed hint step: the forced target cells (a mild "fill here"
+  // highlight) and the deduction's evidence cells (shaded light blue).
+  const hl = hint?.highlights;
+  const hintTargets = hl && hl.cells.length > 0 ? new Set(hl.cells) : null;
+  const hintArea = hl && hl.area.length > 0 ? new Set(hl.area) : null;
 
   // Border between two differing cells when both are filled, or either's
   // region is complete/overfull. Bit 1 = border to the right, bit 2 = below.
@@ -334,6 +355,8 @@ export function redrawFilling(
 
       if (clues[i] === 0) flags |= USER_COL;
       if (mistakeSet?.has(i)) flags |= FF_MISTAKE;
+      if (hintTargets?.has(i)) flags |= HINT_TARGET;
+      else if (hintArea?.has(i)) flags |= HINT_AREA;
 
       const word = v | (flags << VALUE_BITS);
       if (ds.cache[i] !== word) {

@@ -133,7 +133,104 @@ a `connect` step whose cut-vertex neighbours were all still *undecided* (so a
 known-white filter left the area empty) — the connectivity rule treats every
 non-black cell as white, so shade non-black neighbours, not only marked-white ones.
 
-### When the evidence is *filled*, ring it — don't shade it
+### Shade vs ring is about whether the fill *hides the premise*, not whether it's filled
+
+The choice between shading evidence (`COL_HINT_CELL` background) and ringing it
+(`COL_HINT` outline) turns on one question: **does a light-blue fill hide the
+information that makes the cell evidence?**
+
+- **Range** shades — its premises are *undecided* cells (a clue's line of sight,
+  a reach run); there's nothing to hide.
+- **Unruly** rings — its premises are *filled black/white tiles* whose **colour
+  is the reason**; a fill would paint over it (see the next section).
+- **Filling** shades *even though its evidence cells are filled* — because the
+  premise is a **number**, and a digit draws *on top of* a light background
+  (exactly as Range's clue numbers draw on their shaded line of sight). So
+  Filling shades the region a deduction reasons about (`COL_HINT_CELL`) and the
+  region's digits stay readable. This keeps the picture clean — no per-cell ring
+  noise over an already bold-bordered region. The forced target cell takes a
+  **mild `COL_HINT` highlight with *no digit drawn in it*** — owner-directed: a
+  dark fill with the answer pre-printed reads as a *filled-in answer*, not a
+  *call to action*; a gentle highlight on an empty cell says "input a number
+  here". The forced value is read off the narration ("the region of N", "a 1"),
+  so the cell needs no preview digit (contrast Range, whose forced *mark* — a
+  black square / white dot — is non-numeric and so *is* previewed). Exemplar:
+  `buildHighlight` + `narrate` in
+  [`filling/index.ts`](../../src/native/games/filling/index.ts), the `HINT_*`
+  bits + target-digit branch in
+  [`filling/render.ts`](../../src/native/games/filling/render.ts).
+
+So: "is the premise filled?" is the wrong question. "Would the area fill hide the
+premise?" is the right one — a *colour* premise yes (ring), a *number* premise no
+(shade).
+
+**Keep the narration terse (owner-directed).** Explaining *why* is the bar, but
+say it in one sentence, not three. Filling's first cut spelled out the full
+deduction ("…without exceeding N cells — every other neighbour would overshoot.
+So it must extend here: a N.") and read as a wall of text; the owner trimmed it
+to "This is the only empty square that the shaded region of N could grow into."
+— same logical content, a third the length. Lean on the picture (the shaded
+area carries the premise) and on implied values ("the region of N" already tells
+the player to write N), so the words only need to name the *one* reason. **Don't
+repeat the number** — say "the region of N" once and let "these squares" / "a 1"
+carry the rest. When a narration feels long, cut to the single premise the
+highlight doesn't already show.
+
+### Group one firing into one multi-square step — fill a `Move` with several cells
+
+Quality-bar rule 2 (one firing = one journey) has a second form beyond
+`continuesPrevious` legs: when a single deduction forces **several cells at
+once**, emit **one** `HintStep` whose `Move` fills *all* of them, and highlight
+them all as targets. Filling's region-growth deduction is the exemplar — a
+region that can't reach its size pins *every* empty square on its completion at
+once, so the hint points at the whole group ("The shaded region of 5 fits
+exactly into these squares.") instead of dribbling them out one per request.
+This reads far better than N single-cell steps and is what the owner asked for.
+
+Pattern (exemplar: `nextRegionGroup` in
+[`filling/solver.ts`](../../src/native/games/filling/solver.ts),
+`deduceHintPlan` + `hintKeepTrack` in
+[`filling/index.ts`](../../src/native/games/filling/index.ts)):
+
+- **Find the whole forced set per firing.** For each incomplete region, the
+  empty cells it *can't complete without* (each fails the capacity flood when
+  blocked) are all simultaneously forced — return them as one group. Distinguish
+  **exact** (the group *completes* the region — "fits exactly into these
+  squares") from **partial** (the region still needs more — "can't fully grow
+  without these squares"); the count drives singular/plural.
+- **Plan = apply a group, recompute, repeat.** Build the plan on a working board
+  (like Range's per-step grid), applying each group before finding the next, so
+  every step's narration and shaded region reflect the board as that step fires.
+  Keep a **single-cell fallback** (run the per-cell solver, take its first move)
+  for cells no group covers (Filling's lonely / candidate-elimination, plus the
+  rare only-one-flood-path case) — this guarantees the plan still *completes the
+  board* (verify with a "every generated board's plan solves it" test).
+- **`hintKeepTrack` handles partial completion.** A multi-square step the player
+  fills one cell at a time should advance gracefully: the move must set the
+  hinted value into a **subset** of the step's cells (and nothing else) →
+  `"completed"` when it fills the last one, else `"onTrack"` with the step
+  **shrunk in place** (`step.move` / `step.highlights` updated to the remaining
+  cells, which the interface explicitly permits on `"onTrack"`) so a later
+  `executeHint` doesn't re-fill what's done. Touching a non-target cell, or the
+  wrong value, is `"off"`.
+
+### One technique's evidence may be genuinely non-local — say so honestly
+
+Three of Filling's four solver techniques have clean local evidence (the region
+that must grow / can't complete, or the neighbours that pin a lonely cell). The
+fourth — candidate elimination (`learn_bitmap_deductions`) — reasons *globally*:
+a number is ruled out because an orthogonal neighbour equals it **or** because no
+region of that size can reach the cell. The adjacency eliminations are local (the
+filled neighbours, which the hint shades); the reachability eliminations are not
+cleanly localisable. Don't fabricate a tidy area for them — the narration states
+*both* mechanisms honestly ("it would sit next to an equal number, or belong to a
+region that can't reach the right size here"), and the **visible-evidence
+invariant is asserted only for the three local techniques** and relaxed
+(explanation + target) for the global one. Surfacing the step honestly beats
+omitting it (a gap would break the plan's path to the solution). See
+`filling-hint.test.ts`'s "every local-technique deduction carries evidence" test.
+
+### When the evidence is *filled and is a colour*, ring it — don't shade it
 
 Range shades its evidence because its premises are usually *undecided* cells (a
 clue's line of sight, a reach run). Other games are the opposite: Unruly's

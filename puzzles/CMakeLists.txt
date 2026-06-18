@@ -79,10 +79,10 @@ puzzle(fifteen
   OBJECTIVE "Slide the tiles around to arrange them into order.")
 
 puzzle(filling
+  TS_PORTED  # native-TS port (openspec add-filling-ts-port); no filling.c/wasm
   DISPLAYNAME "Filling"
   DESCRIPTION "Polyomino puzzle"
   OBJECTIVE "Mark every square with the area of its containing region.")
-solver(filling)
 
 puzzle(flip
   TS_PORTED  # native-TS port (openspec add-flip-ts-port); no flip.c/wasm

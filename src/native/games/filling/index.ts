@@ -11,6 +11,9 @@
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   type SolveResult,
   UI_UPDATE,
   type UiUpdate,
@@ -36,7 +39,11 @@ import {
   PREFERRED_TILE_SIZE,
   redrawFilling,
 } from "./render.ts";
-import { solveFilling } from "./solver.ts";
+import {
+  deduceHintPlan,
+  type FillingHintReason,
+  solveFilling,
+} from "./solver.ts";
 import {
   decodeParams,
   defaultParams,
@@ -197,6 +204,100 @@ function findMistakes(state: FillingState): readonly FillingMistake[] {
   return out;
 }
 
+// --- hint ------------------------------------------------------------------
+
+/** Highlight data for a Filling hint step. `cells` are the empty squares the
+ * deduction forces (one *or several* — a single firing usually pins a group);
+ * each gets a mild "fill here" highlight with **no digit**, so it reads as a
+ * call to action rather than a filled-in answer (the value is read off the
+ * narration — "the region of N", "a 1"). `value` is the forced number, kept
+ * for `hintKeepTrack` (not rendered). `area` is the deduction's evidence to
+ * shade light-blue — the region it reasons about, or the neighbours that pin a
+ * lonely / eliminated cell — so a beginner can *see* the reasoning, not just
+ * the conclusion (the Palisade region-highlight convention). The evidence
+ * cells are filled, but a light fill leaves their digits readable, so Filling
+ * shades rather than rings (unlike Unruly, whose premise is a tile *colour* a
+ * fill would hide). */
+export interface FillingHint {
+  cells: number[];
+  value: number;
+  area: number[];
+}
+
+/** Narrate *why* the squares are forced, per the technique that fired,
+ * referencing the shaded evidence so the words and the picture agree. Kept
+ * terse and number-light — the value is read off "the region of N" (or "a 1"),
+ * so the target cells need no digit drawn in them. `count` is how many squares
+ * the step forces (singular vs plural wording). */
+function narrate(reason: FillingHintReason, count: number): string {
+  const many = count > 1;
+  switch (reason.kind) {
+    case "growth":
+      if (reason.exact) {
+        return many
+          ? `The shaded region of ${reason.n} fits exactly into these squares.`
+          : `The shaded region of ${reason.n} fits exactly into this last square.`;
+      }
+      return many
+        ? `The shaded region of ${reason.n} can't fully grow without these squares.`
+        : `The shaded region of ${reason.n} can't fully grow without this square.`;
+    case "blocked":
+      return `This is the only empty square that the shaded region of ${reason.n} could grow into.`;
+    case "lonely":
+      return "No neighbouring region can grow to include this square, so it can only be a 1.";
+    case "bitmap":
+      return `No other number can go here — each would touch an equal number or leave a region short of its size — so it must be a ${reason.n}.`;
+  }
+}
+
+function hint(state: FillingState): HintResult<FillingMove, FillingHint> {
+  if (state.completed) {
+    return { ok: false, error: "This board is already solved." };
+  }
+  if (findMistakes(state).length > 0) {
+    return {
+      ok: false,
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+  }
+  const plan = deduceHintPlan(state.board, state.w, state.h);
+  if (plan.length === 0) {
+    return { ok: false, error: "No further move can be deduced from this position." };
+  }
+  const steps: HintStep<FillingMove, FillingHint>[] = plan.map((m) => ({
+    move: { type: "set", cells: m.cells, value: m.value },
+    explanation: narrate(m.reason, m.cells.length),
+    highlights: { cells: m.cells, value: m.value, area: m.area },
+  }));
+  return { ok: true, steps };
+}
+
+/** Classify a player move against a (possibly multi-square) hint step. The
+ * move must set the hinted value into a subset of the step's cells (and
+ * nothing else): filling all of them completes the step, filling some keeps
+ * it on track (the step shrinks so a later auto-hint fills only the rest),
+ * and anything else drops the plan to recompute. */
+function hintKeepTrack(
+  m: FillingMove,
+  step: HintStep<FillingMove, FillingHint>,
+  _state: FillingState,
+): HintTrackVerdict {
+  if (m.type !== "set") return "off";
+  const t = step.highlights;
+  if (!t) return "off";
+  if (m.value !== t.value) return "off";
+  if (!m.cells.every((c) => t.cells.includes(c))) return "off"; // touched a non-target
+  const filled = new Set(m.cells);
+  const remaining = t.cells.filter((c) => !filled.has(c));
+  if (remaining.length === t.cells.length) return "off"; // hit none of the targets
+  if (remaining.length === 0) return "completed";
+  // Partial progress: shrink the step to the squares still to fill.
+  step.highlights = { ...t, cells: remaining };
+  step.move = { type: "set", cells: remaining, value: t.value };
+  return "onTrack";
+}
+
 function flashLength(
   oldState: FillingState,
   newState_: FillingState,
@@ -245,6 +346,8 @@ export const fillingGame: Game<
   status,
 
   solve,
+  hint,
+  hintKeepTrack,
   findMistakes,
 
   textFormat,

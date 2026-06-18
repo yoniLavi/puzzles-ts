@@ -59,13 +59,17 @@
       `TS_PORTED_PUZZLE_IDS`.
 - [x] 7.2 Pre-commit gate green (`tsc -b --noEmit` → biome → vitest 1320 →
       vite build).
-- [ ] 7.3 Owner smoke-test in `npm run dev` (keyboard + mouse + touch; dark mode;
-      Check & Save; Solve; completion flash).
+- [x] 7.3 Owner smoke-test in `npm run dev` (keyboard + mouse + touch; dark mode;
+      Check & Save; Solve; completion flash). Accepted 2026-06-19 alongside the
+      explained hint (`add-filling-hint`): "Fabulous work".
 
 ## 8. Acceptance (stage 2 — only on owner sign-off)
-- [ ] 8.1 Add `TS_PORTED` to `filling`'s `puzzle()` in `puzzles/CMakeLists.txt`.
-- [ ] 8.2 Delete `puzzles/filling.c`, `puzzles/auxiliary/filling-trace.c` (+ its
+- [x] 8.1 Add `TS_PORTED` to `filling`'s `puzzle()` in `puzzles/CMakeLists.txt`
+      (and remove the `solver(filling)` line — no `.c` to build it from).
+- [x] 8.2 Delete `puzzles/filling.c`, `puzzles/auxiliary/filling-trace.c` (+ its
       `cliprogram` line) in one commit (no advisory `scripts/diff-filling.test.ts`
-      was added).
-- [ ] 8.3 Capture the two icon PNGs via `?screenshot`.
-- [ ] 8.4 `openspec archive add-filling-ts-port --yes` in the same commit.
+      was added). Clean `build:wasm` re-verified: C build healthy, `filling`
+      still in `catalog.json`/`puzzleIds` via `ts_ported_names`, no `filling.wasm`.
+- [x] 8.3 Capture the two icon PNGs via `?screenshot` (already committed
+      `src/assets/icons/filling-{64,128}d8.png`).
+- [x] 8.4 `openspec archive add-filling-ts-port --yes` in the same commit.

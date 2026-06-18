@@ -12,6 +12,47 @@
 import { Dsf } from "../../engine/dsf.ts";
 import { DX, DY } from "./state.ts";
 
+/** Why a *set* of cells is forced — drives the hint's narration. A single
+ * deduction usually forces several squares at once, so a hint step carries a
+ * group of cells sharing one reason (the cross-game "one firing = one journey"
+ * bar), not a lone cell.
+ * - `growth`: a region cannot reach its size without these empty squares (they
+ *   are on every completion). `exact` ⇒ they *complete* the region (the
+ *   region's only completion is exactly these cells); otherwise the region
+ *   still needs more cells beyond them. Covers the expand-to-complete and
+ *   critical-square rules, grouped per region.
+ * - `blocked`: a region whose *only* flood-reachable empty square is this one
+ *   (it can only grow one way) — always a single cell.
+ * - `lonely`: no neighbouring region can grow to include this square, so it is
+ *   a region of one — a 1.
+ * - `bitmap`: every number but one is eliminated here (candidate elimination);
+ *   the local eliminators are the filled orthogonal neighbours. */
+export type FillingHintReason =
+  | { kind: "growth"; n: number; exact: boolean }
+  | { kind: "blocked"; n: number }
+  | { kind: "lonely" }
+  | { kind: "bitmap"; n: number };
+
+/** One step of a hint plan: a set of cells forced to the same value, the
+ * evidence cells to shade (the region the deduction reasons about, or the
+ * neighbours that pin a lonely / eliminated cell), and the reason. */
+export interface FillingHintMove {
+  cells: number[];
+  value: number;
+  area: number[];
+  reason: FillingHintReason;
+}
+
+/** Internal per-fill recorder used by the single-cell fallback: the solver
+ * technique that fired (`kind`) and its evidence cells. */
+type RecorderKind = "blocked" | "capacity" | "lonely" | "bitmap";
+type FillingRecorder = (
+  cell: number,
+  value: number,
+  kind: RecorderKind,
+  evidence: number[],
+) => void;
+
 class FillingSolver {
   readonly w: number;
   readonly h: number;
@@ -27,8 +68,11 @@ class FillingSolver {
    * grown region, exactly as C). */
   private readonly connected: Int32Array;
   nempty: number;
+  /** Optional per-fill recorder (built only on the hint path). */
+  private readonly rec?: FillingRecorder;
 
-  constructor(orig: ArrayLike<number>, w: number, h: number) {
+  constructor(orig: ArrayLike<number>, w: number, h: number, rec?: FillingRecorder) {
+    this.rec = rec;
     this.w = w;
     this.h = h;
     this.sz = w * h;
@@ -140,6 +184,91 @@ class FillingSolver {
     return cells;
   }
 
+  /** Filled orthogonal neighbours of cell `i` — the pinning evidence for a
+   * lonely-cell or candidate-elimination hint. */
+  private filledNeighbours(i: number): number[] {
+    const { w, h, board } = this;
+    const x = i % w;
+    const y = (i / w) | 0;
+    const out: number[] = [];
+    for (let j = 0; j < 4; j++) {
+      const nx = x + DX[j];
+      const ny = y + DY[j];
+      if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+      const idx = ny * w + nx;
+      if (board[idx] !== 0) out.push(idx);
+    }
+    return out;
+  }
+
+  /** The empty cells the region rooted at `root` (value `n`) can flood into
+   * over empty cells — every cell it could ever grow to include. A forced
+   * cell is necessarily among these, so this bounds the capacity check. */
+  private regionReachableEmpties(root: number, n: number): number[] {
+    const { w, h, board, dsf, sz } = this;
+    const visited = new Uint8Array(sz);
+    const stack: number[] = [];
+    for (let c = 0; c < sz; c++) {
+      if (board[c] === n && dsf.canonify(c) === root) {
+        stack.push(c);
+        visited[c] = 1;
+      }
+    }
+    const empties: number[] = [];
+    while (stack.length > 0) {
+      const c = stack.pop() as number;
+      const x = c % w;
+      const y = (c / w) | 0;
+      for (let j = 0; j < 4; j++) {
+        const nx = x + DX[j];
+        const ny = y + DY[j];
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+        const idx = ny * w + nx;
+        if (visited[idx]) continue;
+        visited[idx] = 1;
+        if (board[idx] === 0) {
+          empties.push(idx);
+          stack.push(idx);
+        } else if (board[idx] === n) {
+          stack.push(idx);
+        }
+      }
+    }
+    return empties;
+  }
+
+  /** The next region-growth deduction, *grouped*: a region that cannot reach
+   * its size without a set of empty cells (each on every completion, so each
+   * forced to the region's value). `exact` ⇒ those cells complete the region
+   * (its only completion). Returns null when no region has a forced cell in
+   * the current position. Deterministic (lowest root first). */
+  nextRegionGroup(): {
+    cells: number[];
+    value: number;
+    region: number[];
+    exact: boolean;
+  } | null {
+    const { sz, board, dsf } = this;
+    for (let i = 0; i < sz; i++) {
+      if (board[i] === 0 || i !== dsf.canonify(i)) continue;
+      const n = board[i];
+      const slack = n - dsf.size(i);
+      if (slack <= 0) continue;
+      const reach = this.regionReachableEmpties(i, n);
+      const forced = reach.filter((j) => !this.checkCapacity(i, j));
+      // forced.length never exceeds slack on a consistent board; guard anyway.
+      if (forced.length > 0 && forced.length <= slack) {
+        return {
+          cells: forced,
+          value: n,
+          region: this.regionCells(i, n),
+          exact: forced.length === slack,
+        };
+      }
+    }
+    return null;
+  }
+
   /** A region with exactly one legal growth cell must grow into it. */
   private learnBlockedExpansion(): boolean {
     const { w, h, board, dsf, sz } = this;
@@ -148,9 +277,10 @@ class FillingSolver {
       if (board[i] === 0) continue;
       if (i !== dsf.canonify(i)) continue; // canonical only
       if (dsf.size(i) === board[i]) continue; // already complete
+      const region = this.regionCells(i, board[i]);
       const targets = new Set<number>();
       let bail = false;
-      for (const c of this.regionCells(i, board[i])) {
+      for (const c of region) {
         const x = c % w;
         const y = (c / w) | 0;
         for (let k = 0; k < 4; k++) {
@@ -169,7 +299,9 @@ class FillingSolver {
         if (bail) break;
       }
       if (bail || targets.size !== 1) continue;
-      this.expand(targets.values().next().value as number, i);
+      const target = targets.values().next().value as number;
+      this.expand(target, i);
+      this.rec?.(target, board[i], "blocked", region);
       learn = true;
     }
     return learn;
@@ -200,14 +332,19 @@ class FillingSolver {
         }
         if (dsf.size(idx) === board[idx]) continue; // region complete
         if (this.checkCapacity(idx, i)) continue; // can still complete without i
+        const region = this.regionCells(dsf.canonify(idx), board[idx]);
+        const n = board[idx];
         this.expand(i, idx);
+        this.rec?.(i, n, "capacity", region);
         learn = true;
         expanded = true;
         break;
       }
       if (!expanded && one) {
+        const neighbours = this.filledNeighbours(i);
         board[i] = 1;
         this.nempty--;
+        this.rec?.(i, 1, "lonely", neighbours);
         learn = true;
       }
     }
@@ -241,9 +378,12 @@ class FillingSolver {
         } while (k !== i);
         if (k === i) continue; // not within range (or only `i` is — the quirk)
         if (this.checkCapacity(i, j)) continue;
+        const region = this.regionCells(i, board[i]);
+        const n = board[i];
         board[j] = board[i];
         this.filledSquare(j);
         this.nempty--;
+        this.rec?.(j, n, "capacity", region);
         learn = true;
       }
     }
@@ -343,9 +483,11 @@ class FillingSolver {
           n += 1;
         }
         if (board[i] === 0) {
+          const neighbours = this.filledNeighbours(i);
           board[i] = n;
           this.filledSquare(i);
           this.nempty--;
+          this.rec?.(i, n, "bitmap", neighbours);
           learn = true;
         }
       }
@@ -375,4 +517,73 @@ export function solveFilling(
   const s = new FillingSolver(orig, w, h);
   s.run();
   return { solved: s.nempty === 0, board: s.board };
+}
+
+/** Deduce a hint plan from `board` (the player's current marks): an ordered
+ * list of forced *groups* that drives the board to its unique solution. Each
+ * step prefers the grouped region-growth deduction (a region and all the empty
+ * squares it can't complete without); when no region has a forced cell, it
+ * falls back to a single cell forced by the lonely / candidate-elimination
+ * (or only-one-growth) rules. A correct partial is a superset of the clues,
+ * from which the deductions still complete the board. */
+export function deduceHintPlan(
+  board: ArrayLike<number>,
+  w: number,
+  h: number,
+): FillingHintMove[] {
+  const plan: FillingHintMove[] = [];
+  const working = Int32Array.from(board);
+  const limit = w * h + 5; // each step fills ≥1 cell, so this never trips
+  for (let guard = 0; guard < limit; guard++) {
+    if (!working.includes(0)) break; // solved
+    const solver = new FillingSolver(working, w, h);
+    const group = solver.nextRegionGroup();
+    if (group) {
+      plan.push({
+        cells: group.cells,
+        value: group.value,
+        area: group.region.filter((c) => !group.cells.includes(c)),
+        reason: { kind: "growth", n: group.value, exact: group.exact },
+      });
+      for (const c of group.cells) working[c] = group.value;
+      continue;
+    }
+    const single = firstSolverMove(working, w, h);
+    if (!single) break; // stuck (only on an inconsistent board; hint refuses first)
+    plan.push(single);
+    for (const c of single.cells) working[c] = single.value;
+  }
+  return plan;
+}
+
+/** The first cell the four-technique solver forces from `board`, with the
+ * reason that forces it — the fallback for cells no region-growth group
+ * covers (lonely / bitmap, plus the rare only-one-growth case the flood-based
+ * capacity check misses). Runs the solver to completion but keeps only the
+ * first recorded fill. */
+function firstSolverMove(
+  board: ArrayLike<number>,
+  w: number,
+  h: number,
+): FillingHintMove | null {
+  let result: FillingHintMove | null = null;
+  const s = new FillingSolver(board, w, h, (cell, value, kind, evidence) => {
+    if (result) return; // keep only the first fill
+    const reason: FillingHintReason =
+      kind === "lonely"
+        ? { kind: "lonely" }
+        : kind === "bitmap"
+          ? { kind: "bitmap", n: value }
+          : kind === "blocked"
+            ? { kind: "blocked", n: value }
+            : { kind: "growth", n: value, exact: false };
+    result = {
+      cells: [cell],
+      value,
+      area: evidence.filter((c) => c !== cell),
+      reason,
+    };
+  });
+  s.run();
+  return result;
 }
