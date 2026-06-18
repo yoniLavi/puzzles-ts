@@ -1,6 +1,7 @@
 cliprogram(combi-test combi-test.c)
 cliprogram(combi-trace combi-trace.c)
 cliprogram(divvy-test divvy-test.c)
+cliprogram(filling-trace filling-trace.c)
 cliprogram(findloop-test findloop-test.c)
 cliprogram(hatgen hatgen.c CORE_LIB COMPILE_DEFINITIONS TEST_HAT)
 cliprogram(hat-test hat-test.c)

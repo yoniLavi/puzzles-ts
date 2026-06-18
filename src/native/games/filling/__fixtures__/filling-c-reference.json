@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "w": 9,
+      "h": 7,
+      "seed": "filling-9x7-0",
+      "desc": "3g3b477a7a23b9b2a4b9b52b999a887a24i3a3a7c"
+    },
+    {
+      "w": 9,
+      "h": 7,
+      "seed": "filling-9x7-1",
+      "desc": "24427c5a44b5b5d55d8b57a6b4a333b5b2d42a2c74b"
+    },
+    {
+      "w": 9,
+      "h": 7,
+      "seed": "filling-9x7-2",
+      "desc": "9j9a2e49a2a7b25a5g5a65a4d397a7f9c"
+    },
+    {
+      "w": 9,
+      "h": 7,
+      "seed": "filling-9x7-3",
+      "desc": "g2a72b88a8c7723a2b3a4b5a4b3a5c8d5a8c6b7a8b"
+    },
+    {
+      "w": 13,
+      "h": 9,
+      "seed": "filling-13x9-0",
+      "desc": "b9775f4a77c32b999e3a44a999a3a2a9a44a9995b299d3a23e96d6a3a3b5a34b2b24a45b4b6b6c3556c"
+    },
+    {
+      "w": 13,
+      "h": 9,
+      "seed": "filling-13x9-1",
+      "desc": "4b6e4h2a42a23c5a3b2a8a4a26a5d8c2a2a3a3a7c7a4f5a4b723c3b53b5f2a4a5a4a352132c5b"
+    },
+    {
+      "w": 13,
+      "h": 9,
+      "seed": "filling-13x9-2",
+      "desc": "7b223b5c4b7b3b76a33b2a43b73e955a7a2c49c5c9a94b993a39f4c6a99d22c343e6f5e4"
+    },
+    {
+      "w": 13,
+      "h": 9,
+      "seed": "filling-13x9-3",
+      "desc": "h4a3c8a8c6a54f2d99a42a3a4a5c9a95c455c4b6a3e85f4h86b22a6a55b42a4c642a4a2"
+    },
+    {
+      "w": 17,
+      "h": 13,
+      "seed": "filling-17x13-0",
+      "desc": "4c5333c6d3c5d844a8c8234a566b86a8c64c3b8c7a44c3a2a93387a5b4b5a523a3b77c2776a5c6b5a57g8d5a26c4e3355a54a4c6a6c5a5a394b6b48a4b6f9a4b88a266a46a9c2c2d3a4b7b2a"
+    },
+    {
+      "w": 17,
+      "h": 13,
+      "seed": "filling-17x13-1",
+      "desc": "4b27d4d6a93a7a7a2a4a69h75b35d9322c2558d4b3d46a4b58844b5g33c2b3c734e6a2b84b83a648a6a6b8a4d8a8c52b35c688b5c4499d69d7b44c3b44244a77c3b93a4e3c2d5"
+    },
+    {
+      "w": 17,
+      "h": 13,
+      "seed": "filling-17x13-2",
+      "desc": "2c3a7d328b27a2c7765a5b5c79a5a7e858d2c4b66c88c55c64a6f4f29a8e6b49b659a777a43d3a4b9a7a5662c8a3a4c7a56a4b832a3c7e4425c5b4b4g25d4a66a477g3a6a3a6a3b"
+    },
+    {
+      "w": 17,
+      "h": 13,
+      "seed": "filling-17x13-3",
+      "desc": "39f33a445f97a7a6a74b344d37776f4a27a3a53a6a53c4e5b5b5a3b6b4a744a6c3d2a85b4a665a5a464b8b5b882c2b38c4d235a344a2a84b377e6g37a7c9a6667a2b5266c9b72b37f3a37c"
+    }
+  ]
+}

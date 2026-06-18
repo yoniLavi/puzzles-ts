@@ -314,6 +314,39 @@ C-recorded difficulty" bar (Galaxies' D7) only when the generator legitimately
 diverges (e.g. extra RNG draws). Either way it's advisory — tighten per-game,
 never gate CI on C.
 
+**Solver-gated generators: byte-match needs the TS solver to match C's
+*verdict*, not merely be correct.** When the generator removes clues by
+re-running the solver and keeping a removal only while it still solves (Filling's
+`minimize_clue_set`, and any Nikoli-style minimiser), the published clue set —
+and so the desc — is decided entirely by the solver's *solved/stuck* verdict on
+each intermediate board. A byte-match differential then demands the TS solver
+reach the **identical verdict to C on every board**, which is stricter than "a
+correct solver": it must replicate C's *exact deductive power*, including
+upstream quirks. Two traps cost a debug cycle each on Filling and will recur:
+
+- **Faithfully reproduce upstream solver quirks, even buggy-looking ones.**
+  Filling's `learn_critical_square` walks a region's `connected` list from its
+  canonical cell `i` and its `if (i == k) continue` skips a square that only `i`
+  (not another member) can reach — a real upstream quirk. Port it verbatim;
+  "fixing" it makes the TS solver *stronger* and removes clues C keeps.
+- **Some deductions branch on the canonical-DSF-root *identity*, so the shared
+  [`Dsf`](../../src/native/engine/dsf.ts) must match `dsf.c`'s root choice** (tie
+  → the *second* `merge` arg; the larger class otherwise). The shared `Dsf` was
+  aligned to `dsf.c` for exactly this (Filling's i-quirk picks a different square
+  to skip if the root differs). A game that only uses the dsf for connectivity
+  won't notice; one that reads `canonify(i)` as an *element* does.
+
+**Differential-debugging loop for a verdict mismatch** (how the two above were
+found): instrument a throwaway C harness (`puzzles/auxiliary/<game>-dbg.c`,
+deleted after) to dump every `(board, verdict)` its solver sees during minimise;
+replay each board through the TS solver and binary-search the first verdict
+mismatch; on that board, toggle techniques off one at a time to isolate which is
+over/under-powered, then diff that technique against the C line-by-line. Also
+watch C `for (init; cond; incr)` loops whose `incr` has a side effect (Filling's
+`merge_ones`: `for (j…; ++j, board[i]=1)` resets `board[i]` after the *last*
+fall-through too, not only between iterations) — a TS `for` won't run it after
+the final body, so replicate it explicitly.
+
 **Behavioural tests by tier** — reach for the lowest that fits; Playwright is
 visual/integration smoke only. Tiers are codified in
 [`repo-layout`](../../openspec/specs/repo-layout/spec.md):

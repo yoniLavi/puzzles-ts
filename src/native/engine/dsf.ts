@@ -41,17 +41,25 @@ export class Dsf {
     return root;
   }
 
-  /** Merge `a`'s class with `b`'s. No-op if already in the same class. */
+  /** Merge `a`'s class with `b`'s. No-op if already in the same class.
+   *
+   * Tie-breaking mirrors upstream `dsf.c`'s `dsf_merge` exactly: the larger
+   * class becomes the root, and on a tie the *second* argument's root wins
+   * (`if (s1 > s2) root = r1; else root = r2`). This matters because a few
+   * upstream algorithms branch on the canonical-root *identity* (e.g.
+   * Filling's `learn_critical_square` walks a region's `connected` list from
+   * its canonical cell), so matching the root choice is required for
+   * differential parity, not just connectivity. */
   merge(a: number, b: number): void {
     const ra = this.canonify(a);
     const rb = this.canonify(b);
     if (ra === rb) return;
-    if (this.classSize[ra] < this.classSize[rb]) {
-      this.parent[ra] = rb;
-      this.classSize[rb] += this.classSize[ra];
-    } else {
+    if (this.classSize[ra] > this.classSize[rb]) {
       this.parent[rb] = ra;
       this.classSize[ra] += this.classSize[rb];
+    } else {
+      this.parent[ra] = rb;
+      this.classSize[rb] += this.classSize[ra];
     }
   }
 
