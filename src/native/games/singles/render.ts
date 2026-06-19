@@ -40,6 +40,12 @@ export const COL_ERROR = 8;
 export const COL_HINT = 9; // the cell(s) the displayed hint forces (blue)
 export const COL_HINT_CELL = 10; // the deduction's premise/evidence (light blue)
 export const COL_HINT_STRAND = 11; // the corner a corner-deduction protects (amber)
+// Element-type legend: a decided premise cell the reason *cites* rings in a
+// colour fixed by its type, so "a shaded square" and "the ringed white square"
+// read as distinct from the blue forced cell (and from each other) — paired
+// with the cell's own black/white appearance as the non-colour cue.
+export const COL_HINT_BLACKREF = 12; // a cited shaded (black) premise (teal ring)
+export const COL_HINT_WHITEREF = 13; // a cited ringed-white premise (violet ring)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, lowlight } = mkhighlight(defaultBackground);
@@ -56,6 +62,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HINT] = [0.13, 0.5, 0.85];
   out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
   out[COL_HINT_STRAND] = [0.98, 0.78, 0.42];
+  out[COL_HINT_BLACKREF] = [0.0, 0.78, 0.55];
+  out[COL_HINT_WHITEREF] = [0.62, 0.3, 0.82];
   return out;
 }
 
@@ -199,10 +207,17 @@ function tileRedraw(
     dr.drawRect({ x: x + inset, y: y + inset, w: ts - 2 * inset, h: ts - 2 * inset }, COL_BLACK);
   }
   // A decided premise cell (its black/circle colour is the reason): ring
-  // it rather than shading over it — in the strand colour for a protected
-  // corner, else the evidence/hint colour.
+  // it rather than shading over it. The ring colour follows the legend —
+  // strand amber for a protected corner, else by the cell's type so a cited
+  // shaded square and a cited ringed-white square read distinct from each
+  // other and from the blue forced cell.
   if ((f & DS_HINT_EVID || f & DS_HINT_STRAND) && f & (DS_BLACK | DS_CIRCLE)) {
-    const ringCol = f & DS_HINT_STRAND ? COL_HINT_STRAND : COL_HINT;
+    const ringCol =
+      f & DS_HINT_STRAND
+        ? COL_HINT_STRAND
+        : f & DS_BLACK
+          ? COL_HINT_BLACKREF
+          : COL_HINT_WHITEREF;
     drawRectOutline(dr, x + 1, y + 1, ts - 2, ts - 2, ringCol);
     drawRectOutline(dr, x + 2, y + 2, ts - 4, ts - 4, ringCol);
   }

@@ -82,6 +82,51 @@ explicit in the premise. A cheap guard: a hint test asserting the conclusion
 contains a modal and **not** a bare "stays/is" (as the Singles `corner4` test
 does for its premise phrasing).
 
+### 1b. Lead with the indication — teach the pattern, don't just prove it (pedagogy)
+
+**Every nontrivial hint SHALL open by naming the *indication* — the recognisable
+board pattern that triggered the deduction — before any reasoning.** The player
+should come away able to *spot this pattern themselves next time*, not merely
+convinced that this one instance is valid. (Owner-directed, 2026-06-19.)
+
+The metaphor: a hint is **pedagogy, not a terse textbook proof**. Dense proofs
+that jump straight to "shading either of these would force a contradiction, so
+both are white" leave understanding *as an exercise to the reader* — the player
+believes us but learns nothing transferable. Good teaching states **what you
+noticed** first, so the reasoning has something to hang on. The full arc:
+
+> **indication** (the spotted pattern, named in board terms and generalisable) →
+> **reasoning** (why that pattern forces the move) → **conclusion** (the action,
+> in the §1a necessity voice).
+
+This *sharpens* the "proof-by-contradiction arc" (§ later: signal → ruled-out
+move → consequence → deduction): the **signal must come first** and be phrased as
+a **pattern the player can learn to recognise** ("there's a pair of 5s in one
+column and a pair of 1s in the next"), not buried mid-sentence or left implicit in
+the highlight.
+
+Worked example — Singles `offset`. Even after the concrete-values + "overlap"
+fixes, it still *opened on the conclusion*: *"Shading either of these two squares
+would force one of the 5s and one of the 1s to be shaded next to each other…"* —
+a valid proof, but the player never learns **what to look for**. Leading with the
+indication fixes that: *"There's a pair of 5s in one column and a pair of 1s in
+the next, lined up so that shading either of these two squares would force one of
+the 5s and one of the 1s to be shaded next to each other — and shaded squares
+can't touch. So both must be white."* Now the first clause is a **teachable
+recognition cue** (two equal-pairs in neighbouring lines), and the rest is the
+payoff. (Read the orientation off `reason.quad` so "column"/"row" is concrete;
+test it opens on the pattern — `singles-hint.test.ts` "offset" asserts
+`/^There's a pair of \d+s in one (column|row)/`.)
+
+What counts as "nontrivial": anything past a single local rule application. The
+simplest cascade hints already satisfy this for free because their *signal is the
+move* — Singles `adjBlack` opens *"These squares touch a shaded square, and
+shaded squares can't be adjacent…"* (indication first: *touching a shaded
+square*), `sameLine` *"They share a line with the ringed white square…"*. The
+ones that need care are the multi-element deductions (offset, the corners, the
+sandwich/pair pattern) — lead each with the pattern that fired it. When in doubt,
+lead with the indication; it is never wrong to.
+
 ## 2. The mechanics (engine side already exists)
 
 The `Game` hooks and the `Midend` lifecycle are in
@@ -198,6 +243,50 @@ corner, kept disjoint from the shaded `COL_HINT_CELL` matching pair and the
 branch in [`singles/render.ts`](../../src/native/games/singles/render.ts). Test
 that the roles are **disjoint** (no cell is two roles).
 
+#### Element-type colour legend — different *kinds* of element, stable colours
+
+The role-colour rule above generalises: **when a hint narration names more than
+one distinct *kind* of board element** (a filled cell as premise *and* the
+forced cell as conclusion; a clue *and* a region; a wall *and* a cell), give each
+*type* its own highlight colour so the words map to the picture — and make it a
+**stable per-game legend** (a "shaded square" is the *same* colour in every hint
+that cites one), so the player learns it. Normative rule + scenarios:
+[`ts-engine`](../../openspec/specs/ts-engine/spec.md) Hint System
+("element-type colour legend"); per-game requirement e.g.
+[`singles`](../../openspec/specs/singles/spec.md) "Singles hint colour legend".
+
+Two non-negotiables:
+
+- **Colour is never the sole carrier** (colourblind users). Every legend colour
+  is paired with a non-colour cue — ring vs shade vs fill, the drawn digit, or
+  position — and colour *names* never go in the narration text. The cell's own
+  appearance often *is* the cue: Singles rings a cited **black** premise in
+  `COL_HINT_BLACKREF` (teal) and a cited **white/circle** premise in
+  `COL_HINT_WHITEREF` (violet), but the cell underneath is still visibly
+  black/white, so the ring colour is reinforcement, not the only signal.
+- **This is orthogonal to "equivalent moves share a colour" (rule 3).** The
+  legend governs *premise/element types*; equivalent *forced moves* still all
+  share the one target colour. Don't colour two cells differently just because
+  they're different cells — only because they're different *types*.
+
+Singles is the worked legend (`add-hint-type-colour-legend`): forced cell = blue
+fill (`COL_HINT`); matching-number premise = light-blue shade (`COL_HINT_CELL`,
+digit on top); cited shaded square = teal ring (`COL_HINT_BLACKREF`); cited
+ringed-white square = violet ring (`COL_HINT_WHITEREF`); protected corner = amber
+(`COL_HINT_STRAND`). Before this, `adjBlack`/`sameLine` ringed the decided
+premise in the *same* blue as the target, so "a shaded square → a white" drew
+both the same colour. The fix is render-only — the renderer already branches
+shade-vs-ring on the cell's decided state, so it just picks the ring colour by
+type; the `SinglesHint` payload is unchanged. Verify in-process: reach the
+deduction's frame (`renderScenario` + `hintUntil` on the deduction's unique
+phrase — "can't be adjacent" for `adjBlack`, "ringed white square" for
+`sameLine`) and assert the cited premise carries its legend colour *and* the
+target a different one. Exemplar: the ring-colour branch in
+[`singles/render.ts`](../../src/native/games/singles/render.ts) `drawCell`.
+Range/Palisade/Filling/Unruly each get the same treatment as parity-gated
+follow-ups (their hints all name multiple types — black square + white cells +
+clue; wall + region + clue; …).
+
 **A narration whose stated premise doesn't single out the conclusion is a bug,
 even when the move is right.** Quality-bar rule 1 (`AGENTS.md`) again, caught on
 review of Singles' all-equal 2×2 corner (`corner4`). Its first cut read "the only
@@ -246,18 +335,37 @@ paired square stays white forces the one across from it shaded, so both squares
 beside it must be white."* — grammatical, but a wall of deixis ("whichever", "the
 one across from it", "both squares beside it") with **not a single concrete
 reference**, so the player can't map a word to a square. The deduction is two
-interlocking equal-pairs, so *name both values* and walk the contradiction arc
-(read them off `reason.quad` via the `state`-aware `numAt`): *"Two 6s and two 4s
-overlap, offset by a square. Shading either of the two squares between them would
-force one of the 6s and one of the 4s to be shaded side by side — and shaded
-squares can't touch. So both must be white."* Test it stays concrete (assert the
+equal-pairs, so *name both values* (read them off `reason.quad` via the
+`state`-aware `numAt`) — and, per §1b, lead with the pattern: *"There's a pair of
+6s in one column and a pair of 4s in the next, lined up so that shading either of
+these two squares would force one of the 6s and one of the 4s to be shaded next
+to each other — and shaded squares can't touch. So both must be white."* Test it
+stays concrete (assert the
 explanation `toMatch(/\d/)` and drops the old deixis — `singles-hint.test.ts`
-"offset"). Two drafting gotchas: (a) **dodge the a/an trap** — `a ${n}` becomes
-"a 8"; either write articleless ("one of the 6s", "two of the Ns") or branch on
-the digit; never hard-code "a"/"an" before an interpolated number. (b) **guard the
-equal-value branch** — when the two groups can coincide (`n === m`), "Two 4s and
-two 4s overlap" reads broken, so special-case it ("These four 4s form two
-pairs…"). Heuristic for spotting an offender: if a narration contains *zero*
+"offset").
+
+**Concrete *value* and concrete *geometry* are different bars — a value-aware
+narration can still lie about the layout.** A first cut of the offset fix read
+*"Two 6s and two 4s **overlap, offset by a square**…"* — concrete values, but
+geometrically **false**: the offset solver pairs equal numbers *anywhere along a
+line* (`solveOffsetpair` walks `yy = y+1 … h`), so the two 6s can sit at opposite
+ends of a column and the contradiction (a forced pair of adjacent blacks) fires
+far from the cells you're told to mark. The owner couldn't parse "overlap"
+precisely because the cells didn't overlap. Fix: **describe only what's invariant**
+— that shading either target forces "one of the 6s and one of the 4s … next to
+each other" (the forced adjacency is the real, position-independent fact) — and
+**delete the words that assume a tight figure** ("overlap", "offset by a square",
+"between them", "side by side"). Lean on the highlight for *where*; let the words
+carry *what*. Lesson: when you add concrete values, re-check that every spatial
+word is still true for the *general* firing, not just the compact example in your
+head — read the solver's loop bounds, don't assume locality.
+
+Two drafting gotchas from the same rewrite: (a) **dodge the a/an trap** — `a
+${n}` becomes "a 8"; either write articleless ("one of the 6s", "two of the Ns")
+or branch on the digit; never hard-code "a"/"an" before an interpolated number.
+(b) **guard the equal-value branch** — when the two groups can coincide (`n ===
+m`), "Two 4s and two 4s …" reads broken, so special-case it ("two of the 4s").
+Heuristic for spotting an offender: if a narration contains *zero*
 digits/coordinates and three or more "this/that/it/the one" pronouns, it's almost
 certainly improvable with concrete values.
 

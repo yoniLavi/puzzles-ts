@@ -280,9 +280,11 @@ function narrate(
   const numAt = (c: Cell): number => state.nums[c.y * state.w + c.x];
   switch (reason.kind) {
     case "sandwich":
-      return "One of these two matching numbers must be shaded, so the square between them must be white.";
+      // Indication-first (§1b): name the spotted pattern (two equal numbers
+      // one square apart) before the deduction.
+      return "Two matching numbers sit one square apart here; one of them must be shaded, so the square between them must be white.";
     case "pair":
-      return "One of these matching neighbours stays white and uses up the number, so every other copy in the line must be shaded.";
+      return "These two neighbouring squares share a number, so one of them stays white and uses it up — every other copy in the line must be shaded.";
     case "corner4": {
       // All four share a number, so a diagonal pair must be shaded (two
       // shaded cells, never adjacent). At a *grid* corner the corner cell's
@@ -299,7 +301,7 @@ function narrate(
       const t = numAt(targets[0]);
       return targets.some((tg) => sameCell(tg, reason.corner))
         ? `This corner ${t} matches both its neighbouring ${m}s; keeping it white would shade them both, leaving the corner boxed in — so the ${t} must be shaded.`
-        : `Keeping this ${t} white would shade the two ${m}s flanking the corner ${numAt(reason.corner)}, leaving the corner boxed in — so the ${t} must be shaded.`;
+        : `This inner ${t} matches the two ${m}s flanking the corner ${numAt(reason.corner)}; keeping it white would shade them both, leaving the corner boxed in — so the ${t} must be shaded.`;
     }
     case "corner2": {
       // Follow the proof-by-contradiction arc with concrete numbers: the
@@ -313,19 +315,22 @@ function narrate(
     }
     case "offset": {
       // quad = [A1, B1, A2, B2]; the A-pair (n) shares one line, the B-pair
-      // (m) the next, offset by a square. Shading either forced cell makes
-      // A2/B2 white, which blacks A1 and B1 — and A1,B1 are adjacent, so two
-      // shaded squares would touch. Name both values and walk that arc.
+      // (m) the next. Lead with the *indication* (§1b) — the spotted pattern,
+      // a pair of n in one line and a pair of m in the next — so the player
+      // learns to recognise it, then give the consequence. The pairs can sit
+      // ANYWHERE along those lines, so never say "overlap"/"between them";
+      // "lined up so that" + the highlight carry the exact arrangement.
       // (Article-free — "one of the Ns" sidesteps "a 4" vs "an 8".)
       const n = numAt(reason.quad[0]);
       const m = numAt(reason.quad[1]);
-      const intro =
+      const line = reason.quad[0].x === reason.quad[2].x ? "column" : "row";
+      const pairs =
         n === m
-          ? `These four ${n}s form two pairs, offset by a square.`
-          : `Two ${n}s and two ${m}s overlap, offset by a square.`;
+          ? `a pair of ${n}s in one ${line} and another pair in the next`
+          : `a pair of ${n}s in one ${line} and a pair of ${m}s in the next`;
       const forced =
         n === m ? `two of the ${n}s` : `one of the ${n}s and one of the ${m}s`;
-      return `${intro} Shading either of the two squares between them would force ${forced} to be shaded side by side — and shaded squares can't touch. So both must be white.`;
+      return `There's ${pairs}, lined up so that shading either of these two squares would force ${forced} to be shaded next to each other — and shaded squares can't touch. So both must be white.`;
     }
     case "adjBlack":
       return plural

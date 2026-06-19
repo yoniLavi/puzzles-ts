@@ -13,7 +13,12 @@ import { describe, expect, it } from "vitest";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { type SinglesHint, singlesGame } from "./index.ts";
-import { COL_HINT, COL_HINT_CELL } from "./render.ts";
+import {
+  COL_HINT,
+  COL_HINT_BLACKREF,
+  COL_HINT_CELL,
+  COL_HINT_WHITEREF,
+} from "./render.ts";
 import { deduceHintPlan, solveSpecific } from "./solver.ts";
 import {
   DIFF_ANY,
@@ -147,12 +152,16 @@ describe("hint", () => {
       const res = singlesGame.hint?.(s);
       if (!res?.ok) continue;
       const step = res.steps.find((st) =>
-        st.explanation.includes("offset by a square"),
+        st.explanation.includes("shaded next to each other"),
       );
       if (step) {
-        expect(step.explanation).toMatch(/\d/); // concrete value(s), not "a square"
+        expect(step.explanation).toMatch(/\d/); // concrete value(s)
         expect(step.explanation).toContain("can't touch");
         expect(step.explanation).not.toContain("across from it");
+        // "overlap" was geometrically false — the pairs can span a whole line.
+        expect(step.explanation).not.toContain("overlap");
+        // Leads with the indication (§1b) — names the spotted pattern first.
+        expect(step.explanation).toMatch(/^There's a pair of \d+s in one (column|row)/);
         found = true;
         break;
       }
@@ -317,5 +326,38 @@ describe("singles hint render", () => {
     // Numbers are still rendered (clue digits not hidden by the overlay).
     expect(ops.some((o) => o.op === "text")).toBe(true);
     expect(ops).toMatchSnapshot();
+  });
+
+  it("rings a cited shaded square in COL_HINT_BLACKREF, distinct from the blue target", () => {
+    // Walk to an adjBlack frame: a decided black square forces a neighbour
+    // white. The black premise must ring in the black-ref legend colour, not
+    // the same blue as the forced cell.
+    const { recording } = renderScenario({
+      game: singlesGame,
+      id: "6x6dk#scan-0",
+      showHint: true,
+      hintUntil: (s) => s.explanation.includes("can't be adjacent"),
+    });
+    const ops = recording.ops;
+    const colour = (c: number) =>
+      ops.some((o) => "colour" in o && o.colour === c);
+    expect(colour(COL_HINT_BLACKREF)).toBe(true); // cited black premise ring
+    expect(colour(COL_HINT)).toBe(true); // forced cell, a different colour
+    expect(COL_HINT_BLACKREF).not.toBe(COL_HINT);
+  });
+
+  it("rings a cited ringed-white square in COL_HINT_WHITEREF", () => {
+    // Walk to a sameLine frame: a circled white square forces line-mates
+    // shaded. The white premise rings in the white-ref legend colour.
+    const { recording } = renderScenario({
+      game: singlesGame,
+      id: "6x6dk#scan-0",
+      showHint: true,
+      hintUntil: (s) => s.explanation.includes("ringed white square"),
+    });
+    const ops = recording.ops;
+    expect(
+      ops.some((o) => "colour" in o && o.colour === COL_HINT_WHITEREF),
+    ).toBe(true);
   });
 });
