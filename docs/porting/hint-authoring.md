@@ -313,12 +313,16 @@ fact when it's a hypothetical). What unblocked it was making the narration
 **value-aware** (read the actual numbers off the board in `narrate`, passing it
 `state`) and ordering it as the **proof-by-contradiction arc the deduction
 actually is**: *the signal that fired it* → *the move we're ruling out* → *the
-consequence* → *the deduction*. Owner's wording, now generated for any corner:
-*"One of the two touching 3s must be shaded. Shading this 5 would force the 3
-beside the corner 4 shaded as well, leaving the corner boxed in on both sides —
-so the 5 must be white."* (the closing modal follows the §1a necessity house —
-this string predates it and read "stays white" until the 2026-06-19 sweep.)
-Concrete values ("the corner 4", "the two touching 3s") plus the highlight
+consequence* → *the deduction*. Owner's wording, now generated for any corner —
+and, per §1b, **opening on the spotted pattern** (a touching equal-pair at a grid
+corner) before the proof: *"A touching pair of 3s sits at the corner; one of them
+must be shaded. Shading this 5 would then force the 3 beside the corner 4 shaded
+as well, leaving the corner boxed in on both sides — so the 5 must stay white."*
+(The closing `must stay` is a §1a necessity modal; the opening clause is the
+indication brought in line with `offset`/`sandwich` on 2026-06-19 — it had been
+the one corner case still opening on a deduced fact. "At the corner" is robust to
+either sub-case, since the matching pair is `(corner, side)` or `(side, inner)`.)
+Concrete values ("the corner 4", "the touching pair of 3s") plus the highlight
 disambiguate far better than role words, and the arc lets the reader follow each
 link. Watch dangling pronouns: an early cut ended "…force the 3 beside the corner
 4 shaded as well, **trapping it**" — "it" read as the 3, not the corner, so name

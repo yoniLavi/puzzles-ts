@@ -441,11 +441,41 @@ manual flow ("clear this one, then the rest" stays on screen through its legs)
 and the auto-play flow (the legs animate back-to-back as one multi-part move)
 consistent across every game whose hints group naturally.
 
+**Hint-authoring convention — element-type colour legend.** When a game's hint
+narration names **more than one distinct kind of board element** (e.g. a filled
+cell as premise versus the forced cell as conclusion, or a clue versus a
+region), the game's `redraw` SHALL distinguish those types with a **stable
+per-game colour legend**: each element type is assigned one highlight colour used
+consistently across all that game's hints (so the legend is learnable), and only
+the types a given hint actually names are highlighted. Each legend colour SHALL
+be paired with a **non-colour cue** (ring versus shade versus fill, the drawn
+digit/clue, or position) so the type mapping survives for colourblind players —
+colour SHALL NOT be the sole carrier, and colour names SHALL NOT appear in the
+narration text. This convention is orthogonal to "equivalent moves share a
+colour": equivalent *forced moves* still share the single target colour; the
+legend governs *premise/element types*.
+
 A non-deductive game (no technique to teach) MAY instead derive its plan from
 the known solution via `aux`: it is a legitimate hint strategy to walk the
 player to the unique solution. Such a game SHOULD prefer the `aux`-derived plan
 when `aux` is present (guaranteeing the plan completes) and MAY fall back to a
 local heuristic when it is absent.
+
+#### Scenario: A hint naming multiple element types colours them by a stable legend
+
+- **WHEN** a game's displayed hint step narrates two distinct board-element
+  types (for example a cited filled/decided premise cell and the forced target
+  cell)
+- **THEN** `redraw` highlights each type in its own legend colour, paired with a
+  distinguishing non-colour cue, rather than rendering both in the single target
+  colour
+
+#### Scenario: A legend colour is the same across different hints of one game
+
+- **WHEN** two different hints of the same game each name the same element type
+  (for example "a shaded square" appears as a premise in two different
+  deductions)
+- **THEN** that element type is drawn in the same legend colour in both hints
 
 #### Scenario: Requesting a hint from the midend
 
@@ -453,62 +483,6 @@ local heuristic when it is absent.
   on a game that implements the `hint` method
 - **THEN** the midend computes a plan once, stores it with index 0, appends
   the first step's explanation to the status bar, and schedules a repaint
-
-#### Scenario: The midend passes the solution hint to the game
-
-- **WHEN** the midend computes a hint plan for a game whose puzzle was freshly
-  generated (so `aux` is stored)
-- **THEN** it calls `game.hint(state, aux)` with that stored `aux`
-- **AND** a game that derives its plan from the solution produces a plan that
-  reaches the solved state, while a game that ignores `aux` is unaffected
-
-#### Scenario: Following a hint manually shows one step per request
-
-- **WHEN** the user makes a move that completes the displayed hint step
-  (`hintKeepTrack` returns `"completed"`) and the next step is not a
-  journey continuation
-- **THEN** the midend advances the stored plan without recomputing and hides
-  the hint display (no explanation, no highlights)
-- **WHEN** the user requests a hint again via `midend.hint()`
-- **THEN** the already-advanced current step is displayed instantly, still
-  without recomputing the plan
-
-#### Scenario: A multi-leg journey stays displayed through its legs
-
-- **WHEN** the displayed step previews a journey continuation ("Move tile 10
-  to row 2, then to column 5") and the user's move completes the first leg
-- **THEN** the midend advances to the flagged continuation step and keeps the
-  hint displayed, narrating the second leg, without a fresh hint request
-- **WHEN** the journey's final leg completes and the following step is not a
-  continuation
-- **THEN** the display hides and the next step waits to be asked for
-
-#### Scenario: A multi-move deduction is grouped into one journey
-
-- **WHEN** a game's `hint()` derives a step from a single deduction that forces
-  more than one move
-- **THEN** those moves are returned as a contiguous run of `HintStep`s whose
-  first leg is unflagged and carries the full deduction explanation, and whose
-  remaining legs each set `continuesPrevious` to `true`
-- **AND** completing one leg manually keeps the hint displayed and transitions
-  to the next leg, while the next *distinct* deduction's first leg waits to be
-  asked for
-
-#### Scenario: An off-plan move drops the plan
-
-- **WHEN** the user makes a move for which `hintKeepTrack` returns `"off"`
-  (or undoes, redoes, restarts, or starts a new game) while a plan is active
-- **THEN** the midend clears `activeHint`, redraws without hint visuals, and
-  the next hint request computes a fresh plan
-
-#### Scenario: Auto-play executes the stored plan
-
-- **WHEN** `executeHint()` is called repeatedly while a stored plan has
-  remaining steps
-- **THEN** each call executes the plan's current step verbatim — `hint()` is
-  not recomputed per step — and the plan advances at each animation settle,
-  displaying the next step as the auto-play preview and clearing after the
-  final step
 
 ### Requirement: The engine provides shared pointer button constants
 

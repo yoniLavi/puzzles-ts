@@ -58,7 +58,17 @@
   white." Test asserts the
   value-aware wording; live render-scenario confirms text matches the picture.
   Guide updated (concrete-values + contradiction-arc lesson).
+- [x] 4b.4 `corner2` brought **fully indication-first** (§1b, 2026-06-19): it was
+  the one corner case still opening on a deduced fact ("One of the two touching
+  3s must be shaded"). Now opens on the spotted pattern — "A touching pair of 3s
+  sits at the corner; one of them must be shaded. Shading this 5 would then force
+  the 3 beside the corner 4 shaded as well, leaving the corner boxed in on both
+  sides — so the 5 must stay white." "At the corner" is robust to both sub-cases
+  (pair = `(corner, side)` or `(side, inner)`). Test asserts the pattern-first
+  opening (`/^A touching pair of 3s sits at the corner/`); guide worked example
+  updated.
 
 ## 5. Owner acceptance
-- [ ] 5.1 Owner follows hints / Auto-Hint to verify Singles plays correctly.
-- [ ] 5.2 Commit (parity-gated) + archive on acceptance.
+- [x] 5.1 Owner followed hints / Auto-Hint to verify Singles plays correctly
+  (2026-06-19); corner2 narration reworked to indication-first on owner request.
+- [x] 5.2 Commit (parity-gated) + archive on acceptance (2026-06-19).

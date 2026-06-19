@@ -34,14 +34,17 @@
 
 ## 4. Gate + acceptance (parity-gated)
 
-- [ ] 4.1 Full gate: `tsc -b --noEmit` → `biome lint` → `vitest run` →
+- [x] 4.1 Full gate: `tsc -b --noEmit` → `biome lint` → `vitest run` →
       `vite build`.
-- [ ] 4.2 `npm run dev` smoke: a Singles hint citing a shaded square rings it in
+- [x] 4.2 `npm run dev` smoke: a Singles hint citing a shaded square rings it in
       the black-ref colour distinct from the blue target; one citing a ringed
       white square rings it in the white-ref colour; numbers/corners unchanged.
-- [ ] 4.3 Owner decision on **two ring colours vs one** `COL_HINT_REF` (design
-      open question), applied to render + legend table.
-- [ ] 4.4 Owner acceptance → commit + archive.
+- [x] 4.3 Owner decision on **two ring colours vs one** `COL_HINT_REF` (design
+      open question): **decided 2026-06-19 — keep two** (teal `COL_HINT_BLACKREF`
+      for a cited shaded square, violet `COL_HINT_WHITEREF` for a cited ringed-
+      white square). Rationale: the legend is a stable per-game map of element
+      *types*; the cell's own black/white reinforces which ring is which.
+- [x] 4.4 Owner acceptance (2026-06-19) → commit + archive.
 
 ## 5. Follow-ups (separate parity-gated changes, not this change)
 

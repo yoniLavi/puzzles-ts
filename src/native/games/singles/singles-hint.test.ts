@@ -230,10 +230,11 @@ describe("hint", () => {
     expect(hl.strand).toEqual([{ x: 0, y: 0 }]);
     expect(hl.evidence.length).toBeGreaterThanOrEqual(1);
     expect(hl.evidence.some((e) => e.x === 0 && e.y === 0)).toBe(false);
-    // Narration names the actual numbers and follows the contradiction arc
-    // (the touching pair → shading the target → trapping the corner), not
-    // the old confusing "two corner squares".
-    expect(cornerStep?.explanation).toContain("two touching 3s");
+    // Narration opens on the spotted pattern (§1b indication-first), names the
+    // actual numbers, and follows the contradiction arc (the touching pair →
+    // shading the target → trapping the corner), not the old confusing "two
+    // corner squares".
+    expect(cornerStep?.explanation).toMatch(/^A touching pair of 3s sits at the corner/);
     expect(cornerStep?.explanation).toContain("corner 4");
     expect(cornerStep?.explanation).toContain("boxed in");
     expect(cornerStep?.explanation).not.toContain("two corner squares");

@@ -304,14 +304,18 @@ function narrate(
         : `This inner ${t} matches the two ${m}s flanking the corner ${numAt(reason.corner)}; keeping it white would shade them both, leaving the corner boxed in — so the ${t} must be shaded.`;
     }
     case "corner2": {
-      // Follow the proof-by-contradiction arc with concrete numbers: the
-      // signal (the touching pair) → the move we rule out (shading the
-      // target) → its consequence (the corner's neighbour shaded, the
-      // corner boxed in) → the deduction.
+      // Indication-first (§1b): open on the spotted pattern — a touching pair
+      // of equal numbers at a grid corner — then run the proof-by-contradiction
+      // arc with concrete numbers: the move we rule out (shading the target) →
+      // its consequence (the corner's neighbour shaded, the corner boxed in) →
+      // the deduction. ("at the corner" is robust to either sub-case: the pair
+      // is (corner, side) or (side, inner), so it always sits in the corner
+      // block; "the ${p} beside the corner ${c}" names the side member either
+      // way, and c may equal p when the corner is itself part of the pair.)
       const p = numAt(reason.pair[0]);
       const c = numAt(reason.corner);
       const t = numAt(targets[0]);
-      return `One of the two touching ${p}s must be shaded. Shading this ${t} would force the ${p} beside the corner ${c} shaded as well, leaving the corner boxed in on both sides — so the ${t} must be white.`;
+      return `A touching pair of ${p}s sits at the corner; one of them must be shaded. Shading this ${t} would then force the ${p} beside the corner ${c} shaded as well, leaving the corner boxed in on both sides — so the ${t} must stay white.`;
     }
     case "offset": {
       // quad = [A1, B1, A2, B2]; the A-pair (n) shares one line, the B-pair
