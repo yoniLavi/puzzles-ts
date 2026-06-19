@@ -11,11 +11,13 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import type { SinglesHint } from "./index.ts";
 import {
   F_BLACK,
   F_CIRCLE,
   F_ERROR,
+  type SinglesMove,
   type SinglesState,
   type SinglesUi,
 } from "./state.ts";
@@ -34,6 +36,10 @@ export const COL_BLACKNUM = 5;
 export const COL_GRID = 6;
 export const COL_CURSOR = 7;
 export const COL_ERROR = 8;
+// Fork additions (beyond upstream's COL_* enum): the explained hint.
+export const COL_HINT = 9; // the cell(s) the displayed hint forces (blue)
+export const COL_HINT_CELL = 10; // the deduction's premise/evidence (light blue)
+export const COL_HINT_STRAND = 11; // the corner a corner-deduction protects (amber)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, lowlight } = mkhighlight(defaultBackground);
@@ -47,6 +53,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_GRID] = lowlight; // COL_GRID == COL_LOWLIGHT
   out[COL_CURSOR] = [0.2, 0.8, 0];
   out[COL_ERROR] = [1, 0, 0];
+  out[COL_HINT] = [0.13, 0.5, 0.85];
+  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
+  out[COL_HINT_STRAND] = [0.98, 0.78, 0.42];
   return out;
 }
 
@@ -71,6 +80,13 @@ const DS_ERROR = 0x10;
 const DS_FLASH = 0x20;
 const DS_IMPOSSIBLE = 0x40;
 const DS_MISTAKE = 0x80;
+// Hint overlay (fork addition): a forced-black target, a forced-white
+// (circle) target, and an evidence cell (shaded if undecided, ringed if
+// it is a decided black/circle premise — the colour is then the reason).
+const DS_HINT_BLACK = 0x100;
+const DS_HINT_WHITE = 0x200;
+const DS_HINT_EVID = 0x400;
+const DS_HINT_STRAND = 0x800; // a corner-deduction's protected corner (amber)
 
 export interface SinglesDrawState {
   started: boolean;
@@ -143,6 +159,22 @@ function tileRedraw(
     dnum = true;
   }
 
+  // Hint overrides. A target paints the whole cell the hint colour (and a
+  // forced-black target hides the number — it reads as "act here", not a
+  // filled answer). An evidence cell shades light blue only while it is
+  // still undecided; a decided black/circle premise keeps its colour (the
+  // reason) and is ringed below instead.
+  const target = f & (DS_HINT_BLACK | DS_HINT_WHITE);
+  const decided = f & (DS_BLACK | DS_CIRCLE);
+  if (target) {
+    bg = COL_HINT;
+    if (f & DS_HINT_BLACK) dnum = false;
+  } else if (f & DS_HINT_STRAND && !decided) {
+    bg = COL_HINT_STRAND;
+  } else if (f & DS_HINT_EVID && !decided) {
+    bg = COL_HINT_CELL;
+  }
+
   const cx = x + Math.floor(ts / 2);
   const cy = y + Math.floor(ts / 2);
   const cr = crad(ts);
@@ -153,6 +185,26 @@ function tileRedraw(
   if (f & DS_CIRCLE) {
     dr.drawCircle({ x: cx, y: cy }, cr, tcol, tcol);
     dr.drawCircle({ x: cx, y: cy }, cr - 1, bg, tcol);
+  }
+
+  // Forced-white target: preview the circle the hint asks the player to
+  // place (a ring on the blue cell).
+  if (f & DS_HINT_WHITE) {
+    dr.drawCircle({ x: cx, y: cy }, cr, COL_BLACK, COL_BLACK);
+    dr.drawCircle({ x: cx, y: cy }, cr - 1, bg, COL_BLACK);
+  }
+  // Forced-black target: preview the shade as an inset square.
+  if (f & DS_HINT_BLACK) {
+    const inset = Math.max(2, Math.floor(ts / 5));
+    dr.drawRect({ x: x + inset, y: y + inset, w: ts - 2 * inset, h: ts - 2 * inset }, COL_BLACK);
+  }
+  // A decided premise cell (its black/circle colour is the reason): ring
+  // it rather than shading over it — in the strand colour for a protected
+  // corner, else the evidence/hint colour.
+  if ((f & DS_HINT_EVID || f & DS_HINT_STRAND) && f & (DS_BLACK | DS_CIRCLE)) {
+    const ringCol = f & DS_HINT_STRAND ? COL_HINT_STRAND : COL_HINT;
+    drawRectOutline(dr, x + 1, y + 1, ts - 2, ts - 2, ringCol);
+    drawRectOutline(dr, x + 2, y + 2, ts - 4, ts - 4, ringCol);
   }
 
   if (dnum) {
@@ -190,12 +242,26 @@ export function redraw(
   ui: SinglesUi,
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<SinglesMove, SinglesHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
   if (!ds) return;
   const ts = ds.tilesize;
   const { w, h } = state;
+
+  // Index the displayed hint step's target/evidence cells.
+  const hl = hint?.highlights;
+  const hintBlack = new Set<number>();
+  const hintWhite = new Set<number>();
+  const hintEvid = new Set<number>();
+  const hintStrand = new Set<number>();
+  if (hl) {
+    for (const t of hl.targets) {
+      (t.value === "black" ? hintBlack : hintWhite).add(t.y * w + t.x);
+    }
+    for (const e of hl.evidence) hintEvid.add(e.y * w + e.x);
+    for (const s of hl.strand) hintStrand.add(s.y * w + s.x);
+  }
 
   if (!ds.started) {
     const size = computeSize({ w, h }, ts);
@@ -230,6 +296,10 @@ export function redraw(
       if (state.flags[i] & F_CIRCLE) f |= DS_CIRCLE;
       if (state.flags[i] & F_ERROR) f |= DS_ERROR;
       if (mistakeSet?.has(i)) f |= DS_MISTAKE;
+      if (hintBlack.has(i)) f |= DS_HINT_BLACK;
+      if (hintWhite.has(i)) f |= DS_HINT_WHITE;
+      if (hintEvid.has(i)) f |= DS_HINT_EVID;
+      if (hintStrand.has(i)) f |= DS_HINT_STRAND;
 
       if (!ds.started || ds.cache[i] !== f) {
         tileRedraw(dr, ts, coord(x, ts), coord(y, ts), state.nums[i], f);

@@ -76,6 +76,33 @@ moves, each tagged with the rule + premise that forces it. Exemplar:
 [`range/solver.ts`](../../src/native/games/range/solver.ts) +
 [`range/index.ts`](../../src/native/games/range/index.ts).
 
+**Recording through an op-queue + cascade solver (Singles).** Range's rules call
+`makeMove` and record inline. A solver shaped like Singles' (`singles.c`) is
+different: the rules **queue** ops and a separate processor **applies** them while
+**cascading** new ops (a new black queues "circle my neighbours"; a new circle
+queues "blacken my line-mates"). The cause of a cell is known at two sites — the
+rule that queued it, and the apply step that queued a follow-on. So: **attach the
+reason to the queued op, and record each op when it actually changes a flag**
+inside the apply/cascade loop. The cascade builds its own reason at the apply
+site, referencing the just-decided source cell (`adjBlack` → the new black;
+`sameLine` → the new circle). Put the recorder array + a group counter on the
+existing `SolverState` so it threads everywhere for free, and **gate every
+reason allocation on it** (`if (ss.records)`) so the generator's hot solve path
+is byte-for-byte unchanged — verify with the existing C differential. Exemplar:
+[`singles/solver.ts`](../../src/native/games/singles/solver.ts) (`deduceHintPlan`,
+`recordOp`, the cascade reasons in `solverOpsDo`).
+
+**Group by a firing id, not by adjacency.** When one firing forces several cells
+(Singles' four-in-a-corner, an offset-pair's two whites, a doubles pair shading
+*all* other copies, and naturally the cascade itself — one new black forces its
+≤4 neighbours white as one firing; one new circle blackens every line-mate as one
+firing), give that firing's ops a shared `group` id and **merge records by group
+into one multi-cell `HintStep`** (quality-bar rule 2). Records of one firing are
+queued consecutively and so applied consecutively, so a first-seen-order bucket
+keeps the plan's order. A genuine *chain* (a black → neighbours white → those
+blacken line-mates → …) stays *separate* steps — each link is its own teachable
+local deduction, like Range.
+
 ## 3. Refusal couples to the mistake overlay + banner
 
 A hint refused because the board is wrong now lights up the same overlay
@@ -116,6 +143,49 @@ shaded. A premise cell that *can't* take the area fill (Range's adjacent **black
 square, which must stay black) is **ringed** in `COL_HINT` instead — see
 `drawCell`'s `hintKind === 4` branch and `buildHighlights` in
 [`range/index.ts`](../../src/native/games/range/index.ts).
+
+### Distinct *roles* in one deduction get distinct colours — and distinct words
+
+Quality-bar rule 3 ("equivalent moves share a colour") has a converse:
+**premise cells that play *different* roles in the deduction must NOT share a
+colour**, or the highlight lies. Singles' 2×2-corner deduction is the cautionary
+tale — its first cut shaded three cells one colour and the narration called them
+all "two corner squares": but those three cells are *two* roles — the **matching
+pair** (the cells that share a number) and the **corner being protected** (a
+different cell that gets sealed off). One colour + one label made it unreadable
+(the owner: "it says two corner squares, but there's only one corner, and one of
+the highlighted cells is a number that doesn't share"). The fix: a third
+highlight role with its own colour (`COL_HINT_STRAND`, amber) for the protected
+corner, kept disjoint from the shaded `COL_HINT_CELL` matching pair and the
+`COL_HINT` target. Carry the roles as separate lists on the hint type (`targets`
+/ `evidence` / `strand`) and apply them with a clear precedence in `redraw`
+(target > strand > evidence). Exemplar: `SinglesHint` + `strandOf`/`narrate` in
+[`singles/index.ts`](../../src/native/games/singles/index.ts), the `DS_HINT_STRAND`
+branch in [`singles/render.ts`](../../src/native/games/singles/render.ts). Test
+that the roles are **disjoint** (no cell is two roles).
+
+**For a subtle multi-link deduction, name the concrete values and walk the
+contradiction arc — generic "this square / its other neighbour" fails.**
+Distinct colours alone weren't enough for the corner case: even with the corner
+ambered and the pair shaded, the owner couldn't follow *"shading this square
+would seal off the highlighted corner — a matching number forces its other
+neighbour shaded"* (which also wrongly said "already", implying an immediate
+fact when it's a hypothetical). What unblocked it was making the narration
+**value-aware** (read the actual numbers off the board in `narrate`, passing it
+`state`) and ordering it as the **proof-by-contradiction arc the deduction
+actually is**: *the signal that fired it* → *the move we're ruling out* → *the
+consequence* → *the deduction*. Owner's wording, now generated for any corner:
+*"One of the two touching 3s must be shaded. Shading this 5 would force the 3
+beside the corner 4 shaded as well, leaving the corner boxed in on both sides —
+so the 5 stays white."*
+Concrete values ("the corner 4", "the two touching 3s") plus the highlight
+disambiguate far better than role words, and the arc lets the reader follow each
+link. Watch dangling pronouns: an early cut ended "…force the 3 beside the corner
+4 shaded as well, **trapping it**" — "it" read as the 3, not the corner, so name
+the referent ("leaving **the corner** boxed in"). Lesson: when a one-liner with
+pronouns won't land, the fix is usually *concrete references + the reasoning
+order*, not more words. (Colour names still
+don't go in the text — colourblind users — the numbers + highlight carry it.)
 
 **Compute each step's area against the board as that step fires, not the original
 board.** The plan is still computed once, but a frozen area goes stale: a `reach`
@@ -163,6 +233,27 @@ information that makes the cell evidence?**
 So: "is the premise filled?" is the wrong question. "Would the area fill hide the
 premise?" is the right one — a *colour* premise yes (ring), a *number* premise no
 (shade).
+
+**When a game has both kinds, decide shade-vs-ring in `redraw` from the cell's
+own state — one `evidence` list, not two.** Singles' premises are sometimes
+undecided number cells (the equal numbers of a sandwich, a 2×2 corner block) and
+sometimes already-decided cells whose colour *is* the reason (the new black a
+neighbour sits beside; the circled white a line-mate duplicates). Rather than
+splitting the highlight payload into `area` + `rings` (Range's shape, right when
+the split is known at build time), Singles carries one flat `evidence: Pt[]` and
+the renderer branches per cell: **black/circle ⇒ ring `COL_HINT`, else ⇒ shade
+`COL_HINT_CELL`** (numbers draw on top). This is the general form of Range's
+"a premise that can't take the fill is ringed" and keeps the hint type tiny.
+Exemplar: the `DS_HINT_EVID` branch in
+[`singles/render.ts`](../../src/native/games/singles/render.ts).
+
+**Testing gotcha — a narration substring can match more than one deduction.**
+Reaching a specific deduction's frame by predicating `hintUntil` on a phrase from
+its narration is handy, but pick a phrase *unique to that deduction*: several
+Singles narrations share generic words ("shaded square", "stays white"), so a
+loose predicate stops on the wrong frame. Predicate on a phrase only one reason
+uses (e.g. "can't be adjacent" for `adjBlack`, "between them" for the sandwich,
+"ringed white square" for `sameLine`). If the strings get retuned, re-pick.
 
 **Keep the narration terse (owner-directed).** Explaining *why* is the bar, but
 say it in one sentence, not three. Filling's first cut spelled out the full

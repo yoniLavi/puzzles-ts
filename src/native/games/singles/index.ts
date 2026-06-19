@@ -12,6 +12,9 @@
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   type SolveResult,
   UI_UPDATE,
   type UiUpdate,
@@ -38,7 +41,15 @@ import {
   type SinglesDrawState,
   setTileSize,
 } from "./render.ts";
-import { CC_MARK_ERRORS, checkComplete, solveSpecific } from "./solver.ts";
+import {
+  CC_MARK_ERRORS,
+  checkComplete,
+  deduceHintPlan,
+  type HintRecord,
+  OP_BLACK,
+  type SinglesReason,
+  solveSpecific,
+} from "./solver.ts";
 import {
   type CellValue,
   cloneState,
@@ -229,6 +240,213 @@ function findMistakes(state: SinglesState): readonly SinglesMistake[] {
   return out;
 }
 
+// --- hint ------------------------------------------------------------------
+
+interface Cell {
+  x: number;
+  y: number;
+}
+
+/** Highlight data for a Singles hint step. `targets` are the cell(s) the
+ * displayed deduction forces, each with the mark it forces; a firing that
+ * forces two cells at once (a 2×2 corner of four, an offset pair) carries
+ * both. `evidence` are the deduction's premise cells — `redraw` shades an
+ * undecided number cell (the digit draws on top) and rings an already-
+ * decided black/circle cell whose state *is* the reason. `strand` is the
+ * distinct corner cell a 2×2-corner deduction is protecting from being
+ * sealed off — drawn in its own colour so the player can tell the corner
+ * at risk apart from the matching numbers that share a value. */
+export interface SinglesHint {
+  targets: { x: number; y: number; value: "black" | "circle" }[];
+  evidence: Cell[];
+  strand: Cell[];
+}
+
+const opValue = (op: number): "black" | "circle" =>
+  op === OP_BLACK ? "black" : "circle";
+
+const sameCell = (a: Cell, b: Cell): boolean => a.x === b.x && a.y === b.y;
+
+/** Narrate *why* the grouped firing forces its cell(s), referencing the
+ * highlighted evidence so the words and the picture agree. The corner
+ * deductions name the actual numbers involved (owner-directed: concrete
+ * values read far clearer than "this square / its other neighbour"). */
+function narrate(
+  reason: SinglesReason,
+  targets: { x: number; y: number }[],
+  state: SinglesState,
+): string {
+  const plural = targets.length > 1;
+  const numAt = (c: Cell): number => state.nums[c.y * state.w + c.x];
+  switch (reason.kind) {
+    case "sandwich":
+      return "One of these two matching numbers must be shaded, so the square between them stays white.";
+    case "pair":
+      return "One of these matching neighbours stays white and uses up the number, so every other copy in the line is shaded.";
+    case "corner4":
+      return "All four corner squares share a number; the only non-touching pair that leaves one white per line is this diagonal.";
+    case "corner3": {
+      // Branch A shades the corner itself; branch B shades the inner cell
+      // to save the (separately highlighted) corner. Name the referent
+      // explicitly ("the corner") so it never reads as the matching number.
+      const m = numAt(reason.matched[1]);
+      const t = numAt(targets[0]);
+      return targets.some((tg) => sameCell(tg, reason.corner))
+        ? `This corner ${t} matches both its neighbouring ${m}s; keeping it white would shade them both, leaving the corner boxed in — so the ${t} is shaded.`
+        : `Keeping this ${t} white would shade the two ${m}s flanking the corner ${numAt(reason.corner)}, leaving the corner boxed in — so the ${t} is shaded.`;
+    }
+    case "corner2": {
+      // Follow the proof-by-contradiction arc with concrete numbers: the
+      // signal (the touching pair) → the move we rule out (shading the
+      // target) → its consequence (the corner's neighbour shaded, the
+      // corner boxed in) → the deduction.
+      const p = numAt(reason.pair[0]);
+      const c = numAt(reason.corner);
+      const t = numAt(targets[0]);
+      return `One of the two touching ${p}s must be shaded. Shading this ${t} would force the ${p} beside the corner ${c} shaded as well, leaving the corner boxed in on both sides — so the ${t} stays white.`;
+    }
+    case "offset":
+      return "Whichever paired square stays white forces the one across from it shaded, so both squares beside it stay white.";
+    case "adjBlack":
+      return plural
+        ? "These squares touch a shaded square, and shaded squares can't be adjacent — so they stay white."
+        : "This square touches a shaded square, and shaded squares can't be adjacent — so it stays white.";
+    case "sameLine":
+      return plural
+        ? "They share a line with the ringed white square, which already uses this number — so they're shaded."
+        : "It shares a line with the ringed white square, which already uses this number — so it's shaded.";
+    case "boxedIn":
+      return "This is the marked white square's only unshaded neighbour left, so it stays white to avoid sealing that square off.";
+    case "split":
+      return "Shading this square would split the white region in two, so it stays white to keep it connected.";
+  }
+}
+
+/** The premise cells a reason reasons over (its visible evidence — the
+ * cells that share a number, or the decided cell whose state is the
+ * reason). The `strand` corner, when present, is surfaced separately. */
+function evidenceOf(reason: SinglesReason): Cell[] {
+  switch (reason.kind) {
+    case "sandwich":
+      return reason.ends;
+    case "pair":
+      return reason.pair;
+    case "corner4":
+      return reason.block;
+    case "corner3":
+      return reason.matched;
+    case "corner2":
+      return reason.pair;
+    case "offset":
+      return reason.quad;
+    case "adjBlack":
+      return [reason.black];
+    case "sameLine":
+      return [reason.circled];
+    case "boxedIn":
+      return [reason.cell];
+    case "split":
+      return reason.neighbours;
+  }
+}
+
+/** The corner cell a 2×2-corner deduction is protecting (drawn in the
+ * distinct strand colour), if any. */
+function strandOf(reason: SinglesReason): Cell[] {
+  return reason.kind === "corner2" || reason.kind === "corner3"
+    ? [reason.corner]
+    : [];
+}
+
+/** Group the ordered records by firing (`group`) into one step each,
+ * preserving deduction order. Records of one firing are contiguous, so a
+ * first-seen-order bucket keeps the plan's order. */
+function groupRecords(records: HintRecord[]): HintRecord[][] {
+  const groups = new Map<number, HintRecord[]>();
+  for (const r of records) {
+    const g = groups.get(r.group);
+    if (g) g.push(r);
+    else groups.set(r.group, [r]);
+  }
+  return [...groups.values()];
+}
+
+function hint(state: SinglesState): HintResult<SinglesMove, SinglesHint> {
+  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (findMistakes(state).length > 0) {
+    return {
+      ok: false,
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+  }
+  const records = deduceHintPlan(state);
+  if (records.length === 0) {
+    return { ok: false, error: "No further move can be deduced from this position." };
+  }
+  const steps: HintStep<SinglesMove, SinglesHint>[] = groupRecords(records).map(
+    (group) => {
+      const reason = group[0].reason;
+      const targets = group.map((r) => ({
+        x: r.x,
+        y: r.y,
+        value: opValue(r.op),
+      }));
+      const key = (c: Cell): number => c.y * state.w + c.x;
+      const targetKey = new Set(targets.map(key));
+      // The protected corner is drawn in its own colour; keep it out of
+      // both the targets and the shaded matching-number evidence.
+      const strand = strandOf(reason).filter((c) => !targetKey.has(key(c)));
+      const strandKey = new Set(strand.map(key));
+      const evidence = evidenceOf(reason).filter(
+        (c) => !targetKey.has(key(c)) && !strandKey.has(key(c)),
+      );
+      return {
+        move: { sets: targets.map((t) => ({ x: t.x, y: t.y, value: t.value })) },
+        explanation: narrate(reason, targets, state),
+        highlights: { targets, evidence, strand },
+      };
+    },
+  );
+  return { ok: true, steps };
+}
+
+/** A move completes a step when it sets every target cell to its hinted
+ * value; a move filling a strict subset of a multi-cell step (and nothing
+ * else) is `"onTrack"`, shrinking the step in place to what remains. */
+function hintKeepTrack(
+  m: SinglesMove,
+  step: HintStep<SinglesMove, SinglesHint>,
+  state: SinglesState,
+): HintTrackVerdict {
+  if (m.solve) return "off";
+  const targets = step.highlights?.targets ?? [];
+  if (targets.length === 0) return "off";
+  const want = new Map<number, "black" | "circle">();
+  for (const t of targets) want.set(t.y * state.w + t.x, t.value);
+
+  let matched = 0;
+  for (const s of m.sets) {
+    const want_v = want.get(s.y * state.w + s.x);
+    if (want_v === undefined || s.value !== want_v) return "off";
+    matched++;
+  }
+  if (matched === 0) return "off";
+  if (matched === want.size) return "completed";
+
+  // Strict subset of a multi-cell step: keep it displayed, shrunk to the
+  // cells still outstanding (permitted on "onTrack").
+  const done = new Set(m.sets.map((s) => s.y * state.w + s.x));
+  const remaining = targets.filter((t) => !done.has(t.y * state.w + t.x));
+  step.move = { sets: remaining.map((t) => ({ x: t.x, y: t.y, value: t.value })) };
+  step.highlights = {
+    targets: remaining,
+    evidence: step.highlights?.evidence ?? [],
+    strand: step.highlights?.strand ?? [],
+  };
+  return "onTrack";
+}
+
 function flashLength(
   from: SinglesState,
   to: SinglesState,
@@ -270,6 +488,8 @@ export const singlesGame: Game<
   status,
 
   solve,
+  hint,
+  hintKeepTrack,
   findMistakes,
 
   textFormat,
