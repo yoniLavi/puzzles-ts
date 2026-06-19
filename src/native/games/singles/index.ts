@@ -311,8 +311,22 @@ function narrate(
       const t = numAt(targets[0]);
       return `One of the two touching ${p}s must be shaded. Shading this ${t} would force the ${p} beside the corner ${c} shaded as well, leaving the corner boxed in on both sides — so the ${t} must be white.`;
     }
-    case "offset":
-      return "Whichever paired square stays white forces the one across from it shaded, so both squares beside it must be white.";
+    case "offset": {
+      // quad = [A1, B1, A2, B2]; the A-pair (n) shares one line, the B-pair
+      // (m) the next, offset by a square. Shading either forced cell makes
+      // A2/B2 white, which blacks A1 and B1 — and A1,B1 are adjacent, so two
+      // shaded squares would touch. Name both values and walk that arc.
+      // (Article-free — "one of the Ns" sidesteps "a 4" vs "an 8".)
+      const n = numAt(reason.quad[0]);
+      const m = numAt(reason.quad[1]);
+      const intro =
+        n === m
+          ? `These four ${n}s form two pairs, offset by a square.`
+          : `Two ${n}s and two ${m}s overlap, offset by a square.`;
+      const forced =
+        n === m ? `two of the ${n}s` : `one of the ${n}s and one of the ${m}s`;
+      return `${intro} Shading either of the two squares between them would force ${forced} to be shaded side by side — and shaded squares can't touch. So both must be white.`;
+    }
     case "adjBlack":
       return plural
         ? "These squares touch a shaded square, and shaded squares can't be adjacent — so they must be white."

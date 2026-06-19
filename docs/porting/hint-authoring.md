@@ -238,6 +238,29 @@ pronouns won't land, the fix is usually *concrete references + the reasoning
 order*, not more words. (Colour names still
 don't go in the text — colourblind users — the numbers + highlight carry it.)
 
+**Concrete values aren't just for the hard cases — sweep every abstract pronoun
+out.** The corner deductions earned concrete values because they were
+*unfollowable* without them; but the bar applies to every narration, including
+ones that "read fine." Singles' `offset` was the cautionary example here: *"Whichever
+paired square stays white forces the one across from it shaded, so both squares
+beside it must be white."* — grammatical, but a wall of deixis ("whichever", "the
+one across from it", "both squares beside it") with **not a single concrete
+reference**, so the player can't map a word to a square. The deduction is two
+interlocking equal-pairs, so *name both values* and walk the contradiction arc
+(read them off `reason.quad` via the `state`-aware `numAt`): *"Two 6s and two 4s
+overlap, offset by a square. Shading either of the two squares between them would
+force one of the 6s and one of the 4s to be shaded side by side — and shaded
+squares can't touch. So both must be white."* Test it stays concrete (assert the
+explanation `toMatch(/\d/)` and drops the old deixis — `singles-hint.test.ts`
+"offset"). Two drafting gotchas: (a) **dodge the a/an trap** — `a ${n}` becomes
+"a 8"; either write articleless ("one of the 6s", "two of the Ns") or branch on
+the digit; never hard-code "a"/"an" before an interpolated number. (b) **guard the
+equal-value branch** — when the two groups can coincide (`n === m`), "Two 4s and
+two 4s overlap" reads broken, so special-case it ("These four 4s form two
+pairs…"). Heuristic for spotting an offender: if a narration contains *zero*
+digits/coordinates and three or more "this/that/it/the one" pronouns, it's almost
+certainly improvable with concrete values.
+
 **Compute each step's area against the board as that step fires, not the original
 board.** The plan is still computed once, but a frozen area goes stale: a `reach`
 run the player has since filled white wouldn't be shaded. Range threads the

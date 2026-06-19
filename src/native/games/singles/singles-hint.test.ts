@@ -140,6 +140,26 @@ describe("hint", () => {
     expect(found).toBe(true);
   });
 
+  it("offset: narration names the pair values and walks the contradiction arc", () => {
+    let found = false;
+    for (const seed of ["sh-1", "sh-2", "sh-3", "sh-4", "hint-plan"]) {
+      const s = fromSeed({ w: 6, h: 6, diff: "tricky" }, seed);
+      const res = singlesGame.hint?.(s);
+      if (!res?.ok) continue;
+      const step = res.steps.find((st) =>
+        st.explanation.includes("offset by a square"),
+      );
+      if (step) {
+        expect(step.explanation).toMatch(/\d/); // concrete value(s), not "a square"
+        expect(step.explanation).toContain("can't touch");
+        expect(step.explanation).not.toContain("across from it");
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+  });
+
   it("gives every step visible evidence (an area to shade or a premise to ring)", () => {
     for (const seed of ["hint-plan", "sh-1", "sh-2", "evidence-3"]) {
       const s = fromSeed({ w: 6, h: 6, diff: "tricky" }, seed);
