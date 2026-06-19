@@ -164,7 +164,15 @@ export class PuzzleView extends SignalWatcher(LitElement) {
                 role="status"
                 style=${
                   this.canvasSize
-                    ? styleMap({ "max-width": `${this.canvasSize.w}px` })
+                    ? styleMap({
+                        // Wrap a long hint at the board width, but never
+                        // narrower than a readable measure (~34rem ≈ 50ch),
+                        // and never past the viewport. Small boards would
+                        // otherwise squeeze a pedagogical hint into a tall
+                        // unreadable column; on those the centred banner
+                        // simply extends past the board edges.
+                        "max-width": `max(${this.canvasSize.w}px, min(34rem, 100%))`,
+                      })
                     : nothing
                 }>
                 ${
@@ -537,10 +545,13 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
       .hint-banner {
         text-align: center;
-        /* Cap the banner to the board width (inline max-width set from the
-         * canvas size) and centre it, so a long hint sentence wraps within
-         * the board instead of widening the whole game element. It may grow
-         * taller (extra lines) — that's fine; only horizontal growth is. */
+        /* Cap the banner to the board width OR a readable floor, whichever
+         * is wider (inline max-width = max(canvasSize.w, min(34rem, 100%)),
+         * set from the canvas size), and centre it. A long hint wraps at the
+         * board width on large boards, but on a small board it falls back to
+         * ~34rem so the sentence stays legible instead of stacking into a
+         * narrow column — the centred banner just extends past the board
+         * edges there. It may grow taller (extra lines) — that's fine. */
         margin-inline: auto;
         overflow-wrap: break-word;
         padding-inline: var(--spacing);
