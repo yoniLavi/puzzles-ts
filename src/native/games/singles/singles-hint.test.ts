@@ -145,6 +145,28 @@ describe("hint", () => {
     expect(found).toBe(true);
   });
 
+  it("a hint always makes progress from any partial position (resumable solve)", () => {
+    // Regression: solveSpecific is written to run from an empty board, and its
+    // cascade only propagates from cells it changes this run. Resuming it from
+    // the player's marks (the hint path) used to stall — a partially-solved,
+    // mistake-free board returned "No further move can be deduced". Walk each
+    // board to completion one hinted move at a time, recomputing the plan from
+    // scratch after every move so deduceHintPlan is exercised from many
+    // arbitrary partial positions; it must never give up before solved.
+    for (const seed of ["sh-1", "sh-2", "sh-3", "hint-plan"]) {
+      let s = fromSeed({ w: 6, h: 6, diff: "tricky" }, seed);
+      let guard = 0;
+      while (singlesGame.status(s) !== "solved") {
+        expect(guard++).toBeLessThan(200);
+        const res = singlesGame.hint?.(s);
+        expect(res?.ok).toBe(true); // never "no further move" on a solvable board
+        if (!res?.ok) break;
+        s = singlesGame.executeMove(s, res.steps[0].move);
+      }
+      expect(singlesGame.status(s)).toBe("solved");
+    }
+  });
+
   it("offset: narration names the pair values and walks the contradiction arc", () => {
     let found = false;
     for (const seed of ["sh-1", "sh-2", "sh-3", "sh-4", "hint-plan"]) {

@@ -813,6 +813,49 @@ export function deduceHintPlan(state: SinglesState): HintRecord[] {
   const ss = newSolverState(work);
   ss.records = [];
   ss.group = 0;
+  primeCascadeFromMarks(work, ss);
   solveSpecific(work, DIFF_ANY, false, ss);
   return ss.records;
+}
+
+/**
+ * Seed the op queue with the cascade implications of cells the player has
+ * already decided. `solverOpsDo` fires a cell's cascade (a black forces its
+ * neighbours white; a circle blackens its equal line-mates) only when it
+ * *changes* that cell during this solve run. `solveSpecific` is written to run
+ * from an empty board (upstream's only use), so resuming it from the player's
+ * marks — the hint path — would never propagate from those marks and the
+ * solver stalls partway. Priming the existing marks' implications makes the
+ * solve resumable from any consistent partial position, so a hint can always
+ * make progress on a still-solvable board. (Hint-only: the generator solves
+ * from empty with a non-recording state, so its byte-identical path is
+ * untouched.)
+ */
+function primeCascadeFromMarks(s: SinglesState, ss: SolverState): void {
+  for (let y = 0; y < s.h; y++) {
+    for (let x = 0; x < s.w; x++) {
+      const i = y * s.w + x;
+      if (s.flags[i] & F_BLACK) {
+        const r = ss.records
+          ? { kind: "adjBlack" as const, black: { x, y } }
+          : undefined;
+        const g = ss.records ? newGroup(ss) : undefined;
+        solverOpCircle(s, ss, x - 1, y, r, g);
+        solverOpCircle(s, ss, x + 1, y, r, g);
+        solverOpCircle(s, ss, x, y - 1, r, g);
+        solverOpCircle(s, ss, x, y + 1, r, g);
+      } else if (s.flags[i] & F_CIRCLE) {
+        const r = ss.records
+          ? { kind: "sameLine" as const, circled: { x, y } }
+          : undefined;
+        const g = ss.records ? newGroup(ss) : undefined;
+        for (let xx = 0; xx < s.w; xx++) {
+          if (xx !== x) solverOpBlacken(s, ss, xx, y, s.nums[i], r, g);
+        }
+        for (let yy = 0; yy < s.h; yy++) {
+          if (yy !== y) solverOpBlacken(s, ss, x, yy, s.nums[i], r, g);
+        }
+      }
+    }
+  }
 }
