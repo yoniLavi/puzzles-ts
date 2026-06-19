@@ -632,6 +632,42 @@ Seed: `palisade-render-scenario.test.ts` reaches the `equivalentEdges` frame the
 Playwright harness couldn't. To reach a specific deduction without its desc, do a
 fixed-seed scan (loop ids, keep the first whose `result.hint` matches).
 
+### A hint MUST resume from any mid-game position — the cross-game invariant
+
+The single most important behavioural guarantee, and the one most easily missed:
+**a hint asked from a board the player reached by their own play must still make
+progress and lead to a solved board** (as long as the board is solvable with no
+mistakes). In the app a self-played move drops any stored plan (`hintKeepTrack`
+→ `"off"`, or no `hintKeepTrack` at all), so the *next* hint **recomputes from
+the current state** — the plan-carrying machinery does not save you. Two ported
+games shipped a real bug here, both invisible to "the plan solves the board"
+tests that only ran from the *empty* start:
+
+- **Singles** — its deductive `solveSpecific` was a faithful port of upstream,
+  which only ever solves from an empty board; its cascade propagates only from
+  cells it changes *this run*, so resumed from the player's marks it never fired
+  their implications and stalled ("No further move"). Fix: prime the cascade
+  from the existing marks before solving (`primeCascadeFromMarks` in
+  `singles/solver.ts`). General lesson: **a recording deductive solver written to
+  run from empty is not automatically resumable** — seed it from the current
+  decided cells.
+- **Untangle** — its `aux`-walk re-suggested a *no-op* move forever: a vertex sat
+  on its target *pixel*, but the unrounded target jittered between recomputes (the
+  dihedral match + rescale depend on current positions) by more than the fine
+  unit tolerance, so it never counted as "placed". Fix: treat a vertex as placed
+  when the move is a no-op **at the stored pixel resolution** (`isNoOpMove` in
+  `untangle/hint.ts`), not by a tolerance finer than the recompute jitter. General
+  lesson: **for a heuristic/`aux` hint whose target is recomputed each call, the
+  recompute must converge** — never emit a move that doesn't change the board.
+
+This is enforced uniformly for **every** hint-bearing game by
+[`src/native/engine/hint-resume.test.ts`](../../src/native/engine/hint-resume.test.ts):
+it walks a fresh board to solved one *freshly-recomputed* hint at a time (apply
+only `steps[0]`, recompute, repeat), asserting a hint never gives up before
+solved. Any new game that adds a `hint()` is covered the moment its export is
+added to that test's list — **do so as part of the port**, and a per-game
+"plan solves from empty" test is *not* a substitute.
+
 ## 5. Method lesson: probe before trusting a mechanism diagnosis
 
 Twice in one hint session, a plausible mechanism diagnosis ("the second leg reads

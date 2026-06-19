@@ -68,9 +68,19 @@ const BOX_MARGIN = 0.3;
  * small, so the solved layout spreads to nearly the whole play area. */
 const FILL_MARGIN = 0.25;
 
-/** A vertex already this close (model units) to its solved target needs no
- * move step. */
-const PLACED_TOL = 0.02;
+/** True when moving `cur` to `target` would not change its position at the
+ * target's pixel resolution — i.e. the suggestion is a no-op. Used instead of
+ * a fine unit-distance tolerance because the aux target jitters slightly
+ * between recomputes (the dihedral match + rescale depend on the current
+ * positions), and a tolerance finer than that jitter re-suggests a vertex
+ * that is already exactly on its target pixel — an infinite no-op when hints
+ * are consumed one move at a time. */
+function isNoOpMove(cur: RationalPoint, target: RationalPoint): boolean {
+  return (
+    Math.round((cur.x / cur.d) * target.d) === target.x &&
+    Math.round((cur.y / cur.d) * target.d) === target.y
+  );
+}
 
 /** A position in model units (`x/d`, `y/d` already divided out). */
 interface UnitPoint {
@@ -183,11 +193,6 @@ function step(
   return { move: placeMove(vertex, to), explanation: "", highlights: { vertex, to } };
 }
 
-/** Distance (model units) between a rational point and a unit point. */
-function distUnits(p: RationalPoint, u: UnitPoint): number {
-  return Math.hypot(p.x / p.d - u.x, p.y / p.d - u.y);
-}
-
 /**
  * Hint plan from the known solution (`aux`): rescale the dihedral-matched
  * solved layout to fill the play box, then place vertices one at a time in
@@ -233,9 +238,9 @@ function deduceAuxPlan(
   // whose move to its target yields the fewest resulting crossings.
   let pts = state.pts.map((p) => ({ x: p.x, y: p.y, d: p.d }));
   const placed = new Array<boolean>(state.n).fill(false);
-  // Skip vertices already sitting on their target (nothing to suggest).
+  // Skip vertices already on their target pixel (a move there is a no-op).
   for (let v = 0; v < state.n; v++) {
-    if (distUnits(pts[v], targetUnits[v]) <= PLACED_TOL) placed[v] = true;
+    if (isNoOpMove(pts[v], targets[v])) placed[v] = true;
   }
   const steps: HintStep<UntangleMove, UntangleHint>[] = [];
   let remaining = placed.filter((p) => !p).length;
