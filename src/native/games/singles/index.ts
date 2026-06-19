@@ -280,11 +280,17 @@ function narrate(
   const numAt = (c: Cell): number => state.nums[c.y * state.w + c.x];
   switch (reason.kind) {
     case "sandwich":
-      return "One of these two matching numbers must be shaded, so the square between them stays white.";
+      return "One of these two matching numbers must be shaded, so the square between them must be white.";
     case "pair":
-      return "One of these matching neighbours stays white and uses up the number, so every other copy in the line is shaded.";
-    case "corner4":
-      return "All four corner squares share a number; the only non-touching pair that leaves one white per line is this diagonal.";
+      return "One of these matching neighbours stays white and uses up the number, so every other copy in the line must be shaded.";
+    case "corner4": {
+      // All four share a number, so a diagonal pair must be shaded (two
+      // shaded cells, never adjacent). At a *grid* corner the corner cell's
+      // only neighbours are the two sides, so shading the side diagonal
+      // would strand the corner white — the same box-in argument as corner3.
+      const n = numAt(reason.block[0]);
+      return `This corner ${n} matches both its neighbours, so keeping it white would shade them both and box it in — the corner and the ${n} diagonally inside must both be shaded.`;
+    }
     case "corner3": {
       // Branch A shades the corner itself; branch B shades the inner cell
       // to save the (separately highlighted) corner. Name the referent
@@ -292,8 +298,8 @@ function narrate(
       const m = numAt(reason.matched[1]);
       const t = numAt(targets[0]);
       return targets.some((tg) => sameCell(tg, reason.corner))
-        ? `This corner ${t} matches both its neighbouring ${m}s; keeping it white would shade them both, leaving the corner boxed in — so the ${t} is shaded.`
-        : `Keeping this ${t} white would shade the two ${m}s flanking the corner ${numAt(reason.corner)}, leaving the corner boxed in — so the ${t} is shaded.`;
+        ? `This corner ${t} matches both its neighbouring ${m}s; keeping it white would shade them both, leaving the corner boxed in — so the ${t} must be shaded.`
+        : `Keeping this ${t} white would shade the two ${m}s flanking the corner ${numAt(reason.corner)}, leaving the corner boxed in — so the ${t} must be shaded.`;
     }
     case "corner2": {
       // Follow the proof-by-contradiction arc with concrete numbers: the
@@ -303,22 +309,22 @@ function narrate(
       const p = numAt(reason.pair[0]);
       const c = numAt(reason.corner);
       const t = numAt(targets[0]);
-      return `One of the two touching ${p}s must be shaded. Shading this ${t} would force the ${p} beside the corner ${c} shaded as well, leaving the corner boxed in on both sides — so the ${t} stays white.`;
+      return `One of the two touching ${p}s must be shaded. Shading this ${t} would force the ${p} beside the corner ${c} shaded as well, leaving the corner boxed in on both sides — so the ${t} must be white.`;
     }
     case "offset":
-      return "Whichever paired square stays white forces the one across from it shaded, so both squares beside it stay white.";
+      return "Whichever paired square stays white forces the one across from it shaded, so both squares beside it must be white.";
     case "adjBlack":
       return plural
-        ? "These squares touch a shaded square, and shaded squares can't be adjacent — so they stay white."
-        : "This square touches a shaded square, and shaded squares can't be adjacent — so it stays white.";
+        ? "These squares touch a shaded square, and shaded squares can't be adjacent — so they must be white."
+        : "This square touches a shaded square, and shaded squares can't be adjacent — so it must be white.";
     case "sameLine":
       return plural
-        ? "They share a line with the ringed white square, which already uses this number — so they're shaded."
-        : "It shares a line with the ringed white square, which already uses this number — so it's shaded.";
+        ? "They share a line with the ringed white square, which already uses this number — so they must be shaded."
+        : "It shares a line with the ringed white square, which already uses this number — so it must be shaded.";
     case "boxedIn":
-      return "This is the marked white square's only unshaded neighbour left, so it stays white to avoid sealing that square off.";
+      return "This is the ringed white square's only unshaded neighbour left, so it must be white to avoid sealing that square off.";
     case "split":
-      return "Shading this square would split the white region in two, so it stays white to keep it connected.";
+      return "Shading this square would split the white region in two, so it must be white to keep it connected.";
   }
 }
 

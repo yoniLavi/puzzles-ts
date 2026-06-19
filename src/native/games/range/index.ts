@@ -330,9 +330,9 @@ function nonBlackNeighbours(
 function narrate(reason: HintReason, value: RangeCellValue): string {
   switch (reason.kind) {
     case "adjacency":
-      return "No two black squares may touch. This cell sits right next to the ringed black square, so it has to be white.";
+      return "No two black squares may touch. This cell sits right next to the ringed black square, so it must be white.";
     case "satisfied":
-      return `Clue ${reason.n} can already see exactly ${reason.n} white cells (shaded). That count is complete, so the line of sight must stop here — this cell is black.`;
+      return `Clue ${reason.n} can already see exactly ${reason.n} white cells (shaded). That count is complete, so the line of sight must stop here — this cell must be black.`;
     case "overrun":
       return `Clue ${reason.n} already sees the shaded white cells. Leaving this cell white would let it see more than ${reason.n}, so this cell must be black.`;
     case "reach":

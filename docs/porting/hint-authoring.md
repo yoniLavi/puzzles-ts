@@ -48,6 +48,40 @@ clear:
    [`src/puzzle/puzzle.ts`](../../src/puzzle/puzzle.ts), floored by the move's
    own animation so animated moves still play out fully.
 
+### 1a. Action-clause voice: necessity for deductions, imperative for moves (house style)
+
+A hint exists to tell the player **the next action they should take**, so the
+clause that states the conclusion (the "so …" tail) must read as a decision, not
+a description. The collection has **two houses**, chosen by whether the move is
+*logically forced* (owner-decided 2026-06-19):
+
+- **Deductive games** (Singles, Range, Filling, Unruly, Palisade — the move is
+  *forced* by the rules): state the conclusion with a **modal of necessity** —
+  `must be` / `can only be` / `can't be` / `must stay`. **Never** a static
+  state-of-being verb (`is` / `are` / `stays` / `it's`): "so it **stays** white"
+  and "this cell **is** black" describe a continuing state instead of a forced
+  decision and read as flat — rewrite to "so it **must be** white", "this cell
+  **must be** black". The necessity is the *teaching*: it tells the player the
+  move isn't a suggestion. Keep the modal in the **conclusion clause only** —
+  *premise* clauses still state facts plainly ("One of these matching neighbours
+  **stays** white …, so every other copy **must be** shaded"); only the action
+  the player takes gets the modal.
+- **Movement / objective games** (Fifteen, Sixteen, Flood — the suggested move is
+  *not* a logical necessity, just the recommended next action): use the
+  **imperative** ("slide it into place", "move it to column 5", "fill with red").
+  A necessity modal would be wrong here — the move isn't forced. Untangle's
+  heuristic hint carries an empty explanation (see §4, non-deductive games) and is
+  exempt entirely.
+
+Pick the house by the *nature of the move*, not the genre: a deductive game whose
+hint ever recommends a non-forced move would use the imperative for that step.
+Palisade shows the houses can co-exist in one string — its necessity premise
+("Clue c reaches its count only if every remaining edge is a wall") can carry an
+imperative action tail ("draw them all"), because the forced-ness is already
+explicit in the premise. A cheap guard: a hint test asserting the conclusion
+contains a modal and **not** a bare "stays/is" (as the Singles `corner4` test
+does for its premise phrasing).
+
 ## 2. The mechanics (engine side already exists)
 
 The `Game` hooks and the `Midend` lifecycle are in
@@ -164,6 +198,22 @@ corner, kept disjoint from the shaded `COL_HINT_CELL` matching pair and the
 branch in [`singles/render.ts`](../../src/native/games/singles/render.ts). Test
 that the roles are **disjoint** (no cell is two roles).
 
+**A narration whose stated premise doesn't single out the conclusion is a bug,
+even when the move is right.** Quality-bar rule 1 (`AGENTS.md`) again, caught on
+review of Singles' all-equal 2×2 corner (`corner4`). Its first cut read "the only
+non-touching pair that leaves one white per line is this diagonal" — but *both*
+diagonals of an all-equal 2×2 leave one white per line, so the premise doesn't
+justify shading *this* diagonal. The real reason is connectivity: at a grid
+corner the corner cell's only neighbours are its two sides, so shading the *other*
+diagonal would strand it — exactly the box-in argument the sibling `corner3` text
+already uses. The fix made `corner4` value-aware and reused that language ("This
+corner *n* matches both its neighbours, so keeping it white would shade them both
+and box it in — …"). Lesson: when two candidate moves both satisfy the stated
+premise, the narration is describing the wrong reason — find the premise that
+actually discriminates (here, connectivity) and say *that*. A cheap guard is a
+test asserting the discriminating phrase is present and the false one absent
+(`singles-hint.test.ts` "corner4" checks `not.toContain("one white per line")`).
+
 **For a subtle multi-link deduction, name the concrete values and walk the
 contradiction arc — generic "this square / its other neighbour" fails.**
 Distinct colours alone weren't enough for the corner case: even with the corner
@@ -177,7 +227,8 @@ actually is**: *the signal that fired it* → *the move we're ruling out* → *t
 consequence* → *the deduction*. Owner's wording, now generated for any corner:
 *"One of the two touching 3s must be shaded. Shading this 5 would force the 3
 beside the corner 4 shaded as well, leaving the corner boxed in on both sides —
-so the 5 stays white."*
+so the 5 must be white."* (the closing modal follows the §1a necessity house —
+this string predates it and read "stays white" until the 2026-06-19 sweep.)
 Concrete values ("the corner 4", "the two touching 3s") plus the highlight
 disambiguate far better than role words, and the arc lets the reader follow each
 link. Watch dangling pronouns: an early cut ended "…force the 3 beside the corner

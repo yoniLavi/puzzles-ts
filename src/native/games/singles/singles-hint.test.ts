@@ -73,6 +73,27 @@ describe("deduceHintPlan records the deduction reason", () => {
     expect(plan.some((m) => m.reason.kind === "corner2")).toBe(true);
   });
 
+  it("corner4: all four matching shade the diagonal via the box-in argument", () => {
+    // Whole 2x2 board all equal — only the corner+inner diagonal can be
+    // shaded without stranding the grid-corner white. Narration names the
+    // value and uses the same box-in language as corner3 (not the old,
+    // false "only pair that leaves one white per line" premise).
+    const s = craft(2, 2, [4, 4, 4, 4]);
+    const plan = deduceHintPlan(s);
+    expect(plan.some((m) => m.reason.kind === "corner4")).toBe(true);
+    const res = singlesGame.hint?.(s);
+    expect(res?.ok).toBe(true);
+    if (!res?.ok) return;
+    const step = res.steps[0];
+    expect(step.explanation).toContain("box it in");
+    expect(step.explanation).toContain("4");
+    expect(step.explanation).not.toContain("one white per line");
+    // One firing forces both diagonal cells, shaded.
+    const hl = step.highlights as SinglesHint;
+    expect(hl.targets).toHaveLength(2);
+    expect(hl.targets.every((t) => t.value === "black")).toBe(true);
+  });
+
   it("covers the cascade / connectivity / offset rules on generated boards", () => {
     const kinds = new Set<string>();
     for (const seed of ["sh-1", "sh-2", "sh-3", "sh-4"]) {
