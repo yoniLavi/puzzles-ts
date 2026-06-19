@@ -564,7 +564,12 @@ describe("Sixteen hint", () => {
     // flaking when other heavy suites run in parallel.
   }, 60000);
 
-  it("a mid-game board with deep displacements hints fast from the forward search", () => {
+  it("a mid-game board with deep displacements hints fast from the forward search", {
+    // Bounded, fixed-board forward search (~0.2s of CPU). The timeout only
+    // absorbs scheduling jitter under full-suite contention; correctness is
+    // asserted by the deterministic fallback-engaged proxy below, not by time.
+    timeout: 30_000,
+  }, () => {
     // Regression (owner-reported, 2026-06-10): 7 tiles out of place in
     // one 7-cycle needing a 12-slide solution. The exact bidirectional
     // fallback (depth cap 10) could never solve it, but used to engage
@@ -608,7 +613,11 @@ describe("Sixteen hint", () => {
     expect(outOfPlace(board)).toBeLessThan(outOfPlace(s));
   });
 
-  it("a previewed two-leg journey tracks and narrates the same tile through both legs", () => {
+  it("a previewed two-leg journey tracks and narrates the same tile through both legs", {
+    // Single fixed-board hint computation; the timeout only absorbs scheduling
+    // jitter under full-suite contention (work and assertions are deterministic).
+    timeout: 30_000,
+  }, () => {
     // Owner flow: the hint says "Working on tile 7: move it to row 1,
     // then column 2". Following it leg by leg must (a) keep the plan alive with
     // "completed" verdicts — including equivalent wrap-around deltas —

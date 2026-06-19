@@ -109,7 +109,12 @@ describe("Untangle hint heuristic", () => {
     expect(viaGame?.ok).toBe(true);
   });
 
-  describe("aux-based plan (known solution)", () => {
+  // Heavy but seed-deterministic: these tests generate n=25 boards (the size
+  // that exposed the heuristic's stall) and walk full aux plans — fixed work
+  // per fixed seed. The describe-level timeout absorbs scheduling jitter under
+  // full-suite CPU contention; it never masks a regression (which fails an
+  // assertion). See the repo-layout test-determinism spec.
+  describe("aux-based plan (known solution)", { timeout: 30_000 }, () => {
     // Generate so `aux` (the solved layout) is available, like a real
     // freshly-generated game.
     function generated(n: number, seed: string) {

@@ -390,6 +390,44 @@ visual/integration smoke only. Tiers are codified in
   targeted ops **plus** `toMatchSnapshot`). New render code SHOULD ship one.
 - **Tier 3** — components + persistence (`happy-dom`, `fake-indexeddb`).
 
+**Heavy generator/solver tests must be seed-deterministic *and* given an explicit
+timeout — never assert on elapsed time.** A retry-until-unique generator or an
+exhaustive solve over several seeds legitimately takes 1–3s solo. Vitest's
+default per-test timeout is **5000ms**, and under full-suite CPU saturation
+(16 workers on a busy CI box) the same fixed work stretches **5–10×** in wall
+clock (a ~3s Sixteen BFS has been *seen >29s*). A heavy test on the default
+timeout therefore **flakes** — passing alone, failing under load — which is
+corrosive: it trains everyone to shrug off a red gate, and a real regression then
+hides behind "probably the flake." Rules:
+
+- **Drive generation from a fixed seed** (`randomNew("…")`) so the work — and the
+  pass/fail verdict — is identical every run regardless of load. The board is
+  deterministic; only the wall clock varies.
+- **Give the heavy `it`/`describe` an explicit, generous timeout** sized to
+  absorb that jitter — `30_000` for a generator/solver loop, `60_000` for the
+  ~MillionState exact searches (Sixteen's bidirectional fallback). Use the
+  positional `it(name, fn, 30_000)`, the options form `it(name, { timeout:
+  30_000 }, fn)`, or a `describe(name, { timeout: 30_000 }, fn)` for a whole
+  heavy block. This is **per-test, not a global `testTimeout` bump** — the 1400
+  fast tests keep the tight 5s default, preserving their regression sensitivity.
+  The timeout never masks a regression here, because correctness is asserted by
+  the *result* (a wrong board fails an assertion), not by the clock.
+- **Never assert `elapsed < N ms`** as a proxy for "the algorithm is efficient."
+  That measures the CI box's spare capacity, not the code. Assert a
+  load-independent proxy instead — a bounded node/expansion count, iteration
+  count, or result shape (Sixteen's hint test asserts `__lastHintEngagedFallback()
+  === false`, *not* "finished in < N ms").
+
+Normative: the `repo-layout` "test suite is deterministic under parallel load"
+requirement. If you suspect a flake, **reproduce it deterministically** before
+"fixing" anything: list the slow tests with
+`npx vitest run --reporter=verbose 2>&1 | grep -E '✓ .* [0-9]{3,}ms$' | sort` —
+any heavy test ≥ ~600ms solo-in-suite that lacks an explicit timeout is a
+candidate (it crosses 5s at the ~10× load multiplier). Confirm a per-test timeout
+is wired by re-running that file with a tiny global cap
+(`npx vitest run --testTimeout=50 <file>`): the protected heavy test still passes
+(its explicit timeout overrides), the fast ones finish under 50ms.
+
 ## 5. Close out
 
 Keep the openspec change current as you go (tasks ticked, design decisions

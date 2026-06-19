@@ -81,6 +81,11 @@ describe("filling desc codec", () => {
 
 describe("filling generator + solver", () => {
   for (const p of PRESETS) {
+    // Heavy but seed-deterministic: the retry-until-unique generator + solver
+    // does fixed work per fixed seed (the 17×13 worst case is ~1.2s solo).
+    // The explicit timeout only absorbs scheduling jitter under full-suite CPU
+    // contention — it never masks a regression, which would surface as a wrong
+    // verdict below, not as slowness. (See repo-layout test-determinism spec.)
     it(`generates uniquely solvable ${p.w}x${p.h} boards`, () => {
       for (let seed = 0; seed < 4; seed++) {
         const { desc } = newFillingDesc(p, randomNew(`filling-${p.w}x${p.h}-${seed}`));
@@ -90,7 +95,7 @@ describe("filling generator + solver", () => {
         expect(solved).toBe(true);
         expect(isFullSolution(board, p.w, p.h)).toBe(true);
       }
-    });
+    }, 30_000);
   }
 
   it("the solver fills a hand-made deducible board", () => {
