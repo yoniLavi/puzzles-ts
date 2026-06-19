@@ -336,6 +336,37 @@ upstream quirks. Two traps cost a debug cycle each on Filling and will recur:
   to skip if the root differs). A game that only uses the dsf for connectivity
   won't notice; one that reads `canonify(i)` as an *element* does.
 
+**A generator resting on a shared RNG-bearing leaf library (matching.c /
+latin.c) is still byte-match portable — port the library RNG-faithfully too.**
+Singles' generator builds a Latin rectangle via `latin_generate` →
+`matching_with_scratch` (bipartite matching). Byte-match holds *only* if every
+RNG draw in that library is reproduced in order. The two draw sites in
+`matching.c`: `shuffle(Lorder)` once per BFS pass, and the in-place
+`random_upto` swap that permutes the *remaining* adjacency list during the DFS —
+and that swap **mutates the adjacency lists in place**, so later draws see the
+permuted list; mirror the mutation, don't copy-then-shuffle. Write the algorithm
+idiomatically (typed arrays, no `void *scratch`) but keep the draw sequence
+identical. Exemplar: [`singles/generator.ts`](../../src/native/games/singles/generator.ts)
+(`matching` + `latinGenerate`). No standalone bridged seam — it's an ordinary
+module dependency, ported lazily like dsf/tree234.
+
+**Replicate a missing-reset upstream quirk verbatim, but cap the loop so a
+porting slip can't hang the worker.** Singles' `new_game_desc` never resets
+`state->impossible` at its `generate:` label, which would infinite-loop *if*
+generation ever set it — it doesn't, because `solve_allblackbutone` circles a
+white cell's last escape at "3 blacks, 1 free" *before* it can be boxed in. Port
+the no-reset faithfully (resetting it would diverge), but wrap the outer
+regenerate loop in a generous `throw`-on-exceeded cap (Singles:
+`MAX_REGENERATE = 10000`) so a faithful port stays correct while an accidental
+divergence fails loudly instead of hanging.
+
+**A sentinel imported from the wrong module reads as `undefined` and silently
+weakens a `diff >= X` gate.** Singles' `DIFF_ANY` lives in `state.ts`; a test
+that imported it from `solver.ts` (which doesn't re-export it) got `undefined`,
+and `solveSpecific(s, undefined)` ran only the Easy techniques — so a Tricky
+board "failed to solve" with no type error in the test file. When a difficulty
+sentinel test misbehaves, check the import source before the solver.
+
 **Differential-debugging loop for a verdict mismatch** (how the two above were
 found): instrument a throwaway C harness (`puzzles/auxiliary/<game>-dbg.c`,
 deleted after) to dump every `(board, verdict)` its solver sees during minimise;

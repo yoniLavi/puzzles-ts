@@ -20,6 +20,7 @@ import "./palisade/index.ts";
 import "./pegs/index.ts";
 import "./range/index.ts";
 import "./samegame/index.ts";
+import "./singles/index.ts";
 import "./sixteen/index.ts";
 import "./twiddle/index.ts";
 import "./unruly/index.ts";

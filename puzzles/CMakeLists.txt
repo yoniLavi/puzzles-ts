@@ -235,10 +235,10 @@ puzzle(signpost
 solver(signpost)
 
 puzzle(singles
+  TS_PORTED  # native-TS port (openspec add-singles-ts-port); no singles.c/wasm
   DISPLAYNAME "Singles"
   DESCRIPTION "Number-removing puzzle"
   OBJECTIVE "Black out the right set of duplicate numbers.")
-solver(singles)
 
 puzzle(sixteen
   TS_PORTED  # native-TS port (openspec add-sixteen-ts-port); no sixteen.c/wasm
