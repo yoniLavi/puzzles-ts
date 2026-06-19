@@ -529,6 +529,14 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
         /* For sizing the loadingIndicator */
         position: relative;
+
+        /* Centre the board, statusbar, and hint banner within the content
+         * box. The banner's readable min-width (see .hint-banner) can make
+         * the content wider than the board on small puzzles; without this the
+         * board would sit left-aligned against that wider banner. */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
       
       canvas, #canvasPlaceholder {
