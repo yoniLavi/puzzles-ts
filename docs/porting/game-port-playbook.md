@@ -390,6 +390,16 @@ visual/integration smoke only. Tiers are codified in
   targeted ops **plus** `toMatchSnapshot`). New render code SHOULD ship one.
 - **Tier 3** — components + persistence (`happy-dom`, `fake-indexeddb`).
 
+**Render-op assertions: know which primitive records as which op.** The shared
+`RecordingDrawing` records a *filled* `dr.drawRect(...)` as `op === "rect"`, but
+`drawRectOutline(...)` — a *stroked* box, i.e. a hint ring, error outline, or
+cursor frame — records as `op === "line"` segments. A test checking a ring/outline
+colour must therefore match `o.op === "line"`, not `"rect"` (asserting Range's
+`COL_HINT_BLACKREF` premise ring cost a debug cycle on exactly this). Prefer the
+shared `RecordingDrawing` and learn its op vocabulary; ad-hoc per-test doubles may
+name things differently (Unruly's local recorder labels `drawRect` ops
+`"drawRect"`), which is a second reason to reach for the shared one.
+
 **Heavy generator/solver tests must be seed-deterministic *and* given an explicit
 timeout — never assert on elapsed time.** A retry-until-unique generator or an
 exhaustive solve over several seeds legitimately takes 1–3s solo. Vitest's
@@ -417,6 +427,21 @@ hides behind "probably the flake." Rules:
   load-independent proxy instead — a bounded node/expansion count, iteration
   count, or result shape (Sixteen's hint test asserts `__lastHintEngagedFallback()
   === false`, *not* "finished in < N ms").
+- **A *hang* is not a slow test — guard it in the code, not with a bigger
+  timeout.** Everything above is for work that *terminates* but is slow; a test
+  timeout is the right backstop for that, and **bumping the timeout is a
+  legitimate fix only when (a) the work provably terminates and (b) the new
+  ceiling clears the worst-case loaded runtime with room to spare** — otherwise
+  you've only made it flake *slower*. For a *non-terminating* risk — a "repeat
+  until no progress" fixpoint that could spin on spurious progress, an `aux`-walk
+  that re-emits a no-op — a wall-clock test timeout is the *wrong* tool: it's
+  load-sensitive, fires after a long wait, and reports an opaque "timed out" with
+  no clue which input or rule. Bound the work **in the code** with an operation
+  budget that throws a labelled error in milliseconds
+  ([`engine/step-budget.ts`](../../src/native/engine/step-budget.ts); see
+  hint-authoring "Guard the deduction fixpoint with a step budget"). Make it
+  opt-in/gated so it never touches a hot path (generation) where a false trip
+  would itself be a real bug.
 
 Normative: the `repo-layout` "test suite is deterministic under parallel load"
 requirement. If you suspect a flake, **reproduce it deterministically** before
