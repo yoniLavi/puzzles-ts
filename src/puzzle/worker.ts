@@ -208,6 +208,7 @@ export class WorkerPuzzle implements FrontendConstructorArgs, PuzzleEngineSurfac
       canSolve: this.frontend.canSolve,
       canHint: false,
       canFindMistakes: false,
+      canMarkAll: false,
       needsRightButton: this.frontend.needsRightButton,
       isTimed: this.frontend.isTimed,
       wantsStatusbar: this.frontend.wantsStatusbar,

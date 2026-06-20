@@ -107,6 +107,18 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
             <wa-icon name="redo" label="Redo"></wa-icon>
           </wa-button>
           ${
+            this.puzzle?.canMarkAll
+              ? html`
+              <wa-button
+                  ?disabled=${this.puzzle?.status === "solved"}
+                  @pointerdown=${this.handleUndoRedoPointerDown}
+                  @click=${this.handleMarkAll}>
+                <wa-icon name="mark-all" label="Fill in all pencil marks"></wa-icon>
+              </wa-button>
+              `
+              : nothing
+          }
+          ${
             this.puzzle
               ? html`
               <wa-button
@@ -304,6 +316,12 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
 
   private async handleHint() {
     await this.puzzle?.hint();
+  }
+
+  /** Inject the 'M' key (ASCII 77): the game fills every empty cell with all
+   * candidate pencil marks. Only games with `canMarkAll` show this control. */
+  private async handleMarkAll() {
+    await this.puzzle?.processKey(77);
   }
 
   private handleAutoHintToggle() {

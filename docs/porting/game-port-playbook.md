@@ -193,6 +193,17 @@ distinct overlay (a packed cache bit + an inset error outline; exemplar
 [hint-authoring.md](./hint-authoring.md); a permutation puzzle with no notion of
 a wrong-but-legal state correctly omits it.
 
+**A pencil-mark game should set `canMarkAll: true`.** Games with candidate
+pencil marks handle upstream's `M`/`m` key in `interpretMove` (fill every empty
+cell with all candidates). Setting the optional `readonly canMarkAll` flag on the
+`Game` surfaces that as a toolbar button (the grid icon, next to Check & Save)
+that injects `M` via `processKey` — so touch/mouse players reach it, not just the
+keyboard. Plumbed like `canHint`/`canFindMistakes` (`midend.ts` →
+`PuzzleStaticAttributes` → `Puzzle`); C/WASM reports false. Exemplar:
+[`towers/index.ts`](../../src/native/games/towers/index.ts) (`canMarkAll: true`,
+`M` handled in `interpretMove`). Solo / Keen / Unequal / Undead will set it when
+ported.
+
 **Per-game preferences go through the `Game.prefs` hook (since Untangle).** A game
 with upstream `get_prefs`/`set_prefs` declares an optional `prefs: GamePref<Ui>[]`
 — each item is `{ kw, name, type: "boolean" }` or

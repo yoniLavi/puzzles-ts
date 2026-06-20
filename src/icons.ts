@@ -25,6 +25,7 @@ import externalLinkIcon from "lucide-static/icons/external-link.svg";
 import flaskConicalIcon from "lucide-static/icons/flask-conical.svg";
 import frownIcon from "lucide-static/icons/frown.svg";
 import gemIcon from "lucide-static/icons/gem.svg";
+import gridIcon from "lucide-static/icons/grid-3x3.svg";
 import hashIcon from "lucide-static/icons/hash.svg";
 import heartIcon from "lucide-static/icons/heart.svg";
 import historyIcon from "lucide-static/icons/history.svg";
@@ -80,6 +81,7 @@ const defaultIcons: IconMap = {
   "gameid": hashIcon,
   "help": circleQuestionMarkIcon,
   "hint": lightbulbIcon,
+  "mark-all": gridIcon,
   "play": playIcon,
   "pause": pauseIcon,
   "history": historyIcon,

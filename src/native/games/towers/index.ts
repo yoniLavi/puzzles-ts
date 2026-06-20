@@ -373,6 +373,7 @@ export const towersGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
+  canMarkAll: true, // handles 'M' (pencilAll) in interpretMove
 
   defaultParams,
   presets,

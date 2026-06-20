@@ -101,6 +101,9 @@ export interface PuzzleStaticAttributes {
   /** The game can check the board for mistakes (the TS `findMistakes`
    * hook). False for C/WASM games. */
   canFindMistakes: boolean;
+  /** The game supports "fill all pencil marks" (upstream's `M` key). Gates
+   * the toolbar mark-all button. False for C/WASM games. */
+  canMarkAll: boolean;
   // TODO: canFormatAsTextEver: boolean;
   needsRightButton: boolean;
   isTimed: boolean;

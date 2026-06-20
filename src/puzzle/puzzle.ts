@@ -92,6 +92,7 @@ export class Puzzle {
       canSolve,
       canHint,
       canFindMistakes,
+      canMarkAll,
       needsRightButton,
       isTimed,
       wantsStatusbar,
@@ -107,6 +108,7 @@ export class Puzzle {
     this.canSolve = canSolve;
     this.canHint = canHint;
     this.canFindMistakes = canFindMistakes;
+    this.canMarkAll = canMarkAll;
     this.needsRightButton = needsRightButton;
     this.isTimed = isTimed;
     this.wantsStatusbar = wantsStatusbar;
@@ -204,6 +206,7 @@ export class Puzzle {
   public readonly canSolve: boolean;
   public readonly canHint: boolean;
   public readonly canFindMistakes: boolean;
+  public readonly canMarkAll: boolean;
   public readonly needsRightButton: boolean;
   public readonly isTimed: boolean;
   public readonly wantsStatusbar: boolean;

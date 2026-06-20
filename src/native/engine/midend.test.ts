@@ -691,6 +691,12 @@ describe("Midend hint plan lifecycle", () => {
     const props = h.m.getStaticProperties();
     expect(props.canHint).toBe(true);
   });
+
+  it("canMarkAll reflects the game flag (default false, opt-in true)", () => {
+    expect(new Midend(fakeGame).getStaticProperties().canMarkAll).toBe(false);
+    const marking = { ...fakeGame, canMarkAll: true } as typeof fakeGame;
+    expect(new Midend(marking).getStaticProperties().canMarkAll).toBe(true);
+  });
 });
 
 describe("Midend executeHint plays the stored plan", () => {

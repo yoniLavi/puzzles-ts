@@ -169,6 +169,11 @@ export interface Game<
   readonly isTimed: boolean;
   readonly canSolve: boolean;
   readonly canFormatAsText: boolean;
+  /** The game supports the "fill every empty cell with all candidate pencil
+   * marks" action (upstream's `M`/`m` key). A game that sets this MUST handle
+   * the `M`/`m` key in `interpretMove`; the app shell surfaces a toolbar button
+   * (gated on this) that injects that key. Defaults to false (no button). */
+  readonly canMarkAll?: boolean;
 
   defaultParams(): Params;
   presets(): PresetMenu<Params>;
