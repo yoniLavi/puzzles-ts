@@ -376,7 +376,9 @@ describe("singles hint render", () => {
       game: singlesGame,
       id: "6x6dk#scan-0",
       showHint: true,
-      hintUntil: (s) => s.explanation.includes("ringed white square"),
+      // "share a line" is unique to sameLine (boxedIn also cites a "ringed
+      // white square", so predicate on the sameLine-only phrase).
+      hintUntil: (s) => s.explanation.includes("share a line"),
     });
     const ops = recording.ops;
     expect(

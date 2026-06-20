@@ -103,7 +103,6 @@ const FF_IMMUTABLE = 0x1000;
 const FF_MISTAKE = 0x2000;
 // Hint-overlay bits (no upstream analogue), also folded into the cache key.
 const FF_HINT_TARGET = 0x4000; // the forced cell (filled COL_HINT + preview)
-const FF_HINT_ONE = 0x8000; // the forced colour is ONE (else ZERO)
 const FF_HINT_AREA = 0x10000; // a journey-sibling empty cell (light shade)
 const FF_HINT_RING = 0x20000; // a cited premise / pivotal cell (COL_HINT_REF outline)
 
@@ -195,13 +194,12 @@ function drawTile(
       dr.drawRect({ x: px + off, y: py + off, w: sz, h: sz }, val);
     }
   } else if (tile & FF_HINT_TARGET) {
-    // The forced cell: blue fill + an inset preview of the colour it forces.
+    // The forced cell: blue highlight only — the hint marks where to act, it
+    // does not place the colour the player must enter themselves (that would
+    // read as already-done). The narration says which colour; auto-hint
+    // applies it for real in animation mode. (Owner-directed, 2026-06-20 —
+    // see hint-authoring.md.)
     dr.drawRect(inner, COL_HINT);
-    const o = Math.floor(ts / 4);
-    dr.drawRect(
-      { x: px + o, y: py + o, w: ts - 1 - 2 * o, h: ts - 1 - 2 * o },
-      tile & FF_HINT_ONE ? COL_1 : COL_0,
-    );
   } else if (tile & FF_HINT_AREA) {
     // A journey-sibling empty cell: light-blue shade.
     dr.drawRect(inner, COL_HINT_CELL);
@@ -341,7 +339,6 @@ export function redraw(
   // Displayed hint step: the forced target, its sibling area, premise rings.
   const hl = hint?.highlights;
   const hintTarget = hl ? hl.target.y * w2 + hl.target.x : -1;
-  const hintTargetOne = hl?.target.value === ONE;
   const hintAreaSet = hl ? new Set(hl.area) : null;
   const hintRingSet = hl ? new Set(hl.ring) : null;
 
@@ -400,7 +397,6 @@ export function redraw(
       // Hint overlay (target > ring > sibling-area; area only on empty cells).
       if (i === hintTarget) {
         tile |= FF_HINT_TARGET;
-        if (hintTargetOne) tile |= FF_HINT_ONE;
       } else if (hintRingSet?.has(i)) {
         tile |= FF_HINT_RING;
       } else if (hintAreaSet?.has(i) && grid[i] === EMPTY) {

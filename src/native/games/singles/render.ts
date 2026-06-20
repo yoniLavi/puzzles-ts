@@ -167,16 +167,20 @@ function tileRedraw(
     dnum = true;
   }
 
-  // Hint overrides. A target paints the whole cell the hint colour (and a
-  // forced-black target hides the number — it reads as "act here", not a
-  // filled answer). An evidence cell shades light blue only while it is
-  // still undecided; a decided black/circle premise keeps its colour (the
-  // reason) and is ringed below instead.
+  // Hint overrides. A forced cell is only *highlighted* — the whole cell
+  // painted the hint blue with its number kept visible — never pre-filled
+  // with the black square / circle the player must place themselves. The
+  // highlight says "act here"; the narration says which action. (Doing the
+  // move for the player obscured the number and read as already-done, when
+  // it's still the player's to apply — owner-directed, 2026-06-20. Auto-hint
+  // applies the move for real, so animation mode renders the actual mark.)
+  // An evidence cell shades light blue only while it is still undecided; a
+  // decided black/circle premise keeps its colour (the reason) and is ringed
+  // below instead.
   const target = f & (DS_HINT_BLACK | DS_HINT_WHITE);
   const decided = f & (DS_BLACK | DS_CIRCLE);
   if (target) {
     bg = COL_HINT;
-    if (f & DS_HINT_BLACK) dnum = false;
   } else if (f & DS_HINT_STRAND && !decided) {
     bg = COL_HINT_STRAND;
   } else if (f & DS_HINT_EVID && !decided) {
@@ -195,17 +199,9 @@ function tileRedraw(
     dr.drawCircle({ x: cx, y: cy }, cr - 1, bg, tcol);
   }
 
-  // Forced-white target: preview the circle the hint asks the player to
-  // place (a ring on the blue cell).
-  if (f & DS_HINT_WHITE) {
-    dr.drawCircle({ x: cx, y: cy }, cr, COL_BLACK, COL_BLACK);
-    dr.drawCircle({ x: cx, y: cy }, cr - 1, bg, COL_BLACK);
-  }
-  // Forced-black target: preview the shade as an inset square.
-  if (f & DS_HINT_BLACK) {
-    const inset = Math.max(2, Math.floor(ts / 5));
-    dr.drawRect({ x: x + inset, y: y + inset, w: ts - 2 * inset, h: ts - 2 * inset }, COL_BLACK);
-  }
+  // (No forced-mark preview: the hint highlights where to act, it doesn't
+  // place the black square / circle for the player — see the override above.)
+
   // A decided premise cell (its black/circle colour is the reason): ring
   // it rather than shading over it. The ring colour follows the legend —
   // strand amber for a protected corner, else by the cell's type so a cited

@@ -242,7 +242,7 @@ function narrate(reason: FillingHintReason, count: number): string {
         ? `The shaded region of ${reason.n} can't fully grow without these squares.`
         : `The shaded region of ${reason.n} can't fully grow without this square.`;
     case "blocked":
-      return `This is the only empty square that the shaded region of ${reason.n} could grow into.`;
+      return `The shaded region of ${reason.n} has only this one empty square to grow into.`;
     case "lonely":
       return "No neighbouring region can grow to include this square, so it can only be a 1.";
     case "bitmap":

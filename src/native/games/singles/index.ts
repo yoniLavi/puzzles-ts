@@ -267,6 +267,15 @@ const opValue = (op: number): "black" | "circle" =>
 
 const sameCell = (a: Cell, b: Cell): boolean => a.x === b.x && a.y === b.y;
 
+/** Join a list of cell values into readable prose ("3", "3 and 5",
+ * "3, 5 and 2"). Used when a firing forces several squares of differing
+ * values so the narration can name each instead of "these squares". */
+function joinNums(ns: number[]): string {
+  if (ns.length <= 1) return `${ns[0] ?? ""}`;
+  if (ns.length === 2) return `${ns[0]} and ${ns[1]}`;
+  return `${ns.slice(0, -1).join(", ")} and ${ns[ns.length - 1]}`;
+}
+
 /** Narrate *why* the grouped firing forces its cell(s), referencing the
  * highlighted evidence so the words and the picture agree. The corner
  * deductions name the actual numbers involved (owner-directed: concrete
@@ -279,12 +288,18 @@ function narrate(
   const plural = targets.length > 1;
   const numAt = (c: Cell): number => state.nums[c.y * state.w + c.x];
   switch (reason.kind) {
-    case "sandwich":
+    case "sandwich": {
       // Indication-first (§1b): name the spotted pattern (two equal numbers
-      // one square apart) before the deduction.
-      return "Two matching numbers sit one square apart here; one of them must be shaded, so the square between them must be white.";
-    case "pair":
-      return "These two neighbouring squares share a number, so one of them stays white and uses it up — every other copy in the line must be shaded.";
+      // one square apart) before the deduction — and name the *values* (the
+      // square's locator), not "two matching numbers".
+      const n = numAt(reason.ends[0]);
+      const b = numAt(targets[0]);
+      return `Two ${n}s sit one square apart here; one of them must be shaded, so the ${b} between them must be white.`;
+    }
+    case "pair": {
+      const n = numAt(reason.pair[0]);
+      return `These two ${n}s sit next to each other, so one of them stays white and uses it up — every other ${n} in the line must be shaded.`;
+    }
     case "corner4": {
       // All four share a number, so a diagonal pair must be shaded (two
       // shaded cells, never adjacent). At a *grid* corner the corner cell's
@@ -336,18 +351,29 @@ function narrate(
         n === m ? `two of the ${n}s` : `one of the ${n}s and one of the ${m}s`;
       return `There's ${pairs}, lined up so that shading either of these two squares would force ${forced} to be shaded next to each other — and shaded squares can't touch. So both must be white.`;
     }
-    case "adjBlack":
+    case "adjBlack": {
+      // The forced cells are a shaded square's neighbours — their values are
+      // unrelated to the deduction (it's pure adjacency), but still name them
+      // so the player knows which squares without hunting the highlight. The
+      // group can hold mixed/repeated values, so list them all.
+      if (plural) {
+        const list = joinNums(targets.map((t) => numAt(t)));
+        return `These squares — ${list} — touch a shaded square, and shaded squares can't be adjacent, so they must be white.`;
+      }
+      return `This ${numAt(targets[0])} touches a shaded square, and shaded squares can't be adjacent — so it must be white.`;
+    }
+    case "sameLine": {
+      // The forced square(s) and the ringed white square all show the same
+      // number — that duplicate is the whole reason — so name it.
+      const t = numAt(targets[0]);
       return plural
-        ? "These squares touch a shaded square, and shaded squares can't be adjacent — so they must be white."
-        : "This square touches a shaded square, and shaded squares can't be adjacent — so it must be white.";
-    case "sameLine":
-      return plural
-        ? "They share a line with the ringed white square, which already uses this number — so they must be shaded."
-        : "It shares a line with the ringed white square, which already uses this number — so it must be shaded.";
+        ? `These ${t}s share a line with the ringed white ${t}, which already uses that number — so they must be shaded.`
+        : `This ${t} shares a line with the ringed white ${t}, which already uses that number — so this copy must be shaded.`;
+    }
     case "boxedIn":
-      return "This is the ringed white square's only unshaded neighbour left, so it must be white to avoid sealing that square off.";
+      return `This ${numAt(targets[0])} is the ringed white square's only unshaded neighbour left, so it must be white to avoid sealing that square off.`;
     case "split":
-      return "Shading this square would split the white region in two, so it must be white to keep it connected.";
+      return `Shading this ${numAt(targets[0])} would split the white region in two, so it must be white to keep it connected.`;
   }
 }
 

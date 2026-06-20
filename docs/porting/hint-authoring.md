@@ -122,10 +122,42 @@ What counts as "nontrivial": anything past a single local rule application. The
 simplest cascade hints already satisfy this for free because their *signal is the
 move* — Singles `adjBlack` opens *"These squares touch a shaded square, and
 shaded squares can't be adjacent…"* (indication first: *touching a shaded
-square*), `sameLine` *"They share a line with the ringed white square…"*. The
-ones that need care are the multi-element deductions (offset, the corners, the
-sandwich/pair pattern) — lead each with the pattern that fired it. When in doubt,
-lead with the indication; it is never wrong to.
+square*), `sameLine` *"These squares share a line with the ringed white
+square…"*. The ones that need care are the multi-element deductions (offset, the
+corners, the sandwich/pair pattern) — lead each with the pattern that fired it.
+When in doubt, lead with the indication; it is never wrong to.
+
+**Refer to a square by the value it shows — never a bare pronoun *or* a bare
+"this square" (owner-directed, 2026-06-20).** Two tightening passes, the second
+sharper than the first:
+
+1. A hint must not *open* on a dangling *"It"* / *"They"* / *"This is…"* with no
+   noun. The owner flagged Singles `sameLine` opening *"It shares a line with the
+   ringed white square…"*: the *"It"* has no antecedent (the banner is the
+   player's first sight of this sentence — nothing precedes it for a pronoun to
+   point back to), so the reader must hunt the highlight before the sentence even
+   parses.
+2. But the fix is **not** *"This square shares a line…"* either — *"this square"*
+   is still generic. **In a number puzzle the square's value is its name and its
+   locator, so use it:** *"This 3 shares a line with the ringed white 3, which
+   already uses that number — so this copy must be shaded."* Now both squares are
+   identified by sight (a 3, and another ringed 3 on the same line — the
+   duplicate the deduction is about is *visible in the wording*). The reference is
+   free: the deduction already knows the target cell(s), so read the digit off the
+   state (`numAt(targets[0])`).
+
+**Pronouns are allowed only to avoid restating the *same* value when the
+referent is obvious** — *"This 3 … so it must be shaded"* (the *"it"* is the just-named
+3) is fine and better than re-saying "the 3"; an opening or ambiguous pronoun is
+not. When one firing forces **several squares of differing values**, list the
+values (`joinNums` → *"These squares — 3, 5 and 2 — touch a shaded square…"*)
+rather than collapsing to *"these squares"*; when they **share** a value, name it
+once and pluralise (*"These 3s share a line…"*). For a square that is *empty* when
+acted on (Filling's target cell, Range's forced mark) there is no value to name —
+anchor it on a concrete neighbour instead (*"The shaded region of N has only this
+one empty square to grow into"*), which is also how to dissolve the *"This is the
+only empty square…"* shape. Exemplar: every branch of `narrate` in
+[`singles/index.ts`](../../src/native/games/singles/index.ts) now names a value.
 
 ## 2. The mechanics (engine side already exists)
 
@@ -203,10 +235,36 @@ change — they merge into the Hint System requirement in
 
 Render the hint in `redraw` from the displayed `HintStep` (the midend hands it
 in). Conventions: the forced cell in `COL_HINT`, equivalent moves in the **same**
-colour, a preview of the move it forces (Range: black inset square / white dot).
-Fold the hint bits into the per-tile `Int32Array` cache (§2 of the
+colour. Fold the hint bits into the per-tile `Int32Array` cache (§2 of the
 [port playbook](./game-port-playbook.md)). Exemplar:
 [`range/render.ts`](../../src/native/games/range/render.ts).
+
+### A hint *highlights* where to act — it never performs the move (owner-directed, 2026-06-20)
+
+**The displayed (manual) hint must only mark the cell(s) the player should act
+on — paint the target `COL_HINT` blue — and must NOT pre-render the move's
+result.** Do not fill the cell with the black square / circle / colour / digit
+the move would place. Two reasons, both owner-flagged on Singles: a pre-filled
+mark (a) **obscures the cell's own content** (Singles painted a target black,
+hiding the `1` printed there, so the hint read as nonsense against its own
+narration), and (b) **reads as already-done** when applying the move is still the
+player's job — the hint is advice, not the action. Keep the cell's number/state
+visible under the blue highlight; let the **narration** say *which* mark to place
+(this is why a forced-black and forced-white target now look identical — one blue
+highlight each, "act here"). The move is performed for real only in **animation
+mode**: auto-hint calls `executeHint`, which applies the move, so the cell then
+renders as the actual black/circle/colour and (for fill games) can play its
+placement/grow animation.
+
+This is why several games' renders were simplified (the per-cell mark previews
+deleted): Singles (no inset black / circle, number kept), Range (no inset black
+square / white dot), Unruly (no inset colour). Filling already complied — its
+target is a *mild* `COL_HINT` highlight with **no digit** ("input a number here",
+not a filled answer). Palisade is the one different modality: its forced *edge*
+is recoloured `COL_HINT` blue, which marks where to draw a wall without
+obscuring any cell content, so it is a highlight, not a pre-applied black wall.
+**Any new game's hint follows this rule: highlight the action site, never apply
+the move.**
 
 ### Highlight the deduction's *evidence as an area*, not one premise cell
 
@@ -291,8 +349,8 @@ matching row when you add a hint to a similar game:
 | game | move | premise type(s) → colour + cue |
 | --- | --- | --- |
 | Singles | forced cell, blue fill | matching number → `COL_HINT_CELL` shade + digit; cited **black** square → teal `COL_HINT_BLACKREF` ring; cited **white** circle → violet `COL_HINT_WHITEREF` ring; protected corner → amber `COL_HINT_STRAND` |
-| Range | forced cell, blue fill + shape preview | undecided premise → `COL_HINT_CELL` shade; cited **black** square → teal `COL_HINT_BLACKREF` ring (the same hue as Singles) |
-| Unruly | forced cell, blue fill + grow anim | empty journey siblings → `COL_HINT_CELL` shade; cited premise / pivotal cells → orange `COL_HINT_REF` ring (**one** colour, not the black/white split — its rings land on black cells, a balanced both-colour row, *and* empty windows, so a state-derived colour is ill-defined) |
+| Range | forced cell, blue fill (no mark preview) | undecided premise → `COL_HINT_CELL` shade; cited **black** square → teal `COL_HINT_BLACKREF` ring (the same hue as Singles) |
+| Unruly | forced cell, blue fill (grow anim only on auto-hint execution) | empty journey siblings → `COL_HINT_CELL` shade; cited premise / pivotal cells → orange `COL_HINT_REF` ring (**one** colour, not the black/white split — its rings land on black cells, a balanced both-colour row, *and* empty windows, so a state-derived colour is ill-defined) |
 | Palisade | forced edge(s), blue `COL_HINT` segments (equivalent edges all share it) | region → `COL_HINT_CELL` shade; clue → its drawn digit on the shaded cell (no extra colour) |
 | Filling | target square(s), *mild* `COL_HINT` fill, **no digit** | region premise → `COL_HINT_CELL` shade + digit on top |
 
@@ -435,8 +493,10 @@ information that makes the cell evidence?**
   dark fill with the answer pre-printed reads as a *filled-in answer*, not a
   *call to action*; a gentle highlight on an empty cell says "input a number
   here". The forced value is read off the narration ("the region of N", "a 1"),
-  so the cell needs no preview digit (contrast Range, whose forced *mark* — a
-  black square / white dot — is non-numeric and so *is* previewed). Exemplar:
+  so the cell needs no preview digit. (This is the same rule the whole
+  collection now follows — a hint highlights the action site and never pre-applies
+  the move, § "A hint *highlights* where to act" above; Filling reached it first.)
+  Exemplar:
   `buildHighlight` + `narrate` in
   [`filling/index.ts`](../../src/native/games/filling/index.ts), the `HINT_*`
   bits + target-digit branch in

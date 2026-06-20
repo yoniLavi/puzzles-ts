@@ -73,7 +73,6 @@ const F_CURSOR = 1 << 17;
 const F_FLASH = 1 << 18;
 const F_MISTAKE = 1 << 19;
 const F_HINT_TARGET = 1 << 20; // this cell is the displayed hint's target
-const F_HINT_WHITE = 1 << 21; // …and the forced mark is white (else black)
 const F_HINT_REF = 1 << 22; // this cell is a hint area cell (light shade)
 const F_HINT_BLACKREF = 1 << 23; // a black premise cell, outlined in COL_HINT
 
@@ -101,11 +100,11 @@ export function setTileSize(ds: RangeDrawState, ts: number): void {
 
 // --- cell drawing ----------------------------------------------------------
 
-/** Hint highlight for a cell: 0 none, 1 forced-black target, 2
- * forced-white target, 3 area (premise) cell, 4 black premise cell
- * (kept black, outlined in COL_HINT — e.g. the adjacent black that
- * forces a neighbour white). */
-type HintKind = 0 | 1 | 2 | 3 | 4;
+/** Hint highlight for a cell: 0 none, 1 forced target (black *or* white —
+ * both render as the same blue highlight; the narration says which mark),
+ * 3 area (premise) cell, 4 black premise cell (kept black, outlined in
+ * COL_HINT — e.g. the adjacent black that forces a neighbour white). */
+type HintKind = 0 | 1 | 3 | 4;
 
 function drawCell(
   dr: GameDrawing,
@@ -132,7 +131,7 @@ function drawCell(
   // white mark) is pure white; an undecided cell is the soft-grey
   // background.
   const fill =
-    hintKind === 1 || hintKind === 2
+    hintKind === 1
       ? COL_HINT
       : value === BLACK
         ? error
@@ -158,26 +157,11 @@ function drawCell(
     drawRectOutline(dr, x + 2, y + 2, ts - 3, ts - 3, COL_HINT_BLACKREF);
   }
 
-  // Preview the mark the hint forces, on top of the blue target cell.
-  if (hintKind === 1) {
-    // Forced black: an inset black square.
-    const inset = Math.max(2, Math.floor(ts / 5));
-    dr.drawRect(
-      { x: x + inset, y: y + inset, w: ts - 2 * inset, h: ts - 2 * inset },
-      COL_GRID,
-    );
-  } else if (hintKind === 2) {
-    // Forced white: the white dot.
-    dr.drawRect(
-      {
-        x: tx - Math.floor(dotsz / 2),
-        y: ty - Math.floor(dotsz / 2),
-        w: dotsz,
-        h: dotsz,
-      },
-      COL_GRID,
-    );
-  }
+  // No forced-mark preview: the hint only *highlights* the target cell blue
+  // ("act here"); it does not place the black square / white dot the player
+  // must enter themselves — doing so reads as already-done. The narration
+  // says which mark; auto-hint applies it for real in animation mode.
+  // (Owner-directed, 2026-06-20 — see hint-authoring.md.)
 
   if (value === WHITE) {
     dr.drawRect(
@@ -245,7 +229,6 @@ export function redraw(
   // (light-blue shade) and any black premise cells (outlined).
   const hl = hint?.highlights;
   const hintTarget = hl ? idx(hl.target.r, hl.target.c, w) : -1;
-  const hintWhite = hl?.target.value === "white";
   const hintAreaSet = hl ? new Set(hl.area.map((m) => idx(m.r, m.c, w))) : null;
   const hintBlackSet = hl?.blackRefs
     ? new Set(hl.blackRefs.map((m) => idx(m.r, m.c, w)))
@@ -260,9 +243,7 @@ export function redraw(
       const cursor = ui.cursorShow && r === ui.r && c === ui.c;
       const hintKind: HintKind =
         i === hintTarget
-          ? hintWhite
-            ? 2
-            : 1
+          ? 1
           : hintBlackSet?.has(i)
             ? 4
             : hintAreaSet?.has(i)
@@ -274,8 +255,7 @@ export function redraw(
       if (cursor) packed |= F_CURSOR;
       if (flash) packed |= F_FLASH;
       if (mistake) packed |= F_MISTAKE;
-      if (hintKind === 1 || hintKind === 2) packed |= F_HINT_TARGET;
-      if (hintKind === 2) packed |= F_HINT_WHITE;
+      if (hintKind === 1) packed |= F_HINT_TARGET;
       if (hintKind === 3) packed |= F_HINT_REF;
       if (hintKind === 4) packed |= F_HINT_BLACKREF;
 

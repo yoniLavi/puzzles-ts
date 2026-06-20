@@ -450,15 +450,6 @@ exports[`Unruly render scenarios > hint frame: drives a real Midend to a display
     "y": 48,
   },
   {
-    "colour": 3,
-    "h": 15,
-    "op": "rect",
-    "rgb": "rgb(213, 213, 213)",
-    "w": 15,
-    "x": 88,
-    "y": 56,
-  },
-  {
     "op": "unclip",
   },
   {

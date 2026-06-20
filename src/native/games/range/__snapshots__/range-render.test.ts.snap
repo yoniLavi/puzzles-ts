@@ -3503,15 +3503,6 @@ exports[`render scenario snapshot > draws the hint target and premise highlight 
   },
   {
     "colour": 1,
-    "h": 4,
-    "op": "rect",
-    "rgb": "rgb(0, 0, 0)",
-    "w": 4,
-    "x": 158,
-    "y": 62,
-  },
-  {
-    "colour": 1,
     "op": "line",
     "rgb": "rgb(0, 0, 0)",
     "thickness": 1,
