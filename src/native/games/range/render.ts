@@ -35,6 +35,7 @@ export const COL_LOWLIGHT = 3; // == COL_CURSOR
 export const COL_HINT = 4; // the cell the displayed hint forces (blue)
 export const COL_HINT_CELL = 5; // the deduction's premise/area cells (light blue)
 export const COL_WHITEBG = 6; // a known-white cell: a clue or the player's white mark
+export const COL_HINT_BLACKREF = 7; // a cited decided-black premise (teal ring)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, lowlight } = mkhighlight(defaultBackground);
@@ -48,6 +49,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   // Pure white — `mkhighlight` has shifted COL_BACKGROUND off pure white,
   // so a known-white cell reads as visibly white against undecided cells.
   out[COL_WHITEBG] = [1, 1, 1];
+  // Cited decided-black premise ring — the cross-game "a shaded black square is
+  // the reason" hue (matches Singles' COL_HINT_BLACKREF), distinct from the blue
+  // target fill so premise and move don't read as the same colour.
+  out[COL_HINT_BLACKREF] = [0.0, 0.78, 0.55];
   return out;
 }
 
@@ -145,11 +150,12 @@ function drawCell(
   dr.drawRect({ x: x + 1, y: y + 1, w: ts - 1, h: ts - 1 }, fill);
   if (error) drawRectOutline(dr, x + 1, y + 1, ts - 1, ts - 1, COL_ERROR);
 
-  // A black premise cell stays black; ring it in COL_HINT (a doubled
-  // 2px inset outline) so "this black square is the reason" is visible.
+  // A black premise cell stays black; ring it in COL_HINT_BLACKREF (a doubled
+  // 2px inset outline) so "this shaded square is the reason" reads distinct from
+  // the COL_HINT blue of the forced move.
   if (hintKind === 4) {
-    drawRectOutline(dr, x + 1, y + 1, ts - 1, ts - 1, COL_HINT);
-    drawRectOutline(dr, x + 2, y + 2, ts - 3, ts - 3, COL_HINT);
+    drawRectOutline(dr, x + 1, y + 1, ts - 1, ts - 1, COL_HINT_BLACKREF);
+    drawRectOutline(dr, x + 2, y + 2, ts - 3, ts - 3, COL_HINT_BLACKREF);
   }
 
   // Preview the mark the hint forces, on top of the blue target cell.

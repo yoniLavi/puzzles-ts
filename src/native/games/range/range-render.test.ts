@@ -4,20 +4,29 @@
 // (grid outline, clue text, background) so a render regression is a
 // reviewable text diff.
 import { describe, expect, it } from "vitest";
+import type { HintStep } from "../../engine/game.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
-import { rangeGame } from "./index.ts";
+import { type RangeHint, rangeGame } from "./index.ts";
 import {
   COL_ERROR,
   COL_GRID,
   COL_HINT,
+  COL_HINT_BLACKREF,
   COL_HINT_CELL,
   colours,
   newDrawState,
   redraw,
   setTileSize,
 } from "./render.ts";
-import { BLACK, EMPTY, type RangeState, type RangeUi, WHITE } from "./state.ts";
+import {
+  BLACK,
+  EMPTY,
+  type RangeMove,
+  type RangeState,
+  type RangeUi,
+  WHITE,
+} from "./state.ts";
 
 const palette = colours([0.8, 0.8, 0.8]);
 
@@ -38,6 +47,41 @@ const noCursor: RangeUi = { r: 0, c: 0, cursorShow: false };
 function makeState(w: number, h: number, grid: number[]): RangeState {
   return { w, h, grid: Int8Array.from(grid), hasCheated: false, wasSolved: false };
 }
+
+describe("hint colour legend", () => {
+  it("rings a cited black premise in COL_HINT_BLACKREF, distinct from the COL_HINT target", () => {
+    // The adjacency deduction shape: a black square (the premise) at the centre
+    // forces a neighbour white (the target). The element-type legend must draw
+    // the cited black square and the forced cell in *different* colours.
+    const grid = [EMPTY, EMPTY, EMPTY, EMPTY, BLACK, EMPTY, EMPTY, EMPTY, EMPTY];
+    const state = makeState(3, 3, grid);
+    const step: HintStep<RangeMove, RangeHint> = {
+      move: { sets: [{ r: 0, c: 1, value: "white" }] },
+      explanation: "adjacency",
+      highlights: {
+        target: { r: 0, c: 1, value: "white" },
+        area: [],
+        blackRefs: [{ r: 1, c: 1 }],
+      },
+    };
+    const rec = new RecordingDrawing(palette);
+    const ds = newDrawState(state);
+    setTileSize(ds, 32);
+    redraw(rec, ds, null, state, 1, noCursor, 0, 0, step);
+    // The cited black square rings COL_HINT_BLACKREF (an outline — `line` ops,
+    // not a body fill).
+    expect(
+      rec.ops.some((o) => o.op === "line" && o.colour === COL_HINT_BLACKREF),
+    ).toBe(true);
+    // The forced cell fills COL_HINT (a `rect` body) — a different colour from
+    // the premise ring.
+    expect(rec.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
+    // The premise ring is NOT drawn in the target's COL_HINT.
+    expect(
+      rec.ops.some((o) => o.op === "line" && o.colour === COL_HINT),
+    ).toBe(false);
+  });
+});
 
 describe("live error highlight", () => {
   it("reddens two orthogonally adjacent black cells", () => {

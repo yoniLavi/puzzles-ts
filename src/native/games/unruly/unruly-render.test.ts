@@ -15,6 +15,7 @@ import {
   COL_ERROR,
   COL_HINT,
   COL_HINT_CELL,
+  COL_HINT_REF,
   newDrawState,
   PLACE_ANIM_TIME,
   redraw,
@@ -254,11 +255,17 @@ describe("Unruly redraw", () => {
     expect(ops.some((o) => body(o) && o.colour === COL_HINT)).toBe(true);
     // Sibling area cell: a full COL_HINT_CELL body.
     expect(ops.some((o) => body(o) && o.colour === COL_HINT_CELL)).toBe(true);
-    // Premise ring: COL_HINT outline strips around the filled clue.
+    // Premise ring: COL_HINT_REF outline strips around the cited clue — a
+    // distinct colour from the COL_HINT move, so premise and move don't read
+    // as the same element type (the element-type colour legend).
     expect(
-      ops.filter((o) => o.op === "drawRect" && o.colour === COL_HINT && !body(o))
+      ops.filter((o) => o.op === "drawRect" && o.colour === COL_HINT_REF && !body(o))
         .length,
     ).toBeGreaterThanOrEqual(4);
+    // …and the ring is NOT drawn in the target's COL_HINT.
+    expect(
+      ops.some((o) => o.op === "drawRect" && o.colour === COL_HINT && !body(o)),
+    ).toBe(false);
   });
 
   it("suppresses unchanged tiles via the cache", () => {

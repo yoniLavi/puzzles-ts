@@ -54,9 +54,11 @@ export const COL_CURSOR = 9;
 export const COL_ERROR = 10;
 // Hint colours — appended past the dark-mode override range (3–8), so dark
 // mode leaves them unchanged. The action cell is COL_HINT (blue); the
-// deduction's empty siblings shade COL_HINT_CELL (light blue).
+// deduction's empty siblings shade COL_HINT_CELL (light blue); the cited
+// premise / pivotal cells ring COL_HINT_REF (orange), distinct from the move.
 export const COL_HINT = 11;
 export const COL_HINT_CELL = 12;
+export const COL_HINT_REF = 13;
 
 const grey = (v: number): Colour => [v, v, v];
 
@@ -79,6 +81,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = [1, 0, 0];
   out[COL_HINT] = [0.13, 0.5, 0.85];
   out[COL_HINT_CELL] = [0.7, 0.84, 0.98];
+  // Cited premise / pivotal cells. A single ring colour (not the cross-game
+  // teal/violet black/white-ref pair): Unruly's ring set is mixed — filled
+  // black cells, a balanced reference row holding both colours, and empty
+  // reserved windows — so a state-derived colour is ill-defined. Orange keeps
+  // it clear of the blue move and of the teal/violet "decided black/white"
+  // meaning those hues carry in Singles/Range.
+  out[COL_HINT_REF] = [0.95, 0.6, 0.15];
   return out;
 }
 
@@ -96,7 +105,7 @@ const FF_MISTAKE = 0x2000;
 const FF_HINT_TARGET = 0x4000; // the forced cell (filled COL_HINT + preview)
 const FF_HINT_ONE = 0x8000; // the forced colour is ONE (else ZERO)
 const FF_HINT_AREA = 0x10000; // a journey-sibling empty cell (light shade)
-const FF_HINT_RING = 0x20000; // a filled premise cell (COL_HINT outline)
+const FF_HINT_RING = 0x20000; // a cited premise / pivotal cell (COL_HINT_REF outline)
 
 // --- geometry -----------------------------------------------------------
 const border = (ts: number) => Math.floor(ts / 2);
@@ -280,14 +289,17 @@ function drawTile(
     dr.drawRect({ x: sx + span - t, y: sy, w: t, h: span }, COL_ERROR);
   }
 
-  // Hint ring: a COL_HINT outline around a filled premise cell (its colour
-  // stays visible — that colour *is* the evidence).
+  // Hint ring: a COL_HINT_REF outline around a cited premise / pivotal cell
+  // (its own colour stays visible — for a filled premise that colour *is* the
+  // evidence; for an empty reserved window the ring marks the spared cells).
+  // Ringed in COL_HINT_REF, not the COL_HINT of the move, so premise and move
+  // don't read as the same element type.
   if (tile & FF_HINT_RING) {
     const t = Math.max(1, Math.floor(ts / 12));
-    dr.drawRect({ x: px, y: py, w: ts - 1, h: t }, COL_HINT);
-    dr.drawRect({ x: px, y: py + ts - 1 - t, w: ts - 1, h: t }, COL_HINT);
-    dr.drawRect({ x: px, y: py, w: t, h: ts - 1 }, COL_HINT);
-    dr.drawRect({ x: px + ts - 1 - t, y: py, w: t, h: ts - 1 }, COL_HINT);
+    dr.drawRect({ x: px, y: py, w: ts - 1, h: t }, COL_HINT_REF);
+    dr.drawRect({ x: px, y: py + ts - 1 - t, w: ts - 1, h: t }, COL_HINT_REF);
+    dr.drawRect({ x: px, y: py, w: t, h: ts - 1 }, COL_HINT_REF);
+    dr.drawRect({ x: px + ts - 1 - t, y: py, w: t, h: ts - 1 }, COL_HINT_REF);
   }
 
   // Cursor outline.

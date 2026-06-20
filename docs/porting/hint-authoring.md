@@ -283,9 +283,35 @@ phrase — "can't be adjacent" for `adjBlack`, "ringed white square" for
 `sameLine`) and assert the cited premise carries its legend colour *and* the
 target a different one. Exemplar: the ring-colour branch in
 [`singles/render.ts`](../../src/native/games/singles/render.ts) `drawCell`.
-Range/Palisade/Filling/Unruly each get the same treatment as parity-gated
-follow-ups (their hints all name multiple types — black square + white cells +
-clue; wall + region + clue; …).
+
+**The legend is applied across every existing hint-carrying game**
+(`apply-hint-colour-legend`). What each game's hints actually do — copy the
+matching row when you add a hint to a similar game:
+
+| game | move | premise type(s) → colour + cue |
+| --- | --- | --- |
+| Singles | forced cell, blue fill | matching number → `COL_HINT_CELL` shade + digit; cited **black** square → teal `COL_HINT_BLACKREF` ring; cited **white** circle → violet `COL_HINT_WHITEREF` ring; protected corner → amber `COL_HINT_STRAND` |
+| Range | forced cell, blue fill + shape preview | undecided premise → `COL_HINT_CELL` shade; cited **black** square → teal `COL_HINT_BLACKREF` ring (the same hue as Singles) |
+| Unruly | forced cell, blue fill + grow anim | empty journey siblings → `COL_HINT_CELL` shade; cited premise / pivotal cells → orange `COL_HINT_REF` ring (**one** colour, not the black/white split — its rings land on black cells, a balanced both-colour row, *and* empty windows, so a state-derived colour is ill-defined) |
+| Palisade | forced edge(s), blue `COL_HINT` segments (equivalent edges all share it) | region → `COL_HINT_CELL` shade; clue → its drawn digit on the shaded cell (no extra colour) |
+| Filling | target square(s), *mild* `COL_HINT` fill, **no digit** | region premise → `COL_HINT_CELL` shade + digit on top |
+
+Two reusable lessons fell out of the rollout: (1) **teal = "a cited black
+square", violet = "a cited white square"** is a *cross-game* reading worth
+preserving — reuse those hues for a decided black/white premise (Singles, Range)
+and pick a *different* hue (Unruly's orange) when a game's premise ring isn't a
+single decided colour, so you don't imply a colour the cell isn't. (2) When the
+ring set is **mixed** (filled + empty, or both colours), use **one** premise
+colour, not a per-cell split — the split only works when every ringed cell is a
+single decided colour (Singles/Range).
+
+**Single-action *imperative* hints are exempt.** Movement/objective games
+(Sixteen, Fifteen, Flood — § the necessity-voice houses in §1a) name only **one**
+element type — the tile/colour being moved — plus the move itself; there is no
+premise type to disambiguate from a conclusion, so the legend does not apply and
+the existing target/arrow/region highlighting is correct. The legend bites only
+when a hint narrates a *premise* distinct from the *move*. If a future movement
+game grows a deductive hint that cites a premise, revisit.
 
 **A narration whose stated premise doesn't single out the conclusion is a bug,
 even when the move is right.** Quality-bar rule 1 (`AGENTS.md`) again, caught on
