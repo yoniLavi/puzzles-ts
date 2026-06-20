@@ -266,11 +266,11 @@ puzzle(tents
 solver(tents)
 
 puzzle(towers
+  TS_PORTED  # native-TS port (openspec add-towers-ts-port); no towers.c/wasm
   DISPLAYNAME "Towers"
   DESCRIPTION "Tower-placing Latin square puzzle"
   OBJECTIVE "Complete the latin square of towers in accordance with \
 the clues.")
-solver(towers latin.c)
 
 puzzle(tracks
   DISPLAYNAME "Tracks"

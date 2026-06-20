@@ -1,18 +1,16 @@
 /**
- * Singles (Hitori) generator — port of `new_game_desc` plus the Latin-
- * square machinery (`latin_generate`/`latin_generate_rect` and the
- * bipartite `matching` it rests on) from `singles.c` / `latin.c` /
- * `matching.c`.
- *
- * The whole chain is RNG-faithful to upstream: over the bit-identical
- * `random.ts` it reproduces the C desc byte-for-byte for the same seed
- * (see `singles-differential.test.ts`). The two RNG-bearing steps inside
- * matching are reproduced exactly — `shuffle(Lorder)` once per BFS pass,
- * and the in-place `random_upto` swap that permutes the remaining
- * adjacency list during the DFS.
+ * Singles (Hitori) generator — port of `new_game_desc` from `singles.c`. The
+ * Latin-square machinery (`latin_generate`/`latin_generate_rect` and the
+ * bipartite `matching` it rests on) lives in the shared `engine/latin.ts`
+ * (promoted there when Towers became the second consumer); it stays
+ * RNG-faithful, so over the bit-identical `random.ts` the whole chain still
+ * reproduces the C desc byte-for-byte for the same seed (see
+ * `singles-differential.test.ts`).
  */
+
+import { latinGenerateRect } from "../../engine/latin.ts";
 import { shuffle } from "../../engine/shuffle.ts";
-import { type RandomState, randomUpto } from "../../random/index.ts";
+import type { RandomState } from "../../random/index.ts";
 import {
   newSolverState,
   OP_BLACK,
@@ -35,189 +33,6 @@ import {
   type SinglesParams,
   type SinglesState,
 } from "./state.ts";
-
-// --- bipartite matching (matching.c, RNG-faithful) -------------------------
-
-/**
- * Maximum bipartite matching (Hopcroft–Karp) between `nl` left and `nr`
- * right vertices. `adjlists[L]` lists L's neighbours (mutated in place by
- * the randomising DFS, exactly as upstream). Returns the L→R assignment
- * array (`-1` = unmatched), the analogue of upstream's `outl`.
- */
-function matching(
-  nl: number,
-  nr: number,
-  adjlists: number[][],
-  adjsizes: number[],
-  rs: RandomState,
-): Int32Array {
-  const LtoR = new Int32Array(nl).fill(-1);
-  const RtoL = new Int32Array(nr).fill(-1);
-  const Llayer = new Int32Array(nl);
-  const Rlayer = new Int32Array(nr);
-  const Lqueue = new Int32Array(nl);
-  const Rqueue = new Int32Array(nr);
-  const nmin = Math.min(nl, nr);
-  const augpath = new Int32Array(2 * nmin);
-  const dfsstate = new Int32Array(nmin + 1);
-  const Lorder = new Int32Array(nl);
-
-  outer: while (true) {
-    /* BFS from the unassigned left vertices, layering as we go. */
-    Llayer.fill(-1);
-    Rlayer.fill(-1);
-
-    let Lqs = 0;
-    for (let L = 0; L < nl; L++) {
-      if (LtoR[L] === -1) {
-        Llayer[L] = 0;
-        Lqueue[Lqs++] = L;
-      }
-    }
-
-    let layer = 0;
-    let targetLayer = -1;
-    while (true) {
-      let foundFreeR = false;
-      let Rqs = 0;
-      for (let q = 0; q < Lqs; q++) {
-        const L = Lqueue[q];
-        for (let j = 0; j < adjsizes[L]; j++) {
-          const R = adjlists[L][j];
-          if (R !== LtoR[L] && Rlayer[R] === -1) {
-            Rlayer[R] = layer + 1;
-            Rqueue[Rqs++] = R;
-            if (RtoL[R] === -1) foundFreeR = true;
-          }
-        }
-      }
-      layer++;
-
-      if (foundFreeR) {
-        targetLayer = layer;
-        break;
-      }
-      if (Rqs === 0) break outer; /* goto done */
-
-      Lqs = 0;
-      for (let q = 0; q < Rqs; q++) {
-        const R = Rqueue[q];
-        const L = RtoL[R];
-        if (L !== -1 && Llayer[L] === -1) {
-          Llayer[L] = layer + 1;
-          Lqueue[Lqs++] = L;
-        }
-      }
-      layer++;
-
-      if (Lqs === 0) break outer; /* goto done */
-    }
-
-    /* Target-layer R vertices are only interesting if unassigned. */
-    for (let R = 0; R < nr; R++) {
-      if (Rlayer[R] === targetLayer && RtoL[R] !== -1) Rlayer[R] = -1;
-    }
-
-    /* Choose an order in which to try the L vertices. */
-    for (let L = 0; L < nl; L++) Lorder[L] = L;
-    shuffle(Lorder as unknown as number[], rs);
-
-    /* DFS for vertex-disjoint augmenting paths; augment each found. */
-    dfsstate[0] = 0;
-    let i = 0;
-    while (true) {
-      let L: number;
-      if (i === 0) {
-        if (dfsstate[0] === nl) break; /* DFS finished */
-        L = Lorder[dfsstate[0]++];
-        if (Llayer[L] !== 0) continue;
-      } else {
-        L = augpath[2 * i - 2];
-        const j = dfsstate[i]++;
-        if (j === adjsizes[L]) {
-          i--;
-          continue;
-        }
-        if (adjsizes[L] - j > 1) {
-          const which = j + randomUpto(rs, adjsizes[L] - j);
-          const tmp = adjlists[L][which];
-          adjlists[L][which] = adjlists[L][j];
-          adjlists[L][j] = tmp;
-        }
-        const R = adjlists[L][j];
-
-        if (Rlayer[R] !== 2 * i - 1) continue;
-
-        augpath[2 * i - 1] = R;
-        Rlayer[R] = -1;
-
-        if (2 * i - 1 === targetLayer) {
-          for (let k = 0; k < 2 * i; k += 2) {
-            LtoR[augpath[k]] = augpath[k + 1];
-            RtoL[augpath[k + 1]] = augpath[k];
-          }
-          i = 0;
-          continue;
-        }
-
-        L = RtoL[R];
-        if (Llayer[L] !== 2 * i) continue;
-      }
-
-      augpath[2 * i] = L;
-      Llayer[L] = -1;
-      i++;
-      dfsstate[i] = 0;
-    }
-  }
-
-  return LtoR;
-}
-
-// --- latin square (latin.c) ------------------------------------------------
-
-/** Generate an `o × o` Latin square (values 1..o), row by row via matching,
- * faithful to `latin_generate`. */
-function latinGenerate(o: number, rs: RandomState): Int32Array {
-  const sq = new Int32Array(o * o);
-
-  /* Generate rows in random order to avoid directional bias. */
-  const row: number[] = [];
-  for (let i = 0; i < o; i++) row[i] = i;
-  shuffle(row, rs);
-
-  const adjlists: number[][] = [];
-  const adjsizes: number[] = [];
-  for (let j = 0; j < o; j++) adjlists[j] = [];
-
-  for (let i = 0; i < o; i++) {
-    /* Bipartite graph: each column to the numbers not yet in that column. */
-    for (let j = 0; j < o; j++) {
-      const present = new Int8Array(o);
-      for (let k = 0; k < i; k++) present[sq[row[k] * o + j] - 1] = 1;
-      const adj = adjlists[j];
-      adj.length = 0;
-      for (let k = 0; k < o; k++) if (!present[k]) adj.push(k);
-      adjsizes[j] = adj.length;
-    }
-
-    const m = matching(o, o, adjlists, adjsizes, rs);
-    for (let j = 0; j < o; j++) sq[row[i] * o + j] = m[j] + 1;
-  }
-
-  return sq;
-}
-
-/** Crop an `o × o` Latin square to `w × h` (`o = max(w,h)`). */
-function latinGenerateRect(w: number, h: number, rs: RandomState): Int32Array {
-  const o = Math.max(w, h);
-  const latin = latinGenerate(o, rs);
-  const rect = new Int32Array(w * h);
-  for (let x = 0; x < w; x++) {
-    for (let y = 0; y < h; y++) rect[y * w + x] = latin[y * o + x];
-  }
-  return rect;
-}
 
 // --- numbers under black squares (best_black_col) --------------------------
 

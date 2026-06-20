@@ -83,6 +83,20 @@ use the shared [`src/native/engine/`](../../src/native/engine/) helpers
 [`params.ts`](../../src/native/engine/params.ts)). If a second consumer of a
 game-local helper appears, promote it to `engine/`.
 
+**Latin-square games share `engine/latin.ts`.** The generic `latin_solver`
+framework (the candidate cube, positional/numeric + set elimination, forcing
+chains, guess-and-verify recursion) and the RNG-faithful generator
+(`matching`/`latinGenerate`/`latinGenerateRect`) are ported there once
+(`latinSolver(grid, o, cfg)` with per-game `usersolvers` + a `valid` callback,
+the numeric `DIFF_IMPOSSIBLE/AMBIGUOUS/UNFINISHED = 10/11/12` sentinels). Towers
+is the first consumer; Solo/Unequal/Keen/Group reuse it. A Latin game's
+`solver.ts` is then just its own clue deductions (`usersolvers`) + validator +
+a thin driver mapping its difficulty levels onto the `cfg` fields. The cube is
+indexed `(x·o + y)·o + (n−1)`; deductions that read a cube slice are cleanest
+expressed as the cell list of a line + `solver.cubeGet(x,y,n)` /
+`solver.cube[solver.cubepos(x,y,n)] = 0` rather than re-deriving C's start/step
+arithmetic. Exemplar: [`towers/solver.ts`](../../src/native/games/towers/solver.ts).
+
 Reach for these in `interpretMove`/`decodeParams` instead of re-rolling the
 idiom (every game grew its own copy until they were consolidated):
 - [`stripModifiers(button)`](../../src/native/engine/pointer.ts) for
@@ -198,6 +212,32 @@ of the keys a game's `redraw` early-out watches (positions/bg/cursor), so the
 midend drops the drawstate on `setPreferences` to force a full repaint — your
 game's `redraw` doesn't need to do anything special, but don't be surprised the
 repaint is full.
+
+**The app overrides `newUi` pref defaults per-puzzle — verify against that layer,
+not just your `newUi`.** `src/store/settings.ts` `getPuzzlePreferences` carries a
+small hardcoded `defaults` map (a web-app divergence inherited from the C
+frontends — e.g. `pencil-keep-highlight: true` for keen/solo/towers/undead) that
+the app passes to `setPreferences` on every puzzle load, *overriding* your game's
+`newUi` default. So on a dev smoke-test a checkbox can legitimately come up
+checked even though your `newUi` sets it `false` — that is the app's intended
+default, not a port bug (the C/WASM build shows the same). Match upstream's struct
+default in `newUi` regardless; if a default looks "wrong" on smoke-test, check
+this map before chasing your hook. (Towers spent a verify cycle here.)
+
+**A game whose params aren't plain `w`/`h` must make `describeParams` emit the
+exact keys its `augmentation.ts` `describeConfig` template reads — or the header
+shows the literal template.** The config-summary formatter
+(`configFormatter`) substitutes `{field}` → `String(values[field])` and
+`{field:A|B|C}` → `options[Number(values[field])]`; a missing key is left as the
+literal `{field}` text. So Towers' template `"{grid-size}x{grid-size}
+{difficulty:Easy|Hard|Extreme|Unreasonable}"` needs `describeParams` to return
+`{ "grid-size": String(w), difficulty: <0-based level index> }` — **the slug the
+C `game_configure` name produces** (`"Grid size"` → `grid-size`), and a *numeric
+index* for a `{…:A|B}` choice, not the label string. The worker adapter's generic
+`{ width, height }` base only covers `w`/`h` games; a square-grid or
+oddly-named-param game (Towers, Keen, Solo, Unequal) supplies its own keys. Caught
+on the Towers dev smoke (header read `{grid-size}x{grid-size}`); a quick guard is
+a test asserting the rendered summary contains no literal `{`.
 
 **A `solve()` that needs the generator's `aux` only works on a freshly generated
 game.** The midend retains the `aux` from `newDesc` and passes it to
