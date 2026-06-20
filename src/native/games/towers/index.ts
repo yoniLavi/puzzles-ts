@@ -177,19 +177,37 @@ function interpretMove(
 
   if (inGrid(w, tx, ty)) {
     if (button === LEFT_BUTTON) {
-      if (tx === ui.hx && ty === ui.hy && ui.hshow && !ui.hpencil) {
+      // Sticky pencil mode: a left-click keeps the current pencil/real mode
+      // (it only moves the highlight); the mode is toggled by right-click.
+      // Non-sticky (upstream): a left-click always reverts to real entry.
+      if (
+        tx === ui.hx &&
+        ty === ui.hy &&
+        ui.hshow &&
+        (ui.pencilSticky || !ui.hpencil)
+      ) {
         ui.hshow = false;
       } else {
         ui.hx = tx;
         ui.hy = ty;
         ui.hshow = !state.immutable[ty * w + tx];
-        ui.hpencil = false;
+        if (!ui.pencilSticky) ui.hpencil = false;
       }
       ui.hcursor = false;
       return UI_UPDATE;
     }
     if (button === RIGHT_BUTTON) {
-      if (state.grid[ty * w + tx] === 0) {
+      if (ui.pencilSticky) {
+        // Toggle the persistent pencil mode (CapsLock-style). Only move the
+        // highlight onto an *empty* cell — a filled/given cell can't take a
+        // pencil mark, so selecting it would just be confusing.
+        ui.hpencil = !ui.hpencil;
+        if (state.grid[ty * w + tx] === 0) {
+          ui.hx = tx;
+          ui.hy = ty;
+          ui.hshow = true;
+        }
+      } else if (state.grid[ty * w + tx] === 0) {
         if (tx === ui.hx && ty === ui.hy && ui.hshow && ui.hpencil) {
           ui.hshow = false;
         } else {
@@ -403,6 +421,15 @@ export const towersGame: Game<
   textFormat,
 
   prefs: [
+    {
+      kw: "sticky-pencil-mode",
+      name: "Right-click toggles a sticky pencil mode (stays on until right-clicked again)",
+      type: "boolean",
+      get: (ui) => ui.pencilSticky,
+      set: (ui, v) => {
+        ui.pencilSticky = v;
+      },
+    },
     {
       kw: "pencil-keep-highlight",
       name: "Keep mouse highlight after changing a pencil mark",

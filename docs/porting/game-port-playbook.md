@@ -204,6 +204,19 @@ keyboard. Plumbed like `canHint`/`canFindMistakes` (`midend.ts` →
 `M` handled in `interpretMove`). Solo / Keen / Unequal / Undead will set it when
 ported.
 
+**A pencil-mark game should ship sticky pencil mode + a mode indicator (default
+on).** Mobile players expect note entry to be a *mode*: right-click once to enter
+it, keep tapping cells to drop marks, right-click again to leave. Add a
+`pencilSticky` boolean to the `Ui` (default true) exposed via `prefs`; in
+`interpretMove`, when sticky is on, right-click *toggles* a persistent pencil
+mode and left-click only moves the highlight (don't reset `hpencil`) — the
+keyboard path is already mode-persistent, so this just unifies the mouse with it.
+Draw a CapsLock-style indicator while the mode is on: encode it as a high
+tile-flag bit on a board cell no tower/animation overlaps and that is no cell's
+neighbour in the diff cache (Towers uses the top-right clue-ring corner), so the
+existing per-tile cache repaints it on toggle for free. Exemplar:
+[`towers/{state,index,render}.ts`](../../src/native/games/towers/index.ts).
+
 **Per-game preferences go through the `Game.prefs` hook (since Untangle).** A game
 with upstream `get_prefs`/`set_prefs` declares an optional `prefs: GamePref<Ui>[]`
 — each item is `{ kw, name, type: "boolean" }` or

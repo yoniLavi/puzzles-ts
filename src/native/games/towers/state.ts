@@ -199,6 +199,10 @@ export interface TowersUi {
   threeD: boolean;
   /** Preference: keep the mouse highlight after a pencil-mark change. */
   pencilKeepHighlight: boolean;
+  /** Preference (default on): right-click toggles a *sticky* pencil mode —
+   * once on, left-clicks keep entering pencil marks until right-clicked again
+   * (mobile-style), instead of every left-click reverting to real entry. */
+  pencilSticky: boolean;
 }
 
 export function newUi(_state: TowersState): TowersUi {
@@ -210,6 +214,7 @@ export function newUi(_state: TowersState): TowersUi {
     hcursor: false,
     threeD: true,
     pencilKeepHighlight: false,
+    pencilSticky: true,
   };
 }
 

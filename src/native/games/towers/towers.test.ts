@@ -17,7 +17,15 @@ import {
 import { randomNew } from "../../random/index.ts";
 import { newTowersDesc } from "./generator.ts";
 import { towersGame } from "./index.ts";
-import { COL_ERROR, newDrawState, redraw, setTileSize } from "./render.ts";
+import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
+import {
+  COL_ERROR,
+  COL_PENCIL_BODY,
+  coord,
+  newDrawState,
+  redraw,
+  setTileSize,
+} from "./render.ts";
 import { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE, solveTowers } from "./solver.ts";
 import {
   clueIndex,
@@ -292,7 +300,98 @@ function polygonCount(rec: RecordingDrawing): number {
   return rec.ops.filter((o) => o.op === "polygon").length;
 }
 
+describe("towers sticky pencil mode", () => {
+  const ts = 32;
+  // Click the centre of cell (cx, cy). 2D hit-testing (no 3D retargeting).
+  const center = (cx: number, cy: number) => ({
+    x: coord(cx, ts) + Math.floor(ts / 2),
+    y: coord(cy, ts) + Math.floor(ts / 2),
+  });
+
+  function setup() {
+    const { st } = gen(5, "easy", "sticky-1");
+    const ui = newUi(st);
+    ui.threeD = false;
+    const ds = newDrawState(st);
+    setTileSize(ds, ts);
+    // Two distinct empty (non-immutable) cells to click.
+    const empty: { x: number; y: number }[] = [];
+    for (let i = 0; i < st.w * st.w && empty.length < 2; i++) {
+      if (!st.immutable[i]) empty.push({ x: i % st.w, y: (i / st.w) | 0 });
+    }
+    return { st, ui, ds, a: empty[0], b: empty[1] };
+  }
+
+  it("sticky on (default): right-click enters pencil mode and left-clicks keep it", () => {
+    const { st, ui, ds, a, b } = setup();
+    // Right-click cell A → enter pencil mode.
+    towersGame.interpretMove(st, ui, ds, center(a.x, a.y), RIGHT_BUTTON);
+    expect(ui.hpencil).toBe(true);
+    // Left-click a different cell → still in pencil mode (only the highlight moved).
+    towersGame.interpretMove(st, ui, ds, center(b.x, b.y), LEFT_BUTTON);
+    expect(ui.hpencil).toBe(true);
+    expect([ui.hx, ui.hy]).toEqual([b.x, b.y]);
+    // A digit now writes a pencil mark, not a real entry.
+    const m = towersGame.interpretMove(st, ui, ds, center(b.x, b.y), 49 /* '1' */);
+    expect(m).toEqual({ type: "set", x: b.x, y: b.y, n: 1, pencil: true });
+    // Right-click again → toggle pencil mode back off.
+    towersGame.interpretMove(st, ui, ds, center(a.x, a.y), RIGHT_BUTTON);
+    expect(ui.hpencil).toBe(false);
+  });
+
+  it("right-click on a filled cell toggles the mode but does not select it", () => {
+    const { st, ui, ds, a, b } = setup();
+    // Fill cell B with a real digit, then enter pencil mode on empty cell A.
+    const filled = towersGame.executeMove(st, {
+      type: "set",
+      x: b.x,
+      y: b.y,
+      n: 1,
+      pencil: false,
+    });
+    towersGame.interpretMove(filled, ui, ds, center(a.x, a.y), RIGHT_BUTTON);
+    expect(ui.hpencil).toBe(true);
+    // Right-click the filled cell B: the mode toggles off, but the highlight
+    // stays on the empty cell A (the filled cell is not selected/restyled).
+    towersGame.interpretMove(filled, ui, ds, center(b.x, b.y), RIGHT_BUTTON);
+    expect(ui.hpencil).toBe(false);
+    expect([ui.hx, ui.hy]).toEqual([a.x, a.y]);
+    expect(ui.hshow).toBe(true);
+  });
+
+  it("sticky off: a left-click reverts to real entry (upstream behaviour)", () => {
+    const { st, ui, ds, a, b } = setup();
+    ui.pencilSticky = false;
+    towersGame.interpretMove(st, ui, ds, center(a.x, a.y), RIGHT_BUTTON);
+    expect(ui.hpencil).toBe(true);
+    towersGame.interpretMove(st, ui, ds, center(b.x, b.y), LEFT_BUTTON);
+    expect(ui.hpencil).toBe(false);
+  });
+});
+
 describe("towers render", () => {
+  it("draws the pencil-mode indicator only while pencil mode is on", () => {
+    const ts = towersGame.preferredTileSize ?? 48;
+    const palette = towersGame.colours(DEFAULT_BACKGROUND);
+    const render = (hpencil: boolean): RecordingDrawing => {
+      const st = newState(RENDER.p, RENDER.desc);
+      const ui = newUi(st);
+      ui.hpencil = hpencil;
+      ui.hshow = hpencil;
+      const ds = newDrawState(st);
+      setTileSize(ds, ts);
+      const dr = new RecordingDrawing(palette);
+      redraw(dr, ds, null, st, 1, ui, 0, 0);
+      return dr;
+    };
+    // The indicator's pencil body is the only COL_PENCIL_BODY-filled polygon
+    // (pencil marks are text; tower faces fill with background/highlight).
+    const pencilGlyph = (r: RecordingDrawing) =>
+      r.ops.some((o) => o.op === "polygon" && o.fill === COL_PENCIL_BODY);
+    expect(pencilGlyph(render(true))).toBe(true);
+    expect(pencilGlyph(render(false))).toBe(false);
+  });
+
   it("draws the 3D initial frame with clues and tower solids", () => {
     const { recording } = renderScenario({ game: towersGame, id: RENDER_ID });
     // Clue digits are drawn as text.

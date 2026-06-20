@@ -34,6 +34,10 @@ export const COL_HIGHLIGHT = 3;
 export const COL_ERROR = 4;
 export const COL_PENCIL = 5;
 export const COL_DONE = 6;
+// Fork addition: the yellow body of the pencil-mode indicator glyph (a classic
+// #2 school pencil). Appended past the upstream enum; Towers has no dark-mode
+// paletteOverrides, so the extra index is safe.
+export const COL_PENCIL_BODY = 7;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -45,6 +49,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = [1, 0, 0];
   out[COL_PENCIL] = [0.5 * bg[0], 0.5 * bg[1], bg[2]];
   out[COL_DONE] = [bg[0] / 1.5, bg[1] / 1.5, bg[2] / 1.5];
+  out[COL_PENCIL_BODY] = [1, 0.78, 0.17];
   return out;
 }
 
@@ -58,6 +63,11 @@ const DF_HIGHLIGHT_PENCIL = 0x2000;
 const DF_IMMUTABLE = 0x1000;
 const DF_PLAYAREA = 0x0800;
 const DF_DIGIT_MASK = 0x00ff;
+// Fork addition: a CapsLock-style "pencil mode is on" indicator, drawn as a
+// small pencil glyph in the (tower-safe, never-overlapped) top-right corner of
+// the clue ring. A high bit clear of the pencil bitmap (bits 17..25) and the
+// upstream flags below bit 16.
+const DF_PENCIL_MODE = 1 << 30;
 // Fork addition (mistake overlay; not packed alongside the upstream bits, kept
 // in a sidecar so it never collides with the pencil bitmap above bit 16).
 
@@ -162,6 +172,23 @@ function drawTile(
 
   // erase background
   dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, bg);
+
+  // CapsLock-style "pencil mode is on" indicator: a small diagonal pencil
+  // (blue body + sharpened graphite tip), pointing down-left.
+  if (tile & DF_PENCIL_MODE) {
+    const at = (fx: number, fy: number) => ({
+      x: tx + Math.round(ts * fx),
+      y: ty + Math.round(ts * fy),
+    });
+    // body: a crisp yellow parallelogram from the (flat) eraser end to the tip.
+    dr.drawPolygon(
+      [at(0.729, 0.129), at(0.871, 0.271), at(0.463, 0.679), at(0.321, 0.537)],
+      COL_PENCIL_BODY,
+      COL_GRID,
+    );
+    // sharpened graphite point.
+    dr.drawPolygon([at(0.321, 0.537), at(0.463, 0.679), at(0.2, 0.8)], COL_GRID, COL_GRID);
+  }
 
   // pencil-mode highlight (top-left triangle)
   if (tile & DF_HIGHLIGHT_PENCIL) {
@@ -359,6 +386,12 @@ export function redraw(
       ds.tiles[(y + 1) * W + (x + 1)] = tile;
     }
   }
+
+  // Pencil-mode indicator in the top-right clue-ring corner (W-pos (w+1, 0)).
+  // Towers protrude up-left, so nothing ever overlaps this corner; it is also
+  // no cell's up-left neighbour, so the diff cache repaints it cleanly on
+  // toggle. Driven straight off the persistent `hpencil` mode flag.
+  if (ui.hpencil) ds.tiles[w + 1] |= DF_PENCIL_MODE;
 
   // Diff and repaint, drawing each changed cell's tower-overlapping neighbours.
   for (let y = 0; y < W; y++) {
