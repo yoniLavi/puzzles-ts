@@ -193,29 +193,41 @@ distinct overlay (a packed cache bit + an inset error outline; exemplar
 [hint-authoring.md](./hint-authoring.md); a permutation puzzle with no notion of
 a wrong-but-legal state correctly omits it.
 
-**A pencil-mark game should set `canMarkAll: true`.** Games with candidate
-pencil marks handle upstream's `M`/`m` key in `interpretMove` (fill every empty
-cell with all candidates). Setting the optional `readonly canMarkAll` flag on the
-`Game` surfaces that as a toolbar button (the grid icon, next to Check & Save)
-that injects `M` via `processKey` — so touch/mouse players reach it, not just the
-keyboard. Plumbed like `canHint`/`canFindMistakes` (`midend.ts` →
-`PuzzleStaticAttributes` → `Puzzle`); C/WASM reports false. Exemplar:
-[`towers/index.ts`](../../src/native/games/towers/index.ts) (`canMarkAll: true`,
-`M` handled in `interpretMove`). Solo / Keen / Unequal / Undead will set it when
-ported.
+**Pencil-mark games: ship the full note-taking UX (Towers exemplar).** Any game
+with candidate pencil marks — Towers, and Solo / Keen / Unequal / Undead when
+ported — should carry all three of the following. They are deliberate, default-on
+divergences that make note-taking usable with mouse/touch, not just the keyboard:
 
-**A pencil-mark game should ship sticky pencil mode + a mode indicator (default
-on).** Mobile players expect note entry to be a *mode*: right-click once to enter
-it, keep tapping cells to drop marks, right-click again to leave. Add a
-`pencilSticky` boolean to the `Ui` (default true) exposed via `prefs`; in
-`interpretMove`, when sticky is on, right-click *toggles* a persistent pencil
-mode and left-click only moves the highlight (don't reset `hpencil`) — the
-keyboard path is already mode-persistent, so this just unifies the mouse with it.
-Draw a CapsLock-style indicator while the mode is on: encode it as a high
-tile-flag bit on a board cell no tower/animation overlaps and that is no cell's
-neighbour in the diff cache (Towers uses the top-right clue-ring corner), so the
-existing per-tile cache repaints it on toggle for free. Exemplar:
-[`towers/{state,index,render}.ts`](../../src/native/games/towers/index.ts).
+- **Mark-all button — `canMarkAll: true`.** The game already handles upstream's
+  `M`/`m` key in `interpretMove` (fill every empty cell with all candidates); the
+  optional `readonly canMarkAll` `Game` flag surfaces that as a toolbar button
+  (grid icon, next to Check & Save) that injects `M` via `processKey`. Plumbed
+  like `canHint`/`canFindMistakes` (`midend.getStaticProperties` →
+  `PuzzleStaticAttributes` → `Puzzle`); the C/WASM path reports false.
+
+- **Sticky pencil mode — a `pencilSticky` `Ui` boolean (default true) via the
+  `prefs` hook.** When on, right-click *toggles* a persistent pencil mode and
+  left-click only moves the highlight (don't reset the pencil flag); when off,
+  behaviour is exactly upstream. The keyboard is already mode-persistent, so this
+  only unifies the mouse with it. A right-click on a **filled/given cell** must
+  toggle the mode but **not** select or restyle that cell (it can't take a mark,
+  so highlighting it just confuses) — only move the highlight onto an empty,
+  editable cell.
+
+- **A CapsLock-style mode indicator** — a small pencil glyph drawn somewhere
+  fixed whenever pencil mode is on, so the player always sees the mode. Cheapest
+  robust encoding: a high tile-flag bit on a board cell the game's own draw never
+  overpaints (no piece/animation overlap) **and** that is no cell's neighbour in
+  the diff cache, so the per-tile cache repaints it on toggle for free (Towers
+  uses the top-right clue-ring corner — its 3D towers only ever protrude
+  up-left). A game with no such cache-safe cell instead repaints the indicator's
+  region explicitly at the end of every `redraw` (fill background, draw the glyph
+  if on), tracking the last-drawn on/off on the drawstate. Draw the glyph as a
+  yellow #2-pencil body + graphite tip; the body colour is a palette index
+  appended past the upstream enum — safe only when the game has no dark-mode
+  `paletteOverrides` touching that index (check `augmentation.ts`).
+
+Exemplar: [`towers/{state,index,render}.ts`](../../src/native/games/towers/index.ts).
 
 **Per-game preferences go through the `Game.prefs` hook (since Untangle).** A game
 with upstream `get_prefs`/`set_prefs` declares an optional `prefs: GamePref<Ui>[]`
