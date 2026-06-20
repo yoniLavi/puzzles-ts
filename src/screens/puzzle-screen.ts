@@ -29,6 +29,7 @@ import "../puzzle/puzzle-context.ts";
 import "../puzzle/puzzle-history.ts";
 import "../puzzle/puzzle-keys.ts";
 import "../puzzle/puzzle-type-menu.ts";
+import "../puzzle/other-puzzles-menu.ts";
 import "../puzzle/puzzle-view-interactive.ts";
 import "../puzzle/puzzle-end-notification.ts";
 
@@ -157,9 +158,16 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
                 ?without-icon=${this.size === "small" && this.orientation === "vertical"}
                 ?without-label=${this.orientation === "horizontal"}
             ></puzzle-type-menu>
+            <other-puzzles-menu
+                appearance="plain"
+                variant="brand"
+                current=${this.puzzleId}
+                placement=${this.orientation === "vertical" ? "bottom" : "right"}
+                ?without-label=${this.orientation === "horizontal"}
+            ></other-puzzles-menu>
             <wa-button
                 appearance="plain" variant="brand"
-                href=${helpUrl(this.puzzleId).href} 
+                href=${helpUrl(this.puzzleId).href}
             >${
               this.compactButtons
                 ? html`<wa-icon name="help" label="Help"></wa-icon>`
@@ -402,11 +410,6 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         <wa-dropdown-item data-command="about">
           <wa-icon slot="icon" name="info"></wa-icon>
           About
-        </wa-dropdown-item>
-        <wa-divider></wa-divider>
-        <wa-dropdown-item data-command="home">
-          <wa-icon slot="icon" name="back-to-catalog"></wa-icon>
-          Other puzzles
         </wa-dropdown-item>
         ${
           enableDeveloperCommands
@@ -891,7 +894,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
           }
         }
 
-        puzzle-type-menu {
+        puzzle-type-menu, other-puzzles-menu {
           flex: 0 1 auto;
           min-width: 1rem;
         }
@@ -919,7 +922,8 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
         }
 
         wa-button::part(base),
-        puzzle-type-menu::part(trigger-base) {
+        puzzle-type-menu::part(trigger-base),
+        other-puzzles-menu::part(trigger-base) {
           color: var(--wa-color-text-normal);
         }
       }

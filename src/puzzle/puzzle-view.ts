@@ -165,13 +165,17 @@ export class PuzzleView extends SignalWatcher(LitElement) {
                 style=${
                   this.canvasSize
                     ? styleMap({
-                        // Wrap a long hint at the board width, but never
-                        // narrower than a readable measure (~34rem ≈ 50ch),
-                        // and never past the viewport. Small boards would
-                        // otherwise squeeze a pedagogical hint into a tall
-                        // unreadable column; on those the centred banner
-                        // simply extends past the board edges.
-                        "max-width": `max(${this.canvasSize.w}px, min(34rem, 100%))`,
+                        // Reserve a STABLE width whether or not a hint is
+                        // showing — the board width, or a readable floor
+                        // (~34rem ≈ 50ch), whichever is wider — so the
+                        // content box doesn't resize horizontally as hints
+                        // toggle (a real UX sore on small boards like
+                        // Singles, where an empty banner would otherwise
+                        // collapse and a shown hint would jump the box out to
+                        // 34rem). Concrete px+rem (no circular `%`); the
+                        // container caps it via `max-width: 100%` in CSS, and
+                        // a long hint wraps within this width.
+                        width: `max(${this.canvasSize.w}px, 34rem)`,
                       })
                     : nothing
                 }>
@@ -553,13 +557,14 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
       .hint-banner {
         text-align: center;
-        /* Cap the banner to the board width OR a readable floor, whichever
-         * is wider (inline max-width = max(canvasSize.w, min(34rem, 100%)),
-         * set from the canvas size), and centre it. A long hint wraps at the
-         * board width on large boards, but on a small board it falls back to
-         * ~34rem so the sentence stays legible instead of stacking into a
-         * narrow column — the centred banner just extends past the board
-         * edges there. It may grow taller (extra lines) — that's fine. */
+        /* Inline width reserves a stable footprint (max of board width and
+         * ~34rem, set from the canvas size) whether or not a hint is showing,
+         * so the content box never resizes as hints toggle. max-width 100%
+         * caps it to the container on narrow viewports (the text wraps
+         * within); a long hint may grow taller (extra lines) — that's fine.
+         * Centred so the board sits centred when the reserved banner is wider
+         * than it. */
+        max-width: 100%;
         margin-inline: auto;
         overflow-wrap: break-word;
         padding-inline: var(--spacing);
