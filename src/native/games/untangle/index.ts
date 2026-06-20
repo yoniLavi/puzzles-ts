@@ -176,6 +176,9 @@ export const untangleGame: Game<
 
   // --- params --------------------------------------------------------
   defaultParams: () => ({ n: 10 }),
+  // Key matches the `untangle` config template in augmentation.ts
+  // ("{number-of-points} points"); `n` is not a w/h base param.
+  describeParams: (p) => ({ "number-of-points": p.n }),
   presets: () => ({
     title: "Untangle",
     submenu: [6, 10, 15, 20, 25].map((n) => ({ title: `${n} points`, params: { n } })),

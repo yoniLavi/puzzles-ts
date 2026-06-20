@@ -364,6 +364,14 @@ export const cubeGame: Game<CubeParams, CubeState, CubeMove, CubeUi, CubeDrawSta
   encodeParams,
   decodeParams,
   validateParams,
+  // Keys/shape match the `cube` config template in augmentation.ts
+  // ("{type-of-solid:Tetrahedron|Cube|Octahedron|Icosahedron}, {width-top}x{height-bottom}"):
+  // `type-of-solid` is the zero-based SolidType index, the dimensions are d1/d2.
+  describeParams: (p) => ({
+    "type-of-solid": p.solid,
+    "width-top": p.d1,
+    "height-bottom": p.d2,
+  }),
 
   newDesc: (p, rng) => newDesc(p, rng),
   validateDesc,

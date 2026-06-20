@@ -57,6 +57,7 @@ import {
   decodeParams,
   defaultParams,
   diffName,
+  diffToLevel,
   encodeParams,
   F_BLACK,
   F_CIRCLE,
@@ -531,6 +532,10 @@ export const singlesGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  // Keys/shape match the `singles` config template in augmentation.ts
+  // ("{width}x{height} {difficulty:Easy|Tricky}"): width/height come from the
+  // worker adapter's w/h base, `difficulty` is the zero-based label index.
+  describeParams: (p) => ({ difficulty: diffToLevel(p.diff) }),
 
   newDesc: (p, rng) => newSinglesDesc(p, rng),
   validateDesc,
