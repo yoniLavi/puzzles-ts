@@ -10,6 +10,7 @@
  * on — is identical to C's because both reach the same fixpoint.
  */
 import { Dsf } from "../../engine/dsf.ts";
+import { stepBudget } from "../../engine/step-budget.ts";
 import { DX, DY } from "./state.ts";
 
 /** Why a *set* of cells is forced — drives the hint's narration. A single
@@ -497,7 +498,11 @@ class FillingSolver {
   }
 
   run(): void {
+    // Guard the hint/recording path against a non-terminating fixpoint; the
+    // generator (no `rec`) runs unguarded and byte-for-byte unchanged.
+    const budget = this.rec ? stepBudget("filling hint") : undefined;
     do {
+      budget?.tick();
       if (this.learnBlockedExpansion()) continue;
       if (this.learnExpandOrOne()) continue;
       if (this.learnCriticalSquare()) continue;

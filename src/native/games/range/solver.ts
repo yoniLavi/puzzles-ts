@@ -14,6 +14,7 @@
 
 import { Dsf } from "../../engine/dsf.ts";
 import { shuffle as shuffleArray } from "../../engine/shuffle.ts";
+import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
 import { BLACK, EMPTY, idx, outOfBounds, type RangeParams, WHITE } from "./state.ts";
 
@@ -329,7 +330,11 @@ export function applyRules(
   rec?: Recorder,
 ): number {
   let total = 0;
+  // Guard the hint/recording path against a non-terminating fixpoint; the
+  // generator (no `rec`) runs unguarded and byte-for-byte unchanged.
+  const budget = rec ? stepBudget("range hint") : undefined;
   for (;;) {
+    budget?.tick();
     const made =
       ruleNotTooBig(grid, w, h, clues, rec) +
       ruleAdjacency(grid, w, h, rec) +

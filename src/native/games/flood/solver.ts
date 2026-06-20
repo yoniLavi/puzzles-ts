@@ -7,6 +7,8 @@
  * differential test). Keep the inner loops typed-array-tight.
  */
 
+import { stepBudget } from "../../engine/step-budget.ts";
+
 /** Upstream's `RECURSION_DEPTH`: depth-3 was empirically a clear win
  * over 2, with 4 only negligibly better than 3. */
 export const RECURSION_DEPTH = 3;
@@ -262,7 +264,12 @@ export function solveMoves(
   const scratch = new SolverScratch(w, h);
   const work = Uint8Array.from(grid);
   const moves: number[] = [];
+  // Bound the hint/Solve completion loop against a regression where a chosen
+  // move stops shrinking the unfilled region (generation grades via `search`/
+  // `choosemove`, not this function, so it is unaffected).
+  const budget = stepBudget("flood solve");
   while (!completed(work)) {
+    budget.tick();
     const move = choosemove(w, h, work, 0, 0, colours, scratch);
     fill(w, h, work, 0, 0, move, scratch.queue0);
     moves.push(move);

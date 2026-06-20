@@ -12,6 +12,7 @@
 
 import { Dsf } from "../../engine/dsf.ts";
 import { shuffle } from "../../engine/shuffle.ts";
+import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
 import { divvyRectangle } from "./divvy.ts";
 import {
@@ -505,8 +506,12 @@ export function deduceForcedEdges(
   ctx.seedNoWall(playerBorders);
 
   connectedCluesVersusRegionSize(ctx); // idempotent, run once
+  // Hint-only path (the generator's `solver()` fixpoint is separate and
+  // unguarded); bound it against a non-terminating fixpoint regression.
+  const budget = stepBudget("palisade hint");
   let changed = true;
   while (changed) {
+    budget.tick();
     changed = false;
     if (numberExhausted(ctx)) changed = true;
     if (notTooBig(ctx)) changed = true;

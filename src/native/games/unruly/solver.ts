@@ -9,6 +9,7 @@
  * `executeMove` stays pure; only the solver/generator mutate a private
  * working grid.
  */
+import { stepBudget } from "../../engine/step-budget.ts";
 import {
   DIFF_EASY,
   DIFF_NORMAL,
@@ -476,7 +477,11 @@ export function solveGame(
   const bump = (d: number) => {
     if (maxdiff < d) maxdiff = d;
   };
+  // Guard the hint/recording path against a non-terminating fixpoint; the
+  // generator (no `rec`) runs unguarded and byte-for-byte unchanged.
+  const budget = rec ? stepBudget("unruly hint") : undefined;
   while (true) {
+    budget?.tick();
     if (checkAllThrees(view, scratch, rec)) {
       bump(DIFF_TRIVIAL);
       continue;

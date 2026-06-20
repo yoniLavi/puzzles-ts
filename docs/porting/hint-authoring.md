@@ -698,6 +698,28 @@ solved. Any new game that adds a `hint()` is covered the moment its export is
 added to that test's list — **do so as part of the port**, and a per-game
 "plan solves from empty" test is *not* a substitute.
 
+**Guard the deduction fixpoint with a step budget.** The resume test catches a
+hint that *gives up* or whose move-walk *loops* (its `cap` move limit fires with
+a per-seed diagnostic). What it can't catch cheaply is a hang **inside one
+`hint()` call** — a "repeat until no progress" fixpoint (`for (;;)` /
+`while (true)`) where a rule reports progress without changing the board never
+returns, so no move is ever produced and the only backstop is a wall-clock test
+timeout (slow, opaque, load-sensitive). Tick a
+[`stepBudget`](../../src/native/engine/step-budget.ts) once per fixpoint
+iteration so a non-terminating loop throws a labelled error in milliseconds
+instead. Make it **opt-in on the hint path** — gate it on the recorder/hint
+signal the function already carries (`rec`, `ss.records`, `ctx.record`, the
+recording callback), so the generator runs the same fixpoint *unguarded and
+byte-for-byte unchanged* (a budget that fired during generate-and-check would
+break board generation — never guard that path). The limit is generous
+(`DEFAULT_HINT_STEP_LIMIT`): an honest fixpoint converges in ~one iteration per
+cell, so the guard only ever catches a future regression. Exemplars: `applyRules`
+in `range/solver.ts` (gated on `rec`), `solveSpecific` in `singles/solver.ts`
+(gated on `ss.records`), `deduceForcedEdges` in `palisade/solver.ts` (a
+hint-only function, so unconditional). Search-based hints (Fifteen/Sixteen
+A*-style, Flood's `search` BFS) are already bounded by their visited sets and
+need no budget.
+
 ## 5. Method lesson: probe before trusting a mechanism diagnosis
 
 Twice in one hint session, a plausible mechanism diagnosis ("the second leg reads

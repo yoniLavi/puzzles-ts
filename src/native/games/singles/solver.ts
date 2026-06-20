@@ -7,6 +7,7 @@
  * and therefore the generator's published board — matches C exactly.
  */
 import { Dsf } from "../../engine/dsf.ts";
+import { stepBudget } from "../../engine/step-budget.ts";
 import {
   cloneState,
   DIFF_ANY,
@@ -784,7 +785,11 @@ export function solveSpecific(
   solveCorners(state, ss);
   if (diff >= DIFF_TRICKY) solveOffsetpair(state, ss);
 
+  // Guard the hint/recording path against a non-terminating fixpoint; the
+  // generator (non-recording `ss`) runs unguarded and byte-for-byte unchanged.
+  const budget = ss.records ? stepBudget("singles hint") : undefined;
   while (true) {
+    budget?.tick();
     if (ss.ops.length > 0) solverOpsDo(state, ss);
     if (state.impossible) break;
 
