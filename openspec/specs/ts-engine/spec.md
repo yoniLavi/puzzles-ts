@@ -528,6 +528,19 @@ state that contradict the puzzle's unique solution as game-specific
 highlight data (an empty result means no detectable mistakes). The
 method SHALL be pure (no state mutation).
 
+A game whose state carries **candidate/pencil annotations** (e.g. Towers) MAY
+report **annotation-level** contradictions as mistakes, consistently with how a
+placed value is reported: a non-empty candidate set that **excludes** the cell's
+unique-solution value (the player has crossed out the correct answer) is a
+contradiction and MAY be returned, whereas a candidate set that merely holds
+extra, non-solution candidates is ordinary mid-solve state and SHALL NOT be
+reported. The solution such a game checks against SHALL be derived from the
+committed placements only, never from the annotations themselves (an annotation
+can be wrong — that is precisely what is being checked). This makes pencil notes
+first-class markings, so the existing Check-&-Save gate (which refuses a save
+while `findMistakes` is non-empty) refuses a board carrying an invalid note
+exactly as it refuses a wrong placed value.
+
 The `Midend` SHALL, on `findMistakes()`, call the game's hook, store the
 result as `activeMistakes` (midend-only, never in game state, never
 persisted), pass it to the game's `redraw`, and return the **count** of
@@ -569,6 +582,16 @@ unported C/WASM game, `canFindMistakes` SHALL be false and
 - **WHEN** the active game runs on the C/WASM engine
 - **THEN** `canFindMistakes` is false and `findMistakes()` returns 0,
   and the app shell shows no mistake-checking control
+
+#### Scenario: A candidate annotation that excludes the solution is a mistake
+
+- **WHEN** a game with pencil/candidate annotations reports mistakes on a state
+  where an undecided cell's non-empty candidate set excludes that cell's
+  unique-solution value
+- **THEN** `findMistakes` includes that cell
+- **AND** a cell whose candidate set still contains the solution value (with or
+  without extra candidates) is not included
+- **AND** Check-&-Save refuses to quick-save the board while such a cell exists
 
 ### Requirement: The engine provides shared grid-coordinate helpers
 

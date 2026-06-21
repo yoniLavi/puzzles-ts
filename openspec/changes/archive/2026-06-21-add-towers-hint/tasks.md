@@ -79,7 +79,7 @@
   a fully solved board ("Way to go!"); Check-&-Save refused a board with a struck
   correct height ("Not saved — 1 mistake found"); 0 console errors; sticky
   pencil-mode indicator renders.
-- [ ] 5.3 Commit (parity-gated; owner acceptance pending — commit on acceptance,
+- [x] 5.3 Commit (parity-gated; owner acceptance pending — commit on acceptance,
   per the openspec-changes workflow).
 
 ### Implementation notes (for owner-acceptance review)
@@ -140,8 +140,8 @@
   Solo/Keen/Unequal/Undead.
 
 ## 7. Owner acceptance
-- [ ] 7.1 Owner follows hints / Auto-Hint and Check-&-Save to verify Towers plays
+- [x] 7.1 Owner follows hints / Auto-Hint and Check-&-Save to verify Towers plays
   and teaches correctly (incl. the note populate/strike flow and invalid-note
   rejection).
-- [ ] 7.2 Flip `TS_PORTED` stays as-is (already ported); archive the change on
+- [x] 7.2 Flip `TS_PORTED` stays as-is (already ported); archive the change on
   acceptance, updating tasks to reflect any acceptance-driven iteration.
