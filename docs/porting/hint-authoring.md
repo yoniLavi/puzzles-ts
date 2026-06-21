@@ -274,6 +274,22 @@ are queued consecutively, so a first-seen-order bucket keeps the plan's order. A
 genuine *chain* (a black → neighbours white → those blacken line-mates → …) stays
 *separate* steps — each link is its own teachable local deduction, like Range.
 
+**One `group` must cover exactly one firing — beware a shared `group` counter that
+bumps per *pass*, not per *firing*.** If the recording solver bumps the group once
+per solver invocation (Towers/the shared `latin` solver bump it once per difficulty
+level per fixpoint pass) but a single routine loops over *every* clue/line and
+records eliminations for several of them before returning, all those distinct firings
+land under one group. The hint then narrates `group[0]`'s clue while struck marks from
+*other* clues' lines bleed into the same step (the Towers "the 5 from the next column
+got pulled into it" bug, 2026-06-21). Fix: make each clue/line routine **`return` as
+soon as it fires on the recording path** so one pass records one firing (Towers
+`solverEasy` already returned per clue for `lineFull`; its `lowerBound` block didn't —
+the fix added `if (solver.recorder && ret) return ret;`, gated on the recorder so the
+generator's accumulate-across-clues solve path stays byte-identical to C). Guard it:
+assert every struck mark of a standalone clue-strike step lies within that step's
+shaded `area` (its clue's line of sight) — see `towers-hint.test.ts` "clue-strike
+marks never bleed outside the narrated clue's line".
+
 ---
 
 ## 4. Refusal couples to the mistake overlay + banner

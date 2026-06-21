@@ -20,6 +20,7 @@ import { COL_HINT, COL_HINT_CELL } from "./render.ts";
 import { type HintReason, recordTowersDeductions } from "./solver.ts";
 import {
   DIFF_EXTREME,
+  type Difficulty,
   diffToLevel,
   newState,
   newUi,
@@ -105,6 +106,34 @@ describe("towers hint", () => {
     const types = new Set(res.steps.map((s) => (s.move as TowersMove).type));
     expect(types.has("pencilStrike")).toBe(true);
     expect(types.has("set")).toBe(true);
+  });
+
+  it("clue-strike marks never bleed outside the narrated clue's line (regression)", () => {
+    // One recorded firing must cover a single clue. An earlier bug let one
+    // solver pass lump several clues' lower-bound eliminations under one
+    // `group`, so a hint step narrated one clue's line of sight while a struck
+    // mark sat on a *different* clue's line ("the 5 from the next column got
+    // pulled in"). A standalone clue-strike step shades its clue's line as the
+    // evidence `area`; every struck mark must lie within it.
+    const diffs: Difficulty[] = ["easy", "hard", "extreme"];
+    let checked = 0;
+    for (const diff of diffs) {
+      for (let s = 0; s < 8; s++) {
+        const { st } = gen(5, diff, `bleed-${diff}-${s}`);
+        const res = towersGame.hint?.(st);
+        if (!res?.ok) continue;
+        for (const step of res.steps as AnyStep[]) {
+          if (step.move.type !== "pencilStrike") continue;
+          const area: { x: number; y: number }[] = step.highlights?.area ?? [];
+          if (area.length === 0) continue; // dup continuation: no clue line
+          for (const m of step.move.marks as { x: number; y: number }[]) {
+            expect(area.some((a) => a.x === m.x && a.y === m.y)).toBe(true);
+            checked++;
+          }
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
   });
 
   it("skips populate once notes are present", () => {

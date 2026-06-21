@@ -187,6 +187,16 @@ export function solverEasy(solver: LatinSolver, ctx: TowersCtx): number {
       }
       i2++;
     }
+
+    // On the hint-recording path, return as soon as a clue's lower-bound
+    // eliminations fire so each recorded firing (one `solver.group`) covers a
+    // single clue — otherwise a pass would lump several clues' eliminations
+    // under one group, and a hint step would narrate one clue (`group[0]`) while
+    // its struck marks bled in from another clue's line (the "5 from the next
+    // column got pulled in" bug). The generate/solve path (no recorder) keeps
+    // accumulating across clues, byte-identical to the C reference; `lineFull`
+    // above already returns per clue on every path.
+    if (solver.recorder && ret) return ret;
   }
 
   if (ret) return ret;
