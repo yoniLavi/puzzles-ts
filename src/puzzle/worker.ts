@@ -245,7 +245,7 @@ export class WorkerPuzzle implements FrontendConstructorArgs, PuzzleEngineSurfac
     return "This game does not support hints";
   }
 
-  executeHint(): string | undefined {
+  executeHint(_hideAfter = false): string | undefined {
     // C/WASM games don't support hints.
     return "This game does not support hints";
   }

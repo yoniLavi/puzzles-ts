@@ -71,7 +71,7 @@ export interface EngineCore {
   redo(): void;
   solve(): string | undefined;
   hint(): string | undefined;
-  executeHint(): string | undefined;
+  executeHint(hideAfter?: boolean): string | undefined;
   /** Duration in milliseconds of the animation currently armed (e.g. by
    * the slow-motion move `executeHint` just played), or 0 when nothing
    * is animating. The auto-hint loop paces each step by this so a move
@@ -180,6 +180,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * the last step clears the plan instead). */
   private activeHint: ActiveHint<Move> | null = null;
   private advanceHintOnAnimationEnd = false;
+  /** Single-step mode: when an executed step settles, hide the plan
+   * instead of previewing the next step. Set by `executeHint(true)` (the
+   * Hint-button stepper); left false by auto-play so it keeps previewing. */
+  private hideHintAfterStep = false;
   /** Whether the stored plan's current step is on display. Manual
    * play shows one hint per request: completing a step manually
    * advances the plan but hides it until the next `hint()` call.
@@ -470,6 +474,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private clearHint(): void {
     this.activeHint = null;
     this.advanceHintOnAnimationEnd = false;
+    this.hideHintAfterStep = false;
     this.hintDisplayed = false;
   }
 
@@ -533,6 +538,14 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     if (this.advanceHintOnAnimationEnd) {
       this.advanceHintOnAnimationEnd = false;
       this.advanceHint();
+      // Single-step mode (the Hint-button stepper): the move has landed,
+      // so hide the (now-advanced) plan instead of previewing the next
+      // step. The next `hint()` re-shows it — show/apply alternation, one
+      // hint per press. Auto-play leaves this false and keeps the preview.
+      if (this.hideHintAfterStep) {
+        this.hideHintAfterStep = false;
+        this.hintDisplayed = false;
+      }
     }
     if (this.activeHint && this.game.status(this.state) === "solved") {
       this.clearHint();
@@ -571,7 +584,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     return this.displayedHintStep;
   }
 
-  executeHint(): string | undefined {
+  executeHint(hideAfter = false): string | undefined {
     // A previously executed step may still be animating (e.g. the
     // user outpaces the auto-play settle). Its move is already
     // applied to the state, so advance past it now rather than
@@ -584,11 +597,14 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     const step = this.currentHintStep;
     if (step === undefined) return "Game returned an empty hint plan"; // unreachable
     // The executed step stays displayed through the slow-motion
-    // animation (the banner describes the move in flight); the plan
-    // advances when the animation settles, so the *next* step is
-    // previewed during the auto-play rest period.
+    // animation (the banner describes the move in flight). On settle the
+    // plan advances and, in auto-play (`hideAfter` false), the *next* step
+    // is previewed during the rest period; in single-step mode
+    // (`hideAfter` true, the Hint-button stepper) the plan is hidden so
+    // the player gets one applied hint per press and asks again for more.
     this.hintDisplayed = true;
     this.advanceHintOnAnimationEnd = true;
+    this.hideHintAfterStep = hideAfter;
     this.pendingHintAnim = true;
     // A game with no move animation settles synchronously inside
     // `afterTransition` (the timer's settle path never runs for it).

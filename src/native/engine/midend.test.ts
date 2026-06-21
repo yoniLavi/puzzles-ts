@@ -735,6 +735,25 @@ describe("Midend executeHint plays the stored plan", () => {
     expect(explanation()).toBe("Increment the counter to 2");
   });
 
+  it("executeHint(true) applies and hides instead of previewing (stepper mode)", () => {
+    const c = countingHintGame();
+    h = harness(c.game);
+    h.m.newGame(); // target 3
+    // Apply step 1 in single-step (Hint-button stepper) mode.
+    expect(h.m.executeHint(true)).toBeUndefined();
+    expect(c.hintCalls()).toBe(1);
+    expect(h.m.formatAsText()).toBe("count=1"); // the move did land
+    // The plan is hidden — no preview of the next step (unlike auto-play).
+    expect(h.m.activeHintStep()).toBeUndefined();
+    expect(explanation()).toBeUndefined();
+    // …but the plan advanced and is still stored: a fresh hint() re-shows the
+    // next step without recomputing (show/apply alternation).
+    h.m.hint();
+    expect(c.hintCalls()).toBe(1);
+    expect(h.m.activeHintStep()?.explanation).toBe("Increment the counter to 2");
+    expect(explanation()).toBe("Increment the counter to 2");
+  });
+
   it("executes the stored plan's current step after manual progress", () => {
     const c = countingHintGame();
     h = harness(c.game);

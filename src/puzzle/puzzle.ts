@@ -234,6 +234,22 @@ export class Puzzle {
   private _autoHintMessage = signal<string>("");
   private _activeHintExplanation = signal<string>("");
   private _autoHintMessageTimeoutId?: ReturnType<typeof setTimeout>;
+  /**
+   * Stepper state for the Hint button. A press that *shows* a step arms this;
+   * the next press (with nothing else done in between) *applies* that one step
+   * via `executeHint`, then re-arms so repeated presses walk the plan one move
+   * per press — a manual, self-paced version of Auto-Hint. Any intervening user
+   * action disarms it via `disarmHintApply()`, so the next press shows the
+   * now-relevant step rather than applying a stale one.
+   */
+  private _hintArmedToApply = false;
+
+  /** Called by every intervening user action so a subsequent Hint press shows
+   * rather than applies. The stepper's own `executeHint` deliberately does not
+   * route through here. */
+  private disarmHintApply(): void {
+    this._hintArmedToApply = false;
+  }
 
   private setAutoHintMessage(msg: string, temp = false): void {
     if (this._autoHintMessageTimeoutId !== undefined) {
@@ -357,18 +373,41 @@ export class Puzzle {
   }
 
   public async hint(): Promise<string | undefined> {
+    if (this._hintArmedToApply) {
+      // Second press with nothing done in between: apply this one step in slow
+      // motion and stop — `executeHint(true)` hides the plan on settle rather
+      // than previewing the next step, and we disarm so the player gets a clean
+      // show/apply/show/apply rhythm (one applied hint per request, ask again
+      // for the next). An error (e.g. solved) just surfaces in the banner.
+      this.disarmHintApply();
+      const err = await this.executeHint(true);
+      if (err) {
+        this.setAutoHintMessage(err, true);
+      } else if (!this.isSolved) {
+        // Confirm the apply; the midend has hidden the (advanced) plan, so this
+        // transient message is what the banner shows until the next request.
+        this.setAutoHintMessage("Hint applied", true);
+      }
+      return err;
+    }
+    // First press: show the current step. `stopAutoHint` disarms (and cancels
+    // any running Auto-Hint); we arm only if the show succeeds, so the *next*
+    // press applies. A refusal ("fix the highlighted mistakes first", "already
+    // solved", …) is surfaced in the same transient banner the auto-hint flow
+    // uses (the midend also lights up any mistakes behind the message) and
+    // never arms.
     this.stopAutoHint("Cancelled by manual move");
     const err = await this.workerPuzzle.hint();
-    // Surface a refusal ("fix the highlighted mistakes first", "already
-    // solved", …) in the same transient banner the auto-hint flow uses, so a
-    // manual Hint press explains why nothing happened rather than failing
-    // silently. The midend also lights up any mistakes behind the message.
-    if (err) this.setAutoHintMessage(err, true);
-    return err;
+    if (err) {
+      this.setAutoHintMessage(err, true);
+      return err;
+    }
+    this._hintArmedToApply = true;
+    return undefined;
   }
 
-  public async executeHint(): Promise<string | undefined> {
-    return this.enqueueInput(() => this.workerPuzzle.executeHint());
+  public async executeHint(hideAfter = false): Promise<string | undefined> {
+    return this.enqueueInput(() => this.workerPuzzle.executeHint(hideAfter));
   }
 
   /** Check the board for mistakes: display them and return how many.
@@ -379,6 +418,9 @@ export class Puzzle {
 
   public startAutoHint(): void {
     if (!this.canHint) return;
+    // Handing the whole plan to Auto-Hint is its own action; a Hint press after
+    // pausing should show, not resume applying.
+    this.disarmHintApply();
     if (this.isSolved) {
       this.setAutoHintMessage("Already solved!", true);
       return;
@@ -389,6 +431,10 @@ export class Puzzle {
   }
 
   public stopAutoHint(reason?: string): void {
+    // Every intervening user action funnels through here (undo/redo/solve/key/
+    // pointer/new/restart/delete all call it), making it the single chokepoint
+    // that also disarms the Hint stepper.
+    this.disarmHintApply();
     if (this._autoHintActive.get()) {
       this._autoHintActive.set(false);
       if (reason !== "") {
@@ -560,6 +606,9 @@ export class Puzzle {
   }
 
   public async loadGame(data: Uint8Array<ArrayBuffer>): Promise<string | undefined> {
+    // Loading a saved game (e.g. quick-load) replaces the board; a Hint press
+    // after it must show against the loaded state, not apply a stale step.
+    this.disarmHintApply();
     return this.workerPuzzle.loadGame(transfer(data, [data.buffer]));
   }
 

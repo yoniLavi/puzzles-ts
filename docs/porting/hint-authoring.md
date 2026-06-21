@@ -339,6 +339,19 @@ meet this. Filling already complied — its target is a *mild* `COL_HINT` highli
 modality: its forced *edge* is recoloured `COL_HINT` blue, which marks where to draw
 a wall without obscuring any cell content. **Any new game's hint follows this rule.**
 
+The toolbar **Hint button now alternates show/apply** (`add-hint-button-stepper`): the
+first press *shows* the step (the highlight-only display above), and a second press *with
+nothing done in between* calls `executeHint(true)` to apply that one step in slow motion
+and then **stop** — the plan is hidden (not previewed) and the banner reads "Hint
+applied". The *next* press shows the next step, so the rhythm is show → apply → show →
+apply (any intervening action re-arms the show). Applying is deliberately terminal: most
+players want one nudge, not to be raced through the solution (contrast Auto-Hint, which
+*does* roll continuously via `executeHint()` with no `hideAfter`). This is a
+`Puzzle`-level orchestration of the two midend primitives and needs **nothing from a
+game's `hint()`**; it does mean a player experiences the plan at **per-step
+granularity**, so the same "one deduction firing = one journey" grouping (quality-bar
+rule 2) that makes auto-hint read well is also what makes the stepper read well.
+
 ### 5.2 Show the evidence as an *area*, not one premise cell
 
 This is the visual half of quality-bar rule 1. A single shaded premise cell tells the

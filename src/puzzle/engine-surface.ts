@@ -42,7 +42,10 @@ export interface PuzzleEngineSurface {
   redo(): void;
   solve(): string | undefined;
   hint(): string | undefined;
-  executeHint(): string | undefined;
+  /** Apply one step of the stored plan in slow motion. `hideAfter` (the
+   * Hint-button stepper) hides the plan once the step settles instead of
+   * previewing the next step; auto-play leaves it false. */
+  executeHint(hideAfter?: boolean): string | undefined;
   /** Milliseconds of the animation currently armed (e.g. the slow-motion
    * move `executeHint` just played), or 0 when nothing is animating. The
    * auto-hint loop paces each step by this. */

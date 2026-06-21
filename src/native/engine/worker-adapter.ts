@@ -105,8 +105,8 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   hint(): string | undefined {
     return this.engine.hint();
   }
-  executeHint(): string | undefined {
-    return this.engine.executeHint();
+  executeHint(hideAfter = false): string | undefined {
+    return this.engine.executeHint(hideAfter);
   }
   currentAnimationMs(): number {
     return this.engine.currentAnimationMs();
