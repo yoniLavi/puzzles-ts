@@ -507,7 +507,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     if (!this.game.hint) {
       return "This game does not support hints";
     }
-    const result = this.game.hint(this.state, this.aux);
+    const result = this.game.hint(this.state, this.aux, this.ui);
     if (!result.ok) {
       // Keep the refusal's promise. A hint is typically refused because the
       // board has mistakes ("fix the highlighted mistakes first") — but the

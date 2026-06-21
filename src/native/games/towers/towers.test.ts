@@ -206,6 +206,58 @@ describe("towers moves", () => {
     }
   });
 
+  it("auto-pencil strikes the placed height from its row and column notes", () => {
+    const { st } = gen(5, "easy", "moves-autopencil");
+    const w = st.w;
+    // Pencil every candidate everywhere, then place a 3 in an empty cell with
+    // auto-pencil on.
+    const penciled = towersGame.executeMove(st, { type: "pencilAll" });
+    const i = [...st.immutable].indexOf(0);
+    const x = i % w;
+    const y = (i / w) | 0;
+    const placed = towersGame.executeMove(penciled, {
+      type: "set",
+      x,
+      y,
+      n: 3,
+      pencil: false,
+      autoElim: true,
+    });
+    // The placed cell holds 3 with no notes; every *other* empty cell in its row
+    // and column has lost candidate 3; cells off the row/column keep it.
+    expect(placed.grid[y * w + x]).toBe(3);
+    for (let k = 0; k < w; k++) {
+      if (k !== x && !placed.grid[y * w + k]) {
+        expect(placed.pencil[y * w + k] & (1 << 3)).toBeFalsy();
+      }
+      if (k !== y && !placed.grid[k * w + x]) {
+        expect(placed.pencil[k * w + x] & (1 << 3)).toBeFalsy();
+      }
+    }
+    // A cell sharing neither row nor column still has its 3.
+    for (let oy = 0; oy < w; oy++) {
+      for (let ox = 0; ox < w; ox++) {
+        if (ox !== x && oy !== y && !placed.grid[oy * w + ox]) {
+          expect(placed.pencil[oy * w + ox] & (1 << 3)).toBeTruthy();
+        }
+      }
+    }
+    // Without auto-pencil, the other cells keep their 3.
+    const placedPlain = towersGame.executeMove(penciled, {
+      type: "set",
+      x,
+      y,
+      n: 3,
+      pencil: false,
+    });
+    let keptSomewhere = false;
+    for (let k = 0; k < w; k++) {
+      if (k !== x && !placedPlain.grid[y * w + k] && placedPlain.pencil[y * w + k] & (1 << 3))
+        keptSomewhere = true;
+    }
+    expect(keptSomewhere).toBe(true);
+  });
+
   it("clueDone toggles and an immutable cell rejects entry", () => {
     const { st } = gen(5, "easy", "moves-clue");
     const idx = [...st.clues].findIndex((c) => c !== 0);
@@ -233,7 +285,7 @@ describe("towers moves", () => {
 // --- tier 1: findMistakes --------------------------------------------------
 
 describe("towers findMistakes", () => {
-  it("flags a wrong tower, ignores pencil marks and givens", () => {
+  it("flags a wrong tower (kind 'cell') and ignores givens", () => {
     const { st } = gen(5, "easy", "mistakes");
     const sol = solutionGrid(st);
     const w = st.w;
@@ -249,18 +301,46 @@ describe("towers findMistakes", () => {
       pencil: false,
     });
     const ms = towersGame.findMistakes?.(bad) ?? [];
-    expect(ms).toContainEqual({ x: empty % w, y: (empty / w) | 0 });
+    expect(ms).toContainEqual({ kind: "cell", x: empty % w, y: (empty / w) | 0 });
+  });
 
-    // A pencil mark is never a mistake.
-    const other = [...st.immutable].findIndex((v, i) => v === 0 && i !== empty);
-    const pencilled = towersGame.executeMove(st, {
+  it("treats pencil notes as first-class markings", () => {
+    const { st } = gen(5, "easy", "mistakes-notes");
+    const sol = solutionGrid(st);
+    const w = st.w;
+    const cell = [...st.immutable].indexOf(0);
+    const cx = cell % w;
+    const cy = (cell / w) | 0;
+    const truth = sol[cell];
+    const wrong = (truth % w) + 1; // a height != the solution
+
+    // A note that *excludes* the solution height is a mistake (kind "note").
+    const struck = towersGame.executeMove(st, {
       type: "set",
-      x: other % w,
-      y: (other / w) | 0,
-      n: 3,
+      x: cx,
+      y: cy,
+      n: wrong,
       pencil: true,
     });
-    expect(towersGame.findMistakes?.(pencilled) ?? []).toHaveLength(0);
+    expect(towersGame.findMistakes?.(struck) ?? []).toContainEqual({
+      kind: "note",
+      x: cx,
+      y: cy,
+    });
+
+    // A note that *contains* the solution (with or without extra candidates) is
+    // ordinary mid-solve state — not a mistake.
+    let ok = towersGame.executeMove(st, {
+      type: "set",
+      x: cx,
+      y: cy,
+      n: truth,
+      pencil: true,
+    });
+    ok = towersGame.executeMove(ok, { type: "set", x: cx, y: cy, n: wrong, pencil: true });
+    expect(
+      (towersGame.findMistakes?.(ok) ?? []).some((m) => m.x === cx && m.y === cy),
+    ).toBe(false);
   });
 });
 
@@ -422,6 +502,58 @@ describe("towers render", () => {
     expect(polygonCount(threeD)).toBeGreaterThan(polygonCount(twoD));
     // Both still draw the given digits.
     expect(twoD.ops.some((o) => o.op === "text")).toBe(true);
+  });
+
+  it("the mistake overlay marks an invalid note in COL_ERROR", () => {
+    const st = newState(RENDER.p, RENDER.desc);
+    const sol = solutionGrid(st);
+    const w = st.w;
+    const empty = [...st.immutable].indexOf(0);
+    const ex = empty % w;
+    const ey = (empty / w) | 0;
+    // Pencil every height, then strike the *correct* one — a note excluding the
+    // truth, which findMistakes flags (kind "note") and renders red.
+    const moves: TowersMove[] = [
+      { type: "pencilAll" },
+      { type: "pencilStrike", marks: [{ x: ex, y: ey, n: sol[empty] }] },
+    ];
+    const { recording, mistakeCount } = renderScenario({
+      game: towersGame,
+      id: RENDER_ID,
+      moves,
+      showMistakes: true,
+    });
+    expect(mistakeCount).toBeGreaterThan(0);
+    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_ERROR)).toBe(
+      true,
+    );
+  });
+
+  it("Check & Save highlights a mistake even when the cell was already drawn", () => {
+    // Regression: the mistake overlay isn't part of a cell's tile value, so it
+    // must be in the diff cache key — otherwise a findMistakes() on a cell whose
+    // tile was already painted (the move happened a frame earlier) repaints
+    // nothing and the red highlight never shows.
+    const me = new Midend(towersGame);
+    expect(me.newGameFromId(RENDER_ID)).toBeUndefined();
+    const st = (me as unknown as { state: TowersState }).state;
+    const sol = solutionGrid(st);
+    const w = st.w;
+    const empty = [...st.immutable].indexOf(0);
+    const wrong = (sol[empty] % w) + 1;
+    me.playMoves([
+      { type: "set", x: empty % w, y: (empty / w) | 0, n: wrong, pencil: false },
+    ]);
+
+    const palette = towersGame.colours(DEFAULT_BACKGROUND);
+    // First paint: the wrong tower is drawn, no mistake overlay yet.
+    me.redraw(new RecordingDrawing(palette));
+    // Now Check & Save: the offending cell's tile is unchanged from the paint
+    // above, so only a cache that tracks the overlay will repaint it red.
+    expect(me.findMistakes()).toBeGreaterThan(0);
+    const after = new RecordingDrawing(palette);
+    me.redraw(after);
+    expect(after.ops.some((o) => o.op === "line" && o.colour === COL_ERROR)).toBe(true);
   });
 
   it("the mistake overlay marks a wrong tower in COL_ERROR", () => {

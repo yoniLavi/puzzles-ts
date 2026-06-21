@@ -70,10 +70,22 @@ of `HintStep`s of three kinds:
   a single `pencilStrike` move that clears those bits); and
 - **place** steps that fill a cell whose sound candidates have collapsed to one.
 
+The hint SHALL be expressed the way a person solves: at each step it SHALL prefer
+a **naked single** — an empty cell whose live notes have collapsed to a single
+candidate (sound on a mistake-free board, since that lone candidate is then the
+solution) — ahead of any further elimination; otherwise the next clue elimination;
+otherwise a forced placement. The trivial row/column ("this number already sits in
+this line") eliminations a placement implies SHALL be governed by the auto-pencil
+preference (below): with it on they are folded silently into the placement and not
+emitted as steps; with it off they are taught as an explicit `continuesPrevious`
+strike continuation. `hint` SHALL receive the game UI so it can read that
+preference.
+
 Each step SHALL carry a narration that meets the hint quality bar — leading with
 the spotted indication (the clue/line pattern), then the reasoning, then a
-necessity-voice conclusion — and a highlight that shades the driving clue's line
-of sight (`COL_HINT_CELL`), marks the target cell(s)/struck candidate(s)
+necessity-voice conclusion — and a highlight that shades the **driving clue
+cell(s)** and their line of sight (`COL_HINT_CELL`) so the player can see which
+clue the hint is about, marks the target cell(s)/struck candidate(s)
 (`COL_HINT`), with equivalent strikes of one firing sharing the target colour.
 The hint SHALL refuse (`{ ok: false, error }`) when the board is solved or when
 `findMistakes` is non-empty, and refusal SHALL light the mistake overlay through
@@ -131,3 +143,33 @@ differential), and the hint fixpoint SHALL be guarded by a step budget.
   a note that excludes the truth)
 - **THEN** the hint refuses with an explanatory message and the mistaken cells are
   highlighted
+
+#### Scenario: A naked single is offered ahead of further elimination
+
+- **WHEN** a hint is requested on a mistake-free board where some empty cell's
+  pencil notes have collapsed to a single candidate
+- **THEN** the next step places that height in that cell
+
+### Requirement: Towers auto-pencils row/column eliminations on placement
+
+The game SHALL provide an **auto-pencil** preference, **on by default**: when the
+player places a tower height, the game SHALL strike that height from the pencil
+marks of every other cell in the same row and column. The decision SHALL be fixed
+at move-creation time (recorded on the move) so that replaying a saved game is
+deterministic regardless of the preference's later value. When the preference is
+off, a placement SHALL leave other cells' pencil marks untouched (upstream
+behaviour). The preference SHALL also govern the hint: with it on, the hint folds
+the implied row/column eliminations into the placement; with it off, the hint
+teaches them as explicit strikes.
+
+#### Scenario: Placing a tower clears matching notes in its line
+
+- **WHEN** auto-pencil is on and the player places height `n` in a cell
+- **THEN** every other empty cell in that cell's row and column loses candidate `n`
+  from its pencil marks
+- **AND** cells sharing neither the row nor the column keep candidate `n`
+
+#### Scenario: Auto-pencil off leaves notes untouched
+
+- **WHEN** auto-pencil is off and the player places a height
+- **THEN** no other cell's pencil marks change

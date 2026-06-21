@@ -396,6 +396,7 @@ similar game:
 | Unruly | forced cell, blue fill (grow anim only on auto-hint execution) | empty journey siblings → `COL_HINT_CELL` shade; cited premise / pivotal cells → orange `COL_HINT_REF` ring (**one** colour, not the black/white split — its rings land on black cells, a balanced both-colour row, *and* empty windows, so a state-derived colour is ill-defined) |
 | Palisade | forced edge(s), blue `COL_HINT` segments (equivalent edges share it) | region → `COL_HINT_CELL` shade; clue → its drawn digit on the shaded cell |
 | Filling | target square(s), *mild* `COL_HINT` fill, **no digit** | region premise → `COL_HINT_CELL` shade + digit on top |
+| Towers | struck candidate digit(s) `COL_HINT` + cross-through; placement target `COL_HINT` fill | driving **clue cell(s)** *and* their line of sight → `COL_HINT_CELL` shade (clue + sightline read as one premise region; a facing pair shades both clues) |
 
 Two reusable lessons from the rollout: (1) **teal = "a cited black square", violet =
 "a cited white square"** is a cross-game reading worth preserving — reuse those hues
@@ -637,7 +638,91 @@ Two testing gotchas worth internalising:
 
 ---
 
-## 9. Method lesson: probe before trusting a mechanism diagnosis
+## 9. Candidate-elimination (pencil-note) games — Towers exemplar
+
+A game whose signature techniques **narrow a cell's set of possible values**
+rather than directly forcing one (Towers' clue line-of-sight deductions, and
+Solo / Keen / Unequal / Undead when ported) teaches in **pencil-notes** terms:
+the hint sets and strikes notes, and a placement is the moment a cell's notes
+collapse to one. Exemplar:
+[`towers/{solver,index,render}.ts`](../../src/native/games/towers/index.ts) +
+[`engine/latin.ts`](../../src/native/engine/latin.ts).
+
+- **The solver's candidate cube *is* a notes representation; record off it.** A
+  Latin-style solver already carries a `cube[cubepos(x,y,n)]` ("can `n` still go
+  here?"). Thread a `DeductionRecorder` through the generic deductions
+  (`place`/`set`/`forcing`) **and** the game's user-solvers so each *candidate
+  cleared* (`elim`) and each *cell placed* (`place`) is recorded in solver order
+  with its reason + premise. Gate every reason allocation and the strike-record
+  on `solver.recorder` so the generator/solve path is byte-for-byte unchanged
+  (verify with the C differential). A `group` id, bumped once per top-level
+  deduction attempt, ties one firing's records together.
+- **The soundness boundary is non-negotiable: seed the working cube from the
+  placed grid only — never the player's notes.** A note can be wrong (crossing
+  out the correct height is exactly what Check-&-Save flags), so feeding it back
+  as a fact would let the solver "prove" nonsense. The notes are used only to
+  *diff* (which already-true elimination to surface next, what is done) and to
+  *render*. Run the recording solver at the board's own difficulty, **deductive
+  only** (cap below recursion — a guess isn't a teachable note strike).
+- **Persist + populate.** Express the recorded script against the live notes as
+  steps: (1) a conditional **populate** (only when some empty cell lacks notes)
+  reusing the existing fill-all (`pencilAll`) move, so the hint's start state is
+  the fill-all button the player already knows and the basic Latin eliminations
+  are taught honestly rather than baked into the fill; (2) **eliminate** journeys;
+  (3) **place** steps. Skip any operation already reflected on the board so a
+  fresh recompute resumes from any mid-game position (§7.1 — `towersGame` is in
+  `hint-resume.test.ts`).
+- **`pencilStrike` — the one-firing-one-step note move.** A `set { pencil }`
+  toggle is *one* cell and *not idempotent* (a re-applied strike would re-add the
+  candidate). So add a move that **clears** a list of candidate bits atomically
+  (`{ type: "pencilStrike"; marks }`): one firing forcing several strikes is one
+  multi-cell step (§5.5), idempotent, resume-safe. Populate stays on `pencilAll`;
+  placement stays on the real `set`. `hintKeepTrack` treats a pencil toggle that
+  *clears* a subset of the step's marks as `onTrack` (shrink in place) /
+  `completed`, a placement of the hinted value as `completed`, else `off`.
+- **A placement's own row/column eliminations continue its journey.** `place()`
+  strikes the placed height from the rest of its row and column; record those as
+  `dup` strikes and emit them as a `continuesPrevious` strike step after the
+  placement ("a 5 now sits in this row and column, so strike it from these
+  notes"). On recompute after a real placement they bake into the cube and drop
+  out — so the resume walk sees mostly placements, while auto-hint (following the
+  stored plan) still teaches the cleanup.
+- **Notes are first-class markings in `findMistakes`.** See the playbook's
+  pencil-mark-games note: flag an empty cell whose **non-empty** notes *exclude*
+  the solution height (`kind: "note"`); notes with merely *extra* candidates are
+  ordinary mid-solve state. Check-&-Save inherits the rejection through its
+  existing `findMistakes` gate — no quick-save change.
+- **Solve the way a human does: naked single first, then the *interesting*
+  deduction; never narrate a Latin trivial as a step.** The first cut emitted the
+  raw recorded script and buried the player in trivial "strike this number from
+  the rest of its row/column" steps. Two owner-driven fixes, both worth copying:
+  - **An auto-pencil preference (default on)** that, on a real placement, strikes
+    the placed value from the rest of its row and column automatically. Bake the
+    decision into the *move* at `interpretMove` time (`set { autoElim }` read off
+    the Ui pref) so `executeMove` stays pure and replay is deterministic. When on,
+    the hint folds those trivial eliminations into the placement (no step); when
+    off, it teaches them as an explicit `continuesPrevious` strike. The hint needs
+    the pref, so `Game.hint` takes an optional third `ui` arg (the midend passes
+    `this.ui`; other games ignore it) — `const autoClean = ui?.autoPencil ?? true`.
+  - **A naked-single-first plan builder.** Don't express the recorded script
+    verbatim — walk a *working copy* of the board (notes + grid) and at each step
+    take the most natural move: (1) a **naked single** (an empty cell whose working
+    notes have collapsed to one candidate — on a mistake-free board that candidate
+    is the truth, so placing it is sound and is what a person does next); else
+    (2) the next **clue elimination** (the deduction worth teaching); else (3) a
+    forced **placement** (facing clue, or a cube collapse the notes lag). Re-record
+    from the working grid after each placement; advance through strikes by filtering
+    to still-live marks. **Gotcha that hid every clue deduction:** the recording
+    solver commits the facing-clue placement *first*, so a naive "strikes before the
+    first recorded placement" window is empty and every clue elimination gets buried
+    inside a generic "every other height is ruled out" placement. Fix: the strike
+    window extends to the first *unreflected* placement (one whose cell isn't yet on
+    the working grid) — a facing place you've already applied no longer blocks the
+    clue strikes recorded after it. Exemplar: `buildSteps` /
+    `firstUnreflectedPlaceIndex` in
+    [`towers/index.ts`](../../src/native/games/towers/index.ts).
+
+## 10. Method lesson: probe before trusting a mechanism diagnosis
 
 Twice in one hint session a plausible mechanism diagnosis ("the second leg reads as off-plan", "the
 plan is being dropped") was wrong and dissolved by a ~20-line probe test. When a hint misbehaves,

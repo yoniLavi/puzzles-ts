@@ -28,6 +28,7 @@ import { palisadeGame } from "../games/palisade/index.ts";
 import { rangeGame } from "../games/range/index.ts";
 import { singlesGame } from "../games/singles/index.ts";
 import { sixteenGame } from "../games/sixteen/index.ts";
+import { towersGame } from "../games/towers/index.ts";
 import { unrulyGame } from "../games/unruly/index.ts";
 import { untangleGame } from "../games/untangle/index.ts";
 import { randomNew } from "../random/index.ts";
@@ -76,6 +77,7 @@ const HINT_GAMES: [string, AnyGame][] = [
   ["range", rangeGame],
   ["singles", singlesGame],
   ["sixteen", sixteenGame],
+  ["towers", towersGame],
   ["unruly", unrulyGame],
   ["untangle", untangleGame],
 ];

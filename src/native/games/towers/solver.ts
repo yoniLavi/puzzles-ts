@@ -12,7 +12,9 @@
 
 import {
   DIFF_AMBIGUOUS,
+  type DeductionRecord,
   DIFF_IMPOSSIBLE,
+  type LatinReason,
   type LatinSolver,
   latinSolver,
 } from "../../engine/latin.ts";
@@ -25,6 +27,31 @@ import {
 } from "./state.ts";
 
 export { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE };
+
+/** Why a Towers-specific deduction forced a candidate change — the premise the
+ * hint narrates and highlights. Each carries the driving clue index and value.
+ * Combined with {@link LatinReason} (positional/set/forcing) it covers every
+ * technique the recording solver can fire. The `kind` fields never collide. */
+export type TowersReason =
+  /** A pair of facing clues summing to `w+1` fixes the tallest tower's spot. */
+  | { kind: "facing"; clue: number; clue2: number; clueVal: number }
+  /** The clue already sees an increasing run one short of its count, so the
+   * cell next to the clue must hold the tallest remaining tower. */
+  | { kind: "lineFull"; clue: number; clueVal: number }
+  /** A height too tall to hide this close to the clue (the lower-bound rule). */
+  | { kind: "lowerBound"; clue: number; clueVal: number; height: number }
+  /** No valid height arrangement giving exactly `clueVal` visible towers puts
+   * this height here (the hard exhaustive-arrangement rule). */
+  | { kind: "arrangement"; clue: number; clueVal: number };
+
+/** A reason attached to a recorded Towers deduction. */
+export type HintReason = TowersReason | LatinReason;
+
+/** One recorded Towers deduction op (a {@link DeductionRecord} with a narrowed
+ * reason). */
+export interface HintOp extends DeductionRecord {
+  reason: HintReason;
+}
 
 /** Shared, mutable solver context (upstream `struct solver_ctx`). `started`
  * gates the one-off facing-clue deduction and persists across the fixpoint and
@@ -56,7 +83,14 @@ export function solverEasy(solver: LatinSolver, ctx: TowersCtx): number {
         const cells = lineCells(c, w);
         const cell = cells[clues[c] - 1];
         if (solver.cubeGet(cell.x, cell.y, w)) {
-          solver.place(cell.x, cell.y, w);
+          solver.place(
+            cell.x,
+            cell.y,
+            w,
+            solver.recorder
+              ? { kind: "facing", clue: c, clue2: c2, clueVal: clues[c] }
+              : undefined,
+          );
           ret = 1;
         } else {
           ret = -1;
@@ -102,6 +136,16 @@ export function solverEasy(solver: LatinSolver, ctx: TowersCtx): number {
         j--;
         const cell = cells[0];
         if (solver.cubeGet(cell.x, cell.y, i)) {
+          if (solver.recorder) {
+            solver.recorder({
+              kind: "elim",
+              x: cell.x,
+              y: cell.y,
+              n: i,
+              reason: { kind: "lineFull", clue: c, clueVal: clue },
+              group: solver.group,
+            });
+          }
           solver.cube[solver.cubepos(cell.x, cell.y, i)] = 0;
           ret = 1;
         }
@@ -127,6 +171,16 @@ export function solverEasy(solver: LatinSolver, ctx: TowersCtx): number {
       for (let j = 0; j < clue - i2 - 1; j++) {
         const cell = cells[j];
         if (solver.cubeGet(cell.x, cell.y, nn)) {
+          if (solver.recorder) {
+            solver.recorder({
+              kind: "elim",
+              x: cell.x,
+              y: cell.y,
+              n: nn,
+              reason: { kind: "lowerBound", clue: c, clueVal: clue, height: nn },
+              group: solver.group,
+            });
+          }
           solver.cube[solver.cubepos(cell.x, cell.y, nn)] = 0;
           ret = 1;
         }
@@ -214,6 +268,16 @@ export function solverHard(solver: LatinSolver, ctx: TowersCtx): number {
       const cell = cells[i3];
       for (let j = 1; j <= w; j++) {
         if (solver.cubeGet(cell.x, cell.y, j) && !(iscratch[i3] & (1 << j))) {
+          if (solver.recorder) {
+            solver.recorder({
+              kind: "elim",
+              x: cell.x,
+              y: cell.y,
+              n: j,
+              reason: { kind: "arrangement", clue: c, clueVal: clue },
+              group: solver.group,
+            });
+          }
           solver.cube[solver.cubepos(cell.x, cell.y, j)] = 0;
           ret = 1;
         }
@@ -263,6 +327,7 @@ export function solveTowers(
   clues: Int32Array,
   soln: Uint8Array,
   maxdiff: number,
+  recorder?: (rec: DeductionRecord) => void,
 ): number {
   const ctx: TowersCtx = { w, clues, started: false };
   return latinSolver<TowersCtx>(soln, w, {
@@ -275,5 +340,26 @@ export function solveTowers(
     usersolvers: [solverEasy, solverHard, null, null],
     valid: towersValid,
     ctx,
+    recorder,
   });
+}
+
+/**
+ * Run the recording solver on a sound candidate cube seeded from `grid` (the
+ * placed givens/entries only — never the player's notes), up to `maxdiff`, and
+ * return every candidate elimination and cell placement it makes, in solver
+ * order, each tagged with the rule + premise that forced it. This is the raw
+ * deduction script a hint narrates; the recorder-off path (`solveTowers`
+ * without a callback) is byte-for-byte unchanged. `grid` is treated read-only
+ * (a working copy is solved internally).
+ */
+export function recordTowersDeductions(
+  w: number,
+  clues: Int32Array,
+  grid: Uint8Array,
+  maxdiff: number,
+): HintOp[] {
+  const ops: HintOp[] = [];
+  solveTowers(w, clues, grid.slice(), maxdiff, (rec) => ops.push(rec as HintOp));
+  return ops;
 }

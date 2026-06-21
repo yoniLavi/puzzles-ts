@@ -237,8 +237,14 @@ export interface Game<
    * same value passed to `solve` — present for freshly-generated games,
    * absent for descriptive game ids or some loaded saves. A game whose
    * best hint derives from the known solution (Untangle) uses it when
-   * present and falls back otherwise; deductive games ignore it. */
-  hint?(state: State, aux?: string): HintResult<Move>;
+   * present and falls back otherwise; deductive games ignore it.
+   *
+   * `ui` is the live game UI, passed so a hint can honour a player
+   * preference that changes how moves behave or how the hint should be
+   * expressed (e.g. Towers' auto-pencil mode, which decides whether the
+   * hint teaches the trivial row/column note eliminations or folds them
+   * into the placement). Optional and ignored by most games. */
+  hint?(state: State, aux?: string, ui?: Ui): HintResult<Move>;
   /** Classify a player move against the current hint step. The game
    * MAY adjust `step.move` in place on `"onTrack"` (e.g. shrink a
    * slide's remaining distance after partial manual progress) so a

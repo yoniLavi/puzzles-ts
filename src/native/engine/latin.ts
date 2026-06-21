@@ -22,6 +22,7 @@
 
 import { type RandomState, randomUpto } from "../random/index.ts";
 import { shuffle } from "./shuffle.ts";
+import { type StepBudget, stepBudget } from "./step-budget.ts";
 
 /** Upstream `enum { diff_impossible = 10, diff_ambiguous, diff_unfinished }`
  * — positive sentinels larger than any real difficulty level, so a
@@ -35,6 +36,35 @@ export const DIFF_UNFINISHED = 12;
 export type UserSolver<Ctx> = (solver: LatinSolver, ctx: Ctx) => number;
 /** Validate a *completed* grid against the game's extra constraints. */
 export type Validator<Ctx> = (solver: LatinSolver, ctx: Ctx) => boolean;
+
+/** Why a *generic* Latin deduction forced a candidate change — the premise a
+ * hint narrates. A game's user-solvers attach their own (game-specific) reason
+ * objects via `solver.recorder`; the discriminating `kind` fields never collide
+ * with these. Used on the hint path only. */
+export type LatinReason =
+  /** A cell's last remaining candidate, so it must take that height. */
+  | { kind: "single" }
+  /** Height `n` was just placed at `(px, py)`, which rules it out of the rest
+   * of that row and column. */
+  | { kind: "dup"; n: number; px: number; py: number }
+  /** A naked-subset ("set") elimination. */
+  | { kind: "set" }
+  /** A forcing-chain elimination. */
+  | { kind: "forcing" };
+
+/** One recorded deduction operation. Emitted in solver order on the hint path;
+ * `group` ties together every record of a single deduction *firing* (one
+ * top-level deduction attempt), so a firing forcing several strikes becomes one
+ * grouped hint step. `reason` is a {@link LatinReason} or a game-specific reason. */
+export interface DeductionRecord {
+  kind: "place" | "elim";
+  x: number;
+  y: number;
+  n: number;
+  reason: unknown;
+  group: number;
+}
+export type DeductionRecorder = (rec: DeductionRecord) => void;
 
 export class LatinSolver {
   readonly o: number;
@@ -55,6 +85,15 @@ export class LatinSolver {
   private readonly sSet: Uint8Array;
   private readonly sNeighbours: Int32Array;
   private readonly sBfsqueue: Int32Array;
+
+  /** Hint-only deduction recorder; left unset on the generator/solve path so
+   * those run with no recording overhead and byte-for-byte unchanged. */
+  recorder?: DeductionRecorder;
+  /** Hint-only fixpoint budget (set alongside `recorder`). */
+  budget?: StepBudget;
+  /** Current firing id — bumped once per top-level deduction attempt so every
+   * record of one firing shares a `group`. */
+  group = 0;
 
   constructor(o: number) {
     this.o = o;
@@ -98,12 +137,32 @@ export class LatinSolver {
   }
 
   /** Commit digit `n` at `(x, y)`: rule out other digits here, this digit
-   * elsewhere in the row/column, and record the placement. */
-  place(x: number, y: number, n: number): void {
+   * elsewhere in the row/column, and record the placement. `reason` (hint path
+   * only) explains *why* the cell was placed; the row/column eliminations it
+   * implies are recorded as `dup` strikes so a hint can teach them too. */
+  place(x: number, y: number, n: number, reason?: unknown): void {
     const o = this.o;
+    const rec = this.recorder;
+    if (rec && reason !== undefined) {
+      rec({ kind: "place", x, y, n, reason, group: this.group });
+    }
     for (let i = 1; i <= o; i++) if (i !== n) this.cube[this.cubepos(x, y, i)] = 0;
-    for (let i = 0; i < o; i++) if (i !== y) this.cube[this.cubepos(x, i, n)] = 0;
-    for (let i = 0; i < o; i++) if (i !== x) this.cube[this.cubepos(i, y, n)] = 0;
+    for (let i = 0; i < o; i++) {
+      if (i === y) continue;
+      const pos = this.cubepos(x, i, n);
+      if (rec && this.cube[pos]) {
+        rec({ kind: "elim", x, y: i, n, reason: { kind: "dup", n, px: x, py: y }, group: this.group });
+      }
+      this.cube[pos] = 0;
+    }
+    for (let i = 0; i < o; i++) {
+      if (i === x) continue;
+      const pos = this.cubepos(i, y, n);
+      if (rec && this.cube[pos]) {
+        rec({ kind: "elim", x: i, y, n, reason: { kind: "dup", n, px: x, py: y }, group: this.group });
+      }
+      this.cube[pos] = 0;
+    }
     this.grid[y * o + x] = n;
     this.row[y * o + n - 1] = 1;
     this.col[x * o + n - 1] = 1;
@@ -128,7 +187,7 @@ export class LatinSolver {
       const x = (y / o) | 0;
       y %= o;
       if (!this.grid[y * o + x]) {
-        this.place(x, y, n);
+        this.place(x, y, n, this.recorder ? { kind: "single" } : undefined);
         return 1;
       }
     } else if (m === 0) {
@@ -215,6 +274,18 @@ export class LatinSolver {
               for (let j = 0; j < n; j++) {
                 if (!set[j] && grid[i * o + j]) {
                   const fpos = start + rowidx[i] * step1 + colidx[j] * step2;
+                  if (this.recorder) {
+                    const en = 1 + (fpos % o);
+                    const rest = (fpos / o) | 0;
+                    this.recorder({
+                      kind: "elim",
+                      x: (rest / o) | 0,
+                      y: rest % o,
+                      n: en,
+                      reason: { kind: "set" },
+                      group: this.group,
+                    });
+                  }
                   progress = true;
                   cube[fpos] = 0;
                 }
@@ -301,6 +372,16 @@ export class LatinSolver {
               }
 
               if (currn === orign && (xt === x || yt === y)) {
+                if (this.recorder) {
+                  this.recorder({
+                    kind: "elim",
+                    x: xt,
+                    y: yt,
+                    n: orign,
+                    reason: { kind: "forcing" },
+                    group: this.group,
+                  });
+                }
                 this.cube[this.cubepos(xt, yt, orign)] = 0;
                 return 1;
               }
@@ -378,6 +459,10 @@ export interface LatinSolverConfig<Ctx> {
   valid: Validator<Ctx> | null;
   ctx: Ctx;
   ctxNew?: (ctx: Ctx) => Ctx;
+  /** Hint path only: record every candidate cleared / cell placed, in solver
+   * order. When set, a fixpoint step budget is also installed. Leaving it unset
+   * (generator/solve path) keeps that path byte-for-byte unchanged. */
+  recorder?: DeductionRecorder;
 }
 
 function latinSolverTop<Ctx>(solver: LatinSolver, cfg: LatinSolverConfig<Ctx>): number {
@@ -394,7 +479,9 @@ function latinSolverTop<Ctx>(solver: LatinSolver, cfg: LatinSolverConfig<Ctx>): 
   let diff = diffSimple;
 
   cont: while (true) {
+    solver.budget?.tick();
     for (let i = 0; i <= maxdiff; i++) {
+      solver.group++;
       let ret = 0;
       if (usersolvers[i]) ret = (usersolvers[i] as UserSolver<Ctx>)(solver, ctx);
       if (ret === 0 && i === diffSimple) ret = solver.diffSimple();
@@ -529,6 +616,12 @@ export function latinSolver<Ctx>(
 ): number {
   const solver = new LatinSolver(o);
   if (!solver.alloc(grid)) return DIFF_IMPOSSIBLE;
+  // Enable recording only *after* alloc, so seeding the cube from the givens
+  // (a flurry of `place`s) is not mistaken for deductions the hint should teach.
+  if (cfg.recorder) {
+    solver.recorder = cfg.recorder;
+    solver.budget = stepBudget("towers hint");
+  }
   return latinSolverTop(solver, cfg);
 }
 

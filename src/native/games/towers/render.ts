@@ -36,8 +36,11 @@ export const COL_PENCIL = 5;
 export const COL_DONE = 6;
 // Fork addition: the yellow body of the pencil-mode indicator glyph (a classic
 // #2 school pencil). Appended past the upstream enum; Towers has no dark-mode
-// paletteOverrides, so the extra index is safe.
+// paletteOverrides, so the extra indices are safe.
 export const COL_PENCIL_BODY = 7;
+// Fork additions: the explained-hint legend (see hint-authoring §5.3).
+export const COL_HINT = 8; // the cell(s)/candidate(s) the deduction acts on
+export const COL_HINT_CELL = 9; // the driving clue's line of sight (evidence)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -50,6 +53,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL] = [0.5 * bg[0], 0.5 * bg[1], bg[2]];
   out[COL_DONE] = [bg[0] / 1.5, bg[1] / 1.5, bg[2] / 1.5];
   out[COL_PENCIL_BODY] = [1, 0.78, 0.17];
+  out[COL_HINT] = [0.62, 0.81, 0.96];
+  out[COL_HINT_CELL] = [0.85, 0.92, 0.99];
   return out;
 }
 
@@ -103,6 +108,18 @@ export interface TowersDrawState {
   errtmp: Uint8Array;
   /** `(w+2)²` mistake-overlay flags (fork addition). */
   wrong: Uint8Array;
+  /** `(w+2)²` packed hint overlay (fork addition): bit 0 = target cell, bit 1 =
+   * evidence area, bits 2.. = struck-candidate mask (`1 << (2 + height)`).
+   * Compared against {@link drawnHint} so a hint change repaints affected
+   * cells even when their tile value is otherwise unchanged. */
+  hintPacked: Int32Array;
+  /** `(w+2)²` last-drawn hint overlay (-1 = never drawn). */
+  drawnHint: Int32Array;
+  /** `(w+2)²` last-drawn mistake-overlay flags (-1 = never drawn). The mistake
+   * overlay (like the hint overlay) doesn't change a cell's tile value, so it
+   * must be in the diff key or a Check & Save on an already-drawn cell would not
+   * repaint the red highlight. */
+  drawnWrong: Int8Array;
 }
 
 export function newDrawState(state: TowersState): TowersDrawState {
@@ -116,6 +133,9 @@ export function newDrawState(state: TowersState): TowersDrawState {
     drawn: new Int32Array(W * W * 4).fill(-1),
     errtmp: new Uint8Array(W * W),
     wrong: new Uint8Array(W * W),
+    hintPacked: new Int32Array(W * W),
+    drawnHint: new Int32Array(W * W).fill(-1),
+    drawnWrong: new Int8Array(W * W).fill(-1),
   };
 }
 
@@ -134,11 +154,20 @@ function drawTile(
   y: number,
   tile: number,
   wrong: boolean,
+  hint: number,
 ): void {
   let tx = coord(x, ts);
   let ty = coord(y, ts);
   const digit = tile & DF_DIGIT_MASK;
-  const bg = tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : COL_BACKGROUND;
+  // Hint overlay: target cell (COL_HINT) > evidence area (COL_HINT_CELL) >
+  // cursor highlight > background. `struck` is the set of candidate heights
+  // this firing rules out, drawn struck in COL_HINT among the pencil marks.
+  const hintTarget = (hint & 1) !== 0;
+  const hintArea = (hint & 2) !== 0;
+  const struck = hint >> 2;
+  let bg = tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : COL_BACKGROUND;
+  if (hintArea) bg = COL_HINT_CELL;
+  if (hintTarget) bg = COL_HINT;
 
   // 3D tower: left + bottom faces, then offset to the top face.
   if (threeD && tile & DF_PLAYAREA && digit) {
@@ -274,20 +303,25 @@ function drawTile(
         if (tile & (1 << (i + DF_PENCIL_SHIFT))) {
           const dx = j % pw;
           const dy = Math.floor(j / pw);
+          const cx = pl + Math.floor((fontsize * (2 * dx + 1)) / 2);
+          const cy = pt2 + Math.floor((fontsize * (2 * dy + 1)) / 2);
+          const isStruck = (struck & (1 << i)) !== 0;
           dr.drawText(
-            {
-              x: pl + Math.floor((fontsize * (2 * dx + 1)) / 2),
-              y: pt2 + Math.floor((fontsize * (2 * dy + 1)) / 2),
-            },
+            { x: cx, y: cy },
             {
               align: "center",
               baseline: "mathematical",
               fontType: "variable",
               size: fontsize,
             },
-            COL_PENCIL,
+            isStruck ? COL_HINT : COL_PENCIL,
             String(i),
           );
+          // Cross the ruled-out candidate through so the elimination is legible.
+          if (isStruck) {
+            const r = Math.max(2, Math.floor(fontsize / 3));
+            dr.drawLine({ x: cx - r, y: cy }, { x: cx + r, y: cy }, COL_HINT, 2);
+          }
           j++;
         }
       }
@@ -327,6 +361,20 @@ function drawTile(
   }
 }
 
+// --- hint overlay ----------------------------------------------------------
+
+/** Highlight payload a Towers hint step carries (built in `index.ts`). Defined
+ * here so `redraw` can consume it without a circular import. See
+ * hint-authoring §5.3 for the element-type legend. */
+export interface TowersHint {
+  /** The driving clue's line of sight, shaded `COL_HINT_CELL`. */
+  area: { x: number; y: number }[];
+  /** The cell(s) the deduction acts on, marked `COL_HINT`. */
+  targets: { x: number; y: number }[];
+  /** The candidate digit(s) ruled out, shown struck in `COL_HINT`. */
+  marks: { x: number; y: number; n: number }[];
+}
+
 // --- redraw ----------------------------------------------------------------
 
 export function redraw(
@@ -338,7 +386,7 @@ export function redraw(
   ui: TowersUi,
   _animTime: number,
   flashTime: number,
-  _hint?: HintStep<TowersMove>,
+  hint?: HintStep<TowersMove, TowersHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
   if (!ds) return;
@@ -358,6 +406,16 @@ export function redraw(
   ds.wrong.fill(0);
   if (mistakes) {
     for (const m of mistakes) ds.wrong[(m.y + 1) * W + (m.x + 1)] = 1;
+  }
+
+  // Pack the displayed hint overlay per play cell: bit 0 target, bit 1 area,
+  // bits 2.. struck-candidate mask.
+  ds.hintPacked.fill(0);
+  const hl = hint?.highlights;
+  if (hl) {
+    for (const a of hl.area) ds.hintPacked[(a.y + 1) * W + (a.x + 1)] |= 2;
+    for (const t of hl.targets) ds.hintPacked[(t.y + 1) * W + (t.x + 1)] |= 1;
+    for (const m of hl.marks) ds.hintPacked[(m.y + 1) * W + (m.x + 1)] |= 1 << (2 + m.n);
   }
 
   // Build the tile values.
@@ -406,10 +464,12 @@ export function redraw(
         ds.drawn[i * 4] !== tl ||
         ds.drawn[i * 4 + 1] !== tr ||
         ds.drawn[i * 4 + 2] !== bl ||
-        ds.drawn[i * 4 + 3] !== br
+        ds.drawn[i * 4 + 3] !== br ||
+        ds.drawnHint[i] !== ds.hintPacked[i] ||
+        ds.drawnWrong[i] !== ds.wrong[i]
       ) {
         dr.clip({ x: coord(x - 1, ts), y: coord(y - 1, ts), w: ts, h: ts });
-        drawTile(dr, ts, w, threeD, x - 1, y - 1, tr, ds.wrong[i] !== 0);
+        drawTile(dr, ts, w, threeD, x - 1, y - 1, tr, ds.wrong[i] !== 0, ds.hintPacked[i]);
         if (x > 0)
           drawTile(
             dr,
@@ -420,9 +480,20 @@ export function redraw(
             y - 1,
             tl,
             ds.wrong[y * W + (x - 1)] !== 0,
+            ds.hintPacked[y * W + (x - 1)],
           );
         if (y <= w)
-          drawTile(dr, ts, w, threeD, x - 1, y, br, ds.wrong[(y + 1) * W + x] !== 0);
+          drawTile(
+            dr,
+            ts,
+            w,
+            threeD,
+            x - 1,
+            y,
+            br,
+            ds.wrong[(y + 1) * W + x] !== 0,
+            ds.hintPacked[(y + 1) * W + x],
+          );
         if (x > 0 && y <= w)
           drawTile(
             dr,
@@ -433,6 +504,7 @@ export function redraw(
             y,
             bl,
             ds.wrong[(y + 1) * W + (x - 1)] !== 0,
+            ds.hintPacked[(y + 1) * W + (x - 1)],
           );
         dr.unclip();
         dr.drawUpdate({ x: coord(x - 1, ts), y: coord(y - 1, ts), w: ts, h: ts });
@@ -441,6 +513,8 @@ export function redraw(
         ds.drawn[i * 4 + 1] = tr;
         ds.drawn[i * 4 + 2] = bl;
         ds.drawn[i * 4 + 3] = br;
+        ds.drawnHint[i] = ds.hintPacked[i];
+        ds.drawnWrong[i] = ds.wrong[i];
       }
     }
   }

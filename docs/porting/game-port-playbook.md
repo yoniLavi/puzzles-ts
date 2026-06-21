@@ -143,6 +143,21 @@ break, so write it clean the first time.
 run out, add a parallel sidecar typed-array checked in the cache-miss branch
 (Galaxies' `wrongEdges`), don't widen to `BigInt`.
 
+**Every overlay that doesn't live in the tile value MUST be in the diff key —
+or it silently fails to repaint.** A mistake/hint/highlight overlay is applied
+*on top of* a cell, so it usually isn't part of the cell's packed tile value. If
+it isn't *also* compared in the cache-miss branch, it only repaints when the
+cell's tile coincidentally changed that frame — and Check-&-Save (or a hint)
+runs a frame *after* the move that drew the cell, so the cell's tile is
+unchanged and the overlay **never shows**. Towers shipped exactly this bug: the
+mistake overlay (`ds.wrong`) was passed to `drawTile` but left out of the diff
+condition, so Check-&-Save highlighted nothing. Fix: track a `drawn<Overlay>`
+sidecar and add `ds.drawn<Overlay>[i] !== ds.<overlay>[i]` to the cache-miss
+test (Towers' `drawnWrong`/`drawnHint`). Guard it with a test that redraws the
+*same* drawstate twice — paint, then `findMistakes()`, then redraw — and asserts
+the highlight appears on the **second** paint (the `towers.test.ts`
+"highlights a mistake even when the cell was already drawn" regression).
+
 **Rendering doctrine (hard-won — see the Flip three-iteration story in
 [`AGENTS.md`](../../AGENTS.md)):** the engine paints **no pixels of its own**;
 each game fills its own background in the `!ds.started` branch. `Midend.size` is
@@ -226,6 +241,23 @@ divergences that make note-taking usable with mouse/touch, not just the keyboard
   yellow #2-pencil body + graphite tip; the body colour is a palette index
   appended past the upstream enum — safe only when the game has no dark-mode
   `paletteOverrides` touching that index (check `augmentation.ts`).
+
+- **Notes are first-class markings in `findMistakes` (the cross-game
+  convention).** When the game implements `findMistakes`, an empty cell whose
+  **non-empty** pencil notes have crossed out the cell's unique-solution value is
+  a mistake (`kind: "note"`), exactly as a wrong placed value is (`kind: "cell"`)
+  — both render as the same red overlay, and Check-&-Save refuses to quick-save
+  while either exists (it inherits this through the existing `findMistakes`
+  gate, no quick-save change). A note with merely *extra*, non-solution
+  candidates is ordinary mid-solve state and is **not** flagged. Derive the
+  solution from the placed givens/entries only — never from the notes (a note can
+  be wrong; that is what is being checked). This is the template for
+  Solo / Keen / Unequal / Undead. Normative: the `findMistakes` requirement in
+  [`ts-engine`](../../openspec/specs/ts-engine/spec.md).
+
+The **explained, pencil-notes-based hint** these games want is its own change —
+see the "candidate-elimination games" section of
+[`hint-authoring.md`](./hint-authoring.md), with Towers as the exemplar.
 
 Exemplar: [`towers/{state,index,render}.ts`](../../src/native/games/towers/index.ts).
 

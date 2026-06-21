@@ -178,12 +178,27 @@ export function cloneState(s: TowersState): TowersState {
 // --- moves -----------------------------------------------------------------
 
 export type TowersMove =
-  /** Enter (or pencil-toggle) height `n` at `(x, y)`; `n = 0` clears. */
-  | { type: "set"; x: number; y: number; n: number; pencil: boolean }
+  /** Enter (or pencil-toggle) height `n` at `(x, y)`; `n = 0` clears.
+   * `autoElim` (auto-pencil mode, decided at move-creation time off the Ui
+   * preference, so replay is deterministic) additionally strikes height `n`
+   * from the pencil marks of every other cell in the same row and column when
+   * this is a real placement. */
+  | {
+      type: "set";
+      x: number;
+      y: number;
+      n: number;
+      pencil: boolean;
+      autoElim?: boolean;
+    }
   /** Toggle the struck-through state of edge-clue `index`. */
   | { type: "clueDone"; index: number }
-  /** Fill in every pencil mark everywhere (the dev-only `M` key). */
+  /** Fill in every pencil mark everywhere (the `M` key / fill-all button). */
   | { type: "pencilAll" }
+  /** Strike (clear) the listed pencil candidates atomically — a hint's
+   * single-firing elimination. Clearing an absent candidate is a no-op, so this
+   * is idempotent and resume-safe (unlike a `set` pencil toggle). */
+  | { type: "pencilStrike"; marks: { x: number; y: number; n: number }[] }
   /** Auto-solve to the given full grid. */
   | { type: "solve"; grid: number[] };
 
@@ -203,6 +218,11 @@ export interface TowersUi {
    * once on, left-clicks keep entering pencil marks until right-clicked again
    * (mobile-style), instead of every left-click reverting to real entry. */
   pencilSticky: boolean;
+  /** Preference (default on): when you place a tower, immediately strike that
+   * height from the pencil marks of every other cell in its row and column.
+   * When on, hints also skip teaching those trivial eliminations (they happen
+   * automatically) and lean on the placement instead. */
+  autoPencil: boolean;
 }
 
 export function newUi(_state: TowersState): TowersUi {
@@ -215,6 +235,7 @@ export function newUi(_state: TowersState): TowersUi {
     threeD: true,
     pencilKeepHighlight: false,
     pencilSticky: true,
+    autoPencil: true,
   };
 }
 
