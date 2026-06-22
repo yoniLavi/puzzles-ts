@@ -813,8 +813,20 @@ collapse to one. Exemplar:
   grid width (the clue then sees *all* towers, so "only" is wrong); its line-full
   text described *"an increasing run one tower short of its count"* — a run of
   *zero* at `c = 1`. Phrase counts so they hold across the whole range (*"sees
-  exactly ${c}"*, *"all but one of the towers it counts"*). When a narration
-  interpolates a clue/count, re-read it at the min and max that value can take.
+  exactly ${c}"*, *"all but one of its towers deeper in the line"*). When a
+  narration interpolates a clue/count, re-read it at the min and max that value
+  can take.
+- **Narrate the deduction the rule *actually* makes — never a stronger one.** An
+  elimination narration must not imply a placement the rule doesn't establish
+  (owner-flagged 2026-06-22, the subtle sibling of §2.4). Towers' line-full rule
+  strikes the *shortest* heights from the cell nearest the clue (it must be tall
+  enough to hide the cells between it and the tower already in view) — but the
+  text said the cell *"must hold the tallest remaining one"*, which reads as a
+  forced placement. It isn't: nearest ∈ {3,4} when the 1 and 2 are struck, not
+  pinned to 4. If a narration claims a unique value, the step must actually
+  *place* it; an elimination step says only which candidates are *ruled out* and
+  why. Cross-check: does the conclusion match the move type (`pencilStrike` ⇒
+  "rule out", `set` ⇒ "must be")?
 - **A kept plan can go stale — implement `refreshHintStep`.** A plan is computed
   **once** (with the auto-pencil pref baked in) and *kept* while the player
   follows it. A followed move can have side effects the plan didn't author —

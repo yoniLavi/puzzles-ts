@@ -434,7 +434,7 @@ function narrate(reason: HintReason, n: number, continues = false): string {
     case "facing":
       return `These two clues face each other along this line and add up to one more than the grid, which pins the tallest tower to a single cell — height ${n} can only sit here.`;
     case "lineFull":
-      return `Clue ${reason.clueVal} can already see all but one of the towers it counts along this line, so the cell nearest the clue must hold the tallest remaining one — we must cross out the ${n} there.`;
+      return `Clue ${reason.clueVal} already sees all but one of its towers deeper in the line, so the cell nearest the clue must be tall enough to keep everything between it and them hidden — too tall for the shortest heights, so we must cross out the ${n}.`;
     case "lowerBound":
       return `Clue ${reason.clueVal} sees exactly ${reason.clueVal} towers along this line, so a tower of height ${n} this close to the clue would hide too many towers behind it — we must cross out the ${n}.`;
     case "arrangement":
