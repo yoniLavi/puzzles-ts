@@ -765,6 +765,24 @@ collapse to one. Exemplar:
     clue strikes recorded after it. Exemplar: `buildSteps` /
     `firstUnreflectedPlaceIndex` in
     [`towers/index.ts`](../../src/native/games/towers/index.ts).
+  - **Surface a *whole-line forcing* as one ordered placement journey, before
+    populate; pencil in notes lazily.** A clue at an extreme value can force a
+    whole line (or a single cell) outright, needing *no* notes — Towers' clue
+    equal to the grid width pins the line to `1, 2, …, w` from the clue; a clue
+    of `1` pins the tallest tower next to it (owner-requested 2026-06-22).
+    Emitting that as the recorded per-cell elimination cascade buries an obvious
+    move; instead detect it directly in the plan builder and emit the forced
+    cells as one journey (first leg unflagged, the rest `continuesPrevious`,
+    continuation legs narrated tersely so the premise isn't restated each leg).
+    Because these placements need no notes, make **populate lazy**: do the
+    note-free forced placements first and only emit the fill-all step when an
+    *elimination* first needs something to cross out (a naked single still
+    out-ranks everything — an unpopulated board has none, so the ordering is
+    moot there). Detect off `state.clues`, not the recording solver, so the
+    generate/solve path stays byte-identical. Exemplar: `nextExtremeClueLine` +
+    the lazy `ensurePopulated` in
+    [`towers/index.ts`](../../src/native/games/towers/index.ts); guard:
+    `towers-hint.test.ts` "populates before the first elimination".
 - **One firing, multiple struck heights → one step per height, narrated per
   height.** A clue firing can rule out *different* heights in different cells at
   once (Towers' lower-bound rule strikes both 4 and 5 along a line). Don't emit
@@ -776,6 +794,27 @@ collapse to one. Exemplar:
   journey. `nextClueStrike`/`buildSteps` in
   [`towers/index.ts`](../../src/native/games/towers/index.ts); guard:
   `towers-hint.test.ts` "a strike step never mixes heights".
+- **Conclude an elimination with the strike *action*, naming the value; reserve
+  positive necessity for placements.** A candidate-elimination step's conclusion
+  reads best as the necessity-voiced action it asks for — *"…so we must cross out
+  the ${n}."*, naming the struck height (§2.3) — not the abstract *"…so it can't
+  go here"* repeated across every technique (owner-flagged 2026-06-22 as jarring
+  when it recurs in string after string). A *placement* step keeps the positive
+  necessity voice (*"it can only be ${n}"*, *"height ${n} can only sit here"*).
+  The two move types (`pencilStrike` vs `set`) thus carry two distinct, stable
+  conclusion voices. Both satisfy §2.1 (the modal "must"/"can only" is present);
+  the guard regex just has to admit "must cross out" alongside "must be". The
+  height is free — the step already knows its marks (`marks[0].n`). Exemplar:
+  `narrate` in [`towers/index.ts`](../../src/native/games/towers/index.ts).
+- **Sanity-read a clue/count narration at its degenerate extremes.** A phrase
+  tuned for the typical case can read as nonsense at a boundary value (owner-
+  flagged 2026-06-22). Towers' lower-bound text said *"clue ${c} can see only
+  ${c} towers"* — fine for a small clue, self-contradictory when `c` equals the
+  grid width (the clue then sees *all* towers, so "only" is wrong); its line-full
+  text described *"an increasing run one tower short of its count"* — a run of
+  *zero* at `c = 1`. Phrase counts so they hold across the whole range (*"sees
+  exactly ${c}"*, *"all but one of the towers it counts"*). When a narration
+  interpolates a clue/count, re-read it at the min and max that value can take.
 - **A kept plan can go stale — implement `refreshHintStep`.** A plan is computed
   **once** (with the auto-pencil pref baked in) and *kept* while the player
   follows it. A followed move can have side effects the plan didn't author —

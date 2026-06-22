@@ -96,16 +96,24 @@ function firstHint(st: TowersState) {
 }
 
 describe("towers hint", () => {
-  it("populates an empty board before eliminating", () => {
+  it("populates before the first elimination (forced placements may precede)", () => {
+    // Notes are pencilled in lazily: forced placements that need no notes
+    // (extreme-clue lines, facing pairs) come first, and the populate step
+    // appears only when an elimination first needs something to cross out — but
+    // always *before* that first elimination.
     const { st } = gen(5, "easy", "hint-empty");
     const res = firstHint(st);
     expect(res.ok).toBe(true);
     if (!res.ok) return;
-    expect(res.steps[0].move).toEqual({ type: "pencilAll" });
-    // The plan goes on to strike and place.
-    const types = new Set(res.steps.map((s) => (s.move as TowersMove).type));
-    expect(types.has("pencilStrike")).toBe(true);
-    expect(types.has("set")).toBe(true);
+    const moves = res.steps.map((s) => (s.move as TowersMove).type);
+    const firstStrike = moves.indexOf("pencilStrike");
+    const populateAt = moves.indexOf("pencilAll");
+    // This board needs eliminations, so it both populates and strikes and places.
+    expect(firstStrike).toBeGreaterThanOrEqual(0);
+    expect(populateAt).toBeGreaterThanOrEqual(0);
+    expect(moves.includes("set")).toBe(true);
+    // The populate step precedes the first elimination.
+    expect(populateAt).toBeLessThan(firstStrike);
   });
 
   it("clue-strike marks never bleed outside the narrated clue's line (regression)", () => {
@@ -151,10 +159,11 @@ describe("towers hint", () => {
     const res = firstHint(populated);
     expect(res.ok).toBe(true);
     if (!res.ok) return;
-    const modal = /can('|\s+only|not|t)\b|must (be|stay|hold)|can only|can't/i;
+    // A deduction concludes either with a positive necessity ("can only be/sit"
+    // for a placement) or with the necessity-voiced strike action ("we must
+    // cross out the N") for an elimination — never a bare "is/are/stays".
+    const modal = /can only|can't|must (be|stay|hold|cross out)/i;
     for (const s of res.steps) {
-      // Deduction steps (everything but the populate setup) state the conclusion
-      // as a forced decision, never a bare "is/are/stays".
       expect(s.explanation).toMatch(modal);
     }
   });
@@ -183,6 +192,8 @@ describe("towers hint", () => {
   });
 
   it("surfaces a naked single as the next move (suggestion 2)", () => {
+    // A naked single out-ranks every other technique (including the extreme-clue
+    // line fill), so a cell narrowed to one candidate is placed first.
     const { st } = gen(5, "easy", "hint-naked");
     const sol = solutionGrid(st);
     const w = st.w;
@@ -257,7 +268,8 @@ describe("towers hintKeepTrack", () => {
     const { st } = gen(5, "easy", "kt-pop");
     const res = firstHint(st);
     if (!res.ok) throw new Error("refused");
-    const step = res.steps[0];
+    const step = res.steps.find((s) => (s.move as TowersMove).type === "pencilAll");
+    if (!step) throw new Error("no populate step");
     expect(towersGame.hintKeepTrack?.({ type: "pencilAll" }, step, st)).toBe("completed");
     expect(
       towersGame.hintKeepTrack?.(
@@ -351,9 +363,8 @@ describe("towers hintKeepTrack", () => {
         const heights = new Set(m.marks.map((k) => k.n));
         expect(heights.size, `step "${step.explanation.slice(0, 48)}" mixes heights`).toBe(1);
         const n = m.marks[0].n;
-        if (/can see only|none of them puts/.test(step.explanation)) {
-          expect(step.explanation).toContain(`height ${n}`);
-        }
+        // Every elimination conclusion names the concrete struck height.
+        expect(step.explanation).toContain(`cross out the ${n}`);
       }
     }
     expect(checked).toBeGreaterThan(0);
@@ -375,7 +386,7 @@ function lowerBoundFrame() {
     const pop = towersGame.executeMove(st, { type: "pencilAll" });
     const res = towersGame.hint?.(pop);
     if (!res?.ok) continue;
-    if (res.steps.some((s) => /can see only/.test(s.explanation))) return id;
+    if (res.steps.some((s) => /sees exactly/.test(s.explanation))) return id;
   }
   throw new Error("no lower-bound frame found in the scanned seeds");
 }
@@ -405,10 +416,10 @@ describe("towers hint render", () => {
       defaultBackground: DEFAULT_BACKGROUND,
       moves: [{ type: "pencilAll" }],
       showHint: true,
-      hintUntil: (s) => /can see only/.test(s.explanation),
+      hintUntil: (s) => /sees exactly/.test(s.explanation),
     });
     expect(hint).toBeDefined();
-    expect(hint?.explanation).toMatch(/can see only/);
+    expect(hint?.explanation).toMatch(/sees exactly/);
 
     // The clue line of sight is shaded COL_HINT_CELL.
     expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(

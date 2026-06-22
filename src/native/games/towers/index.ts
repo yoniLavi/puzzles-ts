@@ -416,29 +416,37 @@ function findMistakes(state: TowersState): readonly TowersMistake[] {
 // --- hint ------------------------------------------------------------------
 
 const POPULATE_TEXT =
-  "Start by pencilling in every candidate height in each empty cell, so the eliminations below have something to cross out.";
+  "Start by pencilling in every candidate height in each empty cell, so the eliminations that follow have something to cross out.";
 
 /** Narrate *why* a firing is forced, per the technique that fired — leading
  * with the spotted indication, then the reasoning, then a necessity-voice
- * conclusion (hint-authoring §2). `n` is the placed height for a placement. */
-function narrate(reason: HintReason, n: number): string {
+ * conclusion (hint-authoring §2). `n` is the placed height for a placement;
+ * `continues` (a journey continuation leg) gets a terser line that doesn't
+ * restate the premise the journey's first leg already gave. */
+function narrate(reason: HintReason, n: number, continues = false): string {
   switch (reason.kind) {
+    case "fullLine":
+      return continues
+        ? `Continuing up the line — height ${n} can only sit here.`
+        : `Clue ${reason.clueVal} sees every tower in this line, so the heights must climb 1, 2, … straight up from the clue — height ${n} can only sit here.`;
+    case "tallestNearest":
+      return `Clue 1 sees just one tower, so the tallest must stand right next to the clue and hide the rest behind it — height ${n} can only sit here.`;
     case "facing":
       return `These two clues face each other along this line and add up to one more than the grid, which pins the tallest tower to a single cell — height ${n} can only sit here.`;
     case "lineFull":
-      return `Clue ${reason.clueVal} already sees an increasing run one tower short of its count along this line, so the cell nearest the clue must hold the tallest remaining tower — the shorter heights can't sit there.`;
+      return `Clue ${reason.clueVal} can already see all but one of the towers it counts along this line, so the cell nearest the clue must hold the tallest remaining one — we must cross out the ${n} there.`;
     case "lowerBound":
-      return `Clue ${reason.clueVal} can see only ${reason.clueVal} towers along this line, so a tower of height ${n} would block the view too early this close to the clue — it can't go here.`;
+      return `Clue ${reason.clueVal} sees exactly ${reason.clueVal} towers along this line, so a tower of height ${n} this close to the clue would hide too many towers behind it — we must cross out the ${n}.`;
     case "arrangement":
-      return `Trying every way clue ${reason.clueVal} can show exactly ${reason.clueVal} towers along this line, none of them puts a tower of height ${n} here — so it must be ruled out.`;
+      return `Trying every way clue ${reason.clueVal} can show exactly ${reason.clueVal} towers along this line, none of them puts a tower of height ${n} here — so we must cross out the ${n}.`;
     case "dup":
-      return `A ${reason.n} now sits in this row and column, so a ${reason.n} can't go in any cell they pass through — strike it from these notes.`;
+      return `A tower of height ${reason.n} now sits in this row and column, so we must cross out the ${reason.n} from every other cell they pass through.`;
     case "single":
-      return `Every other height has been ruled out in this cell, so it must be a ${n}.`;
+      return `Every other height has been ruled out in this cell, so it can only be ${n}.`;
     case "set":
-      return "These cells between them must use up a fixed set of heights, leaving no room for this candidate among them — so it can't go here.";
+      return `Another group of cells already accounts for a fixed set of heights that includes ${n}, so we must cross out the ${n} here.`;
     case "forcing":
-      return "Following the chain of two-candidate cells from here, this height forces a contradiction further along the line — so it can't go here.";
+      return `Following a chain of two-candidate cells, placing height ${n} here would force a contradiction further along the line — so we must cross out the ${n}.`;
   }
 }
 
@@ -451,6 +459,8 @@ function reasonArea(reason: HintReason, w: number): { x: number; y: number }[] {
     case "facing":
       // A facing pair names two clues at opposite ends of the same line.
       return [cluePos(reason.clue, w), cluePos(reason.clue2, w), ...lineCells(reason.clue, w)];
+    case "fullLine":
+    case "tallestNearest":
     case "lineFull":
     case "lowerBound":
     case "arrangement":
@@ -586,11 +596,13 @@ function emitPlacement(
   n: number,
   reason: HintReason,
   autoClean: boolean,
+  continues = false,
 ): void {
   steps.push({
     move: { type: "set", x, y, n, pencil: false, autoElim: autoClean },
-    explanation: narrate(reason, n),
+    explanation: narrate(reason, n, continues),
     highlights: { area: reasonArea(reason, w), targets: [{ x, y }], marks: [] },
+    continuesPrevious: continues,
   });
   wGrid[y * w + x] = n;
   wPen[y * w + x] = 0;
@@ -616,11 +628,49 @@ function emitPlacement(
   }
 }
 
+/** An extreme clue that forces (part of) a line outright — the cleanest
+ * deduction on the board, so the planner surfaces it before anything else:
+ *   - clue == w: the line sees every tower, so it must climb `1..w` from the
+ *     clue (cell nearest = 1, farthest = w) — returns every still-empty cell
+ *     with its forced height, to be placed as one ordered journey;
+ *   - clue == 1: the line sees only the tallest, so height w must stand next to
+ *     the clue — returns that single cell.
+ * The board is mistake-free when the planner runs (`hint` refuses otherwise), so
+ * any already-filled cell in such a line is guaranteed to match. Returns the
+ * first applicable clue (full lines preferred), or `null`. */
+function nextExtremeClueLine(
+  clues: Int32Array,
+  wGrid: Uint8Array,
+  w: number,
+): { reason: HintReason; cells: { x: number; y: number; n: number }[] } | null {
+  for (let c = 0; c < 4 * w; c++) {
+    if (clues[c] !== w) continue;
+    const line = lineCells(c, w);
+    const cells: { x: number; y: number; n: number }[] = [];
+    for (let i = 0; i < w; i++) {
+      if (wGrid[line[i].y * w + line[i].x] === 0)
+        cells.push({ x: line[i].x, y: line[i].y, n: i + 1 });
+    }
+    if (cells.length > 0) return { reason: { kind: "fullLine", clue: c, clueVal: w }, cells };
+  }
+  for (let c = 0; c < 4 * w; c++) {
+    if (clues[c] !== 1) continue;
+    const cell = lineCells(c, w)[0];
+    if (wGrid[cell.y * w + cell.x] === 0)
+      return {
+        reason: { kind: "tallestNearest", clue: c, clueVal: 1 },
+        cells: [{ x: cell.x, y: cell.y, n: w }],
+      };
+  }
+  return null;
+}
+
 /** Build the hint plan by walking a working copy of the board the way a person
- * solves it: populate notes if needed, then repeatedly take the most natural
- * next move — a naked single first, else the next clue elimination, else a
- * forced placement. `autoClean` (the auto-pencil preference) decides whether a
- * placement's trivial row/column note eliminations are silent or taught. */
+ * solves it: a naked single first, else a forced extreme-clue line, else the
+ * next clue elimination, else a forced placement (populating notes lazily, after
+ * the note-free forced placements and before the first elimination needs them).
+ * `autoClean` (the auto-pencil preference) decides whether a placement's trivial
+ * row/column note eliminations are silent or taught. */
 function buildSteps(
   state: TowersState,
   autoClean: boolean,
@@ -631,7 +681,13 @@ function buildSteps(
   const wPen = Int32Array.from(state.pencil);
   const maxdiff = Math.min(diffToLevel(state.diff), DIFF_EXTREME);
 
-  if (anyEmptyLacksNotes(state)) {
+  // Populate notes lazily: the forced placements below (extreme-clue lines,
+  // facing pairs) need no notes, so an empty board opens straight on them rather
+  // than on a "pencil everything in" step. We only fill notes the moment an
+  // elimination actually needs something to cross out.
+  let populated = !anyEmptyLacksNotes(state);
+  const ensurePopulated = (): void => {
+    if (populated) return;
     const all = (1 << (w + 1)) - (1 << 1);
     for (let i = 0; i < w * w; i++) if (!wGrid[i]) wPen[i] = all;
     steps.push({
@@ -639,7 +695,8 @@ function buildSteps(
       explanation: POPULATE_TEXT,
       highlights: { area: [], targets: [], marks: [] },
     });
-  }
+    populated = true;
+  };
 
   let ops = recordTowersDeductions(w, state.clues, wGrid, maxdiff);
   const budget = stepBudget("towers hint plan");
@@ -655,7 +712,9 @@ function buildSteps(
     for (let i = 0; i < w * w; i++) if (!wGrid[i]) filled = false;
     if (filled) break;
 
-    // 1. A naked single — the next move a human makes.
+    // 1. A naked single — the next move a human makes. (On an unpopulated board
+    //    there are no notes, so none fire here and we fall through to the
+    //    note-free extreme-clue lines.)
     const ns = nakedSingle(wGrid, wPen, w);
     if (ns) {
       emitPlacement(steps, wGrid, wPen, w, ns.x, ns.y, ns.n, { kind: "single" }, autoClean);
@@ -664,7 +723,30 @@ function buildSteps(
       continue;
     }
 
-    // 2. The next clue elimination (the deduction worth teaching). One firing
+    // 2. An extreme clue forcing (part of) a line outright — the cleanest move
+    //    that needs no notes, so an empty board opens on it. clue == w fills the
+    //    whole line 1..w in order as one journey; clue == 1 places the tallest
+    //    tower next to the clue.
+    const forced = nextExtremeClueLine(state.clues, wGrid, w);
+    if (forced) {
+      forced.cells.forEach((c, j) => {
+        emitPlacement(steps, wGrid, wPen, w, c.x, c.y, c.n, forced.reason, autoClean, j > 0);
+      });
+      ops = recordTowersDeductions(w, state.clues, wGrid, maxdiff);
+      lastStrikeGroup = -1;
+      continue;
+    }
+
+    // 3. The extreme-clue lines are done — pencil in the notes now (once), so
+    //    the eliminations below have something to cross out and are taught
+    //    rather than skipped in favour of bare placements.
+    if (!populated) {
+      ensurePopulated();
+      lastStrikeGroup = -1;
+      continue;
+    }
+
+    // 4. The next clue elimination (the deduction worth teaching). One firing
     //    that rules out several heights is emitted as one journey: the first
     //    height unflagged, each further height a `continuesPrevious` leg.
     const strike = nextClueStrike(ops, wGrid, wPen, w);
@@ -684,7 +766,7 @@ function buildSteps(
       continue;
     }
 
-    // 3. A forced placement (facing clue, or a cube collapse the notes lag).
+    // 5. A forced placement (facing clue, or a cube collapse the notes lag).
     const place = nextPlace(ops, wGrid, w);
     if (place) {
       emitPlacement(

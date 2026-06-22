@@ -31,8 +31,17 @@ export { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE };
 /** Why a Towers-specific deduction forced a candidate change — the premise the
  * hint narrates and highlights. Each carries the driving clue index and value.
  * Combined with {@link LatinReason} (positional/set/forcing) it covers every
- * technique the recording solver can fire. The `kind` fields never collide. */
+ * technique the recording solver can fire. The `kind` fields never collide.
+ *
+ * `fullLine`/`tallestNearest` are *extreme-clue* placements the hint planner
+ * surfaces directly (not via the recording solver): a clue equal to the grid
+ * width sees every tower, forcing the whole line to climb `1..w`; a clue of `1`
+ * sees only the tallest, forcing it next to the clue. */
 export type TowersReason =
+  /** A clue equal to the grid width — the whole line must climb `1..w`. */
+  | { kind: "fullLine"; clue: number; clueVal: number }
+  /** A clue of `1` — the tallest tower must stand next to the clue. */
+  | { kind: "tallestNearest"; clue: number; clueVal: number }
   /** A pair of facing clues summing to `w+1` fixes the tallest tower's spot. */
   | { kind: "facing"; clue: number; clue2: number; clueVal: number }
   /** The clue already sees an increasing run one short of its count, so the
