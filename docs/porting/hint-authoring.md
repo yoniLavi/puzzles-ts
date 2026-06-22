@@ -414,6 +414,21 @@ non-negotiables:
 - **This is orthogonal to rule 3.** The legend governs *premise/element types*;
   equivalent *forced moves* still all share the one target colour. Don't colour two
   cells differently just because they're different cells — only different *types*.
+- **A foreground highlight must contrast with the cell it sits on — never paint the
+  acted-on glyph the same colour as its background fill.** A struck candidate *digit*
+  must stay legible; the first cut filled its *cell* `COL_HINT` (the placement-target
+  fill) *and* drew the digit `COL_HINT`, so it was blue-on-blue and vanished — the
+  candidate read as already-removed, which is exactly the "the hint deleted my note"
+  bug (`fix-stale-hint-step`, owner-reported). The solid `COL_HINT` fill is the
+  *placement*-target colour (a cell with no foreground glyph to hide); a **strike**
+  cell keeps the lighter `COL_HINT_CELL`/normal background, and the struck candidate is
+  drawn in its **normal `COL_PENCIL`** colour with a same-colour **strikethrough line**
+  as the "ruled out" cue (a `COL_HINT` digit *or* line both washed out against the
+  lighter hint background — owner-tuned to full-contrast pencil colour). Filling
+  sidesteps the whole problem by drawing **no digit** on its `COL_HINT` fill; Towers
+  must not, because the struck digit *is* the message. Guard it with a tier-2.5
+  assertion that a strike frame draws **no** `COL_HINT` background rect (only placement
+  frames do) — see `towers-hint.test.ts`.
 
 What each game's hints actually do — copy the matching row when you add a hint to a
 similar game:
@@ -425,7 +440,7 @@ similar game:
 | Unruly | forced cell, blue fill (grow anim only on auto-hint execution) | empty journey siblings → `COL_HINT_CELL` shade; cited premise / pivotal cells → orange `COL_HINT_REF` ring (**one** colour, not the black/white split — its rings land on black cells, a balanced both-colour row, *and* empty windows, so a state-derived colour is ill-defined) |
 | Palisade | forced edge(s), blue `COL_HINT` segments (equivalent edges share it) | region → `COL_HINT_CELL` shade; clue → its drawn digit on the shaded cell |
 | Filling | target square(s), *mild* `COL_HINT` fill, **no digit** | region premise → `COL_HINT_CELL` shade + digit on top |
-| Towers | struck candidate digit(s) `COL_HINT` + cross-through; placement target `COL_HINT` fill | driving **clue cell(s)** *and* their line of sight → `COL_HINT_CELL` shade (clue + sightline read as one premise region; a facing pair shades both clues) |
+| Towers | struck candidate digit(s) `COL_HINT` + cross-through (on a *non*-`COL_HINT` cell so the digit shows); placement target `COL_HINT` fill (no digit to hide) | driving **clue cell(s)** *and* their line of sight → `COL_HINT_CELL` shade (clue + sightline read as one premise region; a facing pair shades both clues) |
 
 Two reusable lessons from the rollout: (1) **teal = "a cited black square", violet =
 "a cited white square"** is a cross-game reading worth preserving — reuse those hues
@@ -750,6 +765,48 @@ collapse to one. Exemplar:
     clue strikes recorded after it. Exemplar: `buildSteps` /
     `firstUnreflectedPlaceIndex` in
     [`towers/index.ts`](../../src/native/games/towers/index.ts).
+- **One firing, multiple struck heights → one step per height, narrated per
+  height.** A clue firing can rule out *different* heights in different cells at
+  once (Towers' lower-bound rule strikes both 4 and 5 along a line). Don't emit
+  that as one `pencilStrike` step: the narration names a single height ("a tower
+  of height 5…") but the cell would show 4 *and* 5 crossed out — a visible
+  contradiction the owner flagged. Group a firing's marks **by struck height**;
+  emit one step per height (narrated with *that* height), and flag the further
+  heights `continuesPrevious` so the firing still reads/auto-plays as one
+  journey. `nextClueStrike`/`buildSteps` in
+  [`towers/index.ts`](../../src/native/games/towers/index.ts); guard:
+  `towers-hint.test.ts` "a strike step never mixes heights".
+- **A kept plan can go stale — implement `refreshHintStep`.** A plan is computed
+  **once** (with the auto-pencil pref baked in) and *kept* while the player
+  follows it. A followed move can have side effects the plan didn't author —
+  most concretely, **the player toggling auto-pencil mid-solve**: a plan built
+  with auto-pencil *off* bakes explicit `continuesPrevious` dup-strike legs, but
+  if the player then turns auto-pencil *on*, a placement silently strikes those
+  same candidates, so the stored strike step (or any later clue strike naming one
+  of them) names notes that are **already gone**. The midend re-displayed the
+  stored step without re-checking it → a hint telling the player to remove
+  something already removed (owner-reported, `fix-stale-hint-step`). The engine
+  guarantee is **validate-at-display**: implement
+  `Game.refreshHintStep(step, state)` — return the step with dead marks dropped
+  (rebuild `highlights` to match), or `null` when it is fully resolved. The
+  `Midend` calls it before every (re-)display and advances past / recomputes
+  resolved steps. Towers' is ~20 lines (filter `pencilStrike` marks to present
+  candidates; a placement step resolved once its cell is filled; populate
+  resolved once every empty cell has notes). Every candidate-elimination game
+  with note-clearing side effects needs one. Cross-game coverage:
+  `engine/hint-resume.test.ts` asserts no plan step is ever a no-op when reached
+  (the intrinsic form); `towers-stale-hint.test.ts` drives the real `Midend`
+  through an auto-pencil flip (the side-effect form).
+- **`hintKeepTrack` is handed the PRE-move state.** The midend classifies a
+  move against the plan *before* applying it (`Midend.processInput`), so `state`
+  is the board the move is about to change — a game that needs the result
+  applies the move itself (Sixteen's slide does `executeMove(state, m)`). For a
+  pencil toggle this means "the candidate is present now" ⇒ the toggle *clears*
+  it (the right strike to follow); an *absent* candidate ⇒ the toggle would
+  re-add it ⇒ off-plan. (Towers once had this inverted, testing post-move state
+  the production path never passes, so following a strike silently dropped the
+  plan instead of keeping it — guard against a unit test that fabricates a
+  timing the midend doesn't use.)
 
 ## 10. Method lesson: probe before trusting a mechanism diagnosis
 

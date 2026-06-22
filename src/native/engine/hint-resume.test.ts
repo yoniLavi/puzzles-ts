@@ -84,6 +84,68 @@ const HINT_GAMES: [string, AnyGame][] = [
 
 const SEEDS = ["hr-a", "hr-b", "hr-c", "hr-d", "hr-e"];
 
+/** A structural key for a game state — typed arrays rendered as plain arrays so
+ * two states compare equal iff every field matches. Used to detect a hint step
+ * that does nothing (a no-op when reached = an intrinsically stale step). */
+function stateKey(s: unknown): string {
+  return JSON.stringify(s, (_k, v) =>
+    ArrayBuffer.isView(v) && !(v instanceof DataView)
+      ? Array.from(v as unknown as ArrayLike<number>)
+      : v instanceof Set
+        ? [...v]
+        : v,
+  );
+}
+
+describe("a kept hint plan never contains a step that does nothing", () => {
+  // The engine guarantees a displayed step is never stale (openspec
+  // `fix-stale-hint-step`). The Towers-specific trigger (auto-pencil resolving a
+  // later step) has its own end-to-end test; this is the cross-game invariant
+  // that catches the *intrinsic* form for every hint game — a plan whose own
+  // steps, replayed in order (the exact-follow path), include one that is
+  // already a no-op when reached. A clean plan means the game has no latent
+  // staleness of this shape.
+  for (const [name, game] of HINT_GAMES) {
+    it(`${name}: every plan step changes the board when reached`, () => {
+      for (const seed of SEEDS) {
+        const params = firstLeaf(game.presets());
+        const { desc, aux } = game.newDesc(params, randomNew(`noop-${name}-${seed}`));
+        let state = game.newState(params, desc);
+        const res = game.hint?.(state, aux);
+        if (!res?.ok) continue; // refusal (e.g. already solved) — nothing to check
+        res.steps.forEach((step, i) => {
+          const after = game.executeMove(state, step.move);
+          expect(
+            stateKey(after) !== stateKey(state),
+            `${name}/${seed}: plan step ${i} is a no-op when reached (stale step)`,
+          ).toBe(true);
+          state = after;
+        });
+      }
+    });
+  }
+});
+
+describe("requesting a hint never mutates the board", () => {
+  // A hint computes and *displays* a plan; it must leave the state untouched —
+  // the player applies a step by following it (or pressing Hint a second time).
+  // (Owner-reported: a Towers hint appeared to delete a pencil note. The note
+  // was intact — a render bug drew the struck candidate invisibly — but the
+  // guarantee is worth asserting directly: `hint()` is pure on the state.)
+  for (const [name, game] of HINT_GAMES) {
+    it(`${name}: hint() leaves the state unchanged`, () => {
+      for (const seed of SEEDS) {
+        const params = firstLeaf(game.presets());
+        const { desc, aux } = game.newDesc(params, randomNew(`pure-${name}-${seed}`));
+        const state = game.newState(params, desc);
+        const before = stateKey(state);
+        game.hint?.(state, aux);
+        expect(stateKey(state), `${name}/${seed}: hint() mutated the state`).toBe(before);
+      }
+    });
+  }
+});
+
 describe("a hint can solve from any mid-game position", () => {
   for (const [name, game] of HINT_GAMES) {
     // Heavy, fixed-seed work (re-solve by following hints move-by-move across

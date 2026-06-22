@@ -17,6 +17,17 @@ Exact reproduction game id (5×5):
 This change is **investigation + fix**: find the root cause and guarantee a
 displayed hint step always reflects the current board.
 
+**Second defect, same symptom (found 2026-06-22 during owner acceptance).** On a
+*fresh* hint the candidate is genuinely present, yet the player still sees it
+"already gone" — because the **render draws the struck candidate invisibly**. A
+strike step flags its cells as hint *targets*, which fills the cell background
+`COL_HINT` (the placement-target blue); the struck candidate *digit* is drawn in
+`COL_HINT` too, so it is blue-on-blue and vanishes. The note is intact (verified:
+`hint()` does not mutate state) but the frame hides it, reading identically to
+the staleness bug. Owner's verbatim diagnosis: a hint should only highlight,
+never change the notes. Reproduction id `5#b64d173663c12fe7b5afb449f8d26c25`.
+Both defects are fixed here; both are guarded by tests.
+
 ## Owner-clarified hint-plan semantics (the constraint the fix must respect)
 
 - A manual move that **exactly follows** the displayed hint **keeps the plan

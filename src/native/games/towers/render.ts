@@ -167,7 +167,13 @@ function drawTile(
   const struck = hint >> 2;
   let bg = tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : COL_BACKGROUND;
   if (hintArea) bg = COL_HINT_CELL;
-  if (hintTarget) bg = COL_HINT;
+  // A solid COL_HINT background is the *placement*-target fill. A strike step
+  // also flags its cells as targets, but their struck candidates are drawn in
+  // COL_HINT too — painting the cell COL_HINT as well would hide the very digit
+  // the hint is crossing out (blue-on-blue). So only fill solid when there is
+  // nothing struck here; a strike cell keeps the lighter evidence/normal
+  // background and the COL_HINT strikethrough digit stays legible against it.
+  if (hintTarget && struck === 0) bg = COL_HINT;
 
   // 3D tower: left + bottom faces, then offset to the top face.
   if (threeD && tile & DF_PLAYAREA && digit) {
@@ -306,6 +312,11 @@ function drawTile(
           const cx = pl + Math.floor((fontsize * (2 * dx + 1)) / 2);
           const cy = pt2 + Math.floor((fontsize * (2 * dy + 1)) / 2);
           const isStruck = (struck & (1 << i)) !== 0;
+          // The struck candidate keeps its normal pencil colour (high contrast,
+          // reads as a real note); the strikethrough line — drawn in the same
+          // COL_PENCIL colour as the digit — is the cue that the hint is ruling
+          // it out. Colouring either against the lighter hint background washed
+          // them out.
           dr.drawText(
             { x: cx, y: cy },
             {
@@ -314,13 +325,13 @@ function drawTile(
               fontType: "variable",
               size: fontsize,
             },
-            isStruck ? COL_HINT : COL_PENCIL,
+            COL_PENCIL,
             String(i),
           );
           // Cross the ruled-out candidate through so the elimination is legible.
           if (isStruck) {
             const r = Math.max(2, Math.floor(fontsize / 3));
-            dr.drawLine({ x: cx - r, y: cy }, { x: cx + r, y: cy }, COL_HINT, 2);
+            dr.drawLine({ x: cx - r, y: cy }, { x: cx + r, y: cy }, COL_PENCIL, 2);
           }
           j++;
         }

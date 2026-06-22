@@ -368,9 +368,18 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       this.afterTransition();
       return true;
     }
+    // Classify the move against the plan with the PRE-move state (the
+    // established `hintKeepTrack` contract — a game may itself apply the
+    // move to reason about its result, e.g. Sixteen's slide), then
+    // re-validate the kept plan against the POST-move state so a later
+    // step the move's side effects already resolved is never shown stale.
+    // `next` is computed once and reused for both the re-validation and
+    // the commit. (Upstream's frontend has no plan; this ordering is ours.)
+    const prev = this.state;
+    const next = this.game.executeMove(prev, move);
     const step = this.currentHintStep;
     if (step !== undefined) {
-      const verdict = this.game.hintKeepTrack?.(move, step, this.state) ?? "off";
+      const verdict = this.game.hintKeepTrack?.(move, step, prev) ?? "off";
       if (verdict === "completed") {
         // The game asserts the post-move state matches the plan's
         // expectation after this step, so the rest stays valid —
@@ -378,21 +387,42 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
         // display hides until the next `hint()` call — unless the
         // next step continues the journey this step previewed
         // ("then to column 5"): that was presented as one hint, so
-        // it stays on screen through its legs.
+        // it stays on screen through its legs. Re-validate first, so a
+        // continuation step the move already resolved (auto-pencil
+        // striking what an explicit `pencilStrike` leg would have) is
+        // skipped rather than shown empty.
         this.advanceHint();
+        this.refreshActiveHint(next);
         this.hintDisplayed = this.currentHintStep?.continuesPrevious === true;
       } else if (verdict === "off") {
         this.clearHint();
+      } else {
+        // "onTrack": keep the current step (the game may have adjusted
+        // its move in place to the remaining distance) — but drop any of
+        // its parts this move's side effects also resolved, and if that
+        // empties the step, advance as if completed.
+        const idxBefore = this.activeHint?.index ?? -1;
+        this.refreshActiveHint(next);
+        this.hintDisplayed =
+          this.activeHint != null && this.activeHint.index === idxBefore
+            ? true
+            : this.currentHintStep?.continuesPrevious === true;
       }
-      // "onTrack": keep the current step (the game may have adjusted
-      // its move in place to the remaining distance).
     }
-    return this.applyMove(move);
+    return this.commitMove(next, move);
   }
 
   private applyMove(move: Move): boolean {
+    return this.commitMove(this.game.executeMove(this.state, move), move);
+  }
+
+  /** Commit an already-computed post-move state to history and run the
+   * transition bookkeeping. Split from `applyMove` so `processInput` can
+   * classify/re-validate the hint plan against `next` *before* the
+   * commit's redraw paints, keeping the displayed step in sync with the
+   * frame. */
+  private commitMove(next: State, move: Move): boolean {
     const prev = this.state;
-    const next = this.game.executeMove(prev, move);
     // A new move after an undo truncates the redo branch (history and
     // the parallel move log stay in lockstep: moveLog[i] is the move
     // that turns history[i] into history[i+1]).
@@ -506,6 +536,36 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     }
   }
 
+  /** Re-validate the stored plan against `state` (the state about to be
+   * displayed) so a displayed step never references already-resolved
+   * work — the engine-level "a displayed hint step is never stale"
+   * guarantee. Drops no-longer-actionable parts of the current step via
+   * the game's `refreshHintStep`, advances past any step that is now
+   * fully resolved, and clears the plan if it drains entirely. A game
+   * without the hook is left untouched (its move types can't be
+   * partially resolved by a sibling move's side effects). */
+  private refreshActiveHint(state: State = this.state): void {
+    if (!this.game.refreshHintStep) return;
+    // Bounded by the plan length: each iteration either settles on a
+    // live step (returns) or advances the index by one.
+    for (let guard = (this.activeHint?.steps.length ?? 0) + 1; guard > 0; guard--) {
+      if (!this.activeHint) return;
+      const step = this.currentHintStep;
+      if (step === undefined) {
+        this.clearHint();
+        return;
+      }
+      const refreshed = this.game.refreshHintStep(step, state);
+      if (refreshed === null) {
+        // Fully resolved by an earlier move's side effects — skip it.
+        this.advanceHint();
+        continue;
+      }
+      if (refreshed !== step) this.activeHint.steps[this.activeHint.index] = refreshed;
+      return;
+    }
+  }
+
   /** Compute and store a fresh plan at index 0. Returns the error
    * message when no plan is available. */
   private computeHintPlan(): string | undefined {
@@ -538,6 +598,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     if (this.advanceHintOnAnimationEnd) {
       this.advanceHintOnAnimationEnd = false;
       this.advanceHint();
+      // Re-validate the now-current step before it is previewed during
+      // the rest period — the executed move's side effects may have
+      // resolved part or all of it (same guarantee as the manual path).
+      this.refreshActiveHint();
       // Single-step mode (the Hint-button stepper): the move has landed,
       // so hide the (now-advanced) plan instead of previewing the next
       // step. The next `hint()` re-shows it — show/apply alternation, one
@@ -555,16 +619,22 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   hint(): string | undefined {
     if (this.activeHint) {
-      // A valid plan is stored: (re-)display its current step, don't
-      // recompute and don't advance — advancing is driven only by
-      // moves (manual or executed), which is what makes "recompute
-      // only when invalidated" hold for the manual flow. A plan
-      // hidden by a manual step completion re-shows here: one hint
-      // per request.
-      this.hintDisplayed = true;
-      this.emitStatusBar();
-      this.requestRedraw();
-      return undefined;
+      // A valid plan is stored: re-validate it against the current state
+      // (a kept plan's later step may have been resolved by a followed
+      // move's side effects), then (re-)display its current step. Don't
+      // recompute or advance otherwise — advancing is driven only by
+      // moves (manual or executed), which is what makes "recompute only
+      // when invalidated" hold for the manual flow. A plan hidden by a
+      // manual step completion re-shows here: one hint per request.
+      this.refreshActiveHint();
+      if (this.activeHint) {
+        this.hintDisplayed = true;
+        this.emitStatusBar();
+        this.requestRedraw();
+        return undefined;
+      }
+      // The re-validation drained the whole plan (every remaining step
+      // was already resolved) — fall through and recompute a fresh one.
     }
     const err = this.computeHintPlan();
     if (err) return err;

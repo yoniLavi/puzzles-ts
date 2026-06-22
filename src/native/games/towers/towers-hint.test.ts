@@ -16,7 +16,7 @@ import {
 import { randomNew } from "../../random/index.ts";
 import { newTowersDesc } from "./generator.ts";
 import { towersGame } from "./index.ts";
-import { COL_HINT, COL_HINT_CELL } from "./render.ts";
+import { COL_HINT, COL_HINT_CELL, COL_PENCIL } from "./render.ts";
 import { type HintReason, recordTowersDeductions } from "./solver.ts";
 import {
   DIFF_EXTREME,
@@ -288,8 +288,11 @@ describe("towers hintKeepTrack", () => {
       // Always strike the *current* first remaining mark (the step shrinks).
       const m = (step.move as Extract<TowersMove, { type: "pencilStrike" }>).marks[0];
       const toggle: TowersMove = { type: "set", x: m.x, y: m.y, n: m.n, pencil: true };
-      cur = towersGame.executeMove(cur, toggle);
+      // `hintKeepTrack` sees the PRE-move state (production passes the state the
+      // move is applied to, before applying it — `Midend.processInput`), so
+      // classify against `cur` *then* advance it.
       const verdict = towersGame.hintKeepTrack?.(toggle, step, cur);
+      cur = towersGame.executeMove(cur, toggle);
       expect(verdict).toBe(k === total - 1 ? "completed" : "onTrack");
     }
     // The journey shrank as it was followed: only the final (just-completed)
@@ -306,14 +309,14 @@ describe("towers hintKeepTrack", () => {
     // A toggle on a cell/candidate the step doesn't target is off-plan.
     const otherN = (m.n % 5) + 1;
     const nonTarget: TowersMove = { type: "set", x: m.x, y: m.y, n: otherN, pencil: true };
-    const after = towersGame.executeMove(state, nonTarget);
-    // Only off if (x,y,otherN) isn't itself one of the marks.
+    // Only off if (x,y,otherN) isn't itself one of the marks. `hintKeepTrack`
+    // sees the PRE-move state (`state`).
     if (
       !(step.move as Extract<TowersMove, { type: "pencilStrike" }>).marks.some(
         (k) => k.x === m.x && k.y === m.y && k.n === otherN,
       )
     ) {
-      expect(towersGame.hintKeepTrack?.(nonTarget, step, after)).toBe("off");
+      expect(towersGame.hintKeepTrack?.(nonTarget, step, state)).toBe("off");
     }
   });
 
@@ -325,6 +328,37 @@ describe("towers hintKeepTrack", () => {
     expect(
       towersGame.hintKeepTrack?.({ ...move, n: (move.n % 5) + 1 }, step, state),
     ).toBe("off");
+  });
+
+  it("a strike step never mixes heights; its narration names the struck height", () => {
+    // A single clue firing can rule out *several* heights (the lower-bound rule
+    // strikes both 4 and 5 along a line). Each height must be its own step so
+    // the narration ("a tower of height 5…") matches what is crossed out — a
+    // step striking 4 *and* 5 while the text says only 5 is the reported bug.
+    // The further heights of one firing are continuation legs of one journey.
+    let checked = 0;
+    let sawJourneyLeg = false;
+    for (let i = 0; i < 30 && checked < 40; i++) {
+      const { st } = gen(5, "easy", `mix-${i}`);
+      const pop = towersGame.executeMove(st, { type: "pencilAll" });
+      const res = towersGame.hint?.(pop);
+      if (!res?.ok) continue;
+      for (const step of res.steps) {
+        const m = step.move as TowersMove;
+        if (m.type !== "pencilStrike") continue;
+        checked++;
+        if (step.continuesPrevious) sawJourneyLeg = true;
+        const heights = new Set(m.marks.map((k) => k.n));
+        expect(heights.size, `step "${step.explanation.slice(0, 48)}" mixes heights`).toBe(1);
+        const n = m.marks[0].n;
+        if (/can see only|none of them puts/.test(step.explanation)) {
+          expect(step.explanation).toContain(`height ${n}`);
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
+    // Multi-height firings exist on these boards, emitted as continuation legs.
+    expect(sawJourneyLeg).toBe(true);
   });
 });
 
@@ -346,6 +380,22 @@ function lowerBoundFrame() {
   throw new Error("no lower-bound frame found in the scanned seeds");
 }
 
+/** Scan seeds for a 5×5 easy board whose populated hint plan contains a `set`
+ * placement step (a facing/forced placement). */
+function facingPlacementFrame() {
+  for (let i = 0; i < 40; i++) {
+    const seed = `fp-${i}`;
+    const { desc } = gen(5, "easy", seed);
+    const id = `5de:${desc}`;
+    const st = newState({ w: 5, diff: "easy" }, desc);
+    const pop = towersGame.executeMove(st, { type: "pencilAll" });
+    const res = towersGame.hint?.(pop);
+    if (!res?.ok) continue;
+    if (res.steps.some((s) => (s.move as TowersMove).type === "set")) return id;
+  }
+  throw new Error("no placement frame found in the scanned seeds");
+}
+
 describe("towers hint render", () => {
   it("a clue-elimination journey shades the line of sight and struck candidates", () => {
     const id = lowerBoundFrame();
@@ -360,17 +410,44 @@ describe("towers hint render", () => {
     expect(hint).toBeDefined();
     expect(hint?.explanation).toMatch(/can see only/);
 
-    // The struck candidates and target carry COL_HINT; the clue line of sight
-    // is shaded COL_HINT_CELL.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
+    // The clue line of sight is shaded COL_HINT_CELL.
     expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(
       true,
     );
-    // The struck pencil digit is crossed through (a COL_HINT line).
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_HINT)).toBe(true);
+    // The struck candidate keeps its normal pencil colour (legible) and is
+    // crossed through with a same-colour (COL_PENCIL) line — the strikethrough,
+    // not a recolour, is the "ruled out" cue (highest contrast against the
+    // lighter hint background).
+    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(true);
+    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(true);
+    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(false);
+    // ...and a strike cell is NOT solid-filled COL_HINT. That fill is the
+    // *placement*-target colour; painting a struck cell with it would hide the
+    // struck digit, making the candidate look already-removed. (Regression:
+    // fix-stale-hint-step — owner-reported "the hint deletes my note". The note
+    // is intact; the frame must show it.)
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(false);
     // Clues are still drawn (text).
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);
 
     expect(recording.ops).toMatchSnapshot();
+  });
+
+  it("a placement step DOES solid-fill its target cell COL_HINT (no struck digit to hide)", () => {
+    // The `struck === 0` guard must still fill a placement target — only strike
+    // cells (which carry COL_HINT digits) skip the solid fill.
+    const id = facingPlacementFrame();
+    const { recording, hint } = renderScenario({
+      game: towersGame,
+      id,
+      defaultBackground: DEFAULT_BACKGROUND,
+      moves: [{ type: "pencilAll" }],
+      showHint: true,
+      hintUntil: (s) => (s.move as TowersMove).type === "set",
+    });
+    expect((hint?.move as TowersMove)?.type).toBe("set");
+    // A placement target is solid COL_HINT, and carries no struck digit/line.
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
+    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_HINT)).toBe(false);
   });
 });

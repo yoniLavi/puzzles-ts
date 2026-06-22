@@ -699,6 +699,122 @@ describe("Midend hint plan lifecycle", () => {
   });
 });
 
+// A displayed hint step is never stale (openspec `fix-stale-hint-step`). The
+// engine-level guarantee: before (re-)displaying a stored step, the midend asks
+// the game's `refreshHintStep` whether parts of it are already resolved and
+// drops/advances past them. Modelled here with the smallest game whose move has
+// a side effect that resolves a *later* plan step (Towers' auto-pencil shape):
+// striking candidate `i` also strikes `i+1`, so the plan [strike 0, strike 1,
+// strike 2] has step 1 resolved out from under it by step 0's side effect.
+interface StrikeState {
+  n: number;
+  struck: number; // bitmask of removed candidates
+}
+type StrikeMove = { type: "strike"; i: number } | { type: "noop" };
+const present = (s: StrikeState, i: number) => (s.struck & (1 << i)) === 0;
+
+function strikeGame(opts: { sideEffect: boolean }): Game<
+  { n: number },
+  StrikeState,
+  StrikeMove,
+  null,
+  { started: boolean }
+> {
+  return {
+    ...(fakeGame as unknown as Game<{ n: number }, StrikeState, StrikeMove, null, { started: boolean }>),
+    id: "__strike__",
+    defaultParams: () => ({ n: 3 }),
+    presets: () => ({ title: "root", params: { n: 3 } }),
+    encodeParams: (p) => `n${p.n}`,
+    decodeParams: (s) => ({ n: Number(/^n(\d+)$/.exec(s)?.[1] ?? 3) }),
+    validateParams: () => null,
+    newDesc: () => ({ desc: "g0-0" }),
+    validateDesc: () => null,
+    newState: (p) => ({ n: p.n, struck: 0 }),
+    newUi: () => null,
+    // button 100+i strikes candidate i directly (no coordinate mapping needed).
+    interpretMove: (_s, _ui, _ds, _p, button) =>
+      button >= 100 ? { type: "strike", i: button - 100 } : { type: "noop" },
+    executeMove: (s, m) => {
+      if (m.type === "noop") return s;
+      let struck = s.struck | (1 << m.i);
+      // The side effect that creates staleness: resolve the next candidate too.
+      if (opts.sideEffect && m.i + 1 < s.n) struck |= 1 << (m.i + 1);
+      return { n: s.n, struck };
+    },
+    status: (s) => (s.struck === (1 << s.n) - 1 ? "solved" : "ongoing"),
+    canSolve: false,
+    solve: undefined,
+    hint: (s) => {
+      const steps = [];
+      for (let i = 0; i < s.n; i++) {
+        if (present(s, i)) {
+          steps.push({
+            move: { type: "strike", i } as StrikeMove,
+            explanation: `Strike candidate ${i}`,
+            // One journey, so the display stays on across legs (Towers' dup chain).
+            continuesPrevious: i > 0,
+          });
+        }
+      }
+      return steps.length ? { ok: true, steps } : { ok: false, error: "done" };
+    },
+    hintKeepTrack: (m, step) =>
+      m.type === "strike" && step.move.type === "strike" && m.i === step.move.i
+        ? "completed"
+        : "off",
+    refreshHintStep: (step, state) =>
+      step.move.type === "strike" && present(state, step.move.i) ? step : null,
+    textFormat: (s) => `struck=${s.struck}`,
+  };
+}
+
+function strikeInternals(m: Midend<{ n: number }, StrikeState, StrikeMove, null, { started: boolean }>) {
+  return m as unknown as { activeHint: { steps: StrikeMove[]; index: number } | null };
+}
+
+describe("Midend re-validates a kept plan (a displayed step is never stale)", () => {
+  it("skips a continuation step a completed move's side effects already resolved", () => {
+    const m = new Midend(strikeGame({ sideEffect: true }));
+    m.newGame();
+    expect(m.hint()).toBeUndefined(); // plan: strike 0,1,2; displays step 0
+    expect((m.activeHintStep()?.move as StrikeMove & { i: number }).i).toBe(0);
+
+    // Strike candidate 0 — its side effect also strikes candidate 1, so the
+    // stored step 1 is now resolved. The midend must advance past it to step 2.
+    expect(m.processInput(0, 0, 100)).toBe(true);
+    const shown = m.activeHintStep();
+    expect(shown, "a kept journey stays displayed across its legs").toBeDefined();
+    expect(
+      (shown?.move as StrikeMove & { i: number }).i,
+      "the stale step (candidate 1, already struck) must be skipped",
+    ).toBe(2);
+  });
+
+  it("without the side effect, the same move keeps the next step live", () => {
+    const m = new Midend(strikeGame({ sideEffect: false }));
+    m.newGame();
+    m.hint();
+    m.processInput(0, 0, 100); // strike 0 only
+    expect((m.activeHintStep()?.move as StrikeMove & { i: number }).i).toBe(1);
+  });
+
+  it("hint() re-show re-validates and recomputes when the kept plan has fully drained", () => {
+    const m = new Midend(strikeGame({ sideEffect: true }));
+    m.newGame();
+    m.hint(); // plan strike 0,1,2
+    // A scripted replay (no hintKeepTrack) strikes 0 and 2 — side effects then
+    // cover 1, so every stored step is resolved but the plan is still stored.
+    m.playMoves([{ type: "strike", i: 0 }]);
+    expect(strikeInternals(m).activeHint, "playMoves leaves the plan untouched").not.toBeNull();
+    m.playMoves([{ type: "strike", i: 2 }]);
+    // The board is now fully solved; re-asking re-validates, finds the drained
+    // plan, and recomputes — which refuses on a solved board.
+    expect(m.hint()).toBe("done");
+    expect(strikeInternals(m).activeHint).toBeNull();
+  });
+});
+
 describe("Midend executeHint plays the stored plan", () => {
   let h: ReturnType<typeof harness>;
   const explanation = () =>

@@ -428,9 +428,9 @@ function narrate(reason: HintReason, n: number): string {
     case "lineFull":
       return `Clue ${reason.clueVal} already sees an increasing run one tower short of its count along this line, so the cell nearest the clue must hold the tallest remaining tower — the shorter heights can't sit there.`;
     case "lowerBound":
-      return `Clue ${reason.clueVal} can see only ${reason.clueVal} towers along this line, so a tower of height ${reason.height} would block the view too early this close to the clue — it can't go here.`;
+      return `Clue ${reason.clueVal} can see only ${reason.clueVal} towers along this line, so a tower of height ${n} would block the view too early this close to the clue — it can't go here.`;
     case "arrangement":
-      return `Trying every way clue ${reason.clueVal} can show exactly ${reason.clueVal} towers along this line, none of them puts this height here — so it must be ruled out.`;
+      return `Trying every way clue ${reason.clueVal} can show exactly ${reason.clueVal} towers along this line, none of them puts a tower of height ${n} here — so it must be ruled out.`;
     case "dup":
       return `A ${reason.n} now sits in this row and column, so a ${reason.n} can't go in any cell they pass through — strike it from these notes.`;
     case "single":
@@ -510,34 +510,47 @@ function firstUnreflectedPlaceIndex(
   return ops.length;
 }
 
-/** The next clue-deduction strike firing (one firing = one step) whose marks
- * are still live in the working notes, considering only eliminations valid
- * against the current grid (those before the solver's first placement). `dup`
- * strikes are excluded — those are placement bookkeeping, handled at placement
- * time, not a deduction to teach. */
+/** The next clue-deduction strike whose marks are still live in the working
+ * notes, considering only eliminations valid against the current grid (those
+ * before the solver's first placement). `dup` strikes are excluded — those are
+ * placement bookkeeping, handled at placement time, not a deduction to teach.
+ *
+ * One returned strike groups only the marks of a single firing that share the
+ * **same struck height** — because the narration names that height ("a tower of
+ * height 5 can't go here"). A firing that rules out *several* heights (a clue's
+ * lower-bound rule can strike both 4 and 5 along its line) would otherwise be
+ * shown as one step crossing out 4 *and* 5 while the text mentions only one,
+ * which reads as a bug. The remaining heights of the same firing come back on
+ * the next call and are emitted as continuation legs of one journey (the caller
+ * links them by `group`). */
 function nextClueStrike(
   ops: HintOp[],
   wGrid: Uint8Array,
   wPen: Int32Array,
   w: number,
-): { marks: { x: number; y: number; n: number }[]; reason: HintReason } | null {
+): { marks: { x: number; y: number; n: number }[]; reason: HintReason; group: number } | null {
   const lim = firstUnreflectedPlaceIndex(ops, wGrid, w);
+  const liveAt = (op: HintOp) =>
+    op.kind === "elim" &&
+    wGrid[op.y * w + op.x] === 0 &&
+    (wPen[op.y * w + op.x] & (1 << op.n)) !== 0;
   let i = 0;
   while (i < lim) {
     const g = ops[i].group;
     const group: HintOp[] = [];
     while (i < lim && ops[i].group === g) group.push(ops[i++]);
-    const reason = group[0].reason;
-    if (reason.kind === "dup") continue;
-    const marks = group
-      .filter(
-        (op) =>
-          op.kind === "elim" &&
-          wGrid[op.y * w + op.x] === 0 &&
-          (wPen[op.y * w + op.x] & (1 << op.n)) !== 0,
-      )
-      .map((op) => ({ x: op.x, y: op.y, n: op.n }));
-    if (marks.length > 0) return { marks, reason };
+    // The firing's still-live, teachable (non-dup) eliminations.
+    const live = group.filter((op) => liveAt(op) && op.reason.kind !== "dup");
+    if (live.length === 0) continue;
+    // Narrate one height at a time: take the first live elim's height and
+    // collect every same-height mark of this firing.
+    const height = live[0].n;
+    const same = live.filter((op) => op.n === height);
+    return {
+      marks: same.map((op) => ({ x: op.x, y: op.y, n: op.n })),
+      reason: same[0].reason,
+      group: g,
+    };
   }
   return null;
 }
@@ -631,6 +644,11 @@ function buildSteps(
   let ops = recordTowersDeductions(w, state.clues, wGrid, maxdiff);
   const budget = stepBudget("towers hint plan");
   const cap = w * w * w * 4 + 4;
+  // The firing whose strike the previous step emitted, so a same-firing strike
+  // of a *different* height continues the journey rather than reading as a new,
+  // unrelated hint. `-1` = no strike pending (a placement resets it, since a new
+  // `ops` recording restarts group numbering).
+  let lastStrikeGroup = -1;
   for (let guard = 0; guard < cap; guard++) {
     budget.tick();
     let filled = true;
@@ -642,22 +660,27 @@ function buildSteps(
     if (ns) {
       emitPlacement(steps, wGrid, wPen, w, ns.x, ns.y, ns.n, { kind: "single" }, autoClean);
       ops = recordTowersDeductions(w, state.clues, wGrid, maxdiff);
+      lastStrikeGroup = -1;
       continue;
     }
 
-    // 2. The next clue elimination (the deduction worth teaching).
+    // 2. The next clue elimination (the deduction worth teaching). One firing
+    //    that rules out several heights is emitted as one journey: the first
+    //    height unflagged, each further height a `continuesPrevious` leg.
     const strike = nextClueStrike(ops, wGrid, wPen, w);
     if (strike) {
       steps.push({
         move: { type: "pencilStrike", marks: strike.marks },
-        explanation: narrate(strike.reason, 0),
+        explanation: narrate(strike.reason, strike.marks[0].n),
         highlights: {
           area: reasonArea(strike.reason, w),
           targets: strike.marks.map((m) => ({ x: m.x, y: m.y })),
           marks: strike.marks,
         },
+        continuesPrevious: strike.group === lastStrikeGroup,
       });
       for (const m of strike.marks) wPen[m.y * w + m.x] &= ~(1 << m.n);
+      lastStrikeGroup = strike.group;
       continue;
     }
 
@@ -676,6 +699,7 @@ function buildSteps(
         autoClean,
       );
       ops = recordTowersDeductions(w, state.clues, wGrid, maxdiff);
+      lastStrikeGroup = -1;
       continue;
     }
 
@@ -734,9 +758,11 @@ function hintKeepTrack(
     if (m.type !== "set" || !m.pencil) return "off";
     const hit = sm.marks.findIndex((k) => k.x === m.x && k.y === m.y && k.n === m.n);
     if (hit < 0) return "off"; // touched a non-target candidate
-    // The toggle must have *cleared* it (the post-move state has the bit off);
-    // re-adding a candidate is off-plan.
-    if (state.pencil[m.y * state.w + m.x] & (1 << m.n)) return "off";
+    // `state` is the PRE-move board (the established `hintKeepTrack` contract).
+    // A pencil toggle clears the candidate iff it is present now; if it is
+    // already absent the toggle would *re-add* it — off-plan. (The candidate
+    // being present is exactly what makes the strike the right move to follow.)
+    if (!(state.pencil[m.y * state.w + m.x] & (1 << m.n))) return "off";
     const remaining = sm.marks.filter((_, j) => j !== hit);
     if (remaining.length === 0) return "completed";
     // Shrink the step in place so a later auto-hint strikes only the rest.
@@ -751,6 +777,51 @@ function hintKeepTrack(
     return "onTrack";
   }
   return "off";
+}
+
+/** Re-validate a stored hint step against the current board before it is
+ * (re-)displayed (the engine's "never show a stale step" guarantee). The one
+ * way a kept plan goes stale here: auto-pencil. When the player turns auto-pencil
+ * on, a placement silently strikes the placed height from its row/column, so a
+ * later stored `pencilStrike` step (e.g. the explicit dup leg a plan built with
+ * auto-pencil *off* emitted, or any clue elimination targeting one of those
+ * candidates) names notes that are already gone. Drop dead marks; if none
+ * survive the step is fully resolved (return null → the midend skips it). */
+function refreshHintStep(
+  step: HintStep<TowersMove, TowersHint>,
+  state: TowersState,
+): HintStep<TowersMove, TowersHint> | null {
+  const m = step.move;
+  const w = state.w;
+  if (m.type === "pencilStrike") {
+    const live = m.marks.filter(
+      ({ x, y, n }) =>
+        state.grid[y * w + x] === 0 && (state.pencil[y * w + x] & (1 << n)) !== 0,
+    );
+    if (live.length === 0) return null;
+    if (live.length === m.marks.length) return step;
+    return {
+      ...step,
+      move: { type: "pencilStrike", marks: live },
+      highlights: step.highlights
+        ? { ...step.highlights, targets: live.map((k) => ({ x: k.x, y: k.y })), marks: live }
+        : undefined,
+    };
+  }
+  if (m.type === "set" && !m.pencil) {
+    // A placement step is resolved once its cell is filled (by the player
+    // following it, or any other move). A wrong fill makes the board mistaken
+    // and the next recompute will refuse — advancing past it is harmless.
+    return state.grid[m.y * w + m.x] !== 0 ? null : step;
+  }
+  if (m.type === "pencilAll") {
+    // The populate step is resolved once every empty cell already has notes.
+    for (let i = 0; i < w * w; i++) {
+      if (state.grid[i] === 0 && state.pencil[i] === 0) return step;
+    }
+    return null;
+  }
+  return step;
 }
 
 function flashLength(
@@ -805,6 +876,7 @@ export const towersGame: Game<
   solve,
   hint,
   hintKeepTrack,
+  refreshHintStep,
   findMistakes,
   textFormat,
 

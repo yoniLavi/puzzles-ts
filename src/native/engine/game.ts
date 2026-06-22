@@ -253,6 +253,26 @@ export interface Game<
    * expectation after this step — return `"off"` when in doubt. */
   hintKeepTrack?(m: Move, step: HintStep<Move>, state: State): HintTrackVerdict;
 
+  /** Re-validate a *stored* hint step against the current state right
+   * before the midend (re-)displays it, so a kept plan can never show a
+   * step whose action has already been resolved out from under it. A
+   * move that the plan is following can have side effects the plan
+   * didn't author — most concretely Towers' auto-pencil, which silently
+   * strikes a placed height from its row/column, removing candidates a
+   * *later* stored `pencilStrike` step still names. Return:
+   * - the step **with no-longer-actionable parts dropped** (e.g. a
+   *   `pencilStrike` filtered to candidates still present), rebuilding
+   *   `highlights` to match — return the SAME object reference when
+   *   nothing changed, so the midend can cheaply detect "still live";
+   * - `null` when the step is now **fully** resolved (every part is a
+   *   no-op against the current state) — the midend advances past it,
+   *   recomputing the plan if the whole plan drains.
+   * Pure (no state mutation). Absent ⇒ the game's stored steps are
+   * shown as-is; implement it for any game whose moves can be partially
+   * resolved by another move's side effects (the candidate-elimination
+   * games). */
+  refreshHintStep?(step: HintStep<Move>, state: State): HintStep<Move> | null;
+
   /** Compute the cells of the current state that contradict the
    * puzzle's unique solution — the mistake-checking divergence from
    * upstream. Pure (no state mutation). Returns game-specific highlight
