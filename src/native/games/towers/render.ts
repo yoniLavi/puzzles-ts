@@ -14,6 +14,7 @@
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   checkErrors,
   cluePos,
@@ -208,21 +209,9 @@ function drawTile(
   // erase background
   dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, bg);
 
-  // CapsLock-style "pencil mode is on" indicator: a small diagonal pencil
-  // (blue body + sharpened graphite tip), pointing down-left.
+  // CapsLock-style "pencil mode is on" indicator (shared glyph).
   if (tile & DF_PENCIL_MODE) {
-    const at = (fx: number, fy: number) => ({
-      x: tx + Math.round(ts * fx),
-      y: ty + Math.round(ts * fy),
-    });
-    // body: a crisp yellow parallelogram from the (flat) eraser end to the tip.
-    dr.drawPolygon(
-      [at(0.729, 0.129), at(0.871, 0.271), at(0.463, 0.679), at(0.321, 0.537)],
-      COL_PENCIL_BODY,
-      COL_GRID,
-    );
-    // sharpened graphite point.
-    dr.drawPolygon([at(0.321, 0.537), at(0.463, 0.679), at(0.2, 0.8)], COL_GRID, COL_GRID);
+    drawPencilGlyph(dr, tx, ty, ts, COL_PENCIL_BODY, COL_GRID);
   }
 
   // pencil-mode highlight (top-left triangle)

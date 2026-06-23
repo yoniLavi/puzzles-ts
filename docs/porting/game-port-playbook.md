@@ -131,8 +131,27 @@ then just its own clue deductions (`usersolvers`) + validator + a thin driver
 mapping its difficulty levels onto the `cfg` fields. The cube is indexed
 `(x·o + y)·o + (n−1)`; deductions that read a cube slice are cleanest expressed as a
 line's cell list + `solver.cubeGet(x,y,n)` / `solver.cube[solver.cubepos(x,y,n)] = 0`
-rather than re-deriving C's start/step arithmetic. Exemplar:
-[`towers/solver.ts`](../../src/native/games/towers/solver.ts).
+rather than re-deriving C's start/step arithmetic. Exemplars:
+[`towers/solver.ts`](../../src/native/games/towers/solver.ts) (clue heuristics),
+[`unequal/solver.ts`](../../src/native/games/unequal/solver.ts) (two modes — link
+elimination vs adjacency elimination — dispatched off `ctx.mode`; the optional
+per-recursion `ctxNew` is omitted because the ctx is immutable, exactly as
+upstream's structurally-identical `clone_ctx`).
+
+**Two generator shapes in the family.** Towers *derives* every clue from the full
+square then removes; **Unequal (and Solo/Keen) instead greedily *assemble* clues
+onto a blank board** (`gg_best_clue` picks the clue whose cell has the most
+remaining candidate possibilities, then `game_strip` removes redundant ones). That
+generator reads the solver's *remaining-possibility* counts, so `latinSolver` takes
+an optional `cubeOut?: Uint8Array` that receives the final candidate cube (upstream
+`memcpy(state->hints, solver.cube, …)`); omit it on the solve/hint path. Two
+byte-match traps it surfaced, both §4.4-style "reproduce the quirk verbatim":
+(1) `gg_best_clue` reads `hints[loc*o + j]` with `loc = y*o+x`, a **transposition**
+against the cube's `(x*o+y)*o+n` layout — keep the raw flat read, don't "fix" it to
+`cubeGet`, or the greedy choice (and the desc) diverges; (2) the numeric vs
+inequality clue codes are shuffled in **two separate** `shuffle` calls, in that
+order — reproduce both. Exemplar:
+[`unequal/generator.ts`](../../src/native/games/unequal/generator.ts).
 
 ### 2.3 Pointer coordinates can be fractional
 

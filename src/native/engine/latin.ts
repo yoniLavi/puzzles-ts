@@ -463,6 +463,11 @@ export interface LatinSolverConfig<Ctx> {
    * order. When set, a fixpoint step budget is also installed. Leaving it unset
    * (generator/solve path) keeps that path byte-for-byte unchanged. */
   recorder?: DeductionRecorder;
+  /** Optional `o³` output buffer that receives the final candidate cube
+   * (upstream copies `solver.cube` into `state->hints` after solving). Unequal's
+   * greedy clue-assembly generator reads the remaining-possibility counts off
+   * it; most games omit it. Filled at every non-recursive exit. */
+  cubeOut?: Uint8Array;
 }
 
 function latinSolverTop<Ctx>(solver: LatinSolver, cfg: LatinSolverConfig<Ctx>): number {
@@ -615,14 +620,21 @@ export function latinSolver<Ctx>(
   cfg: LatinSolverConfig<Ctx>,
 ): number {
   const solver = new LatinSolver(o);
-  if (!solver.alloc(grid)) return DIFF_IMPOSSIBLE;
+  if (!solver.alloc(grid)) {
+    if (cfg.cubeOut) cfg.cubeOut.set(solver.cube);
+    return DIFF_IMPOSSIBLE;
+  }
   // Enable recording only *after* alloc, so seeding the cube from the givens
   // (a flurry of `place`s) is not mistaken for deductions the hint should teach.
   if (cfg.recorder) {
     solver.recorder = cfg.recorder;
     solver.budget = stepBudget("towers hint");
   }
-  return latinSolverTop(solver, cfg);
+  const ret = latinSolverTop(solver, cfg);
+  // Expose the final candidate cube (upstream's `memcpy(state->hints, ...)`),
+  // for a generator that grades clues by remaining possibilities (Unequal).
+  if (cfg.cubeOut) cfg.cubeOut.set(solver.cube);
+  return ret;
 }
 
 // --- generator (matching.c / latin.c, RNG-faithful) ------------------------

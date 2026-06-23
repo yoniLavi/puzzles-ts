@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "fixtures": [
+    { "order": 4, "diff": 1, "mode": 0, "seed": "unequal-trace-0", "desc": "0,0D,0,0,0,0,0,0,0R,0,0U,0U,2,0,0,4,", "solverDiff": 1 },
+    { "order": 5, "diff": 0, "mode": 0, "seed": "unequal-trace-1", "desc": "3,0,1,2,0,0,2,0,0,0,1,0,0,0,0,0,0,0,3,0,0,0,2,5,3,", "solverDiff": 0 },
+    { "order": 5, "diff": 1, "mode": 0, "seed": "unequal-trace-2", "desc": "0R,0R,0R,0R,0,0,0D,0,0,0,0,0,4,0,0,0,0,0,3DL,0,0R,0R,0,0,0,", "solverDiff": 1 },
+    { "order": 5, "diff": 2, "mode": 0, "seed": "unequal-trace-3", "desc": "0,0D,0D,0,0L,0,0,0,0,4,0,0,0,0,0,0R,0U,0,0,0D,0,0,0,0,0L,", "solverDiff": 2 },
+    { "order": 5, "diff": 2, "mode": 1, "seed": "unequal-trace-4", "desc": "0D,0D,0R,0DL,0D,0URD,0UDL,0D,0U,2U,0URD,0URL,0URL,0DL,0,0U,0D,0D,0URD,0DL,0R,0UL,0U,0UR,0UL,", "solverDiff": 2 },
+    { "order": 5, "diff": 3, "mode": 0, "seed": "unequal-trace-5", "desc": "0,0D,0,0,3,0D,0RL,0,0U,0,0,0,0L,0L,0,0D,0D,0,0R,0,0,0,0,2,0,", "solverDiff": 3 },
+    { "order": 6, "diff": 2, "mode": 0, "seed": "unequal-trace-6", "desc": "0,0R,3,0D,0D,0,0R,0,0,0L,0,0D,0D,0,0,0U,0,0L,0,0,0,0,0,0L,0R,0U,0,0U,0,0,0R,0,0,0R,0U,5,", "solverDiff": 2 },
+    { "order": 6, "diff": 2, "mode": 1, "seed": "unequal-trace-7", "desc": "0,0RD,0DL,0R,0L,0,0,0UR,0URL,0L,0R,0DL,5,0RD,0L,6,0D,0U,0R,0UDL,0,0,0UR,0DL,0,0U,0D,0,0R,0UL,4,0R,0URL,0L,0R,0L,", "solverDiff": 2 },
+    { "order": 6, "diff": 3, "mode": 0, "seed": "unequal-trace-8", "desc": "0,0RL,0,0R,0,0,0,0,0,0D,0L,0,0,0RD,0D,0,0,0,0,0,0,4,0,0L,0,0,0,0,0L,0U,0U,0L,0U,0R,0,0U,", "solverDiff": 3 },
+    { "order": 7, "diff": 2, "mode": 1, "seed": "unequal-trace-9", "desc": "0RD,0RL,0L,0R,0DL,0,0D,0U,0,0D,2,0U,0,0U,0,0R,0URL,0L,0RD,0RL,0L,0,0RD,0L,0,0UR,0L,0,0R,0UL,0,0D,0R,0DL,0D,0R,0RL,0DL,0U,0,0U,0U,0,0,0UR,0L,0,0,2,", "solverDiff": 2 }
+  ]
+}
