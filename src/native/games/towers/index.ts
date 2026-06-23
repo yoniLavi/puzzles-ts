@@ -40,6 +40,7 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { hiddenSingleLine, singlePlacementReason } from "../../engine/latin-hint.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
@@ -443,6 +444,10 @@ function narrate(reason: HintReason, n: number, continues = false): string {
       return `A tower of height ${reason.n} now sits in this row and column, so we must cross out the ${reason.n} from every other cell they pass through.`;
     case "single":
       return `Every other height has been ruled out in this cell, so it can only be ${n}.`;
+    case "hiddenSingle":
+      return `In this ${reason.line === "row" ? "row" : "column"}, height ${n} can go in only this cell — every other cell in the ${reason.line === "row" ? "row" : "column"} has ruled it out — so it must be ${n}.`;
+    case "forcedSingle":
+      return `Working through this cell's row and column together, only height ${n} can still go here — so it must be ${n}.`;
     case "set":
       return `Another group of cells already accounts for a fixed set of heights that includes ${n}, so we must cross out the ${n} here.`;
     case "forcing":
@@ -465,6 +470,8 @@ function reasonArea(reason: HintReason, w: number): { x: number; y: number }[] {
     case "lowerBound":
     case "arrangement":
       return [cluePos(reason.clue, w), ...lineCells(reason.clue, w)];
+    case "hiddenSingle":
+      return hiddenSingleLine(reason.line, reason.index, w);
     default:
       return [];
   }
@@ -766,20 +773,17 @@ function buildSteps(
       continue;
     }
 
-    // 5. A forced placement (facing clue, or a cube collapse the notes lag).
+    // 5. A forced placement (facing clue, or a cube collapse the notes lag) —
+    // re-derive a generic `single`'s *why* (naked vs hidden single) from the
+    // working board; the recorded reason conflates the two and would mis-narrate
+    // a hidden single. Clue-driven placement reasons are kept as-is.
     const place = nextPlace(ops, wGrid, w);
     if (place) {
-      emitPlacement(
-        steps,
-        wGrid,
-        wPen,
-        w,
-        place.x,
-        place.y,
-        place.n,
-        place.reason,
-        autoClean,
-      );
+      const reason =
+        place.reason.kind === "single"
+          ? singlePlacementReason(wGrid, wPen, place.x, place.y, place.n, w)
+          : place.reason;
+      emitPlacement(steps, wGrid, wPen, w, place.x, place.y, place.n, reason, autoClean);
       ops = recordTowersDeductions(w, state.clues, wGrid, maxdiff);
       lastStrikeGroup = -1;
       continue;

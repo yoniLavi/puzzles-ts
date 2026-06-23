@@ -19,8 +19,10 @@
  */
 
 import {
+  type DeductionRecord,
   DIFF_AMBIGUOUS,
   DIFF_IMPOSSIBLE,
+  type LatinReason,
   type LatinSolver,
   latinSolver,
 } from "../../engine/latin.ts";
@@ -40,6 +42,49 @@ import {
 } from "./state.ts";
 
 export { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE };
+
+/** Why a Keen-specific (cage) deduction ruled a candidate out — the premise the
+ * hint narrates and highlights. Combined with {@link LatinReason} (the generic
+ * positional/set/forcing deductions) it covers every technique the recording
+ * solver fires; the `kind` fields never collide with the Latin reasons.
+ *
+ * `cage` is the EASY/NORMAL per-square pruning: no arrangement of the cage's
+ * digits consistent with its clue leaves this candidate possible in this cell.
+ * `cageLine` is the HARD cross-line pruning: a digit appears in every consistent
+ * layout of the cage somewhere along a row/column, so it is ruled out of the rest
+ * of that line outside the cage (`horizontal` = the line is a row). Both carry the
+ * cage's packed operation/value and its cells (reading order) for narration +
+ * evidence shading. */
+export type KeenReason =
+  | { kind: "cage"; op: number; value: number; cells: { x: number; y: number }[] }
+  | {
+      kind: "cageLine";
+      op: number;
+      value: number;
+      cells: { x: number; y: number }[];
+      horizontal: boolean;
+    }
+  /** A *hidden* single — digit `n` can go in only one cell of a row (`line:
+   * "row"`, `index` = that row's y) or column (`line: "col"`, `index` = that
+   * column's x). Distinct from the generic Latin `single` (a *naked* single,
+   * where a cell's own candidates have collapsed to one): the cell still shows
+   * several candidates, but every *other* cell in the line has ruled `n` out. Not
+   * recorded by the solver (its generic `elim` conflates the two); the hint plan
+   * re-derives it from the working board at placement time. */
+  | { kind: "hiddenSingle"; n: number; line: "row" | "col"; index: number }
+  /** A placement forced by deeper combined deductions whose eliminations the
+   * working notes don't yet reflect (so it is neither a naked nor a clean hidden
+   * single) — narrated honestly without claiming the cell's notes are resolved. */
+  | { kind: "forcedSingle"; n: number };
+
+/** A reason attached to a recorded Keen deduction. */
+export type HintReason = KeenReason | LatinReason;
+
+/** One recorded Keen deduction op (a {@link DeductionRecord} with a narrowed
+ * reason). */
+export interface HintOp extends DeductionRecord {
+  reason: HintReason;
+}
 
 /** Reading-order index of the transposed cell index `s = x·w + y`. */
 function transpose(s: number, w: number): number {
@@ -161,6 +206,20 @@ function solverCommon(solver: LatinSolver, ctx: KeenCtx, diff: number): number {
     const op = clueOp(ctx.clues[box]);
     const sq = (j: number): number => boxlist[sqStart + j];
 
+    // Cage cells in reading order — computed once per cage, on the hint path
+    // only, for narration + evidence shading.
+    let cageCells: { x: number; y: number }[] | null = null;
+    const getCageCells = (): { x: number; y: number }[] => {
+      if (!cageCells) {
+        cageCells = [];
+        for (let k = 0; k < n; k++) {
+          const t = sq(k);
+          cageCells.push({ x: (t / w) | 0, y: t % w });
+        }
+      }
+      return cageCells;
+    };
+
     // Initialise iscratch for this cage.
     if (diff === DIFF_HARD) {
       for (let i = 0; i < 2 * w; i++) iscratch[i] = (1 << (w + 1)) - (1 << 1);
@@ -233,27 +292,62 @@ function solverCommon(solver: LatinSolver, ctx: KeenCtx, diff: number): number {
       for (let i = 0; i < n; i++) {
         for (let j = 1; j <= w; j++) {
           if (cube[sq(i) * w + j - 1] && !(iscratch[i] & (1 << j))) {
+            if (solver.recorder) {
+              const t = sq(i);
+              solver.recorder({
+                kind: "elim",
+                x: (t / w) | 0,
+                y: t % w,
+                n: j,
+                reason: { kind: "cage", op, value, cells: getCageCells() },
+                group: solver.group,
+              });
+            }
             cube[sq(i) * w + j - 1] = 0;
             ret = 1;
           }
         }
       }
+      // On the hint-recording path, return as soon as one cage fires so each
+      // recorded firing (one `solver.group`) covers a single cage — otherwise a
+      // pass would lump several cages' eliminations under one group and a hint
+      // step would narrate one cage while struck marks bled in from another (the
+      // Towers/Unequal "bleed across clues" bug). The generate/solve path (no
+      // recorder) keeps accumulating across cages, byte-identical to the C
+      // reference.
+      if (solver.recorder && ret) return ret;
     } else {
       // HARD: rule a required digit out of the rest of its row/column.
       for (let i = 0; i < 2 * w; i++) {
         const start = i < w ? i * w : i - w;
         const step = i < w ? 1 : w;
+        const horizontal = i >= w; // i<w ⇒ fixed-x column; i≥w ⇒ fixed-y row
+        let lineFired = false;
         for (let j = 1; j <= w; j++) {
           if (iscratch[i] & (1 << j)) {
             for (let k = 0; k < w; k++) {
               const pos = start + k * step;
               if (ctx.whichbox[pos] !== box && cube[pos * w + j - 1]) {
+                if (solver.recorder) {
+                  solver.recorder({
+                    kind: "elim",
+                    x: (pos / w) | 0,
+                    y: pos % w,
+                    n: j,
+                    reason: { kind: "cageLine", op, value, cells: getCageCells(), horizontal },
+                    group: solver.group,
+                  });
+                }
                 cube[pos * w + j - 1] = 0;
                 ret = 1;
+                lineFired = true;
               }
             }
           }
         }
+        // One line's required-digit strike is one firing on the recording path,
+        // so each `cageLine` group narrates a single digit-out-of-one-line.
+        if (solver.recorder && lineFired) return ret;
       }
       // Revert to easier deductions after one cross-box hit, so diagnostics
       // don't make the puzzle look harder than it is.
@@ -339,6 +433,7 @@ export function solveKeen(
   kclues: KeenClues,
   soln: Uint8Array,
   maxdiff: number,
+  recorder?: (rec: DeductionRecord) => void,
 ): number {
   const ctx = buildCtx(w, kclues, maxdiff);
   return latinSolver<KeenCtx>(soln, w, {
@@ -351,5 +446,26 @@ export function solveKeen(
     usersolvers: [solverEasy, solverNormal, solverHard, null, null],
     valid: keenValid,
     ctx,
+    recorder,
   });
+}
+
+/**
+ * Run the recording solver on a sound candidate cube seeded from `grid` (the
+ * placed entries only — never the player's notes), up to `maxdiff`, and return
+ * every candidate elimination and cell placement it makes, in solver order, each
+ * tagged with the rule + premise that forced it. This is the raw deduction script
+ * a hint narrates; the recorder-off path (`solveKeen` without a callback) is
+ * byte-for-byte unchanged. `grid` is treated read-only (a working copy is solved
+ * internally).
+ */
+export function recordKeenDeductions(
+  w: number,
+  kclues: KeenClues,
+  grid: Uint8Array,
+  maxdiff: number,
+): HintOp[] {
+  const ops: HintOp[] = [];
+  solveKeen(w, kclues, grid.slice(), maxdiff, (rec) => ops.push(rec as HintOp));
+  return ops;
 }

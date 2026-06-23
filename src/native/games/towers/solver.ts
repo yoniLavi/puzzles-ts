@@ -51,7 +51,16 @@ export type TowersReason =
   | { kind: "lowerBound"; clue: number; clueVal: number; height: number }
   /** No valid height arrangement giving exactly `clueVal` visible towers puts
    * this height here (the hard exhaustive-arrangement rule). */
-  | { kind: "arrangement"; clue: number; clueVal: number };
+  | { kind: "arrangement"; clue: number; clueVal: number }
+  /** A *hidden* single — height `n` can go in only one cell of a row (`line:
+   * "row"`, `index` = its y) or column (`line: "col"`, `index` = its x), the cell
+   * itself still showing several candidates. Distinct from the generic Latin
+   * `single` (a *naked* single). Re-derived from the working board at placement
+   * time (the recording solver conflates the two under `single`). */
+  | { kind: "hiddenSingle"; n: number; line: "row" | "col"; index: number }
+  /** A placement forced by deeper combined deductions the working notes don't yet
+   * reflect (neither a naked nor a clean hidden single) — narrated honestly. */
+  | { kind: "forcedSingle"; n: number };
 
 /** A reason attached to a recorded Towers deduction. */
 export type HintReason = TowersReason | LatinReason;

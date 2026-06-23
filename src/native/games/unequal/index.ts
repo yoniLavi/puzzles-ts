@@ -33,6 +33,7 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { hiddenSingleLine, singlePlacementReason } from "../../engine/latin-hint.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
@@ -403,6 +404,10 @@ function narrate(reason: HintReason, ns: number[], o: number): string {
         : `With no bar to the cell beside it, this cell must avoid every value one step from it — and ${joinNums(ns)} would clash with a number still open there, so we must cross out ${joinNums(ns)}.`;
     case "single":
       return `Every other number has been ruled out in this cell, so it can only be ${ns[0]}.`;
+    case "hiddenSingle":
+      return `In this ${reason.line === "row" ? "row" : "column"}, ${reason.n} can go in only this cell — every other cell in the ${reason.line === "row" ? "row" : "column"} has ruled it out — so it must be ${reason.n}.`;
+    case "forcedSingle":
+      return `Working through this cell's row and column together, only ${reason.n} can still go here — so it must be ${reason.n}.`;
     case "dup":
       return `There's already a ${reason.n} in this row and column, so we must cross out the ${reason.n} from the other cells they pass through.`;
     case "set":
@@ -575,7 +580,11 @@ function emitPlacement(
   steps.push({
     move: { type: "set", x, y, n, pencil: false, autoElim: autoClean },
     explanation: narrate(reason, [n], o),
-    highlights: { area: [], targets: [{ x, y }], marks: [] },
+    highlights: {
+      area: reason.kind === "hiddenSingle" ? hiddenSingleLine(reason.line, reason.index, o) : [],
+      targets: [{ x, y }],
+      marks: [],
+    },
   });
   wGrid[y * o + x] = n;
   wPen[y * o + x] = 0;
@@ -693,10 +702,14 @@ function buildSteps(
       continue;
     }
 
-    // 5. A forced placement (a cube collapse the notes lag).
+    // 5. A forced placement (a cube collapse the notes lag) — re-derive *why*
+    // (naked vs hidden single) from the working board; the recorded `single`
+    // reason conflates the two and would mis-narrate a hidden single.
     const pl = nextPlace(ops, wGrid, o);
     if (pl) {
-      emitPlacement(steps, wGrid, wPen, o, pl.x, pl.y, pl.n, pl.reason, autoClean);
+      const reason =
+        pl.reason.kind === "single" ? singlePlacementReason(wGrid, wPen, pl.x, pl.y, pl.n, o) : pl.reason;
+      emitPlacement(steps, wGrid, wPen, o, pl.x, pl.y, pl.n, reason, autoClean);
       ops = recordUnequalDeductions(o, state.mode, state.clueFlags, Uint8Array.from(wGrid), maxdiff);
       lastStrikeGroup = Number.NaN;
       continue;

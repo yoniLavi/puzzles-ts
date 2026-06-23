@@ -788,6 +788,44 @@ stale-plan guard (§7.3) all apply here; this section is the pencil-note-*specif
   merely *extra* candidates are ordinary mid-solve state. Check-&-Save inherits the rejection through its
   existing `findMistakes` gate — no quick-save change.
 
+### 9.3a A placement's *why* must be re-derived — the recorded `single` reason lies
+
+The shared `latin.ts` records every forced placement (its generic `elim`) under one
+reason, `{ kind: "single" }` — but `elim` fires on **three** slice kinds: a *cell*
+slice (a genuine **naked single** — the cell's own candidates collapsed to one), a
+*row* slice and a *column* slice (a **hidden single** — digit `n` fits only one cell
+of that line, while the cell itself still shows several candidates). Narrating all of
+them as "every other number has been ruled out in this cell" is **wrong for a hidden
+single**: the player is looking at a cell that visibly still has 1, 2, 3, 4 pencilled
+(owner-flagged on Keen, 2026-06-23). A hidden single must instead name its line —
+*"In this row, 3 can go in only this cell — every other cell in the row has ruled it
+out — so it must be 3"* — and shade the whole row/column as evidence (not the cell
+alone), so the player can *see* that no other cell in the line takes the digit.
+
+**Re-derive the placement reason from the working board at emit time; never trust the
+recorded `single`.** The naked-single *step* already re-derives (it scans the working
+notes for a one-candidate cell), so do the same for the recorded placements
+`nextPlace` surfaces. The shared classifier
+[`engine/latin-hint.ts`](../../src/native/engine/latin-hint.ts) `classifyPlacement`
+returns one of three kinds: **naked** (the cell's notes are exactly `{n}`), **hidden**
+(no other *empty* cell of the row — or the column — still has `n`; only empty cells
+compete, a filled one doesn't block), or **forced** (neither — the notes lag behind a
+deeper set/forcing deduction, so narrate honestly without claiming the cell's notes
+are down to one, rather than lie). `singlePlacementReason` maps those to the
+`single` / `hiddenSingle` / `forcedSingle` reasons every Latin game's narration and
+evidence shading share. Reclassify **only** when the recorded reason is `single` —
+Towers' clue-driven placements (facing, full-line) keep their own reasons. Exemplars:
+the three games' placement sites + `hiddenSingleLine` evidence shading; guards:
+`keen-hint.test.ts` "narrates a hidden single by its line", `latin-hint.test.ts`
+(the classifier), and `hint-resume.test.ts` "a Latin-family placement never falsely
+claims a naked single" (the cross-game regression guard).
+
+> **Shared, not per-game.** This shipped for Towers, Unequal and Keen together
+> (`fix-latin-hidden-single-narration`): a probe had mis-narrated 37/96 Towers and
+> 13/82 Unequal placements (and the Keen case the owner caught) as naked singles; all
+> three now route through the one shared classifier and read 0. Solo / Undead get it
+> for free when they port.
+
 ### 9.3 Solve the way a human does — naked single first, never narrate a Latin trivial
 
 The first cut emitted the raw recorded script and buried the player in trivial "strike this number from
@@ -833,6 +871,20 @@ the rest of its row/column" steps. The fixes, all owner-driven and worth copying
   further heights `continuesPrevious` so the firing still reads/auto-plays as one journey.
   `nextClueStrike`/`buildSteps` in [`towers/index.ts`](../../src/native/games/towers/index.ts); guard:
   `towers-hint.test.ts` "a strike step never mixes heights".
+
+  - **A region/cage firing that spans many cells → split by *cell*, one leg each.** When the firing's premise
+    is a whole *region* (Keen's per-cage candidate pruning: enumerate the cage's clue-consistent layouts, then
+    rule out every cell-candidate no layout uses), one firing legitimately strikes several candidates across
+    several of the cage's cells. Split the firing's live ops **by cell** and emit one leg per cell, each leg
+    narrating "this cell" and highlighting a single target, the legs flagged `continuesPrevious` so the cage's
+    whole implication reads as one journey (the shaded *area* — the whole cage — stays constant across the
+    journey). Within a leg, a value *list* is fine here because the cage narration never names a single value
+    in its premise (Keen: "No way to make this cage multiply to 120 leaves room for 1, 2 and 3 in this cell" —
+    contrast Towers' per-height split, forced because *its* premise says "a tower of height 5"). So the
+    split axis is dictated by the *narration*: split by whatever the premise names singular (Towers: height;
+    Keen: cell). Exemplar: `emitStrikeJourney` + `nextStrike` in
+    [`keen/index.ts`](../../src/native/games/keen/index.ts); guard: `keen-hint.test.ts` "a cage-strike step's
+    marks all lie in one cell".
 
 ---
 

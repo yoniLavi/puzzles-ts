@@ -41,10 +41,11 @@ export const COL_USER = 2;
 export const COL_HIGHLIGHT = 3;
 export const COL_ERROR = 4;
 export const COL_PENCIL = 5;
-// Fork addition: the yellow body of the pencil-mode indicator glyph. Appended
-// past the upstream enum; Keen has no dark-mode paletteOverrides, so this is
-// safe.
-export const COL_PENCIL_BODY = 6;
+// Fork additions, appended past the upstream enum; Keen has no dark-mode
+// paletteOverrides, so a plain append is safe.
+export const COL_PENCIL_BODY = 6; // the yellow body of the pencil-mode indicator
+export const COL_HINT = 7; // the cell(s)/candidate(s) the deduction acts on
+export const COL_HINT_CELL = 8; // the driving cage's cells (evidence shade)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -56,7 +57,22 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = [1, 0, 0];
   out[COL_PENCIL] = [0.5 * bg[0], 0.5 * bg[1], bg[2]];
   out[COL_PENCIL_BODY] = [1, 0.78, 0.17];
+  out[COL_HINT] = [0.62, 0.81, 0.96];
+  out[COL_HINT_CELL] = [0.85, 0.92, 0.99];
   return out;
+}
+
+/** Highlight payload a Keen hint step carries (built in `index.ts`). The
+ * element-type legend (hint-authoring §5.3): the driving cage's cells shaded
+ * `COL_HINT_CELL`, the acted-on cell(s) `COL_HINT`, the ruled-out candidate(s)
+ * shown struck. */
+export interface KeenHint {
+  /** The driving cage's cells (evidence), shaded `COL_HINT_CELL`. */
+  area: { x: number; y: number }[];
+  /** The cell(s) the deduction acts on, marked `COL_HINT`. */
+  targets: { x: number; y: number }[];
+  /** The candidate number(s) ruled out, shown struck among the pencil marks. */
+  marks: { x: number; y: number; n: number }[];
 }
 
 // --- operation symbols (upstream text_fallback first choice) ---------------
@@ -104,6 +120,12 @@ export interface KeenDrawState {
   /** `w²` last-drawn mistake-overlay flags (-1 = never drawn). In the diff key
    * so Check & Save repaints a cell whose tile value is otherwise unchanged. */
   drawnWrong: Int8Array;
+  /** `w²` packed hint overlay (fork addition): bit 0 = target cell, bit 1 =
+   * evidence cell, bits 2.. = struck-candidate mask (`1 << (2 + n)`). In the diff
+   * key via {@link drawnHint} so a hint change repaints affected cells. */
+  hintPacked: Int32Array;
+  /** `w²` last-drawn hint overlay (-1 = never drawn). */
+  drawnHint: Int32Array;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
   pencilModeShown: boolean;
 }
@@ -118,6 +140,8 @@ export function newDrawState(state: KeenState): KeenDrawState {
     errors: new Int32Array(a),
     wrong: new Uint8Array(a),
     drawnWrong: new Int8Array(a).fill(-1),
+    hintPacked: new Int32Array(a),
+    drawnHint: new Int32Array(a).fill(-1),
     pencilModeShown: false,
   };
 }
@@ -137,6 +161,7 @@ function drawTile(
   tile: number,
   onlyOneOp: boolean,
   wrong: boolean,
+  hint: number,
 ): void {
   const ts = ds.tilesize;
   const w = state.params.w;
@@ -144,6 +169,13 @@ function drawTile(
   const { dsf, minimal, clues } = state.clues;
   const cell = y * w + x;
   const drawClue = minimal[cell] === cell;
+
+  // Hint overlay (hint-authoring §5.3): target cell (COL_HINT) > evidence cell
+  // (COL_HINT_CELL) > cursor/flash highlight > background. `struck` is the set of
+  // candidates this firing rules out, drawn crossed through among the marks.
+  const hintTarget = (hint & 1) !== 0;
+  const hintArea = (hint & 2) !== 0;
+  const struck = hint >> 2; // bit n ⇒ candidate n struck
 
   const tx = border(ts) + x * ts + 1 + ge;
   const ty = border(ts) + y * ts + 1 + ge;
@@ -167,11 +199,15 @@ function drawTile(
 
   dr.clip({ x: cx, y: cy, w: cw, h: ch });
 
-  // Background.
-  dr.drawRect(
-    { x: cx, y: cy, w: cw, h: ch },
-    tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : COL_BACKGROUND,
-  );
+  // Background. A solid COL_HINT fill is the *placement*-target fill; a strike
+  // step also flags its cell as a target, but its struck candidates are drawn over
+  // the background, so painting it COL_HINT would wash them out — fill solid only
+  // when nothing is struck here (a placement), else keep the lighter evidence /
+  // normal background so the crossed-through digit stays legible.
+  let bg = tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : COL_BACKGROUND;
+  if (hintArea) bg = COL_HINT_CELL;
+  if (hintTarget && struck === 0) bg = COL_HINT;
+  dr.drawRect({ x: cx, y: cy, w: cw, h: ch }, bg);
 
   // Pencil-mode highlight (top-left triangle).
   if (tile & DF_HIGHLIGHT_PENCIL) {
@@ -281,11 +317,10 @@ function drawTile(
         if (tile & (1 << (i + DF_PENCIL_SHIFT))) {
           const dx = j % pw;
           const dy = (j / pw) | 0;
+          const cx = pl + (((fontsize * (2 * dx + 1)) / 2) | 0);
+          const cy = pt2 + (((fontsize * (2 * dy + 1)) / 2) | 0);
           dr.drawText(
-            {
-              x: pl + (((fontsize * (2 * dx + 1)) / 2) | 0),
-              y: pt2 + (((fontsize * (2 * dy + 1)) / 2) | 0),
-            },
+            { x: cx, y: cy },
             {
               align: "center",
               baseline: "mathematical",
@@ -295,6 +330,12 @@ function drawTile(
             COL_PENCIL,
             String(i),
           );
+          // A hint-ruled-out candidate keeps its normal pencil colour with a
+          // same-colour strikethrough — the "ruled out" cue (hint-authoring §5.3).
+          if (struck & (1 << i)) {
+            const r = Math.max(2, (fontsize / 3) | 0);
+            dr.drawLine({ x: cx - r, y: cy }, { x: cx + r, y: cy }, COL_PENCIL, 2);
+          }
           j++;
         }
       }
@@ -367,7 +408,7 @@ export function redraw(
   ui: KeenUi,
   _animTime: number,
   flashTime: number,
-  _hint?: HintStep<KeenMove>,
+  hint?: HintStep<KeenMove, KeenHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
   if (!ds) return;
@@ -399,6 +440,16 @@ export function redraw(
   ds.wrong.fill(0);
   if (mistakes) for (const m of mistakes) ds.wrong[m.y * w + m.x] = 1;
 
+  // Pack the displayed hint overlay per cell: bit 0 target, bit 1 evidence,
+  // bits 2.. struck candidate (`1 << (2 + n)`).
+  ds.hintPacked.fill(0);
+  const hl = hint?.highlights;
+  if (hl) {
+    for (const a of hl.area) ds.hintPacked[a.y * w + a.x] |= 2;
+    for (const t of hl.targets) ds.hintPacked[t.y * w + t.x] |= 1;
+    for (const m of hl.marks) ds.hintPacked[m.y * w + m.x] |= 1 << (2 + m.n);
+  }
+
   const flash =
     flashTime > 0 && (flashTime <= FLASH_TIME / 3 || flashTime >= (FLASH_TIME * 2) / 3);
 
@@ -412,7 +463,11 @@ export function redraw(
       if (ds.errors[i] & ERR_LATIN) tile |= DF_ERR_LATIN;
       if (ds.errors[i] & ERR_CLUE) tile |= DF_ERR_CLUE;
 
-      if (ds.tiles[i] !== tile || ds.drawnWrong[i] !== ds.wrong[i]) {
+      if (
+        ds.tiles[i] !== tile ||
+        ds.drawnWrong[i] !== ds.wrong[i] ||
+        ds.drawnHint[i] !== ds.hintPacked[i]
+      ) {
         drawTile(
           dr,
           ds,
@@ -422,9 +477,11 @@ export function redraw(
           tile,
           state.params.multiplicationOnly,
           ds.wrong[i] !== 0,
+          ds.hintPacked[i],
         );
         ds.tiles[i] = tile;
         ds.drawnWrong[i] = ds.wrong[i];
+        ds.drawnHint[i] = ds.hintPacked[i];
       }
     }
   }

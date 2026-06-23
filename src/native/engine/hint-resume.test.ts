@@ -24,6 +24,7 @@ import { describe, expect, it } from "vitest";
 import { fillingGame } from "../games/filling/index.ts";
 import { fifteenGame } from "../games/fifteen/index.ts";
 import { floodGame } from "../games/flood/index.ts";
+import { keenGame } from "../games/keen/index.ts";
 import { palisadeGame } from "../games/palisade/index.ts";
 import { rangeGame } from "../games/range/index.ts";
 import { singlesGame } from "../games/singles/index.ts";
@@ -74,6 +75,7 @@ const HINT_GAMES: [string, AnyGame][] = [
   ["filling", fillingGame],
   ["fifteen", fifteenGame],
   ["flood", floodGame],
+  ["keen", keenGame],
   ["palisade", palisadeGame],
   ["range", rangeGame],
   ["singles", singlesGame],
@@ -145,6 +147,48 @@ describe("requesting a hint never mutates the board", () => {
         expect(stateKey(state), `${name}/${seed}: hint() mutated the state`).toBe(before);
       }
     });
+  }
+});
+
+describe("a Latin-family placement never falsely claims a naked single", () => {
+  // The shared `latin.ts` solver records naked and hidden singles under one
+  // `single` reason; a hint must re-derive which (engine/latin-hint.ts) so it never
+  // says "every other number/height has been ruled out in this cell" about a cell
+  // that still visibly shows several candidates (owner-reported on Keen). Walk each
+  // Latin game and assert the naked-single phrasing only ever appears on a cell
+  // whose notes really are down to one candidate.
+  const LATIN: [string, AnyGame][] = [
+    ["towers", towersGame],
+    ["unequal", unequalGame],
+    ["keen", keenGame],
+  ];
+  for (const [name, game] of LATIN) {
+    it(`${name}: "ruled out in this cell" only on a genuine naked single`, () => {
+      for (const seed of SEEDS) {
+        const params = firstLeaf(game.presets());
+        const { desc, aux } = game.newDesc(params, randomNew(`naked-${name}-${seed}`));
+        let state = game.newState(params, desc);
+        // biome-ignore lint/suspicious/noExplicitAny: structural state access.
+        const w = (params as any).w ?? (params as any).order;
+        for (let moves = 0; moves < 2000 && game.status(state) === "ongoing"; moves++) {
+          const res = game.hint?.(state, aux);
+          if (!res?.ok) break;
+          const step = res.steps[0];
+          // biome-ignore lint/suspicious/noExplicitAny: structural move/state access.
+          const m = step.move as any;
+          if (m.type === "set" && !m.pencil && /ruled out in this cell/.test(step.explanation)) {
+            // biome-ignore lint/suspicious/noExplicitAny: structural state access.
+            const pen = (state as any).pencil[m.y * w + m.x] as number;
+            const ncand = Array.from({ length: w }, (_, k) => k + 1).filter((n) => pen & (1 << n)).length;
+            expect(
+              ncand,
+              `${name}/${seed}: naked-single narration on a cell with ${ncand} candidates`,
+            ).toBe(1);
+          }
+          state = game.executeMove(state, step.move);
+        }
+      }
+    }, 30_000);
   }
 });
 
