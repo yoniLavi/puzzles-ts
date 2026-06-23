@@ -13,8 +13,9 @@
  */
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import type { UnequalMove } from "./state.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   checkComplete,
@@ -50,9 +51,11 @@ export const COL_PENCIL = 5;
 export const COL_HIGHLIGHT = 6;
 export const COL_LOWLIGHT = 7;
 export const COL_SPENT = COL_LOWLIGHT;
-// Fork addition: the yellow body of the pencil-mode indicator glyph. Appended
-// past the upstream enum; Unequal has no dark-mode paletteOverrides, so safe.
-export const COL_PENCIL_BODY = 8;
+// Fork additions, appended past the upstream enum; Unequal has no dark-mode
+// paletteOverrides, so a plain append is safe.
+export const COL_PENCIL_BODY = 8; // the yellow body of the pencil-mode indicator
+export const COL_HINT = 9; // the cell(s)/candidate(s) the deduction acts on
+export const COL_HINT_CELL = 10; // the driving clue's cells (evidence shade)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
@@ -67,7 +70,22 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_PENCIL_BODY] = [1, 0.78, 0.17];
+  out[COL_HINT] = [0.62, 0.81, 0.96];
+  out[COL_HINT_CELL] = [0.85, 0.92, 0.99];
   return out;
+}
+
+/** Highlight payload an Unequal hint step carries (built in `index.ts`). The
+ * element-type legend (hint-authoring §5.3): the driving clue's cells shaded
+ * `COL_HINT_CELL`, the acted-on cell(s) `COL_HINT`, the ruled-out candidate(s)
+ * shown struck. */
+export interface UnequalHint {
+  /** The driving clue's cells (evidence), shaded `COL_HINT_CELL`. */
+  area: { x: number; y: number }[];
+  /** The cell(s) the deduction acts on, marked `COL_HINT`. */
+  targets: { x: number; y: number }[];
+  /** The candidate number(s) ruled out, shown struck among the pencil marks. */
+  marks: { x: number; y: number; n: number }[];
 }
 
 // --- geometry --------------------------------------------------------------
@@ -106,6 +124,12 @@ export interface UnequalDrawState {
    * via {@link drawnWrong} so Check & Save repaints an already-drawn cell). */
   wrong: Uint8Array;
   drawnWrong: Int8Array;
+  /** `order²` packed hint overlay (fork addition): bit 0 = target cell, bit 1 =
+   * evidence cell, bits 2.. = struck-candidate mask (`1 << (1 + n)`). In the
+   * diff key via {@link drawnHint} so a hint change repaints affected cells. */
+  hintPacked: Int32Array;
+  /** `order²` last-drawn hint overlay (-1 = never drawn). */
+  drawnHint: Int32Array;
   /** `order²` scratch error flags, refilled each redraw by `checkComplete`. */
   errFlags: Int32Array;
   hx: number;
@@ -128,6 +152,8 @@ export function newDrawState(state: UnequalState): UnequalDrawState {
     hints: new Uint8Array(o * o * o).fill(255),
     wrong: new Uint8Array(o * o),
     drawnWrong: new Int8Array(o * o).fill(-1),
+    hintPacked: new Int32Array(o * o),
+    drawnHint: new Int32Array(o * o).fill(-1),
     errFlags: new Int32Array(o * o),
     hx: 0,
     hy: 0,
@@ -294,15 +320,31 @@ function drawCell(
   pencil: number,
   wrong: boolean,
   hflash: boolean,
+  hint: number,
 ): void {
   const o = state.order;
   const ox = coord(x, ts);
   const oy = coord(y, ts);
-  const bg = hflash ? COL_HIGHLIGHT : COL_BACKGROUND;
   const hon = ui.hshow && x === ui.hx && y === ui.hy;
 
-  // Clear the square (full highlight for real-entry selection).
-  dr.drawRect({ x: ox, y: oy, w: ts, h: ts }, hon && !ui.hpencil ? COL_HIGHLIGHT : bg);
+  // Hint overlay (hint-authoring §5.3): target cell (COL_HINT) > evidence cell
+  // (COL_HINT_CELL) > cursor highlight > flash > background. `struck` is the set
+  // of candidates this firing rules out, drawn crossed through among the marks.
+  const hintTarget = (hint & 1) !== 0;
+  const hintArea = (hint & 2) !== 0;
+  const struck = hint >> 2; // bit (2 + n) ⇒ candidate n struck
+  let bg = hflash ? COL_HIGHLIGHT : COL_BACKGROUND;
+  if (hon && !ui.hpencil) bg = COL_HIGHLIGHT;
+  if (hintArea) bg = COL_HINT_CELL;
+  // A solid COL_HINT background is the *placement*-target fill. A strike step
+  // also flags its cell as a target, but its struck candidates are drawn over
+  // the background, so painting it COL_HINT would wash them out — fill solid
+  // only when nothing is struck here (a placement); a strike keeps the lighter
+  // background so the crossed-through digit stays legible.
+  if (hintTarget && struck === 0) bg = COL_HINT;
+
+  // Clear the square.
+  dr.drawRect({ x: ox, y: oy, w: ts, h: ts }, bg);
 
   // Pencil-mode highlight: a top-left triangle.
   if (hon && ui.hpencil) {
@@ -339,7 +381,7 @@ function drawCell(
       n2c(num, o),
     );
   } else {
-    drawHints(dr, ts, o, ox, oy, pencil);
+    drawHints(dr, ts, o, ox, oy, pencil, struck);
   }
 
   // Check & Save mistake overlay (fork addition): an inset red outline.
@@ -348,7 +390,10 @@ function drawCell(
   }
 }
 
-/** Pencil-mark grid (upstream `draw_hints`, stolen from solo). */
+/** Pencil-mark grid (upstream `draw_hints`, stolen from solo). A candidate in
+ * `struck` (bit `1 << n`) is a hint-ruled-out mark, drawn in its normal pencil
+ * colour with a same-colour strikethrough — high-contrast, reads as a real note,
+ * and the line is the "ruled out" cue (hint-authoring §5.3). */
 function drawHints(
   dr: GameDrawing,
   ts: number,
@@ -356,6 +401,7 @@ function drawHints(
   ox: number,
   oy: number,
   pencil: number,
+  struck = 0,
 ): void {
   let nhints = 0;
   for (let i = 0; i < o; i++) if (pencil & (1 << (i + 1))) nhints++;
@@ -374,11 +420,10 @@ function drawHints(
     if (pencil & (1 << (i + 1))) {
       const hx = j % hw;
       const hy = Math.floor(j / hw);
+      const cx = ox + Math.floor(((4 * hx + 3) * ts) / (4 * hw + 2));
+      const cy = oy + Math.floor(((4 * hy + 3) * ts) / (4 * hh + 2));
       dr.drawText(
-        {
-          x: ox + Math.floor(((4 * hx + 3) * ts) / (4 * hw + 2)),
-          y: oy + Math.floor(((4 * hy + 3) * ts) / (4 * hh + 2)),
-        },
+        { x: cx, y: cy },
         {
           align: "center",
           baseline: "mathematical",
@@ -388,6 +433,10 @@ function drawHints(
         COL_PENCIL,
         n2c(i + 1, o),
       );
+      if (struck & (1 << (i + 1))) {
+        const r = Math.max(2, Math.floor(fontsz / 3));
+        dr.drawLine({ x: cx - r, y: cy }, { x: cx + r, y: cy }, COL_PENCIL, 2);
+      }
       j++;
     }
   }
@@ -415,7 +464,7 @@ export function redraw(
   ui: UnequalUi,
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<UnequalMove, UnequalHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
   if (!ds) return;
@@ -435,6 +484,16 @@ export function redraw(
   checkComplete(state, ds.errFlags);
   ds.wrong.fill(0);
   if (mistakes) for (const m of mistakes) ds.wrong[m.y * o + m.x] = 1;
+
+  // Pack the displayed hint overlay per cell: bit 0 target, bit 1 evidence,
+  // bits 2.. struck candidate (`1 << (1 + n)`).
+  ds.hintPacked.fill(0);
+  const hl = hint?.highlights;
+  if (hl) {
+    for (const a of hl.area) ds.hintPacked[a.y * o + a.x] |= 2;
+    for (const t of hl.targets) ds.hintPacked[t.y * o + t.x] |= 1;
+    for (const m of hl.marks) ds.hintPacked[m.y * o + m.x] |= 1 << (2 + m.n);
+  }
 
   const hchanged =
     ds.hx !== ui.hx || ds.hy !== ui.hy || ds.hshow !== ui.hshow || ds.hpencil !== ui.hpencil;
@@ -456,6 +515,7 @@ export function redraw(
       if (ds.nums[i] !== num) stale = true;
       if (ds.flags[i] !== flags) stale = true;
       if (ds.wrong[i] !== ds.drawnWrong[i]) stale = true;
+      if (ds.hintPacked[i] !== ds.drawnHint[i]) stale = true;
       if (num === 0) {
         for (let n = 0; n < o; n++) {
           if (ds.hints[i * o + n] !== ((pencil >> (n + 1)) & 1)) stale = true;
@@ -463,10 +523,24 @@ export function redraw(
       }
 
       if (stale) {
-        drawCell(dr, ts, state, ui, x, y, num, flags, pencil, ds.wrong[i] !== 0, hflash);
+        drawCell(
+          dr,
+          ts,
+          state,
+          ui,
+          x,
+          y,
+          num,
+          flags,
+          pencil,
+          ds.wrong[i] !== 0,
+          hflash,
+          ds.hintPacked[i],
+        );
         ds.nums[i] = num;
         ds.flags[i] = flags;
         ds.drawnWrong[i] = ds.wrong[i];
+        ds.drawnHint[i] = ds.hintPacked[i];
         for (let n = 0; n < o; n++) ds.hints[i * o + n] = (pencil >> (n + 1)) & 1;
       }
     }

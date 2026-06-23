@@ -12,6 +12,9 @@
 import type { Colour, ConfigValues, GameStatus, Point, Size } from "../../../puzzle/types.ts";
 import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   type PresetMenu,
   type SolveResult,
   UI_UPDATE,
@@ -31,6 +34,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
+import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
 import { newUnequalDesc } from "./generator.ts";
 import {
@@ -44,10 +48,14 @@ import {
   redraw,
   setTileSize,
   type UnequalDrawState,
+  type UnequalHint,
 } from "./render.ts";
 import {
   DIFF_AMBIGUOUS,
   DIFF_IMPOSSIBLE,
+  type HintOp,
+  type HintReason,
+  recordUnequalDeductions,
   solveUnequal,
 } from "./solver.ts";
 import {
@@ -56,6 +64,7 @@ import {
   checkComplete,
   cloneState,
   c2n,
+  DIFF_EXTREME,
   DIFF_RECURSIVE,
   decodeParams,
   defaultParams,
@@ -355,6 +364,448 @@ function findMistakes(state: UnequalState): readonly UnequalMistake[] {
   return out;
 }
 
+// --- hint ------------------------------------------------------------------
+
+const POPULATE_TEXT =
+  "Start by pencilling in every candidate number in each empty cell, so the eliminations that follow have something to cross out.";
+
+/** Join a value list for narration: `[3]`→"3", `[1,2]`→"1 and 2",
+ * `[1,2,3]`→"1, 2 and 3". */
+function joinNums(ns: number[]): string {
+  if (ns.length <= 1) return `${ns[0] ?? ""}`;
+  if (ns.length === 2) return `${ns[0]} and ${ns[1]}`;
+  return `${ns.slice(0, -1).join(", ")} and ${ns[ns.length - 1]}`;
+}
+
+/** Narrate *why* a firing is forced (hint-authoring §2): indication → reasoning →
+ * necessity-voice conclusion. `ns` is the struck value list (a placement passes
+ * its single height); `o` is the grid order. Two-mode aware; phrasing reads
+ * correctly at the value extremes (§2.7 — the differ-by-1 clue says "one away from
+ * N", never "N−1 or N+1"; a trivial inequality bound becomes "the smallest/largest
+ * number" rather than the vacuous "no less than 1"). */
+function narrate(reason: HintReason, ns: number[], o: number): string {
+  switch (reason.kind) {
+    case "greater":
+      return reason.bound <= 1
+        ? `The larger side of a greater-than sign can't hold the smallest number, so we must cross out ${joinNums(ns)}.`
+        : `The cell across this greater-than sign can be no less than ${reason.bound}, so this cell must be larger still — we must cross out ${joinNums(ns)}.`;
+    case "lesser":
+      return reason.bound >= o
+        ? `The smaller side of a greater-than sign can't hold the largest number, so we must cross out ${joinNums(ns)}.`
+        : `The cell across this greater-than sign can be no more than ${reason.bound}, so this cell must be smaller still — we must cross out ${joinNums(ns)}.`;
+    case "adjacent":
+      return reason.bar
+        ? `A bar joins this cell to the ${reason.v} beside it, so the two numbers must differ by exactly 1 — this cell can only be one away from ${reason.v}, so we must cross out ${joinNums(ns)}.`
+        : `There's no bar between this cell and the ${reason.v} beside it, so their numbers can't differ by 1 — this cell can't sit one away from ${reason.v}, so we must cross out ${joinNums(ns)}.`;
+    case "adjacentSet":
+      return reason.bar
+        ? `Whatever the cell beside it turns out to be, the bar forces this cell to a value one away from it — and no number still open there leaves room for ${joinNums(ns)} here, so we must cross out ${joinNums(ns)}.`
+        : `With no bar to the cell beside it, this cell must avoid every value one step from it — and ${joinNums(ns)} would clash with a number still open there, so we must cross out ${joinNums(ns)}.`;
+    case "single":
+      return `Every other number has been ruled out in this cell, so it can only be ${ns[0]}.`;
+    case "dup":
+      return `There's already a ${reason.n} in this row and column, so we must cross out the ${reason.n} from the other cells they pass through.`;
+    case "set":
+      return `Another group of cells already accounts for a fixed set of numbers that includes ${joinNums(ns)}, so we must cross out ${joinNums(ns)} here.`;
+    case "forcing":
+      return `Following a chain of two-candidate cells, placing ${ns[0]} here would force a contradiction further along — so we must cross out ${joinNums(ns)}.`;
+  }
+}
+
+/** The deduction's evidence cells to shade `COL_HINT_CELL`: a clue deduction
+ * names the acted-on cell *and* the cell across the sign/bar that constrains it,
+ * so the player sees the pair; the generic Latin techniques have no clean local
+ * area (the struck notes carry the premise). */
+function reasonArea(
+  reason: HintReason,
+  target: { x: number; y: number },
+): { x: number; y: number }[] {
+  switch (reason.kind) {
+    case "greater":
+    case "lesser":
+    case "adjacent":
+    case "adjacentSet":
+      return [target, { x: reason.ox, y: reason.oy }];
+    default:
+      return [];
+  }
+}
+
+/** True iff some empty cell carries no pencil notes — i.e. the board needs a
+ * fill-all populate before the eliminations have anything to cross out. */
+function anyEmptyLacksNotes(state: UnequalState): boolean {
+  for (let i = 0; i < state.order * state.order; i++) {
+    if (state.grid[i] === 0 && state.pencil[i] === 0) return true;
+  }
+  return false;
+}
+
+/** A naked single in the working notes: the first empty cell whose pencil set has
+ * exactly one candidate. On a mistake-free board that lone candidate is the
+ * solution, so placing it is sound — and it is the move a human makes next, so the
+ * hint surfaces it ahead of any further elimination (hint-authoring §9.3). */
+function nakedSingle(
+  wGrid: Int8Array,
+  wPen: Int32Array,
+  o: number,
+): { x: number; y: number; n: number } | null {
+  for (let i = 0; i < o * o; i++) {
+    if (wGrid[i] !== 0 || wPen[i] === 0) continue;
+    if ((wPen[i] & (wPen[i] - 1)) !== 0) continue; // more than one bit set
+    let n = 0;
+    for (let v = 1; v <= o; v++) {
+      if (wPen[i] & (1 << v)) {
+        n = v;
+        break;
+      }
+    }
+    if (n > 0) return { x: i % o, y: (i / o) | 0, n };
+  }
+  return null;
+}
+
+/** The next basic-Latin cleanup: the first filled cell whose value still appears
+ * as a live pencil mark elsewhere in its row or column. Unequal boards carry a
+ * few givens, which `pencilAll` doesn't account for (it fills *all* candidates),
+ * so these row/column duplicates must be taught explicitly (hint-authoring §9.2,
+ * the givens-bearing-Latin opening). Returns one firing — one placed value and
+ * every stray copy of it in its line. */
+function basicLatinStrike(
+  wGrid: Int8Array,
+  wPen: Int32Array,
+  o: number,
+): { px: number; py: number; n: number; marks: { x: number; y: number; n: number }[] } | null {
+  for (let i = 0; i < o * o; i++) {
+    const v = wGrid[i];
+    if (v === 0) continue;
+    const px = i % o;
+    const py = (i / o) | 0;
+    const bit = 1 << v;
+    const marks: { x: number; y: number; n: number }[] = [];
+    for (let k = 0; k < o; k++) {
+      if (k !== px && wGrid[py * o + k] === 0 && wPen[py * o + k] & bit)
+        marks.push({ x: k, y: py, n: v });
+      if (k !== py && wGrid[k * o + px] === 0 && wPen[k * o + px] & bit)
+        marks.push({ x: px, y: k, n: v });
+    }
+    if (marks.length > 0) return { px, py, n: v, marks };
+  }
+  return null;
+}
+
+/** Index of the first recorded placement whose cell is *not yet* on the working
+ * grid: every op before it is valid against the current working grid (placements
+ * before it are already reflected), so a strike there can be surfaced now with a
+ * premise the player's board supports. */
+function firstUnreflectedPlaceIndex(ops: HintOp[], wGrid: Int8Array, o: number): number {
+  for (let i = 0; i < ops.length; i++) {
+    if (ops[i].kind === "place" && wGrid[ops[i].y * o + ops[i].x] === 0) return i;
+  }
+  return ops.length;
+}
+
+/** The next clue-deduction strike whose marks are still live, considering only
+ * eliminations valid against the current grid. `dup` strikes are excluded (those
+ * are placement bookkeeping). One returned strike groups the marks of a single
+ * firing sharing the **same target cell** — so its narration (which names that
+ * cell's relationship) matches the marks. A link's two ends (greater in one cell,
+ * lesser in the other) come back across two calls and are linked as one journey
+ * by the caller's `group` tracking. */
+function nextClueStrike(
+  ops: HintOp[],
+  wGrid: Int8Array,
+  wPen: Int32Array,
+  o: number,
+): { marks: { x: number; y: number; n: number }[]; reason: HintReason; group: number } | null {
+  const lim = firstUnreflectedPlaceIndex(ops, wGrid, o);
+  const liveAt = (op: HintOp) =>
+    op.kind === "elim" &&
+    wGrid[op.y * o + op.x] === 0 &&
+    (wPen[op.y * o + op.x] & (1 << op.n)) !== 0;
+  let i = 0;
+  while (i < lim) {
+    const g = ops[i].group;
+    const group: HintOp[] = [];
+    while (i < lim && ops[i].group === g) group.push(ops[i++]);
+    const live = group.filter((op) => liveAt(op) && op.reason.kind !== "dup");
+    if (live.length === 0) continue;
+    const first = live[0];
+    const same = live.filter((op) => op.x === first.x && op.y === first.y);
+    return {
+      marks: same.map((op) => ({ x: op.x, y: op.y, n: op.n })),
+      reason: first.reason,
+      group: g,
+    };
+  }
+  return null;
+}
+
+/** The next forced placement the recording solver makes whose cell is still empty
+ * — a cube collapse the working notes lag (a hidden single, or a set/forcing
+ * collapse). Unequal has no facing-clue specials, so every placement is a single
+ * collapse. */
+function nextPlace(
+  ops: HintOp[],
+  wGrid: Int8Array,
+  o: number,
+): { x: number; y: number; n: number; reason: HintReason } | null {
+  for (const op of ops) {
+    if (op.kind === "place" && wGrid[op.y * o + op.x] === 0) {
+      return { x: op.x, y: op.y, n: op.n, reason: op.reason };
+    }
+  }
+  return null;
+}
+
+/** Emit a placement step and apply it to the working board, striking the placed
+ * value from the rest of its row and column. With auto-pencil on (`autoClean`)
+ * that cleanup is silent (the move's own `autoElim` does it on the real board);
+ * with it off it becomes an explicit `pencilStrike` journey continuation. */
+function emitPlacement(
+  steps: HintStep<UnequalMove, UnequalHint>[],
+  wGrid: Int8Array,
+  wPen: Int32Array,
+  o: number,
+  x: number,
+  y: number,
+  n: number,
+  reason: HintReason,
+  autoClean: boolean,
+): void {
+  steps.push({
+    move: { type: "set", x, y, n, pencil: false, autoElim: autoClean },
+    explanation: narrate(reason, [n], o),
+    highlights: { area: [], targets: [{ x, y }], marks: [] },
+  });
+  wGrid[y * o + x] = n;
+  wPen[y * o + x] = 0;
+
+  const dupMarks: { x: number; y: number; n: number }[] = [];
+  for (let k = 0; k < o; k++) {
+    if (k !== x && wPen[y * o + k] & (1 << n)) dupMarks.push({ x: k, y, n });
+    if (k !== y && wPen[k * o + x] & (1 << n)) dupMarks.push({ x, y: k, n });
+  }
+  for (const m of dupMarks) wPen[m.y * o + m.x] &= ~(1 << n);
+
+  if (!autoClean && dupMarks.length > 0) {
+    steps.push({
+      move: { type: "pencilStrike", marks: dupMarks },
+      explanation: narrate({ kind: "dup", n, px: x, py: y }, [], o),
+      highlights: { area: [], targets: dupMarks.map((m) => ({ x: m.x, y: m.y })), marks: dupMarks },
+      continuesPrevious: true,
+    });
+  }
+}
+
+/** Build the hint plan by walking a working copy the way a person solves it: a
+ * naked single first; else (after a lazy populate) the basic-Latin row/column
+ * cull a given/placed value forces; else the next clue elimination; else a forced
+ * placement. `autoClean` (the auto-pencil preference) decides whether a
+ * placement's trivial row/column eliminations are silent or taught. */
+function buildSteps(
+  state: UnequalState,
+  autoClean: boolean,
+): HintStep<UnequalMove, UnequalHint>[] {
+  const o = state.order;
+  const steps: HintStep<UnequalMove, UnequalHint>[] = [];
+  const wGrid = Int8Array.from(state.grid);
+  const wPen = Int32Array.from(state.pencil);
+  const maxdiff = Math.min(diffToLevel(state.diff), DIFF_EXTREME);
+
+  let populated = !anyEmptyLacksNotes(state);
+  const ensurePopulated = (): void => {
+    if (populated) return;
+    const all = (1 << (o + 1)) - (1 << 1);
+    for (let i = 0; i < o * o; i++) if (!wGrid[i]) wPen[i] = all;
+    steps.push({
+      move: { type: "pencilAll" },
+      explanation: POPULATE_TEXT,
+      highlights: { area: [], targets: [], marks: [] },
+    });
+    populated = true;
+  };
+
+  let ops = recordUnequalDeductions(o, state.mode, state.clueFlags, Uint8Array.from(wGrid), maxdiff);
+  const budget = stepBudget("unequal hint plan");
+  const cap = o * o * o * 4 + 4;
+  // A counter for my own (non-recorded) basic-Latin firings, kept distinct from
+  // the recording solver's `group` ids so journey linking never confuses them.
+  let myGroup = -1000;
+  // The firing whose strike the previous step emitted, so a same-firing strike of
+  // a *different* cell (a link's other end) continues the journey.
+  let lastStrikeGroup = Number.NaN;
+  for (let guard = 0; guard < cap; guard++) {
+    budget.tick();
+    let filled = true;
+    for (let i = 0; i < o * o; i++) if (!wGrid[i]) filled = false;
+    if (filled) break;
+
+    // 1. A naked single — the next move a human makes.
+    const ns = nakedSingle(wGrid, wPen, o);
+    if (ns) {
+      emitPlacement(steps, wGrid, wPen, o, ns.x, ns.y, ns.n, { kind: "single" }, autoClean);
+      ops = recordUnequalDeductions(o, state.mode, state.clueFlags, Uint8Array.from(wGrid), maxdiff);
+      lastStrikeGroup = Number.NaN;
+      continue;
+    }
+
+    // 2. Pencil in the notes (once) before any elimination needs them.
+    if (!populated) {
+      ensurePopulated();
+      lastStrikeGroup = Number.NaN;
+      continue;
+    }
+
+    // 3. The basic-Latin cull a given/placed value forces in its row and column.
+    const bs = basicLatinStrike(wGrid, wPen, o);
+    if (bs) {
+      myGroup--;
+      steps.push({
+        move: { type: "pencilStrike", marks: bs.marks },
+        explanation: narrate({ kind: "dup", n: bs.n, px: bs.px, py: bs.py }, [], o),
+        highlights: {
+          area: [{ x: bs.px, y: bs.py }],
+          targets: bs.marks.map((m) => ({ x: m.x, y: m.y })),
+          marks: bs.marks,
+        },
+      });
+      for (const m of bs.marks) wPen[m.y * o + m.x] &= ~(1 << m.n);
+      lastStrikeGroup = myGroup;
+      continue;
+    }
+
+    // 4. The next clue elimination (the deduction worth teaching).
+    const cs = nextClueStrike(ops, wGrid, wPen, o);
+    if (cs) {
+      const values = cs.marks.map((m) => m.n).sort((a, b) => a - b);
+      steps.push({
+        move: { type: "pencilStrike", marks: cs.marks },
+        explanation: narrate(cs.reason, values, o),
+        highlights: {
+          area: reasonArea(cs.reason, { x: cs.marks[0].x, y: cs.marks[0].y }),
+          targets: cs.marks.map((m) => ({ x: m.x, y: m.y })),
+          marks: cs.marks,
+        },
+        continuesPrevious: cs.group === lastStrikeGroup,
+      });
+      for (const m of cs.marks) wPen[m.y * o + m.x] &= ~(1 << m.n);
+      lastStrikeGroup = cs.group;
+      continue;
+    }
+
+    // 5. A forced placement (a cube collapse the notes lag).
+    const pl = nextPlace(ops, wGrid, o);
+    if (pl) {
+      emitPlacement(steps, wGrid, wPen, o, pl.x, pl.y, pl.n, pl.reason, autoClean);
+      ops = recordUnequalDeductions(o, state.mode, state.clueFlags, Uint8Array.from(wGrid), maxdiff);
+      lastStrikeGroup = Number.NaN;
+      continue;
+    }
+
+    break; // stuck (e.g. a Recursive board now needing a guess)
+  }
+
+  return steps;
+}
+
+function hint(
+  state: UnequalState,
+  _aux?: string,
+  ui?: UnequalUi,
+): HintResult<UnequalMove, UnequalHint> {
+  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (findMistakes(state).length > 0) {
+    return {
+      ok: false,
+      error: "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+  }
+  const autoClean = ui?.autoPencil ?? true;
+  const steps = buildSteps(state, autoClean);
+  if (steps.length === 0) {
+    return { ok: false, error: "No further move can be deduced from this position." };
+  }
+  return { ok: true, steps };
+}
+
+/** Classify a player move against the displayed hint step. A `pencilAll` matches a
+ * populate step; a real placement matches a `set` step; a pencil toggle that
+ * *clears* one of a strike step's marks shrinks it (`onTrack`) or finishes it
+ * (`completed`). Anything else drops the plan. */
+function hintKeepTrack(
+  m: UnequalMove,
+  step: HintStep<UnequalMove, UnequalHint>,
+  state: UnequalState,
+): HintTrackVerdict {
+  const sm = step.move;
+  const o = state.order;
+  if (sm.type === "pencilAll") return m.type === "pencilAll" ? "completed" : "off";
+  if (sm.type === "set") {
+    return m.type === "set" && !m.pencil && m.x === sm.x && m.y === sm.y && m.n === sm.n
+      ? "completed"
+      : "off";
+  }
+  if (sm.type === "pencilStrike") {
+    // The player strikes a candidate with a pencil toggle (`set { pencil }`).
+    if (m.type !== "set" || !m.pencil) return "off";
+    const hit = sm.marks.findIndex((k) => k.x === m.x && k.y === m.y && k.n === m.n);
+    if (hit < 0) return "off"; // touched a non-target candidate
+    // `state` is the PRE-move board. A pencil toggle clears the candidate iff it
+    // is present now; if already absent the toggle would re-add it — off-plan.
+    if (!(state.pencil[m.y * o + m.x] & (1 << m.n))) return "off";
+    const remaining = sm.marks.filter((_, j) => j !== hit);
+    if (remaining.length === 0) return "completed";
+    step.move = { type: "pencilStrike", marks: remaining };
+    if (step.highlights) {
+      step.highlights = {
+        ...step.highlights,
+        targets: remaining.map((k) => ({ x: k.x, y: k.y })),
+        marks: remaining,
+      };
+    }
+    return "onTrack";
+  }
+  return "off";
+}
+
+/** Re-validate a stored hint step against the current board before it is
+ * (re-)displayed (the engine's "never show a stale step" guarantee). The way a
+ * kept plan goes stale here is auto-pencil: turning it on silently strikes a
+ * placed value from its row/column, so a later stored `pencilStrike` may name
+ * notes already gone. Drop dead marks; if none survive the step is resolved. */
+function refreshHintStep(
+  step: HintStep<UnequalMove, UnequalHint>,
+  state: UnequalState,
+): HintStep<UnequalMove, UnequalHint> | null {
+  const m = step.move;
+  const o = state.order;
+  if (m.type === "pencilStrike") {
+    const live = m.marks.filter(
+      ({ x, y, n }) => state.grid[y * o + x] === 0 && (state.pencil[y * o + x] & (1 << n)) !== 0,
+    );
+    if (live.length === 0) return null;
+    if (live.length === m.marks.length) return step;
+    return {
+      ...step,
+      move: { type: "pencilStrike", marks: live },
+      highlights: step.highlights
+        ? { ...step.highlights, targets: live.map((k) => ({ x: k.x, y: k.y })), marks: live }
+        : undefined,
+    };
+  }
+  if (m.type === "set" && !m.pencil) {
+    // A placement step is resolved once its cell is filled.
+    return state.grid[m.y * o + m.x] !== 0 ? null : step;
+  }
+  if (m.type === "pencilAll") {
+    for (let i = 0; i < o * o; i++) {
+      if (state.grid[i] === 0 && state.pencil[i] === 0) return step;
+    }
+    return null;
+  }
+  return step;
+}
+
 function flashLength(from: UnequalState, to: UnequalState, _dir: number, _ui: UnequalUi): number {
   if (!from.completed && to.completed && !from.cheated && !to.cheated) return FLASH_TIME;
   return 0;
@@ -399,6 +850,9 @@ export const unequalGame: Game<
   status: (s): GameStatus => status(s),
 
   solve,
+  hint,
+  hintKeepTrack,
+  refreshHintStep,
   findMistakes,
   textFormat,
 

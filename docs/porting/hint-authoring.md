@@ -727,9 +727,9 @@ Two testing gotchas worth internalising:
 ## 9. Candidate-elimination (pencil-note) games — Towers exemplar
 
 A game whose signature techniques **narrow a cell's set of possible values** rather than directly
-forcing one (Towers' clue line-of-sight deductions, and Solo / Keen / Unequal / Undead when ported)
-teaches in **pencil-notes** terms: the hint sets and strikes notes, and a placement is the moment a
-cell's notes collapse to one. The general narration rules (§2.6 strike-vs-place voice, §2.7 degenerate
+forcing one (Towers' clue line-of-sight deductions, Unequal's two-mode inequality/adjacency
+eliminations, and Solo / Keen / Undead when ported) teaches in **pencil-notes** terms: the hint
+sets and strikes notes, and a placement is the moment a cell's notes collapse to one. The general narration rules (§2.6 strike-vs-place voice, §2.7 degenerate
 extremes), the engine mechanics (§3 recording off the cube, `hintKeepTrack` pre-move state), and the
 stale-plan guard (§7.3) all apply here; this section is the pencil-note-*specific* machinery. Exemplar:
 [`towers/{solver,index,render}.ts`](../../src/native/games/towers/index.ts) +
@@ -759,7 +759,18 @@ stale-plan guard (§7.3) all apply here; this section is the pencil-note-*specif
   so the hint's start state is the fill-all button the player already knows and the basic Latin
   eliminations are taught honestly rather than baked into the fill; (2) **eliminate** journeys;
   (3) **place** steps. Skip any operation already reflected on the board so a fresh recompute resumes
-  from any mid-game position (§7.1 — `towersGame` is in `hint-resume.test.ts`).
+  from any mid-game position (§7.1 — `towersGame` and `unequalGame` are in `hint-resume.test.ts`).
+- **A givens-bearing Latin game needs a basic-Latin opening — the recorded script won't carry it.** The
+  recording solver enables its recorder *after* `latinSolver.alloc` (so seeding the cube from the givens
+  isn't mistaken for a teachable deduction). Fine for Towers (≈ zero givens), but Unequal carries a few
+  givens, and `pencilAll` fills *every* candidate, so after populate a cell shows a value that the
+  grid-seeded cube already excluded (the given's row/column duplicate) — and the recorded script never
+  strikes it (it was culled, unrecorded, during `alloc`). Don't bake it into a "smart" populate (that's
+  the bake-into-fill §9.2 avoids); instead emit the row/column cull directly in the plan builder as the
+  opening journey *after* populate and *before* the clue eliminations — one `dup`-reasoned `pencilStrike`
+  per placed/given value with live line-duplicates. It re-derives from the current filled cells each
+  recompute, so it stays resume-safe. Exemplar: `basicLatinStrike` in
+  [`unequal/index.ts`](../../src/native/games/unequal/index.ts).
 - **`pencilStrike` — the one-firing-one-step note move.** A `set { pencil }` toggle is *one* cell and
   *not idempotent* (a re-applied strike would re-add the candidate). So add a move that **clears** a list
   of candidate bits atomically (`{ type: "pencilStrike"; marks }`): one firing forcing several strikes is
