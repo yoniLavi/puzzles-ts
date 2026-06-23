@@ -97,12 +97,11 @@
       `vite build`); update the playbook with anything this port surfaced.
 
 ## 8. Owner acceptance (stage 2) — do NOT do before sign-off
-- [ ] 8.1 Owner smoke-tests the TS path (both modes); address parity gaps.
-- [ ] 8.2 Add `TS_PORTED` to unequal in `puzzles/CMakeLists.txt` (drop the
-      `solver(unequal latin.c tree234.c maxflow.c)` line if present); delete
-      `puzzles/unequal.c`, `puzzles/auxiliary/unequal-trace.c`, and its
-      `cliprogram()` line.
-- [ ] 8.3 Rebuild wasm; confirm unequal still in the catalog with no
+- [x] 8.1 Owner smoke-tests the TS path (both modes); address parity gaps.
+- [x] 8.2 Add `TS_PORTED` to unequal in `puzzles/CMakeLists.txt` (drop the
+      `solver(unequal latin.c)` line); delete `puzzles/unequal.c`,
+      `puzzles/auxiliary/unequal-trace.c`, and its `cliprogram()` line.
+- [x] 8.3 Rebuild wasm; confirm unequal still in the catalog with no
       `unequal.wasm`.
-- [ ] 8.4 Archive the change (`openspec archive add-unequal-ts-port --yes`) in
+- [x] 8.4 Archive the change (`openspec archive add-unequal-ts-port --yes`) in
       the same commit as the C deletion.

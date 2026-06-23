@@ -291,10 +291,10 @@ puzzle(undead
 numbers of them can be seen in mirrors.")
 
 puzzle(unequal
+  TS_PORTED  # native-TS port (openspec add-unequal-ts-port); no unequal.c/wasm
   DISPLAYNAME "Unequal"
   DESCRIPTION "Latin square puzzle"
   OBJECTIVE "Complete the latin square in accordance with the > signs.")
-solver(unequal latin.c)
 
 puzzle(unruly
   TS_PORTED  # native-TS port (openspec add-unruly-ts-port); no unruly.c/wasm
