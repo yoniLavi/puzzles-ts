@@ -126,32 +126,62 @@ elimination, forcing chains, guess-and-verify recursion) and the RNG-faithful
 generator (`matching`/`latinGenerate`/`latinGenerateRect`) are ported there once:
 `latinSolver(grid, o, cfg)` with per-game `usersolvers` + a `valid` callback, the
 numeric `DIFF_IMPOSSIBLE/AMBIGUOUS/UNFINISHED = 10/11/12` sentinels. **Towers is the
-first consumer; Solo/Unequal/Keen/Group reuse it.** A Latin game's `solver.ts` is
-then just its own clue deductions (`usersolvers`) + validator + a thin driver
+first consumer; Unequal/Keen reuse it; Solo/Group later.** A Latin game's `solver.ts`
+is then just its own clue deductions (`usersolvers`) + validator + a thin driver
 mapping its difficulty levels onto the `cfg` fields. The cube is indexed
-`(x·o + y)·o + (n−1)`; deductions that read a cube slice are cleanest expressed as a
-line's cell list + `solver.cubeGet(x,y,n)` / `solver.cube[solver.cubepos(x,y,n)] = 0`
-rather than re-deriving C's start/step arithmetic. Exemplars:
+`(x·o + y)·o + (n−1)`; deductions that read a cube slice are usually cleanest
+expressed as a line's cell list + `solver.cubeGet(x,y,n)` /
+`solver.cube[solver.cubepos(x,y,n)] = 0` rather than re-deriving C's start/step
+arithmetic — *but* when the C solver works in a **transposed** index space with dense
+flat reads (Keen's `boxlist`/`whichbox`/`sq` all hold `s = x·w + y`, read as
+`cube[s·w + n−1]` which equals `cubeGet(x,y,n)`), porting the flat reads *verbatim*
+with a clear comment is the lower-risk faithful choice — re-deriving them into
+`cubeGet` is error-prone and would diverge a byte-match differential (same lesson as
+the `gg_best_clue` transposition below). Exemplars:
 [`towers/solver.ts`](../../src/native/games/towers/solver.ts) (clue heuristics),
 [`unequal/solver.ts`](../../src/native/games/unequal/solver.ts) (two modes — link
 elimination vs adjacency elimination — dispatched off `ctx.mode`; the optional
 per-recursion `ctxNew` is omitted because the ctx is immutable, exactly as
-upstream's structurally-identical `clone_ctx`).
+upstream's structurally-identical `clone_ctx`),
+[`keen/solver.ts`](../../src/native/games/keen/solver.ts) (per-cage arithmetic
+deductions; the EASY/NORMAL/HARD `iscratch` accumulation variants + the "revert to
+easier after one cross-box hard hit" early return, all in the transposed cube space).
 
-**Two generator shapes in the family.** Towers *derives* every clue from the full
-square then removes; **Unequal (and Solo/Keen) instead greedily *assemble* clues
-onto a blank board** (`gg_best_clue` picks the clue whose cell has the most
-remaining candidate possibilities, then `game_strip` removes redundant ones). That
-generator reads the solver's *remaining-possibility* counts, so `latinSolver` takes
-an optional `cubeOut?: Uint8Array` that receives the final candidate cube (upstream
+**Three generator shapes in the family.** (1) Towers *derives* every clue from the
+full square then removes. (2) **Unequal (and Solo) greedily *assemble* clues** onto a
+blank board (`gg_best_clue` picks the clue whose cell has the most remaining
+candidate possibilities, then `game_strip` removes redundant ones); that generator
+reads the solver's *remaining-possibility* counts, so `latinSolver` takes an optional
+`cubeOut?: Uint8Array` that receives the final candidate cube (upstream
 `memcpy(state->hints, solver.cube, …)`); omit it on the solve/hint path. Two
 byte-match traps it surfaced, both §4.4-style "reproduce the quirk verbatim":
-(1) `gg_best_clue` reads `hints[loc*o + j]` with `loc = y*o+x`, a **transposition**
+(a) `gg_best_clue` reads `hints[loc*o + j]` with `loc = y*o+x`, a **transposition**
 against the cube's `(x*o+y)*o+n` layout — keep the raw flat read, don't "fix" it to
-`cubeGet`, or the greedy choice (and the desc) diverges; (2) the numeric vs
+`cubeGet`, or the greedy choice (and the desc) diverges; (b) the numeric vs
 inequality clue codes are shuffled in **two separate** `shuffle` calls, in that
 order — reproduce both. Exemplar:
-[`unequal/generator.ts`](../../src/native/games/unequal/generator.ts).
+[`unequal/generator.ts`](../../src/native/games/unequal/generator.ts). (3) **Keen
+*partitions* structurally**, no `cubeOut` needed: `latinGenerate` the solution, place
+dominoes at prob 3/4 then fold remaining singletons into a neighbour under `MAXBLK`,
+choose a balanced mix of cage ops (good vs `<<BAD_SHIFT` candidate buckets), then
+solver-gate on *exactly* the target difficulty (§4.4 — the published cage clues
+depend on the TS solver's verdict matching C). Exemplar:
+[`keen/generator.ts`](../../src/native/games/keen/generator.ts).
+
+**A cage/region game over the shared `Dsf` needs a precomputed minimal-element
+map.** Upstream `dsf_new_min` makes `dsf_canonify` return a class's *smallest-indexed*
+cell, and games that store a per-cage clue at its minimal cell (Keen) or list cages in
+minimal-cell order rely on that identity, not just connectivity. The shared
+[`engine/dsf.ts`](../../src/native/engine/dsf.ts) `Dsf` uses union-by-size and does
+**not** track a minimal element. Don't add a min-dsf variant to the leaf: precompute
+`minimal[i] = smallest j with canonify(j) === canonify(i)` once after all merges (a
+single ascending pass — `buildMinimal` in
+[`keen/state.ts`](../../src/native/games/keen/state.ts)). Correct because generation
+and `parse_block_structure` never read a minimal mid-merge. The minimal element is
+membership-determined, so it is byte-identical regardless of which root union-by-size
+picks — a generator that only uses the dsf for membership + minimal + size is
+byte-match portable on the shared `Dsf` without matching `dsf.c`'s root choice (unlike
+the Filling §4.4 case, which reads `canonify(i)` as an element).
 
 ### 2.3 Pointer coordinates can be fractional
 
@@ -622,7 +652,13 @@ discipline is ~zero.
 Keep the openspec change current as you go (tasks ticked, design decisions
 recorded). The pre-commit gate (`tsc -b --noEmit` → `biome lint` → `vitest run` →
 `vite build`) must be green; the prod build needs `npm run build:wasm` assets
-present. On owner acceptance, do stage 2 (§6) and **archive the change**
+present. **Format only your own files** — `biome lint` (the gate) does *not* apply
+the import-organize assist, so the committed tree carries import-order drift that
+`npm run check` (`biome check --write .`) "fixes" across **70+ unrelated files**,
+producing a huge churn diff that has nothing to do with your port. Scope formatting
+to your port (`biome check --write src/native/games/<game>/`) and confirm the gate
+with `biome lint .`, never a repo-wide `npm run check`. On owner acceptance, do
+stage 2 (§6) and **archive the change**
 (`openspec archive add-<game>-ts-port --yes`) in the same commit as the C deletion.
 See "Keep openspec changes current" in memory and the workflow in
 [`OPENSPEC_AGENTS.md`](../../openspec/OPENSPEC_AGENTS.md).

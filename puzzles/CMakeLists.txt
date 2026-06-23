@@ -115,11 +115,11 @@ puzzle(inertia
   OBJECTIVE "Collect all the gems without running into any of the mines.")
 
 puzzle(keen
+  TS_PORTED  # native-TS port (openspec add-keen-ts-port); no keen.c/wasm
   DISPLAYNAME "Keen"
   DESCRIPTION "Arithmetic Latin square puzzle"
   OBJECTIVE "Complete the latin square in accordance with the \
 arithmetic clues.")
-solver(keen latin.c)
 
 puzzle(lightup
   DISPLAYNAME "Light Up"
