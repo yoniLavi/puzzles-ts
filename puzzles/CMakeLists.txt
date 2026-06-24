@@ -285,6 +285,7 @@ puzzle(twiddle
   OBJECTIVE "Rotate the tiles around themselves to arrange them into order.")
 
 puzzle(undead
+  TS_PORTED  # native-TS port (openspec add-undead-ts-port); no undead.c/wasm
   DISPLAYNAME "Undead"
   DESCRIPTION "Monster-placing puzzle"
   OBJECTIVE "Place ghosts, vampires and zombies so that the right \

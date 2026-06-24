@@ -542,6 +542,37 @@ the C line-by-line. Two adjacent gotchas:
   *last* fall-through too, not only between iterations — a TS `for` won't run it after
   the final body, so replicate it explicitly.
 
+### 4.8 When byte-match is *infeasible*: record order-independent solver verdicts
+
+Byte-match (§4.3) needs a generator that is deterministic *given the seed* all the
+way to the desc. A generator that sorts with **`qsort`** breaks that: `qsort` is
+not stable and its tie-ordering is implementation-defined, so it differs between
+glibc (the native trace harness), musl (the wasm build), and a TS `Array.sort`.
+If the sorted order feeds the desc (Undead sorts equal-length sightlines, then
+seeds unique-solution paths in that order, and the seeded monsters become the
+clue numbers), the desc is **not reproducible byte-for-byte** — not even between
+the native-glibc trace and the shipped wasm. Don't chase it; a TS stable sort is
+all a TS-only game needs (its shared IDs are generated and replayed by TS).
+
+The differential then validates the **solver + codec** instead of the generator:
+the trace harness decodes each C-generated board and records only verdicts that
+are **provably independent of the sort order** — for Undead, *uniquely solvable*,
+*iterative-solver-solved-or-not*, *post-fixpoint ambiguity count*, and the
+*brute-force outcome* (the iterative fixpoint is the intersection of monotone
+per-path constraints, so it and everything reading it are order-invariant; an
+*order-dependent* quantity like "passes to fixpoint" is deliberately **not**
+recorded). The TS test decodes the same descs and asserts its solver reaches the
+identical verdicts. State the byte-match infeasibility (and why) in the port's
+`design.md`. Exemplar: [`undead-trace.c`](../../puzzles/auxiliary/undead-trace.c)
+→ [`undead-differential.test.ts`](../../src/native/games/undead/undead-differential.test.ts),
+design D1.
+
+> Aside (Undead, parity not differential): upstream may compute state it never
+> *renders* — Undead fills `cell_errors` on every move but no draw call reads
+> them (only the count blocks and edge clues turn red). Parity means matching what
+> the C *draws*, so don't invent a red-cell overlay the C never shows; keep the
+> computed-but-unrendered field only if a later feature (a hint) will use it.
+
 ---
 
 ## 5. Tests

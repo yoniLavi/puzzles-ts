@@ -32,6 +32,7 @@ export const TS_PORTED_PUZZLE_IDS: ReadonlySet<string> = new Set([
   "sixteen",
   "towers",
   "twiddle",
+  "undead",
   "unequal",
   "unruly",
   "untangle",

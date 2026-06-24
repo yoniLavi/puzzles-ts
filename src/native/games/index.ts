@@ -25,6 +25,7 @@ import "./singles/index.ts";
 import "./sixteen/index.ts";
 import "./towers/index.ts";
 import "./twiddle/index.ts";
+import "./undead/index.ts";
 import "./unequal/index.ts";
 import "./unruly/index.ts";
 import "./untangle/index.ts";
