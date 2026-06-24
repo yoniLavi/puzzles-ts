@@ -53,6 +53,49 @@ clear:
 
 ---
 
+## 1A. Guess-free generation — the hint's precondition
+
+An explained hint can exist only if the board is **solvable by pure deduction**. A
+hint that falls back on the known solution or a backtracking search isn't teaching a
+*why* — it's revealing the answer (quality-bar rule 1 has nothing to narrate). So
+this is a **generation policy**, not merely a hint policy (owner decision,
+2026-06-24):
+
+- **Every difficulty tier a logic puzzle ships MUST be solvable by its deductive
+  solver with zero guessing**, enforced at *generation* time — a board is accepted
+  only if the deductive solver (no recursion/backtracking) solves it uniquely. Range
+  and Unequal already do this (`range/solver.ts` keeps a board "only if uniquely
+  solvable without any guessing"; `unequal/generator.ts:155` caps assembly below the
+  recursive level).
+- **The one sanctioned exception is a tier explicitly named "Unreasonable".** An
+  Unreasonable preset MAY require guess-and-backtrack, and its hint is correspondingly
+  allowed to be non-deductive on those boards. Towers and Keen ship a `6×6
+  Unreasonable` preset on this basis (`towers/index.ts:115`, `keen/index.ts:110`).
+  **No other tier name** (Easy/Normal/Hard/Tricky/Extreme/…) may require guessing —
+  "Extreme" must still be pure deduction (forcing chains *are* deduction; recursion is
+  not — see §1A note below).
+- **Movement / objective games are out of scope.** Fifteen, Sixteen, Flood and
+  Untangle are always solvable and carry no deductive "why", so their hints are
+  imperative/heuristic by design (§6), and Untangle's `aux`-walk is the sanctioned
+  non-deductive form. The guess-free policy governs *logic puzzles* only.
+
+**The deduction/guessing line:** *single-level forcing* — tentatively fix one cell's
+candidate, run pure propagation, and eliminate the candidate if it forces an immediate
+contradiction — is **deduction** (it's how the Latin family's `Extreme` tier works,
+`DIFF_EXTREME` forcing chains). *Nested* speculation (assume A, then within that assume
+B, …) is **recursion** = guessing = Unreasonable-only.
+
+**Practical consequence when porting/hinting a deductive game:** before writing the
+hint, confirm the generator can't emit a board the deductive solver can't crack at the
+shipped tiers. If it can — e.g. Undead's Normal/Tricky are graded by *how much brute
+force they need* (`undead/generator.ts:316-338`) — then either gate generation to
+deduction-only, strengthen the deductive solver so the hard tier survives guess-free,
+or move the guessing boards under an explicitly-named Unreasonable tier. The normative
+home for this rule is a generation-policy spec requirement (to be added); this note is
+the followable summary.
+
+---
+
 ## 2. Writing the narration
 
 The narration *is* the product value, so most of this guide's hard-won lessons are
