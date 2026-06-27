@@ -18,6 +18,9 @@ import type {
 } from "../../../puzzle/types.ts";
 import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   type PresetMenu,
   type SolveResult,
   UI_UPDATE,
@@ -36,6 +39,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
+import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
 import { newSoloDesc } from "./generator.ts";
 import {
@@ -47,12 +51,21 @@ import {
   PREFERRED_TILE_SIZE,
   redraw,
   type SoloDrawState,
+  type SoloHint,
   setTileSize,
 } from "./render.ts";
-import { solveSolo } from "./solver.ts";
+import {
+  type HintOp,
+  recordSoloDeductions,
+  type SoloReason,
+  type SoloRegion,
+  solveSolo,
+} from "./solver.ts";
 import {
   checkValid,
   cloneState,
+  diag0,
+  diag1,
   DIFF_AMBIGUOUS,
   DIFF_BLOCK,
   DIFF_EXTREME,
@@ -68,6 +81,8 @@ import {
   encodeParams,
   newState,
   newUi,
+  onDiag0,
+  onDiag1,
   type SoloMistake,
   type SoloMove,
   type SoloParams,
@@ -393,6 +408,582 @@ function findMistakes(state: SoloState): readonly SoloMistake[] {
   return out;
 }
 
+// --- hint ------------------------------------------------------------------
+
+const POPULATE_TEXT =
+  "Start by pencilling in every candidate number in each empty cell, so the eliminations that follow have something to cross out.";
+
+/** Join a value list for narration: `[3]`→"3", `[1,2]`→"1 and 2",
+ * `[1,2,3]`→"1, 2 and 3". */
+function joinNums(ns: number[]): string {
+  if (ns.length <= 1) return `${ns[0] ?? ""}`;
+  if (ns.length === 2) return `${ns[0]} and ${ns[1]}`;
+  return `${ns.slice(0, -1).join(", ")} and ${ns[ns.length - 1]}`;
+}
+
+/** A region's cells (reading order) — for evidence shading. */
+function regionCells(region: SoloRegion, state: SoloState): { x: number; y: number }[] {
+  const cr = state.cr;
+  const out: { x: number; y: number }[] = [];
+  switch (region.kind) {
+    case "row":
+      for (let k = 0; k < cr; k++) out.push({ x: k, y: region.index });
+      break;
+    case "col":
+      for (let k = 0; k < cr; k++) out.push({ x: region.index, y: k });
+      break;
+    case "block":
+      for (const c of state.blocks.blocks[region.index]) out.push({ x: c % cr, y: (c / cr) | 0 });
+      break;
+    case "diag0":
+      for (let k = 0; k < cr; k++) {
+        const c = diag0(k, cr);
+        out.push({ x: c % cr, y: (c / cr) | 0 });
+      }
+      break;
+    case "diag1":
+      for (let k = 0; k < cr; k++) {
+        const c = diag1(k, cr);
+        out.push({ x: c % cr, y: (c / cr) | 0 });
+      }
+      break;
+  }
+  return out;
+}
+
+/** The reader-facing name of a region. */
+function regionName(region: SoloRegion): string {
+  switch (region.kind) {
+    case "row":
+      return "row";
+    case "col":
+      return "column";
+    case "block":
+      return "block";
+    case "diag0":
+    case "diag1":
+      return "diagonal";
+  }
+}
+
+/** Re-derive *why* a generic-`single` placement is forced, from the working board
+ * (§9.3a — the recorded `place` carries a bare `single`, conflating naked and
+ * positional/hidden singles): a naked single (the cell's notes collapsed to one),
+ * a hidden single in a row/column/sub-block/diagonal, or a forced single (the
+ * notes lag a deeper deduction). */
+function soloPlacementReason(
+  wGrid: Int8Array,
+  wPen: Int32Array,
+  x: number,
+  y: number,
+  n: number,
+  state: SoloState,
+): SoloReason {
+  const cr = state.cr;
+  const cell = y * cr + x;
+  if (wPen[cell] === 1 << n) return { kind: "single" };
+
+  // A hidden single: no OTHER empty cell of the region still notes `n`.
+  const hiddenIn = (cells: number[]): boolean => {
+    for (const j of cells) {
+      if (j === cell) continue;
+      if (wGrid[j] === 0 && wPen[j] & (1 << n)) return false;
+    }
+    return true;
+  };
+  const line = (build: (k: number) => number): number[] => {
+    const c: number[] = [];
+    for (let k = 0; k < cr; k++) c.push(build(k));
+    return c;
+  };
+
+  if (hiddenIn(line((k) => y * cr + k)))
+    return { kind: "hiddenSingle", n, region: { kind: "row", index: y } };
+  if (hiddenIn(line((k) => k * cr + x)))
+    return { kind: "hiddenSingle", n, region: { kind: "col", index: x } };
+  const b = state.blocks.whichblock[cell];
+  if (hiddenIn(state.blocks.blocks[b]))
+    return { kind: "hiddenSingle", n, region: { kind: "block", index: b } };
+  if (state.xtype) {
+    if (onDiag0(cell, cr) && hiddenIn(line((k) => diag0(k, cr))))
+      return { kind: "hiddenSingle", n, region: { kind: "diag0" } };
+    if (onDiag1(cell, cr) && hiddenIn(line((k) => diag1(k, cr))))
+      return { kind: "hiddenSingle", n, region: { kind: "diag1" } };
+  }
+  return { kind: "forcedSingle", n };
+}
+
+/** Narrate *why* a firing is forced (hint-authoring §2): indication → reasoning →
+ * necessity-voice conclusion. `ns` is the struck value list (a placement passes
+ * its single digit). */
+function narrate(reason: SoloReason, ns: number[]): string {
+  switch (reason.kind) {
+    case "single":
+      return `Every other number has been ruled out in this cell, so it can only be ${ns[0]}.`;
+    case "hiddenSingle": {
+      const r = regionName(reason.region);
+      return `In this ${r}, ${reason.n} can go in only this cell — every other cell in the ${r} has ruled it out — so it must be ${reason.n}.`;
+    }
+    case "forcedSingle":
+      return `Working through this cell's row, column and block together, only ${reason.n} can still go here — so it must be ${reason.n}.`;
+    case "dup":
+      return `A ${reason.n} is already placed in this cell, so it can't repeat in the same row, column or block — cross out the ${reason.n} from these cells.`;
+    case "intersect": {
+      const cName = regionName(reason.confined);
+      const tName = regionName(reason.target);
+      return `In this ${cName}, every cell that can still take ${reason.n} also lies in this ${tName} — so ${reason.n} must sit where they overlap, and is crossed out of the rest of the ${tName}.`;
+    }
+    case "set":
+      return reason.region
+        ? `Another group of cells in this ${regionName(reason.region)} already accounts for a fixed set of numbers that includes ${joinNums(ns)}, so we must cross out ${joinNums(ns)} here.`
+        : `A locked pattern of cells across these lines already accounts for ${joinNums(ns)}, so we must cross out ${joinNums(ns)} here.`;
+    case "forcing":
+      return `Following a chain of forced candidates, placing ${ns[0]} here would lead to a contradiction — so we must cross out ${joinNums(ns)}.`;
+    case "cageSingle":
+      return `The rest of this killer cage is filled in, and the one cell left must bring the cage to its total — so it can only be ${ns[0]}.`;
+    case "cageIntersect":
+      return `These cells must together total ${reason.clue} once the cages within their region are accounted for, and only this cell is left undetermined — so it must be ${ns[0]}.`;
+    case "cageMinMax":
+      return `This killer cage must total ${reason.clue}; the digits its other cells can still hold leave no room for ${joinNums(ns)} here — so cross out ${joinNums(ns)}.`;
+    case "cageSums":
+      return `No way to make this killer cage total ${reason.clue} uses ${joinNums(ns)} in this cell, so cross out ${joinNums(ns)}.`;
+  }
+}
+
+/** The deduction's evidence cells to shade `COL_HINT_CELL`. */
+function reasonArea(reason: SoloReason, state: SoloState): { x: number; y: number }[] {
+  switch (reason.kind) {
+    case "intersect":
+      return regionCells(reason.confined, state);
+    case "set":
+      return reason.region ? regionCells(reason.region, state) : [];
+    case "cageSingle":
+    case "cageIntersect":
+    case "cageMinMax":
+    case "cageSums":
+      return reason.cells;
+    default:
+      return [];
+  }
+}
+
+/** A placement's evidence cells: a hidden single shades the whole region it
+ * reasons over; a killer placement shades its cage; a naked single needs none. */
+function placementArea(reason: SoloReason, state: SoloState): { x: number; y: number }[] {
+  if (reason.kind === "hiddenSingle") return regionCells(reason.region, state);
+  if (reason.kind === "cageSingle" || reason.kind === "cageIntersect") return reason.cells;
+  return [];
+}
+
+/** True iff some empty cell carries no pencil notes — needs a fill-all populate. */
+function anyEmptyLacksNotes(state: SoloState): boolean {
+  const a = state.cr * state.cr;
+  for (let i = 0; i < a; i++) if (state.grid[i] === 0 && state.pencil[i] === 0) return true;
+  return false;
+}
+
+/** A naked single in the working notes: the first empty cell whose pencil set has
+ * exactly one candidate (sound on a mistake-free board — that candidate is the
+ * solution). Surfaced ahead of any elimination (hint-authoring §9.3). */
+function nakedSingle(
+  wGrid: Int8Array,
+  wPen: Int32Array,
+  cr: number,
+): { x: number; y: number; n: number } | null {
+  for (let i = 0; i < cr * cr; i++) {
+    if (wGrid[i] !== 0 || wPen[i] === 0) continue;
+    if ((wPen[i] & (wPen[i] - 1)) !== 0) continue; // more than one bit set
+    for (let v = 1; v <= cr; v++) {
+      if (wPen[i] & (1 << v)) return { x: i % cr, y: (i / cr) | 0, n: v };
+    }
+  }
+  return null;
+}
+
+/** The next basic-region cleanup: the first filled cell whose value still appears
+ * as a live pencil mark elsewhere in its row, column, sub-block or (X) diagonal.
+ * The recording solver culls those during cube-seeding (before recording), so they
+ * are never in the recorded script and must be taught explicitly (hint-authoring
+ * §9.2, the basic-Latin opening generalised to block + diagonals). */
+function basicRegionStrike(
+  wGrid: Int8Array,
+  wPen: Int32Array,
+  state: SoloState,
+): { px: number; py: number; n: number; marks: { x: number; y: number; n: number }[] } | null {
+  const cr = state.cr;
+  const wb = state.blocks.whichblock;
+  for (let i = 0; i < cr * cr; i++) {
+    const v = wGrid[i];
+    if (v === 0) continue;
+    const px = i % cr;
+    const py = (i / cr) | 0;
+    const bit = 1 << v;
+    const home = wb[i];
+    const seen = new Set<number>();
+    const marks: { x: number; y: number; n: number }[] = [];
+    const tryCell = (j: number): void => {
+      if (j !== i && wGrid[j] === 0 && wPen[j] & bit && !seen.has(j)) {
+        seen.add(j);
+        marks.push({ x: j % cr, y: (j / cr) | 0, n: v });
+      }
+    };
+    for (let k = 0; k < cr; k++) {
+      tryCell(py * cr + k); // row
+      tryCell(k * cr + px); // column
+    }
+    for (let j = 0; j < cr * cr; j++) if (wb[j] === home) tryCell(j); // block
+    if (state.xtype) {
+      if (onDiag0(i, cr)) for (let k = 0; k < cr; k++) tryCell(diag0(k, cr));
+      if (onDiag1(i, cr)) for (let k = 0; k < cr; k++) tryCell(diag1(k, cr));
+    }
+    if (marks.length > 0) return { px, py, n: v, marks };
+  }
+  return null;
+}
+
+/** Index of the first recorded placement whose cell is *not yet* on the working
+ * grid — every op before it is valid against the current grid, so a strike there
+ * can be surfaced now (hint-authoring §9.3, the "facing-place buries clue
+ * deductions" gotcha generalised). */
+function firstUnreflectedPlaceIndex(ops: HintOp[], wGrid: Int8Array, cr: number): number {
+  for (let i = 0; i < ops.length; i++) {
+    if (ops[i].kind === "place" && wGrid[ops[i].y * cr + ops[i].x] === 0) return i;
+  }
+  return ops.length;
+}
+
+/** The next deduction-strike *firing* whose marks are still live (one `group` =
+ * one cage/line/region firing); the caller emits it as a journey. */
+function nextStrike(
+  ops: HintOp[],
+  wGrid: Int8Array,
+  wPen: Int32Array,
+  cr: number,
+): HintOp[] | null {
+  const lim = firstUnreflectedPlaceIndex(ops, wGrid, cr);
+  const liveAt = (op: HintOp) =>
+    op.kind === "elim" &&
+    wGrid[op.y * cr + op.x] === 0 &&
+    (wPen[op.y * cr + op.x] & (1 << op.n)) !== 0;
+  let i = 0;
+  while (i < lim) {
+    const g = ops[i].group;
+    const group: HintOp[] = [];
+    while (i < lim && ops[i].group === g) group.push(ops[i++]);
+    const live = group.filter(liveAt);
+    if (live.length === 0) continue;
+    return live;
+  }
+  return null;
+}
+
+/** The next forced placement the recording solver makes whose cell is still empty
+ * — returned whole so the caller can read its (possibly killer) reason. */
+function nextPlace(ops: HintOp[], wGrid: Int8Array, cr: number): HintOp | null {
+  for (const op of ops) {
+    if (op.kind === "place" && wGrid[op.y * cr + op.x] === 0) return op;
+  }
+  return null;
+}
+
+/** Emit one firing's strikes as a journey. A digit-confined firing (`intersect`)
+ * is one multi-cell step (it crosses a single digit from several cells); every
+ * other firing (cage pruning, a region subset) is split by cell — one leg each
+ * narrating "this cell" — so a multi-digit strike never shows a single value
+ * crossed in the wrong place (hint-authoring §9.3). */
+function emitStrikeJourney(
+  steps: HintStep<SoloMove, SoloHint>[],
+  wPen: Int32Array,
+  state: SoloState,
+  groupOps: HintOp[],
+): void {
+  const cr = state.cr;
+  const reason = groupOps[0].reason;
+  const apply = (marks: { x: number; y: number; n: number }[]): void => {
+    for (const m of marks) wPen[m.y * cr + m.x] &= ~(1 << m.n);
+  };
+
+  if (reason.kind === "intersect") {
+    const marks = groupOps.map((op) => ({ x: op.x, y: op.y, n: op.n }));
+    steps.push({
+      move: { type: "pencilStrike", marks },
+      explanation: narrate(reason, [reason.n]),
+      highlights: {
+        area: reasonArea(reason, state),
+        targets: marks.map((m) => ({ x: m.x, y: m.y })),
+        marks,
+      },
+    });
+    apply(marks);
+    return;
+  }
+
+  const byCell = new Map<number, HintOp[]>();
+  for (const op of groupOps) {
+    const key = op.y * cr + op.x;
+    const arr = byCell.get(key);
+    if (arr) arr.push(op);
+    else byCell.set(key, [op]);
+  }
+  let first = true;
+  for (const [key, cellOps] of byCell) {
+    const x = key % cr;
+    const y = (key / cr) | 0;
+    const marks = cellOps.map((op) => ({ x, y, n: op.n }));
+    const values = marks.map((m) => m.n).sort((a, b) => a - b);
+    steps.push({
+      move: { type: "pencilStrike", marks },
+      explanation: narrate(reason, values),
+      highlights: { area: reasonArea(reason, state), targets: [{ x, y }], marks },
+      continuesPrevious: !first,
+    });
+    apply(marks);
+    first = false;
+  }
+}
+
+/** Emit a placement step and apply it, striking the placed value from the rest of
+ * its row, column, sub-block and (X) diagonal. With auto-pencil on (`autoClean`)
+ * that cleanup is silent (the move's own `autoElim` does it); with it off it
+ * becomes an explicit `pencilStrike` journey continuation. */
+function emitPlacement(
+  steps: HintStep<SoloMove, SoloHint>[],
+  wGrid: Int8Array,
+  wPen: Int32Array,
+  state: SoloState,
+  x: number,
+  y: number,
+  n: number,
+  reason: SoloReason,
+  autoClean: boolean,
+): void {
+  const cr = state.cr;
+  steps.push({
+    move: { type: "set", x, y, n, pencil: false, autoElim: autoClean },
+    explanation: narrate(reason, [n]),
+    highlights: { area: placementArea(reason, state), targets: [{ x, y }], marks: [] },
+  });
+  wGrid[y * cr + x] = n;
+  wPen[y * cr + x] = 0;
+
+  // The row/column/block/diagonal copies the placement rules out.
+  const wb = state.blocks.whichblock;
+  const home = wb[y * cr + x];
+  const bit = 1 << n;
+  const seen = new Set<number>();
+  const dupMarks: { x: number; y: number; n: number }[] = [];
+  const tryCell = (j: number): void => {
+    if (j !== y * cr + x && wGrid[j] === 0 && wPen[j] & bit && !seen.has(j)) {
+      seen.add(j);
+      dupMarks.push({ x: j % cr, y: (j / cr) | 0, n });
+    }
+  };
+  for (let k = 0; k < cr; k++) {
+    tryCell(y * cr + k);
+    tryCell(k * cr + x);
+  }
+  for (let j = 0; j < cr * cr; j++) if (wb[j] === home) tryCell(j);
+  if (state.xtype) {
+    const cell = y * cr + x;
+    if (onDiag0(cell, cr)) for (let k = 0; k < cr; k++) tryCell(diag0(k, cr));
+    if (onDiag1(cell, cr)) for (let k = 0; k < cr; k++) tryCell(diag1(k, cr));
+  }
+  for (const m of dupMarks) wPen[m.y * cr + m.x] &= ~bit;
+
+  if (!autoClean && dupMarks.length > 0) {
+    steps.push({
+      move: { type: "pencilStrike", marks: dupMarks },
+      explanation: narrate({ kind: "dup", n, px: x, py: y }, []),
+      highlights: {
+        area: [{ x, y }],
+        targets: dupMarks.map((m) => ({ x: m.x, y: m.y })),
+        marks: dupMarks,
+      },
+      continuesPrevious: true,
+    });
+  }
+}
+
+/** Build the hint plan by walking a working copy the way a person solves it: a
+ * naked single first; else (after a lazy populate) the basic-region cull a placed
+ * value forces; else the next deductive elimination; else a forced placement. */
+function buildSteps(state: SoloState, autoClean: boolean): HintStep<SoloMove, SoloHint>[] {
+  const cr = state.cr;
+  const steps: HintStep<SoloMove, SoloHint>[] = [];
+  const wGrid = Int8Array.from(state.grid);
+  const wPen = Int32Array.from(state.pencil);
+  const maxdiff = Math.min(state.params.diff, DIFF_EXTREME);
+  const maxkdiff = state.params.kdiff;
+  const recOps = (): HintOp[] =>
+    recordSoloDeductions({ ...state, grid: wGrid }, maxdiff, maxkdiff);
+
+  let populated = !anyEmptyLacksNotes(state);
+  const ensurePopulated = (): void => {
+    if (populated) return;
+    const all = ((1 << (cr + 1)) - (1 << 1)) | 0;
+    for (let i = 0; i < cr * cr; i++) if (!wGrid[i]) wPen[i] = all;
+    steps.push({
+      move: { type: "pencilAll" },
+      explanation: POPULATE_TEXT,
+      highlights: { area: [], targets: [], marks: [] },
+    });
+    populated = true;
+  };
+
+  let ops = recOps();
+  const budget = stepBudget("solo hint plan");
+  const cap = cr * cr * cr * 4 + 4;
+  for (let guard = 0; guard < cap; guard++) {
+    budget.tick();
+    let filled = true;
+    for (let i = 0; i < cr * cr; i++) if (!wGrid[i]) filled = false;
+    if (filled) break;
+
+    // 1. A naked single — the next move a human makes.
+    const ns = nakedSingle(wGrid, wPen, cr);
+    if (ns) {
+      emitPlacement(steps, wGrid, wPen, state, ns.x, ns.y, ns.n, { kind: "single" }, autoClean);
+      ops = recOps();
+      continue;
+    }
+
+    // 2. Pencil in the notes (once) before any elimination needs them.
+    if (!populated) {
+      ensurePopulated();
+      continue;
+    }
+
+    // 3. The basic-region cull a placed value forces.
+    const bs = basicRegionStrike(wGrid, wPen, state);
+    if (bs) {
+      steps.push({
+        move: { type: "pencilStrike", marks: bs.marks },
+        explanation: narrate({ kind: "dup", n: bs.n, px: bs.px, py: bs.py }, []),
+        highlights: {
+          area: [{ x: bs.px, y: bs.py }],
+          targets: bs.marks.map((m) => ({ x: m.x, y: m.y })),
+          marks: bs.marks,
+        },
+      });
+      for (const m of bs.marks) wPen[m.y * cr + m.x] &= ~(1 << m.n);
+      continue;
+    }
+
+    // 4. The next deductive elimination (the technique worth teaching).
+    const cs = nextStrike(ops, wGrid, wPen, cr);
+    if (cs) {
+      emitStrikeJourney(steps, wPen, state, cs);
+      continue;
+    }
+
+    // 5. A forced placement (a cube collapse the notes lag) — re-derive *why*
+    // (naked vs hidden single) from the working board for the generic singles;
+    // a killer placement keeps its recorded cage reason.
+    const pl = nextPlace(ops, wGrid, cr);
+    if (pl) {
+      const reason =
+        pl.reason.kind === "single"
+          ? soloPlacementReason(wGrid, wPen, pl.x, pl.y, pl.n, state)
+          : pl.reason;
+      emitPlacement(steps, wGrid, wPen, state, pl.x, pl.y, pl.n, reason, autoClean);
+      ops = recOps();
+      continue;
+    }
+
+    break; // stuck (e.g. an Unreasonable board now needing a guess)
+  }
+
+  return steps;
+}
+
+function hint(state: SoloState, _aux?: string, ui?: SoloUi): HintResult<SoloMove, SoloHint> {
+  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (findMistakes(state).length > 0) {
+    return {
+      ok: false,
+      error: "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+  }
+  const autoClean = ui?.autoPencil ?? true;
+  const steps = buildSteps(state, autoClean);
+  if (steps.length === 0) {
+    return { ok: false, error: "No further move can be deduced from this position." };
+  }
+  return { ok: true, steps };
+}
+
+/** Classify a player move against the displayed hint step: `pencilAll` matches a
+ * populate; a real placement matches a `set`; a pencil toggle that *clears* one of
+ * a strike step's marks shrinks (`onTrack`) or finishes (`completed`) it. */
+function hintKeepTrack(
+  m: SoloMove,
+  step: HintStep<SoloMove, SoloHint>,
+  state: SoloState,
+): HintTrackVerdict {
+  const sm = step.move;
+  const cr = state.cr;
+  if (sm.type === "pencilAll") return m.type === "pencilAll" ? "completed" : "off";
+  if (sm.type === "set") {
+    return m.type === "set" && !m.pencil && m.x === sm.x && m.y === sm.y && m.n === sm.n
+      ? "completed"
+      : "off";
+  }
+  if (sm.type === "pencilStrike") {
+    if (m.type !== "set" || !m.pencil) return "off";
+    const hit = sm.marks.findIndex((k) => k.x === m.x && k.y === m.y && k.n === m.n);
+    if (hit < 0) return "off"; // touched a non-target candidate
+    // `state` is the PRE-move board. A pencil toggle clears the candidate iff it
+    // is present now; if already absent the toggle would re-add it — off-plan.
+    if (!(state.pencil[m.y * cr + m.x] & (1 << m.n))) return "off";
+    const remaining = sm.marks.filter((_, j) => j !== hit);
+    if (remaining.length === 0) return "completed";
+    step.move = { type: "pencilStrike", marks: remaining };
+    if (step.highlights) {
+      step.highlights = {
+        ...step.highlights,
+        targets: remaining.map((k) => ({ x: k.x, y: k.y })),
+        marks: remaining,
+      };
+    }
+    return "onTrack";
+  }
+  return "off";
+}
+
+/** Re-validate a stored hint step against the current board before (re-)display
+ * (the engine's "never show a stale step" guarantee): drop dead `pencilStrike`
+ * marks (resolve when none survive); a placement resolves once its cell is filled;
+ * a populate resolves once every empty cell has notes. */
+function refreshHintStep(
+  step: HintStep<SoloMove, SoloHint>,
+  state: SoloState,
+): HintStep<SoloMove, SoloHint> | null {
+  const m = step.move;
+  const cr = state.cr;
+  if (m.type === "pencilStrike") {
+    const live = m.marks.filter(
+      ({ x, y, n }) => state.grid[y * cr + x] === 0 && (state.pencil[y * cr + x] & (1 << n)) !== 0,
+    );
+    if (live.length === 0) return null;
+    if (live.length === m.marks.length) return step;
+    return {
+      ...step,
+      move: { type: "pencilStrike", marks: live },
+      highlights: step.highlights
+        ? { ...step.highlights, targets: live.map((k) => ({ x: k.x, y: k.y })), marks: live }
+        : undefined,
+    };
+  }
+  if (m.type === "set" && !m.pencil) {
+    return state.grid[m.y * cr + m.x] !== 0 ? null : step;
+  }
+  if (m.type === "pencilAll") {
+    for (let i = 0; i < cr * cr; i++) if (state.grid[i] === 0 && state.pencil[i] === 0) return step;
+    return null;
+  }
+  return step;
+}
+
 function flashLength(
   from: SoloState,
   to: SoloState,
@@ -445,6 +1036,9 @@ export const soloGame: Game<
   status: (s): GameStatus => soloStatus(s),
 
   solve,
+  hint,
+  hintKeepTrack,
+  refreshHintStep,
   findMistakes,
 
   prefs: [

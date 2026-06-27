@@ -1051,6 +1051,68 @@ specific:
   short sentence and fires rarely can stay a single-step hint.** The what-if-walk visualisation is parked
   for a future port (Solo's forcing chains may be common enough to revisit), not a debt here.
 
+### 9.5 A *bespoke-solver* candidate-elimination game — thread the recorder, don't re-run (Solo)
+
+Solo (`add-solo-hint`) is the first Latin-family hint whose solver is **bespoke**
+(its own `SolverUsage`, a faithful port of `solo.c` — not `engine/latin.ts`), so the
+recording machinery is net-new in Solo's own `solver.ts`. Two ways exist to record off
+a bespoke solver: thread a gated recorder through the live solver (this section), or
+write a *parallel* recorder (Undead §9.4). **Pick by whether the deduction logic is
+cheap to re-run.** Undead's was (≈ one odometer + counting ladder), so a separate
+`recordUndeadDeductions` kept the C differential byte-identical *by construction*.
+Solo's is **not** — ~1200 lines with mutating killer cages, four region types and a
+recursion tier — so re-deriving it onto a parallel recorder would risk diverging the
+byte-match. Thread instead, and lean on the gate:
+
+- **Gate every behavioural change on `this.recorder`, enabled only *after* the givens
+  are placed.** A nullable `recorder` field (promoted from a `pendingRecorder` stash by
+  the driver right after the given-clue placement loop) means the generator/solve path
+  runs the original code untouched (the existing C differential is the regression guard,
+  and it MUST stay green). Seeding the cube from the givens is *not* a teachable
+  deduction, so recording starts after it — the §9.1 soundness boundary, enforced by
+  *when* the recorder turns on rather than by separate code.
+- **The "return per firing" gate is usually already there.** Solo's main loop already
+  `continue mainloop`s after the first positional/numeric/intersect/set firing, so each
+  mainloop iteration is one firing — bump `group` once at the top of the loop and every
+  record of one firing shares it for free. The only loops that *accumulate* across
+  several regions before continuing are the killer **min/max** and **sums** passes
+  (they sum `changed` over all cages); make those `break` after the first cage **when
+  `this.recorder` is set** (gated, so the generate path still sweeps every cage
+  byte-identically). This is the bespoke analogue of Keen's `solverCommon`
+  return-after-first-cage (§9.3).
+- **Record placements only; recompute dup strikes in the plan.** Like Keen/latin.ts, a
+  `place` records just the placement op — the row/column/block/diagonal copies it rules
+  out are recomputed from the working notes in `emitPlacement`/`basicRegionStrike`
+  (the plan filters dup-reason ops out anyway), so don't bother recording them. Solo's
+  `place` also clears the cell's *own* other candidates (the naked collapse); those
+  aren't dups and aren't recorded either.
+- **More region types ⇒ a richer reason union + a game-local placement re-deriver.**
+  The shared `engine/latin-hint.ts` `classifyPlacement` only checks row/column; Solo
+  reasons over **row, column, sub-block (rectangular or jigsaw) and two diagonals**, so
+  it carries its own `soloPlacementReason` extending the naked/hidden/forced
+  classification to block + diagonal, and a `SoloRegion` union (`row`/`col`/`block`/
+  `diag0`/`diag1`) that both the narration (`regionName`) and the evidence shading
+  (`regionCells`) read. The §9.3a rule still holds — re-derive a generic `single`
+  placement's *why* from the working board; only the **killer** placements
+  (`cageSingle`/`cageIntersect`) keep their recorded reason, because the working board
+  can't re-derive a cage-sum forcing.
+- **The split axis follows the premise (§9.3), and Solo has both shapes.** An
+  `intersect` firing crosses a *single digit* from several cells (premise names the
+  digit) → one multi-cell step; a cage (`cageMinMax`/`cageSums`) or `set` firing strikes
+  a *cell's* candidates (premise names the region/cage) → split by cell into a
+  `continuesPrevious` journey. `emitStrikeJourney` special-cases `intersect` and splits
+  everything else by cell.
+- **Killer is heavy on the hint path.** `recordSoloDeductions` re-solves the killer
+  board each plan step, so a from-empty killer resume is ~0.8 s / ~120 moves — fine for
+  a single hint, but give killer-walking tests an explicit `30_000` timeout (the same
+  pattern `hint-resume.test.ts` uses) so they don't flake under full-suite CPU
+  saturation. `hint-resume.test.ts` itself only walks Solo's *trivial* first preset, so
+  it stays fast; variant breadth (standard/X/jigsaw/killer) lives in `solo-hint.test.ts`.
+
+Exemplars: `solo/{solver,index,render}.ts`; guards: `solo-hint.test.ts` (per-technique
+recording, naked-single honesty, X-diagonal narration, render frame) + `soloGame` in
+`hint-resume.test.ts`.
+
 ---
 
 ## 10. Method lesson: probe before trusting a mechanism diagnosis
