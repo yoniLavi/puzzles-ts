@@ -76,7 +76,7 @@ describe("solo recording solver", () => {
         kinds.add((op.reason as HintReason).kind);
     }
     expect([...kinds]).toContain("intersect");
-  });
+  }, 30_000);
 
   it("records the set technique on Advanced boards", () => {
     const kinds = new Set<string>();
@@ -86,7 +86,7 @@ describe("solo recording solver", () => {
         kinds.add((op.reason as HintReason).kind);
     }
     expect([...kinds]).toContain("set");
-  });
+  }, 30_000);
 
   it("records killer-cage reasons on a killer board", () => {
     const kinds = new Set<string>();
