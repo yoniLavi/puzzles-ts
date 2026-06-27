@@ -23,6 +23,7 @@ import "./range/index.ts";
 import "./samegame/index.ts";
 import "./singles/index.ts";
 import "./sixteen/index.ts";
+import "./solo/index.ts";
 import "./towers/index.ts";
 import "./twiddle/index.ts";
 import "./undead/index.ts";

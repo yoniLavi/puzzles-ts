@@ -891,14 +891,7 @@ export function newUi(_state: SoloState): SoloUi {
   };
 }
 
-// --- draw state / mistakes -------------------------------------------------
-
-export interface SoloDrawState {
-  started: boolean;
-  tileSize: number;
-  /** Per-tile packed cache (filled in by the render port). */
-  tiles?: Int32Array;
-}
+// --- mistakes --------------------------------------------------------------
 
 /** A cell the player's board contradicts the unique solution at. `"cell"` = a
  * wrong filled digit; `"note"` = an empty cell whose notes ruled out its

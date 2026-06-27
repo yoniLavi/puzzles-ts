@@ -219,6 +219,18 @@ parallel **sidecar typed-array** checked in the cache-miss branch (Galaxies'
 [`galaxies/render.ts`](../../src/native/games/galaxies/render.ts),
 [`range/render.ts`](../../src/native/games/range/render.ts).
 
+**When the candidate set alone exceeds ~26 bits, don't pack the digit *and* the
+pencil bitmap into one `Int32` — keep two parallel cache arrays.** Keen packs
+`digit | pencil << 16` because its order `w ≤ 9` leaves room. Solo's order `cr` can
+reach 31 (`validateParams` caps `c·r ≤ 31`), so a 5-bit digit + a `cr`-wide pencil
+bitmask is up to 36 bits and overflows a single `Int32`. The faithful answer is a
+per-cell *pair* — `tiles = digit | hl<<8` and a separate `pencil` array holding
+`state.pencil[i]` verbatim (the `1<<n` mark for `n` up to 31 still fits an `Int32`,
+sign bit and all, and compares fine) — plus the usual `drawnWrong` mistake sidecar
+in the diff key. Exemplar:
+[`solo/render.ts`](../../src/native/games/solo/render.ts) (`SoloDrawState.tiles` +
+`.pencil` + `.drawnWrong`).
+
 **Every overlay that doesn't live in the tile value MUST be in the diff key — or it
 silently fails to repaint.** A mistake/hint/highlight overlay is applied *on top of*
 a cell, so it usually isn't part of the cell's packed tile value. If it isn't *also*

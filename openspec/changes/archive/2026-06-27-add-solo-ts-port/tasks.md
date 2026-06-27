@@ -76,22 +76,29 @@
       `gen_killer_cages` layout. Reproduced verbatim (playbook §4.4); without it the
       killer desc diverges._
 
-## 4. Render + glue (`solo/render.ts`, `solo/index.ts`)
-- [ ] 4.1 `render.ts`: palette index-for-index with the C enum; block borders from
-      the `Dsf` (rectangular + jigsaw); killer cage dashes + sum labels; X-diagonal
-      shading; givens vs player digits; auto-sized pencil grids; cursor + pencil
-      highlight; pencil-mode corner indicator; completion flash; `Int32Array` cache
-      with the mistake overlay in the diff key (playbook §3.2 — ship the
-      redraw-twice regression test).
-- [ ] 4.2 `index.ts`: `interpretMove` (cell select; left real / right pencil with
-      sticky + filled-cell rules; digit/backspace/space + no-op suppression +
-      auto-pencil; `M` mark-all; keyboard cursor), `executeMove`, `status`,
-      `solve`, `colours`, `setTileSize`, `describeParams` (variant-aware keys —
-      playbook §3.4 + the `augmentation.test.ts` guard), `registerGame`.
-- [ ] 4.3 `findMistakes`: re-solve from givens (+ killer cages) to the unique
+## 4. Render + glue (`solo/render.ts`, `solo/index.ts`)  ✅ done
+- [x] 4.1 `render.ts`: palette index-for-index with the C enum (`COL_*` 0..8, the
+      fork pencil-body appended at 9 so the `paletteOverrides:{2}` dark-mode dial
+      still hits `COL_GRID`); block borders from `blocks.whichblock` (rectangular +
+      jigsaw, Keen's GRIDEXTRA-merge + corner-juts); killer cage inset lines + sum
+      labels (`col_killer`, jigsaw-vs-rect offset); X-diagonal shading; givens
+      (`COL_CLUE`) vs player digits (`COL_USER`); auto-sized pencil grids;
+      cursor/pencil highlight; pencil-mode corner indicator; completion flash.
+      **Cache shape note (new playbook §3.2 entry):** Solo's `cr` can reach 31, so
+      digit (5 bits) + pencil (≤31 bits) does **not** fit one `Int32` — keep two
+      parallel cache arrays (`tiles = digit|hl<<8`, `pencil`) plus the `drawnWrong`
+      mistake sidecar in the diff key, not a single packed value.
+- [x] 4.2 `index.ts`: `interpretMove` (cell select; left real / right pencil with
+      sticky + filled/given-cell rules; digit/backspace/space + no-op suppression +
+      auto-pencil incl. block + X-diagonal; `M` mark-all; keyboard cursor),
+      `executeMove`, `status`, `solve` (aux or re-derive from givens), `colours`,
+      `setTileSize`, `describeParams` (variant-aware keys for the custom `solo`
+      describeConfig — booleans for jigsaw/killer/x, numeric index for
+      symmetry/difficulty; `augmentation.test.ts` guard green), `registerGame`.
+- [x] 4.3 `findMistakes`: re-solve from givens only (+ killer cages) to the unique
       solution; flag wrong filled cells (`"cell"`) and notes that crossed out the
       solution digit (`"note"`); `[]` when not uniquely deducible.
-- [ ] 4.4 `prefs` hook: sticky-pencil (on), auto-pencil (on), keep-highlight (off);
+- [x] 4.4 `prefs` hook: sticky-pencil (on), auto-pencil (on), keep-highlight (off);
       `canMarkAll = true`. Defaults on the `Ui` via `newUi`.
 
 ## 5. Differential (`solo-trace.c` + `solo-differential.test.ts`)  ✅ done
@@ -107,27 +114,35 @@
       **plus** a solver-grading assertion (decode the C board, run the TS solver,
       assert C's recorded (diff, kdiff)). D5 outcome recorded in `design.md`.
 
-## 6. Tests
-- [ ] 6.1 Tier-1: param/desc round-trip (all variants), solver grades known boards,
-      generator produces uniquely-solvable boards at the requested difficulty,
-      move/executeMove purity + completion, `findMistakes` (cell + note).
-- [ ] 6.2 Tier-2/2.5: render-op assertions + `toMatchSnapshot` for each variant's
-      distinctive rendering (jigsaw borders, killer cages + sums, X shading, pencil
-      grids, mistake overlay). Heavy generator tests seed-deterministic + explicit
-      timeouts (playbook §5.2).
-- [ ] 6.3 Full gate green: `tsc -b --noEmit` → `biome lint` → `vitest run` →
-      `vite build` (format only `src/native/games/solo/`, playbook §7).
+## 6. Tests  ✅ done
+- [x] 6.1 Tier-1: param/desc round-trip + solver grading covered by
+      `solo-state.test.ts` / `solver.test.ts` / `solo-differential.test.ts`;
+      `solo.test.ts` adds solve→valid-grid, move/executeMove purity + completion,
+      pencilAll/pencilStrike/auto-pencil, and `findMistakes` (cell + note).
+- [x] 6.2 Tier-2.5: `solo.test.ts` drives a real `Midend` to the initial frame for
+      each variant (standard / X / jigsaw / killer) via `renderScenario` + the
+      shared recording drawing — distinctive-op assertions (X `COL_XDIAGONALS`
+      rect, killer `COL_KILLER` cage line, clue text) **plus** `toMatchSnapshot`.
+      Boards are decoded from the differential fixture descs, so no slow generation.
+- [x] 6.3 Full gate green: `tsc -b --noEmit` → `biome lint` → `vitest run` (1790) →
+      `vite build`, all green (formatted only `src/native/games/solo/`).
 
-## 7. Stage-1 registration (owner smoke-test)
-- [ ] 7.1 Add `solo` to `ts-ported-ids.ts`; import in `games/index.ts`
-      (`registerGame`). Verify all four variants in `npm run dev` (render + input +
-      animation), then hand to owner for acceptance.
+## 7. Stage-1 registration (owner smoke-test)  ✅ done
+- [x] 7.1 Added `solo` to `ts-ported-ids.ts` + imported in `games/index.ts`
+      (`registerGame`). Dev-verified all four variants in `npm run dev` via
+      Playwright (render + input + auto-pencil + mark-all + sticky-pencil indicator
+      + live duplicate-error red + given protection; 0 console errors). **Pending
+      owner acceptance before stage 2.**
 
-## 8. Stage-2 (owner acceptance only)
-- [ ] 8.1 Add `TS_PORTED` to solo's `puzzle()` in `puzzles/CMakeLists.txt`; delete
-      `puzzles/solo.c`, `puzzles/divvy.c`, `puzzles/auxiliary/solo-trace.c` (+ its
-      `cliprogram` line) and any advisory diff script. Rebuild wasm; confirm solo in
-      the catalog with no `solo.wasm`.
-- [ ] 8.2 `openspec archive add-solo-ts-port --yes` in the same commit as the C
-      deletion. Update the migration-status memory + the dev guides with anything
-      learned. (`add-solo-hint` is a separate follow-up change.)
+## 8. Stage-2 (owner acceptance only)  ✅ done (owner-accepted 2026-06-27)
+- [x] 8.1 Added `TS_PORTED` to solo's `puzzle()` in `puzzles/CMakeLists.txt`; deleted
+      `puzzles/solo.c` and `puzzles/auxiliary/solo-trace.c` (+ its `cliprogram`
+      line). **`puzzles/divvy.c` was NOT deleted** — the task assumed solo was its
+      only consumer, but `puzzles/unfinished/separate.c` still calls
+      `divvy_rectangle` (its wasm fails to link without it). divvy is a shared *leaf*
+      library, so per the leaf-deletion rule (like `random.c`) it stays until its
+      last C consumer is ported; the TS port keeps its own local `divvy.ts`.
+      Rebuilt wasm; confirmed solo in the catalog with no `solo.wasm`.
+- [x] 8.2 `openspec archive add-solo-ts-port --yes` in the same commit as the C
+      deletion. Migration-status memory + playbook updated. (`add-solo-hint` is a
+      separate follow-up change.)

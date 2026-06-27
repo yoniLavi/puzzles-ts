@@ -253,11 +253,12 @@ puzzle(slant
 solver(slant)
 
 puzzle(solo
+  TS_PORTED  # native-TS port (openspec add-solo-ts-port); no solo.c/wasm
+             # (divvy.c stays in core_obj — still used by unfinished/separate.c)
   DISPLAYNAME "Solo"
   DESCRIPTION "Number placement puzzle"
   OBJECTIVE "Fill in the grid so that each row, column and square \
 block contains one of every digit.")
-solver(solo)
 
 puzzle(tents
   DISPLAYNAME "Tents"
