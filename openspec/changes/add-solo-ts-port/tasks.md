@@ -56,16 +56,25 @@
       Validated on a known unique 3×3 board (full solution + Trivial grading),
       ambiguous/impossible verdicts, and killer/jigsaw codec→solve round-trips.
 
-## 3. Generator (`solo/generator.ts` + `solo/divvy.ts`)
-- [ ] 3.1 Port `divvy_rectangle` as `solo/divvy.ts` (idiomatic union-find + retry,
-      RNG-faithful draw order). Local; promote to `engine/` only on a 2nd consumer.
-- [ ] 3.2 Full-solution generation under all active constraints (Latin + blocks +
-      X-diagonals + killer cages); `symmetries()` for all eight `SYMM_*` modes.
-- [ ] 3.3 Killer cage generation (cage divvy + sum assignment) when `killer`.
-- [ ] 3.4 `newDesc`: minimise givens in symmetry orbits via the graded solver to the
-      exact target difficulty (solver-gated minimiser); capped-iteration backstop
-      that throws rather than hanging (playbook §4.6). Per-variant difficulty
-      dial-downs faithful to upstream.
+## 3. Generator (`solo/generator.ts` + `solo/divvy.ts`)  ✅ done + byte-match verified
+- [x] 3.1 Port `divvy_rectangle` as `solo/divvy.ts` (idiomatic typed-array
+      union-find + retry, RNG-faithful draw order — `order` shuffle, per-iteration
+      `random_upto` omino pick, BFS over the same permutation). Local; promote to
+      `engine/` only on a 2nd consumer. Byte-match-safe on the shared `Dsf`
+      (membership-only consumer, playbook §2.2).
+- [x] 3.2 `gridgen` full-solution generation under all active constraints (Latin +
+      blocks + X-diagonals + killer cages), most-constrained-square heuristic + step
+      budget; `symmetries()` (in `state.ts`) drives the symmetry-orbit removal.
+- [x] 3.3 Killer cage generation (`gen_killer_cages` + the singleton-fold merges +
+      `compute_kclues` sum assignment) when `killer`.
+- [x] 3.4 `newDesc`: minimise givens in shuffled symmetry orbits via the graded
+      solver to the exact target difficulty (solver-gated minimiser); capped-
+      iteration backstop (`MAX_REGENERATE`) that throws rather than hanging
+      (playbook §4.6). The 2x2 / jigsaw-`c<4` difficulty dial-down is faithful.
+      _**Upstream-bug finding (design D5):** `merge_some_cages` never increments
+      `npairs`, so no killer cages ever merge — every killer puzzle ships the raw
+      `gen_killer_cages` layout. Reproduced verbatim (playbook §4.4); without it the
+      killer desc diverges._
 
 ## 4. Render + glue (`solo/render.ts`, `solo/index.ts`)
 - [ ] 4.1 `render.ts`: palette index-for-index with the C enum; block borders from
@@ -85,14 +94,18 @@
 - [ ] 4.4 `prefs` hook: sticky-pencil (on), auto-pencil (on), keep-highlight (off);
       `canMarkAll = true`. Defaults on the `Ui` via `newUi`.
 
-## 5. Differential (`solo-trace.c` + `solo-differential.test.ts`)
-- [ ] 5.1 `puzzles/auxiliary/solo-trace.c` (+ `cliprogram` line); build pure-C
-      (`-DUSE_TS_RANDOM=0`, playbook §4.2); record fixtures across the variants +
-      difficulties.
-- [ ] 5.2 Gated `solo-differential.test.ts`: byte-match where the generator allows;
-      verdict-record (decode C board, run TS solver, assert recorded difficulty +
-      unique-solvability) where byte-match is infeasible (record the per-variant
-      outcome in `design.md` D5).
+## 5. Differential (`solo-trace.c` + `solo-differential.test.ts`)  ✅ done
+- [x] 5.1 `puzzles/auxiliary/solo-trace.c` (+ `cliprogram` line); built pure-C
+      (`-DUSE_TS_RANDOM=0`, playbook §4.2); 14 fixtures across all four variants +
+      difficulties (Trivial→Unreasonable standard, X, jigsaw, killer), each
+      recording desc + the upstream solver's (diff, kdiff) on the published board.
+      One pathological case (Trivial killer, `kdiff=KSINGLE`) dropped — upstream
+      generation of it takes minutes (rare-difficulty target), too slow to replay.
+- [x] 5.2 Gated `solo-differential.test.ts`: **byte-match for every variant**
+      (28 tests, all green) — the generator is byte-match across the board (no
+      `qsort`/order-dependent step; D5), so no verdict-record fallback was needed —
+      **plus** a solver-grading assertion (decode the C board, run the TS solver,
+      assert C's recorded (diff, kdiff)). D5 outcome recorded in `design.md`.
 
 ## 6. Tests
 - [ ] 6.1 Tier-1: param/desc round-trip (all variants), solver grades known boards,

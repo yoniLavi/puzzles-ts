@@ -316,8 +316,10 @@ export function validateParams(p: SoloParams, _full: boolean): string | null {
   if (p.c < 2) return "Both dimensions must be at least 2";
   if (p.c > ORDER_MAX || p.r > ORDER_MAX)
     return `Dimensions greater than ${ORDER_MAX} are not supported`;
-  if (p.c * p.r > 31) return "Unable to support more than 31 distinct symbols in a puzzle";
-  if (p.killer && p.c * p.r > 9) return "Killer puzzle dimensions must be smaller than 10";
+  if (p.c * p.r > 31)
+    return "Unable to support more than 31 distinct symbols in a puzzle";
+  if (p.killer && p.c * p.r > 9)
+    return "Killer puzzle dimensions must be smaller than 10";
   if (p.xtype && p.c * p.r < 4) return "X-type puzzle dimensions must be larger than 3";
   return null;
 }
@@ -339,7 +341,7 @@ export interface BlockStructure {
 
 /** Build region cell-lists from `whichblock` (faithful to
  * `make_blocks_from_whichblock`: ascending cell order within each region). */
-function makeBlocksFromWhichblock(
+export function makeBlocksFromWhichblock(
   cr: number,
   nrBlocks: number,
   whichblock: Int32Array,
@@ -354,7 +356,8 @@ export function rectangularBlocks(c: number, r: number): BlockStructure {
   const cr = c * r;
   const whichblock = new Int32Array(cr * cr);
   for (let y = 0; y < cr; y++)
-    for (let x = 0; x < cr; x++) whichblock[y * cr + x] = ((y / c) | 0) * c + ((x / r) | 0);
+    for (let x = 0; x < cr; x++)
+      whichblock[y * cr + x] = ((y / c) | 0) * c + ((x / r) | 0);
   // The formula yields exactly cr distinct block indices.
   return makeBlocksFromWhichblock(cr, cr, whichblock);
 }
@@ -452,7 +455,8 @@ export function validateGridDesc(
       let num = "";
       while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") num += desc[i++];
       const val = Number.parseInt(num, 10);
-      if (val < 1 || val > range) return { error: "Out-of-range number in game description", next: i };
+      if (val < 1 || val > range)
+        return { error: "Out-of-range number in game description", next: i };
       squares++;
     } else {
       return { error: "Invalid character in game description", next: i };
@@ -541,7 +545,11 @@ export function specToDsf(
     const adv = c !== 26; // 'z' is a special case (25 non-edges, no following edge)
     while (c-- > 0) {
       if (pos >= limit)
-        return { dsf: null, error: "Too much data in block structure specification", next: i };
+        return {
+          dsf: null,
+          error: "Too much data in block structure specification",
+          next: i,
+        };
       let p0: number;
       let p1: number;
       if (pos < cr * (cr - 1)) {
@@ -561,7 +569,11 @@ export function specToDsf(
     if (adv) pos++;
   }
   if (pos !== limit + 1)
-    return { dsf: null, error: "Not enough data in block structure specification", next: i };
+    return {
+      dsf: null,
+      error: "Not enough data in block structure specification",
+      next: i,
+    };
   return { dsf, error: null, next: i };
 }
 
@@ -835,7 +847,14 @@ export type SoloMove =
    * (auto-pencil mode, baked at move-creation so replay is deterministic)
    * additionally strikes `n` from the pencil marks of every cell sharing a row,
    * column, block (or diagonal) with `(x, y)` on a real placement. */
-  | { type: "set"; x: number; y: number; n: number; pencil: boolean; autoElim?: boolean }
+  | {
+      type: "set";
+      x: number;
+      y: number;
+      n: number;
+      pencil: boolean;
+      autoElim?: boolean;
+    }
   /** Fill every empty cell's pencil marks (the `M` key / fill-all button). */
   | { type: "pencilAll" }
   /** Strike (clear) the listed pencil candidates atomically (hint elimination). */

@@ -491,6 +491,20 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
   `i` and its `if (i == k) continue` skips a square that only `i` (not another
   member) can reach — a real upstream quirk. Port it verbatim; "fixing" it makes the
   TS solver *stronger* and removes clues C keeps.
+- **The quirk can be an outright *generator* bug that silently disables a whole code
+  path — reproduce it anyway.** Solo's `merge_some_cages` (the killer cage grower)
+  writes each candidate pair to `pairs[npairs]` but **never executes `npairs++`**, so
+  `npairs` stays 0, its random pick-and-merge loop never runs, and it *always returns
+  false drawing no RNG* — meaning **no killer cages are ever merged** and every killer
+  puzzle ships the raw `gen_killer_cages` layout (the elaborate grade-and-merge loop
+  in `new_game_desc` is dead). The first cut "fixed" the missing increment and the
+  killer desc diverged on the very first board. Port the missing increment (and so the
+  always-false, zero-RNG behaviour) verbatim, with a loud comment, and keep the dead
+  pick loop 1:1 with C so the correspondence is auditable. Lesson: when a byte-match
+  diverges on one variant only, suspect that a generator helper is doing *more* (or
+  less) than its name implies — diff it against C line-by-line before trusting the
+  name. Exemplar: [`solo/generator.ts`](../../src/native/games/solo/generator.ts)
+  `mergeSomeCages`.
 - **Some deductions branch on the canonical-DSF-root *identity*, so the shared
   [`Dsf`](../../src/native/engine/dsf.ts) must match `dsf.c`'s root choice** (tie →
   the *second* `merge` arg; the larger class otherwise). The shared `Dsf` was aligned

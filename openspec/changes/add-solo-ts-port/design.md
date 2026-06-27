@@ -82,8 +82,33 @@ precedent (playbook §4.3). The two risks:
 **Decision: attempt byte-match per variant; record in this file which variants
 achieve it and which fall back to verdict-record, after reading the generator.**
 Start with standard (most likely byte-match), then jigsaw, X, killer.
-`solo-trace.c` is built pure-C (playbook §4.2). _[To be filled in during the
-generator port: per-variant byte-match vs verdict-record outcome.]_
+`solo-trace.c` is built pure-C (playbook §4.2).
+
+**Outcome (2026-06-27): byte-match achieved for ALL four variants** — standard
+(Trivial→Unreasonable), X-type, jigsaw, and killer all reproduce the C desc
+byte-for-byte (`solo-differential.test.ts`, 28 tests). No verdict-record fallback
+was needed: there is no `qsort`/order-dependent step anywhere in the generator.
+The gated test asserts byte-match **and** that the TS solver grades each published
+board at C's recorded (diff, kdiff) — the real proof the faithful solver matches
+C's deductive power on the boards the minimiser produced.
+
+Two findings worth recording:
+
+1. **Upstream bug in `merge_some_cages` (the killer cage grower).** It writes each
+   adjacent pair to `pairs[npairs]` but **never increments `npairs`**, so `npairs`
+   stays 0, the random pick-and-merge loop never runs, and it *always returns false
+   without drawing RNG*. The consequence: **no killer cages are ever merged** —
+   every killer puzzle ships the raw `gen_killer_cages` layout (after singleton
+   removal), and the elaborate grade-and-merge loop in `new_game_desc` is inert.
+   Reproduced verbatim (playbook §4.4); the first cut "fixed" the missing increment
+   and the killer desc diverged immediately. This is the dominant killer-path
+   subtlety. The `divvy`/jigsaw and X paths byte-matched on the first try.
+
+2. **Differential fixture cost.** Solo's hard-difficulty generation is genuinely
+   slow in C (and equally in the faithful TS replay), so the fixture set excludes
+   the pathological Trivial-killer (`kdiff=KSINGLE`) case (minutes to generate) and
+   keeps difficulties that grade in <1s each. The byte-match replay of the kept
+   cases is all <0.7s, so the gated test is fast and CI-safe (playbook §5.2).
 
 ## D6 — Rendering: jigsaw borders, killer cages, X shading
 
