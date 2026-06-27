@@ -18,6 +18,7 @@
  * compacting C semantics — see `removeFromBlock`/`splitBlock`).
  */
 
+import type { DeductionRecord, DeductionRecorder } from "../../engine/latin.ts";
 import type { BlockStructure, SoloState } from "./state.ts";
 import {
   diag0,
@@ -37,6 +38,65 @@ import {
   onDiag0,
   onDiag1,
 } from "./state.ts";
+
+// --- hint recording (opt-in; off for generate/solve) ------------------------
+
+/** A region the solver reasons over, for narration + evidence shading. `index`
+ * is the row's y, the column's x, or the sub-block's block number; the two
+ * diagonals carry no index. */
+export type SoloRegion =
+  | { kind: "row"; index: number }
+  | { kind: "col"; index: number }
+  | { kind: "block"; index: number }
+  | { kind: "diag0" }
+  | { kind: "diag1" };
+
+/** Why a Solo deduction forced a candidate change — the premise a hint narrates
+ * and the cells it shades. Combined into {@link HintOp}'s `reason`.
+ *
+ * The placement reasons (`single` / `hiddenSingle` / `forcedSingle`) are
+ * re-derived from the working board at emit time (§9.3a — the recorded `place`
+ * carries a bare `single`, since the solver's positional/numeric `elim`
+ * conflates naked and hidden singles); the killer placement reasons
+ * (`cageSingle` / `cageIntersect`) are recorded directly because the working
+ * board can't re-derive them. */
+export type SoloReason =
+  /** A forced single placement — re-derived to naked/hidden/forced at emit. */
+  | { kind: "single" }
+  /** A digit placed at `(px, py)`, struck from the rest of a shared group. */
+  | { kind: "dup"; n: number; px: number; py: number }
+  /** Every cell of `confined` that can still take `n` also lies in `target`, so
+   * `n` must sit in their overlap and is ruled out of the rest of `target`. One
+   * of the two is a sub-block, the other a row/column/diagonal. */
+  | { kind: "intersect"; n: number; confined: SoloRegion; target: SoloRegion }
+  /** A naked/hidden subset locks a set of digits to a set of cells in a region
+   * (absent for the cross-line single-digit "X-wing" set). */
+  | { kind: "set"; region?: SoloRegion }
+  /** A forcing-chain contradiction. */
+  | { kind: "forcing" }
+  /** A *hidden* single — digit `n` fits only one cell of `region`. */
+  | { kind: "hiddenSingle"; n: number; region: SoloRegion }
+  /** A placement forced by deeper deductions the working notes don't reflect. */
+  | { kind: "forcedSingle"; n: number }
+  /** Killer: the remaining cell(s) of a cage must total `clue`; with one left it
+   * is forced. */
+  | { kind: "cageSingle"; cells: { x: number; y: number }[]; clue: number }
+  /** Killer: a deduced extra-cage (a region minus the cages it fully contains)
+   * with one undetermined cell, forced to the residual sum. */
+  | { kind: "cageIntersect"; cells: { x: number; y: number }[]; clue: number }
+  /** Killer: even the extreme the other cage cells can reach leaves no room for
+   * `n` here. */
+  | { kind: "cageMinMax"; cells: { x: number; y: number }[]; clue: number }
+  /** Killer: no combination of digits summing to the clue uses `n` in this cell. */
+  | { kind: "cageSums"; cells: { x: number; y: number }[]; clue: number };
+
+/** A reason attached to a recorded Solo deduction (the narrowed hint reason). */
+export type HintReason = SoloReason;
+
+/** One recorded Solo deduction op (a {@link DeductionRecord} with a Solo reason). */
+export interface HintOp extends DeductionRecord {
+  reason: HintReason;
+}
 
 // --- precomputed killer sum-bit tables (precompute_sum_bits) ----------------
 // sum_bitsK[clue][i] is a bitmask whose set bit j means "digit j is one of the
@@ -188,6 +248,18 @@ class SolverUsage {
   private readonly sIndexlist: Int32Array;
   private readonly sIndexlist2: Int32Array;
 
+  /** Hint-only deduction recorder; enabled by `run` only *after* the given
+   * clues are placed (so cube-seeding dups aren't mistaken for teachable
+   * deductions), left unset on the generator/solve path so that path is
+   * byte-for-byte unchanged. */
+  recorder?: DeductionRecorder;
+  /** Stashed by {@link recordSoloDeductions}; promoted to `recorder` after the
+   * givens are placed. */
+  pendingRecorder?: DeductionRecorder;
+  /** Current firing id — bumped once per top-level deduction attempt so every
+   * record of one firing shares a `group`. */
+  group = 0;
+
   constructor(
     cr: number,
     blocks: BlockStructure,
@@ -247,10 +319,35 @@ class SolverUsage {
     this.cube[xy * this.cr + n - 1] = v;
   }
 
-  /** `solver_place`: commit digit `n` at (x, y) and propagate the eliminations. */
-  place(x: number, y: number, n: number): void {
+  /** Record an `elim` op at cube cell index `xy` for digit `n`. */
+  private recElim(xy: number, n: number, reason: SoloReason): void {
+    this.recorder?.({
+      kind: "elim",
+      x: xy % this.cr,
+      y: (xy / this.cr) | 0,
+      n,
+      reason,
+      group: this.group,
+    });
+  }
+
+  /** `solver_place`: commit digit `n` at (x, y) and propagate the eliminations.
+   * On the recording path the placement op is recorded with `reason` (default a
+   * generic `single`, re-derived at emit time); the propagated row/col/block/
+   * diagonal dup strikes are NOT recorded — the hint plan recomputes those from
+   * the working notes (`emitPlacement`/`basicRegionStrike`), matching Keen. */
+  place(x: number, y: number, n: number, reason?: SoloReason): void {
     const cr = this.cr;
     const sqindex = y * cr + x;
+
+    this.recorder?.({
+      kind: "place",
+      x,
+      y,
+      n,
+      reason: reason ?? { kind: "single" },
+      group: this.group,
+    });
 
     for (let i = 1; i <= cr; i++) if (i !== n) this.setCube(x, y, i, 0);
     for (let i = 0; i < cr; i++) if (i !== y) this.setCube(x, i, n, 0);
@@ -309,7 +406,11 @@ class SolverUsage {
   /** `solver_intersect`: if every candidate of domain 1 lies in its overlap with
    *  domain 2, rule the number out elsewhere in domain 2. Both `cr`-length and
    *  sorted ascending by cube position. Never returns -1. */
-  private intersect(indices1: Int32Array, indices2: Int32Array): number {
+  private intersect(
+    indices1: Int32Array,
+    indices2: Int32Array,
+    reason?: SoloReason,
+  ): number {
     const cr = this.cr;
     for (let i = 0, j = 0; i < cr; i++) {
       const p = indices1[i];
@@ -325,6 +426,7 @@ class SolverUsage {
       while (j < cr && indices1[j] < p) j++;
       if (this.cube[p] && (j >= cr || indices1[j] !== p)) {
         ret = 1;
+        if (this.recorder && reason) this.recElim((p / cr) | 0, 1 + (p % cr), reason);
         this.cube[p] = 0;
       }
     }
@@ -333,7 +435,7 @@ class SolverUsage {
 
   /** `solver_set`: a `cr × cr` matrix of cube positions (`indices[i*cr+j]`);
    *  hidden/naked subset elimination. +1 / 0 / -1. */
-  private set_(indices: Int32Array): number {
+  private set_(indices: Int32Array, reason?: SoloReason): number {
     const cr = this.cr;
     const grid = this.sGrid;
     const rowidx = this.sRowidx;
@@ -397,6 +499,8 @@ class SolverUsage {
                 if (!set[j] && grid[i * cr + j]) {
                   const fpos = indices[rowidx[i] * cr + colidx[j]];
                   progress = true;
+                  if (this.recorder && reason)
+                    this.recElim((fpos / cr) | 0, 1 + (fpos % cr), reason);
                   this.cube[fpos] = 0;
                 }
             }
@@ -490,6 +594,14 @@ class SolverUsage {
                     ((onDiag0(yt * cr + xt, cr) && onDiag0(y * cr + x, cr)) ||
                       (onDiag1(yt * cr + xt, cr) && onDiag1(y * cr + x, cr)))))
               ) {
+                this.recorder?.({
+                  kind: "elim",
+                  x: xt,
+                  y: yt,
+                  n: orign,
+                  reason: { kind: "forcing" },
+                  group: this.group,
+                });
                 this.setCube(xt, yt, orign, 0);
                 return 1;
               }
@@ -501,12 +613,24 @@ class SolverUsage {
     return 0;
   }
 
+  /** Cell indices → reading-order `{x, y}` (for a recorded cage reason). */
+  private cellsXY(cells: number[]): { x: number; y: number }[] {
+    const cr = this.cr;
+    return cells.map((c) => ({ x: c % cr, y: (c / cr) | 0 }));
+  }
+
   /** `solver_killer_minmax` for a single cage's cell list + clue. +1 / 0. */
   private killerMinmax(cells: number[], clue: number): number {
     const cr = this.cr;
     let ret = 0;
     const nsquares = cells.length;
     if (clue === 0) return 0;
+    let cageCells: { x: number; y: number }[] | null = null;
+    const recCage = (xy: number, n: number): void => {
+      if (!this.recorder) return;
+      if (!cageCells) cageCells = this.cellsXY(cells);
+      this.recElim(xy, n, { kind: "cageMinMax", cells: cageCells, clue });
+    };
 
     for (let i = 0; i < nsquares; i++) {
       const x = cells[i];
@@ -529,10 +653,11 @@ class SolverUsage {
             }
         }
         if (maxval + n < clue) {
+          recCage(x, n);
           this.setCube2(x, n, 0);
           ret = 1;
-        }
-        if (minval + n > clue) {
+        } else if (minval + n > clue) {
+          recCage(x, n);
           this.setCube2(x, n, 0);
           ret = 1;
         }
@@ -601,11 +726,16 @@ class SolverUsage {
     if (possibleAddends === 0) return -1;
 
     let ret = 0;
+    let cageCells: { x: number; y: number }[] | null = null;
     for (let i = 0; i < nsquares; i++) {
       const x = cells[i];
       for (let n = 1; n <= cr; n++) {
         if (!this.cube2At(x, n)) continue;
         if ((possibleAddends & (1 << n)) === 0) {
+          if (this.recorder) {
+            if (!cageCells) cageCells = this.cellsXY(cells);
+            this.recElim(x, n, { kind: "cageSums", cells: cageCells, clue });
+          }
           this.setCube2(x, n, 0);
           ret = 1;
         }
@@ -706,7 +836,16 @@ class SolverUsage {
       }
     }
 
+    // Givens are seeded; from here every deduction is teachable, so enable the
+    // recorder (kept off through the given placement above so cube-seeding dups
+    // aren't mistaken for deductions — §9.1 soundness boundary).
+    this.recorder = this.pendingRecorder;
+
     mainloop: while (true) {
+      // One mainloop iteration = at most one firing (each technique `continue`s
+      // to the top on progress), so bumping the group here gives every record of
+      // one firing a shared group id.
+      this.group++;
       // Blockwise positional elimination.
       for (let b = 0; b < cr; b++)
         for (let n = 1; n <= cr; n++)
@@ -759,7 +898,7 @@ class SolverUsage {
               finish(DIFF_IMPOSSIBLE);
               return;
             }
-            this.place(x, y, v);
+            this.place(x, y, v, { kind: "cageSingle", cells: [{ x, y }], clue: v });
             changed = true;
           }
         }
@@ -805,7 +944,7 @@ class SolverUsage {
                 finish(DIFF_IMPOSSIBLE);
                 return;
               }
-              this.place(x, y, sum);
+              this.place(x, y, sum, { kind: "cageIntersect", cells: [{ x, y }], clue: sum });
               changed = true;
             }
 
@@ -837,12 +976,19 @@ class SolverUsage {
         let changed = false;
         for (let b = 0; b < kblocks.blocks.length; b++) {
           const ret = this.killerMinmax(kblocks.blocks[b], kclues[b]);
-          if (ret > 0) changed = true;
+          if (ret > 0) {
+            changed = true;
+            if (this.recorder) break; // one cage = one firing on the hint path
+          }
         }
-        for (let b = 0; b < this.extraCages.length; b++) {
-          const ret = this.killerMinmax(this.extraCages[b], this.extraClues[b]);
-          if (ret > 0) changed = true;
-        }
+        if (!(this.recorder && changed))
+          for (let b = 0; b < this.extraCages.length; b++) {
+            const ret = this.killerMinmax(this.extraCages[b], this.extraClues[b]);
+            if (ret > 0) {
+              changed = true;
+              if (this.recorder) break;
+            }
+          }
         if (changed) {
           kdiff = Math.max(kdiff, DIFF_KMINMAX);
           continue;
@@ -857,21 +1003,24 @@ class SolverUsage {
           if (ret > 0) {
             changed = true;
             kdiff = Math.max(kdiff, DIFF_KSUMS);
+            if (this.recorder) break; // one cage = one firing on the hint path
           } else if (ret < 0) {
             finish(DIFF_IMPOSSIBLE);
             return;
           }
         }
-        for (let b = 0; b < this.extraCages.length; b++) {
-          const ret = this.killerSums(this.extraCages[b], this.extraClues[b], false);
-          if (ret > 0) {
-            changed = true;
-            kdiff = Math.max(kdiff, DIFF_KSUMS);
-          } else if (ret < 0) {
-            finish(DIFF_IMPOSSIBLE);
-            return;
+        if (!(this.recorder && changed))
+          for (let b = 0; b < this.extraCages.length; b++) {
+            const ret = this.killerSums(this.extraCages[b], this.extraClues[b], false);
+            if (ret > 0) {
+              changed = true;
+              kdiff = Math.max(kdiff, DIFF_KSUMS);
+              if (this.recorder) break;
+            } else if (ret < 0) {
+              finish(DIFF_IMPOSSIBLE);
+              return;
+            }
           }
-        }
         if (changed) continue;
       }
 
@@ -965,7 +1114,13 @@ class SolverUsage {
               idx[i] = (y * cr + i) * cr + n - 1;
               idx2[i] = this.blocks.blocks[b][i] * cr + n - 1;
             }
-            if (this.intersect(idx, idx2) || this.intersect(idx2, idx)) {
+            const rec = this.recorder;
+            const line: SoloRegion = { kind: "row", index: y };
+            const block: SoloRegion = { kind: "block", index: b };
+            if (
+              this.intersect(idx, idx2, rec ? { kind: "intersect", n, confined: line, target: block } : undefined) ||
+              this.intersect(idx2, idx, rec ? { kind: "intersect", n, confined: block, target: line } : undefined)
+            ) {
               diff = Math.max(diff, DIFF_INTERSECT);
               continue mainloop;
             }
@@ -979,7 +1134,13 @@ class SolverUsage {
               idx[i] = (i * cr + x) * cr + n - 1;
               idx2[i] = this.blocks.blocks[b][i] * cr + n - 1;
             }
-            if (this.intersect(idx, idx2) || this.intersect(idx2, idx)) {
+            const rec = this.recorder;
+            const line: SoloRegion = { kind: "col", index: x };
+            const block: SoloRegion = { kind: "block", index: b };
+            if (
+              this.intersect(idx, idx2, rec ? { kind: "intersect", n, confined: line, target: block } : undefined) ||
+              this.intersect(idx2, idx, rec ? { kind: "intersect", n, confined: block, target: line } : undefined)
+            ) {
               diff = Math.max(diff, DIFF_INTERSECT);
               continue mainloop;
             }
@@ -994,7 +1155,13 @@ class SolverUsage {
               idx[i] = diag0(i, cr) * cr + n - 1;
               idx2[i] = this.blocks.blocks[b][i] * cr + n - 1;
             }
-            if (this.intersect(idx, idx2) || this.intersect(idx2, idx)) {
+            const rec = this.recorder;
+            const line: SoloRegion = { kind: "diag0" };
+            const block: SoloRegion = { kind: "block", index: b };
+            if (
+              this.intersect(idx, idx2, rec ? { kind: "intersect", n, confined: line, target: block } : undefined) ||
+              this.intersect(idx2, idx, rec ? { kind: "intersect", n, confined: block, target: line } : undefined)
+            ) {
               diff = Math.max(diff, DIFF_INTERSECT);
               continue mainloop;
             }
@@ -1007,7 +1174,13 @@ class SolverUsage {
               idx[i] = diag1(i, cr) * cr + n - 1;
               idx2[i] = this.blocks.blocks[b][i] * cr + n - 1;
             }
-            if (this.intersect(idx, idx2) || this.intersect(idx2, idx)) {
+            const rec = this.recorder;
+            const line: SoloRegion = { kind: "diag1" };
+            const block: SoloRegion = { kind: "block", index: b };
+            if (
+              this.intersect(idx, idx2, rec ? { kind: "intersect", n, confined: line, target: block } : undefined) ||
+              this.intersect(idx2, idx, rec ? { kind: "intersect", n, confined: block, target: line } : undefined)
+            ) {
               diff = Math.max(diff, DIFF_INTERSECT);
               continue mainloop;
             }
@@ -1020,7 +1193,10 @@ class SolverUsage {
       for (let b = 0; b < cr; b++) {
         for (let i = 0; i < cr; i++)
           for (let n = 1; n <= cr; n++) idx[i * cr + n - 1] = this.blocks.blocks[b][i] * cr + n - 1;
-        const ret = this.set_(idx);
+        const ret = this.set_(
+          idx,
+          this.recorder ? { kind: "set", region: { kind: "block", index: b } } : undefined,
+        );
         if (ret < 0) {
           finish(DIFF_IMPOSSIBLE);
           return;
@@ -1034,7 +1210,10 @@ class SolverUsage {
       for (let y = 0; y < cr; y++) {
         for (let x = 0; x < cr; x++)
           for (let n = 1; n <= cr; n++) idx[x * cr + n - 1] = (y * cr + x) * cr + n - 1;
-        const ret = this.set_(idx);
+        const ret = this.set_(
+          idx,
+          this.recorder ? { kind: "set", region: { kind: "row", index: y } } : undefined,
+        );
         if (ret < 0) {
           finish(DIFF_IMPOSSIBLE);
           return;
@@ -1048,7 +1227,10 @@ class SolverUsage {
       for (let x = 0; x < cr; x++) {
         for (let y = 0; y < cr; y++)
           for (let n = 1; n <= cr; n++) idx[y * cr + n - 1] = (y * cr + x) * cr + n - 1;
-        const ret = this.set_(idx);
+        const ret = this.set_(
+          idx,
+          this.recorder ? { kind: "set", region: { kind: "col", index: x } } : undefined,
+        );
         if (ret < 0) {
           finish(DIFF_IMPOSSIBLE);
           return;
@@ -1063,7 +1245,10 @@ class SolverUsage {
         // \-diagonal set elimination.
         for (let i = 0; i < cr; i++)
           for (let n = 1; n <= cr; n++) idx[i * cr + n - 1] = diag0(i, cr) * cr + n - 1;
-        let ret = this.set_(idx);
+        let ret = this.set_(
+          idx,
+          this.recorder ? { kind: "set", region: { kind: "diag0" } } : undefined,
+        );
         if (ret < 0) {
           finish(DIFF_IMPOSSIBLE);
           return;
@@ -1075,7 +1260,10 @@ class SolverUsage {
         // /-diagonal set elimination.
         for (let i = 0; i < cr; i++)
           for (let n = 1; n <= cr; n++) idx[i * cr + n - 1] = diag1(i, cr) * cr + n - 1;
-        ret = this.set_(idx);
+        ret = this.set_(
+          idx,
+          this.recorder ? { kind: "set", region: { kind: "diag1" } } : undefined,
+        );
         if (ret < 0) {
           finish(DIFF_IMPOSSIBLE);
           return;
@@ -1092,7 +1280,7 @@ class SolverUsage {
       for (let n = 1; n <= cr; n++) {
         for (let y = 0; y < cr; y++)
           for (let x = 0; x < cr; x++) idx[y * cr + x] = (y * cr + x) * cr + n - 1;
-        const ret = this.set_(idx);
+        const ret = this.set_(idx, this.recorder ? { kind: "set" } : undefined);
         if (ret < 0) {
           finish(DIFF_IMPOSSIBLE);
           return;
@@ -1206,4 +1394,34 @@ export function solveSolo(
     dlev,
   );
   return { diff: dlev.diff, kdiff: dlev.kdiff, grid };
+}
+
+/**
+ * Run the recording solver on a sound candidate cube seeded from `s.grid` (the
+ * placed entries only — never the player's notes), capped **below** recursion,
+ * and return every candidate elimination and cell placement it makes, in solver
+ * order, each tagged with the rule + premise that forced it. This is the raw
+ * deduction script a hint narrates; the recorder-off path (`solveSolo`) is
+ * byte-for-byte unchanged (the existing C differential is the guard). `s.grid`
+ * is treated read-only (a working copy is solved internally).
+ */
+export function recordSoloDeductions(
+  s: SoloState,
+  maxdiff: number = DIFF_EXTREME,
+  maxkdiff: number = DIFF_KINTERSECT,
+): HintOp[] {
+  const ops: HintOp[] = [];
+  const grid = s.grid.slice();
+  const kblocks = s.killerData ? s.killerData.kblocks : null;
+  const kgrid = s.killerData ? s.killerData.kgrid : null;
+  const dlev: Difficulty = {
+    maxdiff: Math.min(maxdiff, DIFF_EXTREME),
+    maxkdiff,
+    diff: DIFF_IMPOSSIBLE,
+    kdiff: DIFF_KSINGLE,
+  };
+  const usage = new SolverUsage(s.cr, s.blocks, kblocks, s.xtype, grid, kgrid);
+  usage.pendingRecorder = (rec) => ops.push(rec as HintOp);
+  usage.run(s.blocks, kblocks, s.xtype, kgrid, dlev);
+  return ops;
 }

@@ -25,12 +25,13 @@
  */
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   checkKillerCageSum,
   onDiag0,
   onDiag1,
+  type SoloMove,
   type SoloState,
   type SoloUi,
 } from "./state.ts";
@@ -50,9 +51,11 @@ export const COL_HIGHLIGHT = 5;
 export const COL_ERROR = 6;
 export const COL_PENCIL = 7;
 export const COL_KILLER = 8;
-// Fork addition, appended past the upstream enum (NCOLOURS = 9). Solo's only
+// Fork additions, appended past the upstream enum (NCOLOURS = 9). Solo's only
 // dark-mode override touches index 2, so a plain append is safe.
 export const COL_PENCIL_BODY = 9; // the yellow body of the pencil-mode indicator
+export const COL_HINT = 10; // the cell(s)/candidate(s) the deduction acts on
+export const COL_HINT_CELL = 11; // the driving region's cells (evidence shade)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -67,7 +70,22 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL] = [0.5 * bg[0], 0.5 * bg[1], bg[2]];
   out[COL_KILLER] = [0.5 * bg[0], 0.5 * bg[1], 0.1 * bg[2]];
   out[COL_PENCIL_BODY] = [1, 0.78, 0.17];
+  out[COL_HINT] = [0.62, 0.81, 0.96];
+  out[COL_HINT_CELL] = [0.85, 0.92, 0.99];
   return out;
+}
+
+/** Highlight payload a Solo hint step carries (built in `index.ts`). The
+ * element-type legend (hint-authoring §5.3): the driving region's cells shaded
+ * `COL_HINT_CELL`, the acted-on cell(s) `COL_HINT`, the ruled-out candidate(s)
+ * shown struck. */
+export interface SoloHint {
+  /** The driving region's cells (evidence), shaded `COL_HINT_CELL`. */
+  area: { x: number; y: number }[];
+  /** The cell(s) the deduction acts on, marked `COL_HINT`. */
+  targets: { x: number; y: number }[];
+  /** The candidate number(s) ruled out, shown struck among the pencil marks. */
+  marks: { x: number; y: number; n: number }[];
 }
 
 // --- highlight byte (the `hl` argument of draw_number) ----------------------
@@ -112,6 +130,14 @@ export interface SoloDrawState {
   /** `cr²` last-drawn mistake-overlay flags (-1 = never drawn); in the diff key
    * so Check & Save repaints a cell whose tile is otherwise unchanged. */
   drawnWrong: Int8Array;
+  /** `cr²` packed hint overlay (fork addition): bit 0 = target cell, bit 1 =
+   * evidence cell, bits 2.. = struck-candidate mask (`1 << (2 + n)`). Folded into
+   * the diff key via {@link drawnHint} (playbook §3.2 — Solo keeps two parallel
+   * cache arrays since digit+pencil already exceed 32 bits, so the hint is a
+   * third sidecar, not a tile bit). */
+  hintPacked: Int32Array;
+  /** `cr²` last-drawn hint overlay (-1 = never drawn). */
+  drawnHint: Int32Array;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
   pencilModeShown: boolean;
 }
@@ -127,6 +153,8 @@ export function newDrawState(state: SoloState): SoloDrawState {
     pencil: new Int32Array(a).fill(-1),
     wrong: new Uint8Array(a),
     drawnWrong: new Int8Array(a).fill(-1),
+    hintPacked: new Int32Array(a),
+    drawnHint: new Int32Array(a).fill(-1),
     pencilModeShown: false,
   };
 }
@@ -152,6 +180,7 @@ function drawNumber(
   y: number,
   hl: number,
   wrong: boolean,
+  hint: number,
 ): void {
   const ts = ds.tileSize;
   const cr = state.cr;
@@ -160,6 +189,13 @@ function drawNumber(
   const wb = state.blocks.whichblock;
   const cell = y * cr + x;
   const colKiller = hl & HL_KSUM ? COL_ERROR : COL_KILLER;
+
+  // Hint overlay (hint-authoring §5.3): target cell (COL_HINT) > evidence cell
+  // (COL_HINT_CELL) > cursor/flash highlight > X-diagonal > background. `struck`
+  // is the set of candidates this firing rules out, crossed through among marks.
+  const hintTarget = (hint & 1) !== 0;
+  const hintArea = (hint & 2) !== 0;
+  const struck = hint >> 2; // bit n ⇒ candidate n struck
 
   const tx = b + x * ts + 1 + ge;
   const ty = b + y * ts + 1 + ge;
@@ -185,13 +221,18 @@ function drawNumber(
 
   dr.clip({ x: cx, y: cy, w: cw, h: ch });
 
-  // Background: solid highlight wins; else X-diagonal shade; else plain.
-  const bg =
+  // Background: a hint target (with nothing struck here — a placement) wins as a
+  // solid COL_HINT fill; a strike cell instead keeps a lighter background so the
+  // crossed-through candidate stays legible. Else evidence shade, solid
+  // highlight, X-diagonal shade, or plain.
+  let bg =
     (hl & 15) === HL_SOLID
       ? COL_HIGHLIGHT
       : ds.xtype && (onDiag0(cell, cr) || onDiag1(cell, cr))
         ? COL_XDIAGONALS
         : COL_BACKGROUND;
+  if (hintArea) bg = COL_HINT_CELL;
+  if (hintTarget && struck === 0) bg = COL_HINT;
   dr.drawRect({ x: cx, y: cy, w: cw, h: ch }, bg);
 
   // Pencil-mode highlight (top-left triangle).
@@ -364,7 +405,7 @@ function drawNumber(
       digitChar(d),
     );
   } else {
-    drawPencilMarks(dr, state, x, y, tx, ty, ts, ge);
+    drawPencilMarks(dr, state, x, y, tx, ty, ts, ge, struck);
   }
 
   // Check & Save mistake overlay (fork addition): an inset red outline.
@@ -415,6 +456,7 @@ function drawPencilMarks(
   ty: number,
   ts: number,
   ge: number,
+  struck: number,
 ): void {
   const cr = state.cr;
   const cell = y * cr + x;
@@ -468,11 +510,10 @@ function drawPencilMarks(
     if (!(marks & (1 << (i + 1)))) continue;
     const dx = j % pw;
     const dy = (j / pw) | 0;
+    const gx = pl + (((fontsize * (2 * dx + 1)) / 2) | 0);
+    const gy = pt + (((fontsize * (2 * dy + 1)) / 2) | 0);
     dr.drawText(
-      {
-        x: pl + (((fontsize * (2 * dx + 1)) / 2) | 0),
-        y: pt + (((fontsize * (2 * dy + 1)) / 2) | 0),
-      },
+      { x: gx, y: gy },
       {
         align: "center",
         baseline: "mathematical",
@@ -482,6 +523,12 @@ function drawPencilMarks(
       COL_PENCIL,
       digitChar(i + 1),
     );
+    // A hint-ruled-out candidate keeps its normal pencil colour with a
+    // same-colour strikethrough — the "ruled out" cue (hint-authoring §5.3).
+    if (struck & (1 << (i + 1))) {
+      const r = Math.max(2, (fontsize / 3) | 0);
+      dr.drawLine({ x: gx - r, y: gy }, { x: gx + r, y: gy }, COL_PENCIL, 2);
+    }
     j++;
   }
 }
@@ -514,7 +561,7 @@ export function redraw(
   ui: SoloUi,
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<SoloMove, SoloHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
   if (!ds) return;
@@ -577,6 +624,16 @@ export function redraw(
   ds.wrong.fill(0);
   if (mistakes) for (const m of mistakes) ds.wrong[m.y * cr + m.x] = 1;
 
+  // Pack the displayed hint overlay per cell: bit 0 target, bit 1 evidence,
+  // bits 2.. struck candidate (`1 << (2 + n)`).
+  ds.hintPacked.fill(0);
+  const hl2 = hint?.highlights;
+  if (hl2) {
+    for (const a of hl2.area) ds.hintPacked[a.y * cr + a.x] |= 2;
+    for (const t of hl2.targets) ds.hintPacked[t.y * cr + t.x] |= 1;
+    for (const m of hl2.marks) ds.hintPacked[m.y * cr + m.x] |= 1 << (2 + m.n);
+  }
+
   const flash =
     flashTime > 0 && (flashTime <= FLASH_TIME / 3 || flashTime >= (FLASH_TIME * 2) / 3);
 
@@ -610,15 +667,18 @@ export function redraw(
       const tile = d | (hl << 8);
       const pen = state.pencil[cell];
       const wrong = ds.wrong[cell];
+      const hintCell = ds.hintPacked[cell];
       if (
         ds.tiles[cell] !== tile ||
         ds.pencil[cell] !== pen ||
-        ds.drawnWrong[cell] !== wrong
+        ds.drawnWrong[cell] !== wrong ||
+        ds.drawnHint[cell] !== hintCell
       ) {
-        drawNumber(dr, ds, state, x, y, hl, wrong !== 0);
+        drawNumber(dr, ds, state, x, y, hl, wrong !== 0, hintCell);
         ds.tiles[cell] = tile;
         ds.pencil[cell] = pen;
         ds.drawnWrong[cell] = wrong;
+        ds.drawnHint[cell] = hintCell;
       }
     }
   }
