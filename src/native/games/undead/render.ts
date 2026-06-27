@@ -17,7 +17,7 @@
  */
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   CELL_MIRROR_L,
@@ -28,9 +28,22 @@ import {
   MON_GHOST,
   MON_VAMPIRE,
   MON_ZOMBIE,
+  type UndeadMove,
   type UndeadState,
   type UndeadUi,
 } from "./state.ts";
+
+/** Highlight payload an Undead hint step carries (built in `index.ts`). See
+ * hint-authoring §5.3 for the element-type legend. Coordinates are interior
+ * (1-based) grid cells, matching `redraw`/`findMistakes`. */
+export interface UndeadHint {
+  /** The driving sightline's bounce path, shaded `COL_HINT_CELL` (evidence). */
+  area: { x: number; y: number }[];
+  /** The cell(s) the deduction acts on; a placement target fills `COL_HINT`. */
+  targets: { x: number; y: number }[];
+  /** The candidate monster(s) ruled out, shown struck through in the notes. */
+  marks: { x: number; y: number; monster: number }[];
+}
 
 export const PREFERRED_TILE_SIZE = 64;
 export const FLASH_TIME = 0.7;
@@ -50,9 +63,12 @@ export const COL_GHOST = 6;
 export const COL_ZOMBIE = 7;
 export const COL_VAMPIRE = 8;
 export const COL_DONE = 9;
-// Fork addition, appended past the upstream enum; Undead has no dark-mode
+// Fork additions, appended past the upstream enum; Undead has no dark-mode
 // paletteOverrides, so a plain append is safe.
 export const COL_PENCIL_BODY = 10;
+// The explained-hint legend (hint-authoring §5.3).
+export const COL_HINT = 11; // the cell(s)/candidate(s) the deduction acts on
+export const COL_HINT_CELL = 12; // the driving sightline's bounce path (evidence)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -69,6 +85,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_VAMPIRE] = [bg[0], bg[0] * 0.9, bg[0] * 0.9];
   out[COL_DONE] = [bg[0] / 1.5, bg[1] / 1.5, bg[2] / 1.5];
   out[COL_PENCIL_BODY] = [1, 0.78, 0.17];
+  out[COL_HINT] = [0.62, 0.81, 0.96];
+  out[COL_HINT_CELL] = [0.85, 0.92, 0.99];
   return out;
 }
 
@@ -113,6 +131,12 @@ export interface UndeadDrawState {
   /** `wh` current-frame mistake flags + last-drawn sidecar (Check & Save). */
   wrong: Uint8Array;
   drawnWrong: Int8Array;
+  /** `wh` packed hint overlay (fork addition): bit 0 = target cell, bit 1 =
+   * evidence area, bits 2.. = struck-candidate mask (`monster << 2`). Compared
+   * against {@link drawnHint} so a hint change repaints affected cells. */
+  hintPacked: Int32Array;
+  /** `wh` last-drawn hint overlay (-1 = never drawn). */
+  drawnHint: Int32Array;
   pencilModeShown: boolean;
 }
 
@@ -143,6 +167,8 @@ export function newDrawState(state: UndeadState): UndeadDrawState {
     countPadding: 0,
     wrong: new Uint8Array(common.wh),
     drawnWrong: new Int8Array(common.wh).fill(-1),
+    hintPacked: new Int32Array(common.wh),
+    drawnHint: new Int32Array(common.wh).fill(-1),
     pencilModeShown: false,
   };
 }
@@ -348,15 +374,15 @@ function drawCellBackground(
   ui: UndeadUi,
   x: number,
   y: number,
+  hintBg = -1,
 ): void {
   const ts = ds.tilesize;
   const { dx, dy } = cellCentre(ds, x, y);
   const hon = ui.hshow && x === ui.hx && y === ui.hy;
-  dr.drawRect(
-    { x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 },
-    hon && !ui.hpencil ? COL_HIGHLIGHT : COL_BACKGROUND,
-  );
-  if (hon && ui.hpencil) {
+  // A hint background overrides the cursor highlight (the hint is what to act on).
+  const bg = hintBg >= 0 ? hintBg : hon && !ui.hpencil ? COL_HIGHLIGHT : COL_BACKGROUND;
+  dr.drawRect({ x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 }, bg);
+  if (hintBg < 0 && hon && ui.hpencil) {
     dr.drawPolygon(
       [
         { x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1 },
@@ -425,6 +451,7 @@ function drawPencils(
   y: number,
   pencil: number,
   ascii: boolean,
+  struck = 0,
 ): void {
   const ts = ds.tilesize;
   const dx = border(ts) + x * ts + f(ts / 4);
@@ -437,16 +464,24 @@ function drawPencils(
     for (let px = 0; px < 2; px++) {
       const m = monsters[py * 2 + px];
       if (!m) continue;
+      const cx = dx + f(ts / 2) * px;
+      const cy = dy + f(ts / 2) * py;
       if (!ascii) {
-        drawMonster(dr, dx + f(ts / 2) * px, dy + f(ts / 2) * py, f(ts / 2), false, m);
+        drawMonster(dr, cx, cy, f(ts / 2), false, m);
       } else {
         const buf = m === MON_GHOST ? "G" : m === MON_VAMPIRE ? "V" : "Z";
         dr.drawText(
-          { x: dx + f(ts / 2) * px, y: dy + f(ts / 2) * py },
+          { x: cx, y: cy },
           { align: "center", baseline: "mathematical", fontType: "variable", size: f(ts / 4) },
           COL_TEXT,
           buf,
         );
+      }
+      // A struck candidate keeps its normal glyph (legible on a non-COL_HINT
+      // background, §5.3) and gains a COL_HINT strikethrough as the "ruled out" cue.
+      if (struck & m) {
+        const r = f(ts / 6);
+        dr.drawLine({ x: cx - r, y: cy + r }, { x: cx + r, y: cy - r }, COL_HINT, Math.max(1, f(ts / 24)));
       }
     }
   }
@@ -591,7 +626,7 @@ export function redraw(
   ui: UndeadUi,
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<UndeadMove, UndeadHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
   if (!ds) return;
@@ -686,6 +721,15 @@ export function redraw(
   ds.wrong.fill(0);
   if (mistakes) for (const m of mistakes) ds.wrong[m.x + m.y * stride] = 1;
 
+  // Hint overlay sidecar: per cell, bit 0 target, bit 1 area, bits 2.. struck mask.
+  ds.hintPacked.fill(0);
+  const hl = hint?.highlights;
+  if (hl) {
+    for (const a of hl.area) ds.hintPacked[a.x + a.y * stride] |= 2;
+    for (const t of hl.targets) ds.hintPacked[t.x + t.y * stride] |= 1;
+    for (const m of hl.marks) ds.hintPacked[m.x + m.y * stride] |= m.monster << 2;
+  }
+
   // Grid cells.
   for (let x = 1; x < w + 1; x++) {
     for (let y = 1; y < h + 1; y++) {
@@ -708,10 +752,22 @@ export function redraw(
         ds.cellErrors[xy] = state.cellErrors[xy];
       }
       if (ds.wrong[xy] !== ds.drawnWrong[xy]) stale = true;
+      if (ds.hintPacked[xy] !== ds.drawnHint[xy]) stale = true;
 
       if (stale) {
-        drawCellBackground(dr, ds, ui, x, y);
-        if (xi < 0) {
+        const pack = ds.hintPacked[xy];
+        const isTarget = (pack & 1) !== 0;
+        const isArea = (pack & 2) !== 0;
+        const struck = (pack >> 2) & 7;
+        // A placement target (no struck candidates) fills solid COL_HINT, with no
+        // monster glyph drawn over it (§5.1); a strike/evidence cell shades
+        // COL_HINT_CELL so the struck glyph + its strikethrough stay legible (§5.3).
+        const placement = isTarget && struck === 0;
+        const hintBg = placement ? COL_HINT : isArea ? COL_HINT_CELL : -1;
+        drawCellBackground(dr, ds, ui, x, y, hintBg);
+        if (placement) {
+          // solid COL_HINT, nothing drawn on top (the narration says what to place)
+        } else if (xi < 0) {
           drawMirror(dr, ds, x, y, hflash, c);
         } else if (
           state.guess[xi] === MON_GHOST ||
@@ -720,7 +776,7 @@ export function redraw(
         ) {
           drawBigMonster(dr, ds, x, y, hflash, state.guess[xi], ui.ascii);
         } else {
-          drawPencils(dr, ds, x, y, state.pencils[xi], ui.ascii);
+          drawPencils(dr, ds, x, y, state.pencils[xi], ui.ascii, struck);
         }
         if (ds.wrong[xy]) {
           const { dx, dy } = cellCentre(ds, x, y);
@@ -737,6 +793,7 @@ export function redraw(
           dr.drawUpdate({ x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 });
         }
         ds.drawnWrong[xy] = ds.wrong[xy];
+        ds.drawnHint[xy] = pack;
       }
     }
   }

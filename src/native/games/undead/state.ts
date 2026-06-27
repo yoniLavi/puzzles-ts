@@ -428,6 +428,11 @@ export type UndeadMove =
   | { type: "clear"; cell: number }
   /** Toggle a pencil mark (1/2/4) in cell `cell`. */
   | { type: "pencil"; cell: number; monster: number }
+  /** Clear a list of candidate bits across cells atomically (idempotent — a
+   * re-applied strike never re-adds a candidate). The one-firing-one-step note
+   * move used by the hint (`hint-authoring.md` §9.2); unlike `pencil` it is
+   * resume-safe in a kept plan. */
+  | { type: "pencilStrike"; marks: { cell: number; monster: number }[] }
   /** Fill every undecided cell with all candidate notes (`M`). */
   | { type: "markAll" }
   /** Toggle the struck-through ("done") state of edge clue `clue`. */

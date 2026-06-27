@@ -1006,6 +1006,51 @@ the rest of its row/column" steps. The fixes, all owner-driven and worth copying
     [`keen/index.ts`](../../src/native/games/keen/index.ts); guard: `keen-hint.test.ts` "a cage-strike step's
     marks all lie in one cell".
 
+### 9.4 A *non-Latin* candidate-elimination game — own recorder, same shape (Undead)
+
+Undead (`add-undead-hint`) is the first candidate-elimination hint that does **not** ride
+`engine/latin.ts`: its candidate state is the per-cell monster bitmask (`1` ghost / `2` vampire /
+`4` zombie / `7` undecided), and its deductions are mirror-bouncing **sightline** clues + monster
+**totals**, computed by its own `solveIterative` + the `strengthen-undead-deduction` counting/forcing
+ladder. Everything else in §9 transfers unchanged — the soundness boundary (§9.1: seed the working
+grid from the **placed grid only**, never the player's notes), the `pencilStrike` move (§9.2), the
+naked-single-first plan walk with **lazy populate** (§9.3), and `refreshHintStep` (§7.3). What's
+specific:
+
+- **Write a parallel recorder, don't bolt one onto the grader.** `recordUndeadDeductions(common, placed)`
+  in [`undead/solver.ts`](../../src/native/games/undead/solver.ts) is *separate code* from
+  `gradeUndead`/`solveDeductive`/`findUndeadSolution`, reusing the shared building blocks (the odometer,
+  `checkSolution`, `arcCountFixpoint`). Because the generate/solve/`findMistakes` paths never call it, the
+  C differential stays byte-identical *by construction* — no recorder flag to thread, no risk of the hot
+  path diverging. Prefer this to a `if (recorder)`-gated grader when the deduction logic is easy to re-run.
+- **One pass = one firing = one `group`.** Each ladder pass (one counting deduction, one *path's*
+  sightline narrowing, one forcing elimination) returns after its first firing and bumps the group; the
+  recorder loops to a fixpoint. The planner then splits a **sightline** firing **by cell** into a
+  `continuesPrevious` journey (the whole bounce path stays shaded, each leg names one cell — the §9.3
+  region pattern), while a **total** firing is one step striking one monster across every cell.
+- **Two deduction kinds beyond the cube games.** `total` (a monster type fully placed ⇒ struck
+  everywhere) and its dual `onlyCells` (exactly as many cells can still hold a type as remain ⇒ each is
+  forced) come straight from the global count *equality* `checkNumbers` enforces. Surface them
+  **honestly** as their own narrated steps (§5.6) — folding a total into a sightline narration would state
+  a premise that doesn't discriminate the move.
+- **The plan is deductive-only — no solution-walk.** The strengthened ladder solves every shipped tier
+  guess-free (§1A worked example), so `buildSteps` always has a real deduction; there is no `aux`/solution
+  fallback. Verified by `undeadGame` in `hint-resume.test.ts` (4×4 easy) plus `undead-hint.test.ts`
+  resume on 5×5 Normal/Tricky.
+- **Forcing on Tricky — a §1B.1 case the *measurement* resolved (owner-accepted 2026-06-27).** Tricky
+  boards need the depth-1 forcing rung, and forcing is *intrinsically multi-step*, so the rule of thumb
+  says externalise it as a guided what-if walk (§1B.1) or push the boards to `Unreasonable`. The
+  `add-undead-hint` design D8 did **neither** — because the data didn't justify the cost. Forcing is
+  *rare* on Tricky (a minority of 5×5 boards, a few eliminations when it fires), and the single-sentence
+  narration ("If this cell were a vampire, the sightline clues and monster counts could no longer all be
+  met — so cross out the vampire") tops out at a **measured 130 chars — shorter than the routine
+  sightline hint (282 chars)** that already ships on Easy/Normal. So it sits inside the cognitive-load
+  envelope the player already accepts; the contradiction is asserted, not a chain to hold. **Lesson:
+  §1B.1's "externalise the chain" is a default, not an absolute — measure the actual chain length and
+  string length before paying for what-if-walk machinery; a forcing deduction that compresses to one
+  short sentence and fires rarely can stay a single-step hint.** The what-if-walk visualisation is parked
+  for a future port (Solo's forcing chains may be common enough to revisit), not a debt here.
+
 ---
 
 ## 10. Method lesson: probe before trusting a mechanism diagnosis

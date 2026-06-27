@@ -13,6 +13,7 @@
  * inconsistent (no candidate left).
  */
 
+import { stepBudget } from "../../engine/step-budget.ts";
 import {
   MON_GHOST,
   MON_NONE,
@@ -571,4 +572,194 @@ export function isUniquelySolvable(common: UndeadCommon): boolean {
   const grade = gradeUndead(common, start, true);
   if (grade.inconsistent) return false;
   return grade.iterativeSolved || grade.bruteforceSolved;
+}
+
+// --- the hint recorder (fork divergence; never on the generate/solve path) ---
+//
+// `recordUndeadDeductions` re-runs the deductive ladder, but instead of just
+// narrowing to a fixpoint it captures *each firing* — which candidate it
+// eliminated (or which cell it forced) and the deduction that did it — in
+// dependency order, so the hint plan (`undead/index.ts`) can narrate every step.
+// It is **separate code** from `gradeUndead`/`solveDeductive`/`findUndeadSolution`
+// (which the generator/solve/findMistakes paths use), so those run byte-for-byte
+// unchanged and the C differential remains the guard (`add-undead-hint` task 1.3).
+// The recorder, like every other deductive entry, narrows a cell only to values
+// the true solution still allows, so its firings are sound to teach. It is *not*
+// recursion-capable: a board the ladder can't crack without guessing yields a
+// short plan, and the deductive-ladder generation policy guarantees the shipped
+// tiers never need that (`hint-authoring.md` §1A; the `strengthen-undead-deduction`
+// re-grade measured a zero recursion residual).
+
+/** Why a candidate was eliminated, or a cell forced (`hint-authoring.md` §9):
+ * - `sightline` — one path's two count clues admit no legal beam arrangement
+ *   leaving this cell the eliminated monster (the core mirror-sighting deduction);
+ * - `total` — a monster type's full count is already placed, so it is struck from
+ *   every still-undecided cell (`checkNumbers` surfaced honestly, §5.6);
+ * - `onlyCells` — exactly as many cells can still hold a type as remain to place,
+ *   so each of them is forced to it (counting's dual, a placement);
+ * - `forcing` — hypothesising the candidate forces an immediate contradiction
+ *   (the depth-1 forcing rung, §1B.1). */
+export type UndeadReason =
+  | { kind: "sightline"; path: number }
+  | { kind: "total"; monster: number }
+  | { kind: "onlyCells"; monster: number; nCells: number }
+  | { kind: "forcing"; monster: number }
+  | { kind: "single" };
+
+/** One recorded firing op. `kind: "elim"` removes `monster` from `cell`'s
+ * candidates; `kind: "place"` forces `cell` to `monster`. `group` ties the ops
+ * of a single firing together (one firing = one journey). */
+export interface HintOp {
+  kind: "elim" | "place";
+  cell: number;
+  monster: number;
+  reason: UndeadReason;
+  group: number;
+}
+
+const MON_BITS = [MON_GHOST, MON_VAMPIRE, MON_ZOMBIE];
+
+/** Per-mapping-index surviving candidate bits for one path (the inner loop of
+ * {@link solveIterative}, pulled out so the recorder can diff before/after). */
+function pathSurvivors(common: UndeadCommon, cand: Uint8Array, path: UndeadPath): Int32Array {
+  const numTotal = common.numTotal;
+  const nm = path.numMonsters;
+  const survivors = new Int32Array(nm);
+  if (nm <= 0) return survivors;
+  const loopGuess = new Int32Array(nm);
+  const loopPossible = new Int32Array(nm);
+  for (let i = 0; i < nm; i++) {
+    const v = cand[path.mapping[i]];
+    loopGuess[i] = lowestBit(v);
+    loopPossible[i] = v;
+  }
+  const full = new Int32Array(numTotal);
+  while (true) {
+    for (let i = 0; i < numTotal; i++) full[i] = cand[i];
+    for (let i = 0; i < nm; i++) full[path.mapping[i]] = loopGuess[i];
+    if (checkNumbers(common, full) && checkSolution(full, path)) {
+      for (let j = 0; j < nm; j++) survivors[j] |= loopGuess[j];
+    }
+    if (!nextList(loopGuess, loopPossible, nm - 1)) break;
+  }
+  return survivors;
+}
+
+/** Record the first path-pass that eliminates a candidate; apply it to `cand`.
+ * One path-pass is one firing (`group`). Returns its ops, or `[]`. */
+function recordSightlinePass(
+  common: UndeadCommon,
+  cand: Uint8Array,
+  group: number,
+): HintOp[] {
+  for (let p = 0; p < common.numPaths; p++) {
+    const path = common.paths[p];
+    if (path.numMonsters <= 0) continue;
+    const survivors = pathSurvivors(common, cand, path);
+    const ops: HintOp[] = [];
+    for (let j = 0; j < path.numMonsters; j++) {
+      const m = path.mapping[j];
+      const removed = cand[m] & ~survivors[j];
+      if (!removed) continue;
+      for (const b of MON_BITS) {
+        if (removed & b) ops.push({ kind: "elim", cell: m, monster: b, reason: { kind: "sightline", path: p }, group });
+      }
+    }
+    if (ops.length > 0) {
+      for (let j = 0; j < path.numMonsters; j++) cand[path.mapping[j]] &= survivors[j];
+      return ops;
+    }
+  }
+  return [];
+}
+
+/** Record the first counting deduction (total exhaustion, or its dual "only this
+ * many cells can hold the type"); apply it to `cand`. Returns its ops, or `[]`. */
+function recordCountingPass(common: UndeadCommon, cand: Uint8Array, group: number): HintOp[] {
+  const numTotal = common.numTotal;
+  const targets = [common.numGhosts, common.numVampires, common.numZombies];
+  for (let t = 0; t < 3; t++) {
+    const m = MON_BITS[t];
+    const nT = targets[t];
+    let placed = 0;
+    let possible = 0;
+    for (let i = 0; i < numTotal; i++) {
+      if (cand[i] === m) placed++;
+      if (cand[i] & m) possible++;
+    }
+    if (placed === nT && possible > nT) {
+      // All of this type are placed — strike it from every other candidate cell.
+      const ops: HintOp[] = [];
+      for (let i = 0; i < numTotal; i++) {
+        if (cand[i] !== m && cand[i] & m) {
+          ops.push({ kind: "elim", cell: i, monster: m, reason: { kind: "total", monster: m }, group });
+          cand[i] &= ~m;
+        }
+      }
+      return ops;
+    }
+    if (possible === nT && placed < nT) {
+      // Exactly nT cells can hold the type and nT remain — force each of them.
+      const ops: HintOp[] = [];
+      for (let i = 0; i < numTotal; i++) {
+        if (cand[i] !== m && cand[i] & m) {
+          ops.push({ kind: "place", cell: i, monster: m, reason: { kind: "onlyCells", monster: m, nCells: nT }, group });
+          cand[i] = m;
+        }
+      }
+      return ops;
+    }
+  }
+  return [];
+}
+
+/** Record the first depth-1 forcing elimination; apply it to `cand`. Returns its
+ * op, or `[]`. (One elimination per firing — forcing is per cell/candidate.) */
+function recordForcingPass(common: UndeadCommon, cand: Uint8Array, group: number): HintOp[] {
+  const numTotal = common.numTotal;
+  for (let i = 0; i < numTotal; i++) {
+    const g0 = cand[i];
+    if (g0 === MON_GHOST || g0 === MON_VAMPIRE || g0 === MON_ZOMBIE || g0 === 0) continue;
+    for (const b of MON_BITS) {
+      if (!(cand[i] & b)) continue;
+      const trial = cand.slice();
+      trial[i] = b;
+      if (arcCountFixpoint(common, trial) === "inconsistent") {
+        cand[i] &= ~b;
+        return [{ kind: "elim", cell: i, monster: b, reason: { kind: "forcing", monster: b }, group }];
+      }
+    }
+  }
+  return [];
+}
+
+/**
+ * Run the deductive ladder over a candidate grid seeded from `placed` (singleton
+ * bits for placed/fixed cells, `MON_NONE` for empty), recording every firing in
+ * dependency order. Each round tries counting (totals lead, §D2), then a
+ * sightline pass, then a forcing pass, recording the first that fires; loops to a
+ * fixpoint. `placed` carries `MON_NONE` (= 7) for empty cells and a singleton
+ * bit for placed ones (the player's `state.guess`).
+ */
+export function recordUndeadDeductions(common: UndeadCommon, placed: Uint8Array): HintOp[] {
+  const numTotal = common.numTotal;
+  const cand = new Uint8Array(numTotal);
+  for (let i = 0; i < numTotal; i++) {
+    const v = placed[i];
+    cand[i] = v === MON_GHOST || v === MON_VAMPIRE || v === MON_ZOMBIE ? v : MON_NONE;
+  }
+  const ops: HintOp[] = [];
+  let group = 0;
+  const budget = stepBudget("undead hint recorder");
+  while (true) {
+    budget.tick();
+    let fired = recordCountingPass(common, cand, group);
+    if (fired.length === 0) fired = recordSightlinePass(common, cand, group);
+    if (fired.length === 0) fired = recordForcingPass(common, cand, group);
+    if (fired.length === 0) break;
+    for (const op of fired) ops.push(op);
+    group++;
+    if (anyEmpty(cand, numTotal)) break; // a contradiction — stop (hint refuses anyway)
+  }
+  return ops;
 }

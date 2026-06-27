@@ -176,6 +176,21 @@ The `Unreasonable` tier's hint is then allowed to be non-deductive (or simply
 acknowledge the guess), per §1A. Measure the typical forcing-chain length when deciding
 — a mostly-2-leg walk favours the walk; long chains favour the fallback.
 
+**Resolution (owner-accepted 2026-06-27): keep forcing on Tricky as a single-step hint.**
+The measurement settled it. Forcing is *rare* on Tricky (fires on a minority of 5×5
+boards, a handful of eliminations when it does — counting + sightline carry the solve),
+and the recorder squeezes each forcing deduction into one self-contained sentence whose
+**measured maximum length is 130 chars** ("If this cell were a vampire, the sightline
+clues and monster counts could no longer all be met — so we must cross out the vampire").
+That is *shorter* than the routine sightline-elimination hint (max 282 chars) that already
+ships on Easy/Normal, so it sits well within the cognitive-load envelope the player
+already accepts — there is no visible chain to hold, only an asserted contradiction. So
+**neither** the guided what-if walk **nor** the `Unreasonable` regrade was built:
+Easy/Normal/Tricky all stay, and the forcing narration ships as the single-step form. The
+what-if-walk *visualisation* is parked as a possible future enhancement (revisit if a
+later candidate-elimination port makes forcing common enough to warrant the tentative-mark
+machinery), not a debt against this change.
+
 ## Alternatives rejected
 
 - **Reuse `latin.ts`.** Undead is not a Latin square; its constraints are sightlines
