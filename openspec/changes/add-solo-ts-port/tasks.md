@@ -33,20 +33,28 @@
       _Live per-cell error highlighting (`check_errors`) deferred to the render
       task 4.1._
 
-## 2. Solver (`solo/solver.ts`)
-- [ ] 2.1 The `SolverUsage` model: per-cell candidate cube + per-group position
-      grids; build from the constraint-group list (so X-diagonals and jigsaw blocks
-      are ordinary groups). Discriminated difficulty sentinel.
-- [ ] 2.2 Standard techniques ported faithfully: positional + numeric elimination
-      (`DIFF_BLOCK`/`DIFF_SIMPLE`), block/row/column intersection
-      (`DIFF_INTERSECT`), set elimination (`DIFF_SET`), extreme forcing chains
+## 2. Solver (`solo/solver.ts`)  ✅ done + tested (`solver.test.ts`, 7 tests)
+- [x] 2.1 The `SolverUsage` model: per-cell candidate cube (`Uint8Array`) + the
+      `row`/`col`/`blk`/`diag` "already-placed" grids; X-diagonals and jigsaw
+      blocks fall out of the same loops (jigsaw via the immutable `BlockStructure`,
+      X via the optional `diag` array). Shared `DIFF_*` sentinels. Killer working
+      cages are a mutable `Cages` (plain JS arrays) coupled with `kclues` in one
+      `KillerWork` field; `removeFromBlock`/`splitBlock` match C's compaction.
+- [x] 2.2 Standard techniques ported faithfully: positional + numeric elimination
+      (`DIFF_BLOCK`/`DIFF_SIMPLE`), block/row/column (+ diagonal) intersection
+      (`DIFF_INTERSECT`), set elimination (`DIFF_SET`), row-vs-col + forcing chains
       (`DIFF_EXTREME`), and the bounded recursion (`DIFF_RECURSIVE`).
-- [ ] 2.3 Killer techniques: single-cell sums (`DIFF_KSINGLE`), min/max elimination
-      (`DIFF_KMINMAX`), sum-combination enumeration (`DIFF_KSUMS`), cage/line
-      intersection (`DIFF_KINTERSECT`).
-- [ ] 2.4 The `solveSolo(...)` driver: run techniques in difficulty order on both
-      axes, return the difficulty reached (or impossible/ambiguous), faithful to
-      upstream's grading. Replicate any upstream quirk verbatim (playbook §4.4).
+- [x] 2.3 Killer techniques: single-square cages (`DIFF_KSINGLE`), deduced
+      extra-cages (`DIFF_KINTERSECT`, with `filter_whole_cages`/`split_block`),
+      min/max elimination (`DIFF_KMINMAX`), sum-combination enumeration
+      (`DIFF_KSUMS`) over the eagerly-precomputed `sum_bits{2,3,4}` tables.
+- [x] 2.4 The `runSolver(...)` driver + `solveSolo(...)` `SoloState` wrapper: run
+      techniques in difficulty order on both axes, return the difficulty reached
+      (or `DIFF_AMBIGUOUS`/`DIFF_IMPOSSIBLE`), faithful to upstream's grading
+      (incl. the `goto got_result` quirk where upstream's `dlev->diff =
+      DIFF_IMPOSSIBLE` is overwritten by the local `diff` — replicated, commented).
+      Validated on a known unique 3×3 board (full solution + Trivial grading),
+      ambiguous/impossible verdicts, and killer/jigsaw codec→solve round-trips.
 
 ## 3. Generator (`solo/generator.ts` + `solo/divvy.ts`)
 - [ ] 3.1 Port `divvy_rectangle` as `solo/divvy.ts` (idiomatic union-find + retry,
