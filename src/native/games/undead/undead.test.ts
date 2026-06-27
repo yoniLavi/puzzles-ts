@@ -13,7 +13,14 @@ import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { newUndeadDesc } from "./generator.ts";
 import { undeadGame } from "./index.ts";
-import { findUndeadSolution, gradeUndead, isUniquelySolvable } from "./solver.ts";
+import {
+  findUndeadSolution,
+  isUniquelySolvable,
+  RUNG_ARC,
+  RUNG_COUNTING,
+  RUNG_FORCING,
+  solveDeductive,
+} from "./solver.ts";
 import {
   type Difficulty,
   decodeParams,
@@ -83,17 +90,21 @@ describe("undead generation", () => {
         expect(sol.ok).toBe(true);
         if (sol.ok) expect(Array.from(sol.guess)).toEqual(auxToGuess(aux));
 
-        // Grading reaches the requested difficulty class.
+        // The deductive ladder solves it with zero recursion, at the rung the
+        // requested tier demands (the guess-free generation gate).
         const start = new Uint8Array(state.common.numTotal).fill(MON_NONE);
-        const grade = gradeUndead(state.common, start, diff !== "easy");
+        const grade = solveDeductive(state.common, start);
         expect(grade.inconsistent).toBe(false);
+        expect(grade.solved).toBe(true);
         if (diff === "easy") {
-          expect(grade.iterativeSolved).toBe(true);
+          expect(grade.rung).toBe(RUNG_ARC);
+          expect(grade.arcPasses).toBeLessThanOrEqual(3);
         } else if (diff === "normal") {
-          expect(grade.iterativeSolved || grade.bruteforceSolved).toBe(true);
+          expect(
+            (grade.rung === RUNG_ARC && grade.arcPasses > 3) || grade.rung === RUNG_COUNTING,
+          ).toBe(true);
         } else {
-          expect(grade.bruteforceSolved).toBe(true);
-          expect(grade.ambiguous).toBeGreaterThanOrEqual(4);
+          expect(grade.rung).toBe(RUNG_FORCING);
         }
       },
       30_000,

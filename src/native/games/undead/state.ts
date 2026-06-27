@@ -23,6 +23,11 @@ export const DIFF_EASY = 0;
 export const DIFF_NORMAL = 1;
 export const DIFF_TRICKY = 2;
 export const DIFFCOUNT = 3;
+// No `Unreasonable` tier: the `strengthen-undead-deduction` re-grade measured a
+// zero recursion-only residual — every uniquely-solvable Undead board is cracked
+// by the deductive ladder (arc-consistency + exact counting + depth-1 forcing),
+// so Easy/Normal/Tricky are all guess-free and the recursion-only candidates are
+// exactly the non-unique boards (rejected by the uniqueness oracle anyway).
 
 // undead_diffchars / undead_diffnames, indexed by level.
 const DIFF_CHARS = "ent";
@@ -453,8 +458,8 @@ export interface UndeadUi {
   /** Preference (default on, fork divergence): right-click toggles a sticky
    * pencil mode. */
   pencilSticky: boolean;
-  /** Preference (`count-style`): 0 total, 1 remaining, 2 placed/total. Also
-   * cycled by `c` / right-click on the count row in play. */
+  /** Preference (`count-style`): 0 total, 1 remaining, 2 placed/total, 3
+   * remaining/total (default). Set in Preferences only — no in-play toggle. */
   countStyle: number;
 }
 

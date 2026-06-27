@@ -278,6 +278,252 @@ export function gradeUndead(
   return { iterativeSolved, bruteforceSolved, inconsistent, iterativeDepth, ambiguous, guess };
 }
 
+// --- the deductive ladder (fork divergence: guess-free generation) ---------
+//
+// Upstream Undead grades difficulty by *how much brute force* a board needs,
+// which conflicts with this fork's guess-free generation policy
+// (`docs/porting/hint-authoring.md` §1A: every shipped tier of a logic puzzle
+// must be solvable by pure deduction). This ladder adds the two deductive rungs
+// upstream never built — **exact counting** and **depth-1 forcing** — between
+// arc-consistency (`solveIterative`) and the brute-force oracle, so Easy/Normal/
+// Tricky become pure-deduction tiers graded by *which technique* they need.
+//
+// All three rungs are *sound*: they only narrow a cell to values the true
+// solution still allows, so a ladder that narrows every cell to a singleton has
+// proven that singleton is the unique solution. `solveBruteforce` remains the
+// independent uniqueness oracle.
+
+/** Highest deductive technique a board needs (or `RECURSION` if the ladder
+ * stalls — that board needs nested hypothesising = guessing). */
+export const RUNG_ARC = 0;
+export const RUNG_COUNTING = 1;
+export const RUNG_FORCING = 2;
+export const RUNG_RECURSION = 3;
+export type Rung = 0 | 1 | 2 | 3;
+
+/** Outcome of one propagation step/fixpoint. */
+type Step = "progress" | "stuck" | "inconsistent";
+
+/** Every cell narrowed to a single monster (1/2/4). */
+function isSolved(guess: Uint8Array, numTotal: number): boolean {
+  for (let i = 0; i < numTotal; i++) {
+    const v = guess[i];
+    if (v !== MON_GHOST && v !== MON_VAMPIRE && v !== MON_ZOMBIE) return false;
+  }
+  return true;
+}
+
+/** Any cell with an empty candidate set (a contradiction). */
+function anyEmpty(guess: Uint8Array, numTotal: number): boolean {
+  for (let i = 0; i < numTotal; i++) if (guess[i] === 0) return true;
+  return false;
+}
+
+/**
+ * Rung 1 — arc-consistency to a fixpoint: repeat `solveIterative` (the
+ * per-sightline candidate intersection) until nothing changes. Reports whether
+ * it made progress / stalled / hit a contradiction, plus the pass count (used by
+ * the generator's Easy cap).
+ */
+function arcFixpoint(common: UndeadCommon, guess: Uint8Array): { step: Step; passes: number } {
+  const numTotal = common.numTotal;
+  const old = guess.slice();
+  let passes = 0;
+  let everChanged = false;
+  while (true) {
+    solveIterative(common, guess);
+    passes++;
+    if (anyEmpty(guess, numTotal)) return { step: "inconsistent", passes };
+    let changed = false;
+    for (let i = 0; i < numTotal; i++) {
+      if (guess[i] !== old[i]) {
+        changed = true;
+        old[i] = guess[i];
+      }
+    }
+    if (changed) everChanged = true;
+    else break;
+  }
+  return { step: everChanged ? "progress" : "stuck", passes };
+}
+
+/**
+ * Rung 2 — exact counting (one pass). The three monster totals sum to the cell
+ * count, so they are *equalities*: exactly `numGhosts` cells are ghosts, etc.
+ * That licenses Hall-type deductions per type `T` (mask `m`, target `nT`):
+ *  - `placed_T > nT` or `possible_T < nT` ⇒ contradiction;
+ *  - `placed_T === nT` (all `T`s pinned) ⇒ strike `m` from every other cell;
+ *  - `possible_T === nT` (only `nT` cells can be `T`, and `nT` are needed) ⇒
+ *    force all of them to `T`.
+ * `placed_T` counts singleton-`T` cells; `possible_T` counts cells whose
+ * candidate set still includes `m`.
+ */
+function countingPass(common: UndeadCommon, guess: Uint8Array): Step {
+  const numTotal = common.numTotal;
+  const types = [MON_GHOST, MON_VAMPIRE, MON_ZOMBIE];
+  const targets = [common.numGhosts, common.numVampires, common.numZombies];
+  let changed = false;
+  for (let t = 0; t < 3; t++) {
+    const m = types[t];
+    const nT = targets[t];
+    let placed = 0;
+    let possible = 0;
+    for (let i = 0; i < numTotal; i++) {
+      const g = guess[i];
+      if (g === m) placed++;
+      if (g & m) possible++;
+    }
+    if (placed > nT || possible < nT) return "inconsistent";
+    if (placed === nT) {
+      for (let i = 0; i < numTotal; i++) {
+        const g = guess[i];
+        if (g !== m && g & m) {
+          guess[i] = g & ~m;
+          changed = true;
+          if (guess[i] === 0) return "inconsistent";
+        }
+      }
+    } else if (possible === nT) {
+      for (let i = 0; i < numTotal; i++) {
+        const g = guess[i];
+        if (g & m && g !== m) {
+          guess[i] = m;
+          changed = true;
+        }
+      }
+    }
+  }
+  return changed ? "progress" : "stuck";
+}
+
+/** Rungs 1+2 to a combined fixpoint: arc-consistency and counting cascade until
+ * neither changes anything. */
+function arcCountFixpoint(common: UndeadCommon, guess: Uint8Array): Step {
+  let everChanged = false;
+  while (true) {
+    const arc = arcFixpoint(common, guess);
+    if (arc.step === "inconsistent") return "inconsistent";
+    const cnt = countingPass(common, guess);
+    if (cnt === "inconsistent") return "inconsistent";
+    if (arc.step === "progress" || cnt === "progress") everChanged = true;
+    if (cnt !== "progress") break; // counting added nothing new ⇒ arc is also at fixpoint
+  }
+  return everChanged ? "progress" : "stuck";
+}
+
+/**
+ * Rung 3 — one forcing pass (depth-1, the `DIFF_EXTREME` forcing technique,
+ * classed as deduction). For each undecided cell and each of its remaining
+ * candidates, hypothesise that candidate and run the arc+counting fixpoint on a
+ * copy; if that yields a contradiction, eliminate the candidate from the real
+ * grid. **The inner fixpoint never forces** — a hypothesis that needs a *further*
+ * hypothesis to resolve is recursion (guessing), which this ladder never does; such
+ * a board is left for the brute-force oracle.
+ */
+function forcingPass(common: UndeadCommon, guess: Uint8Array): Step {
+  const numTotal = common.numTotal;
+  const types = [MON_GHOST, MON_VAMPIRE, MON_ZOMBIE];
+  let changed = false;
+  for (let i = 0; i < numTotal; i++) {
+    const g0 = guess[i];
+    // Skip decided (single-bit) or already-empty cells.
+    if (g0 === MON_GHOST || g0 === MON_VAMPIRE || g0 === MON_ZOMBIE || g0 === 0) continue;
+    for (const b of types) {
+      if (!(guess[i] & b)) continue;
+      const trial = guess.slice();
+      trial[i] = b;
+      if (arcCountFixpoint(common, trial) === "inconsistent") {
+        guess[i] &= ~b;
+        changed = true;
+        if (guess[i] === 0) return "inconsistent";
+      }
+    }
+  }
+  return changed ? "progress" : "stuck";
+}
+
+/** Rungs 1+2+3 to a fixpoint: alternate forcing with arc+counting propagation
+ * of each elimination until forcing finds nothing more (or the board solves). */
+function forcingFixpoint(common: UndeadCommon, guess: Uint8Array): Step {
+  let everChanged = false;
+  while (true) {
+    const fr = forcingPass(common, guess);
+    if (fr === "inconsistent") return "inconsistent";
+    if (fr === "stuck") break;
+    everChanged = true;
+    const cr = arcCountFixpoint(common, guess);
+    if (cr === "inconsistent") return "inconsistent";
+    if (isSolved(guess, common.numTotal)) break;
+  }
+  return everChanged ? "progress" : "stuck";
+}
+
+export interface DeductiveResult {
+  /** highest rung the ladder needed; `RUNG_RECURSION` if it never solved. */
+  rung: Rung;
+  /** the ladder narrowed every cell to a single monster (⇒ unique solution). */
+  solved: boolean;
+  /** a contradiction surfaced (the board has no solution). */
+  inconsistent: boolean;
+  /** arc-consistency passes in the pure-arc attempt (the Easy-tier cap). */
+  arcPasses: number;
+  /** the (possibly partial) candidate grid after the ladder ran. */
+  guess: Uint8Array;
+}
+
+/**
+ * Run the deductive ladder (arc-consistency → counting → forcing, to a combined
+ * fixpoint, **without recursion**) over a starting candidate grid, escalating
+ * one rung at a time so the result records the *highest* technique needed. This
+ * is the generator's grading entry and (later) the hint's deduction source.
+ * `solveBruteforce` stays the independent uniqueness oracle.
+ *
+ * `maxRung` stops escalation early: when grading for a tier, anything the ladder
+ * can't solve within the tier's rung is rejected anyway, so there is no point
+ * paying for the (expensive) forcing rung when grading Easy/Normal — pass
+ * `RUNG_ARC` / `RUNG_COUNTING` there. `solved=false` then means "needs more than
+ * `maxRung`" and the reported `rung` is `RUNG_RECURSION` (capped-out). Defaults
+ * to the full ladder for callers (measurement, the hint) that want the true rung.
+ */
+export function solveDeductive(
+  common: UndeadCommon,
+  start: Uint8Array,
+  maxRung: Rung = RUNG_FORCING,
+): DeductiveResult {
+  const numTotal = common.numTotal;
+  const guess = start.slice();
+  const fail = (inconsistent: boolean, arcPasses: number): DeductiveResult => ({
+    rung: RUNG_RECURSION,
+    solved: false,
+    inconsistent,
+    arcPasses,
+    guess,
+  });
+
+  // Rung 1: arc-consistency alone.
+  const arc = arcFixpoint(common, guess);
+  if (arc.step === "inconsistent") return fail(true, arc.passes);
+  if (isSolved(guess, numTotal))
+    return { rung: RUNG_ARC, solved: true, inconsistent: false, arcPasses: arc.passes, guess };
+  if (maxRung < RUNG_COUNTING) return fail(false, arc.passes);
+
+  // Rung 2: + exact counting.
+  const ac = arcCountFixpoint(common, guess);
+  if (ac === "inconsistent") return fail(true, arc.passes);
+  if (isSolved(guess, numTotal))
+    return { rung: RUNG_COUNTING, solved: true, inconsistent: false, arcPasses: arc.passes, guess };
+  if (maxRung < RUNG_FORCING) return fail(false, arc.passes);
+
+  // Rung 3: + depth-1 forcing.
+  const fc = forcingFixpoint(common, guess);
+  if (fc === "inconsistent") return fail(true, arc.passes);
+  if (isSolved(guess, numTotal))
+    return { rung: RUNG_FORCING, solved: true, inconsistent: false, arcPasses: arc.passes, guess };
+
+  // The ladder stalled: this board needs recursion (nested hypothesising).
+  return fail(false, arc.passes);
+}
+
 export type SolutionResult =
   | { ok: true; guess: Uint8Array }
   | { ok: false; error: string };

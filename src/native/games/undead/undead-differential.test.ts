@@ -12,6 +12,14 @@
  * intersection of monotone per-path constraints; ambiguity reads that fixpoint;
  * brute-force scans the narrowed candidate space).
  *
+ * The `gradeUndead`-vs-C assertions verify the *ported iterative/brute solver*,
+ * which is unchanged. They are **not** a difficulty-grade match: with the fork's
+ * deductive ladder (`strengthen-undead-deduction`) Undead grades by rung and
+ * deliberately diverges from upstream, which has no forcing layer. The
+ * differential's role narrows to **soundness** — every published (unique) board
+ * is solved by the deductive ladder to *the* unique solution, and the ladder
+ * never solves a board the brute-force oracle finds non-unique.
+ *
  * Regenerate while `puzzles/undead.c` still exists (deleted at acceptance):
  *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
  *   (cd build/native && make undead-trace)
@@ -20,7 +28,7 @@
  */
 import { describe, expect, it } from "vitest";
 import cReference from "./__fixtures__/undead-c-reference.json" with { type: "json" };
-import { gradeUndead, isUniquelySolvable } from "./solver.ts";
+import { findUndeadSolution, gradeUndead, isUniquelySolvable, solveDeductive } from "./solver.ts";
 import { diffFromLevel, MON_NONE, newState, type UndeadParams } from "./state.ts";
 
 interface Fixture {
@@ -46,13 +54,24 @@ describe("undead differential (frozen C reference, solver-agreement)", () => {
       // Every published board is uniquely solvable.
       expect(isUniquelySolvable(state.common)).toBe(true);
 
-      // The TS grading reaches the same order-independent verdicts as C.
+      // The ported iterative/brute solver reaches the same order-independent
+      // verdicts as C (solver-correctness, not a difficulty-grade match).
       const start = new Uint8Array(state.common.numTotal).fill(MON_NONE);
       const grade = gradeUndead(state.common, start, fx.diff !== 0);
       expect(grade.inconsistent).toBe(fx.inconsistent);
       expect(grade.iterativeSolved).toBe(fx.iterativeSolved);
       expect(grade.ambiguous).toBe(fx.ambiguous);
       expect(grade.bruteforceSolved).toBe(fx.bruteforceSolved);
+
+      // Soundness (the fork's narrowed differential role): the deductive ladder
+      // solves every published unique board to *the* unique solution, with no
+      // recursion.
+      const deductive = solveDeductive(state.common, start);
+      expect(deductive.inconsistent).toBe(false);
+      expect(deductive.solved).toBe(true);
+      const sol = findUndeadSolution(state);
+      expect(sol.ok).toBe(true);
+      if (sol.ok) expect(Array.from(deductive.guess)).toEqual(Array.from(sol.guess));
     });
   }
 });

@@ -569,10 +569,15 @@ function rectOutline(dr: GameDrawing, x: number, y: number, w: number, h: number
 function drawPencilIndicator(dr: GameDrawing, ds: UndeadDrawState, on: boolean): void {
   const ts = ds.tilesize;
   const b = border(ts);
-  const ox = 2 * b + (ds.w + 2) * ts - b;
-  dr.drawRect({ x: ox, y: 0, w: b, h: b }, COL_BACKGROUND);
-  if (on) drawPencilGlyph(dr, ox, 0, b, COL_PENCIL_BODY, COL_GRID);
-  dr.drawUpdate({ x: ox, y: 0, w: b, h: b });
+  // The empty top-right corner cell of the clue ring (grid cell (w+1, 0)) — a full
+  // tile, like Towers' clue-corner indicator. Undead's border is only ts/4, so the
+  // old thin-border glyph read tiny; the shared `drawPencilGlyph` now gets a full
+  // `ts` box, matching the other pencil-mark games' size.
+  const ox = b + (ds.w + 1) * ts;
+  const oy = b + ts;
+  dr.drawRect({ x: ox, y: oy, w: ts, h: ts }, COL_BACKGROUND);
+  if (on) drawPencilGlyph(dr, ox, oy, ts, COL_PENCIL_BODY, COL_GRID);
+  dr.drawUpdate({ x: ox, y: oy, w: ts, h: ts });
 }
 
 // --- redraw ----------------------------------------------------------------

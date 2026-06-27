@@ -16,7 +16,15 @@
  */
 
 import { randomUpto, type RandomState } from "../../random/index.ts";
-import { gradeUndead, nextList } from "./solver.ts";
+import {
+  isUniquelySolvable,
+  nextList,
+  RUNG_ARC,
+  RUNG_COUNTING,
+  RUNG_FORCING,
+  type Rung,
+  solveDeductive,
+} from "./solver.ts";
 import {
   CELL_EMPTY,
   CELL_GHOST,
@@ -39,6 +47,49 @@ import {
   type UndeadCommon,
   type UndeadParams,
 } from "./state.ts";
+
+/** Easy-tier cap on arc-consistency passes (boards solvable by more passes than
+ * this fall to Normal even without needing counting). */
+const EASY_MAX_ARC_PASSES = 3;
+
+/**
+ * Does this board's required deductive rung match the requested tier? The
+ * guess-free generation gate: every tier accepts only a board the deductive
+ * ladder solves to a unique solution (no recursion). A board the ladder can't
+ * solve is non-unique (the re-grade measured a zero uniquely-solvable residual)
+ * and is rejected by the uniqueness oracle.
+ *
+ *  - **Easy**   = arc-consistency alone, within {@link EASY_MAX_ARC_PASSES} passes
+ *  - **Normal** = arc-consistency beyond the cap, or the exact-counting rung
+ *  - **Tricky** = the depth-1 forcing rung
+ */
+function gradeMatchesTier(rung: Rung, arcPasses: number, solved: boolean, diff: number): boolean {
+  switch (diff) {
+    case DIFF_EASY:
+      return solved && rung === RUNG_ARC && arcPasses <= EASY_MAX_ARC_PASSES;
+    case DIFF_NORMAL:
+      return (
+        solved && ((rung === RUNG_ARC && arcPasses > EASY_MAX_ARC_PASSES) || rung === RUNG_COUNTING)
+      );
+    case DIFF_TRICKY:
+      return solved && rung === RUNG_FORCING;
+    default:
+      return false;
+  }
+}
+
+/** Optional measurement hook (inert in production): called for every candidate
+ * board the generator grades, accepted or not. The re-grade harness sets this to
+ * histogram the rung distribution per tier (the keep-vs-drop decision data).
+ * `common` is the graded board, so the harness can run its own oracle checks. */
+export type GradeProbe = (info: {
+  diff: number;
+  rung: Rung;
+  arcPasses: number;
+  solved: boolean;
+  accepted: boolean;
+  common: UndeadCommon;
+}) => void;
 
 /** Backstop against a porting slip turning the (capped, upstream) regenerate
  * loop into a hang; a faithful port converges quickly. */
@@ -154,6 +205,7 @@ function getUnique(common: UndeadCommon, guess: Uint8Array, counter: number, rs:
 export function newUndeadDesc(
   params: UndeadParams,
   rng: RandomState,
+  probe?: GradeProbe,
 ): { desc: string; aux: string } {
   const W = params.w;
   const H = params.h;
@@ -309,33 +361,30 @@ export function newUndeadDesc(
     // Snapshot the solution for `aux` before the grading reset.
     const aux = `S${Array.from(guess, (g) => (g === MON_GHOST ? "G" : g === MON_VAMPIRE ? "V" : "Z")).join("")}`;
 
-    // Grade by re-solving from scratch.
+    // Grade by the deductive ladder (arc-consistency → counting → forcing, no
+    // recursion) and accept only when the required rung matches the tier — the
+    // guess-free generation gate (replaces upstream's brute-force-amount grading).
+    // Cap the ladder at the tier's rung: a board the tier can't use is rejected
+    // anyway, so don't pay for forcing when grading Easy/Normal.
+    const tierMaxRung: Rung =
+      diff === DIFF_EASY ? RUNG_ARC : diff === DIFF_NORMAL ? RUNG_COUNTING : RUNG_FORCING;
     const allUndecided = new Uint8Array(common.numTotal).fill(MON_NONE);
-    const grade = gradeUndead(common, allUndecided, diff !== DIFF_EASY);
+    const grade = solveDeductive(common, allUndecided, tierMaxRung);
+    let accept = !grade.inconsistent && gradeMatchesTier(grade.rung, grade.arcPasses, grade.solved, diff);
 
-    let accept = false;
-    if (
-      diff === DIFF_EASY &&
-      grade.iterativeSolved &&
-      grade.iterativeDepth <= 3 &&
-      !grade.inconsistent
-    )
-      accept = true;
-    else if (
-      diff === DIFF_NORMAL &&
-      ((grade.iterativeSolved && grade.iterativeDepth > 3) ||
-        (grade.bruteforceSolved && grade.ambiguous < 4)) &&
-      !grade.inconsistent
-    )
-      accept = true;
-    else if (
-      diff === DIFF_TRICKY &&
-      grade.bruteforceSolved &&
-      grade.iterativeDepth > 0 &&
-      grade.ambiguous >= 4 &&
-      !grade.inconsistent
-    )
-      accept = true;
+    // Verify uniqueness independently against the brute-force oracle. A
+    // deductively-solved board is unique by soundness; a recursion-only
+    // (`Unreasonable`) board must be confirmed unique here.
+    if (accept && !isUniquelySolvable(common)) accept = false;
+
+    probe?.({
+      diff,
+      rung: grade.rung,
+      arcPasses: grade.arcPasses,
+      solved: grade.solved,
+      accepted: accept,
+      common,
+    });
 
     if (!accept) continue;
 

@@ -84,9 +84,11 @@ narrate — the forcing rung in particular ("if this were a vampire, the left cl
 couldn't be met — so it can't be") covers the boards the old fallback existed for, and
 narrates *better*. §7.1's "make progress to a solved board" is therefore satisfied by
 genuine deduction, guarded by `undeadGame` joining `hint-resume.test.ts` on Easy /
-Normal / Tricky seeds. If `strengthen-undead-deduction` ships a sanctioned
-`Unreasonable` tier for genuinely recursion-only boards, a non-deductive hint is
-allowed **there only**; the deductive plan covers every other tier.
+Normal / Tricky seeds. `strengthen-undead-deduction`'s re-grade measured a **zero**
+*recursion*-only residual, so the solver never has to guess on any shipped board. But
+the *cognitive-load* line (`hint-authoring.md` §1B) is a different cut from the
+recursion line, and it lands on **Tricky** — see **D8**, the deferred decision on how
+Tricky's forcing hints stay glance-able.
 
 ### D4 — No auto-pencil preference (the Latin divergence)
 
@@ -132,6 +134,47 @@ candidate is drawn in its **normal pencil colour with a strikethrough** on a
 placement target is a solid `COL_HINT` fill (no glyph to hide, §5.1 — never pre-render
 the placed monster). Fold the hint signature into the per-cell `Int32Array` diff key
 (a `ds.hintPacked`/`drawnHint` sidecar) so the overlay repaints and clears correctly.
+
+### D8 — Cognitive load on Tricky: the forcing-hint decision (deferred, owner-steered)
+
+The cognitive-load bar (`hint-authoring.md` §1 rule 5 + §1B, owner principle 2026-06-26)
+is that **every hint a non-`Unreasonable` tier shows must land at a glance — at most one
+inferential step** — and that any longer chain is externalised as gradual board marking
+(one mark per step), never crammed into a sentence. Where Undead lands against it:
+
+- **Easy / Normal — already compliant.** Every step is a single *direct* deduction (a
+  sightline narrowing, a total exhaustion, a naked single → placement). Each is one
+  pencil-mark change with a one-line reason; the accumulated notes carry the state. No
+  open question here.
+- **Tricky — the open case.** Tricky boards need the **forcing** rung, and a forcing
+  deduction is *intrinsically multi-step*: arc-consistency + counting already catch
+  every direct single-constraint contradiction, so a contradiction that survives to
+  forcing necessarily combines several constraints (the hypothesis forces another cell,
+  which then breaks a clue/count elsewhere). So a forcing hint is **not** one glance-able
+  step, and the D3 phrasing "if this were a vampire, the left clue couldn't be met" is
+  exactly the compressed-chain form §1B.1 disallows.
+
+**Decision (deferred to implementation, owner-steered 2026-06-27):** at
+`add-undead-hint` build time, **first attempt to externalise Tricky's forcing as a clean
+guided "what-if" walk** — a short `continuesPrevious` journey of *tentative* marks
+("suppose vampire here → then this cell is forced to a ghost → now the left clue of 2
+can't be met → so cross vampire out here"), each leg one glance-able step, only the final
+strike real, built on the existing multi-leg-journey + `pencilStrike` machinery plus a
+new *tentative/hypothetical* mark style. **The owner is interested in whether this can be
+made to work cleanly.**
+
+**Fallback (owner's stated preference if the walk can't be made clean):** rather than
+ship a multi-step forcing hint, **rename the forcing-requiring (Tricky) boards as
+`Unreasonable`** — on the grounds that single-level forcing, whatever its formal status,
+*reads to the player as guessing / what-if reasoning* — and keep **every** shipped
+non-`Unreasonable` hint straightforward (direct elimination + counting only). Concretely
+that means: keep `strengthen-undead-deduction`'s `solveDeductive` rungs, but in the
+generator regrade the forcing-rung bucket to a new `Unreasonable` `Difficulty` (the
+small delta `strengthen-undead-deduction` D3 designed for and then left unbuilt when the
+*recursion* residual came out zero), leaving Easy/Normal/Tricky as direct-only tiers.
+The `Unreasonable` tier's hint is then allowed to be non-deductive (or simply
+acknowledge the guess), per §1A. Measure the typical forcing-chain length when deciding
+— a mostly-2-leg walk favours the walk; long chains favour the fallback.
 
 ## Alternatives rejected
 

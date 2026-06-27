@@ -50,6 +50,11 @@ clear:
 4. **Pace auto-hint uniformly.** `AUTO_HINT_STEP_MS` (1s) per step in
    [`src/puzzle/puzzle.ts`](../../src/puzzle/puzzle.ts), floored by the move's own
    animation so animated moves still play out fully.
+5. **One deductive step per hint; externalize the rest onto the board.** A hint must
+   land *at a glance* — at most one inferential step's worth of reasoning. Multi-step
+   reasoning (including single-level forcing) is spread across **gradual board marks**
+   — one mark per step, the accumulated marks carrying the state — never crammed into
+   one dense sentence. See §1B.
 
 ---
 
@@ -87,12 +92,84 @@ B, …) is **recursion** = guessing = Unreasonable-only.
 
 **Practical consequence when porting/hinting a deductive game:** before writing the
 hint, confirm the generator can't emit a board the deductive solver can't crack at the
-shipped tiers. If it can — e.g. Undead's Normal/Tricky are graded by *how much brute
-force they need* (`undead/generator.ts:316-338`) — then either gate generation to
-deduction-only, strengthen the deductive solver so the hard tier survives guess-free,
-or move the guessing boards under an explicitly-named Unreasonable tier. The normative
-home for this rule is a generation-policy spec requirement (to be added); this note is
-the followable summary.
+shipped tiers. If it can, you have three moves: gate generation to deduction-only,
+**strengthen the deductive solver so the hard tier survives guess-free**, or move the
+guessing boards under an explicitly-named Unreasonable tier. The normative home for
+this rule is a generation-policy spec requirement (to be added); this note is the
+followable summary.
+
+**Worked example — strengthening a non-Latin solver (Undead,
+`strengthen-undead-deduction`).** Undead originally graded difficulty by *how much
+brute force a board needs* — its solver had only two rungs (per-sightline
+arc-consistency, then full backtracking), so most Normal/Tricky boards needed
+guessing. The fix was the *strengthen* move, and it generalises to any non-Latin
+candidate game (Undead doesn't ride `engine/latin.ts`): build the two intermediate
+**deductive** rungs between arc-consistency and the brute-force oracle —
+
+- **Exact counting** (`undead/solver.ts` `countingPass`): when a global tally is an
+  equality (Undead's three monster totals sum to the cell count), apply Hall-type
+  deductions — a type whose full count is placed is struck everywhere; a type whose
+  candidate cells equal its remaining need forces them all; too few candidate cells is
+  a contradiction.
+- **Depth-1 forcing** (`forcingPass`): hypothesise one cell's candidate, run the
+  arc-consistency + counting fixpoint, eliminate the candidate on contradiction. This
+  is *deduction* (the `DIFF_EXTREME` technique); the inner fixpoint **never forces**,
+  which is the deduction/recursion line above.
+
+Then **re-grade by which rung is needed** (Easy = arc-consistency, Normal = counting,
+Tricky = forcing) and accept a board only when the deductive ladder solves it uniquely
+with zero recursion — verified independently against the brute-force oracle. Two
+lessons worth carrying: (1) **cap the ladder at the tier's rung when grading** —
+forcing is the expensive rung, and a board the tier can't use is rejected anyway, so
+don't pay for forcing while grading Easy/Normal (`solveDeductive`'s `maxRung` cut 7×7
+Normal generation ~6×). (2) **Measure the recursion-only residual before deciding to
+ship an Unreasonable tier** — Undead's came out *exactly zero* (every uniquely-solvable
+board is cracked by the ladder; the boards it can't solve are precisely the non-unique
+ones the uniqueness oracle rejects anyway), so no Unreasonable tier was needed. Don't
+add a guess-allowed tier on a hunch; the data may say the ladder already suffices.
+
+---
+
+## 1B. Cognitive load — one deductive step per hint; externalize the rest onto the board
+
+Owner principle (2026-06-26): **every hint a non-`Unreasonable` tier shows must be
+understandable at a glance — at most one inferential step of reasoning.** A hint the
+player has to *work through* (holding a chain of "…and therefore… and therefore…") has
+failed, even when it's correct. The product value is a hint that lands immediately, not
+a proof to parse.
+
+The corollary is the mechanism: **when a deduction's justification spans more than one
+inferential step, externalize the chain as gradual marking on the board — one mark per
+step — instead of cramming it into one dense sentence.** The board's accumulated marks
+(pencil notes, for candidate-elimination games — §9) carry the state, so the player
+never holds the chain in their head; each individual hint then narrates a single,
+self-evident step. This is exactly the §9 pattern (populate → strike one candidate with
+a one-line reason → … → place a naked single): each strike is one step, the marks are
+the externalised memory.
+
+### 1B.1 The forcing boundary (read before hinting a hard tier)
+
+*Single-level forcing* — "suppose X here; propagate; it hits a contradiction; so not
+X" — is sound deduction (§1A), but it is **not** one glance-able step. Arc-consistency
+and counting already catch every *direct*, single-constraint contradiction, so a
+contradiction that *survives* to the forcing rung necessarily comes from **combining
+several constraints** (the hypothesis forces another cell, which then breaks a
+clue/count elsewhere). A forcing deduction is therefore intrinsically a short chain.
+Two compliant options, one non-option:
+
+- **Externalize it as a guided "what-if" walk** — tentative marks the player watches
+  accumulate ("suppose vampire here → then this cell must be a ghost → now the left
+  clue of 2 can't be met → so cross vampire out here"), each leg one glance-able step,
+  only the final strike real. Buildable on the existing multi-leg journey
+  (`continuesPrevious`) + pencil-strike machinery, but it introduces *tentative*
+  (hypothetical) marks — a visual state distinct from real notes.
+- **Keep the shipped tiers direct-only** — arc-consistency + counting (or
+  positional + set for Latin), and don't ship forcing-tier boards at a
+  non-`Unreasonable` difficulty. Simpler hints; a less-hard top tier.
+- **Not allowed:** compress the forcing chain into a single "if X then contradiction"
+  sentence and call it one step. It reads as a glance-able hint but isn't one — it asks
+  the player to run the propagation in their head. (Existing forcing/`Extreme`-tier
+  hints in the Latin family should be reviewed against this when next touched.)
 
 ---
 

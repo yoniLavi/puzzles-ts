@@ -1,5 +1,18 @@
 # Tasks: Add an explained deduction hint to Undead
 
+## 0. Decision gate (D8) — Tricky's forcing-hint approach
+- [ ] 0.1 Measure the typical forcing-chain length on Tricky boards (how many cells a
+  hypothesis forces before the contradiction) to inform the choice.
+- [ ] 0.2 Attempt the **guided what-if walk** for Tricky forcing (tentative-mark
+  `continuesPrevious` journey, each leg one glance-able step, only the final strike
+  real). Owner wants to see whether this can be made to work cleanly.
+- [ ] 0.3 If it can't be made clean, take the owner's **fallback**: regrade the
+  forcing-rung bucket to a new `Unreasonable` `Difficulty` (the small delta
+  `strengthen-undead-deduction` D3 designed), leaving Easy/Normal/Tricky direct-only,
+  and keep every shipped non-`Unreasonable` hint straightforward. (Adjusts the §3
+  plan — no forcing narration in shipped tiers — and `state.ts`/`index.ts` per
+  `strengthen-undead-deduction` tasks 4.1/4.2.)
+
 ## 1. Recording solver (`undead/solver.ts`)
 - [ ] 1.1 `UndeadReason` union: `sightline` (the firing path + which clue/end + its
   count + the struck monster), `total` (the exhausted monster type), `forcing` (the
@@ -61,6 +74,7 @@
 - [ ] 6.1 Full gate green (`tsc -b --noEmit` → `biome lint` → `vitest run` →
   `vite build`); update `docs/porting/hint-authoring.md` §9 with what this port
   surfaced — the first non-Latin candidate-elimination hint (own recorder), the
-  total-exhaustion deduction kind, and the deductive-game solution-walk fallback.
+  total-exhaustion deduction kind, and the deductive-only plan (no solution-walk
+  fallback, guaranteed by `strengthen-undead-deduction`'s guess-free ladder).
 - [ ] 6.2 Owner acceptance (stage 2): owner plays the hint across difficulties; on
   sign-off, commit + `openspec archive add-undead-hint --yes`.

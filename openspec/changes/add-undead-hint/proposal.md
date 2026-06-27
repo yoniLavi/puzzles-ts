@@ -67,7 +67,7 @@ change adds only the explained hint on top, with no `findMistakes` change.
   (§5.3).
 - **Tests**: a recorded reason per deduction kind; the plan solves a generated board
   from empty *and* from mid-game (`undeadGame` joins the shared
-  `hint-resume.test.ts`) on Easy/Normal *and* Tricky (the solution-walk fallback);
+  `hint-resume.test.ts`) on Easy/Normal *and* Tricky (all now pure-deduction);
   refusal on solved / on mistakes; `hintKeepTrack` verdicts; a tier-2.5
   render-scenario snapshot of a sightline-elimination journey frame.
 
@@ -99,9 +99,14 @@ has landed.
   auto-pencil pref (design D4).
 - **Live (rule-violation) error-checking of pencil notes** — same boundary the Latin
   ports drew: Undead checks only the solution-contradiction (`findMistakes`) tier.
-- **Any non-deductive step.** The deductive plan never narrates a guess and never
-  reveals the known solution. Guess-free solvability of the shipped tiers is
-  guaranteed by `strengthen-undead-deduction`, not by a hint-side fallback. (Earlier
-  drafts of this proposal carried a solution-walk fallback for Tricky boards; it is
-  removed — the generator no longer ships boards the deductive plan can't solve,
-  except under a sanctioned `Unreasonable` tier if one is added.)
+- **Any non-deductive step / hidden solution-walk.** The plan never reveals the known
+  solution or narrates a backtracking search. `strengthen-undead-deduction`'s re-grade
+  measured a **zero** *recursion* residual, so the solver never needs to guess on any
+  shipped board — the old solution-walk fallback is gone.
+- **Tricky's forcing hint (the deferred decision — D8, owner-steered 2026-06-27).** The
+  *cognitive-load* bar (`hint-authoring.md` §1B) is a different cut from the recursion
+  line: Easy/Normal are already glance-able single steps, but Tricky's forcing rung is
+  intrinsically multi-step. **Out of scope to settle here** — at build time we first try
+  to externalise it as a clean guided "what-if" walk (tentative marks); if that can't be
+  made clean, the owner's fallback is to **rename the forcing-tier boards `Unreasonable`**
+  and keep every shipped non-`Unreasonable` hint straightforward (direct-only). See D8.

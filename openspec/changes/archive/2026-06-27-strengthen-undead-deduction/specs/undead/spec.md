@@ -21,33 +21,37 @@ remainder with random monsters, and grade the board by **which rung of the deduc
 ladder is required** (arc-consistency / counting / forcing). Every generated board
 SHALL be uniquely solvable (verified against the brute-force oracle).
 
-A board accepted for any difficulty tier **other than** an explicitly-named
-`Unreasonable` tier SHALL be solvable by the deductive ladder alone — **zero guessing
-or recursion** — per the fork's guess-free generation policy. A board that requires
-recursion SHALL only be accepted under an `Unreasonable` tier, the sole sanctioned
-guess-allowed exception; whether Undead ships such a tier (versus rejecting
-recursion-only boards entirely) is determined by measuring the recursion-only residual
-after the deductive ladder is in place.
+Every board Undead accepts SHALL be solvable by the deductive ladder alone — **zero
+guessing or recursion** — per the fork's guess-free generation policy. A board that
+requires recursion (nested hypothesising) SHALL be rejected at generation.
+
+Undead ships **no `Unreasonable` tier**: the re-grade measurement (≈6,800 candidate
+boards across all tiers) found a **zero** uniquely-solvable recursion residual — every
+uniquely-solvable Undead board is cracked by the deductive ladder, and the boards the
+ladder cannot solve are exactly the non-unique ones the brute-force oracle already
+rejects. The `Unreasonable` tier remains the policy's sole sanctioned guess-allowed
+exception for *other* games; Undead does not need it.
 
 #### Scenario: Generated board is unique and on-difficulty
 
-- **WHEN** `newDesc` returns a board for a given size and a non-`Unreasonable`
-  difficulty
+- **WHEN** `newDesc` returns a board for a given size and difficulty
 - **THEN** the deductive ladder solves it uniquely with no recursion
-- **AND** the board's grade matches the highest rung the ladder needed
+- **AND** the board's grade matches the highest rung the ladder needed (Easy =
+  arc-consistency within the pass cap, Normal = arc beyond the cap or counting,
+  Tricky = forcing)
 - **AND** the brute-force oracle confirms exactly one solution
 
-#### Scenario: Non-Unreasonable tiers never require guessing
+#### Scenario: Every tier is guess-free
 
-- **WHEN** any board is accepted for an Easy, Normal, or Tricky tier
+- **WHEN** any board is accepted for any tier (Easy, Normal, Tricky)
 - **THEN** the deductive ladder (arc-consistency + counting + depth-1 forcing) solves
   it to completion without invoking the brute-force/recursive search
 
-#### Scenario: Recursion-only boards are confined to the Unreasonable exception
+#### Scenario: Recursion-only boards are rejected
 
 - **WHEN** a candidate board is solvable only by recursion (nested hypothesising)
-- **THEN** it is rejected at generation unless an `Unreasonable` tier is being
-  generated, in which case it MAY be accepted there
+- **THEN** it is rejected at generation (such boards are non-unique; Undead ships no
+  `Unreasonable` tier)
 
 #### Scenario: Solve fills the unique solution
 

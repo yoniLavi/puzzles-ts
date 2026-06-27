@@ -33,7 +33,6 @@ import {
   colours,
   computeSize,
   countBlockAt,
-  countRowBottom,
   FLASH_TIME,
   newDrawState,
   PREFERRED_TILE_SIZE,
@@ -55,7 +54,6 @@ import {
   MON_NONE,
   MON_VAMPIRE,
   MON_ZOMBIE,
-  N_COUNT_STYLE,
   newState,
   newUi,
   PRESETS,
@@ -92,8 +90,6 @@ const KEY_E = 69;
 const KEY_e = 101;
 const KEY_A = 65;
 const KEY_a = 97;
-const KEY_C = 67;
-const KEY_c = 99;
 const KEY_M = 77;
 const KEY_m = 109;
 const KEY_1 = 49;
@@ -136,16 +132,6 @@ function interpretMove(
   // Pictures/letters toggle.
   if (button === KEY_A || button === KEY_a) {
     ui.ascii = !ui.ascii;
-    return UI_UPDATE;
-  }
-
-  // Count-display-style cycle.
-  if (
-    button === KEY_C ||
-    button === KEY_c ||
-    (button === RIGHT_BUTTON && ds !== null && point.y < countRowBottom(ds))
-  ) {
-    ui.countStyle = (ui.countStyle + 1) % N_COUNT_STYLE;
     return UI_UPDATE;
   }
 

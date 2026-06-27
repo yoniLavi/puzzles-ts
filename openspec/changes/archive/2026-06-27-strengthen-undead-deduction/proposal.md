@@ -1,6 +1,9 @@
 # Proposal: Strengthen Undead's deductive solver so its shipped tiers are guess-free
 
-**Status**: Proposed (design only — implementation in a follow-up session)
+**Status**: Implemented (awaiting owner acceptance). The re-grade measured a **zero**
+uniquely-solvable recursion residual, so the keep-or-drop gate below resolved to
+**drop**: Undead is fully guess-free across Easy/Normal/Tricky and ships **no
+`Unreasonable` tier**.
 
 ## Why
 
