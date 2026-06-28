@@ -17,6 +17,15 @@ import type {
   Size,
 } from "../../../puzzle/types.ts";
 import {
+  anyEmptyLacksNotes,
+  joinNums,
+  keepCandidateHintTrack,
+  nakedSingle,
+  nextPlace,
+  nextStrike,
+  refreshCandidateHintStep,
+} from "../../engine/candidate-hint.ts";
+import {
   type Game,
   type HintResult,
   type HintStep,
@@ -26,6 +35,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import { hiddenSingleLine, singlePlacementReason } from "../../engine/latin-hint.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -38,7 +48,6 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import { hiddenSingleLine, singlePlacementReason } from "../../engine/latin-hint.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
@@ -336,14 +345,6 @@ function findMistakes(state: KeenState): readonly KeenMistake[] {
 const POPULATE_TEXT =
   "Start by pencilling in every candidate number in each empty cell, so the eliminations that follow have something to cross out.";
 
-/** Join a value list for narration: `[3]`→"3", `[1,2]`→"1 and 2",
- * `[1,2,3]`→"1, 2 and 3". */
-function joinNums(ns: number[]): string {
-  if (ns.length <= 1) return `${ns[0] ?? ""}`;
-  if (ns.length === 2) return `${ns[0]} and ${ns[1]}`;
-  return `${ns.slice(0, -1).join(", ")} and ${ns[ns.length - 1]}`;
-}
-
 /** The cage's arithmetic goal as a verb phrase, read off its packed clue — the
  * indication a cage deduction leads with (hint-authoring §2.2). Reads across the
  * whole operation set: `sum to 15`, `multiply to 72`, `differ by 3`,
@@ -406,41 +407,6 @@ function placementArea(reason: HintReason, w: number): { x: number; y: number }[
     : [];
 }
 
-
-/** True iff some empty cell carries no pencil notes — i.e. the board needs a
- * fill-all populate before the eliminations have anything to cross out. */
-function anyEmptyLacksNotes(state: KeenState): boolean {
-  const a = state.params.w * state.params.w;
-  for (let i = 0; i < a; i++) {
-    if (state.grid[i] === 0 && state.pencil[i] === 0) return true;
-  }
-  return false;
-}
-
-/** A naked single in the working notes: the first empty cell whose pencil set has
- * exactly one candidate. On a mistake-free board that lone candidate is the
- * solution, so placing it is sound — and it is the move a human makes next, so the
- * hint surfaces it ahead of any further elimination (hint-authoring §9.3). */
-function nakedSingle(
-  wGrid: Int8Array,
-  wPen: Int32Array,
-  w: number,
-): { x: number; y: number; n: number } | null {
-  for (let i = 0; i < w * w; i++) {
-    if (wGrid[i] !== 0 || wPen[i] === 0) continue;
-    if ((wPen[i] & (wPen[i] - 1)) !== 0) continue; // more than one bit set
-    let n = 0;
-    for (let v = 1; v <= w; v++) {
-      if (wPen[i] & (1 << v)) {
-        n = v;
-        break;
-      }
-    }
-    if (n > 0) return { x: i % w, y: (i / w) | 0, n };
-  }
-  return null;
-}
-
 /** The next basic-Latin cleanup: the first filled cell whose value still appears
  * as a live pencil mark elsewhere in its row or column. Keen has no givens, but a
  * player can place a digit with auto-pencil off, leaving its row/column dups live;
@@ -452,7 +418,12 @@ function basicLatinStrike(
   wGrid: Int8Array,
   wPen: Int32Array,
   w: number,
-): { px: number; py: number; n: number; marks: { x: number; y: number; n: number }[] } | null {
+): {
+  px: number;
+  py: number;
+  n: number;
+  marks: { x: number; y: number; n: number }[];
+} | null {
   for (let i = 0; i < w * w; i++) {
     const v = wGrid[i];
     if (v === 0) continue;
@@ -467,62 +438,6 @@ function basicLatinStrike(
         marks.push({ x: px, y: k, n: v });
     }
     if (marks.length > 0) return { px, py, n: v, marks };
-  }
-  return null;
-}
-
-/** Index of the first recorded placement whose cell is *not yet* on the working
- * grid: every op before it is valid against the current working grid (placements
- * before it are already reflected), so a strike there can be surfaced now with a
- * premise the player's board supports. */
-function firstUnreflectedPlaceIndex(ops: HintOp[], wGrid: Int8Array, w: number): number {
-  for (let i = 0; i < ops.length; i++) {
-    if (ops[i].kind === "place" && wGrid[ops[i].y * w + ops[i].x] === 0) return i;
-  }
-  return ops.length;
-}
-
-/** The next deduction-strike *firing* whose marks are still live, considering only
- * eliminations valid against the current grid. `dup` strikes are excluded (those
- * are placement bookkeeping handled by `emitPlacement`). One returned firing is one
- * `group` (one cage's candidate pruning, or one digit-out-of-one-line cross-cage
- * elimination); the caller splits it into a per-cell journey. */
-function nextStrike(
-  ops: HintOp[],
-  wGrid: Int8Array,
-  wPen: Int32Array,
-  w: number,
-): { ops: HintOp[]; group: number } | null {
-  const lim = firstUnreflectedPlaceIndex(ops, wGrid, w);
-  const liveAt = (op: HintOp) =>
-    op.kind === "elim" &&
-    wGrid[op.y * w + op.x] === 0 &&
-    (wPen[op.y * w + op.x] & (1 << op.n)) !== 0;
-  let i = 0;
-  while (i < lim) {
-    const g = ops[i].group;
-    const group: HintOp[] = [];
-    while (i < lim && ops[i].group === g) group.push(ops[i++]);
-    const live = group.filter((op) => liveAt(op) && op.reason.kind !== "dup");
-    if (live.length === 0) continue;
-    return { ops: live, group: g };
-  }
-  return null;
-}
-
-/** The next forced placement the recording solver makes whose cell is still empty
- * — a cube collapse the working notes lag (a naked or hidden single). The *why*
- * is re-derived from the working board at emit time, so the recorded reason is
- * not returned here. */
-function nextPlace(
-  ops: HintOp[],
-  wGrid: Int8Array,
-  w: number,
-): { x: number; y: number; n: number } | null {
-  for (const op of ops) {
-    if (op.kind === "place" && wGrid[op.y * w + op.x] === 0) {
-      return { x: op.x, y: op.y, n: op.n };
-    }
   }
   return null;
 }
@@ -596,7 +511,11 @@ function emitPlacement(
     steps.push({
       move: { type: "pencilStrike", marks: dupMarks },
       explanation: narrate({ kind: "dup", n, px: x, py: y }, [], w),
-      highlights: { area: [], targets: dupMarks.map((m) => ({ x: m.x, y: m.y })), marks: dupMarks },
+      highlights: {
+        area: [],
+        targets: dupMarks.map((m) => ({ x: m.x, y: m.y })),
+        marks: dupMarks,
+      },
       continuesPrevious: true,
     });
   }
@@ -607,14 +526,17 @@ function emitPlacement(
  * a placed value forces; else the next cage elimination; else a forced placement.
  * `autoClean` (the auto-pencil preference) decides whether a placement's trivial
  * row/column eliminations are silent or taught. */
-function buildSteps(state: KeenState, autoClean: boolean): HintStep<KeenMove, KeenHint>[] {
+function buildSteps(
+  state: KeenState,
+  autoClean: boolean,
+): HintStep<KeenMove, KeenHint>[] {
   const w = state.params.w;
   const steps: HintStep<KeenMove, KeenHint>[] = [];
   const wGrid = Int8Array.from(state.grid);
   const wPen = Int32Array.from(state.pencil);
   const maxdiff = Math.min(diffToLevel(state.params.diff), DIFF_EXTREME);
 
-  let populated = !anyEmptyLacksNotes(state);
+  let populated = !anyEmptyLacksNotes(state.grid, state.pencil, w);
   const ensurePopulated = (): void => {
     if (populated) return;
     const all = (1 << (w + 1)) - (1 << 1);
@@ -639,7 +561,17 @@ function buildSteps(state: KeenState, autoClean: boolean): HintStep<KeenMove, Ke
     // 1. A naked single — the next move a human makes.
     const ns = nakedSingle(wGrid, wPen, w);
     if (ns) {
-      emitPlacement(steps, wGrid, wPen, w, ns.x, ns.y, ns.n, { kind: "single" }, autoClean);
+      emitPlacement(
+        steps,
+        wGrid,
+        wPen,
+        w,
+        ns.x,
+        ns.y,
+        ns.n,
+        { kind: "single" },
+        autoClean,
+      );
       ops = recordKeenDeductions(w, state.clues, Uint8Array.from(wGrid), maxdiff);
       continue;
     }
@@ -669,7 +601,7 @@ function buildSteps(state: KeenState, autoClean: boolean): HintStep<KeenMove, Ke
     // 4. The next cage elimination (the deduction worth teaching).
     const cs = nextStrike(ops, wGrid, wPen, w);
     if (cs) {
-      emitStrikeJourney(steps, wPen, w, cs.ops);
+      emitStrikeJourney(steps, wPen, w, cs);
       continue;
     }
 
@@ -690,12 +622,17 @@ function buildSteps(state: KeenState, autoClean: boolean): HintStep<KeenMove, Ke
   return steps;
 }
 
-function hint(state: KeenState, _aux?: string, ui?: KeenUi): HintResult<KeenMove, KeenHint> {
+function hint(
+  state: KeenState,
+  _aux?: string,
+  ui?: KeenUi,
+): HintResult<KeenMove, KeenHint> {
   if (state.completed) return { ok: false, error: "This board is already solved." };
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
-      error: "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
     };
   }
   const autoClean = ui?.autoPencil ?? true;
@@ -706,82 +643,24 @@ function hint(state: KeenState, _aux?: string, ui?: KeenUi): HintResult<KeenMove
   return { ok: true, steps };
 }
 
-/** Classify a player move against the displayed hint step. A `pencilAll` matches a
- * populate step; a real placement matches a `set` step; a pencil toggle that
- * *clears* one of a strike step's marks shrinks it (`onTrack`) or finishes it
- * (`completed`). Anything else drops the plan. */
+/** Classify a player move against the displayed hint step (shared
+ * candidate-elimination keep-track; `KeenHint` is structurally
+ * `CandidateHighlights`). */
 function hintKeepTrack(
   m: KeenMove,
   step: HintStep<KeenMove, KeenHint>,
   state: KeenState,
 ): HintTrackVerdict {
-  const sm = step.move;
-  const w = state.params.w;
-  if (sm.type === "pencilAll") return m.type === "pencilAll" ? "completed" : "off";
-  if (sm.type === "set") {
-    return m.type === "set" && !m.pencil && m.x === sm.x && m.y === sm.y && m.n === sm.n
-      ? "completed"
-      : "off";
-  }
-  if (sm.type === "pencilStrike") {
-    // The player strikes a candidate with a pencil toggle (`set { pencil }`).
-    if (m.type !== "set" || !m.pencil) return "off";
-    const hit = sm.marks.findIndex((k) => k.x === m.x && k.y === m.y && k.n === m.n);
-    if (hit < 0) return "off"; // touched a non-target candidate
-    // `state` is the PRE-move board. A pencil toggle clears the candidate iff it
-    // is present now; if already absent the toggle would re-add it — off-plan.
-    if (!(state.pencil[m.y * w + m.x] & (1 << m.n))) return "off";
-    const remaining = sm.marks.filter((_, j) => j !== hit);
-    if (remaining.length === 0) return "completed";
-    step.move = { type: "pencilStrike", marks: remaining };
-    if (step.highlights) {
-      step.highlights = {
-        ...step.highlights,
-        targets: remaining.map((k) => ({ x: k.x, y: k.y })),
-        marks: remaining,
-      };
-    }
-    return "onTrack";
-  }
-  return "off";
+  return keepCandidateHintTrack(m, step, state.pencil, state.params.w);
 }
 
 /** Re-validate a stored hint step against the current board before it is
- * (re-)displayed (the engine's "never show a stale step" guarantee). The way a
- * kept plan goes stale here is auto-pencil: turning it on silently strikes a
- * placed value from its row/column, so a later stored `pencilStrike` may name
- * notes already gone. Drop dead marks; if none survive the step is resolved. */
+ * (re-)displayed (shared "never show a stale step" guarantee). */
 function refreshHintStep(
   step: HintStep<KeenMove, KeenHint>,
   state: KeenState,
 ): HintStep<KeenMove, KeenHint> | null {
-  const m = step.move;
-  const w = state.params.w;
-  if (m.type === "pencilStrike") {
-    const live = m.marks.filter(
-      ({ x, y, n }) => state.grid[y * w + x] === 0 && (state.pencil[y * w + x] & (1 << n)) !== 0,
-    );
-    if (live.length === 0) return null;
-    if (live.length === m.marks.length) return step;
-    return {
-      ...step,
-      move: { type: "pencilStrike", marks: live },
-      highlights: step.highlights
-        ? { ...step.highlights, targets: live.map((k) => ({ x: k.x, y: k.y })), marks: live }
-        : undefined,
-    };
-  }
-  if (m.type === "set" && !m.pencil) {
-    // A placement step is resolved once its cell is filled.
-    return state.grid[m.y * w + m.x] !== 0 ? null : step;
-  }
-  if (m.type === "pencilAll") {
-    for (let i = 0; i < w * w; i++) {
-      if (state.grid[i] === 0 && state.pencil[i] === 0) return step;
-    }
-    return null;
-  }
-  return step;
+  return refreshCandidateHintStep(step, state.grid, state.pencil, state.params.w);
 }
 
 function flashLength(

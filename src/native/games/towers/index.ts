@@ -17,6 +17,14 @@ import type {
   Size,
 } from "../../../puzzle/types.ts";
 import {
+  anyEmptyLacksNotes,
+  firstUnreflectedPlaceIndex,
+  keepCandidateHintTrack,
+  nakedSingle,
+  nextPlace,
+  refreshCandidateHintStep,
+} from "../../engine/candidate-hint.ts";
+import {
   type Game,
   type HintResult,
   type HintStep,
@@ -26,6 +34,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import { hiddenSingleLine, singlePlacementReason } from "../../engine/latin-hint.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -40,7 +49,6 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import { hiddenSingleLine, singlePlacementReason } from "../../engine/latin-hint.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
@@ -403,7 +411,8 @@ function findMistakes(state: TowersState): readonly TowersMistake[] {
     if (state.immutable[i]) continue; // givens are always correct
     if (state.grid[i]) {
       // A filled cell whose height contradicts the unique solution.
-      if (state.grid[i] !== soln[i]) out.push({ kind: "cell", x: i % w, y: (i / w) | 0 });
+      if (state.grid[i] !== soln[i])
+        out.push({ kind: "cell", x: i % w, y: (i / w) | 0 });
     } else if (state.pencil[i] !== 0 && !(state.pencil[i] & (1 << soln[i]))) {
       // An empty cell whose non-empty notes have crossed out the correct
       // height. (Notes carrying extra, non-solution candidates are fine — that
@@ -463,7 +472,11 @@ function reasonArea(reason: HintReason, w: number): { x: number; y: number }[] {
   switch (reason.kind) {
     case "facing":
       // A facing pair names two clues at opposite ends of the same line.
-      return [cluePos(reason.clue, w), cluePos(reason.clue2, w), ...lineCells(reason.clue, w)];
+      return [
+        cluePos(reason.clue, w),
+        cluePos(reason.clue2, w),
+        ...lineCells(reason.clue, w),
+      ];
     case "fullLine":
     case "tallestNearest":
     case "lineFull":
@@ -475,56 +488,6 @@ function reasonArea(reason: HintReason, w: number): { x: number; y: number }[] {
     default:
       return [];
   }
-}
-
-/** True iff some empty cell carries no pencil notes — i.e. the board needs a
- * fill-all populate before the eliminations have anything to cross out. */
-function anyEmptyLacksNotes(state: TowersState): boolean {
-  for (let i = 0; i < state.w * state.w; i++) {
-    if (state.grid[i] === 0 && state.pencil[i] === 0) return true;
-  }
-  return false;
-}
-
-/** A naked single in the working notes: the first empty cell whose pencil set
- * has exactly one candidate. On a mistake-free board that lone candidate is the
- * solution, so placing it is sound — and it is the move a human makes next, so
- * the hint surfaces it ahead of any further elimination (suggestion 2). */
-function nakedSingle(
-  wGrid: Uint8Array,
-  wPen: Int32Array,
-  w: number,
-): { x: number; y: number; n: number } | null {
-  for (let i = 0; i < w * w; i++) {
-    if (wGrid[i] !== 0 || wPen[i] === 0) continue;
-    // Exactly one bit set?
-    if ((wPen[i] & (wPen[i] - 1)) !== 0) continue;
-    let n = 0;
-    for (let v = 1; v <= w; v++) {
-      if (wPen[i] & (1 << v)) {
-        n = v;
-        break;
-      }
-    }
-    if (n > 0) return { x: i % w, y: (i / w) | 0, n };
-  }
-  return null;
-}
-
-/** Index of the first recorded placement whose cell is *not yet* on the working
- * grid. Every op before it is valid against the current working grid (placements
- * before it — e.g. a facing-clue placement we have already applied — are already
- * reflected), so a strike there can be surfaced now; a strike after it would
- * depend on a placement we haven't made. */
-function firstUnreflectedPlaceIndex(
-  ops: HintOp[],
-  wGrid: Uint8Array,
-  w: number,
-): number {
-  for (let i = 0; i < ops.length; i++) {
-    if (ops[i].kind === "place" && wGrid[ops[i].y * w + ops[i].x] === 0) return i;
-  }
-  return ops.length;
 }
 
 /** The next clue-deduction strike whose marks are still live in the working
@@ -545,7 +508,11 @@ function nextClueStrike(
   wGrid: Uint8Array,
   wPen: Int32Array,
   w: number,
-): { marks: { x: number; y: number; n: number }[]; reason: HintReason; group: number } | null {
+): {
+  marks: { x: number; y: number; n: number }[];
+  reason: HintReason;
+  group: number;
+} | null {
   const lim = firstUnreflectedPlaceIndex(ops, wGrid, w);
   const liveAt = (op: HintOp) =>
     op.kind === "elim" &&
@@ -568,22 +535,6 @@ function nextClueStrike(
       reason: same[0].reason,
       group: g,
     };
-  }
-  return null;
-}
-
-/** The next forced placement the recording solver makes whose cell is still
- * empty — a facing-clue placement, or a cube collapse the working notes didn't
- * already surface as a naked single. */
-function nextPlace(
-  ops: HintOp[],
-  wGrid: Uint8Array,
-  w: number,
-): { x: number; y: number; n: number; reason: HintReason } | null {
-  for (const op of ops) {
-    if (op.kind === "place" && wGrid[op.y * w + op.x] === 0) {
-      return { x: op.x, y: op.y, n: op.n, reason: op.reason };
-    }
   }
   return null;
 }
@@ -658,7 +609,8 @@ function nextExtremeClueLine(
       if (wGrid[line[i].y * w + line[i].x] === 0)
         cells.push({ x: line[i].x, y: line[i].y, n: i + 1 });
     }
-    if (cells.length > 0) return { reason: { kind: "fullLine", clue: c, clueVal: w }, cells };
+    if (cells.length > 0)
+      return { reason: { kind: "fullLine", clue: c, clueVal: w }, cells };
   }
   for (let c = 0; c < 4 * w; c++) {
     if (clues[c] !== 1) continue;
@@ -692,7 +644,7 @@ function buildSteps(
   // facing pairs) need no notes, so an empty board opens straight on them rather
   // than on a "pencil everything in" step. We only fill notes the moment an
   // elimination actually needs something to cross out.
-  let populated = !anyEmptyLacksNotes(state);
+  let populated = !anyEmptyLacksNotes(state.grid, state.pencil, w);
   const ensurePopulated = (): void => {
     if (populated) return;
     const all = (1 << (w + 1)) - (1 << 1);
@@ -724,7 +676,17 @@ function buildSteps(
     //    note-free extreme-clue lines.)
     const ns = nakedSingle(wGrid, wPen, w);
     if (ns) {
-      emitPlacement(steps, wGrid, wPen, w, ns.x, ns.y, ns.n, { kind: "single" }, autoClean);
+      emitPlacement(
+        steps,
+        wGrid,
+        wPen,
+        w,
+        ns.x,
+        ns.y,
+        ns.n,
+        { kind: "single" },
+        autoClean,
+      );
       ops = recordTowersDeductions(w, state.clues, wGrid, maxdiff);
       lastStrikeGroup = -1;
       continue;
@@ -737,7 +699,18 @@ function buildSteps(
     const forced = nextExtremeClueLine(state.clues, wGrid, w);
     if (forced) {
       forced.cells.forEach((c, j) => {
-        emitPlacement(steps, wGrid, wPen, w, c.x, c.y, c.n, forced.reason, autoClean, j > 0);
+        emitPlacement(
+          steps,
+          wGrid,
+          wPen,
+          w,
+          c.x,
+          c.y,
+          c.n,
+          forced.reason,
+          autoClean,
+          j > 0,
+        );
       });
       ops = recordTowersDeductions(w, state.clues, wGrid, maxdiff);
       lastStrikeGroup = -1;
@@ -783,7 +756,17 @@ function buildSteps(
         place.reason.kind === "single"
           ? singlePlacementReason(wGrid, wPen, place.x, place.y, place.n, w)
           : place.reason;
-      emitPlacement(steps, wGrid, wPen, w, place.x, place.y, place.n, reason, autoClean);
+      emitPlacement(
+        steps,
+        wGrid,
+        wPen,
+        w,
+        place.x,
+        place.y,
+        place.n,
+        reason,
+        autoClean,
+      );
       ops = recordTowersDeductions(w, state.clues, wGrid, maxdiff);
       lastStrikeGroup = -1;
       continue;
@@ -828,86 +811,16 @@ function hintKeepTrack(
   step: HintStep<TowersMove, TowersHint>,
   state: TowersState,
 ): HintTrackVerdict {
-  const sm = step.move;
-  if (sm.type === "pencilAll") return m.type === "pencilAll" ? "completed" : "off";
-  if (sm.type === "set") {
-    return m.type === "set" &&
-      !m.pencil &&
-      m.x === sm.x &&
-      m.y === sm.y &&
-      m.n === sm.n
-      ? "completed"
-      : "off";
-  }
-  if (sm.type === "pencilStrike") {
-    // The player strikes a candidate with a pencil toggle (`set { pencil }`).
-    if (m.type !== "set" || !m.pencil) return "off";
-    const hit = sm.marks.findIndex((k) => k.x === m.x && k.y === m.y && k.n === m.n);
-    if (hit < 0) return "off"; // touched a non-target candidate
-    // `state` is the PRE-move board (the established `hintKeepTrack` contract).
-    // A pencil toggle clears the candidate iff it is present now; if it is
-    // already absent the toggle would *re-add* it — off-plan. (The candidate
-    // being present is exactly what makes the strike the right move to follow.)
-    if (!(state.pencil[m.y * state.w + m.x] & (1 << m.n))) return "off";
-    const remaining = sm.marks.filter((_, j) => j !== hit);
-    if (remaining.length === 0) return "completed";
-    // Shrink the step in place so a later auto-hint strikes only the rest.
-    step.move = { type: "pencilStrike", marks: remaining };
-    if (step.highlights) {
-      step.highlights = {
-        ...step.highlights,
-        targets: remaining.map((k) => ({ x: k.x, y: k.y })),
-        marks: remaining,
-      };
-    }
-    return "onTrack";
-  }
-  return "off";
+  return keepCandidateHintTrack(m, step, state.pencil, state.w);
 }
 
 /** Re-validate a stored hint step against the current board before it is
- * (re-)displayed (the engine's "never show a stale step" guarantee). The one
- * way a kept plan goes stale here: auto-pencil. When the player turns auto-pencil
- * on, a placement silently strikes the placed height from its row/column, so a
- * later stored `pencilStrike` step (e.g. the explicit dup leg a plan built with
- * auto-pencil *off* emitted, or any clue elimination targeting one of those
- * candidates) names notes that are already gone. Drop dead marks; if none
- * survive the step is fully resolved (return null → the midend skips it). */
+ * (re-)displayed (shared "never show a stale step" guarantee). */
 function refreshHintStep(
   step: HintStep<TowersMove, TowersHint>,
   state: TowersState,
 ): HintStep<TowersMove, TowersHint> | null {
-  const m = step.move;
-  const w = state.w;
-  if (m.type === "pencilStrike") {
-    const live = m.marks.filter(
-      ({ x, y, n }) =>
-        state.grid[y * w + x] === 0 && (state.pencil[y * w + x] & (1 << n)) !== 0,
-    );
-    if (live.length === 0) return null;
-    if (live.length === m.marks.length) return step;
-    return {
-      ...step,
-      move: { type: "pencilStrike", marks: live },
-      highlights: step.highlights
-        ? { ...step.highlights, targets: live.map((k) => ({ x: k.x, y: k.y })), marks: live }
-        : undefined,
-    };
-  }
-  if (m.type === "set" && !m.pencil) {
-    // A placement step is resolved once its cell is filled (by the player
-    // following it, or any other move). A wrong fill makes the board mistaken
-    // and the next recompute will refuse — advancing past it is harmless.
-    return state.grid[m.y * w + m.x] !== 0 ? null : step;
-  }
-  if (m.type === "pencilAll") {
-    // The populate step is resolved once every empty cell already has notes.
-    for (let i = 0; i < w * w; i++) {
-      if (state.grid[i] === 0 && state.pencil[i] === 0) return step;
-    }
-    return null;
-  }
-  return step;
+  return refreshCandidateHintStep(step, state.grid, state.pencil, state.w);
 }
 
 function flashLength(

@@ -25,12 +25,54 @@ export type SinglePlacement =
   | { kind: "hidden"; line: "row" | "col"; index: number }
   | { kind: "forced" };
 
+/** A region the {@link classifyPlacementInRegions} classifier reasons over: its
+ * member cell indices (`y * w + x`). A game tags each region with whatever it
+ * needs to name it (a `line`/`index` for a row/column, a `kind` for a sub-block
+ * or diagonal) and reads that tag back off the returned `region`. */
+export interface ClassifyRegion {
+  cells: ArrayLike<number>;
+}
+
+/** Whether the forced placement of digit `n` at `cell` is a *naked* single (the
+ * cell's notes are exactly `{n}`), a *hidden* single in one of `regions` (no other
+ * empty cell of that region still notes `n`), or otherwise *forced* (the notes lag
+ * a deeper deduction). The generic core of "re-derive the why" (hint-authoring
+ * §9.3a) for any candidate-elimination game: the Latin row/column games pass
+ * `[row, column]`; Solo passes `[row, column, block, diag0, diag1]`. Regions are
+ * tested in order, so the first match wins (callers list them in narration
+ * preference order). */
+export function classifyPlacementInRegions<R extends ClassifyRegion>(
+  grid: ArrayLike<number>,
+  pencil: ArrayLike<number>,
+  cell: number,
+  n: number,
+  regions: readonly R[],
+): { kind: "naked" } | { kind: "hidden"; region: R } | { kind: "forced" } {
+  if (pencil[cell] === 1 << n) return { kind: "naked" };
+  const bit = 1 << n;
+  for (const region of regions) {
+    let hidden = true;
+    for (let i = 0; i < region.cells.length; i++) {
+      const j = region.cells[i];
+      if (j === cell) continue;
+      if (grid[j] === 0 && pencil[j] & bit) {
+        hidden = false;
+        break;
+      }
+    }
+    if (hidden) return { kind: "hidden", region };
+  }
+  return { kind: "forced" };
+}
+
 /**
  * Classify the forced placement of digit `n` at `(x, y)` on the working board
- * (`grid`: 0 = empty; `pencil`: bit `1 << d` = candidate `d`). A genuine naked or
- * hidden single is the common case; `forced` is the residue where the visible
- * notes lag behind the deduction that forced the cell, so a hint must narrate it
- * honestly rather than claim the cell's candidates are down to one.
+ * (`grid`: 0 = empty; `pencil`: bit `1 << d` = candidate `d`) as a naked / hidden
+ * (row or column) / forced single — the row/column specialisation of
+ * {@link classifyPlacementInRegions}. A genuine naked or hidden single is the
+ * common case; `forced` is the residue where the visible notes lag behind the
+ * deduction that forced the cell, so a hint must narrate it honestly rather than
+ * claim the cell's candidates are down to one.
  */
 export function classifyPlacement(
   grid: ArrayLike<number>,
@@ -40,28 +82,19 @@ export function classifyPlacement(
   n: number,
   w: number,
 ): SinglePlacement {
-  if (pencil[y * w + x] === 1 << n) return { kind: "naked" };
-  let row = true;
+  const row: number[] = [];
+  const col: number[] = [];
   for (let k = 0; k < w; k++) {
-    if (k === x) continue;
-    const j = y * w + k;
-    if (grid[j] === 0 && pencil[j] & (1 << n)) {
-      row = false;
-      break;
-    }
+    row.push(y * w + k);
+    col.push(k * w + x);
   }
-  if (row) return { kind: "hidden", line: "row", index: y };
-  let col = true;
-  for (let k = 0; k < w; k++) {
-    if (k === y) continue;
-    const j = k * w + x;
-    if (grid[j] === 0 && pencil[j] & (1 << n)) {
-      col = false;
-      break;
-    }
-  }
-  if (col) return { kind: "hidden", line: "col", index: x };
-  return { kind: "forced" };
+  const c = classifyPlacementInRegions(grid, pencil, y * w + x, n, [
+    { cells: row, line: "row", index: y } as const,
+    { cells: col, line: "col", index: x } as const,
+  ]);
+  if (c.kind === "hidden")
+    return { kind: "hidden", line: c.region.line, index: c.region.index };
+  return c;
 }
 
 /** The reason a forced single placement carries — shared across the Latin family

@@ -30,6 +30,18 @@ driver:
 
 Each tier is independently green against the existing suites.
 
+**Tier 1 is independently shippable, and tier 2 must earn its keep.** Tier 1 is where
+the byte-identical duplication and the coordinated-multi-game-fix pain actually live
+(`joinNums` is byte-identical across keen/unequal/solo; `hintKeepTrack` differs only in
+type names + the width accessor); it is the high-confidence win. Tier 2's driver carries
+*seven* injection points (D3) — enough that the driver could degrade into a thin shell
+wrapping mostly-injected behaviour, where the per-game `buildSteps` was already readable.
+So the decision point is explicit: **migrate Keen's `buildSteps` onto the driver first
+and look at the result. If the driver is mostly callbacks and the call-site is not
+clearly simpler than the per-game walk it replaced, stop after tier 1 and leave
+`buildSteps` per-game.** Shipping tier 1 alone is a complete, valuable outcome, not a
+half-done change.
+
 ### D3 — The injection surface (what stays per-game)
 
 `buildCandidatePlan(state, config)` injects exactly the genuinely-variant pieces:
@@ -76,10 +88,13 @@ generic functions are parameterised by the structural subset they read.
   after each. A migration is correct when the suites pass with **no snapshot change**
   (a snapshot diff means an unintended behaviour change — investigate, don't
   `-u` past it).
-- Undead is evaluated last: its candidate model is a monster bitmask, so confirm the
-  pure helpers (which read `pencil[i] & (1<<n)`) fit its bit layout before migrating;
-  if the fit is awkward, leave Undead on its own copy and record the reason in the dev
-  guide (a documented non-migration is a fine outcome).
+- Undead is evaluated last, and a documented **non-**migration is the expected outcome.
+  It is not a Latin game: its candidate model is a monster bitmask, it uses `nextPlaceOp`
+  (not `nextPlace`), a different `anyEmptyLacksNotes` signature, and has none of
+  `joinNums` / `firstUnreflectedPlaceIndex` / `nextStrike`. Confirm whether the pure
+  helpers (which read `pencil[i] & (1<<n)`) fit its bit layout; if the fit is awkward —
+  the likely case — leave Undead on its own copy and record the reason in the dev guide.
+  Migrating Undead is opportunistic, not a goal of this change.
 
 ## Alternatives rejected
 
