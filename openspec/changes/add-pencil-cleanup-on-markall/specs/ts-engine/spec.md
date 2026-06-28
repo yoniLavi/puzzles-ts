@@ -19,15 +19,24 @@ only when `canMarkAll` is true, which on activation injects the `M` key via the
 surface's `processKey`.
 
 The mark-all action SHALL be **adaptive** for a game whose cells have uniqueness
-regions (one that supplies a per-game region provider): if any empty cell lacks
-any candidate the action fills every empty cell with all candidates (as before);
-otherwise (the board is already fully noted) the action SHALL instead **remove the
-obvious candidates** — every pencilled value equal to a value already placed in one
-of that cell's uniqueness regions (row/column, plus sub-block and X-diagonal where
-the game has them; a Keen arithmetic cage is NOT a uniqueness region). The cleanup
-SHALL be emitted as the existing atomic `pencilStrike` move with its marks computed
-at `interpretMove` time, so replay and undo are exact. A game without a row/column
-uniqueness model (e.g. Undead) SHALL keep the fill-only behaviour.
+regions (one that supplies a per-game region provider): if any empty cell has **no
+pencil notes at all** the action fills every note-less empty cell with all candidates
+(as before); otherwise (every empty cell already carries notes) the action SHALL
+instead **remove the obvious candidates** — every pencilled value equal to a value
+already *placed* in one of that cell's uniqueness regions (row/column, plus sub-block
+and X-diagonal where the game has them; a Keen arithmetic cage is NOT a uniqueness
+region). "Obvious" SHALL be judged only against placed values, never inferred from
+another pencil mark.
+
+The cleanup SHALL be emitted as the existing atomic `pencilStrike` move with its marks
+computed at `interpretMove` time, so replay and undo are exact. The cleanup SHALL be
+**idempotent** and a pure function of the placed (non-pencil) grid: repeated presses
+converge to and remain at "every empty cell noted with all candidates minus the values
+placed in its regions" — there SHALL be no fill⇄clean toggle, and a cleaned board SHALL
+NOT silently re-fill. A clean SHALL NOT empty a cell of its last note (a cell whose every
+candidate is region-eliminated occurs only on an already-mistaken board; leaving its last
+note keeps idempotency unconditional). A game without a row/column uniqueness model (e.g.
+Undead) SHALL keep the fill-only behaviour.
 
 #### Scenario: A pencil-mark game shows the control and fills candidates
 
@@ -44,6 +53,14 @@ uniqueness model (e.g. Undead) SHALL keep the fill-only behaviour.
   values already placed in each cell's row/column (and block/diagonal where the game
   has them), leaving every still-possible candidate, and replaying the move
   reproduces the cleaned board
+
+#### Scenario: Repeated presses are idempotent (no re-fill, no toggle)
+
+- **WHEN** the player activates the mark-all control a third time, after a fill and a
+  clean, with no board change in between
+- **THEN** the cleaned board is unchanged — the action computes an empty `pencilStrike`
+  and does not re-fill any cell — and the resulting notes equal `{1..n}` minus the placed
+  values in each cell's regions
 
 #### Scenario: An arithmetic cage is not a uniqueness region
 
