@@ -2,31 +2,35 @@
 
 ## Decisions
 
-### D1 — Trigger: fill if anything is missing, else clean
+### D1 — Trigger: fill the *note-less* cells, else clean (no "missing any candidate")
 
-A press computes the fill set first. If any empty cell lacks any candidate, the press
-**fills** (today's behaviour) — so the first press on a fresh/partial board always fills,
-and the player sees the full candidate grid. If every empty cell is already fully noted,
-the press **cleans**: strike each pencilled value that already sits as a placed value in
-one of that cell's uniqueness regions. This makes "fill then a second press cleans" fall
-out naturally without a separate mode flag.
+A press's branch is decided by whether any empty cell has **zero** pencil notes — NOT
+"lacks any candidate." If some empty cell has no notes at all, the press **fills** every
+note-less empty cell with all candidates `1..n` (today's behaviour — the button's namesake,
+"show me everything"). Otherwise (every empty cell already carries notes) the press
+**cleans**: strike each pencilled value that already sits as a *placed* value in one of that
+cell's uniqueness regions. The "zero notes" trigger (rather than "missing any candidate") is
+what makes the cleaned state stable — see D2.
 
-### D2 — Oscillation: cleaning is terminal for that press cycle (OPEN — owner to confirm)
+### D2 — Idempotent, decided from the placed (non-pencil) grid; NO toggle (owner-confirmed 2026-06-28)
 
-After a clean, some cells no longer carry the full candidate set, so by D1 the *next* press
-would fill again — a fill⇄clean toggle. Two options, to confirm with the owner during
-implementation:
+The owner is explicitly against a fill⇄clean toggle. Cleaning is therefore **idempotent**:
+once the obvious candidates are gone, further presses are no-ops, and the board never
+silently re-fills.
 
-- **(a) Toggle (simplest, matches D1 literally):** press 3 re-fills, press 4 re-cleans.
-  Predictable but a stray double-click "undoes" the cleanup.
-- **(b) Idempotent clean:** once cleaned, further presses re-clean (no-op) until the player
-  changes the board; never silently re-fills. Needs a way to tell "fully noted minus
-  obvious" from "partially noted by the player," which is not locally decidable — likely a
-  transient Ui bit (not serialised), which adds state.
+This falls straight out of D1's "zero notes" trigger without any new state: after a clean,
+every empty cell still carries its non-obvious notes (≥ 1 on a mistake-free board), so no
+cell is note-less → the next press takes the **clean** branch again → the obvious set is
+already empty → empty `pencilStrike` → no-op. The result is a pure function of the placed
+(non-pencil) values: the cleaned board is exactly "every empty cell noted with `{1..n}`
+minus the values placed in its regions," and pressing repeatedly converges to and stays at
+that state. "Obvious" is always judged against a *placed* value, never inferred from another
+pencil mark, which is what keeps it placed-value-defined and idempotent.
 
-**Recommendation: (a) toggle** — no new state, and the player can always re-fill; the
-hint/auto-pencil paths already cover teaching. Decide before implementing; D1 is unaffected
-either way.
+**Mistaken-board guard:** if a cell's every candidate is region-eliminated (only possible on
+an already-wrong board), the clean MUST NOT empty it — leave its last note. Otherwise that
+cell would become note-less and the next press would re-fill, reintroducing oscillation on
+exactly the pathological board. With the guard, idempotency holds unconditionally.
 
 ### D3 — Regions come from `extract-cell-region-helpers`
 
