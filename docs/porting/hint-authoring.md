@@ -855,6 +855,12 @@ stale-plan guard (§7.3) all apply here; this section is the pencil-note-*specif
 [`towers/{solver,index,render}.ts`](../../src/native/games/towers/index.ts) +
 [`engine/latin.ts`](../../src/native/engine/latin.ts).
 
+> **The reusable mechanics live in [`engine/candidate-hint.ts`](../../src/native/engine/candidate-hint.ts)** (`extract-candidate-hint-plan`, after four exemplars). Import them rather than copying: the pure plan helpers (`nakedSingle`, `anyEmptyLacksNotes`, `firstUnreflectedPlaceIndex`, `nextStrike` — whole-firing, dup-excluded — `nextPlace`, `joinNums`) and the generic `keepCandidateHintTrack` / `refreshCandidateHintStep` over the shared `CandidateMove` / `CandidateHighlights`. The §9.3a "re-derive the why" classifier is `classifyPlacementInRegions` in [`latin-hint.ts`](../../src/native/engine/latin-hint.ts) — pass the regions your game reasons over (`[row, col]`, or Solo's `[row, col, block, diag0, diag1]`). A game wires `hintKeepTrack`/`refreshHintStep` as one-line wrappers passing `state.pencil`/`state.grid` + the grid order; the helpers below are the implementation, not snippets to paste.
+>
+> **What stays in the game — and why no shared driver.** The `buildSteps` *walk* is per-game on purpose: the four games diverge in step order (Towers places extreme-clue lines *before* populate), strike-split policy (by-height / by-target-cell / by-cell / intersect-single — dictated by what the narration names singular, §9.3), and journey-continuation tracking (inside the journey vs an external `lastStrikeGroup`). A `buildCandidatePlan` driver was evaluated and **deliberately not built** — it would be a callback shell over a ~6-line loop skeleton, with the per-game walk more readable left in place. Narration and the reason union are likewise per-game (meaning, not mechanics).
+>
+> **Not every candidate game fits.** The shared move/helpers assume `0`-empty, `1<<n` digit candidates on a `w×w` grid, and `{x,y,n}` cells. Undead (§9.4) breaks all of these (a `MON_NONE` sentinel, a 1-D monster bitmask, a `{cell, monster}` move union) and keeps its own copies — a documented non-migration is a fine outcome; don't contort a game onto the shared shape.
+
 ### 9.1 The recorder and the soundness boundary
 
 - **Record off the candidate cube.** A Latin-style solver already carries

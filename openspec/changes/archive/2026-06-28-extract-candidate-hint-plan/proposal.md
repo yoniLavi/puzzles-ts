@@ -23,9 +23,11 @@ bug fix or quality tweak is one edit, not four.
     `firstUnreflectedPlaceIndex`, `nextStrike`, `nextPlace`, `joinNums`;
   - generic `hintKeepTrack` and `refreshHintStep` over a shared `PencilMove` shape
     (`set` | `pencilAll` | `pencilStrike` — structurally identical in all four games);
-  - a `buildCandidatePlan(state, config)` driver running the 5-step walk (naked single
-    → lazy populate → basic-region cull → next deductive elimination → forced
-    placement) and emitting one-firing-one-journey strike steps.
+  - *(evaluated, deliberately not built — see design D2)* a `buildCandidatePlan` driver
+    over the 5-step walk. On inspection the four games' walks diverge in step order,
+    strike-split policy and journey-continuation tracking enough that a driver would be a
+    callback shell over a ~6-line loop skeleton; the per-game `buildSteps` is more
+    readable left in place, configured by the shared helpers above.
 - **`config` injection points keep what is genuinely per-game**: `recordDeductions`,
   `narrate(reason, ns)`, `reasonArea`/`placementArea`, the strike-split policy (by
   digit vs by cell), and `basicRegionStrike`. Narration and the reason unions stay in
