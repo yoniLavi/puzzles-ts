@@ -15,6 +15,8 @@
  * re-derivation, shared so every Latin game tells the truth the same way.
  */
 
+import { joinNums } from "./candidate-hint.ts";
+
 /** A forced single placement, classified against the working board:
  * - `naked` — the cell's own candidates are exactly `{n}`;
  * - `hidden` — a row/column no other empty cell of which can still take `n`;
@@ -109,7 +111,13 @@ export function classifyPlacement(
   n: number,
   w: number,
 ): SinglePlacement {
-  const c = classifyPlacementInRegions(grid, pencil, y * w + x, n, rowColRegions(x, y, w));
+  const c = classifyPlacementInRegions(
+    grid,
+    pencil,
+    y * w + x,
+    n,
+    rowColRegions(x, y, w),
+  );
   if (c.kind === "hidden")
     return { kind: "hidden", line: c.region.line, index: c.region.index };
   return c;
@@ -158,4 +166,44 @@ export function hiddenSingleLine(
   if (line === "row") for (let k = 0; k < w; k++) cells.push({ x: k, y: index });
   else for (let k = 0; k < w; k++) cells.push({ x: index, y: k });
   return cells;
+}
+
+/** The generic Latin reasons whose narration is shared verbatim by the *row/column*
+ * games (Keen, Unequal): a {@link SingleReason} (naked / hidden / forced single)
+ * plus the generic `dup` / `set` / `forcing` eliminations from `LatinReason`. The
+ * `dup` reason may carry extra fields (`px`/`py`) — only `n` is read here. */
+export type GenericLatinReason =
+  | SingleReason
+  | { kind: "dup"; n: number }
+  | { kind: "set" }
+  | { kind: "forcing" };
+
+/** Narrate a generic Latin reason — the six arms that read *identically* across
+ * the row/column Latin games (Keen, Unequal). Shared so a wording improvement to,
+ * say, the hidden-single sentence lands in one place instead of drifting between
+ * those games. `ns` is the value list the arm refers to (the placed value for a
+ * single, the struck values for `set` / `forcing`).
+ *
+ * Scope is deliberately the **row/column** games only: Solo's generic arms diverge
+ * (its single/dup/set name "row, column **and block**" and its `hiddenSingle` names
+ * a block/diagonal region), and Towers narrates the whole family in "height"
+ * vocabulary with a single value, not an `ns` list — both keep their own `narrate`
+ * (see `docs/porting/hint-authoring.md` §9.2). Each row/column game still owns its
+ * game-specific arms (Keen's cage*, Unequal's greater/lesser/adjacent*) and
+ * delegates only the generic ones here. */
+export function narrateLatinReason(reason: GenericLatinReason, ns: number[]): string {
+  switch (reason.kind) {
+    case "single":
+      return `Every other number has been ruled out in this cell, so it can only be ${ns[0]}.`;
+    case "hiddenSingle":
+      return `In this ${reason.line === "row" ? "row" : "column"}, ${reason.n} can go in only this cell — every other cell in the ${reason.line === "row" ? "row" : "column"} has ruled it out — so it must be ${reason.n}.`;
+    case "forcedSingle":
+      return `Working through this cell's row and column together, only ${reason.n} can still go here — so it must be ${reason.n}.`;
+    case "dup":
+      return `There's already a ${reason.n} in this row and column, so we must cross out the ${reason.n} from the other cells they pass through.`;
+    case "set":
+      return `Another group of cells already accounts for a fixed set of numbers that includes ${joinNums(ns)}, so we must cross out ${joinNums(ns)} here.`;
+    case "forcing":
+      return `Following a chain of two-candidate cells, placing ${ns[0]} here would force a contradiction further along — so we must cross out ${joinNums(ns)}.`;
+  }
 }

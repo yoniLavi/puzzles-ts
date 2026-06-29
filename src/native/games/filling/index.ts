@@ -9,7 +9,7 @@
  * port first.
  */
 import type { Colour, KeyLabel, Point, Size } from "../../../puzzle/types.ts";
-import { digitKeys } from "../../engine/key-labels.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   type HintResult,
@@ -19,6 +19,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import { digitKeys } from "../../engine/key-labels.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -40,11 +41,7 @@ import {
   PREFERRED_TILE_SIZE,
   redrawFilling,
 } from "./render.ts";
-import {
-  deduceHintPlan,
-  type FillingHintReason,
-  solveFilling,
-} from "./solver.ts";
+import { deduceHintPlan, type FillingHintReason, solveFilling } from "./solver.ts";
 import {
   decodeParams,
   defaultParams,
@@ -305,15 +302,7 @@ function flashLength(
   _dir: number,
   _ui: FillingUi,
 ): number {
-  if (
-    !oldState.completed &&
-    newState_.completed &&
-    !oldState.cheated &&
-    !newState_.cheated
-  ) {
-    return FLASH_TIME;
-  }
-  return 0;
+  return winFlash(oldState, newState_, FLASH_TIME);
 }
 
 export const fillingGame: Game<

@@ -17,10 +17,10 @@ import type {
   Point,
   Size,
 } from "../../../puzzle/types.ts";
-import { digitKeys } from "../../engine/key-labels.ts";
 import {
   adaptiveMarkAllMove,
   anyEmptyLacksNotes,
+  candidateHint,
   firstUnreflectedPlaceIndex,
   keepCandidateHintTrack,
   nakedSingle,
@@ -28,6 +28,7 @@ import {
   refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   type HintResult,
@@ -38,6 +39,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import { digitKeys } from "../../engine/key-labels.ts";
 import {
   hiddenSingleLine,
   rowColRegions,
@@ -578,7 +580,15 @@ function emitPlacement(
   wGrid[y * w + x] = n;
   wPen[y * w + x] = 0;
 
-  const dupMarks = regionDuplicateMarks(wGrid, wPen, x, y, n, w, rowColRegions(x, y, w));
+  const dupMarks = regionDuplicateMarks(
+    wGrid,
+    wPen,
+    x,
+    y,
+    n,
+    w,
+    rowColRegions(x, y, w),
+  );
   for (const m of dupMarks) wPen[m.y * w + m.x] &= ~(1 << n);
 
   if (!autoClean && dupMarks.length > 0) {
@@ -792,23 +802,7 @@ function hint(
   _aux?: string,
   ui?: TowersUi,
 ): HintResult<TowersMove, TowersHint> {
-  if (state.completed) return { ok: false, error: "This board is already solved." };
-  if (findMistakes(state).length > 0) {
-    return {
-      ok: false,
-      error:
-        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
-    };
-  }
-  // Auto-pencil (default on) folds the trivial row/column eliminations into each
-  // placement; off, they are taught as explicit strikes. The hint with no ui
-  // (tests / harness) takes the default.
-  const autoClean = ui?.autoPencil ?? false;
-  const steps = buildSteps(state, autoClean);
-  if (steps.length === 0) {
-    return { ok: false, error: "No further move can be deduced from this position." };
-  }
-  return { ok: true, steps };
+  return candidateHint(state, ui, findMistakes, buildSteps);
 }
 
 /** Classify a player move against the displayed hint step. A `pencilAll`
@@ -838,9 +832,7 @@ function flashLength(
   _dir: number,
   _ui: TowersUi,
 ): number {
-  if (!from.completed && to.completed && !from.cheated && !to.cheated)
-    return FLASH_TIME;
-  return 0;
+  return winFlash(from, to, FLASH_TIME);
 }
 
 export const towersGame: Game<

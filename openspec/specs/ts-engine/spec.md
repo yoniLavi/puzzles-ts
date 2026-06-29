@@ -1424,3 +1424,64 @@ frames are unchanged.
 - **THEN** `regionsOf` returns only the row and column, so neither the cleanup nor the
   basic-strike removes a candidate that is legal under the cage constraint
 
+### Requirement: A shared candidate-elimination hint entry
+
+The shared candidate-elimination module (`src/native/engine/candidate-hint.ts`) SHALL
+provide a `candidateHint` entry that owns the `Game.hint` control flow common to every
+candidate-elimination game: refuse on a completed board, refuse (with the standard
+message) when the game's `findMistakes` reports any mistake, read the `autoPencil`
+preference (defaulting off, per the games' default-auto-pencil-off preference), build the
+plan via the game's `buildSteps`, refuse when the
+plan is empty, and otherwise return the steps. The standard refusal and empty-plan
+messages SHALL live in this one place. A game's `hint` SHALL be a one-line call passing
+its own `findMistakes` and `buildSteps`; routing through it SHALL be behaviour-preserving.
+
+#### Scenario: A migrated game's hint refusals and success are unchanged
+
+- **WHEN** a candidate-elimination game (Keen, Towers, Unequal, Solo) routes its `hint`
+  through the shared entry
+- **THEN** a completed board, a board with mistakes, and a stuck board each refuse with the
+  same message as before, a solvable board returns the same plan, and the game's hint suite
+  passes with no change
+
+### Requirement: A shared win-flash helper
+
+The engine SHALL provide a shared `winFlash(from, to, flashTime)` helper returning
+`flashTime` exactly when a move transitions the board from unsolved to solved without a
+cheat (`!from.completed && to.completed && !from.cheated && !to.cheated`) and `0`
+otherwise, reading the common `completed` / `cheated` state fields structurally. A game
+whose `flashLength` is this canonical shape SHALL delegate to it; a game with bespoke flash
+timing keeps its own. Delegation SHALL be behaviour-preserving.
+
+#### Scenario: A fresh solve flashes; other transitions do not
+
+- **WHEN** a move solves a previously-unsolved board with no cheat used
+- **THEN** `winFlash` returns the flash duration; for an already-solved board, a non-solving
+  move, or a cheated solve it returns `0`, matching the per-game `flashLength` it replaced
+
+### Requirement: A shared narrator for generic Latin deduction reasons
+
+When adopted, the shared Latin-hint module (`src/native/engine/latin-hint.ts`) SHALL
+provide a `narrateLatinReason(reason, ns)` that renders the *generic* Latin deduction
+reasons whose narration is identical across the **row/column** Latin games (`single`,
+`hiddenSingle`, `forcedSingle`, `dup`, `set`, `forcing`). A row/column game (Keen, Unequal)
+SHALL delegate those arms to the shared narrator and keep its game-specific arms (cages,
+inequality/adjacency clues) local. Delegation SHALL be behaviour-preserving — the rendered
+narration strings are byte-identical to before, asserted by each game's hint suite.
+
+A game whose generic-arm wording legitimately diverges SHALL keep its own `narrate` rather
+than carry overrides into the shared narrator: **Solo** (its `single`/`dup`/`forcedSingle`
+name "row, column and block" and its `hiddenSingle` names a block/diagonal region) and
+**Towers** (it narrates the whole family in "height" vocabulary with a single value, not an
+`ns` list) are conformingly left local. The requirement is satisfied either by the shared
+narrator (for the games where the arms are verbatim-identical) **or** by a recorded decision
+in `docs/porting/hint-authoring.md` that a given game's arms were left per-game because the
+override surface made a shared narrator less readable — both are conforming outcomes.
+
+#### Scenario: A delegated generic arm narrates identically
+
+- **WHEN** a game routes a generic Latin reason (`single` / `set` / `forcing`) through the
+  shared narrator
+- **THEN** the produced sentence is byte-identical to the prior per-game string and the
+  game's hint suite passes with no change
+
