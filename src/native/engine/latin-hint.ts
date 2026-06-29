@@ -65,6 +65,33 @@ export function classifyPlacementInRegions<R extends ClassifyRegion>(
   return { kind: "forced" };
 }
 
+/** A row/column region tagged for narration: the cells of the line plus whether it
+ * is a `row` (`index` = its y) or `col` (`index` = its x). */
+export interface RowColRegion {
+  cells: number[];
+  line: "row" | "col";
+  index: number;
+}
+
+/** The two uniqueness regions of cell `(x, y)` in a plain Latin square: its row
+ * and its column, in narration-preference order (row first). The `regionsOf`
+ * provider for Towers / Unequal / Keen — those games' *only* uniqueness regions (a
+ * Keen cage is an arithmetic constraint, not a uniqueness region). The single
+ * source of truth shared by the placement classifier, the basic-region strike and
+ * the placement dup-cull, so they can never disagree about a cell's regions. */
+export function rowColRegions(x: number, y: number, w: number): RowColRegion[] {
+  const row: number[] = [];
+  const col: number[] = [];
+  for (let k = 0; k < w; k++) {
+    row.push(y * w + k);
+    col.push(k * w + x);
+  }
+  return [
+    { cells: row, line: "row", index: y },
+    { cells: col, line: "col", index: x },
+  ];
+}
+
 /**
  * Classify the forced placement of digit `n` at `(x, y)` on the working board
  * (`grid`: 0 = empty; `pencil`: bit `1 << d` = candidate `d`) as a naked / hidden
@@ -82,16 +109,7 @@ export function classifyPlacement(
   n: number,
   w: number,
 ): SinglePlacement {
-  const row: number[] = [];
-  const col: number[] = [];
-  for (let k = 0; k < w; k++) {
-    row.push(y * w + k);
-    col.push(k * w + x);
-  }
-  const c = classifyPlacementInRegions(grid, pencil, y * w + x, n, [
-    { cells: row, line: "row", index: y } as const,
-    { cells: col, line: "col", index: x } as const,
-  ]);
+  const c = classifyPlacementInRegions(grid, pencil, y * w + x, n, rowColRegions(x, y, w));
   if (c.kind === "hidden")
     return { kind: "hidden", line: c.region.line, index: c.region.index };
   return c;

@@ -21,7 +21,8 @@ silently re-fills.
 This falls straight out of D1's "zero notes" trigger without any new state: after a clean,
 every empty cell still carries its non-obvious notes (≥ 1 on a mistake-free board), so no
 cell is note-less → the next press takes the **clean** branch again → the obvious set is
-already empty → empty `pencilStrike` → no-op. The result is a pure function of the placed
+already empty → **no move at all** (the helper returns `null` rather than an empty
+`pencilStrike`, so the redundant press leaves no dead undo entry). The result is a pure function of the placed
 (non-pencil) values: the cleaned board is exactly "every empty cell noted with `{1..n}`
 minus the values placed in its regions," and pressing repeatedly converges to and stays at
 that state. "Obvious" is always judged against a *placed* value, never inferred from another

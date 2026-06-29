@@ -857,6 +857,8 @@ stale-plan guard (§7.3) all apply here; this section is the pencil-note-*specif
 
 > **The reusable mechanics live in [`engine/candidate-hint.ts`](../../src/native/engine/candidate-hint.ts)** (`extract-candidate-hint-plan`, after four exemplars). Import them rather than copying: the pure plan helpers (`nakedSingle`, `anyEmptyLacksNotes`, `firstUnreflectedPlaceIndex`, `nextStrike` — whole-firing, dup-excluded — `nextPlace`, `joinNums`) and the generic `keepCandidateHintTrack` / `refreshCandidateHintStep` over the shared `CandidateMove` / `CandidateHighlights`. The §9.3a "re-derive the why" classifier is `classifyPlacementInRegions` in [`latin-hint.ts`](../../src/native/engine/latin-hint.ts) — pass the regions your game reasons over (`[row, col]`, or Solo's `[row, col, block, diag0, diag1]`). A game wires `hintKeepTrack`/`refreshHintStep` as one-line wrappers passing `state.pencil`/`state.grid` + the grid order; the helpers below are the implementation, not snippets to paste.
 >
+> **A cell's *uniqueness regions* are one definition per game — `regionsOf` (`extract-cell-region-helpers`).** Three sites used to recompute "which cells share a uniqueness constraint with `(x, y)`, and which still note value `n`?" — the §9.3a classifier, the §9.2 basic-region opening, and the placement dup-cull. Write a single per-game `regionsOf(state, x, y)` returning the cell's tagged uniqueness regions (a `ClassifyRegion` is `{ cells }` + whatever tag you name it by) and feed all three from it, so they can never disagree. Row/column games (Towers/Unequal/Keen) import the shared `rowColRegions(x, y, w)` from `latin-hint.ts`; Solo writes its own (`[row, col, block, diag0, diag1]`). Then the basic-region opening is `findRegionDuplicate(grid, pencil, w, (x, y) => regionsOf(state, x, y))` and the placement cull is `regionDuplicateMarks(grid, pencil, x, y, n, w, regionsOf(state, x, y))` — both in `candidate-hint.ts`, both de-dup a cell reachable via two regions. **A Keen cage is *not* a uniqueness region** — it is an arithmetic constraint a digit may legally repeat under (design D3); `regionsOf` returns row+col only, and the cage logic stays its own deduction.
+>
 > **What stays in the game — and why no shared driver.** The `buildSteps` *walk* is per-game on purpose: the four games diverge in step order (Towers places extreme-clue lines *before* populate), strike-split policy (by-height / by-target-cell / by-cell / intersect-single — dictated by what the narration names singular, §9.3), and journey-continuation tracking (inside the journey vs an external `lastStrikeGroup`). A `buildCandidatePlan` driver was evaluated and **deliberately not built** — it would be a callback shell over a ~6-line loop skeleton, with the per-game walk more readable left in place. Narration and the reason union are likewise per-game (meaning, not mechanics).
 >
 > **Not every candidate game fits.** The shared move/helpers assume `0`-empty, `1<<n` digit candidates on a `w×w` grid, and `{x,y,n}` cells. Undead (§9.4) breaks all of these (a `MON_NONE` sentinel, a 1-D monster bitmask, a `{cell, monster}` move union) and keeps its own copies — a documented non-migration is a fine outcome; don't contort a game onto the shared shape.
@@ -895,7 +897,9 @@ stale-plan guard (§7.3) all apply here; this section is the pencil-note-*specif
   the bake-into-fill §9.2 avoids); instead emit the row/column cull directly in the plan builder as the
   opening journey *after* populate and *before* the clue eliminations — one `dup`-reasoned `pencilStrike`
   per placed/given value with live line-duplicates. It re-derives from the current filled cells each
-  recompute, so it stays resume-safe. Exemplar: `basicLatinStrike` in
+  recompute, so it stays resume-safe. The scan is the shared `findRegionDuplicate(grid, pencil, w,
+  regionsOf)` (`candidate-hint.ts`); the game supplies its `regionsOf` (Unequal: `rowColRegions`).
+  Exemplar: the step-3 `findRegionDuplicate` call in
   [`unequal/index.ts`](../../src/native/games/unequal/index.ts).
 - **`pencilStrike` — the one-firing-one-step note move.** A `set { pencil }` toggle is *one* cell and
   *not idempotent* (a re-applied strike would re-add the candidate). So add a move that **clears** a list
@@ -1088,17 +1092,20 @@ byte-match. Thread instead, and lean on the gate:
   return-after-first-cage (§9.3).
 - **Record placements only; recompute dup strikes in the plan.** Like Keen/latin.ts, a
   `place` records just the placement op — the row/column/block/diagonal copies it rules
-  out are recomputed from the working notes in `emitPlacement`/`basicRegionStrike`
+  out are recomputed from the working notes via the shared `regionDuplicateMarks` /
+  `findRegionDuplicate` over Solo's `regionsOf` (`extract-cell-region-helpers`)
   (the plan filters dup-reason ops out anyway), so don't bother recording them. Solo's
   `place` also clears the cell's *own* other candidates (the naked collapse); those
   aren't dups and aren't recorded either.
 - **More region types ⇒ a richer reason union + a game-local placement re-deriver.**
   The shared `engine/latin-hint.ts` `classifyPlacement` only checks row/column; Solo
   reasons over **row, column, sub-block (rectangular or jigsaw) and two diagonals**, so
-  it carries its own `soloPlacementReason` extending the naked/hidden/forced
-  classification to block + diagonal, and a `SoloRegion` union (`row`/`col`/`block`/
-  `diag0`/`diag1`) that both the narration (`regionName`) and the evidence shading
-  (`regionCells`) read. The §9.3a rule still holds — re-derive a generic `single`
+  it carries its own `regionsOf(state, x, y)` (the single source of truth for its
+  uniqueness regions — feeds the classifier, the basic-region strike and the placement
+  cull alike) and a `soloPlacementReason` that runs `classifyPlacementInRegions` over it,
+  extending the naked/hidden/forced classification to block + diagonal, plus a
+  `SoloRegion` union (`row`/`col`/`block`/`diag0`/`diag1`) that both the narration
+  (`regionName`) and the evidence shading (`regionCells`) read. The §9.3a rule still holds — re-derive a generic `single`
   placement's *why* from the working board; only the **killer** placements
   (`cageSingle`/`cageIntersect`) keep their recorded reason, because the working board
   can't re-derive a cage-sum forcing.

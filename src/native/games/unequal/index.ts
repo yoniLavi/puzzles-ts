@@ -19,13 +19,16 @@ import type {
 } from "../../../puzzle/types.ts";
 import { clearKey } from "../../engine/key-labels.ts";
 import {
+  adaptiveMarkAllMove,
   anyEmptyLacksNotes,
+  findRegionDuplicate,
   firstUnreflectedPlaceIndex,
   joinNums,
   keepCandidateHintTrack,
   nakedSingle,
   nextPlace,
   refreshCandidateHintStep,
+  regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
 import {
   type Game,
@@ -37,7 +40,11 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import { hiddenSingleLine, singlePlacementReason } from "../../engine/latin-hint.ts";
+import {
+  hiddenSingleLine,
+  rowColRegions,
+  singlePlacementReason,
+} from "../../engine/latin-hint.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -267,8 +274,12 @@ function interpretMove(
     return UI_UPDATE;
   }
 
-  // 'M' / 'm' fill-all-pencil-marks.
-  if (button === 77 || button === 109) return { type: "pencilAll" };
+  // 'M' / 'm': fill all pencil marks, then (on a fully-noted board) clean the
+  // obvious row/column candidates — the basic-region opening, in one press.
+  if (button === 77 || button === 109)
+    return adaptiveMarkAllMove<UnequalMove>(state.grid, state.pencil, o, (x, y) =>
+      rowColRegions(x, y, o),
+    );
 
   const n = c2n(button, o);
   if (ui.hshow && n >= 0 && n <= o) {
@@ -459,40 +470,6 @@ function reasonArea(
   }
 }
 
-/** The next basic-Latin cleanup: the first filled cell whose value still appears
- * as a live pencil mark elsewhere in its row or column. Unequal boards carry a
- * few givens, which `pencilAll` doesn't account for (it fills *all* candidates),
- * so these row/column duplicates must be taught explicitly (hint-authoring §9.2,
- * the givens-bearing-Latin opening). Returns one firing — one placed value and
- * every stray copy of it in its line. */
-function basicLatinStrike(
-  wGrid: Int8Array,
-  wPen: Int32Array,
-  o: number,
-): {
-  px: number;
-  py: number;
-  n: number;
-  marks: { x: number; y: number; n: number }[];
-} | null {
-  for (let i = 0; i < o * o; i++) {
-    const v = wGrid[i];
-    if (v === 0) continue;
-    const px = i % o;
-    const py = (i / o) | 0;
-    const bit = 1 << v;
-    const marks: { x: number; y: number; n: number }[] = [];
-    for (let k = 0; k < o; k++) {
-      if (k !== px && wGrid[py * o + k] === 0 && wPen[py * o + k] & bit)
-        marks.push({ x: k, y: py, n: v });
-      if (k !== py && wGrid[k * o + px] === 0 && wPen[k * o + px] & bit)
-        marks.push({ x: px, y: k, n: v });
-    }
-    if (marks.length > 0) return { px, py, n: v, marks };
-  }
-  return null;
-}
-
 /** Index of the first recorded placement whose cell is *not yet* on the working
  * grid: every op before it is valid against the current working grid (placements
  * before it are already reflected), so a strike there can be surfaced now with a
@@ -567,11 +544,7 @@ function emitPlacement(
   wGrid[y * o + x] = n;
   wPen[y * o + x] = 0;
 
-  const dupMarks: { x: number; y: number; n: number }[] = [];
-  for (let k = 0; k < o; k++) {
-    if (k !== x && wPen[y * o + k] & (1 << n)) dupMarks.push({ x: k, y, n });
-    if (k !== y && wPen[k * o + x] & (1 << n)) dupMarks.push({ x, y: k, n });
-  }
+  const dupMarks = regionDuplicateMarks(wGrid, wPen, x, y, n, o, rowColRegions(x, y, o));
   for (const m of dupMarks) wPen[m.y * o + m.x] &= ~(1 << n);
 
   if (!autoClean && dupMarks.length > 0) {
@@ -670,7 +643,7 @@ function buildSteps(
     }
 
     // 3. The basic-Latin cull a given/placed value forces in its row and column.
-    const bs = basicLatinStrike(wGrid, wPen, o);
+    const bs = findRegionDuplicate(wGrid, wPen, o, (x, y) => rowColRegions(x, y, o));
     if (bs) {
       myGroup--;
       steps.push({
@@ -746,7 +719,7 @@ function hint(
         "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
     };
   }
-  const autoClean = ui?.autoPencil ?? true;
+  const autoClean = ui?.autoPencil ?? false;
   const steps = buildSteps(state, autoClean);
   if (steps.length === 0) {
     return { ok: false, error: "No further move can be deduced from this position." };

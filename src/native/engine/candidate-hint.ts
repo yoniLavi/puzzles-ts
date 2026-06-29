@@ -23,6 +23,7 @@
  */
 
 import type { HintStep, HintTrackVerdict } from "./game.ts";
+import type { ClassifyRegion } from "./latin-hint.ts";
 import type { DeductionRecord } from "./latin.ts";
 
 /** A board cell. */
@@ -165,6 +166,139 @@ export function nextPlace<R extends DeductionRecord>(
     if (op.kind === "place" && grid[op.y * w + op.x] === 0) return op;
   }
   return null;
+}
+
+/** One firing of the basic-region cleanup: a placed (or given) value `n` at
+ * `(px, py)` and every stray pencil copy of it still live across that cell's
+ * uniqueness regions. */
+export interface RegionDuplicate {
+  px: number;
+  py: number;
+  n: number;
+  marks: Mark[];
+}
+
+/** The pencil marks the value `n` at `(x, y)` rules out by region uniqueness: every
+ * still-empty cell of any of `regions` that still notes `n`, de-duplicated (a cell
+ * may lie in two of the cell's regions — e.g. a row and a diagonal in Solo X). The
+ * single source of truth for "what a placement strikes," shared by the placement
+ * dup-cull and {@link findRegionDuplicate}. `regions` are the cell's uniqueness
+ * regions (from the game's `regionsOf`); `w` converts a region's `y*w+x` cell
+ * index back to coordinates for the {@link Mark}. The home cell `(x, y)` is never
+ * marked. */
+export function regionDuplicateMarks(
+  grid: ArrayLike<number>,
+  pencil: ArrayLike<number>,
+  x: number,
+  y: number,
+  n: number,
+  w: number,
+  regions: readonly ClassifyRegion[],
+): Mark[] {
+  const home = y * w + x;
+  const bit = 1 << n;
+  const seen = new Set<number>();
+  const marks: Mark[] = [];
+  for (const region of regions) {
+    for (let i = 0; i < region.cells.length; i++) {
+      const j = region.cells[i];
+      if (j === home || seen.has(j)) continue;
+      if (grid[j] === 0 && (pencil[j] & bit) !== 0) {
+        seen.add(j);
+        marks.push({ x: j % w, y: (j / w) | 0, n });
+      }
+    }
+  }
+  return marks;
+}
+
+/** The next basic-region cleanup: the first filled cell (in grid order) whose value
+ * still appears as a live pencil mark in one of its uniqueness regions. Generalises
+ * the per-game `basicLatinStrike` (row+col) / `basicRegionStrike`
+ * (row+col+block+diag) to a single scan over `regionsOf` — the basic-region opening
+ * a given or auto-pencil-off placement leaves behind (hint-authoring §9.2). Returns
+ * one firing (one placed value and every stray copy of it), or `null`.
+ * `regionsOf(x, y)` returns the uniqueness regions of the cell at `(x, y)`. */
+export function findRegionDuplicate(
+  grid: ArrayLike<number>,
+  pencil: ArrayLike<number>,
+  w: number,
+  regionsOf: (x: number, y: number) => readonly ClassifyRegion[],
+): RegionDuplicate | null {
+  for (let i = 0; i < w * w; i++) {
+    const v = grid[i];
+    if (v === 0) continue;
+    const px = i % w;
+    const py = (i / w) | 0;
+    const marks = regionDuplicateMarks(grid, pencil, px, py, v, w, regionsOf(px, py));
+    if (marks.length > 0) return { px, py, n: v, marks };
+  }
+  return null;
+}
+
+/** The whole-board "obvious candidate" strikes for the adaptive mark-all cleanup:
+ * for every empty cell, each pencilled value that already sits as a *placed* value
+ * in one of that cell's uniqueness regions (per `regionsOf`). "Obvious" is always
+ * judged against a placed value, never another pencil mark, so the result is a pure
+ * function of the placed grid and pressing repeatedly converges (design D2).
+ *
+ * Mistaken-board guard: never strike a cell's *last* surviving note. If every note
+ * of a cell is region-eliminated — only possible on an already-wrong board — one
+ * note is kept, so no cell becomes note-less and the cleanup stays idempotent (a
+ * note-less cell would re-fill on the next press, reintroducing oscillation). */
+export function obviousCandidateMarks(
+  grid: ArrayLike<number>,
+  pencil: ArrayLike<number>,
+  w: number,
+  regionsOf: (x: number, y: number) => readonly ClassifyRegion[],
+): Mark[] {
+  const marks: Mark[] = [];
+  for (let i = 0; i < w * w; i++) {
+    if (grid[i] !== 0) continue;
+    const notes = pencil[i];
+    if (notes === 0) continue;
+    const x = i % w;
+    const y = (i / w) | 0;
+    let placed = 0;
+    for (const region of regionsOf(x, y)) {
+      for (let k = 0; k < region.cells.length; k++) {
+        const v = grid[region.cells[k]];
+        if (v !== 0) placed |= 1 << v;
+      }
+    }
+    let removable = notes & placed;
+    if (removable === 0) continue;
+    // Guard: if striking all "obvious" notes would empty the cell, keep its lowest
+    // note (clearing the lowest bit of `removable` leaves that candidate unstruck).
+    if ((notes & ~removable) === 0) {
+      removable &= removable - 1;
+      if (removable === 0) continue;
+    }
+    for (let n = 1; n <= w; n++) if (removable & (1 << n)) marks.push({ x, y, n });
+  }
+  return marks;
+}
+
+/** The adaptive mark-all move (design: fill, then clean obvious). If any empty cell
+ * has *zero* notes, fill every note-less empty cell with all candidates
+ * (`pencilAll` — today's behaviour); otherwise strike each cell's
+ * {@link obviousCandidateMarks} as one atomic `pencilStrike` (marks baked here, at
+ * `interpretMove` time, for deterministic replay). Returns `null` when the board is
+ * already fully cleaned (no fill needed, nothing left to strike) so the press is a
+ * true no-op and adds no undo entry. Typed as the game's move union `M` (the
+ * `pencilAll` / `pencilStrike` variants are members of every such game's `Move`). */
+export function adaptiveMarkAllMove<M>(
+  grid: ArrayLike<number>,
+  pencil: ArrayLike<number>,
+  w: number,
+  regionsOf: (x: number, y: number) => readonly ClassifyRegion[],
+): M | null {
+  if (anyEmptyLacksNotes(grid, pencil, w)) {
+    return { type: "pencilAll" } as unknown as M;
+  }
+  const marks = obviousCandidateMarks(grid, pencil, w, regionsOf);
+  if (marks.length === 0) return null;
+  return { type: "pencilStrike", marks } as unknown as M;
 }
 
 /** A freshly-built pencil-strike move, typed as the game's move union `M`. The
