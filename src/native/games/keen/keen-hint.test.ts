@@ -9,7 +9,10 @@
  * strikethrough, evidence `COL_HINT_CELL`, cage clue glyphs still drawn).
  */
 import { describe, expect, it } from "vitest";
-import { DEFAULT_BACKGROUND, renderScenario } from "../../engine/testing/render-scenario.ts";
+import {
+  DEFAULT_BACKGROUND,
+  renderScenario,
+} from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { newKeenDesc } from "./generator.ts";
 import { keenGame } from "./index.ts";
@@ -114,7 +117,16 @@ describe("keen hint", () => {
     const res = keenGame.hint?.(narrowed);
     expect(res?.ok).toBe(true);
     if (!res?.ok) return;
-    expect(res.steps[0].move).toEqual({ type: "set", x, y, n: v, pencil: false, autoElim: true });
+    // Auto-pencil defaults off, so a placement carries `autoElim: false` (the
+    // player cleans notes via the mark-all button or follows the hint's strike legs).
+    expect(res.steps[0].move).toEqual({
+      type: "set",
+      x,
+      y,
+      n: v,
+      pencil: false,
+      autoElim: false,
+    });
     expect(res.steps[0].explanation).toMatch(/can only be/);
   });
 
@@ -179,7 +191,8 @@ describe("keen hint", () => {
     const off = keenGame.hint?.(st, undefined, uiOff);
     expect(on?.ok && off?.ok).toBe(true);
     if (!on?.ok || !off?.ok) return;
-    const dupCount = (r: typeof on) => r.steps.filter((s) => dupRe.test(s.explanation)).length;
+    const dupCount = (r: typeof on) =>
+      r.steps.filter((s) => dupRe.test(s.explanation)).length;
     // With auto-pencil off, each placement also teaches its row/column cleanup.
     expect(dupCount(off)).toBeGreaterThan(dupCount(on));
     expect(off.steps.length).toBeGreaterThan(on.steps.length);
@@ -198,9 +211,9 @@ describe("keen hint", () => {
       for (let i = 0; i < 3000 && status(state) !== "solved"; i++) {
         const res = keenGame.hint?.(state);
         if (!res?.ok) break;
-        const step = res.steps.find((s) => /can go in only this cell/.test(s.explanation)) as
-          | AnyStep
-          | undefined;
+        const step = res.steps.find((s) =>
+          /can go in only this cell/.test(s.explanation),
+        ) as AnyStep | undefined;
         if (step) {
           const m = step.move as { type: string; x: number; y: number; n: number };
           // The narration is a placement, never the naked-single phrasing.
@@ -234,7 +247,13 @@ describe("keen hint", () => {
     const w = st.params.w;
     const sol = (r.move as { type: "solve"; grid: number[] }).grid;
     const wrong = (sol[0] % w) + 1;
-    const bad = keenGame.executeMove(st, { type: "set", x: 0, y: 0, n: wrong, pencil: false });
+    const bad = keenGame.executeMove(st, {
+      type: "set",
+      x: 0,
+      y: 0,
+      n: wrong,
+      pencil: false,
+    });
     expect(keenGame.hint?.(bad)?.ok).toBe(false);
   });
 });
@@ -250,7 +269,11 @@ describe("keen hintKeepTrack", () => {
     if (!step) throw new Error("no populate step");
     expect(keenGame.hintKeepTrack?.({ type: "pencilAll" }, step, st)).toBe("completed");
     expect(
-      keenGame.hintKeepTrack?.({ type: "set", x: 0, y: 0, n: 1, pencil: false }, step, st),
+      keenGame.hintKeepTrack?.(
+        { type: "set", x: 0, y: 0, n: 1, pencil: false },
+        step,
+        st,
+      ),
     ).toBe("off");
   });
 
@@ -291,7 +314,13 @@ describe("keen hintKeepTrack", () => {
         cur,
       );
       expect(v).toBe(k === marks.length - 1 ? "completed" : "onTrack");
-      cur = keenGame.executeMove(cur, { type: "set", x: mk.x, y: mk.y, n: mk.n, pencil: true });
+      cur = keenGame.executeMove(cur, {
+        type: "set",
+        x: mk.x,
+        y: mk.y,
+        n: mk.n,
+        pencil: true,
+      });
     }
   });
 });
@@ -324,7 +353,12 @@ function cageStrikeFrame(p: KeenParams, pred: (s: string) => boolean): string {
     const populated = keenGame.executeMove(st, { type: "pencilAll" });
     const res = keenGame.hint?.(populated);
     if (!res?.ok) continue;
-    if (res.steps.some((step) => (step.move as KeenMove).type === "pencilStrike" && pred(step.explanation)))
+    if (
+      res.steps.some(
+        (step) =>
+          (step.move as KeenMove).type === "pencilStrike" && pred(step.explanation),
+      )
+    )
       return `${encodeParams(p, true)}#${seed}`;
   }
   throw new Error(`no cage-strike frame found for ${p.diff}`);
@@ -357,12 +391,20 @@ describe("keen hint render", () => {
     });
     expect(hint?.explanation).toMatch(/this cage/);
     // The cage's cells are shaded COL_HINT_CELL evidence.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(true);
+    expect(
+      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
+    ).toBe(true);
     // The struck candidate keeps its COL_PENCIL digit, crossed through in COL_PENCIL.
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(true);
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(true);
+    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(
+      true,
+    );
+    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(
+      true,
+    );
     // A strike cell is NOT solid-filled COL_HINT (that is the placement-target fill).
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(false);
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
+      false,
+    );
     expect(recording.ops).toMatchSnapshot();
   });
 
@@ -379,9 +421,13 @@ describe("keen hint render", () => {
     expect(hint?.explanation).toMatch(/In this (row|column)/);
     // The line is shaded COL_HINT_CELL (≥ w−1 evidence cells; the target itself is
     // COL_HINT) and the placement target is solid-filled COL_HINT.
-    const cellRects = recording.ops.filter((o) => o.op === "rect" && o.colour === COL_HINT_CELL);
+    const cellRects = recording.ops.filter(
+      (o) => o.op === "rect" && o.colour === COL_HINT_CELL,
+    );
     expect(cellRects.length).toBe(small.w - 1);
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
+      true,
+    );
     expect(recording.ops).toMatchSnapshot();
   });
 });

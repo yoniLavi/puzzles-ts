@@ -536,6 +536,9 @@ export function newUi(_state: KeenState): KeenUi {
     hcursor: false,
     pencilKeepHighlight: false,
     pencilSticky: true,
-    autoPencil: true,
+    // Default off (owner, 2026-06-29): placing a digit no longer auto-strikes its
+    // row/column notes. Notes clear only via the mark-all button or a hint; opt
+    // back in through the "auto-pencil" pref.
+    autoPencil: false,
   };
 }

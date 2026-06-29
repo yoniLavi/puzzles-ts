@@ -10,7 +10,10 @@
  * `COL_HINT_CELL`, clue glyphs still drawn).
  */
 import { describe, expect, it } from "vitest";
-import { DEFAULT_BACKGROUND, renderScenario } from "../../engine/testing/render-scenario.ts";
+import {
+  DEFAULT_BACKGROUND,
+  renderScenario,
+} from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { newUnequalDesc } from "./generator.ts";
 import { unequalGame } from "./index.ts";
@@ -62,8 +65,10 @@ describe("unequal recording solver", () => {
 
       // Replaying the placements reconstructs the full (unique) solution.
       const filled = Uint8Array.from(st.immutable);
-      for (const op of ops) if (op.kind === "place") filled[op.y * st.order + op.x] = op.n;
-      for (let i = 0; i < st.order * st.order; i++) expect(filled[i]).toBeGreaterThan(0);
+      for (const op of ops)
+        if (op.kind === "place") filled[op.y * st.order + op.x] = op.n;
+      for (let i = 0; i < st.order * st.order; i++)
+        expect(filled[i]).toBeGreaterThan(0);
     });
   }
 });
@@ -113,12 +118,23 @@ describe("unequal hint", () => {
     // Narrow this one cell to a single candidate (its solution value).
     const marks = [];
     for (let n = 1; n <= o; n++) if (n !== v) marks.push({ x, y, n });
-    const narrowed = unequalGame.executeMove(populated, { type: "pencilStrike", marks });
+    const narrowed = unequalGame.executeMove(populated, {
+      type: "pencilStrike",
+      marks,
+    });
 
     const res = unequalGame.hint?.(narrowed);
     expect(res?.ok).toBe(true);
     if (!res?.ok) return;
-    expect(res.steps[0].move).toEqual({ type: "set", x, y, n: v, pencil: false, autoElim: true });
+    // Auto-pencil defaults off → the placement carries `autoElim: false`.
+    expect(res.steps[0].move).toEqual({
+      type: "set",
+      x,
+      y,
+      n: v,
+      pencil: false,
+      autoElim: false,
+    });
     expect(res.steps[0].explanation).toMatch(/can only be/);
   });
 
@@ -232,9 +248,15 @@ describe("unequal hintKeepTrack", () => {
     if (!res.ok) throw new Error("refused");
     const step = res.steps.find((s) => (s.move as UnequalMove).type === "pencilAll");
     if (!step) throw new Error("no populate step");
-    expect(unequalGame.hintKeepTrack?.({ type: "pencilAll" }, step, st)).toBe("completed");
+    expect(unequalGame.hintKeepTrack?.({ type: "pencilAll" }, step, st)).toBe(
+      "completed",
+    );
     expect(
-      unequalGame.hintKeepTrack?.({ type: "set", x: 0, y: 0, n: 1, pencil: false }, step, st),
+      unequalGame.hintKeepTrack?.(
+        { type: "set", x: 0, y: 0, n: 1, pencil: false },
+        step,
+        st,
+      ),
     ).toBe("off");
   });
 
@@ -244,7 +266,8 @@ describe("unequal hintKeepTrack", () => {
     const res = unequalGame.hint?.(populated);
     if (!res?.ok) throw new Error("hint refused");
     const step = res.steps.find(
-      (s) => (s.move as UnequalMove).type === "pencilStrike" &&
+      (s) =>
+        (s.move as UnequalMove).type === "pencilStrike" &&
         (s.move as { type: "pencilStrike"; marks: unknown[] }).marks.length >= 2,
     ) as AnyStep | undefined;
     if (!step) throw new Error("no multi-mark strike step");
@@ -276,7 +299,13 @@ describe("unequal hintKeepTrack", () => {
         cur,
       );
       expect(v).toBe(k === marks.length - 1 ? "completed" : "onTrack");
-      cur = unequalGame.executeMove(cur, { type: "set", x: mk.x, y: mk.y, n: mk.n, pencil: true });
+      cur = unequalGame.executeMove(cur, {
+        type: "set",
+        x: mk.x,
+        y: mk.y,
+        n: mk.n,
+        pencil: true,
+      });
     }
   });
 });
@@ -311,7 +340,12 @@ function clueStrikeFrame(p: UnequalParams, pred: (s: string) => boolean): string
     const populated = unequalGame.executeMove(st, { type: "pencilAll" });
     const res = unequalGame.hint?.(populated);
     if (!res?.ok) continue;
-    if (res.steps.some((step) => (step.move as UnequalMove).type === "pencilStrike" && pred(step.explanation)))
+    if (
+      res.steps.some(
+        (step) =>
+          (step.move as UnequalMove).type === "pencilStrike" && pred(step.explanation),
+      )
+    )
       return `${encodeParams(p, true)}#${seed}`;
   }
   throw new Error(`no clue-strike frame found for ${p.mode}`);
@@ -330,12 +364,20 @@ describe("unequal hint render", () => {
     });
     expect(hint?.explanation).toMatch(/greater-than sign/);
     // The two clue cells are shaded COL_HINT_CELL evidence.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(true);
+    expect(
+      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
+    ).toBe(true);
     // The struck candidate keeps its COL_PENCIL digit, crossed through in COL_PENCIL.
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(true);
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(true);
+    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(
+      true,
+    );
+    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(
+      true,
+    );
     // A strike cell is NOT solid-filled COL_HINT (that is the placement-target fill).
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(false);
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
+      false,
+    );
     // Clue glyphs (the > polygons) are still drawn.
     expect(recording.ops.some((o) => o.op === "polygon")).toBe(true);
     expect(recording.ops).toMatchSnapshot();
@@ -352,8 +394,12 @@ describe("unequal hint render", () => {
       hintUntil: (s) => /bar/.test(s.explanation),
     });
     expect(hint?.explanation).toMatch(/bar/);
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(true);
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(true);
+    expect(
+      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
+    ).toBe(true);
+    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(
+      true,
+    );
     expect(recording.ops).toMatchSnapshot();
   });
 });

@@ -10,7 +10,10 @@
  * strikethrough, evidence `COL_HINT_CELL`, grid/clues still drawn).
  */
 import { describe, expect, it } from "vitest";
-import { DEFAULT_BACKGROUND, renderScenario } from "../../engine/testing/render-scenario.ts";
+import {
+  DEFAULT_BACKGROUND,
+  renderScenario,
+} from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { newSoloDesc } from "./generator.ts";
 import { soloGame } from "./index.ts";
@@ -28,8 +31,8 @@ import {
   type SoloMove,
   type SoloParams,
   type SoloState,
-  status as soloStatus,
   SYMM_NONE,
+  status as soloStatus,
 } from "./state.ts";
 
 function gen(p: SoloParams, seed: string) {
@@ -145,7 +148,15 @@ describe("solo hint", () => {
     const res = soloGame.hint?.(narrowed);
     expect(res?.ok).toBe(true);
     if (!res?.ok) return;
-    expect(res.steps[0].move).toEqual({ type: "set", x, y, n: v, pencil: false, autoElim: true });
+    // Auto-pencil defaults off → the placement carries `autoElim: false`.
+    expect(res.steps[0].move).toEqual({
+      type: "set",
+      x,
+      y,
+      n: v,
+      pencil: false,
+      autoElim: false,
+    });
     expect(res.steps[0].explanation).toMatch(/can only be/);
   });
 
@@ -155,7 +166,8 @@ describe("solo hint", () => {
     const res = soloGame.hint?.(populated);
     expect(res?.ok).toBe(true);
     if (!res?.ok) return;
-    const modal = /can only|can't|must (be|sit|cross out)|must be|cross out the|cross out/i;
+    const modal =
+      /can only|can't|must (be|sit|cross out)|must be|cross out the|cross out/i;
     for (const s of res.steps) {
       if ((s.move as SoloMove).type === "pencilAll") continue;
       expect(s.explanation, s.explanation).toMatch(modal);
@@ -197,7 +209,8 @@ describe("solo hint", () => {
     const off = soloGame.hint?.(st, undefined, uiOff);
     expect(on?.ok && off?.ok).toBe(true);
     if (!on?.ok || !off?.ok) return;
-    const dupCount = (r: typeof on) => r.steps.filter((s) => dupRe.test(s.explanation)).length;
+    const dupCount = (r: typeof on) =>
+      r.steps.filter((s) => dupRe.test(s.explanation)).length;
     expect(dupCount(off)).toBeGreaterThanOrEqual(dupCount(on));
     expect(off.steps.length).toBeGreaterThanOrEqual(on.steps.length);
   });
@@ -238,7 +251,11 @@ describe("solo hint", () => {
         if (!res?.ok) break;
         const step = res.steps[0];
         const m = step.move as AnyStep;
-        if (m.type === "set" && !m.pencil && /ruled out in this cell/.test(step.explanation)) {
+        if (
+          m.type === "set" &&
+          !m.pencil &&
+          /ruled out in this cell/.test(step.explanation)
+        ) {
           const pen = state.pencil[m.y * cr + m.x];
           const ncand = Array.from({ length: cr }, (_, k) => k + 1).filter(
             (n) => pen & (1 << n),
@@ -287,7 +304,13 @@ describe("solo hint", () => {
         break;
       }
     const wrong = (sol[by * cr + bx] % cr) + 1;
-    const bad = soloGame.executeMove(st, { type: "set", x: bx, y: by, n: wrong, pencil: false });
+    const bad = soloGame.executeMove(st, {
+      type: "set",
+      x: bx,
+      y: by,
+      n: wrong,
+      pencil: false,
+    });
     expect(soloGame.hint?.(bad)?.ok).toBe(false);
   });
 });
@@ -303,7 +326,11 @@ describe("solo hintKeepTrack", () => {
     if (!step) throw new Error("no populate step");
     expect(soloGame.hintKeepTrack?.({ type: "pencilAll" }, step, st)).toBe("completed");
     expect(
-      soloGame.hintKeepTrack?.({ type: "set", x: 0, y: 0, n: 1, pencil: false }, step, st),
+      soloGame.hintKeepTrack?.(
+        { type: "set", x: 0, y: 0, n: 1, pencil: false },
+        step,
+        st,
+      ),
     ).toBe("off");
   });
 
@@ -329,7 +356,13 @@ describe("solo hintKeepTrack", () => {
         cur,
       );
       expect(v).toBe(k === marks.length - 1 ? "completed" : "onTrack");
-      cur = soloGame.executeMove(cur, { type: "set", x: mk.x, y: mk.y, n: mk.n, pencil: true });
+      cur = soloGame.executeMove(cur, {
+        type: "set",
+        x: mk.x,
+        y: mk.y,
+        n: mk.n,
+        pencil: true,
+      });
     }
   });
 });
@@ -345,7 +378,12 @@ function strikeFrame(p: SoloParams, pred: (s: string) => boolean): string {
     const populated = soloGame.executeMove(st, { type: "pencilAll" });
     const res = soloGame.hint?.(populated);
     if (!res?.ok) continue;
-    if (res.steps.some((step) => (step.move as SoloMove).type === "pencilStrike" && pred(step.explanation)))
+    if (
+      res.steps.some(
+        (step) =>
+          (step.move as SoloMove).type === "pencilStrike" && pred(step.explanation),
+      )
+    )
       return `${encodeParams(p, true)}#${seed}`;
   }
   throw new Error(`no strike frame found for ${p.diff}`);
@@ -365,10 +403,16 @@ describe("solo hint render", () => {
     });
     expect(pred(hint?.explanation ?? "")).toBe(true);
     // The evidence region is shaded COL_HINT_CELL.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(true);
+    expect(
+      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
+    ).toBe(true);
     // The struck candidate keeps its COL_PENCIL digit, crossed through in COL_PENCIL.
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(true);
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(true);
+    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(
+      true,
+    );
+    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(
+      true,
+    );
     expect(recording.ops).toMatchSnapshot();
   }, 30_000);
 });
