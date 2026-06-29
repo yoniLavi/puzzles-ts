@@ -396,6 +396,54 @@ describe("keen render", () => {
   });
 });
 
+describe("adaptive mark-all ('M')", () => {
+  const W = 4;
+  const press = (st: KeenState) =>
+    keenGame.interpretMove(st, newUi(st), null, { x: 0, y: 0 }, 77);
+
+  it("fills note-less cells on the first press, then cleans obvious dups, then no-ops", () => {
+    // First press on a fresh board: empty cells are note-less → fill all.
+    const fresh = newState(P4, D4);
+    expect(press(fresh)).toEqual({ type: "pencilAll" });
+
+    // Fully-noted board with a placed 1 at (0,0): the press cleans the obvious
+    // row/column duplicates of the 1, and is a single atomic pencilStrike.
+    const noted = cloneState(fresh);
+    const all = (1 << (W + 1)) - (1 << 1);
+    for (let i = 0; i < W * W; i++) noted.pencil[i] = all;
+    noted.grid[0] = 1;
+    noted.pencil[0] = 0;
+    const move = press(noted);
+    if (typeof move !== "object" || move === null || move.type !== "pencilStrike")
+      throw new Error("expected pencilStrike");
+    const struck = new Set(move.marks.map((m) => `${m.x},${m.y},${m.n}`));
+    // Row 0 (cells x=1,2,3) and column 0 (cells y=1,2,3) lose their 1.
+    expect(struck).toEqual(
+      new Set(["1,0,1", "2,0,1", "3,0,1", "0,1,1", "0,2,1", "0,3,1"]),
+    );
+
+    // Apply it and press again: nothing left to fill or strike → a true no-op.
+    const cleaned = keenGame.executeMove(noted, move);
+    expect(press(cleaned)).toBeNull();
+  });
+
+  it("never strikes a candidate that is only a cage-mate (cages are not uniqueness regions)", () => {
+    // Place a 1 at (0,0); note 1 at (2,2), which shares neither row nor column
+    // with (0,0). Even if (0,0) and (2,2) were cage-mates, a Keen cage permits a
+    // legal repeat, so the 1 at (2,2) must survive the cleanup (design D3).
+    const st = cloneState(newState(P4, D4));
+    const all = (1 << (W + 1)) - (1 << 1);
+    for (let i = 0; i < W * W; i++) st.pencil[i] = all;
+    st.grid[0] = 1;
+    st.pencil[0] = 0;
+    const move = press(st);
+    if (typeof move !== "object" || move === null || move.type !== "pencilStrike")
+      throw new Error("expected pencilStrike");
+    const struck = new Set(move.marks.map((m) => `${m.x},${m.y},${m.n}`));
+    expect(struck.has("2,2,1")).toBe(false); // not in row 0 or column 0 → kept
+  });
+});
+
 describe("on-screen keys (requestKeys)", () => {
   const keysFor = (w: number) =>
     keenGame.requestKeys?.({ ...keenGame.defaultParams(), w });

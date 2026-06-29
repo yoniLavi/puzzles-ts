@@ -19,13 +19,16 @@ import type {
 } from "../../../puzzle/types.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
 import {
+  adaptiveMarkAllMove,
   anyEmptyLacksNotes,
+  findRegionDuplicate,
   joinNums,
   keepCandidateHintTrack,
   nakedSingle,
   nextPlace,
   nextStrike,
   refreshCandidateHintStep,
+  regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
 import {
   type Game,
@@ -37,7 +40,11 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import { hiddenSingleLine, singlePlacementReason } from "../../engine/latin-hint.ts";
+import {
+  hiddenSingleLine,
+  rowColRegions,
+  singlePlacementReason,
+} from "../../engine/latin-hint.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -250,7 +257,13 @@ function interpretMove(
       : { type: "set", x: ui.hx, y: ui.hy, n, pencil, autoElim: ui.autoPencil };
   }
 
-  if (button === 77 || button === 109) return { type: "pencilAll" }; // 'M' / 'm'
+  // 'M' / 'm': fill all pencil marks, then (on a fully-noted board) clean the
+  // obvious row/column candidates. Keen cages are arithmetic, NOT uniqueness
+  // regions, so a legal cage duplicate is never struck (design D3).
+  if (button === 77 || button === 109)
+    return adaptiveMarkAllMove<KeenMove>(state.grid, state.pencil, w, (x, y) =>
+      rowColRegions(x, y, w),
+    );
 
   return null;
 }
@@ -409,41 +422,6 @@ function placementArea(reason: HintReason, w: number): { x: number; y: number }[
     : [];
 }
 
-/** The next basic-Latin cleanup: the first filled cell whose value still appears
- * as a live pencil mark elsewhere in its row or column. Keen has no givens, but a
- * player can place a digit with auto-pencil off, leaving its row/column dups live;
- * the recording solver culls those during `alloc` (before recording), so they are
- * never in the recorded script and must be taught explicitly (hint-authoring §9.2,
- * the basic-Latin opening). Returns one firing — one placed value and every stray
- * copy of it in its line. On a fresh board with no placements it finds nothing. */
-function basicLatinStrike(
-  wGrid: Int8Array,
-  wPen: Int32Array,
-  w: number,
-): {
-  px: number;
-  py: number;
-  n: number;
-  marks: { x: number; y: number; n: number }[];
-} | null {
-  for (let i = 0; i < w * w; i++) {
-    const v = wGrid[i];
-    if (v === 0) continue;
-    const px = i % w;
-    const py = (i / w) | 0;
-    const bit = 1 << v;
-    const marks: { x: number; y: number; n: number }[] = [];
-    for (let k = 0; k < w; k++) {
-      if (k !== px && wGrid[py * w + k] === 0 && wPen[py * w + k] & bit)
-        marks.push({ x: k, y: py, n: v });
-      if (k !== py && wGrid[k * w + px] === 0 && wPen[k * w + px] & bit)
-        marks.push({ x: px, y: k, n: v });
-    }
-    if (marks.length > 0) return { px, py, n: v, marks };
-  }
-  return null;
-}
-
 /** Emit one firing's strikes as a single journey: split the firing's live ops by
  * cell (one cell = one leg), so each leg narrates "this cell" and highlights a
  * single target, with the legs flagged `continuesPrevious` (quality-bar rule 2 —
@@ -502,11 +480,7 @@ function emitPlacement(
   wGrid[y * w + x] = n;
   wPen[y * w + x] = 0;
 
-  const dupMarks: { x: number; y: number; n: number }[] = [];
-  for (let k = 0; k < w; k++) {
-    if (k !== x && wPen[y * w + k] & (1 << n)) dupMarks.push({ x: k, y, n });
-    if (k !== y && wPen[k * w + x] & (1 << n)) dupMarks.push({ x, y: k, n });
-  }
+  const dupMarks = regionDuplicateMarks(wGrid, wPen, x, y, n, w, rowColRegions(x, y, w));
   for (const m of dupMarks) wPen[m.y * w + m.x] &= ~(1 << n);
 
   if (!autoClean && dupMarks.length > 0) {
@@ -585,7 +559,7 @@ function buildSteps(
     }
 
     // 3. The basic-Latin cull a placed value forces in its row and column.
-    const bs = basicLatinStrike(wGrid, wPen, w);
+    const bs = findRegionDuplicate(wGrid, wPen, w, (x, y) => rowColRegions(x, y, w));
     if (bs) {
       steps.push({
         move: { type: "pencilStrike", marks: bs.marks },
@@ -637,7 +611,7 @@ function hint(
         "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
     };
   }
-  const autoClean = ui?.autoPencil ?? true;
+  const autoClean = ui?.autoPencil ?? false;
   const steps = buildSteps(state, autoClean);
   if (steps.length === 0) {
     return { ok: false, error: "No further move can be deduced from this position." };

@@ -373,6 +373,19 @@ Exemplar: [`towers/{state,index,render}.ts`](../../src/native/games/towers/index
   icon, next to Check & Save) that injects `M` via `processKey`. Plumbed like
   `canHint`/`canFindMistakes` (`midend.getStaticProperties` →
   `PuzzleStaticAttributes` → `Puzzle`); the C/WASM path reports false.
+  - **Adaptive mark-all (fill, then clean) for row/col-uniqueness games** —
+    `add-pencil-cleanup-on-markall`. A *candidate-elimination* game (one with a
+    `regionsOf`, §9 of hint-authoring) routes its `M` handling through
+    `adaptiveMarkAllMove(grid, pencil, w, regionsOf)` (`engine/candidate-hint.ts`)
+    instead of always returning `{ type: "pencilAll" }`: a press fills note-less empty
+    cells (today's behaviour), but on an already-fully-noted board it strikes each
+    cell's *obvious* candidates — values already placed in one of that cell's
+    uniqueness regions — as one atomic `pencilStrike`. It returns `null` when there is
+    nothing to fill or strike, so a redundant press is a true no-op (no undo entry). The
+    cleanup is idempotent and defined off the *placed* grid (never inferred from another
+    note), with a guard that never empties a cell's last note. Use the same `regionsOf`
+    the game's hint uses (Keen: row/col only — a cage is **not** a uniqueness region);
+    games without a row/col model (Undead) keep plain fill-only.
 - **Sticky pencil mode — a `pencilSticky` `Ui` boolean (default true) via the
   `prefs` hook.** When on, right-click *toggles* a persistent pencil mode and
   left-click only moves the highlight (don't reset the pencil flag); when off,

@@ -19,13 +19,16 @@ import type {
 } from "../../../puzzle/types.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
 import {
+  adaptiveMarkAllMove,
   anyEmptyLacksNotes,
+  findRegionDuplicate,
   joinNums,
   keepCandidateHintTrack,
   nakedSingle,
   nextPlace,
   nextStrike,
   refreshCandidateHintStep,
+  regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
 import {
   type Game,
@@ -281,7 +284,13 @@ function interpretMove(
       : { type: "set", x: ui.hx, y: ui.hy, n, pencil, autoElim: ui.autoPencil };
   }
 
-  if (button === 77 || button === 109) return { type: "pencilAll" }; // 'M' / 'm'
+  // 'M' / 'm': fill all pencil marks, then (on a fully-noted board) clean the
+  // obvious candidates already placed in each cell's row, column, block or (X)
+  // diagonal — the basic-region opening, in one press.
+  if (button === 77 || button === 109)
+    return adaptiveMarkAllMove<SoloMove>(state.grid, state.pencil, cr, (x, y) =>
+      regionsOf(state, x, y),
+    );
 
   return null;
 }
@@ -473,24 +482,18 @@ function regionName(region: SoloRegion): string {
   }
 }
 
-/** Re-derive *why* a generic-`single` placement is forced, from the working board
- * (§9.3a — the recorded `place` carries a bare `single`, conflating naked and
- * positional/hidden singles): a naked single (the cell's notes collapsed to one),
- * a hidden single in a row/column/sub-block/diagonal, or a forced single (the
- * notes lag a deeper deduction). */
-function soloPlacementReason(
-  wGrid: Int8Array,
-  wPen: Int32Array,
+/** The uniqueness regions of cell `(x, y)`, in narration-preference order (row,
+ * column, sub-block, then the X diagonals it lies on). Each carries its `SoloRegion`
+ * tag for naming. The single source of truth for "this cell's uniqueness regions",
+ * shared by the placement classifier ({@link soloPlacementReason}), the
+ * basic-region strike and the placement dup-cull, so they can never disagree. */
+function regionsOf(
+  state: SoloState,
   x: number,
   y: number,
-  n: number,
-  state: SoloState,
-): SoloReason {
+): { cells: number[]; region: SoloRegion }[] {
   const cr = state.cr;
   const cell = y * cr + x;
-  // The regions this cell belongs to, in narration-preference order (row, column,
-  // sub-block, then the X diagonals it lies on). Each carries the `SoloRegion` tag
-  // to name it; the shared classifier picks the first that hides `n`.
   const line = (build: (k: number) => number): number[] =>
     Array.from({ length: cr }, (_, k) => build(k));
   const regions: { cells: number[]; region: SoloRegion }[] = [
@@ -505,7 +508,24 @@ function soloPlacementReason(
     if (onDiag1(cell, cr))
       regions.push({ cells: line((k) => diag1(k, cr)), region: { kind: "diag1" } });
   }
-  const c = classifyPlacementInRegions(wGrid, wPen, cell, n, regions);
+  return regions;
+}
+
+/** Re-derive *why* a generic-`single` placement is forced, from the working board
+ * (§9.3a — the recorded `place` carries a bare `single`, conflating naked and
+ * positional/hidden singles): a naked single (the cell's notes collapsed to one),
+ * a hidden single in a row/column/sub-block/diagonal, or a forced single (the
+ * notes lag a deeper deduction). */
+function soloPlacementReason(
+  wGrid: Int8Array,
+  wPen: Int32Array,
+  x: number,
+  y: number,
+  n: number,
+  state: SoloState,
+): SoloReason {
+  const cell = y * state.cr + x;
+  const c = classifyPlacementInRegions(wGrid, wPen, cell, n, regionsOf(state, x, y));
   if (c.kind === "naked") return { kind: "single" };
   if (c.kind === "hidden") return { kind: "hiddenSingle", n, region: c.region.region };
   return { kind: "forcedSingle", n };
@@ -575,53 +595,6 @@ function placementArea(
   if (reason.kind === "cageSingle" || reason.kind === "cageIntersect")
     return reason.cells;
   return [];
-}
-
-/** True iff some empty cell carries no pencil notes — needs a fill-all populate. */
-/** The next basic-region cleanup: the first filled cell whose value still appears
- * as a live pencil mark elsewhere in its row, column, sub-block or (X) diagonal.
- * The recording solver culls those during cube-seeding (before recording), so they
- * are never in the recorded script and must be taught explicitly (hint-authoring
- * §9.2, the basic-Latin opening generalised to block + diagonals). */
-function basicRegionStrike(
-  wGrid: Int8Array,
-  wPen: Int32Array,
-  state: SoloState,
-): {
-  px: number;
-  py: number;
-  n: number;
-  marks: { x: number; y: number; n: number }[];
-} | null {
-  const cr = state.cr;
-  const wb = state.blocks.whichblock;
-  for (let i = 0; i < cr * cr; i++) {
-    const v = wGrid[i];
-    if (v === 0) continue;
-    const px = i % cr;
-    const py = (i / cr) | 0;
-    const bit = 1 << v;
-    const home = wb[i];
-    const seen = new Set<number>();
-    const marks: { x: number; y: number; n: number }[] = [];
-    const tryCell = (j: number): void => {
-      if (j !== i && wGrid[j] === 0 && wPen[j] & bit && !seen.has(j)) {
-        seen.add(j);
-        marks.push({ x: j % cr, y: (j / cr) | 0, n: v });
-      }
-    };
-    for (let k = 0; k < cr; k++) {
-      tryCell(py * cr + k); // row
-      tryCell(k * cr + px); // column
-    }
-    for (let j = 0; j < cr * cr; j++) if (wb[j] === home) tryCell(j); // block
-    if (state.xtype) {
-      if (onDiag0(i, cr)) for (let k = 0; k < cr; k++) tryCell(diag0(k, cr));
-      if (onDiag1(i, cr)) for (let k = 0; k < cr; k++) tryCell(diag1(k, cr));
-    }
-    if (marks.length > 0) return { px, py, n: v, marks };
-  }
-  return null;
 }
 
 /** Emit one firing's strikes as a journey. A digit-confined firing (`intersect`)
@@ -705,28 +678,8 @@ function emitPlacement(
   wPen[y * cr + x] = 0;
 
   // The row/column/block/diagonal copies the placement rules out.
-  const wb = state.blocks.whichblock;
-  const home = wb[y * cr + x];
-  const bit = 1 << n;
-  const seen = new Set<number>();
-  const dupMarks: { x: number; y: number; n: number }[] = [];
-  const tryCell = (j: number): void => {
-    if (j !== y * cr + x && wGrid[j] === 0 && wPen[j] & bit && !seen.has(j)) {
-      seen.add(j);
-      dupMarks.push({ x: j % cr, y: (j / cr) | 0, n });
-    }
-  };
-  for (let k = 0; k < cr; k++) {
-    tryCell(y * cr + k);
-    tryCell(k * cr + x);
-  }
-  for (let j = 0; j < cr * cr; j++) if (wb[j] === home) tryCell(j);
-  if (state.xtype) {
-    const cell = y * cr + x;
-    if (onDiag0(cell, cr)) for (let k = 0; k < cr; k++) tryCell(diag0(k, cr));
-    if (onDiag1(cell, cr)) for (let k = 0; k < cr; k++) tryCell(diag1(k, cr));
-  }
-  for (const m of dupMarks) wPen[m.y * cr + m.x] &= ~bit;
+  const dupMarks = regionDuplicateMarks(wGrid, wPen, x, y, n, cr, regionsOf(state, x, y));
+  for (const m of dupMarks) wPen[m.y * cr + m.x] &= ~(1 << n);
 
   if (!autoClean && dupMarks.length > 0) {
     steps.push({
@@ -805,7 +758,7 @@ function buildSteps(
     }
 
     // 3. The basic-region cull a placed value forces.
-    const bs = basicRegionStrike(wGrid, wPen, state);
+    const bs = findRegionDuplicate(wGrid, wPen, cr, (x, y) => regionsOf(state, x, y));
     if (bs) {
       steps.push({
         move: { type: "pencilStrike", marks: bs.marks },
@@ -860,7 +813,7 @@ function hint(
         "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
     };
   }
-  const autoClean = ui?.autoPencil ?? true;
+  const autoClean = ui?.autoPencil ?? false;
   const steps = buildSteps(state, autoClean);
   if (steps.length === 0) {
     return { ok: false, error: "No further move can be deduced from this position." };

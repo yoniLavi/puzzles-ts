@@ -19,12 +19,14 @@ import type {
 } from "../../../puzzle/types.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
 import {
+  adaptiveMarkAllMove,
   anyEmptyLacksNotes,
   firstUnreflectedPlaceIndex,
   keepCandidateHintTrack,
   nakedSingle,
   nextPlace,
   refreshCandidateHintStep,
+  regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
 import {
   type Game,
@@ -36,7 +38,11 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import { hiddenSingleLine, singlePlacementReason } from "../../engine/latin-hint.ts";
+import {
+  hiddenSingleLine,
+  rowColRegions,
+  singlePlacementReason,
+} from "../../engine/latin-hint.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -308,7 +314,12 @@ function interpretMove(
       : { type: "set", x: ui.hx, y: ui.hy, n, pencil, autoElim: ui.autoPencil };
   }
 
-  if (button === 77 || button === 109) return { type: "pencilAll" }; // 'M' / 'm'
+  // 'M' / 'm': fill all pencil marks, then (on a fully-noted board) clean the
+  // obvious row/column candidates — the basic-region opening, in one press.
+  if (button === 77 || button === 109)
+    return adaptiveMarkAllMove<TowersMove>(state.grid, state.pencil, w, (x, y) =>
+      rowColRegions(x, y, w),
+    );
 
   return null;
 }
@@ -567,11 +578,7 @@ function emitPlacement(
   wGrid[y * w + x] = n;
   wPen[y * w + x] = 0;
 
-  const dupMarks: { x: number; y: number; n: number }[] = [];
-  for (let k = 0; k < w; k++) {
-    if (k !== x && wPen[y * w + k] & (1 << n)) dupMarks.push({ x: k, y, n });
-    if (k !== y && wPen[k * w + x] & (1 << n)) dupMarks.push({ x, y: k, n });
-  }
+  const dupMarks = regionDuplicateMarks(wGrid, wPen, x, y, n, w, rowColRegions(x, y, w));
   for (const m of dupMarks) wPen[m.y * w + m.x] &= ~(1 << n);
 
   if (!autoClean && dupMarks.length > 0) {
@@ -796,7 +803,7 @@ function hint(
   // Auto-pencil (default on) folds the trivial row/column eliminations into each
   // placement; off, they are taught as explicit strikes. The hint with no ui
   // (tests / harness) takes the default.
-  const autoClean = ui?.autoPencil ?? true;
+  const autoClean = ui?.autoPencil ?? false;
   const steps = buildSteps(state, autoClean);
   if (steps.length === 0) {
     return { ok: false, error: "No further move can be deduced from this position." };
