@@ -62,8 +62,9 @@ describe("towers recording solver", () => {
     const kinds = new Set(ops.map((o) => (o.reason as HintReason).kind));
     // An easy board exercises the basic Towers + Latin techniques.
     expect(kinds.size).toBeGreaterThan(1);
-    expect([...kinds].some((k) => k === "facing" || k === "lineFull" || k === "lowerBound"))
-      .toBe(true);
+    expect(
+      [...kinds].some((k) => k === "facing" || k === "lineFull" || k === "lowerBound"),
+    ).toBe(true);
 
     // Replaying the placements reconstructs the full (unique) solution.
     const filled = Uint8Array.from(st.immutable);
@@ -212,13 +213,14 @@ describe("towers hint", () => {
     expect(res?.ok).toBe(true);
     if (!res?.ok) return;
     // The very next step places that cell (no populate needed — notes present).
+    // Auto-pencil defaults off, so the placement carries `autoElim: false`.
     expect(res.steps[0].move).toEqual({
       type: "set",
       x,
       y,
       n: v,
       pencil: false,
-      autoElim: true,
+      autoElim: false,
     });
     expect(res.steps[0].explanation).toMatch(/can only be|must be/);
   });
@@ -270,7 +272,9 @@ describe("towers hintKeepTrack", () => {
     if (!res.ok) throw new Error("refused");
     const step = res.steps.find((s) => (s.move as TowersMove).type === "pencilAll");
     if (!step) throw new Error("no populate step");
-    expect(towersGame.hintKeepTrack?.({ type: "pencilAll" }, step, st)).toBe("completed");
+    expect(towersGame.hintKeepTrack?.({ type: "pencilAll" }, step, st)).toBe(
+      "completed",
+    );
     expect(
       towersGame.hintKeepTrack?.(
         { type: "set", x: 0, y: 0, n: 1, pencil: false },
@@ -320,7 +324,13 @@ describe("towers hintKeepTrack", () => {
     const m = (step.move as Extract<TowersMove, { type: "pencilStrike" }>).marks[0];
     // A toggle on a cell/candidate the step doesn't target is off-plan.
     const otherN = (m.n % 5) + 1;
-    const nonTarget: TowersMove = { type: "set", x: m.x, y: m.y, n: otherN, pencil: true };
+    const nonTarget: TowersMove = {
+      type: "set",
+      x: m.x,
+      y: m.y,
+      n: otherN,
+      pencil: true,
+    };
     // Only off if (x,y,otherN) isn't itself one of the marks. `hintKeepTrack`
     // sees the PRE-move state (`state`).
     if (
@@ -361,7 +371,10 @@ describe("towers hintKeepTrack", () => {
         checked++;
         if (step.continuesPrevious) sawJourneyLeg = true;
         const heights = new Set(m.marks.map((k) => k.n));
-        expect(heights.size, `step "${step.explanation.slice(0, 48)}" mixes heights`).toBe(1);
+        expect(
+          heights.size,
+          `step "${step.explanation.slice(0, 48)}" mixes heights`,
+        ).toBe(1);
         const n = m.marks[0].n;
         // Every elimination conclusion names the concrete struck height.
         expect(step.explanation).toContain(`cross out the ${n}`);
@@ -422,22 +435,30 @@ describe("towers hint render", () => {
     expect(hint?.explanation).toMatch(/sees exactly/);
 
     // The clue line of sight is shaded COL_HINT_CELL.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(
-      true,
-    );
+    expect(
+      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
+    ).toBe(true);
     // The struck candidate keeps its normal pencil colour (legible) and is
     // crossed through with a same-colour (COL_PENCIL) line — the strikethrough,
     // not a recolour, is the "ruled out" cue (highest contrast against the
     // lighter hint background).
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(true);
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(true);
-    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(false);
+    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(
+      true,
+    );
+    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(
+      true,
+    );
+    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(
+      false,
+    );
     // ...and a strike cell is NOT solid-filled COL_HINT. That fill is the
     // *placement*-target colour; painting a struck cell with it would hide the
     // struck digit, making the candidate look already-removed. (Regression:
     // fix-stale-hint-step — owner-reported "the hint deletes my note". The note
     // is intact; the frame must show it.)
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(false);
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
+      false,
+    );
     // Clues are still drawn (text).
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);
 
@@ -458,7 +479,11 @@ describe("towers hint render", () => {
     });
     expect((hint?.move as TowersMove)?.type).toBe("set");
     // A placement target is solid COL_HINT, and carries no struck digit/line.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_HINT)).toBe(false);
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
+      true,
+    );
+    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_HINT)).toBe(
+      false,
+    );
   });
 });

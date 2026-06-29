@@ -319,15 +319,16 @@ differential), and the hint fixpoint SHALL be guarded by a step budget.
 
 ### Requirement: Towers auto-pencils row/column eliminations on placement
 
-The game SHALL provide an **auto-pencil** preference, **on by default**: when the
-player places a tower height, the game SHALL strike that height from the pencil
-marks of every other cell in the same row and column. The decision SHALL be fixed
-at move-creation time (recorded on the move) so that replaying a saved game is
-deterministic regardless of the preference's later value. When the preference is
-off, a placement SHALL leave other cells' pencil marks untouched (upstream
-behaviour). The preference SHALL also govern the hint: with it on, the hint folds
-the implied row/column eliminations into the placement; with it off, the hint
-teaches them as explicit strikes.
+The game SHALL provide an **auto-pencil** preference, **off by default**: when it is
+on and the player places a tower height, the game SHALL strike that height from the
+pencil marks of every other cell in the same row and column. The decision SHALL be
+fixed at move-creation time (recorded on the move) so that replaying a saved game is
+deterministic regardless of the preference's later value. When the preference is off
+(the default), a placement SHALL leave other cells' pencil marks untouched (upstream
+behaviour) and note cleanup is manual — the player removes obvious candidates via the
+mark-all control or a hint. The preference SHALL also govern the hint: with it on, the
+hint folds the implied row/column eliminations into the placement; with it off, the
+hint teaches them as explicit strikes.
 
 #### Scenario: Placing a tower clears matching notes in its line
 
