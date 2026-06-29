@@ -13,9 +13,11 @@ import type {
   Colour,
   ConfigValues,
   GameStatus,
+  KeyLabel,
   Point,
   Size,
 } from "../../../puzzle/types.ts";
+import { clearKey } from "../../engine/key-labels.ts";
 import {
   anyEmptyLacksNotes,
   firstUnreflectedPlaceIndex,
@@ -783,6 +785,24 @@ function flashLength(
   return 0;
 }
 
+/**
+ * The on-screen keypad, faithful to upstream `game_request_keys`. Unlike the
+ * shared `digitKeys`, Unequal switches to a `'0'`-based keypad for order ≥ 10
+ * (`'0'..'9'` = 1..10, then `'a','b',…` = 11.., mirroring `c2n`), then the
+ * clear key. Orders run 3..32, so the high range is genuinely reachable.
+ */
+function unequalKeys(order: number): KeyLabel[] {
+  const keys: KeyLabel[] = [];
+  let off = (order > 9 ? "0" : "1").charCodeAt(0);
+  for (let i = 0; i < order; i++) {
+    if (i === 10) off = "a".charCodeAt(0) - 10;
+    const button = i + off;
+    keys.push({ button, label: String.fromCharCode(button) });
+  }
+  keys.push(clearKey);
+  return keys;
+}
+
 export const unequalGame: Game<
   UnequalParams,
   UnequalState,
@@ -826,6 +846,7 @@ export const unequalGame: Game<
   hintKeepTrack,
   refreshHintStep,
   findMistakes,
+  requestKeys: (p): KeyLabel[] => unequalKeys(p.order),
   textFormat,
 
   prefs: [

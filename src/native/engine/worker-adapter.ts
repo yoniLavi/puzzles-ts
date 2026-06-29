@@ -13,12 +13,13 @@
  * The drawing / colour / UI-feedback contract the keystone left
  * minimal was resolved by the first port (`add-flip-ts-port`): the
  * full `GameDrawing` API, `colours(defaultBackground)`, and the
- * `UI_UPDATE` input result. The custom-params / preferences /
- * request-keys surface still returns the empty-but-valid shape:
- * upstream's `config_item` UI machinery is a later cross-cutting
- * change, not modelled here yet. For a game whose only configuration
- * is reachable via presets and game IDs (e.g. Flip) this is the
- * correct behaviour, not a stub masking a defect.
+ * `UI_UPDATE` input result. The on-screen keys surface is modelled too
+ * (`requestKeys` forwards `Game.requestKeys` via the midend —
+ * `add-ts-onscreen-keys`). The custom-params / preferences surface still
+ * returns the empty-but-valid shape: upstream's `config_item` UI
+ * machinery is a later cross-cutting change, not modelled here yet. For a
+ * game whose only configuration is reachable via presets and game IDs
+ * (e.g. Flip) this is the correct behaviour, not a stub masking a defect.
  */
 
 import { transfer } from "comlink";
@@ -124,7 +125,7 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
     return this.engine.processInput(x, y, button);
   }
   requestKeys(): KeyLabel[] {
-    return [];
+    return this.engine.requestKeys();
   }
 
   // --- params / presets -------------------------------------------

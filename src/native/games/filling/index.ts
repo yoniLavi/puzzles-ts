@@ -8,7 +8,8 @@
  * non-clue cell. Read docs/porting/game-port-playbook.md and the Galaxies
  * port first.
  */
-import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import type { Colour, KeyLabel, Point, Size } from "../../../puzzle/types.ts";
+import { digitKeys } from "../../engine/key-labels.ts";
 import {
   type Game,
   type HintResult,
@@ -349,6 +350,8 @@ export const fillingGame: Game<
   hint,
   hintKeepTrack,
   findMistakes,
+  // Upstream's keypad is a fixed 1..9 (region sizes never exceed 9).
+  requestKeys: (): KeyLabel[] => digitKeys(9),
 
   textFormat,
 

@@ -245,3 +245,12 @@ describe("filling render scenario", () => {
     ).toBe(true);
   });
 });
+
+describe("on-screen keys (requestKeys)", () => {
+  it("offers a fixed digits 1..9 plus clear", () => {
+    expect(fillingGame.requestKeys?.(fillingGame.defaultParams())).toEqual([
+      ..."123456789".split("").map((d) => ({ button: d.charCodeAt(0), label: d })),
+      { button: 8, label: "Clear" },
+    ]);
+  });
+});

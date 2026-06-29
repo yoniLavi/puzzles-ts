@@ -275,3 +275,14 @@ describe("undead render", () => {
     expect(r1.recording.ops).toMatchSnapshot();
   });
 });
+
+describe("on-screen keys (requestKeys)", () => {
+  it("offers exactly Ghost/Vampire/Zombie plus clear", () => {
+    expect(undeadGame.requestKeys?.(undeadGame.defaultParams())).toEqual([
+      { button: "G".charCodeAt(0), label: "Ghost" },
+      { button: "V".charCodeAt(0), label: "Vampire" },
+      { button: "Z".charCodeAt(0), label: "Zombie" },
+      { button: 8, label: "Clear" },
+    ]);
+  });
+});

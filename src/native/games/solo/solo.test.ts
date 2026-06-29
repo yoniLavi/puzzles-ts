@@ -233,3 +233,26 @@ describe("solo render (initial frame)", () => {
     expect(recording.ops.length).toBeGreaterThan(0);
   });
 });
+
+describe("on-screen keys (requestKeys)", () => {
+  const buttons = (cr: number) =>
+    soloGame.requestKeys?.({
+      ...soloGame.defaultParams(),
+      c: cr === 9 ? 3 : 2,
+      r: cr === 9 ? 3 : 2,
+    });
+
+  it("a 3×3 board offers digits 1..9 plus clear", () => {
+    expect(buttons(9)).toEqual([
+      ..."123456789".split("").map((d) => ({ button: d.charCodeAt(0), label: d })),
+      { button: 8, label: "Clear" },
+    ]);
+  });
+
+  it("a 2×2 board offers digits 1..4 plus clear", () => {
+    expect(buttons(4)).toEqual([
+      ..."1234".split("").map((d) => ({ button: d.charCodeAt(0), label: d })),
+      { button: 8, label: "Clear" },
+    ]);
+  });
+});
