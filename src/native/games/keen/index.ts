@@ -17,10 +17,10 @@ import type {
   Point,
   Size,
 } from "../../../puzzle/types.ts";
-import { digitKeys } from "../../engine/key-labels.ts";
 import {
   adaptiveMarkAllMove,
   anyEmptyLacksNotes,
+  candidateHint,
   findRegionDuplicate,
   joinNums,
   keepCandidateHintTrack,
@@ -30,6 +30,7 @@ import {
   refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   type HintResult,
@@ -40,8 +41,10 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import { digitKeys } from "../../engine/key-labels.ts";
 import {
   hiddenSingleLine,
+  narrateLatinReason,
   rowColRegions,
   singlePlacementReason,
 } from "../../engine/latin-hint.ts";
@@ -390,18 +393,10 @@ function narrate(reason: HintReason, ns: number[], _w: number): string {
       return `No way to make this cage ${cageGoal(reason.op, reason.value)} leaves room for ${joinNums(ns)} in this cell, so we must cross out ${joinNums(ns)}.`;
     case "cageLine":
       return `This cage must ${cageGoal(reason.op, reason.value)}, and every way to fill it places a ${ns[0]} in this ${reason.horizontal ? "row" : "column"} — so the ${ns[0]} here must be crossed out.`;
-    case "single":
-      return `Every other number has been ruled out in this cell, so it can only be ${ns[0]}.`;
-    case "hiddenSingle":
-      return `In this ${reason.line === "row" ? "row" : "column"}, ${reason.n} can go in only this cell — every other cell in the ${reason.line === "row" ? "row" : "column"} has ruled it out — so it must be ${reason.n}.`;
-    case "forcedSingle":
-      return `Working through this cell's row and column together, only ${reason.n} can still go here — so it must be ${reason.n}.`;
-    case "dup":
-      return `There's already a ${reason.n} in this row and column, so we must cross out the ${reason.n} from the other cells they pass through.`;
-    case "set":
-      return `Another group of cells already accounts for a fixed set of numbers that includes ${joinNums(ns)}, so we must cross out ${joinNums(ns)} here.`;
-    case "forcing":
-      return `Following a chain of two-candidate cells, placing ${ns[0]} here would force a contradiction further along — so we must cross out ${joinNums(ns)}.`;
+    // The generic Latin arms (single / hiddenSingle / forcedSingle / dup / set /
+    // forcing) read identically to Unequal's — narrated once, shared.
+    default:
+      return narrateLatinReason(reason, ns);
   }
 }
 
@@ -480,7 +475,15 @@ function emitPlacement(
   wGrid[y * w + x] = n;
   wPen[y * w + x] = 0;
 
-  const dupMarks = regionDuplicateMarks(wGrid, wPen, x, y, n, w, rowColRegions(x, y, w));
+  const dupMarks = regionDuplicateMarks(
+    wGrid,
+    wPen,
+    x,
+    y,
+    n,
+    w,
+    rowColRegions(x, y, w),
+  );
   for (const m of dupMarks) wPen[m.y * w + m.x] &= ~(1 << n);
 
   if (!autoClean && dupMarks.length > 0) {
@@ -603,20 +606,7 @@ function hint(
   _aux?: string,
   ui?: KeenUi,
 ): HintResult<KeenMove, KeenHint> {
-  if (state.completed) return { ok: false, error: "This board is already solved." };
-  if (findMistakes(state).length > 0) {
-    return {
-      ok: false,
-      error:
-        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
-    };
-  }
-  const autoClean = ui?.autoPencil ?? false;
-  const steps = buildSteps(state, autoClean);
-  if (steps.length === 0) {
-    return { ok: false, error: "No further move can be deduced from this position." };
-  }
-  return { ok: true, steps };
+  return candidateHint(state, ui, findMistakes, buildSteps);
 }
 
 /** Classify a player move against the displayed hint step (shared
@@ -645,9 +635,7 @@ function flashLength(
   _dir: number,
   _ui: KeenUi,
 ): number {
-  if (!from.completed && to.completed && !from.cheated && !to.cheated)
-    return FLASH_TIME;
-  return 0;
+  return winFlash(from, to, FLASH_TIME);
 }
 
 export const keenGame: Game<

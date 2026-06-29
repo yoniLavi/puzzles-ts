@@ -8,7 +8,8 @@ The shared candidate-elimination module (`src/native/engine/candidate-hint.ts`) 
 provide a `candidateHint` entry that owns the `Game.hint` control flow common to every
 candidate-elimination game: refuse on a completed board, refuse (with the standard
 message) when the game's `findMistakes` reports any mistake, read the `autoPencil`
-preference (defaulting on), build the plan via the game's `buildSteps`, refuse when the
+preference (defaulting off, per the games' default-auto-pencil-off preference), build the
+plan via the game's `buildSteps`, refuse when the
 plan is empty, and otherwise return the steps. The standard refusal and empty-plan
 messages SHALL live in this one place. A game's `hint` SHALL be a one-line call passing
 its own `findMistakes` and `buildSteps`; routing through it SHALL be behaviour-preserving.

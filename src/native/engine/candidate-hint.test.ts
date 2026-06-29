@@ -4,6 +4,7 @@ import {
   anyEmptyLacksNotes,
   type CandidateHighlights,
   type CandidateMove,
+  candidateHint,
   findRegionDuplicate,
   firstUnreflectedPlaceIndex,
   joinNums,
@@ -27,6 +28,84 @@ function board(grid: number[], pencil: number[]): [Int8Array, Int32Array] {
 
 /** Bitmask of candidates `ns` (bit `1 << n`). */
 const bits = (...ns: number[]): number => ns.reduce((m, n) => m | (1 << n), 0);
+
+describe("candidateHint (shared hint entry)", () => {
+  interface St {
+    completed: boolean;
+  }
+  // A trivial one-step plan so the success path returns it verbatim.
+  const oneStep: HintStep<CandidateMove, CandidateHighlights>[] = [
+    {
+      move: { type: "set", x: 0, y: 0, n: 1, pencil: false },
+      explanation: "place 1",
+    },
+  ];
+
+  it("refuses a solved board", () => {
+    const r = candidateHint<St, CandidateMove, CandidateHighlights>(
+      { completed: true },
+      undefined,
+      () => [],
+      () => oneStep,
+    );
+    expect(r).toEqual({ ok: false, error: "This board is already solved." });
+  });
+
+  it("refuses a board with mistakes, pointing at the overlay", () => {
+    const r = candidateHint<St, CandidateMove, CandidateHighlights>(
+      { completed: false },
+      undefined,
+      () => [{ wrong: true }],
+      () => oneStep,
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/Fix the highlighted mistakes first/);
+  });
+
+  it("refuses when no further move can be deduced", () => {
+    const r = candidateHint<St, CandidateMove, CandidateHighlights>(
+      { completed: false },
+      undefined,
+      () => [],
+      () => [],
+    );
+    expect(r).toEqual({
+      ok: false,
+      error: "No further move can be deduced from this position.",
+    });
+  });
+
+  it("returns the built plan on the success path", () => {
+    const r = candidateHint<St, CandidateMove, CandidateHighlights>(
+      { completed: false },
+      undefined,
+      () => [],
+      () => oneStep,
+    );
+    expect(r).toEqual({ ok: true, steps: oneStep });
+  });
+
+  it("defaults autoPencil off when no ui is given, and threads ui through", () => {
+    const seen: boolean[] = [];
+    const build = (_s: St, autoClean: boolean) => {
+      seen.push(autoClean);
+      return oneStep;
+    };
+    candidateHint<St, CandidateMove, CandidateHighlights>(
+      { completed: false },
+      undefined,
+      () => [],
+      build,
+    );
+    candidateHint<St, CandidateMove, CandidateHighlights>(
+      { completed: false },
+      { autoPencil: true },
+      () => [],
+      build,
+    );
+    expect(seen).toEqual([false, true]);
+  });
+});
 
 describe("joinNums", () => {
   it("renders 0, 1, 2 and 3+ value lists", () => {

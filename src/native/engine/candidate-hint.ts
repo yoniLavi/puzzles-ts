@@ -22,9 +22,9 @@
  * this module supports.
  */
 
-import type { HintStep, HintTrackVerdict } from "./game.ts";
-import type { ClassifyRegion } from "./latin-hint.ts";
+import type { HintResult, HintStep, HintTrackVerdict } from "./game.ts";
 import type { DeductionRecord } from "./latin.ts";
+import type { ClassifyRegion } from "./latin-hint.ts";
 
 /** A board cell. */
 export interface Cell {
@@ -63,6 +63,40 @@ export interface CandidateHighlights {
   area: Cell[];
   targets: Cell[];
   marks: Mark[];
+}
+
+/** The shared `hint()` entry every candidate-elimination game uses: refuse on a
+ * solved board, refuse (pointing at the mistake overlay) on a wrong board, build
+ * the plan, refuse when it is empty, else return it. The only per-game inputs are
+ * the game's own `findMistakes` and `buildSteps` (the latter owns the walk that
+ * genuinely differs); everything else — the three user-facing refusal strings and
+ * the `autoPencil` default — is shared so a wording tweak lands in one place
+ * instead of drifting across four games.
+ *
+ * `autoPencil` defaults **off**: with no `ui` (tests/harness) the hint teaches the
+ * trivial row/column/region eliminations as explicit strikes rather than folding
+ * them into placements (matches the games' default-auto-pencil-off preference).
+ */
+export function candidateHint<State extends { completed: boolean }, Move, Hint>(
+  state: State,
+  ui: { autoPencil?: boolean } | undefined,
+  findMistakes: (state: State) => readonly unknown[],
+  buildSteps: (state: State, autoClean: boolean) => HintStep<Move, Hint>[],
+): HintResult<Move, Hint> {
+  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (findMistakes(state).length > 0) {
+    return {
+      ok: false,
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+  }
+  const autoClean = ui?.autoPencil ?? false;
+  const steps = buildSteps(state, autoClean);
+  if (steps.length === 0) {
+    return { ok: false, error: "No further move can be deduced from this position." };
+  }
+  return { ok: true, steps };
 }
 
 /** Join a value list for narration: `[3]`→"3", `[1,2]`→"1 and 2",

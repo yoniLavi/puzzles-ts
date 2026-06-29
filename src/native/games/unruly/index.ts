@@ -8,6 +8,7 @@
  * right-click cycles the other way; number keys place directly.
  */
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   type HintResult,
@@ -172,15 +173,7 @@ function flashLength(
   _dir: number,
   _ui: UnrulyUi,
 ): number {
-  if (
-    !oldState.completed &&
-    newState_.completed &&
-    !oldState.cheated &&
-    !newState_.cheated
-  ) {
-    return FLASH_TIME;
-  }
-  return 0;
+  return winFlash(oldState, newState_, FLASH_TIME);
 }
 
 // --- hint -----------------------------------------------------------------

@@ -8,6 +8,7 @@ import {
   classifyPlacement,
   classifyPlacementInRegions,
   hiddenSingleLine,
+  narrateLatinReason,
   singlePlacementReason,
 } from "./latin-hint.ts";
 
@@ -172,5 +173,40 @@ describe("hiddenSingleLine", () => {
       { x: 1, y: 2 },
       { x: 1, y: 3 },
     ]);
+  });
+});
+
+describe("narrateLatinReason (shared row/column-game narration)", () => {
+  it("narrates each generic arm with the shared wording", () => {
+    expect(narrateLatinReason({ kind: "single" }, [3])).toBe(
+      "Every other number has been ruled out in this cell, so it can only be 3.",
+    );
+    expect(
+      narrateLatinReason({ kind: "hiddenSingle", n: 2, line: "col", index: 1 }, []),
+    ).toBe(
+      "In this column, 2 can go in only this cell — every other cell in the column has ruled it out — so it must be 2.",
+    );
+    expect(narrateLatinReason({ kind: "forcedSingle", n: 4 }, [])).toBe(
+      "Working through this cell's row and column together, only 4 can still go here — so it must be 4.",
+    );
+    expect(narrateLatinReason({ kind: "dup", n: 1 }, [])).toBe(
+      "There's already a 1 in this row and column, so we must cross out the 1 from the other cells they pass through.",
+    );
+    expect(narrateLatinReason({ kind: "set" }, [2, 3])).toBe(
+      "Another group of cells already accounts for a fixed set of numbers that includes 2 and 3, so we must cross out 2 and 3 here.",
+    );
+    expect(narrateLatinReason({ kind: "forcing" }, [5])).toBe(
+      "Following a chain of two-candidate cells, placing 5 here would force a contradiction further along — so we must cross out 5.",
+    );
+  });
+
+  it("ignores extra fields a dup reason may carry (only n is read)", () => {
+    // Real callers pass a LatinReason `dup` (which carries px/py) by reference,
+    // not as a literal — bind it so the assignment mirrors that, not an
+    // excess-property literal check.
+    const dupWithExtra = { kind: "dup" as const, n: 6, px: 0, py: 0 };
+    expect(narrateLatinReason(dupWithExtra, [])).toBe(
+      "There's already a 6 in this row and column, so we must cross out the 6 from the other cells they pass through.",
+    );
   });
 });
