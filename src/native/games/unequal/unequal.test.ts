@@ -304,3 +304,28 @@ describe("unequal render", () => {
     expect(texts.length).toBeGreaterThan(0);
   });
 });
+
+describe("on-screen keys (requestKeys)", () => {
+  const keysFor = (order: number) =>
+    unequalGame.requestKeys?.({ ...unequalGame.defaultParams(), order });
+
+  it("offers '1'..order plus clear for order < 10", () => {
+    expect(keysFor(4)).toEqual([
+      ..."1234".split("").map((d) => ({ button: d.charCodeAt(0), label: d })),
+      { button: 8, label: "Clear" },
+    ]);
+  });
+
+  it("switches to a '0'-based keypad for order ≥ 10 (faithful to c2n)", () => {
+    // order 10: '0'..'9' = values 1..10, then clear.
+    expect(keysFor(10)).toEqual([
+      ..."0123456789".split("").map((d) => ({ button: d.charCodeAt(0), label: d })),
+      { button: 8, label: "Clear" },
+    ]);
+    // order 11: '0'..'9' then 'a' (value 11), then clear.
+    expect(keysFor(11)).toEqual([
+      ..."0123456789a".split("").map((c) => ({ button: c.charCodeAt(0), label: c })),
+      { button: 8, label: "Clear" },
+    ]);
+  });
+});

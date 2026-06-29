@@ -270,6 +270,26 @@ describe("Midend params + presets", () => {
   });
 });
 
+describe("Midend.requestKeys forwards Game.requestKeys", () => {
+  it("returns [] for a game with no requestKeys hook", () => {
+    const m = new Midend(fakeGame);
+    expect(m.requestKeys()).toEqual([]);
+  });
+
+  it("forwards the hook, called with the current params", () => {
+    const withKeys: typeof fakeGame = {
+      ...fakeGame,
+      requestKeys: (p) => [{ button: 49, label: String(p.target) }],
+    };
+    const m = new Midend(withKeys);
+    // defaultParams ⇒ target 3
+    expect(m.requestKeys()).toEqual([{ button: 49, label: "3" }]);
+    // params drive the hook: switch presets and the keys follow
+    expect(m.setParams("t7")).toBeUndefined();
+    expect(m.requestKeys()).toEqual([{ button: 49, label: "7" }]);
+  });
+});
+
 describe("Midend timer", () => {
   it("an untimed game never activates the timer and timer() is inert", () => {
     const h = harness();

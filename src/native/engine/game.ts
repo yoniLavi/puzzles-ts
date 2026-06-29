@@ -22,6 +22,7 @@ import type {
   ConfigValues,
   DrawTextOptions,
   GameStatus,
+  KeyLabel,
   Point,
   Rect,
   Size,
@@ -174,6 +175,16 @@ export interface Game<
    * the `M`/`m` key in `interpretMove`; the app shell surfaces a toolbar button
    * (gated on this) that injects that key. Defaults to false (no button). */
   readonly canMarkAll?: boolean;
+
+  /** The on-screen keypad this game wants, faithful to upstream
+   * `game_request_keys(params, *nkeys)`. Returns the `{ button, label }`
+   * keys (digits/letters plus a clear key, or a game's bespoke keys like
+   * Undead's Ghost/Vampire/Zombie). It depends on `params` only — the
+   * keypad does not vary with play and the app's key panel reloads only
+   * on param change — so it deliberately takes neither state nor ui.
+   * Absent ⇒ no keypad (the correct behaviour for games like Flip that
+   * upstream gave none). */
+  requestKeys?(p: Params): KeyLabel[];
 
   defaultParams(): Params;
   presets(): PresetMenu<Params>;

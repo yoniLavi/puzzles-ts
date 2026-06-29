@@ -409,6 +409,36 @@ The **explained, pencil-notes-based hint** these games want is its own change �
 the "candidate-elimination games" section of
 [`hint-authoring.md`](./hint-authoring.md), with Towers as the exemplar.
 
+### 3.8 On-screen keypad — restore it on the TS path (`requestKeys`)
+
+Any game upstream gave a virtual keypad (defines `game_request_keys`) **loses it the
+moment it goes `TS_PORTED`** unless the port implements the optional
+`requestKeys?(params): KeyLabel[]` `Game` hook — the worker adapter forwards
+`Game.requestKeys` through `Midend.requestKeys()`, and an absent hook means an empty
+keypad (correct for games upstream gave none, like Flip). On touch this panel is the
+*primary* digit-entry affordance, so it is not optional for a keypad game. Exemplars:
+the five digit games (`solo`/`keen`/`towers`/`unequal`/`filling`) and Undead.
+
+- **Digit games use the shared helper.** `digitKeys(n)` in
+  [`engine/key-labels.ts`](../../src/native/engine/key-labels.ts) builds buttons
+  `'1'..'9'` then `'a','b',…` past nine, plus a clear key `{ button: 8, label:
+  "Clear" }` (the `"Clear"` label is load-bearing — it's what the `puzzle-keys` icon
+  map turns into the clear icon). Size `n` from params: Solo `c*r`, Keen/Towers `w`,
+  Filling fixed `9`.
+- **Match the C keypad exactly — including its quirks.** The bar is parity with the C
+  build's keypad, so read upstream's `game_request_keys` rather than assuming
+  `digitKeys` fits. Unequal is the cautionary case: it allows order up to 32 and
+  switches to a **`'0'`-based** keypad for order ≥ 10 (`'0'..'9'` = values 1..10, then
+  `'a',…`), faithful to its `c2n`/`n2c`. So it gets a bespoke `unequalKeys(order)`,
+  *not* `digitKeys`. Games with explicit labels (Undead's Ghost/Vampire/Zombie) carry
+  those strings verbatim.
+- **The hook takes `params` only.** The keypad doesn't vary with play and the panel
+  reloads only on param change — so don't thread state/ui through it.
+- **Test it tier-1.** Pin the returned `KeyLabel[]` (buttons + labels) for
+  representative params in the game's existing test file; assert the `digitKeys`
+  rollover and any per-game quirk (Unequal's `'0'`-based high range). Normative: the
+  on-screen-keys requirement in [`ts-engine`](../../openspec/specs/ts-engine/spec.md).
+
 ---
 
 ## 4. Differential check (per-game, optional)

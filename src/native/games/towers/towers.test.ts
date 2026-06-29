@@ -581,3 +581,16 @@ describe("towers render", () => {
     );
   });
 });
+
+describe("on-screen keys (requestKeys)", () => {
+  const keysFor = (w: number) =>
+    towersGame.requestKeys?.({ ...towersGame.defaultParams(), w });
+
+  it("offers digits 1..w plus clear", () => {
+    expect(keysFor(5)).toEqual([
+      ..."12345".split("").map((d) => ({ button: d.charCodeAt(0), label: d })),
+      { button: 8, label: "Clear" },
+    ]);
+    expect(keysFor(4)?.length).toBe(5);
+  });
+});

@@ -13,9 +13,11 @@ import type {
   Colour,
   ConfigValues,
   GameStatus,
+  KeyLabel,
   Point,
   Size,
 } from "../../../puzzle/types.ts";
+import { digitKeys } from "../../engine/key-labels.ts";
 import {
   anyEmptyLacksNotes,
   joinNums,
@@ -942,6 +944,7 @@ export const soloGame: Game<
   hintKeepTrack,
   refreshHintStep,
   findMistakes,
+  requestKeys: (p): KeyLabel[] => digitKeys(p.c * p.r),
 
   prefs: [
     {

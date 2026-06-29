@@ -12,7 +12,15 @@
  * cells that contradict the unique solution.
  */
 
-import type { Colour, ConfigValues, GameStatus, Point, Size } from "../../../puzzle/types.ts";
+import type {
+  Colour,
+  ConfigValues,
+  GameStatus,
+  KeyLabel,
+  Point,
+  Size,
+} from "../../../puzzle/types.ts";
+import { clearKey } from "../../engine/key-labels.ts";
 import {
   type Game,
   type HintResult,
@@ -824,6 +832,13 @@ export const undeadGame: Game<
   hintKeepTrack,
   refreshHintStep,
   findMistakes,
+  // Upstream's four explicit keys: the three monsters plus clear.
+  requestKeys: (): KeyLabel[] => [
+    { button: KEY_G, label: "Ghost" },
+    { button: KEY_V, label: "Vampire" },
+    { button: KEY_Z, label: "Zombie" },
+    clearKey,
+  ],
   textFormat,
 
   prefs: [

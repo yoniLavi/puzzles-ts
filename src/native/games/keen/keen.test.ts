@@ -395,3 +395,19 @@ describe("keen render", () => {
     expect(after.ops.some((o) => o.op === "line" && o.colour === COL_ERROR)).toBe(true);
   });
 });
+
+describe("on-screen keys (requestKeys)", () => {
+  const keysFor = (w: number) =>
+    keenGame.requestKeys?.({ ...keenGame.defaultParams(), w });
+
+  it("offers digits 1..w plus clear at two widths", () => {
+    expect(keysFor(4)).toEqual([
+      ..."1234".split("").map((d) => ({ button: d.charCodeAt(0), label: d })),
+      { button: 8, label: "Clear" },
+    ]);
+    expect(keysFor(6)).toEqual([
+      ..."123456".split("").map((d) => ({ button: d.charCodeAt(0), label: d })),
+      { button: 8, label: "Clear" },
+    ]);
+  });
+});

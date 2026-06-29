@@ -20,6 +20,7 @@ import type {
   ConfigDescription,
   ConfigValues,
   GameStatus,
+  KeyLabel,
   Point,
   PresetMenuEntry,
   PuzzleStaticAttributes,
@@ -82,6 +83,9 @@ export interface EngineCore {
    * many. 0 (and no display change) when the game has no
    * mistake-checking. */
   findMistakes(): number;
+  /** The on-screen keypad for the current params, or `[]` for a game
+   * that wants none. */
+  requestKeys(): KeyLabel[];
   processInput(x: number, y: number, button: number): boolean;
   getParams(): string;
   setParams(params: string): string | undefined;
@@ -770,6 +774,10 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   }
 
   // --- params / presets -------------------------------------------
+
+  requestKeys(): KeyLabel[] {
+    return this.game.requestKeys?.(this.params) ?? [];
+  }
 
   getParams(): string {
     return this.game.encodeParams(this.params, true);
