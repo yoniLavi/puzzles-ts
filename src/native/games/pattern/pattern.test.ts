@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { Midend } from "../../engine/index.ts";
-import { CURSOR_SELECT } from "../../engine/pointer.ts";
+import { CURSOR_SELECT, LEFT_DRAG, LEFT_RELEASE } from "../../engine/pointer.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { newPatternDesc } from "./generator.ts";
@@ -191,6 +191,88 @@ describe("pattern moves and completion", () => {
     // Second select cycles the (0,0) cell UNKNOWN → FULL.
     const move = patternGame.interpretMove(st, ui, null, { x: 0, y: 0 }, CURSOR_SELECT);
     expect(move).toEqual({ type: "fill", value: GRID_FULL, x: 0, y: 0, w: 1, h: 1 });
+  });
+});
+
+describe("pattern drag-paint skips placed marks", () => {
+  const base = () => newState({ w: 5, h: 5 }, "4/2.2/2/1/2/2/2/1/3.1/4");
+
+  it("an onlyBlank fill paints blanks but leaves existing marks", () => {
+    // Place EMPTY at (0,0), then drag FULL across the top row with onlyBlank.
+    let st = executeMove(base(), {
+      type: "fill",
+      value: GRID_EMPTY,
+      x: 0,
+      y: 0,
+      w: 1,
+      h: 1,
+    });
+    st = executeMove(st, {
+      type: "fill",
+      value: GRID_FULL,
+      x: 0,
+      y: 0,
+      w: 4,
+      h: 1,
+      onlyBlank: true,
+    });
+    expect(st.grid[0]).toBe(GRID_EMPTY); // the placed mark is untouched
+    expect([st.grid[1], st.grid[2], st.grid[3]]).toEqual([
+      GRID_FULL,
+      GRID_FULL,
+      GRID_FULL,
+    ]);
+  });
+
+  it("a single-cell fill (no onlyBlank) still overwrites a mark", () => {
+    let st = executeMove(base(), {
+      type: "fill",
+      value: GRID_EMPTY,
+      x: 0,
+      y: 0,
+      w: 1,
+      h: 1,
+    });
+    st = executeMove(st, { type: "fill", value: GRID_FULL, x: 0, y: 0, w: 1, h: 1 });
+    expect(st.grid[0]).toBe(GRID_FULL); // a deliberate click can change a mark
+  });
+
+  it("interpretMove flags a multi-cell paint drag onlyBlank, a single cell not", () => {
+    const st = base();
+    const drag = (endX: number) => {
+      const ui = patternGame.newUi(st);
+      Object.assign(ui, {
+        dragging: true,
+        drag: LEFT_DRAG,
+        release: LEFT_RELEASE,
+        state: GRID_FULL,
+        dragStartX: 0,
+        dragStartY: 0,
+        dragEndX: endX,
+        dragEndY: 0,
+      });
+      return patternGame.interpretMove(st, ui, null, { x: 0, y: 0 }, LEFT_RELEASE);
+    };
+    expect(drag(3)).toMatchObject({ type: "fill", onlyBlank: true, w: 4 });
+    expect(drag(0)).toMatchObject({ type: "fill", onlyBlank: false, w: 1 });
+  });
+
+  it("a clear drag (middle/UNKNOWN) still erases placed marks", () => {
+    let st = executeMove(base(), {
+      type: "fill",
+      value: GRID_FULL,
+      x: 0,
+      y: 0,
+      w: 3,
+      h: 1,
+    });
+    // A clear is never onlyBlank, so it resets marked cells to UNKNOWN.
+    st = executeMove(st, { type: "fill", value: GRID_UNKNOWN, x: 0, y: 0, w: 3, h: 1 });
+    expect([st.grid[0], st.grid[1], st.grid[2]]).toEqual([
+      GRID_UNKNOWN,
+      GRID_UNKNOWN,
+      GRID_UNKNOWN,
+    ]);
   });
 });
 

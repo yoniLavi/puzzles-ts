@@ -55,7 +55,19 @@ export interface PatternState {
  * `F`/`E`/`U x,y,w,h`); a `solve` applies a full solution grid as a string
  * of `'0'`/`'1'` (upstream `S…`), kept a string so the move is save-safe. */
 export type PatternMove =
-  | { type: "fill"; value: GridVal; x: number; y: number; w: number; h: number }
+  | {
+      type: "fill";
+      value: GridVal;
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      /** When true, paint only cells currently `GRID_UNKNOWN` — a drag-paint
+       * across the board never rewrites a mark the player already placed
+       * (the common nonogram QoL). Single-cell actions leave it unset and
+       * overwrite, so a deliberate click can still change a mark. */
+      onlyBlank?: boolean;
+    }
   | { type: "solve"; grid: string };
 
 /** Persisted UI (not history): the in-progress drag and the keyboard
@@ -334,7 +346,9 @@ export function executeMove(state: PatternState, move: PatternMove): PatternStat
   for (let yy = y; yy < y + rh; yy++) {
     for (let xx = x; xx < x + rw; xx++) {
       const i = yy * w + xx;
-      if (!next.common.immutable[i]) next.grid[i] = value;
+      if (next.common.immutable[i]) continue;
+      if (move.onlyBlank && next.grid[i] !== GRID_UNKNOWN) continue;
+      next.grid[i] = value;
     }
   }
   if (!next.completed && isComplete(next)) {

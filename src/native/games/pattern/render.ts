@@ -298,6 +298,9 @@ export function redraw(
     y1 = Math.min(ui.dragStartY, ui.dragEndY);
     y2 = Math.max(ui.dragStartY, ui.dragEndY);
   }
+  // A multi-cell paint drag previews only on blank cells (matching the
+  // onlyBlank fill it will emit), so it never visually clobbers a placed mark.
+  const dragOnlyBlank = (x2 > x1 || y2 > y1) && ui.state !== GRID_UNKNOWN;
 
   const cx = ui.curVisible ? ui.curX : -1;
   const cy = ui.curVisible ? ui.curY : -1;
@@ -316,7 +319,8 @@ export function redraw(
         x <= x2 &&
         y1 <= y &&
         y <= y2 &&
-        !state.common.immutable[i]
+        !state.common.immutable[i] &&
+        (!dragOnlyBlank || grid[i] === GRID_UNKNOWN)
       ) {
         val = ui.state;
       } else {
