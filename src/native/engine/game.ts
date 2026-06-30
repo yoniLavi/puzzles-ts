@@ -175,6 +175,11 @@ export interface Game<
    * the `M`/`m` key in `interpretMove`; the app shell surfaces a toolbar button
    * (gated on this) that injects that key. Defaults to false (no button). */
   readonly canMarkAll?: boolean;
+  /** The game genuinely needs a right (secondary) button to be playable —
+   * upstream's `REQUIRE_RBUTTON` flag. Pattern marks empty cells only with
+   * the right button, so a touch frontend must surface a secondary-action
+   * affordance. Defaults to false (the midend reports it for the app shell). */
+  readonly needsRightButton?: boolean;
 
   /** The on-screen keypad this game wants, faithful to upstream
    * `game_request_keys(params, *nkeys)`. Returns the `{ button, label }`
