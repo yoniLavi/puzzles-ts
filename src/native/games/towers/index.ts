@@ -21,6 +21,7 @@ import {
   adaptiveMarkAllMove,
   anyEmptyLacksNotes,
   candidateHint,
+  emitObviousCleanStep,
   firstUnreflectedPlaceIndex,
   keepCandidateHintTrack,
   nakedSingle,
@@ -443,6 +444,9 @@ function findMistakes(state: TowersState): readonly TowersMistake[] {
 const POPULATE_TEXT =
   "Start by pencilling in every candidate height in each empty cell, so the eliminations that follow have something to cross out.";
 
+const CLEAN_OBVIOUS_TEXT =
+  "Now clear the easy ones: in each cell, cross out any height already standing in its row or column — the same cleanup the “fill all pencil marks” button does.";
+
 /** Narrate *why* a firing is forced, per the technique that fired — leading
  * with the spotted indication, then the reasoning, then a necessity-voice
  * conclusion (hint-authoring §2). `n` is the placed height for a placement;
@@ -675,6 +679,9 @@ function buildSteps(
     });
     populated = true;
   };
+  // The obvious-candidate cleanup is emitted once, right after notes first exist
+  // (just populated, or already present on a pre-noted board) — see step 3.
+  let cleaned = false;
 
   let ops = recordTowersDeductions(w, state.clues, wGrid, maxdiff);
   const budget = stepBudget("towers hint plan");
@@ -743,6 +750,27 @@ function buildSteps(
       ensurePopulated();
       lastStrikeGroup = -1;
       continue;
+    }
+
+    // 3a. Once notes exist (just populated, or already present), bulk-clear the
+    //     obvious candidates in one step — the adaptive Mark-all second press —
+    //     so the walk teaches the real deductions, not the trivial row/column
+    //     culls one placement at a time.
+    if (!cleaned) {
+      cleaned = true;
+      if (
+        emitObviousCleanStep(
+          steps,
+          wGrid,
+          wPen,
+          w,
+          (x, y) => rowColRegions(x, y, w),
+          CLEAN_OBVIOUS_TEXT,
+        )
+      ) {
+        lastStrikeGroup = -1;
+        continue;
+      }
     }
 
     // 4. The next clue elimination (the deduction worth teaching). One firing

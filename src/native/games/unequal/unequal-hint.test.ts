@@ -146,10 +146,14 @@ describe("unequal hint", () => {
       expect(res?.ok).toBe(true);
       if (!res?.ok) continue;
       // A strike concludes "we must cross out …"; a placement "it can only be N";
-      // never a bare "is/are/stays". (The populate step is the lone instruction.)
+      // never a bare "is/are/stays". (The populate fill and the bulk obvious-clean
+      // are setup instructions, not deductions, so they are exempt.)
       const modal = /can only|can't|must (be|cross out)/i;
+      const isSetup = (s: (typeof res.steps)[number]) =>
+        (s.move as UnequalMove).type === "pencilAll" ||
+        /clear the easy ones|fill all pencil marks/.test(s.explanation);
       for (const s of res.steps) {
-        if ((s.move as UnequalMove).type === "pencilAll") continue;
+        if (isSetup(s)) continue;
         expect(s.explanation).toMatch(modal);
       }
     }
