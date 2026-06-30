@@ -146,11 +146,18 @@ function interpretMove(
     const x2 = Math.max(ui.dragStartX, ui.dragEndX);
     const y1 = Math.min(ui.dragStartY, ui.dragEndY);
     const y2 = Math.max(ui.dragStartY, ui.dragEndY);
+    // A multi-cell paint drag (not a single click, not a clear) only fills
+    // blank cells, so dragging across the board never rewrites a mark the
+    // player already placed.
+    const multiCell = x2 > x1 || y2 > y1;
+    const onlyBlank = multiCell && ui.state !== GRID_UNKNOWN;
     let moveNeeded = false;
     for (let yy = y1; yy <= y2 && !moveNeeded; yy++) {
       for (let xx = x1; xx <= x2; xx++) {
         const i = yy * w + xx;
-        if (!state.common.immutable[i] && grid[i] !== ui.state) {
+        if (state.common.immutable[i]) continue;
+        const wouldChange = onlyBlank ? grid[i] === GRID_UNKNOWN : grid[i] !== ui.state;
+        if (wouldChange) {
           moveNeeded = true;
           break;
         }
@@ -165,6 +172,7 @@ function interpretMove(
         y: y1,
         w: x2 - x1 + 1,
         h: y2 - y1 + 1,
+        onlyBlank,
       };
     }
     return UI_UPDATE;
