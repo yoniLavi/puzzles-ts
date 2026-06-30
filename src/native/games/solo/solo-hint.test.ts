@@ -183,8 +183,13 @@ describe("solo hint", () => {
         if (!res?.ok) continue;
         for (const step of res.steps as AnyStep[]) {
           if (step.move.type !== "pencilStrike") continue;
-          // Skip the basic-region dup opening (one placed value across its groups).
+          // Skip the basic-region dup opening (one placed value across its groups)
+          // and the bulk obvious-candidate cleanup at populate (a setup step, not a
+          // deductive strike — multi-cell and multi-digit by design).
           if (/already placed in this cell/.test(step.explanation)) continue;
+          if (/clear the easy ones|fill all pencil marks/.test(step.explanation)) {
+            continue;
+          }
           const marks = step.move.marks as { x: number; y: number; n: number }[];
           const cells = new Set(marks.map((m) => `${m.x},${m.y}`));
           const digits = new Set(marks.map((m) => m.n));

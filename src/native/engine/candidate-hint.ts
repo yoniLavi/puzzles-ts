@@ -343,6 +343,48 @@ function strikeMove<M>(marks: Mark[]): M {
   return { type: "pencilStrike", marks } as unknown as M;
 }
 
+/** Emit the one-shot "clear the obvious candidates" step into a candidate-
+ * elimination hint plan — the bulk equivalent of the adaptive Mark-all second
+ * press. Strikes every {@link obviousCandidateMarks} (each pencilled value already
+ * placed in one of the cell's `regionsOf` regions) as one `pencilStrike`, applies
+ * the marks to the working `pencil`, and pushes the step. The step is flagged
+ * `continuesPrevious` when it directly follows the populate fill, so "fill, then
+ * clear the obvious ones" reads and auto-plays as one setup journey; when the
+ * board was already populated (so no fill step precedes it) it stands alone.
+ *
+ * Returns `true` iff a step was emitted (there was something obvious to clear) —
+ * the caller gates it to fire once, after notes exist and before teaching the real
+ * deductions. Generic over the game's move `M` and highlight `H` (built as the
+ * shared {@link CandidateHighlights} every such game's hint type satisfies); the
+ * constructions are asserted here, as elsewhere in this module. */
+export function emitObviousCleanStep<M, H>(
+  steps: HintStep<M, H>[],
+  grid: ArrayLike<number>,
+  pencil: Int32Array,
+  w: number,
+  regionsOf: (x: number, y: number) => readonly ClassifyRegion[],
+  explanation: string,
+): boolean {
+  const obvious = obviousCandidateMarks(grid, pencil, w, regionsOf);
+  if (obvious.length === 0) return false;
+  for (const m of obvious) pencil[m.y * w + m.x] &= ~(1 << m.n);
+  const prev = steps[steps.length - 1];
+  const continuesPrevious =
+    prev !== undefined && (prev.move as { type?: string }).type === "pencilAll";
+  const highlights: CandidateHighlights = {
+    area: [],
+    targets: obvious.map((m) => ({ x: m.x, y: m.y })),
+    marks: obvious,
+  };
+  steps.push({
+    move: strikeMove<M>(obvious),
+    explanation,
+    highlights: highlights as unknown as H,
+    continuesPrevious,
+  });
+  return true;
+}
+
 /** Classify a player move against the displayed hint step (the engine's
  * keep-track contract). A `pencilAll` matches a populate step; a real placement
  * matches a `set` step; a pencil toggle that *clears* one of a strike step's

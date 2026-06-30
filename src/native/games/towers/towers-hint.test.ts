@@ -117,6 +117,42 @@ describe("towers hint", () => {
     expect(populateAt).toBeLessThan(firstStrike);
   });
 
+  it("cleans the obvious candidates right after populate (Mark-all parity)", () => {
+    // The populate journey fills all candidates, then immediately strikes the
+    // obvious ones — every height already standing in a cell's row/column from
+    // the placements the plan made before populate — as one `continuesPrevious`
+    // leg. So the plan never re-teaches those trivial eliminations and the notes
+    // match what the adaptive "fill all pencil marks" control produces.
+    const { st } = gen(5, "easy", "hint-empty");
+    const res = firstHint(st);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    const steps = res.steps as AnyStep[];
+    const populateAt = steps.findIndex((s) => s.move.type === "pencilAll");
+    expect(populateAt).toBeGreaterThanOrEqual(0);
+    const clean = steps[populateAt + 1];
+    expect(clean.move.type).toBe("pencilStrike");
+    expect(clean.continuesPrevious).toBe(true);
+    expect(clean.explanation).toMatch(/cross out|clear the easy/i);
+    expect(clean.move.marks.length).toBeGreaterThan(0);
+    // Every struck candidate is genuinely obvious: the value already stands in
+    // that cell's row or column on the board the populate journey produced.
+    const w = st.w;
+    const grid = Int8Array.from(st.grid);
+    // Replay the steps up to (and including) populate onto a working grid.
+    for (let i = 0; i <= populateAt; i++) {
+      const m = steps[i].move as TowersMove;
+      if (m.type === "set") grid[m.y * w + m.x] = m.n;
+    }
+    for (const mk of clean.move.marks as { x: number; y: number; n: number }[]) {
+      let seen = false;
+      for (let k = 0; k < w; k++) {
+        if (grid[mk.y * w + k] === mk.n || grid[k * w + mk.x] === mk.n) seen = true;
+      }
+      expect(seen).toBe(true);
+    }
+  });
+
   it("clue-strike marks never bleed outside the narrated clue's line (regression)", () => {
     // One recorded firing must cover a single clue. An earlier bug let one
     // solver pass lump several clues' lower-bound eliminations under one

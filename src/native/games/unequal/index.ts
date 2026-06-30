@@ -21,7 +21,7 @@ import {
   adaptiveMarkAllMove,
   anyEmptyLacksNotes,
   candidateHint,
-  findRegionDuplicate,
+  emitObviousCleanStep,
   firstUnreflectedPlaceIndex,
   joinNums,
   keepCandidateHintTrack,
@@ -413,6 +413,9 @@ function findMistakes(state: UnequalState): readonly UnequalMistake[] {
 const POPULATE_TEXT =
   "Start by pencilling in every candidate number in each empty cell, so the eliminations that follow have something to cross out.";
 
+const CLEAN_OBVIOUS_TEXT =
+  "Now clear the easy ones: in each cell, cross out any number already standing in its row or column — the same cleanup the “fill all pencil marks” button does.";
+
 /** Join a value list for narration: `[3]`→"3", `[1,2]`→"1 and 2",
  * `[1,2,3]`→"1, 2 and 3". */
 /** Narrate *why* a firing is forced (hint-authoring §2): indication → reasoning →
@@ -591,6 +594,9 @@ function buildSteps(
     });
     populated = true;
   };
+  // The obvious-candidate cleanup is emitted once, right after notes first exist
+  // (just populated, or already present on a pre-noted board) — see step 3.
+  let cleaned = false;
 
   let ops = recordUnequalDeductions(
     o,
@@ -601,9 +607,6 @@ function buildSteps(
   );
   const budget = stepBudget("unequal hint plan");
   const cap = o * o * o * 4 + 4;
-  // A counter for my own (non-recorded) basic-Latin firings, kept distinct from
-  // the recording solver's `group` ids so journey linking never confuses them.
-  let myGroup = -1000;
   // The firing whose strike the previous step emitted, so a same-firing strike of
   // a *different* cell (a link's other end) continues the journey.
   let lastStrikeGroup = Number.NaN;
@@ -645,22 +648,25 @@ function buildSteps(
       continue;
     }
 
-    // 3. The basic-Latin cull a given/placed value forces in its row and column.
-    const bs = findRegionDuplicate(wGrid, wPen, o, (x, y) => rowColRegions(x, y, o));
-    if (bs) {
-      myGroup--;
-      steps.push({
-        move: { type: "pencilStrike", marks: bs.marks },
-        explanation: narrate({ kind: "dup", n: bs.n, px: bs.px, py: bs.py }, [], o),
-        highlights: {
-          area: [{ x: bs.px, y: bs.py }],
-          targets: bs.marks.map((m) => ({ x: m.x, y: m.y })),
-          marks: bs.marks,
-        },
-      });
-      for (const m of bs.marks) wPen[m.y * o + m.x] &= ~(1 << m.n);
-      lastStrikeGroup = myGroup;
-      continue;
+    // 3. Once notes exist (just populated, or already present), bulk-clear the
+    // obvious candidates in one step — the adaptive Mark-all second press — then
+    // the walk goes straight to the real deductions (later placements keep notes
+    // clean via `emitPlacement`).
+    if (!cleaned) {
+      cleaned = true;
+      if (
+        emitObviousCleanStep(
+          steps,
+          wGrid,
+          wPen,
+          o,
+          (x, y) => rowColRegions(x, y, o),
+          CLEAN_OBVIOUS_TEXT,
+        )
+      ) {
+        lastStrikeGroup = Number.NaN;
+        continue;
+      }
     }
 
     // 4. The next clue elimination (the deduction worth teaching).

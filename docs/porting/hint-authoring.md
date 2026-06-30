@@ -857,7 +857,7 @@ stale-plan guard (§7.3) all apply here; this section is the pencil-note-*specif
 
 > **The reusable mechanics live in [`engine/candidate-hint.ts`](../../src/native/engine/candidate-hint.ts)** (`extract-candidate-hint-plan`, after four exemplars). Import them rather than copying: the pure plan helpers (`nakedSingle`, `anyEmptyLacksNotes`, `firstUnreflectedPlaceIndex`, `nextStrike` — whole-firing, dup-excluded — `nextPlace`, `joinNums`) and the generic `keepCandidateHintTrack` / `refreshCandidateHintStep` over the shared `CandidateMove` / `CandidateHighlights`. The §9.3a "re-derive the why" classifier is `classifyPlacementInRegions` in [`latin-hint.ts`](../../src/native/engine/latin-hint.ts) — pass the regions your game reasons over (`[row, col]`, or Solo's `[row, col, block, diag0, diag1]`). A game wires `hintKeepTrack`/`refreshHintStep` as one-line wrappers passing `state.pencil`/`state.grid` + the grid order; the helpers below are the implementation, not snippets to paste.
 >
-> **A cell's *uniqueness regions* are one definition per game — `regionsOf` (`extract-cell-region-helpers`).** Three sites used to recompute "which cells share a uniqueness constraint with `(x, y)`, and which still note value `n`?" — the §9.3a classifier, the §9.2 basic-region opening, and the placement dup-cull. Write a single per-game `regionsOf(state, x, y)` returning the cell's tagged uniqueness regions (a `ClassifyRegion` is `{ cells }` + whatever tag you name it by) and feed all three from it, so they can never disagree. Row/column games (Towers/Unequal/Keen) import the shared `rowColRegions(x, y, w)` from `latin-hint.ts`; Solo writes its own (`[row, col, block, diag0, diag1]`). Then the basic-region opening is `findRegionDuplicate(grid, pencil, w, (x, y) => regionsOf(state, x, y))` and the placement cull is `regionDuplicateMarks(grid, pencil, x, y, n, w, regionsOf(state, x, y))` — both in `candidate-hint.ts`, both de-dup a cell reachable via two regions. **A Keen cage is *not* a uniqueness region** — it is an arithmetic constraint a digit may legally repeat under (design D3); `regionsOf` returns row+col only, and the cage logic stays its own deduction.
+> **A cell's *uniqueness regions* are one definition per game — `regionsOf` (`extract-cell-region-helpers`).** Three sites used to recompute "which cells share a uniqueness constraint with `(x, y)`, and which still note value `n`?" — the §9.3a classifier, the §9.2 basic-region opening, and the placement dup-cull. Write a single per-game `regionsOf(state, x, y)` returning the cell's tagged uniqueness regions (a `ClassifyRegion` is `{ cells }` + whatever tag you name it by) and feed all three from it, so they can never disagree. Row/column games (Towers/Unequal/Keen) import the shared `rowColRegions(x, y, w)` from `latin-hint.ts`; Solo writes its own (`[row, col, block, diag0, diag1]`). Then the basic-region opening is the bulk `emitObviousCleanStep(steps, grid, pencil, w, regionsOf, text)` (§9.2 — `obviousCandidateMarks` under the hood), and the placement cull is `regionDuplicateMarks(grid, pencil, x, y, n, w, regionsOf(state, x, y))` — all in `candidate-hint.ts`, all de-dup a cell reachable via two regions. (`findRegionDuplicate` — first-filled-cell-with-a-live-dup — remains as a primitive but is no longer the opening.) **A Keen cage is *not* a uniqueness region** — it is an arithmetic constraint a digit may legally repeat under (design D3); `regionsOf` returns row+col only, and the cage logic stays its own deduction.
 >
 > **What stays in the game — and why no shared driver.** The `buildSteps` *walk* is per-game on purpose: the four games diverge in step order (Towers places extreme-clue lines *before* populate), strike-split policy (by-height / by-target-cell / by-cell / intersect-single — dictated by what the narration names singular, §9.3), and journey-continuation tracking (inside the journey vs an external `lastStrikeGroup`). A `buildCandidatePlan` driver was evaluated and **deliberately not built** — it would be a callback shell over a ~6-line loop skeleton, with the per-game walk more readable left in place. The reason union is per-game (each game's `HintReason` adds its own technique arms). Narration is *mostly* per-game (meaning, not mechanics) — but see the next note for the one slice that is shared.
 >
@@ -890,19 +890,26 @@ stale-plan guard (§7.3) all apply here; this section is the pencil-note-*specif
   eliminations are taught honestly rather than baked into the fill; (2) **eliminate** journeys;
   (3) **place** steps. Skip any operation already reflected on the board so a fresh recompute resumes
   from any mid-game position (§7.1 — `towersGame` and `unequalGame` are in `hint-resume.test.ts`).
-- **A givens-bearing Latin game needs a basic-Latin opening — the recorded script won't carry it.** The
+- **Open with a bulk obvious-candidate clean — one step, the Mark-all second press (`clean-obvious-in-hint-populate`).** The
   recording solver enables its recorder *after* `latinSolver.alloc` (so seeding the cube from the givens
-  isn't mistaken for a teachable deduction). Fine for Towers (≈ zero givens), but Unequal carries a few
-  givens, and `pencilAll` fills *every* candidate, so after populate a cell shows a value that the
-  grid-seeded cube already excluded (the given's row/column duplicate) — and the recorded script never
-  strikes it (it was culled, unrecorded, during `alloc`). Don't bake it into a "smart" populate (that's
-  the bake-into-fill §9.2 avoids); instead emit the row/column cull directly in the plan builder as the
-  opening journey *after* populate and *before* the clue eliminations — one `dup`-reasoned `pencilStrike`
-  per placed/given value with live line-duplicates. It re-derives from the current filled cells each
-  recompute, so it stays resume-safe. The scan is the shared `findRegionDuplicate(grid, pencil, w,
-  regionsOf)` (`candidate-hint.ts`); the game supplies its `regionsOf` (Unequal: `rowColRegions`).
-  Exemplar: the step-3 `findRegionDuplicate` call in
-  [`unequal/index.ts`](../../src/native/games/unequal/index.ts).
+  isn't mistaken for a teachable deduction). Fine for Towers (≈ zero givens), but Unequal/Keen/Solo carry
+  givens, and `pencilAll` fills *every* candidate, so after populate a cell shows a value the grid-seeded
+  cube already excluded (the given's row/column/region duplicate) — and the recorded script never strikes
+  it (it was culled, unrecorded, during `alloc`). Don't bake it into a "smart" populate (keep `pencilAll`
+  a plain fill so the player sees the same notes Mark-all gives). Instead emit **one** bulk cleanup step
+  via the shared `emitObviousCleanStep(steps, grid, pencil, w, regionsOf, text)` (`candidate-hint.ts`):
+  it strikes every `obviousCandidateMarks` (each pencilled value already placed in a region) as one
+  `pencilStrike`, flags it `continuesPrevious` when it follows the populate fill ("fill, then clear the
+  obvious ones" as one journey) and standalone otherwise. Gate it to fire **once** (`let cleaned = false`)
+  and run it *as a step in the walk* — not inside `ensurePopulated` — so it also cleans a **pre-noted
+  board** (one where the player already populated): a clean tucked inside `ensurePopulated` never runs
+  when notes already exist, silently regressing that case. The bulk clean **replaces** the old per-given
+  `findRegionDuplicate` opening loop (one taught firing per given) — same eliminations, one step instead of
+  N; later placements keep notes clean via `emitPlacement`, so the loop is fully subsumed. Exemplar: the
+  one-shot `emitObviousCleanStep` call in [`unequal/index.ts`](../../src/native/games/unequal/index.ts).
+  *Gotcha:* the clean step is a multi-cell **and** multi-digit setup step, not a deductive strike — exempt
+  it (by its narration) from any per-firing test asserting "a strike's marks share one cell or one digit"
+  or "every step uses the necessity voice."
 - **`pencilStrike` — the one-firing-one-step note move.** A `set { pencil }` toggle is *one* cell and
   *not idempotent* (a re-applied strike would re-add the candidate). So add a move that **clears** a list
   of candidate bits atomically (`{ type: "pencilStrike"; marks }`): one firing forcing several strikes is
@@ -1094,9 +1101,10 @@ byte-match. Thread instead, and lean on the gate:
   return-after-first-cage (§9.3).
 - **Record placements only; recompute dup strikes in the plan.** Like Keen/latin.ts, a
   `place` records just the placement op — the row/column/block/diagonal copies it rules
-  out are recomputed from the working notes via the shared `regionDuplicateMarks` /
-  `findRegionDuplicate` over Solo's `regionsOf` (`extract-cell-region-helpers`)
-  (the plan filters dup-reason ops out anyway), so don't bother recording them. Solo's
+  out are recomputed from the working notes via the shared `regionDuplicateMarks` (per
+  placement) and the bulk `emitObviousCleanStep` opening (§9.2) over Solo's `regionsOf`
+  (`extract-cell-region-helpers`) (the plan filters dup-reason ops out anyway), so don't
+  bother recording them. Solo's
   `place` also clears the cell's *own* other candidates (the naked collapse); those
   aren't dups and aren't recorded either.
 - **More region types ⇒ a richer reason union + a game-local placement re-deriver.**
