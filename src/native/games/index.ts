@@ -18,6 +18,7 @@ import "./guess/index.ts";
 import "./keen/index.ts";
 import "./mosaic/index.ts";
 import "./palisade/index.ts";
+import "./pattern/index.ts";
 import "./pegs/index.ts";
 import "./range/index.ts";
 import "./samegame/index.ts";

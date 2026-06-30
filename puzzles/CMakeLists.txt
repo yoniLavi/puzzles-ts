@@ -185,13 +185,11 @@ puzzle(palisade
  the clues.")
 
 puzzle(pattern
+  TS_PORTED  # native-TS port (openspec add-pattern-ts-port); no pattern.c/wasm
   DISPLAYNAME "Pattern"
   DESCRIPTION "Pattern puzzle"
   OBJECTIVE "Fill in the pattern in the grid, given only the lengths \
 of runs of black squares.")
-solver(pattern)
-cliprogram(patternpicture pattern.c
-  COMPILE_DEFINITIONS STANDALONE_PICTURE_GENERATOR)
 
 puzzle(pearl
   DISPLAYNAME "Pearl"

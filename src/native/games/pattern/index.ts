@@ -1,0 +1,278 @@
+/**
+ * Pattern (Nonograms) — native TS port of `pattern.c`. Reconstruct a
+ * black/white picture from the run-length clues listed beside every row and
+ * column. Left-drag paints black (FULL), right-drag paints white/empty
+ * (EMPTY), middle-drag clears to undecided (UNKNOWN); a stylus press cycles a
+ * cell's value. The keyboard cursor paints with Ctrl/Shift held and the
+ * select keys cycle a cell.
+ */
+import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import { winFlash } from "../../engine/flash.ts";
+import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
+import {
+  CURSOR_SELECT,
+  CURSOR_SELECT2,
+  gridCursorMove,
+  isCursorMove,
+  LEFT_BUTTON,
+  LEFT_DRAG,
+  LEFT_RELEASE,
+  MIDDLE_BUTTON,
+  MIDDLE_DRAG,
+  MIDDLE_RELEASE,
+  MOD_CTRL,
+  MOD_SHFT,
+  RIGHT_BUTTON,
+  RIGHT_DRAG,
+  RIGHT_RELEASE,
+  stripModifiers,
+} from "../../engine/pointer.ts";
+import { registerGame } from "../../engine/registry.ts";
+import { newPatternDesc } from "./generator.ts";
+import {
+  colours,
+  computeSize,
+  FLASH_TIME,
+  fromCoord,
+  newDrawState,
+  type PatternDrawState,
+  PREFERRED_TILE_SIZE,
+  redraw,
+} from "./render.ts";
+import { findMistakes, solveToString } from "./solver.ts";
+import {
+  decodeParams,
+  defaultParams,
+  encodeParams,
+  executeMove,
+  GRID_EMPTY,
+  GRID_FULL,
+  GRID_UNKNOWN,
+  type GridVal,
+  newState,
+  type PatternMistake,
+  type PatternMove,
+  type PatternParams,
+  type PatternState,
+  type PatternUi,
+  presets,
+  status,
+  textFormat,
+  validateDesc,
+  validateParams,
+} from "./state.ts";
+
+const MOD_STYLUS = 0x0800;
+
+function newUi(_state: PatternState): PatternUi {
+  return {
+    dragging: false,
+    dragStartX: 0,
+    dragStartY: 0,
+    dragEndX: 0,
+    dragEndY: 0,
+    drag: 0,
+    release: 0,
+    state: GRID_UNKNOWN,
+    curX: 0,
+    curY: 0,
+    curVisible: false,
+  };
+}
+
+function interpretMove(
+  state: PatternState,
+  ui: PatternUi,
+  ds: PatternDrawState | null,
+  p: Point,
+  rawButton: number,
+): PatternMove | null | UiUpdate {
+  const control = (rawButton & MOD_CTRL) !== 0;
+  const shift = (rawButton & MOD_SHFT) !== 0;
+  const stylus = (rawButton & MOD_STYLUS) !== 0;
+  const button = stripModifiers(rawButton);
+  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const { w, h } = state.common;
+  const { grid } = state;
+
+  let x = fromCoord(ts, w, p.x);
+  let y = fromCoord(ts, h, p.y);
+
+  // --- press: begin a drag ---
+  if (
+    x >= 0 &&
+    x < w &&
+    y >= 0 &&
+    y < h &&
+    (button === LEFT_BUTTON || button === RIGHT_BUTTON || button === MIDDLE_BUTTON)
+  ) {
+    const curr = grid[y * w + x];
+    ui.dragging = true;
+    if (button === LEFT_BUTTON) {
+      ui.drag = LEFT_DRAG;
+      ui.release = LEFT_RELEASE;
+      ui.state = stylus ? (((curr + 2) % 3) as GridVal) : GRID_FULL; // FULL→EMPTY→UNKNOWN
+    } else if (button === RIGHT_BUTTON) {
+      ui.drag = RIGHT_DRAG;
+      ui.release = RIGHT_RELEASE;
+      ui.state = stylus ? (((curr + 1) % 3) as GridVal) : GRID_EMPTY; // EMPTY→FULL→UNKNOWN
+    } else {
+      ui.drag = MIDDLE_DRAG;
+      ui.release = MIDDLE_RELEASE;
+      ui.state = GRID_UNKNOWN;
+    }
+    ui.dragStartX = ui.dragEndX = x;
+    ui.dragStartY = ui.dragEndY = y;
+    ui.curVisible = false;
+    return UI_UPDATE;
+  }
+
+  // --- drag: snap to a single line (except a middle/UNKNOWN area-clear) ---
+  if (ui.dragging && button === ui.drag) {
+    if (ui.state !== GRID_UNKNOWN) {
+      if (Math.abs(x - ui.dragStartX) > Math.abs(y - ui.dragStartY)) y = ui.dragStartY;
+      else x = ui.dragStartX;
+    }
+    x = Math.max(0, Math.min(w - 1, x));
+    y = Math.max(0, Math.min(h - 1, y));
+    ui.dragEndX = x;
+    ui.dragEndY = y;
+    return UI_UPDATE;
+  }
+
+  // --- release: emit the rectangle fill if it changes anything ---
+  if (ui.dragging && button === ui.release) {
+    const x1 = Math.min(ui.dragStartX, ui.dragEndX);
+    const x2 = Math.max(ui.dragStartX, ui.dragEndX);
+    const y1 = Math.min(ui.dragStartY, ui.dragEndY);
+    const y2 = Math.max(ui.dragStartY, ui.dragEndY);
+    let moveNeeded = false;
+    for (let yy = y1; yy <= y2 && !moveNeeded; yy++) {
+      for (let xx = x1; xx <= x2; xx++) {
+        const i = yy * w + xx;
+        if (!state.common.immutable[i] && grid[i] !== ui.state) {
+          moveNeeded = true;
+          break;
+        }
+      }
+    }
+    ui.dragging = false;
+    if (moveNeeded) {
+      return {
+        type: "fill",
+        value: ui.state,
+        x: x1,
+        y: y1,
+        w: x2 - x1 + 1,
+        h: y2 - y1 + 1,
+      };
+    }
+    return UI_UPDATE;
+  }
+
+  // --- keyboard cursor movement (paints while Ctrl/Shift held) ---
+  if (isCursorMove(button)) {
+    const ox = ui.curX;
+    const oy = ui.curY;
+    const wasVisible = ui.curVisible;
+    const moved = gridCursorMove(button, ui.curX, ui.curY, w, h);
+    if (moved) {
+      ui.curX = moved.x;
+      ui.curY = moved.y;
+    }
+    ui.curVisible = true;
+    const ret = moved || !wasVisible ? UI_UPDATE : null;
+    if (!control && !shift) return ret;
+
+    const newstate: GridVal = control ? (shift ? GRID_UNKNOWN : GRID_FULL) : GRID_EMPTY;
+    if (grid[oy * w + ox] === newstate && grid[ui.curY * w + ui.curX] === newstate) {
+      return ret;
+    }
+    return {
+      type: "fill",
+      value: newstate,
+      x: Math.min(ox, ui.curX),
+      y: Math.min(oy, ui.curY),
+      w: Math.abs(ox - ui.curX) + 1,
+      h: Math.abs(oy - ui.curY) + 1,
+    };
+  }
+
+  // --- cursor select: cycle the current cell ---
+  if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
+    if (!ui.curVisible) {
+      ui.curVisible = true;
+      return UI_UPDATE;
+    }
+    const curr = grid[ui.curY * w + ui.curX];
+    const newstate: GridVal =
+      button === CURSOR_SELECT2
+        ? curr === GRID_UNKNOWN
+          ? GRID_EMPTY
+          : curr === GRID_EMPTY
+            ? GRID_FULL
+            : GRID_UNKNOWN
+        : curr === GRID_UNKNOWN
+          ? GRID_FULL
+          : curr === GRID_FULL
+            ? GRID_EMPTY
+            : GRID_UNKNOWN;
+    return { type: "fill", value: newstate, x: ui.curX, y: ui.curY, w: 1, h: 1 };
+  }
+
+  return null;
+}
+
+export const patternGame: Game<
+  PatternParams,
+  PatternState,
+  PatternMove,
+  PatternUi,
+  PatternDrawState,
+  PatternMistake
+> = {
+  id: "pattern",
+  wantsStatusbar: false,
+  isTimed: false,
+  canSolve: true,
+  canFormatAsText: true,
+  needsRightButton: true,
+
+  defaultParams,
+  presets,
+  encodeParams,
+  decodeParams,
+  validateParams,
+
+  newDesc: (p, rng) => newPatternDesc(p, rng),
+  validateDesc,
+  newState,
+  newUi,
+
+  interpretMove,
+  executeMove,
+  status,
+
+  solve(orig) {
+    const grid = solveToString(orig);
+    if (!grid)
+      return { ok: false, error: "Solving algorithm cannot complete this puzzle" };
+    return { ok: true, move: { type: "solve", grid } };
+  },
+
+  findMistakes,
+  textFormat,
+
+  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  preferredTileSize: PREFERRED_TILE_SIZE,
+  computeSize: (p: PatternParams, ts: number): Size => computeSize(p, ts),
+  setTileSize: (ds, ts) => {
+    ds.tilesize = ts;
+  },
+  newDrawState,
+  redraw,
+
+  flashLength: (a, b) => winFlash(a, b, FLASH_TIME),
+};
+
+registerGame(patternGame);
