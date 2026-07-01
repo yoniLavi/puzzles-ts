@@ -25,6 +25,7 @@ import {
   MOD_NUM_KEYPAD,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
   animLength,
@@ -248,6 +249,45 @@ export const twiddleGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    ...dimensionParamConfig<TwiddleParams>(),
+    {
+      kw: "rotating-block-size",
+      name: "Rotating block size",
+      type: "string",
+      get: (p) => String(p.n),
+      set: (p, v) => {
+        p.n = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "one-number-per-row",
+      name: "One number per row",
+      type: "boolean",
+      get: (p) => p.rowsonly,
+      set: (p, v) => {
+        p.rowsonly = v;
+      },
+    },
+    {
+      kw: "orientation-matters",
+      name: "Orientation matters",
+      type: "boolean",
+      get: (p) => p.orientable,
+      set: (p, v) => {
+        p.orientable = v;
+      },
+    },
+    {
+      kw: "number-of-shuffling-moves",
+      name: "Number of shuffling moves",
+      type: "string",
+      get: (p) => String(p.movetarget),
+      set: (p, v) => {
+        p.movetarget = parseConfigInt(v);
+      },
+    },
+  ],
 
   newDesc: (p, rng) => newDesc(p, rng),
   validateDesc,

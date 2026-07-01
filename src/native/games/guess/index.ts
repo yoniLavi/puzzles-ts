@@ -23,6 +23,7 @@ import {
   LEFT_RELEASE,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
+import { parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
   colours as coloursImpl,
@@ -419,6 +420,53 @@ export const guessGame: Game<GuessParams, GuessState, GuessMove, GuessUi, GuessD
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    {
+      kw: "colours",
+      name: "Colours",
+      type: "string",
+      get: (p) => String(p.ncolours),
+      set: (p, v) => {
+        p.ncolours = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "pegs-per-guess",
+      name: "Pegs per guess",
+      type: "string",
+      get: (p) => String(p.npegs),
+      set: (p, v) => {
+        p.npegs = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "guesses",
+      name: "Guesses",
+      type: "string",
+      get: (p) => String(p.nguesses),
+      set: (p, v) => {
+        p.nguesses = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "allow-blanks",
+      name: "Allow blanks",
+      type: "boolean",
+      get: (p) => p.allowBlank,
+      set: (p, v) => {
+        p.allowBlank = v;
+      },
+    },
+    {
+      kw: "allow-duplicates",
+      name: "Allow duplicates",
+      type: "boolean",
+      get: (p) => p.allowMultiple,
+      set: (p, v) => {
+        p.allowMultiple = v;
+      },
+    },
+  ],
   describeParams: (p) => ({
     colours: String(p.ncolours),
     "pegs-per-guess": String(p.npegs),

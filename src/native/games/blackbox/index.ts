@@ -22,6 +22,7 @@ import {
   LEFT_RELEASE,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
   animLength,
@@ -359,6 +360,30 @@ export const blackboxGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    ...dimensionParamConfig<BlackboxParams>(),
+    {
+      // Upstream's single "No. of balls" C_STRING: `N` (fixed) or `N-M`
+      // (a range). Parses back onto minballs/maxballs; an empty/garbled
+      // field yields 0, which validateParams rejects with its message.
+      kw: "no-of-balls",
+      name: "No. of balls",
+      type: "string",
+      get: (p) =>
+        p.minballs === p.maxballs
+          ? String(p.minballs)
+          : `${p.minballs}-${p.maxballs}`,
+      set: (p, v) => {
+        const dash = v.indexOf("-");
+        if (dash >= 0) {
+          p.minballs = parseConfigInt(v.slice(0, dash));
+          p.maxballs = parseConfigInt(v.slice(dash + 1));
+        } else {
+          p.minballs = p.maxballs = parseConfigInt(v);
+        }
+      },
+    },
+  ],
   describeParams: (p) => ({
     "no-of-balls":
       p.minballs === p.maxballs

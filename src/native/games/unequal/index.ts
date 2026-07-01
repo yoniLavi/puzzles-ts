@@ -61,6 +61,7 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
@@ -96,6 +97,7 @@ import {
   DIFF_RECURSIVE,
   decodeParams,
   defaultParams,
+  diffFromLevel,
   diffName,
   diffToLevel,
   encodeParams,
@@ -790,6 +792,37 @@ export const unequalGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    {
+      kw: "mode",
+      name: "Mode",
+      type: "choices",
+      choices: ["Unequal", "Adjacent"],
+      get: (p) => (p.mode === "adjacent" ? 1 : 0),
+      set: (p, v) => {
+        p.mode = v === 1 ? "adjacent" : "unequal";
+      },
+    },
+    {
+      kw: "size",
+      name: "Size",
+      type: "string",
+      get: (p) => String(p.order),
+      set: (p, v) => {
+        p.order = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "difficulty",
+      name: "Difficulty",
+      type: "choices",
+      choices: ["Trivial", "Easy", "Tricky", "Extreme", "Recursive"],
+      get: (p) => diffToLevel(p.diff),
+      set: (p, v) => {
+        p.diff = diffFromLevel(v);
+      },
+    },
+  ],
   // Keys/shape match the `unequal` config template in augmentation.ts
   // ("{mode:Unequal|Adjacent}: {size}x{size} {difficulty:...}").
   describeParams: (p): ConfigValues => ({

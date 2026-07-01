@@ -17,6 +17,7 @@ export type {
   HintResult,
   HintStep,
   HintTrackVerdict,
+  ParamConfigItem,
   PresetMenu,
   SolveResult,
   UiUpdate,
@@ -28,7 +29,7 @@ export {
   type NotifyChange,
   type NotifyTimerState,
 } from "./midend.ts";
-export { parseLeadingInt } from "./params.ts";
+export { dimensionParamConfig, parseConfigInt, parseLeadingInt } from "./params.ts";
 export {
   CURSOR_DOWN,
   CURSOR_LEFT,

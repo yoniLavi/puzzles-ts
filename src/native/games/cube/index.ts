@@ -21,6 +21,7 @@ import {
   MOD_MASK,
   MOD_NUM_KEYPAD,
 } from "../../engine/pointer.ts";
+import { parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { newDesc } from "./generator.ts";
 import { Direction } from "./grid.ts";
@@ -364,6 +365,36 @@ export const cubeGame: Game<CubeParams, CubeState, CubeMove, CubeUi, CubeDrawSta
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    {
+      kw: "type-of-solid",
+      name: "Type of solid",
+      type: "choices",
+      choices: ["Tetrahedron", "Cube", "Octahedron", "Icosahedron"],
+      get: (p) => p.solid,
+      set: (p, v) => {
+        p.solid = v;
+      },
+    },
+    {
+      kw: "width-top",
+      name: "Width / top",
+      type: "string",
+      get: (p) => String(p.d1),
+      set: (p, v) => {
+        p.d1 = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "height-bottom",
+      name: "Height / bottom",
+      type: "string",
+      get: (p) => String(p.d2),
+      set: (p, v) => {
+        p.d2 = parseConfigInt(v);
+      },
+    },
+  ],
   // Keys/shape match the `cube` config template in augmentation.ts
   // ("{type-of-solid:Tetrahedron|Cube|Octahedron|Icosahedron}, {width-top}x{height-bottom}"):
   // `type-of-solid` is the zero-based SolidType index, the dimensions are d1/d2.

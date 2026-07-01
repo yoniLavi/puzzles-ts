@@ -29,6 +29,7 @@ import {
   LEFT_DRAG,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { RandomState } from "../../random/index.ts";
 import { newFillingDesc } from "./generator.ts";
@@ -324,6 +325,7 @@ export const fillingGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: dimensionParamConfig(),
 
   newDesc: (p: FillingParams, rng: RandomState) => newFillingDesc(p, rng),
   validateDesc,

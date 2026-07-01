@@ -19,7 +19,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { parseDimensions } from "../../engine/params.ts";
+import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -747,6 +747,19 @@ export const galaxiesGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    ...dimensionParamConfig<GalaxiesParams>(),
+    {
+      kw: "difficulty",
+      name: "Difficulty",
+      type: "choices",
+      choices: ["Normal", "Unreasonable"],
+      get: (p) => p.diff,
+      set: (p, v) => {
+        p.diff = v as GalaxiesDiff;
+      },
+    },
+  ],
   describeParams: (p) => ({ difficulty: String(p.diff) }),
 
   newDesc(p: GalaxiesParams, rng: RandomState) {

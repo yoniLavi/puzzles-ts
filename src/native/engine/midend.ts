@@ -90,6 +90,21 @@ export interface EngineCore {
   getParams(): string;
   setParams(params: string): string | undefined;
   getPresets(): PresetMenuEntry[];
+  /** The game's **custom-params** form as the app's config-dialog
+   * shapes, built from its declarative `paramConfig`. An empty item set
+   * for a game that declares none (its custom dialog stays empty). */
+  getCustomParamsConfig(): ConfigDescription;
+  /** Current custom-params values, read off the live params. */
+  getCustomParams(): ConfigValues;
+  /** Apply submitted custom-params values onto a copy of the params,
+   * validate with the game's own `validateParams`, and — on success —
+   * adopt them (so the app generates a new game at those params) or — on
+   * failure — return the validation error string without applying. */
+  setCustomParams(values: ConfigValues): string | undefined;
+  /** Encode the params described by `values` (built the same way as
+   * `setCustomParams`) to a game-ID param string, or `#ERROR:<reason>`
+   * when they fail `validateParams` — the form's preview path. */
+  encodeCustomParams(values: ConfigValues): string;
   /** The game's preferences as the app's config-dialog shapes. An empty
    * item set for a game that declares no `prefs`. */
   getPreferencesConfig(): ConfigDescription;
@@ -811,6 +826,77 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     return root.submenu ?? [root];
   }
 
+  // --- custom params ----------------------------------------------
+
+  /** Build the app's "Custom type…" config description from the game's
+   * declarative `paramConfig` (empty items when the game has none, which
+   * keeps the dialog empty — correct for a preset-only game). */
+  getCustomParamsConfig(): ConfigDescription {
+    const items: ConfigDescription["items"] = {};
+    for (const item of this.game.paramConfig ?? []) {
+      items[item.kw] =
+        item.type === "boolean"
+          ? { type: "boolean", name: item.name }
+          : item.type === "choices"
+            ? { type: "choices", name: item.name, choicenames: item.choices }
+            : { type: "string", name: item.name };
+    }
+    return { title: this.game.id, items };
+  }
+
+  /** Current custom-params values read off the live params: a string for
+   * a text field, a boolean for a checkbox, the selected zero-based index
+   * for a choices item. */
+  getCustomParams(): ConfigValues {
+    const values: ConfigValues = {};
+    for (const item of this.game.paramConfig ?? []) {
+      values[item.kw] = item.get(this.params);
+    }
+    return values;
+  }
+
+  /** Map submitted form `values` onto a *copy* of the current params
+   * (never the live params, so a rejected edit leaves the running game
+   * untouched), coercing each to its item's type exactly like
+   * `applyPrefs`. Only keys the form actually submitted are applied;
+   * the rest keep their current value. */
+  private paramsFromCustomValues(values: ConfigValues): Params {
+    const draft = structuredClone(this.params);
+    for (const item of this.game.paramConfig ?? []) {
+      const v = values[item.kw];
+      if (v === undefined) continue;
+      if (item.type === "boolean") {
+        item.set(draft, v === true || v === "true" || v === 1);
+      } else if (item.type === "choices") {
+        const n = Number(v);
+        if (!Number.isNaN(n)) item.set(draft, n);
+      } else {
+        item.set(draft, String(v));
+      }
+    }
+    return draft;
+  }
+
+  setCustomParams(values: ConfigValues): string | undefined {
+    if (!this.game.paramConfig?.length) return undefined;
+    const draft = this.paramsFromCustomValues(values);
+    const err = this.game.validateParams(draft, true);
+    if (err) return err;
+    this.params = draft;
+    this.emitParamsChange();
+    return undefined;
+  }
+
+  encodeCustomParams(values: ConfigValues): string {
+    if (!this.game.paramConfig?.length) {
+      return this.game.encodeParams(this.params, true);
+    }
+    const draft = this.paramsFromCustomValues(values);
+    const err = this.game.validateParams(draft, true);
+    if (err) return `#ERROR:${err}`;
+    return this.game.encodeParams(draft, true);
+  }
+
   // --- preferences -------------------------------------------------
 
   /** Build the app's preferences config-dialog description from the
@@ -1104,11 +1190,21 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   }
 
   private emitIdChange(): void {
-    const p = this.game.encodeParams(this.params, false);
     this.emit({
       type: "game-id-change",
-      currentGameId: `${p}:${this.desc}`,
-      randomSeed: this.seed ? `${p}#${this.seed}` : undefined,
+      // Descriptive game ID (`params:desc`): the desc fully specifies the
+      // puzzle, so the params need not carry the difficulty suffix
+      // (upstream `midend_get_game_id` → `encode_params(..., FALSE)`).
+      currentGameId: `${this.game.encodeParams(this.params, false)}:${this.desc}`,
+      // Random seed (`params#seed`): regenerating the puzzle from the seed
+      // needs the *full* params, difficulty included (upstream
+      // `midend_get_random_seed` → `encode_params(..., TRUE)`). The app's
+      // `currentParams` prefers this form precisely because it is the
+      // descriptive one — a `false` encoding here dropped difficulty from
+      // the type-menu label and from shared seeds.
+      randomSeed: this.seed
+        ? `${this.game.encodeParams(this.params, true)}#${this.seed}`
+        : undefined,
     });
   }
 

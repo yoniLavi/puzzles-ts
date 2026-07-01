@@ -15,11 +15,12 @@
  * full `GameDrawing` API, `colours(defaultBackground)`, and the
  * `UI_UPDATE` input result. The on-screen keys surface is modelled too
  * (`requestKeys` forwards `Game.requestKeys` via the midend —
- * `add-ts-onscreen-keys`). The custom-params / preferences surface still
- * returns the empty-but-valid shape: upstream's `config_item` UI
- * machinery is a later cross-cutting change, not modelled here yet. For a
- * game whose only configuration is reachable via presets and game IDs
- * (e.g. Flip) this is the correct behaviour, not a stub masking a defect.
+ * `add-ts-onscreen-keys`). The custom-params AND preferences surfaces
+ * are both modelled: each forwards to the midend, which builds the app's
+ * config dialog from the game's declarative `paramConfig` / `prefs` and
+ * parses the submitted values back. A game that declares neither yields
+ * an empty-but-valid config (an empty custom dialog is correct for a
+ * preset-only game like Flip, not a stub masking a defect).
  */
 
 import { transfer } from "comlink";
@@ -39,8 +40,6 @@ import type {
 } from "../../puzzle/types.ts";
 import type { EngineCore } from "./midend.ts";
 import { getTsGame } from "./registry.ts";
-
-const EMPTY_CONFIG: ConfigDescription = { title: "", items: {} };
 
 export class TsWorkerPuzzle implements PuzzleEngineSurface {
   private readonly engine: EngineCore;
@@ -140,15 +139,18 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
     return this.engine.getPresets();
   }
 
-  // Custom-params / preferences UI surface: see file header.
+  // Custom-params / preferences UI surface: see file header. The engine
+  // builds the config from the game's declarative `paramConfig` and
+  // reads/writes the values off a params copy; the app's
+  // `puzzle-custom-params-form` drives these unchanged.
   getCustomParamsConfig(): ConfigDescription {
-    return { ...EMPTY_CONFIG, title: this.puzzleId };
+    return this.engine.getCustomParamsConfig();
   }
   getCustomParams(): ConfigValues {
-    return {};
+    return this.engine.getCustomParams();
   }
-  setCustomParams(_values: ConfigValues): string | undefined {
-    return undefined;
+  setCustomParams(values: ConfigValues): string | undefined {
+    return this.engine.setCustomParams(values);
   }
   decodeCustomParams(params: string): ConfigValues | string {
     const game = getTsGame(this.puzzleId);
@@ -177,8 +179,8 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
       return String(e);
     }
   }
-  encodeCustomParams(_values: ConfigValues): string {
-    return this.engine.getParams();
+  encodeCustomParams(values: ConfigValues): string {
+    return this.engine.encodeCustomParams(values);
   }
   // Preferences ARE modelled on the TS path: the engine builds the
   // config from the game's declarative `prefs` and reads/writes the

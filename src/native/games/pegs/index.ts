@@ -33,7 +33,7 @@ import {
   LEFT_DRAG,
   LEFT_RELEASE,
 } from "../../engine/pointer.ts";
-import { parseDimensions } from "../../engine/params.ts";
+import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
 import { SortedMultiset } from "../../engine/sorted-multiset.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 
@@ -1045,6 +1045,19 @@ export const pegsGame: Game<PegsParams, PegsState, PegsMove, PegsUi, PegsDrawSta
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    {
+      kw: "board-type",
+      name: "Board type",
+      type: "choices",
+      choices: ["Cross", "Octagon", "Random"],
+      get: (p) => p.type,
+      set: (p, v) => {
+        p.type = v;
+      },
+    },
+    ...dimensionParamConfig<PegsParams>(),
+  ],
   describeParams: (p) => ({ "board-type": String(p.type) }),
 
   newDesc: (p, rng) => newDesc(p, rng),

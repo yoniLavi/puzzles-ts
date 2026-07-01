@@ -60,6 +60,7 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
@@ -96,6 +97,7 @@ import {
   DIFF_UNREASONABLE,
   decodeParams,
   defaultParams,
+  diffFromLevel,
   diffName,
   diffToLevel,
   encodeParams,
@@ -883,6 +885,27 @@ export const towersGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    {
+      kw: "grid-size",
+      name: "Grid size",
+      type: "string",
+      get: (p) => String(p.w),
+      set: (p, v) => {
+        p.w = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "difficulty",
+      name: "Difficulty",
+      type: "choices",
+      choices: ["Easy", "Hard", "Extreme", "Unreasonable"],
+      get: (p) => diffToLevel(p.diff),
+      set: (p, v) => {
+        p.diff = diffFromLevel(v);
+      },
+    },
+  ],
   // Keys/shape match the `towers` config template in augmentation.ts
   // ("{grid-size}x{grid-size} {difficulty:Easy|Hard|Extreme|Unreasonable}"):
   // `grid-size` is the value, `difficulty` the zero-based label index.

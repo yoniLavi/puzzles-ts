@@ -300,6 +300,42 @@ permanent guard exists: [`augmentation.test.ts`](../../src/puzzle/augmentation.t
 fails on any unsubstituted `{field}` for any TS game (caught on the Towers dev smoke,
 and singles/cube/untangle were fixed under it).
 
+**The "Custom type…" dialog comes from `Game.paramConfig` (since
+`add-ts-custom-params-config`).** `describeParams` above only feeds the type-menu
+*summary string*; the editable **form** is a separate optional hook, declarative like
+`prefs` but over `Params`: an ordered `ParamConfigItem<Params>[]`, each
+`{ kw, name, type: "string" | "boolean" | "choices", choices?, get(p), set(p, v) }`.
+The midend builds the app's `ConfigDescription` from it and parses a submit back onto
+a **copy** of the params, validated by the game's own `validateParams` (so the dialog
+rejects exactly what a game ID would). A plain w/h game is one line —
+`paramConfig: dimensionParamConfig()` (from `engine/params.ts`); a game with extra
+fields spreads that then appends. **Conventions that keep it correct:**
+- **Keys match the C config slug** (`"Width"`→`width`, `"Grid size"`→`grid-size`,
+  `"Difficulty"`→`difficulty`), so a TS and a C build show the identical form. `get`
+  mirrors `describeParams` (index for a choice, string for a numeric field); `set` is
+  its inverse (a `diffFromLevel`, `v === 1 ? "adjacent" : "unequal"`, etc.).
+- **Numeric `set` uses `parseConfigInt(v)`, never `Number.parseInt`** — atoi
+  semantics: empty/garbled → 0, which `validateParams` then rejects with its message.
+  `Number.parseInt` yields `NaN`, which slips past every `<`/`>` bound check.
+- **Non-`w`/`h` dimension games write their own width/height items** (Mosaic
+  `width`/`height`, Unruly `w2`/`h2`) rather than the shared helper; square games
+  (Keen/Towers/Unequal, Solo `c`/`r`) supply a single size item.
+- **Cross-field folds run in array order** — the midend applies each `set` in order,
+  so Solo's `jigsaw` item (`c *= r; r = 1`) must come *after* its column/row items,
+  matching upstream `custom_params`.
+- **The round-trip guard** (`custom-params.test.ts`) drives every registered game's
+  presets through `get`∘`set` and asserts identity — it catches a wrong inverse for
+  free, but *not* a wrong label/choice list, so eyeball those against
+  `augmentation.ts`.
+Exemplars: [`pattern/index.ts`](../../src/native/games/pattern/index.ts) (pure w/h),
+[`towers/index.ts`](../../src/native/games/towers/index.ts) (size + difficulty),
+[`solo/index.ts`](../../src/native/games/solo/index.ts) (the jigsaw fold).
+**Gotcha (cost a dev-verify cycle):** the type-menu *label* reads `currentParams`,
+which derives from the `params#seed` random-seed the midend emits — that seed must be
+`encodeParams(_, true)` (full, incl. difficulty), or a custom difficulty shows as the
+default in the header even though the board generated correctly. Fixed in
+`Midend.emitIdChange`; if a new game's header ignores a suffix, check that first.
+
 **Per-game preferences go through the `Game.prefs` hook (since Untangle).** A game
 with upstream `get_prefs`/`set_prefs` declares an optional `prefs: GamePref<Ui>[]` —
 each item is `{ kw, name, type: "boolean" }` or

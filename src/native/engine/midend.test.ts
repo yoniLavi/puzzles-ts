@@ -268,6 +268,35 @@ describe("Midend params + presets", () => {
     expect(m.newGameFromId("nope")).toMatch(/Invalid game ID/);
     expect(m.newGameFromId("t2:bad!")).toBe("bad desc");
   });
+
+  it("random-seed id carries FULL params (difficulty), game id does not", () => {
+    // Regression: `emitIdChange` encoded both the `params:desc` id and the
+    // `params#seed` seed with `full=false`, dropping a difficulty-style
+    // suffix from the seed. The app's `currentParams` prefers the seed
+    // form, so the type-menu label lost the difficulty (Extreme shown as
+    // the default). A game whose `encodeParams` appends a suffix only at
+    // `full=true` (like every difficulty game) exercises the split.
+    const suffixGame: typeof fakeGame = {
+      ...fakeGame,
+      encodeParams: (p, full) => `t${p.target}${full ? "X" : ""}`,
+      decodeParams: (s) => {
+        const m = /^t(\d+)X?$/.exec(s);
+        if (!m) throw new Error(`bad params "${s}"`);
+        return { target: Number(m[1]) };
+      },
+    };
+    const h = harness(suffixGame);
+    h.m.newGame();
+    const id = h.last("game-id-change") as Extract<
+      ChangeNotification,
+      { type: "game-id-change" }
+    >;
+    // Seed form regenerates the puzzle ⇒ must include the full suffix.
+    expect(id.randomSeed).toMatch(/^t3X#[0-9a-f]+$/);
+    // Descriptive form ⇒ desc specifies the puzzle, suffix omitted.
+    expect(id.currentGameId).toMatch(/^t3:/);
+    expect(id.currentGameId).not.toContain("X");
+  });
 });
 
 describe("Midend.requestKeys forwards Game.requestKeys", () => {
@@ -733,15 +762,17 @@ interface StrikeState {
 type StrikeMove = { type: "strike"; i: number } | { type: "noop" };
 const present = (s: StrikeState, i: number) => (s.struck & (1 << i)) === 0;
 
-function strikeGame(opts: { sideEffect: boolean }): Game<
-  { n: number },
-  StrikeState,
-  StrikeMove,
-  null,
-  { started: boolean }
-> {
+function strikeGame(opts: {
+  sideEffect: boolean;
+}): Game<{ n: number }, StrikeState, StrikeMove, null, { started: boolean }> {
   return {
-    ...(fakeGame as unknown as Game<{ n: number }, StrikeState, StrikeMove, null, { started: boolean }>),
+    ...(fakeGame as unknown as Game<
+      { n: number },
+      StrikeState,
+      StrikeMove,
+      null,
+      { started: boolean }
+    >),
     id: "__strike__",
     defaultParams: () => ({ n: 3 }),
     presets: () => ({ title: "root", params: { n: 3 } }),
@@ -789,7 +820,9 @@ function strikeGame(opts: { sideEffect: boolean }): Game<
   };
 }
 
-function strikeInternals(m: Midend<{ n: number }, StrikeState, StrikeMove, null, { started: boolean }>) {
+function strikeInternals(
+  m: Midend<{ n: number }, StrikeState, StrikeMove, null, { started: boolean }>,
+) {
   return m as unknown as { activeHint: { steps: StrikeMove[]; index: number } | null };
 }
 
@@ -826,7 +859,10 @@ describe("Midend re-validates a kept plan (a displayed step is never stale)", ()
     // A scripted replay (no hintKeepTrack) strikes 0 and 2 — side effects then
     // cover 1, so every stored step is resolved but the plan is still stored.
     m.playMoves([{ type: "strike", i: 0 }]);
-    expect(strikeInternals(m).activeHint, "playMoves leaves the plan untouched").not.toBeNull();
+    expect(
+      strikeInternals(m).activeHint,
+      "playMoves leaves the plan untouched",
+    ).not.toBeNull();
     m.playMoves([{ type: "strike", i: 2 }]);
     // The board is now fully solved; re-asking re-validates, finds the drained
     // plan, and recomputes — which refuses on a solved board.
