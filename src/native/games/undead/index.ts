@@ -43,6 +43,7 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
@@ -65,6 +66,7 @@ import {
   clueIndex,
   decodeParams,
   defaultParams,
+  diffFromLevel,
   diffName,
   diffToLevel,
   encodeParams,
@@ -809,6 +811,19 @@ export const undeadGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    ...dimensionParamConfig<UndeadParams>(),
+    {
+      kw: "difficulty",
+      name: "Difficulty",
+      type: "choices",
+      choices: ["Easy", "Normal", "Tricky"],
+      get: (p) => diffToLevel(p.diff),
+      set: (p, v) => {
+        p.diff = diffFromLevel(v);
+      },
+    },
+  ],
   // Keys match the `undead` config template in augmentation.ts
   // ("{width}x{height} {difficulty:Easy|Normal|Tricky}").
   describeParams: (p): ConfigValues => ({

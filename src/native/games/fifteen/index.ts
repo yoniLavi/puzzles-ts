@@ -21,6 +21,7 @@ import {
   LEFT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { computeHint } from "./solver.ts";
 import {
@@ -552,6 +553,7 @@ export const fifteenGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: dimensionParamConfig(),
 
   newDesc: (p, rng) => newDesc(p, rng),
   validateDesc,

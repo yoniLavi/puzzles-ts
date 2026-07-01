@@ -15,6 +15,7 @@
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 
 import {
+  dimensionParamConfig,
   fromCoord as fromCoordE,
   type Game,
   type GameDrawing,
@@ -412,6 +413,20 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
     }
     return null;
   },
+
+  paramConfig: [
+    ...dimensionParamConfig<FlipParams>(),
+    {
+      kw: "shape-type",
+      name: "Shape type",
+      type: "choices",
+      choices: ["Crosses", "Random"],
+      get: (p) => (p.matrixType === "crosses" ? 0 : 1),
+      set: (p, v) => {
+        p.matrixType = v === 0 ? "crosses" : "random";
+      },
+    },
+  ],
 
   describeParams(p) {
     return { "shape-type": p.matrixType === "crosses" ? "0" : "1" };

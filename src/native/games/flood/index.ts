@@ -16,6 +16,7 @@ import {
   LEFT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
   colours,
@@ -252,6 +253,27 @@ export const floodGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    ...dimensionParamConfig<FloodParams>(),
+    {
+      kw: "colours",
+      name: "Colours",
+      type: "string",
+      get: (p) => String(p.colours),
+      set: (p, v) => {
+        p.colours = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "extra-moves-permitted",
+      name: "Extra moves permitted",
+      type: "string",
+      get: (p) => String(p.leniency),
+      set: (p, v) => {
+        p.leniency = parseConfigInt(v);
+      },
+    },
+  ],
   describeParams: (p) => ({
     colours: String(p.colours),
     "extra-moves-permitted": String(p.leniency),

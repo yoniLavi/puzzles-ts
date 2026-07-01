@@ -26,6 +26,7 @@ import {
   MOD_SHFT,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
   CursorMode,
@@ -1614,6 +1615,18 @@ export const sixteenGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    ...dimensionParamConfig<SixteenParams>(),
+    {
+      kw: "number-of-shuffling-moves",
+      name: "Number of shuffling moves",
+      type: "string",
+      get: (p) => String(p.movetarget),
+      set: (p, v) => {
+        p.movetarget = parseConfigInt(v);
+      },
+    },
+  ],
   describeParams: (p) => ({
     "number-of-shuffling-moves": String(p.movetarget),
   }),

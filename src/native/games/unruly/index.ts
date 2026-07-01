@@ -27,6 +27,7 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { newDesc } from "./generator.ts";
 import {
@@ -354,6 +355,46 @@ export const unrulyGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  // Unruly's params use `w2`/`h2` (the full grid dims) rather than `w`/`h`.
+  paramConfig: [
+    {
+      kw: "width",
+      name: "Width",
+      type: "string",
+      get: (p) => String(p.w2),
+      set: (p, v) => {
+        p.w2 = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "height",
+      name: "Height",
+      type: "string",
+      get: (p) => String(p.h2),
+      set: (p, v) => {
+        p.h2 = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "difficulty",
+      name: "Difficulty",
+      type: "choices",
+      choices: ["Trivial", "Easy", "Normal"],
+      get: (p) => p.diff,
+      set: (p, v) => {
+        p.diff = v;
+      },
+    },
+    {
+      kw: "unique-rows-and-columns",
+      name: "Unique rows and columns",
+      type: "boolean",
+      get: (p) => p.unique,
+      set: (p, v) => {
+        p.unique = v;
+      },
+    },
+  ],
   describeParams: (p) => ({
     width: String(p.w2),
     height: String(p.h2),

@@ -20,6 +20,7 @@ import {
   RIGHT_RELEASE,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
   colours,
@@ -235,6 +236,36 @@ export const mosaicGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  // Mosaic's params use `width`/`height` (not the shared helper's `w`/`h`).
+  paramConfig: [
+    {
+      kw: "width",
+      name: "Width",
+      type: "string",
+      get: (p) => String(p.width),
+      set: (p, v) => {
+        p.width = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "height",
+      name: "Height",
+      type: "string",
+      get: (p) => String(p.height),
+      set: (p, v) => {
+        p.height = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "aggressive-generation",
+      name: "Aggressive generation",
+      type: "boolean",
+      get: (p) => p.aggressive,
+      set: (p, v) => {
+        p.aggressive = v;
+      },
+    },
+  ],
   describeParams: (p) => ({
     width: String(p.width),
     height: String(p.height),

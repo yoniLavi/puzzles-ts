@@ -26,6 +26,7 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
   colours,
@@ -427,6 +428,18 @@ export const palisadeGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    ...dimensionParamConfig<PalisadeParams>(),
+    {
+      kw: "region-size",
+      name: "Region size",
+      type: "string",
+      get: (p) => String(p.k),
+      set: (p, v) => {
+        p.k = parseConfigInt(v);
+      },
+    },
+  ],
   describeParams: (p): ConfigValues => ({
     width: String(p.w),
     height: String(p.h),

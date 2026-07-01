@@ -33,6 +33,7 @@ import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import {
   type Game,
+  parseConfigInt,
   registerGame,
   UI_UPDATE,
   type UiUpdate,
@@ -179,6 +180,17 @@ export const untangleGame: Game<
   // Key matches the `untangle` config template in augmentation.ts
   // ("{number-of-points} points"); `n` is not a w/h base param.
   describeParams: (p) => ({ "number-of-points": p.n }),
+  paramConfig: [
+    {
+      kw: "number-of-points",
+      name: "Number of points",
+      type: "string",
+      get: (p) => String(p.n),
+      set: (p, v) => {
+        p.n = parseConfigInt(v);
+      },
+    },
+  ],
   presets: () => ({
     title: "Untangle",
     submenu: [6, 10, 15, 20, 25].map((n) => ({ title: `${n} points`, params: { n } })),

@@ -30,6 +30,7 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
   colours,
@@ -463,6 +464,7 @@ export const rangeGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: dimensionParamConfig(),
 
   newDesc: (p, rng) => ({ desc: encodeDesc(p.w * p.h, generateGrid(p, rng)) }),
   validateDesc,

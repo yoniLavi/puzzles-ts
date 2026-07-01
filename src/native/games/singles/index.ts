@@ -29,6 +29,7 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { newSinglesDesc } from "./generator.ts";
 import {
@@ -56,6 +57,7 @@ import {
   DIFF_ANY,
   decodeParams,
   defaultParams,
+  diffFromLevel,
   diffName,
   diffToLevel,
   encodeParams,
@@ -532,6 +534,19 @@ export const singlesGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    ...dimensionParamConfig<SinglesParams>(),
+    {
+      kw: "difficulty",
+      name: "Difficulty",
+      type: "choices",
+      choices: ["Easy", "Tricky"],
+      get: (p) => diffToLevel(p.diff),
+      set: (p, v) => {
+        p.diff = diffFromLevel(v);
+      },
+    },
+  ],
   // Keys/shape match the `singles` config template in augmentation.ts
   // ("{width}x{height} {difficulty:Easy|Tricky}"): width/height come from the
   // worker adapter's w/h base, `difficulty` is the zero-based label index.

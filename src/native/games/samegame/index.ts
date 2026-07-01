@@ -10,6 +10,7 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
   colours,
@@ -242,6 +243,39 @@ export const samegameGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  paramConfig: [
+    ...dimensionParamConfig<SamegameParams>(),
+    {
+      kw: "no-of-colours",
+      name: "No. of colours",
+      type: "string",
+      get: (p) => String(p.ncols),
+      set: (p, v) => {
+        p.ncols = parseConfigInt(v);
+      },
+    },
+    {
+      // Upstream C_CHOICES: `scoresub = selected + 1` (index 0 = "(n-1)²",
+      // index 1 = "(n-2)²"), mirroring describeParams' `scoresub - 1`.
+      kw: "scoring-system",
+      name: "Scoring system",
+      type: "choices",
+      choices: ["(n-1)²", "(n-2)²"],
+      get: (p) => p.scoresub - 1,
+      set: (p, v) => {
+        p.scoresub = v + 1;
+      },
+    },
+    {
+      kw: "ensure-solubility",
+      name: "Ensure solubility",
+      type: "boolean",
+      get: (p) => p.soluble,
+      set: (p, v) => {
+        p.soluble = v;
+      },
+    },
+  ],
   describeParams: (p) => ({
     "no-of-colours": String(p.ncols),
     // C_CHOICES `selected = scoresub - 1` (0 = "(n-1)^2", 1 = "(n-2)^2").

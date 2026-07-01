@@ -55,6 +55,7 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
+import { parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
@@ -878,6 +879,98 @@ export const soloGame: Game<
   decodeParams,
   validateParams,
   // Keys match the custom `solo` describeConfig in augmentation.ts.
+  // Mirrors upstream `solo` custom_params: read columns and rows, then
+  // fold jigsaw (`c *= r; r = 1`) — so the `jigsaw` item MUST come after
+  // the column/row items, since the midend applies `set`s in array order
+  // and jigsaw's setter reads the just-updated `c`/`r`. A stored jigsaw
+  // board is `r === 1, c === order` (upstream shows rows as 1, jigsaw
+  // checked); unchecking jigsaw leaves c/r as-is, exactly as upstream.
+  paramConfig: [
+    {
+      kw: "columns-of-sub-blocks",
+      name: "Columns of sub-blocks",
+      type: "string",
+      get: (p) => String(p.c),
+      set: (p, v) => {
+        p.c = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "rows-of-sub-blocks",
+      name: "Rows of sub-blocks",
+      type: "string",
+      get: (p) => String(p.r),
+      set: (p, v) => {
+        p.r = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "x",
+      name: '"X" (require every number in each main diagonal)',
+      type: "boolean",
+      get: (p) => p.xtype,
+      set: (p, v) => {
+        p.xtype = v;
+      },
+    },
+    {
+      kw: "jigsaw",
+      name: "Jigsaw (irregularly shaped sub-blocks)",
+      type: "boolean",
+      get: (p) => p.r === 1,
+      set: (p, v) => {
+        if (v) {
+          p.c *= p.r;
+          p.r = 1;
+        }
+      },
+    },
+    {
+      kw: "killer",
+      name: "Killer (digit sums)",
+      type: "boolean",
+      get: (p) => p.killer,
+      set: (p, v) => {
+        p.killer = v;
+      },
+    },
+    {
+      kw: "symmetry",
+      name: "Symmetry",
+      type: "choices",
+      choices: [
+        "None",
+        "2-way rotation",
+        "4-way rotation",
+        "2-way mirror",
+        "2-way diagonal mirror",
+        "4-way mirror",
+        "4-way diagonal mirror",
+        "8-way mirror",
+      ],
+      get: (p) => p.symm,
+      set: (p, v) => {
+        p.symm = v;
+      },
+    },
+    {
+      kw: "difficulty",
+      name: "Difficulty",
+      type: "choices",
+      choices: [
+        "Trivial",
+        "Basic",
+        "Intermediate",
+        "Advanced",
+        "Extreme",
+        "Unreasonable",
+      ],
+      get: (p) => p.diff,
+      set: (p, v) => {
+        p.diff = v;
+      },
+    },
+  ],
   describeParams: (p): ConfigValues => ({
     "columns-of-sub-blocks": p.c,
     "rows-of-sub-blocks": p.r,

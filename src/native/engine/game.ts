@@ -117,6 +117,46 @@ export type GamePref<Ui> =
       set(ui: Ui, value: number): void;
     };
 
+/** One configurable field of a game's **custom params** — the params
+ * analogue of `GamePref`, describing the "Custom type…" dialog. The
+ * engine builds the app's `ConfigDescription` from this list and parses
+ * a submitted `ConfigValues` back through it; validity is decided by the
+ * game's own `validateParams`, so the custom dialog rejects exactly the
+ * params the game-ID path would. `get`/`set` read/write one field of a
+ * `Params` object — the midend always applies `set` to a *copy* of the
+ * live params, so a mid-edit or rejected submission never mutates the
+ * running game. Discriminated by `type`:
+ * - `"string"` ↔ a text field (upstream's `C_STRING`; a numeric field
+ *   like width/height parses the string to an integer in `set` and
+ *   renders it back in `get`);
+ * - `"boolean"` ↔ a checkbox;
+ * - `"choices"` ↔ the selected zero-based index into `choices` (a
+ *   select/radio group).
+ * `kw` is the stable config key the app form uses; `name` the label. */
+export type ParamConfigItem<Params> =
+  | {
+      kw: string;
+      name: string;
+      type: "string";
+      get(p: Params): string;
+      set(p: Params, value: string): void;
+    }
+  | {
+      kw: string;
+      name: string;
+      type: "boolean";
+      get(p: Params): boolean;
+      set(p: Params, value: boolean): void;
+    }
+  | {
+      kw: string;
+      name: string;
+      type: "choices";
+      choices: string[];
+      get(p: Params): number;
+      set(p: Params, value: number): void;
+    };
+
 /** A node in the preset/difficulty menu tree. */
 export interface PresetMenu<Params> {
   title: string;
@@ -312,6 +352,17 @@ export interface Game<
    * `newUi` so a preference survives starting a new game. Defaults are
    * whatever `newUi` sets. Absent ⇒ the game has no preferences. */
   prefs?: GamePref<Ui>[];
+
+  /** The game's **custom params** configuration form (upstream's
+   * `configure`/`custom_params` path), declarative like `prefs`: an
+   * ordered list of field descriptors the midend turns into the app's
+   * "Custom type…" dialog and parses back onto a copy of `Params`,
+   * validated by this game's own `validateParams`. A plain width/height
+   * game declares `paramConfig: dimensionParamConfig()`. Absent ⇒ an
+   * empty custom dialog (correct for a preset-only game like Flip until
+   * it opts in). Independent of the type-summary `describeParams` hook,
+   * which renders the menu label rather than the form. */
+  paramConfig?: ParamConfigItem<Params>[];
 
   /** RGB palette (each component 0..1), index 0 is conventionally the
    * background. Receives the frontend default background so a game can
