@@ -26,6 +26,7 @@ import { fifteenGame } from "../games/fifteen/index.ts";
 import { floodGame } from "../games/flood/index.ts";
 import { keenGame } from "../games/keen/index.ts";
 import { palisadeGame } from "../games/palisade/index.ts";
+import { patternGame } from "../games/pattern/index.ts";
 import { rangeGame } from "../games/range/index.ts";
 import { singlesGame } from "../games/singles/index.ts";
 import { sixteenGame } from "../games/sixteen/index.ts";
@@ -79,6 +80,7 @@ const HINT_GAMES: [string, AnyGame][] = [
   ["flood", floodGame],
   ["keen", keenGame],
   ["palisade", palisadeGame],
+  ["pattern", patternGame],
   ["range", rangeGame],
   ["singles", singlesGame],
   ["sixteen", sixteenGame],
@@ -148,7 +150,9 @@ describe("requesting a hint never mutates the board", () => {
         const state = game.newState(params, desc);
         const before = stateKey(state);
         game.hint?.(state, aux);
-        expect(stateKey(state), `${name}/${seed}: hint() mutated the state`).toBe(before);
+        expect(stateKey(state), `${name}/${seed}: hint() mutated the state`).toBe(
+          before,
+        );
       }
     });
   }
@@ -180,10 +184,16 @@ describe("a Latin-family placement never falsely claims a naked single", () => {
           const step = res.steps[0];
           // biome-ignore lint/suspicious/noExplicitAny: structural move/state access.
           const m = step.move as any;
-          if (m.type === "set" && !m.pencil && /ruled out in this cell/.test(step.explanation)) {
+          if (
+            m.type === "set" &&
+            !m.pencil &&
+            /ruled out in this cell/.test(step.explanation)
+          ) {
             // biome-ignore lint/suspicious/noExplicitAny: structural state access.
             const pen = (state as any).pencil[m.y * w + m.x] as number;
-            const ncand = Array.from({ length: w }, (_, k) => k + 1).filter((n) => pen & (1 << n)).length;
+            const ncand = Array.from({ length: w }, (_, k) => k + 1).filter(
+              (n) => pen & (1 << n),
+            ).length;
             expect(
               ncand,
               `${name}/${seed}: naked-single narration on a cell with ${ncand} candidates`,

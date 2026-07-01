@@ -52,8 +52,11 @@ export interface PatternState {
 }
 
 /** A `fill` sets a rectangle of non-immutable cells to one value (upstream
- * `F`/`E`/`U x,y,w,h`); a `solve` applies a full solution grid as a string
- * of `'0'`/`'1'` (upstream `S…`), kept a string so the move is save-safe. */
+ * `F`/`E`/`U x,y,w,h`); a `fillCells` sets an arbitrary *set* of cells to one
+ * value (the hint's grouped-deduction move — one firing forces a set of cells
+ * that need not be a rectangle, so it can't ride `fill`); a `solve` applies a
+ * full solution grid as a string of `'0'`/`'1'` (upstream `S…`), kept a string
+ * so the move is save-safe. */
 export type PatternMove =
   | {
       type: "fill";
@@ -68,6 +71,7 @@ export type PatternMove =
        * overwrite, so a deliberate click can still change a mark. */
       onlyBlank?: boolean;
     }
+  | { type: "fillCells"; value: GridVal; cells: number[] }
   | { type: "solve"; grid: string };
 
 /** Persisted UI (not history): the in-progress drag and the keyboard
@@ -333,6 +337,19 @@ export function executeMove(state: PatternState, move: PatternMove): PatternStat
       grid[i] = c === "1" ? GRID_FULL : GRID_EMPTY;
     }
     return { ...state, grid, completed: true, cheated: true };
+  }
+
+  if (move.type === "fillCells") {
+    const next = clonePatternState(state);
+    for (const i of move.cells) {
+      if (i < 0 || i >= s) throw new Error("Move out of bounds");
+      if (next.common.immutable[i]) continue;
+      next.grid[i] = move.value;
+    }
+    if (!next.completed && isComplete(next)) {
+      return { ...next, completed: true };
+    }
+    return next;
   }
 
   const { value, x, y } = move;

@@ -594,6 +594,7 @@ game:
 | Palisade | forced edge(s), blue `COL_HINT` segments (equivalent edges share it) | region → `COL_HINT_CELL` shade; clue → its drawn digit on the shaded cell |
 | Filling | target square(s), *mild* `COL_HINT` fill, **no digit** | region premise → `COL_HINT_CELL` shade + digit on top |
 | Towers | struck candidate digit(s) `COL_HINT` + cross-through (on a *non*-`COL_HINT` cell so the digit shows); placement target `COL_HINT` fill (no digit to hide) | driving **clue cell(s)** *and* their line of sight → `COL_HINT_CELL` shade (clue + sightline read as one premise region; a facing pair shades both clues) |
+| Pattern | forced cell(s), blue `COL_HINT` fill (highlight only, no mark) — the reasoned line's clue digits also recolour `COL_HINT` to tie clue↔line | reasoned **row/column** (line of sight) → `COL_HINT_CELL` shade on its *undecided* cells; an overlap run's anchoring **black** mark → teal `COL_HINT_BLACKREF` ring (white anchors → violet `COL_HINT_WHITEREF`). White ("no run reaches here") firings ring *nothing* — that deduction leans on the whole line's packing, not one mark, so a ring would over-claim (§2.4); the shaded line + highlighted clue is the evidence. |
 
 Two reusable lessons from the rollout: (1) **teal = "a cited black square", violet = "a
 cited white square"** is a cross-game reading worth preserving — reuse those hues for a
@@ -682,6 +683,41 @@ sit next to an equal number, or belong to a region that can't reach the right si
 (explanation + target) for the global one. Surfacing the step honestly beats omitting it (a gap
 would break the plan's path to the solution). See `filling-hint.test.ts`'s "every local-technique
 deduction carries evidence" test.
+
+### 5.6a Re-derive the *named technique* when the solver only returns the forced set (Pattern)
+
+A per-line solver like Pattern's (`doRow`/`doRecurse`) computes a line's forced cells by
+**intersecting every legal run placement** — it returns *which* cells are forced but carries **no
+reason**, so narrating "why" needs re-derivation, not a threaded recorder. The move that meets the
+"teach the technique" bar is to compute the two recognisable named techniques directly from the
+line's **leftmost and rightmost feasible run packings** (each respecting the current marks):
+
+- **Overlap → black.** A cell in run *i*'s leftmost∩rightmost span (`right[i] ≤ c < left[i]+len_i`)
+  is covered by run *i* in *every* placement → forced black. Narrate per run ("this run of N can
+  slide only K cells, so these must be black"); one run = one firing.
+- **Unreachable → white.** A cell covered by no run's possible span in any placement is forced
+  white. One firing per contiguous white segment.
+
+Both are **subsets** of what the full intersection solver forces, so keep the complete `doRow`
+solver as a **single-segment fallback** (`fallbackFiring`) for any cell the two named techniques
+miss (gap-based deductions) — that keeps the plan complete on every generated board (which is
+line-solvable by construction). Two things this shape buys:
+
+- **Byte-match for free, no gating flag.** Because the hint code
+  (`packLeft`/`packRight`/`analyzeLine`/`deduceHintPlan`) is *separate* from the generator's
+  `solvePuzzle`/`isSoluble` — the Undead §9.4 *parallel-recorder* shape, not a `if (recorder)`-gated
+  hot path — the generator differential is unaffected **by construction**. Reuse the pure
+  `doRow`/`doRecurse` for the fallback; don't thread state through them.
+- **No new move type needed if you group by contiguity** — but Pattern added a `fillCells`
+  (arbitrary-cell-set) move anyway so a firing's white cells can group even when non-contiguous and
+  `hintKeepTrack` can shrink in place (the Filling model, §5.5). Exemplars:
+  [`pattern/solver.ts`](../../src/native/games/pattern/solver.ts) (the packing + analysis),
+  [`pattern/index.ts`](../../src/native/games/pattern/index.ts) (`hint`/`hintKeepTrack`/`narrate`).
+
+*Narration gotcha (§2.7 + §2.1 interaction):* the zero-slack extreme wants a *premise* verb, and a
+`\bis\b` conclusion-guard regex catches it — "run … **is** pinned" trips a test aimed at the
+conclusion clause. Word the premise without a flat state-of-being verb ("has nowhere to slide")
+rather than loosening the guard.
 
 ### 5.7 Placement animation as hint motion (fill-style games)
 
