@@ -352,6 +352,318 @@ export function lineHasError(state: PatternState, line: number): boolean {
   return false;
 }
 
+// =====================================================================
+// Hint deduction — named nonogram line techniques
+// =====================================================================
+//
+// The hint teaches *why* a cell is forced, so it decomposes each single-line
+// deduction into the recognisable named techniques (overlap → black,
+// unreachable gap → white), each firing forcing a single-colour contiguous
+// segment. The two techniques are computed from the line's leftmost and
+// rightmost feasible run packings (respecting the current marks): a cell in a
+// run's leftmost∩rightmost span is black in every placement (overlap), and a
+// cell no run can reach in any placement is white in every placement.
+//
+// Both are *subsets* of what the full line solver (`doRow`) forces, so a
+// single-line fallback (run `doRow`, surface its first forced segment) covers
+// any cell the two named techniques miss — keeping the plan complete on every
+// board the generator published (which is line-solvable by construction). This
+// is a *parallel* recorder in the Undead sense (hint-authoring §9.4): it never
+// touches the generator's `solvePuzzle`/`isSoluble` path, so the byte-match
+// generator differential is unaffected *by construction*, with no gating flag.
+
+/** Why a set of cells is forced, driving the hint's narration. */
+export type PatternHintReason =
+  | { kind: "overlap"; run: number; slack: number } // black
+  | { kind: "unreachable" } // white — no run reaches these cells
+  | { kind: "lineEmpty" } // white — the line has no clues at all
+  | { kind: "forced"; black: boolean }; // fallback — the line's unique arrangement
+
+/** One hint step: a contiguous set of same-value cells one line deduction
+ * forces, the line reasoned over (for the line-of-sight shade + clue), the
+ * reason, and the already-placed marks the deduction leans on (ringed by their
+ * own colour). All indices are absolute grid positions. */
+export interface PatternHintMove {
+  cells: number[];
+  value: GridVal; // GRID_FULL (black) or GRID_EMPTY (white)
+  line: number; // 0..w-1 columns, w..w+h-1 rows
+  reason: PatternHintReason;
+  blackRefs: number[];
+  whiteRefs: number[];
+}
+
+interface LineGeom {
+  start: number;
+  step: number;
+  len: number;
+}
+
+function lineGeom(line: number, w: number, h: number): LineGeom {
+  return line < w
+    ? { start: line, step: w, len: h }
+    : { start: (line - w) * w, step: 1, len: w };
+}
+
+/** The line's marks as solver states (S_BLOCK / S_DOT / S_UNKNOWN). */
+function readLine(grid: Uint8Array, geom: LineGeom): Uint8Array {
+  const out = new Uint8Array(geom.len);
+  for (let p = 0; p < geom.len; p++) {
+    const v = grid[geom.start + p * geom.step];
+    out[p] = v === GRID_FULL ? S_BLOCK : v === GRID_EMPTY ? S_DOT : S_UNKNOWN;
+  }
+  return out;
+}
+
+/**
+ * Leftmost feasible run packing respecting the current marks: for each run,
+ * the earliest start position such that the whole clue still fits, no run
+ * covers a known-white cell, runs stay separated, and every known-black cell
+ * is covered. Returns the per-run start positions, or null if the line's marks
+ * are inconsistent with its clue (never happens on a mistake-free board).
+ */
+function packLeft(
+  runs: readonly number[],
+  known: Uint8Array,
+  len: number,
+): number[] | null {
+  const starts = new Array<number>(runs.length);
+  const rec = (ndone: number, pos: number): boolean => {
+    if (ndone === runs.length) {
+      for (let i = pos; i < len; i++) if (known[i] === S_BLOCK) return false;
+      return true;
+    }
+    const r = runs[ndone];
+    // The first known-black at or after `pos` bounds this run: starting past it
+    // would strand that black (no later run reaches back for it).
+    let firstBlack = len;
+    for (let i = pos; i < len; i++) {
+      if (known[i] === S_BLOCK) {
+        firstBlack = i;
+        break;
+      }
+    }
+    const maxStart = Math.min(len - r, firstBlack);
+    for (let start = pos; start <= maxStart; start++) {
+      let ok = true;
+      for (let k = 0; k < r; k++) {
+        if (known[start + k] === S_DOT) {
+          ok = false;
+          break;
+        }
+      }
+      if (!ok) continue;
+      if (start + r < len && known[start + r] === S_BLOCK) continue; // separator
+      if (rec(ndone + 1, start + r + 1)) {
+        starts[ndone] = start;
+        return true;
+      }
+    }
+    return false;
+  };
+  return rec(0, 0) ? starts : null;
+}
+
+/** Rightmost feasible packing — `packLeft` on the mirrored line/clue. */
+function packRight(
+  runs: readonly number[],
+  known: Uint8Array,
+  len: number,
+): number[] | null {
+  const mknown = new Uint8Array(len);
+  for (let i = 0; i < len; i++) mknown[i] = known[len - 1 - i];
+  const mruns = [...runs].reverse();
+  const mleft = packLeft(mruns, mknown, len);
+  if (!mleft) return null;
+  const k = runs.length;
+  const out = new Array<number>(k);
+  for (let j = 0; j < k; j++) out[k - 1 - j] = len - mleft[j] - mruns[j];
+  return out;
+}
+
+/** Absolute grid indices of the line's already-placed marks, split by colour,
+ * within the line-local window `[from, to)`. */
+function collectRefs(
+  known: Uint8Array,
+  geom: LineGeom,
+  from: number,
+  to: number,
+): { blackRefs: number[]; whiteRefs: number[] } {
+  const blackRefs: number[] = [];
+  const whiteRefs: number[] = [];
+  for (let p = Math.max(0, from); p < Math.min(geom.len, to); p++) {
+    const abs = geom.start + p * geom.step;
+    if (known[p] === S_BLOCK) blackRefs.push(abs);
+    else if (known[p] === S_DOT) whiteRefs.push(abs);
+  }
+  return { blackRefs, whiteRefs };
+}
+
+/** The first named-technique firing on this line (one overlap run, or the
+ * first unreachable-white segment), or null. Deterministic. */
+function analyzeLine(
+  known: Uint8Array,
+  runs: readonly number[],
+  line: number,
+  geom: LineGeom,
+): PatternHintMove | null {
+  const { len } = geom;
+  const abs = (p: number): number => geom.start + p * geom.step;
+
+  if (runs.length === 0) {
+    // A clueless line is all white; surface its first undecided segment.
+    const seg = firstSegment(known, 0, len, (p) => known[p] === S_UNKNOWN);
+    if (!seg) return null;
+    return {
+      cells: rangeAbs(abs, seg.from, seg.to),
+      value: GRID_EMPTY,
+      line,
+      reason: { kind: "lineEmpty" },
+      blackRefs: [],
+      whiteRefs: [],
+    };
+  }
+
+  const left = packLeft(runs, known, len);
+  const right = packRight(runs, known, len);
+  if (!left || !right) return null; // inconsistent line — caller falls back
+
+  // Overlap: a run longer than its play pins its middle cells black.
+  for (let i = 0; i < runs.length; i++) {
+    const s = right[i];
+    const e = left[i] + runs[i];
+    if (s >= e) continue;
+    const seg = firstSegment(known, s, e, (p) => known[p] === S_UNKNOWN);
+    if (!seg) continue;
+    const spanTo = right[i] + runs[i];
+    return {
+      cells: rangeAbs(abs, seg.from, seg.to),
+      value: GRID_FULL,
+      line,
+      reason: { kind: "overlap", run: runs[i], slack: right[i] - left[i] },
+      ...collectRefs(known, geom, left[i], spanTo),
+    };
+  }
+
+  // Unreachable white: a cell no run can cover in any placement stays white.
+  const coverable = new Uint8Array(len);
+  for (let i = 0; i < runs.length; i++) {
+    for (let p = left[i]; p < right[i] + runs[i]; p++) coverable[p] = 1;
+  }
+  const seg = firstSegment(
+    known,
+    0,
+    len,
+    (p) => known[p] === S_UNKNOWN && !coverable[p],
+  );
+  if (seg) {
+    // No ring: a "no run reaches here" deduction leans on the whole line's
+    // packing, not one or two marks, so ringing individual cells would
+    // over-claim (§2.4). The shaded line of sight + highlighted clue is the
+    // evidence.
+    return {
+      cells: rangeAbs(abs, seg.from, seg.to),
+      value: GRID_EMPTY,
+      line,
+      reason: { kind: "unreachable" },
+      blackRefs: [],
+      whiteRefs: [],
+    };
+  }
+  return null;
+}
+
+/** The first maximal run of positions in `[from, to)` all satisfying `pred`. */
+function firstSegment(
+  known: Uint8Array,
+  from: number,
+  to: number,
+  pred: (p: number) => boolean,
+): { from: number; to: number } | null {
+  let p = Math.max(0, from);
+  const end = Math.min(known.length, to);
+  while (p < end && !pred(p)) p++;
+  if (p >= end) return null;
+  let q = p;
+  while (q < end && pred(q)) q++;
+  return { from: p, to: q };
+}
+
+function rangeAbs(abs: (p: number) => number, from: number, to: number): number[] {
+  const out: number[] = [];
+  for (let p = from; p < to; p++) out.push(abs(p));
+  return out;
+}
+
+/** The fallback firing: run the complete single-line solver on some line and
+ * surface its first forced same-value contiguous segment. Covers cells the two
+ * named techniques miss (gap-based deductions), keeping the plan complete. */
+function fallbackFiring(
+  grid: Uint8Array,
+  w: number,
+  h: number,
+  clues: readonly (readonly number[])[],
+): PatternHintMove | null {
+  for (let line = 0; line < w + h; line++) {
+    const geom = lineGeom(line, w, h);
+    const known = readLine(grid, geom);
+    const mat = Uint8Array.from(known); // doRow reads/writes S_* states
+    const forced: { pos: number; value: GridVal }[] = [];
+    doRow(mat, 0, geom.len, 1, clues[line], (p) =>
+      forced.push({ pos: p, value: mat[p] === S_BLOCK ? GRID_FULL : GRID_EMPTY }),
+    );
+    if (forced.length === 0) continue;
+    forced.sort((a, b) => a.pos - b.pos);
+    const first = forced[0];
+    const cells = [geom.start + first.pos * geom.step];
+    let last = first.pos;
+    for (let k = 1; k < forced.length; k++) {
+      if (forced[k].pos === last + 1 && forced[k].value === first.value) {
+        cells.push(geom.start + forced[k].pos * geom.step);
+        last = forced[k].pos;
+      } else break;
+    }
+    return {
+      cells,
+      value: first.value,
+      line,
+      reason: { kind: "forced", black: first.value === GRID_FULL },
+      blackRefs: [],
+      whiteRefs: [],
+    };
+  }
+  return null;
+}
+
+/**
+ * A hint plan from the player's current marks: an ordered list of forced
+ * single-line deductions that drives the board to its unique solution. Each
+ * step prefers a named technique (overlap / unreachable-white) for teaching,
+ * falling back to the complete line solver for any cell no named technique
+ * groups. The plan is built on a working copy (each step applied before the
+ * next is computed), so every step's narration and highlight reflect the board
+ * as that step fires — and a fresh recompute resumes from any mid-game
+ * position (hint-authoring §7.1).
+ */
+export function deduceHintPlan(state: PatternState): PatternHintMove[] {
+  const { w, h, clues } = state.common;
+  const working = Uint8Array.from(state.grid);
+  const plan: PatternHintMove[] = [];
+  const limit = w * h + 5; // each step decides ≥1 cell, so this never trips
+  for (let guard = 0; guard < limit; guard++) {
+    if (!working.includes(GRID_UNKNOWN)) break; // solved
+    let firing: PatternHintMove | null = null;
+    for (let line = 0; line < w + h && !firing; line++) {
+      const geom = lineGeom(line, w, h);
+      firing = analyzeLine(readLine(working, geom), clues[line], line, geom);
+    }
+    if (!firing) firing = fallbackFiring(working, w, h, clues);
+    if (!firing) break; // stuck — only on an inconsistent board (hint refuses first)
+    plan.push(firing);
+    for (const c of firing.cells) working[c] = firing.value;
+  }
+  return plan;
+}
+
 /** Every player-marked cell that contradicts the unique solution. Returns
  * `[]` when the board isn't uniquely line-solvable (nothing to check
  * against) or when there are no contradictions. */
