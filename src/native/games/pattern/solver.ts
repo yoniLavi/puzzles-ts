@@ -11,6 +11,8 @@
  * (line-solving is monotone, so any schedule reaches the same fixpoint and
  * thus the same solved/stuck verdict).
  */
+import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
+import { stepBudget } from "../../engine/step-budget.ts";
 import {
   GRID_EMPTY,
   GRID_FULL,
@@ -648,19 +650,32 @@ export function deduceHintPlan(state: PatternState): PatternHintMove[] {
   const { w, h, clues } = state.common;
   const working = Uint8Array.from(state.grid);
   const plan: PatternHintMove[] = [];
-  const limit = w * h + 5; // each step decides ≥1 cell, so this never trips
-  for (let guard = 0; guard < limit; guard++) {
-    if (!working.includes(GRID_UNKNOWN)) break; // solved
-    let firing: PatternHintMove | null = null;
-    for (let line = 0; line < w + h && !firing; line++) {
-      const geom = lineGeom(line, w, h);
-      firing = analyzeLine(readLine(working, geom), clues[line], line, geom);
-    }
-    if (!firing) firing = fallbackFiring(working, w, h, clues);
-    if (!firing) break; // stuck — only on an inconsistent board (hint refuses first)
+  // Record a firing (or nothing) into the plan; report it to the shared ladder.
+  const apply = (firing: PatternHintMove | null): number => {
+    if (!firing) return 0;
     plan.push(firing);
     for (const c of firing.cells) working[c] = firing.value;
-  }
+    return 1;
+  };
+  // Restart-on-first-firing over two rungs: prefer a named technique (the
+  // teaching path), fall back to the complete single-line solver for cells no
+  // named technique groups. Each firing decides ≥1 cell; the step budget is the
+  // non-termination backstop.
+  runDeductionFixpoint({
+    rungs: [
+      () => {
+        let firing: PatternHintMove | null = null;
+        for (let line = 0; line < w + h && !firing; line++) {
+          const geom = lineGeom(line, w, h);
+          firing = analyzeLine(readLine(working, geom), clues[line], line, geom);
+        }
+        return apply(firing);
+      },
+      () => apply(fallbackFiring(working, w, h, clues)),
+    ],
+    budget: stepBudget("pattern hint"),
+    solved: () => !working.includes(GRID_UNKNOWN),
+  });
   return plan;
 }
 

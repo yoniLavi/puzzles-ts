@@ -95,8 +95,42 @@ hint, confirm the generator can't emit a board the deductive solver can't crack 
 shipped tiers. If it can, you have three moves: gate generation to deduction-only,
 **strengthen the deductive solver so the hard tier survives guess-free**, or move the
 guessing boards under an explicitly-named Unreasonable tier. The normative home for
-this rule is a generation-policy spec requirement (to be added); this note is the
-followable summary.
+this rule is the `ts-migration` **Narratable-deduction generation policy** requirement,
+with its `ts-engine` companion **"A hint step always names a technique — no un-narrated
+fallback"** (`adopt-narratable-deduction-engine`); this note is the followable summary.
+
+**No generic "just because" fallback — the standing bar.** A displayed hint step must
+name the technique that forces it; a game's hint must **never** emit an unexplained
+catch-all (e.g. *"only one arrangement fits"*) for a deduction its technique set
+doesn't cover — that step fails quality-bar rule 1 (nothing to narrate). The two
+compliant ways to guarantee it, chosen **per game by measured cost**:
+
+1. **Narrate everything the gate accepts** — promote any catch-all into an honest
+   technique, even a non-local or tedious one (Filling narrates its global
+   candidate-elimination honestly, §5.6). Keeps every generated board (and any
+   byte-match differential) intact.
+2. **Reject at generation** — accept a board only if the narratable techniques solve it
+   to completion; retry away the rare board that needs an un-narratable deduction.
+   Shrinks the generated set, so **measure the rejection rate first** — a teachable set
+   materially weaker than the full solver can thin or empty a size/tier or slow "New
+   Game" — and **re-grade the tiers** after the flip.
+
+Pattern is the outstanding case: it still ships a generic `forced` fallback for the
+~0.03% of steps its two named techniques (overlap, unreachable) miss; removing it is
+its own Phase-3 change (`remove-pattern-hint-fallback`, §5.6a). Every *threaded* game
+(Range, Singles, Filling, Unruly, the Latin family) already complies — the recorder
+narrates every firing.
+
+**One narratable engine over the shared runner.** A game's generator and its explained
+hint are two projections of one deduction engine: the same ordered technique rungs run
+to a fixpoint, recorder off to generate/grade, recorder on to narrate. The loop itself
+— restart-on-first-firing, the `maxRung` grading cap, the recorder-gated step budget
+(§7.2) — is written **once** in
+[`engine/deduction-fixpoint.ts`](../../src/native/engine/deduction-fixpoint.ts)
+(`runDeductionFixpoint`); the *techniques* stay per-game. New logic ports should build
+their solver/hint over that runner rather than hand-rolling the loop. Converged call
+sites: `engine/latin.ts` (`latinSolverTop`), `filling/solver.ts` (`FillingSolver.run`),
+`undead/solver.ts` (`recordUndeadDeductions`), `pattern/solver.ts` (`deduceHintPlan`).
 
 **Worked example — strengthening a non-Latin solver (Undead,
 `strengthen-undead-deduction`).** Undead originally graded difficulty by *how much
@@ -834,6 +868,12 @@ converges in ~one iteration per cell, so the guard only catches a future regress
 `ss.records`), `deduceForcedEdges` in `palisade/solver.ts` (a hint-only function, so unconditional).
 Search-based hints (Fifteen/Sixteen A*-style, Flood's BFS) are bounded by their visited sets and
 need no budget.
+
+If your solver/hint is an ordered rung ladder (restart-on-first-firing), don't hand-roll this loop:
+run it through [`runDeductionFixpoint`](../../src/native/engine/deduction-fixpoint.ts) (§1A "one
+narratable engine"), which ticks the budget for you and takes it only on the recording path — pass
+`budget: stepBudget(...)` on the hint call, omit it on the generator call. It also owns the `maxRung`
+grading cap and the restart discipline that keeps one firing = one group.
 
 ### 7.3 A kept plan can go stale — implement `refreshHintStep`
 

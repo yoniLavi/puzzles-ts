@@ -118,6 +118,16 @@ In `interpretMove`/`decodeParams`, reach for these instead of re-rolling the idi
   `WxH`-or-square dimension prefix (`next` continues a trailing suffix). It restores
   the square fallback that `s.indexOf("x")` silently mis-sliced on a bare `"4"`. Not
   for non-`WxH` formats (e.g. Blackbox's `w<W>h<H>m…M…`).
+- [`runDeductionFixpoint({ rungs, maxRung, budget })`](../../src/native/engine/deduction-fixpoint.ts)
+  for a logic game's solver/hint loop. A game's generator and explained hint are two
+  projections of **one deduction engine** — the same ordered technique rungs run to a
+  fixpoint (restart-on-first-firing), recorder off to generate/grade, recorder on to
+  narrate. This runner owns the loop, the `maxRung` grading cap, and the recording-path
+  step budget (pass a `stepBudget` on the hint call, omit it on the generator call); the
+  *techniques* stay per-game. Standing bar: **no generic "just because" hint fallback** —
+  narrate every accepted deduction, or reject at generation the boards you can't narrate
+  (choose by measured rejection cost). See hint-authoring [§1A](./hint-authoring.md) and
+  the `ts-migration` narratable-deduction generation policy.
 
 ### 2.2 Latin-square games share `engine/latin.ts`
 
