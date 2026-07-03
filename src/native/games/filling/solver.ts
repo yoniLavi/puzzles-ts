@@ -9,6 +9,7 @@
  * the solved/stuck verdict — which the generator's clue minimisation depends
  * on — is identical to C's because both reach the same fixpoint.
  */
+import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import { DX, DY } from "./state.ts";
@@ -501,14 +502,18 @@ class FillingSolver {
     // Guard the hint/recording path against a non-terminating fixpoint; the
     // generator (no `rec`) runs unguarded and byte-for-byte unchanged.
     const budget = this.rec ? stepBudget("filling hint") : undefined;
-    do {
-      budget?.tick();
-      if (this.learnBlockedExpansion()) continue;
-      if (this.learnExpandOrOne()) continue;
-      if (this.learnCriticalSquare()) continue;
-      if (this.learnBitmapDeductions()) continue;
-      break;
-    } while (this.nempty > 0);
+    // Four techniques, easiest first, restart on the first that fires — stop
+    // once every cell is filled. (Shared restart-on-first-firing ladder.)
+    runDeductionFixpoint({
+      rungs: [
+        () => (this.learnBlockedExpansion() ? 1 : 0),
+        () => (this.learnExpandOrOne() ? 1 : 0),
+        () => (this.learnCriticalSquare() ? 1 : 0),
+        () => (this.learnBitmapDeductions() ? 1 : 0),
+      ],
+      budget,
+      solved: () => this.nempty === 0,
+    });
   }
 }
 

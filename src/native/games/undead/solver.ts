@@ -13,6 +13,7 @@
  * inconsistent (no candidate left).
  */
 
+import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import {
   MON_GHOST,
@@ -750,16 +751,28 @@ export function recordUndeadDeductions(common: UndeadCommon, placed: Uint8Array)
   }
   const ops: HintOp[] = [];
   let group = 0;
-  const budget = stepBudget("undead hint recorder");
-  while (true) {
-    budget.tick();
-    let fired = recordCountingPass(common, cand, group);
-    if (fired.length === 0) fired = recordSightlinePass(common, cand, group);
-    if (fired.length === 0) fired = recordForcingPass(common, cand, group);
-    if (fired.length === 0) break;
+  // Each round tries counting (totals lead), then sightline, then forcing,
+  // recording the first that fires as one firing/group (shared restart-on-
+  // first-firing ladder). One firing = one `group`, bumped only after it fires.
+  const record = (
+    pass: (common: UndeadCommon, cand: Uint8Array, group: number) => HintOp[],
+  ): number => {
+    const fired = pass(common, cand, group);
+    if (fired.length === 0) return 0;
     for (const op of fired) ops.push(op);
     group++;
-    if (anyEmpty(cand, numTotal)) break; // a contradiction — stop (hint refuses anyway)
-  }
+    return 1;
+  };
+  runDeductionFixpoint({
+    rungs: [
+      () => record(recordCountingPass),
+      () => record(recordSightlinePass),
+      () => record(recordForcingPass),
+    ],
+    budget: stepBudget("undead hint recorder"),
+    // A contradiction (an emptied candidate cell) stops the ladder — the hint
+    // refuses on such a board anyway.
+    solved: () => anyEmpty(cand, numTotal),
+  });
   return ops;
 }

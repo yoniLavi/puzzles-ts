@@ -22,6 +22,10 @@
 
 import { type RandomState, randomUpto } from "../random/index.ts";
 import { shuffle } from "./shuffle.ts";
+import {
+  type DeductionRung,
+  runDeductionFixpoint,
+} from "./deduction-fixpoint.ts";
 import { type StepBudget, stepBudget } from "./step-budget.ts";
 
 /** Upstream `enum { diff_impossible = 10, diff_ambiguous, diff_unfinished }`
@@ -481,30 +485,30 @@ function latinSolverTop<Ctx>(solver: LatinSolver, cfg: LatinSolverConfig<Ctx>): 
     usersolvers,
     ctx,
   } = cfg;
-  let diff = diffSimple;
+  // The ordered rung `i` (0..maxdiff): the game's own `usersolvers[i]` first,
+  // then whichever built-in technique that difficulty level maps to. Returns
+  // `-1` (contradiction) / `0` (nothing) / `>0` (fired), the runner's contract.
+  const applyRung = (i: number): number => {
+    let ret = 0;
+    if (usersolvers[i]) ret = (usersolvers[i] as UserSolver<Ctx>)(solver, ctx);
+    if (ret === 0 && i === diffSimple) ret = solver.diffSimple();
+    if (ret === 0 && i === diffSet0) ret = solver.diffSet(false);
+    if (ret === 0 && i === diffSet1) ret = solver.diffSet(true);
+    if (ret === 0 && i === diffForcing) ret = solver.forcing();
+    return ret;
+  };
+  const rungs: DeductionRung[] = [];
+  for (let i = 0; i <= maxdiff; i++) rungs.push(() => applyRung(i));
 
-  cont: while (true) {
-    solver.budget?.tick();
-    for (let i = 0; i <= maxdiff; i++) {
-      solver.group++;
-      let ret = 0;
-      if (usersolvers[i]) ret = (usersolvers[i] as UserSolver<Ctx>)(solver, ctx);
-      if (ret === 0 && i === diffSimple) ret = solver.diffSimple();
-      if (ret === 0 && i === diffSet0) ret = solver.diffSet(false);
-      if (ret === 0 && i === diffSet1) ret = solver.diffSet(true);
-      if (ret === 0 && i === diffForcing) ret = solver.forcing();
-
-      if (ret < 0) {
-        diff = DIFF_IMPOSSIBLE;
-        return finish(solver, cfg, diff);
-      }
-      if (ret > 0) {
-        diff = Math.max(diff, i);
-        continue cont;
-      }
-    }
-    break;
-  }
+  const fp = runDeductionFixpoint({
+    rungs,
+    maxRung: maxdiff,
+    baseGrade: diffSimple,
+    budget: solver.budget,
+    beforeRung: () => solver.group++,
+  });
+  if (fp.impossible) return finish(solver, cfg, DIFF_IMPOSSIBLE);
+  let diff = fp.grade;
 
   if (maxdiff === diffRecursive) {
     const nsol = latinSolverRecurse(solver, cfg);
