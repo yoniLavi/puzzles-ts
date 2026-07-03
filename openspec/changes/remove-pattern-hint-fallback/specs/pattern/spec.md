@@ -25,11 +25,13 @@ Every displayed step SHALL name a technique — the hint SHALL NOT emit a generi
 unexplained step (e.g. *"only one arrangement fits"*) for a deduction its named
 techniques do not group. Where the elegant techniques do not cover a forced cell,
 the plan SHALL narrate the general single-line **intersection** as an honest
-deductive bottom rung (*"whichever way this line's runs fit, these cells are
-always black / stay white"*); being the per-line solver's own fixpoint restricted
-to one line, that rung always exists for a generated board, so the plan completes
-without any un-narrated step. Generation is untouched, so Pattern's byte-match
-differential against the C reference is retained.
+deductive bottom rung (*"whichever way this line's runs fit, these cells must be
+black / must stay white"* — the necessity voice of the explained-hint bar, never
+the retired *"only one arrangement fits"* wording); being the per-line solver's
+own fixpoint restricted to one line, that rung always exists for a generated
+board, so the plan completes without any un-narrated step. Generation is
+untouched, so Pattern's byte-match differential against the C reference is
+retained.
 
 `hint` SHALL refuse with an error string when the board is already solved or when
 `findMistakes` reports mistakes (the refusal lighting the mistake overlay and the

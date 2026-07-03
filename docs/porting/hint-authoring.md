@@ -115,11 +115,11 @@ compliant ways to guarantee it, chosen **per game by measured cost**:
    materially weaker than the full solver can thin or empty a size/tier or slow "New
    Game" — and **re-grade the tiers** after the flip.
 
-Pattern is the outstanding case: it still ships a generic `forced` fallback for the
-~0.03% of steps its two named techniques (overlap, unreachable) miss; removing it is
-its own Phase-3 change (`remove-pattern-hint-fallback`, §5.6a). Every *threaded* game
-(Range, Singles, Filling, Unruly, the Latin family) already complies — the recorder
-narrates every firing.
+Pattern was the outstanding case and is now compliant (`remove-pattern-hint-fallback`,
+§5.6a): its old generic `forced` fallback was **promoted** (option 1, not rejected)
+into a named **single-line intersection** bottom rung. Every *threaded* game (Range,
+Singles, Filling, Unruly, the Latin family) already complies — the recorder narrates
+every firing.
 
 **One narratable engine over the shared runner.** A game's generator and its explained
 hint are two projections of one deduction engine: the same ordered technique rungs run
@@ -733,9 +733,20 @@ line's **leftmost and rightmost feasible run packings** (each respecting the cur
   white. One firing per contiguous white segment.
 
 Both are **subsets** of what the full intersection solver forces, so keep the complete `doRow`
-solver as a **single-segment fallback** (`fallbackFiring`) for any cell the two named techniques
-miss (gap-based deductions) — that keeps the plan complete on every generated board (which is
-line-solvable by construction). Two things this shape buys:
+solver as the **general single-line intersection** bottom rung (`intersectionFiring`, surfacing its
+first forced same-value segment) for any cell the two elegant techniques miss (gap-based
+deductions). This is **not** a "just because" catch-all — every cell `doRow` forces is that colour
+in *every* arrangement of the line's runs consistent with its marks, i.e. overlap generalised to
+the whole clue, so it is a real named technique. Narrate it in the necessity voice — *"Whichever way
+this row's runs fit, these cells must be black / must stay white."* — **never** the earlier
+misleading *"only one arrangement fits"* (the deduction is all-arrangements-agree, not
+one-arrangement-only, and the bare-`is` phrasing tripped the §2.1 conclusion guard anyway). It keeps
+the plan complete on every generated board (line-solvable by construction) with an honest, named
+step, so no displayed step is ever a generic fallback. **Measure before enriching:** the bottom rung
+is rare per step at the shipped sizes (0% at 10–15×15, ≤0.3% of steps at 30×30, though up to ~⅓ of
+30×30 *boards* touch it once) — that measurement is what justified *promoting* it over *rejecting*
+the ~⅓ of large boards that need it, and what said adding more elegant techniques (edge/anchor,
+gluing) wasn't worth it here. Two things this shape buys:
 
 - **Byte-match for free, no gating flag.** Because the hint code
   (`packLeft`/`packRight`/`analyzeLine`/`deduceHintPlan`) is *separate* from the generator's
