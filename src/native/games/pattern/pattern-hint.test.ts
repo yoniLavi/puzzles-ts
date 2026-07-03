@@ -96,7 +96,7 @@ describe("pattern hint — narration", () => {
       for (const step of res.steps) {
         const t = step.explanation;
         // Opens by naming the board pattern (the row/column being reasoned over).
-        expect(t, `bad opener: "${t}"`).toMatch(/^(This|No run|Only one)\b/);
+        expect(t, `bad opener: "${t}"`).toMatch(/^(This|No run|Whichever)\b/);
         // Concludes with a modal of necessity, never a bare state-of-being verb.
         expect(t, `no necessity modal: "${t}"`).toMatch(/must (be|stay) (black|white)/);
         expect(t, `flat state-of-being verb: "${t}"`).not.toMatch(
@@ -118,6 +118,50 @@ describe("pattern hint — narration", () => {
       }
     }
     expect(sawPinned, "expected at least one zero-slack firing").toBe(true);
+  });
+
+  it("every step names a technique — no generic un-narrated fallback", () => {
+    // Over a spread of sizes (the bottom rung only fires on larger boards), every
+    // plan step carries a named line technique; none is a generic "just because".
+    const named = new Set(["overlap", "unreachable", "lineEmpty", "intersection"]);
+    for (const w of [10, 20, 30]) {
+      for (let i = 0; i < 12; i++) {
+        const P: PatternParams = { w, h: w };
+        const { desc } = patternGame.newDesc(P, randomNew(`named-${w}-${i}`));
+        const state = patternGame.newState(P, desc);
+        for (const m of deduceHintPlan(state)) {
+          expect(named.has(m.reason.kind), `un-named reason: ${m.reason.kind}`).toBe(
+            true,
+          );
+        }
+      }
+    }
+  });
+
+  it("the intersection bottom rung narrates as an explained technique", () => {
+    // Find a board whose plan reaches the intersection bottom rung, then confirm
+    // the displayed step reads as a named necessity-voice deduction (never the
+    // retired "only one arrangement fits" wording).
+    let saw = false;
+    outer: for (let i = 0; i < 40 && !saw; i++) {
+      const P: PatternParams = { w: 30, h: 30 };
+      const { desc } = patternGame.newDesc(P, randomNew(`resid-30-${i}`));
+      const state = patternGame.newState(P, desc);
+      const plan = deduceHintPlan(state);
+      for (let k = 0; k < plan.length; k++) {
+        if (plan[k].reason.kind !== "intersection") continue;
+        const res = doHint(state);
+        if (!res.ok) continue;
+        const t = res.steps[k].explanation;
+        expect(t, `bad intersection narration: "${t}"`).toMatch(
+          /^Whichever way this (row|column)'s runs fit, .* must (be|stay) (black|white)\.$/,
+        );
+        expect(t).not.toMatch(/only one arrangement/i);
+        saw = true;
+        break outer;
+      }
+    }
+    expect(saw, "expected at least one intersection bottom-rung firing").toBe(true);
   });
 });
 

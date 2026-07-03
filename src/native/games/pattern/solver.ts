@@ -366,20 +366,25 @@ export function lineHasError(state: PatternState, line: number): boolean {
 // run's leftmost∩rightmost span is black in every placement (overlap), and a
 // cell no run can reach in any placement is white in every placement.
 //
-// Both are *subsets* of what the full line solver (`doRow`) forces, so a
-// single-line fallback (run `doRow`, surface its first forced segment) covers
-// any cell the two named techniques miss — keeping the plan complete on every
-// board the generator published (which is line-solvable by construction). This
-// is a *parallel* recorder in the Undead sense (hint-authoring §9.4): it never
-// touches the generator's `solvePuzzle`/`isSoluble` path, so the byte-match
-// generator differential is unaffected *by construction*, with no gating flag.
+// Both are *subsets* of what the full line solver (`doRow`) forces. Any cell the
+// two miss is picked up by the general single-line **intersection** bottom rung
+// (`intersectionFiring`): run `doRow` on one line and surface the cells forced
+// the same way across *every* arrangement of that line's runs consistent with
+// its marks. That is a real, named technique — the same family as overlap (which
+// is the single-run special case), generalised to the whole clue — not a "just
+// because"; it is the always-explained completion that keeps the plan complete
+// on every board the generator published (which is line-solvable by
+// construction). All three are *parallel* recorders in the Undead sense
+// (hint-authoring §9.4): they never touch the generator's `solvePuzzle`/
+// `isSoluble` path, so the byte-match generator differential is unaffected *by
+// construction*, with no gating flag.
 
 /** Why a set of cells is forced, driving the hint's narration. */
 export type PatternHintReason =
   | { kind: "overlap"; run: number; slack: number } // black
   | { kind: "unreachable" } // white — no run reaches these cells
   | { kind: "lineEmpty" } // white — the line has no clues at all
-  | { kind: "forced"; black: boolean }; // fallback — the line's unique arrangement
+  | { kind: "intersection"; black: boolean }; // forced in every arrangement of the line's runs
 
 /** One hint step: a contiguous set of same-value cells one line deduction
  * forces, the line reasoned over (for the line-of-sight shade + clue), the
@@ -596,10 +601,14 @@ function rangeAbs(abs: (p: number) => number, from: number, to: number): number[
   return out;
 }
 
-/** The fallback firing: run the complete single-line solver on some line and
- * surface its first forced same-value contiguous segment. Covers cells the two
- * named techniques miss (gap-based deductions), keeping the plan complete. */
-function fallbackFiring(
+/** The single-line intersection bottom rung: run the complete single-line
+ * solver on some line and surface its first forced same-value contiguous
+ * segment. Every cell `doRow` forces is black (or white) in *every* arrangement
+ * of that line's runs consistent with its marks — the general intersection, the
+ * same family as overlap generalised to the whole clue. Covers the gap-based
+ * deductions the two elegant techniques don't name, keeping the plan complete
+ * with an honest, named step (never a "just because"). */
+function intersectionFiring(
   grid: Uint8Array,
   w: number,
   h: number,
@@ -628,7 +637,7 @@ function fallbackFiring(
       cells,
       value: first.value,
       line,
-      reason: { kind: "forced", black: first.value === GRID_FULL },
+      reason: { kind: "intersection", black: first.value === GRID_FULL },
       blackRefs: [],
       whiteRefs: [],
     };
@@ -639,9 +648,10 @@ function fallbackFiring(
 /**
  * A hint plan from the player's current marks: an ordered list of forced
  * single-line deductions that drives the board to its unique solution. Each
- * step prefers a named technique (overlap / unreachable-white) for teaching,
- * falling back to the complete line solver for any cell no named technique
- * groups. The plan is built on a working copy (each step applied before the
+ * step prefers an elegant named technique (overlap / unreachable-white) for
+ * teaching, dropping to the general single-line intersection (still a named,
+ * explained technique) for any cell the elegant two don't group. The plan is
+ * built on a working copy (each step applied before the
  * next is computed), so every step's narration and highlight reflect the board
  * as that step fires — and a fresh recompute resumes from any mid-game
  * position (hint-authoring §7.1).
@@ -657,10 +667,10 @@ export function deduceHintPlan(state: PatternState): PatternHintMove[] {
     for (const c of firing.cells) working[c] = firing.value;
     return 1;
   };
-  // Restart-on-first-firing over two rungs: prefer a named technique (the
-  // teaching path), fall back to the complete single-line solver for cells no
-  // named technique groups. Each firing decides ≥1 cell; the step budget is the
-  // non-termination backstop.
+  // Restart-on-first-firing over two rungs: prefer an elegant named technique
+  // (the teaching path), then the general single-line intersection (also named
+  // and explained) for cells the elegant two don't group. Each firing decides
+  // ≥1 cell; the step budget is the non-termination backstop.
   runDeductionFixpoint({
     rungs: [
       () => {
@@ -671,7 +681,7 @@ export function deduceHintPlan(state: PatternState): PatternHintMove[] {
         }
         return apply(firing);
       },
-      () => apply(fallbackFiring(working, w, h, clues)),
+      () => apply(intersectionFiring(working, w, h, clues)),
     ],
     budget: stepBudget("pattern hint"),
     solved: () => !working.includes(GRID_UNKNOWN),

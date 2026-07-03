@@ -284,10 +284,10 @@ function narrate(
       return `No run can reach ${these} in this ${orient}, so ${they} must stay white.`;
     case "lineEmpty":
       return `This ${orient} has no clues, so ${these} must stay white.`;
-    case "forced":
+    case "intersection":
       return reason.black
-        ? `Only one arrangement of this ${orient}'s clues fits, so ${these} must be black.`
-        : `Only one arrangement of this ${orient}'s clues fits, so ${these} must stay white.`;
+        ? `Whichever way this ${orient}'s runs fit, ${these} must be black.`
+        : `Whichever way this ${orient}'s runs fit, ${these} must stay white.`;
   }
 }
 
