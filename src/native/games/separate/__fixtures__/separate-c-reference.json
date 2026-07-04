@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "fixtures": [
+    { "w": 4, "h": 4, "k": 4, "seed": "separate-trace-0", "desc": "BCDADDDCCBCBAAAB" },
+    { "w": 4, "h": 4, "k": 4, "seed": "separate-trace-1", "desc": "BACDBADDCADCCBAB" },
+    {
+      "w": 5,
+      "h": 5,
+      "k": 5,
+      "seed": "separate-trace-2",
+      "desc": "ADEBCADEEEEDAAACCDCDBBBCB"
+    },
+    {
+      "w": 5,
+      "h": 5,
+      "k": 5,
+      "seed": "separate-trace-3",
+      "desc": "AECBBDECBDADCEAEDCBAEDCBA"
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "k": 4,
+      "seed": "separate-trace-4",
+      "desc": "BACADBBDCCBBAADABADCDACDCCBDCCDABBAD"
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "k": 4,
+      "seed": "separate-trace-5",
+      "desc": "DACADCBACCDBBDCBBCAADBABCBDCAACBADDD"
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "k": 6,
+      "seed": "separate-trace-6",
+      "desc": "BFAFBAEFCEDDDEEACDCDFFCACBBBCEABFADE"
+    },
+    {
+      "w": 5,
+      "h": 4,
+      "k": 4,
+      "seed": "separate-trace-7",
+      "desc": "DDCBDAAABCBBCCACBDDA"
+    }
+  ]
+}

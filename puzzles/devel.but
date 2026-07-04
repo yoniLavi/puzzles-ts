@@ -5407,25 +5407,6 @@ by \cw{interpret_move()}.  The return value is \cw{MOVE_UNUSED} if
 \c{button} is unrecognised, \cw{MOVE_UI_UPDATE} if \c{x}, \c{y}, or
 \c{visible} was updated, and \cw{MOVE_NO EFFECT} otherwise.
 
-\S{utils-divvy-rectangle} \cw{divvy_rectangle()}
-
-\c int *divvy_rectangle(int w, int h, int k, random_state *rs);
-
-Invents a random division of a rectangle into same-sized polyominoes,
-such as is found in the block layout of a Solo puzzle in jigsaw mode,
-or the solution to a Palisade puzzle.
-
-\c{w} and \c{h} are the dimensions of the rectangle. \c{k} is the size
-of polyomino desired. It must be a factor of \c{w*h}.
-
-\c{rs} is a \cw{random_state} used to supply the random numbers to
-select a random division of the rectangle.
-
-The return value is a dsf (see \k{utils-dsf}) whose equivalence
-classes correspond to the polyominoes that the rectangle is divided
-into. The indices of the dsf are of the form \c{y*w+x}, for the cell
-with coordinates \cw{x,y}.
-
 \S{utils-domino-layout} \cw{domino_layout()}
 
 \c int *domino_layout(int w, int h, random_state *rs);

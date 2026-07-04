@@ -1,9 +1,9 @@
 /**
  * Divide a rectangle into equally-sized connected ominoes at random — an
- * idiomatic port of `divvy.c` (`divvy_rectangle`), used by Solo's jigsaw mode to
- * build the irregular sub-block partition. Solo-only upstream; kept local to
- * `solo/` until a second consumer appears (then promote to `engine/` per
- * playbook §2.1).
+ * idiomatic port of `divvy.c` (`divvy_rectangle`). Shared engine leaf: consumed
+ * by Solo's jigsaw sub-block division, Palisade's region generation, and
+ * Separate's `k`-omino partition (promoted here from `solo/` on the third
+ * consumer per playbook §2.1).
  *
  * RNG-faithful to upstream over the bit-identical `random.ts`: the draw order
  * (the `order` shuffle, the per-iteration `random_upto` omino pick, the BFS over
@@ -17,9 +17,9 @@
  * partition, not the root identity, is what feeds the desc (playbook §2.2).
  */
 
-import { Dsf } from "../../engine/dsf.ts";
-import { shuffle } from "../../engine/shuffle.ts";
-import { type RandomState, randomUpto } from "../../random/index.ts";
+import { type RandomState, randomUpto } from "../random/index.ts";
+import { Dsf } from "./dsf.ts";
+import { shuffle } from "./shuffle.ts";
 
 /**
  * `addremcommon`: walk the eight 8-adjacent neighbours of `(x, y)` in cyclic

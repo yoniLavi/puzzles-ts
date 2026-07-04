@@ -419,6 +419,14 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       "{game-mode:Seismic|Tectonic}: {width}x{height} {difficulty:Easy|Hard}",
     ),
   },
+  separate: {
+    describeConfig: configFormatter("{width}x{height}, {letters} letters"),
+    darkMode: {
+      // Separate shares Palisade's palette: grid/letter/wall on index 2,
+      // line-maybe on index 3.
+      paletteOverrides: { 3: 0.6 }, // darken line-maybe
+    },
+  },
   signpost: {
     describeConfig: configFormatter(
       "{width}x{height}{start-and-end-in-corners:, free ends|}",

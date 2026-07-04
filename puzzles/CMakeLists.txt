@@ -35,7 +35,7 @@ else()
 endif()
 
 add_library(core_obj OBJECT
-  combi.c divvy.c draw-poly.c drawing.c dsf.c findloop.c grid.c
+  combi.c draw-poly.c drawing.c dsf.c findloop.c grid.c
   latin.c laydomino.c loopgen.c malloc.c matching.c midend.c misc.c
   penrose.c penrose-legacy.c ps.c ${random_or_sha_source} sort.c tdq.c tree234.c
   version.c
@@ -226,6 +226,13 @@ colour squares."
   TS_PORTED  # native-TS port (openspec add-samegame-ts-port); no samegame.c/wasm
 )
 
+puzzle(separate
+  TS_PORTED  # native-TS port (openspec add-separate-ts-port); no separate.c/wasm.
+             # Finishes upstream's unfinished puzzle; was in unfinished/.
+  DISPLAYNAME "Separate"
+  DESCRIPTION "Rectangle-dividing puzzle"
+  OBJECTIVE "Partition the grid into regions containing one of each letter.")
+
 puzzle(signpost
   DISPLAYNAME "Signpost"
   DESCRIPTION "Square-connecting puzzle"
@@ -252,7 +259,6 @@ solver(slant)
 
 puzzle(solo
   TS_PORTED  # native-TS port (openspec add-solo-ts-port); no solo.c/wasm
-             # (divvy.c stays in core_obj — still used by unfinished/separate.c)
   DISPLAYNAME "Solo"
   DESCRIPTION "Number placement puzzle"
   OBJECTIVE "Fill in the grid so that each row, column and square \

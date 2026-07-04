@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../random/index.ts";
 import {
+  COL_CORRECT,
   COL_ERROR,
   COL_GRID,
   COL_HINT,
@@ -15,7 +16,7 @@ import {
   type PalisadeDrawState,
   redraw,
 } from "./render.ts";
-import { newDesc } from "./solver.ts";
+import { newDesc, solveToBorders } from "./solver.ts";
 import {
   BORDER,
   newState,
@@ -111,6 +112,29 @@ describe("Palisade redraw", () => {
     expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_ERROR)).toBe(true);
   });
 
+  it("shades completed correct regions, but not the untouched board", () => {
+    const state = makeState();
+
+    // Untouched board: one big undivided region ⇒ no correct shade.
+    {
+      const { dr, ops } = recordingDrawing();
+      redraw(dr, freshDs(state), null, state, 0, freshUi(), 0, 0);
+      expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_CORRECT)).toBe(
+        false,
+      );
+    }
+
+    // The unique solution: every region is size k with satisfied clues and no
+    // interior wall ⇒ all regions shade COL_CORRECT.
+    const sol = solveToBorders(P, state.clues);
+    expect(sol).not.toBeNull();
+    if (!sol) return;
+    const solved = { ...state, borders: sol.slice() };
+    const { dr, ops } = recordingDrawing();
+    redraw(dr, freshDs(solved), null, solved, 0, freshUi(), 0, 0);
+    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_CORRECT)).toBe(true);
+  });
+
   it("reddens a findMistakes overlay edge", () => {
     const state = makeState();
     const { dr, ops } = recordingDrawing();
@@ -151,9 +175,9 @@ describe("Palisade redraw", () => {
     // With no hint, none of the hint colours appear.
     const { dr: dr2, ops: ops2 } = recordingDrawing();
     redraw(dr2, freshDs(state), null, state, 0, freshUi(), 0, 0);
-    expect(
-      ops2.some((o) => o.colour === COL_HINT || o.colour === COL_HINT_CELL),
-    ).toBe(false);
+    expect(ops2.some((o) => o.colour === COL_HINT || o.colour === COL_HINT_CELL)).toBe(
+      false,
+    );
   });
 
   it("draws the cursor outline when shown", () => {

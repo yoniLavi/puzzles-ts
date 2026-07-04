@@ -22,6 +22,7 @@ import "./pattern/index.ts";
 import "./pegs/index.ts";
 import "./range/index.ts";
 import "./samegame/index.ts";
+import "./separate/index.ts";
 import "./singles/index.ts";
 import "./sixteen/index.ts";
 import "./solo/index.ts";

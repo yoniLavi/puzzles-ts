@@ -611,14 +611,6 @@ combi_ctx *next_combi(combi_ctx *combi); /* returns NULL for end */
 void free_combi(combi_ctx *combi);
 
 /*
- * divvy.c
- */
-/* divides w*h rectangle into pieces of size k. Returns w*h dsf. */
-DSF *divvy_rectangle(int w, int h, int k, random_state *rs);
-/* Same, but only tries once, and may fail. (Exposed for test program.) */
-DSF *divvy_rectangle_attempt(int w, int h, int k, random_state *rs);
-
-/*
  * findloop.c
  */
 struct findloopstate;

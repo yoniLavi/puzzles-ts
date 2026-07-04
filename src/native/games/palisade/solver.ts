@@ -14,7 +14,7 @@ import { Dsf } from "../../engine/dsf.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
-import { divvyRectangle } from "./divvy.ts";
+import { divvyRectangle } from "../../engine/divvy.ts";
 import {
   BORDER,
   bitcount,

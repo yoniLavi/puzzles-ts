@@ -4,11 +4,6 @@ puzzle(group
   OBJECTIVE "Complete the unfinished Cayley table of a group.")
 solver(group ${PUZZLES_ROOT_DIR}/latin.c)
 
-puzzle(separate
-  DISPLAYNAME "Separate"
-  DESCRIPTION "Rectangle-dividing puzzle"
-  OBJECTIVE "Partition the grid into regions containing one of each letter.")
-
 puzzle(slide
   DISPLAYNAME "Slide"
   DESCRIPTION "Sliding block puzzle"
