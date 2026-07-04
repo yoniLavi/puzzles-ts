@@ -59,12 +59,12 @@
       type 9×9 4-way generates with a correct header; 0 console errors.
       (Win flash verified by the tier-1 flashLength test + the ported
       3-phase blink; not exercised in-browser.)
-- [ ] 4.4 Owner smoke-test / acceptance pass.
+- [x] 4.4 Owner smoke-test / acceptance pass.
 
 ## 5. Stage 2 — on owner acceptance only
 
-- [ ] 5.1 `TS_PORTED` in `puzzles/CMakeLists.txt` (drop `solver(lightup)`),
+- [x] 5.1 `TS_PORTED` in `puzzles/CMakeLists.txt` (drop `solver(lightup)`),
       delete `puzzles/lightup.c` + `puzzles/auxiliary/lightup-trace.c` (+ its
       CMake line); `rm -rf build/wasm` + rebuild; lightup in catalog, no wasm.
-- [ ] 5.2 Update `docs/porting/game-port-playbook.md` with anything learned;
+- [x] 5.2 Update `docs/porting/game-port-playbook.md` with anything learned;
       archive this change in the same commit.

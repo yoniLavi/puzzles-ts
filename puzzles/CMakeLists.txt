@@ -122,10 +122,10 @@ puzzle(keen
 arithmetic clues.")
 
 puzzle(lightup
+  TS_PORTED  # native-TS port (openspec add-lightup-ts-port); no lightup.c/wasm
   DISPLAYNAME "Light Up"
   DESCRIPTION "Light-bulb placing puzzle"
   OBJECTIVE "Place bulbs to light up all the squares.")
-solver(lightup)
 
 puzzle(loopy
   DISPLAYNAME "Loopy"
