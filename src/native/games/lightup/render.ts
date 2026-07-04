@@ -14,14 +14,15 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
-import type { GameDrawing } from "../../engine/game.ts";
-import type { LightupMistake } from "./index.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import type { LightupHint, LightupMistake } from "./index.ts";
 import {
   F_BLACK,
   F_IMPOSSIBLE,
   F_LIGHT,
   F_NUMBERED,
   idx,
+  type LightupMove,
   type LightupState,
   type LightupUi,
   numberWrong,
@@ -39,6 +40,13 @@ export const COL_LIGHT = 3; // white: bulbs and clue digits
 export const COL_LIT = 4; // yellow lit-square fill
 export const COL_ERROR = 5;
 export const COL_CURSOR = 6;
+// Fork hint colours, appended past the C enum (lightup's dark-mode
+// paletteOverrides touch only indices 2/3, so these are safe). The digit
+// of a driving clue recolours COL_HINT (the Pattern clue↔move tie).
+export const COL_HINT = 7; // forced cell(s), blue fill (highlight only)
+export const COL_HINT_CELL = 8; // evidence: light-blue shade / digit on black
+export const COL_HINT_LITREF = 9; // cited lit/bulb premise (teal ring)
+export const COL_HINT_DARKREF = 10; // the unlit square a deduction is about (amber ring)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -50,6 +58,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_LIT] = [1, 1, 0];
   out[COL_ERROR] = [1, 0.25, 0.25];
   out[COL_CURSOR] = [bg[0] / 2, bg[1] / 2, bg[2] / 2];
+  out[COL_HINT] = [0.13, 0.5, 0.85];
+  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
+  out[COL_HINT_LITREF] = [0.0, 0.78, 0.55];
+  out[COL_HINT_DARKREF] = [0.98, 0.78, 0.42];
   return out;
 }
 
@@ -81,6 +93,11 @@ const DF_IMPOSSIBLE = 256;
 const DF_WRONG = 512;
 /** Fork addition: the show-lit-blobs pref, in the key so a toggle repaints. */
 const DF_BLOBS_PREF = 1024;
+// Fork additions: the displayed hint step, in the key so hint changes repaint.
+const DF_HINT_TARGET = 2048; // forced cell — blue COL_HINT fill
+const DF_HINT_AREA = 4096; // evidence — shade when dark, teal ring when lit
+const DF_HINT_DARKREF = 8192; // the unlit square the deduction is about — amber ring
+const DF_HINT_CLUE = 16384; // driving clue — digit recoloured
 
 export interface LightupDrawState {
   started: boolean;
@@ -158,7 +175,15 @@ function tileRedraw(
   if (dsFlags & DF_BLACK) {
     dr.drawRect({ x: dx, y: dy, w: ts, h: ts }, COL_BLACK);
     if (dsFlags & DF_NUMBERED) {
-      const ccol = dsFlags & DF_NUMBERWRONG ? COL_ERROR : COL_LIGHT;
+      // A hint's driving clue recolours its digit COL_HINT (the Pattern
+      // clue↔move tie; the light COL_HINT_CELL would be unreadable as a
+      // cue — nearly white on black). A provably-wrong clue stays red.
+      const ccol =
+        dsFlags & DF_NUMBERWRONG
+          ? COL_ERROR
+          : dsFlags & DF_HINT_CLUE
+            ? COL_HINT
+            : COL_LIGHT;
       // The clue value never changes over the game, so it is not part of
       // the diff key (upstream's observation).
       dr.drawText(
@@ -174,11 +199,29 @@ function tileRedraw(
       );
     }
   } else {
-    dr.drawRect(
-      { x: dx, y: dy, w: ts, h: ts },
-      dsFlags & DF_LIT ? lit : COL_BACKGROUND,
-    );
+    // Hint roles (fork): a target square fills COL_HINT (it is never lit —
+    // targets are always placeable squares); a dark evidence square shades
+    // COL_HINT_CELL (its blob, if any, draws on top); a *lit* evidence
+    // square keeps its yellow (the fill would hide the "already lit"
+    // premise) and gets a teal ring below instead.
+    const fill =
+      dsFlags & DF_HINT_TARGET
+        ? COL_HINT
+        : dsFlags & DF_HINT_AREA && !(dsFlags & DF_LIT)
+          ? COL_HINT_CELL
+          : dsFlags & DF_LIT
+            ? lit
+            : COL_BACKGROUND;
+    dr.drawRect({ x: dx, y: dy, w: ts, h: ts }, fill);
     drawRectOutline(dr, dx, dy, ts, ts, COL_GRID);
+    if (dsFlags & DF_HINT_AREA && dsFlags & DF_LIT) {
+      drawRectOutline(dr, dx + 1, dy + 1, ts - 1, ts - 1, COL_HINT_LITREF);
+      drawRectOutline(dr, dx + 2, dy + 2, ts - 3, ts - 3, COL_HINT_LITREF);
+    }
+    if (dsFlags & DF_HINT_DARKREF) {
+      drawRectOutline(dr, dx + 1, dy + 1, ts - 1, ts - 1, COL_HINT_DARKREF);
+      drawRectOutline(dr, dx + 2, dy + 2, ts - 3, ts - 3, COL_HINT_DARKREF);
+    }
     if (dsFlags & DF_LIGHT) {
       const lcol = dsFlags & DF_OVERLAP ? COL_ERROR : COL_LIGHT;
       dr.drawCircle(
@@ -230,12 +273,29 @@ export function redraw(
   ui: LightupUi,
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<LightupMove, LightupHint>,
   mistakes?: readonly LightupMistake[],
 ): void {
   if (!ds) return;
   const ts = ds.tilesize;
   const { w, h } = state;
+
+  // Per-cell hint-role bits for the displayed step (fork addition).
+  const hl = hint?.highlights;
+  let hintBits: Map<number, number> | null = null;
+  if (hl) {
+    hintBits = new Map();
+    const add = (cells: readonly { x: number; y: number }[], bit: number): void => {
+      for (const c of cells) {
+        const i = idx(c.x, c.y, w);
+        hintBits?.set(i, (hintBits.get(i) ?? 0) | bit);
+      }
+    };
+    add(hl.targets, DF_HINT_TARGET);
+    add(hl.area, DF_HINT_AREA);
+    if (hl.dark) add([hl.dark], DF_HINT_DARKREF);
+    if (hl.clue) add([hl.clue], DF_HINT_CLUE);
+  }
 
   const flashing = flashTime > 0 && Math.floor((flashTime * 3) / FLASH_TIME) !== 1;
 
@@ -264,6 +324,7 @@ export function redraw(
       let df = tileFlags(state, ui, x, y, flashing);
       if (wrong?.has(i)) df |= DF_WRONG;
       if (ui.drawBlobsWhenLit) df |= DF_BLOBS_PREF;
+      if (hintBits?.has(i)) df |= hintBits.get(i) ?? 0;
       if (ds.cache[i] !== df) {
         ds.cache[i] = df;
         tileRedraw(dr, ds, state, ui, x, y);

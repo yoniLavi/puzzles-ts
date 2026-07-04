@@ -25,6 +25,7 @@ import { fillingGame } from "../games/filling/index.ts";
 import { fifteenGame } from "../games/fifteen/index.ts";
 import { floodGame } from "../games/flood/index.ts";
 import { keenGame } from "../games/keen/index.ts";
+import { lightupGame } from "../games/lightup/index.ts";
 import { palisadeGame } from "../games/palisade/index.ts";
 import { patternGame } from "../games/pattern/index.ts";
 import { rangeGame } from "../games/range/index.ts";
@@ -79,6 +80,7 @@ const HINT_GAMES: [string, AnyGame][] = [
   ["fifteen", fifteenGame],
   ["flood", floodGame],
   ["keen", keenGame],
+  ["lightup", lightupGame],
   ["palisade", palisadeGame],
   ["pattern", patternGame],
   ["range", rangeGame],
