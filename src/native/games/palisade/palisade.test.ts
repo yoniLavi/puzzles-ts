@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../random/index.ts";
-import { divvyRectangle } from "./divvy.ts";
+import { divvyRectangle } from "../../engine/divvy.ts";
 import { palisadeGame } from "./index.ts";
 import { deduceForcedEdges, newDesc, solver, solveToBorders } from "./solver.ts";
 import {

@@ -117,6 +117,19 @@ export function mkhighlight(defaultBackground: Colour): {
  * **original** black-distance `db` (`colour_mix(bg, black, k/db, …)`),
  * not a freshly measured one.
  */
+/**
+ * The shared cross-game "this region / area is correctly completed" shade: a
+ * neutral darkening of the cell background to 75%, matching upstream
+ * Rectangles' `COL_CORRECT` (`0.75 × COL_BACKGROUND`). Grid-partition games
+ * (Separate, Palisade) fill a completed correct region with this rather than
+ * inventing a per-game colour, so "done and correct" reads the same everywhere
+ * — a settled grey, not a semantic green. Pass the background the game actually
+ * paints its cells with (post-`mkhighlight`).
+ */
+export function correctRegionColour(background: Colour): Colour {
+  return [background[0] * 0.75, background[1] * 0.75, background[2] * 0.75];
+}
+
 export function mkhighlightSpecific(base: Colour): {
   base: Colour;
   highlight: Colour;

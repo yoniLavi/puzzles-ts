@@ -1,50 +1,47 @@
 /**
- * Palisade rendering — faithful port of `draw_tile` / `game_redraw`.
+ * Separate rendering — adapted from Palisade's `game_redraw`.
  *
- * Per-tile diffed loop over an `Int32Array` flag cache (the no-BigInt
- * pattern). Each tile draws its four border edges (wall / no-wall /
- * unknown / error coloured), the clue, and any cursor box. The live
- * error highlighting is recomputed every frame from two DSFs over the
- * current borders (black = wall-separated regions, yellow = no-wall
- * regions); the `findMistakes` overlay folds into the same error bits.
+ * Per-tile diffed loop over an `Int32Array` flag cache (the no-BigInt pattern).
+ * Each tile draws its four three-valued border edges (wall / no-wall / unknown /
+ * error), its letter, and any cursor box. Live error highlighting is recomputed
+ * every frame from two DSFs over the current borders (black = wall-separated
+ * regions, yellow = no-wall regions): a region that is over-size, undersize, or
+ * has a dangling wall reddens the offending edge, and a cell whose letter repeats
+ * within its wall-bounded region reddens the letter. The `findMistakes` overlay
+ * (edges contradicting the unique solution) folds into the same edge-error bits.
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { correctRegionColour, mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import type { GameDrawing } from "../../engine/game.ts";
 import {
   BORDER,
   BORDER_D,
-  BORDER_MASK,
   BORDER_R,
-  bitcount,
   buildDsf,
   DISABLED,
   DX,
   DY,
-  EMPTY,
   outOfBounds,
-  type PalisadeHint,
-  type PalisadeMistake,
-  type PalisadeMove,
-  type PalisadeParams,
-  type PalisadeState,
-  type PalisadeUi,
+  type SeparateMistake,
+  type SeparateParams,
+  type SeparateState,
+  type SeparateUi,
 } from "./state.ts";
 
 export const PREFERRED_TILE_SIZE = 48;
 export const FLASH_TIME = 0.7;
 
-// --- palette (upstream COL_* enum) ----------------------------------------
+const A = "A".charCodeAt(0);
+
+// --- palette (mirrors Palisade's COL_* enum) ------------------------------
 
 export const COL_BACKGROUND = 0;
 export const COL_FLASH = 1;
-export const COL_GRID = 2; // == COL_CLUE == COL_LINE_YES
+export const COL_GRID = 2; // == letter colour == wall colour
 export const COL_LINE_MAYBE = 3;
 export const COL_LINE_NO = 4;
 export const COL_ERROR = 5;
-export const COL_HINT = 6; // every edge the deduction forces this step (blue)
-export const COL_HINT_CELL = 7; // referenced-cell shading (a light blue)
-export const COL_CORRECT = 8; // a completed, correct region (shared grey shade)
+export const COL_CORRECT = 6; // a completed, correct region (shared grey shade)
 
 const DARKER = 0.9;
 
@@ -55,8 +52,6 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_FLASH] = highlight;
   out[COL_GRID] = [0, 0, 0];
   out[COL_ERROR] = [1, 0, 0];
-  out[COL_HINT] = [0.13, 0.5, 0.85];
-  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
   out[COL_CORRECT] = correctRegionColour(background);
   out[COL_LINE_MAYBE] = [background[0] * DARKER, background[1] * DARKER, 0];
   out[COL_LINE_NO] = [
@@ -74,7 +69,7 @@ export const margin = (ts: number): number => Math.floor(ts / 2);
 const center = (ts: number): number =>
   Math.floor(ts / 2) + Math.floor(tileWidth(ts) / 2);
 
-export function computeSize(p: PalisadeParams, ts: number): Size {
+export function computeSize(p: SeparateParams, ts: number): Size {
   return {
     w: p.w * ts + tileWidth(ts) + 2 * margin(ts),
     h: p.h * ts + tileWidth(ts) + 2 * margin(ts),
@@ -89,16 +84,14 @@ export function fromCoord(coord: number, ts: number): number {
 // --- packed flag bits ------------------------------------------------------
 
 const BORDER_ERROR = (border: number): number => border << 8; // bits 8..11
-const F_ERROR_CLUE = 1 << 12;
+const F_ERROR_LETTER = 1 << 12;
 const F_FLASH = 1 << 13;
 const CONTAINS_CURSOR = (x: number): number => x << 14; // 9 bits, 14..22
-const HINT_EDGE = (border: number): number => border << 23; // bits 23..26
-const F_HINT_CELL = 1 << 27; // a hint-referenced cell (clue pair / region)
-const F_CORRECT = 1 << 28; // a cell in a completed, correct region
+const F_CORRECT = 1 << 23; // a cell in a completed, correct region
 
 // --- draw state ------------------------------------------------------------
 
-export interface PalisadeDrawState {
+export interface SeparateDrawState {
   started: boolean;
   tilesize: number;
   w: number;
@@ -107,7 +100,7 @@ export interface PalisadeDrawState {
   cache: Int32Array;
 }
 
-export function newDrawState(state: PalisadeState): PalisadeDrawState {
+export function newDrawState(state: SeparateState): SeparateDrawState {
   return {
     started: false,
     tilesize: 0,
@@ -119,15 +112,10 @@ export function newDrawState(state: PalisadeState): PalisadeDrawState {
 
 // --- tile drawing ----------------------------------------------------------
 
-/** Colour for edge `dir`, given the tile's packed flags. Every edge the
- * current hint forces this step (the action edge plus the firing's other
- * edges — they share a fate, so they share a colour) is in `HINT_EDGE`
- * and wins over the normal edge states. */
 function edgeColour(flags: number, dir: number): number {
   const b = BORDER(dir);
-  if (flags & HINT_EDGE(b)) return COL_HINT;
   if (flags & BORDER_ERROR(b)) return COL_ERROR;
-  if (flags & b) return COL_GRID; // wall (COL_LINE_YES)
+  if (flags & b) return COL_GRID; // wall
   if (flags & DISABLED(b)) return COL_LINE_NO;
   return COL_LINE_MAYBE;
 }
@@ -138,7 +126,7 @@ function drawTile(
   r: number,
   c: number,
   flags: number,
-  clue: number,
+  letter: number,
 ): void {
   const w = tileWidth(ts);
   const x = margin(ts) + ts * c;
@@ -148,28 +136,20 @@ function drawTile(
 
   dr.drawRect(
     { x: x + w, y: y + w, w: ts - w, h: ts - w },
-    flags & F_FLASH
-      ? COL_FLASH
-      : flags & F_HINT_CELL
-        ? COL_HINT_CELL
-        : flags & F_CORRECT
-          ? COL_CORRECT
-          : COL_BACKGROUND,
+    flags & F_FLASH ? COL_FLASH : flags & F_CORRECT ? COL_CORRECT : COL_BACKGROUND,
   );
 
-  if (clue !== EMPTY) {
-    dr.drawText(
-      { x: x + center(ts), y: y + center(ts) },
-      {
-        align: "center",
-        baseline: "mathematical",
-        fontType: "variable",
-        size: Math.floor(ts / 2),
-      },
-      flags & F_ERROR_CLUE ? COL_ERROR : COL_GRID,
-      String(clue),
-    );
-  }
+  dr.drawText(
+    { x: x + center(ts), y: y + center(ts) },
+    {
+      align: "center",
+      baseline: "mathematical",
+      fontType: "variable",
+      size: Math.floor(ts / 2),
+    },
+    flags & F_ERROR_LETTER ? COL_ERROR : COL_GRID,
+    String.fromCharCode(A + letter),
+  );
 
   // Four border edges (U, R, D, L).
   dr.drawRect({ x: x + w, y, w: ts - w, h: w }, edgeColour(flags, 0));
@@ -193,7 +173,6 @@ function drawCursor(dr: GameDrawing, ts: number, curX: number, curY: number): vo
   const centerX = x + (offX === 0 ? Math.floor(w / 2) : center(ts));
   const centerY = y + (offY === 0 ? Math.floor(w / 2) : center(ts));
 
-  // cur_type = (offX<<1)+offY: 0 TL-corner, 1 left-border, 2 top-border, 3 centre.
   const third = Math.floor(ts / 3);
   const twoThird = Math.floor((2 * ts) / 3);
   const cw = offX === 0 ? third : twoThird;
@@ -201,7 +180,6 @@ function drawCursor(dr: GameDrawing, ts: number, curX: number, curY: number): vo
 
   const ox = centerX - Math.floor(cw / 2);
   const oy = centerY - Math.floor(ch / 2);
-  // Outline (draw_rect_outline): four 1-px edges.
   dr.drawLine({ x: ox, y: oy }, { x: ox + cw, y: oy }, COL_GRID, 1);
   dr.drawLine({ x: ox + cw, y: oy }, { x: ox + cw, y: oy + ch }, COL_GRID, 1);
   dr.drawLine({ x: ox + cw, y: oy + ch }, { x: ox, y: oy + ch }, COL_GRID, 1);
@@ -213,43 +191,21 @@ function drawCursor(dr: GameDrawing, ts: number, curX: number, curY: number): vo
 
 export function redraw(
   dr: GameDrawing,
-  ds: PalisadeDrawState | null,
-  _prev: PalisadeState | null,
-  state: PalisadeState,
+  ds: SeparateDrawState | null,
+  _prev: SeparateState | null,
+  state: SeparateState,
   _dir: number,
-  ui: PalisadeUi,
+  ui: SeparateUi,
   _animTime: number,
   flashTime: number,
-  hint?: HintStep<PalisadeMove, PalisadeHint>,
-  mistakes?: readonly PalisadeMistake[],
+  _hint?: unknown,
+  mistakes?: readonly SeparateMistake[],
 ): void {
   if (!ds) return;
   const ts = ds.tilesize;
-  const { w, h, k, clues, borders } = state;
+  const { w, h, k, letters, borders } = state;
   const wh = w * h;
   const flash = Math.floor((flashTime * 5) / FLASH_TIME) % 2;
-
-  // Fold the displayed hint step into per-tile hint channels. The action
-  // edge and the firing's other forced edges (`hl.edges`) all paint
-  // COL_HINT — they share a fate, so they share a colour — so both are
-  // marked into the one edge mask; the referenced cells (the clue pair /
-  // region) shade COL_HINT_CELL. Both sides of each edge are marked (same
-  // pixels).
-  const hintEdgeMask = new Int32Array(wh);
-  const hintCellMask = new Int32Array(wh);
-  const hl = hint?.highlights;
-  if (hl) {
-    const markEdge = (ex: number, ey: number, edir: number): void => {
-      hintEdgeMask[ey * w + ex] |= BORDER(edir);
-      const nx = ex + DX[edir];
-      const ny = ey + DY[edir];
-      if (!outOfBounds(nx, ny, w, h)) hintEdgeMask[ny * w + nx] |= BORDER(edir ^ 2);
-    };
-    markEdge(hl.x, hl.y, hl.dir);
-    if (hl.edges) for (const e of hl.edges) markEdge(e.x, e.y, e.dir);
-    if (hl.cells)
-      for (const cell of hl.cells) hintCellMask[cell.y * w + cell.x] |= F_HINT_CELL;
-  }
 
   if (!ds.started) {
     const size = computeSize({ w, h, k }, ts);
@@ -270,20 +226,37 @@ export function redraw(
   const blackDsf = buildDsf(w, h, borders, true);
   const yellowDsf = buildDsf(w, h, borders, false);
 
+  // Per black region: which letters appear, and how many times. A letter that
+  // repeats within a *completed* (size-k) wall-bounded region reddens every cell
+  // that carries it — the "you closed this region but it has two of the same
+  // letter" signal. We gate on size === k so the untouched board (one big region
+  // holding every letter k times) stays clean, mirroring Palisade's philosophy
+  // of only flagging provably-wrong state.
+  const regionCounts = new Map<number, Int32Array>();
+  for (let i = 0; i < wh; i++) {
+    const root = blackDsf.canonify(i);
+    let counts = regionCounts.get(root);
+    if (!counts) {
+      counts = new Int32Array(k);
+      regionCounts.set(root, counts);
+    }
+    counts[letters[i]]++;
+  }
+
   // Completed-and-correct regions: a wall-bounded (black) component of exactly
-  // `k` cells, every clue in it satisfied, and no wall interior to it. These
-  // shade with the shared completed-region colour (Rect's convention), the same
-  // feedback Galaxies/Rect give (a *local* correctness check, not a
-  // global-solution check). Start each right-sized component valid, then
-  // invalidate on a clue mismatch or an interior (dangling) wall.
+  // `k` cells holding one of each letter (no duplicate) with no wall interior to
+  // it. These shade with the shared completed-region colour (Rect's convention)
+  // to signal validity — the same local-correctness feedback Galaxies/Rect give.
+  // Start each right-sized component valid, then invalidate on a duplicate letter
+  // or an interior (dangling) wall.
   const validRoot = new Map<number, boolean>();
   for (let i = 0; i < wh; i++) {
     const r = blackDsf.canonify(i);
-    if (!validRoot.has(r)) validRoot.set(r, blackDsf.size(r) === k);
-  }
-  for (let i = 0; i < wh; i++) {
-    if (clues[i] !== EMPTY && clues[i] !== bitcount(borders[i]))
-      validRoot.set(blackDsf.canonify(i), false);
+    if (validRoot.has(r)) continue;
+    let ok = blackDsf.size(r) === k;
+    const counts = regionCounts.get(r);
+    if (ok && counts) for (let n = 0; n < k; n++) if (counts[n] > 1) ok = false;
+    validRoot.set(r, ok);
   }
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -304,16 +277,15 @@ export function redraw(
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < w; c++) {
       const i = r * w + c;
-      const clue = clues[i];
-      let flags =
-        borders[i] | mistakeMask[i] | HINT_EDGE(hintEdgeMask[i]) | hintCellMask[i];
+      let flags = borders[i] | mistakeMask[i];
 
-      if (validRoot.get(blackDsf.canonify(i))) flags |= F_CORRECT;
       if (flash) flags |= F_FLASH;
 
-      const on = bitcount(borders[i]);
-      const off = bitcount((borders[i] >> 4) & BORDER_MASK);
-      if (clue !== EMPTY && (on > clue || clue > 4 - off)) flags |= F_ERROR_CLUE;
+      const counts = regionCounts.get(blackDsf.canonify(i));
+      if (counts && blackDsf.size(i) === k && counts[letters[i]] > 1)
+        flags |= F_ERROR_LETTER;
+
+      if (validRoot.get(blackDsf.canonify(i))) flags |= F_CORRECT;
 
       if (ui.show) {
         for (let u = 0; u < 3; u++) {
@@ -344,7 +316,7 @@ export function redraw(
 
       if (ds.cache[i] !== flags) {
         ds.cache[i] = flags;
-        drawTile(dr, ts, r, c, flags, clue);
+        drawTile(dr, ts, r, c, flags, letters[i]);
       }
     }
   }

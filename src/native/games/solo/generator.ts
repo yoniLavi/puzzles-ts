@@ -29,7 +29,7 @@
 
 import { shuffle } from "../../engine/shuffle.ts";
 import { type RandomState, randomBits, randomUpto } from "../../random/index.ts";
-import { divvyRectangle } from "./divvy.ts";
+import { divvyRectangle } from "../../engine/divvy.ts";
 import { type Difficulty, runSolver } from "./solver.ts";
 import {
   type BlockStructure,

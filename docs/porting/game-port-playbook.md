@@ -67,6 +67,41 @@ waits for the enabling change). Open the port as **one openspec change**
 (`add-<game>-ts-port`) — proposal + tasks + design + per-game spec deltas (the
 [openspec proposal workflow](../../openspec/OPENSPEC_AGENTS.md)).
 
+### 1.1 Finishing an *unfinished* upstream puzzle (`puzzles/unfinished/`)
+
+A handful of upstream puzzles ship only a solver/generator — the whole frontend
+(`interpret_move`/`execute_move`/`game_redraw`/`new_ui`, even the `game_state`
+fields) is `FIXME` stubs, and the game is gated behind `PUZZLES_ENABLE_UNFINISHED`
+so it reaches nobody. Porting one is a **finish**, not a transliteration: the
+interaction model, rendering, win condition, `findMistakes`, and presets are yours
+to design. Two things make it tractable and low-risk:
+
+- **Reuse a structurally-similar *shipped* game's frontend wholesale.** Find a
+  ported game whose *task* matches and adopt its data model + input + render
+  skeleton, differing only in the cell content and win rule. Separate ("partition
+  a letters grid into `k`-ominoes, one of each letter per region") is Palisade
+  ("partition into equal-size regions") with letters instead of wall-count clues —
+  so it took Palisade's three-valued wall model, edge-nearest-click input, half-grid
+  cursor, and per-tile render *verbatim*, and only rewrote the win test
+  (size `k` + one-of-each-letter) and the solver/generator (ported from the C).
+  The generator often already shares a leaf with that game (both Separate and
+  Palisade use `divvyRectangle`), which also gives you a **byte-match differential**
+  (§4.3) even though upstream never wrote the frontend — the generator *is* real C.
+- **Live-error gating on a "whole grid is one region" start.** A content check
+  (Separate's duplicate-letter-in-a-region red) fires on *every* cell at the
+  untouched start, where the whole grid is one region holding every letter `k`
+  times — pure noise. Gate it on region *completeness* (only flag a duplicate once
+  the wall-bounded region has reached size `k`), mirroring the "only flag
+  provably-wrong state" philosophy the wall/size errors already follow.
+
+Making it **user-visible** is a catalog move, not just registration (§6): move its
+`puzzle(<game> …)` out of `puzzles/unfinished/CMakeLists.txt` into the **main**
+`puzzles/CMakeLists.txt` with `TS_PORTED`. **Gotcha (cost a rebuild):
+`rm -rf build/wasm/` before the rebuild** — CMake's cached config still lists the
+game under `unfinished` and re-emits its `<game>.wasm` until the cache is cleared
+(the CLAUDE.md "reset the cmake cache" rule bites hardest here, since the entry
+*moved* rather than just gaining a flag).
+
 ---
 
 ## 2. Scaffold and file layout
@@ -291,6 +326,23 @@ cells grey. Derive the white from
 `COL_BACKGROUND` off pure white precisely so a pure-white cell stays
 distinguishable. Exemplar:
 [`range/render.ts`](../../src/native/games/range/render.ts).
+
+**Shade a completed-and-correct region with the *shared* colour, don't invent
+one.** When a game highlights a region/area the player has correctly finished
+(the local-completion feedback Galaxies and Rectangles give — *not* a
+global-solution check), fill it with
+[`correctRegionColour(background)`](../../src/native/engine/colour-mkhighlight.ts)
+(a neutral grey, `0.75 × background`, upstream Rectangles' `COL_CORRECT`
+convention), placed at a `COL_CORRECT` palette index. Reach for the shared
+constant rather than a per-game hue (a green invented for Separate/Palisade was
+the inconsistency this rule exists to prevent) so "done and correct" reads the
+same across every game; tune it in one place. Compute local validity per
+wall-bounded component (right size + correct content + no interior/dangling wall),
+OR an `F_CORRECT` tile-flag bit into the packed cache key (§3.2 — it must be in the
+diff key so it paints and clears as regions complete/break), and prioritise it
+below flash/hint fills. Exemplars:
+[`separate/render.ts`](../../src/native/games/separate/render.ts),
+[`palisade/render.ts`](../../src/native/games/palisade/render.ts).
 
 ### 3.4 Params, config summary, preferences
 
