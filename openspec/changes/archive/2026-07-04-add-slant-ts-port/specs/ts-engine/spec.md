@@ -26,3 +26,27 @@ ported) SHALL consume this helper rather than re-rolling it.
 - **WHEN** `findLoops` runs over a multi-component tree graph
 - **THEN** `anyLoop` is false and every edge is a bridge with correct
   vertex counts on each side
+
+### Requirement: Fit-to-window sizing honours user-size expansion
+
+`Midend.size(maxSize, isUserSize, dpr)` SHALL resolve the tile size as
+upstream `midend_size` does: the largest integer tile size whose
+`computeSize` result fits `maxSize` (binary search), where `isUserSize`
+permits growing beyond the game's preferred tile size and its absence caps
+the tile at the preferred size. The app shell passes `isUserSize = true`
+(fill the layout slot), so a TS-served game SHALL occupy the same space the
+C/WASM build did rather than freezing at its preferred size. The call
+remains purely informational per the existing size requirement (no
+drawstate recreation, no cache invalidation).
+
+#### Scenario: A large slot expands the board
+
+- **WHEN** `size` is called with user-size on a slot much larger than the
+  preferred-size board
+- **THEN** the resolved tile size exceeds the preferred tile size and the
+  returned window size fits the slot
+
+#### Scenario: Without user-size the preferred size is the ceiling
+
+- **WHEN** `size` is called without user-size on the same large slot
+- **THEN** the resolved tile size equals the preferred tile size

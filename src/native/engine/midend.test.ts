@@ -349,12 +349,27 @@ describe("Midend.size is purely informational (regression: ResizeObserver flicke
     return m;
   }
 
-  it("returns a sensible window size from computeSize(params, tile)", () => {
+  it("expands past the preferred tile size to fill the slot (user size)", () => {
     const m = midend();
     const out = m.size({ w: 200, h: 200 }, true, 1);
-    // fakeGame.computeSize: w = target*tile, h = tile.
-    // At maxSize 200×200 the preferred tile (10) fits unscaled.
+    // fakeGame.computeSize: w = target(3)*tile, h = tile. With user
+    // size (what the app passes), upstream midend_size's binary search
+    // picks the largest tile that fits: 3*66 = 198 ≤ 200.
+    expect(out).toEqual({ w: 198, h: 66 });
+  });
+
+  it("caps at the preferred tile size without user size", () => {
+    const m = midend();
+    const out = m.size({ w: 200, h: 200 }, false, 1);
+    // Preferred tile is 10 (fits easily), so it is the ceiling.
     expect(out).toEqual({ w: 30, h: 10 });
+  });
+
+  it("shrinks below the preferred tile size when the slot is small", () => {
+    const m = midend();
+    const out = m.size({ w: 15, h: 15 }, true, 1);
+    // Largest tile with 3*tile ≤ 15 is 5.
+    expect(out).toEqual({ w: 15, h: 5 });
   });
 
   it("does NOT recreate the drawstate when called repeatedly at the same size", () => {

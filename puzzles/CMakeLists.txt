@@ -252,10 +252,10 @@ puzzle(sixteen
   OBJECTIVE "Slide a row at a time to arrange the tiles into order.")
 
 puzzle(slant
+  TS_PORTED  # native-TS port (openspec add-slant-ts-port); no slant.c/wasm
   DISPLAYNAME "Slant"
   DESCRIPTION "Maze-drawing puzzle"
   OBJECTIVE "Draw a maze of slanting lines that matches the clues.")
-solver(slant)
 
 puzzle(solo
   TS_PORTED  # native-TS port (openspec add-solo-ts-port); no solo.c/wasm

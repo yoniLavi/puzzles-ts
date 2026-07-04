@@ -49,6 +49,12 @@ anywhere near the desc (byte-match differential is feasible).
 - Byte-match differential: transient `puzzles/auxiliary/slant-trace.c`
   records preset/seed → desc fixtures; a committed gated test asserts
   `newDesc` reproduces them exactly.
+- Fix cross-game fit-to-window sizing (surfaced on this port's acceptance
+  pass): `Midend.size` now honours `isUserSize` exactly as upstream
+  `midend_size` (binary-search the largest fitting tile; user-size may
+  exceed the preferred tile size), so every TS-served game expands to fill
+  the layout slot as the C/WASM build did instead of freezing at its
+  preferred size.
 - Register the game for owner smoke-testing (stage 1). On owner acceptance,
   flip `TS_PORTED`, delete `puzzles/slant.c` (and the trace harness), and
   archive this change (stage 2). `puzzles/findloop.c` stays — it still has
