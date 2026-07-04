@@ -189,7 +189,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   lightup: {
     describeConfig: configFormatter(
-      "{width}x{height} {difficulty:easy|tricky|hard}{percentage-of-black-squares}{symmetry}",
+      "{width}x{height} {difficulty:easy|tricky|unreasonable}{percentage-of-black-squares}{symmetry}",
       {
         // Default black squares is "20". Note value is 5-100, not 0.05-1.0.
         "percentage-of-black-squares": (value) =>

@@ -37,7 +37,7 @@ export const SYMM_REF4 = 3;
 export const SYMM_ROT4 = 4;
 const SYMM_MAX = 5;
 
-export const DIFFCOUNT = 2; // difficulty is 0 (easy), 1 (tricky), 2 (hard)
+export const DIFFCOUNT = 2; // difficulty is 0 (easy), 1 (tricky), 2 (unreasonable)
 
 // --- types ---------------------------------------------------------------------
 
@@ -99,7 +99,11 @@ const PRESETS: LightupParams[] = [
   { w: 14, h: 14, blackpc: 20, symm: SYMM_ROT2, difficulty: 2 },
 ];
 
-const DIFF_NAMES = ["easy", "tricky", "hard"];
+// Difficulty 2 requires guess-and-backtrack by construction (the generator
+// rejects boards solvable at Tricky), so per the narratable-deduction
+// generation policy it is *named* Unreasonable. The params encoding (`d2`)
+// and board generation are untouched — this is a label, not a re-grade.
+const DIFF_NAMES = ["easy", "tricky", "unreasonable"];
 
 export function defaultParams(): LightupParams {
   return { ...PRESETS[0] };

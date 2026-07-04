@@ -11,6 +11,7 @@
  * from the C shape here only with a differential run to prove it.
  */
 import { Combi } from "../../combi/index.ts";
+import { stepBudget } from "../../engine/step-budget.ts";
 import {
   cloneState,
   F_BLACK,
@@ -42,6 +43,86 @@ export function flagsFromDifficulty(difficulty: number): number {
 
 const MAXRECURSE = 5;
 
+// --- hint recording -----------------------------------------------------------
+//
+// The hint plan is the solver's own deduction script, so a recorder is
+// threaded through the deduction functions and gated on presence: with no
+// recorder every function runs byte-for-byte as before (the generator's
+// byte-match differential is the regression guard); with one, each firing
+// is reported with the cells it forces and the premise to narrate.
+
+export interface HintCell {
+  x: number;
+  y: number;
+}
+
+/** The premise of one deduction firing — what the hint narrates/highlights. */
+export type LightupHintReason =
+  | {
+      /** An unlit square with exactly one remaining way to be lit. */
+      kind: "forcedLight";
+      /** The square in the dark. */
+      dark: HintCell;
+      /** Its whole line of sight (every square that could light it). */
+      corridor: HintCell[];
+    }
+  | {
+      /** A clue with all its bulbs placed rules out its free neighbours. */
+      kind: "clueSatisfied";
+      clue: HintCell;
+      n: number;
+      /** The clue's placed bulbs (the premise). */
+      bulbs: HintCell[];
+    }
+  | {
+      /** A clue with as many bulbs left to place as free neighbours. */
+      kind: "clueSaturated";
+      clue: HintCell;
+      n: number;
+      /** Bulbs still to place (= the number of free neighbours). */
+      need: number;
+    }
+  | {
+      /** Overlapping-set discount seeded by an unlit square: a bulb at
+       * the target would extinguish every way to light `dark`. */
+      kind: "discountUnlit";
+      dark: HintCell;
+      set: HintCell[];
+    }
+  | {
+      /** Overlapping-set discount seeded by a clue: at least one of
+       * `set` must be a bulb, and a bulb at the target rules them all out. */
+      kind: "discountClue";
+      clue: HintCell;
+      n: number;
+      set: HintCell[];
+    };
+
+/** One recorded firing: the mark it places and every cell it places it
+ * on (one firing = one grouped hint step). */
+export interface LightupFiring {
+  kind: "light" | "impossible";
+  cells: HintCell[];
+  reason: LightupHintReason;
+  /** Working-board snapshot with this firing (and all before it)
+   * applied — highlights are computed against it, not the start board,
+   * so they stay truthful as the player follows the plan. */
+  flags: Uint8Array;
+  lights: Int16Array;
+}
+
+/** Called once per firing, after its marks are applied to the state. */
+export type LightupRecorder = (
+  kind: "light" | "impossible",
+  cells: HintCell[],
+  reason: LightupHintReason,
+) => void;
+
+/** The discount seed, threaded to the mark site for the reason payload. */
+type DiscountSource =
+  | { kind: "unlit"; dark: HintCell }
+  | { kind: "clue"; clue: HintCell; n: number };
+
 // --- basic deductions ---------------------------------------------------------
 
 export function couldPlaceLight(flags: number, lights: number): boolean {
@@ -62,6 +143,7 @@ function trySolveLight(
   oy: number,
   flags: number,
   lights: number,
+  rec?: LightupRecorder,
 ): boolean {
   if (lights > 0) return false;
   if (flags & F_BLACK) return false;
@@ -82,6 +164,13 @@ function trySolveLight(
   }
   if (n === 1) {
     setLight(state, sx, sy, true);
+    if (rec) {
+      rec("light", [{ x: sx, y: sy }], {
+        kind: "forcedLight",
+        dark: { x: ox, y: oy },
+        corridor: [...litCells(state, ox, oy, true)],
+      });
+    }
     return true;
   }
   return false;
@@ -95,6 +184,7 @@ function trySolveNumber(
   ny: number,
   nflags: number,
   nlights: number,
+  rec?: LightupRecorder,
 ): boolean {
   if (!(nflags & F_NUMBERED)) return false;
   const { w, h } = state;
@@ -121,20 +211,42 @@ function trySolveNumber(
     // All bulbs this clue needs are placed; the remaining surrounds are
     // impossible.
     state.flags[idx(nx, ny, w)] |= F_NUMBERUSED;
+    const targets: HintCell[] = [];
     for (const pt of points) {
       if (!pt.mark) {
         state.flags[idx(pt.x, pt.y, w)] |= F_IMPOSSIBLE;
         ret = true;
+        if (rec) targets.push({ x: pt.x, y: pt.y });
       }
+    }
+    if (rec && targets.length > 0) {
+      rec("impossible", targets, {
+        kind: "clueSatisfied",
+        clue: { x: nx, y: ny },
+        n: nlights,
+        bulbs: points
+          .filter((pt) => state.flags[idx(pt.x, pt.y, w)] & F_LIGHT)
+          .map((pt) => ({ x: pt.x, y: pt.y })),
+      });
     }
   } else if (nl === ns) {
     // As many bulbs to place as spaces left; fill them all.
     state.flags[idx(nx, ny, w)] |= F_NUMBERUSED;
+    const targets: HintCell[] = [];
     for (const pt of points) {
       if (!pt.mark) {
         setLight(state, pt.x, pt.y, true);
         ret = true;
+        if (rec) targets.push({ x: pt.x, y: pt.y });
       }
+    }
+    if (rec && targets.length > 0) {
+      rec("light", targets, {
+        kind: "clueSaturated",
+        clue: { x: nx, y: ny },
+        n: nlights,
+        need: nl,
+      });
     }
   }
   return ret;
@@ -192,8 +304,15 @@ function tryRuleOut(
 }
 
 /** Given a MAKESLIGHT set in `scratch`, find candidate squares that rule
- * out the whole set and mark them impossible. Returns whether any were. */
-function discountSet(state: LightupState, scratch: Scratch[]): boolean {
+ * out the whole set and mark them impossible. Returns whether any were.
+ * On the recording path each discounted square is its own firing (the
+ * candidate check runs per square, so each is a separate deduction). */
+function discountSet(
+  state: LightupState,
+  scratch: Scratch[],
+  rec?: LightupRecorder,
+  source?: DiscountSource,
+): boolean {
   const n = scratch.length;
   if (n === 0) return false;
 
@@ -237,20 +356,35 @@ function discountSet(state: LightupState, scratch: Scratch[]): boolean {
     // This candidate ruled out everything in the set.
     state.flags[idx(dx, dy, state.w)] |= F_IMPOSSIBLE;
     didsth = true;
+    if (rec && source) {
+      const set = scratch.map((sc) => ({ x: sc.x, y: sc.y }));
+      rec(
+        "impossible",
+        [{ x: dx, y: dy }],
+        source.kind === "unlit"
+          ? { kind: "discountUnlit", dark: source.dark, set }
+          : { kind: "discountClue", clue: source.clue, n: source.n, set },
+      );
+    }
   });
   return didsth;
 }
 
 /** MAKESLIGHT set from an unlit square: everywhere a bulb could sit that
  * would light it. */
-function discountUnlit(state: LightupState, x: number, y: number): boolean {
+function discountUnlit(
+  state: LightupState,
+  x: number,
+  y: number,
+  rec?: LightupRecorder,
+): boolean {
   const scratch: Scratch[] = [];
   for (const pt of litCells(state, x, y, true)) {
     if (couldPlaceLightXy(state, pt.x, pt.y)) {
       scratch.push({ x: pt.x, y: pt.y, n: 0 });
     }
   }
-  return discountSet(state, scratch);
+  return discountSet(state, scratch, rec, rec && { kind: "unlit", dark: { x, y } });
 }
 
 /**
@@ -258,9 +392,15 @@ function discountUnlit(state: LightupState, x: number, y: number): boolean {
  * more bulbs, every (n−m+1)-subset of the free neighbours must contain a
  * bulb. All subsets are tried (no early exit), as upstream.
  */
-function discountClue(state: LightupState, x: number, y: number): boolean {
+function discountClue(
+  state: LightupState,
+  x: number,
+  y: number,
+  rec?: LightupRecorder,
+): boolean {
   const { w, h } = state;
-  let m = state.lights[idx(x, y, w)];
+  const clue = state.lights[idx(x, y, w)];
+  let m = clue;
   if (m === 0) return false;
 
   const sempty: { x: number; y: number }[] = [];
@@ -274,10 +414,15 @@ function discountClue(state: LightupState, x: number, y: number): boolean {
   if (m < 0 || m > n) return false; // become impossible
 
   let didsth = false;
+  const source: DiscountSource | undefined = rec && {
+    kind: "clue",
+    clue: { x, y },
+    n: clue,
+  };
   const combi = new Combi(n - m + 1, n);
   while (combi.next()) {
     const scratch: Scratch[] = combi.a.map((j) => ({ ...sempty[j], n: 0 }));
-    if (discountSet(state, scratch)) didsth = true;
+    if (discountSet(state, scratch, rec, source)) didsth = true;
   }
   return didsth;
 }
@@ -294,12 +439,18 @@ function solveSub(
   solveFlags: number,
   depth: number,
   maxdepth: DepthTracker | null,
+  rec?: LightupRecorder,
 ): number {
   if (maxdepth && maxdepth.value < depth) maxdepth.value = depth;
   const maxrecurse = solveFlags & F_SOLVE_ALLOWRECURSE ? MAXRECURSE : 0;
   const { w, h } = state;
 
+  // Guard the hint/recording path against a non-terminating fixpoint; the
+  // generator (no `rec`) runs unguarded and byte-for-byte unchanged.
+  const budget = rec ? stepBudget("lightup hint") : undefined;
+
   for (;;) {
+    budget?.tick();
     if (gridOverlap(state)) {
       // From scratch this never happens on a soluble grid; solving a
       // half-completed *incorrect* grid can reach it — no solutions.
@@ -316,8 +467,8 @@ function solveSub(
         const flags = state.flags[i];
         const lights = state.lights[i];
         if (couldPlaceLight(flags, lights)) ncanplace++;
-        if (trySolveLight(state, x, y, flags, lights)) didstuff = true;
-        if (trySolveNumber(state, x, y, flags, lights)) didstuff = true;
+        if (trySolveLight(state, x, y, flags, lights, rec)) didstuff = true;
+        if (trySolveNumber(state, x, y, flags, lights, rec)) didstuff = true;
       }
     }
     if (didstuff) continue;
@@ -335,12 +486,12 @@ function solveSub(
           const flags = state.flags[i];
           const lights = state.lights[i];
           if (!(flags & F_BLACK) && lights === 0) {
-            if (discountUnlit(state, x, y)) {
+            if (discountUnlit(state, x, y, rec)) {
               didstuff = true;
               break outer;
             }
           } else if (flags & F_NUMBERED) {
-            if (discountClue(state, x, y)) {
+            if (discountClue(state, x, y, rec)) {
               didstuff = true;
               break outer;
             }
@@ -416,9 +567,34 @@ export function dosolve(
   state: LightupState,
   solveFlags: number,
   maxdepth: DepthTracker | null = null,
+  rec?: LightupRecorder,
 ): number {
   for (let i = 0; i < state.flags.length; i++) state.flags[i] &= ~F_NUMBERUSED;
-  return solveSub(state, solveFlags, 0, maxdepth);
+  return solveSub(state, solveFlags, 0, maxdepth, rec);
+}
+
+/**
+ * Run the deductive solver (no recursion — a guess isn't a teachable
+ * step) from the player's current position, honouring their bulbs and
+ * impossible-marks as constraints, and record every firing in deduction
+ * order. The returned script is the hint plan's raw material; it ends
+ * either with the board solved or at the point where deduction runs dry
+ * (only possible on an Unreasonable board or after the player's own
+ * unsound-but-not-wrong marks starve a line of deduction).
+ */
+export function deduceHintPlan(state: LightupState): LightupFiring[] {
+  const work = cloneState(state);
+  const firings: LightupFiring[] = [];
+  dosolve(work, F_SOLVE_FORCEUNIQUE | F_SOLVE_DISCOUNTSETS, null, (kind, cells, reason) => {
+    firings.push({
+      kind,
+      cells,
+      reason,
+      flags: work.flags.slice(),
+      lights: work.lights.slice(),
+    });
+  });
+  return firings;
 }
 
 /** Remove every bulb and every impossible-mark (and the solver-scratch

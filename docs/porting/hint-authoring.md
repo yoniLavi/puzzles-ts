@@ -629,6 +629,7 @@ game:
 | Filling | target square(s), *mild* `COL_HINT` fill, **no digit** | region premise → `COL_HINT_CELL` shade + digit on top |
 | Towers | struck candidate digit(s) `COL_HINT` + cross-through (on a *non*-`COL_HINT` cell so the digit shows); placement target `COL_HINT` fill (no digit to hide) | driving **clue cell(s)** *and* their line of sight → `COL_HINT_CELL` shade (clue + sightline read as one premise region; a facing pair shades both clues) |
 | Pattern | forced cell(s), blue `COL_HINT` fill (highlight only, no mark) — the reasoned line's clue digits also recolour `COL_HINT` to tie clue↔line | reasoned **row/column** (line of sight) → `COL_HINT_CELL` shade on its *undecided* cells; an overlap run's anchoring **black** mark → teal `COL_HINT_BLACKREF` ring (white anchors → violet `COL_HINT_WHITEREF`). White ("no run reaches here") firings ring *nothing* — that deduction leans on the whole line's packing, not one mark, so a ring would over-claim (§2.4); the shaded line + highlighted clue is the evidence. |
+| Light Up | forced square(s), blue `COL_HINT` fill (bulb *and* mark targets identical — the narration says which; no bulb/blob preview) | evidence squares (a corridor of sight, a MAKESLIGHT set, a clue's placed bulbs) carried as one list, cue split by the cell's own state (§5.4): a **dark** square → `COL_HINT_CELL` shade (its blob draws on top), a **lit/bulb** square → teal `COL_HINT_LITREF` ring (a fill would hide the "already lit" premise); the unlit square a deduction protects → amber `COL_HINT_DARKREF` ring; the driving clue → its digit recolours `COL_HINT` (the Pattern clue↔move tie; the light `COL_HINT_CELL` was tried first and is unreadable as a cue — nearly white on black) |
 
 Two reusable lessons from the rollout: (1) **teal = "a cited black square", violet = "a
 cited white square"** is a cross-game reading worth preserving — reuse those hues for a
@@ -662,7 +663,10 @@ cell evidence?**
   [`filling/render.ts`](../../src/native/games/filling/render.ts)).
 
 So "is the premise filled?" is the wrong question; "would the area fill hide the premise?" is
-the right one — a *colour* premise yes (ring), a *number* premise no (shade). **When a game
+the right one — a *colour* premise yes (ring), a *number* premise no (shade). **Light Up** is
+the same call with a *state* premise: its evidence squares are cited as "already crossed out
+or lit", and a light-blue fill would hide the yellow lit-ness, so the renderer shades dark
+evidence squares and rings lit ones teal, from one list. **When a game
 has both kinds, decide in `redraw` from the cell's own state — one `evidence` list, not
 two.** Rather than splitting the payload into `area` + `rings` (Range's shape, right
 when the split is known at build time), Singles carries one flat `evidence: Pt[]` and

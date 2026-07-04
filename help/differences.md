@@ -20,5 +20,10 @@ Although functional, they're likely to change significantly in future updates.
 
 ## Changes to specific puzzles
 
-(All changes to individual puzzles have been accepted back into the original 
+* **Light Up**: the difficulty the original calls *Hard* is named
+  *Unreasonable* here. Those boards require trial and error by construction
+  (the built-in hints can only walk you up to the point where guessing
+  starts); *Easy* and *Tricky* are always solvable by pure deduction.
+
+(Other changes to individual puzzles have been accepted back into the original 
 collection.)
