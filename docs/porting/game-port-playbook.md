@@ -129,6 +129,9 @@ may collapse files):
 Leaf libs (dsf, sorted structures) are pulled in **idiomatically and lazily**: use
 the shared [`src/native/engine/`](../../src/native/engine/) helpers
 ([`dsf.ts`](../../src/native/engine/dsf.ts),
+[`findloop.ts`](../../src/native/engine/findloop.ts) — Tarjan loop/bridge
+finding for live loop-error highlighting (Slant; Bridges/Dominosa/Loopy/Tracks
+when ported),
 [`sorted-multiset.ts`](../../src/native/engine/sorted-multiset.ts),
 [`colour-mkhighlight.ts`](../../src/native/engine/colour-mkhighlight.ts),
 [`pointer.ts`](../../src/native/engine/pointer.ts),
@@ -295,6 +298,14 @@ when the cell was already drawn" regression).
 [`AGENTS.md`](../../AGENTS.md)):** the engine paints **no pixels of its own**; each
 game fills its own background in the `!ds.started` branch. `Midend.size` is
 side-effect-free; `canvasCleared()` is the *only* cache-stale signal.
+
+**Check the web build's compile defines before porting `#ifdef`-gated geometry.**
+`cmake/platforms/webapp.cmake` defines **`NARROW_BORDERS`**, so a game whose C
+carries an `#ifdef NARROW_BORDERS` variant (Slant: `BORDER = CLUE_RADIUS + 1`
+instead of a full tile) must port the *narrow* variant — parity is with what the
+browser actually showed, not the desktop default. Grep the game's `.c` for
+`#ifdef` before writing `computeSize`. Exemplar:
+[`slant/render.ts`](../../src/native/games/slant/render.ts).
 
 ### 3.3 Palette
 
@@ -658,6 +669,16 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
   less) than its name implies — diff it against C line-by-line before trusting the
   name. Exemplar: [`solo/generator.ts`](../../src/native/games/solo/generator.ts)
   `mergeSomeCages`.
+- **An early-out that exists only under a diagnostics define is NOT release
+  semantics — port the release build.** Slant's `fill_square` has "already
+  filled with the opposite value" and "would make a loop" checks whose
+  `return false` sits *inside* `#ifdef SOLVER_DIAGNOSTICS`, which neither the
+  shipped build nor a trace harness defines — so in the build being
+  byte-matched, `fill_square` never fails and will overwrite. Porting the
+  guarded semantics ("obviously what was meant") changes solver verdicts and
+  diverges the desc. When a C early-out looks load-bearing, check which
+  `#ifdef` it lives under before porting it. Exemplar:
+  [`slant/solver.ts`](../../src/native/games/slant/solver.ts) `fillSquare`.
 - **Some deductions branch on the canonical-DSF-root *identity*, so the shared
   [`Dsf`](../../src/native/engine/dsf.ts) must match `dsf.c`'s root choice** (tie →
   the *second* `merge` arg; the larger class otherwise). The shared `Dsf` was aligned
