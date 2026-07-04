@@ -12,8 +12,15 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import type { GameDrawing } from "../../engine/game.ts";
-import type { SlantMistake, SlantParams, SlantState, SlantUi } from "./state.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import type { SlantHint } from "./index.ts";
+import type {
+  SlantMistake,
+  SlantMove,
+  SlantParams,
+  SlantState,
+  SlantUi,
+} from "./state.ts";
 
 export const PREFERRED_TILE_SIZE = 32;
 export const FLASH_TIME = 0.3;
@@ -28,6 +35,11 @@ export const COL_ERROR = 5;
 export const COL_CURSOR = 6;
 export const COL_FILLEDSQUARE = 7;
 export const COL_GROUNDED = 8;
+// Fork hint palette, appended past the upstream enum so slant's dark-mode
+// overrides (indices 1/8) never touch these.
+export const COL_HINT = 9; // forced square(s), blue fill (highlight only)
+export const COL_HINT_CELL = 10; // evidence area, light-blue shade
+export const COL_HINT_REF = 11; // a cited filled anchor (teal ring)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight } = mkhighlight(defaultBackground);
@@ -42,6 +54,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_CURSOR] = highlight; // a background highlight, per game_mkhighlight
   out[COL_FILLEDSQUARE] = background;
   out[COL_GROUNDED] = scale(background, 0.8);
+  out[COL_HINT] = [0.13, 0.5, 0.85];
+  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
+  out[COL_HINT_REF] = [0.0, 0.78, 0.55];
   return out;
 }
 
@@ -68,6 +83,16 @@ const CURSOR = 0x00040000;
 const GROUNDED = 0x00080000;
 // Our findMistakes overlay bit (no upstream analogue): an inset red outline.
 const MISTAKE = 0x00100000;
+// Fork hint overlay bits (no upstream analogue). Target/evidence/ring are
+// per-square; the four HINT_* corner bits recolour a driving clue's digit in
+// the four tiles that draw it (mirroring the ERR_TL/TR/BL/BR clue pattern).
+const HINT_TARGET = 0x00200000;
+const HINT_EVID = 0x00400000;
+const HINT_REF = 0x00800000;
+const HINT_TL = 0x01000000;
+const HINT_TR = 0x02000000;
+const HINT_BL = 0x04000000;
+const HINT_BR = 0x08000000;
 
 // --- geometry -------------------------------------------------------------
 const clueRadius = (ts: number) => Math.floor(ts / 3);
@@ -114,10 +139,11 @@ function drawClue(
   y: number,
   v: number,
   err: boolean,
+  hint: boolean,
 ): void {
   if (v < 0) return;
   const ccol = (x ^ y) & 1 ? COL_SLANT1 : COL_SLANT2;
-  const tcol = err ? COL_ERROR : COL_INK;
+  const tcol = err ? COL_ERROR : hint ? COL_HINT : COL_INK;
   dr.drawCircle(
     { x: coord(x, ts), y: coord(y, ts) },
     clueRadius(ts),
@@ -156,13 +182,17 @@ function drawTile(
 
   dr.drawRect(
     { x: coord(x, ts), y: coord(y, ts), w: ts, h: ts },
-    v & FLASH
-      ? COL_GRID
-      : v & CURSOR
-        ? COL_CURSOR
-        : v & (BACKSLASH | FORWSLASH)
-          ? COL_FILLEDSQUARE
-          : COL_BACKGROUND,
+    v & HINT_TARGET
+      ? COL_HINT
+      : v & FLASH
+        ? COL_GRID
+        : v & HINT_EVID
+          ? COL_HINT_CELL
+          : v & CURSOR
+            ? COL_CURSOR
+            : v & (BACKSLASH | FORWSLASH)
+              ? COL_FILLEDSQUARE
+              : COL_BACKGROUND,
   );
 
   // Grid lines.
@@ -245,6 +275,23 @@ function drawTile(
     );
   }
 
+  // Hint anchor: a doubled teal ring on a cited already-filled square (the
+  // "share a fate" premise of an equivalence firing), drawn over its slash.
+  if (v & HINT_REF) {
+    const inset = Math.max(1, Math.floor(ts / 12));
+    const sx = coord(x, ts) + inset;
+    const sy = coord(y, ts) + inset;
+    const span = ts - 2 * inset;
+    dr.drawRect({ x: sx, y: sy, w: span, h: 1 }, COL_HINT_REF);
+    dr.drawRect({ x: sx, y: sy + span - 1, w: span, h: 1 }, COL_HINT_REF);
+    dr.drawRect({ x: sx, y: sy, w: 1, h: span }, COL_HINT_REF);
+    dr.drawRect({ x: sx + span - 1, y: sy, w: 1, h: span }, COL_HINT_REF);
+    dr.drawRect({ x: sx + 1, y: sy + 1, w: span - 2, h: 1 }, COL_HINT_REF);
+    dr.drawRect({ x: sx + 1, y: sy + span - 2, w: span - 2, h: 1 }, COL_HINT_REF);
+    dr.drawRect({ x: sx + 1, y: sy + 1, w: 1, h: span - 2 }, COL_HINT_REF);
+    dr.drawRect({ x: sx + span - 2, y: sy + 1, w: 1, h: span - 2 }, COL_HINT_REF);
+  }
+
   // findMistakes overlay: an inset red outline (the fork's cross-game
   // mistake styling), distinct from the live loop-error red slash.
   if (v & MISTAKE) {
@@ -261,16 +308,23 @@ function drawTile(
 
   // And finally the clues at the tile's corners.
   if (x >= 0 && y >= 0) {
-    drawClue(dr, ts, x, y, clues[y * W + x], (v & ERR_TL) !== 0);
+    drawClue(dr, ts, x, y, clues[y * W + x], (v & ERR_TL) !== 0, (v & HINT_TL) !== 0);
   }
   if (x < w && y >= 0) {
-    drawClue(dr, ts, x + 1, y, clues[y * W + (x + 1)], (v & ERR_TR) !== 0);
+    drawClue(
+      dr, ts, x + 1, y, clues[y * W + (x + 1)], (v & ERR_TR) !== 0, (v & HINT_TR) !== 0,
+    );
   }
   if (x >= 0 && y < h) {
-    drawClue(dr, ts, x, y + 1, clues[(y + 1) * W + x], (v & ERR_BL) !== 0);
+    drawClue(
+      dr, ts, x, y + 1, clues[(y + 1) * W + x], (v & ERR_BL) !== 0, (v & HINT_BL) !== 0,
+    );
   }
   if (x < w && y < h) {
-    drawClue(dr, ts, x + 1, y + 1, clues[(y + 1) * W + (x + 1)], (v & ERR_BR) !== 0);
+    drawClue(
+      dr, ts, x + 1, y + 1, clues[(y + 1) * W + (x + 1)],
+      (v & ERR_BR) !== 0, (v & HINT_BR) !== 0,
+    );
   }
 
   dr.unclip();
@@ -288,7 +342,7 @@ export function redraw(
   ui: SlantUi,
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<SlantMove, SlantHint>,
   mistakes?: readonly SlantMistake[],
 ): void {
   if (!ds) return;
@@ -374,6 +428,23 @@ export function redraw(
   // findMistakes overlay.
   if (mistakes) {
     for (const m of mistakes) todraw[ti(m.x, m.y)] |= MISTAKE;
+  }
+
+  // Hint overlay: target square(s) blue, evidence shaded, anchor ringed, the
+  // driving clue's digit recoloured in the four tiles that draw it.
+  const hl = hint?.highlights;
+  if (hl) {
+    todraw[ti(hl.target.x, hl.target.y)] |= HINT_TARGET;
+    if (hl.siblings) for (const s of hl.siblings) todraw[ti(s.x, s.y)] |= HINT_TARGET;
+    if (hl.area) for (const a of hl.area) todraw[ti(a.x, a.y)] |= HINT_EVID;
+    if (hl.ref) todraw[ti(hl.ref.x, hl.ref.y)] |= HINT_REF;
+    if (hl.clue) {
+      const { x: cx, y: cy } = hl.clue;
+      todraw[cy * stride + cx] |= HINT_BR;
+      todraw[cy * stride + (cx + 1)] |= HINT_BL;
+      todraw[(cy + 1) * stride + cx] |= HINT_TR;
+      todraw[(cy + 1) * stride + (cx + 1)] |= HINT_TL;
+    }
   }
 
   // Draw the tiles whose packed word changed.

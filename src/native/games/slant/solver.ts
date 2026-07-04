@@ -17,7 +17,7 @@
  *   over the vertex-connectivity DSF, and the v-shape bitmap deductions.
  */
 import { Dsf } from "../../engine/dsf.ts";
-import { DIFF_EASY, DIFF_HARD } from "./state.ts";
+import { DIFF_EASY, DIFF_HARD, type Slash } from "./state.ts";
 
 /** Solver verdicts (upstream's 0 / 1 / 2 return codes). */
 export const SOLVE_IMPOSSIBLE = 0;
@@ -27,6 +27,63 @@ export type SolveVerdict =
   | typeof SOLVE_IMPOSSIBLE
   | typeof SOLVE_UNIQUE
   | typeof SOLVE_NOT_CONVERGED;
+
+/**
+ * The four move-producing techniques of `slant_solve`. The v-shape /
+ * equivalence-merge pass never places a square — it only feeds the
+ * `equiv`/`vbitmap` state that later square-pass firings read — so the hint
+ * has exactly these to narrate.
+ */
+export type SlantTechnique = "clue-fill" | "clue-empty" | "loop" | "deadend" | "equiv";
+
+/** One square placed by a firing. */
+export interface SlantPlacement {
+  x: number;
+  y: number;
+  v: Slash;
+}
+
+/** A single deduction firing, recorded for the hint (D1). */
+export interface SlantFiring {
+  technique: SlantTechnique;
+  /** The square(s) this one firing forces (1, or up to 4 for a clue). */
+  moves: SlantPlacement[];
+  /** Driving clue vertex + value (clue-fill / clue-empty). */
+  clue?: { x: number; y: number; c: number };
+  /** A same-class already-filled square (equivalence anchor). */
+  anchor?: { x: number; y: number };
+  /** Snapshot of `soln` just after this firing (stale-safe evidence — the
+   * Range `HintMove.grid` pattern). */
+  grid: Int8Array;
+}
+
+/** Options for the recording / seeded solve path (the generator passes none,
+ * keeping its call byte-identical). */
+export interface SlantSolveOpts {
+  record?: (f: SlantFiring) => void;
+  /** Replay these placed diagonals before deducing, so the recorded plan
+   * continues from the player's position. */
+  seedFrom?: Int8Array;
+}
+
+/** Find an already-filled square in the same equivalence class as (x, y) — the
+ * "share a fate" anchor an equivalence firing propagates from. */
+function findEquivAnchor(
+  sc: SolverScratch,
+  soln: Int8Array,
+  w: number,
+  h: number,
+  x: number,
+  y: number,
+): { x: number; y: number } | undefined {
+  const cls = sc.equiv.canonify(y * w + x);
+  for (let i = 0; i < w * h; i++) {
+    if (soln[i] !== 0 && sc.equiv.canonify(i) === cls) {
+      return { x: i % w, y: Math.floor(i / w) };
+    }
+  }
+  return undefined;
+}
 
 /** Reusable scratch space (upstream `struct solver_scratch`). */
 export class SolverScratch {
@@ -167,9 +224,11 @@ export function slantSolve(
   soln: Int8Array,
   sc: SolverScratch,
   difficulty: number,
+  opts?: SlantSolveOpts,
 ): SolveVerdict {
   const W = w + 1;
   const H = h + 1;
+  const record = opts?.record;
 
   soln.fill(0);
   sc.clues = clues;
@@ -186,6 +245,17 @@ export function slantSolve(
     for (let x = 0; x < W; x++) {
       sc.border[y * W + x] = y === 0 || y === H - 1 || x === 0 || x === W - 1 ? 1 : 0;
       sc.exits[y * W + x] = clues[y * W + x] < 0 ? 4 : clues[y * W + x];
+    }
+  }
+
+  // Hint path: replay the player's current marks so the recorded plan
+  // continues from their position (syncing connectivity / exits / equiv).
+  if (opts?.seedFrom) {
+    for (let i = 0; i < w * h; i++) {
+      const v = opts.seedFrom[i];
+      if (v !== 0) {
+        fillSquare(w, h, i % w, Math.floor(i / w), v, soln, sc.connected, sc);
+      }
     }
   }
 
@@ -268,22 +338,22 @@ export function slantSolve(
         if (nu > 0 && (nl === 0 || nl === nu)) {
           // Fill (nl > 0) or empty (nl === 0) every undecided neighbour
           // except a tracked equivalent pair.
+          const placed: SlantPlacement[] = [];
           for (let i = 0; i < nneighbours; i++) {
             const j = nPos[i];
             const s = nSlash[i];
             if (soln[j] === 0 && j !== mj1 && j !== mj2) {
-              fillSquare(
-                w,
-                h,
-                j % w,
-                Math.floor(j / w),
-                nl ? s : -s,
-                soln,
-                sc.connected,
-                sc,
-              );
+              const sv = (nl ? s : -s) as Slash;
+              fillSquare(w, h, j % w, Math.floor(j / w), sv, soln, sc.connected, sc);
+              if (record) placed.push({ x: j % w, y: Math.floor(j / w), v: sv });
             }
           }
+          record?.({
+            technique: nl ? "clue-fill" : "clue-empty",
+            moves: placed,
+            clue: { x, y, c },
+            grid: soln.slice(),
+          });
           doneSomething = true;
         } else if (nu === 2 && nl === 1 && difficulty > DIFF_EASY) {
           // Precisely two undecided squares and one line to place between
@@ -328,6 +398,7 @@ export function slantSolve(
 
         let fs = false;
         let bs = false;
+        let reason: SlantTechnique = "loop";
         const v =
           difficulty > DIFF_EASY ? sc.slashval[sc.equiv.canonify(y * w + x)] : 0;
 
@@ -336,7 +407,10 @@ export function slantSolve(
         {
           const c1 = sc.connected.canonify(y * W + x);
           const c2 = sc.connected.canonify((y + 1) * W + (x + 1));
-          if (c1 === c2) fs = true; // simple loop avoidance
+          if (c1 === c2) {
+            fs = true;
+            reason = "loop";
+          }
           if (
             difficulty > DIFF_EASY &&
             !sc.border[c1] &&
@@ -344,16 +418,23 @@ export function slantSolve(
             sc.exits[c1] <= 1 &&
             sc.exits[c2] <= 1
           ) {
-            fs = true; // dead-end avoidance
+            fs = true;
+            reason = "deadend";
           }
-          if (v === 1) fs = true; // equivalence to a filled square
+          if (v === 1) {
+            fs = true;
+            reason = "equiv";
+          }
         }
 
         // Same between (x+1,y)–(x,y+1) for a backslash.
         {
           const c1 = sc.connected.canonify(y * W + (x + 1));
           const c2 = sc.connected.canonify((y + 1) * W + x);
-          if (c1 === c2) bs = true;
+          if (c1 === c2) {
+            bs = true;
+            reason = "loop";
+          }
           if (
             difficulty > DIFF_EASY &&
             !sc.border[c1] &&
@@ -362,16 +443,30 @@ export function slantSolve(
             sc.exits[c2] <= 1
           ) {
             bs = true;
+            reason = "deadend";
           }
-          if (v === -1) bs = true;
+          if (v === -1) {
+            bs = true;
+            reason = "equiv";
+          }
         }
 
         if (fs && bs) return SOLVE_IMPOSSIBLE;
-        if (fs) {
-          fillSquare(w, h, x, y, 1, soln, sc.connected, sc);
-          doneSomething = true;
-        } else if (bs) {
-          fillSquare(w, h, x, y, -1, soln, sc.connected, sc);
+        if (fs || bs) {
+          const sv: Slash = fs ? 1 : -1;
+          // For an equivalence firing, the anchor must be found BEFORE the
+          // fill merges this square into the class as another filled member.
+          const anchor =
+            record && reason === "equiv"
+              ? findEquivAnchor(sc, soln, w, h, x, y)
+              : undefined;
+          fillSquare(w, h, x, y, sv, soln, sc.connected, sc);
+          record?.({
+            technique: reason,
+            moves: [{ x, y, v: sv }],
+            anchor,
+            grid: soln.slice(),
+          });
           doneSomething = true;
         }
       }
@@ -483,6 +578,28 @@ export function slantSolve(
 
   // No more progress: solved iff the grid is full.
   return soln.includes(0) ? SOLVE_NOT_CONVERGED : SOLVE_UNIQUE;
+}
+
+/**
+ * Run the Hard solver from the player's current marks, recording every
+ * remaining forced firing in deduction order (the Range `deduceHintPlan`
+ * pattern). Returns the ordered firings the player has not yet made — the
+ * raw material for the hint plan.
+ */
+export function deduceHintPlan(
+  w: number,
+  h: number,
+  clues: Int8Array,
+  soln: Int8Array,
+): SlantFiring[] {
+  const sc = new SolverScratch(w, h);
+  const scratch = new Int8Array(w * h);
+  const firings: SlantFiring[] = [];
+  slantSolve(w, h, clues, scratch, sc, DIFF_HARD, {
+    seedFrom: soln,
+    record: (f) => firings.push(f),
+  });
+  return firings;
 }
 
 /**

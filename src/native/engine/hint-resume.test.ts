@@ -31,6 +31,7 @@ import { patternGame } from "../games/pattern/index.ts";
 import { rangeGame } from "../games/range/index.ts";
 import { singlesGame } from "../games/singles/index.ts";
 import { sixteenGame } from "../games/sixteen/index.ts";
+import { slantGame } from "../games/slant/index.ts";
 import { soloGame } from "../games/solo/index.ts";
 import { towersGame } from "../games/towers/index.ts";
 import { undeadGame } from "../games/undead/index.ts";
@@ -86,6 +87,7 @@ const HINT_GAMES: [string, AnyGame][] = [
   ["range", rangeGame],
   ["singles", singlesGame],
   ["sixteen", sixteenGame],
+  ["slant", slantGame],
   ["solo", soloGame],
   ["towers", towersGame],
   ["undead", undeadGame],

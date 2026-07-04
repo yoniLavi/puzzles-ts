@@ -630,6 +630,7 @@ game:
 | Towers | struck candidate digit(s) `COL_HINT` + cross-through (on a *non*-`COL_HINT` cell so the digit shows); placement target `COL_HINT` fill (no digit to hide) | driving **clue cell(s)** *and* their line of sight → `COL_HINT_CELL` shade (clue + sightline read as one premise region; a facing pair shades both clues) |
 | Pattern | forced cell(s), blue `COL_HINT` fill (highlight only, no mark) — the reasoned line's clue digits also recolour `COL_HINT` to tie clue↔line | reasoned **row/column** (line of sight) → `COL_HINT_CELL` shade on its *undecided* cells; an overlap run's anchoring **black** mark → teal `COL_HINT_BLACKREF` ring (white anchors → violet `COL_HINT_WHITEREF`). White ("no run reaches here") firings ring *nothing* — that deduction leans on the whole line's packing, not one mark, so a ring would over-claim (§2.4); the shaded line + highlighted clue is the evidence. |
 | Light Up | forced square(s), blue `COL_HINT` fill (bulb *and* mark targets identical — the narration says which; no bulb/blob preview) | evidence squares (a corridor of sight, a MAKESLIGHT set, a clue's placed bulbs) carried as one list, cue split by the cell's own state (§5.4): a **dark** square → `COL_HINT_CELL` shade (its blob draws on top), a **lit/bulb** square → teal `COL_HINT_LITREF` ring (a fill would hide the "already lit" premise); the unlit square a deduction protects → amber `COL_HINT_DARKREF` ring; the driving clue → its digit recolours `COL_HINT` (the Pattern clue↔move tie; the light `COL_HINT_CELL` was tried first and is unreadable as a cue — nearly white on black) |
+| Slant | forced square(s), blue `COL_HINT` fill (highlight only, no slash preview); a clue firing lights all its forced squares (equivalent moves share the colour, rule 3) and drops them as its multi-leg journey advances | a **clue** firing → the clue's digit recolours `COL_HINT` + its already-decided neighbour squares `COL_HINT_CELL` shade; a **loop/dead-end** firing → the connectivity chain / trapped-point components `COL_HINT_CELL` shade (plus the trapped points' incident squares, so a dead-end point carrying no diagonal yet is still *located*); an **equivalence** firing → teal `COL_HINT_REF` ring on the cited already-filled anchor (the honest locked-slant tier, below) |
 
 Two reusable lessons from the rollout: (1) **teal = "a cited black square", violet = "a
 cited white square"** is a cross-game reading worth preserving — reuse those hues for a
@@ -767,6 +768,48 @@ gluing) wasn't worth it here. Two things this shape buys:
 `\bis\b` conclusion-guard regex catches it — "run … **is** pinned" trips a test aimed at the
 conclusion clause. Word the premise without a flat state-of-being verb ("has nowhere to slide")
 rather than loosening the guard.
+
+### 5.6b The honest non-local tier for a game with no on-board mark (Slant)
+
+§5.6 tolerates a non-local *technique* inside an otherwise-glance-able set; Slant
+(`add-slant-hint`) is the case where a whole **technique is intrinsically a multi-step chain the
+game has no vocabulary to externalise**, and the honest treatment is the only compliant one. Slant's
+graded solver has exactly four *move-producing* techniques (its v-shape / equivalence-merge pass
+never places a square — it only feeds `equiv`/`vbitmap` state a later square-pass firing reads).
+Three are clean and glance-able — **clue-counting** (`this N clue still needs a line for every empty
+square left, so each must slant toward it`), **loop avoidance**, **dead-end avoidance** — and cover
+~94–98% of firings (*measure first*: a throwaway technique-tag recorder over the shipped presets
+gave clue ≈83%, loop ≈9%, dead-end ≈5%, equivalence ≈4%, and told me dead-end/equivalence fire on
+34/40 8×8 and 40/40 12×10 boards, so the plan **cannot** drop them — every one must be narrated).
+
+The fourth, **equivalence-to-an-already-filled-square**, is the Palisade "share a fate" idea (two
+squares locked to the same slant), but its justification is a *chain* — the lock was established by a
+2-clue pairing or a v-shape argument several fixpoint passes earlier — and, unlike the Latin family,
+Slant has **no pencil mark** to accumulate that chain onto the board (the §1B externalisation route
+is closed). So compressing it into one glance-able sentence is impossible without lying. The honest
+tier: name the technique and cite the anchor — *"This square is locked to the same slant as the
+ringed one — the clues around them leave no other pairing — so since that one is a backslash, this
+must be a backslash too"* — ring the already-filled anchor (`COL_HINT_REF` teal, the cross-game
+"cited filled premise" hue) as the visible evidence, and **do not** reconstruct the derivation. It is
+a real minority of firings, so the common hint stays first-class; flag the dip for owner acceptance.
+
+Two mechanics worth carrying to the next connectivity game:
+
+- **Recorder + `seedFrom`, both gated, over the real solver.** Extend the ported solver with an
+  optional `record`/`seedFrom` (the generator passes neither ⇒ byte-identical, differential green);
+  `seedFrom` replays the player's marks through the same `fillSquare` that syncs connectivity/exits/
+  equivalence, so the recorded plan continues from their position (the Range `dup.slice()` idea, but
+  the seed has to walk the union-find, not just copy a grid). `deduceHintPlan` then returns the
+  firings not yet on the board. Exemplar: [`slant/solver.ts`](../../src/native/games/slant/solver.ts).
+- **Connectivity-chain evidence must add the points' *incident squares*, not just the diagonal
+  component.** A dead-end firing traps a point boxed in by *clue/exit* constraints, which may carry
+  **zero placed diagonals** — so the diagonal-only component comes back empty and the visible-evidence
+  invariant fails. Shade the component **∪** the two ruled-out corners' incident squares, so the
+  trapped points are always located even before any diagonal touches them
+  (`componentSquares` + `incidentSquares` in [`slant/index.ts`](../../src/native/games/slant/index.ts)).
+- **A clue firing groups as `continuesPrevious` legs**, not a new multi-square move — leg 0 narrates
+  the clue, later legs (`The same clue forces this square too — it must slant toward the clue`) carry
+  the necessity modal too so the voice guard passes on *every* step, not just openers.
 
 ### 5.7 Placement animation as hint motion (fill-style games)
 
