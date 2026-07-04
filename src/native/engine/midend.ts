@@ -973,8 +973,8 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   }
 
   /** Pick the largest integer tile size whose board fits `maxSize`
-   * (mirrors `midend_size`'s fit-to-window behaviour, minus the
-   * user-size persistence a later change will add) and inform the
+   * (mirrors `midend_size`'s fit-to-window binary search, including
+   * user-size expansion beyond the preferred tile size) and inform the
    * draw state via `setTileSize` (upstream's `game_set_size`).
    *
    * **Pure** in the drawstate-cache sense: no recreation of the
@@ -986,14 +986,36 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * canvas-clearing concern is handled by `canvasCleared()` which
    * the adapter invokes from `resizeDrawing` only — the real signal
    * that the cache is stale. */
-  size(maxSize: Size, _isUserSize: boolean, _dpr: number): Size {
+  size(maxSize: Size, isUserSize: boolean, _dpr: number): Size {
     const base = this.game.computeSize(this.params, this.preferredTileSize);
     if (base.w <= 0 || base.h <= 0) {
       this.winSize = base;
       return base;
     }
-    const scale = Math.min(maxSize.w / base.w, maxSize.h / base.h, 1);
-    const tile = Math.max(1, Math.floor(this.preferredTileSize * scale));
+    // Largest integer tile size whose board fits maxSize — upstream
+    // midend_size's binary search. With `isUserSize` (the app passes true:
+    // fill the layout slot) the tile may exceed the game's preferred size;
+    // without it, the preferred size is the ceiling.
+    const fits = (ts: number): boolean => {
+      const s = this.game.computeSize(this.params, ts);
+      return s.w <= maxSize.w && s.h <= maxSize.h;
+    };
+    let hi: number;
+    if (isUserSize) {
+      hi = 1;
+      do {
+        hi *= 2;
+      } while (fits(hi));
+    } else {
+      hi = this.preferredTileSize + 1;
+    }
+    let lo = 1;
+    while (lo < hi - 1) {
+      const mid = (lo + hi) >> 1;
+      if (fits(mid)) lo = mid;
+      else hi = mid;
+    }
+    const tile = lo;
     this.currentTileSize = tile;
     if (this.drawState !== null) {
       // `setTileSize` is informational on the existing drawstate —

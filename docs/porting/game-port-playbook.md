@@ -568,6 +568,22 @@ the five digit games (`solo`/`keen`/`towers`/`unequal`/`filling`) and Undead.
 **Dev-time differential spot-check** (advisory, *not* a gate): generate N boards
 from the C build and the TS port for the same seed and eyeball the diff.
 
+**Scope byte-parity to the generator/solver/codec — it buys nothing for display
+(owner-stated doctrine, 2026-07-04).** Byte-fidelity earns its keep in exactly
+two places: the **RNG-fed generation path** (same seed ⇒ same board, which is
+what the differentials in this section verify and what keeps shared IDs
+reproducible) and, tactically, as a **porting ease** — transcribing upstream's
+solver/generator verbatim is often the lowest-risk way to get it right. It was
+the project's founding "hard wall" but is no longer: with 26 ports proving the
+TS direction, the bar for everything user-facing — rendering, layout, geometry,
+animation, colours — is **neat visuals and clean code**, not pixel-for-pixel
+reproduction of the C frontend. Port display code *faithfully enough to play
+identically* (§6's behavioural parity gate still applies in full), but when the
+C's drawing does something awkward and a cleaner TS shape looks as good or
+better, prefer the cleaner shape — and deliberate visual *improvements* (the
+Range known-white fill, the shared correct-region shade, mistake overlays) are
+the point of the fork, not deviations to be minimised.
+
 **A differential earns its place on solver/codec games, not every port.** It pays
 off where the generator runs a hard uniqueness/difficulty loop or a non-obvious
 codec (galaxies, unruly, flood, guess); permutation / short-RNG games (cube, fifteen,

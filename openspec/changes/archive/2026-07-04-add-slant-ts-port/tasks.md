@@ -69,13 +69,17 @@
       refusal with red squares, Solve, undo, Preferences shows both prefs
       and they act, Custom type generates with a correct header; 0 console
       errors.
-- [ ] 5.4 Owner smoke-test / acceptance pass.
+- [x] 5.4 Owner smoke-test / acceptance pass. (Accepted 2026-07-04;
+      feedback: boards render smaller than the C build — fixed by 5.5.)
+- [x] 5.5 Cross-game sizing fix from the acceptance pass: `Midend.size`
+      honours `isUserSize` (upstream binary search; may exceed the
+      preferred tile size), midend tests updated, dev-verified.
 
 ## 6. Stage 2 — on owner acceptance only
 
-- [ ] 6.1 `TS_PORTED` in `puzzles/CMakeLists.txt` (drop `solver(slant)`),
+- [x] 6.1 `TS_PORTED` in `puzzles/CMakeLists.txt` (drop `solver(slant)`),
       delete `puzzles/slant.c` + `puzzles/auxiliary/slant-trace.c` (+ its
       CMake line); `rm -rf build/wasm` + rebuild; slant in catalog, no
       wasm. `puzzles/findloop.c` stays (five C consumers remain).
-- [ ] 6.2 Update `docs/porting/game-port-playbook.md` with anything
+- [x] 6.2 Update `docs/porting/game-port-playbook.md` with anything
       learned; archive this change in the same commit.
