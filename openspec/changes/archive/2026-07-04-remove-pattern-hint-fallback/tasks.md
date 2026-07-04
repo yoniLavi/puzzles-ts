@@ -64,4 +64,4 @@
 - [x] 5.3 `openspec validate remove-pattern-hint-fallback --strict` passes; full gate
       green (tsc -b --noEmit clean, biome lint 367 files clean, vitest 1957 passed,
       vite production build succeeds).
-- [ ] 5.4 On owner acceptance, commit + archive.
+- [x] 5.4 On owner acceptance, commit + archive.
