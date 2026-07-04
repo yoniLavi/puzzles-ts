@@ -762,7 +762,10 @@ The shared `RecordingDrawing` records a *filled* `dr.drawRect(...)` as `op === "
 but `drawRectOutline(...)` — a *stroked* box, i.e. a hint ring, error outline, or
 cursor frame — records as `op === "line"` segments. A test checking a ring/outline
 colour must therefore match `o.op === "line"`, not `"rect"` (asserting Range's
-`COL_HINT_BLACKREF` premise ring cost a debug cycle on exactly this). Prefer the
+`COL_HINT_BLACKREF` premise ring cost a debug cycle on exactly this). Likewise a
+`drawCircle` records with `fill`/`outline` fields, **not** `colour` — matching
+`o.op === "circle" && o.colour === …` type-errors and always misses (Light Up's
+bulb assertions hit this). Prefer the
 shared `RecordingDrawing` and learn its op vocabulary; ad-hoc per-test doubles may
 name things differently (Unruly's local recorder labels `drawRect` ops `"drawRect"`),
 a second reason to reach for the shared one.

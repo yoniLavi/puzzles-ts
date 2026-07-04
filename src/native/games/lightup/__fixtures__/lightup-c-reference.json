@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "w": 7,
+      "h": 7,
+      "blackpc": 20,
+      "symm": 4,
+      "difficulty": 0,
+      "seed": "lightup-trace-0",
+      "desc": "h00b3f1i0f1b01h"
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "blackpc": 20,
+      "symm": 4,
+      "difficulty": 1,
+      "seed": "lightup-trace-1",
+      "desc": "aBBf0c1e01c1c1Be0cBfBBa"
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "blackpc": 20,
+      "symm": 4,
+      "difficulty": 2,
+      "seed": "lightup-trace-2",
+      "desc": "e2a2h2aBk1a1h1aBe"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "blackpc": 20,
+      "symm": 2,
+      "difficulty": 0,
+      "seed": "lightup-trace-3",
+      "desc": "aBdBe3eBbBaB2cBbBb0c3h3d2h2cBb1bBc1BaBb0e2e0dBa"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "blackpc": 20,
+      "symm": 2,
+      "difficulty": 1,
+      "seed": "lightup-trace-4",
+      "desc": "c2eBaBd1hBa0bBlBbBa3b0aBbBlBbBa3h1d2a2eBc"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "blackpc": 20,
+      "symm": 2,
+      "difficulty": 2,
+      "seed": "lightup-trace-5",
+      "desc": "cBa1dBh1a0aBc3d2b0c1c3cBdBcBc1c1bBd3cBaBa1h2d0aBc"
+    },
+    {
+      "w": 14,
+      "h": 14,
+      "blackpc": 20,
+      "symm": 2,
+      "difficulty": 0,
+      "seed": "lightup-trace-6",
+      "desc": "BBe3hBeBb10gBd1bBc2cBdBb1aBb1eBa1B2BBaBa2zj0a1aBBBB2a1eBb1a3b1d3c1cBbBdBgB0bBe1h0eBB"
+    },
+    {
+      "w": 14,
+      "h": 14,
+      "blackpc": 20,
+      "symm": 2,
+      "difficulty": 1,
+      "seed": "lightup-trace-7",
+      "desc": "d00c0fBfBc32bBBaBc1Bb0bBiBa1bBBbBi0e2f1b2a2j2aBbBfBeBiBb2Bb2a1i0bBbBBc1a20b0BcBf1f1c11d"
+    },
+    {
+      "w": 14,
+      "h": 14,
+      "blackpc": 20,
+      "symm": 2,
+      "difficulty": 2,
+      "seed": "lightup-trace-8",
+      "desc": "2a2aBkBb2B2e0f2a1rBg0b2a3aBBbBf2aBaBb0B2aBjBaBB1b1a2aBf1b01a3a0b0gBr2aBf1eBBBbBkBa1aB"
+    },
+    {
+      "w": 10,
+      "h": 8,
+      "blackpc": 25,
+      "symm": 1,
+      "difficulty": 1,
+      "seed": "lightup-trace-9",
+      "desc": "b0c0i1a0B1BlBaBBf1aB1b1Bn1a11b1cBc"
+    },
+    {
+      "w": 9,
+      "h": 9,
+      "blackpc": 30,
+      "symm": 0,
+      "difficulty": 2,
+      "seed": "lightup-trace-10",
+      "desc": "B0d1iBg1i0b1a1a3aBBB0BcB2fBbBa2cBb1BBBf"
+    },
+    {
+      "w": 11,
+      "h": 11,
+      "blackpc": 20,
+      "symm": 3,
+      "difficulty": 0,
+      "seed": "lightup-trace-11",
+      "desc": "bBaBaBaBcB1eBBa3cBa0c3aBg3e0a1eBgBeBa0eBgBa1cBaBcBaB1eBBcBaBa0a1b"
+    }
+  ]
+}
