@@ -651,13 +651,21 @@ export function latinSolver<Ctx>(
  * (`-1` = unmatched), the analogue of upstream's `outl`. The two RNG draws —
  * `shuffle(Lorder)` per BFS pass and the in-place `random_upto` adjacency
  * swap during the DFS — are reproduced exactly so generation is byte-faithful.
+ *
+ * `rs` is optional: passing it perturbs the algorithm to choose randomly among
+ * possible matchings (generation), while omitting it runs deterministically
+ * — the two draw sites are guarded exactly as `matching.c`'s `if (rs)`. A
+ * matching's *cardinality* is order-independent, so the `rs`-less mode is the
+ * faithful analogue of upstream's `rs = NULL` existence check (Tents'
+ * completion check). Derive an `R→L` assignment, if needed, by inverting the
+ * returned `L→R` array.
  */
 export function matching(
   nl: number,
   nr: number,
   adjlists: number[][],
   adjsizes: number[],
-  rs: RandomState,
+  rs?: RandomState,
 ): Int32Array {
   const LtoR = new Int32Array(nl).fill(-1);
   const RtoL = new Int32Array(nr).fill(-1);
@@ -725,7 +733,7 @@ export function matching(
     }
 
     for (let L = 0; L < nl; L++) Lorder[L] = L;
-    shuffle(Lorder as unknown as number[], rs);
+    if (rs) shuffle(Lorder as unknown as number[], rs);
 
     dfsstate[0] = 0;
     let i = 0;
@@ -742,7 +750,7 @@ export function matching(
           i--;
           continue;
         }
-        if (adjsizes[L] - j > 1) {
+        if (rs && adjsizes[L] - j > 1) {
           const which = j + randomUpto(rs, adjsizes[L] - j);
           const tmp = adjlists[L][which];
           adjlists[L][which] = adjlists[L][j];
