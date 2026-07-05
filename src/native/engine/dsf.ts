@@ -72,4 +72,13 @@ export class Dsf {
   equivalent(a: number, b: number): boolean {
     return this.canonify(a) === this.canonify(b);
   }
+
+  /** A deep copy — a fresh forest with the same partition. Used by games
+   * (Signpost) whose immutable state clones its `Dsf` per move. */
+  clone(): Dsf {
+    const copy = new Dsf(this.parent.length);
+    copy.parent.set(this.parent);
+    copy.classSize.set(this.classSize);
+    return copy;
+  }
 }

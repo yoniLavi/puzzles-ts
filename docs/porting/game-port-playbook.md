@@ -319,6 +319,16 @@ browser actually showed, not the desktop default. Grep the game's `.c` for
 `#ifdef` before writing `computeSize`. Exemplar:
 [`slant/render.ts`](../../src/native/games/slant/render.ts).
 
+**Drag-preview games: put move application in a separate module, not `index.ts`.**
+Upstream `game_redraw` for a drag game (Signpost, and Untangle earlier) reflects
+the *in-progress* drag by simulating the release move and drawing the resulting
+state — so `render.ts` needs to call `executeMove` + the release-move helper. If
+those live in `index.ts`, `render` ↔ `index` is a cycle. Split them into a small
+`moves.ts` (`executeMove` + `dragReleaseMove`) that both import. Blitter drag
+sprite (save the background under the moving arrow, restore next frame) — a second
+exemplar after Pegs — lives in `render.ts`. Exemplar:
+[`signpost/moves.ts`](../../src/native/games/signpost/moves.ts).
+
 ### 3.3 Palette
 
 **Mirror the C colour-enum indices when the game has dark-mode overrides.**
@@ -667,6 +677,15 @@ difficulty + unique mode; the Flip CROSSES path is the precedent). Fall back to 
 weaker "TS solver agrees at the C-recorded difficulty" bar (Galaxies' D7) only when
 the generator legitimately diverges (e.g. extra RNG draws). Either way it's advisory
 — tighten per-game, never gate CI on C.
+
+**A `qsort`/`.sort()` that feeds only *rendering* does not threaten byte-match.**
+Only sorts (and RNG draws) on the path that produces the desc matter. Signpost's
+`update_numbers` `qsort(compare_heads)` orders regions purely to assign display
+colours — it never touches the desc byte-stream — so it's free to port as a plain
+`.sort()` (the comparator is a total order anyway). Don't let a scary-looking sort
+in the `.c` talk you out of a byte-match; trace whether its result reaches the
+desc. (Contrast Undead §4.8, where the generator's `qsort` of equal-length paths
+*does* feed the desc and forces the order-independent-verdict fallback.)
 
 ### 4.4 Solver-gated generators: match C's *verdict*, not merely be correct
 
