@@ -135,11 +135,11 @@ adjacent edges.")
 solver(loopy)
 
 puzzle(magnets
+  TS_PORTED  # native-TS port (openspec add-magnets-ts-port); no magnets.c/wasm
   DISPLAYNAME "Magnets"
   DESCRIPTION "Magnet-placing puzzle"
   OBJECTIVE "Place magnets to satisfy the clues and avoid like poles \
 touching.")
-solver(magnets)
 
 puzzle(map
   DISPLAYNAME "Map"
