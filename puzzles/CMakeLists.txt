@@ -234,10 +234,10 @@ puzzle(separate
   OBJECTIVE "Partition the grid into regions containing one of each letter.")
 
 puzzle(signpost
+  TS_PORTED  # native-TS port (openspec add-signpost-ts-port); no signpost.c/wasm
   DISPLAYNAME "Signpost"
   DESCRIPTION "Square-connecting puzzle"
   OBJECTIVE "Connect the squares into a path following the arrows.")
-solver(signpost)
 
 puzzle(singles
   TS_PORTED  # native-TS port (openspec add-singles-ts-port); no singles.c/wasm
