@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "w": 6,
+      "h": 5,
+      "diff": 0,
+      "stripclues": false,
+      "seed": "magnets-trace-0",
+      "desc": "221122,32023,212131,22123,LRTTLRLRBBTTLRLRBBTLRLRTBLRLRB",
+      "aux": "+-+.-+-+-.+.....-.+..-+--+-+-+"
+    },
+    {
+      "w": 6,
+      "h": 5,
+      "diff": 1,
+      "stripclues": false,
+      "seed": "magnets-trace-1",
+      "desc": "212123,32123,122132,23222,TTTTTTBBBBBBTTLRTTBBTTBBLRBBLR",
+      "aux": "+.-+-+-.+-+-.-..-+.+-.+-+-+.-+"
+    },
+    {
+      "w": 6,
+      "h": 5,
+      "diff": 1,
+      "stripclues": true,
+      "seed": "magnets-trace-2",
+      "desc": "1..12.,23.3.,2..1..,322..,TTTLRTBBBLRBTLRTLRBLRBLRLRLRLR",
+      "aux": ".-+-+-.+-+-+-...+-+-+.-+-+...."
+    },
+    {
+      "w": 8,
+      "h": 7,
+      "diff": 0,
+      "stripclues": false,
+      "seed": "magnets-trace-3",
+      "desc": "32223243,2432244,23232234,4233234,TLRLRTLRBLRLRBTTTTLRLRBBBBLRTTLRTLRTBBLRBLRBTTLRLRLRBBLR",
+      "aux": "-..-+-+-+-+..+-+-+-+..+-+-..-.-+...-+.+-.+-+-+-++-+-+-+-"
+    },
+    {
+      "w": 8,
+      "h": 7,
+      "diff": 1,
+      "stripclues": false,
+      "seed": "magnets-trace-4",
+      "desc": "23331232,3433222,33232312,3443203,TTTTLRLRBBBBTLRTTTTTBTTBBBBBTBBTLRLRBTTBTLRTTBBTBLRBBLRB",
+      "aux": "-+-+-+..+-+-+-+--+-+-.-++-+-..+--+...-.+...+.+...-+-.-+."
+    },
+    {
+      "w": 8,
+      "h": 7,
+      "diff": 1,
+      "stripclues": true,
+      "seed": "magnets-trace-5",
+      "desc": "..2..2..,.3.3.33,.2.1.0..,4.33..4,LRTLRLRTLRBLRLRBTTLRLRLRBBTTLRTTTTBBLRBBBBLRTLRTLRLRBLRB",
+      "aux": "-+-+-..-+-+....+-+-+..+-+-..-+-+-.....+-+.+-+...-+-+-+-."
+    },
+    {
+      "w": 10,
+      "h": 9,
+      "diff": 1,
+      "stripclues": false,
+      "seed": "magnets-trace-6",
+      "desc": "5133424432,534231445,4232424343,354421354,TTTTTTLRLRBBBBBBTTTTLRLRLRBBBBTTTLRTTLRTBBBTTBBTTBTTTBBLRBBTBBBLRLRLRBTTLRTTTTTTBBLRBBBBBB",
+      "aux": "+.+-+.+-+--.-+-.-+-++-..+-+-+--+-...-+-.+-+.-.+...-...+.....+..+-+-+-.-.+-+-+-+-+.-+-+-+-+"
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "diff": 0,
+      "stripclues": false,
+      "seed": "magnets-trace-7",
+      "desc": "4323212,2342132,3423230,3233132,LRLRTTTLRTTBBBLRBBTLRLRLRBTTTTLR*BBBBTTTLRLRBBBLR",
+      "aux": "+-+-.-.-+-+.+.+-+-+-+-+-+-..+-.....-+.-+-++-.+-.."
+    },
+    {
+      "w": 5,
+      "h": 5,
+      "diff": 1,
+      "stripclues": true,
+      "seed": "magnets-trace-8",
+      "desc": "..2..,22..2,1.2..,.2.1.,*LRLRTTLRTBBTTBLRBBTLRLRB",
+      "aux": ".+-+-+-+-.-+-....+.-+-..+"
+    }
+  ]
+}

@@ -132,6 +132,11 @@ the shared [`src/native/engine/`](../../src/native/engine/) helpers
 [`findloop.ts`](../../src/native/engine/findloop.ts) — Tarjan loop/bridge
 finding for live loop-error highlighting (Slant; Bridges/Dominosa/Loopy/Tracks
 when ported),
+[`laydomino.ts`](../../src/native/engine/laydomino.ts) — `dominoLayout(w, h, rs)`,
+a random 2×1 domino tiling of a grid (RNG-faithful: the candidate-list shuffle +
+per-BFS-node neighbour shuffle reproduce C's draws, so a generator built on it is
+byte-match portable). Ported for Magnets; Dominosa reuses it when ported (so
+`puzzles/laydomino.c` stays until then, like `random.c`),
 [`sorted-multiset.ts`](../../src/native/engine/sorted-multiset.ts),
 [`colour-mkhighlight.ts`](../../src/native/engine/colour-mkhighlight.ts),
 [`pointer.ts`](../../src/native/engine/pointer.ts),
