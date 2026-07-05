@@ -265,10 +265,10 @@ puzzle(solo
 block contains one of every digit.")
 
 puzzle(tents
+  TS_PORTED  # native-TS port (openspec add-tents-ts-port); no tents.c/wasm
   DISPLAYNAME "Tents"
   DESCRIPTION "Tent-placing puzzle"
   OBJECTIVE "Place a tent next to each tree.")
-solver(tents)
 
 puzzle(towers
   TS_PORTED  # native-TS port (openspec add-towers-ts-port); no towers.c/wasm

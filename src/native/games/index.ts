@@ -28,6 +28,7 @@ import "./singles/index.ts";
 import "./sixteen/index.ts";
 import "./slant/index.ts";
 import "./solo/index.ts";
+import "./tents/index.ts";
 import "./towers/index.ts";
 import "./twiddle/index.ts";
 import "./undead/index.ts";

@@ -138,6 +138,18 @@ when ported),
 [`params.ts`](../../src/native/engine/params.ts)). **If a second consumer of a
 game-local helper appears, promote it to `engine/`.**
 
+The bipartite **`matching`** (Hopcroft–Karp, RNG-faithful) lives in
+[`latin.ts`](../../src/native/engine/latin.ts) alongside `latinGenerate`, and
+is reusable outside the Latin family: Tents drives it both ways. Its `rs` is
+**optional** — pass it to randomise among matchings (generation, byte-match
+sensitive) or omit it to run deterministically (an existence/cardinality check,
+upstream's `rs = NULL`). It returns only the left→right assignment (`LtoR`); a
+game that needs upstream's `outr` (right→left) derives it by inverting —
+`outr[LtoR[L]] = L` for each matched `L` — which is byte-identical to reading
+C's `outr`, and the edge count is just the number of matched `L`. Tents uses
+the RNG form to place trees against tents in generation and the `rs`-less form
+in its completion check (does a perfect tree↔tent matching exist?).
+
 In `interpretMove`/`decodeParams`, reach for these instead of re-rolling the idiom
 (every game grew its own copy until they were consolidated):
 
