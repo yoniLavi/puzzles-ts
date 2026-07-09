@@ -9,6 +9,7 @@
 
 import "./blackbox/index.ts";
 import "./cube/index.ts";
+import "./dominosa/index.ts";
 import "./fifteen/index.ts";
 import "./filling/index.ts";
 import "./flip/index.ts";

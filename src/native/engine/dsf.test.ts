@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { Dsf } from "./dsf.ts";
 import { randomNew, randomUpto } from "../random/index.ts";
+import { Dsf, FlipDsf } from "./dsf.ts";
 
 /**
  * Brute-force reference: a plain parent array, walked to a root each
@@ -105,26 +105,128 @@ describe("Dsf", () => {
 
   // O(n²) cross-check after every op — legitimately CPU-heavy; the
   // explicit timeout keeps it robust when the parallel suite starves it.
-  it(
-    "matches brute-force reference over long random sequences",
-    () => {
-      const n = 20;
-      const rng = randomNew("dsf-property");
-      for (let trial = 0; trial < 5; trial++) {
-        const d = new Dsf(n);
-        const ref = new RefDsf(n);
-        for (let op = 0; op < 200; op++) {
-          const a = randomUpto(rng, n);
-          const b = randomUpto(rng, n);
-          d.merge(a, b);
-          ref.merge(a, b);
-          classesEqual(d, ref, n);
-        }
-        d.reinit();
-        ref.reinit();
+  it("matches brute-force reference over long random sequences", () => {
+    const n = 20;
+    const rng = randomNew("dsf-property");
+    for (let trial = 0; trial < 5; trial++) {
+      const d = new Dsf(n);
+      const ref = new RefDsf(n);
+      for (let op = 0; op < 200; op++) {
+        const a = randomUpto(rng, n);
+        const b = randomUpto(rng, n);
+        d.merge(a, b);
+        ref.merge(a, b);
         classesEqual(d, ref, n);
       }
-    },
-    30000,
-  );
+      d.reinit();
+      ref.reinit();
+      classesEqual(d, ref, n);
+    }
+  }, 30000);
+});
+
+/**
+ * Brute-force parity reference: store every parity constraint as an edge
+ * `(a, b, inverse)` and answer connectivity + relative sense by BFS. The
+ * FlipDsf's canonical roots are internal, so we test the *invariants* that
+ * matter — same class ⇒ same root, and the accumulated `inverse` flags recover
+ * the constraint-implied relative parity.
+ */
+class RefFlipDsf {
+  private readonly edges: Array<[number, number, number]> = [];
+  merge(a: number, b: number, inverse: boolean): void {
+    this.edges.push([a, b, inverse ? 1 : 0]);
+  }
+  /** BFS from `a`; returns a map element→parity for every element reachable. */
+  private reach(a: number): Map<number, number> {
+    const parity = new Map<number, number>([[a, 0]]);
+    const queue = [a];
+    while (queue.length) {
+      const u = queue.shift() as number;
+      const pu = parity.get(u) as number;
+      for (const [x, y, inv] of this.edges) {
+        for (const [from, to] of [
+          [x, y],
+          [y, x],
+        ]) {
+          if (from === u && !parity.has(to)) {
+            parity.set(to, pu ^ inv);
+            queue.push(to);
+          }
+        }
+      }
+    }
+    return parity;
+  }
+  connected(a: number, b: number): boolean {
+    return this.reach(a).has(b);
+  }
+  /** Relative sense of `b` w.r.t. `a` (0 same, 1 opposite); a,b connected. */
+  sense(a: number, b: number): number {
+    return this.reach(a).get(b) as number;
+  }
+}
+
+describe("FlipDsf", () => {
+  it("binds two elements in the same and opposite senses", () => {
+    const d = new FlipDsf(4);
+    d.mergeFlip(0, 1, false); // same
+    d.mergeFlip(2, 3, true); // opposite
+    const c0 = d.canonify(0);
+    const c1 = d.canonify(1);
+    expect(c1.root).toBe(c0.root);
+    expect(c0.inverse === c1.inverse).toBe(true); // same sense
+
+    const c2 = d.canonify(2);
+    const c3 = d.canonify(3);
+    expect(c3.root).toBe(c2.root);
+    expect(c2.inverse !== c3.inverse).toBe(true); // opposite sense
+
+    // Two separate classes.
+    expect(c2.root).not.toBe(c0.root);
+  });
+
+  it("propagates parity transitively", () => {
+    const d = new FlipDsf(4);
+    d.mergeFlip(0, 1, true); // 1 opposite 0
+    d.mergeFlip(1, 2, true); // 2 opposite 1 ⇒ 2 same as 0
+    const c0 = d.canonify(0);
+    const c2 = d.canonify(2);
+    expect(c2.root).toBe(c0.root);
+    expect(c0.inverse === c2.inverse).toBe(true);
+    const c1 = d.canonify(1);
+    expect(c0.inverse !== c1.inverse).toBe(true);
+  });
+
+  it("matches a brute-force parity reference under random merges", () => {
+    const n = 24;
+    const rng = randomNew("flipdsf-property");
+    for (let trial = 0; trial < 5; trial++) {
+      const d = new FlipDsf(n);
+      const ref = new RefFlipDsf();
+      for (let op = 0; op < 60; op++) {
+        const a = randomUpto(rng, n);
+        const b = randomUpto(rng, n);
+        const inv = randomUpto(rng, 2) === 1;
+        // Only merge when consistent (avoid contradicting an existing relation,
+        // which would trip the C's inconsistency assert).
+        if (!ref.connected(a, b) || ref.sense(a, b) === (inv ? 1 : 0)) {
+          d.mergeFlip(a, b, inv);
+          ref.merge(a, b, inv);
+        }
+        for (let x = 0; x < n; x++)
+          for (let y = 0; y < n; y++) {
+            const cx = d.canonify(x);
+            const cy = d.canonify(y);
+            if (ref.connected(x, y)) {
+              expect(cy.root).toBe(cx.root);
+              const relSense = cx.inverse !== cy.inverse ? 1 : 0;
+              expect(relSense).toBe(ref.sense(x, y));
+            } else {
+              expect(cy.root).not.toBe(cx.root);
+            }
+          }
+      }
+    }
+  }, 30000);
 });

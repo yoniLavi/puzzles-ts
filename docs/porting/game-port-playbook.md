@@ -128,7 +128,9 @@ may collapse files):
 
 Leaf libs (dsf, sorted structures) are pulled in **idiomatically and lazily**: use
 the shared [`src/native/engine/`](../../src/native/engine/) helpers
-([`dsf.ts`](../../src/native/engine/dsf.ts),
+([`dsf.ts`](../../src/native/engine/dsf.ts) — `Dsf` (union-by-size) plus
+`FlipDsf`, the **parity/flip** union-find (`dsf_new_flip`; each class tracks a
+same/opposite-sense bit) that Dominosa's forcing-chain deduction needs,
 [`findloop.ts`](../../src/native/engine/findloop.ts) — Tarjan loop/bridge
 finding for live loop-error highlighting (Slant; Bridges/Dominosa/Loopy/Tracks
 when ported),

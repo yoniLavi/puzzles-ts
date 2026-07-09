@@ -82,3 +82,112 @@ export class Dsf {
     return copy;
   }
 }
+
+/** The root/inverse pair a flip-dsf canonify returns. */
+export interface FlipCanon {
+  /** Canonical root of the equivalence class. */
+  root: number;
+  /** True iff `n`'s sense is flipped relative to the root. */
+  inverse: boolean;
+}
+
+/**
+ * Flip (parity) disjoint-set — a union-find whose classes additionally track a
+ * parity bit, so two elements can be bound "in the same sense" or "in opposite
+ * senses". An idiomatic TS port of `dsf.c`'s flip variant (`dsf_new_flip` /
+ * `dsf_canonify_flip` / `dsf_merge_flip`), ported for Dominosa's forcing-chain
+ * deduction (two domino placements are linked either always-together or
+ * always-opposite).
+ *
+ * Path compression carries the accumulated flip parity exactly as
+ * `dsf_path_compress_flip`; union is by class size with the same tie-break as
+ * {@link Dsf} (the second argument's root wins on a tie).
+ */
+export class FlipDsf {
+  private readonly parent: Int32Array;
+  private readonly classSize: Int32Array;
+  /** For a non-root `n`, whether its sense is flipped relative to its parent. */
+  private readonly flip: Uint8Array;
+
+  constructor(n: number) {
+    this.parent = new Int32Array(n);
+    this.classSize = new Int32Array(n);
+    this.flip = new Uint8Array(n);
+    this.reinit();
+  }
+
+  /** Restore the singleton partition (every element its own root, no flips). */
+  reinit(): void {
+    for (let i = 0; i < this.parent.length; i++) {
+      this.parent[i] = i;
+      this.classSize[i] = 1;
+      this.flip[i] = 0;
+    }
+  }
+
+  /** Walk to the root of `n`, accumulating the flip parity along the way.
+   * Mirrors `dsf_find_root_flip`. */
+  private findRoot(n: number): { root: number; flip: number } {
+    let flip = 0;
+    while (this.parent[n] !== n) {
+      flip ^= this.flip[n];
+      n = this.parent[n];
+    }
+    return { root: n, flip };
+  }
+
+  /** Repoint every node on the path from `n` to `root`, fixing up its stored
+   * flip so the parity relative to the root is preserved.
+   * Mirrors `dsf_path_compress_flip`. */
+  private pathCompress(n: number, root: number, flip: number): void {
+    while (this.parent[n] !== n) {
+      const prev = n;
+      const flipPrev = flip;
+      n = this.parent[n];
+      flip ^= this.flip[prev];
+      this.flip[prev] = flipPrev;
+      this.parent[prev] = root;
+    }
+  }
+
+  /** Canonical root of `n`'s class and whether `n` is flipped relative to it. */
+  canonify(n: number): FlipCanon {
+    const { root, flip } = this.findRoot(n);
+    this.pathCompress(n, root, flip);
+    return { root, inverse: flip !== 0 };
+  }
+
+  /** Bind `n1` and `n2` into one class. `inverse` is `true` to bind them in
+   * opposite senses, `false` for the same sense. No-op (but parity-checked in
+   * dev) if they are already related. Mirrors `dsf_merge_flip`. */
+  mergeFlip(n1: number, n2: number, inverse: boolean): void {
+    const inv = inverse ? 1 : 0;
+    const c1 = this.findRoot(n1);
+    const c2 = this.findRoot(n2);
+    const r1 = c1.root;
+    const r2 = c2.root;
+    let f1 = c1.flip;
+    let f2 = c2.flip;
+    let root: number;
+
+    if (r1 === r2) {
+      root = r1;
+    } else {
+      const s1 = this.classSize[r1];
+      const s2 = this.classSize[r2];
+      if (s1 > s2) {
+        this.parent[r2] = root = r1;
+        this.flip[r2] = f1 ^ f2 ^ inv;
+        f2 ^= this.flip[r2];
+      } else {
+        this.parent[r1] = root = r2;
+        this.flip[r1] = f1 ^ f2 ^ inv;
+        f1 ^= this.flip[r1];
+      }
+      this.classSize[root] = s1 + s2;
+    }
+
+    this.pathCompress(n1, root, f1);
+    this.pathCompress(n2, root, f2);
+  }
+}
