@@ -25,6 +25,7 @@ import type {
   KeyLabel,
   Point,
   Rect,
+  ReferenceModel,
   Size,
 } from "../../puzzle/types.ts";
 import type { RandomState } from "../random/index.ts";
@@ -339,6 +340,20 @@ export interface Game<
    * never-persisted overlay (cleared on the next transition) and passes
    * it to `redraw`, exactly like a displayed hint step. */
   findMistakes?(state: State): readonly Mistake[];
+
+  /** Build the game's **reference aid**: a checklist of the puzzle's
+   * fixed inventory of pieces with the player's found status, derived
+   * purely from the current state (never the solution). Pure. Presence
+   * of this hook makes the app show a reference toggle button; absent ⇒
+   * no reference aid. `ui` is passed so the model can echo the currently
+   * spotlighted piece (`selected`). */
+  reference?(state: State, ui: Ui): ReferenceModel;
+  /** Spotlight a reference item on the board (or clear it when `key` is
+   * null) by mutating `Ui` in place — a `UI_UPDATE`-shaped change the
+   * midend repaints but never records as a move. Returns whether
+   * anything changed (false ⇒ the midend skips the repaint). Present iff
+   * `reference` is. */
+  selectReference?(ui: Ui, key: string | null): boolean;
 
   textFormat?(s: State): string;
   statusbarText?(s: State, ui: Ui): string;

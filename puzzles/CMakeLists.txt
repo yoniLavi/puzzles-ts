@@ -36,7 +36,7 @@ endif()
 
 add_library(core_obj OBJECT
   combi.c draw-poly.c drawing.c dsf.c findloop.c grid.c
-  latin.c laydomino.c loopgen.c malloc.c matching.c midend.c misc.c
+  latin.c loopgen.c malloc.c matching.c midend.c misc.c
   penrose.c penrose-legacy.c ps.c ${random_or_sha_source} sort.c tdq.c tree234.c
   version.c
   ${platform_common_sources})
@@ -67,10 +67,10 @@ puzzle(cube
   OBJECTIVE "Pick up all the blue squares by rolling the cube over them.")
 
 puzzle(dominosa
+  TS_PORTED  # native-TS port (openspec add-dominosa-ts-port); no dominosa.c/wasm
   DISPLAYNAME "Dominosa"
   DESCRIPTION "Domino tiling puzzle"
   OBJECTIVE "Tile the rectangle with a full set of dominoes.")
-solver(dominosa)
 
 puzzle(fifteen
   TS_PORTED  # native-TS port (openspec add-fifteen-ts-port); no fifteen.c/wasm

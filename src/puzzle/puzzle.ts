@@ -19,6 +19,7 @@ import type {
   Point,
   PresetMenuEntry,
   PuzzleStaticAttributes,
+  ReferenceModel,
   Size,
 } from "./types.ts";
 import type { RemoteWorkerPuzzle, RemoteWorkerPuzzleFactory } from "./worker.ts";
@@ -92,6 +93,7 @@ export class Puzzle {
       canSolve,
       canHint,
       canFindMistakes,
+      hasReference,
       canMarkAll,
       needsRightButton,
       isTimed,
@@ -108,6 +110,7 @@ export class Puzzle {
     this.canSolve = canSolve;
     this.canHint = canHint;
     this.canFindMistakes = canFindMistakes;
+    this.hasReference = hasReference;
     this.canMarkAll = canMarkAll;
     this.needsRightButton = needsRightButton;
     this.isTimed = isTimed;
@@ -206,6 +209,7 @@ export class Puzzle {
   public readonly canSolve: boolean;
   public readonly canHint: boolean;
   public readonly canFindMistakes: boolean;
+  public readonly hasReference: boolean;
   public readonly canMarkAll: boolean;
   public readonly needsRightButton: boolean;
   public readonly isTimed: boolean;
@@ -414,6 +418,18 @@ export class Puzzle {
    * 0 for games without mistake-checking. */
   public async findMistakes(): Promise<number> {
     return this.workerPuzzle.findMistakes();
+  }
+
+  /** The active game's reference-aid model (inventory checklist with found
+   * status), or null when the game has no reference aid. */
+  public async getReference(): Promise<ReferenceModel | null> {
+    return this.workerPuzzle.getReference();
+  }
+
+  /** Spotlight a reference item on the board (or clear it with null). A
+   * `UI_UPDATE`-shaped change: the board repaints but no move is recorded. */
+  public async selectReference(key: string | null): Promise<void> {
+    return this.workerPuzzle.selectReference(key);
   }
 
   public startAutoHint(): void {

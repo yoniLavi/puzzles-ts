@@ -24,6 +24,7 @@ import type {
   Point,
   PresetMenuEntry,
   PuzzleStaticAttributes,
+  ReferenceModel,
   Size,
 } from "../../puzzle/types.ts";
 import { randomNew } from "../random/index.ts";
@@ -83,6 +84,11 @@ export interface EngineCore {
    * many. 0 (and no display change) when the game has no
    * mistake-checking. */
   findMistakes(): number;
+  /** The active game's reference-aid model, or null when it has none. */
+  getReference(): ReferenceModel | null;
+  /** Spotlight (or clear) a reference item by mutating Ui, repainting like
+   * a `UI_UPDATE`; no move/history/save. No-op without a reference aid. */
+  selectReference(key: string | null): void;
   /** The on-screen keypad for the current params, or `[]` for a game
    * that wants none. */
   requestKeys(): KeyLabel[];
@@ -250,6 +256,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       canSolve: this.game.canSolve,
       canHint: this.game.hint !== undefined,
       canFindMistakes: this.game.findMistakes !== undefined,
+      hasReference: this.game.reference !== undefined,
       canMarkAll: this.game.canMarkAll ?? false,
       needsRightButton: this.game.needsRightButton ?? false,
       isTimed: this.game.isTimed,
@@ -543,6 +550,25 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.activeMistakes = mistakes.length > 0 ? mistakes : null;
     this.requestRedraw();
     return mistakes.length;
+  }
+
+  /** The active game's reference-aid model for the current board, or
+   * null if the game has no reference. Pure read — no state change. */
+  getReference(): ReferenceModel | null {
+    if (!this.game.reference) return null;
+    return this.game.reference(this.state, this.ui);
+  }
+
+  /** Spotlight a reference item (or clear it when `key` is null) by
+   * mutating the live `Ui` through the game's hook, then repaint — the
+   * same in-place path a `UI_UPDATE` takes: no move, no history entry,
+   * no serialisation. A no-op (or an absent hook) skips the repaint. */
+  selectReference(key: string | null): void {
+    if (!this.game.selectReference) return;
+    if (this.game.selectReference(this.ui, key)) {
+      this.clearAnimation();
+      this.afterTransition();
+    }
   }
 
   /** Advance the plan past its current step; the plan clears when the

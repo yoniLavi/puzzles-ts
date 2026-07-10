@@ -25,6 +25,7 @@ import "@awesome.me/webawesome/dist/components/radio/radio.js";
 import "@awesome.me/webawesome/dist/components/radio-group/radio-group.js";
 import "@awesome.me/webawesome/dist/components/skeleton/skeleton.js";
 import "../components/dynamic-content.ts";
+import "../components/reference-panel.ts";
 import "../puzzle/puzzle-context.ts";
 import "../puzzle/puzzle-history.ts";
 import "../puzzle/puzzle-keys.ts";
@@ -64,6 +65,11 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
 
   @state()
   swapMouseButtons = false; // MouseButtonToggle current value
+
+  /** Whether the (non-blocking) reference panel is docked open. Only meaningful
+   * for a game whose `hasReference` is true (the toggle button only shows then). */
+  @state()
+  private referenceOpen = false;
 
   @query("puzzle-context")
   private puzzleContext?: HTMLElementTagNameMap["puzzle-context"];
@@ -120,6 +126,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       this.puzzleData = data;
       this.autoSaveFilename = undefined;
       this.puzzleLoaded = false;
+      this.referenceOpen = false; // a new puzzle type may have no reference
       this.defaultHelpLabel = `${this.puzzleData.name} Help`;
     }
   }
@@ -147,7 +154,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
           @puzzle-params-change=${this.handlePuzzleParamsChange}
           @puzzle-game-state-change=${this.handlePuzzleGameStateChange}
       >
-        <main>
+        <main class=${this.referenceOpen ? "reference-open" : nothing}>
           <header>
             ${this.renderGameMenu()}
             ${this.renderEngineBadge()}
@@ -198,6 +205,13 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
             ${this.renderMouseButtonToggle()}
             <puzzle-history></puzzle-history>
           </footer>
+          ${
+            this.referenceOpen
+              ? html`<reference-panel
+                  @reference-close=${this.handleReferenceClose}
+                ></reference-panel>`
+              : nothing
+          }
         </main>
 
         ${settings.showEndNotification ? this.renderEndNotification() : nothing}
@@ -358,6 +372,16 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
             : nothing
         }
         ${
+          this.puzzle?.hasReference
+            ? html`
+              <wa-dropdown-item data-command="toggle-reference">
+                <wa-icon slot="icon" name="reference"></wa-icon>
+                ${this.referenceOpen ? "Hide reference" : "Domino reference"}
+              </wa-dropdown-item>
+              `
+            : nothing
+        }
+        ${
           this.puzzle
             ? html`
               <wa-dropdown-item data-command="check-and-save">
@@ -462,11 +486,25 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       redraw: () => this.shadowRoot?.querySelector("puzzle-view-interactive")?.redraw(),
       "restart-game": () => this.puzzle?.restartGame(),
       "save-game": this.showSaveGameDialog,
+      "toggle-reference": this.toggleReference,
       share: this.showShareDialog,
       solve: () => this.puzzle?.solve(),
       hint: () => this.puzzle?.hint(),
     });
   }
+
+  /** Toggle the non-blocking reference panel (the toolbar reference button and
+   * the game menu both route here via `data-command="toggle-reference"`).
+   * Closing deliberately KEEPS any board spotlight: on a small screen the common
+   * flow is mark a domino, close the (large) panel to see the board, then place
+   * it. Escape (or re-clicking the chip) clears the spotlight. */
+  private toggleReference() {
+    this.referenceOpen = !this.referenceOpen;
+  }
+
+  private handleReferenceClose = () => {
+    this.referenceOpen = false;
+  };
 
   private async showShareDialog(panel?: string) {
     await import("../dialogs/share-dialog.ts");
@@ -778,6 +816,16 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       await this.handleCheckAndSave();
       return;
     }
+    // Escape clears a reference spotlight — the quick dismiss for a highlight
+    // that (deliberately) persists after the panel is closed. When the panel is
+    // open, route through it so the chip deselects too; when closed, clear the
+    // board spotlight directly. Doesn't preventDefault/stop, so it still
+    // composes with any other Escape handling (e.g. closing a dialog).
+    if (event.key === "Escape") {
+      const panel = this.shadowRoot?.querySelector("reference-panel");
+      if (panel) panel.clearSelection();
+      else if (this.puzzle?.hasReference) void this.puzzle.selectReference(null);
+    }
     // If a key event arrives at the document when nothing else is focused,
     // focus the puzzle and redirect the event to it.
     if (event.key === "Tab") {
@@ -847,6 +895,27 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
   
         background-color: var(--wa-color-brand-fill-quiet);
         color: var(--wa-color-text-normal);
+      }
+
+      /* When the non-blocking reference panel is docked, reserve space for it so
+       * the ResizeController-driven canvas reflows smaller and stays fully
+       * visible/interactive beside (wide) or above (narrow) the panel. The
+       * conditions mirror reference-panel.ts's :host media query: a side dock by
+       * default, a bottom sheet on a narrow viewport OR in "horizontal"
+       * orientation (short landscape, where a side dock would shove the board
+       * off-centre against the toolbar column). */
+      main.reference-open {
+        padding-inline-end: min(340px, 42vw);
+      }
+      @media (max-width: 640px) {
+        main.reference-open {
+          padding-inline-end: 0;
+          padding-block-end: min(45vh, 22rem);
+        }
+      }
+      :host([orientation="horizontal"]) main.reference-open {
+        padding-inline-end: 0;
+        padding-block-end: min(45vh, 22rem);
       }
 
       /* Dev-only icon-capture mode (?screenshot). */

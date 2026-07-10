@@ -13,10 +13,12 @@
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import type { DominosaHint } from "./index.ts";
 import {
   DINDEX,
   type DominosaMistake,
+  type DominosaMove,
   type DominosaParams,
   type DominosaState,
   type DominosaUi,
@@ -41,6 +43,13 @@ export const COL_HIGHLIGHT_1 = 6;
 export const COL_HIGHLIGHT_2 = 7;
 // Fork mistake overlay, appended past the upstream enum.
 export const COL_MISTAKE = 8;
+// Fork hint overlay, appended past the enum (no dark-mode overrides touch these).
+export const COL_HINT = 9; // target cells / suggested edge, blue
+export const COL_HINT_CELL = 10; // evidence squares, light blue
+// Fork reference-panel spotlight: boxes a domino's candidate placements. Violet,
+// distinct from the mistake (red), hint (blue), and value-highlight (red/green)
+// colours; appended past the enum so no dark-mode override touches it.
+export const COL_REFERENCE = 11;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background } = mkhighlight(defaultBackground);
@@ -58,6 +67,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HIGHLIGHT_1] = [0.85, 0.2, 0.2];
   out[COL_HIGHLIGHT_2] = [0.3, 0.85, 0.2];
   out[COL_MISTAKE] = [1, 0, 0];
+  out[COL_HINT] = [0.13, 0.5, 0.85];
+  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
+  out[COL_REFERENCE] = [0.6, 0.2, 0.8];
   return out;
 }
 
@@ -83,6 +95,16 @@ const DF_CURSOR_YBASE = 0x40000;
 const DF_CURSOR_YMASK = 0xc0000;
 // Fork mistake overlay bit (no upstream analogue): an inset red outline.
 const DF_MISTAKE = 0x100000;
+// Fork hint overlay bits.
+const DF_HINT_TARGET = 0x200000; // act-on cell → COL_HINT background
+const DF_HINT_EVID = 0x400000; // evidence cell → COL_HINT_CELL background
+const DF_HINT_EDGE_L = 0x800000;
+const DF_HINT_EDGE_R = 0x1000000;
+const DF_HINT_EDGE_T = 0x2000000;
+const DF_HINT_EDGE_B = 0x4000000;
+// Fork reference-panel spotlight bit: this square is a candidate placement for
+// the selected domino (boxed in COL_REFERENCE).
+const DF_REF = 0x8000000;
 
 // --- geometry ---------------------------------------------------------------
 const gutter = (ts: number) => Math.floor(ts / 16);
@@ -157,8 +179,16 @@ function drawTile(
   const co = coffset(ts);
   const rad = dominoRadius(ts);
 
+  const flags0 = packed & ~TYPE_MASK;
+  const bgColour =
+    flags0 & DF_HINT_TARGET
+      ? COL_HINT
+      : flags0 & DF_HINT_EVID
+        ? COL_HINT_CELL
+        : COL_BACKGROUND;
+
   dr.clip({ x: cx, y: cy, w: ts, h: ts });
-  dr.drawRect({ x: cx, y: cy, w: ts, h: ts }, COL_BACKGROUND);
+  dr.drawRect({ x: cx, y: cy, w: ts, h: ts }, bgColour);
 
   const flags = packed & ~TYPE_MASK;
   const type = packed & TYPE_MASK;
@@ -231,6 +261,34 @@ function drawTile(
     dr.drawRect({ x: sx + span - t, y: sy, w: t, h: span }, COL_MISTAKE);
   }
 
+  // Reference spotlight: a box hugging the square edge in COL_REFERENCE, marking
+  // it as a candidate placement for the selected domino. A small inset so two
+  // adjacent candidate squares read as one domino-shaped pair.
+  if (flags & DF_REF) {
+    const t = Math.max(1, Math.floor(ts / 16));
+    const inset = Math.max(1, Math.floor(ts / 16));
+    const sx = cx + inset;
+    const sy = cy + inset;
+    const span = ts - 2 * inset;
+    dr.drawRect({ x: sx, y: sy, w: span, h: t }, COL_REFERENCE);
+    dr.drawRect({ x: sx, y: sy + span - t, w: span, h: t }, COL_REFERENCE);
+    dr.drawRect({ x: sx, y: sy, w: t, h: span }, COL_REFERENCE);
+    dr.drawRect({ x: sx + span - t, y: sy, w: t, h: span }, COL_REFERENCE);
+  }
+
+  // Hint: recolour the suggested barrier edge blue (a thick COL_HINT bar).
+  if (flags & (DF_HINT_EDGE_L | DF_HINT_EDGE_R | DF_HINT_EDGE_T | DF_HINT_EDGE_B)) {
+    const th = Math.max(2, Math.floor(ts / 12));
+    if (flags & DF_HINT_EDGE_T)
+      dr.drawRect({ x: cx + g, y: cy, w: ts - 2 * g, h: th }, COL_HINT);
+    if (flags & DF_HINT_EDGE_B)
+      dr.drawRect({ x: cx + g, y: cy + ts - th, w: ts - 2 * g, h: th }, COL_HINT);
+    if (flags & DF_HINT_EDGE_L)
+      dr.drawRect({ x: cx, y: cy + g, w: th, h: ts - 2 * g }, COL_HINT);
+    if (flags & DF_HINT_EDGE_R)
+      dr.drawRect({ x: cx + ts - th, y: cy + g, w: th, h: ts - 2 * g }, COL_HINT);
+  }
+
   dr.drawText(
     { x: cx + Math.floor(ts / 2), y: cy + Math.floor(ts / 2) },
     {
@@ -258,7 +316,7 @@ export function redraw(
   ui: DominosaUi,
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<DominosaMove, DominosaHint>,
   mistakes?: readonly DominosaMistake[],
 ): void {
   if (!ds) return;
@@ -266,6 +324,17 @@ export function redraw(
   const { w, h, grid, numbers } = state;
   const wh = w * h;
   const n = state.params.n;
+
+  // Hint overlay bits, keyed by cell.
+  const hintTargets = new Set<number>();
+  const hintEvidence = new Set<number>();
+  let hintEdge: [number, number] | null = null;
+  const hl = hint?.highlights;
+  if (hl) {
+    for (const t of hl.targets) hintTargets.add(t);
+    for (const e of hl.evidence) hintEvidence.add(e);
+    if (hl.edge) hintEdge = hl.edge;
+  }
 
   if (!ds.started) {
     const size = computeSize({ n, diff: 0 }, ts);
@@ -283,9 +352,26 @@ export function redraw(
       if (used[di] < 2) used[di]++;
     }
 
-  const mistakeSet = mistakes?.length
-    ? new Set(mistakes.map((m) => m.index))
-    : null;
+  const mistakeSet = mistakes?.length ? new Set(mistakes.map((m) => m.index)) : null;
+
+  // Reference-panel spotlight: every square that borders another so the two
+  // clue values form the selected domino is a candidate placement — box it.
+  let refSet: Set<number> | null = null;
+  if (ui.highlightPair !== null) {
+    refSet = new Set<number>();
+    const di = ui.highlightPair;
+    for (let i = 0; i < wh; i++) {
+      const x = i % w;
+      if (x + 1 < w && DINDEX(numbers[i], numbers[i + 1]) === di) {
+        refSet.add(i);
+        refSet.add(i + 1);
+      }
+      if (i + w < wh && DINDEX(numbers[i], numbers[i + w]) === di) {
+        refSet.add(i);
+        refSet.add(i + w);
+      }
+    }
+  }
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -320,6 +406,18 @@ export function redraw(
       }
 
       if (mistakeSet?.has(i)) c |= DF_MISTAKE;
+
+      if (refSet?.has(i)) c |= DF_REF;
+
+      if (hintTargets.has(i)) c |= DF_HINT_TARGET;
+      else if (hintEvidence.has(i)) c |= DF_HINT_EVID;
+      if (hintEdge) {
+        const [a, b] = hintEdge;
+        if (i === a && b === a + 1) c |= DF_HINT_EDGE_R;
+        else if (i === b && b === a + 1) c |= DF_HINT_EDGE_L;
+        else if (i === a && b === a + w) c |= DF_HINT_EDGE_B;
+        else if (i === b && b === a + w) c |= DF_HINT_EDGE_T;
+      }
 
       if (ds.visible[i] !== c) {
         drawTile(dr, ts, state, x, y, c);

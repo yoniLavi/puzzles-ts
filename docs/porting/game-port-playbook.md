@@ -590,6 +590,52 @@ the five digit games (`solo`/`keen`/`towers`/`unequal`/`filling`) and Undead.
   rollover and any per-game quirk (Unequal's `'0'`-based high range). Normative: the
   on-screen-keys requirement in [`ts-engine`](../../openspec/specs/ts-engine/spec.md).
 
+### 3.9 Reference aid — an inventory checklist + click-to-highlight (Dominosa exemplar)
+
+A game with a **fixed, enumerable inventory of pieces** the player tracks by hand
+(Dominosa: place each of the `(n+1)(n+2)/2` distinct dominoes exactly once) can offer
+a **reference aid** — a non-blocking side panel listing every piece with found status,
+where clicking a piece spotlights its candidate placements on the live board. It is a
+deliberate learning-aid divergence, gated behind an explicit toolbar button next to
+Hint, like Solve — so surface it when the game's core bookkeeping is "which pieces have
+I used?" (Dominosa, and later plausibly Magnets).
+
+The seam is generic (only Dominosa implements it today), mirroring `canMarkAll`:
+
+- **Two optional `Game` hooks.** `reference(state, ui): ReferenceModel` returns a plain
+  checklist — `items: { key, label, pips?, status: "outstanding" | "placed" | "conflict" }[]`
+  plus `selected` — derived **purely from the player's own placements**, never the
+  solution (zero leak; it is the paper accounting). `selectReference(ui, key): boolean`
+  spotlights an item by mutating `Ui` and returns whether it changed.
+- **It flows the `canMarkAll` chain.** Presence of `reference` surfaces a static
+  `hasReference` flag (`Midend.getStaticProperties` → `PuzzleStaticAttributes` → `Puzzle`
+  → the `data-command="toggle-reference"` toolbar button + game-menu item). Two new
+  engine-surface methods carry it across Comlink: `getReference()` and
+  `selectReference(key)`. `selectReference` is the **first clean app→`Ui` push channel** —
+  shaped like a `UI_UPDATE` (repaints, but no move / no history / not serialised) — rather
+  than injecting a synthetic key. WASM games report `hasReference:false`.
+- **The panel is `src/components/reference-panel.ts`** (generic; renders `pips` as a mini
+  domino or falls back to `label`). It is **non-blocking and responsive** — side-docked when
+  there is room, a bottom sheet on a narrow viewport **or** in the app's short-landscape
+  "horizontal" orientation, board interactive in both (no modal). It reserves space via
+  `main.reference-open` padding (`padding-inline-end` for the dock, `padding-block-end` for
+  the sheet) so the ResizeController-driven canvas reflows and stays fully visible. Watch the
+  orientation: in "horizontal" `main` is a flex *row* with the toolbar as a right column, so a
+  side dock's `padding-inline-end` shoves the board off-centre into a dead gap — use the sheet
+  there (the panel `:host` media query and the padding rule share the
+  `(orientation: landscape) and (max-height: 40rem)` condition from `common.css`). It refetches
+  `getReference()` on every board change so the checklist ticks off live.
+- **The board highlight is a per-game `Ui` field + render bit.** Dominosa's
+  `DominosaUi.highlightPair` (a domino index) drives a `COL_REFERENCE` box around each
+  candidate cell in `render.ts` — a new colour appended past the palette and a new bit
+  folded into the packed cache key (§3.2), reset with the other highlights on completion.
+  Panel selection and board box share the colour so they read as one.
+- **Drive the render frame in-process** with `renderScenario({ …, selectReference: key })`
+  (the harness gained the option) and assert `COL_REFERENCE` rects appear only with a
+  selection. Normative: the reference-aid requirement in
+  [`ts-engine`](../../openspec/specs/ts-engine/spec.md); exemplar
+  [`dominosa/`](../../src/native/games/dominosa/).
+
 ---
 
 ## 4. Differential check (per-game, optional)

@@ -38,6 +38,7 @@ import partyPopperIcon from "lucide-static/icons/party-popper.svg";
 import pauseIcon from "lucide-static/icons/pause.svg";
 import playIcon from "lucide-static/icons/play.svg";
 import plusIcon from "lucide-static/icons/plus.svg";
+import listChecksIcon from "lucide-static/icons/list-checks.svg";
 import redo2Icon from "lucide-static/icons/redo-2.svg";
 import rocketIcon from "lucide-static/icons/rocket.svg";
 import settingsIcon from "lucide-static/icons/settings.svg";
@@ -82,6 +83,7 @@ const defaultIcons: IconMap = {
   "help": circleQuestionMarkIcon,
   "hint": lightbulbIcon,
   "mark-all": gridIcon,
+  "reference": listChecksIcon,
   "play": playIcon,
   "pause": pauseIcon,
   "history": historyIcon,

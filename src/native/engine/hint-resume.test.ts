@@ -21,8 +21,9 @@
  * arbitrary partial positions; a correct hint must never give up before solved.
  */
 import { describe, expect, it } from "vitest";
-import { fillingGame } from "../games/filling/index.ts";
+import { dominosaGame } from "../games/dominosa/index.ts";
 import { fifteenGame } from "../games/fifteen/index.ts";
+import { fillingGame } from "../games/filling/index.ts";
 import { floodGame } from "../games/flood/index.ts";
 import { keenGame } from "../games/keen/index.ts";
 import { lightupGame } from "../games/lightup/index.ts";
@@ -77,6 +78,7 @@ function solveByHints(game: AnyGame, seed: string): number {
 }
 
 const HINT_GAMES: [string, AnyGame][] = [
+  ["dominosa", dominosaGame],
   ["filling", fillingGame],
   ["fifteen", fifteenGame],
   ["flood", floodGame],
