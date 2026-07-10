@@ -37,6 +37,30 @@ function recordingDrawing() {
   return { dr, ops };
 }
 
+/** A fake game that exposes the reference-aid hooks over a tiny mutable Ui,
+ * for the midend's `hasReference`/`getReference`/`selectReference` paths. The
+ * fake's other members ignore `ui`, so the widened Ui type is a test-only cast. */
+function refGame(): typeof fakeGame {
+  type RefUi = { pick: string | null };
+  const g = {
+    ...fakeGame,
+    newUi: (): RefUi => ({ pick: null }),
+    reference: (_s: unknown, ui: RefUi) => ({
+      items: [
+        { key: "a", label: "a", status: "outstanding" as const },
+        { key: "b", label: "b", status: "placed" as const },
+      ],
+      selected: ui.pick,
+    }),
+    selectReference: (ui: RefUi, key: string | null) => {
+      if (ui.pick === key) return false;
+      ui.pick = key;
+      return true;
+    },
+  };
+  return g as unknown as typeof fakeGame;
+}
+
 /** Drive a fresh midend and record every notification it emits. */
 function harness(game: typeof fakeGame = fakeGame) {
   const notes: ChangeNotification[] = [];
@@ -760,6 +784,49 @@ describe("Midend hint plan lifecycle", () => {
     expect(new Midend(fakeGame).getStaticProperties().canMarkAll).toBe(false);
     const marking = { ...fakeGame, canMarkAll: true } as typeof fakeGame;
     expect(new Midend(marking).getStaticProperties().canMarkAll).toBe(true);
+  });
+
+  it("hasReference reflects the reference hook; getReference returns its model", () => {
+    expect(new Midend(fakeGame).getStaticProperties().hasReference).toBe(false);
+    const m = new Midend(refGame());
+    m.newGameFromId("t3:g3-0");
+    expect(m.getStaticProperties().hasReference).toBe(true);
+    const model = m.getReference();
+    expect(model?.items.map((i) => i.key)).toEqual(["a", "b"]);
+    expect(model?.selected).toBeNull();
+  });
+
+  it("selectReference repaints and spotlights but records no move", () => {
+    const notes: ChangeNotification[] = [];
+    let redraws = 0;
+    const m = new Midend(refGame());
+    m.setCallbacks(
+      (n) => notes.push(n),
+      () => {},
+      () => {
+        redraws++;
+      },
+    );
+    m.newGameFromId("t3:g3-0");
+
+    const lastMoveCounts = () => {
+      const s = [...notes]
+        .reverse()
+        .find((n) => n.type === "game-state-change") as
+        | Extract<ChangeNotification, { type: "game-state-change" }>
+        | undefined;
+      return { current: s?.currentMove, total: s?.totalMoves, canUndo: s?.canUndo };
+    };
+    const before = lastMoveCounts();
+    const redrawsBefore = redraws;
+
+    m.selectReference("b");
+
+    expect(redraws).toBe(redrawsBefore + 1); // it repainted
+    expect(m.getReference()?.selected).toBe("b"); // it spotlighted
+    // …but added no history entry: move counters are unchanged.
+    expect(lastMoveCounts()).toEqual(before);
+    expect(before.canUndo).toBe(false);
   });
 });
 

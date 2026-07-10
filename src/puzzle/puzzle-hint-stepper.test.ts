@@ -17,6 +17,7 @@ const ATTRS: PuzzleStaticAttributes = {
   canSolve: true,
   canHint: true,
   canFindMistakes: false,
+  hasReference: false,
   canMarkAll: false,
   needsRightButton: false,
   isTimed: false,

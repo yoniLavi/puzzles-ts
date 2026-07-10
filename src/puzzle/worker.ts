@@ -34,6 +34,7 @@ import type {
   PresetMenuEntry,
   PuzzleModule,
   PuzzleStaticAttributes,
+  ReferenceModel,
   Size,
 } from "./types.ts";
 
@@ -208,6 +209,7 @@ export class WorkerPuzzle implements FrontendConstructorArgs, PuzzleEngineSurfac
       canSolve: this.frontend.canSolve,
       canHint: false,
       canFindMistakes: false,
+      hasReference: false,
       canMarkAll: false,
       needsRightButton: this.frontend.needsRightButton,
       isTimed: this.frontend.isTimed,
@@ -259,6 +261,14 @@ export class WorkerPuzzle implements FrontendConstructorArgs, PuzzleEngineSurfac
   findMistakes(): number {
     // C/WASM games have no mistake-checking hook.
     return 0;
+  }
+
+  getReference(): ReferenceModel | null {
+    // C/WASM games have no reference aid.
+    return null;
+  }
+  selectReference(_key: string | null): void {
+    // No reference aid to spotlight.
   }
 
   processKey(key: number): boolean {

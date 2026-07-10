@@ -100,6 +100,17 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
               `
               : nothing
           }
+          ${
+            this.puzzle?.hasReference
+              ? html`
+              <wa-button
+                  data-command="toggle-reference"
+                  @pointerdown=${this.handleUndoRedoPointerDown}>
+                <wa-icon name="reference" label="Domino reference"></wa-icon>
+              </wa-button>
+              `
+              : nothing
+          }
           <wa-button
               ?disabled=${!this.puzzle?.canRedo}
               @pointerdown=${this.handleUndoRedoPointerDown}

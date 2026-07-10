@@ -811,6 +811,44 @@ Two mechanics worth carrying to the next connectivity game:
   the clue, later legs (`The same clue forces this square too — it must slant toward the clue`) carry
   the necessity modal too so the voice guard passes on *every* step, not just openers.
 
+### 5.6c A game with a barrier/annotation affordance can teach rule-outs as board marks (Dominosa)
+
+Most deductive hints only ever *place*; a game whose own move set includes a
+"this can't be filled" annotation (Dominosa's **barrier edge**, `E` move) can
+externalise its rule-out deductions directly onto the board (§1B) instead of
+cramming the reasoning into a placement's narration. Dominosa's hint
+(`add-dominosa-hint`) emits **two kinds of step** off one recorder:
+
+- a **placement** step (`onlySpot` / `squareOnly`) — the payoff "place the N–M
+  domino here", narrated with why the alternatives are gone;
+- a **barrier** step (the seven rule-out techniques) — "this can't be a domino
+  because …", whose move *draws the barrier*, so the deduction becomes a visible
+  mark the next placement can then lean on.
+
+The recorder + driver shape that made it clean and resume-safe:
+
+- **`firstFiring` checks for a determined-but-unplaced piece first**, then runs
+  the deductions in solver order and returns after the *first* firing —
+  placements always take priority over rule-outs (the payoff leads).
+- **Persistent scratch across the plan build, seeded from placed pieces only.**
+  `hint()` builds the whole plan on one solver scratch (`seedFromDominoes`),
+  and `forcePlacement` advances it after each emitted placement — so the *next*
+  `firstFiring` continues naturally. Crucially it does **not** seed the player's
+  *annotations* (a wrong barrier must never break the hint); the recorder
+  re-derives every rule-out, and a barrier the player already drew is skipped
+  for **display** while still advancing the scratch. Contrast Slant's `seedFrom`
+  (which replays marks through `fillSquare`): Dominosa's annotations carry no
+  validity, so they are deliberately ignored, not replayed.
+- **Trivial boards come out all-placements** (their only technique is a
+  placement), so barriers appear only when a harder tier genuinely needs one to
+  make progress — the step count stays low and the barriers read as teaching,
+  not busywork. The `hint-resume.test.ts` walk (first preset = Trivial) is
+  therefore all placements; add a game-local test that walks a *Hard* board to
+  solved to exercise the barrier path (`dominosa-hint.test.ts`).
+
+The recorder is **gated** (`this.recording`), so `runSolver` — the generator's
+path — is byte-identical and the differential is unaffected by construction.
+
 ### 5.7 Placement animation as hint motion (fill-style games)
 
 A game with no upstream move animation (`animLength` 0) can still make auto-hint read as motion

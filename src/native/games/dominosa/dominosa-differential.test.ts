@@ -18,10 +18,10 @@ import {
   type DescFixture,
   describeDescDifferential,
 } from "../../engine/testing/differential.ts";
+import reference from "./__fixtures__/dominosa-c-reference.json" with { type: "json" };
 import { newDominosaDesc } from "./generator.ts";
 import { solveNumbers } from "./solver.ts";
 import { DIFF_AMBIGUOUS, DIFFCOUNT, newState, validateDesc } from "./state.ts";
-import reference from "./__fixtures__/dominosa-c-reference.json" with { type: "json" };
 
 interface DominosaFixture extends DescFixture {
   name: string;

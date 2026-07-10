@@ -44,10 +44,12 @@ interface CommandHost {
  * is requested — there is no render root in this detached element). */
 function makeScreen(opts: { canFindMistakes: boolean; mistakeCount: number }) {
   const findMistakes = vi.fn(async () => opts.mistakeCount);
+  const selectReference = vi.fn(async () => undefined);
   const fakePuzzle = {
     puzzleId: "galaxies",
     canFindMistakes: opts.canFindMistakes,
     findMistakes,
+    selectReference,
   };
   const screen = new PuzzleScreen();
   Object.defineProperty(screen, "puzzle", {
@@ -59,7 +61,12 @@ function makeScreen(opts: { canFindMistakes: boolean; mistakeCount: number }) {
     writable: true,
     value: "galaxies",
   });
-  return { screen, host: screen as unknown as CommandHost, findMistakes };
+  return {
+    screen,
+    host: screen as unknown as CommandHost,
+    findMistakes,
+    selectReference,
+  };
 }
 
 describe("puzzle-screen: Check-&-Save command", () => {
@@ -128,5 +135,31 @@ describe("puzzle-screen: Check-&-Save command", () => {
     await host.handleBubbledKeyDown(event);
     expect(prevent).toHaveBeenCalled();
     expect(quickSave).toHaveBeenCalledOnce();
+  });
+});
+
+describe("puzzle-screen: reference panel toggle command", () => {
+  it("toggle-reference flips the panel and keeps the spotlight on close", () => {
+    const { screen, host, selectReference } = makeScreen({
+      canFindMistakes: false,
+      mistakeCount: 0,
+    });
+    // Shadow the reactive `referenceOpen` with a plain own property so toggling
+    // it doesn't schedule a Lit render on this detached element (the same
+    // technique makeScreen uses for `puzzle`/`puzzleId`).
+    Object.defineProperty(screen, "referenceOpen", {
+      configurable: true,
+      writable: true,
+      value: false,
+    });
+    const open = () => (screen as unknown as { referenceOpen: boolean }).referenceOpen;
+
+    host.commandMap["toggle-reference"].call(host);
+    expect(open()).toBe(true);
+    host.commandMap["toggle-reference"].call(host);
+    expect(open()).toBe(false);
+    // Closing must NOT clear the board spotlight — the mark→close→place flow
+    // relies on it persisting (Escape / re-clicking the chip is the clear path).
+    expect(selectReference).not.toHaveBeenCalled();
   });
 });

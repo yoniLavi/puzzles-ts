@@ -23,6 +23,7 @@ import type {
   Point,
   PresetMenuEntry,
   PuzzleStaticAttributes,
+  ReferenceModel,
   Size,
 } from "./types.ts";
 
@@ -53,6 +54,14 @@ export interface PuzzleEngineSurface {
   /** Display the current board's mistakes and return how many; 0 when
    * the game has no mistake-checking. */
   findMistakes(): number;
+
+  /** The active game's reference-aid model (inventory checklist with found
+   * status), or null when the game has no reference aid (all C/WASM games). */
+  getReference(): ReferenceModel | null;
+  /** Spotlight a reference item on the board (or clear it with null). A
+   * `UI_UPDATE`-shaped change: repaints but adds no move/history/save. No-op
+   * for a game without a reference aid. */
+  selectReference(key: string | null): void;
 
   processKey(key: number): boolean;
   processMouse(point: Point, button: number): boolean;

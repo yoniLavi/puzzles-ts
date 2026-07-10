@@ -266,6 +266,10 @@ export interface DominosaUi {
   /** The two value-highlight slots (a face number, or −1 for empty). */
   highlight1: number;
   highlight2: number;
+  /** The reference-panel spotlight: a domino index (`0…DCOUNT-1`) whose
+   * candidate placements are boxed on the board, or `null` for none.
+   * Ui-only, never a move, never serialised; cleared on completion. */
+  highlightPair: number | null;
 }
 
 /** A player-placed domino cell that contradicts the unique solution. */

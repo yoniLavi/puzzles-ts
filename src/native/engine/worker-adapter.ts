@@ -36,6 +36,7 @@ import type {
   Point,
   PresetMenuEntry,
   PuzzleStaticAttributes,
+  ReferenceModel,
   Size,
 } from "../../puzzle/types.ts";
 import type { EngineCore } from "./midend.ts";
@@ -113,6 +114,12 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   }
   findMistakes(): number {
     return this.engine.findMistakes();
+  }
+  getReference(): ReferenceModel | null {
+    return this.engine.getReference();
+  }
+  selectReference(key: string | null): void {
+    this.engine.selectReference(key);
   }
 
   // --- input ------------------------------------------------------

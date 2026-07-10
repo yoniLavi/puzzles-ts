@@ -104,11 +104,36 @@ export interface PuzzleStaticAttributes {
   /** The game supports "fill all pencil marks" (upstream's `M` key). Gates
    * the toolbar mark-all button. False for C/WASM games. */
   canMarkAll: boolean;
+  /** The game offers a reference aid (the TS `reference` hook) — a checklist
+   * of its fixed inventory with found status. Gates the toolbar reference
+   * button. False for C/WASM games. */
+  hasReference: boolean;
   // TODO: canFormatAsTextEver: boolean;
   needsRightButton: boolean;
   isTimed: boolean;
   wantsStatusbar: boolean;
   engineType: PuzzleEngineType;
+}
+
+/** One entry in a game's reference aid: a piece from the puzzle's fixed
+ * inventory with the player's found status. Plain data (crosses the Comlink
+ * worker boundary). `key` is a stable id the panel echoes back to
+ * `selectReference`; `label` is the text/accessible rendering; `pips` is
+ * optional face-value data for a domino-style pip render; `status` is derived
+ * purely from the player's own placements. */
+export interface ReferenceItem {
+  key: string;
+  label: string;
+  pips?: readonly number[];
+  status: "outstanding" | "placed" | "conflict";
+}
+
+/** A game's reference-aid model: the full inventory checklist plus the
+ * currently spotlighted key. `columns` is an optional layout hint. */
+export interface ReferenceModel {
+  items: ReferenceItem[];
+  selected: string | null;
+  columns?: number;
 }
 
 /**

@@ -59,7 +59,7 @@
 - [x] 7.2 Full gate green (`tsc -b --noEmit` → `biome lint` → `vitest run`
   (2234) → `vite build`); dev smoke-test in browser (renders, places dominoes,
   Solve fills + completes, 0 console errors).
-- [ ] 7.3 **Stage 2 (owner acceptance):** `TS_PORTED` in
+- [x] 7.3 **Stage 2 (owner acceptance):** `TS_PORTED` in
   `puzzles/CMakeLists.txt`, delete `puzzles/dominosa.c` +
   `puzzles/laydomino.c` (now its last C consumer) + trace harness, rebuild
   wasm, archive change.

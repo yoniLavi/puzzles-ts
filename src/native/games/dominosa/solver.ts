@@ -28,6 +28,31 @@ import {
   DINDEX,
 } from "./state.ts";
 
+/** The deductive technique a hint firing used. */
+export type HintTechnique =
+  | "onlySpot"
+  | "squareOnly"
+  | "squareSingleDomino"
+  | "mustOverlap"
+  | "localDuplicate"
+  | "localDuplicate2"
+  | "parity"
+  | "set"
+  | "forcingChain";
+
+/** One firing captured by the hint recorder — either a forced domino placement
+ * or a set of ruled-out placements (barriers), plus the squares it reasons
+ * over (shaded as evidence). Cell references are `y*w+x` indices. */
+export interface HintFiring {
+  technique: HintTechnique;
+  /** For a placement firing, the `[a, b]` (a < b) square pair to lay a domino. */
+  place: [number, number] | null;
+  /** For a barrier firing, the `[a, b]` ruled-out placements to bar. */
+  barriers: Array<[number, number]>;
+  /** Cells the deduction reasons over, to shade as evidence. */
+  evidence: number[];
+}
+
 class SolverDomino {
   lo = 0;
   hi = 0;
@@ -84,6 +109,25 @@ export class DominosaSolver {
 
   private squaresByNumber: SolverSquare[] | null = null;
   private dsfScratch: FlipDsf | null = null;
+
+  // --- hint recording (gated; runSolver / the generator never enable it) ----
+  private recording = false;
+  /** Edges (`[min, max]` square pair) ruled out during the current firing. */
+  private recBarriers: Array<[number, number]> = [];
+  /** Cell indices the current firing reasons over (shaded as evidence). */
+  private recEvidence: number[] = [];
+  /** For a placement-type firing, the square pair to lay a domino on. */
+  private recPlace: [number, number] | null = null;
+
+  private resetRec(): void {
+    this.recBarriers = [];
+    this.recEvidence = [];
+    this.recPlace = null;
+  }
+
+  private recordEvidence(cells: number[]): void {
+    if (this.recording) this.recEvidence = cells;
+  }
 
   constructor(n: number) {
     const w = n + 2;
@@ -190,6 +234,12 @@ export class DominosaSolver {
     const d = p.domino;
     p.active = false;
 
+    if (this.recording) {
+      const a = p.squares[0].index;
+      const b = p.squares[1].index;
+      this.recBarriers.push(a < b ? [a, b] : [b, a]);
+    }
+
     let i = p.dpi;
     if (--d.nplacements !== i) {
       d.placements[i] = d.placements[d.nplacements];
@@ -230,6 +280,12 @@ export class DominosaSolver {
     const p = sq.placements[0];
     const d = p.domino;
     if (d.nplacements <= 1) return false;
+    if (this.recording) {
+      const a = p.squares[0].index;
+      const b = p.squares[1].index;
+      this.recPlace = a < b ? [a, b] : [b, a];
+      this.recEvidence = [sq.index];
+    }
     while (d.nplacements > 1)
       this.ruleOutPlacement(d.placements[0] === p ? d.placements[1] : d.placements[0]);
     return true;
@@ -244,6 +300,7 @@ export class DominosaSolver {
     for (let i = 1; i < sq.nplacements; i++)
       if (sq.placements[i].domino !== d) return false;
     if (d.nplacements <= sq.nplacements) return false;
+    this.recordEvidence([sq.index]);
     for (let i = d.nplacements; i-- > 0; ) {
       const p = d.placements[i];
       if (p.squares[0] !== sq && p.squares[1] !== sq) this.ruleOutPlacement(p);
@@ -274,6 +331,12 @@ export class DominosaSolver {
       }
     }
     if (nint === 0) return false;
+    if (this.recording) {
+      const cells: number[] = [];
+      for (let j = 0; j < d.nplacements; j++)
+        cells.push(d.placements[j].squares[0].index, d.placements[j].squares[1].index);
+      this.recEvidence = cells;
+    }
     for (let i = 0; i < nint; i++) this.ruleOutPlacement(intersection[i]);
     return true;
   }
@@ -293,6 +356,7 @@ export class DominosaSolver {
           break;
         }
       if (bad) continue;
+      this.recordEvidence([sq.index]);
       this.ruleOutPlacement(p);
       return true;
     }
@@ -339,6 +403,7 @@ export class DominosaSolver {
           foundDi = true;
         }
         if (badQj || !foundDi) continue;
+        this.recordEvidence([sqi.index, sqj.index]);
         this.ruleOutPlacement(p);
         return true;
       }
@@ -479,6 +544,12 @@ export class DominosaSolver {
               reported = true;
               done = true;
               squaresDone |= squares;
+              if (this.recording) {
+                const cells: number[] = [];
+                for (let bb = 0; bb < nsq; bb++)
+                  if ((squares >> bb) & 1) cells.push(sqbn[sqs + bb].index);
+                this.recEvidence = cells;
+              }
             }
             this.ruleOutPlacement(p);
           }
@@ -704,6 +775,122 @@ export class DominosaSolver {
       out.push(a < b ? [a, b] : [b, a]);
     }
     return out;
+  }
+
+  // --- hint driver --------------------------------------------------------
+
+  /** Find the still-active placement covering squares `a` and `b`, or null. */
+  private placementOf(a: number, b: number): SolverPlacement | null {
+    const sq = this.squares[a];
+    for (let k = 0; k < sq.nplacements; k++) {
+      const p = sq.placements[k];
+      if (p.squares[0].index === b || p.squares[1].index === b) return p;
+    }
+    return null;
+  }
+
+  /** Realise "a domino is placed on (a, b)": rule out the placement's active
+   * overlaps and any other placements of its domino. Non-recording. */
+  forcePlacement(a: number, b: number): void {
+    const p = this.placementOf(a, b);
+    if (!p) return;
+    while (p.domino.nplacements > 1)
+      this.ruleOutPlacement(
+        p.domino.placements[0] === p ? p.domino.placements[1] : p.domino.placements[0],
+      );
+    for (let oi = 0; oi < p.noverlaps; oi++)
+      if (p.overlaps[oi].active) this.ruleOutPlacement(p.overlaps[oi]);
+  }
+
+  /** Seed the scratch from the player's placed dominoes (forcing each). The
+   * player's barrier annotations are deliberately NOT seeded (a wrong one must
+   * never break the hint — the recorder re-derives every rule-out itself). */
+  seedFromDominoes(grid: Int32Array): void {
+    for (let i = 0; i < this.wh; i++) {
+      const j = grid[i];
+      if (j > i) this.forcePlacement(i, j);
+    }
+  }
+
+  /** Run the deductions in `run_solver` order but return after the FIRST
+   * firing, capturing what it did — the hint-plan primitive. `placed` holds the
+   * domino indices already laid on the working board, so an already-placed
+   * determined domino isn't re-suggested. Returns null when no deduction fires
+   * (a fully-reduced or genuinely stuck board). */
+  firstFiring(maxDiffAllowed: number, placed: ReadonlySet<number>): HintFiring | null {
+    // A domino determined but not yet laid — the payoff "only spot" placement.
+    for (const d of this.dominoes) {
+      if (d.nplacements === 1 && !placed.has(d.index)) {
+        const p = d.placements[0];
+        const a = p.squares[0].index;
+        const b = p.squares[1].index;
+        return {
+          technique: "onlySpot",
+          place: a < b ? [a, b] : [b, a],
+          barriers: [],
+          evidence: [],
+        };
+      }
+    }
+
+    this.recording = true;
+    try {
+      const place = (technique: HintTechnique): HintFiring => ({
+        technique,
+        place: this.recPlace,
+        barriers: [],
+        evidence: this.recEvidence,
+      });
+      const barrier = (technique: HintTechnique): HintFiring => ({
+        technique,
+        place: null,
+        barriers: this.recBarriers.slice(),
+        evidence: this.recEvidence.slice(),
+      });
+
+      // Trivial
+      for (let si = 0; si < this.wh; si++) {
+        this.resetRec();
+        if (this.deduceSquareSinglePlacement(si)) return place("squareOnly");
+      }
+      if (maxDiffAllowed <= DIFF_TRIVIAL) return null;
+
+      // Basic
+      for (let si = 0; si < this.wh; si++) {
+        this.resetRec();
+        if (this.deduceSquareSingleDomino(si)) return barrier("squareSingleDomino");
+      }
+      for (let di = 0; di < this.dc; di++) {
+        this.resetRec();
+        if (this.deduceDominoMustOverlap(di)) return barrier("mustOverlap");
+      }
+      for (let pi = 0; pi < this.pc; pi++) {
+        this.resetRec();
+        if (this.deduceLocalDuplicate(pi)) return barrier("localDuplicate");
+      }
+      for (let pi = 0; pi < this.pc; pi++) {
+        this.resetRec();
+        if (this.deduceLocalDuplicate2(pi)) return barrier("localDuplicate2");
+      }
+      this.resetRec();
+      if (this.deduceParity()) return barrier("parity");
+      if (maxDiffAllowed <= DIFF_BASIC) return null;
+
+      // Hard
+      this.resetRec();
+      if (this.deduceSet(false)) return barrier("set");
+      if (maxDiffAllowed <= DIFF_HARD) return null;
+
+      // Extreme
+      this.resetRec();
+      if (this.deduceSet(true)) return barrier("set");
+      this.resetRec();
+      if (this.deduceForcingChain()) return barrier("forcingChain");
+
+      return null;
+    } finally {
+      this.recording = false;
+    }
   }
 }
 

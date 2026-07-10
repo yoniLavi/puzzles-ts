@@ -53,6 +53,9 @@ export interface RenderScenario<Params, State, Move, Ui, DrawState, Mistake> {
    * Returns the matched step in the result's `hint`; if no step matches
    * within the plan, `hint` is the last step reached. */
   hintUntil?: (step: HintStep<Move>) => boolean;
+  /** Spotlight a reference-aid item before capture (the `reference` /
+   * `selectReference` hooks) — the key of the item to highlight, or null. */
+  selectReference?: string | null;
   /** Frontend default background fed to the game's palette. Defaults to
    * {@link DEFAULT_BACKGROUND}. */
   defaultBackground?: Colour;
@@ -90,6 +93,9 @@ export function renderScenario<Params, State, Move, Ui, DrawState, Mistake>(
   if (err) throw new Error(`renderScenario: invalid id "${id}": ${err}`);
 
   if (moves && moves.length > 0) midend.playMoves(moves);
+
+  if (scenario.selectReference !== undefined)
+    midend.selectReference(scenario.selectReference);
 
   let mistakeCount = 0;
   if (showMistakes) mistakeCount = midend.findMistakes();
