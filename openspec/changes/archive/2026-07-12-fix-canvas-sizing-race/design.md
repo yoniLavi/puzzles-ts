@@ -99,3 +99,42 @@ component edit (full reload) leaves the board full-size with no manual resize.
 - Is the premature measurement the host box (unlikely — measured full at 2.5s) or the
   content/canvas offsets during attach? The evidence points at the latter; confirm by logging
   `getAvailableCanvasSize`'s components at the *first* `resize()` call (not at 2.5s).
+
+## Resolution (measured 2026-07-12)
+
+The design above guessed "host box not settled" and proposed a timer/observer recompute
+(approaches A/B). Instrumentation disproved that guess and pinpointed a **circular width
+measurement** instead:
+
+`[SIZING]` logs (Playwright, dominosa @ 1400×900), first two resizes on load:
+
+```
+resize gameId=none   -> used=1288x670 changed=true          (pre-game: size()=availableSize; sets canvasSize=1288)
+getAvail host=1336x718 content=1288x242 canvasEl=300x150 -> avail=348x626   ← the poisoned frame
+resize inCreate=true -> used=348x304  changed=true          (board stuck small)
+```
+
+The host box is a stable `1336×718` the entire time — it is **not** the premature value. The
+bug is that `getAvailableCanvasSize()` measured available width incrementally as
+`host − content.offsetWidth + canvas.offsetWidth`, and at the `createCanvas()` frame:
+
+- `content.offsetWidth` = **1288** — inflated by the hint banner, whose reserved width is
+  `max(canvasSize.w, 34rem)` and `canvasSize.w` was just set to the full `1288` by the pre-game
+  resize (which returns `availableSize` because no `gameId` is known yet);
+- `canvas.offsetWidth` = **300** — the freshly-created `<canvas>` still at its intrinsic default,
+  because `updateCanvasSize()` hasn't applied the real size yet.
+
+So `avail.w = 1336 − 1288 + 300 = 348`, and the board is sized to `348×304`. It stays stuck
+because the host box never changes again, so the `ResizeObserver` never re-fires; only an
+incidental resize (window nudge, scrollbar, 1px rounding) later corrects it — exactly the "resize
+the window to fix it" symptom. This precisely reproduces the evidence table's stuck `348×304`.
+
+**Fix (approach C, pinned to the banner):** measure available **width** from the *puzzle
+wrapper* (`[part=puzzle]`, which contains only the canvas + its padding), not from `content`
+(which also contains the board-width-derived banner). Height stays content-based (statusbar +
+banner heights are genuine vertical consumers and do not depend on the board width). The
+arithmetic moved to a pure `computeAvailableCanvasSize()` in `src/puzzle/canvas-sizing.ts`, unit
+-tested in `canvas-sizing.test.ts`. No timer, no extra observer, no loop-guard: the existing
+post-attach `resize()` now computes the correct size on the first try. Verified idempotent
+(a same-viewport recompute reports `changed=false`) and resize-preserving across
+dominosa/solo/towers/galaxies/pattern in both orientations.
