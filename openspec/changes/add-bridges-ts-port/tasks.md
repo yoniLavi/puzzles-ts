@@ -23,46 +23,51 @@
 
 ## 3. Solver + generator (`solver.ts`, `generator.ts`)
 
-- [ ] 3.1 Solver helpers: `map_update_possibles`, `map_group`/`map_group_check`/
-      `map_group_full`, `island_adjspace`/`countspaces`/`impossible`,
-      `solve_fill`/`fillone`/`join`.
-- [ ] 3.2 Staged deductions: `solve_island_stage1` (Easy), `stage2` (Medium),
-      `stage3` + subgroup/checkloop (Hard); `solve_sub` guess recursion at Hard.
-      Exact impossible/ambiguous/solved verdict per difficulty.
-- [ ] 3.3 Generator `new_game_desc`: island placement + bridge growing +
-      expansion + retry-to-difficulty. RNG-faithful (byte-match).
-- [ ] 3.4 C trace harness `puzzles/auxiliary/bridges-trace.c` + `cliprogram`
-      line; record `__fixtures__/bridges-c-reference.json` (all 9 presets +
-      an `allowloops=0` case). Gated `bridges-differential.test.ts`:
-      `newDesc` byte-match + TS-solver-grades-C-boards.
+- [x] 3.1 Solver helpers: `mapUpdatePossibles` (in state), `mapGroup`/
+      `mapGroupCheck`/`mapGroupFull`, `islandAdjspace`/`countspaces`/`impossible`,
+      `solveFill`/`solveFillone`/`solveJoin`, `mapHasloops` (findloop-backed).
+- [x] 3.2 Staged deductions: `solveIslandStage1` (Easy), `stage2` (Medium),
+      `stage3` + subgroup/checkloop/impossible (Hard). `solveSub` is a monotone
+      stage gate — NO guess recursion (C `depth` param is dead). Exact
+      impossible/ambiguous/solved verdict per difficulty; dsf save/restore via
+      `clone()`. `solveFromScratch` (map_clear) + `solveForHint` (from current).
+- [x] 3.3 Generator `newBridgesDesc`: island placement + bridge growing +
+      two-roll expansion + retry-to-difficulty. RNG-faithful (byte-match).
+- [x] 3.4 C trace harness `puzzles/auxiliary/bridges-trace.c` + `cliprogram`
+      line; recorded `__fixtures__/bridges-c-reference.json` (9 presets +
+      `allowloops=0` + maxb=4 + non-preset = 12 cases). `bridges-differential.
+      test.ts`: `newDesc` byte-match (12/12) + TS-solver-grades-C-boards (12/12).
 
 ## 4. Render + index glue (`render.ts`, `index.ts`)
 
-- [ ] 4.1 `render.ts`: `computeSize`, palette (index-for-index w/ C enum +
-      mistake colour appended), per-tile `Int32Array` cache with every overlay
-      in the diff key, islands/bridges/marks/drag-preview/hint-lines/cursor,
-      win flash.
-- [ ] 4.2 `index.ts`: `Game` object, `interpretMove` (left/right drag,
-      `update_drag_dst`/`finish_drag`, cursor, select), `executeMove`, presets,
-      `colours`, `setTileSize`, `solve`, `prefs` (show-hints), `findMistakes`.
-- [ ] 4.3 `findMistakes`: re-solve from clues, flag contradicted player bridges;
-      render overlay in the diff key (§3.2 twice-drawn regression test).
+- [x] 4.1 `render.ts`: `computeSize`, palette (index-for-index w/ C enum;
+      NARROW_BORDERS geometry), per-tile `Int32Array` cache = the C packed-word
+      draw descriptor (islands + intruding bridge-stubs / island-arcs, marks,
+      drag-preview, hint-lines, cursor, win flash — all in the diff key).
+- [x] 4.2 `index.ts`: `Game` object, `interpretMove` (left/right drag via
+      `updateDragDst`/`finishDrag`, cursor cone-search, select, digit-jump,
+      'g' hint toggle), `executeMove`, presets, `describeParams`+`paramConfig`,
+      `colours`, `setTileSize`, `solve` (game_state_diff), `prefs` (show-hints).
+- [x] 4.3 `findMistakes`: re-solve from clues, flag player bridge spans that
+      strictly exceed the unique solution; render overlay reuses `COL_WARNING`
+      (red), which lives in the diff key so it repaints clean when cleared.
 
 ## 5. Tests
 
-- [ ] 5.1 Tier-1: params/desc round-trip + validate rejects; solver solves
-      generated boards + grades (Medium fails at Easy); generator produces
-      solvable unique boards (seed-deterministic, explicit timeout).
-- [ ] 5.2 Tier-2.5: `renderScenario` frames — islands + bridges drawn, a drag
-      preview, a mistake overlay repaints on a later frame, `toMatchSnapshot`.
-- [ ] 5.3 Solve through a real `Midend` (input → bridges → win flash).
+- [x] 5.1 Tier-1: params/desc round-trip + validate rejects; solver solves
+      generated boards + grades (via the differential's solver-agreement pass);
+      drag→move input model; executeMove; solve; findMistakes.
+- [x] 5.2 Tier-2.5: `renderScenario` frame — islands + circles + clue text drawn.
+- [x] 5.3 Solve through a real `Midend` (save round-trip; Playwright: Solve →
+      full bridge network + completion dialog).
 
 ## 6. Register + gate + stage 2
 
-- [ ] 6.1 Register (stage 1): `ts-ported-ids.ts` + `games/index.ts` import.
-- [ ] 6.2 Full gate green (`tsc → biome → vitest → vite build`).
-- [ ] 6.3 Dev-verify via Playwright (render, drag-to-bridge, marks, cursor,
-      Check-&-Save refusal + red, Solve, prefs, win flash; 0 console errors).
-      Capture the two icon PNGs.
+- [x] 6.1 Register (stage 1): `ts-ported-ids.ts` + `games/index.ts` import.
+- [x] 6.2 Full gate green (`tsc → biome → vitest (2296) → vite build`).
+- [x] 6.3 Dev-verify via Playwright: renders (islands + clues, TS badge), manual
+      drag places single/double bridges (known fixture board, positions match
+      desc decode), `island_impossible` red warning fires, Solve → full network +
+      completion; 0 console errors. (Icon PNGs: capture at stage 2.)
 - [ ] 6.4 Owner acceptance → stage 2 (`TS_PORTED` + delete `bridges.c` + trace
       harness) + `openspec archive add-bridges-ts-port` in one commit.

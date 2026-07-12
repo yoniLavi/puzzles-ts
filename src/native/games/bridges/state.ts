@@ -66,12 +66,60 @@ export const BRIDGES_PRESETS: BridgesParams[] = [
   { w: 7, h: 7, maxb: 2, islands: 30, expansion: 10, allowloops: true, difficulty: 0 },
   { w: 7, h: 7, maxb: 2, islands: 30, expansion: 10, allowloops: true, difficulty: 1 },
   { w: 7, h: 7, maxb: 2, islands: 30, expansion: 10, allowloops: true, difficulty: 2 },
-  { w: 10, h: 10, maxb: 2, islands: 30, expansion: 10, allowloops: true, difficulty: 0 },
-  { w: 10, h: 10, maxb: 2, islands: 30, expansion: 10, allowloops: true, difficulty: 1 },
-  { w: 10, h: 10, maxb: 2, islands: 30, expansion: 10, allowloops: true, difficulty: 2 },
-  { w: 15, h: 15, maxb: 2, islands: 30, expansion: 10, allowloops: true, difficulty: 0 },
-  { w: 15, h: 15, maxb: 2, islands: 30, expansion: 10, allowloops: true, difficulty: 1 },
-  { w: 15, h: 15, maxb: 2, islands: 30, expansion: 10, allowloops: true, difficulty: 2 },
+  {
+    w: 10,
+    h: 10,
+    maxb: 2,
+    islands: 30,
+    expansion: 10,
+    allowloops: true,
+    difficulty: 0,
+  },
+  {
+    w: 10,
+    h: 10,
+    maxb: 2,
+    islands: 30,
+    expansion: 10,
+    allowloops: true,
+    difficulty: 1,
+  },
+  {
+    w: 10,
+    h: 10,
+    maxb: 2,
+    islands: 30,
+    expansion: 10,
+    allowloops: true,
+    difficulty: 2,
+  },
+  {
+    w: 15,
+    h: 15,
+    maxb: 2,
+    islands: 30,
+    expansion: 10,
+    allowloops: true,
+    difficulty: 0,
+  },
+  {
+    w: 15,
+    h: 15,
+    maxb: 2,
+    islands: 30,
+    expansion: 10,
+    allowloops: true,
+    difficulty: 1,
+  },
+  {
+    w: 15,
+    h: 15,
+    maxb: 2,
+    islands: 30,
+    expansion: 10,
+    allowloops: true,
+    difficulty: 2,
+  },
 ];
 
 export const DIFFICULTY_NAMES = ["Easy", "Medium", "Hard"] as const;
@@ -427,7 +475,12 @@ export class BridgesState {
     return c;
   }
 
-  islandAdjspace(is: Island, marks: boolean, missing: number, direction: number): number {
+  islandAdjspace(
+    is: Island,
+    marks: boolean,
+    missing: number,
+    direction: number,
+  ): number {
     const pt = is.points[direction];
     const gline = pt.dx ? G_LINEH : G_LINEV;
     if (marks) {
