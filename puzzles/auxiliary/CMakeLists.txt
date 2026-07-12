@@ -1,3 +1,4 @@
+cliprogram(bridges-trace bridges-trace.c)
 cliprogram(combi-test combi-test.c)
 cliprogram(combi-trace combi-trace.c)
 cliprogram(findloop-test findloop-test.c)

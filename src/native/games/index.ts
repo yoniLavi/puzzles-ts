@@ -8,6 +8,7 @@
  */
 
 import "./blackbox/index.ts";
+import "./bridges/index.ts";
 import "./cube/index.ts";
 import "./dominosa/index.ts";
 import "./fifteen/index.ts";

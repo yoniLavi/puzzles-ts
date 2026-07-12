@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "w": 7,
+      "h": 7,
+      "maxb": 2,
+      "islands": 30,
+      "expansion": 10,
+      "allowloops": true,
+      "difficulty": 0,
+      "seed": "bridges-trace-0",
+      "desc": "3a3b4g25d6b2a3k3a5a3a2e3"
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "maxb": 2,
+      "islands": 30,
+      "expansion": 10,
+      "allowloops": true,
+      "difficulty": 1,
+      "seed": "bridges-trace-1",
+      "desc": "2b3b3g4e5g4b4a2e1a34b5a2a"
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "maxb": 2,
+      "islands": 30,
+      "expansion": 10,
+      "allowloops": true,
+      "difficulty": 2,
+      "seed": "bridges-trace-2",
+      "desc": "b4b4a1e2c1a3j4a2a4g3a5c3"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "maxb": 2,
+      "islands": 30,
+      "expansion": 10,
+      "allowloops": true,
+      "difficulty": 0,
+      "seed": "bridges-trace-3",
+      "desc": "a4a6b6b4h2b2b2p1v3a3b41j2a4d3a3a3a2d3"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "maxb": 2,
+      "islands": 30,
+      "expansion": 10,
+      "allowloops": true,
+      "difficulty": 1,
+      "seed": "bridges-trace-4",
+      "desc": "a2e4a43g3s2a4h4j3a3a3a6a2m1c4a2a1c4d3"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "maxb": 2,
+      "islands": 30,
+      "expansion": 10,
+      "allowloops": true,
+      "difficulty": 2,
+      "seed": "bridges-trace-5",
+      "desc": "4d4a2c2d3b3k3e2d2c3n3d3c3f5a5k2a3c2a2"
+    },
+    {
+      "w": 15,
+      "h": 15,
+      "maxb": 2,
+      "islands": 30,
+      "expansion": 10,
+      "allowloops": true,
+      "difficulty": 0,
+      "seed": "bridges-trace-6",
+      "desc": "c1a3h42g3b3a2p5h6b4c3e2b2t5d3zg3a3k5c4c2b3y2a1c2a6c4a3d2j1d3b3d3"
+    },
+    {
+      "w": 15,
+      "h": 15,
+      "maxb": 2,
+      "islands": 30,
+      "expansion": 10,
+      "allowloops": true,
+      "difficulty": 1,
+      "seed": "bridges-trace-7",
+      "desc": "1a4e5e4i1e1q2c3p5d53a2h4a2b3e3d1a22p1d2a4a6b31o5f6b6a4c4d2b1c3m2c4e6a3c1a4e3a2a4a2a"
+    },
+    {
+      "w": 15,
+      "h": 15,
+      "maxb": 2,
+      "islands": 30,
+      "expansion": 10,
+      "allowloops": true,
+      "difficulty": 2,
+      "seed": "bridges-trace-8",
+      "desc": "4b3a2a3e3c4a5d3b2s2f1b1b5c6h5b1a2c3a3b1a24a2q1a5e3c1e2e54b3p1a3a2a6a4a4c4a2a2a1k1c3b3b2a3a3f4a3k2a2"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "maxb": 2,
+      "islands": 30,
+      "expansion": 10,
+      "allowloops": false,
+      "difficulty": 2,
+      "seed": "bridges-trace-9",
+      "desc": "f1b23c3c1b4a2b2e3a6k5a4c1f43g1b5b4a6b61j2b1a2b2"
+    },
+    {
+      "w": 8,
+      "h": 8,
+      "maxb": 4,
+      "islands": 30,
+      "expansion": 10,
+      "allowloops": true,
+      "difficulty": 1,
+      "seed": "bridges-trace-10",
+      "desc": "d1b37d5k4c7a7b3a8a4f2a66c8a4c3d4"
+    },
+    {
+      "w": 12,
+      "h": 8,
+      "maxb": 2,
+      "islands": 25,
+      "expansion": 20,
+      "allowloops": true,
+      "difficulty": 2,
+      "seed": "bridges-trace-11",
+      "desc": "a1c5a5c3h2c3c1b2e2c6b4c5j4b1f3n3h4a2"
+    }
+  ]
+}

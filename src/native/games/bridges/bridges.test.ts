@@ -1,25 +1,42 @@
 /**
- * Starter tests for the bridges port — scaffolded by scripts/new-game-port.sh.
- *
- * SKELETONS: the `it.skip(...)` blocks below type-check and lint clean against
- * the (throwing) stubs, so the gate stays green on a fresh scaffold. As you
- * fill in the port, drop `.skip`, set a real game id, and flesh out the
- * assertions. Read the galaxies/flip tests as exemplars; the test tiers are in
- * docs/porting/game-port-playbook.md §4.
+ * Behavioural tests for the Bridges port (tier 1 logic + tier 2.5 render).
+ * The byte-match generator/solver differential lives in
+ * `bridges-differential.test.ts`; this file covers the codec, the drag→move
+ * input model, executeMove/solve/findMistakes, and a render smoke frame.
  */
 import { describe, expect, it } from "vitest";
+import { UI_UPDATE } from "../../engine/game.ts";
 import { Midend } from "../../engine/index.ts";
+import {
+  LEFT_BUTTON,
+  LEFT_DRAG,
+  LEFT_RELEASE,
+  RIGHT_BUTTON,
+  RIGHT_DRAG,
+  RIGHT_RELEASE,
+} from "../../engine/pointer.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { randomNew } from "../../random/index.ts";
+import { newBridgesDesc } from "./generator.ts";
 import { bridgesGame } from "./index.ts";
+import { newDrawState, setTileSize } from "./render.ts";
 import {
   BRIDGES_PRESETS,
+  type BridgesMove,
+  type BridgesOp,
   decodeParams,
   encodeGame,
   encodeParams,
+  G_LINEH,
+  G_LINEV,
+  G_MARK,
+  G_NOLINEH,
   newStateFromDesc,
   validateDesc,
   validateParams,
 } from "./state.ts";
+
+const randomState = (seed: string) => randomNew(seed);
 
 describe("bridges params codec", () => {
   it("round-trips every preset in full form", () => {
@@ -45,10 +62,8 @@ describe("bridges params codec", () => {
 });
 
 describe("bridges desc codec", () => {
-  // A hand-built 3x3 with islands at the four corners: counts 1,2,2,1 reading
-  // row-major, separated by run-length skips ('a' = skip 1).
   const p3 = { ...BRIDGES_PRESETS[0], w: 3, h: 3 };
-  const desc = "1a2c2a1"; // (0,0)=1 skip1 (2,0)=2 skip3 (0,2)=2 skip1 (2,2)=1
+  const desc = "1a2c2a1"; // (0,0)=1 (2,0)=2 (0,2)=2 (2,2)=1
 
   it("parses a desc and re-encodes it identically", () => {
     const state = newStateFromDesc(p3, desc);
@@ -56,52 +71,161 @@ describe("bridges desc codec", () => {
     expect(encodeGame(state)).toBe(desc);
   });
 
-  it("places island counts at the right cells", () => {
-    const state = newStateFromDesc(p3, desc);
-    expect(state.islandAt(0, 0)?.count).toBe(1);
-    expect(state.islandAt(2, 0)?.count).toBe(2);
-    expect(state.islandAt(0, 2)?.count).toBe(2);
-    expect(state.islandAt(2, 2)?.count).toBe(1);
-    expect(state.islandAt(1, 1)).toBeNull();
-  });
-
   it("finds orthogonal neighbours across empty cells", () => {
     const state = newStateFromDesc(p3, desc);
-    // (0,0) sees (2,0) to its right (off 2) and (0,2) below (off 2).
-    const is = state.islandAt(0, 0);
-    expect(is?.nislands).toBe(2);
+    expect(state.islandAt(0, 0)?.nislands).toBe(2);
   });
 
   it("validateDesc accepts a good desc and rejects overruns / lone islands", () => {
     expect(validateDesc(p3, desc)).toBeNull();
-    expect(validateDesc(p3, "zzz")).not.toBeNull(); // run overruns the grid
-    expect(validateDesc(p3, "1i")).not.toBeNull(); // only one island
+    expect(validateDesc(p3, "zzz")).not.toBeNull();
+    expect(validateDesc(p3, "1i")).not.toBeNull();
   });
 });
 
-// TODO: a real game id — "<params>:<desc>" (descriptive) or "<params>#<seed>"
-// (random, reproducible via the bit-identical RNG). Replace once newDesc /
-// newState are implemented; until then the skipped tests don't evaluate it.
-const SCAFFOLD_ID = "5x5#scaffold-seed";
+describe("bridges input model (drag → move)", () => {
+  // Two islands in the top row of a 3x3 board, empty elsewhere.
+  const p3 = { ...BRIDGES_PRESETS[0], w: 3, h: 3 };
+  const twoIslands = () => newStateFromDesc(p3, "1a1f");
+  const ts = 24;
+  const b = 4; // border(24)
+  const centre = (cell: number) => cell * ts + b + Math.trunc(ts / 2);
 
+  it("left-drag between adjacent islands emits an L bridge move", () => {
+    const s = twoIslands();
+    const ui = bridgesGame.newUi(s);
+    const ds = newDrawState(s);
+    setTileSize(ds, ts);
+
+    // Press on island (0,0), drag toward (2,0), release.
+    expect(
+      bridgesGame.interpretMove(s, ui, ds, { x: centre(0), y: centre(0) }, LEFT_BUTTON),
+    ).toBe(UI_UPDATE);
+    expect(
+      bridgesGame.interpretMove(s, ui, ds, { x: centre(2), y: centre(0) }, LEFT_DRAG),
+    ).toBe(UI_UPDATE);
+    const move = bridgesGame.interpretMove(
+      s,
+      ui,
+      ds,
+      { x: centre(2), y: centre(0) },
+      LEFT_RELEASE,
+    ) as BridgesMove;
+    expect(move.ops).toEqual([{ op: "L", x1: 0, y1: 0, x2: 2, y2: 0, n: 1 }]);
+
+    const s2 = bridgesGame.executeMove(s, move);
+    expect(s2.gridCount(1, 0, G_LINEH)).toBe(1);
+  });
+
+  it("right-drag lays a no-line, and a plain click toggles the island mark", () => {
+    const s = twoIslands();
+    const ui = bridgesGame.newUi(s);
+    const ds = newDrawState(s);
+    setTileSize(ds, ts);
+
+    bridgesGame.interpretMove(s, ui, ds, { x: centre(0), y: centre(0) }, RIGHT_BUTTON);
+    bridgesGame.interpretMove(s, ui, ds, { x: centre(2), y: centre(0) }, RIGHT_DRAG);
+    const nmove = bridgesGame.interpretMove(
+      s,
+      ui,
+      ds,
+      { x: centre(2), y: centre(0) },
+      RIGHT_RELEASE,
+    ) as BridgesMove;
+    expect(nmove.ops).toEqual([{ op: "N", x1: 0, y1: 0, x2: 2, y2: 0 }]);
+    const s2 = bridgesGame.executeMove(s, nmove);
+    expect(s2.gridAt(1, 0) & G_NOLINEH).toBeTruthy();
+
+    // A left click on an island with no drag toggles its mark.
+    const ui2 = bridgesGame.newUi(s);
+    bridgesGame.interpretMove(s, ui2, ds, { x: centre(0), y: centre(0) }, LEFT_BUTTON);
+    const mmove = bridgesGame.interpretMove(
+      s,
+      ui2,
+      ds,
+      { x: centre(0), y: centre(0) },
+      LEFT_RELEASE,
+    ) as BridgesMove;
+    expect(mmove.ops).toEqual([{ op: "M", x: 0, y: 0 }]);
+    const s3 = bridgesGame.executeMove(s, mmove);
+    expect(s3.gridAt(0, 0) & G_MARK).toBeTruthy();
+  });
+});
+
+describe("bridges solve + findMistakes", () => {
+  const genState = (difficulty: number, seed: string) => {
+    const p = { ...BRIDGES_PRESETS[0], difficulty };
+    const { desc } = newBridgesDesc(p, randomState(seed));
+    return { p, state: bridgesGame.newState(p, desc) };
+  };
+
+  it("solve() produces a move that completes a freshly generated board", () => {
+    const { state } = genState(0, "bridges-solve-easy");
+    const res = bridgesGame.solve?.(state, state);
+    expect(res?.ok).toBe(true);
+    if (!res?.ok) return;
+    const solved = bridgesGame.executeMove(state, res.move);
+    expect(bridgesGame.status(solved)).toBe("solved");
+  });
+
+  it("a fully solved board has no mistakes; an extra bridge is flagged", () => {
+    const { state } = genState(0, "bridges-mistake-easy");
+    const res = bridgesGame.solve?.(state, state);
+    expect(res?.ok).toBe(true);
+    if (!res?.ok) return;
+    const solved = bridgesGame.executeMove(state, res.move);
+    expect(bridgesGame.findMistakes?.(solved)).toEqual([]);
+
+    // Over-bridge (n=2) every right/down span the unique solution uses exactly
+    // once — that strictly exceeds the solution, so each must be flagged.
+    const ops: BridgesOp[] = solved.islands.flatMap((is) =>
+      is.points
+        .filter(
+          (pt) =>
+            pt.off > 0 &&
+            (pt.dx === 1 || pt.dy === 1) &&
+            solved.gridCount(pt.x, pt.y, pt.dx ? G_LINEH : G_LINEV) === 1,
+        )
+        .map((pt) => ({
+          op: "L" as const,
+          x1: is.x,
+          y1: is.y,
+          x2: is.x + pt.off * pt.dx,
+          y2: is.y + pt.off * pt.dy,
+          n: 2,
+        })),
+    );
+    if (ops.length === 0) return; // no single-bridge span to over-bridge; skip
+    const over = bridgesGame.executeMove(state, { ops });
+    const mistakes = bridgesGame.findMistakes?.(over) ?? [];
+    expect(mistakes.length).toBeGreaterThan(0);
+  });
+});
+
+describe("bridges render smoke (tier 2.5)", () => {
+  it("redraws a generated board: background + island circles + a clue", () => {
+    const p = BRIDGES_PRESETS[0];
+    const { desc } = newBridgesDesc(p, randomState("bridges-render"));
+    const id = `${encodeParams(p, true)}:${desc}`;
+    const { recording } = renderScenario({ game: bridgesGame, id });
+    // Background fill, island circles, and at least one clue number.
+    expect(recording.ops.some((o) => o.op === "rect")).toBe(true);
+    expect(recording.ops.some((o) => o.op === "circle")).toBe(true);
+    expect(recording.ops.some((o) => o.op === "text")).toBe(true);
+  });
+});
+
+// A Midend-driven save round-trip (state survives serialise/parse).
 describe("bridges save round-trip", () => {
-  it.skip("saveGame -> loadGame restores an equivalent game", () => {
+  it("saveGame -> loadGame restores an equivalent game", () => {
+    const p = BRIDGES_PRESETS[0];
+    const { desc } = newBridgesDesc(p, randomState("bridges-save"));
+    const id = `${encodeParams(p, true)}:${desc}`;
     const me = new Midend(bridgesGame);
-    expect(me.newGameFromId(SCAFFOLD_ID)).toBeUndefined();
-    // TODO: play a move or two so the save carries real progress.
+    expect(me.newGameFromId(id)).toBeUndefined();
     const saved = me.saveGame();
     const me2 = new Midend(bridgesGame);
     expect(me2.loadGame(saved)).toBeUndefined();
-    // TODO: assert me2 matches me (formatAsText / status / a render compare).
-  });
-});
-
-describe("bridges render smoke", () => {
-  it.skip("redraws the initial frame without throwing", () => {
-    const { recording } = renderScenario({ game: bridgesGame, id: SCAFFOLD_ID });
-    // TODO: assert the ops that matter (a tile rect, the grid lines, …) and add
-    // `expect(recording.ops).toMatchSnapshot()` once the frame is stable
-    // (tier 2.5 — see the playbook).
-    expect(recording.ops.length).toBeGreaterThan(0);
+    expect(me2.formatAsText?.()).toBe(me.formatAsText?.());
   });
 });

@@ -1,42 +1,82 @@
 /**
- * Gated C-vs-TS differential for bridges — SCAFFOLD STUB.
+ * Gated C-vs-TS differential for the Bridges port. Reads the committed fixture
+ * recorded from upstream bridges.c (puzzles/auxiliary/bridges-trace.c) and
+ * asserts:
  *
- * A differential is per-game OPTIONAL — it earns its place on solver/codec
- * games (uniqueness/difficulty loops, non-obvious codecs), not every port. If
- * bridges skips it, delete this file and note the skip in the port's design.md.
+ *  1. TS `newDesc` over the same seed reproduces the C desc **byte-for-byte** —
+ *     the generator is a faithful port, its accept/reject decisions are made by
+ *     identical solver verdicts, and the RNG is bit-identical.
+ *  2. The TS solver solves each C-generated board at the recorded difficulty
+ *     and (for a Medium/Hard board with enough islands) does NOT solve it one
+ *     level down — the same "too easy" gate the generator applied.
  *
- * If it earns one, regenerate the frozen fixture while puzzles/bridges.c still
- * exists (the C is deleted at acceptance):
+ * Regenerate the fixture (while bridges.c still exists) with:
  *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
  *   (cd build/native && make bridges-trace)
  *   build/native/auxiliary/bridges-trace \
  *     > src/native/games/bridges/__fixtures__/bridges-c-reference.json
- *
- * Then replace the `it.todo` below with the wiring commented underneath it.
- * Most ports use the shared byte-for-byte desc-match helper; solver-agreement
- * (decode + solve + difficulty) stays inline (playbook §4).
  */
-import { describe, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { describeDescDifferential } from "../../engine/testing/differential.ts";
+import cReference from "./__fixtures__/bridges-c-reference.json" with { type: "json" };
+import { newBridgesDesc } from "./generator.ts";
+import { solveFromScratch } from "./solver.ts";
+import { type BridgesParams, newStateFromDesc, validateDesc } from "./state.ts";
 
-describe("bridges differential (scaffold stub)", () => {
-  it.todo("record a C fixture, then enable the byte-match differential below");
+interface Fixture {
+  w: number;
+  h: number;
+  maxb: number;
+  islands: number;
+  expansion: number;
+  allowloops: boolean;
+  difficulty: number;
+  seed: string;
+  desc: string;
+}
+
+const data = cReference as { fixtures: Fixture[] };
+
+const MIN_SENSIBLE_ISLANDS = 3;
+
+const params = (f: Fixture): BridgesParams => ({
+  w: f.w,
+  h: f.h,
+  maxb: f.maxb,
+  islands: f.islands,
+  expansion: f.expansion,
+  allowloops: f.allowloops,
+  difficulty: f.difficulty,
 });
 
-// Uncomment once __fixtures__/bridges-c-reference.json exists (delete the
-// `it.todo` stub above), and adjust Fixture/params to this game's shape:
-//
-// import { describeDescDifferential } from "../../engine/testing/differential.ts";
-// import cReference from "./__fixtures__/bridges-c-reference.json" with { type: "json" };
-// import { newBridgesDesc } from "./generator.ts";
-// import type { BridgesParams } from "./state.ts";
-//
-// interface Fixture { seed: string; desc: string; w: number; h: number; }
-// const data = cReference as { fixtures: Fixture[] };
-//
-// describeDescDifferential<Fixture, BridgesParams>({
-//   title: "bridges differential (frozen C reference)",
-//   fixtures: data.fixtures,
-//   label: (f) => `${f.w}x${f.h} seed=${f.seed}`,
-//   params: (f) => ({ w: f.w, h: f.h }),
-//   newDesc: newBridgesDesc,
-// });
+const label = (f: Fixture) =>
+  `${f.w}x${f.h} m${f.maxb}${f.allowloops ? "" : "L"} d${f.difficulty} seed=${f.seed}`;
+
+// 1. Byte-for-byte desc match (plus the desc validating, for free).
+describeDescDifferential<Fixture, BridgesParams>({
+  title: "Bridges C-vs-TS differential — desc byte-match (gated)",
+  fixtures: data.fixtures,
+  label,
+  params,
+  newDesc: newBridgesDesc,
+  extra: (f, p) => {
+    expect(validateDesc(p, f.desc)).toBeNull();
+  },
+});
+
+// 2. Solver agreement — the TS solver grades every C board like C did.
+describe("Bridges C-vs-TS differential — solver agreement (gated)", () => {
+  for (const f of data.fixtures) {
+    const p = params(f);
+    it(`${label(f)}: TS solver solves at difficulty ${f.difficulty}`, () => {
+      const state = newStateFromDesc(p, f.desc);
+      expect(solveFromScratch(state.workingCopy(), f.difficulty)).toBe(1);
+
+      // The "too easy" gate: a Medium/Hard board with more than the sensible
+      // minimum of islands must not solve one difficulty down.
+      if (f.difficulty > 0 && state.islands.length > MIN_SENSIBLE_ISLANDS) {
+        expect(solveFromScratch(state.workingCopy(), f.difficulty - 1)).toBe(0);
+      }
+    });
+  }
+});
