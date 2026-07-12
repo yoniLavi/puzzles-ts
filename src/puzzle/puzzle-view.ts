@@ -19,6 +19,7 @@ import {
 import { clamp } from "../utils/math.ts";
 import { throttle } from "../utils/timing.ts";
 import { puzzleAugmentations } from "./augmentation.ts";
+import { computeAvailableCanvasSize } from "./canvas-sizing.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 import type { FontInfo, Size } from "./types.ts";
@@ -249,26 +250,22 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   protected minPuzzleDimension = 64;
 
   protected getAvailableCanvasSize(): Size {
-    // Available canvas size is free space plus current canvas size.
-    // Free space is my size minus current content size.
-    // (When resizing smaller, free space may be negative.)
-    // Content includes the current canvas, statusbar, padding/spacing/borders, etc.
-    let { width, height } = this.getBoundingClientRect();
-    const content = this.contentPart;
-    if (content) {
-      width -= content.offsetWidth;
-      height -= content.offsetHeight;
-    }
-    // This must use the actual canvas (or placeholder) in the DOM
-    // (not this.canvasSize, which may not have been applied yet).
+    // Read the live layout (canvas/placeholder may not reflect canvasSize yet)
+    // and delegate the arithmetic to a pure, unit-tested helper.
     const canvas = this.canvas ?? this.canvasPlaceholder;
-    if (canvas) {
-      width += canvas.offsetWidth;
-      height += canvas.offsetHeight;
-    }
-    width = Math.floor(Math.max(width, this.minPuzzleDimension));
-    height = Math.floor(Math.max(height, this.minPuzzleDimension));
-    return { w: width, h: height };
+    const { width: hostW, height: hostH } = this.getBoundingClientRect();
+    return computeAvailableCanvasSize({
+      host: { w: hostW, h: hostH },
+      canvasW: canvas?.offsetWidth ?? 0,
+      canvasH: canvas?.offsetHeight ?? 0,
+      // Horizontal overhead from the *puzzle wrapper* (canvas + padding only),
+      // NOT `content` (see computeAvailableCanvasSize for why the banner poisons
+      // a content-based width measurement).
+      puzzleW: this.puzzlePart?.offsetWidth,
+      contentW: this.contentPart?.offsetWidth,
+      contentH: this.contentPart?.offsetHeight,
+      minDimension: this.minPuzzleDimension,
+    });
   }
 
   // Returns true if canvasSize changed.
