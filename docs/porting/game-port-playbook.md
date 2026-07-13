@@ -280,18 +280,22 @@ first time.
 **Watch for logic that is correct only because of what `memmove` leaves behind.**
 `memmove` *copies*; it does not clear the source. So after C opens a gap in an array
 (`memmove(a + i + n, a + i, …)`), the vacated slots still hold their old values, and
-the code that follows may quietly *read them back*. Inertia's tour-growth splice does
-exactly this: when it opens the gap on top of a vertex (`n1 == n2`, the
-round-trip-out-of-one-vertex case) it then re-reads `circuit[n1]` and gets the vertex
-that was "moved away". A JS `splice`/`concat` that fills the gap with a placeholder
-destroys that value, and the shortest-path walk fails with a
+the code that follows may quietly *read them back*. Inertia's tour-growth splice did
+exactly this: when it opened the gap on top of a vertex (`n1 == n2`, the
+round-trip-out-of-one-vertex case) it then re-read `circuit[n1]` and got the vertex
+that had been "moved away". A JS `splice`/`concat` that fills the gap with a
+placeholder destroys that value, and the shortest-path walk fails with a
 "no predecessor at distance − 1" — on the *round-trip case only*, so a naive test can
-miss it. The fix is not to imitate the stale memory: **capture the endpoints before
-the splice** and use those, which makes the intent explicit rather than emergent. The
-same suspicion applies to any C array shuffle (`memmove`/`memcpy` overlapping ranges,
-a `realloc`'d buffer read past its logical end) — ask what the vacated region still
-holds and whether anything reads it. Exemplar:
-[`inertia/solver.ts`](../../src/native/games/inertia/solver.ts) (`fromNode`/`toNode`).
+miss it. The same suspicion applies to any C array shuffle (`memmove`/`memcpy` over
+overlapping ranges, a `realloc`'d buffer read past its logical end): ask what the
+vacated region still holds and whether anything reads it.
+
+The narrow fix is to capture the endpoints *before* the splice. The real fix is to
+stop transcribing the in-place surgery at all — build the new array out of the pieces
+you mean (`[...before, ...detour, ...after]`) and the whole class of bug cannot be
+written. Inertia now does the latter; see the tour in
+[`inertia/solver.ts`](../../src/native/games/inertia/solver.ts) (`spliceDetour`), and
+§4.3 for why the byte-match that caught this was then deliberately given up.
 
 ### 3.2 Rendering: the cache, the diff key, the doctrine
 
@@ -625,6 +629,22 @@ nothing and restores the input. Grep a game's `.c` for `MOD_NUM_KEYPAD` before p
 its input, and say what you did in `design.md`. Exemplar:
 [`inertia/index.ts`](../../src/native/games/inertia/index.ts) (`DIGIT_DIRECTIONS`).
 
+### 3.8b The board keeps the keyboard after a control is pressed
+
+You can rely on this now, but it was not always true, so know what it is doing for you:
+pressing a control (a game-menu command, a `data-command` button, a toolbar button)
+**hands keyboard focus back to `puzzle-view-interactive`**. Before
+`fix-board-focus-after-command`, a menu left focus on its trigger button and a clicked
+toolbar button kept focus on itself, so one click made the board deaf to the keyboard
+until you clicked it again — Enter reopened the menu, and the cursor keys went nowhere.
+
+It matters most to a game whose aid is a *keyboard* loop over a *menu* command —
+Inertia's route-following (pick Solve, then press Enter repeatedly to walk the route)
+is unusable without it. If you build any such flow, the normative rule is the
+`app-shell` spec's "Pressing a control gives the keyboard back to the board"; the two
+carve-outs are a click that opens a menu (the menu needs the focus) and a keyboard
+activation of a button (that player is in the tab order deliberately).
+
 ### 3.9 Reference aid — an inventory checklist + click-to-highlight (Dominosa exemplar)
 
 A game with a **fixed, enumerable inventory of pieces** the player tracks by hand
@@ -766,23 +786,38 @@ weaker "TS solver agrees at the C-recorded difficulty" bar (Galaxies' D7) only w
 the generator legitimately diverges (e.g. extra RNG draws). Either way it's advisory
 — tighten per-game, never gate CI on C.
 
-**A deterministic *solver* can be byte-matched too, not just the generator.** The
-differential's usual subject is the desc, because that's what the RNG feeds. But a
-solver that draws no randomness is simply a pure function of the board — so if its
-output is a *canonical artefact* (Inertia's `solve_game` returns the actual route it
-will make the player follow, as a direction string), the trace harness can record
-that too and the TS port can be asserted to reproduce it **exactly**. That is a far
-stronger check on a big, fiddly algorithm than "the answer it found is *a* valid one":
-Inertia's ~250-line approximate-TSP tour (graph construction, node/edge ordering, four
-BFSes per gem, the insertion heuristic, the two-direction reduction pass) is pinned
-end-to-end by ten recorded routes, and the one bug in it (the `memmove` trap, §3.1)
-surfaced as a route mismatch on the first run. Reach for this whenever the C solver is
-deterministic and returns something comparable; it costs one extra field in the trace
-harness. Exemplar:
+**A deterministic *solver* can be byte-matched too — but as a scaffold, not a
+destination.** The differential's usual subject is the desc, because that's what the
+RNG feeds. But a solver that draws no randomness is a pure function of the board, so
+if its output is a comparable artefact (Inertia's `solve_game` returns the actual
+route it makes the player follow, as a direction string), the trace harness can record
+that too and the port can be asserted to reproduce it **exactly**. Do it: it costs one
+extra field in the trace harness, and it is a far stronger check while you are porting
+than "the answer it found is *a* valid one". Inertia's ~250-line approximate-TSP tour
+(graph construction, node/edge ordering, four BFSes per gem, the insertion heuristic,
+the two-direction reduction pass) was pinned end-to-end by ten recorded routes, and the
+one bug in it (the `memmove` trap, §3.1) surfaced as a route mismatch on the first run.
+It works precisely because it forces you to reproduce C's *iteration orders*, not just
+its logic — which is exactly where a faithful-looking port silently drifts.
+
+**Then ask whether the artefact has a right answer, and if it doesn't, give the
+byte-match up.** A solver that finds *the* solution to a logic puzzle does; an
+approximate optimiser does not — a tour is only better or worse, and there are many
+equally good ones. Keeping the byte-match on one welds the port to C's shape forever:
+Inertia's tour could not be written idiomatically (the `memmove` splice *is* the
+algorithm, bit for bit) and, worse, could never be **improved**, because any
+improvement is a diff. Once it was dropped (owner, 2026-07-13), the tour was rewritten
+around real path objects and grown *twice* — nearest-gem-first and farthest-gem-first,
+keeping the shorter — which beats C's route on six of the ten fixture boards and ties
+on the rest. The differential then asserts what actually matters: the route is legal,
+it collects every gem, and it is **no longer than C's**. That last clause is the trick
+— keep the recorded C artefact as a *quality yardstick* rather than an answer key, and
+you get a regression bar that a byte-match could never give you, since a byte-match is
+equally satisfied by faithfully reproducing a *bad* answer. This is the byte-parity
+scope doctrine (§4 intro) applied one level in: fidelity where there is a fact of the
+matter, "write it well" where there isn't. Exemplar:
 [`inertia-trace.c`](../../puzzles/auxiliary/inertia-trace.c) →
 [`inertia-differential.test.ts`](../../src/native/games/inertia/inertia-differential.test.ts).
-(It requires the port to reproduce C's *iteration orders*, not just its logic — which
-is a feature: those orders are exactly where a faithful-looking port drifts.)
 
 **A `qsort`/`.sort()` that feeds only *rendering* does not threaten byte-match.**
 Only sorts (and RNG draws) on the path that produces the desc matter. Signpost's

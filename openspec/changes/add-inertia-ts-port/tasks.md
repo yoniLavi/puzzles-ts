@@ -26,11 +26,15 @@
 - [x] 3.1 `findGemCandidates`: the double BFS over `w·h·8` square+direction
       nodes (forward from the start, backward to it); a square is a candidate
       iff some direction is reachable both ways. Ports `can_go` verbatim.
-- [x] 3.2 `solveRoute` (upstream `solve_game`): build the move graph
-      (`moveGoesTo`, stationary + directed gem vertices), grow the tour by
-      splicing in a round trip to the nearest uncollected gem, then reduce
-      redundant sections to shortest paths until it stops shrinking. Returns the
-      direction sequence, or an error when a gem is unreachable.
+- [x] 3.2 `solveRoute` (upstream `solve_game`): a `MoveGraph` (stationary +
+      directed gem vertices, forward and backward adjacency, BFS distances and
+      shortest paths), grow the tour by splicing in a detour to an uncollected
+      gem, then reduce redundant stretches to shortest paths until it stops
+      shrinking. Returns the direction sequence, or an error when a gem is
+      unreachable.
+- [x] 3.3 Grow **two** tours — nearest-first and farthest-first — and keep the
+      shorter (design D12). Beats C's route on six of the ten fixture boards and
+      ties on the other four; never worse.
 
 ## 4. Generator (`generator.ts`)
 
@@ -75,11 +79,12 @@
 - [x] 7.1 `puzzles/auxiliary/inertia-trace.c` + its `cliprogram()` line; record
       `__fixtures__/inertia-c-reference.json` (3 presets + custom sizes, several
       seeds each).
-- [x] 7.2 `inertia-differential.test.ts`: `newDesc` byte-match on 10 boards,
-      **plus a byte-match on the solver's route** — `solve_game` draws no
-      randomness, so the route is a pure function of the board and pins the whole
-      tour algorithm (this is what caught the `memmove` bug). Written inline
-      rather than via `describeDescDifferential`, since it asserts both.
+- [x] 7.2 `inertia-differential.test.ts`: `newDesc` byte-match on 10 boards.
+      The route is deliberately **not** byte-matched (design D8): a tour is an
+      approximate optimum, not an answer to reproduce. It is checked on what
+      matters instead — legal, collects every gem, and no longer than C's.
+      Written inline rather than via `describeDescDifferential`, since it
+      asserts more than the desc.
 
 ## 8. Tests
 
@@ -103,6 +108,11 @@
 - [x] 9.4 Dev-verify in a real browser (slide, gem pickup, death + flash, win
       flash, Solve → arrow → Enter follows, deviation re-solves, status bar,
       octant clicks, custom params).
+- [x] 9.7 Post-port refactor (owner, 2026-07-13 — byte-parity on the route
+      released): a real `Board` type replaces the `(grid, w, h)` threading; the
+      tour rewritten around a `MoveGraph` with path objects instead of C's
+      in-place `memmove` splicing; `slide` builds its state instead of casting
+      away `readonly`; two-tour portfolio (D12).
 - [ ] 9.5 **Owner acceptance** → stage 2: `TS_PORTED` in `puzzles/CMakeLists.txt`,
       delete `puzzles/inertia.c` + `puzzles/auxiliary/inertia-trace.c`, rebuild
       wasm, confirm inertia is still in the catalog with no `inertia.wasm`.

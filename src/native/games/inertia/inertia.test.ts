@@ -15,14 +15,20 @@ import { COL_DEAD_PLAYER, COL_GEM, COL_HINT, COL_MINE, COL_PLAYER } from "./rend
 import { findGemCandidates, solveRoute } from "./solver.ts";
 import {
   BLANK,
-  GEM,
+  type Board,
   type InertiaState,
-  MINE,
   newState,
   STOP,
   validateDesc,
-  WALL,
 } from "./state.ts";
+
+/** The board the generator ran its candidate search on: gems go only on blank
+ * candidate squares, so blanking them out again recovers it. */
+function withoutGems(s: InertiaState): Board {
+  const board = s.board.clone();
+  for (const square of board.gemSquares()) board.cells[square] = BLANK;
+  return board;
+}
 
 /** A `Midend` that records its status-bar notifications. */
 function harness() {
@@ -106,7 +112,7 @@ describe("inertia params and desc codec", () => {
     const { params, desc } = board(["bSbg", "wwww"]);
     const s = newState(params, desc);
     expect([s.px, s.py]).toEqual([1, 0]);
-    expect(s.grid[1]).toBe(STOP);
+    expect(s.board.cell(1)).toBe(STOP);
     expect(s.gems).toBe(1);
   });
 });
@@ -122,8 +128,8 @@ describe("inertia sliding", () => {
     const s1 = play(s0, E);
     expect([s1.px, s1.py]).toEqual([3, 0]); // stopped before the wall
     expect(s1.gems).toBe(0);
-    expect(s1.grid[1]).toBe(BLANK);
-    expect(s1.grid[2]).toBe(BLANK);
+    expect(s1.board.cell(1)).toBe(BLANK);
+    expect(s1.board.cell(2)).toBe(BLANK);
     expect(s1.distanceMoved).toBe(3);
     expect(s1.dead).toBe(false);
   });
@@ -452,13 +458,13 @@ describe("inertia generator", () => {
     const { desc } = newInertiaDesc(p, randomNew("candidates"));
     const state = newState(p, desc);
 
-    // Rebuild the pre-gem grid the generator ran the search on: gems were
-    // placed on blank candidate squares, so blank them out again.
-    const grid = Uint8Array.from(state.grid, (c) => (c === GEM ? BLANK : c));
-    const { candidates } = findGemCandidates(grid, p.w, p.h, state.py * p.w + state.px);
+    const board = withoutGems(state);
+    const candidates = new Set(
+      findGemCandidates(board, board.square(state.px, state.py)),
+    );
 
-    for (let i = 0; i < p.w * p.h; i++) {
-      if (state.grid[i] === GEM) expect(candidates[i]).toBe(1);
+    for (const square of state.board.gemSquares()) {
+      expect(candidates.has(square)).toBe(true);
     }
   });
 
@@ -466,14 +472,12 @@ describe("inertia generator", () => {
     const p = { w: 10, h: 8 };
     const { desc } = newInertiaDesc(p, randomNew("no-bad-candidates"));
     const state = newState(p, desc);
-    const grid = Uint8Array.from(state.grid, (c) => (c === GEM ? BLANK : c));
-    const { candidates } = findGemCandidates(grid, p.w, p.h, state.py * p.w + state.px);
 
-    for (let i = 0; i < p.w * p.h; i++) {
-      if (candidates[i]) expect(grid[i]).toBe(BLANK);
-      if (state.grid[i] === WALL || state.grid[i] === MINE) {
-        expect(candidates[i]).toBe(0);
-      }
+    const board = withoutGems(state);
+    const candidates = findGemCandidates(board, board.square(state.px, state.py));
+
+    for (const square of candidates) {
+      expect(board.cell(square)).toBe(BLANK);
     }
   });
 });

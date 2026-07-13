@@ -9,7 +9,8 @@
  *
  * Byte-match-critical: the RNG draws here (one `shuffle` per attempt, plus a
  * second on the attempt that succeeds) must match the C exactly, or the same
- * seed yields a different board.
+ * seed yields a different board. That constrains the order the two shuffled
+ * lists are *built* in, and nothing else.
  */
 
 import { shuffle } from "../../engine/shuffle.ts";
@@ -17,10 +18,12 @@ import type { RandomState } from "../../random/index.ts";
 import { findGemCandidates } from "./solver.ts";
 import {
   BLANK,
+  Board,
+  type Cell,
   DIRECTIONS,
   DX,
   DY,
-  encodeGrid,
+  encodeBoard,
   GEM,
   type InertiaParams,
   MINE,
@@ -28,68 +31,71 @@ import {
   WALL,
 } from "./state.ts";
 
-/** The start square, while the grid is being shuffled. It then becomes a
- * `STOP` with the ball standing on it — upstream keeps a distinct `START`
- * character, but every consumer of it treats it as a stop. */
-const START = 5;
+/** Where the ball starts. Only a marker while the grid is being shuffled: the
+ * square then becomes a `STOP` with the ball standing on it. */
+const START = -1;
 
 /** Backstop against a faithful-but-broken port spinning forever. Generation
  * normally succeeds within a handful of attempts, and the threshold relaxes
  * every 50 rejections, so this is unreachable in practice (playbook §4.6). */
 const MAX_ATTEMPTS = 100_000;
 
+/** How many rejections before we accept a less evenly-spread board. */
+const PATIENCE = 50;
+
 export function newInertiaDesc(p: InertiaParams, rng: RandomState): { desc: string } {
   const { w, h } = p;
-  const wh = w * h;
-  const fifth = Math.floor(wh / 5);
+  const area = w * h;
+  const gemCount = Math.floor(area / 5);
 
-  // The "reachable squares must be well spread" threshold can safely start as
-  // low as 2; we raise it as we get more desperate.
-  let maxDistThreshold = 2;
-  let tries = 0;
+  // How far a square may be from the nearest place a gem could go before we
+  // call the board too sparse. Starts as low as 2; relaxes as we get desperate.
+  let maxDistance = 2;
+  let rejections = 0;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     // Fill with the piece types in roughly equal proportion — but leave the
     // gems out, because we don't yet know where they may legally go.
-    const cells: number[] = [];
-    for (let j = 0; j < fifth; j++) cells.push(WALL);
-    for (let j = 0; j < fifth; j++) cells.push(STOP);
-    for (let j = 0; j < fifth; j++) cells.push(MINE);
-    cells.push(START);
-    while (cells.length < wh) cells.push(BLANK);
+    const cells: (Cell | typeof START)[] = [
+      ...Array<Cell>(gemCount).fill(WALL),
+      ...Array<Cell>(gemCount).fill(STOP),
+      ...Array<Cell>(gemCount).fill(MINE),
+      START,
+      ...Array<Cell>(area - 3 * gemCount - 1).fill(BLANK),
+    ];
     shuffle(cells, rng);
 
-    const startIndex = cells.indexOf(START);
-    const grid = Uint8Array.from(cells);
-    grid[startIndex] = STOP;
+    const startSquare = cells.indexOf(START);
+    const board = new Board(
+      Uint8Array.from(cells, (cell) => (cell === START ? STOP : cell)),
+      w,
+      h,
+    );
 
     // Where could a gem go? Give up early if there aren't enough such squares.
-    const { candidates, count } = findGemCandidates(grid, w, h, startIndex);
-    if (count < fifth) continue;
+    const candidates = findGemCandidates(board, startSquare);
+    if (candidates.length < gemCount) continue;
 
     // This is already a viable level — but possibly one where a big chunk of
-    // the board is dead space. Test for that by finding the largest distance
-    // from any square to the nearest candidate (a purely geometric search,
-    // ignoring walls and long ways round) and rejecting a grid whose worst
-    // square is too far out.
-    if (maxDistanceToCandidate(candidates, w, h) > maxDistThreshold) {
-      tries++;
-      if (tries === 50) {
-        maxDistThreshold++;
-        tries = 0;
+    // the board is dead space. Test for that by finding the furthest any square
+    // is from the nearest candidate (a purely geometric distance, ignoring
+    // walls and long ways round) and rejecting a board whose worst square is
+    // too far out.
+    if (spread(board, candidates) > maxDistance) {
+      if (++rejections === PATIENCE) {
+        maxDistance++;
+        rejections = 0;
       }
       continue;
     }
 
-    // The reachable squares are now plausibly evenly spread. We don't go on to
+    // The reachable squares are plausibly evenly spread. We don't go on to
     // *enforce* that the gems keep them that way — the RNG can be trusted to
     // pick a sensible subset.
-    const list: number[] = [];
-    for (let i = 0; i < wh; i++) if (candidates[i]) list.push(i);
-    shuffle(list, rng);
-    for (let i = 0; i < fifth; i++) grid[list[i]] = GEM;
+    shuffle(candidates, rng);
+    for (const square of candidates.slice(0, gemCount)) board.cells[square] = GEM;
 
-    return { desc: encodeGrid(grid, startIndex) };
+    return { desc: encodeBoard(board, startSquare) };
   }
 
   throw new Error(`inertia: failed to generate a ${w}x${h} grid`);
@@ -97,38 +103,30 @@ export function newInertiaDesc(p: InertiaParams, rng: RandomState): { desc: stri
 
 /** The furthest any square is from the nearest gem candidate, counting a
  * diagonal step as one — a breadth-first search seeded from every candidate. */
-function maxDistanceToCandidate(candidates: Uint8Array, w: number, h: number): number {
-  const wh = w * h;
-  const dist = new Int32Array(wh).fill(-1);
-  const list = new Int32Array(wh);
-  let head = 0;
-  let tail = 0;
+function spread(board: Board, candidates: readonly number[]): number {
+  const distance = new Int32Array(board.area).fill(-1);
+  const queue = [...candidates];
+  for (const square of candidates) distance[square] = 0;
 
-  for (let i = 0; i < wh; i++) {
-    if (candidates[i]) {
-      dist[i] = 0;
-      list[tail++] = i;
-    }
-  }
+  let furthest = 0;
+  for (let head = 0; head < queue.length; head++) {
+    const square = queue[head];
+    furthest = Math.max(furthest, distance[square]);
 
-  let maxDist = 0;
-  while (head < tail) {
-    const pos = list[head++];
-    if (maxDist < dist[pos]) maxDist = dist[pos];
-
-    const x = pos % w;
-    const y = Math.floor(pos / w);
+    const x = board.x(square);
+    const y = board.y(square);
     for (let d = 0; d < DIRECTIONS; d++) {
       const x2 = x + DX[d];
       const y2 = y + DY[d];
-      if (x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
-      const p2 = y2 * w + x2;
-      if (dist[p2] < 0) {
-        dist[p2] = dist[pos] + 1;
-        list[tail++] = p2;
+      if (!board.inside(x2, y2)) continue;
+
+      const next = board.square(x2, y2);
+      if (distance[next] < 0) {
+        distance[next] = distance[square] + 1;
+        queue.push(next);
       }
     }
   }
 
-  return maxDist;
+  return furthest;
 }

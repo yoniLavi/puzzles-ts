@@ -358,13 +358,13 @@ export function redraw(
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      let v: number = s.grid[y * w + x];
+      let v: number = s.board.at(x, y);
 
       // A gem the ball is in the process of sliding over stays on screen until
       // the ball actually reaches it.
-      if (prev && prev.grid[y * w + x] !== s.grid[y * w + x]) {
+      if (prev && prev.board.at(x, y) !== s.board.at(x, y)) {
         const dist = Math.max(Math.abs(x - prev.px), Math.abs(y - prev.py));
-        v = playerDist < dist ? prev.grid[y * w + x] : s.grid[y * w + x];
+        v = playerDist < dist ? prev.board.at(x, y) : s.board.at(x, y);
       }
 
       // The mine the dead ball is sitting on is hidden by the splat, so erase
