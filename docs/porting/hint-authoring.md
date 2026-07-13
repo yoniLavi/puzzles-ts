@@ -19,9 +19,11 @@ Authoritative spec: the Hint System requirements in
 (exemplar: Palisade)" section of [`AGENTS.md`](../../AGENTS.md). **Exemplars to
 read:** Palisade (grouped multi-leg deductions),
 [`src/native/games/range/`](../../src/native/games/range/) (`solver.ts` recording →
-`index.ts` `hint`/`hintKeepTrack` → `render.ts` highlight), and
+`index.ts` `hint`/`hintKeepTrack` → `render.ts` highlight),
 [`src/native/games/towers/`](../../src/native/games/towers/) (candidate-elimination,
-§9).
+§9), and [`src/native/games/inertia/`](../../src/native/games/inertia/) (the
+**non-deductive** exemplar, §6: verified-claim narration, a stable marked subgoal,
+and a recompute-stable plan).
 
 Explained hints are a **core deliberate-divergence product value** of this fork, not
 a nicety. Upstream's `'h'` returns one next move with no explanation; that is below
@@ -865,11 +867,17 @@ grow branch in `drawTile`
 
 ## 6. Non-deductive (heuristic) hints
 
-Not every game is deductive. **Untangle** has no logical "why" — no move is *forced*, you just
-want fewer crossings — so quality-bar rule 1 doesn't apply, and forcing a narration would
-fabricate a non-sequitur. By owner approval such a game ships a hint with an **empty
-`explanation`**: the visual highlight plus the existing move animation *are* the whole hint.
-Pattern (exemplar: [`untangle/hint.ts`](../../src/native/games/untangle/hint.ts)):
+Not every game is deductive, and the two poles of this section are **Untangle** (nothing to say)
+and **Inertia** (a great deal to say). Decide which you are before writing a line: ask *what does
+a move here cost the player if they get it wrong, and can I check that claim?* If the answer is
+"nothing you could name" — Untangle: no move is forced, you just want fewer crossings — a
+narration would fabricate a non-sequitur, and the hint ships with an **empty `explanation`**
+(§6 below). If a move has a consequence you can *verify* — Inertia: you don't choose where you
+stop, and a greedy grab can lose the game outright — narrate it, and see §6.1.
+
+**Untangle's pattern** — the floor, not the ceiling. By owner approval such a game ships an empty
+`explanation`: the visual highlight plus the existing move animation *are* the whole hint.
+Exemplar: [`untangle/hint.ts`](../../src/native/games/untangle/hint.ts):
 
 - **Objective, not deduction.** Pick the move that most improves a cheap scalar objective
   (Untangle: edge-crossing *pairs* from `findCrossings`). A greedy loop on a *working copy* —
