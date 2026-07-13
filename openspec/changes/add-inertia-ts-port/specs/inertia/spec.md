@@ -126,13 +126,19 @@ heading another, so a gem there could be collected but never returned from.
 ### Requirement: Solve installs a route the player follows
 
 `solve` SHALL compute a route — a sequence of directions from the ball's current
-position that collects every remaining gem — by building the move graph
-(a vertex at every square the ball can come to rest, plus a *directed* vertex at
-every gem the ball can slide through, since a gem passed through in one direction
-cannot be left in another), growing a tour that splices in a round trip to the
-nearest as-yet-uncollected gem until none remain, and then repeatedly replacing
-redundant sections of the tour with shortest paths until it stops shrinking. It
-SHALL return an error when some remaining gem is unreachable.
+position that collects every remaining gem — by building the move graph (a vertex
+at every square the ball can come to rest, plus a *directed* vertex at every gem
+the ball can slide through, since a gem passed through in one direction cannot be
+left in another), growing a tour that splices in a detour to one as-yet-uncollected
+gem after another until none remain, and then repeatedly replacing redundant
+sections of the tour with shortest paths until it stops shrinking. It SHALL return
+an error when some remaining gem is unreachable.
+
+Because the tour is an approximate solution to a travelling-salesman problem and
+not a deduction, the route is **not** required to reproduce the one the C
+reference finds. Two tours SHALL be grown — one reaching for the nearest
+uncollected gem, one for the farthest — and the shorter kept, which yields a
+route no longer than C's on every board of the differential fixture.
 
 The solve move SHALL **install** that route into the game state rather than
 completing the game: the game remains in progress until the player collects the
@@ -157,6 +163,12 @@ route is installed:
 
 - **WHEN** a route is installed and the player plays some other legal direction
 - **THEN** the game installs a freshly computed route from the resulting position
+
+#### Scenario: The route is no worse than the C reference's
+
+- **WHEN** a route is computed for a board in the differential fixture
+- **THEN** it collects every gem without the ball dying, and is no longer than
+  the route the C solver found for the same board
 
 #### Scenario: Solve does not finish the game
 

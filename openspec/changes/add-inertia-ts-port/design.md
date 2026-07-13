@@ -108,16 +108,47 @@ and the one-off decrement while the fatal move is still animating) is faithful.
 Inertia has `BORDER = 1`, not a full tile (playbook §3.2). We port the narrow
 variant — parity is with what the browser actually showed.
 
-### D8 — Byte-match differential is feasible; the `qsort` is a red herring
+### D8 — The desc is byte-matched; the route is deliberately *not*
 
 The desc comes only from `gengrid`, whose RNG draws are two `shuffle` calls (the
 piece grid, then the gem-candidate list) — both reproduced bit-identically by
-`random.ts`. The `qsort` in `solve_game` sorts `backedges`, whose keys
-(`target·n + source`) are **distinct by construction** (two directions out of one
-node can never reach the same node — distinct rays from a point share only their
-origin, and the origin case is excluded), so tie-order is not even a question; and
-`solve_game` never touches the desc anyway. Unlike Undead (§4.8), byte-match is
-therefore on the table, and the differential asserts it.
+`random.ts`. So the generator is byte-matched against the C reference, and stays
+that way: the check is cheap, and it covers the gem-candidate search the
+generator gates on as well as the generator itself.
+
+The **route** is a different matter. `solve_game` draws no randomness, so an
+exactly faithful port reproduces C's route too — and the first cut of this port
+did, which is how it caught a real bug (upstream's tour splicing reads back a
+slot its own `memmove` has just vacated, which a JS array splice does not leave
+behind). But byte-matching a route pins the port to that in-place-`memmove`
+shape, and a route is a **travelling-salesman tour**: there is no right answer to
+reproduce, only better and worse ones. The byte-parity scope doctrine (playbook
+§4) puts the generator/solver/codec under fidelity and everything else under
+"write it well", and an approximate optimiser is squarely the latter.
+
+So the route byte-match was dropped (owner, 2026-07-13) and the tour rewritten
+around real path objects — which made a genuine improvement affordable, see D12.
+The differential now checks the route on what actually matters: it is legal, it
+collects every gem, and it is **no longer than C's**.
+
+### D12 — Two tours are grown, and the shorter wins
+
+Upstream grows one tour, always reaching for the *nearest* uncollected gem.
+`solveRoute` grows that tour **and** a *farthest*-first one, and keeps the
+shorter. Farthest-first insertion is the counter-intuitive classic of TSP
+construction — committing to the awkward, far-flung gems while the tour is still
+short lays down a skeleton the near ones can be threaded onto later, instead of
+leaving them stranded at the end — and on this game's boards it usually wins
+outright.
+
+Measured on the ten differential boards: 521 moves against C's 553, beating C on
+six and tying on four, never worse. On thirty fresh 20×16 boards it is ~7% shorter
+than nearest-first alone. The cost is a few milliseconds, on a code path that only
+runs when the player asks for the aid (or wanders off an installed route).
+
+The insertion cost was also corrected while the tour was being rewritten: a detour
+that replaces an existing step of the tour is one move cheaper than the two paths
+it is built from, which upstream's comparison overlooks.
 
 ### D10 — The bare digit keys are accepted, not just `MOD_NUM_KEYPAD` ones
 
@@ -134,7 +165,7 @@ deliberate (small) divergence, and it is the kind the fork exists for: without
 it a keyboard-only player cannot play the game. Inertia binds no other digit, so
 there is nothing for it to collide with.
 
-### D11 — Dev-verify surfaced an app-shell focus bug (handed off, not fixed here)
+### D11 — Dev-verify surfaced an app-shell focus bug (fixed in its own change)
 
 Driving the route aid in the browser exposed a **pre-existing app-shell issue**:
 after any command is picked from the game menu, focus is restored to the menu's
@@ -145,10 +176,11 @@ hardest — its aid loop is literally "pick Solve from the menu, then press Ente
 to follow the route" — but it swallows `CURSOR_SELECT` in **every** game that
 takes a keyboard cursor, and it predates this port.
 
-It is not fixed here: the correct fix is an app-shell focus change affecting all
-32 games, and it needs a decision about the commands that legitimately open a
-dialog (which must keep focus). Recommendation: a small follow-up change that
-returns focus to `puzzle-view-interactive` after a menu command settles.
+It is not fixed here — an app-shell focus change affecting all 32 games does not
+belong inside a game port. It is fixed in its own change,
+`fix-board-focus-after-command`, which also picks up the second half of the same
+bug that dev-verify then turned up: the toolbar buttons bypass the command bus
+entirely, so clicking Undo left the cursor keys dead too.
 
 ### D9 — Rendering: no per-tile cache key packing beyond upstream's
 

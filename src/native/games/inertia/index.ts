@@ -45,9 +45,7 @@ import {
 } from "./render.ts";
 import { solveRoute } from "./solver.ts";
 import {
-  at,
   BLANK,
-  cloneState,
   DIRECTIONS,
   DX,
   DY,
@@ -71,39 +69,35 @@ import {
 
 // --- moves -----------------------------------------------------------
 
-/** Slide the ball, collecting gems and dying on mines. The caller has already
- * established that the first step isn't into a wall (so the ball can never run
- * off the grid: out-of-bounds counts as a wall, which stops it). */
+/**
+ * Slide the ball, collecting gems and dying on mines. The caller has already
+ * established that the first step isn't into a wall — so the ball can never run
+ * off the grid, because the void beyond it reads as a wall and stops it.
+ */
 function slide(s: InertiaState, dir: number): InertiaState {
-  const { w } = s.params;
-  const next = cloneState(s) as {
-    -readonly [K in keyof InertiaState]: InertiaState[K];
-  };
-  const grid = next.grid;
-
-  next.distanceMoved = 0;
-  next.dead = false;
+  const board = s.board.clone();
+  let px = s.px;
+  let py = s.py;
+  let gems = s.gems;
+  let distanceMoved = 0;
 
   for (;;) {
-    next.px += DX[dir];
-    next.py += DY[dir];
-    next.distanceMoved++;
+    px += DX[dir];
+    py += DY[dir];
+    distanceMoved++;
 
-    const i = next.py * w + next.px;
-    if (grid[i] === GEM) {
-      grid[i] = BLANK;
-      next.gems--;
+    const square = board.square(px, py);
+    if (board.cell(square) === GEM) {
+      board.cells[square] = BLANK;
+      gems--;
     }
-    if (grid[i] === MINE) {
-      next.dead = true;
-      break;
+    if (board.cell(square) === MINE) {
+      return { ...s, board, px, py, gems, distanceMoved, dead: true };
     }
-    if (grid[i] === STOP || at(next, next.px + DX[dir], next.py + DY[dir]) === WALL) {
-      break;
+    if (board.cell(square) === STOP || board.at(px + DX[dir], py + DY[dir]) === WALL) {
+      return { ...s, board, px, py, gems, distanceMoved, dead: false };
     }
   }
-
-  return next;
 }
 
 /**
@@ -130,20 +124,16 @@ function applyRoute(s: InertiaState, dir: number): InertiaState {
 function executeMove(s: InertiaState, m: InertiaMove): InertiaState {
   if (m.type === "route") {
     // A solve move doesn't touch the board at all — it just hands the player a
-    // route to follow.
+    // route to follow, so the new state can share the old board (only `slide`
+    // ever writes to a board, and it clones first).
     if (m.route.length === 0) throw new Error("inertia: empty route");
-    return {
-      ...cloneState(s),
-      cheated: true,
-      route: Object.freeze([...m.route]),
-      routePos: 0,
-    };
+    return { ...s, cheated: true, route: Object.freeze([...m.route]), routePos: 0 };
   }
 
   const dir = m.dir;
   if (dir < 0 || dir >= DIRECTIONS) throw new Error(`inertia: bad direction ${dir}`);
   if (s.dead) throw new Error("inertia: the ball is dead");
-  if (at(s, s.px + DX[dir], s.py + DY[dir]) === WALL) {
+  if (s.board.at(s.px + DX[dir], s.py + DY[dir]) === WALL) {
     throw new Error("inertia: there's a wall in the way");
   }
 
@@ -214,7 +204,7 @@ function interpretMove(
   if (dir < 0) return null;
 
   // A wall in the way, or a dead ball, and the move simply cannot happen.
-  if (at(s, s.px + DX[dir], s.py + DY[dir]) === WALL) return null;
+  if (s.board.at(s.px + DX[dir], s.py + DY[dir]) === WALL) return null;
   if (s.dead) return null;
 
   ui.justMadeMove = true;

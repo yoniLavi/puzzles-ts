@@ -1,5 +1,5 @@
 /**
- * Inertia — types, codec and the slide rule.
+ * Inertia — types and codec.
  *
  * The board is a grid of five cell kinds; a single ball slides in one of
  * eight directions until something stops it, collecting gems and dying on
@@ -105,12 +105,77 @@ export interface InertiaUi {
   flashType: number;
 }
 
+// --- the board -------------------------------------------------------
+
+/**
+ * A `w × h` grid of cells, row-major, with everything off the grid reading as a
+ * wall (upstream's `AT` macro — which is why the ball can never slide off the
+ * board: the void stops it like any other wall).
+ *
+ * Squares are addressed both as `(x, y)` and as a flat index; `x`/`y`/`square`
+ * convert. The cells are only ever mutated while a board is being *built* (by
+ * the generator, and by a slide clearing the gems it collects); the board on a
+ * state is never touched again.
+ */
+export class Board {
+  constructor(
+    readonly cells: Uint8Array,
+    readonly w: number,
+    readonly h: number,
+  ) {}
+
+  static blank(w: number, h: number): Board {
+    return new Board(new Uint8Array(w * h), w, h);
+  }
+
+  get area(): number {
+    return this.w * this.h;
+  }
+
+  at(x: number, y: number): Cell {
+    if (x < 0 || x >= this.w || y < 0 || y >= this.h) return WALL;
+    return this.cells[y * this.w + x] as Cell;
+  }
+
+  cell(square: number): Cell {
+    return this.cells[square] as Cell;
+  }
+
+  x(square: number): number {
+    return square % this.w;
+  }
+
+  y(square: number): number {
+    return Math.floor(square / this.w);
+  }
+
+  square(x: number, y: number): number {
+    return y * this.w + x;
+  }
+
+  inside(x: number, y: number): boolean {
+    return x >= 0 && x < this.w && y >= 0 && y < this.h;
+  }
+
+  /** The flat indices of every square holding a gem. */
+  gemSquares(): number[] {
+    const squares: number[] = [];
+    for (let i = 0; i < this.cells.length; i++) {
+      if (this.cells[i] === GEM) squares.push(i);
+    }
+    return squares;
+  }
+
+  clone(): Board {
+    return new Board(new Uint8Array(this.cells), this.w, this.h);
+  }
+}
+
 // --- state -----------------------------------------------------------
 
 export interface InertiaState {
   readonly params: InertiaParams;
-  /** `w · h` cells, row-major. */
-  readonly grid: Uint8Array;
+  readonly board: Board;
   readonly px: number;
   readonly py: number;
   readonly gems: number;
@@ -125,34 +190,6 @@ export interface InertiaState {
   readonly route: readonly number[] | null;
   /** Index of the route's next step. */
   readonly routePos: number;
-}
-
-/** Read a cell, treating everything off the grid as a wall (upstream's `AT`). */
-export function at(s: InertiaState, x: number, y: number): Cell {
-  const { w, h } = s.params;
-  if (x < 0 || x >= w || y < 0 || y >= h) return WALL;
-  return s.grid[y * w + x] as Cell;
-}
-
-/** As `at`, over a bare grid (used by the solver and generator, which work on
- * grids that are not yet a state). */
-export function atGrid(
-  grid: Uint8Array,
-  w: number,
-  h: number,
-  x: number,
-  y: number,
-): Cell {
-  if (x < 0 || x >= w || y < 0 || y >= h) return WALL;
-  return grid[y * w + x] as Cell;
-}
-
-export function cloneState(s: InertiaState): InertiaState {
-  return {
-    ...s,
-    grid: new Uint8Array(s.grid),
-    // `route` is frozen and shared by reference — no copy needed.
-  };
 }
 
 // --- desc codec ------------------------------------------------------
@@ -182,30 +219,29 @@ export function validateDesc(p: InertiaParams, desc: string): string | null {
 }
 
 export function newState(p: InertiaParams, desc: string): InertiaState {
-  const wh = p.w * p.h;
-  const grid = new Uint8Array(wh);
+  const board = Board.blank(p.w, p.h);
   let px = -1;
   let py = -1;
   let gems = 0;
 
-  for (let i = 0; i < wh; i++) {
+  for (let i = 0; i < board.area; i++) {
     const c = desc[i];
     if (c === START_CHAR) {
       // The start square is a stop square with the ball standing on it.
-      grid[i] = STOP;
-      px = i % p.w;
-      py = Math.floor(i / p.w);
+      board.cells[i] = STOP;
+      px = board.x(i);
+      py = board.y(i);
     } else {
       const cell = charToCell(c);
       if (cell === null) throw new Error(`bad desc character ${c}`);
-      grid[i] = cell;
+      board.cells[i] = cell;
       if (cell === GEM) gems++;
     }
   }
 
   return {
     params: p,
-    grid,
+    board,
     px,
     py,
     gems,
@@ -217,11 +253,11 @@ export function newState(p: InertiaParams, desc: string): InertiaState {
   };
 }
 
-/** Render a grid (with a `START` cell) as a desc string. Used by the generator. */
-export function encodeGrid(grid: Uint8Array, startIndex: number): string {
+/** Render a board as a desc string, with the ball's square as the start. */
+export function encodeBoard(board: Board, startSquare: number): string {
   let out = "";
-  for (let i = 0; i < grid.length; i++) {
-    out += i === startIndex ? START_CHAR : CELL_CHARS[grid[i]];
+  for (let i = 0; i < board.area; i++) {
+    out += i === startSquare ? START_CHAR : CELL_CHARS[board.cells[i]];
   }
   return out;
 }
@@ -244,7 +280,7 @@ export function textFormat(s: InertiaState): string {
     for (let c = 0; c < w; c++) {
       const cell = r * ch * gw + cw * c;
       const centre = cell + (gw * ch) / 2 + cw / 2;
-      switch (s.grid[r * w + c]) {
+      switch (s.board.at(c, r)) {
         case GEM:
           board[centre] = "o";
           break;
