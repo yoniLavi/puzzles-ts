@@ -34,6 +34,9 @@ export const DEFAULT_BACKGROUND: Colour = [0.827, 0.827, 0.827];
  * could still loop to the plan's end and back). */
 const MAX_HINT_STEPS = 1000;
 
+/** Longer than any game's animation or flash, so one tick settles the clock. */
+const SETTLE_SECONDS = 60;
+
 export interface RenderScenario<Params, State, Move, Ui, DrawState, Mistake> {
   game: Game<Params, State, Move, Ui, DrawState, Mistake>;
   /** Full game id: `<params>:<desc>` (descriptive) or `<params>#<seed>`
@@ -56,6 +59,16 @@ export interface RenderScenario<Params, State, Move, Ui, DrawState, Mistake> {
   /** Spotlight a reference-aid item before capture (the `reference` /
    * `selectReference` hooks) — the key of the item to highlight, or null. */
   selectReference?: string | null;
+  /** Run the animation/flash clock out before capturing, so the frame is the
+   * **settled** one rather than an animated game's frame 0.
+   *
+   * A move on an animated game (Inertia's slide, Flip's tile spin, Sixteen's
+   * row shove) arms an animation, and a capture taken straight after `moves`
+   * therefore shows the *start* of that animation — with the previous state
+   * still on screen. Anything a game draws only once the move has landed (a
+   * dead player's splat, a win flash resolving) is invisible in that frame.
+   * Set this to reach the frame a player actually ends up looking at. */
+  settle?: boolean;
   /** Frontend default background fed to the game's palette. Defaults to
    * {@link DEFAULT_BACKGROUND}. */
   defaultBackground?: Colour;
@@ -119,6 +132,11 @@ export function renderScenario<Params, State, Move, Ui, DrawState, Mistake>(
       }
     }
   }
+
+  // One generous tick is enough: `Midend.timer` clamps a finished animation
+  // (dropping the from-state) and resets a finished flash, so the next redraw
+  // is the settled frame.
+  if (scenario.settle) midend.timer(SETTLE_SECONDS);
 
   const palette = game.colours(defaultBackground);
   const recording = new RecordingDrawing(palette);
