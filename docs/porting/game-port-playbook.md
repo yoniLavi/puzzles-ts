@@ -277,6 +277,22 @@ unions over `0|1` sentinels, GC over `dup`/`free`, modern data structures over
 C-array mirrors. There is no corpus a refactor can break, so write it clean the
 first time.
 
+**Watch for logic that is correct only because of what `memmove` leaves behind.**
+`memmove` *copies*; it does not clear the source. So after C opens a gap in an array
+(`memmove(a + i + n, a + i, …)`), the vacated slots still hold their old values, and
+the code that follows may quietly *read them back*. Inertia's tour-growth splice does
+exactly this: when it opens the gap on top of a vertex (`n1 == n2`, the
+round-trip-out-of-one-vertex case) it then re-reads `circuit[n1]` and gets the vertex
+that was "moved away". A JS `splice`/`concat` that fills the gap with a placeholder
+destroys that value, and the shortest-path walk fails with a
+"no predecessor at distance − 1" — on the *round-trip case only*, so a naive test can
+miss it. The fix is not to imitate the stale memory: **capture the endpoints before
+the splice** and use those, which makes the intent explicit rather than emergent. The
+same suspicion applies to any C array shuffle (`memmove`/`memcpy` overlapping ranges,
+a `realloc`'d buffer read past its logical end) — ask what the vacated region still
+holds and whether anything reads it. Exemplar:
+[`inertia/solver.ts`](../../src/native/games/inertia/solver.ts) (`fromNode`/`toNode`).
+
 ### 3.2 Rendering: the cache, the diff key, the doctrine
 
 **Cache key:** pack flags into an `Int32Array`, *not* `BigInt64Array` (`BigInt` is
@@ -590,6 +606,25 @@ the five digit games (`solo`/`keen`/`towers`/`unequal`/`filling`) and Undead.
   rollover and any per-game quirk (Unequal's `'0'`-based high range). Normative: the
   on-screen-keys requirement in [`ts-engine`](../../openspec/specs/ts-engine/spec.md).
 
+### 3.8a `MOD_NUM_KEYPAD` never arrives — bind the bare digits too
+
+**This web frontend does not set `MOD_NUM_KEYPAD`.** `puzzle-view-interactive.ts`'s
+`puzzleKeyMap` handles the arrow/select/delete keys and then falls through to "any
+single character → its char code", so a number-pad `7` reaches `interpretMove` as the
+plain character `'7'`, never as `MOD_NUM_KEYPAD | '7'`. A port that faithfully
+transcribes an upstream `interpret_move` testing `button == (MOD_NUM_KEYPAD | '7')`
+therefore ships a **key binding that can never fire** — and the C build has the same
+dead binding, so it doesn't show up as a parity difference either.
+
+It bites hardest where the keypad is the *only* route to some input: Inertia's four
+diagonal moves are keypad-or-mouse upstream, so with the modified-only binding a
+keyboard-only player literally cannot make them. Accept the **bare digits as well as
+the modified ones** (`stripModifiers(button)` then look the character up) whenever the
+game binds no other meaning to those digits — a deliberate divergence that costs
+nothing and restores the input. Grep a game's `.c` for `MOD_NUM_KEYPAD` before porting
+its input, and say what you did in `design.md`. Exemplar:
+[`inertia/index.ts`](../../src/native/games/inertia/index.ts) (`DIGIT_DIRECTIONS`).
+
 ### 3.9 Reference aid — an inventory checklist + click-to-highlight (Dominosa exemplar)
 
 A game with a **fixed, enumerable inventory of pieces** the player tracks by hand
@@ -730,6 +765,24 @@ difficulty + unique mode; the Flip CROSSES path is the precedent). Fall back to 
 weaker "TS solver agrees at the C-recorded difficulty" bar (Galaxies' D7) only when
 the generator legitimately diverges (e.g. extra RNG draws). Either way it's advisory
 — tighten per-game, never gate CI on C.
+
+**A deterministic *solver* can be byte-matched too, not just the generator.** The
+differential's usual subject is the desc, because that's what the RNG feeds. But a
+solver that draws no randomness is simply a pure function of the board — so if its
+output is a *canonical artefact* (Inertia's `solve_game` returns the actual route it
+will make the player follow, as a direction string), the trace harness can record
+that too and the TS port can be asserted to reproduce it **exactly**. That is a far
+stronger check on a big, fiddly algorithm than "the answer it found is *a* valid one":
+Inertia's ~250-line approximate-TSP tour (graph construction, node/edge ordering, four
+BFSes per gem, the insertion heuristic, the two-direction reduction pass) is pinned
+end-to-end by ten recorded routes, and the one bug in it (the `memmove` trap, §3.1)
+surfaced as a route mismatch on the first run. Reach for this whenever the C solver is
+deterministic and returns something comparable; it costs one extra field in the trace
+harness. Exemplar:
+[`inertia-trace.c`](../../puzzles/auxiliary/inertia-trace.c) →
+[`inertia-differential.test.ts`](../../src/native/games/inertia/inertia-differential.test.ts).
+(It requires the port to reproduce C's *iteration orders*, not just its logic — which
+is a feature: those orders are exactly where a faithful-looking port drifts.)
 
 **A `qsort`/`.sort()` that feeds only *rendering* does not threaten byte-match.**
 Only sorts (and RNG draws) on the path that produces the desc matter. Signpost's
@@ -876,6 +929,15 @@ visual/integration smoke only. Tiers are codified in
   (`renderScenario(...)` drives a real `Midend` to a target frame; assert targeted
   ops **plus** `toMatchSnapshot`). **New render code SHOULD ship one.**
 - **Tier 3** — components + persistence (`happy-dom`, `fake-indexeddb`).
+
+**On an animated game, `moves` lands you on animation frame *zero*, not the settled
+frame** — the move armed an animation, so the previous state is still on screen and
+anything the game draws only once the move has *landed* (Inertia's dead-player splat)
+is simply absent from the capture. Pass **`settle: true`** to run the animation/flash
+clock out before the capture (`renderScenario({ …, moves, settle: true })`). Asserting
+both frames from the same `moves` is the cheap way to pin an animation's endpoints —
+Inertia's "the ball is still a live green circle mid-slide, and a red splat once it
+lands" — and costs one extra scenario call.
 
 ### 5.1 Render-op vocabulary — know which primitive records as which op
 

@@ -17,6 +17,7 @@ import "./flip/index.ts";
 import "./flood/index.ts";
 import "./galaxies/index.ts";
 import "./guess/index.ts";
+import "./inertia/index.ts";
 import "./keen/index.ts";
 import "./lightup/index.ts";
 import "./magnets/index.ts";
