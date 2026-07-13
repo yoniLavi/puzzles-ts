@@ -148,6 +148,21 @@ byte-match portable). Ported for Magnets; Dominosa reuses it when ported (so
 [`params.ts`](../../src/native/engine/params.ts)). **If a second consumer of a
 game-local helper appears, promote it to `engine/`.**
 
+**A `tree234` is almost always just a sorted set — reach for `SortedMultiset`.**
+Upstream uses `tree234` wherever it wants an ordered collection, but the games
+overwhelmingly use only four of its operations, and
+[`sorted-multiset.ts`](../../src/native/engine/sorted-multiset.ts) already has
+all four under upstream's own semantics: `add234` → `add`, `del234` → `delete`
+(a no-op when absent, so C's `find234`-then-`del234` collapses to a bare
+`delete`), `delpos234` → `removeAt`, `count234` → `size`. Netslide's generator
+(the third consumer, after Flip and Pegs) needed no new leaf at all. **Port the
+comparator exactly**: `randomUpto(set.size)` → `removeAt(i)` indexes into the
+*sorted order*, so the comparator is byte-match surface (§4.3), not a tidy
+convention. A `tree234` used as a **worklist** (netslide's `compute_active`
+drains one with `delpos234(todo, 0)`, i.e. in sorted order) is a different
+matter: check whether the order can affect the result before reproducing it — a
+flood fill's reachable set cannot, so that one is a plain queue.
+
 The bipartite **`matching`** (Hopcroft–Karp, RNG-faithful) lives in
 [`latin.ts`](../../src/native/engine/latin.ts) alongside `latinGenerate`, and
 is reusable outside the Latin family: Tents drives it both ways. Its `rs` is
@@ -300,6 +315,14 @@ written. Inertia now does the latter; see the tour in
 [`inertia/solver.ts`](../../src/native/games/inertia/solver.ts) (`spliceDetour`), and
 §4.3 for why the byte-match that caught this was then deliberately given up.
 
+**The "shared frozen matrix" pattern cannot actually use `Object.freeze`.** A game
+whose state has a component that never changes after `newState` (Flip's matrix,
+Netslide's barrier grid) should share the one array by reference across every state,
+so a move copies only the part that moves — but `Object.freeze` **throws** on a
+populated typed array (`TypeError: Cannot freeze array buffer views with elements`),
+so the `readonly` type is the whole guarantee. Don't reach for a runtime freeze and
+don't switch to a plain `Array` to get one; just don't write to it.
+
 ### 3.2 Rendering: the cache, the diff key, the doctrine
 
 **Cache key:** pack flags into an `Int32Array`, *not* `BigInt64Array` (`BigInt` is
@@ -408,6 +431,23 @@ below flash/hint fills. Exemplars:
 [`palisade/render.ts`](../../src/native/games/palisade/render.ts).
 
 ### 3.4 Params, config summary, preferences
+
+**A `float` param is a byte-match hazard: reproduce `%g` and `atof`, and round to
+single precision.** Most params are ints, but a few are C `float`s (Netslide's
+`barrier_probability`; Net's is the same field). Three things then bite at once,
+and all three change the *board*, not merely the label — Netslide places
+`(int)(barrier_probability * candidateCount)` barriers, so a value off by one ulp
+can be off by one wall:
+- **`encode_params` writes it with `%g`**, which is six significant digits with
+  trailing zeros stripped — *not* `String(x)`, which would render 1/3 as
+  `0.3333333333333333` and change what `decodeParams` reads back. Port a small
+  `formatG` (netslide's `state.ts`).
+- **`decode_params` reads it with `atof`**, which yields **0** for garbage.
+  `Number.parseFloat` yields `NaN`, which slips past every `<`/`>` bound check in
+  `validateParams` — the same trap `parseConfigInt` exists to close for ints.
+- **The value is a `float`, not a `double`.** Store what C stores: `Math.fround`
+  at every boundary that admits one (`decodeParams`, the `paramConfig` `set`), and
+  again at the arithmetic C does in single precision.
 
 **A game whose params aren't plain `w`/`h` must make `describeParams` emit the exact
 keys its `augmentation.ts` `describeConfig` template reads — or the header shows the
@@ -835,6 +875,19 @@ weaker "TS solver agrees at the C-recorded difficulty" bar (Galaxies' D7) only w
 the generator legitimately diverges (e.g. extra RNG draws). Either way it's advisory
 — tighten per-game, never gate CI on C.
 
+**A generator loop that *rejects* a candidate has already spent its RNG draws —
+reproduce the rejection, not a cleaned-up version.** The tempting refactor of a
+"draw, decide it's no good, `continue` without incrementing the counter" loop is to
+pick only from the legal candidates in the first place. That changes the draw
+sequence and silently diverges the desc. Netslide's shuffle draws a direction and a
+row/column, *then* declines a slide that would undo the previous one (or repeat it
+so often it becomes a shorter slide the other way) and retries **without** rewinding
+the RNG — so the rejected draws are part of the stream and the port must make them
+too. The tell is a C `for (i = 0; i < n; /* incremented conditionally */)`: the
+missing `i++` in the header is the author flagging exactly this. Same family as the
+§4.4 quirks — when the C does something that looks like it could be tidied, first ask
+whether the tidying is observable in the RNG stream.
+
 **A deterministic *solver* can be byte-matched too — but as a scaffold, not a
 destination.** The differential's usual subject is the desc, because that's what the
 RNG feeds. But a solver that draws no randomness is a pure function of the board, so
@@ -1036,6 +1089,15 @@ bulb assertions hit this). Prefer the
 shared `RecordingDrawing` and learn its op vocabulary; ad-hoc per-test doubles may
 name things differently (Unruly's local recorder labels `drawRect` ops `"drawRect"`),
 a second reason to reach for the shared one.
+
+**An op carries *both* forms of its colour: `op.colour` is the palette index the game
+passed, `op.rgb` the resolved `"rgb(r, g, b)"` label.** So assert against the game's
+own constant — `o.colour === COL_HINT` — and don't rebuild the rgb string from the
+palette to compare (the resolved label exists so a *snapshot* diff stays readable when
+a palette index moves, not so tests match on it). Narrowing note: `DrawOp` is a
+discriminated union, so a *chained* `.filter(o => o.op === "rect").filter(o => o.w …)`
+doesn't narrow and `o.w` type-errors — put the whole predicate in one `filter`, or give
+it a type guard (`(o): o is Extract<DrawOp, { op: "rect" }> => …`).
 
 ### 5.2 Heavy tests: seed-deterministic + explicit timeout, never assert elapsed time
 
