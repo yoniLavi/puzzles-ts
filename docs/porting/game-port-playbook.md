@@ -653,6 +653,22 @@ yourself writing `button & 0x0800`, you want the flag instead. And know that
 so your port is covered the day you register it. If it fails, your `interpretMove` is
 looking at a raw button somewhere.
 
+### 3.8d A touch *hold* arrives as the right button — which breaks drag gestures
+
+`detectSecondaryButton` (`src/utils/touch.ts`) gives touch a long-press-for-secondary
+affordance: a finger that stays within 8px for **350ms** is delivered to the game as
+`RIGHT_BUTTON` (and its drag/release follow suit), not `LEFT_BUTTON`.
+
+That is a trap for any **press-and-drag gesture**, because "press, pause a moment to
+decide, then drag" is *exactly* a press that stays put — so the gesture dies precisely
+when the player stops to aim, and only on touch. Inertia's swipe (hold the ball, drag
+out the direction, let go) hit this. The fix is one line: if the game has no use for a
+secondary button, **fold right onto left** at the top of `interpretMove`
+(`asPrimary()` in [`inertia/index.ts`](../../src/native/games/inertia/index.ts)), so
+the gesture works whichever the long-press detector decides it saw. A game that *does*
+use the right button has to think harder — most likely by keeping the drag on the
+button the press arrived with.
+
 ### 3.8b The board keeps the keyboard after a control is pressed
 
 You can rely on this now, but it was not always true, so know what it is doing for you:

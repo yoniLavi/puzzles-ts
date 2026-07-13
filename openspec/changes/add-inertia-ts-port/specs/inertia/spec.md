@@ -76,6 +76,41 @@ game. Inertia binds no other digit, so no other input can be shadowed.
 - **WHEN** the player presses `3`
 - **THEN** the ball sets off to the south-east
 
+### Requirement: The ball can be swiped in a direction
+
+Pressing the pointer **on the ball** SHALL begin a swipe rather than making a
+move: while the pointer is held, the game SHALL draw an arrow on the ball
+pointing at the direction the pointer is aimed at (the octant it lies in, seen
+from the ball), and SHALL play that direction when the pointer is released.
+
+Aiming SHALL yield no direction — and so draw no arrow, and make no move on
+release — when the pointer is back on the ball (which is how the player calls the
+swipe off) or when it is aimed at a wall (which is not a move the ball can make).
+The arrow SHALL be drawn in its own colour, distinct from the route arrow, since
+the two mean different things ("you are about to go this way" versus "the solver
+says go this way") and a player with a route installed sees both.
+
+The whole gesture SHALL also work on the **secondary** button, because on touch a
+press that stays put for the long-press interval is delivered as one — and a
+press that stays put is exactly what holding the ball to aim looks like. Inertia
+binds nothing else to the secondary button.
+
+This is a deliberate divergence: upstream offers only the click-an-octant input,
+which stays supported, but is fiddly with a finger and gives no feedback before
+committing.
+
+#### Scenario: Holding and dragging aims, and releasing launches
+
+- **WHEN** the player presses on the ball, drags out to the east and releases
+- **THEN** an arrow points east while the pointer is held, and the ball sets off
+  east on release
+
+#### Scenario: Dragging back to the ball calls the swipe off
+
+- **WHEN** the player presses on the ball, drags out, drags back onto the ball
+  and releases
+- **THEN** no move is made
+
 ### Requirement: Descriptions encode the grid; the start square becomes a stop
 
 The desc SHALL be exactly `w · h` characters from `{b, g, m, s, w, S}` (blank,

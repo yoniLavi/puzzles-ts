@@ -113,6 +113,11 @@
       tour rewritten around a `MoveGraph` with path objects instead of C's
       in-place `memmove` splicing; `slide` builds its state instead of casting
       away `readonly`; two-tour portfolio (D12).
+- [x] 9.8 Swipe-to-move (owner-requested, 2026-07-13): press the ball, drag out
+      a direction (arrow drawn on the ball in `COL_AIM`), release to launch;
+      drag back onto the ball to call it off. Also accepted on the secondary
+      button — a touch long-press is delivered as one, and holding the ball to
+      aim *is* a long press (playbook §3.8d).
 - [ ] 9.5 **Owner acceptance** → stage 2: `TS_PORTED` in `puzzles/CMakeLists.txt`,
       delete `puzzles/inertia.c` + `puzzles/auxiliary/inertia-trace.c`, rebuild
       wasm, confirm inertia is still in the catalog with no `inertia.wasm`.

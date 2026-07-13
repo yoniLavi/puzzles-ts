@@ -103,6 +103,12 @@ export interface InertiaUi {
   animLength: number;
   /** Which flash (death or win) is playing, as the render flag bits. */
   flashType: number;
+  /** The player is holding the ball, aiming a swipe. */
+  aiming: boolean;
+  /** The direction the swipe is currently aimed at (0..7), or -1 for "no
+   * direction yet" — the pointer is still on the ball, or it is pointing at a
+   * wall. Drawn as an arrow on the ball; played when the pointer is released. */
+  aimDir: number;
 }
 
 // --- the board -------------------------------------------------------
