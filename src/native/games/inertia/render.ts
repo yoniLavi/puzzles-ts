@@ -43,10 +43,15 @@ export const COL_MINE = 6;
 export const COL_GEM = 7;
 export const COL_WALL = 8;
 export const COL_HINT = 9;
+/** Appended past the C enum: the arrow the player is aiming with a swipe. It is
+ * deliberately NOT `COL_HINT` yellow — the route arrow means "the solver says
+ * go this way", and this one means "you are about to go this way", and a player
+ * with a route installed sees both in turn. */
+export const COL_AIM = 10;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const ret: Colour[] = new Array(10);
+  const ret: Colour[] = new Array(11);
 
   ret[COL_BACKGROUND] = background;
   ret[COL_HIGHLIGHT] = highlight;
@@ -61,6 +66,7 @@ export function colours(defaultBackground: Colour): Colour[] {
     (i) => (3 * background[i] + highlight[i]) / 4,
   ) as unknown as Colour;
   ret[COL_HINT] = [1, 1, 0];
+  ret[COL_AIM] = [1, 1, 1];
 
   return ret;
 }
@@ -209,15 +215,17 @@ function drawTile(dr: GameDrawing, ts: number, x: number, y: number, v: number):
 
 // --- the ball --------------------------------------------------------
 
-/** The ball, plus the route arrow when a route is installed. `x`/`y` are the
- * sprite's top-left pixel, which is fractional mid-slide. */
+/** The ball, plus an arrow — the swipe the player is aiming, or the next step of
+ * an installed route. `x`/`y` are the sprite's top-left pixel, which is
+ * fractional mid-slide. */
 function drawPlayer(
   dr: GameDrawing,
   ts: number,
   x: number,
   y: number,
   dead: boolean,
-  hintDir: number,
+  arrowDir: number,
+  arrowColour: number,
 ): void {
   const half = Math.floor(ts / 2);
 
@@ -261,13 +269,13 @@ function drawPlayer(
     );
   }
 
-  if (!dead && hintDir >= 0) {
-    // An arrow along the route's next direction. Diagonals are shortened so
-    // they don't stick out further than the orthogonals.
-    const scale = DX[hintDir] && DY[hintDir] ? 0.8 : 1.0;
+  if (!dead && arrowDir >= 0) {
+    // An arrow along the direction. Diagonals are shortened so they don't stick
+    // out further than the orthogonals.
+    const scale = DX[arrowDir] && DY[arrowDir] ? 0.8 : 1.0;
     const reach = Math.floor((ts * 2) / 5);
-    const ax = Math.trunc(reach * scale * DX[hintDir]);
-    const ay = Math.trunc(reach * scale * DY[hintDir]);
+    const ax = Math.trunc(reach * scale * DX[arrowDir]);
+    const ay = Math.trunc(reach * scale * DY[arrowDir]);
     const px = -ay;
     const py = ax;
     const ox = x + half;
@@ -284,7 +292,7 @@ function drawPlayer(
         { x: ox - t(px, 9) + t(ax * 2, 3), y: oy - t(py, 9) + t(ay * 2, 3) },
         { x: ox - t(px, 9), y: oy - t(py, 9) },
       ],
-      COL_HINT,
+      arrowColour,
       COL_OUTLINE,
     );
   }
@@ -388,6 +396,12 @@ export function redraw(
   ds.pbgX = Math.round(ox + ap * (nx - ox));
   ds.pbgY = Math.round(oy + ap * (ny - oy));
 
+  // Arrows only show on a settled board, never mid-slide. The swipe the player
+  // is aiming wins over the route: it is what the ball will actually do next.
+  const settled = !prev;
+  const aimDir = settled && ui.aiming ? ui.aimDir : -1;
+  const routeDir = settled && s.route ? s.route[s.routePos] : -1;
+
   if (!ds.playerBackground) ds.playerBackground = dr.blitterNew({ w: ts, h: ts });
   dr.blitterSave(ds.playerBackground, { x: ds.pbgX, y: ds.pbgY });
   drawPlayer(
@@ -396,8 +410,8 @@ export function redraw(
     ds.pbgX,
     ds.pbgY,
     s.dead && !prev,
-    // The route arrow only shows on a settled board, not mid-slide.
-    !prev && s.route ? s.route[s.routePos] : -1,
+    aimDir >= 0 ? aimDir : routeDir,
+    aimDir >= 0 ? COL_AIM : COL_HINT,
   );
   ds.playerBgSaved = true;
 }

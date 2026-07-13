@@ -6,17 +6,30 @@
  */
 import { describe, expect, it } from "vitest";
 import type { ChangeNotification } from "../../../puzzle/types.ts";
+import { UI_UPDATE } from "../../engine/game.ts";
 import { Midend } from "../../engine/index.ts";
+import {
+  type DrawOp,
+  RecordingDrawing,
+} from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { newInertiaDesc } from "./generator.ts";
 import { inertiaGame } from "./index.ts";
-import { COL_DEAD_PLAYER, COL_GEM, COL_HINT, COL_MINE, COL_PLAYER } from "./render.ts";
+import {
+  COL_AIM,
+  COL_DEAD_PLAYER,
+  COL_GEM,
+  COL_HINT,
+  COL_MINE,
+  COL_PLAYER,
+} from "./render.ts";
 import { findGemCandidates, solveRoute } from "./solver.ts";
 import {
   BLANK,
   type Board,
   type InertiaState,
+  type InertiaUi,
   newState,
   STOP,
   validateDesc,
@@ -268,8 +281,117 @@ describe("inertia input", () => {
       type: "move",
       dir: SW,
     });
-    // Clicking the ball's own square is not a direction at all.
-    expect(inertiaGame.interpretMove(s, ui(), ds, at(2, 2), 0x0200)).toBeNull();
+    // Pressing the ball's own square is not a direction — it starts a swipe.
+    expect(inertiaGame.interpretMove(s, ui(), ds, at(2, 2), 0x0200)).toBe(UI_UPDATE);
+  });
+});
+
+// --- swipe (hold the ball and drag) ----------------------------------
+
+describe("inertia swipe", () => {
+  /** The ball in the middle, with a wall in the square directly north of it —
+   * so north is a direction the ball cannot set off in. */
+  function swipeBoard() {
+    const { params, desc } = board(["bbbbb", "bbwbb", "bbSbg", "bbbbb", "bbbbb"]);
+    const s = newState(params, desc);
+    const ts = 32;
+    const ds = inertiaGame.newDrawState?.(s);
+    if (!ds) throw new Error("expected a drawstate");
+    inertiaGame.setTileSize?.(ds, ts);
+    // Pixel centre of a cell, and the ball's own centre.
+    const centre = (cx: number, cy: number) => ({
+      x: 1 + cx * ts + ts / 2,
+      y: 1 + cy * ts + ts / 2,
+    });
+    return { s, ds, u: ui(), centre, ball: centre(2, 2) };
+  }
+
+  const PRESS = 0x0200;
+  const DRAG = 0x0203;
+  const RELEASE = 0x0206;
+
+  it("aims an arrow while held, and launches that way on release", () => {
+    const { s, ds, u, centre, ball } = swipeBoard();
+
+    expect(inertiaGame.interpretMove(s, u, ds, ball, PRESS)).toBe(UI_UPDATE);
+    expect(u.aiming).toBe(true);
+    expect(u.aimDir).toBe(-1); // nothing aimed yet: still on the ball
+
+    // Drag out to the east: the arrow points east...
+    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), DRAG)).toBe(UI_UPDATE);
+    expect(u.aimDir).toBe(E);
+    // ...and dragging further the same way changes nothing to repaint.
+    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), DRAG)).toBeNull();
+
+    // Let go: the ball goes east.
+    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), RELEASE)).toEqual({
+      type: "move",
+      dir: E,
+    });
+    // The arrow comes off the ball with the swipe.
+    expect(u.aiming).toBe(false);
+    expect(u.aimDir).toBe(-1);
+  });
+
+  it("aims diagonally", () => {
+    const { s, ds, u, centre, ball } = swipeBoard();
+    inertiaGame.interpretMove(s, u, ds, ball, PRESS);
+    inertiaGame.interpretMove(s, u, ds, centre(4, 4), DRAG);
+    expect(u.aimDir).toBe(SE);
+  });
+
+  it("dragging back onto the ball calls the swipe off", () => {
+    const { s, ds, u, centre, ball } = swipeBoard();
+    inertiaGame.interpretMove(s, u, ds, ball, PRESS);
+    inertiaGame.interpretMove(s, u, ds, centre(4, 2), DRAG);
+    expect(u.aimDir).toBe(E);
+
+    // Back to the ball: the arrow goes away...
+    expect(inertiaGame.interpretMove(s, u, ds, ball, DRAG)).toBe(UI_UPDATE);
+    expect(u.aimDir).toBe(-1);
+
+    // ...and releasing there makes no move at all. (It still repaints, to take
+    // the arrow off.)
+    expect(inertiaGame.interpretMove(s, u, ds, ball, RELEASE)).toBe(UI_UPDATE);
+    expect(u.aiming).toBe(false);
+  });
+
+  it("will not aim at a wall", () => {
+    const { s, ds, u, centre, ball } = swipeBoard();
+    inertiaGame.interpretMove(s, u, ds, ball, PRESS);
+
+    // Due north of the ball is a wall, so there is nothing to aim at: no arrow,
+    // and releasing does nothing.
+    expect(inertiaGame.interpretMove(s, u, ds, centre(2, 0), DRAG)).toBeNull();
+    expect(u.aimDir).toBe(-1);
+    expect(inertiaGame.interpretMove(s, u, ds, centre(2, 0), RELEASE)).toBe(UI_UPDATE);
+  });
+
+  it("survives a touch long-press, which arrives as the right button", () => {
+    // On touch, a press that stays put for 350ms is delivered as a *right*
+    // button (the frontend reads it as a long-press) — and "hold the ball, then
+    // drag" is exactly a press that stays put. So the whole gesture has to work
+    // on the secondary button too, or it would die the moment a player paused
+    // to aim.
+    const { s, ds, u, centre, ball } = swipeBoard();
+    const R_PRESS = 0x0202;
+    const R_DRAG = 0x0205;
+    const R_RELEASE = 0x0208;
+
+    expect(inertiaGame.interpretMove(s, u, ds, ball, R_PRESS)).toBe(UI_UPDATE);
+    expect(u.aiming).toBe(true);
+    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), R_DRAG)).toBe(UI_UPDATE);
+    expect(u.aimDir).toBe(E);
+    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), R_RELEASE)).toEqual({
+      type: "move",
+      dir: E,
+    });
+  });
+
+  it("ignores drag and release when no swipe is under way", () => {
+    const { s, ds, u, centre } = swipeBoard();
+    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), DRAG)).toBeNull();
+    expect(inertiaGame.interpretMove(s, u, ds, centre(4, 2), RELEASE)).toBeNull();
   });
 });
 
@@ -531,6 +653,38 @@ describe("inertia rendering", () => {
     expect(recording.ops.some((o) => o.op === "polygon" && o.fill === COL_HINT)).toBe(
       true,
     );
+  });
+
+  it("draws the aim arrow, in its own colour, while a swipe is held", () => {
+    // Tier 2 (a recording drawing straight into `redraw`): the aim arrow lives
+    // on the Ui, and `renderScenario` deliberately replays moves rather than
+    // pointer events, so there is no swipe for it to drive.
+    const { params, desc } = board(["bbbbb", "bbbbb", "bbSbg", "bbbbb", "bbbbb"]);
+    const s = newState(params, desc);
+    const ds = inertiaGame.newDrawState?.(s);
+    if (!ds) throw new Error("expected a drawstate");
+    inertiaGame.setTileSize?.(ds, 32);
+
+    const palette = inertiaGame.colours([1, 1, 1]);
+    const redraw = inertiaGame.redraw;
+    if (!redraw) throw new Error("expected a redraw");
+    const paint = (u: InertiaUi) => {
+      const dr = new RecordingDrawing(palette);
+      redraw(dr, ds, null, s, 0, u, 0, 0);
+      return dr.ops;
+    };
+    const arrows = (ops: DrawOp[], colour: number) =>
+      ops.filter((o) => o.op === "polygon" && o.fill === colour).length;
+
+    // No swipe: no arrow of either kind.
+    const idle = paint({ ...ui(), aiming: false, aimDir: -1 });
+    expect(arrows(idle, COL_AIM)).toBe(0);
+
+    // Holding the ball, aimed east: an arrow appears — and in COL_AIM, not the
+    // COL_HINT yellow the solver's route arrow uses. They mean different things.
+    const aiming = paint({ ...ui(), aiming: true, aimDir: E });
+    expect(arrows(aiming, COL_AIM)).toBe(1);
+    expect(arrows(aiming, COL_HINT)).toBe(0);
   });
 
   it("draws the dead ball as a red splat, once the slide has played out", () => {
