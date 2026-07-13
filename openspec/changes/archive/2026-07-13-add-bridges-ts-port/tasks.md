@@ -73,5 +73,6 @@
       drag places single/double bridges (known fixture board, positions match
       desc decode), `island_impossible` red warning fires, Solve → full network +
       completion; 0 console errors. (Icon PNGs: capture at stage 2.)
-- [ ] 6.4 Owner acceptance → stage 2 (`TS_PORTED` + delete `bridges.c` + trace
-      harness) + `openspec archive add-bridges-ts-port` in one commit.
+- [x] 6.4 Owner acceptance (2026-07-13) → stage 2: `TS_PORTED` flipped, `bridges.c`
+      + `bridges-trace.c` + its cliprogram line deleted, wasm rebuilt (bridges in
+      catalog, no wasm), `openspec archive add-bridges-ts-port`.
