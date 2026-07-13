@@ -56,6 +56,7 @@ puzzle(blackbox
 off them.")
 
 puzzle(bridges
+  TS_PORTED  # native-TS port (openspec add-bridges-ts-port); no bridges.c/wasm
   DISPLAYNAME "Bridges"
   DESCRIPTION "Bridge-placing puzzle"
   OBJECTIVE "Connect all the islands with a network of bridges.")
