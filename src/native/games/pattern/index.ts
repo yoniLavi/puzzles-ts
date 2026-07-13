@@ -16,6 +16,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -29,12 +30,12 @@ import {
   MIDDLE_RELEASE,
   MOD_CTRL,
   MOD_SHFT,
+  MOD_STYLUS,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { newPatternDesc } from "./generator.ts";
 import {
@@ -74,8 +75,6 @@ import {
   validateDesc,
   validateParams,
 } from "./state.ts";
-
-const MOD_STYLUS = 0x0800;
 
 function newUi(_state: PatternState): PatternUi {
   return {
@@ -387,6 +386,10 @@ export const patternGame: Game<
   canSolve: true,
   canFormatAsText: true,
   needsRightButton: true,
+  // Pattern is the one game that wants the raw MOD_STYLUS bit: with no right
+  // button to hand, a touch press cycles the cell through its three states
+  // instead of just filling it. Every other game lets the midend strip it.
+  wantsStylusModifier: true,
 
   defaultParams,
   presets,

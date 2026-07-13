@@ -26,6 +26,11 @@ export const CURSOR_SELECT2 = 0x020e;
 
 // --- keyboard modifier masks (upstream puzzles.h) ------------------
 
+/** Set by the frontend on a press/drag/release that came from a finger or a
+ * pen. The midend strips it before `interpretMove` unless the game sets
+ * `wantsStylusModifier` — see `Game.wantsStylusModifier` for why the default is
+ * inverted from upstream's. */
+export const MOD_STYLUS = 0x0800;
 export const MOD_CTRL = 0x1000;
 export const MOD_SHFT = 0x2000;
 export const MOD_NUM_KEYPAD = 0x4000;
