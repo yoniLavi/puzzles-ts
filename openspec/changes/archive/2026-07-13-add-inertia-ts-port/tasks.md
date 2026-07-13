@@ -118,8 +118,8 @@
       drag back onto the ball to call it off. Also accepted on the secondary
       button — a touch long-press is delivered as one, and holding the ball to
       aim *is* a long press (playbook §3.8d).
-- [ ] 9.5 **Owner acceptance** → stage 2: `TS_PORTED` in `puzzles/CMakeLists.txt`,
+- [x] 9.5 **Owner acceptance** → stage 2: `TS_PORTED` in `puzzles/CMakeLists.txt`,
       delete `puzzles/inertia.c` + `puzzles/auxiliary/inertia-trace.c`, rebuild
       wasm, confirm inertia is still in the catalog with no `inertia.wasm`.
-- [ ] 9.6 Archive the change with the C deletion; update the dev guides with
+- [x] 9.6 Archive the change with the C deletion; update the dev guides with
       anything this port taught.

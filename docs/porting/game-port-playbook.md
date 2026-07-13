@@ -35,6 +35,9 @@ section below:
 - [ ] A uniquely-solvable game ships `findMistakes` — Check & Save depends on it
       (§3.5).
 - [ ] A pencil-mark game ships the full note-taking UX (§3.7).
+- [ ] Input read against the four frontend traps (§3.8a–d) — and the collection-wide
+      touch guard (`engine/touch-input.test.ts`) is green, which it will be unless the
+      game reads a raw button.
 - [ ] Differential check decided per-game and its lifecycle handled correctly
       (§4).
 - [ ] Behavioural tests at the lowest fitting tier; new render code ships a
@@ -610,6 +613,12 @@ the five digit games (`solo`/`keen`/`towers`/`unequal`/`filling`) and Undead.
   rollover and any per-game quirk (Unequal's `'0'`-based high range). Normative: the
   on-screen-keys requirement in [`ts-engine`](../../openspec/specs/ts-engine/spec.md).
 
+### 3.8a–d Input: four things this frontend does that upstream never tells you
+
+Upstream's `interpret_move` contract does not survive contact with a browser
+untouched. Each of the next four subsections is a trap that has already cost this
+project a shipped bug — read them before writing a game's input, not after.
+
 ### 3.8a `MOD_NUM_KEYPAD` never arrives — bind the bare digits too
 
 **This web frontend does not set `MOD_NUM_KEYPAD`.** `puzzle-view-interactive.ts`'s
@@ -629,7 +638,7 @@ nothing and restores the input. Grep a game's `.c` for `MOD_NUM_KEYPAD` before p
 its input, and say what you did in `design.md`. Exemplar:
 [`inertia/index.ts`](../../src/native/games/inertia/index.ts) (`DIGIT_DIRECTIONS`).
 
-### 3.8c Touch: the midend strips `MOD_STYLUS` for you (and a guard proves it)
+### 3.8b Touch: the midend strips `MOD_STYLUS` for you (and a guard proves it)
 
 `puzzle-view-interactive.ts` ORs **`MOD_STYLUS` (0x0800)** into the button for every
 press, drag and release whose `pointerType` is `touch` or `pen`. Upstream's `midend.c`
@@ -653,7 +662,7 @@ yourself writing `button & 0x0800`, you want the flag instead. And know that
 so your port is covered the day you register it. If it fails, your `interpretMove` is
 looking at a raw button somewhere.
 
-### 3.8d A touch *hold* arrives as the right button — which breaks drag gestures
+### 3.8c A touch *hold* arrives as the right button — which breaks drag gestures
 
 `detectSecondaryButton` (`src/utils/touch.ts`) gives touch a long-press-for-secondary
 affordance: a finger that stays within 8px for **350ms** is delivered to the game as
@@ -669,7 +678,7 @@ the gesture works whichever the long-press detector decides it saw. A game that 
 use the right button has to think harder — most likely by keeping the drag on the
 button the press arrived with.
 
-### 3.8b The board keeps the keyboard after a control is pressed
+### 3.8d The board keeps the keyboard after a control is pressed
 
 You can rely on this now, but it was not always true, so know what it is doing for you:
 pressing a control (a game-menu command, a `data-command` button, a toolbar button)
@@ -816,7 +825,7 @@ cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
 build/native/auxiliary/<game>-trace > src/native/games/<game>/__fixtures__/<game>-c-reference.json
 ```
 
-### 4.3 Byte-match is the strongest bar — when achievable
+### 4.3 Byte-match: the strongest bar *where there is a right answer*
 
 Because `random.ts` is bit-identical to `random.c`, a *faithful* generator port
 reproduces the C desc **exactly** for the same seed — assert
