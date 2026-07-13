@@ -23,4 +23,4 @@
       Flip, Galaxies and Inertia all now register a touch tap (move count
       increments) where they previously ignored it.
 - [x] 3.2 Full gate green.
-- [ ] 3.3 **Owner acceptance** → archive.
+- [x] 3.3 **Owner acceptance** → archive.

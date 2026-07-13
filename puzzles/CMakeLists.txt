@@ -111,6 +111,7 @@ puzzle(guess
   OBJECTIVE "Guess the hidden combination of colours.")
 
 puzzle(inertia
+  TS_PORTED  # native-TS port (openspec add-inertia-ts-port); no inertia.c/wasm
   DISPLAYNAME "Inertia"
   DESCRIPTION "Gem-collecting puzzle"
   OBJECTIVE "Collect all the gems without running into any of the mines.")

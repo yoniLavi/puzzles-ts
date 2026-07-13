@@ -23,4 +23,4 @@
       to the board and the arrow keys then play; clicking the history dropdown's
       trigger still opens it with focus intact for arrow-key navigation.
 - [x] 3.2 Full gate green.
-- [ ] 3.3 **Owner acceptance** → archive.
+- [x] 3.3 **Owner acceptance** → archive.

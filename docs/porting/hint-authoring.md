@@ -914,6 +914,35 @@ for a spacious reveal.
 - **Share the solution-decoding with `solve`** — extract the `aux` parse + symmetry match into
   `state.ts` so the two don't duplicate it.
 
+### 6.1 When a game should ship **no** hint at all (Inertia)
+
+There is a third answer, and Inertia is the first game to take it: `hint` is optional, and
+sometimes the right thing is to leave the Hint button off.
+
+Inertia is not deductive (no move is forced), so §1's *why* bar cannot be met — same as
+Untangle. But unlike Untangle it does not fall through to §6's heuristic hint either, and the
+reason is worth generalising: **the game already ships a step-by-step aid, and a hint would
+be the same thing under a second button.** Upstream's Solve does not finish Inertia — it
+*installs a route* into the state, draws an arrow on the ball, and lets the player walk it one
+press at a time, re-solving if they wander off. That is precisely what a hint plan is. A
+`hint()` would call the same solver, show the same arrow, and narrate "go this way, because
+the tour goes this way" — the *"just because"* fallback the narratable-deduction doctrine
+exists to forbid.
+
+So the test, before you write a hint for a non-deductive game:
+
+- **Is there already an aid that yields the next move?** If yes, the honest move is to leave
+  `hint` unimplemented and let that aid be the aid. Two buttons doing one job is worse than
+  one, and the second one lies about being an explanation.
+- **Would the narration survive being read aloud?** "Slide east, because the route says east"
+  is not a reason, it is a restatement. If that is the best sentence available and no visual
+  highlight adds information the game isn't already showing, ship nothing.
+- **Say so in the design.** An absent hook reads as an oversight unless the change records
+  that it was a decision (Inertia's `design.md` D3).
+
+The app shell degrades correctly on its own: no `hint` means no Hint button, exactly as no
+`findMistakes` means Check-&-Save becomes a plain Quick-save.
+
 ---
 
 ## 7. The cross-game correctness guards
