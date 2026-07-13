@@ -15,6 +15,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -34,7 +35,6 @@ import {
   RIGHT_RELEASE,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { RandomState } from "../../random/index.ts";
 import { newBridgesDesc } from "./generator.ts";
@@ -93,6 +93,7 @@ function newUi(state: BridgesState): BridgesUi {
     curY: first ? first.y : 0,
     curVisible: false,
     showHints: false,
+    autoMark: true,
   };
 }
 
@@ -104,6 +105,16 @@ const prefs: GamePref<BridgesUi>[] = [
     get: (ui) => ui.showHints,
     set: (ui, v) => {
       ui.showHints = v;
+    },
+  },
+  {
+    // Fork aid: auto-grey islands whose clue is satisfied (visual only, no lock).
+    kw: "auto-mark-complete",
+    name: "Highlight islands once their bridge count is met",
+    type: "boolean",
+    get: (ui) => ui.autoMark,
+    set: (ui, v) => {
+      ui.autoMark = v;
     },
   },
 ];
@@ -611,7 +622,19 @@ export const bridgesGame: Game<
       kw: "expansion-factor",
       name: "Expansion factor (%age)",
       type: "choices",
-      choices: ["0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%", "100%"],
+      choices: [
+        "0%",
+        "10%",
+        "20%",
+        "30%",
+        "40%",
+        "50%",
+        "60%",
+        "70%",
+        "80%",
+        "90%",
+        "100%",
+      ],
       get: (p) => Math.trunc(p.expansion / 10),
       set: (p, v) => {
         p.expansion = v * 10;
