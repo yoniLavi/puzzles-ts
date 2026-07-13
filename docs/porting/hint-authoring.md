@@ -914,6 +914,67 @@ for a spacious reveal.
 - **Share the solution-decoding with `solve`** — extract the `aux` parse + symmetry match into
   `state.ts` so the two don't duplicate it.
 
+### 6.1 A non-deductive game can still have plenty to say (Inertia)
+
+An empty `explanation` is the *floor*, not the ceiling. Untangle has nothing to narrate because
+no move has a consequence worth teaching; most movement games are not like that. **Inertia**
+([`inertia/hint.ts`](../../src/native/games/inertia/hint.ts)) is the exemplar of the richer
+shape: no move is *forced* by logic, but every move has a concrete consequence, and the thing
+beginners get wrong — *you don't choose where you stop* — is exactly what a hint can say out
+loud. Its narration is organised as **verified claims**, one branch per claim it can actually
+check: forced (every other direction is a mine — a genuine necessity claim), collecting (what
+the slide sweeps up, and what brings it to a halt), stranding (grabbing that gem now would leave
+one unreachable *for ever* — the game's one provable verdict), positioning (nothing reachable
+from here; here's what this sets up).
+
+**Find the one thing your game can prove, and lead with it.** Inertia's is `unreachableGems`:
+flood the move graph and report the gems no sequence of moves even passes over. It proves in one
+direction only — a *reachable* gem may still be uncollectable — which is precisely why it is
+safe to lean on: when it speaks, it is right. It powers both the best narration in the game and
+an honest refusal ("a gem can no longer be reached — undo") in place of the solver's shrug.
+
+### 6.2 Hold a stable subgoal, and mark it when the game can't name it
+
+The Fifteen/Sixteen pattern generalised: narrate every move by **the goal it serves**, and hold
+that goal *stable* across the run of moves that serves it — derive it once, from the plan, and
+carry it. Re-deriving it per step (from the board, or from the piece's position) makes the banner
+flip-flop — "tile 8" → "tile 7" → "tile 8" — and read as though the hint has lost the plot.
+Fifteen's `index.ts` carries the scar in a comment; Inertia holds the gem its leg is going for.
+
+When the game has no *name* for the goal — Inertia's gems are anonymous; there is no "tile 8" —
+the board must carry the reference: mark it, and say "the marked gem" (§2.3, §5.3). Watch the
+cache: a mark drawn **on a tile** must be in that tile's diff key, even in a game whose other
+overlays ride a sprite and are repainted every frame (playbook §3.2).
+
+### 6.3 A heuristic plan must be **recompute-stable**, not merely correct
+
+The one that will bite you, and the reason to read this section. A plan is recomputed from
+scratch whenever the player goes their own way — so a *correct* plan is not enough, it must also
+be **stable across recomputes**. Inertia's first cut simply narrated `solveRoute`'s tour, which
+is a heuristic TSP: two tours grown from *adjacent* positions disagreed about which gem to fetch
+first, and each opened by walking to the other's position. Hint says north-east; player follows;
+hint now says south-west. For ever, collecting nothing. `hint-resume.test.ts` (§7.1) caught it on
+the day Inertia was added to its list — which is the argument for adding your game to that list
+*first*, before polishing any narration.
+
+The fix is a **monotone potential**: make each step provably shrink some non-negative integer.
+Inertia goes for the *nearest* gem it can take (fewest moves), so every move of the walk shortens
+the distance to a still-valid goal by one, and a goal is reached within it. Greedy-nearest is the
+usual way to get this; if greedy is *unsafe* in your game (Inertia's greedy grab can strand the
+ball where a gem is unreachable), filter the candidates by a safety check — play the leg out and
+re-solve — rather than abandoning the monotonicity. Don't reach for "just cache the plan":
+carrying a plan hides the instability while the player follows it, and hands them the ping-pong
+the moment they don't.
+
+### 6.4 Read one plan out loud before polishing anything
+
+The cheapest test there is, and it found the sharpest bug in Inertia's hint: print a whole plan
+and read it as a player would. Step 19 promised *"slide south-west, and one more slide sweeps it
+up"*; step 20 then said *"the route comes at it from another side"* and went elsewhere. The plan
+was correct — the *narration* had made a promise about "some slide exists" when the only claim
+worth making is about **the plan's own next move**. A test that asserts "the plan solves the
+board" is blind to this. Reading it takes a minute.
+
 ---
 
 ## 7. The cross-game correctness guards
@@ -939,6 +1000,12 @@ a real bug here, both invisible to "the plan solves the board" tests that only r
   resolution** (`isNoOpMove`). General lesson: **for a heuristic/`aux` hint whose target is
   recomputed each call, the recompute must converge** — never emit a move that doesn't change the
   board.
+- **Inertia** — it narrated the route solver's heuristic tour, and two tours grown from adjacent
+  positions reached for *different* gems, each opening by walking to the other's position: the ball
+  ping-ponged for ever, collecting nothing. Every step was a legal, sensible move; the plan just
+  never converged. Fix: plan for the **nearest safe gem**, a monotone potential (§6.3). General
+  lesson: **a heuristic plan must be recompute-stable, not merely correct** — and a *cached* plan
+  hides this until the player deviates.
 
 This is enforced for **every** hint-bearing game by
 [`hint-resume.test.ts`](../../src/native/engine/hint-resume.test.ts): it walks a fresh board to
