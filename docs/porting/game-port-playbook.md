@@ -629,6 +629,30 @@ nothing and restores the input. Grep a game's `.c` for `MOD_NUM_KEYPAD` before p
 its input, and say what you did in `design.md`. Exemplar:
 [`inertia/index.ts`](../../src/native/games/inertia/index.ts) (`DIGIT_DIRECTIONS`).
 
+### 3.8c Touch: the midend strips `MOD_STYLUS` for you (and a guard proves it)
+
+`puzzle-view-interactive.ts` ORs **`MOD_STYLUS` (0x0800)** into the button for every
+press, drag and release whose `pointerType` is `touch` or `pen`. Upstream's `midend.c`
+hands that bit straight to `interpret_move` and expects each game to strip it
+(`net.c` does; `inertia.c` doesn't). **Nine of this collection's first thirty-two
+ports forgot** — Flip, Galaxies, Pegs, Blackbox, Dominosa, Guess, Signpost, Untangle,
+Inertia — and every one of them shipped *completely deaf to touch*, because
+`button === LEFT_BUTTON` simply never matches `LEFT_BUTTON | MOD_STYLUS`. It reads
+correctly, it fails silently, and it fails only on a device the suite never uses.
+
+So the contract is inverted here (`fix-touch-input-stylus-modifier`): **the midend
+strips `MOD_STYLUS` before `interpretMove`**, and a game that genuinely wants it opts
+in with `Game.wantsStylusModifier` (Pattern is the only one — with no right button to
+hand, a touch press cycles a cell through its three states). You therefore need to do
+*nothing*: compare the plain button and touch works.
+
+Two things follow for a port. Don't reintroduce the bit by hand — if you catch
+yourself writing `button & 0x0800`, you want the flag instead. And know that
+[`engine/touch-input.test.ts`](../../src/native/engine/touch-input.test.ts) sweeps
+**every registered game** asserting a touch press does what the same mouse press does,
+so your port is covered the day you register it. If it fails, your `interpretMove` is
+looking at a raw button somewhere.
+
 ### 3.8b The board keeps the keyboard after a control is pressed
 
 You can rely on this now, but it was not always true, so know what it is doing for you:
