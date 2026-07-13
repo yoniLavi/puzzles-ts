@@ -225,6 +225,9 @@ export interface BridgesUi {
   curY: number;
   curVisible: boolean;
   showHints: boolean;
+  /** Fork aid: auto-grey an island whose bridge-count is met (purely visual —
+   * does NOT lock its bridges, unlike a manual mark). Default on. */
+  autoMark: boolean;
 }
 
 /** Highlight returned by findMistakes: a wrongly-placed bridge span. */

@@ -51,6 +51,10 @@
 - [x] 4.3 `findMistakes`: re-solve from clues, flag player bridge spans that
       strictly exceed the unique solution; render overlay reuses `COL_WARNING`
       (red), which lives in the diff key so it repaints clean when cleared.
+- [x] 4.4 Auto-mark aid (owner request): `auto-mark-complete` pref (default on)
+      auto-greys a satisfied island via `DI_BG_MARK` at render time — purely
+      visual, no `G_MARK`/lock; manual click-to-mark retained. Tier-2 test asserts
+      the pref gates the grey and leaves the island editable.
 
 ## 5. Tests
 

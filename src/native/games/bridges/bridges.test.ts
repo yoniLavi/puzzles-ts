@@ -15,11 +15,12 @@ import {
   RIGHT_DRAG,
   RIGHT_RELEASE,
 } from "../../engine/pointer.ts";
+import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { newBridgesDesc } from "./generator.ts";
 import { bridgesGame } from "./index.ts";
-import { newDrawState, setTileSize } from "./render.ts";
+import { COL_MARK, newDrawState, setTileSize } from "./render.ts";
 import {
   BRIDGES_PRESETS,
   type BridgesMove,
@@ -199,6 +200,32 @@ describe("bridges solve + findMistakes", () => {
     const over = bridgesGame.executeMove(state, { ops });
     const mistakes = bridgesGame.findMistakes?.(over) ?? [];
     expect(mistakes.length).toBeGreaterThan(0);
+  });
+});
+
+describe("bridges auto-mark aid", () => {
+  const p3 = { ...BRIDGES_PRESETS[0], w: 3, h: 3 };
+
+  it("greys a satisfied island only when the pref is on, without locking it", () => {
+    const s0 = newStateFromDesc(p3, "1a1f"); // two count-1 islands
+    // One bridge satisfies both count-1 islands.
+    const s1 = bridgesGame.executeMove(s0, {
+      ops: [{ op: "L", x1: 0, y1: 0, x2: 2, y2: 0, n: 1 }],
+    });
+    const palette = bridgesGame.colours([0.9, 0.9, 0.9]);
+    const markCircles = (autoMark: boolean) => {
+      const ds = newDrawState(s1);
+      setTileSize(ds, 24);
+      const ui = { ...bridgesGame.newUi(s1), autoMark };
+      const rec = new RecordingDrawing(palette);
+      bridgesGame.redraw?.(rec, ds, null, s1, 0, ui, 0, 0);
+      return rec.ops.filter((o) => o.op === "circle" && o.fill === COL_MARK).length;
+    };
+
+    expect(markCircles(true)).toBeGreaterThan(0); // satisfied islands greyed
+    expect(markCircles(false)).toBe(0); // no auto-grey when the pref is off
+    // Purely visual: the island is NOT actually marked/locked in the state.
+    expect(s1.gridAt(0, 0) & G_MARK).toBeFalsy();
   });
 });
 

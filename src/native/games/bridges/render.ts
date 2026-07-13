@@ -602,6 +602,10 @@ export function redrawBridges(
         if (ui.curVisible && ui.curX === is.x && ui.curY === is.y)
           idata |= DI_BG_CURSOR;
         else if (v & G_MARK) idata |= DI_BG_MARK;
+        // Fork aid: auto-grey a satisfied island (visual only — no lock).
+        // A satisfied island is never impossible, so this never fights the red.
+        else if (ui.autoMark && s.islandCountbridges(is) === is.count)
+          idata |= DI_BG_MARK;
         else idata |= DI_BG_NORMAL;
 
         newgrid[c] |= idata << D_I_ISLAND_SHIFT;

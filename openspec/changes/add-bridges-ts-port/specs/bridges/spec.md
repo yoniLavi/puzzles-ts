@@ -146,12 +146,35 @@ bridges (horizontal and vertical), the in-progress drag preview line,
 no-line/mark indicators, the keyboard cursor ring, and the win flash, using the
 upstream tile geometry. The palette SHALL mirror the upstream colour enum
 index-for-index (`BACKGROUND, FOREGROUND, HIGHLIGHT, LOWLIGHT, SELECTED, MARK,
-HINT, GRID, WARNING, CURSOR`), with the fork mistake-overlay colour appended past
-it. The game SHALL expose a `show-hints` boolean preference (upstream
-`PREF_SHOW_HINTS`) through the `Game.prefs` hook; when on, faint `COL_HINT` lines
-SHALL indicate forced or forbidden bridges.
+HINT, GRID, WARNING, CURSOR`); the `findMistakes` overlay SHALL reuse the red
+`COL_WARNING` channel (no extra palette entry), so it lives in the render diff
+key and repaints clean when cleared. The game SHALL expose a `show-hints` boolean
+preference (upstream `PREF_SHOW_HINTS`) through the `Game.prefs` hook; when on,
+faint `COL_HINT` lines SHALL indicate forced or forbidden bridges.
 
 #### Scenario: The show-hints preference toggles the hint overlay
 
 - **WHEN** the `show-hints` preference is turned on
 - **THEN** the renderer emits `COL_HINT` hint lines that are absent when it is off
+
+### Requirement: Bridges auto-marks satisfied islands (fork aid)
+
+The game SHALL offer an `auto-mark-complete` boolean preference, default on,
+exposed through `Game.prefs` — a deliberate divergence from upstream, which
+requires a manual click to mark an island done. When on, the renderer SHALL draw an
+island whose current bridge-count equals its clue with the "done" mark background
+(`DI_BG_MARK`), automatically and without any player action. This aid SHALL be
+**purely visual**: it SHALL NOT set `G_MARK` or lock the island's bridges, so the
+player can still edit them freely (the manual click-to-mark-and-lock behaviour is
+retained and unchanged). Because a satisfied island is never `island_impossible`,
+the auto-mark background SHALL never fight the red live-error foreground. The
+background is part of the render diff key, so an island greys as soon as its count
+is met and reverts when a bridge is removed.
+
+#### Scenario: A satisfied island greys only when the preference is on
+
+- **WHEN** the player brings an island's bridge-count up to its clue with
+  `auto-mark-complete` on
+- **THEN** that island is drawn with the done-mark background, while the same
+  state drawn with the preference off shows no done-mark background, and in
+  neither case is the island's `G_MARK` flag set (its bridges stay editable)
