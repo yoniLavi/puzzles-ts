@@ -203,7 +203,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
           <footer>
             ${settings.showPuzzleKeyboard ? html`<puzzle-keys></puzzle-keys>` : nothing}
             ${this.renderMouseButtonToggle()}
-            <puzzle-history></puzzle-history>
+            <puzzle-history @click=${this.handleToolbarClick}></puzzle-history>
           </footer>
           ${
             this.referenceOpen
@@ -492,6 +492,64 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       hint: () => this.puzzle?.hint(),
     });
   }
+
+  /**
+   * Give the keyboard back to the board.
+   *
+   * Every control on this screen is a one-shot action on the puzzle, and the
+   * board is what the player wants to be typing at once it has run. Without
+   * this it isn't: the game menu focuses its own trigger button as it closes,
+   * a clicked toolbar button keeps focus on itself, and the stray-key redirect
+   * in `handleBubbledKeyDown` only steps in when *nothing at all* is focused.
+   * So a single click on any control left the board deaf to the keyboard until
+   * you clicked it again — Enter reopened the menu, and the cursor keys went
+   * nowhere. Inertia shows this up worst (its solution-following aid is
+   * literally "pick Solve from the menu, then press Enter to walk the route"),
+   * but it swallowed the cursor keys in every keyboard-playable game.
+   *
+   * Always deferred a microtask, because both `wa-dropdown` (as it closes) and
+   * a clicked button focus themselves out from under us otherwise.
+   */
+  private focusBoard() {
+    queueMicrotask(() => {
+      this.shadowRoot
+        ?.querySelector("puzzle-view-interactive")
+        ?.focus({ preventScroll: true });
+    });
+  }
+
+  /**
+   * Commands — the game menu, and every `data-command` control.
+   *
+   * Commands that open a dialog need no exception: the dialog takes focus for
+   * itself when it opens, and because we moved focus first it hands it back to
+   * the *board* when it closes, rather than to whichever button opened it.
+   */
+  protected override handleCommand(command: string): boolean {
+    const handled = super.handleCommand(command);
+    if (handled) this.focusBoard();
+    return handled;
+  }
+
+  /**
+   * The toolbar (`puzzle-history`: undo, redo, hint, mark-all, check-&-save),
+   * whose buttons are wired to their own click handlers rather than to the
+   * command bus, so `handleCommand` never sees them.
+   *
+   * Two things must NOT hand focus over. A click that *opens* a menu, because
+   * the open menu needs the focus for its own arrow-key navigation — hence the
+   * `slot="trigger"` test. And a keyboard activation (tab to the button, press
+   * Enter), which arrives as a click with `detail === 0`: that user is moving
+   * through the tab order deliberately and would not thank us for throwing them
+   * out of it. Only a real pointer click hands the keyboard back.
+   */
+  private handleToolbarClick = (event: MouseEvent) => {
+    if (event.detail === 0) return;
+    const opensAMenu = event
+      .composedPath()
+      .some((el) => el instanceof HTMLElement && el.getAttribute("slot") === "trigger");
+    if (!opensAMenu) this.focusBoard();
+  };
 
   /** Toggle the non-blocking reference panel (the toolbar reference button and
    * the game menu both route here via `data-command="toggle-reference"`).

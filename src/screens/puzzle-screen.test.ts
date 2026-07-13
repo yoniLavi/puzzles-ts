@@ -37,6 +37,8 @@ import { PuzzleScreen } from "./puzzle-screen.ts";
 interface CommandHost {
   commandMap: Record<string, (...args: unknown[]) => unknown>;
   handleBubbledKeyDown: (event: KeyboardEvent) => Promise<void> | void;
+  handleCommand: (command: string) => boolean;
+  handleToolbarClick: (event: MouseEvent) => void;
 }
 
 /** Build a screen with a fake puzzle injected, without scheduling a Lit
@@ -45,11 +47,13 @@ interface CommandHost {
 function makeScreen(opts: { canFindMistakes: boolean; mistakeCount: number }) {
   const findMistakes = vi.fn(async () => opts.mistakeCount);
   const selectReference = vi.fn(async () => undefined);
+  const solve = vi.fn(async () => undefined);
   const fakePuzzle = {
     puzzleId: "galaxies",
     canFindMistakes: opts.canFindMistakes,
     findMistakes,
     selectReference,
+    solve,
   };
   const screen = new PuzzleScreen();
   Object.defineProperty(screen, "puzzle", {
@@ -66,7 +70,22 @@ function makeScreen(opts: { canFindMistakes: boolean; mistakeCount: number }) {
     host: screen as unknown as CommandHost,
     findMistakes,
     selectReference,
+    solve,
   };
+}
+
+/** Stand a fake board in the screen's shadow root, so we can watch whether a
+ * command hands focus back to it. */
+function stubBoard(screen: PuzzleScreen) {
+  const focus = vi.fn();
+  Object.defineProperty(screen, "shadowRoot", {
+    configurable: true,
+    get: () => ({
+      querySelector: (selector: string) =>
+        selector === "puzzle-view-interactive" ? { focus } : null,
+    }),
+  });
+  return focus;
 }
 
 describe("puzzle-screen: Check-&-Save command", () => {
@@ -161,5 +180,66 @@ describe("puzzle-screen: reference panel toggle command", () => {
     // Closing must NOT clear the board spotlight — the mark→close→place flow
     // relies on it persisting (Escape / re-clicking the chip is the clear path).
     expect(selectReference).not.toHaveBeenCalled();
+  });
+});
+
+describe("puzzle-screen: focus returns to the board after a command", () => {
+  // The bug this pins: a command run from the game menu left focus on the menu's
+  // trigger button (wa-dropdown puts it back there as it closes), and a command
+  // run from the toolbar left focus on its button — so the next keystroke went
+  // to the button, not the puzzle. Enter reopened the menu instead of playing.
+  // Worst on Inertia, whose route-following aid *is* "Solve, then press Enter",
+  // but it swallowed the cursor keys in every keyboard-playable game.
+
+  it("hands focus to the board once the command has run", async () => {
+    const { screen, host, solve } = makeScreen({
+      canFindMistakes: false,
+      mistakeCount: 0,
+    });
+    const focus = stubBoard(screen);
+
+    expect(host.handleCommand("solve")).toBe(true);
+    expect(solve).toHaveBeenCalledOnce();
+
+    // Deferred by a microtask on purpose: wa-dropdown focuses its own trigger
+    // the moment our wa-select handler returns, so focusing the board inline
+    // would just be overwritten.
+    expect(focus).not.toHaveBeenCalled();
+    await Promise.resolve();
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it("leaves focus alone when the command isn't one of ours", async () => {
+    const { screen, host } = makeScreen({ canFindMistakes: false, mistakeCount: 0 });
+    const focus = stubBoard(screen);
+
+    // An unhandled command falls through to the browser (an ordinary link, say),
+    // and stealing focus from whatever it does would be wrong.
+    expect(host.handleCommand("not-a-command")).toBe(false);
+    await Promise.resolve();
+    expect(focus).not.toHaveBeenCalled();
+  });
+
+  it("hands focus to the board after a toolbar button is clicked", async () => {
+    // The toolbar's buttons (undo/redo/hint/mark-all/check-&-save) are wired to
+    // their own handlers, not the command bus, so they need their own path.
+    const { screen, host } = makeScreen({ canFindMistakes: false, mistakeCount: 0 });
+    const focus = stubBoard(screen);
+
+    host.handleToolbarClick(new MouseEvent("click", { detail: 1 }));
+    await Promise.resolve();
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it("leaves focus alone when a button was activated from the keyboard", async () => {
+    // Tab to the button, press Enter: that arrives as a click with detail 0. The
+    // player is walking the tab order on purpose; throwing them out of it onto
+    // the board would lose their place.
+    const { screen, host } = makeScreen({ canFindMistakes: false, mistakeCount: 0 });
+    const focus = stubBoard(screen);
+
+    host.handleToolbarClick(new MouseEvent("click", { detail: 0 }));
+    await Promise.resolve();
+    expect(focus).not.toHaveBeenCalled();
   });
 });
