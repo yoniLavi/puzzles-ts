@@ -198,6 +198,85 @@ export interface InertiaState {
   readonly routePos: number;
 }
 
+// --- sliding ---------------------------------------------------------
+
+/** What a slide does, without doing it. See `slidePath`. */
+export interface SlidePath {
+  /** The squares the ball crosses, in order; the last is where it ends up
+   * (which is the mine, when the slide is fatal). */
+  readonly squares: readonly number[];
+  /** The squares holding gems, which the slide sweeps up on its way. */
+  readonly gems: readonly number[];
+  /** What brings the ball to a halt: a stop square catches it, the wall beyond
+   * the next square blocks it, or a mine kills it. */
+  readonly stopper: "stop" | "wall" | "mine";
+}
+
+/**
+ * Where a slide from `(px, py)` in `dir` takes the ball, what it collects and
+ * what stops it. The caller must already have established that the first step
+ * isn't into a wall — given that, the ball can never run off the grid, because
+ * the void beyond it reads as a wall and stops it like any other.
+ *
+ * Pure: the hint narrates a move by looking at its path before it is played.
+ */
+export function slidePath(
+  board: Board,
+  px: number,
+  py: number,
+  dir: number,
+): SlidePath {
+  const squares: number[] = [];
+  const gems: number[] = [];
+  let x = px;
+  let y = py;
+
+  for (;;) {
+    x += DX[dir];
+    y += DY[dir];
+    const square = board.square(x, y);
+    squares.push(square);
+
+    const cell = board.cell(square);
+    if (cell === GEM) gems.push(square);
+    if (cell === MINE) return { squares, gems, stopper: "mine" };
+    if (cell === STOP) return { squares, gems, stopper: "stop" };
+    if (board.at(x + DX[dir], y + DY[dir]) === WALL) {
+      return { squares, gems, stopper: "wall" };
+    }
+  }
+}
+
+/** Play a slide: the gems along its path are collected, and a mine at the end
+ * of it kills the ball. */
+export function slide(s: InertiaState, dir: number): InertiaState {
+  const path = slidePath(s.board, s.px, s.py, dir);
+  const board = s.board.clone();
+  for (const square of path.gems) board.cells[square] = BLANK;
+
+  const end = path.squares[path.squares.length - 1];
+  return {
+    ...s,
+    board,
+    px: board.x(end),
+    py: board.y(end),
+    gems: s.gems - path.gems.length,
+    distanceMoved: path.squares.length,
+    dead: path.stopper === "mine",
+  };
+}
+
+/** The directions the ball can set off in from a square: the ones with no wall
+ * (or edge of the board) immediately in the way. A fatal direction is still a
+ * legal one — the ball may be driven onto a mine. */
+export function legalDirections(board: Board, px: number, py: number): number[] {
+  const dirs: number[] = [];
+  for (let dir = 0; dir < DIRECTIONS; dir++) {
+    if (board.at(px + DX[dir], py + DY[dir]) !== WALL) dirs.push(dir);
+  }
+  return dirs;
+}
+
 // --- desc codec ------------------------------------------------------
 
 export function validateDesc(p: InertiaParams, desc: string): string | null {

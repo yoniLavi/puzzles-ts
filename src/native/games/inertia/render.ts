@@ -15,14 +15,16 @@
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { coord as coordE } from "../../engine/geometry.ts";
+import type { InertiaHintHighlights } from "./hint.ts";
 import {
   BLANK,
   DIRECTIONS,
   DX,
   DY,
   GEM,
+  type InertiaMove,
   type InertiaParams,
   type InertiaState,
   type InertiaUi,
@@ -48,10 +50,17 @@ export const COL_HINT = 9;
  * go this way", and this one means "you are about to go this way", and a player
  * with a route installed sees both in turn. */
 export const COL_AIM = 10;
+/** Appended: the ring round the gem a hint is going for. The hint's two roles
+ * get two colours, each with a cue of its own (hint-authoring §5.3) — the
+ * direction is a yellow *arrow* (`COL_HINT`, the route arrow's own shape and
+ * colour: both mean "the solver says go this way"), and the subgoal gem is a
+ * violet *ring*. The app's dark-mode `paletteOverrides` for inertia touch only
+ * index 6, so appending past the C enum is safe. */
+export const COL_HINT_GOAL = 11;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const ret: Colour[] = new Array(11);
+  const ret: Colour[] = new Array(12);
 
   ret[COL_BACKGROUND] = background;
   ret[COL_HIGHLIGHT] = highlight;
@@ -67,6 +76,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   ) as unknown as Colour;
   ret[COL_HINT] = [1, 1, 0];
   ret[COL_AIM] = [1, 1, 1];
+  ret[COL_HINT_GOAL] = [0.7, 0.15, 1];
 
   return ret;
 }
@@ -92,6 +102,11 @@ export function computeSize(p: InertiaParams, ts: number): Size {
  * through the ordinary per-tile diff. */
 const FLASH_DEAD = 0x100;
 const FLASH_WIN = 0x200;
+/** Likewise the hint's ring. Unlike the arrow — which rides the ball sprite and
+ * so is repainted every frame — the ring is drawn *on a tile*, so it has to be
+ * part of that tile's diff key or it would never be painted, and never erased
+ * (playbook §3.2). */
+const HINT_GOAL = 0x400;
 
 const UNDRAWN = -1;
 
@@ -134,7 +149,7 @@ function drawTile(dr: GameDrawing, ts: number, x: number, y: number, v: number):
   const ty = coord(y, ts);
   const bg =
     v & FLASH_DEAD ? COL_DEAD_PLAYER : v & FLASH_WIN ? COL_HIGHLIGHT : COL_BACKGROUND;
-  const cell = v & ~(FLASH_DEAD | FLASH_WIN);
+  const cell = v & ~(FLASH_DEAD | FLASH_WIN | HINT_GOAL);
   const hw = highlightWidth(ts);
 
   dr.clip({ x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 });
@@ -207,6 +222,16 @@ function drawTile(dr: GameDrawing, ts: number, x: number, y: number, v: number):
       COL_GEM,
       COL_OUTLINE,
     );
+  }
+
+  // The gem a hint is going for. Inertia's gems are anonymous, so the narration
+  // says "the marked gem" and this is the mark it means.
+  if (v & HINT_GOAL) {
+    const centre = { x: tx + Math.floor(ts / 2), y: ty + Math.floor(ts / 2) };
+    const r = Math.floor(ts / 2) - 2;
+    // Two circles: one pixel of ring is too thin to read at any tile size.
+    dr.drawCircle(centre, r, -1, COL_HINT_GOAL);
+    dr.drawCircle(centre, r - 1, -1, COL_HINT_GOAL);
   }
 
   dr.unclip();
@@ -311,6 +336,7 @@ export function redraw(
   ui: InertiaUi,
   animTime: number,
   flashTime: number,
+  hint?: HintStep<InertiaMove, InertiaHintHighlights>,
 ): void {
   if (!ds) return;
   const { w, h } = s.params;
@@ -379,6 +405,8 @@ export function redraw(
       // it — but only once the move has finished playing out.
       if (v === MINE && !prev && s.dead && x === s.px && y === s.py) v = BLANK;
 
+      if (v === GEM && hint?.highlights?.goal === y * w + x) v |= HINT_GOAL;
+
       v |= flashType;
 
       if (ds.grid[y * w + x] !== v) {
@@ -397,10 +425,14 @@ export function redraw(
   ds.pbgY = Math.round(oy + ap * (ny - oy));
 
   // Arrows only show on a settled board, never mid-slide. The swipe the player
-  // is aiming wins over the route: it is what the ball will actually do next.
+  // is aiming wins over the other two: it is what the ball will actually do
+  // next. A displayed hint step then wins over an installed route — both say
+  // "the solver would go this way", and the hint is the one just asked for.
   const settled = !prev;
   const aimDir = settled && ui.aiming ? ui.aimDir : -1;
+  const hintDir = settled && hint?.highlights ? hint.highlights.dir : -1;
   const routeDir = settled && s.route ? s.route[s.routePos] : -1;
+  const solverDir = hintDir >= 0 ? hintDir : routeDir;
 
   if (!ds.playerBackground) ds.playerBackground = dr.blitterNew({ w: ts, h: ts });
   dr.blitterSave(ds.playerBackground, { x: ds.pbgX, y: ds.pbgY });
@@ -410,7 +442,7 @@ export function redraw(
     ds.pbgX,
     ds.pbgY,
     s.dead && !prev,
-    aimDir >= 0 ? aimDir : routeDir,
+    aimDir >= 0 ? aimDir : solverDir,
     aimDir >= 0 ? COL_AIM : COL_HINT,
   );
   ds.playerBgSaved = true;

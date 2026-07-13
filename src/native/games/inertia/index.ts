@@ -41,6 +41,7 @@ import {
 import { registerGame } from "../../engine/registry.ts";
 import type { RandomState } from "../../random/index.ts";
 import { newInertiaDesc } from "./generator.ts";
+import { hint, hintKeepTrack } from "./hint.ts";
 import {
   animLength,
   BORDER,
@@ -55,22 +56,19 @@ import {
 } from "./render.ts";
 import { solveRoute } from "./solver.ts";
 import {
-  BLANK,
   DIRECTIONS,
   DX,
   DY,
   decodeParams,
   defaultParams,
   encodeParams,
-  GEM,
   type InertiaMove,
   type InertiaParams,
   type InertiaState,
   type InertiaUi,
-  MINE,
   newState,
   PRESETS,
-  STOP,
+  slide,
   textFormat,
   validateDesc,
   validateParams,
@@ -78,37 +76,6 @@ import {
 } from "./state.ts";
 
 // --- moves -----------------------------------------------------------
-
-/**
- * Slide the ball, collecting gems and dying on mines. The caller has already
- * established that the first step isn't into a wall — so the ball can never run
- * off the grid, because the void beyond it reads as a wall and stops it.
- */
-function slide(s: InertiaState, dir: number): InertiaState {
-  const board = s.board.clone();
-  let px = s.px;
-  let py = s.py;
-  let gems = s.gems;
-  let distanceMoved = 0;
-
-  for (;;) {
-    px += DX[dir];
-    py += DY[dir];
-    distanceMoved++;
-
-    const square = board.square(px, py);
-    if (board.cell(square) === GEM) {
-      board.cells[square] = BLANK;
-      gems--;
-    }
-    if (board.cell(square) === MINE) {
-      return { ...s, board, px, py, gems, distanceMoved, dead: true };
-    }
-    if (board.cell(square) === STOP || board.at(px + DX[dir], py + DY[dir]) === WALL) {
-      return { ...s, board, px, py, gems, distanceMoved, dead: false };
-    }
-  }
-}
 
 /**
  * Keep an installed route in step with the move the player just made.
@@ -375,6 +342,12 @@ export const inertiaGame: Game<
 
   textFormat,
   statusbarText,
+
+  // The hint is deliberately *not* Solve under another name: it installs no
+  // route and never sets `cheated`, so asking for a nudge doesn't brand the
+  // game auto-solved (`hint.ts`, design D1).
+  hint,
+  hintKeepTrack,
 
   colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,

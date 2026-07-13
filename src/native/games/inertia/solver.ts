@@ -330,6 +330,16 @@ export type RouteResult = { ok: true; route: number[] } | { ok: false; error: st
  * threaded onto later, instead of leaving them stranded at the end — and on this
  * game's boards it usually wins outright. Growing both is a few milliseconds and
  * can only beat either.
+ *
+ * Both are **tours** — they come home — and that is not the waste it looks. The
+ * game ends the instant the last gem is collected, so the way home is never
+ * played; but *ranking* each gem by the cost of getting out to it **and back**
+ * is what keeps the route continuable, because a ball that can always return can
+ * always go on. A plain greedy walk to the nearest gem, with no return
+ * requirement, was tried: it strands itself on every board the generator makes
+ * (36 of 36, across all three presets). The price of the tour discipline is that
+ * a sweep ending in a far corner looks expensive to it, so on a wide-open board
+ * with no mines or stop squares it may reach a gem from a longer way round.
  */
 export function solveRoute(state: InertiaState): RouteResult {
   const { board } = state;
@@ -357,6 +367,26 @@ export function solveRoute(state: InertiaState): RouteResult {
   }
 
   return best ? { ok: true, route: best } : { ok: false, error: UNSOLVABLE };
+}
+
+/**
+ * The gems the ball provably can never collect from where it stands: no
+ * sequence of moves, however long, so much as passes over them.
+ *
+ * This is the one thing about a position Inertia can *prove* — and it proves it
+ * in one direction only. A non-empty answer means the game is lost, full stop.
+ * An empty one means no more than "nothing is obviously unreachable": a gem the
+ * ball can reach may still be uncollectable in practice, because collecting it
+ * could strand the ball somewhere it cannot get out of.
+ *
+ * Both the hint's refusal ("a gem can no longer be reached — undo") and its
+ * strongest narration ("sweeping that one up now would strand you") rest on it.
+ */
+export function unreachableGems(state: InertiaState): number[] {
+  const graph = new MoveGraph(state.board, state.px, state.py);
+  const reached = new Set<number>();
+  for (let v = 0; v < graph.size; v++) reached.add(graph.squareOf(v));
+  return state.board.gemSquares().filter((square) => !reached.has(square));
 }
 
 /** Which uncollected gem the tour reaches for next. See `solveRoute`. */
