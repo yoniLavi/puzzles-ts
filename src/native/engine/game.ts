@@ -221,6 +221,24 @@ export interface Game<
    * the right button, so a touch frontend must surface a secondary-action
    * affordance. Defaults to false (the midend reports it for the app shell). */
   readonly needsRightButton?: boolean;
+  /**
+   * The game wants to know that a press came from a finger or a pen, and will
+   * handle the `MOD_STYLUS` bit itself. Defaults to false, and **should stay
+   * false unless the game genuinely gives touch its own behaviour**: the midend
+   * strips `MOD_STYLUS` before `interpretMove` for every other game, so that a
+   * plain `button === LEFT_BUTTON` test cannot silently ignore every touch.
+   *
+   * This is a deliberate divergence from upstream, where `midend.c` hands the
+   * bit to `interpret_move` and each game is expected to remember to strip it.
+   * That is a footgun, and it had already fired: nine ported games (Flip,
+   * Galaxies, Pegs, Blackbox, Dominosa, Guess, Signpost, Untangle, Inertia)
+   * shipped completely deaf to touch, because comparing the raw button is the
+   * obvious thing to write and it silently fails only on a device the test
+   * suite never uses. Inverting the default makes the dangerous case the one
+   * you have to ask for. Pattern is the only game that asks (it cycles a cell's
+   * state on touch, having no right button to cycle with).
+   */
+  readonly wantsStylusModifier?: boolean;
 
   /** The on-screen keypad this game wants, faithful to upstream
    * `game_request_keys(params, *nkeys)`. Returns the `{ button, label }`

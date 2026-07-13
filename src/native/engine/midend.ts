@@ -36,6 +36,7 @@ import {
   type PresetMenu,
   UI_UPDATE,
 } from "./game.ts";
+import { MOD_STYLUS } from "./pointer.ts";
 import { decodeSave, encodeSave, type SaveEnvelope } from "./save.ts";
 
 /** Target wall-clock duration (seconds) for a hint-executed move's
@@ -379,12 +380,19 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   }
 
   processInput(x: number, y: number, button: number): boolean {
+    // A press from a finger or a pen arrives with MOD_STYLUS set. Strip it,
+    // unless the game has asked to see it (`wantsStylusModifier`): a game with
+    // no touch-specific behaviour must not have to *remember* to strip a bit it
+    // does not care about, because forgetting makes it silently ignore every
+    // touch — which is exactly what nine ported games shipped doing.
+    const b = this.game.wantsStylusModifier ? button : button & ~MOD_STYLUS;
+
     const move = this.game.interpretMove(
       this.state,
       this.ui,
       this.drawState,
       { x, y } as Point,
-      button,
+      b,
     );
     if (move === null) return false;
     if (move === UI_UPDATE) {
