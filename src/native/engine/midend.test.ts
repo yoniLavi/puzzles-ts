@@ -934,20 +934,25 @@ describe("Midend re-validates a kept plan (a displayed step is never stale)", ()
     expect((m.activeHintStep()?.move as StrikeMove & { i: number }).i).toBe(1);
   });
 
-  it("hint() re-show re-validates and recomputes when the kept plan has fully drained", () => {
+  it("a scripted replay drops the stored plan, and hint() recomputes fresh", () => {
     const m = new Midend(strikeGame({ sideEffect: true }));
     m.newGame();
     m.hint(); // plan strike 0,1,2
-    // A scripted replay (no hintKeepTrack) strikes 0 and 2 — side effects then
-    // cover 1, so every stored step is resolved but the plan is still stored.
+    // A scripted replay bypasses `hintKeepTrack` — the moves are setup, not
+    // an answer to the displayed hint — so the stored plan (computed for a
+    // board the replay just changed) is dropped, exactly as a self-played
+    // move drops it on the production input path. Leaving it stored would
+    // re-show a stale step on the next `hint()`: re-validation is a no-op
+    // for a game without `refreshHintStep`, and a stale step can even be
+    // illegal to execute (Flood, found by the cross-game overlay guard).
     m.playMoves([{ type: "strike", i: 0 }]);
     expect(
       strikeInternals(m).activeHint,
-      "playMoves leaves the plan untouched",
-    ).not.toBeNull();
+      "playMoves drops the stored plan",
+    ).toBeNull();
+    // Side effects covered 1; strike 2 solves the board. Re-asking
+    // recomputes fresh — and refuses on a solved board.
     m.playMoves([{ type: "strike", i: 2 }]);
-    // The board is now fully solved; re-asking re-validates, finds the drained
-    // plan, and recomputes — which refuses on a solved board.
     expect(m.hint()).toBe("done");
     expect(strikeInternals(m).activeHint).toBeNull();
   });

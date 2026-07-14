@@ -354,10 +354,14 @@ coincidentally changed that frame — and Check-&-Save (or a hint) runs a frame
 was passed to `drawTile` but left out of the diff condition, so Check-&-Save
 highlighted nothing. Fix: track a `drawn<Overlay>` sidecar and add
 `ds.drawn<Overlay>[i] !== ds.<overlay>[i]` to the cache-miss test (Towers'
-`drawnWrong`/`drawnHint`). Guard it with a test that redraws the *same* drawstate
-twice — paint, then `findMistakes()`, then redraw — and asserts the highlight
-appears on the **second** paint (the `towers.test.ts` "highlights a mistake even
-when the cell was already drawn" regression).
+`drawnWrong`/`drawnHint`). The **hint** overlay is guarded cross-game by
+`src/native/engine/hint-overlay.test.ts` (warm the drawstate, display a hint,
+assert the same drawstate emits paint ops) — every game in
+`testing/hint-games.ts` is covered automatically. The **mistake** overlay still
+needs a per-game paint-twice test (a mistaken board can't be built generically):
+paint, then `findMistakes()`, then redraw the *same* drawstate and assert the
+highlight appears on the **second** paint (the `towers.test.ts` "highlights a
+mistake even when the cell was already drawn" regression).
 
 **Rendering doctrine (hard-won — see the Flip three-iteration story in
 [`AGENTS.md`](../../AGENTS.md)):** the engine paints **no pixels of its own**; each

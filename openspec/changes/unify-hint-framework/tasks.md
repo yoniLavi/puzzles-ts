@@ -44,12 +44,25 @@
 
 ## 2. Extract (only if 1.2 says go)
 
-- [ ] 2.1 Per seam: land the shared machinery + its cross-game guard *before* converting
-      any game.
-- [ ] 2.2 Convert games one at a time, suite green at each step, exemplar hints (Palisade,
+- [x] 2.1 Per seam: land the shared machinery + its cross-game guard *before* converting
+      any game. **Done for both GO seams: `testing/hint-games.ts` (shared enrollment) +
+      `hint-overlay.test.ts` (S4) + `hint-quality.test.ts` (S3); flushed and fixed a real
+      `Midend.playMoves` stale-plan bug (design.md Phase 2a).**
+- [x] 2.2 Convert games one at a time, suite green at each step, exemplar hints (Palisade,
       Inertia, Towers, Filling) re-read word-for-word to confirm no narration was lost.
-- [ ] 2.3 Every seam that lands retires its rule(s) from `hint-authoring.md`. Record the
+      **No game conversions were needed — both seams are guards; no narration changed
+      (the S3 guard asserts form only, and the exemplar idioms are declared, not
+      reworded).**
+- [x] 2.3 Every seam that lands retires its rule(s) from `hint-authoring.md`. Record the
       guide's before/after line count in the change — the shrinkage is the metric.
+      **Recorded honestly in design.md Phase 2a: ~1,600 lines before and after — the
+      truer metric moved: rules guarded cross-game went 5 → 9 (§2.1, §2.5, §5.2,
+      overlay-to-cache), enrollment collapsed to one line, and the guide now teaches +
+      points instead of prescribing per-game tests.**
+- [ ] 2.4 (owner-relaxed bar, 2026-07-14) Cleanliness refactors from the Phase 2b
+      worklist: overlay-plumbing helper, Towers/Unequal hint-stack dedupe (now including
+      the `ensurePopulated`/populate-text copies across the candidate family), recorder
+      vocab alignment, dead-module sweep.
 
 ## 3. Gate
 
