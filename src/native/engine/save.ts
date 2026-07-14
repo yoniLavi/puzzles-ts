@@ -17,8 +17,15 @@ export interface SaveEnvelope {
   puzzleId: string;
   /** Fully-encoded game parameters. */
   params: string;
-  /** The board description the moves were played against. */
+  /** The board description the moves were played against — the *public* one,
+   * which is also what the shareable game ID names. */
   desc: string;
+  /** Present only for a game that superseded its desc (upstream `privdesc`;
+   * Mines). The description state 0 is rebuilt from on restore: the public
+   * desc describes the layout *plus* the first click, so replaying the move
+   * log from it would re-apply a click already baked into the board. Absent ⇒
+   * `desc` reconstructs state 0 faithfully, as it does for every other game. */
+  privDesc?: string;
   /** Serialised move log; `moves[i]` turns history[i] into history[i+1]. */
   moves: unknown[];
   /** History cursor at save time (for save-then-undo round-trips). */
@@ -48,6 +55,9 @@ function isSaveEnvelope(value: unknown): value is SaveEnvelope {
     typeof v.puzzleId === "string" &&
     typeof v.params === "string" &&
     typeof v.desc === "string" &&
+    // Additive and optional: a save written before desc supersession existed
+    // simply omits it, and every non-superseding game still does.
+    (v.privDesc === undefined || typeof v.privDesc === "string") &&
     Array.isArray(v.moves) &&
     typeof v.pos === "number" &&
     typeof v.timerElapsed === "number" &&
