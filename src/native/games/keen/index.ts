@@ -19,14 +19,16 @@ import type {
 } from "../../../puzzle/types.ts";
 import {
   adaptiveMarkAllMove,
-  anyEmptyLacksNotes,
   candidateHint,
+  cleanObviousText,
   emitObviousCleanStep,
   joinNums,
   keepCandidateHintTrack,
+  lazyPopulate,
   nakedSingle,
   nextPlace,
   nextStrike,
+  populateText,
   refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
@@ -362,11 +364,9 @@ function findMistakes(state: KeenState): readonly KeenMistake[] {
 
 // --- hint ------------------------------------------------------------------
 
-const POPULATE_TEXT =
-  "Start by pencilling in every candidate number in each empty cell, so the eliminations that follow have something to cross out.";
+const POPULATE_TEXT = populateText("number");
 
-const CLEAN_OBVIOUS_TEXT =
-  "Now clear the easy ones: in each cell, cross out any number already standing in its row or column — the same cleanup the “fill all pencil marks” button does.";
+const CLEAN_OBVIOUS_TEXT = cleanObviousText("number", "standing", "row or column");
 
 /** The cage's arithmetic goal as a verb phrase, read off its packed clue — the
  * indication a cage deduction leads with (hint-authoring §2.2). Reads across the
@@ -520,18 +520,14 @@ function buildSteps(
   const wPen = Int32Array.from(state.pencil);
   const maxdiff = Math.min(diffToLevel(state.params.diff), DIFF_EXTREME);
 
-  let populated = !anyEmptyLacksNotes(state.grid, state.pencil, w);
-  const ensurePopulated = (): void => {
-    if (populated) return;
-    const all = (1 << (w + 1)) - (1 << 1);
-    for (let i = 0; i < w * w; i++) if (!wGrid[i]) wPen[i] = all;
-    steps.push({
-      move: { type: "pencilAll" },
-      explanation: POPULATE_TEXT,
-      highlights: { area: [], targets: [], marks: [] },
-    });
-    populated = true;
-  };
+  const pop = lazyPopulate<KeenMove, KeenHint>(
+    state,
+    wGrid,
+    wPen,
+    w,
+    steps,
+    POPULATE_TEXT,
+  );
   // The obvious-candidate cleanup is emitted once, right after notes first exist
   // (just populated, or already present on a pre-noted board) — see step 3.
   let cleaned = false;
@@ -564,8 +560,8 @@ function buildSteps(
     }
 
     // 2. Pencil in the notes (once) before any elimination needs them.
-    if (!populated) {
-      ensurePopulated();
+    if (!pop.done()) {
+      pop.ensure();
       continue;
     }
 
