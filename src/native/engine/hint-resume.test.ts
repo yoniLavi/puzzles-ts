@@ -21,41 +21,8 @@
  * arbitrary partial positions; a correct hint must never give up before solved.
  */
 import { describe, expect, it } from "vitest";
-import { dominosaGame } from "../games/dominosa/index.ts";
-import { fifteenGame } from "../games/fifteen/index.ts";
-import { fillingGame } from "../games/filling/index.ts";
-import { floodGame } from "../games/flood/index.ts";
-import { inertiaGame } from "../games/inertia/index.ts";
-import { keenGame } from "../games/keen/index.ts";
-import { lightupGame } from "../games/lightup/index.ts";
-import { netslideGame } from "../games/netslide/index.ts";
-import { palisadeGame } from "../games/palisade/index.ts";
-import { patternGame } from "../games/pattern/index.ts";
-import { rangeGame } from "../games/range/index.ts";
-import { singlesGame } from "../games/singles/index.ts";
-import { sixteenGame } from "../games/sixteen/index.ts";
-import { slantGame } from "../games/slant/index.ts";
-import { soloGame } from "../games/solo/index.ts";
-import { towersGame } from "../games/towers/index.ts";
-import { undeadGame } from "../games/undead/index.ts";
-import { unequalGame } from "../games/unequal/index.ts";
-import { unrulyGame } from "../games/unruly/index.ts";
-import { untangleGame } from "../games/untangle/index.ts";
 import { randomNew } from "../random/index.ts";
-import type { Game, PresetMenu } from "./game.ts";
-
-// biome-ignore lint/suspicious/noExplicitAny: a deliberately game-agnostic probe.
-type AnyGame = Game<any, any, any, any, any, any>;
-
-/** First leaf preset's params — a small, valid board for each game. */
-function firstLeaf<P>(menu: PresetMenu<P>): P {
-  if (menu.params !== undefined) return menu.params;
-  for (const sub of menu.submenu ?? []) {
-    const p = firstLeaf(sub);
-    if (p !== undefined) return p;
-  }
-  throw new Error("no leaf preset");
-}
+import { type AnyGame, firstLeaf, HINT_GAMES } from "./testing/hint-games.ts";
 
 /** Walk a fresh board to solved, recomputing the hint after every move.
  * Returns the move count, or throws with a diagnostic if a hint gives up or
@@ -78,29 +45,6 @@ function solveByHints(game: AnyGame, seed: string): number {
   }
   throw new Error(`${seed}: did not converge within ${cap} moves (loop?)`);
 }
-
-const HINT_GAMES: [string, AnyGame][] = [
-  ["dominosa", dominosaGame],
-  ["filling", fillingGame],
-  ["fifteen", fifteenGame],
-  ["flood", floodGame],
-  ["inertia", inertiaGame],
-  ["keen", keenGame],
-  ["lightup", lightupGame],
-  ["netslide", netslideGame],
-  ["palisade", palisadeGame],
-  ["pattern", patternGame],
-  ["range", rangeGame],
-  ["singles", singlesGame],
-  ["sixteen", sixteenGame],
-  ["slant", slantGame],
-  ["solo", soloGame],
-  ["towers", towersGame],
-  ["undead", undeadGame],
-  ["unequal", unequalGame],
-  ["unruly", unrulyGame],
-  ["untangle", untangleGame],
-];
 
 const SEEDS = ["hr-a", "hr-b", "hr-c", "hr-d", "hr-e"];
 
@@ -175,11 +119,9 @@ describe("a Latin-family placement never falsely claims a naked single", () => {
   // that still visibly shows several candidates (owner-reported on Keen). Walk each
   // Latin game and assert the naked-single phrasing only ever appears on a cell
   // whose notes really are down to one candidate.
-  const LATIN: [string, AnyGame][] = [
-    ["towers", towersGame],
-    ["unequal", unequalGame],
-    ["keen", keenGame],
-  ];
+  const LATIN: [string, AnyGame][] = HINT_GAMES.filter(([name]) =>
+    ["towers", "unequal", "keen"].includes(name),
+  );
   for (const [name, game] of LATIN) {
     it(`${name}: "ruled out in this cell" only on a genuine naked single`, () => {
       for (const seed of SEEDS) {

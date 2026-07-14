@@ -122,7 +122,9 @@ describe("Dsf", () => {
       ref.reinit();
       classesEqual(d, ref, n);
     }
-  }, 30000);
+    // 30s predated the suite-wide 60s default and *lowered* the ceiling;
+    // under full-suite CPU saturation this legitimately runs 40s+.
+  }, 60_000);
 });
 
 /**
@@ -228,5 +230,6 @@ describe("FlipDsf", () => {
           }
       }
     }
-  }, 30000);
+    // Same saturation headroom as the sibling property test above.
+  }, 60_000);
 });

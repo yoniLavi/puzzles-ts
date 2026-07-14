@@ -502,8 +502,14 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * math, no right-button quirks), and it is a natural entry for any
    * future move-scripting feature. It does NOT consult the active hint
    * plan (`hintKeepTrack`) — replayed moves are setup, not player
-   * input answering a displayed hint. */
+   * input answering a displayed hint — so any stored plan is dropped,
+   * exactly as a self-played move drops it on the production path.
+   * (Leaving the plan stored re-shows a stale step on the next
+   * `hint()`: the re-validation pass is a no-op for a game without
+   * `refreshHintStep`, and a stale step can be illegal to execute —
+   * found by the cross-game overlay guard on Flood.) */
   playMoves(moves: readonly Move[]): void {
+    if (moves.length > 0) this.clearHint();
     for (const move of moves) this.applyMove(move);
   }
 

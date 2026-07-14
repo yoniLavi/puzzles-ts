@@ -404,3 +404,52 @@ inventory, to be sized and landed one at a time, suite green at each step:
 
 S2 as originally scoped (a unified deduction-recorder *contract*) remains a no-go even
 under the relaxed bar — it fails the exemplar guardrail, not the defect-history one.
+
+---
+
+# Phase 2a — landed (2026-07-14)
+
+**The shared enrollment list** (`src/native/engine/testing/hint-games.ts`): `HINT_GAMES`
+extracted from `hint-resume.test.ts`; all cross-game guards iterate it, so a new port
+enrolls once and is covered by every guard — the coverage of the guards can no longer
+drift apart.
+
+**S4 — `hint-overlay.test.ts`**: warm the midend's drawstate with a settled frame, then
+display a hint and require the same drawstate to emit paint ops; a step that paints
+nothing is legitimate only if it declares no board marks (the candidate games' populate
+opener — banner-only by design, owner-accepted UX), in which case the guard applies the
+opener's own move and judges the next display. Two findings flushed out:
+
+1. **A real engine fix**: `Midend.playMoves` skipped `hintKeepTrack` (documented) but
+   also left the stored plan in place — and the midend's re-validation is a no-op for
+   the 14 games without `refreshHintStep`, so the next `hint()` re-showed a stale step
+   that could be *illegal to execute* (reproduced on Flood: "fill colour 4" re-shown on
+   an already-colour-4 board). `playMoves` now drops the stored plan, exactly as every
+   other non-following transition (undo/redo/solve/off-plan input) does. Today only the
+   test harness reached this; the docstring's promised "future move-scripting feature"
+   would have shipped it as the `fix-stale-hint-step` class.
+2. The populate steps' empty-evidence shape is now a *declared* exemption rather than an
+   accident (see the S3 show-something rule).
+
+**S3 — `hint-quality.test.ts`**: three form guards over all 20 games × fixed seeds,
+calibrated by an empirical probe (silent-step count today: 0; longest narration: 281):
+(a) every step shows something — board marks or words; (b) deductive conclusions use the
+shared necessity vocabulary, with mechanical populate/cleanup openers recognised and
+per-game owner-endorsed idioms declared in an explicit table (Filling's "fits exactly
+into"); (c) a 300-char narration ceiling. Form only — no assertion touches what a hint
+says about the board.
+
+**Guide changes**: §2.1, §2.5, §5.2 now state the rule + point at the guard instead of
+prescribing per-game tests; §7.1 documents one-line enrollment; playbook §3.2's
+paint-twice prescription is cross-game for hint overlays (per-game only for mistake
+overlays, which need a mistaken board no generic test can build). **On the "guide
+shrinkage" metric**: the guide is ~1,600 lines before and after — the honest finding is
+that the metric was the wrong proxy. The guide's *teaching* (why a rule exists, what the
+bug looked like) is worth its lines; what changed is enforcement: three §2/§5 rules and
+the overlay rule moved from *remembered* to *guarded*, and enrollment collapsed to one
+line. The census in §0.5 (structural/guarded/remembered counts) is the truer metric:
+guarded went from 5 rules in one file to 9 across three files, all driven by one list.
+
+**Dedupe signals recorded for 2b** (from the guard work): the populate/cleanup step
+construction (`ensurePopulated` + `POPULATE_TEXT`) is copy-pasted near-verbatim across
+towers/unequal/keen/solo/undead — hoist into `candidate-hint.ts`.

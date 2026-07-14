@@ -244,11 +244,14 @@ Pick the house by the *nature of the move*, not the genre: a deductive game whos
 ever recommends a non-forced move uses the imperative for that step. Palisade shows
 the houses can co-exist in one string — its necessity premise ("Clue c reaches its
 count only if every remaining edge is a wall") can carry an imperative tail ("draw
-them all"), because the forced-ness is already explicit in the premise. Cheap guard: a
-hint test asserting the conclusion contains a modal and **not** a bare "stays/is" (as
-the Singles `corner4` test does). When a game has two conclusion *kinds* — a strike vs
-a placement (§9) — both stay in the necessity house ("must cross out the 5" / "can only
-be 5"); the guard regex just admits both phrasings.
+them all"), because the forced-ness is already explicit in the premise.
+
+**Guarded cross-game** (`src/native/engine/hint-quality.test.ts`): every deductive
+game's steps must match the shared necessity vocabulary; mechanical populate/cleanup
+openers are recognised, and an owner-endorsed phrasing that carries necessity in its
+own words (Filling's "fits exactly into") is a *declared idiom* in that file — add to
+the idiom table deliberately, never by loosening the shared pattern. Game-specific
+phrasing rules (the exact modal for a strike vs a placement, §9) stay per-game tests.
 
 ### 2.2 Lead with the indication — teach the pattern, don't just prove it
 
@@ -369,6 +372,10 @@ area carries the premise) and on implied values ("the region of N" already tells
 player to write N). **Don't repeat the number** — say "the region of N" once and let
 "these squares" / "a 1" carry the rest. When a narration feels long, cut to the single
 premise the highlight doesn't already show.
+
+**Guarded cross-game** (`hint-quality.test.ts`): a hard 300-character ceiling per step
+(longest shipped: 281, Undead's sightline teach). The ceiling catches the "rulebook
+bled into the step" class; terseness *below* it is still an editing judgement.
 
 ### 2.6 Conclude with the *action* the move actually makes — never a stronger one
 
@@ -614,12 +621,14 @@ time, this move and all prior deductions applied) and builds the highlight from 
 snapshot, so the shaded run grows as the player follows. (The snapshot has the move
 applied, so filter the target out of its own area.)
 
-**Invariant worth a test: every step carries visible evidence** — a non-empty area or a
-ringed premise, never a bare conclusion (the "visible evidence" test in
-[`range-hint.test.ts`](../../src/native/games/range/range-hint.test.ts)). It caught a
-`connect` step whose cut-vertex neighbours were all still *undecided* (a known-white filter
-left the area empty): the connectivity rule treats every non-black cell as white, so shade
-non-black neighbours, not only marked-white ones.
+**Guarded cross-game** (`hint-quality.test.ts`): every step must *show something* —
+board marks or words (a step with neither is invisible). The stronger per-game form —
+this deduction's evidence area is non-empty — is still worth a per-game test: the
+"visible evidence" test in
+[`range-hint.test.ts`](../../src/native/games/range/range-hint.test.ts) caught a
+`connect` step whose cut-vertex neighbours were all still *undecided* (a known-white
+filter left the area empty): the connectivity rule treats every non-black cell as
+white, so shade non-black neighbours, not only marked-white ones.
 
 ### 5.3 Distinct *roles* get distinct colours — the element-type legend
 
@@ -1225,9 +1234,18 @@ a real bug here, both invisible to "the plan solves the board" tests that only r
 This is enforced for **every** hint-bearing game by
 [`hint-resume.test.ts`](../../src/native/engine/hint-resume.test.ts): it walks a fresh board to
 solved one *freshly-recomputed* hint at a time (apply only `steps[0]`, recompute, repeat),
-asserting a hint never gives up before solved. Any new game is covered the moment its export is
-added to that test's list — **do so as part of the port**; a per-game "plan solves from empty"
-test is *not* a substitute.
+asserting a hint never gives up before solved.
+
+**Enrollment is one line, and it covers every cross-game guard at once.** The guards all
+iterate the shared list in
+[`testing/hint-games.ts`](../../src/native/engine/testing/hint-games.ts) — add the new
+game there **as part of the port** and it is covered by `hint-resume.test.ts` (resume,
+purity, no-op-free plans, Latin naked-single honesty),
+[`hint-overlay.test.ts`](../../src/native/engine/hint-overlay.test.ts) (the overlay
+reaches the render cache — the paint-twice class, playbook §3.2), and
+[`hint-quality.test.ts`](../../src/native/engine/hint-quality.test.ts) (§2.1 voice,
+§2.5 length, §5.2 show-something). A per-game "plan solves from empty" test is *not* a
+substitute.
 
 ### 7.2 Guard the deduction fixpoint with a step budget
 
