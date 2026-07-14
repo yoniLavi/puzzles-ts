@@ -17,6 +17,7 @@
  */
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
+import { HintSidecar } from "../../engine/hint-sidecar.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
@@ -131,12 +132,11 @@ export interface UndeadDrawState {
   /** `wh` current-frame mistake flags + last-drawn sidecar (Check & Save). */
   wrong: Uint8Array;
   drawnWrong: Int8Array;
-  /** `wh` packed hint overlay (fork addition): bit 0 = target cell, bit 1 =
-   * evidence area, bits 2.. = struck-candidate mask (`monster << 2`). Compared
-   * against {@link drawnHint} so a hint change repaints affected cells. */
-  hintPacked: Int32Array;
-  /** `wh` last-drawn hint overlay (-1 = never drawn). */
-  drawnHint: Int32Array;
+  /** `wh` hint-overlay sidecar (fork addition): bit 0 = target cell, bit 1 =
+   * evidence area, bits 2.. = struck-monster mask (`monster << 2`). Owns the
+   * repack/stale/commit dance that keeps the overlay in the cache diff key
+   * (playbook §3.2). */
+  hint: HintSidecar;
   pencilModeShown: boolean;
 }
 
@@ -167,8 +167,7 @@ export function newDrawState(state: UndeadState): UndeadDrawState {
     countPadding: 0,
     wrong: new Uint8Array(common.wh),
     drawnWrong: new Int8Array(common.wh).fill(-1),
-    hintPacked: new Int32Array(common.wh),
-    drawnHint: new Int32Array(common.wh).fill(-1),
+    hint: new HintSidecar(common.wh),
     pencilModeShown: false,
   };
 }
@@ -722,13 +721,7 @@ export function redraw(
   if (mistakes) for (const m of mistakes) ds.wrong[m.x + m.y * stride] = 1;
 
   // Hint overlay sidecar: per cell, bit 0 target, bit 1 area, bits 2.. struck mask.
-  ds.hintPacked.fill(0);
-  const hl = hint?.highlights;
-  if (hl) {
-    for (const a of hl.area) ds.hintPacked[a.x + a.y * stride] |= 2;
-    for (const t of hl.targets) ds.hintPacked[t.x + t.y * stride] |= 1;
-    for (const m of hl.marks) ds.hintPacked[m.x + m.y * stride] |= m.monster << 2;
-  }
+  ds.hint.pack(hint?.highlights, (x, y) => x + y * stride, (m) => m.monster << 2);
 
   // Grid cells.
   for (let x = 1; x < w + 1; x++) {
@@ -752,10 +745,10 @@ export function redraw(
         ds.cellErrors[xy] = state.cellErrors[xy];
       }
       if (ds.wrong[xy] !== ds.drawnWrong[xy]) stale = true;
-      if (ds.hintPacked[xy] !== ds.drawnHint[xy]) stale = true;
+      if (ds.hint.stale(xy)) stale = true;
 
       if (stale) {
-        const pack = ds.hintPacked[xy];
+        const pack = ds.hint.packed[xy];
         const isTarget = (pack & 1) !== 0;
         const isArea = (pack & 2) !== 0;
         const struck = (pack >> 2) & 7;
@@ -793,7 +786,7 @@ export function redraw(
           dr.drawUpdate({ x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 });
         }
         ds.drawnWrong[xy] = ds.wrong[xy];
-        ds.drawnHint[xy] = pack;
+        ds.hint.commit(xy);
       }
     }
   }

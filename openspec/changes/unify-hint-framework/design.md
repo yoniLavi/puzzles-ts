@@ -453,3 +453,42 @@ guarded went from 5 rules in one file to 9 across three files, all driven by one
 **Dedupe signals recorded for 2b** (from the guard work): the populate/cleanup step
 construction (`ensurePopulated` + `POPULATE_TEXT`) is copy-pasted near-verbatim across
 towers/unequal/keen/solo/undead — hoist into `candidate-hint.ts`.
+
+---
+
+# Phase 2b — cleanliness refactors (owner-relaxed bar), landed + evaluated
+
+**Landed:**
+
+1. **Populate opener hoisted** (`candidate-hint.ts`): `populateText`/`cleanObviousText`
+   (the narrations, parameterised by each game's noun/verb/regions), `populateStep`
+   (the one step shape the cross-game guards exempt — now built in one place), and
+   `lazyPopulate` (the fill-notes-on-first-need closure Towers/Unequal/Keen/Solo shared
+   verbatim). Undead stays bespoke deliberately: different opener text (monsters,
+   `markAll`), non-Latin pencil arrays, and it imports nothing from `candidate-hint` —
+   sharing would add a dependency, not remove duplication.
+2. **`HintSidecar`** (`engine/hint-sidecar.ts`): the hint-overlay render sidecar —
+   playbook §3.2's "every overlay in the diff key" as a type. Owns the
+   `hintPacked`/`drawnHint` repack/stale/commit dance all five candidate-family renders
+   (towers, unequal, keen, solo, undead) hand-wrote; all five converted, render output
+   identical (snapshots unchanged), plus a contract unit test. Future ports get
+   `pack`/`stale`/`commit` instead of re-deriving the two-array discipline.
+3. **Shared guard enrollment** (`testing/hint-games.ts`) — landed with 2a, but it is
+   also the dedupe of the 20-import list that would otherwise be copied per guard file.
+
+**Evaluated and declined (recorded per the no-go discipline):**
+
+- **Recorder vocabulary alignment (Singles/Solo bespoke recorders → latin.ts naming).**
+  Renaming fields in two working recorders does not make the codebase *noticeably*
+  cleaner — the shapes are genuinely different (Hitori's flag-change groups; Solo's
+  region/killer ops), only the names rhyme — and both sit on byte-match-guarded solver
+  paths where churn has real blast radius. Cosmetic gain, real risk: declined.
+- **Further Towers/Unequal hint-stack dedupe.** After the populate hoist, what remains
+  different in their `buildSteps` is genuinely different (Towers' extreme-clue specials
+  and line-of-sight shading vs Unequal's constraint/adjacent modes); the identical parts
+  already live in `candidate-hint`/`latin-hint`. Nothing byte-identical left to hoist.
+- **Key-bits overlay variant helper.** The 11 games that fold hint bits into their
+  packed tile word do it inside per-game packing code that differs by board topology
+  (rings, strides, edge bits); a shared helper would be a parameter soup. The sidecar
+  shape is the extractable one; the key-bits shape stays a documented pattern
+  (playbook §3.2) with the cross-game guard as its safety net.

@@ -14,6 +14,7 @@
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { hintMarkBit, HintSidecar } from "../../engine/hint-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   checkErrors,
@@ -109,13 +110,12 @@ export interface TowersDrawState {
   errtmp: Uint8Array;
   /** `(w+2)²` mistake-overlay flags (fork addition). */
   wrong: Uint8Array;
-  /** `(w+2)²` packed hint overlay (fork addition): bit 0 = target cell, bit 1 =
-   * evidence area, bits 2.. = struck-candidate mask (`1 << (2 + height)`).
-   * Compared against {@link drawnHint} so a hint change repaints affected
-   * cells even when their tile value is otherwise unchanged. */
-  hintPacked: Int32Array;
-  /** `(w+2)²` last-drawn hint overlay (-1 = never drawn). */
-  drawnHint: Int32Array;
+  /** `(w+2)²` hint-overlay sidecar (fork addition): bit 0 = target cell,
+   * bit 1 = evidence area, bits 2.. = struck-candidate mask
+   * (`hintMarkBit(height)`). Owns the repack/stale/commit dance that keeps
+   * a hint change repainting affected cells even when their tile value is
+   * otherwise unchanged (playbook §3.2). */
+  hint: HintSidecar;
   /** `(w+2)²` last-drawn mistake-overlay flags (-1 = never drawn). The mistake
    * overlay (like the hint overlay) doesn't change a cell's tile value, so it
    * must be in the diff key or a Check & Save on an already-drawn cell would not
@@ -134,8 +134,7 @@ export function newDrawState(state: TowersState): TowersDrawState {
     drawn: new Int32Array(W * W * 4).fill(-1),
     errtmp: new Uint8Array(W * W),
     wrong: new Uint8Array(W * W),
-    hintPacked: new Int32Array(W * W),
-    drawnHint: new Int32Array(W * W).fill(-1),
+    hint: new HintSidecar(W * W),
     drawnWrong: new Int8Array(W * W).fill(-1),
   };
 }
@@ -408,15 +407,12 @@ export function redraw(
     for (const m of mistakes) ds.wrong[(m.y + 1) * W + (m.x + 1)] = 1;
   }
 
-  // Pack the displayed hint overlay per play cell: bit 0 target, bit 1 area,
-  // bits 2.. struck-candidate mask.
-  ds.hintPacked.fill(0);
-  const hl = hint?.highlights;
-  if (hl) {
-    for (const a of hl.area) ds.hintPacked[(a.y + 1) * W + (a.x + 1)] |= 2;
-    for (const t of hl.targets) ds.hintPacked[(t.y + 1) * W + (t.x + 1)] |= 1;
-    for (const m of hl.marks) ds.hintPacked[(m.y + 1) * W + (m.x + 1)] |= 1 << (2 + m.n);
-  }
+  // Pack the displayed hint overlay per play cell (border-ring indexing).
+  ds.hint.pack(
+    hint?.highlights,
+    (x, y) => (y + 1) * W + (x + 1),
+    (m) => hintMarkBit(m.n),
+  );
 
   // Build the tile values.
   ds.tiles.fill(0);
@@ -465,11 +461,11 @@ export function redraw(
         ds.drawn[i * 4 + 1] !== tr ||
         ds.drawn[i * 4 + 2] !== bl ||
         ds.drawn[i * 4 + 3] !== br ||
-        ds.drawnHint[i] !== ds.hintPacked[i] ||
+        ds.hint.stale(i) ||
         ds.drawnWrong[i] !== ds.wrong[i]
       ) {
         dr.clip({ x: coord(x - 1, ts), y: coord(y - 1, ts), w: ts, h: ts });
-        drawTile(dr, ts, w, threeD, x - 1, y - 1, tr, ds.wrong[i] !== 0, ds.hintPacked[i]);
+        drawTile(dr, ts, w, threeD, x - 1, y - 1, tr, ds.wrong[i] !== 0, ds.hint.packed[i]);
         if (x > 0)
           drawTile(
             dr,
@@ -480,7 +476,7 @@ export function redraw(
             y - 1,
             tl,
             ds.wrong[y * W + (x - 1)] !== 0,
-            ds.hintPacked[y * W + (x - 1)],
+            ds.hint.packed[y * W + (x - 1)],
           );
         if (y <= w)
           drawTile(
@@ -492,7 +488,7 @@ export function redraw(
             y,
             br,
             ds.wrong[(y + 1) * W + x] !== 0,
-            ds.hintPacked[(y + 1) * W + x],
+            ds.hint.packed[(y + 1) * W + x],
           );
         if (x > 0 && y <= w)
           drawTile(
@@ -504,7 +500,7 @@ export function redraw(
             y,
             bl,
             ds.wrong[(y + 1) * W + (x - 1)] !== 0,
-            ds.hintPacked[(y + 1) * W + (x - 1)],
+            ds.hint.packed[(y + 1) * W + (x - 1)],
           );
         dr.unclip();
         dr.drawUpdate({ x: coord(x - 1, ts), y: coord(y - 1, ts), w: ts, h: ts });
@@ -513,7 +509,7 @@ export function redraw(
         ds.drawn[i * 4 + 1] = tr;
         ds.drawn[i * 4 + 2] = bl;
         ds.drawn[i * 4 + 3] = br;
-        ds.drawnHint[i] = ds.hintPacked[i];
+        ds.hint.commit(i);
         ds.drawnWrong[i] = ds.wrong[i];
       }
     }
