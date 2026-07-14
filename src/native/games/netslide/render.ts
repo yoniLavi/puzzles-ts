@@ -13,7 +13,8 @@
  */
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import type { NetslideHint } from "./hint.ts";
 import {
   ACTIVE,
   anticlockwise,
@@ -26,6 +27,7 @@ import {
   FLASHING,
   L,
   LD,
+  type NetslideMove,
   type NetslideState,
   type NetslideUi,
   opposite,
@@ -58,6 +60,12 @@ export const COL_BARRIER = 6;
 export const COL_LOWLIGHT = 7;
 export const COL_TEXT = 8;
 
+/** The hint's colours, appended *past* upstream's enum so the palette above stays
+ * index-for-index with it. Safe to append here because Netslide declares no
+ * dark-mode `paletteOverrides` — nothing addresses a palette slot by number
+ * (playbook §3.3). */
+export const COL_HINT = 9;
+
 export function colours(defaultBackground: Colour): Colour[] {
   const scale = (c: Colour, f: number): Colour => [c[0] * f, c[1] * f, c[2] * f];
   const out: Colour[] = [];
@@ -72,8 +80,29 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BARRIER] = [1, 0, 0];
   out[COL_LOWLIGHT] = scale(defaultBackground, 0.8);
   out[COL_TEXT] = [0, 0, 0];
+  // The same blue Sixteen marks a hinted tile with — the two are the same kind of
+  // game and should read the same way. Black wires and cyan powered wires both
+  // stay legible on it.
+  out[COL_HINT] = [0.3, 0.5, 0.9];
   return out;
 }
+
+/* ----------------------------------------------------------------------
+ * Hint overlay bits.
+ *
+ * These ride in the per-tile cache word alongside the wires and the powered
+ * flag, which is the whole point: the diff key is that word, so a hint requested
+ * on a board that did not otherwise change still repaints. Keeping the overlay
+ * *out* of the diff key is a real bug that has shipped in this codebase before
+ * (playbook §3.2) — the hint simply never appears until something else moves.
+ */
+
+/** The tile the hint is placing. */
+const HINT_TILE = 0x40;
+/** Where this slide lands it — a staging cell, so shown as a dashed outline. */
+const HINT_LANDING = 0x80;
+/** Where it finally belongs — a solid outline. */
+const HINT_HOME = 0x100;
 
 /** Takes anything carrying the grid dimensions, so `redraw` can size the
  * background from the state without conjuring a params object. */
@@ -90,14 +119,18 @@ export interface NetslideDrawState {
   w: number;
   h: number;
   tilesize: number;
-  /** Last-drawn value per tile (wires | ACTIVE | FLASHING), or −1 for "dirty,
-   * repaint unconditionally" (upstream's `0xFF` sentinel). Every overlay the
-   * renderer can apply lives in this word, so the diff key covers them all by
-   * construction (playbook §3.2). */
+  /** Last-drawn value per tile (wires | ACTIVE | FLASHING | the HINT_* bits), or
+   * −1 for "dirty, repaint unconditionally" (upstream's `0xFF` sentinel). Every
+   * overlay the renderer can apply lives in this word, so the diff key covers
+   * them all by construction (playbook §3.2). */
   visible: Int32Array;
   /** Last-drawn cursor arrow, so a cursor move repaints exactly two arrows. */
   curX: number;
   curY: number;
+  /** Last-drawn hint arrow, likewise. The arrows live in the gutter, outside the
+   * tile grid, so no tile repaint reaches them — they need their own diff. */
+  hintArrowX: number;
+  hintArrowY: number;
 }
 
 export function newDrawState(s: NetslideState): NetslideDrawState {
@@ -109,6 +142,8 @@ export function newDrawState(s: NetslideState): NetslideDrawState {
     visible: new Int32Array(s.w * s.h).fill(-1),
     curX: -1,
     curY: -1,
+    hintArrowX: -2,
+    hintArrowY: -2,
   };
 }
 
@@ -171,7 +206,11 @@ function drawTile(
   const by = b + ts * y + Math.trunc(yshift * ts);
 
   // Blank the tile: a border-coloured rect with a background-coloured one
-  // inset by the tile border.
+  // inset by the tile border. The tile the hint is placing is backed in the hint
+  // colour instead — its wires stay drawn on top, so the player can still see
+  // *which* piece is being talked about.
+  const background =
+    tile & HINT_TILE ? COL_HINT : tile & FLASHING ? COL_FLASHING : COL_BACKGROUND;
   dr.drawRect({ x: bx, y: by, w: ts + TILE_BORDER, h: ts + TILE_BORDER }, COL_BORDER);
   dr.drawRect(
     {
@@ -180,7 +219,7 @@ function drawTile(
       w: ts - TILE_BORDER,
       h: ts - TILE_BORDER,
     },
-    tile & FLASHING ? COL_FLASHING : COL_BACKGROUND,
+    background,
   );
 
   const cx = TILE_BORDER + (ts - TILE_BORDER) / 2 - 0.5;
@@ -262,7 +301,48 @@ function drawTile(
     }
   }
 
+  // Where the hinted tile is headed. The cell it *belongs* in gets a solid
+  // outline; a cell it is only passing through on the way gets a dashed one, so
+  // a staging move never reads as "this is the answer".
+  if (tile & (HINT_LANDING | HINT_HOME)) {
+    drawHintOutline(dr, bx, by, ts, (tile & HINT_HOME) === 0);
+  }
+
   dr.drawUpdate({ x: bx, y: by, w: ts + TILE_BORDER, h: ts + TILE_BORDER });
+}
+
+/** An outline just inside a tile's edge, solid or dashed. Inset past the tile
+ * border so a barrier drawn along that edge later does not paint over it. */
+function drawHintOutline(
+  dr: GameDrawing,
+  bx: number,
+  by: number,
+  ts: number,
+  dashed: boolean,
+): void {
+  const inset = TILE_BORDER + 1;
+  const thickness = Math.max(2, Math.round(ts / 16));
+  const x = bx + inset;
+  const y = by + inset;
+  const side = ts - 2 * inset;
+
+  if (!dashed) {
+    dr.drawRect({ x, y, w: side, h: thickness }, COL_HINT);
+    dr.drawRect({ x, y: y + side - thickness, w: side, h: thickness }, COL_HINT);
+    dr.drawRect({ x, y, w: thickness, h: side }, COL_HINT);
+    dr.drawRect({ x: x + side - thickness, y, w: thickness, h: side }, COL_HINT);
+    return;
+  }
+
+  const dash = Math.max(3, Math.round(ts / 8));
+  const step = dash * 2;
+  for (let d = 0; d < side; d += step) {
+    const run = Math.min(dash, side - d);
+    dr.drawRect({ x: x + d, y, w: run, h: thickness }, COL_HINT);
+    dr.drawRect({ x: x + d, y: y + side - thickness, w: run, h: thickness }, COL_HINT);
+    dr.drawRect({ x, y: y + d, w: thickness, h: run }, COL_HINT);
+    dr.drawRect({ x: x + side - thickness, y: y + d, w: thickness, h: run }, COL_HINT);
+  }
 }
 
 /** The quarter of a barrier junction that belongs to tile `(x, y)`. Drawn in
@@ -385,7 +465,7 @@ function drawArrow(
   gy: number,
   xdx: number,
   xdy: number,
-  cursor: boolean,
+  fill: number,
 ): void {
   const ts = ds.tilesize;
   const b = border(ts);
@@ -409,32 +489,47 @@ function drawArrow(
     point(ts / 4, ts / 2), // left corner
   ];
 
-  dr.drawPolygon(coords, cursor ? COL_POWERED : COL_LOWLIGHT, COL_TEXT);
+  dr.drawPolygon(coords, fill, COL_TEXT);
 }
 
-/** The arrow the keyboard cursor is on, given its ring position. */
-function drawArrowForCursor(
+/** One border arrow, addressed by its ring position. */
+function drawArrowAt(
   dr: GameDrawing,
   ds: NetslideDrawState,
-  curX: number,
-  curY: number,
-  cursor: boolean,
+  cx: number,
+  cy: number,
+  fill: number,
 ): void {
-  if (curX === -1 && curY === -1) return; // no cursor here
+  if (cx === -1 && cy === -1) return; // no arrow here
 
-  if (curX === -1)
-    drawArrow(dr, ds, 0, curY + 1, 0, -1, cursor); // left column
-  else if (curX === ds.w)
-    drawArrow(dr, ds, ds.w, curY, 0, +1, cursor); // right
-  else if (curY === -1)
-    drawArrow(dr, ds, curX, 0, +1, 0, cursor); // top row
-  else if (curY === ds.h)
-    drawArrow(dr, ds, curX + 1, ds.h, -1, 0, cursor); // bottom
-  else throw new Error(`(${curX}, ${curY}) is not a border-arrow position`);
+  if (cx === -1)
+    drawArrow(dr, ds, 0, cy + 1, 0, -1, fill); // left column
+  else if (cx === ds.w)
+    drawArrow(dr, ds, ds.w, cy, 0, +1, fill); // right
+  else if (cy === -1)
+    drawArrow(dr, ds, cx, 0, +1, 0, fill); // top row
+  else if (cy === ds.h)
+    drawArrow(dr, ds, cx + 1, ds.h, -1, 0, fill); // bottom
+  else throw new Error(`(${cx}, ${cy}) is not a border-arrow position`);
 
   const ts = ds.tilesize;
   const b = border(ts);
-  dr.drawUpdate({ x: curX * ts + b, y: curY * ts + b, w: ts, h: ts });
+  dr.drawUpdate({ x: cx * ts + b, y: cy * ts + b, w: ts, h: ts });
+}
+
+/** How an arrow should look: the cursor wins over the hint (it is where the
+ * player's own attention is), and everything else is a plain arrow. */
+function arrowFill(
+  cx: number,
+  cy: number,
+  curX: number,
+  curY: number,
+  hintX: number,
+  hintY: number,
+): number {
+  if (cx === curX && cy === curY) return COL_POWERED;
+  if (cx === hintX && cy === hintY) return COL_HINT;
+  return COL_LOWLIGHT;
 }
 
 /* ----------------------------------------------------------------------
@@ -450,6 +545,7 @@ export function redraw(
   ui: NetslideUi,
   animTime: number,
   flashTime: number,
+  hint?: HintStep<NetslideMove, NetslideHint>,
 ): void {
   if (!ds) return;
 
@@ -472,14 +568,41 @@ export function redraw(
     drawSlideArrows(dr, ds, state);
   }
 
-  // The cursor arrow: repaint the one it left and the one it arrived at.
+  const marks = hint?.highlights;
+  const hintArrowX = marks?.arrowX ?? -2;
+  const hintArrowY = marks?.arrowY ?? -2;
+
+  // The cursor and hint arrows: repaint the ones that were lit and the ones that
+  // now are. The arrows sit in the gutter, which no tile repaint reaches, so
+  // this is their whole cache.
   const curX = ui.curVisible ? ui.curX : -1;
   const curY = ui.curVisible ? ui.curY : -1;
-  if (curX !== ds.curX || curY !== ds.curY) {
-    drawArrowForCursor(dr, ds, curX, curY, true);
-    drawArrowForCursor(dr, ds, ds.curX, ds.curY, false);
+  if (
+    curX !== ds.curX ||
+    curY !== ds.curY ||
+    hintArrowX !== ds.hintArrowX ||
+    hintArrowY !== ds.hintArrowY
+  ) {
+    const stale: [number, number][] = [
+      [ds.curX, ds.curY],
+      [ds.hintArrowX, ds.hintArrowY],
+      [curX, curY],
+      [hintArrowX, hintArrowY],
+    ];
+    for (const [ax, ay] of stale) {
+      if (ax === -2 || ay === -2) continue;
+      drawArrowAt(
+        dr,
+        ds,
+        ax,
+        ay,
+        arrowFill(ax, ay, curX, curY, hintArrowX, hintArrowY),
+      );
+    }
     ds.curX = curX;
     ds.curY = curY;
+    ds.hintArrowX = hintArrowX;
+    ds.hintArrowY = hintArrowY;
   }
 
   // An undo runs the slide animation backwards: swap the endpoints and reverse
@@ -520,6 +643,21 @@ export function redraw(
     for (let y = 0; y < ds.h; y++) {
       const i = y * ds.w + x;
       let c = state.tiles[i] | active[i];
+
+      // The hint overlay goes into the cache word, not around it — see the note
+      // on the HINT_* bits. A hint is requested on a board that has not otherwise
+      // changed, so if these bits were not part of the diff, nothing would repaint
+      // and the hint would simply not appear.
+      if (marks) {
+        if (i === marks.tile) c |= HINT_TILE;
+        // A solid outline says "this tile belongs here"; a dashed one says "this
+        // is only on the way". Which the destination gets depends on whether the
+        // finished board really does want this tile's wires there — the plan can
+        // run out of budget and park a tile somewhere merely useful, and a solid
+        // outline there would promise something nothing has checked.
+        if (i === marks.destination) c |= marks.belongs ? HINT_HOME : HINT_LANDING;
+        else if (i === marks.landing) c |= HINT_LANDING;
+      }
 
       // The completion flash ripples outward: a tile at Chebyshev distance
       // `dist` from the centre flashes on and off over frames dist … dist+3.
@@ -601,12 +739,12 @@ function drawSlideArrows(
 ): void {
   for (let x = 0; x < ds.w; x++) {
     if (x === s.cx) continue;
-    drawArrow(dr, ds, x, 0, +1, 0, false); // above, pointing right
-    drawArrow(dr, ds, x + 1, ds.h, -1, 0, false); // below, pointing left
+    drawArrow(dr, ds, x, 0, +1, 0, COL_LOWLIGHT); // above, pointing up
+    drawArrow(dr, ds, x + 1, ds.h, -1, 0, COL_LOWLIGHT); // below, pointing down
   }
   for (let y = 0; y < ds.h; y++) {
     if (y === s.cy) continue;
-    drawArrow(dr, ds, ds.w, y, 0, +1, false); // right, pointing down
-    drawArrow(dr, ds, 0, y + 1, 0, -1, false); // left, pointing up
+    drawArrow(dr, ds, ds.w, y, 0, +1, COL_LOWLIGHT); // right, pointing right
+    drawArrow(dr, ds, 0, y + 1, 0, -1, COL_LOWLIGHT); // left, pointing left
   }
 }

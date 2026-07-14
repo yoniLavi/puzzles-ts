@@ -633,6 +633,7 @@ game:
 | Pattern | forced cell(s), blue `COL_HINT` fill (highlight only, no mark) — the reasoned line's clue digits also recolour `COL_HINT` to tie clue↔line | reasoned **row/column** (line of sight) → `COL_HINT_CELL` shade on its *undecided* cells; an overlap run's anchoring **black** mark → teal `COL_HINT_BLACKREF` ring (white anchors → violet `COL_HINT_WHITEREF`). White ("no run reaches here") firings ring *nothing* — that deduction leans on the whole line's packing, not one mark, so a ring would over-claim (§2.4); the shaded line + highlighted clue is the evidence. |
 | Light Up | forced square(s), blue `COL_HINT` fill (bulb *and* mark targets identical — the narration says which; no bulb/blob preview) | evidence squares (a corridor of sight, a MAKESLIGHT set, a clue's placed bulbs) carried as one list, cue split by the cell's own state (§5.4): a **dark** square → `COL_HINT_CELL` shade (its blob draws on top), a **lit/bulb** square → teal `COL_HINT_LITREF` ring (a fill would hide the "already lit" premise); the unlit square a deduction protects → amber `COL_HINT_DARKREF` ring; the driving clue → its digit recolours `COL_HINT` (the Pattern clue↔move tie; the light `COL_HINT_CELL` was tried first and is unreadable as a cue — nearly white on black) |
 | Slant | forced square(s), blue `COL_HINT` fill (highlight only, no slash preview); a clue firing lights all its forced squares (equivalent moves share the colour, rule 3) and drops them as its multi-leg journey advances | a **clue** firing → the clue's digit recolours `COL_HINT` + its already-decided neighbour squares `COL_HINT_CELL` shade; a **loop/dead-end** firing → the connectivity chain / trapped-point components `COL_HINT_CELL` shade (plus the trapped points' incident squares, so a dead-end point carrying no diagonal yet is still *located*); an **equivalence** firing → teal `COL_HINT_REF` ring on the cited already-filled anchor (the honest locked-slant tier, below) |
+| Netslide | the tile being placed, `COL_HINT` fill (its wires still drawn on top, so the player sees *which* piece); the border arrow to press, `COL_HINT` | its destination outlined `COL_HINT` — **solid** when the finished board really does want that tile's wires there, **dashed** when the plan is only passing through. A movement game names one element type (the tile), so the §5.3 legend does not otherwise bite; the solid/dashed split is the non-colour cue distinguishing *arrived* from *setting up* |
 
 Two reusable lessons from the rollout: (1) **teal = "a cited black square", violet = "a
 cited white square"** is a cross-game reading worth preserving — reuse those hues for a
@@ -982,6 +983,122 @@ up"*; step 20 then said *"the route comes at it from another side"* and went els
 was correct — the *narration* had made a promise about "some slide exists" when the only claim
 worth making is about **the plan's own next move**. A test that asserts "the plan solves the
 board" is blind to this. Reading it takes a minute.
+
+It earned its keep again on Netslide (§6.5): the very first printed plan showed the slide that
+*finishes the board* narrated as **"(setting up)"**. Every test was green — the plan solved the
+board, every step was legal — and the sentence was still a lie.
+
+### 6.5 Sliding-permutation games: the shared planner, and the two things that will bite
+
+Fifteen, Sixteen and Netslide are one family — a toroidal grid, a move slides a whole line — and the
+search is shared: [`engine/slide-planner.ts`](../../src/native/engine/slide-planner.ts)
+(`add-netslide-hint`). It owns the bucket-queue A\*, the exact bidirectional search, the
+no-progress gate and the partial-plan return. A game supplies its board, its finished board, its
+legal moves, **a `heuristic(board)`**, and when to run the exact search. Exemplar:
+[`netslide/hint.ts`](../../src/native/games/netslide/hint.ts).
+
+Two lessons, both of which cost a full debugging cycle and both of which generalise past this
+family:
+
+**(a) A distance measure must be recomputed against the board it is measuring — never frozen.**
+Netslide's tiles are wire masks and many are *identical*, so a tile has no single home. The obvious
+move is to settle it once — assign each tile to the nearest cell wanting its wires, then measure
+total travel to that assignment. It is far cheaper and it is **wrong**, in two ways at once:
+
+- *The search wanders.* The assignment is only cheapest for the board it was computed on; as the
+  search moves away, some other assignment becomes cheaper, and the frozen one starts scoring moves
+  that visibly make the picture *worse* as progress (measured: a plan taking the wrong-cell count
+  from 16 to 17 and carrying on).
+- *The narration lies.* The slide that actually finishes the board delivers tiles to
+  mask-compatible cells the assignment never picked, so the hint describes the winning move as
+  "(setting up)" (§6.4 caught this; no test did).
+
+The fix is to measure the board in front of you: a min-cost matching **per node** (per mask group —
+tiny, allocation-free). And for the narration, **read each tile's home off the plan**: simulate it,
+and a tile's destination is where it ends up. True by construction, and it agrees with the picture.
+A tile "belongs" there only if the finished board wants its wires there — a partial plan can park a
+tile somewhere merely useful, and that is "(setting up)", honestly.
+
+**(b) The endgame needs an exact *shortest* plan, and it must be paid for in the right place.**
+§6.3's monotone potential, in its sharpest form. Netslide's heuristic plan looped — but *not* in the
+two-move ping-pong shape Inertia had, and the don't-undo-the-last-move guard could not see it:
+
+```
+40: wrong=6  -> row0-      41: wrong=8  -> row0-      42: wrong=6  -> row0-
+43: wrong=8  -> row0-      44: wrong=7  -> row0-      # row 0 is 5 wide: five slides = the identity
+```
+
+The culprit is the endgame Sixteen calls a **swapped pair**: two tiles want each other's cells, so
+the board reads as *two* cells from finished while really being ten moves away, and every single
+slide from it looks worse. A distance heuristic is helpless there by construction. Only an exact
+search crosses it — and a plan that is *shortest* is also what stops a recomputed plan cycling: its
+first move provably shortens the true distance home, so the walk is a strictly decreasing
+non-negative integer and must arrive.
+
+Four things about that search are load-bearing, and **each one was got wrong first**:
+
+1. **It must actually return a shortest path.** Answering on the first meet you stumble across
+   mid-level gives a path that can be one move too long — and one move too long has *no*
+   monotonicity. Finish the level; take the cheapest meet.
+2. **Enforce the budget *inside* the level, not between levels.** One level expands to many times
+   the frontier, so a frontier near the cap balloons far past it before anyone looks again — a single
+   hint was measured at **13.7 s** against a cap it had long since blown through.
+3. **Prune commuting moves.** Slides of the same axis commute (row 0 then row 3 = row 3 then row 0),
+   so a plain BFS generates every permutation of a run of row-slides and throws all but one away.
+   Restricting a same-axis run to non-decreasing index order keeps one representative of each and
+   loses nothing — any shortest path can be reordered into that form. It is what makes the budget
+   reach far enough to matter.
+4. **Fire it only when the heuristic is *helpless*** (`exactSearch: { when: "no-progress" }`), and
+   then give it a *big* budget. This is the one that took longest to see. Running it on every board
+   (`when: "first"`) is the intuitive choice — you want the shortest plan whenever you can have one
+   — but it costs its **whole budget on every board it cannot reach**, which is most of them, and
+   5×5 hints went from ~1 s to 4–5 s. It is affordable as a last resort precisely because **a plan,
+   once found, is carried**: `hintKeepTrack` keeps it while the player follows it, so the search is
+   paid once and its whole plan plays out. Do not split the difference with a small search plus a
+   bigger one in reserve, either — the big one opens a descent from ten moves out, the player takes
+   one step, and the small one cannot sustain it from nine, so the heuristic takes back over and
+   walks the board round a loop. **The search that opens a descent must be the one that finishes it.**
+
+And a structural note worth carrying: **the planner works on the board the player sees, not on
+labelled pieces.** For a game with identical pieces that is not just simpler, it is *necessary* —
+every slide on an odd-width torus is an even permutation, so a target that distinguishes identical
+tiles can sit in a coset the board cannot reach, while the finished *picture* is two moves away.
+
+**Test it the way the midend plays it.** A followed hint keeps its plan, so the honest walk is
+"ask, follow the whole plan, ask again" (`netslide-hint.test.ts`), not "ask, take one move, throw the
+plan away" — the latter demands a guarantee the app never needs and pays the worst cost on every
+step. Keep the strict recompute-every-move walk for the small presets, where it is cheap and a
+stronger statement; `hint-resume.test.ts` runs it for every game on the *first* preset only.
+
+### 6.6 A game with no solver can often still recover its answer from the board (Netslide)
+
+Netslide has no solver: `solve` and `hint` both replay the generator's `aux`. A game arriving as a
+**descriptive id** (`3x3:52h9hbd4h4v34` — a shared link, a bookmark, a save) carries no `aux`, and
+both simply gave up: *"Solution not known for this puzzle"*, on a board a player was staring at.
+Owner-reported, and not acceptable — that is an ordinary way to play.
+
+The answer was recoverable all along, because the board constrains it savagely (`reconstruct.ts`):
+the tiles are the same tiles (a slide only permutes them), the centre tile cannot have moved, wires
+must meet and may not cross a barrier, and the network is a tree with no slack for a loop. Fill the
+grid **most-hemmed-in cell first** — every placed neighbour *forces* one of a tile's wires — and the
+search is under a millisecond on most boards. (Reading order is the obvious choice and is far worse
+on a wrapping board: the wrap constraints are not felt until the very end, so it builds most of a
+grid before finding out it never fitted.) Two lessons generalise:
+
+- **The recovered answer is slide-invariant, and that is where its stability comes from.** It turns
+  only on the tile multiset, the barriers and the centre tile — none of which a slide changes — so it
+  is the *same grid for the whole game*, however the player scrambles the board. Free stability, by
+  construction. It also means the enumeration order must not depend on the current board: picking
+  "the finished grid nearest to where the tiles are now" would hand the instability straight back.
+- **Check the answer is *reachable*, and check your reachability test against brute force.** Not
+  every valid-looking finished grid can be slid into. A slide of a line of length `k` is a `k`-cycle
+  — **even** exactly when `k` is odd — so on a 3×3 every move is even and only *half* the
+  arrangements exist at all (its whole reachable set is 20 160 = 8!/2, the alternating group
+  exactly, and three of one board's six valid finished grids lay outside it). A repeated tile buys a
+  parity flip for free (swap two identical tiles: the picture is unchanged, the parity is not) — but
+  **only if both are movable**; a duplicate that merely matches the *centre* tile buys nothing, which
+  is the bug the brute-force check caught. Do not reason your way to a parity rule and trust it:
+  enumerate a small board's entire reachable set and assert the predicate agrees.
 
 ---
 

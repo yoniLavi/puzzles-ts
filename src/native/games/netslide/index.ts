@@ -25,6 +25,8 @@ import {
 import { registerGame } from "../../engine/registry.ts";
 import type { RandomState } from "../../random/index.ts";
 import { newDesc } from "./generator.ts";
+import { netslideHint, netslideHintKeepTrack, parseAux } from "./hint.ts";
+import { reconstructSolution } from "./reconstruct.ts";
 import {
   ANIM_TIME,
   colours,
@@ -292,16 +294,19 @@ export const netslideGame: Game<
   // The midend upgrades this to "solved-with-help" when Solve was used.
   status: (s): GameStatus => (s.completed ? "solved" : "ongoing"),
 
-  solve: (_orig, _curr, aux): SolveResult<NetslideMove> => {
-    if (!aux) return { ok: false, error: "Solution not known for this puzzle" };
-    return {
-      ok: true,
-      move: {
-        type: "solve",
-        tiles: Array.from(aux, (c) => Number.parseInt(c, 16)),
-      },
-    };
+  // Netslide has no solver, so the answer is the generator's unshuffled grid.
+  // A game that arrived as a shared link or a bookmark carries no `aux`, and
+  // upstream simply gives up on those; we recover the finished grid from the
+  // board instead (`reconstruct.ts`), so Solve — and Hint — work on any board a
+  // player can actually be looking at.
+  solve: (_orig, curr, aux): SolveResult<NetslideMove> => {
+    const tiles = parseAux(aux, curr.w * curr.h) ?? reconstructSolution(curr);
+    if (!tiles) return { ok: false, error: "Solution not known for this puzzle" };
+    return { ok: true, move: { type: "solve", tiles: Array.from(tiles) } };
   },
+
+  hint: netslideHint,
+  hintKeepTrack: netslideHintKeepTrack,
 
   statusbarText: (s) => {
     const active = computeActive(s, -1, -1).reduce<number>(
