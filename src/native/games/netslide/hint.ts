@@ -8,16 +8,18 @@
  * [`slide-planner`](../../engine/slide-planner.ts), which Sixteen also uses; what
  * lives here is everything that makes the plan *Netslide's*:
  *
- * - **Which lines may be slid** — every row and column *except the centre ones*,
- *   and only by one step at a time.
+ * - **Which lines may be slid** — every row and column *except the two through the
+ *   source*, and only by one step at a time.
  * - **How far from finished a board is.** Sixteen's tiles are numbered, so a
  *   tile's home is given and the distance is a sum. Netslide's are wire masks and
  *   **many are identical**, so there is no one place a tile belongs — see
  *   `travelToFinish`, and the false start recorded there.
- * - **What finished means** — every tile powered from the centre, which is
+ * - **What finished means** — every tile powered from the source, which is
  *   weaker than "the board equals `aux`" and must stay that way (see below).
- * - **The narration**, which leads with the one thing this game can prove: the
- *   centre tile can never move, because both lines through it are frozen.
+ * - **The narration**, which leads with the one thing this game can prove about a
+ *   *move*: a tile sitting in the source's row has a single degree of freedom, so
+ *   only a column move can shift it. The *rule* that the source itself never moves
+ *   is left to the help text — see `narrateStep`.
  */
 
 import type { HintResult, HintStep, HintTrackVerdict } from "../../engine/game.ts";
@@ -291,7 +293,7 @@ function distanceTable(w: number, h: number): Int32Array {
  */
 
 /** Every slide the player is allowed to make: one step, either way, along any
- * line but the two through the centre. */
+ * line but the two through the source. */
 function legalMoves(s: NetslideState): SlideMove[] {
   const moves: SlideMove[] = [];
   for (let y = 0; y < s.h; y++) {
@@ -642,14 +644,24 @@ function less(a: [number, number, number], b: [number, number, number]): boolean
 /**
  * One step's sentence.
  *
- * Every clause is a claim, so every clause is checked. The three openings are
- * the three things this game can actually prove about the tile being placed:
+ * Every clause is a claim, so every clause is checked — and every clause has to
+ * earn the width it takes on the hint bar. Two things are worth saying about the
+ * tile being placed:
  *
- * - it sits on a line that **cannot be slid**, so it has a single degree of
- *   freedom (the game's whole insight, applied);
- * - it belongs **next to the immovable centre**, which is why the network gets
- *   built around it;
- * - or nothing special is true of it, and the move speaks for itself.
+ * - it sits on a line that **cannot be slid**, so only the perpendicular line can
+ *   shift it — a single degree of freedom, and the game's whole technique;
+ * - or its destination is a cell the finished board wants its wires in, which is
+ *   just stated, plainly.
+ *
+ * What is *not* said: that the source can never move. That is a **rule of the
+ * game**, not a deduction about this move — the board already shows it (no arrows
+ * are drawn beside the source's row or column) and it belongs in the help text.
+ * Saying it every step made the commonest sentence 1.8× the length of the rest and
+ * taught nothing the second time.
+ *
+ * Lines are named by **number** ("row 3 never slides"), never as "the centre":
+ * `cx` is `⌊w/2⌋`, so on an even-sized board the source is visibly off-centre and
+ * the player can see the claim is false.
  *
  * The move itself is *not* forced by logic — Netslide is a movement game — so
  * the conclusion is an imperative, never a modal of necessity.
@@ -690,19 +702,29 @@ function narrateStep(
   const row = Math.floor(focus.from / w);
   const col = focus.from % w;
 
-  // The single degree of freedom. A tile in the centre row sits on a line that
+  // The single degree of freedom. A tile in the source's row sits on a line that
   // never slides, so the only line that can move it is its column — and the other
-  // way about. This is the immovable centre doing its work, and it is the
-  // technique the game is really about.
+  // way about. The row is named by its number: true at every board size, and the
+  // player can count it.
   let explanation: string;
   if (row === cy && m.axis === "col") {
-    explanation = `The centre row never slides, so the only way to move this ${name} is down its column: take it to ${where}${tail}.`;
+    explanation = `Row ${cy + 1} never slides, so only a column move can shift this ${name}: take it to ${where}${tail}.`;
   } else if (col === cx && m.axis === "row") {
-    explanation = `The centre column never slides, so the only way to move this ${name} is along its row: take it to ${where}${tail}.`;
-  } else if (focus.belongs && isBesideCentre(focus.destination, w, cx, cy)) {
-    // The centre tile can never move — both lines through it are frozen — so the
-    // network has to be built around it, starting with its own neighbours.
-    explanation = `The centre tile can never move, so the network has to be built around it — and this ${name} belongs right beside it: take it to ${where}${tail}.`;
+    explanation = `Column ${cx + 1} never slides, so only a row move can shift this ${name}: take it to ${where}${tail}.`;
+  } else if (focus.belongs && isBesideSource(focus.destination, w, cx, cy)) {
+    // Stated, not argued: the network grows outward from the source, so a tile
+    // that belongs against it is worth naming — but *why* the source is fixed is a
+    // rule of the game, and the help text is where rules live.
+    //
+    // The consequence still has to be said, and "belongs beside the source" is
+    // itself the arrival marker: appending `tail`'s ", where it belongs" would say
+    // "belongs" twice in one sentence. So the arriving leg leads with the
+    // imperative and closes on the arrival; a leg still on its way keeps the
+    // shared "(setting up)" marker, which is what tells the player the cell it is
+    // being taken to is not the one it belongs in.
+    explanation = arrivesHome
+      ? `Take this ${name} to ${where} — it belongs beside the source.`
+      : `This ${name} belongs beside the source: take it to ${where} ${HINT_SETTING_UP}.`;
   } else {
     explanation = `Working on the highlighted ${name}: take it to ${where}${tail}.`;
   }
@@ -710,9 +732,10 @@ function narrateStep(
   return { move, explanation, highlights: highlightsFor(s, move, focus) };
 }
 
-/** Is `cell` orthogonally adjacent to the centre tile? (Not toroidally: the claim
- * is about the picture the player is looking at.) */
-function isBesideCentre(cell: number, w: number, cx: number, cy: number): boolean {
+/** Is `cell` orthogonally adjacent to the source — the tile power flows from, whose
+ * row and column are both frozen? (Not toroidally: the claim is about the picture
+ * the player is looking at.) */
+function isBesideSource(cell: number, w: number, cx: number, cy: number): boolean {
   const dx = Math.abs((cell % w) - cx);
   const dy = Math.abs(Math.floor(cell / w) - cy);
   return dx + dy === 1;
