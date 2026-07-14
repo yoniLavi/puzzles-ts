@@ -313,6 +313,64 @@ export function obviousCandidateMarks(
   return marks;
 }
 
+/** Narration for the populate opener — shared verbatim across the candidate
+ * games modulo the game's own noun ("number", "height", …). Undead's opener
+ * ("pencilling every monster into…") is structurally different and stays
+ * game-local. */
+export function populateText(noun: string): string {
+  return `Start by pencilling in every candidate ${noun} in each empty cell, so the eliminations that follow have something to cross out.`;
+}
+
+/** Narration for the obvious-cleanup step, parameterised by the game's noun,
+ * its placement verb ("standing", "placed"), and its region phrase ("row or
+ * column", "row, column or block"). */
+export function cleanObviousText(
+  noun: string,
+  placedVerb: string,
+  regions: string,
+): string {
+  return `Now clear the easy ones: in each cell, cross out any ${noun} already ${placedVerb} in its ${regions} — the same cleanup the “fill all pencil marks” button does.`;
+}
+
+/** The populate/mark-all opener step. It deliberately declares **no board
+ * marks** — the banner narration is the whole display, and the cross-game
+ * guards (`hint-overlay.test.ts`, `hint-quality.test.ts`) recognise exactly
+ * this shape as the one step allowed to paint nothing. Building it here keeps
+ * that contract in one place. */
+export function populateStep<M, H>(move: M, explanation: string): HintStep<M, H> {
+  return {
+    move,
+    explanation,
+    highlights: { area: [], targets: [], marks: [] } as unknown as H,
+  };
+}
+
+/** Lazy populate for a Latin-family candidate game: nothing is filled (and no
+ * step emitted) until an elimination actually needs notes to cross out. The
+ * four consumers (Towers, Unequal, Keen, Solo) shared this closure verbatim
+ * before it was hoisted. `done()` reports whether notes already exist —
+ * builders use it to decide when to emit the one-off obvious-cleanup step. */
+export function lazyPopulate<M, H>(
+  state: { grid: ArrayLike<number>; pencil: ArrayLike<number> },
+  wGrid: ArrayLike<number>,
+  wPen: Int32Array,
+  w: number,
+  steps: HintStep<M, H>[],
+  explanation: string,
+): { ensure(): void; done(): boolean } {
+  let populated = !anyEmptyLacksNotes(state.grid, state.pencil, w);
+  return {
+    ensure(): void {
+      if (populated) return;
+      const all = (1 << (w + 1)) - (1 << 1);
+      for (let i = 0; i < w * w; i++) if (!wGrid[i]) wPen[i] = all;
+      steps.push(populateStep({ type: "pencilAll" } as unknown as M, explanation));
+      populated = true;
+    },
+    done: (): boolean => populated,
+  };
+}
+
 /** The adaptive mark-all move (design: fill, then clean obvious). If any empty cell
  * has *zero* notes, fill every note-less empty cell with all candidates
  * (`pencilAll` — today's behaviour); otherwise strike each cell's
