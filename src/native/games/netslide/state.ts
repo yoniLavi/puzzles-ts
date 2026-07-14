@@ -417,13 +417,18 @@ function addBarrierCorners(barriers: Uint8Array, w: number, h: number): void {
  * Upstream drains its worklist in sorted order via a `tree234`. That is
  * incidental — a flood fill's reachable set does not depend on visit order, and
  * this never feeds the desc — so a plain stack is used.
+ *
+ * `tiles` defaults to the state's own grid. The hint overrides it to ask the
+ * same question of a *rearranged* grid — "would this arrangement win?" — without
+ * building a whole state per candidate board.
  */
 export function computeActive(
   s: NetslideState,
   movingRow: number,
   movingCol: number,
+  tiles: Uint8Array = s.tiles,
 ): Uint8Array {
-  const { w, h, tiles, barriers } = s;
+  const { w, h, barriers } = s;
   const active = new Uint8Array(w * h);
 
   active[s.cy * w + s.cx] = ACTIVE;
@@ -450,9 +455,10 @@ export function computeActive(
   return active;
 }
 
-/** Is every tile powered from the centre? */
-export function isComplete(s: NetslideState): boolean {
-  return computeActive(s, -1, -1).every((a) => a !== 0);
+/** Is every tile powered from the centre? `tiles` defaults to the state's own
+ * grid; the hint passes a candidate arrangement to ask whether it would win. */
+export function isComplete(s: NetslideState, tiles: Uint8Array = s.tiles): boolean {
+  return computeActive(s, -1, -1, tiles).every((a) => a !== 0);
 }
 
 /* ----------------------------------------------------------------------

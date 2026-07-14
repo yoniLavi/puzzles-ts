@@ -475,11 +475,16 @@ describe("netslide solve and save", () => {
     expect(statusBar()).toContain("Active: 25/25");
   });
 
-  it("declines to solve a game built from a descriptive id (it has no aux)", () => {
+  it("solves a game built from a descriptive id, which carries no aux", () => {
+    // Upstream gives up here, and so did this port: a `params:desc` id — what a
+    // shared link or a bookmark hands you — has no `aux`, and Netslide has no
+    // solver. The finished grid is recovered from the board itself instead
+    // (`reconstruct.ts`), so Solve works on any board a player can be looking at.
+    // Owner-reported against `?id=3x3:52h9hbd4h4v34`.
     const { desc } = newDesc(EASY_5x5, randomNew("no-aux"));
-    const me = new Midend(netslideGame);
-    expect(me.newGameFromId(`5x5b1:${desc}`)).toBeUndefined();
-    expect(me.solve()).toBe("Solution not known for this puzzle");
+    const { me, statusBar } = driven(`5x5b1:${desc}`);
+    expect(me.solve()).toBeUndefined();
+    expect(statusBar()).toContain("Active: 25/25");
   });
 
   it("round-trips a game with progress through save/load", () => {

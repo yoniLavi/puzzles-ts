@@ -29,6 +29,12 @@ import {
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
+  planSlides,
+  type SlideMove,
+  slidePieces,
+  toroidalDist,
+} from "../../engine/slide-planner.ts";
+import {
   CursorMode,
   decodeParams,
   defaultParams,
@@ -1014,47 +1020,6 @@ function statusbarText(state: SixteenState, _ui: SixteenUi): string {
 
 // --- hint heuristic ----------------------------------------------------
 
-/** Toroidal distance: shortest distance on a wrap-around axis of length `len`. */
-function toroidalDist(from: number, to: number, len: number): number {
-  const d = Math.abs(from - to);
-  return Math.min(d, len - d);
-}
-
-function slideTilesInto(
-  src: Int32Array,
-  dest: Int32Array,
-  w: number,
-  h: number,
-  move: Extract<SixteenMove, { type: "slide" }>,
-): void {
-  const { axis, index, delta } = move;
-  dest.set(src);
-
-  if (axis === "row") {
-    const offset = index * w;
-    for (let x = 0; x < w; x++) {
-      const srcX = (((x - delta) % w) + w) % w;
-      dest[offset + x] = src[offset + srcX];
-    }
-  } else {
-    for (let y = 0; y < h; y++) {
-      const srcY = (((y - delta) % h) + h) % h;
-      dest[y * w + index] = src[srcY * w + index];
-    }
-  }
-}
-
-function arrayToKey(arr: Int32Array): string {
-  let s = "";
-  const len = arr.length;
-  for (let i = 0; i < len; i++) {
-    s += String.fromCharCode(arr[i]);
-  }
-  return s;
-}
-
-type SlideMove = Extract<SixteenMove, { type: "slide" }>;
-
 /** Test-only diagnostic: whether the most recent `hint()` engaged the exact
  * bidirectional fallback — the expensive (~0.5-2s) path the no-progress gate
  * exists to avoid on boards the forward search can already make progress on.
@@ -1065,354 +1030,109 @@ export function __lastHintEngagedFallback(): boolean {
   return lastHintEngagedFallback;
 }
 
-/** Exact bidirectional BFS (in full-slide moves) from `start` to the
- * solved board: expand level by level from both ends, always growing the
- * smaller frontier, until the visited sets meet. Returns the full move
- * path of a shortest solution, or null when no meeting point is found
- * within the depth/state caps. */
-function bidirectionalPlan(
-  start: Int32Array,
-  w: number,
-  h: number,
-  n: number,
-  moves: SlideMove[],
-): SlideMove[] | null {
-  const MAX_TOTAL_DEPTH = 10;
-  const MAX_STATES = 1_500_000;
-
-  const goal = new Int32Array(n);
-  for (let i = 0; i < n; i++) goal[i] = i + 1;
-
-  const invert = (m: SlideMove): SlideMove => ({ ...m, delta: -m.delta });
-
-  /** `parent` walks toward the start; `move` is the forward-direction
-   * move that leads from the parent to this node. */
-  interface FwdInfo {
-    parent: string | null;
-    move: SlideMove | null;
-  }
-  /** `parent` walks toward the goal; `out` is the forward-direction
-   * move that leads from this node to the parent. */
-  interface BwdInfo {
-    parent: string | null;
-    out: SlideMove | null;
-  }
-  interface FrontierNode {
-    tiles: Int32Array;
-    key: string;
-  }
-
-  const startKey = arrayToKey(start);
-  const goalKey = arrayToKey(goal);
-  const fwdSeen = new Map<string, FwdInfo>([[startKey, { parent: null, move: null }]]);
-  const bwdSeen = new Map<string, BwdInfo>([[goalKey, { parent: null, out: null }]]);
-  let fwdFrontier: FrontierNode[] = [{ tiles: start, key: startKey }];
-  let bwdFrontier: FrontierNode[] = [{ tiles: goal, key: goalKey }];
-  let depth = 0;
-
-  const scratch = new Int32Array(n);
-
-  /** The shortest path start→goal through a meeting key present in
-   * both visited maps: the forward parent chain (reversed) followed by
-   * the backward parent chain's outgoing moves. */
-  const joinPaths = (meetKey: string): SlideMove[] => {
-    const path: SlideMove[] = [];
-    for (
-      let info = fwdSeen.get(meetKey);
-      info !== undefined && info.move !== null && info.parent !== null;
-      info = fwdSeen.get(info.parent)
-    ) {
-      path.push(info.move);
-    }
-    path.reverse();
-    for (
-      let info = bwdSeen.get(meetKey);
-      info !== undefined && info.out !== null && info.parent !== null;
-      info = bwdSeen.get(info.parent)
-    ) {
-      path.push(info.out);
-    }
-    return path;
+/** Sixteen's own move for a planned slide. The planner's `delta` already means
+ * "how far a tile travels", which is Sixteen's sense too, so only the axis
+ * spelling differs. */
+function toSixteenMove(m: SlideMove): SixteenMove {
+  return {
+    type: "slide",
+    axis: m.axis === "row" ? "row" : "column",
+    index: m.index,
+    delta: m.delta,
   };
-
-  while (
-    fwdFrontier.length > 0 &&
-    bwdFrontier.length > 0 &&
-    depth < MAX_TOTAL_DEPTH &&
-    fwdSeen.size + bwdSeen.size < MAX_STATES
-  ) {
-    const forward = fwdFrontier.length <= bwdFrontier.length;
-    const frontier = forward ? fwdFrontier : bwdFrontier;
-    const next: FrontierNode[] = [];
-    for (const node of frontier) {
-      if (forward) {
-        for (const move of moves) {
-          slideTilesInto(node.tiles, scratch, w, h, move);
-          const key = arrayToKey(scratch);
-          if (fwdSeen.has(key)) continue;
-          fwdSeen.set(key, { parent: node.key, move });
-          if (bwdSeen.has(key)) return joinPaths(key);
-          next.push({ tiles: new Int32Array(scratch), key });
-        }
-      } else {
-        for (const move of moves) {
-          slideTilesInto(node.tiles, scratch, w, h, move);
-          const key = arrayToKey(scratch);
-          if (bwdSeen.has(key)) continue;
-          // In forward direction, this edge runs successor --inv(move)--> node.
-          bwdSeen.set(key, { parent: node.key, out: invert(move) });
-          if (fwdSeen.has(key)) return joinPaths(key);
-          next.push({ tiles: new Int32Array(scratch), key });
-        }
-      }
-    }
-    if (forward) {
-      fwdFrontier = next;
-    } else {
-      bwdFrontier = next;
-    }
-    depth++;
-  }
-  return null;
 }
 
 function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlights> {
   const { w, h, n, tiles } = state;
 
-  // Already solved?
-  let solved = true;
-  for (let i = 0; i < n; i++) {
-    if (tiles[i] !== i + 1) {
-      solved = false;
-      break;
-    }
-  }
-  if (solved) return { ok: false, error: "Already solved" };
-
   let outOfPlace = 0;
   for (let i = 0; i < n; i++) {
-    if (tiles[i] !== i + 1) {
-      outOfPlace++;
-    }
+    if (tiles[i] !== i + 1) outOfPlace++;
   }
+  if (outOfPlace === 0) return { ok: false, error: "Already solved" };
 
-  // A* Search settings
-  // Near the solved state, a somewhat larger budget resolves shallow
-  // plateaus; deep local minima (e.g. swapped pairs) are beyond ANY
-  // sane forward budget and are handled by the exact bidirectional
-  // fallback below, so there is no point burning a huge budget here.
-  const maxStates = outOfPlace <= 8 ? 6000 : 4000;
-
-  const targetR = new Int32Array(n + 1);
-  const targetC = new Int32Array(n + 1);
-  for (let tile = 1; tile <= n; tile++) {
-    targetR[tile] = Math.floor((tile - 1) / w);
-    targetC[tile] = (tile - 1) % w;
-  }
-
-  const cellR = new Int32Array(n);
-  const cellC = new Int32Array(n);
-  for (let i = 0; i < n; i++) {
-    cellR[i] = Math.floor(i / w);
-    cellC[i] = i % w;
-  }
-
-  // Precompute static toroidal Manhattan distances once for this board configuration.
-  // distTable[cellIndex * (n + 1) + tile] holds the distance from cell cellIndex to target of tile.
-  const distTable = new Int32Array(n * (n + 1));
-  for (let i = 0; i < n; i++) {
-    for (let tile = 1; tile <= n; tile++) {
-      distTable[i * (n + 1) + tile] =
-        toroidalDist(cellR[i], targetR[tile], h) +
-        toroidalDist(cellC[i], targetC[tile], w);
-    }
-  }
-
-  const getHeuristic = (board: Int32Array): number => {
-    let total = 0;
-    const len = board.length;
-    const rowStride = n + 1;
-    for (let i = 0; i < len; i++) {
-      total += distTable[i * rowStride + board[i]];
-    }
-    return total;
-  };
-
-  const startH = getHeuristic(tiles);
-
-  // Store visited states and their best g values
-  const visited = new Map<string, number>();
-  visited.set(arrayToKey(tiles), 0);
-
-  // Priority Queue using Bucket Queue for O(1) state management.
-  // Since f = g + h is always a small integer, we can bucket nodes by their f value.
-  // Parent pointers reconstruct the full move path; nodes are already
-  // retained by the bucket queue, so the chains add two references per
-  // node and no new allocation pattern.
-  interface SearchNode {
-    tiles: Int32Array;
-    g: number;
-    h: number;
-    f: number;
-    parent: SearchNode | null;
-    move: SlideMove | null;
-  }
-
-  const buckets: SearchNode[][] = [];
-  let minF = startH;
-  let queueSize = 0;
-
-  const insertSorted = (node: SearchNode) => {
-    const f = node.f;
-    if (!buckets[f]) {
-      buckets[f] = [];
-    }
-    buckets[f].push(node);
-    if (f < minF) {
-      minF = f;
-    }
-    queueSize++;
-  };
-
-  insertSorted({
-    tiles,
-    g: 0,
-    h: startH,
-    f: startH,
-    parent: null,
-    move: null,
-  });
-
-  let expanded = 0;
-  let bestNode: SearchNode = buckets[startH][0];
-
-  // Pre-generate all legal moves from any state. A slide by any distance
-  // is a single move — the same granularity as a player's drag and the
-  // move counter — so the planner's first move is directly executable as
-  // one full slide (executing a longer journey than the plan's first
-  // step deviated from the plan and caused auto-hint cycles).
-  const moves: Extract<SixteenMove, { type: "slide" }>[] = [];
+  // Every legal move: a slide of any line by any distance. A slide by any
+  // distance is a *single* move — the same granularity as a player's drag and
+  // as the move counter — so the plan's first move is directly executable
+  // (executing a longer journey than the plan's first step deviated from the
+  // plan and caused auto-hint cycles).
+  const moves: SlideMove[] = [];
   for (let r = 0; r < h; r++) {
     for (let delta = 1; delta < w; delta++) {
-      moves.push({ type: "slide", axis: "row", index: r, delta });
+      moves.push({ axis: "row", index: r, delta });
     }
   }
   for (let c = 0; c < w; c++) {
     for (let delta = 1; delta < h; delta++) {
-      moves.push({ type: "slide", axis: "column", index: c, delta });
+      moves.push({ axis: "col", index: c, delta });
     }
   }
 
-  const popMin = (): SearchNode | null => {
-    while (minF < buckets.length) {
-      const bucket = buckets[minF];
-      if (bucket && bucket.length > 0) {
-        queueSize--;
-        const nextNode = bucket.pop();
-        if (nextNode !== undefined) return nextNode;
-      }
-      minF++;
+  // Every tile is distinct and belongs in the cell one below its own number, so
+  // "how far from finished" is just the total distance the tiles must travel.
+  // Precomputed per (cell, tile) so the heuristic is a sum of table lookups.
+  const goal = new Int32Array(n);
+  for (let i = 0; i < n; i++) goal[i] = i + 1;
+
+  const stride = n + 1;
+  const distTable = new Int32Array(n * stride);
+  for (let cell = 0; cell < n; cell++) {
+    for (let tile = 1; tile <= n; tile++) {
+      distTable[cell * stride + tile] =
+        toroidalDist(Math.floor(cell / w), Math.floor((tile - 1) / w), h) +
+        toroidalDist(cell % w, (tile - 1) % w, w);
     }
-    return null;
+  }
+  const heuristic = (board: Int32Array): number => {
+    let total = 0;
+    for (let cell = 0; cell < n; cell++)
+      total += distTable[cell * stride + board[cell]];
+    return total;
   };
 
-  // Reusable scratch buffer to generate move states and check visited list BEFORE allocating arrays.
-  const scratchTiles = new Int32Array(n);
-
-  while (queueSize > 0 && expanded < maxStates) {
-    const curr = popMin();
-    if (!curr) break;
-    expanded++;
-
-    // Check if solved
-    if (curr.h === 0) {
-      bestNode = curr;
-      break;
-    }
-
-    // Track state with absolute lowest heuristic value
-    if (curr.h < bestNode.h) {
-      bestNode = curr;
-    }
-
-    for (const move of moves) {
-      // Avoid immediately undoing or contradicting the last move on the first step of the path.
-      if (curr.g === 0 && state.lastMove && state.lastMove.type === "slide") {
-        const last = state.lastMove;
-        if (move.axis === last.axis && move.index === last.index) {
-          const lim = move.axis === "row" ? w : h;
-          const normalize = (d: number) => {
-            let nd = ((d % lim) + lim) % lim;
-            if (nd > lim / 2) nd -= lim;
-            return nd;
-          };
-          const nd1 = normalize(last.delta);
-          const ndSum = normalize(last.delta + move.delta);
-          if (Math.abs(ndSum) < Math.abs(nd1)) {
-            continue;
+  const last = state.lastMove;
+  const plan = planSlides({
+    w,
+    h,
+    start: tiles,
+    goal,
+    heuristic,
+    moves,
+    // Near the solved state a somewhat larger budget resolves shallow
+    // plateaus; deep local minima (two swapped pairs) are beyond *any* sane
+    // forward budget and are the exact fallback's job, so there is no point
+    // burning a huge budget here.
+    maxStates: outOfPlace <= 8 ? 6000 : 4000,
+    // Don't open by undoing (or partly undoing) the slide the player just made.
+    rejectFirstMove:
+      last?.type === "slide"
+        ? (m) => {
+            const axis = m.axis === "row" ? "row" : "column";
+            if (axis !== last.axis || m.index !== last.index) return false;
+            const lim = m.axis === "row" ? w : h;
+            const normalize = (d: number) => {
+              let nd = ((d % lim) + lim) % lim;
+              if (nd > lim / 2) nd -= lim;
+              return nd;
+            };
+            return (
+              Math.abs(normalize(last.delta + m.delta)) <
+              Math.abs(normalize(last.delta))
+            );
           }
-        }
-      }
+        : undefined,
+    // A local minimum sits ~8 plies uphill — beyond any forward budget — but
+    // meeting in the middle crosses it at ~4 plies a side, paid once for the
+    // whole endgame thanks to plan-carrying. Only worth it near the end, and
+    // only once the forward search has proved itself helpless.
+    exactSearch:
+      outOfPlace <= 8
+        ? { when: "no-progress" as const, maxDepth: 10, maxStates: 4_000_000 }
+        : undefined,
+  });
 
-      slideTilesInto(curr.tiles, scratchTiles, w, h, move);
-      const key = arrayToKey(scratchTiles);
-      const nextG = curr.g + 1;
-
-      const prevG = visited.get(key);
-      if (prevG !== undefined && prevG <= nextG) {
-        continue;
-      }
-
-      visited.set(key, nextG);
-      const nextH = getHeuristic(scratchTiles);
-
-      // Lazy Allocation: Only construct new Int32Array and node object when actually accepted into queue!
-      const nextTiles = new Int32Array(scratchTiles);
-      const nextNode: SearchNode = {
-        tiles: nextTiles,
-        g: nextG,
-        h: nextH,
-        f: nextG + nextH,
-        parent: curr,
-        move,
-      };
-
-      insertSorted(nextNode);
-    }
-  }
-
-  // Plan selection: use the heuristic search's path when it reached the
-  // goal or at least improved on the start position; only when it made
-  // NO progress at all — a strict local minimum, e.g. two swapped
-  // pairs, where every single slide makes the distance heuristic worse
-  // and `bestNode` is still the start node — fall back to an exact
-  // bidirectional search on near-solved boards. Those minima sit ~8
-  // plies uphill, beyond any sane forward budget, but meeting in the
-  // middle crosses them at ~4 plies per side for ~0.5-2s, paid once
-  // for the whole endgame thanks to plan-carrying. The no-progress
-  // gate matters: mid-game boards with few-but-deep displacements
-  // (e.g. a 7-cycle needing 12 slides) used to engage the fallback
-  // too, burning ~3s hitting its depth cap before returning the
-  // forward search's partial plan anyway.
-  const pathTo = (node: SearchNode): SlideMove[] => {
-    const path: SlideMove[] = [];
-    for (let p: SearchNode | null = node; p !== null && p.move !== null; p = p.parent) {
-      path.push(p.move);
-    }
-    return path.reverse();
-  };
-
-  // The myopic case (search failed to reach the goal but improved on
-  // the start) yields a *partial* plan — the path to `bestNode`. That
-  // is fine: the plan runs out and the next request recomputes from
-  // the better position.
-  let path: SlideMove[] | null = null;
-  lastHintEngagedFallback = false;
-  if (bestNode.h !== 0 && bestNode.move === null && outOfPlace <= 8) {
-    lastHintEngagedFallback = true;
-    path = bidirectionalPlan(tiles, w, h, n, moves);
-  }
-  path ??= pathTo(bestNode);
+  lastHintEngagedFallback = plan.usedExactSearch;
+  const path = plan.moves;
   if (path.length === 0) {
     return { ok: false, error: "No helpful hint found" };
   }
@@ -1435,7 +1155,7 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
         : null;
     steps.push(narrateStep(board, w, h, path[k], path[k + 1] ?? null, journey));
     const next = new Int32Array(n);
-    slideTilesInto(board, next, w, h, path[k]);
+    slidePieces(board, next, w, h, path[k]);
     board = next;
   }
 
@@ -1550,10 +1270,9 @@ function narrateStep(
 
   if (nextMove && nextMove.axis !== move.axis) {
     const onSecondLine =
-      nextMove.axis === "column" ? nextMove.index === landC : nextMove.index === landR;
+      nextMove.axis === "col" ? nextMove.index === landC : nextMove.index === landR;
     if (onSecondLine) {
-      const ultR =
-        nextMove.axis === "column" ? (landR + nextMove.delta + h) % h : landR;
+      const ultR = nextMove.axis === "col" ? (landR + nextMove.delta + h) % h : landR;
       const ultC = nextMove.axis === "row" ? (landC + nextMove.delta + w) % w : landC;
       const ult = ultR * w + ultC;
       if (ult !== targetPos && ult !== currentIdx) {
@@ -1584,8 +1303,9 @@ function narrateStep(
   // (same permutation mod w/h) so the slide animation glides the tile
   // straight to its target box rather than wrapping across the edge.
   const inGridDelta = move.axis === "row" ? landC - curC : landR - curR;
-  const outMove: SixteenMove =
-    inGridDelta === move.delta ? move : { ...move, delta: inGridDelta };
+  const outMove = toSixteenMove(
+    inGridDelta === move.delta ? move : { ...move, delta: inGridDelta },
+  );
 
   return {
     move: outMove,
