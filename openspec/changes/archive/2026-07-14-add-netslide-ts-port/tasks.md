@@ -96,10 +96,15 @@
 
 ## 7. Owner acceptance → stage 2
 
-- [ ] 7.1 Owner accepts full behavioural parity.
-- [ ] 7.2 Flip `TS_PORTED` in `puzzles/CMakeLists.txt`; delete
+- [x] 7.1 Owner accepted full behavioural parity (2026-07-14).
+- [x] 7.2 Flip `TS_PORTED` in `puzzles/CMakeLists.txt`; delete
       `puzzles/netslide.c` + `puzzles/auxiliary/netslide-trace.c` (+ its
       CMake line); `rm -rf build/wasm/` and rebuild; confirm netslide is in
       the catalog with no `netslide.wasm`.
-- [ ] 7.3 Update `AGENTS.md` with the port entry; `openspec archive
-      add-netslide-ts-port --yes` in the same commit as the C deletion.
+- [x] 7.3 Dev guides updated with what this port taught (5 new
+      `game-port-playbook.md` lessons — see the stage-1 commit). `AGENTS.md`
+      needed no edit: it carries no per-port changelog past the
+      pattern-establishing ports, and netslide moves none of its standing
+      claims (the supersede long-tail risk still names Mines/Net; `tree234.c`
+      still has C consumers). `openspec archive add-netslide-ts-port --yes`
+      in the same commit as the C deletion.
