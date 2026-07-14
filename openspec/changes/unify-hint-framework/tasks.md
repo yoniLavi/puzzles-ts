@@ -5,30 +5,42 @@
 
 ## 0. Audit — read what we actually shipped
 
-- [ ] 0.1 Inventory all 20 hinting games: what each one's hint is (deductive / movement /
+- [x] 0.1 Inventory all 20 hinting games: what each one's hint is (deductive / movement /
       objective), which shared modules it uses, and which mechanics it re-derives. Table
       goes in `design.md`.
-- [ ] 0.2 Classify all 24 hint `fix(...)` commits into the six recurrence classes (or new
-      ones the reading turns up). A class with one game is not a class.
-- [ ] 0.3 **Check the live latent bugs the Netslide fix implies**: do Sixteen and Fifteen
+- [x] 0.2 Classify all 24 hint `fix(...)` commits into the six recurrence classes (or new
+      ones the reading turns up). A class with one game is not a class. **Result: 22
+      commits classified (design.md §0.2). Classes 4/5/6/7 recurred across games; class 1
+      hit only Netslide; class 3's shipped fixes hit only Sixteen; class 2's evidence is
+      real but lives outside `fix(hint)` commits (playbook §3.2).**
+- [x] 0.3 **Check the live latent bugs the Netslide fix implies**: do Sixteen and Fifteen
       mis-place their hint marks mid-animation (the S1 bug, same structure)? Reach the
       frame with the tier-2.5 harness, as `netslide-hint.test.ts` does. If yes, that is
-      both a bug to fix and the strongest possible evidence for S1.
-- [ ] 0.4 Check whether every hinting game is actually enrolled in `hint-resume.test.ts`.
+      both a bug to fix and the strongest possible evidence for S1. **Result: not live —
+      both mark tiles by identity, not cell index; mid-slide-frame guards added to
+      `sixteen.test.ts` and `fifteen-render.test.ts` (design.md §0.3).**
+- [x] 0.4 Check whether every hinting game is actually enrolled in `hint-resume.test.ts`.
       Any that is not is an unguarded plan-stability regression waiting to happen.
-- [ ] 0.5 For each rule in `hint-authoring.md`, mark it: *structural* (the code prevents
+      **Result: all 20 enrolled, in all three cross-game guards (design.md §0.4).**
+- [x] 0.5 For each rule in `hint-authoring.md`, mark it: *structural* (the code prevents
       the mistake), *guarded* (a test prevents it), or *remembered* (only review prevents
-      it). The "remembered" list is the target list.
+      it). The "remembered" list is the target list. **Result: 70 rules — ~8 structural,
+      5 guarded (all in `hint-resume.test.ts`), ~57 remembered (design.md §0.5).**
 
 ## 1. Decide — go/no-go per seam
 
-- [ ] 1.1 Score S1–S5 against the four criteria in `design.md`. Write the verdict and the
-      reasoning for each, including the no-gos.
-- [ ] 1.2 Confirm with the owner before any extraction begins. A survey that concludes
+- [x] 1.1 Score S1–S5 against the four criteria in `design.md`. Write the verdict and the
+      reasoning for each, including the no-gos. **Result (design.md Phase 1): S1 no-go
+      (closed by Phase-0 guards), S2 no-go, S3 GO (cross-game narration guards), S4 GO
+      (cross-game paint-twice guard only), S5 no-go (already done).**
+- [x] 1.2 Confirm with the owner before any extraction begins. A survey that concludes
       "leave it alone" is a valid, successful outcome — say so plainly if that is what the
-      evidence says.
-- [ ] 1.3 If go: sequence the seams into changes (one seam per change if any is large;
-      S2 never shares a change with another seam).
+      evidence says. **Owner 2026-07-14: GO on both guards (S3+S4), and the criteria were
+      too harsh — "noticeably cleaner" abstractions are also in scope (design.md "Owner
+      decision" section; Phase 2b worklist).**
+- [x] 1.3 If go: sequence the seams into changes (one seam per change if any is large;
+      S2 never shares a change with another seam). **Sequenced inside this change:
+      2a guards (S4 then S3), then 2b cleanliness refactors one at a time (design.md).**
 
 ## 2. Extract (only if 1.2 says go)
 

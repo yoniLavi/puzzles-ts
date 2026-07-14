@@ -1098,3 +1098,147 @@ describe("Sixteen hint track and direction fixes", () => {
     expect(h4.move).toEqual({ type: "slide", axis: "row", index: 0, delta: -1 });
   });
 });
+
+describe("the hint marks while the hinted slide animates", () => {
+  // Netslide's owner-reported defect class (edadec1): once the hinted slide
+  // starts animating, a mark on the *moving tile* must ride the slide and a
+  // mark on a *fixed cell* must stay put — the midend advances the plan only
+  // at animation end, so the displayed step's indices refer to the board the
+  // move left behind. Sixteen holds both properties by construction (the
+  // tile mark is keyed by tile *number*, so it follows the tile through the
+  // interpolated draw; the target border is drawn after the tile loop at the
+  // cell's own coordinates). These tests pin that down at an actual
+  // mid-slide frame, which the settled-frame snapshots cannot see.
+  const TS = 48;
+  const BORDER = TS; // sixteen's border(ts) = ts
+  const HW = Math.max(1, Math.floor(TS / 20)); // HIGHLIGHT_WIDTH_DIV = 20
+  const px = (cell: number) => cell * TS + BORDER;
+
+  interface Op {
+    op: string;
+    colour?: number;
+    x?: number;
+    y?: number;
+    w?: number;
+    h?: number;
+  }
+
+  function coordRecordingDrawing(): { dr: GameDrawing; ops: Op[] } {
+    const ops: Op[] = [];
+    const dr = {
+      startDraw: () => {},
+      endDraw: () => {},
+      drawUpdate: () => {},
+      clip: () => {},
+      unclip: () => {},
+      drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
+        ops.push({ op: "rect", colour: c, x: r.x, y: r.y, w: r.w, h: r.h }),
+      drawLine: () => {},
+      drawPolygon: (p: { x: number; y: number }[], f: number) =>
+        ops.push({ op: "polygon", colour: f, x: p[0].x, y: p[0].y }),
+      drawCircle: () => {},
+      drawText: (p: { x: number; y: number }, _o: unknown, c: number) =>
+        ops.push({ op: "text", colour: c, x: p.x, y: p.y }),
+      blitterNew: () => ({}),
+      blitterFree: () => {},
+      blitterSave: () => {},
+      blitterLoad: () => {},
+    } as unknown as GameDrawing;
+    return { dr, ops };
+  }
+
+  /** A mid-slide frame of the hinted move, on the first board whose hint step
+   * slides its tile one straight (unwrapped) cell and aims the target border
+   * at a cell on the line being slid — the only case where a border wrongly
+   * painted in the shifted tile pass would visibly move. */
+  function animatingFrame() {
+    for (let i = 0; i < 60; i++) {
+      const rng = randomNew(`hint-anim-${i}`);
+      const params = defaultParams();
+      const { desc } = newDesc(params, rng);
+      const state = newState(params, desc);
+      const res = sixteenGame.hint?.(state);
+      if (!res?.ok) continue;
+      const step = res.steps[0];
+      if (step.move.type !== "slide") continue;
+      const m = step.move;
+      const hl = step.highlights as SixteenHintHighlights;
+      if (hl.ultimatePos !== undefined) continue; // want the solid target border
+      const after = executeMove(state, m);
+      const w = state.w;
+      const from = state.tiles.indexOf(hl.tile);
+      const to = after.tiles.indexOf(hl.tile);
+      // The hinted tile must move without wrapping round the torus, so the
+      // expected mid-slide position is closed-form.
+      const straight =
+        m.axis === "row"
+          ? Math.floor(to / w) === Math.floor(from / w) &&
+            (to % w) - (from % w) === m.delta
+          : to % w === from % w &&
+            Math.floor(to / w) - Math.floor(from / w) === m.delta;
+      if (!straight) continue;
+      const onLine =
+        m.axis === "row"
+          ? Math.floor(hl.targetPos / w) === m.index
+          : hl.targetPos % w === m.index;
+      if (!onLine) continue;
+
+      const ds = sixteenGame.newDrawState?.(state);
+      if (!ds) throw new Error("no draw state");
+      sixteenGame.setTileSize?.(ds, TS);
+      const ui = sixteenGame.newUi(state);
+
+      // Paint the still pre-move frame first, so the cache is warm exactly
+      // as in the app when the hinted slide begins.
+      sixteenGame.redraw?.(coordRecordingDrawing().dr, ds, null, state, 1, ui, 0, 0, step);
+
+      // Halfway through the slide.
+      const anim = sixteenGame.animLength?.(state, after, 1, ui) ?? 0;
+      const { dr, ops } = coordRecordingDrawing();
+      sixteenGame.redraw?.(dr, ds, state, after, 1, ui, anim / 2, 0, step);
+      return { state, after, m, hl, from, ops };
+    }
+    throw new Error(
+      "no board in 60 gave a straight hinted slide aimed along its own line",
+    );
+  }
+
+  it("carries the tile mark along with the tile it is marking", () => {
+    const { state, m, from, ops } = animatingFrame();
+    const w = state.w;
+
+    // Half a slide in, the tile sits half a tile from its origin toward its
+    // landing cell; the hint fill is drawTile's centre rect, inset by HW.
+    const shift = Math.round(0.5 * TS * m.delta);
+    const ex = px(from % w) + (m.axis === "row" ? shift : 0) + HW;
+    const ey = px(Math.floor(from / w)) + (m.axis === "column" ? shift : 0) + HW;
+
+    const fills = ops.filter(
+      (o) =>
+        o.op === "rect" && o.colour === 4 && o.w === TS - 2 * HW && o.h === TS - 2 * HW,
+    );
+    expect(
+      fills.length,
+      "the hinted tile is not painted in the hint colour",
+    ).toBeGreaterThan(0);
+    for (const f of fills) {
+      expect({ x: f.x, y: f.y }).toEqual({ x: ex, y: ey });
+    }
+  });
+
+  it("leaves the target border where the target cell is", () => {
+    const { state, hl, ops } = animatingFrame();
+    const w = state.w;
+
+    // The target is a *cell*; the line slides under it. The solid border's
+    // top edge is a full-width, 3px-tall rect at the cell's own corner.
+    const top = ops.find(
+      (o) => o.op === "rect" && o.colour === 4 && o.w === TS && o.h === 3,
+    );
+    expect(top, "the target cell is not outlined at all").toBeDefined();
+    expect(top).toMatchObject({
+      x: px(hl.targetPos % w),
+      y: px(Math.floor(hl.targetPos / w)),
+    });
+  });
+});

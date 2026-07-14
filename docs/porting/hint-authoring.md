@@ -914,10 +914,20 @@ grow branch in `drawTile`
 
 ### 5.8 In an animated game, a mark on a *tile* moves and a mark on a *cell* does not
 
+**First ask: does the game mark moving pieces by *identity* or by *position*?** A mark
+keyed by a stable piece identity (Sixteen/Fifteen highlight tile *number N*, painted as
+the tile's own background wherever the tile is drawn) rides any animation for free and
+cannot get this wrong — the `unify-hint-framework` audit (2026-07-14) confirmed both are
+structurally immune, and pinned it with mid-animation-frame tests (`sixteen.test.ts`,
+`fifteen-render.test.ts`). The class below exists only where pieces are **anonymous**
+(Netslide's wire-mask tiles) so the hint must mark a *cell index* — and a cell index is
+board-relative, which is what goes stale. If your pieces have identities, mark by
+identity and this section is one test; if they do not, read on.
+
 Owner-reported on Netslide (2026-07-14): the hint's marks sat correctly on the still board,
 then **both jumped a cell the instant the slide began**, snapping back when it ended. Two
-different bugs wearing the same symptom, and a game whose moves animate (Netslide, Sixteen,
-Fifteen, and any future sliding/moving game) has both waiting for it:
+different bugs wearing the same symptom, and a game whose moves animate and whose marks
+are positional has both waiting for it:
 
 - **A mark on a tile must ride the animation.** A moving tile is drawn *offset* from its grid
   cell for the length of the move, so a highlight painted as part of that tile travels with it —
