@@ -7,6 +7,7 @@
  * cache-fragility doctrine fixes from `fix-flip-canvas-reshape`.
  */
 import { drawRectOutline, type GameDrawing } from "../../engine/index.ts";
+import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import {
   checkComplete,
   F_DOT,
@@ -52,8 +53,11 @@ export interface GalaxiesDrawState {
   /** Per-tile wrong-wall mask (DRAW_EDGE_L/R/U/D bits) for the mistake
    * overlay — a sidecar rather than a cache-key bit because there are no
    * free bits left in the Int32 key for four more edge flags. Part of
-   * the cache-miss comparison, so walls repaint clean when it clears. */
-  wrongEdges: Int32Array;
+   * the cache-miss comparison, so walls repaint clean when it clears.
+   * Packed by hand (`clear`/`add`) rather than from a cell list: one wrong
+   * wall is a *shared* edge, so it lights a different bit in each of the two
+   * tiles it separates. */
+  wrongEdges: OverlaySidecar;
 }
 
 const PREFERRED_TILE_SIZE = 32;
@@ -70,7 +74,7 @@ export function newDrawState(s: GalaxiesState): GalaxiesDrawState {
     cache,
     dx: new Int16Array(n),
     dy: new Int16Array(n),
-    wrongEdges: new Int32Array(n),
+    wrongEdges: new OverlaySidecar(n),
   };
 }
 
@@ -78,8 +82,9 @@ export function setTileSize(ds: GalaxiesDrawState, tileSize: number): void {
   if (ds.tileSize === tileSize) return;
   ds.tileSize = tileSize;
   ds.started = false;
+  // Every tile now misses on its key, so it repaints and re-commits its
+  // wrong-wall mask along with it.
   for (let i = 0; i < ds.cache.length; i++) ds.cache[i] = -1;
-  ds.wrongEdges.fill(0);
 }
 
 // --- flags encoded into the per-tile cache key ---------------------
@@ -329,20 +334,34 @@ export function redraw(
   const tile = ds.tileSize;
 
   // Split the mistake overlay into wrong-association tiles (folded into
-  // the cache key as DRAW_MISTAKE) and wrong walls (kept in the
+  // the cache key as DRAW_MISTAKE) and wrong walls (packed into the
   // `wrongEdges` sidecar). Empty when the engine supplies no overlay;
   // both feed the cache-miss check so cells repaint clean once cleared.
+  //
+  // A wall lives on a half-grid coordinate *between* two tiles, so it lights
+  // one bit in each of them: a vertical wall (even x, odd y) is the right-hand
+  // tile's L edge and the left-hand tile's R edge, and vice versa for a
+  // horizontal wall. Tiles off the board's rim simply drop out.
   const mistakeTiles = new Set<number>();
-  const wrongEdgeCells = new Set<number>();
-  if (mistakes) {
-    for (const m of mistakes) {
-      if (m.kind === "edge") {
-        wrongEdgeCells.add(m.y * (2 * w + 1) + m.x);
-      } else {
-        const tx = (m.x - 1) >> 1;
-        const ty = (m.y - 1) >> 1;
-        if (tx >= 0 && tx < w && ty >= 0 && ty < h) mistakeTiles.add(ty * w + tx);
-      }
+  ds.wrongEdges.clear();
+  const addWall = (tx: number, ty: number, bit: number) => {
+    if (tx >= 0 && tx < w && ty >= 0 && ty < h) ds.wrongEdges.add(ty * w + tx, bit);
+  };
+  for (const m of mistakes ?? []) {
+    if (m.kind === "edge") {
+      const vertical = m.x % 2 === 0;
+      const tx = vertical ? m.x >> 1 : (m.x - 1) >> 1;
+      const ty = vertical ? (m.y - 1) >> 1 : m.y >> 1;
+      addWall(tx, ty, vertical ? DRAW_EDGE_L : DRAW_EDGE_U);
+      addWall(
+        vertical ? tx - 1 : tx,
+        vertical ? ty : ty - 1,
+        vertical ? DRAW_EDGE_R : DRAW_EDGE_D,
+      );
+    } else {
+      const tx = (m.x - 1) >> 1;
+      const ty = (m.y - 1) >> 1;
+      if (tx >= 0 && tx < w && ty >= 0 && ty < h) mistakeTiles.add(ty * w + tx);
     }
   }
   const border = tile;
@@ -462,21 +481,6 @@ export function redraw(
       // Wrong-association highlight (bit 30 of the key).
       if (mistakeTiles.has(y * w + x)) flags |= DRAW_MISTAKE;
 
-      // Wrong-wall mask: which of this tile's four edges the overlay
-      // flags as a wall inside a single galaxy (recoloured in drawSquare).
-      let wrongEdges = 0;
-      if (wrongEdgeCells.size) {
-        const stride = 2 * w + 1;
-        if (wrongEdgeCells.has((2 * y + 1) * stride + 2 * x)) wrongEdges |= DRAW_EDGE_L;
-        if (wrongEdgeCells.has((2 * y + 1) * stride + 2 * x + 2)) {
-          wrongEdges |= DRAW_EDGE_R;
-        }
-        if (wrongEdgeCells.has(2 * y * stride + 2 * x + 1)) wrongEdges |= DRAW_EDGE_U;
-        if (wrongEdgeCells.has((2 * y + 2) * stride + 2 * x + 1)) {
-          wrongEdges |= DRAW_EDGE_D;
-        }
-      }
-
       // Cache key: flags (bits 0-11, 30) | dots (bits 12-29), within 31
       // bits — fits a positive Int32. ddx/ddy and the wrong-wall mask
       // live in their sidecar arrays and form part of the cache-miss check.
@@ -486,13 +490,14 @@ export function redraw(
         ds.cache[cacheI] !== key ||
         ds.dx[cacheI] !== ddx ||
         ds.dy[cacheI] !== ddy ||
-        ds.wrongEdges[cacheI] !== wrongEdges
+        ds.wrongEdges.stale(cacheI)
       ) {
+        const wrongEdges = ds.wrongEdges.packed[cacheI];
         drawSquare(dr, x, y, tile, border, flags, dots, ddx, ddy, wrongEdges);
         ds.cache[cacheI] = key;
         ds.dx[cacheI] = ddx;
         ds.dy[cacheI] = ddy;
-        ds.wrongEdges[cacheI] = wrongEdges;
+        ds.wrongEdges.commit(cacheI);
       }
     }
   }
