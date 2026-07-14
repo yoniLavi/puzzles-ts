@@ -59,10 +59,15 @@
       truer metric moved: rules guarded cross-game went 5 → 9 (§2.1, §2.5, §5.2,
       overlay-to-cache), enrollment collapsed to one line, and the guide now teaches +
       points instead of prescribing per-game tests.**
-- [ ] 2.4 (owner-relaxed bar, 2026-07-14) Cleanliness refactors from the Phase 2b
+- [x] 2.4 (owner-relaxed bar, 2026-07-14) Cleanliness refactors from the Phase 2b
       worklist: overlay-plumbing helper, Towers/Unequal hint-stack dedupe (now including
       the `ensurePopulated`/populate-text copies across the candidate family), recorder
-      vocab alignment, dead-module sweep.
+      vocab alignment, dead-module sweep. **Landed: populate opener hoisted into
+      candidate-hint (4 games), `HintSidecar` render helper (5 games converted, output
+      identical). Declined with reasons (design.md Phase 2b): recorder vocab renaming
+      (cosmetic, byte-match blast radius), further Towers/Unequal dedupe (what remains
+      differs genuinely), key-bits overlay helper (parameter soup; guard covers the
+      class). Dead-module sweep: no `hint-entry.ts` exists — nothing to delete.**
 
 ## 3. Gate
 

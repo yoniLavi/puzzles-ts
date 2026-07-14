@@ -26,6 +26,7 @@
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { hintMarkBit, HintSidecar } from "../../engine/hint-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   checkKillerCageSum,
@@ -130,14 +131,12 @@ export interface SoloDrawState {
   /** `cr²` last-drawn mistake-overlay flags (-1 = never drawn); in the diff key
    * so Check & Save repaints a cell whose tile is otherwise unchanged. */
   drawnWrong: Int8Array;
-  /** `cr²` packed hint overlay (fork addition): bit 0 = target cell, bit 1 =
-   * evidence cell, bits 2.. = struck-candidate mask (`1 << (2 + n)`). Folded into
-   * the diff key via {@link drawnHint} (playbook §3.2 — Solo keeps two parallel
-   * cache arrays since digit+pencil already exceed 32 bits, so the hint is a
-   * third sidecar, not a tile bit). */
-  hintPacked: Int32Array;
-  /** `cr²` last-drawn hint overlay (-1 = never drawn). */
-  drawnHint: Int32Array;
+  /** `cr²` hint-overlay sidecar (fork addition): bit 0 = target cell, bit 1 =
+   * evidence cell, bits 2.. = struck-candidate mask (`hintMarkBit(n)`). Owns
+   * the repack/stale/commit dance that keeps the overlay in the cache diff key
+   * (playbook §3.2 — Solo keeps parallel cache arrays since digit+pencil
+   * already exceed 32 bits, so the hint is a sidecar, not a tile bit). */
+  hint: HintSidecar;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
   pencilModeShown: boolean;
 }
@@ -153,8 +152,7 @@ export function newDrawState(state: SoloState): SoloDrawState {
     pencil: new Int32Array(a).fill(-1),
     wrong: new Uint8Array(a),
     drawnWrong: new Int8Array(a).fill(-1),
-    hintPacked: new Int32Array(a),
-    drawnHint: new Int32Array(a).fill(-1),
+    hint: new HintSidecar(a),
     pencilModeShown: false,
   };
 }
@@ -624,15 +622,8 @@ export function redraw(
   ds.wrong.fill(0);
   if (mistakes) for (const m of mistakes) ds.wrong[m.y * cr + m.x] = 1;
 
-  // Pack the displayed hint overlay per cell: bit 0 target, bit 1 evidence,
-  // bits 2.. struck candidate (`1 << (2 + n)`).
-  ds.hintPacked.fill(0);
-  const hl2 = hint?.highlights;
-  if (hl2) {
-    for (const a of hl2.area) ds.hintPacked[a.y * cr + a.x] |= 2;
-    for (const t of hl2.targets) ds.hintPacked[t.y * cr + t.x] |= 1;
-    for (const m of hl2.marks) ds.hintPacked[m.y * cr + m.x] |= 1 << (2 + m.n);
-  }
+  // Pack the displayed hint overlay per cell.
+  ds.hint.pack(hint?.highlights, (x, y) => y * cr + x, (m) => hintMarkBit(m.n));
 
   const flash =
     flashTime > 0 && (flashTime <= FLASH_TIME / 3 || flashTime >= (FLASH_TIME * 2) / 3);
@@ -667,18 +658,18 @@ export function redraw(
       const tile = d | (hl << 8);
       const pen = state.pencil[cell];
       const wrong = ds.wrong[cell];
-      const hintCell = ds.hintPacked[cell];
+      const hintCell = ds.hint.packed[cell];
       if (
         ds.tiles[cell] !== tile ||
         ds.pencil[cell] !== pen ||
         ds.drawnWrong[cell] !== wrong ||
-        ds.drawnHint[cell] !== hintCell
+        ds.hint.stale(cell)
       ) {
         drawNumber(dr, ds, state, x, y, hl, wrong !== 0, hintCell);
         ds.tiles[cell] = tile;
         ds.pencil[cell] = pen;
         ds.drawnWrong[cell] = wrong;
-        ds.drawnHint[cell] = hintCell;
+        ds.hint.commit(cell);
       }
     }
   }

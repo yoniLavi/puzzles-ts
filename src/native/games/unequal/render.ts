@@ -16,6 +16,7 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { UnequalMove } from "./state.ts";
+import { hintMarkBit, HintSidecar } from "../../engine/hint-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   checkComplete,
@@ -124,12 +125,11 @@ export interface UnequalDrawState {
    * via {@link drawnWrong} so Check & Save repaints an already-drawn cell). */
   wrong: Uint8Array;
   drawnWrong: Int8Array;
-  /** `order²` packed hint overlay (fork addition): bit 0 = target cell, bit 1 =
-   * evidence cell, bits 2.. = struck-candidate mask (`1 << (1 + n)`). In the
-   * diff key via {@link drawnHint} so a hint change repaints affected cells. */
-  hintPacked: Int32Array;
-  /** `order²` last-drawn hint overlay (-1 = never drawn). */
-  drawnHint: Int32Array;
+  /** `order²` hint-overlay sidecar (fork addition): bit 0 = target cell, bit 1 =
+   * evidence, bits 2.. = struck-candidate mask (`hintMarkBit(n)`). Owns the
+   * repack/stale/commit dance that keeps the overlay in the cache diff key
+   * (playbook §3.2). */
+  hint: HintSidecar;
   /** `order²` scratch error flags, refilled each redraw by `checkComplete`. */
   errFlags: Int32Array;
   hx: number;
@@ -152,8 +152,7 @@ export function newDrawState(state: UnequalState): UnequalDrawState {
     hints: new Uint8Array(o * o * o).fill(255),
     wrong: new Uint8Array(o * o),
     drawnWrong: new Int8Array(o * o).fill(-1),
-    hintPacked: new Int32Array(o * o),
-    drawnHint: new Int32Array(o * o).fill(-1),
+    hint: new HintSidecar(o * o),
     errFlags: new Int32Array(o * o),
     hx: 0,
     hy: 0,
@@ -485,15 +484,8 @@ export function redraw(
   ds.wrong.fill(0);
   if (mistakes) for (const m of mistakes) ds.wrong[m.y * o + m.x] = 1;
 
-  // Pack the displayed hint overlay per cell: bit 0 target, bit 1 evidence,
-  // bits 2.. struck candidate (`1 << (1 + n)`).
-  ds.hintPacked.fill(0);
-  const hl = hint?.highlights;
-  if (hl) {
-    for (const a of hl.area) ds.hintPacked[a.y * o + a.x] |= 2;
-    for (const t of hl.targets) ds.hintPacked[t.y * o + t.x] |= 1;
-    for (const m of hl.marks) ds.hintPacked[m.y * o + m.x] |= 1 << (2 + m.n);
-  }
+  // Pack the displayed hint overlay per cell.
+  ds.hint.pack(hint?.highlights, (x, y) => y * o + x, (m) => hintMarkBit(m.n));
 
   const hchanged =
     ds.hx !== ui.hx || ds.hy !== ui.hy || ds.hshow !== ui.hshow || ds.hpencil !== ui.hpencil;
@@ -515,7 +507,7 @@ export function redraw(
       if (ds.nums[i] !== num) stale = true;
       if (ds.flags[i] !== flags) stale = true;
       if (ds.wrong[i] !== ds.drawnWrong[i]) stale = true;
-      if (ds.hintPacked[i] !== ds.drawnHint[i]) stale = true;
+      if (ds.hint.stale(i)) stale = true;
       if (num === 0) {
         for (let n = 0; n < o; n++) {
           if (ds.hints[i * o + n] !== ((pencil >> (n + 1)) & 1)) stale = true;
@@ -535,12 +527,12 @@ export function redraw(
           pencil,
           ds.wrong[i] !== 0,
           hflash,
-          ds.hintPacked[i],
+          ds.hint.packed[i],
         );
         ds.nums[i] = num;
         ds.flags[i] = flags;
         ds.drawnWrong[i] = ds.wrong[i];
-        ds.drawnHint[i] = ds.hintPacked[i];
+        ds.hint.commit(i);
         for (let n = 0; n < o; n++) ds.hints[i * o + n] = (pencil >> (n + 1)) & 1;
       }
     }

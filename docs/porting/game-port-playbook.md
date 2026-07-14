@@ -352,9 +352,14 @@ coincidentally changed that frame — and Check-&-Save (or a hint) runs a frame
 *after* the move that drew the cell, so the cell's tile is unchanged and the overlay
 **never shows**. Towers shipped exactly this bug: the mistake overlay (`ds.wrong`)
 was passed to `drawTile` but left out of the diff condition, so Check-&-Save
-highlighted nothing. Fix: track a `drawn<Overlay>` sidecar and add
+highlighted nothing. For the **hint** overlay, don't hand-write the two-array
+dance at all: `src/native/engine/hint-sidecar.ts` (`HintSidecar`) owns
+repack/stale/commit — `ds.hint.pack(step?.highlights, indexFn, markBitsFn)`
+per frame, `ds.hint.stale(i)` in the cache-miss test, `ds.hint.commit(i)`
+after drawing (exemplars: the five candidate-family renders). For other
+overlays (mistakes), track a `drawn<Overlay>` sidecar and add
 `ds.drawn<Overlay>[i] !== ds.<overlay>[i]` to the cache-miss test (Towers'
-`drawnWrong`/`drawnHint`). The **hint** overlay is guarded cross-game by
+`drawnWrong`). The **hint** overlay is guarded cross-game by
 `src/native/engine/hint-overlay.test.ts` (warm the drawstate, display a hint,
 assert the same drawstate emits paint ops) — every game in
 `testing/hint-games.ts` is covered automatically. The **mistake** overlay still
