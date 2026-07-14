@@ -173,6 +173,7 @@ puzzle(net
   OBJECTIVE "Rotate each tile to reassemble the network.")
 
 puzzle(netslide
+  TS_PORTED  # native-TS port (openspec add-netslide-ts-port); no netslide.c/wasm
   DISPLAYNAME "Netslide"
   DESCRIPTION "Toroidal sliding network puzzle"
   OBJECTIVE "Slide a row at a time to reassemble the network.")
