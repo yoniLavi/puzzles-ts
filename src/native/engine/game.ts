@@ -37,6 +37,17 @@ import type { RandomState } from "../random/index.ts";
 export const UI_UPDATE: unique symbol = Symbol("ui-update");
 export type UiUpdate = typeof UI_UPDATE;
 
+/** A game's answer to {@link Game.supersededDesc}. */
+export interface SupersededDesc {
+  /** The public description — what a shared game ID and "Game → Specific"
+   * name, and what a restart rebuilds from. */
+  readonly desc: string;
+  /** The description a *save* rebuilds state 0 from, when the public one
+   * would not reconstruct it faithfully (Mines: same layout, no first
+   * click). Absent ⇒ the public desc is used for both. */
+  readonly privDesc?: string;
+}
+
 /** Result of a solver attempt — discriminated so a string `Move`
  * cannot be mistaken for an error message. */
 export type SolveResult<Move> = { ok: true; move: Move } | { ok: false; error: string };
@@ -272,6 +283,31 @@ export interface Game<
   validateDesc(p: Params, desc: string): string | null;
   newState(p: Params, desc: string): State;
   newUi(state: State): Ui;
+
+  /** What game description describes the board this state belongs to
+   * (upstream `midend_supersede_game_desc`)? Implemented only by a game whose
+   * board is not fully determined until play begins — Mines generates its mine
+   * layout on the *first click* (so the first click is never a mine), and the
+   * desc the player started from describes no layout at all.
+   *
+   * Upstream's game reaches into the midend and pushes a new desc from inside
+   * `execute_move`; a TS game has no midend back-reference and `executeMove` is
+   * pure, so the engine **pulls** instead: after every committed move it asks
+   * this, and a game answers from its own state (Mines' post-click state
+   * carries the layout it just generated, so the desc is derivable).
+   *
+   * Two rules the engine enforces, both mirroring upstream:
+   * - **`null` means "nothing to say", never "revert".** A desc describes the
+   *   *game*, not the position, so undoing past the superseding move leaves it
+   *   superseded — which is why this may not be read as a bidirectional
+   *   derivation.
+   * - **`privDesc` is the desc a *save* is rebuilt from.** Mines' public desc
+   *   describes the layout *plus the first click* (so a shared game ID drops
+   *   you on an opened board); replaying the move log from that would re-play a
+   *   click already baked in. `privDesc` describes the same layout with no
+   *   click, and the engine restores state 0 from it. Omit it when the public
+   *   desc reconstructs state 0 faithfully. */
+  supersededDesc?(s: State): SupersededDesc | null;
 
   /** Reconcile persisted Ui against a state transition (upstream
    * `game_changed_state`). The midend calls this — mutating `ui` in

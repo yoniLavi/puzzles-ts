@@ -60,7 +60,7 @@ that need an interface decision *before* you start, not mid-port (full list unde
 
 | Risk | Where it bites | Stance |
 | --- | --- | --- |
-| **`midend_supersede_game_desc`** | Mines (first-click-not-a-mine), Net (centre-on-click) | Needs a `Game`-interface hook before one of these is ported. (Untangle didn't need it — desc is edges-only and never changes.) |
+| **`midend_supersede_game_desc`** | Mines (the only upstream caller — first-click-not-a-mine) | **Solved**: implement `Game.supersededDesc(state)` — the engine *pulls* the desc from state after each committed move, so `executeMove` stays pure (`add-desc-supersede-hook`). See §3.10. (Untangle didn't need it — desc is edges-only and never changes.) |
 | **Undo via state-string equality** | "did anything change?" by stringifying state; Net's rotation cycles is the hard case | Galaxies returns `null` from `interpretMove` instead — fine when locally decidable. |
 | **`#ifdef EDITOR` move letters** | editor-only input letters | Don't map them; say so in the port's `design.md`. |
 | **`printing.c`** | a future "print this puzzle" feature | Deleted at fork; no TS replacement yet — don't promise it. |
@@ -800,6 +800,32 @@ The seam is generic (only Dominosa implements it today), mirroring `canMarkAll`:
   [`dominosa/`](../../src/native/games/dominosa/).
 
 ---
+
+### 3.10 A board that isn't decided until play starts (`supersededDesc`)
+
+Mines generates its mine layout on the **first click**, so the first click is never a
+mine — the desc the player started from describes no layout at all, and must be replaced
+once the real board exists (upstream `midend_supersede_game_desc`). If you are porting a
+game like that, implement `Game.supersededDesc(state)`: the engine asks, after every
+committed move, *what desc describes the board this state belongs to*, and adopts the
+answer. It **pulls** rather than letting the game push, so `executeMove` stays pure and no
+game needs a midend back-reference.
+
+Three things the engine guarantees, so you don't re-derive them
+([`ts-engine` spec](../../openspec/specs/ts-engine/spec.md), "A game can supersede its
+game description mid-play"):
+
+- Answer `null` for "nothing to say" — **never** to revert. Undoing past the generating
+  move keeps the desc: a desc describes the *game*, not the position.
+- Return a `privDesc` when your public desc bakes in the move that generated the board
+  (Mines' public desc names layout *and* first click). The engine rebuilds state 0 from it
+  on load, so the move log replays against the board it was played on.
+- Restart rebuilds from the *public* desc, so the player restarts to just after the
+  generating move rather than to a blank board they'd have to re-guess.
+
+Make the generation a deterministic function of state + move (put the generator's RNG in
+the state), or the move log will not replay. Exemplar until Mines lands: the fake game in
+[`desc-supersede.test.ts`](../../src/native/engine/desc-supersede.test.ts).
 
 ## 4. Differential check (per-game, optional)
 
