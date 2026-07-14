@@ -5,6 +5,7 @@
 // moving tile at an interpolated coordinate.
 import { describe, expect, it } from "vitest";
 import type { GameDrawing } from "../../engine/game.ts";
+import { randomNew } from "../../random/index.ts";
 import { executeMove, fifteenGame } from "./index.ts";
 import { type FifteenState, newState } from "./state.ts";
 
@@ -126,4 +127,66 @@ describe("Fifteen rendering", () => {
 // A throwaway recording drawing used only to prime the cache.
 function dr0(_ds: unknown, _state: unknown): GameDrawing {
   return recordingDrawing().dr;
+}
+
+describe("the hint mark while the hinted slide animates", () => {
+  // Netslide's owner-reported defect class (edadec1): a hint mark on a
+  // *moving tile* must ride the slide — the midend advances the plan only at
+  // animation end, so while the hinted move animates the displayed step
+  // still describes the board the move left behind. Fifteen holds this by
+  // construction: the mark is keyed by tile *number* and painted as the
+  // tile's own background in the interpolated animation pass. This test pins
+  // that down at an actual mid-slide frame.
+  it("rides the moving tile, and nothing marks the cell it set off from", () => {
+    const params = { w: 4, h: 4 };
+    for (let i = 0; i < 20; i++) {
+      const rng = randomNew(`hint-anim-${i}`);
+      const { desc } = fifteenGame.newDesc(params, rng);
+      const state = newState(params, desc);
+      const res = fifteenGame.hint?.(state);
+      if (!res?.ok) continue;
+      const step = res.steps[0];
+      const tile = (step.highlights as { tile: number }).tile;
+      const after = executeMove(state, step.move);
+      const from = state.tiles.indexOf(tile);
+      const to = after.tiles.indexOf(tile);
+
+      const ds = freshDs(state);
+      // Warm the cache with the still pre-move frame, hint displayed.
+      redraw(dr0(ds, state), ds, null, state, 0, UI, 0, 0, step);
+
+      // Halfway through the slide into the gap.
+      const anim = fifteenGame.animLength?.(state, after, 1, UI) ?? 0;
+      const { dr, ops } = recordingDrawing();
+      redraw(dr, ds, state, after, 1, UI, anim / 2, 0, step);
+
+      // The hint fill is drawTile's centre rect (inset by hw = ts/20 = 2),
+      // drawn at the tile's interpolated position — half a cell from its
+      // origin toward the gap it slides into.
+      const hw = 2;
+      const x0 = coord(from % 4);
+      const y0 = coord(Math.floor(from / 4));
+      const x1 = coord(to % 4);
+      const y1 = coord(Math.floor(to / 4));
+      const ex = x0 + Math.floor(0.5 * (x1 - x0)) + hw;
+      const ey = y0 + Math.floor(0.5 * (y1 - y0)) + hw;
+
+      const fills = ops.filter(
+        (o) =>
+          o.op === "drawRect" && o.colour === 4 && o.w === TS - 2 * hw &&
+          o.h === TS - 2 * hw,
+      );
+      // Exactly one hint fill on the frame, and it is mid-flight — in
+      // particular not at the origin cell, where marking the step's own
+      // pre-move index would have painted it.
+      expect(fills).toHaveLength(1);
+      expect({ x: fills[0].x, y: fills[0].y }).toEqual({ x: ex, y: ey });
+      return;
+    }
+    throw new Error("no seed in 20 produced a board with an ok hint");
+  });
+});
+
+function coord(pos: number): number {
+  return pos * TS + Math.floor(TS / 2); // fifteen's border(ts) = ts/2
 }
