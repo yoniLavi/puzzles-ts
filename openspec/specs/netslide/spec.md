@@ -203,15 +203,24 @@ player completes by another route is recognised as finished.
 
 The hint SHALL meet the collection's hint quality bar:
 
-- It SHALL lead with what the game can **prove**: the centre tile can never
-  move, because the row and the column through it are both frozen, so the
-  network must be built around it. Where it bites, it SHALL say that a tile in
-  the centre row can only be moved by sliding its column (and vice versa) — a
-  single degree of freedom.
+- It SHALL name board elements as the player can **see or count** them, never by a
+  claim it has not checked. The immovable tile SHALL be called **the source** — the
+  tile power flows from, drawn as the black box — and SHALL NOT be called "the
+  centre": it sits at `⌊w/2⌋, ⌊h/2⌋`, which on an even-sized board is visibly not
+  the centre. A line that cannot be slid SHALL be named by its **number** ("row 3
+  never slides"), which is true at every board size.
+- It SHALL lead with what the game can prove about **this move**: a tile in the
+  source's row can only be moved by sliding its column, and vice versa — the single
+  degree of freedom that is the game's technique.
+- It SHALL NOT restate the **rules** of the game step after step. That the source
+  cannot move is a rule the board already shows — no arrows are drawn beside its row
+  or column — and no move *follows* from it; it belongs in the help text, not in
+  every hint. A step whose tile merely belongs beside the source SHALL say that
+  plainly, without a preamble.
 - It SHALL narrate each move by its consequence — whether it **places a tile
   where it belongs** or is a **setting-up move** that brings one within reach —
   using the shared sliding-tile hint vocabulary, never merely restating the
-  move.
+  move, and SHALL NOT say a tile "belongs" twice in one sentence.
 - A subgoal that takes several slides SHALL be emitted as **one multi-leg
   journey** (continuation legs flagged `continuesPrevious`), so it reads and
   auto-plays as a single hint.
@@ -240,6 +249,20 @@ The hint SHALL meet the collection's hint quality bar:
 
 - **WHEN** a hint step says a tile belongs at a cell
 - **THEN** the finished board holds exactly that tile's wires in that cell
+
+#### Scenario: The immovable tile is never called the centre
+
+- **WHEN** any hint step is narrated, on a board of any size
+- **THEN** its explanation calls the immovable tile the source, and never the
+  centre — which on an even-sized board would name a tile the player can see it is
+  not
+
+#### Scenario: A frozen line is named by its number
+
+- **WHEN** a hint step turns on the single degree of freedom — the tile sits in the
+  source's row, so only its column can shift it
+- **THEN** the explanation names that row by its number, and says that only a column
+  move can shift the tile
 
 ### Requirement: Netslide can be solved from any position
 
@@ -307,9 +330,35 @@ The hint overlay SHALL be part of the render cache's diff key, so it repaints on
 the frame the hint is requested even though the underlying tiles did not change
 that frame.
 
+The two marks SHALL behave differently while a slide animates, because they mark
+different kinds of thing:
+
+- The **tile** mark marks a *tile*, which is moving, so it SHALL travel with the
+  tile it marks. While the hinted slide is animating, the displayed step's
+  `tile` cell is the cell the tile set off *from* — the midend advances the plan
+  when the animation ends — so `redraw` SHALL mark the cell the slide lands it in,
+  and SHALL NOT mark the vacated cell, which by then holds a different tile.
+- The **destination** mark marks a *cell*, which is not moving, so it SHALL stay
+  where the cell is while the line slides underneath it, and SHALL NOT be drawn
+  with the animation's offset.
+
 #### Scenario: A hint repaints on a board that did not otherwise change
 
 - **WHEN** a board is drawn, a hint is then requested, and the same draw state is
   redrawn
 - **THEN** the hint highlight appears on that second paint
+
+#### Scenario: The tile mark travels with the tile mid-slide
+
+- **WHEN** a frame is captured partway through the slide the displayed hint step
+  asked for
+- **THEN** the tile highlight is drawn on the tile being placed, at the offset
+  position that tile is drawn at — not on the cell it has left
+
+#### Scenario: The destination mark stays put mid-slide
+
+- **WHEN** a frame is captured partway through a slide whose line contains the
+  cell the hint is taking the tile to
+- **THEN** that cell's outline is drawn at the cell's own position, unshifted by
+  the animation
 
