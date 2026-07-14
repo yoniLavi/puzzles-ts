@@ -41,4 +41,4 @@
 - [x] 4.2 `tsc -b --noEmit` → `biome lint` → `vitest run` (2596 passed) → `vite build`;
       snapshots unchanged — render output is byte-identical, the acceptance bar.
 - [x] 4.3 `openspec validate generalize-overlay-sidecar --strict`.
-- [ ] 4.4 Owner acceptance; archive.
+- [x] 4.4 Owner acceptance (2026-07-14); archive.
