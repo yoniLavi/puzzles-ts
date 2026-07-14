@@ -28,6 +28,15 @@ const EASY_3X3: NetslideParams = {
   barrierProbability: 1,
   movetarget: 0,
 };
+/** An even-sized board: the source sits at ⌊4/2⌋ = 2, i.e. row 3, column 3 — the
+ * board on which "the centre tile" is a claim the player can see is false. */
+const EVEN_4X4: NetslideParams = {
+  w: 4,
+  h: 4,
+  wrapping: false,
+  barrierProbability: 1,
+  movetarget: 0,
+};
 const HARD_5X5: NetslideParams = {
   w: 5,
   h: 5,
@@ -223,8 +232,12 @@ describe("netslide hint narration", () => {
         // and it is still on screen.
         if (step.continuesPrevious) continue;
         // Every other step states the consequence the move actually has — it puts a
-        // tile where it belongs, or it is setting one up to get there.
-        expect(step.explanation).toMatch(/where it belongs|\(setting up\)/);
+        // tile where it belongs, or it is setting one up to get there. "Belongs" in
+        // any of its phrasings is the arrival marker ("where it belongs", "it
+        // belongs beside the source"); "(setting up)" is the shared not-yet marker.
+        // The vocabulary test below holds it to *one* "belongs" per sentence, so
+        // this cannot be satisfied by a stutter.
+        expect(step.explanation).toMatch(/\bbelongs\b|\(setting up\)/);
       }
     }
   });
@@ -246,14 +259,14 @@ describe("netslide hint narration", () => {
     }
   });
 
-  it("teaches the frozen centre line when that is what the move turns on", () => {
-    // The one thing Netslide can *prove*: the centre tile can never move, so a
-    // tile sitting in the centre row can only be shifted by its column (and the
-    // other way about). Scan seeds for a plan that hits the case and check it
-    // says so.
+  it("teaches the frozen line, named by its number, when that is what the move turns on", () => {
+    // The one thing Netslide can prove *about a move*: a tile sitting in the
+    // source's row can only be shifted by its column (and the other way about).
+    // The line is named by its number — "the centre row" is false on an
+    // even-sized board, where the source sits at ⌊w/2⌋ and the player can see it.
     let seen = false;
     for (let i = 0; i < 40 && !seen; i++) {
-      const { state, aux } = board(HARD_5X5, `centre-${i}`);
+      const { state, aux } = board(HARD_5X5, `frozen-${i}`);
       const res = hintOf(state, aux);
       if (!res.ok) continue;
       for (const step of res.steps) {
@@ -266,7 +279,8 @@ describe("netslide hint narration", () => {
           step.move.type === "slide" &&
           step.move.axis === "col"
         ) {
-          expect(step.explanation).toContain("The centre row never slides");
+          expect(step.explanation).toContain(`Row ${state.cy + 1} never slides`);
+          expect(step.explanation).toContain("only a column move can shift");
           seen = true;
         }
         if (
@@ -274,12 +288,73 @@ describe("netslide hint narration", () => {
           step.move.type === "slide" &&
           step.move.axis === "row"
         ) {
-          expect(step.explanation).toContain("The centre column never slides");
+          expect(step.explanation).toContain(`Column ${state.cx + 1} never slides`);
+          expect(step.explanation).toContain("only a row move can shift");
           seen = true;
         }
       }
     }
     expect(seen, "no plan in 40 boards ever moved a tile off a frozen line").toBe(true);
+  });
+
+  it("never calls the source the centre, and never says a tile belongs twice", () => {
+    // "Centre" is a claim the hint has not checked: the source sits at ⌊w/2⌋,
+    // ⌊h/2⌋, so on the 4×4 it is row 3, column 3 — visibly not the centre. And a
+    // sentence that says a tile "belongs beside the source" and then ", where it
+    // belongs" reads as a stutter.
+    for (const params of [EVEN_4X4, HARD_5X5, EASY_3X3]) {
+      for (let i = 0; i < 20; i++) {
+        const { state, aux } = board(params, `vocab-${params.w}-${i}`);
+        const res = hintOf(state, aux);
+        if (!res.ok) continue;
+        for (const step of res.steps) {
+          expect(step.explanation).not.toMatch(/centre|center|middle/i);
+          expect(step.explanation.match(/belongs/g)?.length ?? 0).toBeLessThan(2);
+        }
+      }
+    }
+  });
+
+  it("keeps every sentence short enough to read at a glance", () => {
+    // The defect this guards: the beside-the-source step used to open with a
+    // preamble about the source never moving — a *rule of the game*, not a
+    // deduction about the move — which made the commonest sentence 146 characters,
+    // 1.8× every other step, so it wrapped to two lines on a 4×4.
+    let longest = 0;
+    for (const params of [EVEN_4X4, HARD_5X5]) {
+      for (let i = 0; i < 20; i++) {
+        const { state, aux } = board(params, `length-${params.w}-${i}`);
+        const res = hintOf(state, aux);
+        if (!res.ok) continue;
+        for (const step of res.steps)
+          longest = Math.max(longest, step.explanation.length);
+      }
+    }
+    expect(longest).toBeLessThanOrEqual(120);
+  });
+
+  it("states plainly that a tile belongs beside the source, without a preamble", () => {
+    let seen = false;
+    for (let i = 0; i < 40 && !seen; i++) {
+      const { state, aux } = board(EVEN_4X4, `beside-${i}`);
+      const res = hintOf(state, aux);
+      if (!res.ok) continue;
+      for (const step of res.steps) {
+        if (step.continuesPrevious) continue;
+        const marks = step.highlights as NetslideHint;
+        const dx = Math.abs((marks.destination % state.w) - state.cx);
+        const dy = Math.abs(Math.floor(marks.destination / state.w) - state.cy);
+        if (!marks.belongs || dx + dy !== 1) continue;
+        // Either shape, but no preamble: the sentence opens on the tile or on the
+        // imperative, never on a lecture about what the source can and cannot do.
+        expect(step.explanation).toMatch(/belongs beside the source/);
+        expect(step.explanation).toMatch(/^(This|Take this) /);
+        seen = true;
+      }
+    }
+    expect(seen, "no plan in 40 boards ever placed a tile beside the source").toBe(
+      true,
+    );
   });
 
   it("groups a tile's several slides into one journey", () => {

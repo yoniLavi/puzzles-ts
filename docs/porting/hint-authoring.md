@@ -400,6 +400,54 @@ so they hold across the whole range (*"sees exactly ${c}"*, *"all but one of its
 deeper in the line"*). **When a narration interpolates a clue/count, re-read it at the
 min and max that value can take.**
 
+### 2.8 Name a board element by what the player can *see or count* — never by a geometric claim
+
+A name is a claim, and §5's "claim only what you have checked" applies to it (owner-flagged
+2026-07-14, Netslide). Netslide's hint called the immovable tile *"the centre tile"* and its
+frozen lines *"the centre row / centre column"* — but `cx` is `⌊w/2⌋`, so on a 4×4 board the
+tile is at row 3, column 3, and the player is looking straight at a square that is visibly
+**not** the centre. Two fixes, both of which also came out *shorter*:
+
+- **Name the element by what it does and how it's drawn.** Netslide's fixed tile became
+  *"the source"* — the black box the power comes from — which the player can point at and
+  which explains *why* the network grows around it. Rule of thumb: if the name would not
+  survive a player checking it against the picture, it's the wrong name.
+- **Name a line by its number, not its position.** *"Row 3 never slides"* is true at every
+  board size, is shorter than *"the centre row never slides"*, and tells the player exactly
+  which row to look at. §2.7's habit generalises: re-read a name at the degenerate size
+  (even vs odd, `w = 1`), not just a value at its extremes.
+
+If the hint introduces a word (*source*), the **help text must teach it** — check
+`puzzles/html/<game>.html`, which is the per-puzzle overview the app serves. Netslide's said
+"the middle square" (so the vocabulary didn't even match) and never stated the rule the whole
+game turns on: that the source's row and column cannot be slid. A hint and a help page that
+disagree are worse than either alone.
+
+### 2.9 The *rules* of the game belong in the help — a hint step explains **this move**
+
+The premise on a step must be what makes *this move* follow. A fact that is true of the
+whole board, every step, forever, is a **rule**, and repeating it is noise the player learns
+to skip (owner-flagged 2026-07-14). Netslide opened 12% of its steps with
+
+> The centre tile can never move, so the network has to be built around it — and this corner
+> belongs right beside it: take it to row 2 (setting up).
+
+The preamble is a rule the board *already shows* (no arrows are drawn beside the source's row
+or column), and the move does not follow from it. It became simply *"This corner belongs
+beside the source: take it to row 2 (setting up)."* — 69 characters, down from 146 — while the
+genuinely move-specific deduction kept its premise, because there it does work: *"Row 3 never
+slides, so only a column move can shift this corner."* That one **is** the technique; the
+other was the rulebook.
+
+**Diagnose before you rewrite: measure length × frequency, not frequency alone.** A quick
+throwaway that plans N fresh boards and tallies each narration branch (count, share, mean
+length) is ~40 lines and tells you which sentence actually dominates the bar. Netslide's
+offender fired on only 12% of steps but ran 1.8× the mean length, so it wrapped to two lines
+and read as if it were on all of them — a frequency-only count would have sent you after the
+wrong branch. Guard the result with a **max-length assertion** over a scan of boards
+(`netslide-hint.test.ts` holds every sentence to ≤ 120 chars), so the preamble cannot creep
+back.
+
 ---
 
 ## 3. Engine mechanics (already built)

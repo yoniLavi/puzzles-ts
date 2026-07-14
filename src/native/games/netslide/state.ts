@@ -223,8 +223,14 @@ export type NetslideMove =
 export interface NetslideState {
   readonly w: number;
   readonly h: number;
-  /** The centre tile. Its row and its column cannot be slid — that
-   * restriction is what makes Netslide a puzzle rather than a shuffle. */
+  /** The **source**: the tile power flows from, drawn as the black box. Its row
+   * and its column cannot be slid — that restriction is what makes Netslide a
+   * puzzle rather than a shuffle.
+   *
+   * It is `⌊w/2⌋, ⌊h/2⌋`, which is *not* the centre of an even-sized board — so
+   * player-facing text (hints, help) says "the source", never "the centre", which
+   * a 4×4 player can see is false. Internal comments below still say centre-ish
+   * things about the flood fill; the vocabulary rule is about what we show. */
   readonly cx: number;
   readonly cy: number;
   readonly wrapping: boolean;
