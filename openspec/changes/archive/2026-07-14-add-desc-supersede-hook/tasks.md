@@ -22,7 +22,7 @@
 - [x] 1.5 Playbook §3.10 (desc-superseding games) + the long-tail-risk table row flipped
       from "needs a hook" to the hook. Link-only to the `ts-engine` spec.
 - [x] 1.6 Gate (`tsc` → lint → vitest → build) + `openspec validate --strict`.
-- [ ] 1.7 Owner review of the hook shape before the Mines port builds on it; archive.
+- [x] 1.7 Owner review of the hook shape (accepted 2026-07-14, incl. the `set_public_desc` no-go); archive.
 
 ## Decided along the way (see `design.md`)
 
