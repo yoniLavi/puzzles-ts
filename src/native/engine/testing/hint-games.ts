@@ -59,6 +59,21 @@ export const HINT_GAMES: [string, AnyGame][] = [
   ["untangle", untangleGame],
 ];
 
+/** True when a step declares no board marks at all — `highlights` absent, or an
+ * object whose every field is empty. The candidate-elimination games' populate
+ * opener (`{ area: [], targets: [], marks: [] }`) is the canonical case: its
+ * banner narration is the whole display, so a frame it paints nothing on is
+ * *correct*. Both cross-game guards need the same judgement — `hint-overlay`
+ * to know which step must repaint a warm frame, `hint-quality` to know which
+ * step must then carry words instead. */
+export function declaresNoMarks(highlights: unknown): boolean {
+  if (highlights == null) return true;
+  if (typeof highlights !== "object") return false;
+  return Object.values(highlights).every(
+    (v) => v == null || (Array.isArray(v) && v.length === 0),
+  );
+}
+
 /** First leaf preset's params — a small, valid board for each game. */
 export function firstLeaf<P>(menu: PresetMenu<P>): P {
   if (menu.params !== undefined) return menu.params;

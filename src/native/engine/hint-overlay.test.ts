@@ -19,7 +19,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "./midend.ts";
-import { firstLeaf, HINT_GAMES } from "./testing/hint-games.ts";
+import { declaresNoMarks, firstLeaf, HINT_GAMES } from "./testing/hint-games.ts";
 import { RecordingDrawing } from "./testing/recording-drawing.ts";
 import { DEFAULT_BACKGROUND } from "./testing/render-scenario.ts";
 
@@ -29,19 +29,6 @@ const SEEDS = ["ov-a", "ov-b", "ov-c"];
  * board marks (a candidate game's populate/cleanup opener may precede the
  * first marked deduction). */
 const MAX_UNMARKED_OPENERS = 4;
-
-/** True when a step declares no board marks at all — highlights absent, or an
- * object whose every field is empty. The candidate-elimination games' populate
- * opener (`{ area: [], targets: [], marks: [] }`) is the canonical case: its
- * banner narration is the whole display, so an unchanged frame is *correct*
- * for it, and the guard must judge the first step that does carry marks. */
-function declaresNoMarks(highlights: unknown): boolean {
-  if (highlights == null) return true;
-  if (typeof highlights !== "object") return false;
-  return Object.values(highlights).every(
-    (v) => v == null || (Array.isArray(v) && v.length === 0),
-  );
-}
 
 describe("a newly displayed hint repaints a warm, otherwise-unchanged frame", () => {
   for (const [name, game] of HINT_GAMES) {

@@ -4,7 +4,7 @@ import { UI_UPDATE } from "../../engine/index.ts";
 import { randomNew } from "../../random/index.ts";
 import { newGameDesc } from "./generator.ts";
 import { GalaxiesDiff, type GalaxiesParams, galaxiesGame } from "./index.ts";
-import { COL_MISTAKE } from "./render.ts";
+import { COL_EDGE, COL_MISTAKE } from "./render.ts";
 import { clearForSolve, solverState } from "./solver.ts";
 import {
   addAssoc,
@@ -477,5 +477,44 @@ describe("Galaxies findMistakes", () => {
     // wrong-wall recolour (no tile mistakes present), so any such rect
     // proves the wall was painted in the mistake colour.
     expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_MISTAKE)).toBe(true);
+  });
+
+  it("recolours a flagged wall on a board that was already drawn", () => {
+    // Paint twice (playbook §3.2): a Check & Save changes no tile value, so
+    // this frame only repaints if the wall overlay is part of the cache-miss
+    // test. A cold-frame test cannot see that — every cell misses on frame 1
+    // regardless — which is how a missing-from-the-diff-key overlay ships.
+    expect(interior).not.toBeNull();
+    if (!interior) return;
+    const s = cloneState(init);
+    s.flags[idx(s, interior.x, interior.y)] |= F_EDGE_SET;
+    const ui = galaxiesGame.newUi(s);
+    const ds = newDrawState(s);
+
+    // Frame 1: the same board, no overlay — warms the per-tile cache.
+    const cold = recordingDrawing();
+    galaxiesRedraw(cold.dr, ds, null, s, 1, ui, 0, 0, undefined, undefined);
+    expect(cold.ops.some((o) => o.op === "drawRect" && o.colour === COL_MISTAKE)).toBe(
+      false,
+    );
+
+    // Frame 2: Check & Save turns the overlay on. Nothing else changed.
+    const warm = recordingDrawing();
+    const mistakes = galaxiesGame.findMistakes?.(s) ?? [];
+    galaxiesRedraw(warm.dr, ds, s, s, 1, ui, 0, 0, undefined, mistakes);
+    expect(warm.ops.some((o) => o.op === "drawRect" && o.colour === COL_MISTAKE)).toBe(
+      true,
+    );
+
+    // Frame 3: the overlay clears (the player moves on) — the wall must go
+    // back to COL_EDGE, which only happens if the *removal* is stale too.
+    const cleared = recordingDrawing();
+    galaxiesRedraw(cleared.dr, ds, s, s, 1, ui, 0, 0, undefined, undefined);
+    expect(
+      cleared.ops.some((o) => o.op === "drawRect" && o.colour === COL_MISTAKE),
+    ).toBe(false);
+    expect(cleared.ops.some((o) => o.op === "drawRect" && o.colour === COL_EDGE)).toBe(
+      true,
+    );
   });
 });

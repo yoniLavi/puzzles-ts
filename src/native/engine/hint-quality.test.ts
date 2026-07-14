@@ -27,7 +27,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../random/index.ts";
-import { firstLeaf, HINT_GAMES } from "./testing/hint-games.ts";
+import { declaresNoMarks, firstLeaf, HINT_GAMES } from "./testing/hint-games.ts";
 
 const SEEDS = ["hq-a", "hq-b", "hq-c"];
 
@@ -72,15 +72,6 @@ const IDIOMS: Record<string, RegExp> = {
   filling: /fits exactly into/,
 };
 
-/** True when a step declares no board marks at all. */
-function noMarks(highlights: unknown): boolean {
-  if (highlights == null) return true;
-  if (typeof highlights !== "object") return false;
-  return Object.values(highlights).every(
-    (v) => v == null || (Array.isArray(v) && v.length === 0),
-  );
-}
-
 describe("hint narration form, cross-game", () => {
   for (const [name, game] of HINT_GAMES) {
     it(`${name}: every step is visible, terse${DEDUCTIVE.has(name) ? ", and necessity-voiced" : ""}`, () => {
@@ -95,7 +86,7 @@ describe("hint narration form, cross-game", () => {
 
           // §5.2 — a step the player cannot see is not a hint.
           expect(
-            step.explanation.length > 0 || !noMarks(step.highlights),
+            step.explanation.length > 0 || !declaresNoMarks(step.highlights),
             `${at} — shows nothing: no words, no board marks`,
           ).toBe(true);
 

@@ -326,8 +326,8 @@ don't switch to a plain `Array` to get one; just don't write to it.
 ### 3.2 Rendering: the cache, the diff key, the doctrine
 
 **Cache key:** pack flags into an `Int32Array`, *not* `BigInt64Array` (`BigInt` is
-hot-path-expensive and idiomatically wrong here). When the key bits run out, add a
-parallel **sidecar typed-array** checked in the cache-miss branch (Galaxies'
+hot-path-expensive and idiomatically wrong here). When the key bits run out, move the
+overflow into an **`OverlaySidecar`** checked in the cache-miss branch (Galaxies'
 `wrongEdges`), don't widen to `BigInt`. Exemplars:
 [`galaxies/render.ts`](../../src/native/games/galaxies/render.ts),
 [`range/render.ts`](../../src/native/games/range/render.ts).
@@ -339,10 +339,10 @@ reach 31 (`validateParams` caps `c·r ≤ 31`), so a 5-bit digit + a `cr`-wide p
 bitmask is up to 36 bits and overflows a single `Int32`. The faithful answer is a
 per-cell *pair* — `tiles = digit | hl<<8` and a separate `pencil` array holding
 `state.pencil[i]` verbatim (the `1<<n` mark for `n` up to 31 still fits an `Int32`,
-sign bit and all, and compares fine) — plus the usual `drawnWrong` mistake sidecar
-in the diff key. Exemplar:
+sign bit and all, and compares fine) — plus the usual mistake `OverlaySidecar` in the
+diff key. Exemplar:
 [`solo/render.ts`](../../src/native/games/solo/render.ts) (`SoloDrawState.tiles` +
-`.pencil` + `.drawnWrong`).
+`.pencil` + `.wrong`).
 
 **Every overlay that doesn't live in the tile value MUST be in the diff key — or it
 silently fails to repaint.** A mistake/hint/highlight overlay is applied *on top of*
@@ -352,21 +352,31 @@ coincidentally changed that frame — and Check-&-Save (or a hint) runs a frame
 *after* the move that drew the cell, so the cell's tile is unchanged and the overlay
 **never shows**. Towers shipped exactly this bug: the mistake overlay (`ds.wrong`)
 was passed to `drawTile` but left out of the diff condition, so Check-&-Save
-highlighted nothing. For the **hint** overlay, don't hand-write the two-array
-dance at all: `src/native/engine/hint-sidecar.ts` (`HintSidecar`) owns
-repack/stale/commit — `ds.hint.pack(step?.highlights, indexFn, markBitsFn)`
-per frame, `ds.hint.stale(i)` in the cache-miss test, `ds.hint.commit(i)`
-after drawing (exemplars: the five candidate-family renders). For other
-overlays (mistakes), track a `drawn<Overlay>` sidecar and add
-`ds.drawn<Overlay>[i] !== ds.<overlay>[i]` to the cache-miss test (Towers'
-`drawnWrong`). The **hint** overlay is guarded cross-game by
+highlighted nothing. **Never hand-write the two-array dance** — for *any* overlay.
+`src/native/engine/overlay-sidecar.ts` (`OverlaySidecar`) owns repack/stale/commit;
+give each overlay its own instance on the draw state, then per frame: pack it once,
+`ds.<overlay>.stale(i)` as a clause of the cache-miss test, `ds.<overlay>.packed[i]`
+(or `.at(i)`) handed to the cell painter, `ds.<overlay>.commit(i)` after drawing.
+Three pack entry points, by the shape of what you have:
+
+| You have | Call | Exemplar |
+| --- | --- | --- |
+| A hint step's `highlights` (`area`/`targets`/`marks`) | `pack(step?.highlights, indexFn, markBitsFn)` | the five candidate-family renders |
+| A `findMistakes` cell list | `packCells(mistakes, indexFn)` | `towers/render.ts` `ds.wrong` |
+| An overlay with its own topology | `clear()` + `add(i, bits)` | `galaxies/render.ts` `ds.wrongEdges` — one wrong wall is a *shared* edge, so it lights a different bit in each of the two tiles it separates |
+
+The **hint** overlay is guarded cross-game by
 `src/native/engine/hint-overlay.test.ts` (warm the drawstate, display a hint,
 assert the same drawstate emits paint ops) — every game in
 `testing/hint-games.ts` is covered automatically. The **mistake** overlay still
 needs a per-game paint-twice test (a mistaken board can't be built generically):
 paint, then `findMistakes()`, then redraw the *same* drawstate and assert the
-highlight appears on the **second** paint (the `towers.test.ts` "highlights a
-mistake even when the cell was already drawn" regression).
+highlight appears on the **second** paint — and, ideally, that a third frame
+*without* the overlay erases it. A cold-frame test proves nothing here: on frame 1
+every cell misses the cache anyway, so a missing-from-the-diff-key overlay still
+paints. Exemplars: `towers.test.ts` ("highlights a mistake even when the cell was
+already drawn"), `galaxies.test.ts` ("recolours a flagged wall on a board that was
+already drawn").
 
 **Rendering doctrine (hard-won — see the Flip three-iteration story in
 [`AGENTS.md`](../../AGENTS.md)):** the engine paints **no pixels of its own**; each

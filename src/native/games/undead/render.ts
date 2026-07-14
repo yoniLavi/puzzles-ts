@@ -17,7 +17,7 @@
  */
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
-import { HintSidecar } from "../../engine/hint-sidecar.ts";
+import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
@@ -129,14 +129,13 @@ export interface UndeadDrawState {
   countW: number;
   countGap: number;
   countPadding: number;
-  /** `wh` current-frame mistake flags + last-drawn sidecar (Check & Save). */
-  wrong: Uint8Array;
-  drawnWrong: Int8Array;
   /** `wh` hint-overlay sidecar (fork addition): bit 0 = target cell, bit 1 =
    * evidence area, bits 2.. = struck-monster mask (`monster << 2`). Owns the
    * repack/stale/commit dance that keeps the overlay in the cache diff key
    * (playbook §3.2). */
-  hint: HintSidecar;
+  hint: OverlaySidecar;
+  /** `wh` mistake-overlay sidecar (Check & Save) — same dance. */
+  wrong: OverlaySidecar;
   pencilModeShown: boolean;
 }
 
@@ -165,9 +164,8 @@ export function newDrawState(state: UndeadState): UndeadDrawState {
     countW: 0,
     countGap: 0,
     countPadding: 0,
-    wrong: new Uint8Array(common.wh),
-    drawnWrong: new Int8Array(common.wh).fill(-1),
-    hint: new HintSidecar(common.wh),
+    hint: new OverlaySidecar(common.wh),
+    wrong: new OverlaySidecar(common.wh),
     pencilModeShown: false,
   };
 }
@@ -716,12 +714,10 @@ export function redraw(
     }
   }
 
-  // Mistake overlay sidecar.
-  ds.wrong.fill(0);
-  if (mistakes) for (const m of mistakes) ds.wrong[m.x + m.y * stride] = 1;
-
-  // Hint overlay sidecar: per cell, bit 0 target, bit 1 area, bits 2.. struck mask.
-  ds.hint.pack(hint?.highlights, (x, y) => x + y * stride, (m) => m.monster << 2);
+  // The two overlay sidecars. Hint: bit 0 target, bit 1 area, bits 2.. struck mask.
+  const index = (x: number, y: number) => x + y * stride;
+  ds.hint.pack(hint?.highlights, index, (m) => m.monster << 2);
+  ds.wrong.packCells(mistakes, index);
 
   // Grid cells.
   for (let x = 1; x < w + 1; x++) {
@@ -744,8 +740,8 @@ export function redraw(
         stale = true;
         ds.cellErrors[xy] = state.cellErrors[xy];
       }
-      if (ds.wrong[xy] !== ds.drawnWrong[xy]) stale = true;
       if (ds.hint.stale(xy)) stale = true;
+      if (ds.wrong.stale(xy)) stale = true;
 
       if (stale) {
         const pack = ds.hint.packed[xy];
@@ -771,7 +767,7 @@ export function redraw(
         } else {
           drawPencils(dr, ds, x, y, state.pencils[xi], ui.ascii, struck);
         }
-        if (ds.wrong[xy]) {
+        if (ds.wrong.at(xy)) {
           const { dx, dy } = cellCentre(ds, x, y);
           for (const inset of [2, 3]) {
             rectOutline(
@@ -785,8 +781,8 @@ export function redraw(
           }
           dr.drawUpdate({ x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 });
         }
-        ds.drawnWrong[xy] = ds.wrong[xy];
         ds.hint.commit(xy);
+        ds.wrong.commit(xy);
       }
     }
   }

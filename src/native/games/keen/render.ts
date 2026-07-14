@@ -15,7 +15,7 @@
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { hintMarkBit, HintSidecar } from "../../engine/hint-sidecar.ts";
+import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   C_ADD,
@@ -116,16 +116,14 @@ export interface KeenDrawState {
   tiles: Int32Array;
   /** `w²` scratch error flags, refilled each redraw by `checkErrors`. */
   errors: Int32Array;
-  /** `w²` mistake-overlay flags (fork addition). */
-  wrong: Uint8Array;
-  /** `w²` last-drawn mistake-overlay flags (-1 = never drawn). In the diff key
-   * so Check & Save repaints a cell whose tile value is otherwise unchanged. */
-  drawnWrong: Int8Array;
   /** `w²` hint-overlay sidecar (fork addition): bit 0 = target cell, bit 1 =
    * evidence, bits 2.. = struck-candidate mask (`hintMarkBit(n)`). Owns the
    * repack/stale/commit dance that keeps the overlay in the cache diff key
    * (playbook §3.2). */
-  hint: HintSidecar;
+  hint: OverlaySidecar;
+  /** `w²` mistake-overlay sidecar (fork addition) — same dance, so Check & Save
+   * repaints a cell whose tile value is otherwise unchanged. */
+  wrong: OverlaySidecar;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
   pencilModeShown: boolean;
 }
@@ -138,9 +136,8 @@ export function newDrawState(state: KeenState): KeenDrawState {
     w: state.params.w,
     tiles: new Int32Array(a).fill(-1),
     errors: new Int32Array(a),
-    wrong: new Uint8Array(a),
-    drawnWrong: new Int8Array(a).fill(-1),
-    hint: new HintSidecar(a),
+    hint: new OverlaySidecar(a),
+    wrong: new OverlaySidecar(a),
     pencilModeShown: false,
   };
 }
@@ -436,11 +433,10 @@ export function redraw(
 
   checkErrors(state, ds.errors);
 
-  ds.wrong.fill(0);
-  if (mistakes) for (const m of mistakes) ds.wrong[m.y * w + m.x] = 1;
-
-  // Pack the displayed hint overlay per cell.
-  ds.hint.pack(hint?.highlights, (x, y) => y * w + x, (m) => hintMarkBit(m.n));
+  // Pack both overlays per cell.
+  const index = (x: number, y: number) => y * w + x;
+  ds.hint.pack(hint?.highlights, index, (m) => hintMarkBit(m.n));
+  ds.wrong.packCells(mistakes, index);
 
   const flash =
     flashTime > 0 && (flashTime <= FLASH_TIME / 3 || flashTime >= (FLASH_TIME * 2) / 3);
@@ -455,11 +451,7 @@ export function redraw(
       if (ds.errors[i] & ERR_LATIN) tile |= DF_ERR_LATIN;
       if (ds.errors[i] & ERR_CLUE) tile |= DF_ERR_CLUE;
 
-      if (
-        ds.tiles[i] !== tile ||
-        ds.drawnWrong[i] !== ds.wrong[i] ||
-        ds.hint.stale(i)
-      ) {
+      if (ds.tiles[i] !== tile || ds.hint.stale(i) || ds.wrong.stale(i)) {
         drawTile(
           dr,
           ds,
@@ -468,12 +460,12 @@ export function redraw(
           y,
           tile,
           state.params.multiplicationOnly,
-          ds.wrong[i] !== 0,
+          ds.wrong.at(i),
           ds.hint.packed[i],
         );
         ds.tiles[i] = tile;
-        ds.drawnWrong[i] = ds.wrong[i];
         ds.hint.commit(i);
+        ds.wrong.commit(i);
       }
     }
   }
