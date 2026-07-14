@@ -301,14 +301,39 @@ function drawTile(
     }
   }
 
-  // Where the hinted tile is headed. The cell it *belongs* in gets a solid
-  // outline; a cell it is only passing through on the way gets a dashed one, so
-  // a staging move never reads as "this is the answer".
-  if (tile & (HINT_LANDING | HINT_HOME)) {
-    drawHintOutline(dr, bx, by, ts, (tile & HINT_HOME) === 0);
-  }
-
   dr.drawUpdate({ x: bx, y: by, w: ts + TILE_BORDER, h: ts + TILE_BORDER });
+}
+
+/**
+ * Where the hinted tile is headed. The cell it *belongs* in gets a solid outline;
+ * a cell it is only passing through on the way gets a dashed one, so a staging
+ * move never reads as "this is the answer".
+ *
+ * This is a mark on a **cell**, so it is drawn here — after every tile, at the
+ * cell's own unshifted position — and not inside `drawTile`, whose whole job is
+ * to draw a tile *where the tile currently is*. Drawn there, the destination
+ * outline slid along with the line under it (owner-reported): the tile moves, the
+ * cell it is being taken to does not. Painting last also keeps a neighbour sliding
+ * across the cell from covering the outline.
+ */
+function drawHintTargets(
+  dr: GameDrawing,
+  ds: NetslideDrawState,
+  marks: NetslideHint,
+): void {
+  const ts = ds.tilesize;
+  const b = border(ts);
+  const at = (cell: number, dashed: boolean) => {
+    const x = cell % ds.w;
+    const y = Math.floor(cell / ds.w);
+    const bx = b + ts * x;
+    const by = b + ts * y;
+    drawHintOutline(dr, bx, by, ts, dashed);
+    dr.drawUpdate({ x: bx, y: by, w: ts + TILE_BORDER, h: ts + TILE_BORDER });
+  };
+
+  at(marks.destination, !marks.belongs);
+  if (marks.landing !== marks.destination) at(marks.landing, true);
 }
 
 /** An outline just inside a tile's edge, solid or dashed. Inset past the tile
@@ -625,6 +650,25 @@ export function redraw(
 
   const frame = flashTime > 0 ? Math.floor(flashTime / FLASH_FRAME) : -1;
 
+  // Which cell of *this* board holds the tile the hint is placing.
+  //
+  // A step's marks index the board the step was computed against, and while the
+  // hinted slide animates that is the board we have just left: the midend advances
+  // the plan when the animation *ends*, so the displayed step is still the one being
+  // played and `marks.tile` still names the cell the tile set off from. In the board
+  // being drawn, the tile is where the slide put it — `marks.landing` — and marking
+  // it there is also what makes the highlight travel with it, since a tile on the
+  // moving line is drawn shifted. Marking `marks.tile` instead highlighted whichever
+  // tile had slid into the vacated cell (owner-reported).
+  //
+  // Any other displayed step — the next leg of a journey, after the midend advanced
+  // on a manual completion — was computed against this board already, so its
+  // `marks.tile` is the cell to use.
+  const animating = oldstate !== null && t < ANIM_TIME;
+  const playingThisStep =
+    animating && hint !== undefined && isMoveBeingAnimated(hint.move, state);
+  const hintTile = marks ? (playingThisStep ? marks.landing : marks.tile) : -1;
+
   // A line in motion is drawn unpowered, so the powered highlight doesn't
   // appear to leap across it.
   const active =
@@ -649,12 +693,11 @@ export function redraw(
       // changed, so if these bits were not part of the diff, nothing would repaint
       // and the hint would simply not appear.
       if (marks) {
-        if (i === marks.tile) c |= HINT_TILE;
-        // A solid outline says "this tile belongs here"; a dashed one says "this
-        // is only on the way". Which the destination gets depends on whether the
-        // finished board really does want this tile's wires there — the plan can
-        // run out of budget and park a tile somewhere merely useful, and a solid
-        // outline there would promise something nothing has checked.
+        if (i === hintTile) c |= HINT_TILE;
+        // The outlines themselves are drawn by `drawHintTargets`, after every tile
+        // and at the cell's own position. They are still keyed into the cache word
+        // here, because that is what repaints the tile *under* a stale outline once
+        // the hint moves on — without the bit, the old outline would be left behind.
         if (i === marks.destination) c |= marks.belongs ? HINT_HOME : HINT_LANDING;
         else if (i === marks.landing) c |= HINT_LANDING;
       }
@@ -698,7 +741,18 @@ export function redraw(
     }
   }
 
+  // Last, so no sliding tile paints across them.
+  if (marks) drawHintTargets(dr, ds, marks);
+
   dr.unclip();
+}
+
+/** Is `move` the slide currently being animated? The state records the last slide
+ * it was given, and a Netslide move is exactly (line, direction), so this is a
+ * comparison rather than a guess. */
+function isMoveBeingAnimated(move: NetslideMove, s: NetslideState): boolean {
+  if (move.type !== "slide" || move.dir !== s.lastMoveDir) return false;
+  return move.axis === "row" ? move.index === s.lastMoveRow : move.index === s.lastMoveCol;
 }
 
 /** The walls around the outside of the grid, drawn once — they are outside the

@@ -912,6 +912,38 @@ auto-hint step plays as a visible fill with no frozen gap. Exemplar: Unruly's `a
 grow branch in `drawTile`
 ([`unruly/render.ts`](../../src/native/games/unruly/render.ts)).
 
+### 5.8 In an animated game, a mark on a *tile* moves and a mark on a *cell* does not
+
+Owner-reported on Netslide (2026-07-14): the hint's marks sat correctly on the still board,
+then **both jumped a cell the instant the slide began**, snapping back when it ended. Two
+different bugs wearing the same symptom, and a game whose moves animate (Netslide, Sixteen,
+Fifteen, and any future sliding/moving game) has both waiting for it:
+
+- **A mark on a tile must ride the animation.** A moving tile is drawn *offset* from its grid
+  cell for the length of the move, so a highlight painted as part of that tile travels with it —
+  which is what you want, provided you paint it on **the right cell**. Which brings the trap:
+- **Mid-animation, the displayed step's cell indices still refer to the board you have just
+  left.** The midend advances the plan when the animation **ends** (`settleHint`), so while the
+  hinted move plays, the displayed step is still the one being played, and its "tile" field names
+  the cell the tile set *off from*. Paint there and you highlight whatever slid *into* the vacated
+  cell — a different piece. Resolve the tile's cell in the board actually being drawn (Netslide:
+  `landing` while this step's own move is animating, `tile` otherwise — a continuation leg the
+  midend already advanced to was computed against the drawn board).
+- **A mark on a cell must NOT ride the animation.** A destination/target outline marks a *cell*,
+  and cells do not move. Drawing it inside the per-tile paint routine — whose job is to draw a
+  tile *where the tile currently is* — makes it slide along whenever the target cell happens to
+  lie on the moving line. Draw cell marks in their own pass **after** every tile, at the cell's
+  own unshifted position; painting last also stops a tile sliding across the cell from covering
+  the outline. Keep the mark's bit in the render-cache word even so — that is what repaints the
+  tile *under* a stale outline once the hint moves on.
+
+Test it at a **mid-animation frame**, which the tier-2/2.5 harness reaches directly: call
+`redraw` with `(prev = pre-move state, current = post-move state, animTime = ANIM_TIME / 2)` and
+assert the *drawn coordinates* of each mark (seed:
+[`netslide-hint.test.ts`](../../src/native/games/netslide/netslide-hint.test.ts), "the hint marks
+while the hinted slide animates"). A snapshot alone will not catch this — the still frames either
+side of the animation are correct, which is exactly why it survived to a player.
+
 ---
 
 ## 6. Non-deductive (heuristic) hints

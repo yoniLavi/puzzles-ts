@@ -11,7 +11,14 @@ import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { type NetslideHint, parseAux } from "./hint.ts";
 import { netslideGame } from "./index.ts";
-import { COL_HINT, colours, newDrawState, redraw, setTileSize } from "./render.ts";
+import {
+  ANIM_TIME,
+  COL_HINT,
+  colours,
+  newDrawState,
+  redraw,
+  setTileSize,
+} from "./render.ts";
 import {
   isComplete,
   type NetslideMove,
@@ -553,5 +560,112 @@ describe("netslide hint rendering", () => {
     expect(arrows).toHaveLength(1);
 
     expect(result.recording.ops).toMatchSnapshot();
+  });
+});
+
+describe("the hint marks while the hinted slide animates", () => {
+  // Owner-reported: the marks sit correctly until the slide starts, and then both
+  // jump a cell. Two distinct causes, and the fix pulls them apart:
+  //
+  //  - The *tile* mark is a mark on a **tile**, and the tile is moving. Its cell
+  //    index in the step is the cell the tile came *from* — the midend advances the
+  //    plan only when the animation ends — so painting it there marks whatever slid
+  //    into that cell instead. It must ride with the tile, i.e. be painted on the
+  //    cell the slide lands it in.
+  //  - The *destination* mark is a mark on a **cell**, and cells do not move. It was
+  //    painted inside the tile paint, which is shifted while the line slides, so it
+  //    slid too. It must stay put while the line slides under it.
+  const TS = 32;
+  const TILE_BORDER = 1;
+  const border = (ts: number) => Math.floor((3 * ts) / 4) + 1;
+
+  /** The tile-background rect `drawTile` lays down, by its distinctive size. */
+  function hintFill(ops: RecordingDrawing["ops"]) {
+    return ops.find(
+      (op) =>
+        op.op === "rect" &&
+        op.colour === COL_HINT &&
+        op.w === TS - TILE_BORDER &&
+        op.h === TS - TILE_BORDER,
+    );
+  }
+
+  /** The top edge of the destination outline, by its distinctive size. */
+  function hintOutlineTop(ops: RecordingDrawing["ops"]) {
+    const inset = TILE_BORDER + 1;
+    const side = TS - 2 * inset;
+    const thickness = Math.max(2, Math.round(TS / 16));
+    return ops.find(
+      (op) =>
+        op.op === "rect" && op.colour === COL_HINT && op.w === side && op.h === thickness,
+    );
+  }
+
+  /** A mid-slide frame of the hinted move, on the first board whose hint step both
+   * moves a tile and aims at a cell on the line being slid — the case the owner hit,
+   * and the only one where a cell-mark riding the shift is visible. */
+  function animatingFrame() {
+    for (let i = 0; i < 40; i++) {
+      const { state, aux } = board(EVEN_4X4, `anim-${i}`);
+      const res = hintOf(state, aux);
+      if (!res.ok) continue;
+      const step = res.steps[0] as HintStep<NetslideMove, NetslideHint>;
+      const marks = step.highlights as NetslideHint;
+      if (step.move.type !== "slide") continue;
+      const slide = step.move;
+      const onLine = (cell: number) =>
+        slide.axis === "row"
+          ? Math.floor(cell / state.w) === slide.index
+          : cell % state.w === slide.index;
+      if (!onLine(marks.destination)) continue;
+      if (marks.landing === marks.tile) continue;
+
+      const after = netslideGame.executeMove(state, step.move);
+      const ds = newDrawState(after);
+      setTileSize(ds, TS);
+      const palette = colours([1, 1, 1]);
+
+      // Paint the pre-move frame first, so the draw state's cache is warm exactly as
+      // it is in the app when the slide begins.
+      redraw(new RecordingDrawing(palette), ds, null, state, 0, newUi(state), 0, 0, step);
+
+      // Halfway through the slide: the line is drawn half a tile back along its
+      // direction of travel.
+      const rec = new RecordingDrawing(palette);
+      redraw(rec, ds, state, after, 0, newUi(after), ANIM_TIME / 2, 0, step);
+      return { state, after, slide, marks, rec };
+    }
+    throw new Error("no board in 40 aimed a hint at a cell on the line it slides");
+  }
+
+  it("carries the tile mark along with the tile it is marking", () => {
+    const { after, slide, marks, rec } = animatingFrame();
+
+    // Half a slide in, the tile is drawn half a tile back from the cell it lands in.
+    const shift = 0.5 * slide.dir;
+    const lx = marks.landing % after.w;
+    const ly = Math.floor(marks.landing / after.w);
+    const bx = border(TS) + TS * lx + Math.trunc((slide.axis === "row" ? shift : 0) * TS);
+    const by = border(TS) + TS * ly + Math.trunc((slide.axis === "col" ? shift : 0) * TS);
+
+    const fill = hintFill(rec.ops);
+    expect(fill, "the hinted tile is not painted in the hint colour at all").toBeDefined();
+    expect(fill).toMatchObject({ x: bx + TILE_BORDER, y: by + TILE_BORDER });
+  });
+
+  it("leaves the destination mark where the destination is", () => {
+    const { after, marks, rec } = animatingFrame();
+
+    // The destination is a *cell*. The line slides under it; it does not move.
+    const dx = marks.destination % after.w;
+    const dy = Math.floor(marks.destination / after.w);
+    const inset = TILE_BORDER + 1;
+
+    const outline = hintOutlineTop(rec.ops);
+    expect(outline, "the destination is not outlined at all").toBeDefined();
+    expect(outline).toMatchObject({
+      x: border(TS) + TS * dx + inset,
+      y: border(TS) + TS * dy + inset,
+    });
   });
 });
