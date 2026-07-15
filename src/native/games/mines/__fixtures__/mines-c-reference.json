@@ -1,0 +1,9 @@
+[
+  {"params": "9x9n10", "seed": "diff-0", "desc": "0,8,mff9452e1d83a0a7065160"},
+  {"params": "9x9n10", "seed": "diff-1", "desc": "5,3,m3e291f0772c9059d13c28"},
+  {"params": "9x9n10", "seed": "diff-2", "desc": "0,6,mf4b9f1f3f7abee67fe568"},
+  {"params": "9x9n35", "seed": "diff-0", "desc": "0,8,m9a59f4cb234d3492bddd0"},
+  {"params": "9x9n35", "seed": "diff-1", "desc": "5,3,m7b7bd08b9a8f0659279c8"},
+  {"params": "16x16n40", "seed": "diff-0", "desc": "8,7,m82a435827fcf4109d8d88d53a04f16aa993a5a314aa5b56cf03749a5f9049fcc"},
+  {"params": "16x16n40", "seed": "diff-1", "desc": "5,10,md6d3aa16231b156aee9b4fb1356cff1a13c1e15a822bdd97ae34f60f4cb5402c"}
+]

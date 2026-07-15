@@ -82,6 +82,19 @@ little additional information as possible.
   wrong squares
 - **THEN** only the mine(s) that the chord would have struck are uncovered
 
+### Requirement: A plain left-click chords without a false-uncover preview
+
+A left-click on a number SHALL chord (clear around it when its flags are satisfied) but SHALL
+NOT paint the 3×3 mouse-down "pressed" preview — that preview is drawn identically to opened
+cells, so on a not-yet-satisfied number it would flash a false uncover that reverts on
+release. The deliberate chord gesture (middle button / Shift+left) SHALL keep the preview, and
+a left-press over a covered square SHALL keep its single-cell "about to open" highlight.
+
+#### Scenario: Clicking a not-yet-satisfied number
+
+- **WHEN** the player presses the left button on a number whose mines are not all flagged
+- **THEN** no 3×3 preview appears, so nothing looks uncovered and nothing re-covers on release
+
 ### Requirement: Mines does not offer mistake-checking
 
 Mines SHALL NOT implement `findMistakes`. The only mistake it could report — a flag on a safe

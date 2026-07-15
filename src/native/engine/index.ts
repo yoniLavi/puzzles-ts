@@ -20,6 +20,7 @@ export type {
   ParamConfigItem,
   PresetMenu,
   SolveResult,
+  SupersededDesc,
   UiUpdate,
 } from "./game.ts";
 export { UI_UPDATE } from "./game.ts";

@@ -467,4 +467,17 @@ export interface Game<
    * be structured-clone/JSON-safe and is stored as-is. */
   serialiseMove?(m: Move): unknown;
   deserialiseMove?(raw: unknown): Move;
+
+  /** Serialise the parts of the `Ui` that must survive a save (upstream
+   * `encode_ui`/`decode_ui`). The `Ui` is otherwise rebuilt from `newUi`
+   * on load and reconstructed by replaying the move log — but a field that
+   * lives *outside* the undo history and is set by `interpretMove` (which
+   * replay never calls) cannot be recovered that way. Mines' persistent
+   * death counter and its "was ever completed" flag are exactly that: dying
+   * then undoing removes the death from the move log, so only serialising
+   * the `Ui` keeps the count. The midend writes `encodeUi(ui)` into the save
+   * and, after replaying the move log on load, restores it via `decodeUi`.
+   * Absent ⇒ the `Ui` carries no save-surviving state (every other game). */
+  encodeUi?(ui: Ui): string;
+  decodeUi?(ui: Ui, encoded: string): void;
 }

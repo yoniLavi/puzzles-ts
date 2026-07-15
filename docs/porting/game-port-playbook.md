@@ -824,8 +824,49 @@ game description mid-play"):
   generating move rather than to a blank board they'd have to re-guess.
 
 Make the generation a deterministic function of state + move (put the generator's RNG in
-the state), or the move log will not replay. Exemplar until Mines lands: the fake game in
-[`desc-supersede.test.ts`](../../src/native/engine/desc-supersede.test.ts).
+the state), or the move log will not replay. Do it in **one controlled shared box**: Mines'
+mine layout is a mutable holder shared by reference across every cloned state, filled once
+on the first click and surviving undo (so you can't re-roll the board) — the sole deliberate
+`executeMove` impurity, and it must be commented *at the mutation site* (it's a memoisation
+of a deterministic function of the desc RNG + click, so replay reproduces it byte-for-byte).
+Exemplar: [`mines/index.ts`](../../src/native/games/mines/index.ts) (`openSquare` +
+`supersededDesc`) with the shared box in
+[`mines/state.ts`](../../src/native/games/mines/state.ts) (`MineLayout`); the fake game in
+[`desc-supersede.test.ts`](../../src/native/engine/desc-supersede.test.ts) is Mines' shape
+in miniature.
+
+### 3.11 A timed game, and Ui state a save-replay can't rebuild (Mines)
+
+Mines was the first two firsts at once: the first `isTimed` TS game, and the first with
+`Ui` state that must survive a save. Two engine capabilities exist because of it — reach for
+them, don't re-invent:
+
+- **`isTimed: true` + `timingState(state, ui)`.** The midend runs the clock while
+  `timingState` is true and prefixes the status bar with `[M:SS]` (upstream
+  `midend_rewrite_statusbar`, engine-owned — your `statusbarText` returns only the game
+  text). Mines stops the clock before the first click, on death, on a win, and once
+  `ui.completed` was ever set. **Browser-verify a timed game** — the rAF/worker timer path
+  had never run before Mines; watch it tick, freeze, and resume.
+- **`encodeUi(ui)` / `decodeUi(ui, s)`.** A `Ui` field set in `interpretMove` that lives
+  *outside* the undo history cannot be rebuilt by replaying the move log (replay runs
+  `executeMove`, never `interpretMove`) — Mines' death counter is the case: dying then
+  undoing removes the death from the log. Serialise exactly those fields (upstream
+  `encode_ui`/`decode_ui`); the midend writes them into the save's `ui` field and restores
+  them after the replay. A game whose `Ui` is fully derivable from state omits both hooks.
+
+### 3.12 A chord/press preview must not look like an opened cell (Mines)
+
+Mines' pressed-preview (the mouse-down chord highlight) is drawn *identically* to an opened
+cell — faithful to upstream `draw_tile`, but a trap: because a plain left-click on a number
+*chords* here (upstream/this port both make left-click-on-a-number act), the press painted a
+3×3 preview that, on a not-yet-satisfied number, flashed a false "uncover" reverting on
+release — read by the owner as "uncovered blocks re-covered." Fix (Mines design D11):
+**decouple the preview radius from the chord intent** — a left press keeps `validradius`
+(so the release still chords / opens) but drops the preview (`hradius = 0`), matching MS
+(a left-click shows no preview); the deliberate chord gesture (middle / Shift+left) keeps
+it. General rule: if a transient press/preview overlay is visually indistinguishable from a
+committed state, a press that *doesn't* commit reads as a glitch — make the preview distinct
+or suppress it on the gesture that usually won't commit.
 
 ## 4. Differential check (per-game, optional)
 

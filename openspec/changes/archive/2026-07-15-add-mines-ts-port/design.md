@@ -144,6 +144,59 @@ from `ui.hx/hy/hradius` at draw time, not from the state. They are per-cell over
 not live in the tile value ⇒ playbook §3.2 ⇒ they go in the cache key or through an
 `OverlaySidecar`. (The sidecar generalisation landed 2026-07-14; Mines is a natural consumer.)
 
+## D10. Two engine additions — surfaced loudly, and NOT supersede-hook failures
+
+The proposal said "Engine: expected to be zero-change. If the port needs an engine edit, that
+is a signal the supersede hook got something wrong." **The supersede hook needed zero
+changes** — `supersededDesc` + the midend's existing `applySupersede`/`descSuperseded`/
+restart-from-public-desc/save-privDesc machinery carried Mines end-to-end (verified by
+`mines.test.ts` and the pre-existing `desc-supersede.test.ts`, whose fake game is Mines'
+shape exactly). So the "zero-change" expectation held *for the thing it was about*.
+
+Two **other**, orthogonal engine gaps surfaced — neither about supersession — because Mines
+is the first game to exercise a capability no prior port needed. Both are additive optional
+hooks; every other game is untouched. Recorded here loudly as the proposal instructed:
+
+1. **Ui serialisation (`Game.encodeUi`/`decodeUi` + save-envelope `ui` field).** Mines' death
+   counter and `completed` flag live on the `Ui`, *outside* the undo history, and are set in
+   `interpretMove`. A save replays the move log through `executeMove`, which never calls
+   `interpretMove` — and an undone death is gone from the log entirely — so the counter cannot
+   be reconstructed. Upstream serialises exactly these two fields (`encode_ui`/`decode_ui`);
+   the TS engine had no equivalent because no prior game had save-surviving ui state. Added as
+   optional hooks (`ts-engine` spec, "serialises Ui state a move-log replay cannot
+   reconstruct").
+2. **Timed-game status-bar clock (`[M:SS]` prefix).** Mines is the first `isTimed` game, so the
+   midend's port of upstream `midend_rewrite_statusbar` (the `[M:SS] ` prefix on a timed game's
+   status text) had never been written. Added to `Midend.emitStatusBar`, gated on
+   `isTimed && wantsStatusbar` (`ts-engine` spec, "displays a timed game's elapsed clock").
+
+If a *future* reviewer reads these as supersede-hook breakage: they are not. They are the
+first-timed-game and first-persistent-ui gaps, and would have been needed by Mines with or
+without the desc-supersede design.
+
+## D11. Left-click chording shows no false-uncover preview (owner report 2026-07-15)
+
+Mines makes a plain **left-click on a satisfied number chord** (upstream: a `LEFT_BUTTON`
+press over a number sets `validradius = hradius = 1`, and the release clears around it). A
+side effect was that the same press also painted the 3×3 **mouse-down preview** (`hradius = 1`
+→ each covered neighbour drawn in the "pressed" style). That pressed style renders
+**pixel-identical to an opened cell** (both a flat `COL_BACKGROUND2` fill with a top/left
+shadow — faithful to upstream `draw_tile`). So while solving by left-clicking numbers, every
+click on a **not-yet-fully-flagged** number flashed a false "uncover" of its 3×3 that snapped
+back on release — the owner read this as *"uncovered blocks got re-covered."* A satisfied
+number chords cleanly (the preview cells become real opens with no revert), which is why it
+was intermittent.
+
+**Fix:** decouple the preview (`hradius`) from the chord intent (`validradius`) on a **left**
+press. A left press over a number now sets `hradius = 0` (no 3×3 preview) but keeps
+`validradius = 1`, so the release still chords — matching MS Minesweeper, where a plain
+left-click shows no preview. The deliberate chord gesture (middle button / Shift+left, which
+this frontend maps to `MIDDLE_BUTTON`) keeps `hradius = 1`, so a held chord still previews.
+A left press over a *covered* cell keeps its single-cell "about to open" highlight
+(`hradius = 0` lights only the pressed cell). Guarded by the `mines chord preview` tests and
+dev-verified in the browser (no flash on an unsatisfied-number press; left-click still
+chords; Shift+left still previews; 0 console errors).
+
 ## D9. Not in scope
 
 Printing (no print path in this fork). `game_request_keys` is NULL. No preferences upstream.
