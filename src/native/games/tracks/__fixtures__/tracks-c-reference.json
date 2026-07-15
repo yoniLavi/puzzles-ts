@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "w": 8,
+      "h": 8,
+      "diff": 0,
+      "single_ones": 1,
+      "seed": "tracks-trace-0",
+      "desc": "lAs3b5kA6jCd,4,3,8,S7,4,6,7,6,5,5,6,6,7,7,S5,4",
+      "solveRet": 1,
+      "gradeDiff": 0
+    },
+    {
+      "w": 8,
+      "h": 8,
+      "diff": 1,
+      "single_ones": 1,
+      "seed": "tracks-trace-1",
+      "desc": "f5s5e6e5fCkCb5c,4,S4,4,4,7,5,4,5,4,3,3,6,S5,5,5,6",
+      "solveRet": 1,
+      "gradeDiff": 1
+    },
+    {
+      "w": 10,
+      "h": 8,
+      "diff": 1,
+      "single_ones": 1,
+      "seed": "tracks-trace-2",
+      "desc": "zcA6x9Co9g,2,3,S4,3,3,3,3,7,7,6,3,3,8,S9,4,5,7,2",
+      "solveRet": 1,
+      "gradeDiff": 1
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "diff": 0,
+      "single_ones": 1,
+      "seed": "tracks-trace-3",
+      "desc": "za9zp6xCd,3,1,2,5,10,S4,5,5,2,3,5,5,6,5,8,4,2,S2,1,2",
+      "solveRet": 1,
+      "gradeDiff": 0
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "diff": 1,
+      "single_ones": 1,
+      "seed": "tracks-trace-4",
+      "desc": "n3e6f9zzpCc,3,2,2,1,4,6,S6,8,10,4,10,9,S6,6,2,2,2,1,4,4",
+      "solveRet": 1,
+      "gradeDiff": 1
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "diff": 2,
+      "single_ones": 1,
+      "seed": "tracks-trace-5",
+      "desc": "aCmCa5b6zze9hAhAc,9,5,2,2,5,4,S8,4,8,7,7,8,S5,5,5,4,4,7,6,3",
+      "solveRet": 1,
+      "gradeDiff": 2
+    },
+    {
+      "w": 15,
+      "h": 10,
+      "diff": 2,
+      "single_ones": 1,
+      "seed": "tracks-trace-6",
+      "desc": "l5j3m5gCr9p5m9zuCf,3,1,4,5,5,7,9,7,S4,5,3,3,3,4,4,11,9,12,S10,8,8,3,2,1,3",
+      "solveRet": 1,
+      "gradeDiff": 2
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "diff": 0,
+      "single_ones": 1,
+      "seed": "tracks-trace-7",
+      "desc": "f6pCkC,2,3,3,2,3,S3,3,S3,3,3,2,2",
+      "solveRet": 1,
+      "gradeDiff": 0
+    },
+    {
+      "w": 7,
+      "h": 9,
+      "diff": 1,
+      "single_ones": 1,
+      "seed": "tracks-trace-8",
+      "desc": "n6oCl9q9a,7,7,5,6,1,S3,3,2,2,S4,3,4,3,6,6,2",
+      "solveRet": 1,
+      "gradeDiff": 1
+    },
+    {
+      "w": 8,
+      "h": 8,
+      "diff": 1,
+      "single_ones": 0,
+      "seed": "tracks-trace-9",
+      "desc": "jCe5ztA,3,3,3,1,6,2,3,S4,5,4,S4,1,4,4,2,1",
+      "solveRet": 1,
+      "gradeDiff": 1
+    },
+    {
+      "w": 12,
+      "h": 8,
+      "diff": 2,
+      "single_ones": 0,
+      "seed": "tracks-trace-10",
+      "desc": "zf9c6fCzx9a,2,1,1,4,3,1,1,2,3,3,S7,7,3,2,8,S8,6,4,2,2",
+      "solveRet": 1,
+      "gradeDiff": 2
+    }
+  ]
+}

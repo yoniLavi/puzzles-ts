@@ -283,10 +283,10 @@ puzzle(towers
 the clues.")
 
 puzzle(tracks
+  TS_PORTED  # native-TS port (openspec add-tracks-ts-port); no tracks.c/wasm
   DISPLAYNAME "Tracks"
   DESCRIPTION "Path-finding railway track puzzle"
   OBJECTIVE "Fill in the railway track according to the clues.")
-solver(tracks)
 
 puzzle(twiddle
   TS_PORTED  # native-TS port (openspec add-twiddle-ts-port); no twiddle.c/wasm

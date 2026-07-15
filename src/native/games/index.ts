@@ -38,6 +38,7 @@ import "./slant/index.ts";
 import "./solo/index.ts";
 import "./tents/index.ts";
 import "./towers/index.ts";
+import "./tracks/index.ts";
 import "./twiddle/index.ts";
 import "./undead/index.ts";
 import "./unequal/index.ts";
