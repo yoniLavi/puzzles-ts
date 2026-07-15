@@ -1,12 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
-// Register every TS-ported game (side-effect imports) so the round-trip
-// guard below can drive each game's declared `paramConfig`.
-import "../games/index.ts";
+// Register every TS-ported game so the round-trip guard below can drive
+// each game's declared `paramConfig`. `beforeAll` re-runs it because under
+// `isolate: false` a sibling file (worker-adapter) may have reset the
+// shared registry after this module's import-time registration ran.
+import { registerAllGames } from "../games/index.ts";
 import type { Game, ParamConfigItem, PresetMenu } from "./game.ts";
 import { Midend } from "./midend.ts";
 import { getTsGame } from "./registry.ts";
 import { TS_PORTED_PUZZLE_IDS } from "../games/ts-ported-ids.ts";
+
+beforeAll(registerAllGames);
 
 // A tiny game exercising all three `paramConfig` types (string / boolean
 // / choices) over a params object, so the midend round-trip can be

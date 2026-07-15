@@ -16,7 +16,8 @@
     "test": "vitest",
     "test:run": "vitest run --passWithNoTests",
     "diff": "vitest run --passWithNoTests -c scripts/diff.vitest.config.mts",
-    "gate": "npm run typecheck && npm run lint && npm run test:run && vite build",
+    "gate": "sh scripts/gate.sh",
+    "test:shuffle": "vitest run --passWithNoTests --sequence.shuffle.files=true",
     "prepare": "husky"
   },
   "dependencies": {

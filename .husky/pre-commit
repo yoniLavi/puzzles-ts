@@ -1,15 +1,5 @@
-# Run type checking, linter, and tests before commit.
-# Modelled on /Users/yoni/codeliance/mathliance/.husky/pre-commit
-# (knip not introduced here — no dead-code rule in this repo yet).
-npx tsc -b --noEmit
-npm run lint
-npm run test:run
-# Production build. tsc/lint/vitest never exercise `vite build`, so a
-# broken production build (vite-plugin closeBundle crashes, unresolved
-# `?raw`/asset imports, plugin/dep regressions) is otherwise invisible
-# until deploy — exactly how two such bugs sat undetected on main.
-# `tsc` above already covers the `tsc &&` half of `npm run build`, so
-# run `vite build` directly (leaner, no double typecheck). Assumes
-# `npm run build:wasm` has populated src/assets/puzzles/ (the same
-# precondition `npm run build` already documents).
-npx vite build
+# The gate lives in scripts/gate.sh so this hook and `npm run gate` share one
+# implementation (the build-pipeline spec requires they mirror each other).
+# tsc → biome (fast fail-fast prefix), then `vitest run` ∥ `vite build`
+# concurrently, failing the commit if either fails. See scripts/gate.sh.
+sh scripts/gate.sh

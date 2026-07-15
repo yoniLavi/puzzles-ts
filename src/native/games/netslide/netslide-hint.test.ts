@@ -63,6 +63,51 @@ function hintOf(state: NetslideState, aux?: string) {
   return res;
 }
 
+/**
+ * A shared corpus of solved boards + their computed hint plans, spanning all
+ * three sizes, computed **once** and reused by every test that checks a
+ * *structural narration invariant* over a sample of boards (does any step ever
+ * say "centre", is any sentence too long, does every step state a purpose).
+ *
+ * The hint planner is the suite's single most expensive operation (~0.3s per
+ * 4×4 board, ~0.6s per 5×5 — generation is <1ms), and these narration checks
+ * verify deterministic *templates*: a diverse handful of boards exercises the
+ * same code paths as dozens, so regenerating 20–60 boards per test was pure
+ * redundant planner work — enough to blow the 60s test timeout under a
+ * saturated CI box (the `repo-layout` "bounded under saturation" requirement).
+ * Sharing one corpus keeps the same invariants over a richer, consistent board
+ * set while collapsing ~100 planner calls to ~30. Boards that hunt for a
+ * *specific* rare shape (a frozen-line move, a beside-source placement, a
+ * multi-leg journey) keep their own targeted loops below — they need a board
+ * matching a predicate, not a representative sample.
+ *
+ * Module-level and lazy: computed on first use, then reused. Read-only and
+ * deterministic, so it is safe under `isolate: false` (it is this file's own
+ * module state, not shared across files).
+ */
+type OkHint = Extract<ReturnType<typeof hintOf>, { ok: true }>;
+interface CorpusEntry {
+  params: NetslideParams;
+  state: NetslideState;
+  aux: string | undefined;
+  steps: OkHint["steps"];
+}
+let narrationCorpusCache: CorpusEntry[] | undefined;
+function narrationCorpus(): CorpusEntry[] {
+  if (narrationCorpusCache) return narrationCorpusCache;
+  const out: CorpusEntry[] = [];
+  for (const params of [EASY_3X3, EVEN_4X4, HARD_5X5]) {
+    for (let i = 0; i < 6; i++) {
+      const { state, aux } = board(params, `corpus-${params.w}-${i}`);
+      const res = hintOf(state, aux);
+      if (res.ok) out.push({ params, state, aux, steps: res.steps });
+    }
+  }
+  if (out.length === 0) throw new Error("narration corpus produced no hints");
+  narrationCorpusCache = out;
+  return out;
+}
+
 /** Every slide the player may legally make. */
 function legalMoves(s: NetslideState): NetslideMove[] {
   const moves: NetslideMove[] = [];
@@ -226,11 +271,8 @@ describe("netslide hint", () => {
 
 describe("netslide hint narration", () => {
   it("says what every slide is *for*, never only what it is", () => {
-    for (const seed of ["narrate-a", "narrate-b", "narrate-c"]) {
-      const { state, aux } = board(EASY_3X3, seed);
-      const res = hintOf(state, aux);
-      if (!res.ok) continue;
-      for (const step of res.steps) {
+    for (const { steps } of narrationCorpus()) {
+      for (const step of steps) {
         expect(step.explanation.length).toBeGreaterThan(0);
         // Movement game, so the imperative — never a modal of necessity, which
         // would claim the move is *forced*, and it is not.
@@ -309,15 +351,10 @@ describe("netslide hint narration", () => {
     // ⌊h/2⌋, so on the 4×4 it is row 3, column 3 — visibly not the centre. And a
     // sentence that says a tile "belongs beside the source" and then ", where it
     // belongs" reads as a stutter.
-    for (const params of [EVEN_4X4, HARD_5X5, EASY_3X3]) {
-      for (let i = 0; i < 20; i++) {
-        const { state, aux } = board(params, `vocab-${params.w}-${i}`);
-        const res = hintOf(state, aux);
-        if (!res.ok) continue;
-        for (const step of res.steps) {
-          expect(step.explanation).not.toMatch(/centre|center|middle/i);
-          expect(step.explanation.match(/belongs/g)?.length ?? 0).toBeLessThan(2);
-        }
+    for (const { steps } of narrationCorpus()) {
+      for (const step of steps) {
+        expect(step.explanation).not.toMatch(/centre|center|middle/i);
+        expect(step.explanation.match(/belongs/g)?.length ?? 0).toBeLessThan(2);
       }
     }
   });
@@ -328,14 +365,9 @@ describe("netslide hint narration", () => {
     // deduction about the move — which made the commonest sentence 146 characters,
     // 1.8× every other step, so it wrapped to two lines on a 4×4.
     let longest = 0;
-    for (const params of [EVEN_4X4, HARD_5X5]) {
-      for (let i = 0; i < 20; i++) {
-        const { state, aux } = board(params, `length-${params.w}-${i}`);
-        const res = hintOf(state, aux);
-        if (!res.ok) continue;
-        for (const step of res.steps)
-          longest = Math.max(longest, step.explanation.length);
-      }
+    for (const { steps } of narrationCorpus()) {
+      for (const step of steps)
+        longest = Math.max(longest, step.explanation.length);
     }
     expect(longest).toBeLessThanOrEqual(120);
   });

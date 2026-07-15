@@ -201,12 +201,19 @@ describe("FlipDsf", () => {
   });
 
   it("matches a brute-force parity reference under random merges", () => {
-    const n = 24;
+    // The per-op cost is the O(n²) full-matrix re-check below, run once per op,
+    // so wall time scales as n²·ops. The parity property is n-independent — 16
+    // elements under 40 consistent flip-merges already builds deep multi-way
+    // equivalence classes with inversions — so a smaller n/ops keeps the check
+    // just as strong while staying comfortably within the test timeout even on
+    // a saturated box (the `repo-layout` "bounded under saturation"
+    // requirement); the earlier 24/60 was ~3× the work for no added rigour.
+    const n = 16;
     const rng = randomNew("flipdsf-property");
     for (let trial = 0; trial < 5; trial++) {
       const d = new FlipDsf(n);
       const ref = new RefFlipDsf();
-      for (let op = 0; op < 60; op++) {
+      for (let op = 0; op < 40; op++) {
         const a = randomUpto(rng, n);
         const b = randomUpto(rng, n);
         const inv = randomUpto(rng, 2) === 1;

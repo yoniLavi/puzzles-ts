@@ -17,8 +17,10 @@
  * registered, without anybody having to remember this test exists.
  */
 
-import { describe, expect, it } from "vitest";
-import "../games/index.ts"; // registers every ported game
+import { beforeAll, describe, expect, it } from "vitest";
+// Registers every ported game; `beforeAll` re-runs it in case a sibling
+// file reset the shared registry under `isolate: false`.
+import { registerAllGames } from "../games/index.ts";
 import { TS_PORTED_PUZZLE_IDS } from "../games/ts-ported-ids.ts";
 import { randomNew } from "../random/index.ts";
 import type { Game } from "./game.ts";
@@ -27,6 +29,8 @@ import { LEFT_BUTTON, MOD_STYLUS, RIGHT_BUTTON } from "./pointer.ts";
 import { getTsGame } from "./registry.ts";
 
 type AnyGame = Game<unknown, unknown, unknown, unknown, unknown>;
+
+beforeAll(registerAllGames);
 
 /** What a single press does to a fresh board: was it consumed, and what did it
  * leave behind. Going through a real `Midend` is the point — the modifier
