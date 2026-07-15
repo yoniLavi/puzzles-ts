@@ -34,6 +34,10 @@ export interface SaveEnvelope {
   timerElapsed: number;
   /** Whether the solver was used (drives "solved-with-help"). */
   usedSolve: boolean;
+  /** Serialised `Ui` state that must survive a save but cannot be rebuilt by
+   * replaying the move log (upstream `encode_ui`; Mines' death counter and
+   * completion flag). Present only for a game with an `encodeUi` hook. */
+  ui?: string;
 }
 
 const encoder = new TextEncoder();
@@ -61,7 +65,8 @@ function isSaveEnvelope(value: unknown): value is SaveEnvelope {
     Array.isArray(v.moves) &&
     typeof v.pos === "number" &&
     typeof v.timerElapsed === "number" &&
-    typeof v.usedSolve === "boolean"
+    typeof v.usedSolve === "boolean" &&
+    (v.ui === undefined || typeof v.ui === "string")
   );
 }
 

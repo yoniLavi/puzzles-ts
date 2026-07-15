@@ -151,10 +151,10 @@ same colour.")
 solver(map)
 
 puzzle(mines
+  TS_PORTED  # native-TS port (openspec add-mines-ts-port); no mines.c/wasm
   DISPLAYNAME "Mines"
   DESCRIPTION "Mine-finding puzzle"
   OBJECTIVE "Find all the mines without treading on any of them.")
-cliprogram(mineobfusc mines.c COMPILE_DEFINITIONS STANDALONE_OBFUSCATOR)
 
 puzzle(mosaic
   TS_PORTED  # native-TS port (openspec add-mosaic-ts-port); no mosaic.c/wasm

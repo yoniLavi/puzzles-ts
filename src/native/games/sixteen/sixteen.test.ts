@@ -560,9 +560,10 @@ describe("Sixteen hint", () => {
     expect(s.completed).toBeGreaterThan(0);
     // Generous timeout: the exact bidirectional BFS over ~1.5M states is
     // inherently ~2-3s solo and much slower under full-suite CPU contention
-    // (seen >29s); a high ceiling keeps a correct-but-slow search from
-    // flaking when other heavy suites run in parallel.
-  }, 60000);
+    // (seen >29s, and >60s once the mines generator suite joined the parallel
+    // run); a high ceiling keeps a correct-but-slow search from flaking when
+    // other heavy suites run in parallel. Matched to its 120s sibling above.
+  }, 120000);
 
   it("a mid-game board with deep displacements hints fast from the forward search", {
     // Bounded, fixed-board forward search (~0.2s of CPU). The timeout only

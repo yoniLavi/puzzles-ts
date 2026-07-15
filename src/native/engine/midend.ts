@@ -1143,6 +1143,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       pos: this.pos,
       timerElapsed: this.timerElapsed,
       usedSolve: this.usedSolve,
+      ...(this.game.encodeUi ? { ui: this.game.encodeUi(this.ui) } : {}),
     };
     return encodeSave(envelope);
   }
@@ -1184,6 +1185,11 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.pos = Math.min(env.pos, this.history.length - 1);
     this.usedSolve = env.usedSolve;
     this.timerElapsed = env.timerElapsed;
+    // Restore Ui state the move log cannot reconstruct (Mines' death counter /
+    // completion flag), after the replay above — replay goes through
+    // `executeMove`, never `interpretMove`, so a death removed from the log by
+    // an undo would otherwise be lost. See {@link Game.encodeUi}.
+    if (env.ui !== undefined) this.game.decodeUi?.(this.ui, env.ui);
     // Replay armed animations for each step; a restored game should
     // appear settled, not mid-animation.
     this.clearAnimation();
@@ -1353,9 +1359,16 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     // independently (puzzle-view.ts), so the empty text emitted here for
     // a no-status-bar game is inert.
     if (!this.game.wantsStatusbar && !this.game.hint) return;
-    const text = this.game.wantsStatusbar
+    let text = this.game.wantsStatusbar
       ? (this.game.statusbarText?.(this.state, this.ui) ?? "")
       : "";
+    // A timed game shows the elapsed clock as a `[M:SS]` prefix on its status
+    // text — upstream `midend_rewrite_statusbar` (midend.c:2204), the midend's
+    // job, not the game's. Mines is the first TS game to exercise it.
+    if (this.game.isTimed && this.game.wantsStatusbar) {
+      const sec = Math.floor(this.timerElapsed);
+      text = `[${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}] ${text}`;
+    }
     this.emit({
       type: "status-bar-change",
       statusBarText: text,
