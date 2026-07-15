@@ -1159,6 +1159,21 @@ visual/integration smoke only. Tiers are codified in
   ops **plus** `toMatchSnapshot`). **New render code SHOULD ship one.**
 - **Tier 3** — components + persistence (`happy-dom`, `fake-indexeddb`).
 
+**A byte-match differential does NOT exercise the interactive completion path —
+drive `executeMove` → completion in a unit test too.** The generator/solver
+differential (§4) runs the solver, whose `check_completion` is called with
+`mark=false` (verdict only). A game's *interactive* `check_completion(mark=true)`
+(error marking, path/loop marking, flash labelling) is a different code path the
+differential never touches — so a bug confined to it sails through a green 22/22
+differential. Tracks shipped exactly that: `checkCompletion`'s connectivity
+`Dsf` build dropped the `INGRID` guard upstream's `dsf_update_completion` has, so
+the exit cell's outward edge did a `dsf.merge(i, offGridIndex)` — an out-of-bounds
+typed-array read corrupted the union-find, and `canonify` **infinite-looped** in
+the `mark=true`-only pathclass block. It surfaced only when a `solve()`→
+`executeMove`→completed unit test hung. Always pair the differential with a
+tier-1 test that runs a move (or `solve`) through `executeMove` to a completed
+board — it covers the `mark=true` path and the flash walk the differential can't.
+
 **On an animated game, `moves` lands you on animation frame *zero*, not the settled
 frame** — the move armed an animation, so the previous state is still on screen and
 anything the game draws only once the move has *landed* (Inertia's dead-player splat)
