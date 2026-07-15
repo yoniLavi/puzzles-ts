@@ -61,7 +61,7 @@ that need an interface decision *before* you start, not mid-port (full list unde
 | Risk | Where it bites | Stance |
 | --- | --- | --- |
 | **`midend_supersede_game_desc`** | Mines (the only upstream caller — first-click-not-a-mine) | **Solved**: implement `Game.supersededDesc(state)` — the engine *pulls* the desc from state after each committed move, so `executeMove` stays pure (`add-desc-supersede-hook`). See §3.10. (Untangle didn't need it — desc is edges-only and never changes.) |
-| **Undo via state-string equality** | "did anything change?" by stringifying state; Net's rotation cycles is the hard case | Galaxies returns `null` from `interpretMove` instead — fine when locally decidable. |
+| **Undo via state-string equality** | ~~Net's rotation cycles~~ — a **phantom**: no game in the C tree compares stringified state (verified for `add-net-ts-port`; Net shipped needing none) | Suppress no-op moves *locally* in `interpretMove` (return `null`), as Galaxies and Net do; never `Object.is`/deep-compare state. |
 | **`#ifdef EDITOR` move letters** | editor-only input letters | Don't map them; say so in the port's `design.md`. |
 | **`printing.c`** | a future "print this puzzle" feature | Deleted at fork; no TS replacement yet — don't promise it. |
 
@@ -145,8 +145,14 @@ byte-match portable). Ported for Magnets; Dominosa reuses it when ported (so
 [`sorted-multiset.ts`](../../src/native/engine/sorted-multiset.ts),
 [`colour-mkhighlight.ts`](../../src/native/engine/colour-mkhighlight.ts),
 [`pointer.ts`](../../src/native/engine/pointer.ts),
-[`params.ts`](../../src/native/engine/params.ts)). **If a second consumer of a
-game-local helper appears, promote it to `engine/`.**
+[`params.ts`](../../src/native/engine/params.ts),
+[`wires.ts`](../../src/native/engine/wires.ts) — the shared **Net/Netslide
+model** (direction algebra `R/U/L/D`/`A`/`C`/`F`/`ROT`, the hex wire desc codec
+with `v`/`h` barriers, the spanning-tree grower over `sorted-multiset`, barrier
+placement, and the `computeActive` power flood). Wire bits `0x0F` only — each
+game owns the high bits (`0x10` collides: Netslide `FLASHING`, Net `LOCKED`).
+Extracted from Netslide when Net became the second consumer). **If a second
+consumer of a game-local helper appears, promote it to `engine/`.**
 
 **A `tree234` is almost always just a sorted set — reach for `SortedMultiset`.**
 Upstream uses `tree234` wherever it wants an ordered collection, but the games

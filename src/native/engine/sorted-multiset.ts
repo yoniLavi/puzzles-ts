@@ -10,8 +10,8 @@
  * positional / relative-find operations. Flip grids are tiny (presets
  * ≤ 5×5 = 25 cells; the puzzle is impractical at large sizes), so a
  * sorted array with binary search is the right structure — a 2-3-4
- * tree would be gratuitous. Promote to `src/native/lib/` only when a
- * second game needs it (YAGNI).
+ * tree would be gratuitous. Now a shared `engine/` leaf: Pegs, Netslide
+ * and Net (via `engine/wires.ts`) are further consumers.
  *
  * `compare(a, b)` returns <0, 0, or >0. Two items that compare equal
  * are treated as the same member (the comparator defines identity).

@@ -15,20 +15,45 @@ import {
   CURSOR_RIGHT,
   CURSOR_UP,
 } from "../../engine/pointer.ts";
+import {
+  addBorderBarriers,
+  anticlockwise,
+  clockwise,
+  computeActive as computeActiveWires,
+  DIRECTIONS,
+  dirX,
+  dirY,
+  opposite,
+  parseWireDesc,
+  validateWireDesc,
+} from "../../engine/wires.ts";
 
 /* ----------------------------------------------------------------------
  * Bit vocabulary.
  *
  * A tile's wires are a 4-bit mask; the same four bits name a neighbour
- * direction. The barrier grid reuses those low four bits for "there is a wall
- * on this side" and the high four for the corner-joining flags that let
- * barrier junctions be drawn without a notch.
+ * direction — the direction algebra lives in `engine/wires.ts`, shared with
+ * Net. The barrier grid reuses those low four bits for "there is a wall on this
+ * side" and the high four for the corner-joining flags that let barrier
+ * junctions be drawn without a notch.
  */
 
-export const R = 0x01;
-export const U = 0x02;
-export const L = 0x04;
-export const D = 0x08;
+// Re-export the shared wire primitives so Netslide's own modules (and its
+// tests) keep importing them from `./state.ts` unchanged.
+export {
+  anticlockwise,
+  clockwise,
+  D,
+  DIRECTIONS,
+  dirX,
+  dirY,
+  L,
+  offset,
+  opposite,
+  R,
+  U,
+  wireCount,
+} from "../../engine/wires.ts";
 
 /** Non-wire tile flags, OR'd into the value handed to the renderer. */
 export const FLASHING = 0x10;
@@ -39,58 +64,6 @@ export const RU = 0x10;
 export const UL = 0x20;
 export const LD = 0x40;
 export const DR = 0x80;
-
-/** The four directions in upstream's iteration order (`d = 1; d < 0x10;
- * d <<= 1`). Ports of upstream loops depend on this order. */
-export const DIRECTIONS: readonly number[] = [R, U, L, D];
-
-/** Rotate a direction/wire mask one step anticlockwise (upstream `A`). */
-export function anticlockwise(x: number): number {
-  return ((x & 0x07) << 1) | ((x & 0x08) >> 3);
-}
-
-/** Rotate a direction/wire mask one step clockwise (upstream `C`). */
-export function clockwise(x: number): number {
-  return ((x & 0x0e) >> 1) | ((x & 0x01) << 3);
-}
-
-/** Reverse a direction/wire mask (upstream `F`). */
-export function opposite(x: number): number {
-  return ((x & 0x0c) >> 2) | ((x & 0x03) << 2);
-}
-
-/** The x displacement of a single direction bit (upstream `X`). */
-export function dirX(dir: number): number {
-  return dir === R ? +1 : dir === L ? -1 : 0;
-}
-
-/** The y displacement of a single direction bit (upstream `Y`). */
-export function dirY(dir: number): number {
-  return dir === D ? +1 : dir === U ? -1 : 0;
-}
-
-/** Number of wires in a tile mask (upstream `COUNT`). */
-export function wireCount(tile: number): number {
-  return (
-    ((tile & 0x08) >> 3) + ((tile & 0x04) >> 2) + ((tile & 0x02) >> 1) + (tile & 0x01)
-  );
-}
-
-/** Step one tile in `dir`, wrapping around the torus (upstream's `OFFSET`
- * macro — it wraps unconditionally; a non-wrapping game is fenced in by
- * border barriers instead, not by clamping the arithmetic). */
-export function offset(
-  x: number,
-  y: number,
-  dir: number,
-  w: number,
-  h: number,
-): { x: number; y: number } {
-  return {
-    x: (x + w + dirX(dir)) % w,
-    y: (y + h + dirY(dir)) % h,
-  };
-}
 
 /* ----------------------------------------------------------------------
  * Params.
@@ -296,17 +269,7 @@ export function slideCol(
  */
 
 export function validateDesc(p: NetslideParams, desc: string): string | null {
-  let i = 0;
-  for (let n = 0; n < p.w * p.h; n++) {
-    const c = desc[i];
-    if (c === undefined) return "Game description shorter than expected";
-    if (!/[0-9a-fA-F]/.test(c))
-      return "Game description contained unexpected character";
-    i++;
-    while (desc[i] === "h" || desc[i] === "v") i++;
-  }
-  if (i < desc.length) return "Game description longer than expected";
-  return null;
+  return validateWireDesc(p.w, p.h, desc);
 }
 
 /**
@@ -316,34 +279,9 @@ export function validateDesc(p: NetslideParams, desc: string): string | null {
  */
 export function newState(p: NetslideParams, desc: string): NetslideState {
   const { w, h } = p;
-  const tiles = new Uint8Array(w * h);
-  const barriers = new Uint8Array(w * h);
+  const { tiles, barriers } = parseWireDesc(w, h, desc);
 
-  let i = 0;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      tiles[y * w + x] = Number.parseInt(desc[i], 16);
-      i++;
-      while (desc[i] === "h" || desc[i] === "v") {
-        const d1 = desc[i] === "v" ? R : D;
-        const n = offset(x, y, d1, w, h);
-        barriers[y * w + x] |= d1;
-        barriers[n.y * w + n.x] |= opposite(d1);
-        i++;
-      }
-    }
-  }
-
-  if (!p.wrapping) {
-    for (let x = 0; x < w; x++) {
-      barriers[x] |= U;
-      barriers[(h - 1) * w + x] |= D;
-    }
-    for (let y = 0; y < h; y++) {
-      barriers[y * w] |= L;
-      barriers[y * w + (w - 1)] |= R;
-    }
-  }
+  if (!p.wrapping) addBorderBarriers(barriers, w, h);
 
   addBarrierCorners(barriers, w, h);
 
@@ -434,31 +372,17 @@ export function computeActive(
   movingCol: number,
   tiles: Uint8Array = s.tiles,
 ): Uint8Array {
-  const { w, h, barriers } = s;
-  const active = new Uint8Array(w * h);
-
-  active[s.cy * w + s.cx] = ACTIVE;
-  const todo: number[] = [s.cy * w + s.cx];
-
-  while (todo.length > 0) {
-    const cur = todo.pop() as number;
-    const x1 = cur % w;
-    const y1 = (cur - x1) / w;
-
-    for (const d1 of DIRECTIONS) {
-      const { x: x2, y: y2 } = offset(x1, y1, d1, w, h);
-      if (x2 === movingCol || y2 === movingRow) continue;
-      if (!(tiles[y1 * w + x1] & d1)) continue;
-      if (!(tiles[y2 * w + x2] & opposite(d1))) continue;
-      if (barriers[y1 * w + x1] & d1) continue;
-      if (active[y2 * w + x2]) continue;
-
-      active[y2 * w + x2] = ACTIVE;
-      todo.push(y2 * w + x2);
-    }
-  }
-
-  return active;
+  return computeActiveWires(
+    s.w,
+    s.h,
+    tiles,
+    s.barriers,
+    s.cx,
+    s.cy,
+    ACTIVE,
+    movingRow,
+    movingCol,
+  );
 }
 
 /** Is every tile powered from the centre? `tiles` defaults to the state's own

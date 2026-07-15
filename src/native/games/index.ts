@@ -23,6 +23,7 @@ import "./lightup/index.ts";
 import "./magnets/index.ts";
 import "./mines/index.ts";
 import "./mosaic/index.ts";
+import "./net/index.ts";
 import "./netslide/index.ts";
 import "./palisade/index.ts";
 import "./pattern/index.ts";
