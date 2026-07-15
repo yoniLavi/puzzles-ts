@@ -21,10 +21,23 @@ const games = new Map<string, Game<unknown, unknown, unknown, unknown, unknown>>
  * Register a game's TS implementation. Generics are inferred from the
  * passed `Game`, so no `any` escapes: the stored factory is
  * `() => EngineCore` (a `Midend<…>` implements `EngineCore`).
+ *
+ * Idempotent on the *same* game instance: re-registering the identical
+ * `Game` object is a no-op (not an error). This is what lets
+ * `registerAllGames()` re-populate the registry after a test-only
+ * `_resetRegistry()` without the module system re-evaluating each game
+ * module (ES-module side effects run once per worker). Registering a
+ * *different* game object under an already-claimed id is still a hard
+ * error — that is the copy-paste bug the guard exists to catch, and it
+ * cannot happen from an idempotent re-run.
  */
 export function registerGame<P, S, M, U, D>(game: Game<P, S, M, U, D>): void {
-  if (factories.has(game.id)) {
-    throw new Error(`A TS game is already registered for "${game.id}"`);
+  const existing = games.get(game.id);
+  if (existing !== undefined) {
+    if (existing !== game) {
+      throw new Error(`A different TS game is already registered for "${game.id}"`);
+    }
+    return;
   }
   factories.set(game.id, () => new Midend(game));
   games.set(game.id, game);

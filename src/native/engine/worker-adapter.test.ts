@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { registerAllGames } from "../games/index.ts";
 import { blackboxGame } from "../games/blackbox/index.ts";
 import { flipGame } from "../games/flip/index.ts";
 import { floodGame } from "../games/flood/index.ts";
@@ -15,6 +16,15 @@ import { TsWorkerPuzzle } from "./worker-adapter.ts";
 describe("TsWorkerPuzzle — decodeCustomParams", () => {
   beforeEach(() => {
     _resetRegistry();
+  });
+
+  // This file is the only one that mutates the shared registry. Under
+  // `isolate: false` the registry is module state shared across every file
+  // in the worker, so leaving it half-populated would fail a sibling that
+  // depends on the full set (e.g. ts-ported-ids). Restore it once at the end.
+  afterAll(() => {
+    _resetRegistry();
+    registerAllGames();
   });
 
   it("decodes pegs custom params correctly", () => {

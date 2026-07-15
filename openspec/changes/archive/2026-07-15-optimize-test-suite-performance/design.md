@@ -69,3 +69,46 @@ safe subset. Treat D3 as a documented option, not a default.
   measurement during implementation.)
 - Is a pre-push hook acceptable to the owner as the home for a heavy tier, or
   should everything stay on pre-commit? (Owner decision if D3 is pursued.)
+
+## Implementation outcome (finalized)
+
+Measured on an 8-core box carrying heavy, persistent external load (a stuck
+background process pair pinning ~2 cores) — an adversarial but informative
+condition.
+
+- **D2 (`isolate: false`) — SHIPPED, the headline win.** Full run ~180s → ~60s
+  (`import` 74s → 22s: the default `forks` pool re-paid the module graph's
+  import+transform per file, 169×). It also *removed* the baseline's 3
+  load-induced timeout failures (re-importing per file was itself starving the
+  heavy tests). Determinism proven green 3× under `sequence.shuffle.files`.
+  - **Cross-file leak found + fixed:** the `registerGame` registry (module-level
+    Maps, shared across a worker's files under `isolate: false`). `registerGame`
+    is now idempotent on the same game instance; `games/index.ts` exposes a
+    re-runnable `registerAllGames()`; `worker-adapter.test.ts` (the only mutator)
+    restores it in `afterAll`; the four registry-reading files re-ensure it in
+    `beforeAll`. A forced worst-case ordering failed pre-fix, passes post-fix.
+  - `npm run test:shuffle` added as the durable detector for future leaks.
+
+- **D1 (parallel build) — SHIPPED as ADAPTIVE concurrency (owner-endorsed).**
+  Unconditional concurrency proved *not reliable*: on a loaded box the all-core
+  `vite build` oversubscribes CPU/memory and starves vitest's heaviest
+  seed-deterministic tests past their 60s timeout (reproduced repeatedly — the
+  same suite ran green when the build was serialised, even at load 85). A
+  reliable blocking gate is the non-negotiable, so the gate probes 1-minute load
+  and only parallelises with ≥1 core of headroom, else runs the build after
+  vitest. Idle boxes get the ~40s win; loaded boxes stay green; the serial
+  fallback makes a bad probe cost only the speedup. Orchestration centralised in
+  `scripts/gate.sh` (shared by the hook and `npm run gate`).
+
+- **Heavy-test boundedness — done (enabler for D1, and a pre-existing
+  `repo-layout` requirement).** The two slowest tests violated "bounded so
+  worst-case wall time stays within the timeout even when saturated":
+  `netslide-hint` now shares one lazily-computed hint corpus across its
+  structural-narration tests (~100 planner calls → ~18; 43s → ~22s isolated),
+  and `dsf`'s n-independent brute-force parity test was right-sized 24/60 →
+  16/40. Both remove redundant re-execution of deterministic checks — no
+  correctness coverage dropped.
+
+- **D3 (fast/heavy split) — NOT pursued.** D2 + the right-sizing reached ~60s
+  green under load with every check still on the per-commit path; a split would
+  weaken the always-green bar for no remaining need.

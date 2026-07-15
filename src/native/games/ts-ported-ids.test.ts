@@ -1,9 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { puzzleIds } from "../../puzzle/catalog.ts";
 import { hasTsGame } from "../engine/registry.ts";
 import { TS_PORTED_PUZZLE_IDS, isTsPorted } from "./ts-ported-ids.ts";
-// Side-effect: registers every native-TS game so `hasTsGame` is populated.
-import "./index.ts";
+// Registers every native-TS game so `hasTsGame` is populated. `beforeAll`
+// re-runs it because under `isolate: false` a sibling file (worker-adapter)
+// may have reset the shared registry after this module's import-time run.
+import { registerAllGames } from "./index.ts";
+
+beforeAll(registerAllGames);
 
 describe("TS_PORTED_PUZZLE_IDS", () => {
   // The static list (consumed on the main thread, e.g. the home-screen
