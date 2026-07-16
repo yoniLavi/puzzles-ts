@@ -80,6 +80,8 @@ There is **no inherited test suite**. We build the discipline from scratch, now 
 1. **Behavioural tests per ported game / module.** Ordinary unit/integration tests asserting the thing behaves correctly (generates solvable boards, solver solves them, input transitions are right, serialise/deserialise round-trips). Property tests where there's a closed-form invariant ("combi emits exactly C(n,r) lex-ordered tuples") — cheap, additive, catches unrecorded-input regressions.
 2. **Dev-time differential spot-check.** An advisory harness that generates N boards from both the C build and the TS port for the same seed and surfaces diffs for human review. Review signal, **not** a pass/fail gate. Per-game tightening (a stricter check for a generator with brutal uniqueness constraints) is allowed but is not the default.
 3. **Pre-commit gate stays:** `tsc -b --noEmit` → `biome lint` → `vitest run` → `vite build` (the production build is in the gate because tsc/lint/vitest never exercise `vite build`, and two prod-only breakages once sat undetected on main; needs `build:wasm` assets present).
+4. NEVER EVER attempt to bypass pre-commit validation. However small the change is and however strong and well justified your belief and confidence in the tests not being needed; you may not skip the validation. These tests are critical to our code integrity and security. Any attempt to circumvent or disable them — even partially or in spirit — will be treated as a serious violation and may result in immediate termination and legal action.
+
 
 **In-process testing tiers (reach for the lowest one that fits; Playwright is for visual/integration smoke only — not for logic you can assert in `vitest`).** Codified in the `repo-layout` spec by `add-in-process-ui-test-harness`:
 
