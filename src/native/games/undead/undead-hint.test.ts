@@ -12,7 +12,10 @@
  */
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
-import { DEFAULT_BACKGROUND, renderScenario } from "../../engine/testing/render-scenario.ts";
+import {
+  DEFAULT_BACKGROUND,
+  renderScenario,
+} from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { newUndeadDesc } from "./generator.ts";
 import { undeadGame } from "./index.ts";
@@ -116,7 +119,10 @@ describe("undead hint plan", () => {
       const firstPopulate = steps.findIndex((s) => s.move.type === "markAll");
       if (firstStrike >= 0) {
         // notes must be populated before anything is crossed out
-        expect(firstPopulate, `seed ${i}: a strike before populate`).toBeGreaterThanOrEqual(0);
+        expect(
+          firstPopulate,
+          `seed ${i}: a strike before populate`,
+        ).toBeGreaterThanOrEqual(0);
         expect(firstPopulate).toBeLessThan(firstStrike);
       }
     }
@@ -128,10 +134,16 @@ describe("undead hint plan", () => {
       for (const step of fullPlan(st)) {
         if (step.move.type !== "pencilStrike") continue;
         if (!/sightline/.test(step.explanation)) continue;
-        const hl = step.highlights as { area: { x: number; y: number }[]; marks: { x: number; y: number }[] };
+        const hl = step.highlights as {
+          area: { x: number; y: number }[];
+          marks: { x: number; y: number }[];
+        };
         const area = new Set(hl.area.map((c) => `${c.x},${c.y}`));
         for (const m of hl.marks) {
-          expect(area.has(`${m.x},${m.y}`), `seed ${i}: sightline mark off the path`).toBe(true);
+          expect(
+            area.has(`${m.x},${m.y}`),
+            `seed ${i}: sightline mark off the path`,
+          ).toBe(true);
         }
       }
     }
@@ -151,7 +163,10 @@ describe("undead hint plan", () => {
         }
         // sightline counts are phrased "exactly N ... and N", never "only N"
         if (/Trace this sightline/.test(e)) {
-          expect(/shows exactly \d+ from one end and \d+ from the other/.test(e), e).toBe(true);
+          expect(
+            /shows exactly \d+ from one end and \d+ from the other/.test(e),
+            e,
+          ).toBe(true);
         }
       }
     }
@@ -193,7 +208,10 @@ describe("undead hint refusal", () => {
 });
 
 describe("undead hintKeepTrack", () => {
-  function firstStepOfType(st: UndeadState, type: UndeadMove["type"]): HintStep<UndeadMove> {
+  function firstStepOfType(
+    st: UndeadState,
+    type: UndeadMove["type"],
+  ): HintStep<UndeadMove> {
     // Walk the plan, applying steps, until we reach one of the requested type.
     let s = st;
     for (let guard = 0; guard < 200; guard++) {
@@ -214,9 +232,15 @@ describe("undead hintKeepTrack", () => {
     const st = gen({ w: 5, h: 5, diff: "normal" }, "track-1");
 
     const populate = firstStepOfType(st, "markAll");
-    expect(undeadGame.hintKeepTrack?.({ type: "markAll" }, populate, st)).toBe("completed");
+    expect(undeadGame.hintKeepTrack?.({ type: "markAll" }, populate, st)).toBe(
+      "completed",
+    );
     expect(
-      undeadGame.hintKeepTrack?.({ type: "pencil", cell: 0, monster: MON_GHOST }, populate, st),
+      undeadGame.hintKeepTrack?.(
+        { type: "pencil", cell: 0, monster: MON_GHOST },
+        populate,
+        st,
+      ),
     ).toBe("off");
   });
 
@@ -243,7 +267,11 @@ describe("undead hintKeepTrack", () => {
         );
         if (other !== undefined) {
           expect(
-            undeadGame.hintKeepTrack?.({ type: "pencil", cell: mark.cell, monster: other }, strike, s),
+            undeadGame.hintKeepTrack?.(
+              { type: "pencil", cell: mark.cell, monster: other },
+              strike,
+              s,
+            ),
           ).toBe("off");
         }
         return;
@@ -271,7 +299,7 @@ describe("undead hint resume (per tier)", () => {
         }
         expect(undeadGame.status(s), `${diff}/${seed}`).toBe("solved");
       }
-    }, 60000);
+    });
   }
 });
 
@@ -281,7 +309,8 @@ describe("undead hint render (tier 2.5)", () => {
       game: undeadGame,
       id: "5x5dn#hint-render",
       showHint: true,
-      hintUntil: (s) => s.move.type === "pencilStrike" && /Trace this sightline/.test(s.explanation),
+      hintUntil: (s) =>
+        s.move.type === "pencilStrike" && /Trace this sightline/.test(s.explanation),
       defaultBackground: DEFAULT_BACKGROUND,
     });
     expect(hint).toBeDefined();

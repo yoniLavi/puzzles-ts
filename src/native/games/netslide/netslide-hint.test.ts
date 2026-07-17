@@ -73,8 +73,8 @@ function hintOf(state: NetslideState, aux?: string) {
  * 4×4 board, ~0.6s per 5×5 — generation is <1ms), and these narration checks
  * verify deterministic *templates*: a diverse handful of boards exercises the
  * same code paths as dozens, so regenerating 20–60 boards per test was pure
- * redundant planner work — enough to blow the 60s test timeout under a
- * saturated CI box (the `repo-layout` "bounded under saturation" requirement).
+ * redundant planner work — minutes of it under a saturated box, for no added
+ * coverage.
  * Sharing one corpus keeps the same invariants over a richer, consistent board
  * set while collapsing ~100 planner calls to ~30. Boards that hunt for a
  * *specific* rare shape (a frozen-line move, a beside-source placement, a
@@ -366,8 +366,7 @@ describe("netslide hint narration", () => {
     // 1.8× every other step, so it wrapped to two lines on a 4×4.
     let longest = 0;
     for (const { steps } of narrationCorpus()) {
-      for (const step of steps)
-        longest = Math.max(longest, step.explanation.length);
+      for (const step of steps) longest = Math.max(longest, step.explanation.length);
     }
     expect(longest).toBeLessThanOrEqual(120);
   });
@@ -491,7 +490,7 @@ describe("netslide hint convergence", () => {
           }
           expect(isComplete(at), `${seed}: never finished`).toBe(true);
         }
-      }, 300_000);
+      });
     }
   }
 
@@ -520,7 +519,7 @@ describe("netslide hint convergence", () => {
       }
       expect(isComplete(at), `${seed}: never finished`).toBe(true);
     }
-  }, 120_000);
+  });
 });
 
 describe("netslide hint rendering", () => {
@@ -629,7 +628,10 @@ describe("the hint marks while the hinted slide animates", () => {
     const thickness = Math.max(2, Math.round(TS / 16));
     return ops.find(
       (op) =>
-        op.op === "rect" && op.colour === COL_HINT && op.w === side && op.h === thickness,
+        op.op === "rect" &&
+        op.colour === COL_HINT &&
+        op.w === side &&
+        op.h === thickness,
     );
   }
 
@@ -659,7 +661,17 @@ describe("the hint marks while the hinted slide animates", () => {
 
       // Paint the pre-move frame first, so the draw state's cache is warm exactly as
       // it is in the app when the slide begins.
-      redraw(new RecordingDrawing(palette), ds, null, state, 0, newUi(state), 0, 0, step);
+      redraw(
+        new RecordingDrawing(palette),
+        ds,
+        null,
+        state,
+        0,
+        newUi(state),
+        0,
+        0,
+        step,
+      );
 
       // Halfway through the slide: the line is drawn half a tile back along its
       // direction of travel.
@@ -677,11 +689,16 @@ describe("the hint marks while the hinted slide animates", () => {
     const shift = 0.5 * slide.dir;
     const lx = marks.landing % after.w;
     const ly = Math.floor(marks.landing / after.w);
-    const bx = border(TS) + TS * lx + Math.trunc((slide.axis === "row" ? shift : 0) * TS);
-    const by = border(TS) + TS * ly + Math.trunc((slide.axis === "col" ? shift : 0) * TS);
+    const bx =
+      border(TS) + TS * lx + Math.trunc((slide.axis === "row" ? shift : 0) * TS);
+    const by =
+      border(TS) + TS * ly + Math.trunc((slide.axis === "col" ? shift : 0) * TS);
 
     const fill = hintFill(rec.ops);
-    expect(fill, "the hinted tile is not painted in the hint colour at all").toBeDefined();
+    expect(
+      fill,
+      "the hinted tile is not painted in the hint colour at all",
+    ).toBeDefined();
     expect(fill).toMatchObject({ x: bx + TILE_BORDER, y: by + TILE_BORDER });
   });
 

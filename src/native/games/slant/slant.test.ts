@@ -335,7 +335,7 @@ describe("slant generator (behavioural)", () => {
       const sc = new SolverScratch(6, 6);
       expect(slantSolve(6, 6, clues, soln, sc, diff)).toBe(SOLVE_UNIQUE);
     }
-  }, 30_000);
+  });
 
   it("slantGenerate fills every square without loops", () => {
     const rng = randomNew("slant-gen");

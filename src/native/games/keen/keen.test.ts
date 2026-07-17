@@ -157,7 +157,7 @@ describe("keen generator", () => {
         if (op === C_SUB || op === C_DIV) expect(size).toBe(2);
         if (p.multiplicationOnly) expect(st.clues.clues[i] & CMASK).toBe(0x20000000);
       }
-    }, 30000);
+    });
   }
 });
 

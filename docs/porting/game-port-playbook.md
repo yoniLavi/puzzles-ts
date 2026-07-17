@@ -41,7 +41,7 @@ section below:
 - [ ] Differential check decided per-game and its lifecycle handled correctly
       (§4).
 - [ ] Behavioural tests at the lowest fitting tier; new render code ships a
-      tier-2.5 test; heavy tests are seed-deterministic with explicit timeouts
+      tier-2.5 test; heavy tests are seed-deterministic and never clock-gated
       (§5).
 - [ ] **Owner-accepted full behavioural parity** before `TS_PORTED` + C deletion
       (§6) — never call a shortfall "cosmetic."
@@ -1206,53 +1206,46 @@ discriminated union, so a *chained* `.filter(o => o.op === "rect").filter(o => o
 doesn't narrow and `o.w` type-errors — put the whole predicate in one `filter`, or give
 it a type guard (`(o): o is Extract<DrawOp, { op: "rect" }> => …`).
 
-### 5.2 Heavy tests: seed-deterministic + explicit timeout, never assert elapsed time
+### 5.2 Heavy tests: seed-deterministic, never clock-gated
 
 A retry-until-unique generator or an exhaustive solve over several seeds legitimately
-takes 1–3s solo. Vitest's default per-test timeout is **5000ms**, and under
-full-suite CPU saturation (16 workers on a busy CI box) the same fixed work stretches
-**5–10×** in wall clock (a ~3s Sixteen BFS has been *seen >29s*). A heavy test on the
-default timeout therefore **flakes** — passing alone, failing under load — which is
-corrosive: it trains everyone to shrug off a red gate, and a real regression then
-hides behind "probably the flake." Rules:
+takes 1–3s solo, and under full-suite CPU saturation the same fixed work stretches
+**5–10×** in wall clock (a ~3s Sixteen BFS has been *seen >29s*, and >170s on a box at
+load ~32). The work is correct; only the clock moved. Rules:
 
 - **Drive generation from a fixed seed** (`randomNew("…")`) so the work — and the
   pass/fail verdict — is identical every run regardless of load.
-- **Give the heavy `it`/`describe` an explicit, generous timeout** sized to absorb the
-  jitter — `30_000` for a generator/solver loop, `60_000` for the ~MillionState exact
-  searches (Sixteen's bidirectional fallback). Use the positional
-  `it(name, fn, 30_000)`, the options form `it(name, { timeout: 30_000 }, fn)`, or a
-  `describe(name, { timeout: 30_000 }, fn)` for a whole heavy block. This is
-  **per-test, not a global `testTimeout` bump** — the ~1400 fast tests keep the tight
-  5s default, preserving their regression sensitivity. The timeout never masks a
-  regression, because correctness is asserted by the *result*, not the clock.
+- **Never give a test its own timeout.** There is exactly one ceiling, `testTimeout`
+  in [`vitest.config.ts`](../../vitest.config.ts), and it is a *runaway backstop, not
+  a gate*: this box runs deliberately busy, and an otherwise-good commit must never be
+  rejected merely because work took long. A per-test ceiling is a guess about
+  contention — it can only be *tighter* than the global one, it is invisible from the
+  config, and it must be re-guessed every time the suite grows. We carried 39 of them;
+  Sixteen's went 30s → 60s → 120s and still failed a green commit.
 - **Never assert `elapsed < N ms`** as a proxy for "the algorithm is efficient." That
-  measures the CI box's spare capacity, not the code. Assert a load-independent proxy
-  — a bounded node/expansion count, iteration count, or result shape (Sixteen's hint
-  test asserts `__lastHintEngagedFallback() === false`, not "finished in < N ms").
-- **A *hang* is not a slow test — guard it in the code, not with a bigger timeout.** A
-  test timeout is the right backstop for work that *terminates* but is slow, and
-  **bumping the timeout is a legitimate fix only when (a) the work provably terminates
-  and (b) the new ceiling clears the worst-case loaded runtime with room to spare** —
-  otherwise you've made it flake *slower*. For a *non-terminating* risk — a "repeat
-  until no progress" fixpoint that could spin on spurious progress, an `aux`-walk that
-  re-emits a no-op — a wall-clock timeout is the *wrong* tool (load-sensitive, slow,
-  opaque). Bound the work **in the code** with an operation budget that throws a
-  labelled error in milliseconds
-  ([`engine/step-budget.ts`](../../src/native/engine/step-budget.ts); see
-  hint-authoring "Guard the deduction fixpoint with a step budget"). Make it
-  opt-in/gated so it never touches a hot path (generation) where a false trip would
-  itself be a real bug.
+  measures the box's spare capacity, not the code. Assert a load-independent proxy — a
+  bounded node/expansion count, iteration count, or result shape (Sixteen's hint test
+  asserts `__lastHintEngagedFallback() === false`, not "finished in < N ms"). This is
+  what actually guards correctness, and it is why removing the clock gates cost no
+  coverage.
+- **A *hang* is not a slow test — and a timeout was never going to catch one.** These
+  tests are synchronous, so a runaway loop blocks the event loop and the timeout's
+  `setTimeout` cannot fire — the same mechanism that orphans vitest workers (see
+  [`scripts/reap-orphaned-workers.sh`](../../scripts/reap-orphaned-workers.sh)). Bound
+  non-termination **in the code**, where it can actually be caught: an operation budget
+  that throws a labelled error in milliseconds
+  ([`engine/step-budget.ts`](../../src/native/engine/step-budget.ts) for solver/hint
+  fixpoints; [`engine/retry-limit.ts`](../../src/native/engine/retry-limit.ts) for
+  generate-until-success retries). Make it opt-in/gated so it never touches a hot path
+  (generation) where a false trip would itself be a real bug.
 
 Normative: the `repo-layout` "test suite is deterministic under parallel load"
-requirement. If you suspect a flake, **reproduce it deterministically** before
-"fixing" anything: list the slow tests with
-`npx vitest run --reporter=verbose 2>&1 | grep -E '✓ .* [0-9]{3,}ms$' | sort` — any
-heavy test ≥ ~600ms solo-in-suite that lacks an explicit timeout is a candidate (it
-crosses 5s at the ~10× load multiplier). Confirm a per-test timeout is wired by
-re-running that file with a tiny global cap
-(`npx vitest run --testTimeout=50 <file>`): the protected heavy test still passes (its
-explicit timeout overrides), the fast ones finish under 50ms.
+requirement. If a test fails only under load, **root-cause it** — but note that
+"contention on work that terminates" is a complete diagnosis, and its fix is to stop
+gating that test on the clock, not to re-guess a constant. Reach for the other causes
+(shared state, order dependence, a logic edge case, genuine non-termination) when the
+evidence points there: re-run the file alone, and re-run the suite under
+`--sequence.shuffle.files=true` to localise a cross-file leak.
 
 ---
 

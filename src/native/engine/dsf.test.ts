@@ -103,8 +103,8 @@ describe("Dsf", () => {
     }
   });
 
-  // O(n²) cross-check after every op — legitimately CPU-heavy; the
-  // explicit timeout keeps it robust when the parallel suite starves it.
+  // O(n²) cross-check after every op — legitimately CPU-heavy, and slow under
+  // a busy suite. Not clock-gated: the verdict is the assertion, not the time.
   it("matches brute-force reference over long random sequences", () => {
     const n = 20;
     const rng = randomNew("dsf-property");
@@ -124,7 +124,7 @@ describe("Dsf", () => {
     }
     // 30s predated the suite-wide 60s default and *lowered* the ceiling;
     // under full-suite CPU saturation this legitimately runs 40s+.
-  }, 60_000);
+  });
 });
 
 /**
@@ -205,9 +205,8 @@ describe("FlipDsf", () => {
     // so wall time scales as n²·ops. The parity property is n-independent — 16
     // elements under 40 consistent flip-merges already builds deep multi-way
     // equivalence classes with inversions — so a smaller n/ops keeps the check
-    // just as strong while staying comfortably within the test timeout even on
-    // a saturated box (the `repo-layout` "bounded under saturation"
-    // requirement); the earlier 24/60 was ~3× the work for no added rigour.
+    // just as strong for a fraction of the work; the earlier 24/60 was ~3× the
+    // cost for no added rigour.
     const n = 16;
     const rng = randomNew("flipdsf-property");
     for (let trial = 0; trial < 5; trial++) {
@@ -238,5 +237,5 @@ describe("FlipDsf", () => {
       }
     }
     // Same saturation headroom as the sibling property test above.
-  }, 60_000);
+  });
 });

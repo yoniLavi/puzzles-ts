@@ -53,10 +53,7 @@ describe("a newly displayed hint repaints a warm, otherwise-unchanged frame", ()
           // a cached renderer this frame's *only* difference is the
           // overlay — the exact frame the bug class makes blank.
           const hintErr = midend.hint();
-          expect(
-            hintErr,
-            `${name}/${seed}: hint refused on the board`,
-          ).toBeUndefined();
+          expect(hintErr, `${name}/${seed}: hint refused on the board`).toBeUndefined();
           const step = midend.activeHintStep();
           expect(step, `${name}/${seed}: no step on display`).toBeDefined();
           if (!step) return;
@@ -87,6 +84,6 @@ describe("a newly displayed hint repaints a warm, otherwise-unchanged frame", ()
           midend.playMoves([step.move]);
         }
       }
-    }, 30_000);
+    });
   }
 });

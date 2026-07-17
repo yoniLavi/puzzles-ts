@@ -82,7 +82,11 @@ describe("Untangle hint heuristic", () => {
     // planner's untangled layout should occupy a healthy fraction of the
     // play box, not shrink to a knot in the middle. Measure the final
     // bounding box across a few seeds.
-    for (const seed of ["untangle-spread-a", "untangle-spread-b", "untangle-spread-c"]) {
+    for (const seed of [
+      "untangle-spread-a",
+      "untangle-spread-b",
+      "untangle-spread-c",
+    ]) {
       const s = freshState(10, seed);
       const result = deduceUntangleHintPlan(s);
       expect(result.ok).toBe(true);
@@ -111,10 +115,9 @@ describe("Untangle hint heuristic", () => {
 
   // Heavy but seed-deterministic: these tests generate n=25 boards (the size
   // that exposed the heuristic's stall) and walk full aux plans — fixed work
-  // per fixed seed. The describe-level timeout absorbs scheduling jitter under
-  // full-suite CPU contention; it never masks a regression (which fails an
-  // assertion). See the repo-layout test-determinism spec.
-  describe("aux-based plan (known solution)", { timeout: 30_000 }, () => {
+  // per fixed seed, however long the wall clock says. A regression fails an
+  // assertion, never a timer. See the repo-layout test-determinism spec.
+  describe("aux-based plan (known solution)", () => {
     // Generate so `aux` (the solved layout) is available, like a real
     // freshly-generated game.
     function generated(n: number, seed: string) {

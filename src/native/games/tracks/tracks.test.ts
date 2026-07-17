@@ -107,7 +107,7 @@ describe("tracks solver", () => {
     const { desc } = newDesc(p, randomNew("tracks-gen-easy"));
     const solved = copyAndStrip(stateToBoard(newState(p, desc)), -1);
     expect(tracksSolve(solved, DIFF_COUNT).ret).toBe(1);
-  }, 30_000);
+  });
 });
 
 describe("tracks findMistakes + solve", () => {

@@ -14,9 +14,8 @@ describe("Flood solver completeness", () => {
     { w: 12, h: 12, colours: 4, leniency: 0 },
   ] as FloodParams[]) {
     // Heavy but seed-deterministic: five fixed seeds of generate+solve per
-    // preset (16×16c6 is the ~0.65s worst case). The explicit timeout only
-    // absorbs scheduling jitter under full-suite CPU contention — a regression
-    // would fail an assertion below, not silently slow this down.
+    // preset (16×16c6 is the ~0.65s worst case). A regression fails an assertion
+    // below; slowness under contention means nothing, so nothing is clock-gated.
     it(`solves several seeds of ${p.w}x${p.h}c${p.colours}`, () => {
       for (let s = 0; s < 5; s++) {
         const { desc } = newDesc(p, randomNew(`solver-${p.colours}-${p.w}-${s}`));
@@ -32,7 +31,7 @@ describe("Flood solver completeness", () => {
         }
         expect(completed(grid)).toBe(true);
       }
-    }, 30_000);
+    });
   }
 });
 

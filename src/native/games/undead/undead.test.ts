@@ -1,8 +1,8 @@
 /**
  * Behavioural tests for the Undead port (tier 1 + a tier-2.5 render smoke).
  *
- * Generation is seeded for determinism; the heavy generate/solve blocks carry an
- * explicit generous timeout (playbook §5.2). End-to-end consistency is checked by
+ * Generation is seeded for determinism, so the heavy generate/solve blocks do
+ * fixed work and need no clock gate (playbook §5.2). End-to-end consistency is checked by
  * decoding a generated desc and confirming its unique solution equals the
  * generator's recorded `aux` solution — exercising codec + solver + generator
  * together.
@@ -45,7 +45,9 @@ function gen(w: number, h: number, diff: Difficulty, seed: string) {
 }
 
 function auxToGuess(aux: string): number[] {
-  return [...aux.slice(1)].map((c) => (c === "G" ? MON_GHOST : c === "V" ? MON_VAMPIRE : MON_ZOMBIE));
+  return [...aux.slice(1)].map((c) =>
+    c === "G" ? MON_GHOST : c === "V" ? MON_VAMPIRE : MON_ZOMBIE,
+  );
 }
 
 // --- params ----------------------------------------------------------------
@@ -78,37 +80,34 @@ describe("undead generation", () => {
     [5, 5, "normal"],
   ];
   for (const [w, h, diff] of cases) {
-    it(
-      `generates a unique, on-difficulty ${w}x${h} ${diff} board`,
-      () => {
-        const { params, desc, aux, state } = gen(w, h, diff, `${w}x${h}-${diff}`);
-        expect(validateDesc(params, desc)).toBeNull();
-        expect(isUniquelySolvable(state.common)).toBe(true);
+    it(`generates a unique, on-difficulty ${w}x${h} ${diff} board`, () => {
+      const { params, desc, aux, state } = gen(w, h, diff, `${w}x${h}-${diff}`);
+      expect(validateDesc(params, desc)).toBeNull();
+      expect(isUniquelySolvable(state.common)).toBe(true);
 
-        // The unique solution equals the generator's recorded solution.
-        const sol = findUndeadSolution(state);
-        expect(sol.ok).toBe(true);
-        if (sol.ok) expect(Array.from(sol.guess)).toEqual(auxToGuess(aux));
+      // The unique solution equals the generator's recorded solution.
+      const sol = findUndeadSolution(state);
+      expect(sol.ok).toBe(true);
+      if (sol.ok) expect(Array.from(sol.guess)).toEqual(auxToGuess(aux));
 
-        // The deductive ladder solves it with zero recursion, at the rung the
-        // requested tier demands (the guess-free generation gate).
-        const start = new Uint8Array(state.common.numTotal).fill(MON_NONE);
-        const grade = solveDeductive(state.common, start);
-        expect(grade.inconsistent).toBe(false);
-        expect(grade.solved).toBe(true);
-        if (diff === "easy") {
-          expect(grade.rung).toBe(RUNG_ARC);
-          expect(grade.arcPasses).toBeLessThanOrEqual(3);
-        } else if (diff === "normal") {
-          expect(
-            (grade.rung === RUNG_ARC && grade.arcPasses > 3) || grade.rung === RUNG_COUNTING,
-          ).toBe(true);
-        } else {
-          expect(grade.rung).toBe(RUNG_FORCING);
-        }
-      },
-      30_000,
-    );
+      // The deductive ladder solves it with zero recursion, at the rung the
+      // requested tier demands (the guess-free generation gate).
+      const start = new Uint8Array(state.common.numTotal).fill(MON_NONE);
+      const grade = solveDeductive(state.common, start);
+      expect(grade.inconsistent).toBe(false);
+      expect(grade.solved).toBe(true);
+      if (diff === "easy") {
+        expect(grade.rung).toBe(RUNG_ARC);
+        expect(grade.arcPasses).toBeLessThanOrEqual(3);
+      } else if (diff === "normal") {
+        expect(
+          (grade.rung === RUNG_ARC && grade.arcPasses > 3) ||
+            grade.rung === RUNG_COUNTING,
+        ).toBe(true);
+      } else {
+        expect(grade.rung).toBe(RUNG_FORCING);
+      }
+    }, 30_000);
   }
 });
 
@@ -134,7 +133,11 @@ describe("undead executeMove", () => {
 
   it("places and clears a monster", () => {
     const s0 = emptyState();
-    const s1 = undeadGame.executeMove(s0, { type: "set", cell: 0, monster: MON_ZOMBIE });
+    const s1 = undeadGame.executeMove(s0, {
+      type: "set",
+      cell: 0,
+      monster: MON_ZOMBIE,
+    });
     expect(s1.guess[0]).toBe(MON_ZOMBIE);
     const s2 = undeadGame.executeMove(s1, { type: "clear", cell: 0 });
     expect(s2.guess[0]).toBe(MON_NONE);
@@ -143,9 +146,17 @@ describe("undead executeMove", () => {
 
   it("toggles a pencil mark", () => {
     const s0 = emptyState();
-    const s1 = undeadGame.executeMove(s0, { type: "pencil", cell: 0, monster: MON_GHOST });
+    const s1 = undeadGame.executeMove(s0, {
+      type: "pencil",
+      cell: 0,
+      monster: MON_GHOST,
+    });
     expect(s1.pencils[0]).toBe(MON_GHOST);
-    const s2 = undeadGame.executeMove(s1, { type: "pencil", cell: 0, monster: MON_GHOST });
+    const s2 = undeadGame.executeMove(s1, {
+      type: "pencil",
+      cell: 0,
+      monster: MON_GHOST,
+    });
     expect(s2.pencils[0]).toBe(0);
   });
 

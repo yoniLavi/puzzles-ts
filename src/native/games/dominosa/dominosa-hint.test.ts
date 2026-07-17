@@ -92,7 +92,7 @@ describe("dominosa hint — narration + plan", () => {
     expect(dominosaGame.status(s)).toBe("solved");
     // A Hard board should require at least one teaching barrier along the way.
     expect(barrierSeen).toBe(true);
-  }, 30000);
+  });
 });
 
 describe("dominosa hint — render", () => {

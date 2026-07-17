@@ -1599,10 +1599,11 @@ byte-match. Thread instead, and lean on the gate:
   everything else by cell.
 - **Killer is heavy on the hint path.** `recordSoloDeductions` re-solves the killer
   board each plan step, so a from-empty killer resume is ~0.8 s / ~120 moves — fine for
-  a single hint, but give killer-walking tests an explicit `30_000` timeout (the same
-  pattern `hint-resume.test.ts` uses) so they don't flake under full-suite CPU
-  saturation. `hint-resume.test.ts` itself only walks Solo's *trivial* first preset, so
-  it stays fast; variant breadth (standard/X/jigsaw/killer) lives in `solo-hint.test.ts`.
+  a single hint, and slow-but-correct in a killer-walking test. Do **not** give such a
+  test its own timeout: there is one generous ceiling in `vitest.config.ts` and no test
+  sets its own (playbook §5.2). `hint-resume.test.ts` only walks Solo's *trivial* first
+  preset, so it stays fast; variant breadth (standard/X/jigsaw/killer) lives in
+  `solo-hint.test.ts`.
 
 Exemplars: `solo/{solver,index,render}.ts`; guards: `solo-hint.test.ts` (per-technique
 recording, naked-single honesty, X-diagonal narration, render frame) + `soloGame` in

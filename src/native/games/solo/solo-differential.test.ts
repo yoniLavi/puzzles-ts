@@ -67,7 +67,7 @@ describe("solo differential (frozen C reference)", () => {
       const { desc } = newSoloDesc(paramsOf(f), randomNew(f.seed));
       expect(desc).toBe(f.desc);
       expect(validateDesc(paramsOf(f), desc)).toBeNull();
-    }, 30_000);
+    });
 
     it(`${label(f)}: TS solver grades the published board as C did`, () => {
       const p = paramsOf(f);

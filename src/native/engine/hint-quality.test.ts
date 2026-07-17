@@ -106,6 +106,6 @@ describe("hint narration form, cross-game", () => {
           }
         });
       }
-    }, 30_000);
+    });
   }
 });

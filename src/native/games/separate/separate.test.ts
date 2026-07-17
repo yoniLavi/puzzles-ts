@@ -115,7 +115,7 @@ describe("separate solver + generator", () => {
         expect(sol).not.toBeNull();
         if (sol) expect(isSolved(p.w, p.h, p.k, s.letters, sol)).toBe(true);
       }
-    }, 30_000);
+    });
   }
 });
 

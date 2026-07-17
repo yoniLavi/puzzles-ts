@@ -102,7 +102,7 @@ describe("pattern solver", () => {
         expect(computeRuns(solution, i * w, w, 1)).toEqual(clues[w + i]);
       }
     }
-  }, 30_000);
+  });
 });
 
 describe("pattern findMistakes", () => {
@@ -286,7 +286,7 @@ describe("pattern Midend integration", () => {
     expect(me2.loadGame(saved)).toBeUndefined();
     expect(me2.formatAsText()).toBe(me.formatAsText());
     expect(me.solve()).toBeUndefined(); // a fresh game can solve
-  }, 30_000);
+  });
 });
 
 describe("pattern render", () => {
@@ -302,5 +302,5 @@ describe("pattern render", () => {
     // Clue numbers are drawn as text.
     expect(ops.some((o) => o.op === "text")).toBe(true);
     expect(ops).toMatchSnapshot();
-  }, 30_000);
+  });
 });

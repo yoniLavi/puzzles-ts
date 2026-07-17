@@ -1,6 +1,6 @@
 /**
  * Tier-1 behavioural tests for the dominosa port + a tier-2.5 render smoke.
- * Heavy generation/solve is seed-fixed with explicit timeouts (playbook §5.2).
+ * Heavy generation/solve is seed-fixed, never clock-gated (playbook §5.2).
  */
 import { describe, expect, it } from "vitest";
 import { LEFT_BUTTON } from "../../engine/pointer.ts";
@@ -95,7 +95,7 @@ describe("dominosa solver / generator", () => {
         const easier = solveNumbers(n, state.numbers, prevDiff);
         expect(easier.result).not.toBe(1); // stuck one level below
       }
-    }, 30000);
+    });
   }
 
   it("generates an Ambiguous board (no difficulty guarantee, valid desc)", () => {
@@ -103,7 +103,7 @@ describe("dominosa solver / generator", () => {
     const { desc, aux } = newDominosaDesc(p, randomNew("ambig"));
     expect(validateDesc(p, desc)).toBeNull();
     expect(aux.length).toBe((p.n + 2) * (p.n + 1));
-  }, 30000);
+  });
 });
 
 // Helper: place the whole solution via the game's own domino moves.
@@ -126,7 +126,7 @@ describe("dominosa moves + completion", () => {
     const { pairs } = solveNumbers(p.n, state.numbers, DIFFCOUNT);
     const solved = layoutSolution(state, pairs);
     expect(dominosaGame.status(solved)).toBe("solved");
-  }, 30000);
+  });
 
   it("toggles a domino on and off and toggles a barrier edge", () => {
     const p = { n: 3, diff: DIFF_TRIVIAL };
@@ -173,7 +173,7 @@ describe("dominosa findMistakes + solve", () => {
     const flagged = new Set(mistakes.map((m) => m.index));
     expect(flagged.has(a)).toBe(true);
     expect(flagged.has(b)).toBe(true);
-  }, 30000);
+  });
 
   it("solve via aux and via re-solve both reach a completed board", () => {
     const p = { n: 4, diff: DIFF_TRIVIAL };
@@ -193,7 +193,7 @@ describe("dominosa findMistakes + solve", () => {
       const solved = dominosaGame.executeMove(state, viaSolver.move);
       expect(dominosaGame.status(solved)).toBe("solved");
     }
-  }, 30000);
+  });
 });
 
 describe("dominosa reference aid", () => {
@@ -257,7 +257,7 @@ describe("dominosa reference aid", () => {
       const model = dominosaGame.reference?.(s, ui);
       expect(model?.items.find((i) => i.key === conflictKey)?.status).toBe("conflict");
     }
-  }, 30000);
+  });
 
   it("a board tap dismisses the reference spotlight (and still does its action)", () => {
     const p = { n: 4, diff: DIFF_TRIVIAL };
@@ -269,7 +269,13 @@ describe("dominosa reference aid", () => {
 
     // Tap between squares 0 and 1 (ds=null ⇒ PREFERRED_TILE_SIZE): places that
     // domino AND clears the spotlight.
-    const move = dominosaGame.interpretMove(state, ui, null, { x: 26, y: 14 }, LEFT_BUTTON);
+    const move = dominosaGame.interpretMove(
+      state,
+      ui,
+      null,
+      { x: 26, y: 14 },
+      LEFT_BUTTON,
+    );
     expect(ui.highlightPair).toBeNull();
     expect(move).toMatchObject({ type: "domino", d1: 0, d2: 1 });
   });
@@ -313,7 +319,7 @@ describe("dominosa reference aid", () => {
         (o) => o.op === "rect" && o.colour === COL_REFERENCE,
       ),
     ).toBe(false);
-  }, 30000);
+  });
 });
 
 describe("dominosa render", () => {
@@ -383,5 +389,5 @@ describe("dominosa render", () => {
       (o) => o.op === "rect" && o.colour === COL_DOMINOCLASH,
     );
     expect(clash).toBe(true);
-  }, 30000);
+  });
 });

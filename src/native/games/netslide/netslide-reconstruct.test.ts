@@ -65,7 +65,7 @@ describe("recovering the finished grid", () => {
         expect(isComplete({ ...state, tiles: grid })).toBe(true);
       }
     }
-  }, 60_000);
+  });
 
   it("recovers the generator's own grid when the barriers pin it", () => {
     // At barrier probability 1 every wall the solution permits is drawn in, which
@@ -136,7 +136,7 @@ describe("recovering the finished grid", () => {
         expect(reachable.has(key(picked)), "picked an unreachable grid").toBe(true);
       }
     }
-  }, 120_000);
+  });
 });
 
 describe("a board with no `aux` at all (the reported bug)", () => {
@@ -186,5 +186,5 @@ describe("a board with no `aux` at all (the reported bug)", () => {
         expect(isComplete(at), `${label}/${seed}: never finished`).toBe(true);
       }
     }
-  }, 600_000);
+  });
 });

@@ -99,7 +99,7 @@ describe("magnets generator + solver", () => {
         expect(solver.grid[i]).toBe(auxVal);
       }
     }
-  }, 30_000);
+  });
 
   it("a Tricky board is not solvable at Easy", () => {
     const p = P(8, 7, DIFF_TRICKY);
@@ -113,7 +113,7 @@ describe("magnets generator + solver", () => {
       s.common.colcount,
     );
     expect(easy.solve(DIFF_EASY)).toBeLessThanOrEqual(0); // ambiguous at Easy
-  }, 30_000);
+  });
 });
 
 describe("magnets moves + findMistakes", () => {
