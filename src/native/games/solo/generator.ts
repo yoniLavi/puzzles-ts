@@ -27,9 +27,10 @@
  * faithfulness lives in `solver.ts`.
  */
 
+import { divvyRectangle } from "../../engine/divvy.ts";
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { type RandomState, randomBits, randomUpto } from "../../random/index.ts";
-import { divvyRectangle } from "../../engine/divvy.ts";
 import { type Difficulty, runSolver } from "./solver.ts";
 import {
   type BlockStructure,
@@ -385,8 +386,6 @@ function encodeSolveMove(cr: number, grid: ArrayLike<number>): string {
 
 // --- new_game_desc ----------------------------------------------------------
 
-const MAX_REGENERATE = 50000;
-
 export function newSoloDesc(
   p: SoloParams,
   rng: RandomState,
@@ -409,10 +408,9 @@ export function newSoloDesc(
   let kblocks: BlockStructure | null = null;
   let aux = "";
 
-  let iterations = 0;
+  const attempt = retryLimit("solo: generation", 50_000);
   while (true) {
-    if (++iterations > MAX_REGENERATE)
-      throw new Error(`solo generator: no puzzle after ${MAX_REGENERATE} iterations`);
+    attempt();
 
     // Block structure.
     if (r === 1) {

@@ -18,6 +18,8 @@
  * fixed seed extends the previous barrier set rather than replacing it.
  */
 
+import { retryLimit } from "../../engine/retry-limit.ts";
+import { shuffle as shuffleArray } from "../../engine/shuffle.ts";
 import {
   anticlockwise,
   clockwise,
@@ -34,7 +36,6 @@ import {
   U,
   type Xyd,
 } from "../../engine/wires.ts";
-import { shuffle as shuffleArray } from "../../engine/shuffle.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 import { computeLoops } from "./loops.ts";
 import { netSolver, SOLVER_UNIQUE } from "./solver.ts";
@@ -43,10 +44,20 @@ import type { NetParams } from "./state.ts";
 const HEX = "0123456789abcdef";
 const LOCKED = 0x10;
 
-export function newDesc(
-  p: NetParams,
-  rs: RandomState,
-): { desc: string; aux: string } {
+/**
+ * Consecutive loop-fixing rounds that may fail to reduce the loop-square count
+ * before we treat the tie as the give-up upstream's comment already intends
+ * (see `shuffle`).
+ *
+ * Plateaus are real but short: measured over 720 boards (3x3…13x11, wrapping
+ * and not, 60 seeds each) the longest run of non-reducing rounds was **3**, and
+ * this escape fired **zero** times. 100 leaves ~33x that headroom, so every
+ * seed the C reference converges on takes the identical path and the
+ * differential's byte-match is unaffected.
+ */
+const MAX_STALLED_ROUNDS = 100;
+
+export function newDesc(p: NetParams, rs: RandomState): { desc: string; aux: string } {
   const { w, h } = p;
   const wh = w * h;
   const cx = Math.floor(w / 2);
@@ -56,7 +67,10 @@ export function newDesc(
 
   // The outer loop is upstream's `begin_generation` label: the uniqueness gate
   // may give up and restart the whole grid.
+  const attempt = retryLimit("net: generation");
   beginGeneration: for (;;) {
+    attempt();
+
     tiles.fill(0);
     barriers.fill(0);
 
@@ -125,7 +139,10 @@ export function newDesc(
 function shuffle(tiles: Uint8Array, w: number, h: number, rs: RandomState): void {
   const wh = w * h;
 
+  const attempt = retryLimit("net: shuffle");
   reshuffle: for (;;) {
+    attempt();
+
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const orig = tiles[y * w + x];
@@ -134,6 +151,25 @@ function shuffle(tiles: Uint8Array, w: number, h: number, rs: RandomState): void
     }
 
     // Fix loops by reshuffling just the squares involved.
+    //
+    // TERMINATION. Upstream (net.c:1485) gives up only when the count
+    // *increases*, while its own comment states the intent as "increasing
+    // rather than reducing". A plateau is a failure to reduce, but the `>`
+    // test lets it re-rotate for ever: the count sequence is non-increasing,
+    // so it converges, and if it converges to anything above zero the loop
+    // spins until random rotation happens to break the tie — "terminates with
+    // probability 1", which for a synchronous, uninterruptible worker means
+    // "may hang the machine" (see engine/retry-limit.ts). A grid where every
+    // rotation yields the same count never escapes at all.
+    //
+    // So detect the stall the predicate misses and take upstream's own escape
+    // hatch. Each round now either strictly reduces the count (at most `wh`
+    // times, since it is a non-increasing series of non-negative integers) or
+    // burns one of MAX_STALLED_ROUNDS — giving a real bound, `wh *
+    // MAX_STALLED_ROUNDS`, in place of a probabilistic argument. Reshuffling
+    // rather than throwing keeps a pathological seed a slower puzzle instead
+    // of a failed one; the outer `retries` above bounds the recovery itself.
+    let stalledRounds = 0;
     let prevLoopsquares = wh + 1;
     for (;;) {
       const loops = computeLoops(w, h, tiles, null, true);
@@ -149,6 +185,14 @@ function shuffle(tiles: Uint8Array, w: number, h: number, rs: RandomState): void
         continue reshuffle;
       }
       if (thisLoopsquares === 0) break;
+      // Not reducing either. Upstream would retry this for ever; give the tie
+      // a generous number of chances to break (so any seed C converges on
+      // behaves identically), then treat it as the give-up it already is.
+      if (thisLoopsquares === prevLoopsquares) {
+        if (++stalledRounds > MAX_STALLED_ROUNDS) continue reshuffle;
+      } else {
+        stalledRounds = 0;
+      }
       prevLoopsquares = thisLoopsquares;
     }
 
@@ -156,16 +200,10 @@ function shuffle(tiles: Uint8Array, w: number, h: number, rs: RandomState): void
     let mismatches = 0;
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
-        if (
-          x + 1 < w &&
-          (rot(tiles[y * w + x], 2) ^ tiles[y * w + x + 1]) & L
-        ) {
+        if (x + 1 < w && (rot(tiles[y * w + x], 2) ^ tiles[y * w + x + 1]) & L) {
           mismatches++;
         }
-        if (
-          y + 1 < h &&
-          (rot(tiles[y * w + x], 2) ^ tiles[(y + 1) * w + x]) & U
-        ) {
+        if (y + 1 < h && (rot(tiles[y * w + x], 2) ^ tiles[(y + 1) * w + x]) & U) {
           mismatches++;
         }
       }

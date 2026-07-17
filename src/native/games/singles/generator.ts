@@ -9,6 +9,7 @@
  */
 
 import { latinGenerateRect } from "../../engine/latin.ts";
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import type { RandomState } from "../../random/index.ts";
 import {
@@ -105,12 +106,10 @@ function newGameIsGood(
 
 // --- new_game_desc ---------------------------------------------------------
 
-/** Defensive cap on the outer regenerate loop. Upstream has no cap (it
- * relies on `solveAllblackbutone` locking a white's last escape before it
- * can be boxed in, so generation never makes the board impossible); this
- * only fires if a porting discrepancy would otherwise hang the worker. */
-const MAX_REGENERATE = 10000;
-
+/** Upstream has no cap here: it relies on `solveAllblackbutone` locking a
+ * white's last escape before it can be boxed in, so generation never makes the
+ * board impossible. The guard below only fires if a porting discrepancy breaks
+ * that invariant (see engine/retry-limit.ts). */
 export function newSinglesDesc(
   paramsOrig: SinglesParams,
   rs: RandomState,
@@ -134,11 +133,10 @@ export function newSinglesDesc(
   const rownums = new Int32Array(h * o);
   const colnums = new Int32Array(w * o);
 
-  let regenerations = 0;
+  const attempt = retryLimit("singles: generation");
   generate: while (true) {
-    if (++regenerations > MAX_REGENERATE) {
-      throw new Error("singles generator: exceeded regenerate cap");
-    }
+    attempt();
+
     ss.ops = [];
     state.flags.fill(0);
 

@@ -9,17 +9,19 @@
  * and the `cell_adj` enumeration order are ported verbatim.
  */
 
-import { type RandomState, randomUpto } from "../../random/index.ts";
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
+import { type RandomState, randomUpto } from "../../random/index.ts";
 import { solveState } from "./solver.ts";
+
 import {
   assignStateInto,
   blankInto,
   blankState,
   cloneState,
-  dirOpposite,
   DXS,
   DYS,
+  dirOpposite,
   FLAG_IMMUTABLE,
   generateDesc,
   type SignpostParams,
@@ -28,15 +30,16 @@ import {
   whichDirI,
 } from "./state.ts";
 
+/** Draws allowed when picking two distinct cells. The 1x1 grid — the only board
+ * with no distinct pair — returns before this runs, so the rejection sampling
+ * ends with probability 1; "probably" is not a bound (see
+ * engine/retry-limit.ts). */
+const MAX_DISTINCT_PICKS = 1_000_000;
+
 /** Fill `ai`/`ad` with all non-numbered cells reachable from cell `i`
  * along each of the 8 directions; return the count. Enumeration order
  * (direction-major, outward) is byte-load-bearing. */
-function cellAdj(
-  s: SignpostState,
-  i: number,
-  ai: Int32Array,
-  ad: Int32Array,
-): number {
+function cellAdj(s: SignpostState, i: number, ai: Int32Array, ad: Int32Array): number {
   const { w, h } = s;
   let n = 0;
   const sx = i % w;
@@ -159,25 +162,30 @@ function newGameStrip(s: SignpostState, rng: RandomState): boolean {
   return true;
 }
 
-export function newSignpostDesc(
-  p: SignpostParams,
-  rng: RandomState,
-): { desc: string } {
+export function newSignpostDesc(p: SignpostParams, rng: RandomState): { desc: string } {
   if (p.w === 1 && p.h === 1) return { desc: "1a" };
 
   const s = blankState(p);
+  const attempt = retryLimit("signpost: generation");
   for (;;) {
+    attempt();
+
     blankInto(s);
 
     // Keep trying head/tail choices until we fill successfully.
     let headi = 0;
     let taili = 0;
+    const fill = retryLimit("signpost: newGameFill");
     do {
+      fill();
+
       if (p.forceCornerStart) {
         headi = 0;
         taili = s.n - 1;
       } else {
+        const pick = retryLimit("signpost: head/tail selection", MAX_DISTINCT_PICKS);
         do {
+          pick();
           headi = randomUpto(rng, s.n);
           taili = randomUpto(rng, s.n);
         } while (headi === taili);

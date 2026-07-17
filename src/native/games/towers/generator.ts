@@ -10,6 +10,7 @@
  */
 
 import { latinGenerate } from "../../engine/latin.ts";
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import type { RandomState } from "../../random/index.ts";
 import { solveTowers } from "./solver.ts";
@@ -20,10 +21,6 @@ import {
   lineCells,
   type TowersParams,
 } from "./state.ts";
-
-/** Backstop against a porting slip turning the (uncapped, upstream) regenerate
- * loop into a hang; a faithful port converges in a handful of tries. */
-const MAX_REGENERATE = 1000;
 
 export function newTowersDesc(
   p: TowersParams,
@@ -42,13 +39,9 @@ export function newTowersDesc(
   const soln = new Uint8Array(a);
   const soln2 = new Uint8Array(a);
 
-  let tries = 0;
+  const attempt = retryLimit(`towers: generation (${w}d${p.diff})`, 1000);
   while (true) {
-    if (++tries > MAX_REGENERATE) {
-      throw new Error(
-        `towers: failed to generate ${w}d${p.diff} in ${MAX_REGENERATE} tries`,
-      );
-    }
+    attempt();
 
     // Construct a Latin square as the solution.
     const latin = latinGenerate(w, rng);

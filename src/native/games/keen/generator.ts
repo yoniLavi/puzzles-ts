@@ -12,6 +12,7 @@
 
 import { Dsf } from "../../engine/dsf.ts";
 import { latinGenerate } from "../../engine/latin.ts";
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 import { solveKeen } from "./solver.ts";
@@ -38,10 +39,6 @@ const F_MUL = 0x04;
 const F_DIV = 0x08;
 const BAD_SHIFT = 4;
 
-/** Backstop against a porting slip turning the (capped, upstream) regenerate
- * loop into a hang; a faithful port converges in a handful of tries. */
-const MAX_REGENERATE = 10000;
-
 export function newKeenDesc(
   p: KeenParams,
   rng: RandomState,
@@ -60,13 +57,10 @@ export function newKeenDesc(
   const cluevals = new Int32Array(a);
   let grid!: Int32Array;
   let minimal!: Int32Array;
-  let regen = 0;
 
+  const attempt = retryLimit(`keen: generation (${w}d${diff})`);
   while (true) {
-    if (++regen > MAX_REGENERATE)
-      throw new Error(
-        `keen: failed to generate ${w}d${diff} in ${MAX_REGENERATE} tries`,
-      );
+    attempt();
 
     // Latin square solution.
     grid = latinGenerate(w, rng);

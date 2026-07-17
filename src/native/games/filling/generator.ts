@@ -9,6 +9,7 @@
  * transiently in `mergeOnes`), distinct from the immutable game state.
  */
 import { Dsf } from "../../engine/dsf.ts";
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 import { solveFilling } from "./solver.ts";
@@ -111,7 +112,10 @@ function makeBoard(w: number, h: number, rng: RandomState): number[] {
   for (let i = 0; i < sz; i++) board[i] = i; // shuffled cell-index list
   const dsf = new Dsf(sz);
 
+  const attempt = retryLimit("filling: makeBoard");
   retry: while (true) {
+    attempt();
+
     dsf.reinit();
     shuffle(board, rng);
     let change = true;

@@ -32,6 +32,15 @@
 # the parallelism win, never a spuriously-blocked commit.
 set -e
 
+# --- 0. Reap orphaned vitest workers from a previously-interrupted run. ---
+# A sync-blocked worker survives its parent's death and spins a core forever
+# (see scripts/reap-orphaned-workers.sh). Reaping here rather than relying on
+# the `pretest:run` hook below is deliberate: orphans inflate the load average
+# that the concurrency probe reads a few lines down, so a box left dirty by an
+# earlier Ctrl-C would be misjudged "busy" and serialise the build for nothing.
+# Fail-safe and near-free (one `ps` scan), so it costs a clean box nothing.
+sh "$(dirname -- "$0")/reap-orphaned-workers.sh" || true
+
 # --- 1. Fast fail-fast prefix. ---
 npx tsc -b --noEmit
 npm run lint

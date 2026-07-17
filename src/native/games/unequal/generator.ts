@@ -12,6 +12,7 @@
  */
 
 import { latinGenerate } from "../../engine/latin.ts";
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import type { RandomState } from "../../random/index.ts";
 import { solveUnequal } from "./solver.ts";
@@ -25,10 +26,6 @@ import {
 } from "./state.ts";
 
 const MAXTRIES = 50;
-/** Backstop against a porting slip turning the (capped, upstream) regenerate
- * loop into a hang; a faithful port converges in a handful of tries. */
-const MAX_REGENERATE = 2000;
-
 /** The board being assembled: number givens, adjacency flags, and the solver's
  * last candidate cube (`state->hints`). */
 interface GenState {
@@ -228,11 +225,10 @@ export function newUnequalDesc(
 
   let sq!: ReturnType<typeof latinGenerate>;
   let ntries = 1;
-  let regen = 0;
 
+  const attempt = retryLimit(`unequal: generation (${o}${p.mode})`, 2000);
   while (true) {
-    if (++regen > MAX_REGENERATE)
-      throw new Error(`unequal: failed to generate ${o}${p.mode} in ${MAX_REGENERATE} tries`);
+    attempt();
 
     sq = latinGenerate(o, rng);
 
@@ -271,7 +267,12 @@ export function newUnequalDesc(
 
 /** Shuffle `arr[start .. start+len)` in place, RNG-faithful (the draw sequence
  * matches C's `shuffle(arr + start, len, …)`). */
-function shuffleRange(arr: Int32Array, start: number, len: number, rng: RandomState): void {
+function shuffleRange(
+  arr: Int32Array,
+  start: number,
+  len: number,
+  rng: RandomState,
+): void {
   const slice: number[] = [];
   for (let i = 0; i < len; i++) slice[i] = arr[start + i];
   shuffle(slice, rng);
