@@ -79,7 +79,7 @@ There is **no inherited test suite**. We build the discipline from scratch, now 
 
 1. **Behavioural tests per ported game / module.** Ordinary unit/integration tests asserting the thing behaves correctly (generates solvable boards, solver solves them, input transitions are right, serialise/deserialise round-trips). Property tests where there's a closed-form invariant ("combi emits exactly C(n,r) lex-ordered tuples") — cheap, additive, catches unrecorded-input regressions.
 2. **Dev-time differential spot-check.** An advisory harness that generates N boards from both the C build and the TS port for the same seed and surfaces diffs for human review. Review signal, **not** a pass/fail gate. Per-game tightening (a stricter check for a generator with brutal uniqueness constraints) is allowed but is not the default.
-3. **Pre-commit gate stays:** `tsc -b --noEmit` → `biome lint` → `vitest run` → `vite build` (the production build is in the gate because tsc/lint/vitest never exercise `vite build`, and two prod-only breakages once sat undetected on main; needs `build:wasm` assets present).
+3. **Pre-commit gate stays:** `tsc -b --noEmit` → `biome ci` → `vitest run` → `vite build` (the production build is in the gate because tsc/lint/vitest never exercise `vite build`, and two prod-only breakages once sat undetected on main; needs `build:wasm` assets present).
 4. NEVER EVER attempt to bypass pre-commit validation. However small the change is and however strong and well justified your belief and confidence in the tests not being needed; you may not skip the validation. These tests are critical to our code integrity and security. Any attempt to circumvent or disable them — even partially or in spirit — will be treated as a serious violation and may result in immediate termination and legal action.
 
 
@@ -317,7 +317,7 @@ Update `/help` when adding features that diverge from upstream.
 ## Git
 
 - Main branch: `main`.
-- Husky pre-commit runs `tsc -b --noEmit` → `biome lint` → `vitest run` → `vite build` (blocks on any failure). The final `vite build` catches production-only breakage (vite-plugin closeBundle crashes, unresolved `?raw`/asset imports, plugin/dep regressions) that the other three never exercise; it assumes `npm run build:wasm` has populated `src/assets/puzzles/`. See `.husky/pre-commit`.
+- Husky pre-commit runs `tsc -b --noEmit` → `biome ci` → `vitest run` → `vite build` (blocks on any failure). `biome ci` is the read-only form of `biome check`: one pass covering lint rules, formatting, **and** import order, so a lint-clean-but-unformatted file can't land and re-open the drift that once made `npm run check` reformat ~150 untouched files. `npm run check` remains the fixer. The final `vite build` catches production-only breakage (vite-plugin closeBundle crashes, unresolved `?raw`/asset imports, plugin/dep regressions) that the other three never exercise; it assumes `npm run build:wasm` has populated `src/assets/puzzles/`. See `.husky/pre-commit`.
 
 [sgt-puzzles]: https://git.tartarus.org/?p=simon/puzzles.git
 [medmunds/puzzles-web]: https://github.com/medmunds/puzzles-web

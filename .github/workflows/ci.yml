@@ -2,7 +2,7 @@
 #
 # This project is trunk-based (no PRs), so the gate runs post-push on `main`:
 # it runs the SAME gate as the husky pre-commit hook (`npm run gate`:
-# tsc -b --noEmit → biome lint → vitest run → vite build), so a `--no-verify`
+# tsc -b --noEmit → biome ci → vitest run → vite build), so a `--no-verify`
 # commit or a fresh clone whose hooks never installed can no longer land
 # breakage on `main` undetected. (If contributors arrive later and PRs become
 # useful, add a `pull_request:` trigger here.)
@@ -108,5 +108,5 @@ jobs:
           path: src/assets/puzzles
           key: ${{ steps.wasm-cache.outputs.cache-primary-key }}
 
-      - name: Run the gate (typecheck → lint → test → prod build)
+      - name: Run the gate (typecheck → lint/format → test → prod build)
         run: npm run gate

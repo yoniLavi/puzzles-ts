@@ -3,8 +3,9 @@
 # cannot drift (the build-pipeline spec requires they mirror each other).
 #
 # Order and semantics:
-#   1. Fast fail-fast prefix — `tsc -b --noEmit`, then `biome lint`. A type or
-#      lint error fails here in seconds without spending the heavy branches.
+#   1. Fast fail-fast prefix — `tsc -b --noEmit`, then `biome ci`. A type, lint,
+#      or formatting error fails here in seconds without spending the heavy
+#      branches.
 #   2. Heavy checks — `vitest run` and `vite build`. They share no inputs or
 #      outputs, so on a machine with spare cores they run concurrently and the
 #      gate wall-clock is ~max(vitest, build) instead of their sum (~40s off the
@@ -45,8 +46,15 @@ set -e
 sh "$(dirname -- "$0")/reap-orphaned-workers.sh" || true
 
 # --- 1. Fast fail-fast prefix. ---
+# `biome ci` rather than `biome lint`: it is the read-only form of `biome check`,
+# so one ~3s pass covers lint rules AND formatting AND import order. Gating only
+# `lint` left the tree lint-clean but never format-clean, so the first
+# `biome check --write` (= `npm run check`) reformatted ~150 files nobody had
+# touched and buried the real diff. `format --check` would not close it either:
+# `check` also sorts imports, which `format` does not. `npm run check` stays the
+# fixer — run it, then commit.
 npx tsc -b --noEmit
-npm run lint
+npx biome ci .
 
 # `nice` (weak on macOS but free insurance) keeps the background build below
 # vitest, which is the branch that actually blocks the commit.
