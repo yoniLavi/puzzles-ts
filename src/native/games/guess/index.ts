@@ -13,6 +13,7 @@
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
+import { parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -23,7 +24,6 @@ import {
   LEFT_RELEASE,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
-import { parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
   colours as coloursImpl,
@@ -32,8 +32,8 @@ import {
   type Geom,
   type GuessDrawState,
   newDrawState,
-  pegOff,
   PREFERRED_TILE_SIZE,
+  pegOff,
   redraw,
   setTileSize,
 } from "./render.ts";
@@ -216,7 +216,12 @@ function computeHint(state: GuessState, ui: GuessUi): void {
  * y (clamped to `maxColour`); `gridCursorMove` owns the clamp and returns
  * `null` for a no-op against an edge, which we keep as a position hold so
  * the `displayCur` reveal still fires. */
-function moveCursor(button: number, ui: GuessUi, maxPeg: number, maxColour: number): UiUpdate | null {
+function moveCursor(
+  button: number,
+  ui: GuessUi,
+  maxPeg: number,
+  maxColour: number,
+): UiUpdate | null {
   if (!isCursorMove(button)) return null;
 
   const moved = gridCursorMove(button, ui.pegCur, ui.colourCur, maxPeg, maxColour);
@@ -348,7 +353,8 @@ function interpretMove(
     return UI_UPDATE;
   }
   if (
-    ((button >= 0x31 && button <= 0x30 + ncolours) || (button === 0x30 && ncolours === 10)) &&
+    ((button >= 0x31 && button <= 0x30 + ncolours) ||
+      (button === 0x30 && ncolours === 10)) &&
     ui.pegCur < npegs
   ) {
     ui.displayCur = true;
@@ -356,7 +362,11 @@ function interpretMove(
     if (ui.pegCur + 1 < npegs + (ui.markable ? 1 : 0)) ui.pegCur++;
     return UI_UPDATE;
   }
-  if (button === 0x44 || button === 0x64 || button === 0x08 /* 'D' | 'd' | backspace */) {
+  if (
+    button === 0x44 ||
+    button === 0x64 ||
+    button === 0x08 /* 'D' | 'd' | backspace */
+  ) {
     if (!ui.displayCur || ui.currPegs[ui.pegCur] !== 0) {
       ui.displayCur = true;
       setPeg(params, ui, ui.pegCur, 0);
@@ -408,7 +418,13 @@ function executeMove(s: GuessState, m: GuessMove): GuessState {
 
 // --- Game object ------------------------------------------------------
 
-export const guessGame: Game<GuessParams, GuessState, GuessMove, GuessUi, GuessDrawState> = {
+export const guessGame: Game<
+  GuessParams,
+  GuessState,
+  GuessMove,
+  GuessUi,
+  GuessDrawState
+> = {
   id: "guess",
   wantsStatusbar: false,
   isTimed: false,

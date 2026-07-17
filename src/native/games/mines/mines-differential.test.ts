@@ -28,14 +28,10 @@ const fixtures = cReference as Fixture[];
 
 describe("mines differential (frozen C reference)", () => {
   for (const f of fixtures) {
-    it(
-      `reproduces the C layout byte-for-byte: ${f.params} seed=${f.seed}`,
-      () => {
-        const p = decodeParams(f.params);
-        const desc = newGameDescBatch(p, randomNew(f.seed));
-        expect(desc).toBe(f.desc);
-      },
-      30_000,
-    );
+    it(`reproduces the C layout byte-for-byte: ${f.params} seed=${f.seed}`, () => {
+      const p = decodeParams(f.params);
+      const desc = newGameDescBatch(p, randomNew(f.seed));
+      expect(desc).toBe(f.desc);
+    }, 30_000);
   }
 });

@@ -11,6 +11,7 @@
  * tier demands.
  */
 import { describe, expect, it } from "vitest";
+import { randomNew } from "../../random/index.ts";
 import { newUndeadDesc } from "./generator.ts";
 import {
   isUniquelySolvable,
@@ -19,20 +20,24 @@ import {
   RUNG_FORCING,
   solveDeductive,
 } from "./solver.ts";
-import { randomNew } from "../../random/index.ts";
 import {
+  type Difficulty,
   MON_GHOST,
   MON_NONE,
   MON_VAMPIRE,
   newState,
-  type Difficulty,
   type UndeadCommon,
   type UndeadParams,
 } from "./state.ts";
 
 /** A synthetic monster-only `common` with no sightlines, so arc-consistency is a
  * pure no-op and only the counting rung can make progress. */
-function paintByNumbers(numTotal: number, g: number, v: number, z: number): UndeadCommon {
+function paintByNumbers(
+  numTotal: number,
+  g: number,
+  v: number,
+  z: number,
+): UndeadCommon {
   return {
     params: { w: 1, h: 1, diff: "easy" },
     w: 1,
@@ -119,26 +124,25 @@ describe("undead guess-free generation property", () => {
     [5, 5, "tricky"],
   ];
   for (const [w, h, diff] of tiers) {
-    it(
-      `every accepted ${w}x${h} ${diff} board is solved by the ladder with no recursion`,
-      () => {
-        const params: UndeadParams = { w, h, diff };
-        for (let i = 0; i < 5; i++) {
-          const { desc } = newUndeadDesc(params, randomNew(`prop-${w}x${h}-${diff}-${i}`));
-          const common = newState(params, desc).common;
-          const start = new Uint8Array(common.numTotal).fill(MON_NONE);
-          const grade = solveDeductive(common, start); // full ladder
-          expect(grade.solved).toBe(true); // deductive, zero recursion
-          expect(grade.inconsistent).toBe(false);
-          if (diff === "easy") expect(grade.rung).toBe(RUNG_ARC);
-          else if (diff === "normal")
-            expect(grade.rung === RUNG_ARC || grade.rung === RUNG_COUNTING).toBe(true);
-          else expect(grade.rung).toBe(RUNG_FORCING);
-          // Independently unique.
-          expect(isUniquelySolvable(common)).toBe(true);
-        }
-      },
-      30_000,
-    );
+    it(`every accepted ${w}x${h} ${diff} board is solved by the ladder with no recursion`, () => {
+      const params: UndeadParams = { w, h, diff };
+      for (let i = 0; i < 5; i++) {
+        const { desc } = newUndeadDesc(
+          params,
+          randomNew(`prop-${w}x${h}-${diff}-${i}`),
+        );
+        const common = newState(params, desc).common;
+        const start = new Uint8Array(common.numTotal).fill(MON_NONE);
+        const grade = solveDeductive(common, start); // full ladder
+        expect(grade.solved).toBe(true); // deductive, zero recursion
+        expect(grade.inconsistent).toBe(false);
+        if (diff === "easy") expect(grade.rung).toBe(RUNG_ARC);
+        else if (diff === "normal")
+          expect(grade.rung === RUNG_ARC || grade.rung === RUNG_COUNTING).toBe(true);
+        else expect(grade.rung).toBe(RUNG_FORCING);
+        // Independently unique.
+        expect(isUniquelySolvable(common)).toBe(true);
+      }
+    }, 30_000);
   }
 });

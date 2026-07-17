@@ -39,17 +39,13 @@ describe("stripModifiers", () => {
       MOD_CTRL | MOD_SHFT | MOD_NUM_KEYPAD,
     );
     expect(stripModifiers(CURSOR_UP | MOD_CTRL)).toBe(CURSOR_UP);
-    expect(stripModifiers(CURSOR_LEFT | MOD_SHFT | MOD_NUM_KEYPAD)).toBe(
-      CURSOR_LEFT,
-    );
+    expect(stripModifiers(CURSOR_LEFT | MOD_SHFT | MOD_NUM_KEYPAD)).toBe(CURSOR_LEFT);
     expect(stripModifiers(LEFT_BUTTON)).toBe(LEFT_BUTTON);
   });
 
   it("preserves unrelated high bits outside MOD_MASK", () => {
     const HIGH = 0x10000;
-    expect(stripModifiers(CURSOR_DOWN | MOD_SHFT | HIGH)).toBe(
-      CURSOR_DOWN | HIGH,
-    );
+    expect(stripModifiers(CURSOR_DOWN | MOD_SHFT | HIGH)).toBe(CURSOR_DOWN | HIGH);
   });
 });
 

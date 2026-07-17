@@ -272,10 +272,7 @@ function tileRedraw(
   const sarrowcol = f & F_DIM ? dim(setcol) : COL_ARROW;
 
   // Clear tile background.
-  dr.drawRect(
-    { x: tx, y: ty, w: ts, h: ts },
-    f & F_DIM ? dimbg(setcol) : setcol,
-  );
+  dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, f & F_DIM ? dimbg(setcol) : setcol);
 
   // Large outward-pointing arrow (or star for the final immutable cell).
   const asz = Math.floor((7 * ts) / 32);
@@ -331,8 +328,8 @@ function drawDragIndicator(
     const dir = ui.dragIsFrom ? s.dirs[ui.sy * w + ui.sx] : s.dirs[fy * w + fx];
     ang = (TWO_PI * dir) / 8;
   } else {
-    const ox = (ui.sx * ts + BORDER) + Math.floor(ts / 2);
-    const oy = (ui.sy * ts + BORDER) + Math.floor(ts / 2);
+    const ox = ui.sx * ts + BORDER + Math.floor(ts / 2);
+    const oy = ui.sy * ts + BORDER + Math.floor(ts / 2);
     const xdiff = Math.abs(ox - ui.dx);
     const ydiff = Math.abs(oy - ui.dy);
     if (xdiff === 0) {
@@ -420,9 +417,7 @@ export function redrawSignpost(
     dr.drawUpdate({ x: 0, y: 0, w: aw + 2 * BORDER, h: ah + 2 * BORDER });
   }
 
-  const mistakeSet = mistakes?.length
-    ? new Set(mistakes.map((m) => m.index))
-    : null;
+  const mistakeSet = mistakes?.length ? new Set(mistakes.map((m) => m.index)) : null;
 
   for (let x = 0; x < state.w; x++) {
     for (let y = 0; y < state.h; y++) {
@@ -454,7 +449,12 @@ export function redrawSignpost(
       if (renderState.next[i] !== -1) f |= F_ARROW_POINT;
       if (renderState.prev[i] !== -1) {
         f |= F_ARROW_INPOINT;
-        dirp = whichDir(x, y, renderState.prev[i] % w, Math.floor(renderState.prev[i] / w));
+        dirp = whichDir(
+          x,
+          y,
+          renderState.prev[i] % w,
+          Math.floor(renderState.prev[i] / w),
+        );
       }
 
       if (

@@ -11,8 +11,8 @@
  */
 
 import {
-  DIFF_AMBIGUOUS,
   type DeductionRecord,
+  DIFF_AMBIGUOUS,
   DIFF_IMPOSSIBLE,
   type LatinReason,
   type LatinSolver,

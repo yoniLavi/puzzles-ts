@@ -51,7 +51,10 @@ function fresh(id: string) {
 
 /** A genuinely covered cell (`?` in the text format) — a flag on an opened
  * cell is illegal, so tests must pick a covered one to flag. */
-function coveredCell(m: { formatAsText(): string | undefined }): { x: number; y: number } {
+function coveredCell(m: { formatAsText(): string | undefined }): {
+  x: number;
+  y: number;
+} {
   const rows = (m.formatAsText() ?? "").split("\n");
   for (let y = 0; y < rows.length; y++) {
     const x = rows[y].indexOf("?");
@@ -64,7 +67,14 @@ function coveredCell(m: { formatAsText(): string | undefined }): { x: number; y:
 
 describe("mines params", () => {
   it("round-trips the presets through encode/decode (full)", () => {
-    for (const s of ["9x9n10", "9x9n35", "16x16n40", "16x16n99", "30x16n99", "30x16n170"]) {
+    for (const s of [
+      "9x9n10",
+      "9x9n35",
+      "16x16n40",
+      "16x16n99",
+      "30x16n99",
+      "30x16n170",
+    ]) {
       expect(encodeParams(decodeParams(s), true)).toBe(s);
     }
   });
@@ -86,11 +96,17 @@ describe("mines params", () => {
     expect(validateParams(decodeParams("5x5n3"), true)).toBeNull();
     // too many mines: n > wh - 9 (a 3x3 needs 9 clear around the first click).
     expect(
-      validateParams({ w: 3, h: 3, n: 5, unique: true, firstClickX: -1, firstClickY: -1 }, true),
+      validateParams(
+        { w: 3, h: 3, n: 5, unique: true, firstClickX: -1, firstClickY: -1 },
+        true,
+      ),
     ).toMatch(/Too many mines/);
     // unique requires > 2 in each dimension.
     expect(
-      validateParams({ w: 2, h: 9, n: 3, unique: true, firstClickX: -1, firstClickY: -1 }, true),
+      validateParams(
+        { w: 2, h: 9, n: 3, unique: true, firstClickX: -1, firstClickY: -1 },
+        true,
+      ),
     ).toMatch(/greater than two/);
   });
 });
@@ -153,7 +169,14 @@ describe("mines solver", () => {
         for (let j = -1; j <= 1; j++) {
           const nx = ox + i;
           const ny = oy + j;
-          if (nx >= 0 && nx < w && ny >= 0 && ny < h && !(i === 0 && j === 0) && mines[ny * w + nx])
+          if (
+            nx >= 0 &&
+            nx < w &&
+            ny >= 0 &&
+            ny < h &&
+            !(i === 0 && j === 0) &&
+            mines[ny * w + nx]
+          )
             c++;
         }
       return c;
@@ -176,24 +199,20 @@ describe("mines solver", () => {
 // --- generator ---------------------------------------------------------
 
 describe("mines generator", () => {
-  it(
-    "generates solvable boards with exactly n mines and a clear first-click area",
-    () => {
-      const w = 9;
-      const h = 9;
-      const n = 10;
-      const x = 4;
-      const y = 4;
-      for (let s = 0; s < 4; s++) {
-        const mines = minegen(w, h, n, x, y, true, randomNew(`gen${s}`));
-        expect(Array.from(mines).reduce((a, b) => a + b, 0)).toBe(n);
-        // 3x3 around the first click is clear.
-        for (let dy = -1; dy <= 1; dy++)
-          for (let dx = -1; dx <= 1; dx++) expect(mines[(y + dy) * w + (x + dx)]).toBe(0);
-      }
-    },
-    30_000,
-  );
+  it("generates solvable boards with exactly n mines and a clear first-click area", () => {
+    const w = 9;
+    const h = 9;
+    const n = 10;
+    const x = 4;
+    const y = 4;
+    for (let s = 0; s < 4; s++) {
+      const mines = minegen(w, h, n, x, y, true, randomNew(`gen${s}`));
+      expect(Array.from(mines).reduce((a, b) => a + b, 0)).toBe(n);
+      // 3x3 around the first click is clear.
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) expect(mines[(y + dy) * w + (x + dx)]).toBe(0);
+    }
+  }, 30_000);
 });
 
 // --- game / supersede / midend (design D1, D2) -------------------------
@@ -289,7 +308,10 @@ describe("mines supersede + midend", () => {
     const ds = minesGame.newDrawState?.(s) ?? null;
     minesGame.setTileSize?.(ds as never, 20);
     const border = borderFor(20);
-    const at = (x: number, y: number) => ({ x: x * 20 + border + 10, y: y * 20 + border + 10 });
+    const at = (x: number, y: number) => ({
+      x: x * 20 + border + 10,
+      y: y * 20 + border + 10,
+    });
     // Press then release on (0,0).
     minesGame.interpretMove(s, ui, ds, at(0, 0), LEFT_BUTTON);
     const move = minesGame.interpretMove(s, ui, ds, at(0, 0), LEFT_RELEASE);
@@ -322,7 +344,10 @@ describe("mines supersede + midend", () => {
     const ds = minesGame.newDrawState?.(s) ?? null;
     minesGame.setTileSize?.(ds as never, 20);
     const border = borderFor(20);
-    const at = (x: number, y: number) => ({ x: x * 20 + border + 10, y: y * 20 + border + 10 });
+    const at = (x: number, y: number) => ({
+      x: x * 20 + border + 10,
+      y: y * 20 + border + 10,
+    });
     // Middle-button press (chord) on the '1' at (1,1), then release.
     minesGame.interpretMove(s, ui, ds, at(1, 1), 0x0201); // MIDDLE_BUTTON
     const move = minesGame.interpretMove(s, ui, ds, at(1, 1), 0x0207); // MIDDLE_RELEASE
@@ -340,7 +365,11 @@ describe("mines supersede + midend", () => {
     const p = decodeParams("3x3n1");
     const s = minesGame.newState(p, "1,1,u800"); // opens (1,1); wins on this tiny board
     // Rebuild an explicitly-ongoing board so Solve fills the whole grid.
-    const alive: MinesState = { ...s, won: false, grid: new Int8Array(9).fill(COVERED) };
+    const alive: MinesState = {
+      ...s,
+      won: false,
+      grid: new Int8Array(9).fill(COVERED),
+    };
     const solved = minesGame.executeMove(alive, { type: "solve" });
     expect(solved.usedSolve).toBe(true);
     expect(solved.grid[0]).toBe(-1); // the mine, flagged
@@ -415,7 +444,10 @@ describe("mines chord preview", () => {
     const ds = minesGame.newDrawState?.(s) ?? null;
     minesGame.setTileSize?.(ds as never, 20);
     const border = borderFor(20);
-    const at = (x: number, y: number) => ({ x: x * 20 + border + 10, y: y * 20 + border + 10 });
+    const at = (x: number, y: number) => ({
+      x: x * 20 + border + 10,
+      y: y * 20 + border + 10,
+    });
     return { s, ui, ds, at };
   }
 

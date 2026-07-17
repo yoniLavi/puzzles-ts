@@ -46,7 +46,9 @@ describe("Slant hint render scenarios", () => {
     );
     // Other clue digits still drawn; the grid frame is present.
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);
-    expect(recording.ops.some((o) => "colour" in o && o.colour === COL_GRID)).toBe(true);
+    expect(recording.ops.some((o) => "colour" in o && o.colour === COL_GRID)).toBe(
+      true,
+    );
     expect(size.w).toBeGreaterThan(0);
 
     expect(recording.ops).toMatchSnapshot();
@@ -62,7 +64,7 @@ describe("Slant hint render scenarios", () => {
 
     const h = hl(hint);
     expect(h).toBeDefined();
-    expect((h?.area?.length ?? 0)).toBeGreaterThan(0);
+    expect(h?.area?.length ?? 0).toBeGreaterThan(0);
     // Exactly one blue target (loop firings force a single square).
     expect(
       recording.ops.filter((o) => o.op === "rect" && o.colour === COL_HINT).length,
@@ -86,8 +88,8 @@ describe("Slant hint render scenarios", () => {
     expect(
       recording.ops.filter((o) => o.op === "rect" && o.colour === COL_HINT).length,
     ).toBe(1);
-    expect(
-      recording.ops.some((o) => "colour" in o && o.colour === COL_HINT_REF),
-    ).toBe(true);
+    expect(recording.ops.some((o) => "colour" in o && o.colour === COL_HINT_REF)).toBe(
+      true,
+    );
   });
 });

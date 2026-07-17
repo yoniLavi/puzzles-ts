@@ -9,14 +9,14 @@
  * and Towers differentials (RNG-faithful byte-match).
  */
 import { describe, expect, it } from "vitest";
+import { randomNew } from "../random/index.ts";
 import {
   DIFF_AMBIGUOUS,
   DIFF_UNFINISHED,
+  type LatinSolverConfig,
   latinGenerate,
   latinSolver,
-  type LatinSolverConfig,
 } from "./latin.ts";
-import { randomNew } from "../random/index.ts";
 
 /** A plain Latin-square config: no game-specific deductions or validator,
  * the generic layers keyed simple=0/set0=1/set1=2/forcing=3/recursive=4. */
@@ -79,6 +79,11 @@ describe("latin generator", () => {
   it("produces a valid Latin square", () => {
     const o = 6;
     const sq = latinGenerate(o, randomNew("latin-gen"));
-    expect(isLatin(Uint8Array.from(sq, (v) => v), o)).toBe(true);
+    expect(
+      isLatin(
+        Uint8Array.from(sq, (v) => v),
+        o,
+      ),
+    ).toBe(true);
   });
 });

@@ -194,13 +194,17 @@ export function blankInto(s: SignpostState): void {
 
 // --- geometry / pointing --------------------------------------------
 
-export const isReal = (s: SignpostState, num: number): boolean =>
-  num > 0 && num <= s.n;
+export const isReal = (s: SignpostState, num: number): boolean => num > 0 && num <= s.n;
 
 export const inGrid = (s: SignpostState, x: number, y: number): boolean =>
   x >= 0 && x < s.w && y >= 0 && y < s.h;
 
-export function whichDir(fromx: number, fromy: number, tox: number, toy: number): number {
+export function whichDir(
+  fromx: number,
+  fromy: number,
+  tox: number,
+  toy: number,
+): number {
   let dx = tox - fromx;
   let dy = toy - fromy;
   if (dx && dy && Math.abs(dx) !== Math.abs(dy)) return -1;

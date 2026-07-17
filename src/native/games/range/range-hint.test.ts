@@ -84,9 +84,9 @@ describe("hint", () => {
         const hasEvidence = hl.area.length > 0 || (hl.blackRefs?.length ?? 0) > 0;
         expect(hasEvidence).toBe(true);
         // The area never includes the target cell itself.
-        expect(
-          hl.area.some((a) => a.r === hl.target.r && a.c === hl.target.c),
-        ).toBe(false);
+        expect(hl.area.some((a) => a.r === hl.target.r && a.c === hl.target.c)).toBe(
+          false,
+        );
       }
     }
   });

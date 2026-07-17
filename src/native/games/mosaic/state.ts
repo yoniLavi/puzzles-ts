@@ -297,7 +297,8 @@ export function executeMove(state: MosaicState, move: MosaicMove): MosaicState {
     return { ...state, cells, cheating: true, notCompletedClues: 0 };
   }
 
-  const inBounds = (x: number, y: number) => x >= 0 && y >= 0 && x < width && y < height;
+  const inBounds = (x: number, y: number) =>
+    x >= 0 && y >= 0 && x < width && y < height;
 
   if (move.type === "toggle") {
     if (!inBounds(move.x, move.y)) throw new Error("Toggle out of bounds");

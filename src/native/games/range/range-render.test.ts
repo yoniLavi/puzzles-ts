@@ -70,16 +70,14 @@ describe("hint colour legend", () => {
     redraw(rec, ds, null, state, 1, noCursor, 0, 0, step);
     // The cited black square rings COL_HINT_BLACKREF (an outline — `line` ops,
     // not a body fill).
-    expect(
-      rec.ops.some((o) => o.op === "line" && o.colour === COL_HINT_BLACKREF),
-    ).toBe(true);
+    expect(rec.ops.some((o) => o.op === "line" && o.colour === COL_HINT_BLACKREF)).toBe(
+      true,
+    );
     // The forced cell fills COL_HINT (a `rect` body) — a different colour from
     // the premise ring.
     expect(rec.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
     // The premise ring is NOT drawn in the target's COL_HINT.
-    expect(
-      rec.ops.some((o) => o.op === "line" && o.colour === COL_HINT),
-    ).toBe(false);
+    expect(rec.ops.some((o) => o.op === "line" && o.colour === COL_HINT)).toBe(false);
   });
 });
 

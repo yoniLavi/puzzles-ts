@@ -22,7 +22,7 @@
  */
 
 import { Dsf } from "../../engine/dsf.ts";
-import { anticlockwise, opposite, offset } from "../../engine/wires.ts";
+import { anticlockwise, offset, opposite } from "../../engine/wires.ts";
 
 /** Proved to have no solution at all. */
 export const SOLVER_INCONSISTENT = -1;
@@ -268,10 +268,7 @@ export function netSolver(
     for (let d = 1; d <= 8; d += d) {
       const { x: x2, y: y2 } = offset(x, y, d, w, h);
       const d2 = opposite(d);
-      if (
-        deadendmax[d] > 0 &&
-        deadends[(y2 * w + x2) * 5 + d2] > deadendmax[d]
-      ) {
+      if (deadendmax[d] > 0 && deadends[(y2 * w + x2) * 5 + d2] > deadendmax[d]) {
         deadends[(y2 * w + x2) * 5 + d2] = deadendmax[d];
         doneSomething = true;
         todo.add(y2 * w + x2);

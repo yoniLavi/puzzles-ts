@@ -30,7 +30,11 @@ import {
 } from "./state.ts";
 
 /** Build a state with balls at 0-indexed arena coords `[x, y]`. */
-function makeState(w: number, h: number, balls: Array<[number, number]>): BlackboxState {
+function makeState(
+  w: number,
+  h: number,
+  balls: Array<[number, number]>,
+): BlackboxState {
   const nlasers = 2 * (w + h);
   const grid = new Int32Array((w + 2) * (h + 2));
   for (const [bx, by] of balls) grid[(by + 1) * (w + 2) + (bx + 1)] = BALL_CORRECT;
@@ -250,14 +254,27 @@ describe("Black Box — params", () => {
   });
 
   it("ignores unknown letters on decode", () => {
-    expect(decodeParams("w5zzh5m3M3")).toEqual({ w: 5, h: 5, minballs: 3, maxballs: 3 });
+    expect(decodeParams("w5zzh5m3M3")).toEqual({
+      w: 5,
+      h: 5,
+      minballs: 3,
+      maxballs: 3,
+    });
   });
 
   it("rejects invalid params", () => {
-    expect(validateParams({ w: 1, h: 5, minballs: 1, maxballs: 1 }, true)).not.toBeNull();
-    expect(validateParams({ w: 5, h: 5, minballs: 0, maxballs: 1 }, true)).not.toBeNull();
-    expect(validateParams({ w: 5, h: 5, minballs: 4, maxballs: 2 }, true)).not.toBeNull();
-    expect(validateParams({ w: 3, h: 3, minballs: 9, maxballs: 9 }, true)).not.toBeNull();
+    expect(
+      validateParams({ w: 1, h: 5, minballs: 1, maxballs: 1 }, true),
+    ).not.toBeNull();
+    expect(
+      validateParams({ w: 5, h: 5, minballs: 0, maxballs: 1 }, true),
+    ).not.toBeNull();
+    expect(
+      validateParams({ w: 5, h: 5, minballs: 4, maxballs: 2 }, true),
+    ).not.toBeNull();
+    expect(
+      validateParams({ w: 3, h: 3, minballs: 9, maxballs: 9 }, true),
+    ).not.toBeNull();
     expect(validateParams({ w: 8, h: 8, minballs: 5, maxballs: 5 }, true)).toBeNull();
   });
 });

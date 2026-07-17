@@ -13,11 +13,11 @@
  */
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import type { UnequalMove } from "./state.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
+import type { UnequalMove } from "./state.ts";
 import {
   checkComplete,
   F_ADJ_DOWN,
@@ -216,22 +216,58 @@ function drawGts(
 
   if (f & F_ADJ_UP) {
     dr.drawRect({ x: ox, y: oy - g, w: ts, h: g }, COL_BACKGROUND);
-    drawGt(dr, ox + g2, oy - g4, g2, -g2, g2, g2, clueColour(f, F_ERROR_UP, F_SPENT_UP, fg));
+    drawGt(
+      dr,
+      ox + g2,
+      oy - g4,
+      g2,
+      -g2,
+      g2,
+      g2,
+      clueColour(f, F_ERROR_UP, F_SPENT_UP, fg),
+    );
     dr.drawUpdate({ x: ox, y: oy - g, w: ts, h: g });
   }
   if (f & F_ADJ_RIGHT) {
     dr.drawRect({ x: ox + ts, y: oy, w: g, h: ts }, COL_BACKGROUND);
-    drawGt(dr, ox + ts + g4, oy + g2, g2, g2, -g2, g2, clueColour(f, F_ERROR_RIGHT, F_SPENT_RIGHT, fg));
+    drawGt(
+      dr,
+      ox + ts + g4,
+      oy + g2,
+      g2,
+      g2,
+      -g2,
+      g2,
+      clueColour(f, F_ERROR_RIGHT, F_SPENT_RIGHT, fg),
+    );
     dr.drawUpdate({ x: ox + ts, y: oy, w: g, h: ts });
   }
   if (f & F_ADJ_DOWN) {
     dr.drawRect({ x: ox, y: oy + ts, w: ts, h: g }, COL_BACKGROUND);
-    drawGt(dr, ox + g2, oy + ts + g4, g2, g2, g2, -g2, clueColour(f, F_ERROR_DOWN, F_SPENT_DOWN, fg));
+    drawGt(
+      dr,
+      ox + g2,
+      oy + ts + g4,
+      g2,
+      g2,
+      g2,
+      -g2,
+      clueColour(f, F_ERROR_DOWN, F_SPENT_DOWN, fg),
+    );
     dr.drawUpdate({ x: ox, y: oy + ts, w: ts, h: g });
   }
   if (f & F_ADJ_LEFT) {
     dr.drawRect({ x: ox - g, y: oy, w: g, h: ts }, COL_BACKGROUND);
-    drawGt(dr, ox - g4, oy + g2, -g2, g2, g2, g2, clueColour(f, F_ERROR_LEFT, F_SPENT_LEFT, fg));
+    drawGt(
+      dr,
+      ox - g4,
+      oy + g2,
+      -g2,
+      g2,
+      g2,
+      g2,
+      clueColour(f, F_ERROR_LEFT, F_SPENT_LEFT, fg),
+    );
     dr.drawUpdate({ x: ox - g, y: oy, w: g, h: ts });
   }
 }
@@ -365,7 +401,8 @@ function drawCell(
   else drawGts(dr, ts, ox, oy, flags, COL_TEXT);
 
   if (num > 0) {
-    const colour = flags & DF_IMMUTABLE ? COL_TEXT : flags & F_ERROR ? COL_ERROR : COL_GUESS;
+    const colour =
+      flags & DF_IMMUTABLE ? COL_TEXT : flags & F_ERROR ? COL_ERROR : COL_GUESS;
     dr.drawText(
       { x: ox + Math.floor(ts / 2), y: oy + Math.floor(ts / 2) },
       {
@@ -383,7 +420,15 @@ function drawCell(
 
   // Check & Save mistake overlay (fork addition): an inset red outline.
   if (wrong) {
-    for (const inset of [2, 3]) rectOutline(dr, ox + inset, oy + inset, ts - 2 * inset, ts - 2 * inset, COL_ERROR);
+    for (const inset of [2, 3])
+      rectOutline(
+        dr,
+        ox + inset,
+        oy + inset,
+        ts - 2 * inset,
+        ts - 2 * inset,
+        COL_ERROR,
+      );
   }
 }
 
@@ -442,7 +487,12 @@ function drawHints(
 /** The pencil-mode indicator: the shared diagonal pencil glyph, drawn in the
  * empty top-right border corner (outside the grid, never overlapping a cell or a
  * gap clue) — the same corner Towers uses, via the same {@link drawPencilGlyph}. */
-function drawPencilIndicator(dr: GameDrawing, order: number, ts: number, on: boolean): void {
+function drawPencilIndicator(
+  dr: GameDrawing,
+  order: number,
+  ts: number,
+  on: boolean,
+): void {
   const b = border(ts);
   const ox = drawSize(order, ts) - b;
   dr.drawRect({ x: ox, y: 0, w: b, h: b }, COL_BACKGROUND);
@@ -485,7 +535,10 @@ export function redraw(
   ds.wrong.packCells(mistakes, index);
 
   const hchanged =
-    ds.hx !== ui.hx || ds.hy !== ui.hy || ds.hshow !== ui.hshow || ds.hpencil !== ui.hpencil;
+    ds.hx !== ui.hx ||
+    ds.hy !== ui.hy ||
+    ds.hshow !== ui.hshow ||
+    ds.hpencil !== ui.hpencil;
 
   for (let x = 0; x < o; x++) {
     for (let y = 0; y < o; y++) {

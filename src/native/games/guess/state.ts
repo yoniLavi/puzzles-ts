@@ -8,8 +8,8 @@
  */
 
 import type { GameStatus } from "../../../puzzle/types.ts";
-import { type RandomState, randomUpto } from "../../random/index.ts";
 import { bin2hex, hex2bin, obfuscateBitmap } from "../../engine/obfuscate.ts";
+import { type RandomState, randomUpto } from "../../random/index.ts";
 
 // --- feedback codes (upstream FEEDBACK_*) -----------------------------
 
@@ -110,7 +110,13 @@ export function cloneState(s: GuessState): GuessState {
 
 export function defaultParams(): GuessParams {
   // The canonical Mastermind ruleset.
-  return { ncolours: 6, npegs: 4, nguesses: 10, allowBlank: false, allowMultiple: true };
+  return {
+    ncolours: 6,
+    npegs: 4,
+    nguesses: 10,
+    allowBlank: false,
+    allowMultiple: true,
+  };
 }
 
 export interface GuessPreset {
@@ -119,8 +125,26 @@ export interface GuessPreset {
 }
 
 export const GUESS_PRESETS: GuessPreset[] = [
-  { name: "Standard", params: { ncolours: 6, npegs: 4, nguesses: 10, allowBlank: false, allowMultiple: true } },
-  { name: "Super", params: { ncolours: 8, npegs: 5, nguesses: 12, allowBlank: false, allowMultiple: true } },
+  {
+    name: "Standard",
+    params: {
+      ncolours: 6,
+      npegs: 4,
+      nguesses: 10,
+      allowBlank: false,
+      allowMultiple: true,
+    },
+  },
+  {
+    name: "Super",
+    params: {
+      ncolours: 8,
+      npegs: 5,
+      nguesses: 12,
+      allowBlank: false,
+      allowMultiple: true,
+    },
+  },
 ];
 
 export function presets() {

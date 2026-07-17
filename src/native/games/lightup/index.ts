@@ -280,7 +280,12 @@ function buildHighlights(f: LightupFiring): LightupHint {
     case "clueSatisfied":
       // The placed bulbs are the premise; they are lit, so the renderer
       // rings them. The clue itself is cued by its recoloured digit.
-      return { kind: f.kind, targets: f.cells, area: f.reason.bulbs, clue: f.reason.clue };
+      return {
+        kind: f.kind,
+        targets: f.cells,
+        area: f.reason.bulbs,
+        clue: f.reason.clue,
+      };
     case "clueSaturated":
       // The premise is just the clue's count against its free neighbours,
       // and the free neighbours are all targets — no separate evidence.

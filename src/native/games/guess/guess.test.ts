@@ -5,8 +5,8 @@
  * input mapping.
  */
 import { describe, expect, it } from "vitest";
-import { randomNew } from "../../random/index.ts";
 import { CURSOR_SELECT } from "../../engine/pointer.ts";
+import { randomNew } from "../../random/index.ts";
 import { guessGame } from "./index.ts";
 import {
   defaultParams,
@@ -20,7 +20,10 @@ import {
 
 const ZERO = { x: 0, y: 0 };
 
-function freshGame(seed = "seed-X", params = defaultParams()): { state: GuessState; ui: GuessUi } {
+function freshGame(
+  seed = "seed-X",
+  params = defaultParams(),
+): { state: GuessState; ui: GuessUi } {
   const { desc } = newDesc(params, randomNew(seed));
   const state = newState(params, desc);
   const ui = guessGame.newUi(state);
@@ -102,7 +105,10 @@ describe("changedState (hold-carry)", () => {
   it("clears the working row and holds on a win", () => {
     const { state, ui } = freshGame();
     ui.holds[0] = true;
-    const next = guessGame.executeMove(state, submit(state.solution.slice(), [true, false, false, false]));
+    const next = guessGame.executeMove(
+      state,
+      submit(state.solution.slice(), [true, false, false, false]),
+    );
     guessGame.changedState?.(ui, state, next);
     expect(ui.currPegs).toEqual([0, 0, 0, 0]);
     expect(ui.holds.every((h) => !h)).toBe(true);

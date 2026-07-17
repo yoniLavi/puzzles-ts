@@ -424,8 +424,10 @@ export function checkComplete(state: UnequalState, errFlags?: Int32Array): numbe
 
       // check_num_error: duplicates in the same row / column.
       let dup = false;
-      for (let yy = 0; yy < o; yy++) if (yy !== y && grid[yy * o + x] === val) dup = true;
-      for (let xx = 0; xx < o; xx++) if (xx !== x && grid[y * o + xx] === val) dup = true;
+      for (let yy = 0; yy < o; yy++)
+        if (yy !== y && grid[yy * o + x] === val) dup = true;
+      for (let xx = 0; xx < o; xx++)
+        if (xx !== x && grid[y * o + xx] === val) dup = true;
       if (dup) {
         ret = -1;
         if (errFlags) errFlags[i] |= F_ERROR;

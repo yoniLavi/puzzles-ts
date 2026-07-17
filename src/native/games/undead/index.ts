@@ -20,7 +20,6 @@ import type {
   Point,
   Size,
 } from "../../../puzzle/types.ts";
-import { clearKey } from "../../engine/key-labels.ts";
 import {
   type Game,
   type HintResult,
@@ -31,6 +30,8 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import { clearKey } from "../../engine/key-labels.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -43,7 +44,6 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
@@ -60,7 +60,12 @@ import {
   type UndeadDrawState,
   type UndeadHint,
 } from "./render.ts";
-import { findUndeadSolution, type HintOp, recordUndeadDeductions, type UndeadReason } from "./solver.ts";
+import {
+  findUndeadSolution,
+  type HintOp,
+  recordUndeadDeductions,
+  type UndeadReason,
+} from "./solver.ts";
 import {
   cloneState,
   clueIndex,
@@ -252,7 +257,12 @@ function interpretMove(
     if (xi >= 0 && !common.fixed[xi]) {
       const g = state.guess[xi];
       if (button === LEFT_BUTTON) {
-        if (gx === ui.hx && gy === ui.hy && ui.hshow && (ui.pencilSticky || !ui.hpencil)) {
+        if (
+          gx === ui.hx &&
+          gy === ui.hy &&
+          ui.hshow &&
+          (ui.pencilSticky || !ui.hpencil)
+        ) {
           ui.hshow = false;
         } else {
           ui.hx = gx;
@@ -353,7 +363,11 @@ function executeMove(state: UndeadState, move: UndeadMove): UndeadState {
   return next;
 }
 
-function changedState(ui: UndeadUi, _old: UndeadState | null, newSt: UndeadState): void {
+function changedState(
+  ui: UndeadUi,
+  _old: UndeadState | null,
+  newSt: UndeadState,
+): void {
   if (ui.hshow && ui.hpencil && !ui.hcursor) {
     const stride = newSt.common.w + 2;
     const xi = newSt.common.xinfo[ui.hx + ui.hy * stride];
@@ -364,7 +378,11 @@ function changedState(ui: UndeadUi, _old: UndeadState | null, newSt: UndeadState
   }
 }
 
-function solve(orig: UndeadState, _curr: UndeadState, aux?: string): SolveResult<UndeadMove> {
+function solve(
+  orig: UndeadState,
+  _curr: UndeadState,
+  aux?: string,
+): SolveResult<UndeadMove> {
   const numTotal = orig.common.numTotal;
   if (aux) {
     const placements: number[] = [];
@@ -426,7 +444,8 @@ function monsterName(bit: number): string {
  * "ghost, vampire or zombie". */
 function joinMonsters(bits: number): string {
   const names: string[] = [];
-  for (const b of [MON_GHOST, MON_VAMPIRE, MON_ZOMBIE]) if (bits & b) names.push(monsterName(b));
+  for (const b of [MON_GHOST, MON_VAMPIRE, MON_ZOMBIE])
+    if (bits & b) names.push(monsterName(b));
   if (names.length <= 1) return names[0] ?? "";
   return `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}`;
 }
@@ -447,7 +466,10 @@ function monsterCellXY(common: UndeadState["common"]): { x: number; y: number }[
 
 /** A sightline path's traced cells (mirrors and monster cells) as interior
  * coordinates, shaded as the evidence area (§5.2). */
-function pathCells(common: UndeadState["common"], p: number): { x: number; y: number }[] {
+function pathCells(
+  common: UndeadState["common"],
+  p: number,
+): { x: number; y: number }[] {
   const path = common.paths[p];
   const stride = common.w + 2;
   const cells: { x: number; y: number }[] = [];
@@ -471,7 +493,8 @@ function narrate(
   const list = joinMonsters(bits);
   switch (reason.kind) {
     case "sightline": {
-      if (continues) return `The same sightline rules the ${list} out of this cell too.`;
+      if (continues)
+        return `The same sightline rules the ${list} out of this cell too.`;
       const path = common.paths[reason.path];
       const a = path.sightingsStart;
       const b = path.sightingsEnd;
@@ -496,14 +519,22 @@ function narrate(
 
 /** The evidence area to shade: a sightline shades its whole bounce path; the
  * other deductions have no clean local area (the struck/placed cell carries it). */
-function reasonArea(common: UndeadState["common"], reason: UndeadReason): { x: number; y: number }[] {
+function reasonArea(
+  common: UndeadState["common"],
+  reason: UndeadReason,
+): { x: number; y: number }[] {
   return reason.kind === "sightline" ? pathCells(common, reason.path) : [];
 }
 
 /** True iff some empty cell carries no notes — the board needs a fill-all
  * populate before eliminations have anything to cross out. */
-function anyEmptyLacksNotes(wGuess: Uint8Array, wPen: Uint8Array, numTotal: number): boolean {
-  for (let i = 0; i < numTotal; i++) if (wGuess[i] === MON_NONE && wPen[i] === 0) return true;
+function anyEmptyLacksNotes(
+  wGuess: Uint8Array,
+  wPen: Uint8Array,
+  numTotal: number,
+): boolean {
+  for (let i = 0; i < numTotal; i++)
+    if (wGuess[i] === MON_NONE && wPen[i] === 0) return true;
   return false;
 }
 
@@ -544,7 +575,9 @@ function nextFiring(
   const effPen = (cell: number): number =>
     wPen[cell] || (wGuess[cell] === MON_NONE ? MON_NONE : 0);
   const live = (op: HintOp): boolean =>
-    op.kind === "elim" && wGuess[op.cell] === MON_NONE && (effPen(op.cell) & op.monster) !== 0;
+    op.kind === "elim" &&
+    wGuess[op.cell] === MON_NONE &&
+    (effPen(op.cell) & op.monster) !== 0;
   for (let i = 0; i < ops.length; i++) {
     if (!live(ops[i])) continue;
     const g = ops[i].group;
@@ -580,7 +613,11 @@ function emitFiring(
   common: UndeadState["common"],
 ): void {
   const { ops, reason } = firing;
-  const markOf = (op: HintOp) => ({ x: xyOf[op.cell].x, y: xyOf[op.cell].y, monster: op.monster });
+  const markOf = (op: HintOp) => ({
+    x: xyOf[op.cell].x,
+    y: xyOf[op.cell].y,
+    monster: op.monster,
+  });
 
   if (reason.kind === "sightline") {
     // Group the firing's ops by cell, preserving first-seen order.
@@ -596,7 +633,10 @@ function emitFiring(
       let bits = 0;
       for (const op of cellOps) bits |= op.monster;
       steps.push({
-        move: { type: "pencilStrike", marks: cellOps.map((op) => ({ cell, monster: op.monster })) },
+        move: {
+          type: "pencilStrike",
+          marks: cellOps.map((op) => ({ cell, monster: op.monster })),
+        },
         explanation: narrate(common, reason, bits, leg > 0),
         highlights: { area, targets: [xyOf[cell]], marks: cellOps.map(markOf) },
         continuesPrevious: leg > 0,
@@ -610,7 +650,10 @@ function emitFiring(
   // `forcing` is one cell, one candidate.)
   const monster = reason.kind === "total" ? reason.monster : ops[0].monster;
   steps.push({
-    move: { type: "pencilStrike", marks: ops.map((op) => ({ cell: op.cell, monster: op.monster })) },
+    move: {
+      type: "pencilStrike",
+      marks: ops.map((op) => ({ cell: op.cell, monster: op.monster })),
+    },
     explanation: narrate(common, reason, monster, false),
     highlights: {
       area: [],
@@ -702,7 +745,8 @@ function hint(
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
-      error: "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
     };
   }
   // Undead has no trivial (non-teachable) elimination to fold away, so it takes
@@ -723,7 +767,11 @@ function strikeHighlights(
   return {
     area: prev?.area ?? [],
     targets: marks.map((k) => xyOf[k.cell]),
-    marks: marks.map((k) => ({ x: xyOf[k.cell].x, y: xyOf[k.cell].y, monster: k.monster })),
+    marks: marks.map((k) => ({
+      x: xyOf[k.cell].x,
+      y: xyOf[k.cell].y,
+      monster: k.monster,
+    })),
   };
 }
 
@@ -736,7 +784,9 @@ function hintKeepTrack(
   const sm = step.move;
   if (sm.type === "markAll") return m.type === "markAll" ? "completed" : "off";
   if (sm.type === "set") {
-    return m.type === "set" && m.cell === sm.cell && m.monster === sm.monster ? "completed" : "off";
+    return m.type === "set" && m.cell === sm.cell && m.monster === sm.monster
+      ? "completed"
+      : "off";
   }
   if (sm.type === "pencilStrike") {
     // The player strikes a candidate with a `pencil` toggle.
@@ -749,7 +799,11 @@ function hintKeepTrack(
     const remaining = sm.marks.filter((_, j) => j !== hit);
     if (remaining.length === 0) return "completed";
     step.move = { type: "pencilStrike", marks: remaining };
-    step.highlights = strikeHighlights(monsterCellXY(state.common), step.highlights, remaining);
+    step.highlights = strikeHighlights(
+      monsterCellXY(state.common),
+      step.highlights,
+      remaining,
+    );
     return "onTrack";
   }
   return "off";
@@ -764,7 +818,8 @@ function refreshHintStep(
   const m = step.move;
   if (m.type === "pencilStrike") {
     const live = m.marks.filter(
-      ({ cell, monster }) => state.guess[cell] === MON_NONE && (state.pencils[cell] & monster) !== 0,
+      ({ cell, monster }) =>
+        state.guess[cell] === MON_NONE && (state.pencils[cell] & monster) !== 0,
     );
     if (live.length === 0) return null;
     if (live.length === m.marks.length) return step;

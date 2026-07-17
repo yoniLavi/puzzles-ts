@@ -73,7 +73,13 @@ describe("params codec", () => {
 
 describe("desc codec + wrapping re-derivation", () => {
   it("round-trips a generated desc through validateDesc + newState", () => {
-    const p: NetParams = { w: 5, h: 5, wrapping: false, unique: true, barrierProbability: 0 };
+    const p: NetParams = {
+      w: 5,
+      h: 5,
+      wrapping: false,
+      unique: true,
+      barrierProbability: 0,
+    };
     const { desc, state } = generate(p, "codec-seed");
     expect(validateDesc(p, desc)).toBeNull();
     expect(state.tiles).toHaveLength(25);
@@ -83,7 +89,13 @@ describe("desc codec + wrapping re-derivation", () => {
     // A 3×3 wrapping grid with every toroidal border edge walled: the 'h' walls
     // below the bottom row and the 'v' walls right of the last column together
     // seal the wrap, so newState must report it as non-wrapping.
-    const p: NetParams = { w: 3, h: 3, wrapping: true, unique: false, barrierProbability: 0 };
+    const p: NetParams = {
+      w: 3,
+      h: 3,
+      wrapping: true,
+      unique: false,
+      barrierProbability: 0,
+    };
     const desc = "000v000v0h0h0vh";
     expect(validateDesc(p, desc)).toBeNull();
     expect(newState(p, desc).wrapping).toBe(false);
@@ -137,7 +149,13 @@ describe("generator", () => {
   });
 
   it("the shuffled start is not already solved, and has no loops", () => {
-    const p: NetParams = { w: 6, h: 6, wrapping: false, unique: true, barrierProbability: 0 };
+    const p: NetParams = {
+      w: 6,
+      h: 6,
+      wrapping: false,
+      unique: true,
+      barrierProbability: 0,
+    };
     for (let seed = 0; seed < 4; seed++) {
       const { state } = generate(p, `start-${seed}`);
       expect(isComplete(state)).toBe(false);
@@ -148,7 +166,13 @@ describe("generator", () => {
 });
 
 describe("moves", () => {
-  const p: NetParams = { w: 5, h: 5, wrapping: false, unique: true, barrierProbability: 0 };
+  const p: NetParams = {
+    w: 5,
+    h: 5,
+    wrapping: false,
+    unique: true,
+    barrierProbability: 0,
+  };
   const base = () => generate(p, "moves-seed").state;
 
   it("executeMove is pure (does not mutate the source state)", () => {
@@ -190,9 +214,7 @@ describe("moves", () => {
     // The cursor starts at the centre (2,2); lock that tile, then 'a' rotates it.
     const locked = netGame.executeMove(s, { type: "lock", x: 2, y: 2 });
     const ui = newUi(locked);
-    expect(
-      netGame.interpretMove(locked, ui, null, { x: 0, y: 0 }, 0x61),
-    ).toBeNull();
+    expect(netGame.interpretMove(locked, ui, null, { x: 0, y: 0 }, 0x61)).toBeNull();
   });
 
   it("jumble replays deterministically from its expanded op list", () => {
@@ -245,7 +267,13 @@ describe("moves", () => {
   });
 
   it("Ctrl/Shift+arrow move the source and origin as UI updates", () => {
-    const p2: NetParams = { w: 5, h: 5, wrapping: true, unique: true, barrierProbability: 0 };
+    const p2: NetParams = {
+      w: 5,
+      h: 5,
+      wrapping: true,
+      unique: true,
+      barrierProbability: 0,
+    };
     const { state } = generate(p2, "ui-seed");
     const ui = newUi(state);
     const cx0 = ui.cx;

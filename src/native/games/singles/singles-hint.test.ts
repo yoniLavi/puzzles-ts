@@ -234,7 +234,9 @@ describe("hint", () => {
     // actual numbers, and follows the contradiction arc (the touching pair →
     // shading the target → trapping the corner), not the old confusing "two
     // corner squares".
-    expect(cornerStep?.explanation).toMatch(/^A touching pair of 3s sits at the corner/);
+    expect(cornerStep?.explanation).toMatch(
+      /^A touching pair of 3s sits at the corner/,
+    );
     expect(cornerStep?.explanation).toContain("corner 4");
     expect(cornerStep?.explanation).toContain("boxed in");
     expect(cornerStep?.explanation).not.toContain("two corner squares");
@@ -362,8 +364,7 @@ describe("singles hint render", () => {
       hintUntil: (s) => s.explanation.includes("can't be adjacent"),
     });
     const ops = recording.ops;
-    const colour = (c: number) =>
-      ops.some((o) => "colour" in o && o.colour === c);
+    const colour = (c: number) => ops.some((o) => "colour" in o && o.colour === c);
     expect(colour(COL_HINT_BLACKREF)).toBe(true); // cited black premise ring
     expect(colour(COL_HINT)).toBe(true); // forced cell, a different colour
     expect(COL_HINT_BLACKREF).not.toBe(COL_HINT);
@@ -381,8 +382,6 @@ describe("singles hint render", () => {
       hintUntil: (s) => s.explanation.includes("share a line"),
     });
     const ops = recording.ops;
-    expect(
-      ops.some((o) => "colour" in o && o.colour === COL_HINT_WHITEREF),
-    ).toBe(true);
+    expect(ops.some((o) => "colour" in o && o.colour === COL_HINT_WHITEREF)).toBe(true);
   });
 });

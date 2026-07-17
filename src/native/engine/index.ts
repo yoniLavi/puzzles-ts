@@ -7,9 +7,8 @@
  */
 
 export { mkhighlight, mkhighlightBackground } from "./colour-mkhighlight.ts";
-export { Dsf } from "./dsf.ts";
 export { type BevelBounds, drawRecessedBorder, drawRectOutline } from "./draw.ts";
-export { coord, fromCoord } from "./geometry.ts";
+export { Dsf } from "./dsf.ts";
 export type {
   ActiveHint,
   Game,
@@ -24,6 +23,7 @@ export type {
   UiUpdate,
 } from "./game.ts";
 export { UI_UPDATE } from "./game.ts";
+export { coord, fromCoord } from "./geometry.ts";
 export {
   type EngineCore,
   Midend,

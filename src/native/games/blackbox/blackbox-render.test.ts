@@ -45,7 +45,8 @@ function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
     unclip: () => ops.push({ op: "unclip" }),
     drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
       ops.push({ op: "drawRect", colour: c, x: r.x, y: r.y, w: r.w, h: r.h }),
-    drawLine: (_a: unknown, _b: unknown, c: number) => ops.push({ op: "drawLine", colour: c }),
+    drawLine: (_a: unknown, _b: unknown, c: number) =>
+      ops.push({ op: "drawLine", colour: c }),
     drawPolygon: (p: { x: number; y: number }[], f: number) =>
       ops.push({ op: "drawPolygon", colour: f, x: p[0].x, y: p[0].y }),
     drawCircle: (p: { x: number; y: number }, _r: number, f: number) =>
@@ -62,7 +63,11 @@ function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
 
 const TS = 32;
 
-function makeState(w: number, h: number, balls: Array<[number, number]>): BlackboxState {
+function makeState(
+  w: number,
+  h: number,
+  balls: Array<[number, number]>,
+): BlackboxState {
   const nlasers = 2 * (w + h);
   const grid = new Int32Array((w + 2) * (h + 2));
   for (const [bx, by] of balls) grid[(by + 1) * (w + 2) + (bx + 1)] = BALL_CORRECT;
@@ -104,7 +109,12 @@ describe("Black Box redraw", () => {
     const fullW = TS * (s.w + 2) + 2 * Math.floor(TS / 2);
     expect(
       ops.some(
-        (o) => o.op === "drawRect" && o.colour === COL_BACKGROUND && o.x === 0 && o.y === 0 && o.w === fullW,
+        (o) =>
+          o.op === "drawRect" &&
+          o.colour === COL_BACKGROUND &&
+          o.x === 0 &&
+          o.y === 0 &&
+          o.w === fullW,
       ),
     ).toBe(true);
   });
@@ -139,7 +149,9 @@ describe("Black Box redraw", () => {
     const ds0 = freshDs(s0);
     const r0 = recordingDrawing();
     redraw(r0.dr, ds0, null, s0, 1, freshUi(s0), 0, 0);
-    expect(r0.ops.some((o) => o.op === "drawCircle" && o.colour === COL_BUTTON)).toBe(false);
+    expect(r0.ops.some((o) => o.op === "drawCircle" && o.colour === COL_BUTTON)).toBe(
+      false,
+    );
 
     // Mark the right number of guesses → button appears.
     let s1 = s0;
@@ -148,7 +160,9 @@ describe("Black Box redraw", () => {
     const ds1 = freshDs(s1);
     const r1 = recordingDrawing();
     redraw(r1.dr, ds1, null, s1, 1, freshUi(s1), 0, 0);
-    expect(r1.ops.some((o) => o.op === "drawCircle" && o.colour === COL_BUTTON)).toBe(true);
+    expect(r1.ops.some((o) => o.op === "drawCircle" && o.colour === COL_BUTTON)).toBe(
+      true,
+    );
   });
 
   it("draws the red cross over a wrong guess on reveal", () => {
@@ -165,6 +179,8 @@ describe("Black Box redraw", () => {
     const ds = freshDs(revealed);
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, s, revealed, 1, freshUi(revealed), 0, 0);
-    expect(ops.some((o) => o.op === "drawPolygon" && o.colour === COL_WRONG)).toBe(true);
+    expect(ops.some((o) => o.op === "drawPolygon" && o.colour === COL_WRONG)).toBe(
+      true,
+    );
   });
 });

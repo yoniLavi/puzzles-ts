@@ -366,7 +366,16 @@ export function minesolve(
       if (minesleft === 0 || minesleft === squaresleft) {
         for (let i = 0; i < w * h; i++) {
           if (grid[i] === -2) {
-            knownSquares(w, std, grid, open, i % w, Math.floor(i / w), 1, minesleft !== 0);
+            knownSquares(
+              w,
+              std,
+              grid,
+              open,
+              i % w,
+              Math.floor(i / w),
+              1,
+              minesleft !== 0,
+            );
           }
         }
         continue;

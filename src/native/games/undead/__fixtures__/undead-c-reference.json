@@ -1,13 +1,93 @@
 {
   "version": 1,
   "fixtures": [
-    { "w": 4, "h": 4, "diff": 0, "seed": "undead-trace-0", "desc": "4,4,1,aRRaLRaLdLbL,1,0,0,0,2,1,1,3,0,3,3,0,0,1,0,1", "iterativeSolved": true, "ambiguous": 0, "bruteforceSolved": false, "inconsistent": false },
-    { "w": 4, "h": 4, "diff": 1, "seed": "undead-trace-1", "desc": "3,4,1,bRLRbRLaRaLaRa,0,2,1,0,0,0,1,1,2,0,2,0,0,0,1,1", "iterativeSolved": false, "ambiguous": 1, "bruteforceSolved": true, "inconsistent": false },
-    { "w": 4, "h": 4, "diff": 2, "seed": "undead-trace-2", "desc": "3,3,5,dLcRaRcLR,3,3,2,4,2,4,4,0,0,0,3,4,2,0,0,2", "iterativeSolved": false, "ambiguous": 4, "bruteforceSolved": true, "inconsistent": false },
-    { "w": 5, "h": 5, "diff": 0, "seed": "undead-trace-3", "desc": "3,9,2,LaRaRbRRLhLLaRaLR,0,5,0,3,0,0,0,4,2,0,0,0,3,0,1,0,2,4,2,3", "iterativeSolved": true, "ambiguous": 0, "bruteforceSolved": false, "inconsistent": false },
-    { "w": 5, "h": 5, "diff": 1, "seed": "undead-trace-4", "desc": "6,6,4,gRLRRaLaRRfRRa,2,2,1,0,2,2,0,2,3,0,1,1,0,2,3,2,2,2,3,2", "iterativeSolved": false, "ambiguous": 3, "bruteforceSolved": true, "inconsistent": false },
-    { "w": 5, "h": 5, "diff": 2, "seed": "undead-trace-5", "desc": "4,7,3,LbLRaLeRaRcRLaRRRa,4,1,3,0,0,0,3,0,0,1,1,1,1,0,4,3,6,2,3,1", "iterativeSolved": false, "ambiguous": 6, "bruteforceSolved": true, "inconsistent": false },
-    { "w": 7, "h": 7, "diff": 0, "seed": "undead-trace-6", "desc": "16,10,9,bLaRLRdRLnRLRbLReRbLcRb,6,4,0,3,0,0,0,7,0,0,3,2,1,0,0,2,2,3,7,7,0,0,6,2,6,0,5,6", "iterativeSolved": true, "ambiguous": 0, "bruteforceSolved": false, "inconsistent": false },
-    { "w": 7, "h": 7, "diff": 1, "seed": "undead-trace-7", "desc": "7,15,4,bLLLRaLaRRRRLdRRaLhRRbLRaRRReRLaL,3,3,1,0,0,0,1,3,0,2,4,4,2,1,0,4,0,0,1,3,1,5,0,2,0,2,5,2", "iterativeSolved": true, "ambiguous": 0, "bruteforceSolved": false, "inconsistent": false }
+    {
+      "w": 4,
+      "h": 4,
+      "diff": 0,
+      "seed": "undead-trace-0",
+      "desc": "4,4,1,aRRaLRaLdLbL,1,0,0,0,2,1,1,3,0,3,3,0,0,1,0,1",
+      "iterativeSolved": true,
+      "ambiguous": 0,
+      "bruteforceSolved": false,
+      "inconsistent": false
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "diff": 1,
+      "seed": "undead-trace-1",
+      "desc": "3,4,1,bRLRbRLaRaLaRa,0,2,1,0,0,0,1,1,2,0,2,0,0,0,1,1",
+      "iterativeSolved": false,
+      "ambiguous": 1,
+      "bruteforceSolved": true,
+      "inconsistent": false
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "diff": 2,
+      "seed": "undead-trace-2",
+      "desc": "3,3,5,dLcRaRcLR,3,3,2,4,2,4,4,0,0,0,3,4,2,0,0,2",
+      "iterativeSolved": false,
+      "ambiguous": 4,
+      "bruteforceSolved": true,
+      "inconsistent": false
+    },
+    {
+      "w": 5,
+      "h": 5,
+      "diff": 0,
+      "seed": "undead-trace-3",
+      "desc": "3,9,2,LaRaRbRRLhLLaRaLR,0,5,0,3,0,0,0,4,2,0,0,0,3,0,1,0,2,4,2,3",
+      "iterativeSolved": true,
+      "ambiguous": 0,
+      "bruteforceSolved": false,
+      "inconsistent": false
+    },
+    {
+      "w": 5,
+      "h": 5,
+      "diff": 1,
+      "seed": "undead-trace-4",
+      "desc": "6,6,4,gRLRRaLaRRfRRa,2,2,1,0,2,2,0,2,3,0,1,1,0,2,3,2,2,2,3,2",
+      "iterativeSolved": false,
+      "ambiguous": 3,
+      "bruteforceSolved": true,
+      "inconsistent": false
+    },
+    {
+      "w": 5,
+      "h": 5,
+      "diff": 2,
+      "seed": "undead-trace-5",
+      "desc": "4,7,3,LbLRaLeRaRcRLaRRRa,4,1,3,0,0,0,3,0,0,1,1,1,1,0,4,3,6,2,3,1",
+      "iterativeSolved": false,
+      "ambiguous": 6,
+      "bruteforceSolved": true,
+      "inconsistent": false
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "diff": 0,
+      "seed": "undead-trace-6",
+      "desc": "16,10,9,bLaRLRdRLnRLRbLReRbLcRb,6,4,0,3,0,0,0,7,0,0,3,2,1,0,0,2,2,3,7,7,0,0,6,2,6,0,5,6",
+      "iterativeSolved": true,
+      "ambiguous": 0,
+      "bruteforceSolved": false,
+      "inconsistent": false
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "diff": 1,
+      "seed": "undead-trace-7",
+      "desc": "7,15,4,bLLLRaLaRRRRLdRRaLhRRbLRaRRReRLaL,3,3,1,0,0,0,1,3,0,2,4,4,2,1,0,4,0,0,1,3,1,5,0,2,0,2,5,2",
+      "iterativeSolved": true,
+      "ambiguous": 0,
+      "bruteforceSolved": false,
+      "inconsistent": false
+    }
   ]
 }

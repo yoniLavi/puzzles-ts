@@ -2,9 +2,9 @@
 // generation (completable + par = solver + leniency), fill/solve move
 // semantics and immutability, win/lose status, and input mapping.
 import { describe, expect, it } from "vitest";
-import { randomNew } from "../../random/index.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { CURSOR_RIGHT, CURSOR_SELECT, LEFT_BUTTON } from "../../engine/pointer.ts";
+import { randomNew } from "../../random/index.ts";
 import { executeMove, floodGame } from "./index.ts";
 import { completed, solveMoves } from "./solver.ts";
 import {
@@ -40,7 +40,12 @@ describe("Flood params", () => {
 
   it("decodes c/m flags in either remainder order", () => {
     expect(decodeParams("8x10c4m0")).toEqual({ w: 8, h: 10, colours: 4, leniency: 0 });
-    expect(decodeParams("16x16c6m2")).toEqual({ w: 16, h: 16, colours: 6, leniency: 2 });
+    expect(decodeParams("16x16c6m2")).toEqual({
+      w: 16,
+      h: 16,
+      colours: 6,
+      leniency: 2,
+    });
   });
 
   it("validateParams rejects bad params", () => {
@@ -180,14 +185,26 @@ describe("Flood input mapping", () => {
     const fresh = floodGame.newUi(state);
     // Cell (1,0) holds colour 1; border = ts/2 = 16, ts = 32, so x in
     // [48,80) maps to column 1, y in [16,48) to row 0.
-    const move = floodGame.interpretMove(state, fresh, ds, { x: 56, y: 24 }, LEFT_BUTTON);
+    const move = floodGame.interpretMove(
+      state,
+      fresh,
+      ds,
+      { x: 56, y: 24 },
+      LEFT_BUTTON,
+    );
     expect(move).toEqual({ type: "fill", colour: 1 });
   });
 
   it("ignores a left-click on a same-colour (corner) cell", () => {
     const fresh = floodGame.newUi(state);
     // Cell (0,0) is the corner colour 0.
-    const move = floodGame.interpretMove(state, fresh, ds, { x: 24, y: 24 }, LEFT_BUTTON);
+    const move = floodGame.interpretMove(
+      state,
+      fresh,
+      ds,
+      { x: 24, y: 24 },
+      LEFT_BUTTON,
+    );
     expect(move).toBeNull();
   });
 
@@ -202,7 +219,13 @@ describe("Flood input mapping", () => {
   it("fills the cursor cell on select when it differs", () => {
     const fresh = floodGame.newUi(state);
     floodGame.interpretMove(state, fresh, ds, { x: 0, y: 0 }, CURSOR_RIGHT); // cx=1
-    const move = floodGame.interpretMove(state, fresh, ds, { x: 0, y: 0 }, CURSOR_SELECT);
+    const move = floodGame.interpretMove(
+      state,
+      fresh,
+      ds,
+      { x: 0, y: 0 },
+      CURSOR_SELECT,
+    );
     expect(move).toEqual({ type: "fill", colour: 1 });
   });
 });

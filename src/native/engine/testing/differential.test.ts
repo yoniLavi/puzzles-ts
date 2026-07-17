@@ -7,10 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { type RandomState, randomNew } from "../../random/index.ts";
-import {
-  describeDescDifferential,
-  expectDescMatches,
-} from "./differential.ts";
+import { describeDescDifferential, expectDescMatches } from "./differential.ts";
 
 interface FakeFixture {
   seed: string;
@@ -35,9 +32,7 @@ describe("expectDescMatches", () => {
 
   it("throws when newDesc diverges from the fixture desc", () => {
     const f = FIXTURES[0];
-    expect(() =>
-      expectDescMatches(f, params(f), () => ({ desc: "WRONG" })),
-    ).toThrow();
+    expect(() => expectDescMatches(f, params(f), () => ({ desc: "WRONG" }))).toThrow();
   });
 
   it("threads the mapped params and a seed-derived RandomState into newDesc", () => {

@@ -72,7 +72,9 @@ const minesish: Game<MinesishParams, MinesishState, MinesishMove, null, null> = 
     opened: [...s.opened, m.click],
   }),
   supersededDesc: (s) =>
-    s.layout === null ? null : { desc: `${s.clickedAt},${s.layout}`, privDesc: s.layout },
+    s.layout === null
+      ? null
+      : { desc: `${s.clickedAt},${s.layout}`, privDesc: s.layout },
   status: () => "ongoing",
   textFormat: (s) =>
     `layout=${s.layout} clicked=${s.clickedAt} opened=[${s.opened.join(",")}]`,
@@ -99,10 +101,7 @@ function harness(game = minesish) {
     () => {},
   );
   const gameId = () =>
-    [...notes]
-      .reverse()
-      .find((n) => n.type === "game-id-change")
-      ?.currentGameId;
+    [...notes].reverse().find((n) => n.type === "game-id-change")?.currentGameId;
   const idChanges = () => notes.filter((n) => n.type === "game-id-change").length;
   return { m, notes, gameId, idChanges, board: () => m.formatAsText() };
 }

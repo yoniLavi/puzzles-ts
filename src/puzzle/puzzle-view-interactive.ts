@@ -175,10 +175,7 @@ export class PuzzleViewInteractive extends PuzzleView {
     // Don't claim Ctrl/Cmd+C (copy-as-image) while the user has a text
     // selection — leave it to the browser's native copy so the redirect in
     // `handleBubbledKeyDown` doesn't steal focus and clear the selection.
-    if (
-      (event.key === "Copy" || (event.key === "c" && isCtrl)) &&
-      hasTextSelection()
-    ) {
+    if ((event.key === "Copy" || (event.key === "c" && isCtrl)) && hasTextSelection()) {
       return false;
     }
     return (

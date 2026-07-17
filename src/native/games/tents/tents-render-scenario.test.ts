@@ -17,9 +17,9 @@ import {
   DIFF_TRICKY,
   encodeParams,
   newState,
+  TENT,
   type TentsMove,
   type TentsParams,
-  TENT,
   TREE,
 } from "./state.ts";
 
@@ -38,7 +38,9 @@ describe("tents render scenarios", () => {
     const { recording, size } = renderScenario({ game: tentsGame, id });
 
     // Grid lines in COL_GRID.
-    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_GRID)).toBe(true);
+    expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_GRID)).toBe(
+      true,
+    );
     // A tree leaf (green circle).
     expect(
       recording.ops.some((o) => o.op === "circle" && o.fill === COL_TREELEAF),
@@ -72,9 +74,9 @@ describe("tents render scenarios", () => {
     const { recording } = renderScenario({ game: tentsGame, id, moves });
 
     // The adjacency diamond is a polygon filled COL_ERROR.
-    expect(
-      recording.ops.some((o) => o.op === "polygon" && o.fill === COL_ERROR),
-    ).toBe(true);
+    expect(recording.ops.some((o) => o.op === "polygon" && o.fill === COL_ERROR)).toBe(
+      true,
+    );
   });
 
   it("mistake frame: a wrong tent draws the COL_MISTAKE overlay", () => {

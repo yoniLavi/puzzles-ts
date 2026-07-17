@@ -21,8 +21,6 @@
 import type { DeductionRecord, DeductionRecorder } from "../../engine/latin.ts";
 import type { BlockStructure, SoloState } from "./state.ts";
 import {
-  diag0,
-  diag1,
   DIFF_AMBIGUOUS,
   DIFF_BLOCK,
   DIFF_EXTREME,
@@ -35,6 +33,8 @@ import {
   DIFF_RECURSIVE,
   DIFF_SET,
   DIFF_SIMPLE,
+  diag0,
+  diag1,
   onDiag0,
   onDiag1,
 } from "./state.ts";
@@ -366,11 +366,13 @@ class SolverUsage {
 
     if (this.diag) {
       if (onDiag0(sqindex, cr)) {
-        for (let i = 0; i < cr; i++) if (diag0(i, cr) !== sqindex) this.setCube2(diag0(i, cr), n, 0);
+        for (let i = 0; i < cr; i++)
+          if (diag0(i, cr) !== sqindex) this.setCube2(diag0(i, cr), n, 0);
         this.diag[n - 1] = 1;
       }
       if (onDiag1(sqindex, cr)) {
-        for (let i = 0; i < cr; i++) if (diag1(i, cr) !== sqindex) this.setCube2(diag1(i, cr), n, 0);
+        for (let i = 0; i < cr; i++)
+          if (diag1(i, cr) !== sqindex) this.setCube2(diag1(i, cr), n, 0);
         this.diag[cr + n - 1] = 1;
       }
     }
@@ -559,11 +561,14 @@ class SolverUsage {
             for (let yt = 0; yt < cr; yt++) neighbours[nneighbours++] = yt * cr + xx;
             for (let xt = 0; xt < cr; xt++) neighbours[nneighbours++] = yy * cr + xt;
             const blkIdx = this.blocks.whichblock[yy * cr + xx];
-            for (let yt = 0; yt < cr; yt++) neighbours[nneighbours++] = this.blocks.blocks[blkIdx][yt];
+            for (let yt = 0; yt < cr; yt++)
+              neighbours[nneighbours++] = this.blocks.blocks[blkIdx][yt];
             if (this.diag) {
               const sqindex = yy * cr + xx;
-              if (onDiag0(sqindex, cr)) for (let i = 0; i < cr; i++) neighbours[nneighbours++] = diag0(i, cr);
-              if (onDiag1(sqindex, cr)) for (let i = 0; i < cr; i++) neighbours[nneighbours++] = diag1(i, cr);
+              if (onDiag0(sqindex, cr))
+                for (let i = 0; i < cr; i++) neighbours[nneighbours++] = diag0(i, cr);
+              if (onDiag1(sqindex, cr))
+                for (let i = 0; i < cr; i++) neighbours[nneighbours++] = diag1(i, cr);
             }
 
             for (let i = 0; i < nneighbours; i++) {
@@ -589,7 +594,8 @@ class SolverUsage {
                 currn === orign &&
                 (xt === x ||
                   yt === y ||
-                  this.blocks.whichblock[yt * cr + xt] === this.blocks.whichblock[y * cr + x] ||
+                  this.blocks.whichblock[yt * cr + xt] ===
+                    this.blocks.whichblock[y * cr + x] ||
                   (this.diag &&
                     ((onDiag0(yt * cr + xt, cr) && onDiag0(y * cr + x, cr)) ||
                       (onDiag1(yt * cr + xt, cr) && onDiag1(y * cr + x, cr)))))
@@ -919,7 +925,11 @@ class SolverUsage {
           for (let n = 0; n < cr; n++) {
             const extraList = this.regionCells(i, n);
             let sum = (cr * (cr + 1)) / 2;
-            const { len: nsquares, filteredSum } = this.filterWholeCages(extraList, kblocks, kclues);
+            const { len: nsquares, filteredSum } = this.filterWholeCages(
+              extraList,
+              kblocks,
+              kclues,
+            );
             sum -= filteredSum;
             if (nsquares === cr || nsquares === 0) continue;
             if (dlev.maxdiff >= DIFF_RECURSIVE) {
@@ -944,7 +954,11 @@ class SolverUsage {
                 finish(DIFF_IMPOSSIBLE);
                 return;
               }
-              this.place(x, y, sum, { kind: "cageIntersect", cells: [{ x, y }], clue: sum });
+              this.place(x, y, sum, {
+                kind: "cageIntersect",
+                cells: [{ x, y }],
+                clue: sum,
+              });
               changed = true;
             }
 
@@ -1118,8 +1132,20 @@ class SolverUsage {
             const line: SoloRegion = { kind: "row", index: y };
             const block: SoloRegion = { kind: "block", index: b };
             if (
-              this.intersect(idx, idx2, rec ? { kind: "intersect", n, confined: line, target: block } : undefined) ||
-              this.intersect(idx2, idx, rec ? { kind: "intersect", n, confined: block, target: line } : undefined)
+              this.intersect(
+                idx,
+                idx2,
+                rec
+                  ? { kind: "intersect", n, confined: line, target: block }
+                  : undefined,
+              ) ||
+              this.intersect(
+                idx2,
+                idx,
+                rec
+                  ? { kind: "intersect", n, confined: block, target: line }
+                  : undefined,
+              )
             ) {
               diff = Math.max(diff, DIFF_INTERSECT);
               continue mainloop;
@@ -1138,8 +1164,20 @@ class SolverUsage {
             const line: SoloRegion = { kind: "col", index: x };
             const block: SoloRegion = { kind: "block", index: b };
             if (
-              this.intersect(idx, idx2, rec ? { kind: "intersect", n, confined: line, target: block } : undefined) ||
-              this.intersect(idx2, idx, rec ? { kind: "intersect", n, confined: block, target: line } : undefined)
+              this.intersect(
+                idx,
+                idx2,
+                rec
+                  ? { kind: "intersect", n, confined: line, target: block }
+                  : undefined,
+              ) ||
+              this.intersect(
+                idx2,
+                idx,
+                rec
+                  ? { kind: "intersect", n, confined: block, target: line }
+                  : undefined,
+              )
             ) {
               diff = Math.max(diff, DIFF_INTERSECT);
               continue mainloop;
@@ -1159,8 +1197,20 @@ class SolverUsage {
             const line: SoloRegion = { kind: "diag0" };
             const block: SoloRegion = { kind: "block", index: b };
             if (
-              this.intersect(idx, idx2, rec ? { kind: "intersect", n, confined: line, target: block } : undefined) ||
-              this.intersect(idx2, idx, rec ? { kind: "intersect", n, confined: block, target: line } : undefined)
+              this.intersect(
+                idx,
+                idx2,
+                rec
+                  ? { kind: "intersect", n, confined: line, target: block }
+                  : undefined,
+              ) ||
+              this.intersect(
+                idx2,
+                idx,
+                rec
+                  ? { kind: "intersect", n, confined: block, target: line }
+                  : undefined,
+              )
             ) {
               diff = Math.max(diff, DIFF_INTERSECT);
               continue mainloop;
@@ -1178,8 +1228,20 @@ class SolverUsage {
             const line: SoloRegion = { kind: "diag1" };
             const block: SoloRegion = { kind: "block", index: b };
             if (
-              this.intersect(idx, idx2, rec ? { kind: "intersect", n, confined: line, target: block } : undefined) ||
-              this.intersect(idx2, idx, rec ? { kind: "intersect", n, confined: block, target: line } : undefined)
+              this.intersect(
+                idx,
+                idx2,
+                rec
+                  ? { kind: "intersect", n, confined: line, target: block }
+                  : undefined,
+              ) ||
+              this.intersect(
+                idx2,
+                idx,
+                rec
+                  ? { kind: "intersect", n, confined: block, target: line }
+                  : undefined,
+              )
             ) {
               diff = Math.max(diff, DIFF_INTERSECT);
               continue mainloop;
@@ -1192,10 +1254,13 @@ class SolverUsage {
       // Blockwise set elimination.
       for (let b = 0; b < cr; b++) {
         for (let i = 0; i < cr; i++)
-          for (let n = 1; n <= cr; n++) idx[i * cr + n - 1] = this.blocks.blocks[b][i] * cr + n - 1;
+          for (let n = 1; n <= cr; n++)
+            idx[i * cr + n - 1] = this.blocks.blocks[b][i] * cr + n - 1;
         const ret = this.set_(
           idx,
-          this.recorder ? { kind: "set", region: { kind: "block", index: b } } : undefined,
+          this.recorder
+            ? { kind: "set", region: { kind: "block", index: b } }
+            : undefined,
         );
         if (ret < 0) {
           finish(DIFF_IMPOSSIBLE);
@@ -1212,7 +1277,9 @@ class SolverUsage {
           for (let n = 1; n <= cr; n++) idx[x * cr + n - 1] = (y * cr + x) * cr + n - 1;
         const ret = this.set_(
           idx,
-          this.recorder ? { kind: "set", region: { kind: "row", index: y } } : undefined,
+          this.recorder
+            ? { kind: "set", region: { kind: "row", index: y } }
+            : undefined,
         );
         if (ret < 0) {
           finish(DIFF_IMPOSSIBLE);
@@ -1229,7 +1296,9 @@ class SolverUsage {
           for (let n = 1; n <= cr; n++) idx[y * cr + n - 1] = (y * cr + x) * cr + n - 1;
         const ret = this.set_(
           idx,
-          this.recorder ? { kind: "set", region: { kind: "col", index: x } } : undefined,
+          this.recorder
+            ? { kind: "set", region: { kind: "col", index: x } }
+            : undefined,
         );
         if (ret < 0) {
           finish(DIFF_IMPOSSIBLE);
@@ -1332,7 +1401,8 @@ class SolverUsage {
 
           runSolver(cr, blocksImmutable, kblocksImmutable, xtype, outgrid, kgrid, dlev);
 
-          if (diff === DIFF_IMPOSSIBLE && dlev.diff !== DIFF_IMPOSSIBLE) grid.set(outgrid);
+          if (diff === DIFF_IMPOSSIBLE && dlev.diff !== DIFF_IMPOSSIBLE)
+            grid.set(outgrid);
 
           if (dlev.diff === DIFF_AMBIGUOUS) diff = DIFF_AMBIGUOUS;
           else if (dlev.diff === DIFF_IMPOSSIBLE) {
@@ -1383,7 +1453,12 @@ export function solveSolo(
   maxkdiff = DIFF_KINTERSECT,
 ): { diff: number; kdiff: number; grid: Int8Array } {
   const grid = s.grid.slice();
-  const dlev: Difficulty = { maxdiff, maxkdiff, diff: DIFF_IMPOSSIBLE, kdiff: DIFF_KSINGLE };
+  const dlev: Difficulty = {
+    maxdiff,
+    maxkdiff,
+    diff: DIFF_IMPOSSIBLE,
+    kdiff: DIFF_KSINGLE,
+  };
   runSolver(
     s.cr,
     s.blocks,

@@ -38,7 +38,8 @@ function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
     unclip: () => ops.push({ op: "unclip" }),
     drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
       ops.push({ op: "drawRect", colour: c, x: r.x, y: r.y, w: r.w, h: r.h }),
-    drawLine: (_a: unknown, _b: unknown, c: number) => ops.push({ op: "drawLine", colour: c }),
+    drawLine: (_a: unknown, _b: unknown, c: number) =>
+      ops.push({ op: "drawLine", colour: c }),
     drawPolygon: (p: { x: number; y: number }[], f: number) =>
       ops.push({ op: "drawPolygon", colour: f, x: p[0].x, y: p[0].y }),
     drawCircle: (p: { x: number; y: number }, r: number, f: number) =>
@@ -75,7 +76,11 @@ describe("Guess redraw", () => {
     redraw(dr, ds, null, s, 1, freshUi(s), 0, 0);
     expect(
       ops.some(
-        (o) => o.op === "drawRect" && o.colour === COL_BACKGROUND && o.w === ds.w && o.h === ds.h,
+        (o) =>
+          o.op === "drawRect" &&
+          o.colour === COL_BACKGROUND &&
+          o.w === ds.w &&
+          o.h === ds.h,
       ),
     ).toBe(true);
   });
@@ -96,7 +101,9 @@ describe("Guess redraw", () => {
     const ui = freshUi(s1);
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, s0, s1, 1, ui, 0, 0);
-    expect(ops.some((o) => o.op === "drawCircle" && o.colour === COL_CORRECTPLACE)).toBe(true);
+    expect(
+      ops.some((o) => o.op === "drawCircle" && o.colour === COL_CORRECTPLACE),
+    ).toBe(true);
   });
 
   it("draws the hold bar on a held active slot", () => {
@@ -106,7 +113,9 @@ describe("Guess redraw", () => {
     ui.holds[0] = true;
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, s, 1, ui, 0, 0);
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_HOLD && o.h === 2)).toBe(true);
+    expect(
+      ops.some((o) => o.op === "drawRect" && o.colour === COL_HOLD && o.h === 2),
+    ).toBe(true);
   });
 
   it("reveals the solution row only once the game is over", () => {
@@ -118,7 +127,10 @@ describe("Guess redraw", () => {
     const { dr: drA, ops: opsA } = recordingDrawing();
     redraw(drA, dsA, null, s0, 1, freshUi(s0), 0, 0);
     const pegCircle = (o: Op) =>
-      o.op === "drawCircle" && o.colour !== undefined && o.colour >= 6 && o.colour <= 15;
+      o.op === "drawCircle" &&
+      o.colour !== undefined &&
+      o.colour >= 6 &&
+      o.colour <= 15;
     expect(opsA.some((o) => pegCircle(o) && (o.y ?? 0) >= dsA.solny)).toBe(false);
 
     // Solved: the solution pegs are revealed in the solution row.

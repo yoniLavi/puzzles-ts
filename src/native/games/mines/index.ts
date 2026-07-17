@@ -11,7 +11,14 @@
  * Logic mirrors the C reference; not a control-flow transliteration.
  */
 
-import type { Colour, ConfigValues, GameStatus, Point, Size } from "../../../puzzle/types.ts";
+import type {
+  Colour,
+  ConfigValues,
+  GameStatus,
+  Point,
+  Size,
+} from "../../../puzzle/types.ts";
+import { fromCoord } from "../../engine/geometry.ts";
 import {
   type Game,
   type HintStep,
@@ -21,11 +28,11 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { fromCoord } from "../../engine/geometry.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
@@ -35,7 +42,6 @@ import {
   MIDDLE_RELEASE,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
-import { gridCursorMove } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 import { minegen } from "./generator.ts";
 import {
@@ -69,8 +75,8 @@ import {
   setTileSize,
 } from "./render.ts";
 import {
-  cloneState,
   COVERED,
+  cloneState,
   decodeDesc,
   decodeParams,
   decodeUi,
@@ -80,12 +86,12 @@ import {
   encodeUi,
   FLAG,
   KILLED,
+  MINE,
   type MineOp,
   type MinesMove,
   type MinesParams,
   type MinesState,
   type MinesUi,
-  MINE,
   QUERY,
   randomStateEncode,
   validateDesc,
@@ -113,7 +119,15 @@ function openSquare(state: MinesState, x: number, y: number): void {
     // === the single deliberate mutation of a shared object (design D1) ===
     // The layout is a memoisation of a deterministic function of the desc's RNG
     // state and this click, so replaying the move log reproduces it exactly.
-    layout.mines = minegen(w, h, layout.n, x, y, layout.unique, layout.rs as RandomState);
+    layout.mines = minegen(
+      w,
+      h,
+      layout.n,
+      x,
+      y,
+      layout.unique,
+      layout.rs as RandomState,
+    );
     layout.startx = x;
     layout.starty = y;
     layout.rs = null;
@@ -577,7 +591,8 @@ export const minesGame: Game<
   },
 
   solve(_orig: MinesState, curr: MinesState): SolveResult<MinesMove> {
-    if (!curr.layout.mines) return { ok: false, error: "Game has not been started yet" };
+    if (!curr.layout.mines)
+      return { ok: false, error: "Game has not been started yet" };
     return { ok: true, move: { type: "solve" } };
   },
 
@@ -681,7 +696,11 @@ export const minesGame: Game<
     ret[COL_HIGHLIGHT] = [1, 1, 1];
     ret[COL_LOWLIGHT] = [(bg[0] * 2) / 3, (bg[1] * 2) / 3, (bg[2] * 2) / 3];
     ret[COL_WRONGNUMBER] = [1, 0.6, 0.6];
-    ret[COL_CURSOR] = [ret[COL_HIGHLIGHT][0], ret[COL_HIGHLIGHT][0] / 2, ret[COL_HIGHLIGHT][0] / 2];
+    ret[COL_CURSOR] = [
+      ret[COL_HIGHLIGHT][0],
+      ret[COL_HIGHLIGHT][0] / 2,
+      ret[COL_HIGHLIGHT][0] / 2,
+    ];
     return ret;
   },
   computeSize(p: MinesParams, tileSize: number): Size {

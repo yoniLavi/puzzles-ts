@@ -13,14 +13,14 @@ import { tentsSolve } from "./solver.ts";
 import {
   BLANK,
   checkCompletion,
-  decodeDesc,
   DIFF_EASY,
   DIFF_TRICKY,
+  decodeDesc,
   encodeDesc,
   encodeParams,
   executeMove,
-  newState,
   NONTENT,
+  newState,
   TENT,
   type TentsParams,
   type TentsState,
@@ -78,22 +78,18 @@ describe("tents desc codec", () => {
 });
 
 describe("tents generator", () => {
-  it(
-    "produces uniquely-solvable boards at exactly their difficulty",
-    () => {
-      for (const [p, seed] of [
-        [{ w: 8, h: 8, diff: DIFF_EASY }, "gen-e"],
-        [{ w: 8, h: 8, diff: DIFF_TRICKY }, "gen-t"],
-        [{ w: 10, h: 10, diff: DIFF_TRICKY }, "gen-t2"],
-      ] as const) {
-        const { state } = genBoard(p, seed);
-        const puzzle = Int8Array.from(state.grid, (v) => (v === TREE ? TREE : 0));
-        expect(tentsSolve(p.w, p.h, puzzle, state.numbers, p.diff).ret).toBe(1);
-        expect(tentsSolve(p.w, p.h, puzzle, state.numbers, p.diff - 1).ret).toBe(2);
-      }
-    },
-    30_000,
-  );
+  it("produces uniquely-solvable boards at exactly their difficulty", () => {
+    for (const [p, seed] of [
+      [{ w: 8, h: 8, diff: DIFF_EASY }, "gen-e"],
+      [{ w: 8, h: 8, diff: DIFF_TRICKY }, "gen-t"],
+      [{ w: 10, h: 10, diff: DIFF_TRICKY }, "gen-t2"],
+    ] as const) {
+      const { state } = genBoard(p, seed);
+      const puzzle = Int8Array.from(state.grid, (v) => (v === TREE ? TREE : 0));
+      expect(tentsSolve(p.w, p.h, puzzle, state.numbers, p.diff).ret).toBe(1);
+      expect(tentsSolve(p.w, p.h, puzzle, state.numbers, p.diff - 1).ret).toBe(2);
+    }
+  }, 30_000);
 
   it("the solution satisfies every completion constraint", () => {
     const p = { w: 10, h: 10, diff: DIFF_EASY };

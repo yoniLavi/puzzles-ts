@@ -129,10 +129,7 @@ function drawTile(
     if (v === -22 || v === -23 || v === -24) {
       v += 20;
       // Highlighted (pressed): flat fill, no bevel.
-      dr.drawRect(
-        { x, y, w: ts, h: ts },
-        bg === COL_BACKGROUND ? COL_BACKGROUND2 : bg,
-      );
+      dr.drawRect({ x, y, w: ts, h: ts }, bg === COL_BACKGROUND ? COL_BACKGROUND2 : bg);
       dr.drawLine({ x, y }, { x: x + ts - 1, y }, COL_LOWLIGHT, 1);
       dr.drawLine({ x, y }, { x, y: y + ts - 1 }, COL_LOWLIGHT, 1);
     } else {
@@ -167,7 +164,12 @@ function drawTile(
       // A question mark (this frontend never sets one, but be faithful).
       dr.drawText(
         { x: x + Math.floor(ts / 2), y: y + Math.floor(ts / 2) },
-        { align: "center", baseline: "mathematical", fontType: "variable", size: Math.floor((ts * 6) / 8) },
+        {
+          align: "center",
+          baseline: "mathematical",
+          fontType: "variable",
+          size: Math.floor((ts * 6) / 8),
+        },
         COL_QUERY,
         "?",
       );
@@ -195,7 +197,12 @@ function drawTile(
     if (v > 0 && v <= 8) {
       dr.drawText(
         { x: x + Math.floor(ts / 2), y: y + Math.floor(ts / 2) },
-        { align: "center", baseline: "mathematical", fontType: "variable", size: Math.floor((ts * 7) / 8) },
+        {
+          align: "center",
+          baseline: "mathematical",
+          fontType: "variable",
+          size: Math.floor((ts * 7) / 8),
+        },
         COL_1 - 1 + v,
         String(v),
       );
@@ -205,11 +212,21 @@ function drawTile(
       const r = Math.floor(ts / 2) - 3;
       dr.drawCircle({ x: cx, y: cy }, Math.floor((5 * r) / 6), COL_MINE, COL_MINE);
       dr.drawRect(
-        { x: cx - Math.floor(r / 6), y: cy - r, w: 2 * Math.floor(r / 6) + 1, h: 2 * r + 1 },
+        {
+          x: cx - Math.floor(r / 6),
+          y: cy - r,
+          w: 2 * Math.floor(r / 6) + 1,
+          h: 2 * r + 1,
+        },
         COL_MINE,
       );
       dr.drawRect(
-        { x: cx - r, y: cy - Math.floor(r / 6), w: 2 * r + 1, h: 2 * Math.floor(r / 6) + 1 },
+        {
+          x: cx - r,
+          y: cy - Math.floor(r / 6),
+          w: 2 * r + 1,
+          h: 2 * Math.floor(r / 6) + 1,
+        },
         COL_MINE,
       );
       dr.drawRect(
@@ -265,8 +282,7 @@ export function redraw(
   let bg: number;
   if (flashTime) {
     const frame = Math.floor(flashTime / FLASH_FRAME);
-    if (frame % 2)
-      bg = ui.flashIsDeath ? COL_BACKGROUND : COL_LOWLIGHT;
+    if (frame % 2) bg = ui.flashIsDeath ? COL_BACKGROUND : COL_LOWLIGHT;
     else bg = ui.flashIsDeath ? COL_BANG : COL_HIGHLIGHT;
   } else {
     bg = COL_BACKGROUND;
@@ -305,7 +321,13 @@ export function redraw(
           for (let dx = -1; dx <= 1; dx++) {
             const nx = x + dx;
             const ny = y + dy;
-            if (nx >= 0 && nx < ds.w && ny >= 0 && ny < ds.h && s.grid[ny * ds.w + nx] === FLAG)
+            if (
+              nx >= 0 &&
+              nx < ds.w &&
+              ny >= 0 &&
+              ny < ds.h &&
+              s.grid[ny * ds.w + nx] === FLAG
+            )
               flags++;
           }
         }

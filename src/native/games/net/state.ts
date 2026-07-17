@@ -134,8 +134,7 @@ export function validateParams(p: NetParams, full: boolean): string | null {
   if (p.w <= 0 || p.h <= 0) return "Width and height must both be greater than zero";
   if (p.w <= 1 && p.h <= 1)
     return "At least one of width and height must be greater than one";
-  if (p.w * p.h > 1_000_000)
-    return "Width times height must not be unreasonably large";
+  if (p.w * p.h > 1_000_000) return "Width times height must not be unreasonably large";
   if (p.barrierProbability < 0) return "Barrier probability may not be negative";
   if (p.barrierProbability > 1) return "Barrier probability may not be greater than 1";
   // A wrapping grid with a dimension of 2 provably cannot have a unique

@@ -13,8 +13,8 @@
  * "this tile touches a loop".
  */
 
-import { DIRECTIONS, offset, opposite } from "../../engine/wires.ts";
 import { findLoops } from "../../engine/findloop.ts";
+import { DIRECTIONS, offset, opposite } from "../../engine/wires.ts";
 
 const LOCKED = 0x10;
 

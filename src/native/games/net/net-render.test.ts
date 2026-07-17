@@ -23,7 +23,10 @@ import {
 import { type NetMove, type NetParams, newState, newUi } from "./state.ts";
 
 /** A reproducible `params:desc` id and the matching state/solve move. */
-function board(p: NetParams, seed: string): { id: string; state: ReturnType<typeof newState>; solveMove: NetMove } {
+function board(
+  p: NetParams,
+  seed: string,
+): { id: string; state: ReturnType<typeof newState>; solveMove: NetMove } {
   const { desc } = newDesc(p, randomNew(seed));
   const id = `${netGame.encodeParams(p, true)}:${desc}`;
   const state = newState(p, desc);
@@ -32,8 +35,20 @@ function board(p: NetParams, seed: string): { id: string; state: ReturnType<type
   return { id, state, solveMove: solveResult.move };
 }
 
-const P5: NetParams = { w: 5, h: 5, wrapping: false, unique: true, barrierProbability: 0 };
-const P5B: NetParams = { w: 5, h: 5, wrapping: false, unique: true, barrierProbability: 1 };
+const P5: NetParams = {
+  w: 5,
+  h: 5,
+  wrapping: false,
+  unique: true,
+  barrierProbability: 0,
+};
+const P5B: NetParams = {
+  w: 5,
+  h: 5,
+  wrapping: false,
+  unique: true,
+  barrierProbability: 1,
+};
 
 describe("net render", () => {
   it("opener frame: draws grid borders, wire polygons and the source box", () => {
@@ -67,13 +82,17 @@ describe("net render", () => {
     const { id } = board(P5, "render-locked");
     const lock: NetMove = { type: "lock", x: 2, y: 2 };
     const { recording } = renderScenario({ game: netGame, id, moves: [lock] });
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_LOCKED)).toBe(true);
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_LOCKED)).toBe(
+      true,
+    );
   });
 
   it("a barrier preset draws red barrier rectangles", () => {
     const { id } = board(P5B, "render-barrier");
     const { recording } = renderScenario({ game: netGame, id });
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_BARRIER)).toBe(true);
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_BARRIER)).toBe(
+      true,
+    );
   });
 
   it("Solve is not celebrated with a flash", () => {

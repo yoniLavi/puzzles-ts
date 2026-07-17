@@ -57,8 +57,12 @@ export function tentsSolve(
           const x2 = x + DX(d);
           const y2 = y + DY(d);
           if (
-            x2 >= 0 && x2 < w && y2 >= 0 && y2 < h &&
-            soln[y2 * w + x2] === TREE && !links[y2 * w + x2]
+            x2 >= 0 &&
+            x2 < w &&
+            y2 >= 0 &&
+            y2 < h &&
+            soln[y2 * w + x2] === TREE &&
+            !links[y2 * w + x2]
           ) {
             if (linkd) break; // found more than one
             linkd = d;
@@ -89,8 +93,12 @@ export function tentsSolve(
           const x2 = x + DX(d);
           const y2 = y + DY(d);
           if (
-            x2 >= 0 && x2 < w && y2 >= 0 && y2 < h &&
-            soln[y2 * w + x2] === TREE && !links[y2 * w + x2]
+            x2 >= 0 &&
+            x2 < w &&
+            y2 >= 0 &&
+            y2 < h &&
+            soln[y2 * w + x2] === TREE &&
+            !links[y2 * w + x2]
           ) {
             canBeTent = true;
           }
@@ -220,7 +228,11 @@ export function tentsSolve(
         // Valid unless two chosen tents are physically adjacent.
         let valid = true;
         for (let j = 0; j + 1 < n; j++) {
-          if (place[j] === TENT && place[j + 1] === TENT && locs[j + 1] === locs[j] + 1) {
+          if (
+            place[j] === TENT &&
+            place[j + 1] === TENT &&
+            locs[j + 1] === locs[j] + 1
+          ) {
             valid = false;
             break;
           }
@@ -294,7 +306,8 @@ export function tentsSolve(
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       if (soln[y * w + x] === BLANK) return { ret: 2, soln };
-      if (soln[y * w + x] !== NONTENT && links[y * w + x] === 0) return { ret: 2, soln };
+      if (soln[y * w + x] !== NONTENT && links[y * w + x] === 0)
+        return { ret: 2, soln };
     }
   }
   return { ret: 1, soln };

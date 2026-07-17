@@ -27,11 +27,19 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
-import { anticlockwise, clockwise, D, L, offset, opposite, R, U } from "../../engine/wires.ts";
+import {
+  anticlockwise,
+  clockwise,
+  D,
+  L,
+  offset,
+  opposite,
+  R,
+  U,
+} from "../../engine/wires.ts";
 import type { RandomState } from "../../random/index.ts";
 import { randomUpto } from "../../random/index.ts";
 import { newDesc } from "./generator.ts";
-import { netSolver, SOLVER_INCONSISTENT } from "./solver.ts";
 import {
   ANIM_TIME,
   colours,
@@ -45,6 +53,7 @@ import {
   setTileSize,
   WINDOW_OFFSET,
 } from "./render.ts";
+import { netSolver, SOLVER_INCONSISTENT } from "./solver.ts";
 import {
   atof,
   cloneState,
@@ -177,11 +186,7 @@ function interpretMove(
     | "moveCursor";
   let action: Action = "none";
 
-  if (
-    button === LEFT_BUTTON ||
-    button === MIDDLE_BUTTON ||
-    button === RIGHT_BUTTON
-  ) {
+  if (button === LEFT_BUTTON || button === MIDDLE_BUTTON || button === RIGHT_BUTTON) {
     if (ui.curVisible) {
       ui.curVisible = false;
       nullret = UI_UPDATE;

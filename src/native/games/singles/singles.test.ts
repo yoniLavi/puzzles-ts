@@ -13,13 +13,13 @@ import { Midend } from "../../engine/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { newSinglesDesc } from "./generator.ts";
+import { type SinglesMistake, singlesGame } from "./index.ts";
 import { COL_ERROR, COL_GRID } from "./render.ts";
 import { solveSpecific } from "./solver.ts";
-import { singlesGame, type SinglesMistake } from "./index.ts";
 import {
   cloneState,
-  decodeParams,
   DIFF_ANY,
+  decodeParams,
   diffToLevel,
   encodeParams,
   F_BLACK,
@@ -176,8 +176,8 @@ describe("singles render", () => {
       showMistakes: true,
     });
     expect(mistakeCount).toBeGreaterThan(0);
-    expect(
-      recording.ops.some((o) => "colour" in o && o.colour === COL_ERROR),
-    ).toBe(true);
+    expect(recording.ops.some((o) => "colour" in o && o.colour === COL_ERROR)).toBe(
+      true,
+    );
   });
 });

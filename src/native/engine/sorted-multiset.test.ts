@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { SortedMultiset } from "./sorted-multiset.ts";
 import { randomNew, randomUpto } from "../random/index.ts";
+import { SortedMultiset } from "./sorted-multiset.ts";
 
 const numCmp = (a: number, b: number) => (a < b ? -1 : a > b ? 1 : 0);
 

@@ -243,7 +243,13 @@ function solveSinglesep(s: SinglesState, ss: SolverState): number {
           y,
           OP_CIRCLE,
           ss.records
-            ? { kind: "sandwich", ends: [{ x, y }, { x: x + 2, y }] }
+            ? {
+                kind: "sandwich",
+                ends: [
+                  { x, y },
+                  { x: x + 2, y },
+                ],
+              }
             : undefined,
           newGroup(ss),
         );
@@ -257,7 +263,13 @@ function solveSinglesep(s: SinglesState, ss: SolverState): number {
           y + 1,
           OP_CIRCLE,
           ss.records
-            ? { kind: "sandwich", ends: [{ x, y }, { x, y: y + 2 }] }
+            ? {
+                kind: "sandwich",
+                ends: [
+                  { x, y },
+                  { x, y: y + 2 },
+                ],
+              }
             : undefined,
           newGroup(ss),
         );
@@ -279,7 +291,13 @@ function solveDoubles(s: SinglesState, ss: SolverState): number {
       if (x < s.w - 1 && !(s.flags[ii] & F_BLACK) && s.nums[i] === s.nums[ii]) {
         // One firing: this pair forces every other copy in the row black.
         const reason: SinglesReason | undefined = ss.records
-          ? { kind: "pair", pair: [{ x, y }, { x: x + 1, y }] }
+          ? {
+              kind: "pair",
+              pair: [
+                { x, y },
+                { x: x + 1, y },
+              ],
+            }
           : undefined;
         const g = newGroup(ss);
         for (let xy = 0; xy < s.w; xy++) {
@@ -294,7 +312,13 @@ function solveDoubles(s: SinglesState, ss: SolverState): number {
       ii = i + s.w;
       if (y < s.h - 1 && !(s.flags[ii] & F_BLACK) && s.nums[i] === s.nums[ii]) {
         const reason: SinglesReason | undefined = ss.records
-          ? { kind: "pair", pair: [{ x, y }, { x, y: y + 1 }] }
+          ? {
+              kind: "pair",
+              pair: [
+                { x, y },
+                { x, y: y + 1 },
+              ],
+            }
           : undefined;
         const g = newGroup(ss);
         for (let xy = 0; xy < s.h; xy++) {
