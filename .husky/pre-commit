@@ -1,6 +1,9 @@
 # The gate lives in scripts/gate.sh so this hook and `npm run gate` share one
 # implementation (the build-pipeline spec requires they mirror each other).
-# tsc → biome ci (fast fail-fast prefix; lint + format + import order), then
-# `vitest run` ∥ `vite build`
-# concurrently, failing the commit if either fails. See scripts/gate.sh.
-sh scripts/gate.sh
+# tsc → biome (fast fail-fast prefix; lint + format + import order), then
+# `vitest run` ∥ `vite build` concurrently, failing the commit if either fails.
+#
+# GATE_BIOME_STAGED=1 scopes the biome check to the staged files (a commit can
+# only unformat a file it touches); CI and manual `npm run gate` leave it unset
+# and check the whole tree as the backstop. See scripts/gate.sh.
+GATE_BIOME_STAGED=1 sh scripts/gate.sh
