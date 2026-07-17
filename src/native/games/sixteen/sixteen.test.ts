@@ -558,19 +558,13 @@ describe("Sixteen hint", () => {
     // with no recomputation.
     for (const step of result.steps) s = executeMove(s, step.move);
     expect(s.completed).toBeGreaterThan(0);
-    // Generous timeout: the exact bidirectional BFS over ~1.5M states is
-    // inherently ~2-3s solo and much slower under full-suite CPU contention
-    // (seen >29s, and >60s once the mines generator suite joined the parallel
-    // run); a high ceiling keeps a correct-but-slow search from flaking when
-    // other heavy suites run in parallel. Matched to its 120s sibling above.
-  }, 120000);
+    // The exact bidirectional BFS over ~1.5M states is inherently slow; the
+    // assertions above are the guarantee, never the clock. Ceiling: vitest.config.ts.
+  });
 
-  it("a mid-game board with deep displacements hints fast from the forward search", {
-    // Bounded, fixed-board forward search (~0.2s of CPU). The timeout only
-    // absorbs scheduling jitter under full-suite contention; correctness is
-    // asserted by the deterministic fallback-engaged proxy below, not by time.
-    timeout: 30_000,
-  }, () => {
+  // Bounded, fixed-board forward search: correctness is asserted by the
+  // deterministic fallback-engaged proxy below, not by time.
+  it("a mid-game board with deep displacements hints fast from the forward search", () => {
     // Regression (owner-reported, 2026-06-10): 7 tiles out of place in
     // one 7-cycle needing a 12-slide solution. The exact bidirectional
     // fallback (depth cap 10) could never solve it, but used to engage
@@ -614,11 +608,8 @@ describe("Sixteen hint", () => {
     expect(outOfPlace(board)).toBeLessThan(outOfPlace(s));
   });
 
-  it("a previewed two-leg journey tracks and narrates the same tile through both legs", {
-    // Single fixed-board hint computation; the timeout only absorbs scheduling
-    // jitter under full-suite contention (work and assertions are deterministic).
-    timeout: 30_000,
-  }, () => {
+  // Single fixed-board hint computation; work and assertions are deterministic.
+  it("a previewed two-leg journey tracks and narrates the same tile through both legs", () => {
     // Owner flow: the hint says "Working on tile 7: move it to row 1,
     // then column 2". Following it leg by leg must (a) keep the plan alive with
     // "completed" verdicts — including equivalent wrap-around deltas —
@@ -1191,7 +1182,17 @@ describe("the hint marks while the hinted slide animates", () => {
 
       // Paint the still pre-move frame first, so the cache is warm exactly
       // as in the app when the hinted slide begins.
-      sixteenGame.redraw?.(coordRecordingDrawing().dr, ds, null, state, 1, ui, 0, 0, step);
+      sixteenGame.redraw?.(
+        coordRecordingDrawing().dr,
+        ds,
+        null,
+        state,
+        1,
+        ui,
+        0,
+        0,
+        step,
+      );
 
       // Halfway through the slide.
       const anim = sixteenGame.animLength?.(state, after, 1, ui) ?? 0;

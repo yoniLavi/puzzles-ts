@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { divvyRectangle } from "../../engine/divvy.ts";
 import type { HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../random/index.ts";
-import { divvyRectangle } from "../../engine/divvy.ts";
 import { palisadeGame } from "./index.ts";
 import { deduceForcedEdges, newDesc, solver, solveToBorders } from "./solver.ts";
 import {
@@ -89,8 +89,8 @@ describe("palisade divvy", () => {
 });
 
 describe("palisade solver + generator", () => {
-  // Generation is CPU-heavy (the 15×12 preset is ~0.7s/board); the
-  // explicit timeout keeps it robust under parallel-suite load.
+  // Generation is CPU-heavy (the 15×12 preset is ~0.7s/board) and slower still
+  // under parallel-suite load; the verdict below is what matters, not the clock.
   it("generates uniquely solvable boards across presets", () => {
     for (const p of PRESETS) {
       const rng = randomNew(`palisade-gen-${p.w}x${p.h}`);
@@ -102,7 +102,7 @@ describe("palisade solver + generator", () => {
         expect(isSolved(p.w, p.h, p.k, state.clues, sol)).toBe(true);
       }
     }
-  }, 30000);
+  });
 
   it("the solver fills the rim into a valid division", () => {
     const p = { w: 5, h: 5, k: 5 };

@@ -79,7 +79,7 @@ describe("solo recording solver", () => {
         kinds.add((op.reason as HintReason).kind);
     }
     expect([...kinds]).toContain("intersect");
-  }, 30_000);
+  });
 
   it("records the set technique on Advanced boards", () => {
     const kinds = new Set<string>();
@@ -89,7 +89,7 @@ describe("solo recording solver", () => {
         kinds.add((op.reason as HintReason).kind);
     }
     expect([...kinds]).toContain("set");
-  }, 30_000);
+  });
 
   it("records killer-cage reasons on a killer board", () => {
     const kinds = new Set<string>();
@@ -99,7 +99,7 @@ describe("solo recording solver", () => {
         kinds.add((op.reason as HintReason).kind);
     }
     expect([...kinds].some((k) => k.startsWith("cage"))).toBe(true);
-  }, 30_000);
+  });
 });
 
 // --- tier 1: hint plan ------------------------------------------------------
@@ -201,7 +201,7 @@ describe("solo hint", () => {
       }
     }
     expect(checked).toBeGreaterThan(0);
-  }, 30_000);
+  });
 
   it("auto-pencil off teaches more cleanup steps than on", () => {
     const { st } = gen(ADV, "autopencil");
@@ -244,7 +244,7 @@ describe("solo hint", () => {
       }
     }
     expect(checked).toBeGreaterThan(0);
-  }, 30_000);
+  });
 
   it("a naked-single narration only ever appears on a genuine one-candidate cell", () => {
     for (const seed of ["nk0", "nk1", "nk2", "nk3"]) {
@@ -270,7 +270,7 @@ describe("solo hint", () => {
         state = soloGame.executeMove(state, step.move);
       }
     }
-  }, 30_000);
+  });
 
   it("teaches an X-diagonal deduction on an X board", () => {
     let found = false;
@@ -288,7 +288,7 @@ describe("solo hint", () => {
       }
     }
     expect(found).toBe(true);
-  }, 30_000);
+  });
 
   it("refuses on a solved board and on a board with mistakes", () => {
     const { st } = gen(BASIC, "refuse");
@@ -419,5 +419,5 @@ describe("solo hint render", () => {
       true,
     );
     expect(recording.ops).toMatchSnapshot();
-  }, 30_000);
+  });
 });

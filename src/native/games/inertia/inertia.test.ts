@@ -557,7 +557,7 @@ describe("inertia generator", () => {
     }
   });
 
-  it("every generated board is completable", { timeout: 30_000 }, () => {
+  it("every generated board is completable", () => {
     for (let i = 0; i < 5; i++) {
       const p = { w: 10, h: 8 };
       const { desc } = newInertiaDesc(p, randomNew(`solvable-${i}`));

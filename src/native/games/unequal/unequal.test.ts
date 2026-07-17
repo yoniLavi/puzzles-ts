@@ -4,8 +4,8 @@
 
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";
-import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { LEFT_BUTTON } from "../../engine/pointer.ts";
+import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { newUnequalDesc } from "./generator.ts";
 import { unequalGame } from "./index.ts";
@@ -61,11 +61,19 @@ describe("unequal params", () => {
   });
 
   it("rejects invalid params", () => {
-    expect(validateParams({ order: 2, mode: "unequal", diff: "easy" }, true)).not.toBeNull();
-    expect(validateParams({ order: 33, mode: "unequal", diff: "easy" }, true)).not.toBeNull();
+    expect(
+      validateParams({ order: 2, mode: "unequal", diff: "easy" }, true),
+    ).not.toBeNull();
+    expect(
+      validateParams({ order: 33, mode: "unequal", diff: "easy" }, true),
+    ).not.toBeNull();
     // Adjacent below order 5 at Tricky+ is invalid.
-    expect(validateParams({ order: 4, mode: "adjacent", diff: "tricky" }, true)).not.toBeNull();
-    expect(validateParams({ order: 5, mode: "adjacent", diff: "tricky" }, true)).toBeNull();
+    expect(
+      validateParams({ order: 4, mode: "adjacent", diff: "tricky" }, true),
+    ).not.toBeNull();
+    expect(
+      validateParams({ order: 5, mode: "adjacent", diff: "tricky" }, true),
+    ).toBeNull();
   });
 });
 
@@ -107,9 +115,11 @@ describe("unequal generator", () => {
     // Not solvable below the target (a real deduction is needed).
     if (want > 0) {
       const easier = Uint8Array.from(st.immutable);
-      expect(solveUnequal(order, mode, st.clueFlags, easier, want - 1)).not.toBe(want - 1);
+      expect(solveUnequal(order, mode, st.clueFlags, easier, want - 1)).not.toBe(
+        want - 1,
+      );
     }
-  }, 30_000);
+  });
 });
 
 // --- moves -----------------------------------------------------------------
@@ -121,12 +131,24 @@ describe("unequal moves", () => {
     const x = i % st.order;
     const y = (i / st.order) | 0;
 
-    const after = unequalGame.executeMove(st, { type: "set", x, y, n: 3, pencil: false });
+    const after = unequalGame.executeMove(st, {
+      type: "set",
+      x,
+      y,
+      n: 3,
+      pencil: false,
+    });
     expect(after.grid[i]).toBe(3);
 
     const pen = unequalGame.executeMove(st, { type: "set", x, y, n: 2, pencil: true });
     expect(pen.pencil[i] & (1 << 2)).toBeTruthy();
-    const pen2 = unequalGame.executeMove(pen, { type: "set", x, y, n: 2, pencil: true });
+    const pen2 = unequalGame.executeMove(pen, {
+      type: "set",
+      x,
+      y,
+      n: 2,
+      pencil: true,
+    });
     expect(pen2.pencil[i] & (1 << 2)).toBeFalsy();
   });
 
@@ -138,7 +160,14 @@ describe("unequal moves", () => {
     const i = [...all.immutable].indexOf(0);
     const x = i % o;
     const y = (i / o) | 0;
-    const after = unequalGame.executeMove(all, { type: "set", x, y, n: 3, pencil: false, autoElim: true });
+    const after = unequalGame.executeMove(all, {
+      type: "set",
+      x,
+      y,
+      n: 3,
+      pencil: false,
+      autoElim: true,
+    });
     for (let k = 0; k < o; k++) {
       if (k !== x) expect(after.pencil[y * o + k] & (1 << 3)).toBeFalsy();
       if (k !== y) expect(after.pencil[k * o + x] & (1 << 3)).toBeFalsy();
@@ -149,7 +178,11 @@ describe("unequal moves", () => {
     const { st } = gen(5, "unequal", "tricky", "moves-spent");
     // Find a cell with a RIGHT clue.
     let idx = -1;
-    for (let i = 0; i < st.order * st.order; i++) if (st.clueFlags[i] & 4) { idx = i; break; }
+    for (let i = 0; i < st.order * st.order; i++)
+      if (st.clueFlags[i] & 4) {
+        idx = i;
+        break;
+      }
     expect(idx).toBeGreaterThanOrEqual(0);
     const x = idx % st.order;
     const y = (idx / st.order) | 0;
@@ -229,7 +262,9 @@ describe("unequal Solve via Midend", () => {
     expect(me.newGameFromId("5de#unequal-save")).toBeUndefined();
     const st = (me as unknown as { state: UnequalState }).state;
     const i = [...st.immutable].indexOf(0);
-    me.playMoves([{ type: "set", x: i % st.order, y: (i / st.order) | 0, n: 1, pencil: false }]);
+    me.playMoves([
+      { type: "set", x: i % st.order, y: (i / st.order) | 0, n: 1, pencil: false },
+    ]);
     const saved = me.saveGame();
     const me2 = new Midend(unequalGame);
     expect(me2.loadGame(saved)).toBeUndefined();

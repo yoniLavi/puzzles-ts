@@ -154,7 +154,7 @@ describe("a Latin-family placement never falsely claims a naked single", () => {
           state = game.executeMove(state, step.move);
         }
       }
-    }, 30_000);
+    });
   }
 });
 
@@ -162,16 +162,14 @@ describe("a hint can solve from any mid-game position", () => {
   for (const [name, game] of HINT_GAMES) {
     // Heavy, fixed-seed work (re-solve by following hints move-by-move across
     // every seed). The work per seed is bounded and deterministic; only the
-    // wall-clock varies, and it stretches several-fold under full-suite CPU
-    // saturation — flood once crossed the default 5s. An explicit per-test
-    // timeout keeps it from flaking without masking a real regression (the
-    // assertion is on the *result*, not the clock). See the test-discipline
-    // note in AGENTS.md.
+    // wall-clock varies, stretching several-fold under full-suite CPU
+    // saturation. That is why nothing here is clock-gated — the assertion is on
+    // the *result*. See playbook §5.2.
     it(`${name}: following hints one move at a time always reaches solved`, () => {
       for (const seed of SEEDS) {
         // Throws with a per-seed diagnostic on failure.
         expect(() => solveByHints(game, `${name}-${seed}`)).not.toThrow();
       }
-    }, 30_000);
+    });
   }
 });

@@ -9,6 +9,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";
+import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import {
   DEFAULT_BACKGROUND,
@@ -17,7 +18,6 @@ import {
 import { randomNew } from "../../random/index.ts";
 import { newTowersDesc } from "./generator.ts";
 import { towersGame } from "./index.ts";
-import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
 import {
   COL_ERROR,
   COL_PENCIL_BODY,
@@ -151,7 +151,7 @@ describe("towers generator", () => {
       expect(solveTowers(w, st.clues, graded, diffToLevel(diff))).toBe(
         diffToLevel(diff),
       );
-    }, 30_000);
+    });
   }
 });
 
@@ -252,7 +252,11 @@ describe("towers moves", () => {
     });
     let keptSomewhere = false;
     for (let k = 0; k < w; k++) {
-      if (k !== x && !placedPlain.grid[y * w + k] && placedPlain.pencil[y * w + k] & (1 << 3))
+      if (
+        k !== x &&
+        !placedPlain.grid[y * w + k] &&
+        placedPlain.pencil[y * w + k] & (1 << 3)
+      )
         keptSomewhere = true;
     }
     expect(keptSomewhere).toBe(true);
@@ -337,7 +341,13 @@ describe("towers findMistakes", () => {
       n: truth,
       pencil: true,
     });
-    ok = towersGame.executeMove(ok, { type: "set", x: cx, y: cy, n: wrong, pencil: true });
+    ok = towersGame.executeMove(ok, {
+      type: "set",
+      x: cx,
+      y: cy,
+      n: wrong,
+      pencil: true,
+    });
     expect(
       (towersGame.findMistakes?.(ok) ?? []).some((m) => m.x === cx && m.y === cy),
     ).toBe(false);

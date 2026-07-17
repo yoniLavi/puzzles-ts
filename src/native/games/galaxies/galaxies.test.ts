@@ -62,8 +62,8 @@ describe("Galaxies generator integration", () => {
     const diff = solverState(fresh, GalaxiesDiff.Unreasonable);
     expect(diff).toBe(GalaxiesDiff.Unreasonable);
     expect(checkComplete(fresh, false).complete).toBe(true);
-  }, 60_000);
-}, 120_000);
+  });
+});
 
 describe("Galaxies game flow", () => {
   it("newDesc → newState → solve → executeMove(solve) completes the puzzle", () => {

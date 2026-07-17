@@ -36,9 +36,12 @@ describe("showToast", () => {
     // Removal = duration (10ms) + the fade-out fallback (250ms). Poll until
     // it's gone rather than sleeping a fixed margin: a loaded machine that
     // fires the timers late must not flake (and a fast one needn't wait).
+    // The budget is deliberately enormous next to the ~260ms it describes —
+    // `waitFor` returns the moment the toast goes, so headroom is free, and
+    // this box runs deliberately busy.
     await vi.waitFor(
       () => expect(region()?.querySelectorAll("app-toast").length).toBe(0),
-      { timeout: 2000, interval: 20 },
+      { timeout: 30_000, interval: 20 },
     );
   });
 });

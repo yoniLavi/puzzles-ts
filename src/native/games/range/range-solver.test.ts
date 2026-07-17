@@ -58,9 +58,8 @@ describe("fullSolve", () => {
 
 describe("generator", () => {
   // Heavy but seed-deterministic: a single fixed-seed RNG drives a fixed number
-  // of generate+full-solve iterations, so the work is identical every run. The
-  // explicit timeout only absorbs scheduling jitter under full-suite CPU
-  // contention; it cannot hide a regression (which fails an assertion below).
+  // of generate+full-solve iterations, so the work is identical every run —
+  // however long it takes under load. A regression fails an assertion below.
   it("produces valid, uniquely no-recursion-solvable, symmetric boards", () => {
     const rng = randomNew("range-generator");
     for (const p of PRESETS) {
@@ -89,5 +88,5 @@ describe("generator", () => {
         expect(Array.from(sol as Int8Array)).toEqual(Array.from(dup));
       }
     }
-  }, 30_000);
+  });
 });
