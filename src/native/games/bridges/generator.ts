@@ -6,6 +6,8 @@
  * bar. The exact `random_upto` draw order (island, direction, two possible
  * expansion rolls, position offsets, bridge count) is preserved rule-for-rule.
  */
+
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 import { solveFromScratch } from "./solver.ts";
 import {
@@ -29,7 +31,10 @@ export function newBridgesDesc(
   const niReq = Math.max(Math.floor((p.islands * wh) / 100), MIN_SENSIBLE_ISLANDS);
 
   // `generate:` — full restart on any rejection.
+  const attempt = retryLimit(`bridges: generation (${p.w}x${p.h})`);
   while (true) {
+    attempt();
+
     const st = BridgesState.empty(p);
 
     // Pick a first island position randomly.

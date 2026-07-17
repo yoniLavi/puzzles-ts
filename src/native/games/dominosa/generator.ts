@@ -11,6 +11,7 @@
  */
 
 import { dominoLayout } from "../../engine/laydomino.ts";
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 import { DominosaSolver } from "./solver.ts";
@@ -24,9 +25,6 @@ import {
   type DominosaParams,
   encodeNumbers,
 } from "./state.ts";
-
-/** Guard against a faithful-but-divergent generator hanging (§4.6). */
-const MAX_REGENERATE = 200000;
 
 interface AllocVal {
   lo: number;
@@ -319,10 +317,9 @@ export function newDominosaDesc(
   const sc = new DominosaSolver(n);
   const as = new AllocScratch(n);
 
-  let tries = 0;
+  const attempt = retryLimit("dominosa: generation", 200_000);
   for (;;) {
-    if (++tries > MAX_REGENERATE)
-      throw new Error(`dominosa: generation exceeded ${MAX_REGENERATE} attempts`);
+    attempt();
 
     as.makeLayout(rng);
 

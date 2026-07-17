@@ -8,6 +8,7 @@
  * `lightup-differential.test.ts`).
  */
 
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import type { RandomState } from "../../random/index.ts";
 import { randomUpto } from "../../random/index.ts";
@@ -110,10 +111,12 @@ export function setBlacks(
   // Clear, then randomise, the required region.
   cleanBoard(state, false);
   const nblack = Math.floor((rw * rh * params.blackpc) / 100);
+  const pick = retryLimit("lightup: setBlacks", MAX_BLACK_PICKS);
   for (let i = 0; i < nblack; i++) {
     let x: number;
     let y: number;
     do {
+      pick();
       x = randomUpto(rs, rw);
       y = randomUpto(rs, rh);
     } while (state.flags[idx(x, y, w)] & F_BLACK);
@@ -262,6 +265,16 @@ export function stripUnusedNums(state: LightupState): number {
 
 const MAX_GRIDGEN_TRIES = 20;
 
+/** Rounds of the blackpc ramp (each already ≤ MAX_GRIDGEN_TRIES attempts, so
+ * ≈20k grids in total). The ramp stops at 90, after which every round retries
+ * identical parameters — so this is a real escape, not just insurance. */
+const MAX_RAMP_ROUNDS = 1000;
+
+/** Draws allowed when picking a non-black cell. blackpc never exceeds 90, so a
+ * free cell always exists and the rejection sampling ends with probability 1 —
+ * but "probably" is not a bound (see engine/retry-limit.ts). */
+const MAX_BLACK_PICKS = 1_000_000;
+
 /**
  * Generate a puzzle: the most complex grid honouring a unique solution
  * and the difficulty floor/ceiling, ramping the black-square percentage
@@ -281,7 +294,10 @@ export function newLightupDesc(
   const numindices = Array.from({ length: wh }, (_, i) => i);
   shuffle(numindices, rs);
 
+  const round = retryLimit("lightup: generation (blackpc ramp)", MAX_RAMP_ROUNDS);
   for (;;) {
+    round();
+
     for (let tries = 0; tries < MAX_GRIDGEN_TRIES; tries++) {
       setBlacks(news, params, rs); // also cleans the board
       placeLights(news, rs);

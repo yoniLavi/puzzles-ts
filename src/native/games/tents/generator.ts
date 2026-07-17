@@ -12,6 +12,7 @@
  * when the puzzle is solvable at the target difficulty but not one below.
  */
 import { matching } from "../../engine/latin.ts";
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 import { tentsSolve } from "./solver.ts";
 import {
@@ -21,8 +22,8 @@ import {
   DY,
   encodeDesc,
   MAXDIR,
-  type TentsParams,
   TENT,
+  type TentsParams,
   TREE,
 } from "./state.ts";
 
@@ -41,7 +42,10 @@ export function newTentsDesc(
   const treemap = new Int32Array(w * h);
   const numbers = new Int32Array(w + h);
 
+  const attempt = retryLimit("tents: generation");
   while (true) {
+    attempt();
+
     for (let i = 0; i < w * h; i++) {
       order[i] = i;
       treemap[i] = -1;
@@ -64,7 +68,10 @@ export function newTentsDesc(
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           if (
-            x + dx >= 0 && x + dx < w && y + dy >= 0 && y + dy < h &&
+            x + dx >= 0 &&
+            x + dx < w &&
+            y + dy >= 0 &&
+            y + dy < h &&
             grid[(y + dy) * w + (x + dx)] === TENT
           ) {
             ok = false;

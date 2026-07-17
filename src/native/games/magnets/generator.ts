@@ -13,6 +13,7 @@
  * solvable.
  */
 import { dominoLayout } from "../../engine/laydomino.ts";
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import type { RandomState } from "../../random/index.ts";
 import { MagnetsSolver } from "./solver.ts";
@@ -97,7 +98,10 @@ function genGame(w: number, h: number, rs: RandomState): GenBoard {
   const dominoes = dominoLayout(w, h, rs);
 
   let grid: Int32Array;
+  const attempt = retryLimit("magnets: layDominoes");
   while (true) {
+    attempt();
+
     const r = layDominoes(w, h, dominoes, rs);
     if (r.ret !== -1) {
       grid = r.grid;
@@ -205,7 +209,10 @@ export function newMagnetsDesc(
 ): { desc: string; aux: string } {
   let board: GenBoard;
   let aux: string;
+  const attempt = retryLimit("magnets: generation");
   while (true) {
+    attempt();
+
     board = genGame(p.w, p.h, rs);
     aux = "";
     for (let i = 0; i < p.w * p.h; i++) aux += GRID2CHAR[board.grid[i]];

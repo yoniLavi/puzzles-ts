@@ -5,6 +5,7 @@
  * then winnow clues while the deductive solver at the target difficulty
  * can still finish, with a too-easy gate above Trivial.
  */
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 import {
@@ -71,11 +72,17 @@ function solvableAt(view: GridView, grid: Uint8Array, diff: number): boolean {
 export function newDesc(p: UnrulyParams, rng: RandomState): { desc: string } {
   const s = p.w2 * p.h2;
 
+  const attempt = retryLimit("unruly: generation");
   while (true) {
+    attempt();
+
     // Build a valid full grid, retrying until one materialises.
     const view = blankView(p);
     let scratch = newScratch(view);
+    const fill = retryLimit("unruly: fillGame");
     while (!fillGame(view, scratch, rng)) {
+      fill();
+
       view.grid.fill(EMPTY);
       scratch = newScratch(view);
     }

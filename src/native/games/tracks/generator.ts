@@ -6,6 +6,7 @@
  * byte-for-byte for the same seed (playbook §4.3–4.4).
  */
 
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import type { RandomState } from "../../random/index.ts";
 import { randomUpto } from "../../random/index.ts";
@@ -29,8 +30,6 @@ import {
   sESet,
   type TracksParams,
 } from "./state.ts";
-
-const MAX_REGENERATE = 10000;
 
 function clearBoard(b: Board): void {
   b.sflags.fill(0);
@@ -84,7 +83,10 @@ function findDirection(b: Board, rs: RandomState, x: number, y: number): number 
 
 function layPath(b: Board, rs: RandomState): void {
   const { h } = b;
+  const attempt = retryLimit("tracks: layPath");
   for (;;) {
+    attempt();
+
     clearBoard(b);
     const py0 = randomUpto(rs, h);
     b.rowS = py0;
@@ -180,9 +182,9 @@ export function newDesc(
   if (w === 4 && h === 4 && diff > DIFF_EASY) diff = DIFF_EASY;
 
   const b = blankBoard(w, h);
-  let guard = 0;
+  const attempt = retryLimit("tracks: generation");
   for (;;) {
-    if (guard++ > MAX_REGENERATE) throw new Error("Tracks generation did not converge");
+    attempt();
 
     layPath(b, rs);
     for (let x = 0; x < w; x++) {

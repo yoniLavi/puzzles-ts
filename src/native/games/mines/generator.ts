@@ -15,9 +15,15 @@
  *   4. the never-updated `prevret` in the solve-and-perturb loop (below).
  */
 
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { type RandomState, randomBits, randomUpto } from "../../random/index.ts";
 import { minesolve, type OpenCb, type Perturbation, type PerturbCb } from "./solver.ts";
 import { encodeLayoutHex, type MinesParams } from "./state.ts";
+
+/** Solve/perturb rounds allowed within one layout attempt. Each round perturbs
+ * and re-solves, and only a solve (0) or an unsolvable verdict (-1) ends it, so
+ * a layout that does neither would spin for ever. */
+const MAX_SOLVE_ROUNDS = 10_000;
 
 /** Mutable generation context (upstream `struct minectx`, mines.c:1364). The
  * `grid` here is the *real* mine bitmap; `opened` tracks squares the solver has
@@ -325,7 +331,12 @@ export function minegen(
   let success = false;
   let ntries = 0;
 
+  // The guard keeps its own count: `ntries` is load-bearing (it gates
+  // `allowBigPerturbs` below), so nudging it would move the generated board.
+  const attempt = retryLimit("mines: generation");
   do {
+    attempt();
+
     success = false;
     ntries++;
     ret.fill(0);
@@ -369,7 +380,12 @@ export function minegen(
       // "Fixing" it to track the previous perturb count would change the
       // give-up point and diverge the byte-match desc (design D6, trap 4).
       const prevret = -2;
+      // A guard of its own, deliberately: bounding this loop via `prevret`
+      // would resurrect the dead give-up above and change the desc.
+      const round = retryLimit("mines: solve/perturb", MAX_SOLVE_ROUNDS);
       while (true) {
+        round();
+
         solvegrid.fill(-2);
         solvegrid[y * w + x] = mineopen(ctx, x, y); // 0 by deliberate arrangement
 
