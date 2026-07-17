@@ -8,6 +8,7 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -16,11 +17,10 @@ import {
   LEFT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
-  colours,
   COLOUR_NAMES,
+  colours,
   computeSize,
   type FloodDrawState,
   newDrawState,

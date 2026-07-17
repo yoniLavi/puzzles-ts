@@ -36,7 +36,9 @@ describe("Signpost render scenarios", () => {
     // Immutable numbers are text.
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);
     // The grid frame line.
-    expect(recording.ops.some((o) => "colour" in o && o.colour === COL_GRID)).toBe(true);
+    expect(recording.ops.some((o) => "colour" in o && o.colour === COL_GRID)).toBe(
+      true,
+    );
     expect(size.w).toBeGreaterThan(0);
 
     expect(recording.ops).toMatchSnapshot();
@@ -84,8 +86,8 @@ describe("Signpost render scenarios", () => {
 
     expect(mistakeCount).toBeGreaterThan(0);
     // The offending cell's number is drawn in the error colour.
-    expect(
-      recording.ops.some((o) => o.op === "text" && o.colour === COL_ERROR),
-    ).toBe(true);
+    expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_ERROR)).toBe(
+      true,
+    );
   });
 });

@@ -28,7 +28,12 @@
  */
 import { describe, expect, it } from "vitest";
 import cReference from "./__fixtures__/undead-c-reference.json" with { type: "json" };
-import { findUndeadSolution, gradeUndead, isUniquelySolvable, solveDeductive } from "./solver.ts";
+import {
+  findUndeadSolution,
+  gradeUndead,
+  isUniquelySolvable,
+  solveDeductive,
+} from "./solver.ts";
 import { diffFromLevel, MON_NONE, newState, type UndeadParams } from "./state.ts";
 
 interface Fixture {

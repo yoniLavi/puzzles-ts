@@ -334,7 +334,13 @@ function solverCommon(solver: LatinSolver, ctx: KeenCtx, diff: number): number {
                     x: (pos / w) | 0,
                     y: pos % w,
                     n: j,
-                    reason: { kind: "cageLine", op, value, cells: getCageCells(), horizontal },
+                    reason: {
+                      kind: "cageLine",
+                      op,
+                      value,
+                      cells: getCageCells(),
+                      horizontal,
+                    },
                     group: solver.group,
                   });
                 }

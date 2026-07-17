@@ -103,7 +103,10 @@ describe("Flood redraw", () => {
   it("superimposes the victory rainbow when a completed board flashes", () => {
     // A solved single-colour board; the rainbow recolours cells near the
     // corner, so multiple distinct play colours are drawn.
-    const base = newState({ w: 5, h: 5, colours: 6, leniency: 0 }, `${"0".repeat(25)},9`);
+    const base = newState(
+      { w: 5, h: 5, colours: 6, leniency: 0 },
+      `${"0".repeat(25)},9`,
+    );
     const state: FloodState = { ...base, complete: true, moves: 3 };
     const ds = freshDs(state);
     const { dr, ops } = recordingDrawing();

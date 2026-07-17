@@ -585,15 +585,20 @@ export function dosolve(
 export function deduceHintPlan(state: LightupState): LightupFiring[] {
   const work = cloneState(state);
   const firings: LightupFiring[] = [];
-  dosolve(work, F_SOLVE_FORCEUNIQUE | F_SOLVE_DISCOUNTSETS, null, (kind, cells, reason) => {
-    firings.push({
-      kind,
-      cells,
-      reason,
-      flags: work.flags.slice(),
-      lights: work.lights.slice(),
-    });
-  });
+  dosolve(
+    work,
+    F_SOLVE_FORCEUNIQUE | F_SOLVE_DISCOUNTSETS,
+    null,
+    (kind, cells, reason) => {
+      firings.push({
+        kind,
+        cells,
+        reason,
+        flags: work.flags.slice(),
+        lights: work.lights.slice(),
+      });
+    },
+  );
   return firings;
 }
 

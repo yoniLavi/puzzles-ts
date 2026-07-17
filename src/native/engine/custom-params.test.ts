@@ -5,10 +5,10 @@ import { beforeAll, describe, expect, it } from "vitest";
 // `isolate: false` a sibling file (worker-adapter) may have reset the
 // shared registry after this module's import-time registration ran.
 import { registerAllGames } from "../games/index.ts";
+import { TS_PORTED_PUZZLE_IDS } from "../games/ts-ported-ids.ts";
 import type { Game, ParamConfigItem, PresetMenu } from "./game.ts";
 import { Midend } from "./midend.ts";
 import { getTsGame } from "./registry.ts";
-import { TS_PORTED_PUZZLE_IDS } from "../games/ts-ported-ids.ts";
 
 beforeAll(registerAllGames);
 

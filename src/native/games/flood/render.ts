@@ -1,12 +1,15 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import {
-  drawRecessedBorder as drawBevel,
-  drawRectOutline,
-} from "../../engine/draw.ts";
+import { drawRecessedBorder as drawBevel, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { fill } from "./solver.ts";
-import { FILLX, FILLY, type FloodMove, type FloodParams, type FloodState } from "./state.ts";
+import {
+  FILLX,
+  FILLY,
+  type FloodMove,
+  type FloodParams,
+  type FloodState,
+} from "./state.ts";
 
 // --- tile-size-derived metrics ----------------------------------------
 
@@ -169,12 +172,7 @@ function drawTile(
   dr.drawUpdate({ x: tx, y: ty, w: ts, h: ts });
 }
 
-function drawRecessedFrame(
-  dr: GameDrawing,
-  w: number,
-  h: number,
-  ts: number,
-): void {
+function drawRecessedFrame(dr: GameDrawing, w: number, h: number, ts: number): void {
   const hw = highlightWidth(ts);
   const sep = sepWidth(ts);
 

@@ -380,7 +380,9 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     // clicked)" (midend.c:991). Every other game's `history[0]` *is*
     // `newState(params, desc)`, so this branch is theirs alone.
     this.history = [
-      this.descSuperseded ? this.game.newState(this.params, this.desc) : this.history[0],
+      this.descSuperseded
+        ? this.game.newState(this.params, this.desc)
+        : this.history[0],
     ];
     this.moveLog = [];
     this.pos = 0;

@@ -163,11 +163,7 @@ function drawArenaTile(
   if (ui.curVisible && ui.curX === gx && ui.curY === gy) gsTile |= FLAG_CURSOR;
 
   if (gsTile !== dsTile || gs.reveal !== ds.reveal || force) {
-    const bg = gs.reveal
-      ? COL_BACKGROUND
-      : gsTile & BALL_LOCK
-        ? COL_LOCK
-        : COL_COVER;
+    const bg = gs.reveal ? COL_BACKGROUND : gsTile & BALL_LOCK ? COL_LOCK : COL_COVER;
 
     dr.drawRect(rect(dx, dy, ts, ts), bg);
     drawRectOutline(dr, dx, dy, ts, ts, COL_GRID);
@@ -182,8 +178,18 @@ function drawArenaTile(
     }
     const ocol = gsTile & FLAG_CURSOR && bcol !== bg ? COL_CURSOR : bcol;
 
-    dr.drawCircle(pt(dx + Math.floor(ts / 2), dy + Math.floor(ts / 2)), ds.crad - 1, ocol, ocol);
-    dr.drawCircle(pt(dx + Math.floor(ts / 2), dy + Math.floor(ts / 2)), ds.crad - 3, bcol, bcol);
+    dr.drawCircle(
+      pt(dx + Math.floor(ts / 2), dy + Math.floor(ts / 2)),
+      ds.crad - 1,
+      ocol,
+      ocol,
+    );
+    dr.drawCircle(
+      pt(dx + Math.floor(ts / 2), dy + Math.floor(ts / 2)),
+      ds.crad - 3,
+      bcol,
+      bcol,
+    );
 
     if (gsTile & FLAG_CURSOR && bcol === bg) drawSquareCursor(dr, ds, dx, dy);
 
@@ -194,12 +200,22 @@ function drawArenaTile(
       const x2 = dx + ts - 3;
       const y2 = dy + ts - 3;
       dr.drawPolygon(
-        [pt(x1 - 1, y1 + 1), pt(x1 + 1, y1 - 1), pt(x2 + 1, y2 - 1), pt(x2 - 1, y2 + 1)],
+        [
+          pt(x1 - 1, y1 + 1),
+          pt(x1 + 1, y1 - 1),
+          pt(x2 + 1, y2 - 1),
+          pt(x2 - 1, y2 + 1),
+        ],
         COL_WRONG,
         COL_WRONG,
       );
       dr.drawPolygon(
-        [pt(x2 + 1, y1 + 1), pt(x2 - 1, y1 - 1), pt(x1 - 1, y2 - 1), pt(x1 + 1, y2 + 1)],
+        [
+          pt(x2 + 1, y1 + 1),
+          pt(x2 - 1, y1 - 1),
+          pt(x1 - 1, y2 - 1),
+          pt(x1 + 1, y2 + 1),
+        ],
         COL_WRONG,
         COL_WRONG,
       );
@@ -271,7 +287,12 @@ function drawLaserTile(
 
       dr.drawText(
         pt(dx + Math.floor(ts / 2), dy + Math.floor(ts / 2)),
-        { align: "center", baseline: "mathematical", fontType: "variable", size: Math.floor(ts / 2) },
+        {
+          align: "center",
+          baseline: "mathematical",
+          fontType: "variable",
+          size: Math.floor(ts / 2),
+        },
         tcol,
         str,
       );
@@ -338,7 +359,8 @@ export function redraw(
   if (isflash !== ds.isflash) force = true;
 
   for (let x = 0; x < state.w; x++)
-    for (let y = 0; y < state.h; y++) drawArenaTile(dr, state, ds, ui, x, y, force, isflash);
+    for (let y = 0; y < state.h; y++)
+      drawArenaTile(dr, state, ds, ui, x, y, force, isflash);
 
   // Which laser to highlight this frame.
   ds.flashLaserno = LASER_EMPTY;
@@ -354,8 +376,18 @@ export function redraw(
     const outline =
       ui.curVisible && ui.curX === 0 && ui.curY === 0 ? COL_CURSOR : COL_BALL;
     dr.clip(rect(b0 - 1, b0 - 1, ts + 1, ts + 1));
-    dr.drawCircle(pt(b0 + ds.crad - 1, b0 + ds.crad - 1), ds.crad - 1, outline, outline);
-    dr.drawCircle(pt(b0 + ds.crad - 1, b0 + ds.crad - 1), ds.crad - 3, COL_BUTTON, COL_BUTTON);
+    dr.drawCircle(
+      pt(b0 + ds.crad - 1, b0 + ds.crad - 1),
+      ds.crad - 1,
+      outline,
+      outline,
+    );
+    dr.drawCircle(
+      pt(b0 + ds.crad - 1, b0 + ds.crad - 1),
+      ds.crad - 3,
+      COL_BUTTON,
+      COL_BUTTON,
+    );
     dr.unclip();
   } else {
     dr.drawRect(rect(b0 - 1, b0 - 1, ts, ts), COL_BACKGROUND);

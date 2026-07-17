@@ -44,9 +44,11 @@ function harness() {
     () => {},
   );
   const status = () =>
-    ([...notes].reverse().find((n) => n.type === "game-state-change") as
-      | Extract<ChangeNotification, { type: "game-state-change" }>
-      | undefined)?.status as GameStatus | undefined;
+    (
+      [...notes].reverse().find((n) => n.type === "game-state-change") as
+        | Extract<ChangeNotification, { type: "game-state-change" }>
+        | undefined
+    )?.status as GameStatus | undefined;
   const statusBar = () =>
     (
       [...notes].reverse().find((n) => n.type === "status-bar-change") as

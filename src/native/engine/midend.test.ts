@@ -810,9 +810,7 @@ describe("Midend hint plan lifecycle", () => {
     m.newGameFromId("t3:g3-0");
 
     const lastMoveCounts = () => {
-      const s = [...notes]
-        .reverse()
-        .find((n) => n.type === "game-state-change") as
+      const s = [...notes].reverse().find((n) => n.type === "game-state-change") as
         | Extract<ChangeNotification, { type: "game-state-change" }>
         | undefined;
       return { current: s?.currentMove, total: s?.totalMoves, canUndo: s?.canUndo };
@@ -946,10 +944,7 @@ describe("Midend re-validates a kept plan (a displayed step is never stale)", ()
     // for a game without `refreshHintStep`, and a stale step can even be
     // illegal to execute (Flood, found by the cross-game overlay guard).
     m.playMoves([{ type: "strike", i: 0 }]);
-    expect(
-      strikeInternals(m).activeHint,
-      "playMoves drops the stored plan",
-    ).toBeNull();
+    expect(strikeInternals(m).activeHint, "playMoves drops the stored plan").toBeNull();
     // Side effects covered 1; strike 2 solves the board. Re-asking
     // recomputes fresh — and refuses on a solved board.
     m.playMoves([{ type: "strike", i: 2 }]);

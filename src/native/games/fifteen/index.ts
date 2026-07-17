@@ -11,6 +11,7 @@ import type {
 } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { workingOn } from "../../engine/hint-vocab.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -21,7 +22,6 @@ import {
   LEFT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { computeHint } from "./solver.ts";
 import {

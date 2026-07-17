@@ -208,7 +208,11 @@ export function encodeLayoutHex(mines: Int8Array, wh: number): string {
 
 /** Decode the `(wh+3)/4`-nibble hex tail of a public/private desc back into a
  * mine bitmap (upstream `new_game`, mines.c:2336). `masked` de-obfuscates. */
-export function decodeLayoutBitmap(hex: string, wh: number, masked: boolean): Int8Array {
+export function decodeLayoutBitmap(
+  hex: string,
+  wh: number,
+  masked: boolean,
+): Int8Array {
   const bmp = new Uint8Array((wh + 7) >> 3);
   const nnib = (wh + 3) >> 2;
   for (let i = 0; i < nnib; i++) {
@@ -241,14 +245,12 @@ export function validateDesc(p: MinesParams, desc: string): string | null {
       i++;
     }
     if (n > wh - 9) return "Too many mines for grid size";
-    if (desc[i] !== ",")
-      return "No ',' after initial x-coordinate in game description";
+    if (desc[i] !== ",") return "No ',' after initial x-coordinate in game description";
     i++;
     if (desc[i] !== "u" && desc[i] !== "a")
       return "No uniqueness specifier in game description";
     i++;
-    if (desc[i] !== ",")
-      return "No ',' after uniqueness specifier in game description";
+    if (desc[i] !== ",") return "No ',' after uniqueness specifier in game description";
     // rest (the encoded RNG state) is ignored
     return null;
   }
@@ -260,8 +262,7 @@ export function validateDesc(p: MinesParams, desc: string): string | null {
       i++;
     }
     if (x < 0 || x >= p.w) return "Initial x-coordinate was out of range";
-    if (desc[i] !== ",")
-      return "No ',' after initial x-coordinate in game description";
+    if (desc[i] !== ",") return "No ',' after initial x-coordinate in game description";
     i++;
     if (!isDigit(desc[i])) return "No initial y-coordinate in game description";
     let y = 0;
@@ -270,8 +271,7 @@ export function validateDesc(p: MinesParams, desc: string): string | null {
       i++;
     }
     if (y < 0 || y >= p.h) return "Initial y-coordinate was out of range";
-    if (desc[i] !== ",")
-      return "No ',' after initial y-coordinate in game description";
+    if (desc[i] !== ",") return "No ',' after initial y-coordinate in game description";
     i++;
   }
   if (desc[i] === "m" || desc[i] === "u") i++;

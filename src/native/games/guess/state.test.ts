@@ -22,7 +22,13 @@ import {
 
 describe("params", () => {
   it("round-trips encode/decode", () => {
-    const p = { ncolours: 8, npegs: 5, nguesses: 12, allowBlank: false, allowMultiple: true };
+    const p = {
+      ncolours: 8,
+      npegs: 5,
+      nguesses: 12,
+      allowBlank: false,
+      allowMultiple: true,
+    };
     expect(encodeParams(p, true)).toBe("c8p5g12Bm");
     expect(decodeParams("c8p5g12Bm")).toEqual(p);
   });
@@ -48,7 +54,13 @@ describe("params", () => {
     // no duplicates but fewer colours than pegs
     expect(
       validateParams(
-        { ncolours: 3, npegs: 4, nguesses: 10, allowBlank: false, allowMultiple: false },
+        {
+          ncolours: 3,
+          npegs: 4,
+          nguesses: 10,
+          allowBlank: false,
+          allowMultiple: false,
+        },
         true,
       ),
     ).not.toBeNull();
@@ -73,7 +85,13 @@ describe("desc", () => {
   });
 
   it("honours allowMultiple=false (no repeated colour in the solution)", () => {
-    const p = { ncolours: 6, npegs: 4, nguesses: 10, allowBlank: false, allowMultiple: false };
+    const p = {
+      ncolours: 6,
+      npegs: 4,
+      nguesses: 10,
+      allowBlank: false,
+      allowMultiple: false,
+    };
     for (const seed of ["a", "b", "c", "d", "e"]) {
       const { desc } = newDesc(p, randomNew(seed));
       const s = newState(p, desc);
@@ -134,7 +152,13 @@ describe("markPegs (Knuth feedback)", () => {
 });
 
 describe("isMarkable", () => {
-  const base = { ncolours: 6, npegs: 4, nguesses: 10, allowBlank: false, allowMultiple: true };
+  const base = {
+    ncolours: 6,
+    npegs: 4,
+    nguesses: 10,
+    allowBlank: false,
+    allowMultiple: true,
+  };
 
   it("requires all pegs filled by default", () => {
     expect(isMarkable(base, [1, 2, 3, 0])).toBe(false);

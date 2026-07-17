@@ -124,9 +124,9 @@ describe("narration", () => {
         const selfLit =
           hl.kind === "light" && hl.area.length === 0 && !hl.dark && !hl.clue;
         if (!selfLit) {
-          expect(hl.area.length > 0 || hl.dark !== undefined || hl.clue !== undefined).toBe(
-            true,
-          );
+          expect(
+            hl.area.length > 0 || hl.dark !== undefined || hl.clue !== undefined,
+          ).toBe(true);
         }
       }
     }

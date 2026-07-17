@@ -13,6 +13,7 @@
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -22,7 +23,6 @@ import {
   LEFT_RELEASE,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
-import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
   animLength,
@@ -242,8 +242,7 @@ function executeMove(from: BlackboxState, m: BlackboxMove): BlackboxState {
   if (ret.justwrong) {
     ret.justwrong = false;
     for (let i = 0; i < ret.nlasers; i++) {
-      if (ret.exits[i] !== LASER_EMPTY)
-        ret.exits[i] &= ~(LASER_OMITTED | LASER_WRONG);
+      if (ret.exits[i] !== LASER_EMPTY) ret.exits[i] &= ~(LASER_OMITTED | LASER_WRONG);
     }
   }
 
@@ -271,8 +270,7 @@ function executeMove(from: BlackboxState, m: BlackboxMove): BlackboxState {
     case "fire": {
       if (m.rangeno < 0 || m.rangeno >= ret.nlasers)
         throw new Error("Laser index out of range");
-      if (ret.exits[m.rangeno] !== LASER_EMPTY)
-        throw new Error("Laser already fired");
+      if (ret.exits[m.rangeno] !== LASER_EMPTY) throw new Error("Laser already fired");
       fireLaserMove(ret, m.rangeno);
       break;
     }
@@ -370,9 +368,7 @@ export const blackboxGame: Game<
       name: "No. of balls",
       type: "string",
       get: (p) =>
-        p.minballs === p.maxballs
-          ? String(p.minballs)
-          : `${p.minballs}-${p.maxballs}`,
+        p.minballs === p.maxballs ? String(p.minballs) : `${p.minballs}-${p.maxballs}`,
       set: (p, v) => {
         const dash = v.indexOf("-");
         if (dash >= 0) {
@@ -386,9 +382,7 @@ export const blackboxGame: Game<
   ],
   describeParams: (p) => ({
     "no-of-balls":
-      p.minballs === p.maxballs
-        ? String(p.minballs)
-        : `${p.minballs}-${p.maxballs}`,
+      p.minballs === p.maxballs ? String(p.minballs) : `${p.minballs}-${p.maxballs}`,
   }),
 
   newDesc: (p, rng) => newDesc(p, rng),

@@ -32,7 +32,8 @@ import { ACTIVE, computeActive, LOCKED, type NetState, type NetUi } from "./stat
 export const PREFERRED_TILE_SIZE = 32;
 const ROTATE_TIME = 0.13;
 const FLASH_FRAME = 0.07;
-export { ROTATE_TIME as ANIM_TIME, FLASH_FRAME };
+
+export { FLASH_FRAME, ROTATE_TIME as ANIM_TIME };
 
 // Palette, index-for-index with net.c's colour enum.
 export const COL_BACKGROUND = 0;
@@ -215,8 +216,10 @@ function drawTile(
     const gridr = x === ds.w ? tx + borderTl : tx + ts;
     const gridu = y === -1 ? ty + ts - borderBr : ty;
     const gridd = y === ds.h ? ty + borderTl : ty + ts;
-    if (x >= 0) dr.drawRect({ x: tx, y: gridu, w: borderTl, h: gridd - gridu }, COL_BORDER);
-    if (y >= 0) dr.drawRect({ x: gridl, y: ty, w: gridr - gridl, h: borderTl }, COL_BORDER);
+    if (x >= 0)
+      dr.drawRect({ x: tx, y: gridu, w: borderTl, h: gridd - gridu }, COL_BORDER);
+    if (y >= 0)
+      dr.drawRect({ x: gridl, y: ty, w: gridr - gridl, h: borderTl }, COL_BORDER);
     if (x < ds.w)
       dr.drawRect(
         { x: tx + ts - borderBr, y: gridu, w: borderBr, h: gridd - gridu },
@@ -235,11 +238,21 @@ function drawTile(
     const insetOuter = Math.floor(ts / 8);
     const insetInner = insetOuter + lt;
     dr.drawRect(
-      { x: tx + insetOuter, y: ty + insetOuter, w: ts - 2 * insetOuter, h: ts - 2 * insetOuter },
+      {
+        x: tx + insetOuter,
+        y: ty + insetOuter,
+        w: ts - 2 * insetOuter,
+        h: ts - 2 * insetOuter,
+      },
       cursorcol,
     );
     dr.drawRect(
-      { x: tx + insetInner, y: ty + insetInner, w: ts - 2 * insetInner, h: ts - 2 * insetInner },
+      {
+        x: tx + insetInner,
+        y: ty + insetInner,
+        w: ts - 2 * insetInner,
+        h: ts - 2 * insetInner,
+      },
       bg,
     );
   }
@@ -256,7 +269,10 @@ function drawTile(
     for (let d = 1; d < 16; d *= 2, dsh++) {
       const edgetype = (tile >> (TILE_WIRE_ON_EDGE_SHIFT + 2 * dsh)) & 3;
       if (edgetype === 0) continue;
-      if (!(tile & TILE_ROTATING) && ((tile >> (TILE_WIRE_SHIFT + 2 * dsh)) & 3) !== 0) {
+      if (
+        !(tile & TILE_ROTATING) &&
+        ((tile >> (TILE_WIRE_SHIFT + 2 * dsh)) & 3) !== 0
+      ) {
         continue;
       }
 
@@ -351,10 +367,12 @@ function drawTile(
       col = COL_WIRE;
     }
 
-    if (tile & (L << TILE_BARRIER_SHIFT)) dr.drawRect({ x: tx, y: ty, w: btl, h: ts }, col);
+    if (tile & (L << TILE_BARRIER_SHIFT))
+      dr.drawRect({ x: tx, y: ty, w: btl, h: ts }, col);
     if (tile & (R << TILE_BARRIER_SHIFT))
       dr.drawRect({ x: tx + ts - bbr, y: ty, w: bbr, h: ts }, col);
-    if (tile & (U << TILE_BARRIER_SHIFT)) dr.drawRect({ x: tx, y: ty, w: ts, h: btl }, col);
+    if (tile & (U << TILE_BARRIER_SHIFT))
+      dr.drawRect({ x: tx, y: ty, w: ts, h: btl }, col);
     if (tile & (D << TILE_BARRIER_SHIFT))
       dr.drawRect({ x: tx, y: ty + ts - bbr, w: ts, h: bbr }, col);
 
@@ -399,7 +417,7 @@ export function redraw(
   let ty = -1;
   let angle = 0;
   const lastRotateDir =
-    dir === -1 ? oldstate?.lastRotateDir ?? 0 : state.lastRotateDir;
+    dir === -1 ? (oldstate?.lastRotateDir ?? 0) : state.lastRotateDir;
   if (oldstate && animTime < ROTATE_TIME && lastRotateDir) {
     tx = dir === -1 ? oldstate.lastRotateX : state.lastRotateX;
     ty = dir === -1 ? oldstate.lastRotateY : state.lastRotateY;
@@ -410,7 +428,13 @@ export function redraw(
   const frame = flashTime > 0 ? Math.floor(flashTime / FLASH_FRAME) : 0;
 
   const active = computeActive(state, ui.cx, ui.cy);
-  const loops = computeLoops(state.w, state.h, state.tiles, state.barriers, ui.unlockedLoops);
+  const loops = computeLoops(
+    state.w,
+    state.h,
+    state.tiles,
+    state.barriers,
+    ui.unlockedLoops,
+  );
   const { w, h, barriers } = state;
 
   const td = ds.toDraw;

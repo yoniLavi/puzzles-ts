@@ -12,6 +12,7 @@ import type {
 import { UI_UPDATE } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HINT_SETTING_UP, workingOn } from "../../engine/hint-vocab.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -26,7 +27,6 @@ import {
   MOD_SHFT,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
-import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
   planSlides,

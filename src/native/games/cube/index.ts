@@ -12,6 +12,7 @@
 
 import type { GameStatus, Point } from "../../../puzzle/types.ts";
 import type { Game, UiUpdate } from "../../engine/game.ts";
+import { parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -21,7 +22,6 @@ import {
   MOD_MASK,
   MOD_NUM_KEYPAD,
 } from "../../engine/pointer.ts";
-import { parseConfigInt } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { newDesc } from "./generator.ts";
 import { Direction } from "./grid.ts";

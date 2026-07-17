@@ -37,7 +37,9 @@ describe("renderScenario", () => {
     expect(recording.ops.length).toBeGreaterThan(0);
     // The clue digits and the grid rim are drawn.
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_GRID)).toBe(true);
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_GRID)).toBe(
+      true,
+    );
     expect(size.w).toBeGreaterThan(0);
     expect(size.h).toBeGreaterThan(0);
   });
@@ -72,7 +74,9 @@ describe("renderScenario", () => {
       showHint: true,
     });
     expect(hint).toBeDefined();
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
+      true,
+    );
   });
 
   it("walks the plan to a step matching hintUntil", () => {

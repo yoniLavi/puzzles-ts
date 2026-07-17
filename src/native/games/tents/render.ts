@@ -21,12 +21,12 @@ import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
 import {
   BLANK,
   NONTENT,
+  TENT,
   type TentsMistake,
   type TentsMove,
   type TentsParams,
   type TentsState,
   type TentsUi,
-  TENT,
   TREE,
 } from "./state.ts";
 
@@ -85,7 +85,10 @@ const brBorder = (ts: number) => ts + 2;
 const coord = (n: number, ts: number) => n * ts + TLBORDER;
 
 export function computeSize(p: TentsParams, ts: number): Size {
-  return { w: TLBORDER + brBorder(ts) + ts * p.w, h: TLBORDER + brBorder(ts) + ts * p.h };
+  return {
+    w: TLBORDER + brBorder(ts) + ts * p.w,
+    h: TLBORDER + brBorder(ts) + ts * p.h,
+  };
 }
 
 // --- draw state -----------------------------------------------------------
@@ -135,7 +138,8 @@ export function findErrors(
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       if (
-        y + 1 < h && x + 1 < w &&
+        y + 1 < h &&
+        x + 1 < w &&
         ((isTent(grid[y * w + x]) && isTent(grid[(y + 1) * w + (x + 1)])) ||
           (isTent(grid[(y + 1) * w + x]) && isTent(grid[y * w + (x + 1)])))
       ) {
@@ -204,7 +208,8 @@ export function findErrors(
       else if (grid[i] === TENT) tmp[r]--;
     }
     for (let i = 0; i < w * h; i++) {
-      if (grid[i] === TENT && tmp[dsf.canonify(i)] < 0) cell[i] |= 1 << ERR_OVERCOMMITTED;
+      if (grid[i] === TENT && tmp[dsf.canonify(i)] < 0)
+        cell[i] |= 1 << ERR_OVERCOMMITTED;
     }
   }
 
@@ -238,7 +243,8 @@ export function findErrors(
       else if (potTent(grid[i])) tmp[r]--;
     }
     for (let i = 0; i < w * h; i++) {
-      if (grid[i] === TREE && tmp[dsf.canonify(i)] > 0) cell[i] |= 1 << ERR_OVERCOMMITTED;
+      if (grid[i] === TREE && tmp[dsf.canonify(i)] > 0)
+        cell[i] |= 1 << ERR_OVERCOMMITTED;
     }
   }
 
@@ -336,13 +342,29 @@ function drawTile(
     const r1 = Math.floor(ts / 4);
     const r2 = Math.floor(ts / 8);
     dr.drawCircle({ x: cx, y: ty + Math.floor((ts * 4) / 10) }, r1, col, col);
-    dr.drawCircle({ x: cx + Math.floor(ts / 5), y: ty + Math.floor(ts / 4) }, r2, col, col);
-    dr.drawCircle({ x: cx - Math.floor(ts / 5), y: ty + Math.floor(ts / 4) }, r2, col, col);
     dr.drawCircle(
-      { x: cx + Math.floor(ts / 4), y: ty + Math.floor((ts * 6) / 13) }, r2, col, col,
+      { x: cx + Math.floor(ts / 5), y: ty + Math.floor(ts / 4) },
+      r2,
+      col,
+      col,
     );
     dr.drawCircle(
-      { x: cx - Math.floor(ts / 4), y: ty + Math.floor((ts * 6) / 13) }, r2, col, col,
+      { x: cx - Math.floor(ts / 5), y: ty + Math.floor(ts / 4) },
+      r2,
+      col,
+      col,
+    );
+    dr.drawCircle(
+      { x: cx + Math.floor(ts / 4), y: ty + Math.floor((ts * 6) / 13) },
+      r2,
+      col,
+      col,
+    );
+    dr.drawCircle(
+      { x: cx - Math.floor(ts / 4), y: ty + Math.floor((ts * 6) / 13) },
+      r2,
+      col,
+      col,
     );
   } else if (v === TENT) {
     const t = Math.floor(ts / 3);
@@ -387,11 +409,13 @@ function drawTile(
     // A stroked outline via four thin rects (drawRectOutline analogue).
     dr.drawRect({ x: tx + coff, y: ty + coff, w: ts - coff * 2 + 1, h: 1 }, COL_GRID);
     dr.drawRect(
-      { x: tx + coff, y: ty + ts - coff, w: ts - coff * 2 + 1, h: 1 }, COL_GRID,
+      { x: tx + coff, y: ty + ts - coff, w: ts - coff * 2 + 1, h: 1 },
+      COL_GRID,
     );
     dr.drawRect({ x: tx + coff, y: ty + coff, w: 1, h: ts - coff * 2 + 1 }, COL_GRID);
     dr.drawRect(
-      { x: tx + ts - coff, y: ty + coff, w: 1, h: ts - coff * 2 + 1 }, COL_GRID,
+      { x: tx + ts - coff, y: ty + coff, w: 1, h: ts - coff * 2 + 1 },
+      COL_GRID,
     );
   }
 
@@ -425,14 +449,16 @@ export function redraw(
       dr.drawLine(
         { x: coord(0, ts), y: coord(y, ts) },
         { x: coord(w, ts), y: coord(y, ts) },
-        COL_GRID, 1,
+        COL_GRID,
+        1,
       );
     }
     for (let x = 0; x <= w; x++) {
       dr.drawLine(
         { x: coord(x, ts), y: coord(0, ts) },
         { x: coord(x, ts), y: coord(h, ts) },
-        COL_GRID, 1,
+        COL_GRID,
+        1,
       );
     }
     dr.drawUpdate({ x: 0, y: 0, w: size.w, h: size.h });
@@ -446,7 +472,12 @@ export function redraw(
   let errGrid = grid;
   if (ui.dragButton >= 0) {
     errGrid = Int8Array.from(grid);
-    errGrid[ui.dsy * w + ui.dsx] = dragXform(ui, ui.dsx, ui.dsy, errGrid[ui.dsy * w + ui.dsx]);
+    errGrid[ui.dsy * w + ui.dsx] = dragXform(
+      ui,
+      ui.dsx,
+      ui.dsy,
+      errGrid[ui.dsy * w + ui.dsx],
+    );
   }
   const errors = findErrors(w, h, errGrid, numbers);
 
@@ -484,11 +515,21 @@ export function redraw(
       );
       dr.drawText(
         { x: coord(x, ts) + Math.floor(ts / 2), y: coord(h + 1, ts) },
-        { align: "center", baseline: "alphabetic", fontType: "variable", size: numberSize },
+        {
+          align: "center",
+          baseline: "alphabetic",
+          fontType: "variable",
+          size: numberSize,
+        },
         errors.num[x] ? COL_ERROR : COL_GRID,
         String(numbers[x]),
       );
-      dr.drawUpdate({ x: coord(x, ts), y: coord(h, ts) + 1, w: ts, h: brBorder(ts) - 1 });
+      dr.drawUpdate({
+        x: coord(x, ts),
+        y: coord(h, ts) + 1,
+        w: ts,
+        h: brBorder(ts) - 1,
+      });
       ds.numbersDrawn[x] = errors.num[x];
     }
   }
@@ -500,11 +541,21 @@ export function redraw(
       );
       dr.drawText(
         { x: coord(w + 1, ts), y: coord(y, ts) + Math.floor(ts / 2) },
-        { align: "right", baseline: "mathematical", fontType: "variable", size: numberSize },
+        {
+          align: "right",
+          baseline: "mathematical",
+          fontType: "variable",
+          size: numberSize,
+        },
         errors.num[w + y] ? COL_ERROR : COL_GRID,
         String(numbers[w + y]),
       );
-      dr.drawUpdate({ x: coord(w, ts) + 1, y: coord(y, ts), w: brBorder(ts) - 1, h: ts });
+      dr.drawUpdate({
+        x: coord(w, ts) + 1,
+        y: coord(y, ts),
+        w: brBorder(ts) - 1,
+        h: ts,
+      });
       ds.numbersDrawn[w + y] = errors.num[w + y];
     }
   }

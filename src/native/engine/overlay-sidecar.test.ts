@@ -19,7 +19,11 @@ describe("OverlaySidecar", () => {
   it("packs area, target and marks; commit settles exactly that cell", () => {
     const s = new OverlaySidecar(9);
     s.pack(
-      { area: [{ x: 0, y: 0 }], targets: [{ x: 1, y: 0 }], marks: [{ x: 1, y: 0, n: 3 }] },
+      {
+        area: [{ x: 0, y: 0 }],
+        targets: [{ x: 1, y: 0 }],
+        marks: [{ x: 1, y: 0, n: 3 }],
+      },
       idx,
       marks,
     );

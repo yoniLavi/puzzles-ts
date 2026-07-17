@@ -353,7 +353,8 @@ export function executeMove(state: TentsState, move: TentsMove): TentsState {
     usedSolve = true;
     for (let i = 0; i < w * h; i++) if (grid[i] !== TREE) grid[i] = NONTENT;
     for (const idx of move.tents) {
-      if (idx < 0 || idx >= w * h || grid[idx] === TREE) throw new Error("Bad solve move");
+      if (idx < 0 || idx >= w * h || grid[idx] === TREE)
+        throw new Error("Bad solve move");
       grid[idx] = TENT;
     }
   } else {

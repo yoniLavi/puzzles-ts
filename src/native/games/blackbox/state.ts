@@ -208,8 +208,7 @@ export function validateParams(p: BlackboxParams, _full: boolean): string | null
  * x0, y0, …]` as a byte-per-value bitmap, obfuscate, and hex-encode. */
 export function newDesc(p: BlackboxParams, rng: RandomState): { desc: string } {
   let nballs = p.minballs;
-  if (p.maxballs > p.minballs)
-    nballs += randomUpto(rng, p.maxballs - p.minballs + 1);
+  if (p.maxballs > p.minballs) nballs += randomUpto(rng, p.maxballs - p.minballs + 1);
 
   const grid = new Uint8Array(p.w * p.h);
   const bmp = new Uint8Array(nballs * 2 + 2);
@@ -244,8 +243,7 @@ export function validateDesc(p: BlackboxParams, desc: string): string | null {
   for (let i = 0; i < nballs; i++) {
     const x = bmp[(i + 1) * 2];
     const y = bmp[(i + 1) * 2 + 1];
-    if (x < 0 || y < 0 || x >= p.w || y >= p.h)
-      return "Game description is corrupted";
+    if (x < 0 || y < 0 || x >= p.w || y >= p.h) return "Game description is corrupted";
   }
   return null;
 }
@@ -469,7 +467,10 @@ export function checkGuesses(state: BlackboxState, cagey: boolean): number {
     // (1) A fired laser whose recorded result contradicts the guess.
     let n = 0;
     for (let i = 0; i < guesses.nlasers; i++) {
-      if (guesses.exits[i] !== LASER_EMPTY && guesses.exits[i] !== laserExit(guesses, i))
+      if (
+        guesses.exits[i] !== LASER_EMPTY &&
+        guesses.exits[i] !== laserExit(guesses, i)
+      )
         n++;
     }
     if (n) {
@@ -492,7 +493,10 @@ export function checkGuesses(state: BlackboxState, cagey: boolean): number {
     // (2) An unfired laser that would have distinguished guess from real.
     n = 0;
     for (let i = 0; i < guesses.nlasers; i++) {
-      if (guesses.exits[i] === LASER_EMPTY && laserExit(state, i) !== laserExit(guesses, i))
+      if (
+        guesses.exits[i] === LASER_EMPTY &&
+        laserExit(state, i) !== laserExit(guesses, i)
+      )
         n++;
     }
     if (n) {
@@ -579,10 +583,7 @@ export function checkGuesses(state: BlackboxState, cagey: boolean): number {
  * in-range guess count and no reveal/justwrong already showing. */
 export function canReveal(s: BlackboxState): boolean {
   return (
-    s.nguesses >= s.minballs &&
-    s.nguesses <= s.maxballs &&
-    !s.reveal &&
-    !s.justwrong
+    s.nguesses >= s.minballs && s.nguesses <= s.maxballs && !s.reveal && !s.justwrong
   );
 }
 

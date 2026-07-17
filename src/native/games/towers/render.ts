@@ -452,7 +452,17 @@ export function redraw(
         ds.wrong.stale(i)
       ) {
         dr.clip({ x: coord(x - 1, ts), y: coord(y - 1, ts), w: ts, h: ts });
-        drawTile(dr, ts, w, threeD, x - 1, y - 1, tr, ds.wrong.at(i), ds.hint.packed[i]);
+        drawTile(
+          dr,
+          ts,
+          w,
+          threeD,
+          x - 1,
+          y - 1,
+          tr,
+          ds.wrong.at(i),
+          ds.hint.packed[i],
+        );
         if (x > 0)
           drawTile(
             dr,

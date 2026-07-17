@@ -46,10 +46,10 @@ import {
 import { tentsSolve } from "./solver.ts";
 import {
   BLANK,
-  decodeParams,
-  defaultParams,
   DIFF_COUNT,
   DIFF_NAMES,
+  decodeParams,
+  defaultParams,
   encodeParams,
   executeMove,
   NONTENT,
@@ -62,8 +62,8 @@ import {
   type TentsParams,
   type TentsState,
   type TentsUi,
-  textFormat,
   TREE,
+  textFormat,
   validateDesc,
   validateParams,
 } from "./state.ts";

@@ -312,18 +312,35 @@ function drawTile(
   }
   if (x < w && y >= 0) {
     drawClue(
-      dr, ts, x + 1, y, clues[y * W + (x + 1)], (v & ERR_TR) !== 0, (v & HINT_TR) !== 0,
+      dr,
+      ts,
+      x + 1,
+      y,
+      clues[y * W + (x + 1)],
+      (v & ERR_TR) !== 0,
+      (v & HINT_TR) !== 0,
     );
   }
   if (x >= 0 && y < h) {
     drawClue(
-      dr, ts, x, y + 1, clues[(y + 1) * W + x], (v & ERR_BL) !== 0, (v & HINT_BL) !== 0,
+      dr,
+      ts,
+      x,
+      y + 1,
+      clues[(y + 1) * W + x],
+      (v & ERR_BL) !== 0,
+      (v & HINT_BL) !== 0,
     );
   }
   if (x < w && y < h) {
     drawClue(
-      dr, ts, x + 1, y + 1, clues[(y + 1) * W + (x + 1)],
-      (v & ERR_BR) !== 0, (v & HINT_BR) !== 0,
+      dr,
+      ts,
+      x + 1,
+      y + 1,
+      clues[(y + 1) * W + (x + 1)],
+      (v & ERR_BR) !== 0,
+      (v & HINT_BR) !== 0,
     );
   }
 

@@ -173,7 +173,9 @@ describe("the hint mark while the hinted slide animates", () => {
 
       const fills = ops.filter(
         (o) =>
-          o.op === "drawRect" && o.colour === 4 && o.w === TS - 2 * hw &&
+          o.op === "drawRect" &&
+          o.colour === 4 &&
+          o.w === TS - 2 * hw &&
           o.h === TS - 2 * hw,
       );
       // Exactly one hint fill on the frame, and it is mid-flight — in

@@ -6,8 +6,8 @@ import { describe, expect, it } from "vitest";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { newSignpostDesc } from "./generator.ts";
-import { executeMove } from "./moves.ts";
 import { signpostGame } from "./index.ts";
+import { executeMove } from "./moves.ts";
 import { solveState } from "./solver.ts";
 import {
   cloneState,
@@ -40,9 +40,12 @@ describe("signpost params codec", () => {
   });
 
   it("rejects a 1x1 full generation", () => {
-    expect(signpostGame.validateParams({ w: 1, h: 1, forceCornerStart: true }, true)).not
-      .toBeNull();
-    expect(signpostGame.validateParams({ w: 4, h: 4, forceCornerStart: true }, true)).toBeNull();
+    expect(
+      signpostGame.validateParams({ w: 1, h: 1, forceCornerStart: true }, true),
+    ).not.toBeNull();
+    expect(
+      signpostGame.validateParams({ w: 4, h: 4, forceCornerStart: true }, true),
+    ).toBeNull();
   });
 });
 

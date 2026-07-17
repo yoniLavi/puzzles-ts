@@ -64,7 +64,9 @@ describe("Mosaic params", () => {
   });
 
   it("validates size bounds", () => {
-    expect(validateParams({ width: 2, height: 3, aggressive: true }, true)).toBeTruthy();
+    expect(
+      validateParams({ width: 2, height: 3, aggressive: true }, true),
+    ).toBeTruthy();
     expect(validateParams({ width: 3, height: 3, aggressive: true }, true)).toBeNull();
     expect(
       validateParams({ width: 101, height: 100, aggressive: true }, true),
@@ -132,7 +134,9 @@ describe("Mosaic moves", () => {
 
   it("throws on an out-of-bounds toggle", () => {
     const s = newState(P3, ALL_BLACK_DESC);
-    expect(() => executeMove(s, { type: "toggle", x: 3, y: 0, double: false })).toThrow();
+    expect(() =>
+      executeMove(s, { type: "toggle", x: 3, y: 0, double: false }),
+    ).toThrow();
   });
 
   it("paints only still-unmarked cells along the run", () => {
@@ -222,8 +226,17 @@ describe("Mosaic status / text", () => {
 });
 
 describe("Mosaic input mapping", () => {
-  const ds = { started: false, tilesize: 32, width: 3, height: 3, cache: new Int32Array(0) };
-  const at = (cx: number, cy: number) => ({ x: 16 + 32 * cx + 16, y: 16 + 32 * cy + 16 });
+  const ds = {
+    started: false,
+    tilesize: 32,
+    width: 3,
+    height: 3,
+    cache: new Int32Array(0),
+  };
+  const at = (cx: number, cy: number) => ({
+    x: 16 + 32 * cx + 16,
+    y: 16 + 32 * cy + 16,
+  });
 
   function fresh(): { s: MosaicState; ui: MosaicUi } {
     return { s: newState(P3, ALL_BLACK_DESC), ui: freshUi() };
@@ -246,7 +259,9 @@ describe("Mosaic input mapping", () => {
 
   it("ignores clicks in the margin", () => {
     const { s, ui } = fresh();
-    expect(mosaicGame.interpretMove(s, ui, ds, { x: 4, y: 40 }, LEFT_BUTTON)).toBeNull();
+    expect(
+      mosaicGame.interpretMove(s, ui, ds, { x: 4, y: 40 }, LEFT_BUTTON),
+    ).toBeNull();
   });
 
   it("emits an aligned drag paint and advances the anchor", () => {
@@ -306,12 +321,14 @@ describe("Mosaic input mapping", () => {
       y: 0,
       double: false,
     });
-    expect(mosaicGame.interpretMove(s, ui, ds, { x: 0, y: 0 }, CURSOR_SELECT2)).toEqual({
-      type: "toggle",
-      x: 1,
-      y: 0,
-      double: true,
-    });
+    expect(mosaicGame.interpretMove(s, ui, ds, { x: 0, y: 0 }, CURSOR_SELECT2)).toEqual(
+      {
+        type: "toggle",
+        x: 1,
+        y: 0,
+        double: true,
+      },
+    );
   });
 
   it("the first select only reveals the cursor", () => {

@@ -32,33 +32,39 @@ describe("wantsKeyEvent copy handling", () => {
   it("does NOT claim Ctrl/Cmd+C while text is selected", () => {
     const view = makeView();
     stubSelection("Clue 7 can only reach its 7 cells...");
-    expect(view.wantsKeyEvent(new KeyboardEvent("keydown", { key: "c", ctrlKey: true }))).toBe(
+    expect(
+      view.wantsKeyEvent(new KeyboardEvent("keydown", { key: "c", ctrlKey: true })),
+    ).toBe(false);
+    expect(view.wantsKeyEvent(new KeyboardEvent("keydown", { key: "Copy" }))).toBe(
       false,
     );
-    expect(view.wantsKeyEvent(new KeyboardEvent("keydown", { key: "Copy" }))).toBe(false);
   });
 
   it("claims Ctrl/Cmd+C (copy-as-image) when there is no selection", () => {
     const view = makeView();
     stubSelection("");
-    expect(view.wantsKeyEvent(new KeyboardEvent("keydown", { key: "c", ctrlKey: true }))).toBe(
+    expect(
+      view.wantsKeyEvent(new KeyboardEvent("keydown", { key: "c", ctrlKey: true })),
+    ).toBe(true);
+    expect(view.wantsKeyEvent(new KeyboardEvent("keydown", { key: "Copy" }))).toBe(
       true,
     );
-    expect(view.wantsKeyEvent(new KeyboardEvent("keydown", { key: "Copy" }))).toBe(true);
   });
 
   it("treats a whitespace-only selection as no selection", () => {
     const view = makeView();
     stubSelection("   \n  ");
-    expect(view.wantsKeyEvent(new KeyboardEvent("keydown", { key: "c", ctrlKey: true }))).toBe(
-      true,
-    );
+    expect(
+      view.wantsKeyEvent(new KeyboardEvent("keydown", { key: "c", ctrlKey: true })),
+    ).toBe(true);
   });
 
   it("still claims non-copy puzzle keys regardless of selection", () => {
     const view = makeView();
     stubSelection("some selected hint text");
     // Arrow keys drive the puzzle cursor and are unaffected by the copy guard.
-    expect(view.wantsKeyEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }))).toBe(true);
+    expect(view.wantsKeyEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }))).toBe(
+      true,
+    );
   });
 });

@@ -34,7 +34,11 @@ import {
  * happen at `pos ≥ 1` (the `pos === 0` block intercepts every carry case), so
  * the index never goes negative.
  */
-export function nextList(guess: Int32Array, possible: Int32Array, pos: number): boolean {
+export function nextList(
+  guess: Int32Array,
+  possible: Int32Array,
+  pos: number,
+): boolean {
   if (pos === 0) {
     if (
       (guess[pos] === 1 && possible[pos] === 1) ||
@@ -277,7 +281,14 @@ export function gradeUndead(
     bruteforceSolved = solveBruteforce(common, guess);
   }
 
-  return { iterativeSolved, bruteforceSolved, inconsistent, iterativeDepth, ambiguous, guess };
+  return {
+    iterativeSolved,
+    bruteforceSolved,
+    inconsistent,
+    iterativeDepth,
+    ambiguous,
+    guess,
+  };
 }
 
 // --- the deductive ladder (fork divergence: guess-free generation) ---------
@@ -327,7 +338,10 @@ function anyEmpty(guess: Uint8Array, numTotal: number): boolean {
  * it made progress / stalled / hit a contradiction, plus the pass count (used by
  * the generator's Easy cap).
  */
-function arcFixpoint(common: UndeadCommon, guess: Uint8Array): { step: Step; passes: number } {
+function arcFixpoint(
+  common: UndeadCommon,
+  guess: Uint8Array,
+): { step: Step; passes: number } {
   const numTotal = common.numTotal;
   const old = guess.slice();
   let passes = 0;
@@ -429,7 +443,8 @@ function forcingPass(common: UndeadCommon, guess: Uint8Array): Step {
   for (let i = 0; i < numTotal; i++) {
     const g0 = guess[i];
     // Skip decided (single-bit) or already-empty cells.
-    if (g0 === MON_GHOST || g0 === MON_VAMPIRE || g0 === MON_ZOMBIE || g0 === 0) continue;
+    if (g0 === MON_GHOST || g0 === MON_VAMPIRE || g0 === MON_ZOMBIE || g0 === 0)
+      continue;
     for (const b of types) {
       if (!(guess[i] & b)) continue;
       const trial = guess.slice();
@@ -506,21 +521,39 @@ export function solveDeductive(
   const arc = arcFixpoint(common, guess);
   if (arc.step === "inconsistent") return fail(true, arc.passes);
   if (isSolved(guess, numTotal))
-    return { rung: RUNG_ARC, solved: true, inconsistent: false, arcPasses: arc.passes, guess };
+    return {
+      rung: RUNG_ARC,
+      solved: true,
+      inconsistent: false,
+      arcPasses: arc.passes,
+      guess,
+    };
   if (maxRung < RUNG_COUNTING) return fail(false, arc.passes);
 
   // Rung 2: + exact counting.
   const ac = arcCountFixpoint(common, guess);
   if (ac === "inconsistent") return fail(true, arc.passes);
   if (isSolved(guess, numTotal))
-    return { rung: RUNG_COUNTING, solved: true, inconsistent: false, arcPasses: arc.passes, guess };
+    return {
+      rung: RUNG_COUNTING,
+      solved: true,
+      inconsistent: false,
+      arcPasses: arc.passes,
+      guess,
+    };
   if (maxRung < RUNG_FORCING) return fail(false, arc.passes);
 
   // Rung 3: + depth-1 forcing.
   const fc = forcingFixpoint(common, guess);
   if (fc === "inconsistent") return fail(true, arc.passes);
   if (isSolved(guess, numTotal))
-    return { rung: RUNG_FORCING, solved: true, inconsistent: false, arcPasses: arc.passes, guess };
+    return {
+      rung: RUNG_FORCING,
+      solved: true,
+      inconsistent: false,
+      arcPasses: arc.passes,
+      guess,
+    };
 
   // The ladder stalled: this board needs recursion (nested hypothesising).
   return fail(false, arc.passes);
@@ -561,7 +594,8 @@ export function findUndeadSolution(state: UndeadState): SolutionResult {
 
   if (inconsistent) return { ok: false, error: "Puzzle is inconsistent" };
   if (!iterativeSolved) {
-    if (!solveBruteforce(common, guess)) return { ok: false, error: "Puzzle is unsolvable" };
+    if (!solveBruteforce(common, guess))
+      return { ok: false, error: "Puzzle is unsolvable" };
   }
   return { ok: true, guess };
 }
@@ -622,7 +656,11 @@ const MON_BITS = [MON_GHOST, MON_VAMPIRE, MON_ZOMBIE];
 
 /** Per-mapping-index surviving candidate bits for one path (the inner loop of
  * {@link solveIterative}, pulled out so the recorder can diff before/after). */
-function pathSurvivors(common: UndeadCommon, cand: Uint8Array, path: UndeadPath): Int32Array {
+function pathSurvivors(
+  common: UndeadCommon,
+  cand: Uint8Array,
+  path: UndeadPath,
+): Int32Array {
   const numTotal = common.numTotal;
   const nm = path.numMonsters;
   const survivors = new Int32Array(nm);
@@ -663,7 +701,14 @@ function recordSightlinePass(
       const removed = cand[m] & ~survivors[j];
       if (!removed) continue;
       for (const b of MON_BITS) {
-        if (removed & b) ops.push({ kind: "elim", cell: m, monster: b, reason: { kind: "sightline", path: p }, group });
+        if (removed & b)
+          ops.push({
+            kind: "elim",
+            cell: m,
+            monster: b,
+            reason: { kind: "sightline", path: p },
+            group,
+          });
       }
     }
     if (ops.length > 0) {
@@ -676,7 +721,11 @@ function recordSightlinePass(
 
 /** Record the first counting deduction (total exhaustion, or its dual "only this
  * many cells can hold the type"); apply it to `cand`. Returns its ops, or `[]`. */
-function recordCountingPass(common: UndeadCommon, cand: Uint8Array, group: number): HintOp[] {
+function recordCountingPass(
+  common: UndeadCommon,
+  cand: Uint8Array,
+  group: number,
+): HintOp[] {
   const numTotal = common.numTotal;
   const targets = [common.numGhosts, common.numVampires, common.numZombies];
   for (let t = 0; t < 3; t++) {
@@ -693,7 +742,13 @@ function recordCountingPass(common: UndeadCommon, cand: Uint8Array, group: numbe
       const ops: HintOp[] = [];
       for (let i = 0; i < numTotal; i++) {
         if (cand[i] !== m && cand[i] & m) {
-          ops.push({ kind: "elim", cell: i, monster: m, reason: { kind: "total", monster: m }, group });
+          ops.push({
+            kind: "elim",
+            cell: i,
+            monster: m,
+            reason: { kind: "total", monster: m },
+            group,
+          });
           cand[i] &= ~m;
         }
       }
@@ -704,7 +759,13 @@ function recordCountingPass(common: UndeadCommon, cand: Uint8Array, group: numbe
       const ops: HintOp[] = [];
       for (let i = 0; i < numTotal; i++) {
         if (cand[i] !== m && cand[i] & m) {
-          ops.push({ kind: "place", cell: i, monster: m, reason: { kind: "onlyCells", monster: m, nCells: nT }, group });
+          ops.push({
+            kind: "place",
+            cell: i,
+            monster: m,
+            reason: { kind: "onlyCells", monster: m, nCells: nT },
+            group,
+          });
           cand[i] = m;
         }
       }
@@ -716,18 +777,31 @@ function recordCountingPass(common: UndeadCommon, cand: Uint8Array, group: numbe
 
 /** Record the first depth-1 forcing elimination; apply it to `cand`. Returns its
  * op, or `[]`. (One elimination per firing — forcing is per cell/candidate.) */
-function recordForcingPass(common: UndeadCommon, cand: Uint8Array, group: number): HintOp[] {
+function recordForcingPass(
+  common: UndeadCommon,
+  cand: Uint8Array,
+  group: number,
+): HintOp[] {
   const numTotal = common.numTotal;
   for (let i = 0; i < numTotal; i++) {
     const g0 = cand[i];
-    if (g0 === MON_GHOST || g0 === MON_VAMPIRE || g0 === MON_ZOMBIE || g0 === 0) continue;
+    if (g0 === MON_GHOST || g0 === MON_VAMPIRE || g0 === MON_ZOMBIE || g0 === 0)
+      continue;
     for (const b of MON_BITS) {
       if (!(cand[i] & b)) continue;
       const trial = cand.slice();
       trial[i] = b;
       if (arcCountFixpoint(common, trial) === "inconsistent") {
         cand[i] &= ~b;
-        return [{ kind: "elim", cell: i, monster: b, reason: { kind: "forcing", monster: b }, group }];
+        return [
+          {
+            kind: "elim",
+            cell: i,
+            monster: b,
+            reason: { kind: "forcing", monster: b },
+            group,
+          },
+        ];
       }
     }
   }
@@ -742,7 +816,10 @@ function recordForcingPass(common: UndeadCommon, cand: Uint8Array, group: number
  * fixpoint. `placed` carries `MON_NONE` (= 7) for empty cells and a singleton
  * bit for placed ones (the player's `state.guess`).
  */
-export function recordUndeadDeductions(common: UndeadCommon, placed: Uint8Array): HintOp[] {
+export function recordUndeadDeductions(
+  common: UndeadCommon,
+  placed: Uint8Array,
+): HintOp[] {
   const numTotal = common.numTotal;
   const cand = new Uint8Array(numTotal);
   for (let i = 0; i < numTotal; i++) {

@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  type DeductionRung,
-  runDeductionFixpoint,
-} from "./deduction-fixpoint.ts";
+import { type DeductionRung, runDeductionFixpoint } from "./deduction-fixpoint.ts";
 import { StepBudgetExceeded, stepBudget } from "./step-budget.ts";
 
 describe("runDeductionFixpoint", () => {
@@ -156,10 +153,7 @@ describe("runDeductionFixpoint", () => {
     const build = (): DeductionRung[] => {
       let r0 = 3;
       let r1 = 2;
-      return [
-        () => (r0-- > 0 ? 1 : 0),
-        () => (r1-- > 0 ? 1 : 0),
-      ];
+      return [() => (r0-- > 0 ? 1 : 0), () => (r1-- > 0 ? 1 : 0)];
     };
     const off = runDeductionFixpoint({ rungs: build() });
     const on = runDeductionFixpoint({

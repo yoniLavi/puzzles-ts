@@ -19,6 +19,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -29,7 +30,6 @@ import {
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
-import { dimensionParamConfig } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { newSinglesDesc } from "./generator.ts";
 import {
@@ -411,9 +411,7 @@ function evidenceOf(reason: SinglesReason): Cell[] {
 /** The corner cell a 2×2-corner deduction is protecting (drawn in the
  * distinct strand colour), if any. */
 function strandOf(reason: SinglesReason): Cell[] {
-  return reason.kind === "corner2" || reason.kind === "corner3"
-    ? [reason.corner]
-    : [];
+  return reason.kind === "corner2" || reason.kind === "corner3" ? [reason.corner] : [];
 }
 
 /** Group the ordered records by firing (`group`) into one step each,

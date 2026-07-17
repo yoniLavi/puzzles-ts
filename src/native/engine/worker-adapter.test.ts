@@ -1,13 +1,13 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { registerAllGames } from "../games/index.ts";
 import { blackboxGame } from "../games/blackbox/index.ts";
 import { flipGame } from "../games/flip/index.ts";
 import { floodGame } from "../games/flood/index.ts";
 import { galaxiesGame } from "../games/galaxies/index.ts";
 import { guessGame } from "../games/guess/index.ts";
+import { registerAllGames } from "../games/index.ts";
 import { mosaicGame } from "../games/mosaic/index.ts";
-import { samegameGame } from "../games/samegame/index.ts";
 import { pegsGame } from "../games/pegs/index.ts";
+import { samegameGame } from "../games/samegame/index.ts";
 import { sixteenGame } from "../games/sixteen/index.ts";
 import { Midend } from "./midend.ts";
 import { _resetRegistry, registerGame } from "./registry.ts";

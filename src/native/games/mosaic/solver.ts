@@ -9,7 +9,7 @@
  * (`solveGameActual`, board-side, clue numbers only).
  */
 import { shuffle } from "../../engine/shuffle.ts";
-import { randomBits, type RandomState } from "../../random/index.ts";
+import { type RandomState, randomBits } from "../../random/index.ts";
 import {
   encodeBoard,
   type MosaicBoard,
@@ -273,7 +273,16 @@ export function solveGameActual(board: MosaicBoard): Uint8Array | null {
     madeProgress = false;
     for (let y = 0; y < height && !error; y++) {
       for (let x = 0; x < width; x++) {
-        const res = solveCell(width, height, clues[y * width + x], false, false, sol, x, y);
+        const res = solveCell(
+          width,
+          height,
+          clues[y * width + x],
+          false,
+          false,
+          sol,
+          x,
+          y,
+        );
         if (res === "contradiction") {
           error = true;
           break;

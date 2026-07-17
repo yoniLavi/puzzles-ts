@@ -108,7 +108,9 @@ describe("Palisade render scenarios", () => {
     });
 
     expect(hint).toBeDefined();
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
+      true,
+    );
     expect(recording.ops).toMatchSnapshot();
   });
 });

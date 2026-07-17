@@ -757,7 +757,14 @@ export function textFormat(s: UndeadState): string {
         out += " /";
       } else if (xi >= 0) {
         const g = s.guess[xi];
-        out += g === MON_GHOST ? " G" : g === MON_VAMPIRE ? " V" : g === MON_ZOMBIE ? " Z" : " .";
+        out +=
+          g === MON_GHOST
+            ? " G"
+            : g === MON_VAMPIRE
+              ? " V"
+              : g === MON_ZOMBIE
+                ? " Z"
+                : " .";
       } else {
         out += "  ";
       }

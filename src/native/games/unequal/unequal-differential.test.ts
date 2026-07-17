@@ -54,7 +54,13 @@ describe("unequal differential (byte-match + solver agreement)", () => {
     it(`${p.mode} ${f.order} d${f.diff} (seed ${f.seed}): TS solver grades at the C difficulty`, () => {
       const state = newState(p, f.desc);
       const soln = Uint8Array.from(state.immutable);
-      const ret = solveUnequal(state.order, state.mode, state.clueFlags, soln, f.solverDiff);
+      const ret = solveUnequal(
+        state.order,
+        state.mode,
+        state.clueFlags,
+        soln,
+        f.solverDiff,
+      );
       expect(ret).toBe(f.solverDiff);
     });
   }

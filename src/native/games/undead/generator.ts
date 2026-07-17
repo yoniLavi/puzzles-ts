@@ -15,7 +15,7 @@
  * stable sort is used here; the differential validates the solver/codec instead.
  */
 
-import { randomUpto, type RandomState } from "../../random/index.ts";
+import { type RandomState, randomUpto } from "../../random/index.ts";
 import {
   isUniquelySolvable,
   nextList,
@@ -36,11 +36,11 @@ import {
   DIFF_NORMAL,
   DIFF_TRICKY,
   diffToLevel,
-  makePaths,
   MON_GHOST,
   MON_NONE,
   MON_VAMPIRE,
   MON_ZOMBIE,
+  makePaths,
   newCommon,
   range2grid,
   sortPaths,
@@ -63,13 +63,20 @@ const EASY_MAX_ARC_PASSES = 3;
  *  - **Normal** = arc-consistency beyond the cap, or the exact-counting rung
  *  - **Tricky** = the depth-1 forcing rung
  */
-function gradeMatchesTier(rung: Rung, arcPasses: number, solved: boolean, diff: number): boolean {
+function gradeMatchesTier(
+  rung: Rung,
+  arcPasses: number,
+  solved: boolean,
+  diff: number,
+): boolean {
   switch (diff) {
     case DIFF_EASY:
       return solved && rung === RUNG_ARC && arcPasses <= EASY_MAX_ARC_PASSES;
     case DIFF_NORMAL:
       return (
-        solved && ((rung === RUNG_ARC && arcPasses > EASY_MAX_ARC_PASSES) || rung === RUNG_COUNTING)
+        solved &&
+        ((rung === RUNG_ARC && arcPasses > EASY_MAX_ARC_PASSES) ||
+          rung === RUNG_COUNTING)
       );
     case DIFF_TRICKY:
       return solved && rung === RUNG_FORCING;
@@ -125,7 +132,12 @@ function lowestBit(v: number): number {
  * achievable (start, end) sighting pair, chosen at random (upstream
  * `get_unique`). Mutates `guess` for the cells on path `counter`.
  */
-function getUnique(common: UndeadCommon, guess: Uint8Array, counter: number, rs: RandomState): void {
+function getUnique(
+  common: UndeadCommon,
+  guess: Uint8Array,
+  counter: number,
+  rs: RandomState,
+): void {
   const path = common.paths[counter];
   const len = path.numMonsters;
   if (len <= 0) return;
@@ -272,7 +284,8 @@ export function newUndeadDesc(
     // How much of the grid to fix with unique-solution paths.
     let filling: number;
     if (diff === DIFF_EASY) filling = 2;
-    else if (diff === DIFF_NORMAL) filling = Math.min(W + H, Math.floor(common.numTotal / 2));
+    else if (diff === DIFF_NORMAL)
+      filling = Math.min(W + H, Math.floor(common.numTotal / 2));
     else filling = Math.max(W + H, Math.floor(common.numTotal / 2));
 
     let idx = 0;
@@ -367,10 +380,16 @@ export function newUndeadDesc(
     // Cap the ladder at the tier's rung: a board the tier can't use is rejected
     // anyway, so don't pay for forcing when grading Easy/Normal.
     const tierMaxRung: Rung =
-      diff === DIFF_EASY ? RUNG_ARC : diff === DIFF_NORMAL ? RUNG_COUNTING : RUNG_FORCING;
+      diff === DIFF_EASY
+        ? RUNG_ARC
+        : diff === DIFF_NORMAL
+          ? RUNG_COUNTING
+          : RUNG_FORCING;
     const allUndecided = new Uint8Array(common.numTotal).fill(MON_NONE);
     const grade = solveDeductive(common, allUndecided, tierMaxRung);
-    let accept = !grade.inconsistent && gradeMatchesTier(grade.rung, grade.arcPasses, grade.solved, diff);
+    let accept =
+      !grade.inconsistent &&
+      gradeMatchesTier(grade.rung, grade.arcPasses, grade.solved, diff);
 
     // Verify uniqueness independently against the brute-force oracle. A
     // deductively-solved board is unique by soundness; a recursion-only

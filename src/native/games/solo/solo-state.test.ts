@@ -9,25 +9,25 @@ import type { Dsf } from "../../engine/dsf.ts";
 import {
   blocksFromDsf,
   checkValid,
-  decodeParams,
-  defaultParams,
   DIFF_BLOCK,
   DIFF_KINTERSECT,
   DIFF_KMINMAX,
   DIFF_RECURSIVE,
   DIFF_SET,
   DIFF_SIMPLE,
+  decodeParams,
+  defaultParams,
   encodeBlockStructureDesc,
   encodeGrid,
   encodeParams,
   newState,
   rectangularBlocks,
-  specToDsf,
-  specToGrid,
   type SoloParams,
   SYMM_NONE,
   SYMM_REF4D,
   SYMM_ROT2,
+  specToDsf,
+  specToGrid,
   validateDesc,
   validateParams,
 } from "./state.ts";
@@ -46,12 +46,60 @@ function paramsEqual(a: SoloParams, b: SoloParams): boolean {
 describe("solo params codec", () => {
   it("round-trips every variant through full encode/decode", () => {
     const cases: SoloParams[] = [
-      { c: 3, r: 3, symm: SYMM_ROT2, diff: DIFF_BLOCK, kdiff: DIFF_KMINMAX, xtype: false, killer: false },
-      { c: 2, r: 3, symm: SYMM_ROT2, diff: DIFF_SIMPLE, kdiff: DIFF_KMINMAX, xtype: false, killer: false },
-      { c: 3, r: 3, symm: SYMM_ROT2, diff: DIFF_SIMPLE, kdiff: DIFF_KMINMAX, xtype: true, killer: false },
-      { c: 9, r: 1, symm: SYMM_ROT2, diff: DIFF_SET, kdiff: DIFF_KMINMAX, xtype: false, killer: false },
-      { c: 3, r: 3, symm: SYMM_NONE, diff: DIFF_BLOCK, kdiff: DIFF_KINTERSECT, xtype: false, killer: true },
-      { c: 3, r: 3, symm: SYMM_REF4D, diff: DIFF_RECURSIVE, kdiff: DIFF_KMINMAX, xtype: false, killer: false },
+      {
+        c: 3,
+        r: 3,
+        symm: SYMM_ROT2,
+        diff: DIFF_BLOCK,
+        kdiff: DIFF_KMINMAX,
+        xtype: false,
+        killer: false,
+      },
+      {
+        c: 2,
+        r: 3,
+        symm: SYMM_ROT2,
+        diff: DIFF_SIMPLE,
+        kdiff: DIFF_KMINMAX,
+        xtype: false,
+        killer: false,
+      },
+      {
+        c: 3,
+        r: 3,
+        symm: SYMM_ROT2,
+        diff: DIFF_SIMPLE,
+        kdiff: DIFF_KMINMAX,
+        xtype: true,
+        killer: false,
+      },
+      {
+        c: 9,
+        r: 1,
+        symm: SYMM_ROT2,
+        diff: DIFF_SET,
+        kdiff: DIFF_KMINMAX,
+        xtype: false,
+        killer: false,
+      },
+      {
+        c: 3,
+        r: 3,
+        symm: SYMM_NONE,
+        diff: DIFF_BLOCK,
+        kdiff: DIFF_KINTERSECT,
+        xtype: false,
+        killer: true,
+      },
+      {
+        c: 3,
+        r: 3,
+        symm: SYMM_REF4D,
+        diff: DIFF_RECURSIVE,
+        kdiff: DIFF_KMINMAX,
+        xtype: false,
+        killer: false,
+      },
     ];
     for (const p of cases) {
       const decoded = decodeParams(encodeParams(p, true));
@@ -66,9 +114,9 @@ describe("solo params codec", () => {
     expect(encodeParams({ ...base, c: 3, r: 3, xtype: true }, false)).toBe("3x3x");
     expect(encodeParams({ ...base, c: 3, r: 3, killer: true }, false)).toBe("3x3k");
     // full mode adds symmetry + difficulty (ROT2 / BLOCK are the omitted defaults)
-    expect(encodeParams({ ...base, c: 3, r: 3, symm: SYMM_NONE, diff: DIFF_SET }, true)).toBe(
-      "3x3ada",
-    );
+    expect(
+      encodeParams({ ...base, c: 3, r: 3, symm: SYMM_NONE, diff: DIFF_SET }, true),
+    ).toBe("3x3ada");
   });
 
   it("decodes the legacy jigsaw-of-a-rectangle form", () => {

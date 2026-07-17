@@ -10,8 +10,8 @@
  */
 
 import {
-  DIFF_AMBIGUOUS,
   type DeductionRecord,
+  DIFF_AMBIGUOUS,
   DIFF_IMPOSSIBLE,
   type LatinReason,
   type LatinSolver,
@@ -93,7 +93,13 @@ export function newCtx(o: number, mode: Mode, flags: Int32Array): UnequalCtx {
         const f = flags[y * o + x];
         for (let i = 0; i < 4; i++) {
           if (f & ADJTHAN[i].f)
-            links.push({ gx: x, gy: y, lx: x + ADJTHAN[i].dx, ly: y + ADJTHAN[i].dy, len: 1 });
+            links.push({
+              gx: x,
+              gy: y,
+              lx: x + ADJTHAN[i].dx,
+              ly: y + ADJTHAN[i].dy,
+              len: 1,
+            });
         }
       }
     }
@@ -105,7 +111,11 @@ export function newCtx(o: number, mode: Mode, flags: Int32Array): UnequalCtx {
 
 /** The smallest and largest still-possible value indices (0-based) at `(x, y)`.
  * A filled cell pins both to `grid-1`. */
-function nminmax(solver: LatinSolver, x: number, y: number): { min: number; max: number } {
+function nminmax(
+  solver: LatinSolver,
+  x: number,
+  y: number,
+): { min: number; max: number } {
   const o = solver.o;
   const v = solver.grid[y * o + x];
   if (v > 0) return { min: v - 1, max: v - 1 };
@@ -281,7 +291,9 @@ function solverAdjacentSet(solver: LatinSolver, ctx: UnequalCtx): number {
 // --- mode-dispatching usersolvers ------------------------------------------
 
 function solverEasy(solver: LatinSolver, ctx: UnequalCtx): number {
-  return ctx.mode === "adjacent" ? solverAdjacent(solver, ctx) : solverLinks(solver, ctx);
+  return ctx.mode === "adjacent"
+    ? solverAdjacent(solver, ctx)
+    : solverLinks(solver, ctx);
 }
 
 function solverSet(solver: LatinSolver, ctx: UnequalCtx): number {

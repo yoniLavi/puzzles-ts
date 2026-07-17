@@ -90,7 +90,10 @@ export class OverlaySidecar {
   /** Repack this frame's overlay from a plain cell list — the `findMistakes`
    * shape. Every listed cell gets {@link OVERLAY_FLAG}, everything else
    * clears (so the overlay's *removal* repaints too). */
-  packCells(cells: readonly Cell[] | undefined, index: (x: number, y: number) => number): void {
+  packCells(
+    cells: readonly Cell[] | undefined,
+    index: (x: number, y: number) => number,
+  ): void {
     this.clear();
     for (const c of cells ?? []) this.add(index(c.x, c.y), OVERLAY_FLAG);
   }

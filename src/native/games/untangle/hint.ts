@@ -122,7 +122,11 @@ function normalise(x: number, y: number): UnitPoint | null {
 
 /** Direction that pushes point `c` away from the other vertices (a
  * repulsion sum), so an outward target declusters around `c`. */
-function repulsionDir(pu: readonly UnitPoint[], v: number, c: UnitPoint): UnitPoint | null {
+function repulsionDir(
+  pu: readonly UnitPoint[],
+  v: number,
+  c: UnitPoint,
+): UnitPoint | null {
   let rx = 0;
   let ry = 0;
   for (let u = 0; u < pu.length; u++) {
@@ -166,7 +170,11 @@ function toRational(p: UnitPoint, w: number): RationalPoint {
   const hi = Math.max(lo, w - BOX_MARGIN);
   const x = Math.min(hi, Math.max(lo, p.x));
   const y = Math.min(hi, Math.max(lo, p.y));
-  return { x: Math.round(x * HINT_DENOM), y: Math.round(y * HINT_DENOM), d: HINT_DENOM };
+  return {
+    x: Math.round(x * HINT_DENOM),
+    y: Math.round(y * HINT_DENOM),
+    d: HINT_DENOM,
+  };
 }
 
 /** Vertex `v`'s clustering score at `p`: Σ 1/(distance+ε) to every other
@@ -186,10 +194,7 @@ function placeMove(i: number, p: RationalPoint): UntangleMove {
   return { kind: "place", points: [{ i, x: p.x, y: p.y, d: p.d }], solving: false };
 }
 
-function step(
-  vertex: number,
-  to: RationalPoint,
-): HintStep<UntangleMove, UntangleHint> {
+function step(vertex: number, to: RationalPoint): HintStep<UntangleMove, UntangleHint> {
   return { move: placeMove(vertex, to), explanation: "", highlights: { vertex, to } };
 }
 
@@ -305,9 +310,12 @@ export function deduceUntangleHintPlan(
 
     // Pick the move with the fewest resulting crossings (primary), breaking
     // ties by the largest reduction in clustering (secondary — spread out).
-    let best:
-      | { vertex: number; to: RationalPoint; count: number; spreadDelta: number }
-      | null = null;
+    let best: {
+      vertex: number;
+      to: RationalPoint;
+      count: number;
+      spreadDelta: number;
+    } | null = null;
     for (const v of candidates) {
       const centroid = neighbourCentroid(pu, adj[v]);
       if (centroid === null) continue;

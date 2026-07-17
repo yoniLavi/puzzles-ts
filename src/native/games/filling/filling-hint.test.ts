@@ -9,12 +9,7 @@ import { randomNew } from "../../random/index.ts";
 import { type FillingHint, fillingGame } from "./index.ts";
 import { COL_HINT, COL_HINT_CELL } from "./render.ts";
 import { deduceHintPlan, solveFilling } from "./solver.ts";
-import {
-  decodeParams,
-  executeMove,
-  type FillingState,
-  newState,
-} from "./state.ts";
+import { decodeParams, executeMove, type FillingState, newState } from "./state.ts";
 
 function fromSeed(params: string, seed: string): FillingState {
   const p = decodeParams(params);
@@ -22,12 +17,7 @@ function fromSeed(params: string, seed: string): FillingState {
   return newState(p, desc);
 }
 
-const SEEDS = [
-  "filling-hint-a",
-  "filling-hint-b",
-  "filling-hint-c",
-  "filling-hint-d",
-];
+const SEEDS = ["filling-hint-a", "filling-hint-b", "filling-hint-c", "filling-hint-d"];
 
 describe("deduceHintPlan", () => {
   it("groups a region's forced completion into one step", () => {
@@ -199,9 +189,9 @@ describe("filling hint render scenario", () => {
     if (!result) throw new Error("no seed produced an area-carrying first hint");
 
     const { recording } = result;
-    expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT),
-    ).toBe(true);
+    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
+      true,
+    );
     expect(
       recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
     ).toBe(true);

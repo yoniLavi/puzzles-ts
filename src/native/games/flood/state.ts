@@ -1,6 +1,6 @@
-import { type RandomState, randomUpto } from "../../random/index.ts";
 import type { GameStatus } from "../../../puzzle/types.ts";
 import { parseDimensions } from "../../engine/params.ts";
+import { type RandomState, randomUpto } from "../../random/index.ts";
 import { choosemove, completed, fill, SolverScratch } from "./solver.ts";
 
 // --- constants --------------------------------------------------------

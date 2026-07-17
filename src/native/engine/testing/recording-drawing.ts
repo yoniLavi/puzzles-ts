@@ -30,7 +30,15 @@ import type { GameDrawing } from "../game.ts";
  * passed; `rgb`/`fillRgb`/`outlineRgb` are that index resolved through
  * the palette to a stable label. Coordinates are integer-rounded. */
 export type DrawOp =
-  | { op: "rect"; x: number; y: number; w: number; h: number; colour: number; rgb: string }
+  | {
+      op: "rect";
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      colour: number;
+      rgb: string;
+    }
   | {
       op: "line";
       x1: number;

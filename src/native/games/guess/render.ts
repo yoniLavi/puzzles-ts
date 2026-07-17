@@ -294,7 +294,12 @@ function drawPeg(
   if (labelled && col) {
     dr.drawText(
       pt(cx + ds.pegrad, cy + ds.pegrad),
-      { align: "center", baseline: "mathematical", fontType: "variable", size: ds.pegrad },
+      {
+        align: "center",
+        baseline: "mathematical",
+        fontType: "variable",
+        size: ds.pegrad,
+      },
       COL_FRAME,
       String(col % 10),
     );
@@ -344,12 +349,22 @@ function guessRedraw(
       if (scol & PEG_CURSOR) drawCursor(dr, ds, rowx + pegOff(ds) * i, rowy);
       if (scol & PEG_HOLD) {
         dr.drawRect(
-          rect(rowx + pegOff(ds) * i, rowy + ds.pegsz + idiv(ds.gapsz, 2) - 2, ds.pegsz, 2),
+          rect(
+            rowx + pegOff(ds) * i,
+            rowy + ds.pegsz + idiv(ds.gapsz, 2) - 2,
+            ds.pegsz,
+            2,
+          ),
           COL_HOLD,
         );
       }
       dr.drawUpdate(
-        rect(rowx + pegOff(ds) * i, rowy + ds.pegsz + idiv(ds.gapsz, 2) - 2, ds.pegsz, 2),
+        rect(
+          rowx + pegOff(ds) * i,
+          rowy + ds.pegsz + idiv(ds.gapsz, 2) - 2,
+          ds.pegsz,
+          2,
+        ),
       );
     }
     dest.pegs[i] = scol;
@@ -463,7 +478,10 @@ export function redraw(
   if (!ds.started) {
     // The engine paints no pixels of its own: fill the background here.
     dr.drawRect(rect(0, 0, ds.w, ds.h), COL_BACKGROUND);
-    dr.drawRect(rect(SOLN_OX(ds), SOLN_OY(ds) - ds.gapsz - 1, SOLN_W(ds), 2), COL_FRAME);
+    dr.drawRect(
+      rect(SOLN_OX(ds), SOLN_OY(ds) - ds.gapsz - 1, SOLN_W(ds), 2),
+      COL_FRAME,
+    );
     dr.drawUpdate(rect(0, 0, ds.w, ds.h));
   }
 

@@ -153,7 +153,12 @@ describe("slant hint", () => {
     expect(slantGame.hintKeepTrack?.(step.move, step, s)).toBe("completed");
     // The opposite slash on the same square is off-plan.
     const m = step.move as Extract<SlantMove, { type: "set" }>;
-    const wrong: SlantMove = { type: "set", x: m.x, y: m.y, v: (m.v === 1 ? -1 : 1) as 1 | -1 };
+    const wrong: SlantMove = {
+      type: "set",
+      x: m.x,
+      y: m.y,
+      v: (m.v === 1 ? -1 : 1) as 1 | -1,
+    };
     expect(slantGame.hintKeepTrack?.(wrong, step, s)).toBe("off");
   });
 });

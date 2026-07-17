@@ -25,6 +25,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
+import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -33,7 +34,6 @@ import {
   LEFT_DRAG,
   LEFT_RELEASE,
 } from "../../engine/pointer.ts";
-import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
 import { SortedMultiset } from "../../engine/sorted-multiset.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
 
@@ -771,7 +771,11 @@ function fromCoordWithTileSize(x: number, ts: number): number {
 // --- colours ---------------------------------------------------------
 
 function colours(defaultBackground: Colour): Colour[] {
-  const { background: bg, highlight: hi, lowlight: lo } = mkhighlight(defaultBackground);
+  const {
+    background: bg,
+    highlight: hi,
+    lowlight: lo,
+  } = mkhighlight(defaultBackground);
 
   const peg: Colour = [0, 0, 1];
   const cursor: Colour = [0.5, 0.5, 1];

@@ -85,9 +85,9 @@ describe("Mosaic redraw", () => {
     expect(texts.every((o) => o.colour === COL_MARKED)).toBe(true);
     expect(texts.map((o) => o.text).join("")).toBe(ALL_BLACK_DESC);
     // Grid lines present.
-    expect(ops.some((o) => o.op === "drawRect" && o.colour === COL_GRID && o.h === 1)).toBe(
-      true,
-    );
+    expect(
+      ops.some((o) => o.op === "drawRect" && o.colour === COL_GRID && o.h === 1),
+    ).toBe(true);
   });
 
   it("draws the closing grid lines from the margin row/column", () => {

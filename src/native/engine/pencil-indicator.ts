@@ -32,5 +32,9 @@ export function drawPencilGlyph(
     gridColour,
   );
   // Sharpened graphite point.
-  dr.drawPolygon([at(0.321, 0.537), at(0.463, 0.679), at(0.2, 0.8)], gridColour, gridColour);
+  dr.drawPolygon(
+    [at(0.321, 0.537), at(0.463, 0.679), at(0.2, 0.8)],
+    gridColour,
+    gridColour,
+  );
 }

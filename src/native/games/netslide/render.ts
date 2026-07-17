@@ -752,7 +752,9 @@ export function redraw(
  * comparison rather than a guess. */
 function isMoveBeingAnimated(move: NetslideMove, s: NetslideState): boolean {
   if (move.type !== "slide" || move.dir !== s.lastMoveDir) return false;
-  return move.axis === "row" ? move.index === s.lastMoveRow : move.index === s.lastMoveCol;
+  return move.axis === "row"
+    ? move.index === s.lastMoveRow
+    : move.index === s.lastMoveCol;
 }
 
 /** The walls around the outside of the grid, drawn once — they are outside the

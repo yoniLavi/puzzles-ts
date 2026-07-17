@@ -242,13 +242,7 @@ export function redraw(
       const mistake = mistakeSet?.has(i) ?? false;
       const cursor = ui.cursorShow && r === ui.r && c === ui.c;
       const hintKind: HintKind =
-        i === hintTarget
-          ? 1
-          : hintBlackSet?.has(i)
-            ? 4
-            : hintAreaSet?.has(i)
-              ? 3
-              : 0;
+        i === hintTarget ? 1 : hintBlackSet?.has(i) ? 4 : hintAreaSet?.has(i) ? 3 : 0;
 
       let packed = value + 2;
       if (error) packed |= F_ERROR;

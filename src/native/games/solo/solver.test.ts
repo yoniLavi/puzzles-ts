@@ -28,28 +28,16 @@ function stateFromGivens(givens: number[]) {
 
 // prettier-ignore
 const PUZZLE = [
-  5,3,0, 0,7,0, 0,0,0,
-  6,0,0, 1,9,5, 0,0,0,
-  0,9,8, 0,0,0, 0,6,0,
-  8,0,0, 0,6,0, 0,0,3,
-  4,0,0, 8,0,3, 0,0,1,
-  7,0,0, 0,2,0, 0,0,6,
-  0,6,0, 0,0,0, 2,8,0,
-  0,0,0, 4,1,9, 0,0,5,
-  0,0,0, 0,8,0, 0,7,9,
+  5, 3, 0, 0, 7, 0, 0, 0, 0, 6, 0, 0, 1, 9, 5, 0, 0, 0, 0, 9, 8, 0, 0, 0, 0, 6, 0, 8, 0,
+  0, 0, 6, 0, 0, 0, 3, 4, 0, 0, 8, 0, 3, 0, 0, 1, 7, 0, 0, 0, 2, 0, 0, 0, 6, 0, 6, 0, 0,
+  0, 0, 2, 8, 0, 0, 0, 0, 4, 1, 9, 0, 0, 5, 0, 0, 0, 0, 8, 0, 0, 7, 9,
 ];
 
 // prettier-ignore
 const SOLUTION = [
-  5,3,4, 6,7,8, 9,1,2,
-  6,7,2, 1,9,5, 3,4,8,
-  1,9,8, 3,4,2, 5,6,7,
-  8,5,9, 7,6,1, 4,2,3,
-  4,2,6, 8,5,3, 7,9,1,
-  7,1,3, 9,2,4, 8,5,6,
-  9,6,1, 5,3,7, 2,8,4,
-  2,8,7, 4,1,9, 6,3,5,
-  3,4,5, 2,8,6, 1,7,9,
+  5, 3, 4, 6, 7, 8, 9, 1, 2, 6, 7, 2, 1, 9, 5, 3, 4, 8, 1, 9, 8, 3, 4, 2, 5, 6, 7, 8, 5,
+  9, 7, 6, 1, 4, 2, 3, 4, 2, 6, 8, 5, 3, 7, 9, 1, 7, 1, 3, 9, 2, 4, 8, 5, 6, 9, 6, 1, 5,
+  3, 7, 2, 8, 4, 2, 8, 7, 4, 1, 9, 6, 3, 5, 3, 4, 5, 2, 8, 6, 1, 7, 9,
 ];
 
 describe("solo solver — standard 3×3", () => {
@@ -84,7 +72,6 @@ describe("solo solver — standard 3×3", () => {
     const { diff } = solveSolo(s);
     expect(diff).toBe(DIFF_IMPOSSIBLE);
   });
-
 });
 
 describe("solo solver — variant paths (codec → solve round-trips)", () => {
@@ -101,7 +88,10 @@ describe("solo solver — variant paths (codec → solve round-trips)", () => {
     const kgrid = new Array(81).fill(0);
     for (const cell of cages.blocks) kgrid[cell[0]] = 45; // 1+…+9 per block
     const desc = `${gridDesc},${blockDesc},${encodeGrid(kgrid, 81)}`;
-    const s = newState({ ...defaultParams(), killer: true, kdiff: DIFF_KINTERSECT }, desc);
+    const s = newState(
+      { ...defaultParams(), killer: true, kdiff: DIFF_KINTERSECT },
+      desc,
+    );
     const { diff, grid } = solveSolo(s, DIFF_RECURSIVE, DIFF_KINTERSECT);
     expect(diff).toBeLessThan(DIFF_AMBIGUOUS);
     expect([...grid]).toEqual(SOLUTION);
@@ -121,7 +111,12 @@ describe("solo solver — variant paths (codec → solve round-trips)", () => {
 describe("solo solver — low level", () => {
   it("runSolver mutates the grid in place to the solution", () => {
     const grid = Int8Array.from(PUZZLE);
-    const dlev = { maxdiff: DIFF_RECURSIVE, maxkdiff: 0, diff: DIFF_IMPOSSIBLE, kdiff: 0 };
+    const dlev = {
+      maxdiff: DIFF_RECURSIVE,
+      maxkdiff: 0,
+      diff: DIFF_IMPOSSIBLE,
+      kdiff: 0,
+    };
     runSolver(9, rectangularBlocks(3, 3), null, false, grid, null, dlev);
     expect(dlev.diff).toBeLessThan(DIFF_AMBIGUOUS);
     expect([...grid]).toEqual(SOLUTION);

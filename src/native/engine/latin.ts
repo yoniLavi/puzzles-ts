@@ -21,11 +21,8 @@
  */
 
 import { type RandomState, randomUpto } from "../random/index.ts";
+import { type DeductionRung, runDeductionFixpoint } from "./deduction-fixpoint.ts";
 import { shuffle } from "./shuffle.ts";
-import {
-  type DeductionRung,
-  runDeductionFixpoint,
-} from "./deduction-fixpoint.ts";
 import { type StepBudget, stepBudget } from "./step-budget.ts";
 
 /** Upstream `enum { diff_impossible = 10, diff_ambiguous, diff_unfinished }`
@@ -155,7 +152,14 @@ export class LatinSolver {
       if (i === y) continue;
       const pos = this.cubepos(x, i, n);
       if (rec && this.cube[pos]) {
-        rec({ kind: "elim", x, y: i, n, reason: { kind: "dup", n, px: x, py: y }, group: this.group });
+        rec({
+          kind: "elim",
+          x,
+          y: i,
+          n,
+          reason: { kind: "dup", n, px: x, py: y },
+          group: this.group,
+        });
       }
       this.cube[pos] = 0;
     }
@@ -163,7 +167,14 @@ export class LatinSolver {
       if (i === x) continue;
       const pos = this.cubepos(i, y, n);
       if (rec && this.cube[pos]) {
-        rec({ kind: "elim", x: i, y, n, reason: { kind: "dup", n, px: x, py: y }, group: this.group });
+        rec({
+          kind: "elim",
+          x: i,
+          y,
+          n,
+          reason: { kind: "dup", n, px: x, py: y },
+          group: this.group,
+        });
       }
       this.cube[pos] = 0;
     }

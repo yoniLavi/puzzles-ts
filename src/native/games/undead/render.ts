@@ -17,8 +17,8 @@
  */
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
-import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   CELL_MIRROR_L,
@@ -188,7 +188,8 @@ function calculateCountLayout(ds: UndeadDrawState): void {
 
   let maxChars: number;
   if (ds.countStyle === COUNT_STYLE_REMAINING) maxChars = 1 + maxDigits;
-  else if (ds.countStyle === COUNT_STYLE_PLACED_TOTAL) maxChars = maxDigits + 0.5 + maxDigits;
+  else if (ds.countStyle === COUNT_STYLE_PLACED_TOTAL)
+    maxChars = maxDigits + 0.5 + maxDigits;
   else if (ds.countStyle === COUNT_STYLE_REMAINING_TOTAL)
     // remaining (with a possible minus sign when over-placed) / total
     maxChars = 1 + maxDigits + 0.5 + maxDigits;
@@ -205,7 +206,9 @@ function calculateCountLayout(ds: UndeadDrawState): void {
     blockW = COUNT_MSIZE + padding + numberW;
     gap = idiv(totalW - 3 * blockW, 2);
     if (gap < 0) {
-      fontsize = Math.trunc((totalW / 3 - COUNT_MSIZE - padding) / (maxChars * DIGIT_WIDTH));
+      fontsize = Math.trunc(
+        (totalW / 3 - COUNT_MSIZE - padding) / (maxChars * DIGIT_WIDTH),
+      );
       fontsize = Math.max(fontsize, idiv(ts, 10));
       numberW = Math.trunc(maxChars * DIGIT_WIDTH * fontsize);
       blockW = COUNT_MSIZE + padding + numberW;
@@ -270,7 +273,12 @@ function drawMonster(
   const m25 = idiv(2 * ts, 5);
 
   if (monster === MON_GHOST) {
-    dr.clip({ x: x - f(ts / 2) + 2, y: y - f(ts / 2) + 2, w: ts - 3, h: f(ts / 2) + 1 });
+    dr.clip({
+      x: x - f(ts / 2) + 2,
+      y: y - f(ts / 2) + 2,
+      w: ts - 3,
+      h: f(ts / 2) + 1,
+    });
     dr.drawCircle({ x, y }, m25, COL_GHOST, black);
     dr.unclip();
 
@@ -291,16 +299,43 @@ function drawMonster(
     dr.drawPolygon(poly, COL_GHOST, black);
     dr.unclip();
 
-    dr.drawCircle({ x: x - f(ts / 6), y: y - f(ts / 12) }, f(ts / 10), COL_BACKGROUND, black);
-    dr.drawCircle({ x: x + f(ts / 6), y: y - f(ts / 12) }, f(ts / 10), COL_BACKGROUND, black);
-    drawCircleOrPoint(dr, x - f(ts / 6) + 1 + f(ts / 48), y - f(ts / 12), f(ts / 48), black);
-    drawCircleOrPoint(dr, x + f(ts / 6) + 1 + f(ts / 48), y - f(ts / 12), f(ts / 48), black);
+    dr.drawCircle(
+      { x: x - f(ts / 6), y: y - f(ts / 12) },
+      f(ts / 10),
+      COL_BACKGROUND,
+      black,
+    );
+    dr.drawCircle(
+      { x: x + f(ts / 6), y: y - f(ts / 12) },
+      f(ts / 10),
+      COL_BACKGROUND,
+      black,
+    );
+    drawCircleOrPoint(
+      dr,
+      x - f(ts / 6) + 1 + f(ts / 48),
+      y - f(ts / 12),
+      f(ts / 48),
+      black,
+    );
+    drawCircleOrPoint(
+      dr,
+      x + f(ts / 6) + 1 + f(ts / 48),
+      y - f(ts / 12),
+      f(ts / 48),
+      black,
+    );
   } else if (monster === MON_VAMPIRE) {
     dr.clip({ x: x - f(ts / 2) + 2, y: y - f(ts / 2) + 2, w: ts - 3, h: f(ts / 2) });
     dr.drawCircle({ x, y }, m25, black, black);
     dr.unclip();
 
-    dr.clip({ x: x - f(ts / 2) + 2, y: y - f(ts / 2) + 2, w: f(ts / 2) + 1, h: f(ts / 2) });
+    dr.clip({
+      x: x - f(ts / 2) + 2,
+      y: y - f(ts / 2) + 2,
+      w: f(ts / 2) + 1,
+      h: f(ts / 2),
+    });
     dr.drawCircle({ x: x - f(ts / 7), y }, m25 - f(ts / 7), COL_VAMPIRE, black);
     dr.unclip();
     dr.clip({ x, y: y - f(ts / 2) + 2, w: f(ts / 2) + 1, h: f(ts / 2) });
@@ -311,8 +346,18 @@ function drawMonster(
     dr.drawCircle({ x, y }, m25, COL_VAMPIRE, black);
     dr.unclip();
 
-    dr.drawCircle({ x: x - f(ts / 7), y: y - f(ts / 16) }, f(ts / 16), COL_BACKGROUND, black);
-    dr.drawCircle({ x: x + f(ts / 7), y: y - f(ts / 16) }, f(ts / 16), COL_BACKGROUND, black);
+    dr.drawCircle(
+      { x: x - f(ts / 7), y: y - f(ts / 16) },
+      f(ts / 16),
+      COL_BACKGROUND,
+      black,
+    );
+    dr.drawCircle(
+      { x: x + f(ts / 7), y: y - f(ts / 16) },
+      f(ts / 16),
+      COL_BACKGROUND,
+      black,
+    );
     drawCircleOrPoint(dr, x - f(ts / 7), y - f(ts / 16), f(ts / 48), black);
     drawCircleOrPoint(dr, x + f(ts / 7), y - f(ts / 16), f(ts / 48), black);
 
@@ -343,21 +388,55 @@ function drawMonster(
     const ex = f(ts / 7);
     const ey = f(ts / 12);
     const r = f(ts / 16);
-    dr.drawLine({ x: x - ex - r, y: y - ey - r }, { x: x - ex + r, y: y - ey + r }, black, 1);
-    dr.drawLine({ x: x - ex + r, y: y - ey - r }, { x: x - ex - r, y: y - ey + r }, black, 1);
-    dr.drawLine({ x: x + ex - r, y: y - ey - r }, { x: x + ex + r, y: y - ey + r }, black, 1);
-    dr.drawLine({ x: x + ex + r, y: y - ey - r }, { x: x + ex - r, y: y - ey + r }, black, 1);
+    dr.drawLine(
+      { x: x - ex - r, y: y - ey - r },
+      { x: x - ex + r, y: y - ey + r },
+      black,
+      1,
+    );
+    dr.drawLine(
+      { x: x - ex + r, y: y - ey - r },
+      { x: x - ex - r, y: y - ey + r },
+      black,
+      1,
+    );
+    dr.drawLine(
+      { x: x + ex - r, y: y - ey - r },
+      { x: x + ex + r, y: y - ey + r },
+      black,
+      1,
+    );
+    dr.drawLine(
+      { x: x + ex + r, y: y - ey - r },
+      { x: x + ex - r, y: y - ey + r },
+      black,
+      1,
+    );
 
     dr.clip({ x: x - f(ts / 5), y: y + f(ts / 6), w: m25 + 1, h: f(ts / 2) });
-    dr.drawCircle({ x: x - f(ts / 15), y: y + f(ts / 6) }, f(ts / 12), COL_BACKGROUND, black);
+    dr.drawCircle(
+      { x: x - f(ts / 15), y: y + f(ts / 6) },
+      f(ts / 12),
+      COL_BACKGROUND,
+      black,
+    );
     dr.unclip();
-    dr.drawLine({ x: x - f(ts / 5), y: y + f(ts / 6) }, { x: x + f(ts / 5), y: y + f(ts / 6) }, black, 1);
+    dr.drawLine(
+      { x: x - f(ts / 5), y: y + f(ts / 6) },
+      { x: x + f(ts / 5), y: y + f(ts / 6) },
+      black,
+      1,
+    );
   }
 }
 
 // --- cell + furniture drawing ----------------------------------------------
 
-function cellCentre(ds: UndeadDrawState, x: number, y: number): { dx: number; dy: number } {
+function cellCentre(
+  ds: UndeadDrawState,
+  x: number,
+  y: number,
+): { dx: number; dy: number } {
   const ts = ds.tilesize;
   return {
     dx: border(ts) + x * ts + f(ts / 2),
@@ -378,7 +457,10 @@ function drawCellBackground(
   const hon = ui.hshow && x === ui.hx && y === ui.hy;
   // A hint background overrides the cursor highlight (the hint is what to act on).
   const bg = hintBg >= 0 ? hintBg : hon && !ui.hpencil ? COL_HIGHLIGHT : COL_BACKGROUND;
-  dr.drawRect({ x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 }, bg);
+  dr.drawRect(
+    { x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 },
+    bg,
+  );
   if (hintBg < 0 && hon && ui.hpencil) {
     dr.drawPolygon(
       [
@@ -393,7 +475,14 @@ function drawCellBackground(
   dr.drawUpdate({ x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 });
 }
 
-function drawMirror(dr: GameDrawing, ds: UndeadDrawState, x: number, y: number, hflash: boolean, mirror: number): void {
+function drawMirror(
+  dr: GameDrawing,
+  ds: UndeadDrawState,
+  x: number,
+  y: number,
+  hflash: boolean,
+  mirror: number,
+): void {
   const ts = ds.tilesize;
   const { dx, dy } = cellCentre(ds, x, y);
   let mx1: number;
@@ -411,7 +500,12 @@ function drawMirror(dr: GameDrawing, ds: UndeadDrawState, x: number, y: number, 
     mx2 = dx + f(ts / 4);
     my2 = dy - f(ts / 4);
   }
-  dr.drawLine({ x: mx1, y: my1 }, { x: mx2, y: my2 }, hflash ? COL_FLASH : COL_TEXT, f(ts / 16));
+  dr.drawLine(
+    { x: mx1, y: my1 },
+    { x: mx2, y: my2 },
+    hflash ? COL_FLASH : COL_TEXT,
+    f(ts / 16),
+  );
   dr.drawUpdate({ x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 });
 }
 
@@ -427,17 +521,39 @@ function drawBigMonster(
   const ts = ds.tilesize;
   const { dx, dy } = cellCentre(ds, x, y);
   if (ascii) {
-    const buf = monster === MON_GHOST ? "G" : monster === MON_VAMPIRE ? "V" : monster === MON_ZOMBIE ? "Z" : " ";
+    const buf =
+      monster === MON_GHOST
+        ? "G"
+        : monster === MON_VAMPIRE
+          ? "V"
+          : monster === MON_ZOMBIE
+            ? "Z"
+            : " ";
     dr.drawText(
       { x: dx, y: dy },
-      { align: "center", baseline: "mathematical", fontType: "variable", size: f(ts / 2) },
+      {
+        align: "center",
+        baseline: "mathematical",
+        fontType: "variable",
+        size: f(ts / 2),
+      },
       hflash ? COL_FLASH : COL_TEXT,
       buf,
     );
-    dr.drawUpdate({ x: dx - f(ts / 2) + 2, y: dy - f(ts / 2) + 2, w: ts - 3, h: ts - 3 });
+    dr.drawUpdate({
+      x: dx - f(ts / 2) + 2,
+      y: dy - f(ts / 2) + 2,
+      w: ts - 3,
+      h: ts - 3,
+    });
   } else {
     drawMonster(dr, dx, dy, idiv(3 * ts, 4), hflash, monster);
-    dr.drawUpdate({ x: dx - f(ts / 2) + 2, y: dy - f(ts / 2) + 2, w: ts - 3, h: ts - 3 });
+    dr.drawUpdate({
+      x: dx - f(ts / 2) + 2,
+      y: dy - f(ts / 2) + 2,
+      w: ts - 3,
+      h: ts - 3,
+    });
   }
 }
 
@@ -469,7 +585,12 @@ function drawPencils(
         const buf = m === MON_GHOST ? "G" : m === MON_VAMPIRE ? "V" : "Z";
         dr.drawText(
           { x: cx, y: cy },
-          { align: "center", baseline: "mathematical", fontType: "variable", size: f(ts / 4) },
+          {
+            align: "center",
+            baseline: "mathematical",
+            fontType: "variable",
+            size: f(ts / 4),
+          },
           COL_TEXT,
           buf,
         );
@@ -478,16 +599,29 @@ function drawPencils(
       // background, §5.3) and gains a COL_HINT strikethrough as the "ruled out" cue.
       if (struck & m) {
         const r = f(ts / 6);
-        dr.drawLine({ x: cx - r, y: cy + r }, { x: cx + r, y: cy - r }, COL_HINT, Math.max(1, f(ts / 24)));
+        dr.drawLine(
+          { x: cx - r, y: cy + r },
+          { x: cx + r, y: cy - r },
+          COL_HINT,
+          Math.max(1, f(ts / 24)),
+        );
       }
     }
   }
-  dr.drawUpdate({ x: dx - f(ts / 4) + 2, y: dy - f(ts / 4) + 2, w: f(ts / 2) - 3, h: f(ts / 2) - 3 });
+  dr.drawUpdate({
+    x: dx - f(ts / 4) + 2,
+    y: dy - f(ts / 4) + 2,
+    w: f(ts / 2) - 3,
+    h: f(ts / 2) - 3,
+  });
 }
 
 function drawMonsterCountBackground(dr: GameDrawing, ds: UndeadDrawState): void {
   const ts = ds.tilesize;
-  dr.drawRect({ x: 0, y: countY(ts), w: 2 * border(ts) + (ds.w + 2) * ts, h: ts }, COL_BACKGROUND);
+  dr.drawRect(
+    { x: 0, y: countY(ts), w: 2 * border(ts) + (ds.w + 2) * ts, h: ts },
+    COL_BACKGROUND,
+  );
   dr.drawUpdate({ x: 0, y: countY(ts), w: 2 * border(ts) + (ds.w + 2) * ts, h: ts });
 }
 
@@ -537,7 +671,12 @@ function drawMonsterCount(
   } else {
     dr.drawText(
       { x: dx + f(msize / 2), y: dy + f(dh / 2) },
-      { align: "center", baseline: "mathematical", fontType: "variable", size: idiv(ts, 2) },
+      {
+        align: "center",
+        baseline: "mathematical",
+        fontType: "variable",
+        size: idiv(ts, 2),
+      },
       hflash ? COL_FLASH : COL_TEXT,
       bufm,
     );
@@ -578,14 +717,26 @@ function drawPathHint(
   dr.drawRect({ x: dx, y: dy, w: textSize, h: textSize }, COL_BACKGROUND);
   dr.drawText(
     { x: textDx, y: textDy },
-    { align: "center", baseline: "mathematical", fontType: "variable", size: idiv(ts, 2) },
+    {
+      align: "center",
+      baseline: "mathematical",
+      fontType: "variable",
+      size: idiv(ts, 2),
+    },
     colour,
     String(hint),
   );
   dr.drawUpdate({ x: dx, y: dy, w: textSize, h: textSize });
 }
 
-function rectOutline(dr: GameDrawing, x: number, y: number, w: number, h: number, colour: number): void {
+function rectOutline(
+  dr: GameDrawing,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  colour: number,
+): void {
   dr.drawPolygon(
     [
       { x, y },
@@ -639,7 +790,10 @@ export function redraw(
     const fullW = 2 * b + (w + 2) * ts;
     const fullH = 2 * b + (h + 3) * ts;
     dr.drawRect({ x: 0, y: 0, w: fullW, h: fullH }, COL_BACKGROUND);
-    dr.drawRect({ x: b + ts - 1, y: b + 2 * ts - 1, w: w * ts + 3, h: h * ts + 3 }, COL_GRID);
+    dr.drawRect(
+      { x: b + ts - 1, y: b + 2 * ts - 1, w: w * ts + 3, h: h * ts + 3 },
+      COL_GRID,
+    );
     for (let i = 0; i < w; i++) {
       for (let j = 0; j < h; j++) {
         dr.drawRect(
@@ -652,7 +806,10 @@ export function redraw(
   }
 
   const hchanged =
-    ds.hx !== ui.hx || ds.hy !== ui.hy || ds.hshow !== ui.hshow || ds.hpencil !== ui.hpencil;
+    ds.hx !== ui.hx ||
+    ds.hy !== ui.hy ||
+    ds.hshow !== ui.hshow ||
+    ds.hpencil !== ui.hpencil;
   const changedAscii = ds.ascii !== ui.ascii;
   if (changedAscii) ds.ascii = ui.ascii;
   const changedCountStyle = ds.countStyle !== ui.countStyle;
@@ -670,7 +827,8 @@ export function redraw(
   if (changedCountStyle || !ds.started) calculateCountLayout(ds);
 
   for (let i = 0; i < 3; i++) {
-    let stale = !ds.started || ds.hflash !== hflash || changedAscii || changedCountStyle;
+    let stale =
+      !ds.started || ds.hflash !== hflash || changedAscii || changedCountStyle;
     if (ds.countErrors[i] !== state.countErrors[i]) {
       stale = true;
       ds.countErrors[i] = state.countErrors[i];
@@ -727,7 +885,8 @@ export function redraw(
       const c = common.grid[xy];
 
       let stale = !ds.started || ds.hflash !== hflash || changedAscii;
-      if (hchanged && ((x === ui.hx && y === ui.hy) || (x === ds.hx && y === ds.hy))) stale = true;
+      if (hchanged && ((x === ui.hx && y === ui.hy) || (x === ds.hx && y === ds.hy)))
+        stale = true;
       if (xi >= 0 && state.guess[xi] !== ds.monsters[xi]) {
         stale = true;
         ds.monsters[xi] = state.guess[xi];
@@ -779,7 +938,12 @@ export function redraw(
               COL_ERROR,
             );
           }
-          dr.drawUpdate({ x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 });
+          dr.drawUpdate({
+            x: dx - f(ts / 2) + 1,
+            y: dy - f(ts / 2) + 1,
+            w: ts - 1,
+            h: ts - 1,
+          });
         }
         ds.hint.commit(xy);
         ds.wrong.commit(xy);
@@ -804,7 +968,11 @@ export function redraw(
 
 /** Border cell `(x, y)` for an edge index — the render-side `range2grid` (we
  * only need the position, not the direction). */
-function rangeCell(rangeno: number, width: number, height: number): { x: number; y: number } {
+function rangeCell(
+  rangeno: number,
+  width: number,
+  height: number,
+): { x: number; y: number } {
   if (rangeno < width) return { x: rangeno + 1, y: 0 };
   rangeno -= width;
   if (rangeno < height) return { x: width + 1, y: rangeno + 1 };
