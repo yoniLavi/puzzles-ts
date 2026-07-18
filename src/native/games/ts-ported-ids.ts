@@ -28,6 +28,7 @@ export const TS_PORTED_PUZZLE_IDS: ReadonlySet<string> = new Set([
   "keen",
   "lightup",
   "magnets",
+  "map",
   "mines",
   "mosaic",
   "net",

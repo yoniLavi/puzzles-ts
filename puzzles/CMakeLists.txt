@@ -144,11 +144,11 @@ puzzle(magnets
 touching.")
 
 puzzle(map
+  TS_PORTED  # native-TS port (openspec add-map-ts-port); no map.c/wasm
   DISPLAYNAME "Map"
   DESCRIPTION "Map-colouring puzzle"
   OBJECTIVE "Colour the map so that adjacent regions are never the \
 same colour.")
-solver(map)
 
 puzzle(mines
   TS_PORTED  # native-TS port (openspec add-mines-ts-port); no mines.c/wasm
