@@ -197,12 +197,11 @@ puzzle(pattern
 of runs of black squares.")
 
 puzzle(pearl
+  TS_PORTED  # native-TS port (openspec add-pearl-ts-port); no pearl.c/wasm
   DISPLAYNAME "Pearl"
   DESCRIPTION "Loop-drawing puzzle"
   OBJECTIVE "Draw a single closed loop, given clues about corner and \
 straight squares.")
-solver(pearl)
-cliprogram(pearlbench pearl.c COMPILE_DEFINITIONS STANDALONE_SOAK_TEST)
 
 puzzle(pegs
   TS_PORTED  # native-TS port (openspec add-pegs-ts-port); no pegs.c/wasm
