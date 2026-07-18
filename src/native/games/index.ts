@@ -40,6 +40,7 @@ import { palisadeGame } from "./palisade/index.ts";
 import { patternGame } from "./pattern/index.ts";
 import { pegsGame } from "./pegs/index.ts";
 import { rangeGame } from "./range/index.ts";
+import { rectGame } from "./rect/index.ts";
 import { samegameGame } from "./samegame/index.ts";
 import { separateGame } from "./separate/index.ts";
 import { signpostGame } from "./signpost/index.ts";
@@ -87,6 +88,7 @@ export function registerAllGames(): void {
   registerGame(patternGame);
   registerGame(pegsGame);
   registerGame(rangeGame);
+  registerGame(rectGame);
   registerGame(samegameGame);
   registerGame(separateGame);
   registerGame(signpostGame);

@@ -218,6 +218,7 @@ puzzle(range
 each numbered cell.")
 
 puzzle(rect
+  TS_PORTED  # native-TS port (openspec add-rect-ts-port); no rect.c/wasm
   DISPLAYNAME "Rectangles"
   DESCRIPTION "Rectangles puzzle"
   OBJECTIVE "Divide the grid into rectangles with areas equal to the \
