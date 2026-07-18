@@ -1,8 +1,7 @@
-# grid Specification
+# grid — spec delta for extend-grid-tilings
 
-## Purpose
-TBD - created by archiving change add-pearl-ts-port. Update Purpose after archive.
-## Requirements
+## MODIFIED Requirements
+
 ### Requirement: Shared planar-grid data structure and deterministic square tiling
 
 The engine SHALL provide `src/native/engine/grid.ts` exposing a general
@@ -36,26 +35,7 @@ reproduces upstream's sequential-allocation pointer order.
 - **THEN** the two grids have identical faces, edges and dots in the same order
   (no randomness enters square construction)
 
-### Requirement: RNG-faithful random loop generation
-
-The engine SHALL provide `src/native/engine/loopgen.ts` exposing
-`generateLoop(grid, board, rng, bias?)` which colours every face of `grid`
-inside (white) or outside (black) so that the white/black boundary is a single
-closed loop, writing the colouring into `board`. It SHALL reproduce the upstream
-`generate_loop` RNG draw order exactly — a per-face 31-bit random score, a random
-seed face, a per-iteration random candidate colour, a shuffle of the face list,
-and a final random flip pass — with candidate faces ordered by score, then their
-random score field, then face index (reproducing upstream's pointer-order tie
-break). An optional `bias` callback (the upstream contract: invoked with a face
-tentatively set, then restored, then notified on commit; consuming no randomness)
-SHALL let a consumer bias generation toward desirable loops. Given a fixed seed,
-the generated loop SHALL be reproducible.
-
-#### Scenario: Loop generation yields a single closed loop
-
-- **WHEN** `generateLoop` runs on a square grid with a fixed seed and no bias
-- **THEN** the resulting white/black face colouring has a boundary that is one
-  closed loop, and the same seed yields the same colouring every run
+## ADDED Requirements
 
 ### Requirement: Periodic tilings
 
@@ -173,4 +153,3 @@ are a property of the consuming game, not of the geometry.
 
 - **WHEN** `gridValidateParams` is given a legal size for a tiling
 - **THEN** it returns null
-

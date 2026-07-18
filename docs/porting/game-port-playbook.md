@@ -156,10 +156,29 @@ Extracted from Netslide when Net became the second consumer),
 leaf (upstream `grid.c`): `Grid`/`GridFace`/`GridEdge`/`GridDot` with reference
 incidence (an edge holds its two dots + two faces, a null face = the infinite
 exterior; faces/dots carry clockwise edge/face rings) and the shared
-`makeConsistent` incidence builder. **Square tiling only so far** (`gridNewSquare`,
-deterministic from `(w,h)` — no RNG, no float); the other 17 tilings + the float
-helpers (`grid_nearest_edge`/`grid_find_incentre`/`grid_compute_size`) are deferred
-to whoever needs them (the Loopy port). Landed with Pearl,
+`makeConsistent` incidence builder. Split into `grid-core.ts` (structures +
+`makeConsistent`), `grid-tilings*.ts` (generators) and `grid-geometry.ts` (the
+float helpers) — **import the `grid.ts` barrel, not the parts**. Landed
+square-only with Pearl; `extend-grid-tilings` added **all 14 periodic tilings**
+plus `gridComputeSize`, `gridValidateParams`, `gridNearestEdge` and
+`gridFindIncentre` for Loopy. The **four aperiodic tilings** (Penrose P2/P3,
+hats, spectres) are RNG-bearing and desc-round-tripping and land in
+`add-aperiodic-tilings`; `gridNew` throws a named error for them meanwhile.
+Three rules a new tiling must respect, each of which has already cost real
+debugging:
+(a) **integer arithmetic only** — `grid.c:1404` says so, because dot dedup is by
+*exact* coordinate equality, so a fractional coordinate silently splits a shared
+corner into two dots instead of raising; use `Math.trunc`, never bare `/`, where
+C does integer division;
+(b) **watch for negative zero** — a negative scale factor times a zero index
+gives `-0`, which passes `===`, stringifies to `"0"` and yields a structurally
+perfect grid, yet fails `Object.is` and so fails a structural differential. It
+bit floret; expect it wherever basis vectors are signed. Fix with `|| 0`;
+(c) **emission order is observable** — dot indices come from first-encounter
+order, so reordering face emission within a cell is a behaviour change even when
+the geometry is identical. Verify with the index-exact differential
+(`grid-differential.test.ts` against `grid-trace.c --all`), never by eye,
+Landed with Pearl,
 [`loopgen.ts`](../../src/native/engine/loopgen.ts) — `generateLoop(g, board, rng, bias?)`,
 the RNG-faithful random-loop generator over a `Grid` (upstream `loopgen.c`). It is
 **byte-match critical** (drives Pearl's desc): reproduce the exact draw order —
