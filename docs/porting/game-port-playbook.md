@@ -574,6 +574,22 @@ must be in the diff key). Exemplar:
 coupling are detailed in [hint-authoring.md](./hint-authoring.md); a permutation
 puzzle with no notion of a wrong-but-legal state correctly omits it.
 
+**For a *region-drawing* game, flag the player's *edges* that contradict the
+solution — not "the cell looks invalid".** Where the player draws walls
+(Rectangles, and Tracks earlier), re-solve to the unique solution's edge grid and
+flag every edge the player has **set** that the solution does **not** contain — a
+definite mistake. A *missing* solution edge is merely incomplete, never a mistake,
+so a partially-drawn-but-correct board (some right walls, no complete rectangle
+yet) correctly reports zero. This is subtler than a cell-validity check: a
+2×2 box the player draws around no number *looks* wrong, but if each of its walls
+is a real solution boundary it is legitimate partial progress — only a wall the
+solution forbids (e.g. one boxing a 7-clue into a 1×1) is flagged. Recolour the
+flagged walls with a `COL_MISTAKE` index and fold the wrong-edge bits into the
+per-tile cache word (§3.2) so they paint and clear like any overlay. Exemplars:
+[`rect/index.ts`](../../src/native/games/rect/index.ts) `findMistakes` +
+[`rect/render.ts`](../../src/native/games/rect/render.ts),
+[`tracks/index.ts`](../../src/native/games/tracks/index.ts).
+
 ### 3.6 `solve()` and the generator's `aux`
 
 **A `solve()` that needs the generator's `aux` only works on a freshly generated

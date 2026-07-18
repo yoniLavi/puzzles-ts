@@ -63,6 +63,37 @@ export function parseConfigInt(v: string): number {
   return parseLeadingInt(v, 0).value;
 }
 
+/** C `atof`: parse a leading float, yielding 0 for garbage — never `NaN`,
+ * which would slip past every `<`/`>` bound check in `validateParams`. Used
+ * by any game with a `float` param (Netslide/Net's barrier probability,
+ * Rectangles' expansion factor). */
+export function atof(s: string): number {
+  const value = Number.parseFloat(s);
+  return Number.isNaN(value) ? 0 : value;
+}
+
+/**
+ * Render a number the way C's `%g` does (`encode_params` writes floats with
+ * it): six significant digits, trailing zeros stripped, switching to
+ * exponential notation below 1e-4 or at/above 1e6. This is emphatically *not*
+ * `String(x)` — that renders 1/3 as `0.3333333333333333`, which C would read
+ * back (via {@link atof}) as a slightly different number than it wrote, so a
+ * float param that round-trips through `String` can silently generate a
+ * different board. Any game encoding a `float` param uses this. */
+export function formatG(value: number): string {
+  if (value === 0) return "0";
+  const exponent = Math.floor(Math.log10(Math.abs(value)));
+  if (exponent < -4 || exponent >= 6) {
+    const [mantissa, exp] = value.toExponential(5).split("e");
+    return `${stripTrailingZeros(mantissa)}e${exp[0]}${exp.slice(1).padStart(2, "0")}`;
+  }
+  return stripTrailingZeros(value.toFixed(Math.max(0, 5 - exponent)));
+}
+
+function stripTrailingZeros(s: string): string {
+  return s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s;
+}
+
 /**
  * The two `width`/`height` `ParamConfigItem`s that virtually every grid
  * game's "Custom type…" dialog needs — the params analogue of the shared

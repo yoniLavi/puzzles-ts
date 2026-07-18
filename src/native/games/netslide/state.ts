@@ -91,26 +91,12 @@ export interface NetslideParams {
  * `0.3333333333333333`, which C would then read back as a slightly different
  * number than it wrote.
  */
-export function formatG(value: number): string {
-  if (value === 0) return "0";
-  const exponent = Math.floor(Math.log10(Math.abs(value)));
-  if (exponent < -4 || exponent >= 6) {
-    const [mantissa, exp] = value.toExponential(5).split("e");
-    return `${stripTrailingZeros(mantissa)}e${exp[0]}${exp.slice(1).padStart(2, "0")}`;
-  }
-  return stripTrailingZeros(value.toFixed(Math.max(0, 5 - exponent)));
-}
+// `formatG` (%g) and `atof` moved to `engine/params.ts` when Rectangles became
+// the second float-param consumer; imported + re-exported so existing imports
+// (and this module's own encode/decode) hold.
+export { atof, formatG } from "../../engine/params.ts";
 
-function stripTrailingZeros(s: string): string {
-  return s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s;
-}
-
-/** C `atof`: parse a leading float, yielding 0 for garbage — never `NaN`,
- * which would slip past every `<`/`>` bound check in `validateParams`. */
-export function atof(s: string): number {
-  const value = Number.parseFloat(s);
-  return Number.isNaN(value) ? 0 : value;
-}
+import { atof, formatG } from "../../engine/params.ts";
 
 export function defaultParams(): NetslideParams {
   return { w: 3, h: 3, wrapping: false, barrierProbability: 1, movetarget: 0 };
