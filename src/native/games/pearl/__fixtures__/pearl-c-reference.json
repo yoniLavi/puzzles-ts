@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "w": 6,
+      "h": 6,
+      "difficulty": 0,
+      "nosolve": false,
+      "seed": "pearl-0",
+      "desc": "dWbWWcBaWaWdBhBbBaB",
+      "aux": "95555C355C969556A0A95C3CA3CA0A356356",
+      "grade": 0
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "difficulty": 1,
+      "nosolve": false,
+      "seed": "pearl-1",
+      "desc": "aWWmBaWBdWbWeWaB",
+      "aux": "955C9C3C96AA96356AA955CAAA956A363556",
+      "grade": 1
+    },
+    {
+      "w": 8,
+      "h": 8,
+      "difficulty": 0,
+      "nosolve": false,
+      "seed": "pearl-2",
+      "desc": "dWdWWbBfWcWfWhBaBWaWWeWaWWBbBd",
+      "aux": "09C9555C0AA3C956963CAA9CA9C3636A36A9C9CA956AAAAAA00AAAAA35563636",
+      "grade": 0
+    },
+    {
+      "w": 8,
+      "h": 8,
+      "difficulty": 1,
+      "nosolve": false,
+      "seed": "pearl-3",
+      "desc": "BcBBjWeWaBaBBbWeWdWaWeWeWaWcBb",
+      "aux": "9555C95CA09CAA96A0AA36A035635CA09555563C3555C9CA95556AAA35555636",
+      "grade": 1
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "difficulty": 0,
+      "nosolve": false,
+      "seed": "pearl-4",
+      "desc": "BdBBeWaBbBgWeWaBcBaBbBaBhBaWdWfBaBaBfBaWWbBBn",
+      "aux": "95555C955CA955CAA9563600AAAA00955CA3635C35CA35C9CA9CA3556A36A369C9C35CA956AA35CAAA95635CAA3635555636",
+      "grade": 0
+    },
+    {
+      "w": 12,
+      "h": 8,
+      "difficulty": 1,
+      "nosolve": false,
+      "seed": "pearl-5",
+      "desc": "cWWdBcWaWiWaWaBaBiWaWcWBaBBaBcWgWWaBoBcWbWBbB",
+      "aux": "9C955C9C095CAA35C36A0A96AA9569560A3CA3600A95C3CA35C9563C356A9CAA955695CAA36369C0A96A355556356356",
+      "grade": 1
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "difficulty": 0,
+      "nosolve": false,
+      "seed": "pearl-6",
+      "desc": "fBWWfWWBkBbWWaWeWdBb",
+      "aux": "9C9C95CAAAA3CAAAA356AA3609CAA95CAAAAA96AAA3635636",
+      "grade": 0
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "difficulty": 0,
+      "nosolve": true,
+      "seed": "pearl-7",
+      "desc": "BWdWbWWeWbWbWbWaWWg",
+      "aux": "95C000A0355C3C09560A035C0A9556036000",
+      "grade": -1
+    }
+  ]
+}

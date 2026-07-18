@@ -151,7 +151,25 @@ model** (direction algebra `R/U/L/D`/`A`/`C`/`F`/`ROT`, the hex wire desc codec
 with `v`/`h` barriers, the spanning-tree grower over `sorted-multiset`, barrier
 placement, and the `computeActive` power flood). Wire bits `0x0F` only — each
 game owns the high bits (`0x10` collides: Netslide `FLASHING`, Net `LOCKED`).
-Extracted from Netslide when Net became the second consumer). **If a second
+Extracted from Netslide when Net became the second consumer),
+[`grid.ts`](../../src/native/engine/grid.ts) — the shared **planar-grid geometry**
+leaf (upstream `grid.c`): `Grid`/`GridFace`/`GridEdge`/`GridDot` with reference
+incidence (an edge holds its two dots + two faces, a null face = the infinite
+exterior; faces/dots carry clockwise edge/face rings) and the shared
+`makeConsistent` incidence builder. **Square tiling only so far** (`gridNewSquare`,
+deterministic from `(w,h)` — no RNG, no float); the other 17 tilings + the float
+helpers (`grid_nearest_edge`/`grid_find_incentre`/`grid_compute_size`) are deferred
+to whoever needs them (the Loopy port). Landed with Pearl,
+[`loopgen.ts`](../../src/native/engine/loopgen.ts) — `generateLoop(g, board, rng, bias?)`,
+the RNG-faithful random-loop generator over a `Grid` (upstream `loopgen.c`). It is
+**byte-match critical** (drives Pearl's desc): reproduce the exact draw order —
+per-face `randomBits(31)`, the seed-face `randomUpto`, per-iteration `randomUpto(2)`
+colour, one `shuffle(faceList)`, and a `randomUpto(10)` flip pass — with the sorted
+candidate sets ordered (score desc, random, **face index**) and the delete-before-rescore
+discipline mirroring `del234`/`add234`. A `bias` callback's only observable effect is
+its return value, so a **full-rescan** bias (recompute the score fresh each call
+instead of porting the incremental `tdq` machinery) is provably byte-identical and far
+simpler — Pearl does this. Landed with Pearl). **If a second
 consumer of a game-local helper appears, promote it to `engine/`.**
 
 **A `tree234` is almost always just a sorted set — reach for `SortedMultiset`.**
