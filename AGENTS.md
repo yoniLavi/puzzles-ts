@@ -120,6 +120,19 @@ Aspirational next step (owner-flagged 2026-06-15, not yet committed): lift Fifte
 
 Port to the most idiomatic TS shape — classes over handle-passing, `[Symbol.iterator]()` over `while (next())`, `boolean` over `0|1`, GC over explicit `free()`, modern data structures over C-array mirrors. Use the C as a *reference for the logic* (what deductions the solver makes, how the generator ensures uniqueness), not as a control-flow template to mirror line-for-line. There is no corpus that a refactor could break, so write it clean the first time; the dev-time differential spot-check catches gross divergence.
 
+### Byte-parity is a tool, not a debt (owner-stated 2026-07-04 and 2026-07-20)
+
+**Display code was never in scope** (2026-07-04): rendering, layout, geometry, animation and colours target *neat visuals and clean code*, not pixel-for-pixel reproduction. Deliberate visual improvements are the point of the fork.
+
+**On the generator/solver/codec path, byte-parity is the default — but as a *means*, not an end** (2026-07-20). It buys exactly two things: it is the **verification mechanism** (on a solver-gated generator the desc depends on the solver's verdict on every intermediate board, so one byte-match assertion validates generator, solver and codec together — nothing else available is as strong), and it is **porting ease** (verbatim transcription is the lowest-risk way to get a hard algorithm right). **You may let it go for a bigger benefit** — deliberately, recorded, and knowing you are also giving up the oracle.
+
+Four rules, from `add-loopy-ts-port`; the followable form is [`game-port-playbook.md`](docs/porting/game-port-playbook.md) §4 intro:
+
+1. **Divergence is free where C has no defined behaviour.** Upstream aborts on a degenerate Penrose patch, so retrying with a fresh desc diverges *only* on the seeds where C crashes. Take those — there is nothing to match.
+2. **Price the quirk before paying or refusing it.** "Bug-compatibility" sounds expensive and usually isn't: one quirk cost a single line plus a comment, another cost literally nothing (TS's `%` truncates exactly like C's). Don't narrate a sacrifice you aren't making.
+3. **Diverge for a genuine player-visible defect, not for tidiness.** A solver that deduces *falsely* can generate a puzzle with no unique solution — fix it and record it. A solver that is merely *weaker* than intended is not a defect; it is the difficulty curve upstream shipped, and "fixing" it changes every board.
+4. **Diverge where the C shape doesn't fit a browser.** `grid_trim_vigorously`'s dense `O(numDots²)` matrix is ~576 MB at 50×50. Structure is not behaviour — the replacement was exact, so this cost no fidelity at all; the trap would have been transcribing it faithfully *because* it was the C's shape.
+
 ## Migration order
 
 Top-down, product-value first:
