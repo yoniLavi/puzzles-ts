@@ -46,9 +46,62 @@ GroupReason | LatinReason` exactly as Unequal's `HintReason`.
 **Load-bearing constraint:** the recording branch is gated on `solver.recorder`
 being set. With it unset (generator/solve path) the code path — and every RNG
 draw and deduction verdict — is byte-for-byte what the frozen
-`group-c-reference.json` differential froze. The recording early-return
-("`return` as soon as one firing fires when recording") lives *inside* the
-`if (solver.recorder)` guard so it cannot perturb the un-recorded fixpoint.
+`group-c-reference.json` differential froze. The recording early-return lives
+*inside* the `if (solver.recorder)` guard so it cannot perturb the un-recorded
+fixpoint. Concretely: `solverNormal` already returns per firing on **both** paths
+(associativity returns on the first placement; the identity fill is itself one
+firing), so it needed no early-return change — only the reason argument to
+`solver.place`. `solverHard` did: un-recorded it accumulates strikes across
+*every* element and returns once; recording, it returns after **one** element's
+strikes (`if (rec && fired) return 1;`) so one recorded firing narrates a single
+"this element can't be the identity" deduction. The differential re-ran green.
+
+### D2b — Group's move model differs from the shared `CandidateMove` (implementation refinement)
+
+The shared `candidate-hint.ts` plan helpers assume the family move shape
+(`set {x,y,n,pencil}`, `pencilAll`, `pencilStrike`). Group's interactive `set`/
+`pencil` instead carry a **cell list** (`{cells, n}`) for its diagonal multifill,
+and it has no fill-all move. Rather than contort Group's moves to fit the
+contract (the guardrail: *game-specific logic is never contorted*), the hint:
+
+- **reuses the pure readers and mechanics** — `nakedSingle`, `nextPlace`,
+  `nextStrike`, `firstUnreflectedPlaceIndex`, `lazyPopulate`,
+  `emitObviousCleanStep`, `regionDuplicateMarks`, `candidateHint`, and the
+  `OverlaySidecar` render sidecar;
+- **emits placements as Group's native `set {cells:[{x,y}], n}`** — the exact move
+  a player produces by hand, so keep-track matching is natural and `executeHint`
+  runs it through the existing `executeMove`;
+- **adds only `pencilAll` / `pencilStrike`** (the two hint-execution variants the
+  family shares) to `GroupMove`, handled in `executeMove`;
+- **provides game-specific `hintKeepTrack` / `refreshHintStep`** that read Group's
+  native move shape (the shared `keepCandidateHintTrack` reads `set {x,y,n,pencil}`,
+  which a Group player never produces).
+
+Adding move variants does not touch the desc/differential (moves aren't in the
+desc), and only new hint-generated saves ever carry them.
+
+### D2c — Re-add upstream's 'M' (mark-all) as a real play move (owner-approved, reverses port D6)
+
+The Group port dropped upstream's `'M'` (fill-every-pencil-mark) as a
+standalone-solver diagnostic. The hint's populate step needs a fill-all action a
+player can *follow by hand*, so — owner-approved during implementation — `'M'` is
+re-added as a genuine `pencilAll` play move (`canMarkAll: true`, the Mark-all
+toolbar button, `adaptiveMarkAllMove`). One wrinkle unique to Group: its elements
+are the **letters a–z**, so lowercase `'m'` (109) is element 13 for `w ≥ 13` and
+must still enter that value — **only uppercase `'M'` (77)** is intercepted for
+mark-all (a clean disambiguation: uppercase = command, lowercase = element).
+
+### D2d — Generic Latin narration is Group-local (letters, not digits)
+
+`narrateLatinReason` interpolates values as **digits** (Keen/Unequal are numeric).
+Group's values are element **letters**, so its generic arms (single / hiddenSingle
+/ forcedSingle / dup / set / forcing) are transcribed locally with `toChar`
+formatting rather than reused. A value formatter on the shared helper was
+considered and declined as premature — Group is the only letter-valued Latin game,
+and the arms are a handful of short sentences (the guardrail: *an exemplar hint
+never loses a word to an abstraction*). The a/an trap (§2.3) bites here: an
+element `a` after "There's already…" reads as the article, so the `dup` arm says
+"This row and column already contain a" instead.
 
 ### D3 — Plan-preference ladder
 

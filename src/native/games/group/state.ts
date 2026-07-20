@@ -163,9 +163,16 @@ export type GroupMove =
   | { type: "reorder"; num: number; pos: number }
   /** Toggle a divider to the right of element `i` (between `i` and `j`)
    * (upstream `V`). */
-  | { type: "divider"; i: number; j: number };
-// Upstream's 'M' (fill every pencil mark everywhere) is a standalone-solver
-// diagnostic aid, not a play move — deliberately dropped (design D6).
+  | { type: "divider"; i: number; j: number }
+  /** Pencil in every candidate in each empty cell — the "fill all pencil marks"
+   * action ('M'). Upstream dropped this as a standalone-solver diagnostic, but
+   * the fork re-adds it (owner-approved) as a real play move: it is the populate
+   * step the explained hint teaches, and the manual action a player follows it
+   * with (the hint's elimination steps need notes to cross out). */
+  | { type: "pencilAll" }
+  /** Strike the listed pencil marks — the atomic form the hint's elimination
+   * steps and the "clear obvious candidates" cleanup emit. */
+  | { type: "pencilStrike"; marks: readonly { x: number; y: number; n: number }[] };
 
 /** A cell whose filled value contradicts the unique solution (Check & Save). */
 export interface GroupMistake {
