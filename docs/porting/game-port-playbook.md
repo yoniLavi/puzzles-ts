@@ -275,7 +275,7 @@ elimination, forcing chains, guess-and-verify recursion) and the RNG-faithful
 generator (`matching`/`latinGenerate`/`latinGenerateRect`) are ported there once:
 `latinSolver(grid, o, cfg)` with per-game `usersolvers` + a `valid` callback, the
 numeric `DIFF_IMPOSSIBLE/AMBIGUOUS/UNFINISHED = 10/11/12` sentinels. **Towers is the
-first consumer; Unequal/Keen reuse it; Solo/Group later.** A Latin game's `solver.ts`
+first consumer; Unequal/Keen/Solo/Group reuse it.** A Latin game's `solver.ts`
 is then just its own clue deductions (`usersolvers`) + validator + a thin driver
 mapping its difficulty levels onto the `cfg` fields. The cube is indexed
 `(x·o + y)·o + (n−1)`; deductions that read a cube slice are usually cleanest
@@ -294,7 +294,18 @@ per-recursion `ctxNew` is omitted because the ctx is immutable, exactly as
 upstream's structurally-identical `clone_ctx`),
 [`keen/solver.ts`](../../src/native/games/keen/solver.ts) (per-cage arithmetic
 deductions; the EASY/NORMAL/HARD `iscratch` accumulation variants + the "revert to
-easier after one cross-box hard hit" early return, all in the transposed cube space).
+easier after one cross-box hard hit" early return, all in the transposed cube space),
+[`group/solver.ts`](../../src/native/games/group/solver.ts) (associativity
+forward-deduction + identity-hidden elimination; the 5th consumer, reusing latin.ts
+with **zero** changes — Group is "two `usersolvers` + a `valid`" and nothing else).
+Group's port surfaced one reusable byte-parity trap: **a `usersolver`'s
+contradiction `return -1` may sit inside `#ifdef STANDALONE_SOLVER`, so the
+*shipped game build* has an empty `else` and silently skips the impossible
+placement.** The trace harness is a game build, not the standalone solver, so
+port the shipped behaviour (no `-1` there) — writing the "obvious" `-1` would
+diverge a byte-match desc. Read each `#ifdef STANDALONE_SOLVER` block to see
+whether the `return`/mutation is inside it (skip) or only the debug `printf` is
+(keep the logic) — `group_normal` has both kinds a few lines apart.
 
 **Three generator shapes in the family.** (1) Towers *derives* every clue from the
 full square then removes. (2) **Unequal (and Solo) greedily *assemble* clues** onto a

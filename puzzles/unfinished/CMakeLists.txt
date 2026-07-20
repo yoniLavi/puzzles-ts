@@ -1,8 +1,5 @@
-puzzle(group
-  DISPLAYNAME "Group"
-  DESCRIPTION "Group theory puzzle"
-  OBJECTIVE "Complete the unfinished Cayley table of a group.")
-solver(group ${PUZZLES_ROOT_DIR}/latin.c)
+# Group is a native-TS game in the main catalog (openspec add-group-ts-port);
+# group.c and group.gap were deleted at stage-2 acceptance.
 
 puzzle(slide
   DISPLAYNAME "Slide"
