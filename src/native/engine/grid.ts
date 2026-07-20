@@ -11,16 +11,26 @@
  *   (`Grid`/`GridFace`/`GridEdge`/`GridDot`) and the shared `makeConsistent`
  *   incidence builder.
  * - [`grid-tilings.ts`](./grid-tilings.ts) — the 14 periodic tiling
- *   generators and `periodicGridSize`. Pure integer, no RNG.
+ *   generators, the size dispatch (`gridSizeFor`, all 18 tilings) and
+ *   `gridValidateParams`. Pure integer, no RNG.
  * - [`grid-geometry.ts`](./grid-geometry.ts) — `gridNearestEdge` (input
  *   hit-testing) and `gridFindIncentre` (label placement). The only floating
  *   point in the module, and display/input only — never desc, generation or
  *   solving.
+ * - [`grid-desc.ts`](./grid-desc.ts) — `gridNewDesc` / `gridValidateDesc`.
+ * - [`grid-trim.ts`](./grid-trim.ts) — `gridTrimVigorously`, which the
+ *   aperiodic generators run before `makeConsistent` to shed their ragged
+ *   fringe.
+ *
+ * **The one contract worth knowing before reading further:** `gridNewDesc` is
+ * the only function here that consumes randomness, and `gridNew` is a pure
+ * deterministic function of `(type, width, height, desc)`. Everything else
+ * follows from that split — including the ability to differential-check
+ * geometry and RNG fidelity independently.
  *
  * Landed square-tiling-only with Pearl; extended to all 14 periodic tilings by
  * `extend-grid-tilings` for Loopy. The four aperiodic tilings (Penrose P2/P3,
- * hats, spectres) are RNG-bearing and desc-round-tripping, and land next in
- * `add-aperiodic-tilings` — until then `gridNew` rejects them.
+ * hats, spectres) land in `add-aperiodic-tilings`.
  */
 
 export {
@@ -30,14 +40,17 @@ export {
   GridFace,
   makeConsistent,
 } from "./grid-core.ts";
+export { gridNewDesc, gridValidateDesc } from "./grid-desc.ts";
 export { gridFindIncentre, gridNearestEdge } from "./grid-geometry.ts";
 export {
+  ALL_GRID_TYPES,
+  APERIODIC_GRID_TYPES,
   type GridSize,
   type GridType,
   gridNewSquare,
+  gridSizeFor,
   gridValidateParams,
   PERIODIC_GRID_TYPES,
-  periodicGridSize,
 } from "./grid-tilings.ts";
 export {
   gridNewCairo,
@@ -58,13 +71,15 @@ export {
   gridNewKites,
   gridNewOctagonal,
 } from "./grid-tilings-hex.ts";
+export { GridTrimmedAwayError, gridTrimVigorously } from "./grid-trim.ts";
 
 import type { Grid } from "./grid-core.ts";
+import { assertGridDescValid } from "./grid-desc.ts";
 import {
   type GridSize,
   type GridType,
   gridNewSquare,
-  periodicGridSize,
+  gridSizeFor,
 } from "./grid-tilings.ts";
 import {
   gridNewCairo,
@@ -85,6 +100,9 @@ import {
   gridNewKites,
   gridNewOctagonal,
 } from "./grid-tilings-hex.ts";
+import { gridNewHats } from "./tilings/hat-grid.ts";
+import { gridNewPenrose } from "./tilings/penrose-grid.ts";
+import { gridNewSpectres } from "./tilings/spectre-grid.ts";
 
 /**
  * Build a grid of the given type and size. `desc` is the tiling's description
@@ -100,64 +118,51 @@ export function gridNew(
   height: number,
   desc: string | null = null,
 ): Grid {
+  // Upstream asserts the description here rather than returning an error: a bad
+  // description reaching construction means the caller skipped validation, so
+  // it is a programming error, and every generator below may trust its input.
+  assertGridDescValid(type, width, height, desc);
+
   switch (type) {
     case "square":
-      requireNoDesc(type, desc);
       return gridNewSquare(width, height);
     case "honeycomb":
-      requireNoDesc(type, desc);
       return gridNewHoneycomb(width, height);
     case "triangular":
       return gridNewTriangular(width, height, desc);
     case "snubsquare":
-      requireNoDesc(type, desc);
       return gridNewSnubsquare(width, height);
     case "cairo":
-      requireNoDesc(type, desc);
       return gridNewCairo(width, height);
     case "greathexagonal":
-      requireNoDesc(type, desc);
       return gridNewGreathexagonal(width, height);
     case "kagome":
-      requireNoDesc(type, desc);
       return gridNewKagome(width, height);
     case "octagonal":
-      requireNoDesc(type, desc);
       return gridNewOctagonal(width, height);
     case "kites":
-      requireNoDesc(type, desc);
       return gridNewKites(width, height);
     case "floret":
-      requireNoDesc(type, desc);
       return gridNewFloret(width, height);
     case "dodecagonal":
-      requireNoDesc(type, desc);
       return gridNewDodecagonal(width, height);
     case "greatdodecagonal":
-      requireNoDesc(type, desc);
       return gridNewGreatdodecagonal(width, height);
     case "greatgreatdodecagonal":
-      requireNoDesc(type, desc);
       return gridNewGreatgreatdodecagonal(width, height);
     case "compassdodecagonal":
-      requireNoDesc(type, desc);
       return gridNewCompassdodecagonal(width, height);
+    // The aperiodic four. `desc` is non-null for all of them: it is the record
+    // of the generator's random choices, and `assertGridDescValid` above has
+    // already rejected a missing or malformed one.
     case "penrose_p2_kite":
+      return gridNewPenrose("p2", width, height, desc as string);
     case "penrose_p3_thick":
+      return gridNewPenrose("p3", width, height, desc as string);
     case "hats":
+      return gridNewHats(width, height, desc as string);
     case "spectres":
-      throw new Error(
-        `grid: the aperiodic tiling '${type}' is not implemented yet ` +
-          "(openspec add-aperiodic-tilings)",
-      );
-    default:
-      throw new Error(`grid: unimplemented tiling '${type}'`);
-  }
-}
-
-function requireNoDesc(type: GridType, desc: string | null): void {
-  if (desc !== null) {
-    throw new Error(`grid: tiling '${type}' takes no description string`);
+      return gridNewSpectres(width, height, desc as string);
   }
 }
 
@@ -171,5 +176,5 @@ export function gridComputeSize(
   width: number,
   height: number,
 ): GridSize {
-  return periodicGridSize(type, width, height);
+  return gridSizeFor(type, width, height);
 }

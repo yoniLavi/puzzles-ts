@@ -35,7 +35,19 @@ export class GridDot {
   edges: GridEdge[] = [];
   faces: (GridFace | null)[] = [];
   constructor(
-    public readonly index: number,
+    /**
+     * Position in `Grid.dots`. Assigned at construction and rewritten **only**
+     * by {@link gridTrimVigorously}'s compaction pass, which renumbers the
+     * survivors densely. Nothing else may write it.
+     *
+     * (It was `readonly` until the aperiodic tilings arrived — they are the
+     * first generators that emit an over-large patch and trim it. Rebuilding
+     * fresh dots instead would have to remap every face's dot references, and
+     * getting that wrong breaks the *identity* sharing that `makeConsistent`
+     * relies on — deduplicated corners must stay the same object — which is a
+     * far worse failure than a narrowly-mutable field.)
+     */
+    public index: number,
     public readonly x: number,
     public readonly y: number,
   ) {}
@@ -72,7 +84,10 @@ export class GridFace {
   iy = 0;
 
   constructor(
-    public readonly index: number,
+    /** Position in `Grid.faces`. Mutable for the same narrow reason as
+     * {@link GridDot.index} — {@link gridTrimVigorously}'s compaction is the
+     * only writer besides construction. */
+    public index: number,
     public readonly order: number,
     public readonly dots: (GridDot | null)[],
   ) {}

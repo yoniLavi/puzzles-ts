@@ -75,6 +75,21 @@ export const PERIODIC_GRID_TYPES = [
   "compassdodecagonal",
 ] as const satisfies readonly GridType[];
 
+/** The four aperiodic tilings: RNG-bearing, desc-round-tripping, and trimmed
+ * before their incidence is derived. Their generators live in `tilings/`. */
+export const APERIODIC_GRID_TYPES = [
+  "penrose_p2_kite",
+  "penrose_p3_thick",
+  "hats",
+  "spectres",
+] as const satisfies readonly GridType[];
+
+/** All 18 tilings, in `GRIDGEN_LIST` order. */
+export const ALL_GRID_TYPES = [
+  ...PERIODIC_GRID_TYPES,
+  ...APERIODIC_GRID_TYPES,
+] as const satisfies readonly GridType[];
+
 /** A tiling's natural tile size and the extent of the patch it produces. */
 export interface GridSize {
   tileSize: number;
@@ -129,6 +144,23 @@ export const DODEC_TILESIZE = 26;
 export const DODEC_A = 15;
 export const DODEC_B = 26;
 
+// Aperiodic tilings. The generators live in `tilings/`; only their *sizes* and
+// bounds are here, because size is a pure function of (width, height) that
+// needs no patch built — and because the size arms must stay adjacent to the
+// periodic ones they dispatch alongside.
+
+export const PENROSE_TILESIZE = 100;
+
+export const HATS_TILESIZE = 32;
+export const HATS_XSQUARELEN = 4;
+export const HATS_YSQUARELEN = 6;
+export const HATS_XUNIT = 14;
+export const HATS_YUNIT = 8;
+
+export const SPECTRE_TILESIZE = 32;
+export const SPECTRE_SQUARELEN = 7;
+export const SPECTRE_UNIT = 8;
+
 // ---------------------------------------------------------------------------
 // Size computation — pure integer, needs no constructed grid.
 // ---------------------------------------------------------------------------
@@ -138,11 +170,7 @@ export const DODEC_B = 26;
  * `(type, width, height)`. Mirrors the `grid_size_*` family; the app sizes its
  * drawing surface from this before any grid exists.
  */
-export function periodicGridSize(
-  type: GridType,
-  width: number,
-  height: number,
-): GridSize {
+export function gridSizeFor(type: GridType, width: number, height: number): GridSize {
   switch (type) {
     case "square":
       return {
@@ -256,8 +284,33 @@ export function periodicGridSize(
         xExtent: (4 * DODEC_A + 2 * DODEC_B) * width,
         yExtent: (4 * DODEC_A + 2 * DODEC_B) * height,
       };
-    default:
-      throw new Error(`grid size: ${type} is not a periodic tiling`);
+    // The aperiodic tilings. Note both Penrose variants report the *same*
+    // extent despite their different internal x/y units: the unit difference
+    // only changes how many tiles land inside the fixed 100·w × 100·h box.
+    case "penrose_p2_kite":
+    case "penrose_p3_thick":
+      return {
+        tileSize: PENROSE_TILESIZE,
+        xExtent: PENROSE_TILESIZE * width,
+        yExtent: PENROSE_TILESIZE * height,
+      };
+    // Hats is the one tiling whose built grid is NOT re-centred into the
+    // extent reported here: Penrose and spectres both force their bounding box
+    // to match, hats keeps whatever survived trimming. So a hat grid's bbox
+    // will generally differ from this. That asymmetry is upstream's and is
+    // deliberate — don't "fix" it by adding a recentring step.
+    case "hats":
+      return {
+        tileSize: HATS_TILESIZE,
+        xExtent: width * HATS_XUNIT * HATS_XSQUARELEN,
+        yExtent: height * HATS_YUNIT * HATS_YSQUARELEN,
+      };
+    case "spectres":
+      return {
+        tileSize: SPECTRE_TILESIZE,
+        xExtent: width * SPECTRE_UNIT * SPECTRE_SQUARELEN,
+        yExtent: height * SPECTRE_UNIT * SPECTRE_SQUARELEN,
+      };
   }
 }
 
@@ -279,8 +332,8 @@ const INT_MAX = 2147483647;
  * it is carried per tiling rather than normalised away.
  */
 const OBJECT_BOUND: Record<
-  (typeof PERIODIC_GRID_TYPES)[number],
-  { multiplier: number; corners: boolean }
+  GridType,
+  { multiplier: number; corners: boolean; extentUnit?: number }
 > = {
   square: { multiplier: 1, corners: true },
   honeycomb: { multiplier: 2, corners: true },
@@ -296,6 +349,25 @@ const OBJECT_BOUND: Record<
   greatdodecagonal: { multiplier: 200, corners: false },
   greatgreatdodecagonal: { multiplier: 300, corners: false },
   compassdodecagonal: { multiplier: 18, corners: false },
+
+  // Aperiodic. `extentUnit` is upstream's `l` — see the note in
+  // `gridValidateParams` on why these four don't use the forward extent.
+  penrose_p2_kite: {
+    multiplier: 3 * 3 * 4,
+    corners: false,
+    extentUnit: PENROSE_TILESIZE,
+  },
+  penrose_p3_thick: {
+    multiplier: 3 * 3 * 4,
+    corners: false,
+    extentUnit: PENROSE_TILESIZE,
+  },
+  hats: { multiplier: 6, corners: false, extentUnit: HATS_TILESIZE },
+  spectres: {
+    multiplier: SPECTRE_SQUARELEN * SPECTRE_SQUARELEN,
+    corners: false,
+    extentUnit: SPECTRE_UNIT * SPECTRE_SQUARELEN,
+  },
 };
 
 /**
@@ -318,6 +390,13 @@ const OBJECT_BOUND: Record<
  * mistyped size silently tries to allocate hundreds of millions of objects.
  * `INT_MAX` is kept as the threshold so the accepted/rejected boundary stays
  * identical to the C's.
+ *
+ * **Wording divergence, recorded deliberately.** Upstream returns "Grid must
+ * not be unreasonably large"; this returns "Grid size must not be unreasonably
+ * large". Nothing compares these strings — they are surfaced to the player, not
+ * to a fixture — and the extra word reads better next to a size the player just
+ * typed. Noted so it stays a decision rather than becoming unexplained drift
+ * from the reference.
  */
 export function gridValidateParams(
   type: GridType,
@@ -326,17 +405,27 @@ export function gridValidateParams(
 ): string | null {
   if (width <= 0 || height <= 0) return "Width and height must both be positive";
 
-  const bound = OBJECT_BOUND[type as (typeof PERIODIC_GRID_TYPES)[number]];
-  if (bound === undefined) {
-    throw new Error(`grid validate: ${type} is not a periodic tiling`);
-  }
+  const bound = OBJECT_BOUND[type];
 
-  // Extent overflow. Computed forward rather than in upstream's divided form
-  // (see the doc comment); equivalent, and it reuses the size function that
-  // the differential already proves correct against the C.
-  const { xExtent, yExtent } = periodicGridSize(type, width, height);
-  if (xExtent > INT_MAX || yExtent > INT_MAX) {
-    return "Grid size must not be unreasonably large";
+  // Extent overflow. For the periodic tilings this is computed forward rather
+  // than in upstream's divided form (see the doc comment) — equivalent, and it
+  // reuses the size function the differential already proves against the C.
+  //
+  // The four aperiodic tilings need upstream's `l` instead, because there `l`
+  // is *not* the reported extent: hats, for instance, guard on `width * 32`
+  // while reporting an extent of `width * 56`. Computing forward would move the
+  // accept/reject boundary (INT_MAX/56 rather than INT_MAX/32). Nothing real
+  // sits near either threshold, but a silently different boundary is exactly
+  // the kind of drift the differential cannot see, so match the C.
+  if (bound.extentUnit !== undefined) {
+    if (width > INT_MAX / bound.extentUnit || height > INT_MAX / bound.extentUnit) {
+      return "Grid size must not be unreasonably large";
+    }
+  } else {
+    const { xExtent, yExtent } = gridSizeFor(type, width, height);
+    if (xExtent > INT_MAX || yExtent > INT_MAX) {
+      return "Grid size must not be unreasonably large";
+    }
   }
 
   const cells = bound.corners ? (width + 1) * (height + 1) : width * height;

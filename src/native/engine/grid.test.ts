@@ -10,12 +10,16 @@
  * comparison.
  */
 import { describe, expect, it } from "vitest";
+import { randomNew } from "../random/index.ts";
 import {
+  APERIODIC_GRID_TYPES,
   type Grid,
   gridComputeSize,
   gridNearestEdge,
   gridNew,
+  gridNewDesc,
   gridNewSquare,
+  gridValidateDesc,
   gridValidateParams,
   PERIODIC_GRID_TYPES,
 } from "./grid.ts";
@@ -245,16 +249,30 @@ describe("triangular version desc", () => {
   });
 });
 
-describe("aperiodic tilings are not yet implemented", () => {
-  // Guards the change boundary: these must fail loudly rather than silently
-  // returning something wrong, until `add-aperiodic-tilings` lands.
+describe("aperiodic tilings", () => {
+  // Replaced `extend-grid-tilings`' "these throw a named error" guard, which
+  // was the change boundary while the four were unimplemented. Index-exact
+  // agreement with the C lives in `grid-aperiodic-differential.test.ts`; what
+  // is asserted here is only that they are wired into the barrel at all.
   it.each([
-    "penrose_p2_kite",
-    "penrose_p3_thick",
-    "hats",
-    "spectres",
-  ] as const)("%s throws a named error", (type) => {
-    expect(() => gridNew(type, 6, 6)).toThrow(/add-aperiodic-tilings/);
+    ...APERIODIC_GRID_TYPES,
+  ])("%s builds from a generated description", (type) => {
+    const desc = gridNewDesc(type, 6, 6, randomNew("wiring"));
+    expect(desc).not.toBeNull();
+    expect(gridValidateDesc(type, 6, 6, desc)).toBeNull();
+
+    const g = gridNew(type, 6, 6, desc);
+    expect(g.faces.length).toBeGreaterThan(0);
+    expect(g.dots.length).toBeGreaterThan(0);
+    // Simply-connected planar patch, post-trim.
+    expect(g.dots.length - g.edges.length + g.faces.length).toBe(1);
+  });
+
+  it.each([...APERIODIC_GRID_TYPES])("%s requires a description", (type) => {
+    // Unlike the periodic tilings, a description is not optional here: it is
+    // the record of the generator's random choices, without which there is no
+    // particular patch to rebuild.
+    expect(() => gridNew(type, 6, 6, null)).toThrow(/invalid description/);
   });
 });
 
