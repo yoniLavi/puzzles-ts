@@ -214,6 +214,10 @@ Tracked via **openspec**. See `openspec/OPENSPEC_AGENTS.md` for the workflow (pr
 
 **One openspec change per coherent unit of work** — the TS midend is one change; each game port is one change; a cross-game feature (quick-save) is one change. Bundle only when several items share genuinely identical `design.md` reasoning (e.g. three trivially-similar small games after the pattern is well-trodden); keep separate when an item has its own non-obvious decisions. A game port that ships its C deletion does both in the one change.
 
+**Don't wait for proposal approval before implementing** (owner directive, 2026-07-20). openspec's generic workflow has an approval gate between proposal and implementation; in this project that gate is **off by default**. Scaffold the change, then keep going into the implementation in the same session. The gate that actually matters here is the one at the *other* end — owner acceptance before archiving and flipping a game to `TS_PORTED` (see "Parity-gated" below), and that one is unchanged.
+
+Stop and ask only for a **genuinely difficult decision**: a real trade-off with no clear winner, an ambiguity where two readings produce materially different work, or something irreversible/user-visible (dropping save compatibility, changing a shipped format). A design decision that the C survey already determines is not a difficult decision — write it down in `design.md` and implement it. Surfacing a settled call as a question is the friction this directive exists to remove.
+
 ## What's been done
 
 Recorded here as durable reference, not a changelog (commit history carries the detail):

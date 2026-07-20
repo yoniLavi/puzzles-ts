@@ -161,9 +161,15 @@ exterior; faces/dots carry clockwise edge/face rings) and the shared
 float helpers) — **import the `grid.ts` barrel, not the parts**. Landed
 square-only with Pearl; `extend-grid-tilings` added **all 14 periodic tilings**
 plus `gridComputeSize`, `gridValidateParams`, `gridNearestEdge` and
-`gridFindIncentre` for Loopy. The **four aperiodic tilings** (Penrose P2/P3,
-hats, spectres) are RNG-bearing and desc-round-tripping and land in
-`add-aperiodic-tilings`; `gridNew` throws a named error for them meanwhile.
+`gridFindIncentre` for Loopy; `add-aperiodic-tilings` completed the set at
+**18** with the **four aperiodic tilings** (Penrose P2/P3, hats, spectres) under
+`tilings/`, plus the `gridNewDesc`/`gridValidateDesc` round-trip,
+`gridTrimVigorously` and `nTimesRootK`. **The contract worth knowing before
+using any of it: `gridNewDesc` is the only function in the module that consumes
+randomness, and `gridNew` is a pure deterministic function of
+`(type, width, height, desc)`.** That split is what lets a tiling's geometry and
+its RNG fidelity be differential-checked independently — a red test then means
+either "wrong geometry" or "wrong draw order", never "somewhere in 2,400 lines".
 Three rules a new tiling must respect, each of which has already cost real
 debugging:
 (a) **integer arithmetic only** — `grid.c:1404` says so, because dot dedup is by
@@ -173,11 +179,26 @@ C does integer division;
 (b) **watch for negative zero** — a negative scale factor times a zero index
 gives `-0`, which passes `===`, stringifies to `"0"` and yields a structurally
 perfect grid, yet fails `Object.is` and so fails a structural differential. It
-bit floret; expect it wherever basis vectors are signed. Fix with `|| 0`;
+bit floret; expect it wherever basis vectors are signed. Fix with `|| 0` — or,
+where a tiling computes in exact irrational arithmetic and converts to pixels at
+one boundary (the aperiodic four), normalise once **at that boundary** rather
+than scattering guards through the arithmetic, so there is a single reviewable
+choke point;
 (c) **emission order is observable** — dot indices come from first-encounter
 order, so reordering face emission within a cell is a behaviour change even when
 the geometry is identical. Verify with the index-exact differential
-(`grid-differential.test.ts` against `grid-trace.c --all`), never by eye,
+(`grid-differential.test.ts` against `grid-trace.c --all`,
+`grid-aperiodic-differential.test.ts` against `--aperiodic`), never by eye;
+(d) **a random draw is an observable side effect, not a computation** — all
+three aperiodic tilings pick weighted candidates by linear scan, and all three
+call `random_upto` *unconditionally even when the candidate list holds exactly
+one entry* (hat's `parents_T`, spectre's `poss_J`/`poss_L`). Skipping the draw
+when `n === 1` is the obvious optimisation and it desynchronises the stream,
+yielding a different — entirely valid, entirely plausible-looking — tiling with
+nothing asserting. The same rule forbids "fixing" weight constants that look
+wrong (hat's `starting_hats` uses `PROB_P` for its `TT_T` entry): they are what
+the C draws against. This generalises past `grid.ts` to **any** port whose
+generator must match a seed,
 Landed with Pearl,
 [`loopgen.ts`](../../src/native/engine/loopgen.ts) — `generateLoop(g, board, rng, bias?)`,
 the RNG-faithful random-loop generator over a `Grid` (upstream `loopgen.c`). It is
