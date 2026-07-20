@@ -17,6 +17,7 @@
 
 import type { Colour, DrawTextOptions, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { GroupMove } from "./state.ts";
 import {
   checkErrors,
@@ -43,6 +44,11 @@ export const COL_PENCIL = 5;
 export const COL_DIAGONAL = 6;
 /** Fork addition (past the upstream enum): the Check & Save mistake outline. */
 export const COL_MISTAKE = 7;
+/** Hint overlay (fork addition): the cell(s)/candidate(s) the deduction acts on. */
+export const COL_HINT = 8;
+/** Hint overlay: the premise cells shaded as evidence (associativity's three
+ * known products, an identity fill's revealing cell). */
+export const COL_HINT_CELL = 9;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -55,7 +61,20 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL] = [0.5 * bg[0], 0.5 * bg[1], bg[2]];
   out[COL_DIAGONAL] = [0.95 * bg[0], 0.95 * bg[1], 0.95 * bg[2]];
   out[COL_MISTAKE] = [1, 0, 0];
+  out[COL_HINT] = [0.62, 0.81, 0.96];
+  out[COL_HINT_CELL] = [0.85, 0.92, 0.99];
   return out;
+}
+
+/** Highlight payload a Group hint step carries (built in `index.ts`), the
+ * `CandidateHighlights` shape the shared plan helpers consume: the premise cells
+ * shaded `COL_HINT_CELL` (`area`), the acted-on cell(s) `COL_HINT` (`targets`),
+ * and the struck candidate(s) crossed through among the pencil marks (`marks`).
+ * All coordinates are grid `{x = col, y = row}`. */
+export interface GroupHint {
+  area: { x: number; y: number }[];
+  targets: { x: number; y: number }[];
+  marks: { x: number; y: number; n: number }[];
 }
 
 // --- draw-flag bits (DF_*) --------------------------------------------------
@@ -119,6 +138,11 @@ export interface GroupDrawState {
   errors: Int32Array;
   /** Per-display-cell mistake-bit cache. */
   mistakes: Uint8Array;
+  /** Grid-indexed hint-overlay sidecar (fork addition): bit 0 = target cell,
+   * bit 1 = evidence, bits 2.. = struck-candidate mask (`hintMarkBit(n)`). Keyed
+   * by grid cell (`y·w + x`) so the overlay follows an element through a display
+   * reorder; owns its own drawn-vs-packed diff (playbook §3.2 / OverlaySidecar). */
+  hint: OverlaySidecar;
   /** Scratch: the drag-modified display sequence, rebuilt each redraw. */
   sequence: Uint8Array;
   /** Scratch: grid-indexed error overlay from `checkErrors`. */
@@ -138,6 +162,7 @@ export function newDrawState(state: GroupState): GroupDrawState {
     pencil: new Int32Array(a).fill(-1),
     errors: new Int32Array(a),
     mistakes: new Uint8Array(a),
+    hint: new OverlaySidecar(a),
     sequence: new Uint8Array(w),
     errtmp: new Int32Array(a),
   };
@@ -169,11 +194,19 @@ function drawTile(
   pencil: number,
   error: number,
   mistake: boolean,
+  hint: number,
 ): void {
   const w = ds.w;
   const ts = ds.tilesize;
   const id = ds.id;
   let tile = tileIn;
+
+  // Hint overlay (hint-authoring §5.3): a placement target fills solid COL_HINT;
+  // an evidence cell shades COL_HINT_CELL; a strike keeps its ordinary background
+  // so the crossed-through candidates stay legible (`struck` bit `2 + n`).
+  const hintTarget = (hint & 1) !== 0;
+  const hintArea = (hint & 2) !== 0;
+  const struck = hint >> 2;
 
   const tx = border(ts) + legend(ts) + x * ts + 1;
   const ty = border(ts) + legend(ts) + y * ts + 1;
@@ -193,11 +226,13 @@ function drawTile(
 
   dr.clip({ x: cx, y: cy, w: cw, h: ch });
 
-  // Background.
-  dr.drawRect(
-    { x: cx, y: cy, w: cw, h: ch },
-    tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : x === y ? COL_DIAGONAL : COL_BACKGROUND,
-  );
+  // Background: hint target (solid, placement only) > hint evidence > highlight >
+  // diagonal shade > plain.
+  let bg =
+    tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : x === y ? COL_DIAGONAL : COL_BACKGROUND;
+  if (hintArea) bg = COL_HINT_CELL;
+  if (hintTarget && struck === 0) bg = COL_HINT;
+  dr.drawRect({ x: cx, y: cy, w: cw, h: ch }, bg);
 
   // Dividers.
   if (tile & DF_DIVIDER_TOP) dr.drawRect({ x: cx, y: cy, w: cw, h: 1 }, COL_GRID);
@@ -292,15 +327,15 @@ function drawTile(
         if (pencil & (1 << i)) {
           const dx = j % pw;
           const dy = Math.trunc(j / pw);
-          dr.drawText(
-            {
-              x: pl + Math.trunc((fontsize * (2 * dx + 1)) / 2),
-              y: pt + Math.trunc((fontsize * (2 * dy + 1)) / 2),
-            },
-            textOpts(fontsize),
-            COL_PENCIL,
-            toChar(i, id),
-          );
+          const px = pl + Math.trunc((fontsize * (2 * dx + 1)) / 2);
+          const py = pt + Math.trunc((fontsize * (2 * dy + 1)) / 2);
+          dr.drawText({ x: px, y: py }, textOpts(fontsize), COL_PENCIL, toChar(i, id));
+          // A hint-struck candidate keeps its normal pencil colour with a
+          // same-colour strikethrough as the "ruled out" cue (hint-authoring §5.3).
+          if (struck & (1 << i)) {
+            const r = Math.max(2, Math.trunc(fontsize / 3));
+            dr.drawLine({ x: px - r, y: py }, { x: px + r, y: py }, COL_PENCIL, 2);
+          }
           j++;
         }
       }
@@ -330,7 +365,7 @@ export function redraw(
   ui: GroupUi,
   _animTime: number,
   flashTime: number,
-  _hint?: HintStep<GroupMove>,
+  hint?: HintStep<GroupMove, GroupHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
   const w = state.w;
@@ -377,14 +412,21 @@ export function redraw(
   const mistakeFlags = new Uint8Array(w * w);
   if (mistakes) for (const m of mistakes) mistakeFlags[m.y * w + m.x] = 1;
 
+  // Hint overlay, packed by grid cell so it follows an element through a reorder.
+  ds.hint.pack(
+    hint?.highlights,
+    (x, y) => y * w + x,
+    (m) => hintMarkBit(m.n),
+  );
+
   // Legend row/column.
   for (let x = 0; x < w; x++) {
     const sx = ds.sequence[x];
     const tile = (sx + 1) | DF_LEGEND;
     if (ds.legend[x] !== tile) {
       ds.legend[x] = tile;
-      drawTile(dr, ds, -1, x, tile, 0, 0, false);
-      drawTile(dr, ds, x, -1, tile, 0, 0, false);
+      drawTile(dr, ds, -1, x, tile, 0, 0, false, 0);
+      drawTile(dr, ds, x, -1, tile, 0, 0, false, 0);
     }
   }
 
@@ -435,21 +477,25 @@ export function redraw(
       if (x + 1 >= w || state.dividers[sx] === ds.sequence[x + 1])
         tile |= DF_DIVIDER_RIGHT;
 
-      const error = ds.errtmp[sy * w + sx];
-      const mistake = mistakeFlags[sy * w + sx] !== 0;
+      const gi = sy * w + sx;
+      const error = ds.errtmp[gi];
+      const mistake = mistakeFlags[gi] !== 0;
+      const hintWord = ds.hint.packed[gi];
 
       const idx = y * w + x;
       if (
         ds.tiles[idx] !== tile ||
         ds.pencil[idx] !== pencil ||
         ds.errors[idx] !== error ||
-        ds.mistakes[idx] !== (mistake ? 1 : 0)
+        ds.mistakes[idx] !== (mistake ? 1 : 0) ||
+        ds.hint.stale(gi)
       ) {
         ds.tiles[idx] = tile;
         ds.pencil[idx] = pencil;
         ds.errors[idx] = error;
         ds.mistakes[idx] = mistake ? 1 : 0;
-        drawTile(dr, ds, x, y, tile, pencil, error, mistake);
+        drawTile(dr, ds, x, y, tile, pencil, error, mistake, hintWord);
+        ds.hint.commit(gi);
       }
     }
   }

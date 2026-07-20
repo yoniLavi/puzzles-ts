@@ -14,6 +14,7 @@ import { dominosaGame } from "../../games/dominosa/index.ts";
 import { fifteenGame } from "../../games/fifteen/index.ts";
 import { fillingGame } from "../../games/filling/index.ts";
 import { floodGame } from "../../games/flood/index.ts";
+import { groupGame } from "../../games/group/index.ts";
 import { inertiaGame } from "../../games/inertia/index.ts";
 import { keenGame } from "../../games/keen/index.ts";
 import { lightupGame } from "../../games/lightup/index.ts";
@@ -41,6 +42,7 @@ export const HINT_GAMES: [string, AnyGame][] = [
   ["filling", fillingGame],
   ["fifteen", fifteenGame],
   ["flood", floodGame],
+  ["group", groupGame],
   ["inertia", inertiaGame],
   ["keen", keenGame],
   ["lightup", lightupGame],

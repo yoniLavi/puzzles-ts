@@ -1609,6 +1609,55 @@ Exemplars: `solo/{solver,index,render}.ts`; guards: `solo-hint.test.ts` (per-tec
 recording, naked-single honesty, X-diagonal narration, render frame) + `soloGame` in
 `hint-resume.test.ts`.
 
+### 9.6 A *placement-first*, *letter-valued* Latin game with its own move shape (Group)
+
+Group (`add-group-hint`) is the Latin family's odd corner, and each way it differs
+changes one decision — worth reading before hinting a game that shares any of them.
+
+- **Placement-first, not elimination-first.** Group's signature deductions —
+  associativity (`(a·b)·c = a·(b·c)` forces the fourth product) and the identity
+  fill — are **placements**, not candidate culls. So the plan leads with placements
+  and only populates when an *elimination* is the next thing to teach (identity-mark
+  strikes on identity-hidden Hard boards, or a generic set/forcing cull). The gate
+  that keeps this honest is `firstUnreflectedPlaceIndex(ops, wGrid, w) === 0`: when a
+  placement is the solver's *immediate* next deduction, emit it directly (no
+  populate); only when a strike *precedes* the next placement do you populate → clean
+  → strike. **Don't gate populate on `nextStrike` returning a strike** — `nextStrike`
+  only counts a strike whose candidate is *present in the notes*, so with no notes yet
+  it returns null and you deadlock (populate never fires, the strike never surfaces).
+  That chicken-and-egg was the one real bug in the port; the fix is the
+  `firstUnreflectedPlaceIndex` peek, which reads solver order without needing notes.
+- **The identity fill is one firing → one multi-leg journey.** Learning the identity
+  forces its whole row and column at once; emit those as `continuesPrevious` legs
+  (`emitIdentityFillJourney`) with the revealing cell shaded on every leg, not `2w−1`
+  disjoint hints (quality-bar rule 2).
+- **Letter values ⇒ Group-local generic narration.** `narrateLatinReason` formats
+  values as **digits**; Group's are the elements **a–z**, so its generic arms (single
+  / hiddenSingle / dup / set / forcing) are transcribed locally with `toChar`. A value
+  formatter on the shared helper was declined as premature (Group is the only
+  letter-valued Latin game). Watch the a/an trap (§2.3): an element `a` after "There's
+  already…" reads as the article — say "This row and column already contain a" instead.
+- **The game's move shape needn't match `CandidateMove`.** Group's interactive
+  `set`/`pencil` carry a *cell list* (`{cells, n}`, for its diagonal multifill) and it
+  has no fill-all move. The hint **reuses the pure readers/mechanics** (`nakedSingle`,
+  `nextPlace`, `nextStrike`, `lazyPopulate`, `emitObviousCleanStep`, the
+  `OverlaySidecar`) but **emits placements as the native `set {cells:[{x,y}], n}`** (so
+  a player following a hint produces the exact move the plan expects), adds only
+  `pencilAll`/`pencilStrike` for the hint-execution path, and writes **game-specific
+  `hintKeepTrack`/`refreshHintStep`** that read the native move shape (the shared
+  `keepCandidateHintTrack` reads `set {x,y,n,pencil}`, which a Group player never
+  produces). Contorting the game's moves to fit the shared contract is the wrong trade
+  — reuse the mechanics, keep the meaning.
+- **Re-adding a dropped play move for the hint is fine (with owner sign-off).** Group's
+  port dropped upstream's `'M'` (mark-all); the populate step wants a fill-all a player
+  can follow by hand, so it was re-added as a real `pencilAll` move. Its elements being
+  letters, only **uppercase `'M'` (77)** is intercepted (lowercase `'m'` is element 13
+  for `w ≥ 13`).
+
+Exemplars: `group/{solver,index,render}.ts`; guards: `group-hint.test.ts` +
+`group-render-scenario.test.ts` (associativity frame) + `groupGame` in
+`hint-resume.test.ts`.
+
 ---
 
 ## 10. Method lesson: probe before trusting a mechanism diagnosis

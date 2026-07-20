@@ -12,7 +12,7 @@
 import { describe, expect, it } from "vitest";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { groupGame } from "./index.ts";
-import { COL_DIAGONAL, COL_GRID } from "./render.ts";
+import { COL_DIAGONAL, COL_GRID, COL_HINT, COL_HINT_CELL } from "./render.ts";
 
 // A 6x6 identity-shown board (group-trace-5 fixture): the identity row/column
 // are given, so the frame exercises legend, diagonal, and immutable digits.
@@ -61,5 +61,35 @@ describe("group render scenarios", () => {
     );
 
     expect(withDivider.recording.ops).toMatchSnapshot();
+  });
+
+  it("an associativity hint frame rings the target and shades the known products", () => {
+    // Scan Normal (identity-shown) seeds for a plan that reaches an associativity
+    // step, walking the plan to it (the fixed-seed scan + hintUntil idiom).
+    const isAssoc = (step: { explanation: string }) =>
+      /in any group/.test(step.explanation);
+    let frame: ReturnType<typeof renderScenario> | undefined;
+    for (let n = 0; n < 40 && !frame; n++) {
+      const r = renderScenario({
+        game: groupGame,
+        id: `6dn#assoc-${n}`,
+        showHint: true,
+        hintUntil: isAssoc,
+      });
+      if (r.hint && isAssoc(r.hint)) frame = r;
+    }
+    expect(frame, "no associativity frame found in 40 seeds").toBeDefined();
+    if (!frame) return;
+
+    // The forced cell is ringed with a solid COL_HINT fill; the three known
+    // products are shaded COL_HINT_CELL as evidence (design D4 / §5.2).
+    const hintTargets = rects(frame.recording.ops).filter((r) => r.colour === COL_HINT);
+    const evidence = rects(frame.recording.ops).filter(
+      (r) => r.colour === COL_HINT_CELL,
+    );
+    expect(hintTargets.length).toBeGreaterThanOrEqual(1);
+    expect(evidence.length).toBeGreaterThanOrEqual(3);
+
+    expect(frame.recording.ops).toMatchSnapshot();
   });
 });

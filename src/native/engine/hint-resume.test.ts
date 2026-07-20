@@ -120,7 +120,7 @@ describe("a Latin-family placement never falsely claims a naked single", () => {
   // Latin game and assert the naked-single phrasing only ever appears on a cell
   // whose notes really are down to one candidate.
   const LATIN: [string, AnyGame][] = HINT_GAMES.filter(([name]) =>
-    ["towers", "unequal", "keen"].includes(name),
+    ["towers", "unequal", "keen", "group"].includes(name),
   );
   for (const [name, game] of LATIN) {
     it(`${name}: "ruled out in this cell" only on a genuine naked single`, () => {

@@ -17,7 +17,24 @@ import type {
   Size,
 } from "../../../puzzle/types.ts";
 import {
+  adaptiveMarkAllMove,
+  anyEmptyLacksNotes,
+  candidateHint,
+  cleanObviousText,
+  emitObviousCleanStep,
+  firstUnreflectedPlaceIndex,
+  lazyPopulate,
+  nakedSingle,
+  nextPlace,
+  nextStrike,
+  populateText,
+  regionDuplicateMarks,
+} from "../../engine/candidate-hint.ts";
+import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   type PresetMenu,
   type SolveResult,
   UI_UPDATE,
@@ -25,6 +42,12 @@ import {
 } from "../../engine/game.ts";
 import { clearKey } from "../../engine/key-labels.ts";
 import { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE } from "../../engine/latin.ts";
+import {
+  hiddenSingleLine,
+  rowColRegions,
+  type SingleReason,
+  singlePlacementReason,
+} from "../../engine/latin-hint.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -43,6 +66,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
+import { stepBudget } from "../../engine/step-budget.ts";
 import { newGameDesc } from "./generator.ts";
 import {
   colours,
@@ -50,15 +74,22 @@ import {
   flashLength,
   fromCoord,
   type GroupDrawState,
+  type GroupHint,
   newDrawState,
   PREFERRED_TILE_SIZE,
   redraw,
   setTileSize,
 } from "./render.ts";
-import { solveGroup } from "./solver.ts";
+import {
+  type HintOp,
+  type HintReason,
+  recordGroupDeductions,
+  solveGroup,
+} from "./solver.ts";
 import {
   checkErrors,
   cloneState,
+  DIFF_EXTREME,
   DIFF_NAMES,
   DIFF_UNREASONABLE,
   decodeParams,
@@ -258,6 +289,16 @@ function interpretMove(
     return UI_UPDATE;
   }
 
+  // Uppercase 'M' (the Mark-all toolbar button, ASCII 77): fill every empty cell
+  // with all candidate marks, then clean the obvious row/column culls — the
+  // populate step the hint teaches. Only *uppercase* M is intercepted, because
+  // Group's elements are the letters a–z, so lowercase 'm' (109) is element 13
+  // for w ≥ 13 and must still enter that value.
+  if (button === 77)
+    return adaptiveMarkAllMove<GroupMove>(state.grid, state.pencil, w, (x, y) =>
+      rowColRegions(x, y, w),
+    );
+
   if (
     ui.hshow &&
     ((isChar(button) && fromChar(button, state.id) <= w) ||
@@ -352,6 +393,17 @@ function executeMove(from: GroupState, move: GroupMove): GroupState {
       ret.dividers[move.i] = ret.dividers[move.i] === move.j ? -1 : move.j;
       return ret;
     }
+    case "pencilAll": {
+      const ret = cloneState(from);
+      const all = (1 << (w + 1)) - (1 << 1); // bits 1..w set
+      for (let i = 0; i < a; i++) if (!ret.grid[i]) ret.pencil[i] = all;
+      return ret;
+    }
+    case "pencilStrike": {
+      const ret = cloneState(from);
+      for (const { x, y, n } of move.marks) ret.pencil[y * w + x] &= ~(1 << n);
+      return ret;
+    }
   }
 }
 
@@ -437,6 +489,399 @@ function findMistakes(state: GroupState): readonly GroupMistake[] {
   return out;
 }
 
+// --- hint ------------------------------------------------------------------
+
+const POPULATE_TEXT = populateText("element");
+const CLEAN_OBVIOUS_TEXT = cleanObviousText("element", "placed", "row or column");
+
+/** The reasons a hint step narrates: the Group-specific deductions, the generic
+ * Latin reasons, and the naked/hidden/forced classification a placement's `single`
+ * reason is re-derived into. */
+type NarratableReason = HintReason | SingleReason;
+
+/** Join a list of element letters for narration: `[a]`→"a", `[a,b]`→"a and b",
+ * `[a,b,c]`→"a, b and c". */
+function joinCh(vals: number[], id: boolean): string {
+  const s = vals.map((v) => toChar(v, id));
+  if (s.length <= 1) return s[0] ?? "";
+  if (s.length === 2) return `${s[0]} and ${s[1]}`;
+  return `${s.slice(0, -1).join(", ")} and ${s[s.length - 1]}`;
+}
+
+/** Narrate *why* a firing is forced (hint-authoring §2): indication → reasoning →
+ * necessity-voice conclusion, every cell named by the element letter it shows.
+ * `ns` is the value list the step acts on (a placement passes its single value; a
+ * strike its struck values). The generic Latin arms mirror `narrateLatinReason`
+ * but interpolate `toChar` letters instead of digits, since Group's values are
+ * the elements a–z. `identityFill`'s *first-leg* text lives here; its continuation
+ * legs are narrated in {@link emitIdentityFillJourney}. */
+function narrate(reason: NarratableReason, ns: number[], id: boolean): string {
+  const ch = (n: number): string => toChar(n, id);
+  switch (reason.kind) {
+    case "associativity": {
+      const A = ch(reason.a);
+      const B = ch(reason.b);
+      const C = ch(reason.c);
+      const known = reason.knownLeft ? `(${A}·${B})·${C}` : `${A}·(${B}·${C})`;
+      const forced = reason.knownLeft ? `${A}·(${B}·${C})` : `(${A}·${B})·${C}`;
+      return `You've filled ${A}·${B} = ${ch(reason.ab)}, ${B}·${C} = ${ch(reason.bc)} and ${known} = ${ch(reason.v)}. Because (${A}·${B})·${C} = ${A}·(${B}·${C}) in any group, ${forced} must also be ${ch(reason.v)}.`;
+    }
+    case "identityFill": {
+      const A = ch(reason.a);
+      const B = ch(reason.b);
+      const shows =
+        reason.prod === reason.a
+          ? `${A}·${B} = ${A} shows ${B} is the identity`
+          : `${A}·${B} = ${B} shows ${A} is the identity`;
+      return `${shows}, so its row and column are just the element labels — this cell must be ${ch(ns[0])}.`;
+    }
+    case "identityElim": {
+      const E = ch(reason.elem);
+      const O = ch(reason.other);
+      const product = reason.left
+        ? `${E}·${O} = ${ch(reason.product)}`
+        : `${O}·${E} = ${ch(reason.product)}`;
+      return `${product}, not ${O} — the identity leaves every element unchanged, so ${E} can't be the identity. Cross out its identity marks.`;
+    }
+    case "single":
+      return `Every other element has been ruled out in this cell, so it can only be ${ch(ns[0])}.`;
+    case "hiddenSingle": {
+      const line = reason.line === "row" ? "row" : "column";
+      return `In this ${line}, ${ch(reason.n)} can go in only this cell — every other cell in the ${line} has ruled it out — so it must be ${ch(reason.n)}.`;
+    }
+    case "forcedSingle":
+      return `Working through this cell's row and column together, only ${ch(reason.n)} can still go here — so it must be ${ch(reason.n)}.`;
+    case "dup":
+      // "contain X" (not "there's already X") dodges the a/an trap — element
+      // letters like "a" would read as the indefinite article after "already".
+      return `This row and column already contain ${ch(reason.n)}, so we must cross out ${ch(reason.n)} from the other cells they pass through.`;
+    case "set":
+      return `Another group of cells already accounts for a fixed set of elements that includes ${joinCh(ns, id)}, so we must cross out ${joinCh(ns, id)} here.`;
+    case "forcing":
+      return `Following a chain of two-candidate cells, placing ${ch(ns[0])} here would force a contradiction further along — so we must cross out ${joinCh(ns, id)}.`;
+  }
+}
+
+/** The premise cells a step shades `COL_HINT_CELL` as evidence: associativity's
+ * three known products; an identity fill's / identity elimination's revealing
+ * cell; a hidden single's whole line. The generic culls have no clean local area
+ * (the struck notes carry the premise). */
+function reasonArea(reason: NarratableReason, w: number): { x: number; y: number }[] {
+  switch (reason.kind) {
+    case "associativity":
+      return [reason.abCell, reason.bcCell, reason.thirdCell];
+    case "identityFill":
+      return [{ x: reason.viaX, y: reason.viaY }];
+    case "identityElim":
+      return [{ x: reason.wx, y: reason.wy }];
+    case "hiddenSingle":
+      return hiddenSingleLine(reason.line, reason.index, w);
+    default:
+      return [];
+  }
+}
+
+/** Emit a placement step (a native single-cell `set`) and apply it to the working
+ * board, striking the placed value from the rest of its row and column. Group has
+ * no auto-pencil, so that cleanup is always an explicit `pencilStrike` journey
+ * continuation when notes exist (and a no-op — no step — when they don't, the
+ * placement-first common case on a note-free board). */
+function emitPlacement(
+  steps: HintStep<GroupMove, GroupHint>[],
+  wGrid: Uint8Array,
+  wPen: Int32Array,
+  w: number,
+  id: boolean,
+  x: number,
+  y: number,
+  n: number,
+  reason: NarratableReason,
+): void {
+  steps.push({
+    move: { type: "set", cells: [{ x, y }], n },
+    explanation: narrate(reason, [n], id),
+    highlights: { area: reasonArea(reason, w), targets: [{ x, y }], marks: [] },
+  });
+  wGrid[y * w + x] = n;
+  wPen[y * w + x] = 0;
+
+  const dupMarks = regionDuplicateMarks(
+    wGrid,
+    wPen,
+    x,
+    y,
+    n,
+    w,
+    rowColRegions(x, y, w),
+  );
+  for (const m of dupMarks) wPen[m.y * w + m.x] &= ~(1 << m.n);
+  if (dupMarks.length > 0) {
+    steps.push({
+      move: { type: "pencilStrike", marks: dupMarks },
+      explanation: narrate({ kind: "dup", n, px: x, py: y }, [], id),
+      highlights: {
+        area: [],
+        targets: dupMarks.map((m) => ({ x: m.x, y: m.y })),
+        marks: dupMarks,
+      },
+      continuesPrevious: true,
+    });
+  }
+}
+
+/** Emit the identity's whole row and column as **one multi-leg journey** (design
+ * D4): the deduction that "learns" the identity forces every empty cell of its
+ * row and column at once, so those placements read and auto-play as a single hint
+ * (continuation legs flagged `continuesPrevious`), not `2w−1` disjoint ones. The
+ * revealing cell is shaded on every leg as the shared premise. */
+function emitIdentityFillJourney(
+  steps: HintStep<GroupMove, GroupHint>[],
+  wGrid: Uint8Array,
+  wPen: Int32Array,
+  w: number,
+  id: boolean,
+  ops: HintOp[],
+  group: number,
+): void {
+  const fills = ops.filter(
+    (op) => op.kind === "place" && op.group === group && wGrid[op.y * w + op.x] === 0,
+  );
+  fills.forEach((op, i) => {
+    const reason = op.reason;
+    const area =
+      reason.kind === "identityFill" ? [{ x: reason.viaX, y: reason.viaY }] : [];
+    const explanation =
+      i === 0
+        ? narrate(reason, [op.n], id)
+        : `The identity's row and column are just the element labels, so this cell must be ${toChar(op.n, id)}.`;
+    steps.push({
+      move: { type: "set", cells: [{ x: op.x, y: op.y }], n: op.n },
+      explanation,
+      highlights: { area, targets: [{ x: op.x, y: op.y }], marks: [] },
+      continuesPrevious: i > 0,
+    });
+    wGrid[op.y * w + op.x] = op.n;
+    wPen[op.y * w + op.x] = 0;
+  });
+}
+
+/** Emit one recorded placement (Group's own or a generic single), re-deriving a
+ * generic `single` reason into naked/hidden/forced from the working board. */
+function emitRecordedPlacement(
+  steps: HintStep<GroupMove, GroupHint>[],
+  wGrid: Uint8Array,
+  wPen: Int32Array,
+  w: number,
+  id: boolean,
+  ops: HintOp[],
+  pl: HintOp,
+): void {
+  if (pl.reason.kind === "identityFill") {
+    emitIdentityFillJourney(steps, wGrid, wPen, w, id, ops, pl.group);
+    return;
+  }
+  const reason: NarratableReason =
+    pl.reason.kind === "single"
+      ? singlePlacementReason(wGrid, wPen, pl.x, pl.y, pl.n, w)
+      : (pl.reason as NarratableReason);
+  emitPlacement(steps, wGrid, wPen, w, id, pl.x, pl.y, pl.n, reason);
+}
+
+/** Build the hint plan by walking a working copy the way a person solves it
+ * (design D3, placement-first): a naked single first; else, when a placement is
+ * the solver's *immediate* next deduction, teach it (Group's associativity or an
+ * identity-row/column fill, or a generic single); else — when an elimination
+ * precedes the next placement — a lazy populate + obvious-cull cleanup, then the
+ * elimination (Group's identity-mark strike, or a generic set/forcing cull), then
+ * the placement it enables. Capped below recursion (a guess is not teachable). */
+function buildSteps(state: GroupState): HintStep<GroupMove, GroupHint>[] {
+  const w = state.w;
+  const id = state.id;
+  const steps: HintStep<GroupMove, GroupHint>[] = [];
+  const wGrid = Uint8Array.from(state.grid);
+  const wPen = Int32Array.from(state.pencil);
+  const maxdiff = Math.min(state.diff, DIFF_EXTREME);
+
+  const pop = lazyPopulate<GroupMove, GroupHint>(
+    state,
+    wGrid,
+    wPen,
+    w,
+    steps,
+    POPULATE_TEXT,
+  );
+  let cleaned = false;
+  let ops = recordGroupDeductions(wGrid, w, maxdiff);
+
+  const budget = stepBudget("group hint plan");
+  const cap = w * w * w * 4 + 4;
+  for (let guard = 0; guard < cap; guard++) {
+    budget.tick();
+    let filled = true;
+    for (let i = 0; i < w * w; i++) if (!wGrid[i]) filled = false;
+    if (filled) break;
+
+    // 1. A naked single — the next move a human makes.
+    const ns = nakedSingle(wGrid, wPen, w);
+    if (ns) {
+      emitPlacement(steps, wGrid, wPen, w, id, ns.x, ns.y, ns.n, { kind: "single" });
+      ops = recordGroupDeductions(wGrid, w, maxdiff);
+      continue;
+    }
+
+    // 2. A placement is the solver's immediate next deduction (nothing precedes
+    //    it in solver order) — teach it directly, no notes needed (placement-
+    //    first: Group's associativity / identity fill lead, not a populate).
+    if (firstUnreflectedPlaceIndex(ops, wGrid, w) === 0) {
+      emitRecordedPlacement(steps, wGrid, wPen, w, id, ops, ops[0]);
+      ops = recordGroupDeductions(wGrid, w, maxdiff);
+      continue;
+    }
+
+    // 3. An elimination precedes the next placement (Group's identity-mark strike,
+    //    or a set/forcing cull) — its notes are what the strike crosses out, so
+    //    populate (and clean the obvious culls) first, then teach the deduction.
+    if (!pop.done()) {
+      pop.ensure();
+      continue;
+    }
+    if (!cleaned) {
+      cleaned = true;
+      if (
+        emitObviousCleanStep(
+          steps,
+          wGrid,
+          wPen,
+          w,
+          (x, y) => rowColRegions(x, y, w),
+          CLEAN_OBVIOUS_TEXT,
+        )
+      )
+        continue;
+    }
+    const strike = nextStrike(ops, wGrid, wPen, w);
+    if (strike) {
+      const reason = strike[0].reason;
+      const marks = strike.map((op) => ({ x: op.x, y: op.y, n: op.n }));
+      const values = marks.map((m) => m.n).sort((a, b) => a - b);
+      steps.push({
+        move: { type: "pencilStrike", marks },
+        explanation: narrate(reason, values, id),
+        highlights: {
+          area: reasonArea(reason, w),
+          targets: marks.map((m) => ({ x: m.x, y: m.y })),
+          marks,
+        },
+      });
+      for (const m of marks) wPen[m.y * w + m.x] &= ~(1 << m.n);
+      continue;
+    }
+
+    // 4. The strikes are exhausted; the placement they enabled (a forced single
+    //    the notes now reflect) is next.
+    const pl = nextPlace(ops, wGrid, w);
+    if (pl) {
+      emitRecordedPlacement(steps, wGrid, wPen, w, id, ops, pl);
+      ops = recordGroupDeductions(wGrid, w, maxdiff);
+      continue;
+    }
+
+    break; // stuck (an Unreasonable board now needing a guess)
+  }
+
+  return steps;
+}
+
+function hint(
+  state: GroupState,
+  _aux?: string,
+  _ui?: GroupUi,
+): HintResult<GroupMove, GroupHint> {
+  return candidateHint(state, undefined, findMistakes, (s) => buildSteps(s));
+}
+
+/** Classify a player move against the displayed hint step (the engine's
+ * keep-track contract). A placement completes a `set` step; a native `pencil`
+ * toggle that *clears* one of a strike step's marks shrinks it (`onTrack`) or
+ * finishes it (`completed`); a Mark-all completes a `pencilAll` step; anything
+ * else drops the plan. `state` is the PRE-move board. */
+function hintKeepTrack(
+  m: GroupMove,
+  step: HintStep<GroupMove, GroupHint>,
+  state: GroupState,
+): HintTrackVerdict {
+  const w = state.w;
+  const sm = step.move;
+  if (sm.type === "pencilAll") return m.type === "pencilAll" ? "completed" : "off";
+  if (sm.type === "set") {
+    if (m.type !== "set" || m.n <= 0 || m.cells.length !== 1) return "off";
+    const c = m.cells[0];
+    const s = sm.cells[0];
+    return c.x === s.x && c.y === s.y && m.n === sm.n ? "completed" : "off";
+  }
+  if (sm.type === "pencilStrike") {
+    // A manual strike is a right-click pencil toggle of a single candidate.
+    if (m.type !== "pencil" || m.n <= 0 || m.cells.length !== 1) return "off";
+    const c = m.cells[0];
+    const hit = sm.marks.findIndex((k) => k.x === c.x && k.y === c.y && k.n === m.n);
+    if (hit < 0) return "off"; // touched a non-target candidate
+    // The toggle clears the candidate iff it is present now; an absent candidate
+    // would be *re-added* — off-plan.
+    if (!(state.pencil[c.y * w + c.x] & (1 << m.n))) return "off";
+    const remaining = sm.marks.filter((_, j) => j !== hit);
+    if (remaining.length === 0) return "completed";
+    step.move = { type: "pencilStrike", marks: remaining };
+    if (step.highlights) {
+      step.highlights = {
+        ...step.highlights,
+        targets: remaining.map((k) => ({ x: k.x, y: k.y })),
+        marks: remaining,
+      };
+    }
+    return "onTrack";
+  }
+  return "off";
+}
+
+/** Re-validate a stored hint step against the current board before it is
+ * (re-)displayed (the engine's "never show a stale step" guarantee): drop a
+ * strike step's dead marks (or resolve it), resolve a placement once its cell is
+ * filled, resolve a populate once every empty cell has notes. */
+function refreshHintStep(
+  step: HintStep<GroupMove, GroupHint>,
+  state: GroupState,
+): HintStep<GroupMove, GroupHint> | null {
+  const w = state.w;
+  const m = step.move;
+  if (m.type === "pencilStrike") {
+    const live = m.marks.filter(
+      ({ x, y, n }) =>
+        state.grid[y * w + x] === 0 && (state.pencil[y * w + x] & (1 << n)) !== 0,
+    );
+    if (live.length === 0) return null;
+    if (live.length === m.marks.length) return step;
+    return {
+      ...step,
+      move: { type: "pencilStrike", marks: live },
+      highlights: step.highlights
+        ? {
+            ...step.highlights,
+            targets: live.map((k) => ({ x: k.x, y: k.y })),
+            marks: live,
+          }
+        : undefined,
+    };
+  }
+  if (m.type === "set" && m.n > 0) {
+    const c = m.cells[0];
+    return state.grid[c.y * w + c.x] !== 0 ? null : step;
+  }
+  if (m.type === "pencilAll") {
+    return anyEmptyLacksNotes(state.grid, state.pencil, w) ? step : null;
+  }
+  return step;
+}
+
 // --- config / params summary -----------------------------------------------
 
 function describeParams(p: GroupParams): ConfigValues {
@@ -458,6 +903,7 @@ export const groupGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
+  canMarkAll: true,
   needsRightButton: true,
 
   defaultParams,
@@ -508,6 +954,9 @@ export const groupGame: Game<
   status,
 
   solve,
+  hint,
+  hintKeepTrack,
+  refreshHintStep,
   findMistakes,
   requestKeys,
   textFormat,
