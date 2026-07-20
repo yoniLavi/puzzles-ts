@@ -969,6 +969,47 @@ better, prefer the cleaner shape — and deliberate visual *improvements* (the
 Range known-white fill, the shared correct-region shade, mistake overlays) are
 the point of the fork, not deviations to be minimised.
 
+**And on the generator/solver/codec path itself, byte-parity is a *means*, not
+an end (owner-stated, 2026-07-20).** It is the default there — but because it
+*buys* two concrete things, not because fidelity is owed to upstream:
+
+1. **It is the verification mechanism.** On a solver-gated generator the desc
+   depends on the solver's verdict on every intermediate board, so a single
+   byte-match assertion validates the generator, the solver and the codec at
+   once. Nothing else available is nearly as strong, and the bigger the game the
+   more that matters.
+2. **It is porting ease.** Transcribing upstream's logic verbatim is the
+   lowest-risk way to get a hard algorithm right.
+
+So **you may let it go for a bigger benefit** — just do it deliberately, and
+know you are also trading away the oracle. Four rules for deciding, learned on
+`add-loopy-ts-port`:
+
+- **Divergence is free where C has no defined behaviour.** Upstream aborts on a
+  degenerate Penrose patch (`dsf_new(0)`). Retrying with a fresh description
+  diverges *only* on the seeds where C crashes, so byte-agreement is preserved
+  everywhere C produces any output at all. When you find a case like this, take
+  it — there is nothing to match.
+- **Price the quirk before paying or refusing.** "Bug-compatibility" sounds
+  expensive and usually isn't. `face_setall_identical`'s never-reassigned return
+  value costs *one line and a comment* — and preserving it is mandatory, because
+  the generator is solver-gated so the resulting early exit is baked into which
+  puzzles exist. `parity_deductions`' negative-modulo quirk costs *nothing at
+  all*, because TS's `%` truncates exactly like C's; the "trap" is only "don't
+  apply the hygiene fix". Don't narrate a sacrifice you aren't making.
+- **Diverge for a genuine player-visible defect, not for tidiness.** A solver
+  that deduces *falsely* can generate a puzzle with no unique solution — that is
+  worth fixing and recording, even at the cost of the differential. A solver
+  that is merely *weaker* than intended is not a defect; it is the difficulty
+  curve upstream shipped.
+- **Diverge where the C shape doesn't fit a browser.** `grid_trim_vigorously`'s
+  dense `O(numDots²)` matrix is ~576 MB at 50×50. Structure is not behaviour:
+  the replacement is exact, so this costs no fidelity at all — the trap would
+  have been transcribing it faithfully *because* it was the C's shape.
+
+Whenever you do diverge, say so in the code and in the change's `design.md`, and
+note what verification you gave up in exchange.
+
 **A differential earns its place on solver/codec games, not every port.** It pays
 off where the generator runs a hard uniqueness/difficulty loop or a non-obvious
 codec (galaxies, unruly, flood, guess); permutation / short-RNG games (cube, fifteen,
