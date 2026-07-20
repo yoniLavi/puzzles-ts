@@ -16,6 +16,29 @@ improving (or replacing) a generator upstream called inadequate. It is
 scaffolded now to capture the scope and the honest gap, not because it is close.
 Expect it done much later, or not at all.
 
+## Sequencing (owner decision, 2026-07-20)
+
+**This change is deliberately deferred until after `retire-c-engine`.** The
+owner's ordering for the remaining work is: port the *mostly-done* unfinished
+games (Group, Slide, Sokoban) **first, while the C engine still builds**, so each
+gets its byte-match differential oracle; then land `retire-c-engine`; then take
+on the *greenfield* builds (Path, Numgame) **on the TS-only system**.
+
+Two reasons this is the right order for Path specifically:
+
+1. **Nothing is lost by waiting.** Path has no `struct game` and no C solver, so
+   there is no byte-match oracle to preserve — its assurance is behavioural
+   regardless (see "not in this change" below). Retiring C costs Path nothing.
+2. **It becomes a deliberate ergonomics test.** Building Numberlink from scratch
+   — new solver, new generator, invented frontend — with the C engine already
+   gone is exactly the exercise the owner wants: a real measure of how ergonomic
+   the native-TS system is for adding a *new* game, not a transcription of an
+   existing one. That signal is more valuable than doing it early.
+
+So: do not start Path until `retire-c-engine` has landed and the collection is
+C-free. When it is picked up, prove solver feasibility with a spike before
+committing to the full game (see Impact).
+
 ## What Changes
 
 - **A new `src/native/games/path/` game** — Numberlink: link each pair of like

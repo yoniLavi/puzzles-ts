@@ -27,6 +27,7 @@ import { fillingGame } from "./filling/index.ts";
 import { flipGame } from "./flip/index.ts";
 import { floodGame } from "./flood/index.ts";
 import { galaxiesGame } from "./galaxies/index.ts";
+import { groupGame } from "./group/index.ts";
 import { guessGame } from "./guess/index.ts";
 import { inertiaGame } from "./inertia/index.ts";
 import { keenGame } from "./keen/index.ts";
@@ -78,6 +79,7 @@ export function registerAllGames(): void {
   registerGame(flipGame);
   registerGame(floodGame);
   registerGame(galaxiesGame);
+  registerGame(groupGame);
   registerGame(guessGame);
   registerGame(inertiaGame);
   registerGame(keenGame);

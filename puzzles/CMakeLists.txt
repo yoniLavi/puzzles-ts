@@ -109,6 +109,12 @@ puzzle(galaxies
   OBJECTIVE "Divide the grid into rotationally symmetric regions each \
 centred on a dot.")
 
+puzzle(group
+  TS_PORTED  # native-TS port (openspec add-group-ts-port); no group.c/wasm
+  DISPLAYNAME "Group"
+  DESCRIPTION "Group theory puzzle"
+  OBJECTIVE "Complete the unfinished Cayley table of a group.")
+
 puzzle(guess
   TS_PORTED  # native-TS port (openspec add-guess-ts-port); no guess.c/wasm
   DISPLAYNAME "Guess"
