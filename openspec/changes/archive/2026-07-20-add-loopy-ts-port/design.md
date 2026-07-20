@@ -404,3 +404,174 @@ differential-tested.
 - **No hint ships here**, so Loopy's first release is less capable than Palisade
   or Dominosa. That is the established sequencing and not a regression, but it
   should be said out loud rather than discovered.
+
+## Findings during implementation
+
+Seven things the design got wrong, or could not have known without reading the
+app layer. Recorded here rather than left to be rediscovered.
+
+### F1 — D1 was right in shape but wrong in one detail: one Penrose configuration is *impossible*, not unlucky
+
+D1 assumed every degenerate patch is **seed-dependent**, and reasoned from that
+to "retry, never raise the minima". Measuring it — 200 descriptions per
+configuration, across all four aperiodic tilings, at every size from each type's
+minimum to minimum + 5 — showed that is almost entirely true, and exactly one
+exception:
+
+- Success rates for generable configurations run from **~20% to ~98%**, and
+  retrying converges quickly in every case. D1's reasoning holds for all of these.
+- **Penrose kite/dart at width 3 never succeeds, at any height** (0/200 for each
+  of 3×3 … 3×8). Retrying cannot rescue an impossible configuration; it only
+  converts an abort into a slow error.
+
+Note the asymmetry is real and would have been easy to get wrong: it is the
+**width** specifically, and 4×3 … 8×3 succeed roughly half the time. So the fix
+is *not* an `amin` bump (which would forbid those working sizes) but a width
+bound, in `validateParams`, where the Custom dialog can show the player a reason
+instead of failing on "New game". Upstream accepts these params and then aborts,
+so this diverges only where the C has no defined behaviour — playbook rule (1).
+
+Consequently `buildLoopyGrid`'s bound is deliberately **small** (100, not the
+house default 10,000): with a worst generable success rate of ~20%, 100 attempts
+fail with probability ~2e-10, while any *other* impossible configuration that
+ever appears reports in milliseconds rather than tens of seconds.
+
+### F2 — The generator needed a second recovery D1 did not anticipate
+
+Even on a well-formed patch, the inner `newboard_please` loop can fail to find a
+board that is uniquely solvable at the requested difficulty **and** not solvable
+one rung easier. Upstream concedes this in a comment — *"this can loop for ever
+if the params are suitably unfavourable"* — and simply hangs.
+
+Measured at the smallest legal Penrose sizes, this is a property of the
+**patch**, not the params: Penrose kite/dart 4×4 at Normal needed 25 patches;
+the same size at Hard succeeded on the first. So `newDesc` retries with a fresh
+patch, bounded, for the tilings whose descriptions consume randomness — and
+propagates for the deterministic tilings, where a fresh draw is the same grid
+and exhaustion genuinely means the params admit no puzzle.
+
+This cannot diverge from a terminating C run: the inner budget stays at the
+house default, so any board upstream *would* have found is still found before a
+patch is abandoned. It engages only where upstream hangs.
+
+One case remains unrescued — Penrose rhombs 3×3 at Normal, where 25 patches ×
+200 attempts found nothing, and which is plausibly genuinely impossible. It
+raises `RetryLimitExceeded` after a few seconds, where upstream hangs for ever.
+That is the outcome `retry-limit.ts` doctrine asks for and it is left as is.
+
+### F3 — **D6c is withdrawn: the app already owns dark mode**
+
+D6c called for luminance-aware derivation of `COL_LINEUNKNOWN`/`COL_FAINT`,
+reasoning that upstream's `background × 0.9` is *darker* than the background and
+so vanishes in this fork's dark mode. **The premise is false for this app.**
+
+`src/puzzle/puzzle-view.ts` passes **pure white** as `defaultBackground` in dark
+mode and adapts the returned palette afterwards in OKLCH (with per-puzzle
+`darkMode.paletteOverrides` in `augmentation.ts`), and its comment says exactly
+why:
+
+> *"It doesn't work well for dark background colors. Puzzles often generate
+> colors by multiplying the background by a factor < 1.0. This works for light
+> backgrounds, but generates near-blacks for dark ones. Instead, invert a dark
+> background to generate a light palette, and reverse that later."*
+
+So `colours()` never receives a dark background, the luminance test is dead
+code, and a second adaptation inside the game would fight the layer that owns
+the concern. Loopy's palette is therefore **identical to upstream's**, and the
+reason is recorded in `render.ts`.
+
+Worth generalising: a display-side divergence justified by "this fork ships a
+dark mode" should first check whether `puzzle-view.ts` has already handled it.
+
+### F4 — D6d resolved by widening `Game.textFormat`, with no new hook
+
+`game_can_format_as_text_now(params)` is param-dependent (square grids only);
+the `Game` interface's `canFormatAsText` is static. D6d listed options cheapest
+first. The cheapest works: `Midend.formatAsText` already returns
+`string | undefined` and the share dialog already treats an absent rendering as
+"no text panel", so `Game.textFormat` was widened to return `string | undefined`
+and Loopy returns `undefined` for the seventeen non-square tilings. No
+`canFormatAsTextNow?(params)` hook was added — per the `PointerAction`
+precedent, it would have had one adopter and a wider surface.
+
+### F5 — Loopy does **not** fit the shared `runDeductionFixpoint`
+
+Both handoffs asserted that Loopy's four rungs "fit the shared
+`runDeductionFixpoint` runner". Reading the loop closely, they do not, and using
+it would have been a silent behaviour change:
+
+- The shared runner restarts from rung 0 on any firing and reports a grade of
+  "highest rung that fired". Loopy instead runs with a difficulty *cap* and asks
+  whether the board came out solved.
+- More importantly, `solve_game_rec` carries a `(thresholdDiff, thresholdIndex)`
+  pair the shared runner has no notion of. Each rung returns the *lowest* rung
+  that could notice what it did, and the loop skips cheap rungs that provably
+  cannot use the new information.
+
+That began as a speed optimisation, but because the generator is solver-gated it
+decides **which puzzles exist**. It is ported exactly; the reasoning is recorded
+in `solver.ts`'s module doc so the "why not use the shared runner?" question is
+answered where it will be asked.
+
+### F6 — Two factual errors in the task list, corrected in passing
+
+- Task 4.1 says "`FACE_COLOUR(null)` is white, which is what makes boundary
+  clues come out right". It is **black** (`loopgen.h:14-16`) — and that is what
+  makes boundary clues right: a white face at the edge of the patch sees a
+  colour transition across its outer edges and is clued for them.
+- Task 3.6 is right that `face_setall_identical` always returns `false`, and the
+  regression test asserts it *even when it mutates*; but note the reachability
+  analysis in D3.1 is what justifies keeping it, and that analysis is now
+  restated in the function's own doc comment rather than only here.
+
+### F7 — The two-level preset menu renders as a labelled section (task 2.5)
+
+Task 2.5 asked to confirm the app shell renders a nested preset menu, and to
+treat a failure as a real finding rather than quietly flattening it. It renders:
+`Puzzle.getPresets(true)` flattens submenus while keeping the submenu node, and
+`puzzle-type-menu.ts` turns that node into a divider plus an `<h3>` heading
+followed by its entries. So "More..." appears as a titled group rather than a
+nested flyout — a faithful rendering of the intent, and the nesting is kept.
+
+### F8 — A pre-existing TS-engine repaint bug, half fixed and half handed off
+
+Dev-verification (task 8.4) surfaced a **blank board on first paint**, and it is
+worth writing down carefully because the first instinct — "Loopy doesn't render"
+— was wrong twice over.
+
+**What was observed.** Deep-linking to a non-default type
+(`/loopy?type=5x4t9dh`) left the canvas empty indefinitely, while the *same*
+params chosen from the Type menu painted immediately. Loopy's own rendering was
+never at fault: `redraw` produces the right ops for all 18 tilings in-process
+(verified at both the preferred and a large tile size, with every drawn
+coordinate inside `computeSize`'s bounds), and 16 of the 18 tilings painted fine
+on the same route.
+
+**Two things confirmed it was not Loopy's.** The same failure reproduces on
+**Pearl** — shipped and owner-accepted since 2026-07 — via `/pearl?type=12x8dt`;
+and it does **not** reproduce on a C/WASM game (`/bricks?type=10x10dn`). That
+pins it to the TS engine's adapter rather than to any game or to the app shell
+generally.
+
+**Root cause found and fixed (one of them).** `TsWorkerPuzzle.redraw()` is gated
+on `paletteReady`, and *silently drops* any repaint requested before the palette
+is installed. The midend requests one on the initial game transition, which is a
+race the game loses whenever generation is fast — and nothing re-issued it,
+because `setDrawingPalette` only repainted when it *replaced* an existing
+palette (`setPalette` returns true only on replacement), never on the first
+install. One branch in `worker-adapter.ts` now repaints on first install.
+Verified: Pearl's deep link paints correctly after the fix.
+
+**Still open, and handed off.** Loopy's dodecagonal and kagome cases (both
+`5x4`, i.e. `w ≠ h`) remain blank on that route after the fix, so there is a
+**second, independent cause**. The evidence so far: it correlates with a
+non-square board; the board *is* generated and merely unpainted (opening any
+menu paints it instantly); no console error appears. A plausible second
+mechanism — `resizeDrawing` clears the canvas and drops the drawstate without
+repainting — was implemented and **reverted**, because it did not fix the
+symptom and shipping an unverified guess is worse than shipping a known gap.
+
+This is **not a Loopy parity shortfall** (it predates this change, reproduces on
+another game, and does not affect the normal in-app path), but it is a real
+user-visible bug in shipped code and should get its own change. It is the
+highest-value item in `NEXT-STEPS.md` for that reason.
