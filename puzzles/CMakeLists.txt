@@ -34,14 +34,19 @@ else()
   set(random_or_sha_source random.c)
 endif()
 
+# The Loopy grid subtree (grid.c, loopgen.c, penrose*.c, hat.c, spectre.c) was
+# deleted when Loopy shipped its native-TS port (openspec add-loopy-ts-port) —
+# it was the last C consumer of any of it. tree234.c stays: latin.c (still
+# compiled here) uses it, and latin.c belongs to the later retire-c-engine
+# change, not this one.
 add_library(core_obj OBJECT
-  combi.c draw-poly.c drawing.c dsf.c findloop.c grid.c
-  latin.c loopgen.c malloc.c matching.c midend.c misc.c
-  penrose.c penrose-legacy.c ps.c ${random_or_sha_source} sort.c tdq.c tree234.c
+  combi.c draw-poly.c drawing.c dsf.c findloop.c
+  latin.c malloc.c matching.c midend.c misc.c
+  ps.c ${random_or_sha_source} sort.c tdq.c tree234.c
   version.c
   ${platform_common_sources})
 add_library(core STATIC $<TARGET_OBJECTS:core_obj>)
-add_library(common STATIC $<TARGET_OBJECTS:core_obj> hat.c spectre.c)
+add_library(common STATIC $<TARGET_OBJECTS:core_obj>)
 
 cliprogram(polygon-test draw-poly.c
   SDL2_LIB COMPILE_DEFINITIONS STANDALONE_POLYGON)
@@ -130,11 +135,11 @@ puzzle(lightup
   OBJECTIVE "Place bulbs to light up all the squares.")
 
 puzzle(loopy
+  TS_PORTED  # native-TS port (openspec add-loopy-ts-port); no loopy.c/wasm
   DISPLAYNAME "Loopy"
   DESCRIPTION "Loop-drawing puzzle"
   OBJECTIVE "Draw a single closed loop, given clues about number of \
 adjacent edges.")
-solver(loopy)
 
 puzzle(magnets
   TS_PORTED  # native-TS port (openspec add-magnets-ts-port); no magnets.c/wasm

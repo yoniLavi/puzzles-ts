@@ -31,6 +31,7 @@ import { guessGame } from "./guess/index.ts";
 import { inertiaGame } from "./inertia/index.ts";
 import { keenGame } from "./keen/index.ts";
 import { lightupGame } from "./lightup/index.ts";
+import { loopyGame } from "./loopy/index.ts";
 import { magnetsGame } from "./magnets/index.ts";
 import { mapGame } from "./map/index.ts";
 import { minesGame } from "./mines/index.ts";
@@ -81,6 +82,7 @@ export function registerAllGames(): void {
   registerGame(inertiaGame);
   registerGame(keenGame);
   registerGame(lightupGame);
+  registerGame(loopyGame);
   registerGame(magnetsGame);
   registerGame(mapGame);
   registerGame(minesGame);

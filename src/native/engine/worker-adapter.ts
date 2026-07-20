@@ -264,6 +264,7 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   }
   setDrawingPalette(colors: string[]): void {
     if (!this.drawing) throw new Error("setDrawingPalette: no canvas attached");
+    const firstInstall = !this.paletteReady && colors.length > 0;
     if (colors.length > 0) this.paletteReady = true;
     // `setPalette` returns true only when an already-installed
     // palette was replaced (light/dark toggle). In that case the
@@ -271,7 +272,25 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
     // palette and is stale — drop the drawstate, arm first-draw and
     // repaint, matching `puzzles/webapp.cpp`'s
     // `setDrawingPalette → forceRedraw()`.
-    if (this.drawing.setPalette(colors)) this.forceRedraw();
+    if (this.drawing.setPalette(colors)) {
+      this.forceRedraw();
+      return;
+    }
+    // **The first install must also repaint, and this is the whole reason
+    // this branch exists.** `redraw()` below silently drops every repaint
+    // requested before the palette arrives — and the midend requests one on
+    // the *initial* game transition, which is a race the game usually loses
+    // when generation is fast. Nothing else re-issues that repaint, so the
+    // board stayed blank until some unrelated event (opening a menu,
+    // resizing) happened to force one.
+    //
+    // Symptom this fixes: deep-linking to a non-default type
+    // (`/loopy?type=5x4t9dh`, `/pearl?type=12x8dt`) left the canvas empty
+    // indefinitely, while the *same* params chosen from the Type menu painted
+    // immediately — because by then the palette was long installed. It
+    // affected every TS-ported game (reproduced on Pearl, shipped since
+    // 2026-07) and no C/WASM game, which is what pinned it to this adapter.
+    if (firstInstall) this.forceRedraw();
   }
   setDrawingFontInfo(fontInfo: FontInfo): void {
     if (!this.drawing) throw new Error("setDrawingFontInfo: no canvas attached");

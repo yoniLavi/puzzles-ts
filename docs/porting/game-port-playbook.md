@@ -513,6 +513,34 @@ below flash/hint fills. Exemplars:
 [`separate/render.ts`](../../src/native/games/separate/render.ts),
 [`palisade/render.ts`](../../src/native/games/palisade/render.ts).
 
+**Don't "fix" a palette for dark mode — the app already owns it.** Upstream
+games routinely derive a colour as `background × 0.9`, which on a *dark*
+background is darker than the background and so vanishes; several upstream files
+even concede the problem in a comment (`loopy.c`: *"Except if the background is
+pretty dark already; then it ought to be a bit lighter. Oy vey."*). It is very
+tempting to make the derivation luminance-aware in the port. **Don't.**
+[`puzzle-view.ts`](../../src/puzzle/puzzle-view.ts) passes **pure white** as
+`defaultBackground` in dark mode — precisely *because* puzzles multiply the
+background down — and then adapts the whole returned palette in OKLCH, with
+per-puzzle `darkMode.paletteOverrides` from
+[`augmentation.ts`](../../src/puzzle/augmentation.ts). So `colours()` never sees
+a dark background: a luminance test there is dead code, and a second adaptation
+inside the game fights the layer that owns the concern. Derive exactly as
+upstream does and record *why there is no divergence*. (This overturned a
+written design decision on `add-loopy-ts-port`; see its `design.md` F3.)
+Exemplar: [`loopy/render.ts`](../../src/native/games/loopy/render.ts).
+
+**A param-dependent capability the static `Game` flag can't express: widen the
+return, don't add a hook.** Upstream has `game_can_format_as_text_now(params)`;
+the `Game` interface has a static `canFormatAsText`. Loopy's text format works
+on the square lattice and on none of its other seventeen tilings. The cheapest
+resolution — and the right one — was to widen `Game.textFormat` to return
+`string | undefined`, since `Midend.formatAsText` and the share dialog already
+treat an absent rendering as "no text panel". Adding a
+`canFormatAsTextNow?(params)` hook would have been a wider surface for one
+adopter, which is the `PointerAction` mistake (a hook shipped with no adopter,
+later deleted as phantom API).
+
 ### 3.4 Params, config summary, preferences
 
 **A `float` param is a byte-match hazard: reproduce `%g` and `atof`, and round to
@@ -1006,6 +1034,40 @@ know you are also trading away the oracle. Four rules for deciding, learned on
   dense `O(numDots²)` matrix is ~576 MB at 50×50. Structure is not behaviour:
   the replacement is exact, so this costs no fidelity at all — the trap would
   have been transcribing it faithfully *because* it was the C's shape.
+
+**Measure a "rare failure" before you design the recovery for it.** A generator
+that fails on some inputs invites the reflex "retry, it's just an unlucky seed".
+Check. On `add-loopy-ts-port` the design assumed every degenerate Penrose patch
+was seed-dependent; 200 draws per configuration across all four aperiodic
+tilings showed that was true for all but one — Penrose kite/dart at **width 3**
+never succeeds, at any height, while 4×3 and larger heights-of-3 succeed about
+half the time. The two failure modes need opposite fixes and it is cheap to tell
+them apart:
+
+- *Unlucky* ⇒ **retry**, bounded, driven by the same RNG stream so determinism
+  and shared game IDs survive.
+- *Impossible* ⇒ **reject in `validateParams`**, where the Custom dialog can
+  show a reason, rather than letting the player press "New game" and wait for an
+  error. And reject the precise thing you measured: a width bound, not an
+  `amin` bump that would also forbid the sizes that work.
+
+Corollary on bounds: size the retry budget from the *worst measured success
+rate* of a generable configuration (Loopy's was ~20%, so 100 attempts fail at
+~2e-10), not from the house default. A generous bound is correct for a runaway
+guard but turns an impossible configuration into a ten-second hang before the
+error.
+
+**Check what a shared runner's bookkeeping actually decides before adopting
+it.** Two handoffs asserted Loopy's four deduction rungs "fit
+`runDeductionFixpoint`". They don't: the shared runner restarts from rung 0 on
+any firing and grades by "highest rung that fired", where Loopy runs under a
+difficulty *cap* and carries a `(thresholdDiff, thresholdIndex)` pair that skips
+cheap rungs which provably cannot use the latest information. That began as a
+speed optimisation — but on a **solver-gated generator, the order the solver
+explores in decides which puzzles exist**, so adopting the shared loop would
+have silently changed every board. Reuse the shared runner when the loop is
+genuinely an ordered ladder; port the loop exactly when its bookkeeping feeds
+back into generation.
 
 Whenever you do diverge, say so in the code and in the change's `design.md`, and
 note what verification you gave up in exchange.
