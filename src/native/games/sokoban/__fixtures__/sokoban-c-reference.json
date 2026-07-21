@@ -1,0 +1,76 @@
+{
+  "fixtures": [
+    {
+      "w": 12,
+      "h": 10,
+      "seed": "sokoban-trace-12x10-a",
+      "desc": "w13s2ts2fufstw2bsbs2b2s3w2s5ts4w2tfs2bstbstw2stbsbtst2bw2s2ts3bs3w2sbtbfs2b2sw2ts2ts5w14"
+    },
+    {
+      "w": 12,
+      "h": 10,
+      "seed": "sokoban-trace-12x10-b",
+      "desc": "w13s2tstbswtw3sbs2ts3bw3s2bsbswsbtw2tbstsbstsw3bvbsbt2bsw3tbt2bts3tw3tbsbswbsbw2tbs4ts3w13"
+    },
+    {
+      "w": 12,
+      "h": 10,
+      "seed": "sokoban-trace-12x10-c",
+      "desc": "w13tw5s2fuw2sbsw3s2bfw2s3btwtsbsw4s6btw4sws4wtw3s2bftbsbtw3sbstbtbtw4ts5w16"
+    },
+    {
+      "w": 16,
+      "h": 12,
+      "seed": "sokoban-trace-16x12-a",
+      "desc": "w18tbsw3tbtbtbsw4s3tbs2fs2t2w2tw2bs5btsb2w2bwstsbs8w2s3bfts3ws2tw3sbs4bfbs2bftw2bvb2sts2tws3bw2tbt2bstfs3ws2w3t2bstw2s3bstw4tbsw2tbsw21"
+    },
+    {
+      "w": 16,
+      "h": 12,
+      "seed": "sokoban-trace-16x12-b",
+      "desc": "w18sbt2bsw4sbtw3s13w4sfs2bwtsbsfsw3tbstsfts2btsw4bs2bt3bsbstw4sts2b2w3sbfw6s2btws3btw6s4btbt2s2w4s8btbsw4sbtwtbsbvftw18"
+    },
+    {
+      "w": 20,
+      "h": 16,
+      "seed": "sokoban-trace-20x16-a",
+      "desc": "w22twtstsws2w2tbsbtw3sb2tb2s2tbw4tst2w2s3bs3bwt2btb2sb2w2fs4ts3t2bstststw2s5tfbsbfs2bs2btw3tbsfs2ws4tswbsbw2twswtbs2tw2tsbs2wsw2bs6bs2tbfs3ftw2s3fs2ws3bs3fsbsw2ts4ts4ws3b2s2w2btbstbtbs3bs3t3w2s3fts2ws9bw2sbs3btbtbstsbfws2w3s3bst2bubtws2tw23"
+    },
+    {
+      "w": 20,
+      "h": 16,
+      "seed": "sokoban-trace-20x16-b",
+      "desc": "w21tbvbsw3sbstwtw2s2w3sfs2bts2btw2btwsbw3st2s2fsbtbws2bs3w2sbsbws2ts5bs2wtw2s4btswtwstwt2sw4tbs4twbwsbwsbsbtw3s3bsbs8tw5swsfs3ws2tsftbt2w3s2ftw2btbsbs2bsb2w3sw2tbstbts5bstw3s2w2tbs4w2sbts2w2tsbs2btw2bs8w2bs6w2tbsbtsfs2w2s2twtbsw3tw28"
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "seed": "sokoban-trace-4x4-a",
+      "desc": "w6uw9"
+    },
+    {
+      "w": 5,
+      "h": 9,
+      "seed": "sokoban-trace-5x9-a",
+      "desc": "w6s3w2tbsw2sbtw2sbsw2tbuw2tbsw2tfsw6"
+    },
+    {
+      "w": 9,
+      "h": 5,
+      "seed": "sokoban-trace-9x5-a",
+      "desc": "w10ts6w2sfsbsbsw2tsbufstw10"
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "seed": "sokoban-trace-7x7-a",
+      "desc": "w8ts2buw2tsbf2w3sbs2w3sts2w3s4w8"
+    },
+    {
+      "w": 13,
+      "h": 11,
+      "seed": "sokoban-trace-13x11-a",
+      "desc": "w14tws3fts2w4bs2bfwtsbt2w2s2bs5btbw2st2sbsfsbtsw2bstfb2ts4w2tbs3ts3bsw2t2sbs5t2w2bs4b3sbtw2s2btsfufstw15"
+    }
+  ]
+}

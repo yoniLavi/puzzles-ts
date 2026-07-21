@@ -273,6 +273,13 @@ puzzle(slant
   DESCRIPTION "Maze-drawing puzzle"
   OBJECTIVE "Draw a maze of slanting lines that matches the clues.")
 
+puzzle(sokoban
+  TS_PORTED  # native-TS port (openspec add-sokoban-ts-port); no sokoban.c/wasm.
+             # Finishes upstream's unfinished puzzle; was in unfinished/.
+  DISPLAYNAME "Sokoban"
+  DESCRIPTION "Barrel-pushing puzzle"
+  OBJECTIVE "Push all the barrels into the target squares.")
+
 puzzle(solo
   TS_PORTED  # native-TS port (openspec add-solo-ts-port); no solo.c/wasm
   DISPLAYNAME "Solo"
