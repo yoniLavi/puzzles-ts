@@ -24,6 +24,28 @@ export const CURSOR_RIGHT = 0x020c;
 export const CURSOR_SELECT = 0x020d;
 export const CURSOR_SELECT2 = 0x020e;
 
+// --- mouse button class predicates (upstream IS_MOUSE_* macros) ----
+
+// LEFT/MIDDLE/RIGHT are contiguous within each of the down/drag/release
+// triples, so upstream's `IS_MOUSE_*` macros are a range check. Reproduced
+// here so a drag game classifies a (already modifier-stripped) button without
+// re-listing the three constants (27 ports had each written their own copy).
+
+/** True for `LEFT_BUTTON` / `MIDDLE_BUTTON` / `RIGHT_BUTTON` (a press). */
+export function isMouseDown(button: number): boolean {
+  return button >= LEFT_BUTTON && button <= RIGHT_BUTTON;
+}
+
+/** True for `LEFT_DRAG` / `MIDDLE_DRAG` / `RIGHT_DRAG`. */
+export function isMouseDrag(button: number): boolean {
+  return button >= LEFT_DRAG && button <= RIGHT_DRAG;
+}
+
+/** True for `LEFT_RELEASE` / `MIDDLE_RELEASE` / `RIGHT_RELEASE`. */
+export function isMouseRelease(button: number): boolean {
+  return button >= LEFT_RELEASE && button <= RIGHT_RELEASE;
+}
+
 // --- keyboard modifier masks (upstream puzzles.h) ------------------
 
 /** Set by the frontend on a press/drag/release that came from a finger or a

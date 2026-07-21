@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "fixtures": [
+    { "w": 7, "h": 7, "seed": "clusters-trace-7x7-a", "desc": "kbidDHgAac" },
+    { "w": 7, "h": 7, "seed": "clusters-trace-7x7-b", "desc": "cGBadDDMCbAacAa" },
+    { "w": 8, "h": 8, "seed": "clusters-trace-8x8-a", "desc": "CbAfEecIaiDACaHCa" },
+    { "w": 8, "h": 8, "seed": "clusters-trace-8x8-b", "desc": "cJddBFccfCcHEcAa" },
+    {
+      "w": 9,
+      "h": 9,
+      "seed": "clusters-trace-9x9-a",
+      "desc": "abAaDHaAbbAicBclbAabACs"
+    },
+    {
+      "w": 9,
+      "h": 9,
+      "seed": "clusters-trace-9x9-b",
+      "desc": "aADaAabbGBBabdFaeBBiBadcIabd"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "seed": "clusters-trace-10x10-a",
+      "desc": "abeCacAaJcAbBCabdcHBgefAdAekc"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "seed": "clusters-trace-10x10-b",
+      "desc": "AabcbABBCBBcAIaECcCaBaedecEaHdfcd"
+    },
+    { "w": 5, "h": 5, "seed": "clusters-trace-5x5-a", "desc": "AeEbjba" },
+    { "w": 6, "h": 9, "seed": "clusters-trace-6x9-a", "desc": "aeJCeaBfbDao" },
+    {
+      "w": 12,
+      "h": 8,
+      "seed": "clusters-trace-12x8-a",
+      "desc": "aCcFcEdjceAaDgcbAbDHCahccAaa"
+    },
+    { "w": 4, "h": 4, "seed": "clusters-trace-4x4-a", "desc": "KaaABa" }
+  ]
+}
