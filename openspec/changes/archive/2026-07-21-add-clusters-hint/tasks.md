@@ -86,4 +86,4 @@
 
 ## 7. Close out — on owner acceptance
 
-- [ ] 7.1 Archive `add-clusters-hint`; commit hint + archive together.
+- [x] 7.1 Owner-accepted 2026-07-21; archived as 2026-07-21-add-clusters-hint (hint committed as 960a246, archive in this commit).
