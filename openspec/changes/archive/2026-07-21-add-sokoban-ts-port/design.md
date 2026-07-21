@@ -81,6 +81,11 @@ design exists — but that couples a near-complete, verifiable transliteration t
 larger open question, so the recommendation is to ship (A) and let (B) follow. **This
 is the decision to confirm before implementation.**
 
+> **Resolved 2026-07-21 — (A).** Owner confirmed shipping the faithful reverse-move
+> generator now. Curated hand-authored level packs (B) remain a compelling separate
+> follow-up if wanted. The port ships (A); the byte-match differential (D10) is green
+> across all three presets + a size sweep.
+
 Whichever way it goes, the **gameplay** model (moves, pushes, pits, labelled
 barrels, win) is faithful and unaffected — a curated pack is just a different source
 of the same `desc` format.

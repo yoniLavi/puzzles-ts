@@ -105,6 +105,22 @@ game under `unfinished` and re-emits its `<game>.wasm` until the cache is cleare
 (the CLAUDE.md "reset the cmake cache" rule bites hardest here, since the entry
 *moved* rather than just gaining a flag).
 
+**The two-stage gate (§6) partly collapses for an unfinished game — there is no
+in-app C fallback.** A shipped game runs on C/WASM until its TS port is registered,
+so stage 1 ("register for smoke-testing") leaves a working fallback if the port has a
+bug. An **unfinished** game has none: it is gated behind `PUZZLES_ENABLE_UNFINISHED`
+and is **absent from the catalog**, so registering it in `ts-ported-ids.ts` +
+`games/index.ts` alone makes `ts-ported-ids.test.ts` fail (its id isn't in
+`catalog.json`) and the game still doesn't appear. So to smoke-test it *at all* you
+must do the catalog move (main `CMakeLists.txt` + `TS_PORTED`, rebuild) as part of
+stage 1 — the TS impl is the only implementation from the first moment it is visible.
+What stays gated on owner acceptance is the **C deletion** (stage 2): keep
+`puzzles/unfinished/<game>.c` on disk as the reference (and to back `<game>-trace`)
+until acceptance, then delete it + the trace harness + archive together. Sokoban
+followed exactly this: catalog move + register + rebuild in one step, C retained.
+(Separate and Group are the prior instances.) The trace harness `#include`s the C at
+its unfinished path — `#include "../unfinished/<game>.c"`, not `../<game>.c`.
+
 ---
 
 ## 2. Scaffold and file layout
