@@ -503,6 +503,18 @@ sprite (save the background under the moving arrow, restore next frame) — a se
 exemplar after Pegs — lives in `render.ts`. Exemplar:
 [`signpost/moves.ts`](../../src/native/games/signpost/moves.ts).
 
+**A C *cursor* blitter usually shouldn't become a TS blitter.** Upstream often
+saves/restores the pixels under the keyboard cursor with a blitter so it can draw
+the cursor anywhere without dirtying the cell cache. In a TS port whose cursor sits
+*inside* a cell (or a sub-cell slot), the simpler faithful translation is to fold
+the cursor position into that cell's packed cache key and draw the cursor marks in
+the cell repaint — the old cell repaints when the cursor leaves (its key changed),
+so no save/restore is needed and the recording double sees real ops instead of
+blitter no-ops. Reserve actual blitters for sprites that cross cell boundaries
+mid-drag (the Pegs/Signpost case above). Exemplar:
+[`subsets/render.ts`](../../src/native/games/subsets/render.ts) (upstream's
+`draw_rect_corners` blitter cursor as a `cursor-slot` field of the cell key).
+
 ### 3.3 Palette
 
 **Mirror the C colour-enum indices when the game has dark-mode overrides.**

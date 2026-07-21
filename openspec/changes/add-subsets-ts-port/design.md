@@ -245,6 +245,34 @@ unlike Tatham's `unfinished/` stubs). Stage 2, **only on owner acceptance**, add
 `puzzles/unreleased/subsets.c`, and rebuilds after `rm -rf build/wasm/` (the
 `option()`-cache gotcha, playbook §1.1). Icons already exist.
 
+## Implementation findings (recorded per §1.2 / task 9.5)
+
+- **F1 — The differential matched byte-for-byte on all 12 fixtures, first
+  run.** No solver-strength divergence surfaced; the dead advanced-rule block
+  stayed out (D2) and the two-shuffle RNG surface (D3) held exactly.
+- **F2 — Upstream's Solve deliberately never completes the game.**
+  `execute_move`'s `'S'` branch returns *before* the completion check, and
+  nothing in subsets.c ever sets `cheated` — so after Solve the C game stays
+  "ongoing" (no flash, no win). Ported faithfully (`executeMove`'s solve arm
+  skips the check; `cheated` is a constant-false struct-parity field), with
+  a test documenting it. Toggling any slot away and back after a Solve runs
+  the completion check and *does* win — also upstream behaviour.
+- **F3 — "Not enough data to fill grid" is only reachable with a trailing
+  comma.** `attempt_load_game` checks the separator *before* re-testing the
+  loop condition, so a truncated desc like `"1"` errors "Missing separator";
+  only `"1,2,"` reaches the not-enough-data message. Reproduced exactly;
+  the codec tests assert the quirky messages.
+- **F4 — The cube's no-candidate contradiction writes `known |= ~0`.**
+  C stores `0xFFFFFFFF`; the TS `Uint16Array` stores `0xFFFF`. Proven
+  observationally identical (a comment in `bitsFromCube` carries the
+  argument): `mask` never exceeds `ALL_BITS(n)`, so a garbage `known` can
+  never equal `mask`, never reads as decided, and never indexes `counts`.
+- **F5 — The keyboard cursor is drawn through the per-cell diff, not a
+  blitter.** Upstream saves/restores the cursor backing with a blitter; the
+  TS render folds the cursor slot into the cell's packed cache key and draws
+  the corner brackets inside the cell repaint — same pixels, no blitter
+  plumbing (display concern, D10).
+
 ## Risks
 
 - **Solver-strength fidelity is the whole differential.** The generator's desc
