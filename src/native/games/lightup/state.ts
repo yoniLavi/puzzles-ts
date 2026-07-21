@@ -11,6 +11,12 @@
  */
 import type { GameStatus } from "../../../puzzle/types.ts";
 import type { PresetMenu } from "../../engine/game.ts";
+import {
+  SYMM_MAX,
+  SYMM_REF4,
+  SYMM_ROT2,
+  SYMM_ROT4,
+} from "../../engine/symmetric-blacks.ts";
 
 // --- cell flags (upstream values) -------------------------------------------
 
@@ -30,12 +36,16 @@ export const idx = (x: number, y: number, w: number): number => y * w + x;
 
 // --- symmetry / difficulty ---------------------------------------------------
 
-export const SYMM_NONE = 0;
-export const SYMM_REF2 = 1;
-export const SYMM_ROT2 = 2;
-export const SYMM_REF4 = 3;
-export const SYMM_ROT4 = 4;
-const SYMM_MAX = 5;
+// The symmetry enum lives in the shared symmetric-blacks helper (Sticks is
+// the second consumer of upstream's set_blacks); re-exported so lightup's
+// own modules keep importing it from here.
+export {
+  SYMM_NONE,
+  SYMM_REF2,
+  SYMM_REF4,
+  SYMM_ROT2,
+  SYMM_ROT4,
+} from "../../engine/symmetric-blacks.ts";
 
 export const DIFFCOUNT = 2; // difficulty is 0 (easy), 1 (tricky), 2 (unreasonable)
 

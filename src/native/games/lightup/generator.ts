@@ -10,8 +10,8 @@
 
 import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
+import { placeSymmetricBlacks } from "../../engine/symmetric-blacks.ts";
 import type { RandomState } from "../../random/index.ts";
-import { randomUpto } from "../../random/index.ts";
 import {
   type DepthTracker,
   dosolve,
@@ -34,11 +34,6 @@ import {
   type LightupParams,
   type LightupState,
   litCells,
-  SYMM_NONE,
-  SYMM_REF2,
-  SYMM_REF4,
-  SYMM_ROT2,
-  SYMM_ROT4,
   setLight,
 } from "./state.ts";
 
@@ -55,101 +50,27 @@ function cleanBoard(state: LightupState, leaveBlacks: boolean): void {
 }
 
 /** Randomise the black squares over the symmetry-reduced region, then
- * mirror/rotate the region over the whole board (upstream `set_blacks`). */
+ * mirror/rotate the region over the whole board (upstream `set_blacks`,
+ * via the shared engine helper — Sticks is the second consumer). */
 export function setBlacks(
   state: LightupState,
   params: LightupParams,
   rs: RandomState,
 ): void {
-  const { w, h } = state;
-  const wodd = w % 2 ? 1 : 0;
-  const hodd = h % 2 ? 1 : 0;
-  let degree: number;
-  let rotate: boolean;
-  switch (params.symm) {
-    case SYMM_NONE:
-      degree = 1;
-      rotate = false;
-      break;
-    case SYMM_ROT2:
-      degree = 2;
-      rotate = true;
-      break;
-    case SYMM_REF2:
-      degree = 2;
-      rotate = false;
-      break;
-    case SYMM_ROT4:
-      degree = 4;
-      rotate = true;
-      break;
-    case SYMM_REF4:
-      degree = 4;
-      rotate = false;
-      break;
-    default:
-      throw new Error(`Unknown symmetry type ${params.symm}`);
-  }
-  if (params.symm === SYMM_ROT4 && h !== w)
-    throw new Error("4-fold symmetry unavailable without square grid");
-
-  let rw: number;
-  let rh: number;
-  if (degree === 4) {
-    rw = Math.floor(w / 2);
-    rh = Math.floor(h / 2);
-    if (!rotate) rw += wodd; // ... but see below (upstream comment)
-    rh += hodd;
-  } else if (degree === 2) {
-    rw = w;
-    rh = Math.floor(h / 2) + hodd;
-  } else {
-    rw = w;
-    rh = h;
-  }
-
-  // Clear, then randomise, the required region.
+  const { w } = state;
   cleanBoard(state, false);
-  const nblack = Math.floor((rw * rh * params.blackpc) / 100);
-  const pick = retryLimit("lightup: setBlacks", MAX_BLACK_PICKS);
-  for (let i = 0; i < nblack; i++) {
-    let x: number;
-    let y: number;
-    do {
-      pick();
-      x = randomUpto(rs, rw);
-      y = randomUpto(rs, rh);
-    } while (state.flags[idx(x, y, w)] & F_BLACK);
-    state.flags[idx(x, y, w)] |= F_BLACK;
-  }
-
-  // Copy the required region per the symmetry.
-  if (params.symm === SYMM_NONE) return;
-  for (let x = 0; x < rw; x++) {
-    for (let y = 0; y < rh; y++) {
-      const xs: number[] = [x];
-      const ys: number[] = [y];
-      if (degree === 4) {
-        xs.push(w - 1 - (rotate ? y : x));
-        ys.push(rotate ? x : y);
-        xs.push(rotate ? w - 1 - x : x);
-        ys.push(h - 1 - y);
-        xs.push(rotate ? y : w - 1 - x);
-        ys.push(h - 1 - (rotate ? x : y));
-      } else {
-        xs.push(rotate ? w - 1 - x : x);
-        ys.push(h - 1 - y);
-      }
-      for (let i = 1; i < degree; i++) {
-        state.flags[idx(xs[i], ys[i], w)] = state.flags[idx(xs[0], ys[0], w)];
-      }
-    }
-  }
-  // SYMM_ROT4 misses the middle square above; fix that here.
-  if (degree === 4 && rotate && wodd && randomUpto(rs, 100) <= params.blackpc) {
-    state.flags[idx(Math.floor(w / 2) + wodd - 1, Math.floor(h / 2) + hodd - 1, w)] |=
-      F_BLACK;
-  }
+  placeSymmetricBlacks({
+    w,
+    h: state.h,
+    blackpc: params.blackpc,
+    symm: params.symm,
+    rs,
+    isBlack: (x, y) => (state.flags[idx(x, y, w)] & F_BLACK) !== 0,
+    setBlack: (x, y, black) => {
+      if (black) state.flags[idx(x, y, w)] |= F_BLACK;
+      else state.flags[idx(x, y, w)] &= ~F_BLACK;
+    },
+  });
 }
 
 /** Would removing a bulb at (x, y) leave some square it lights dark? */
@@ -269,11 +190,6 @@ const MAX_GRIDGEN_TRIES = 20;
  * ≈20k grids in total). The ramp stops at 90, after which every round retries
  * identical parameters — so this is a real escape, not just insurance. */
 const MAX_RAMP_ROUNDS = 1000;
-
-/** Draws allowed when picking a non-black cell. blackpc never exceeds 90, so a
- * free cell always exists and the rejection sampling ends with probability 1 —
- * but "probably" is not a bound (see engine/retry-limit.ts). */
-const MAX_BLACK_PICKS = 1_000_000;
 
 /**
  * Generate a puzzle: the most complex grid honouring a unique solution

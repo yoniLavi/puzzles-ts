@@ -243,6 +243,17 @@ drains one with `delpos234(todo, 0)`, i.e. in sorted order) is a different
 matter: check whether the order can affect the result before reproducing it — a
 flood fill's reachable set cannot, so that one is a plain queue.
 
+**Symmetric black-square placement is shared:**
+[`symmetric-blacks.ts`](../../src/native/engine/symmetric-blacks.ts) —
+`placeSymmetricBlacks` (upstream `set_blacks`, which `sticks.c` copied
+verbatim from `lightup.c`), plus the `SYMM_*` enum and the Custom-dialog
+`SYMMETRY_CHOICES` labels. It is byte-match critical (region sizing,
+rejection-sampling draw order, symmetry copy order, the `SYMM_ROT4`
+odd-centre draw with its `<=` comparison) and callback-parameterised over the
+caller's board (`isBlack`/`setBlack`); the caller clears its board first.
+Light Up and Sticks are the consumers — the extraction was proven byte-safe
+by Light Up's differential staying green through the refactor.
+
 The bipartite **`matching`** (Hopcroft–Karp, RNG-faithful) lives in
 [`latin.ts`](../../src/native/engine/latin.ts) alongside `latinGenerate`, and
 is reusable outside the Latin family: Tents drives it both ways. Its `rs` is
@@ -916,11 +927,17 @@ key — §3.2). Use the shared
 [`isMouseDown`/`isMouseDrag`/`isMouseRelease`](../../src/native/engine/pointer.ts)
 (upstream `IS_MOUSE_*`, extracted with Clusters — 27 ports had each rewritten the
 three-constant `===` chain). Exemplar:
-[`clusters/index.ts`](../../src/native/games/clusters/index.ts). When bricks or
-sticks land as the second/third consumer, promote the lifecycle skeleton itself
-to `engine/` (the Ui fields + press/drag/release plumbing) with per-game
-callbacks for the cycle/filter/fill; one consumer isn't yet enough to fix the
-callback shape.
+[`clusters/index.ts`](../../src/native/games/clusters/index.ts). **Sticks
+landed and the promotion was evaluated and declined** (its `design.md` F7):
+Sticks' drag machine is materially different — the press picks no paint value
+(the orientation comes from the *drag axis*, a `DRAG_DELTA` bounding-box
+test), each accreted cell stores its own per-cell value re-writable on
+re-crossing, and a matching-line start flips the whole drag into a clearing
+drag. Only "accrete + commit on release" is shared, which is too little to
+fix a callback shape over. If bricks' drag proves Clusters-like, revisit
+against Clusters alone. One input idiom Sticks did add: its `FROMCOORD` is
+*truncating* division, so it uses `Math.trunc`, not the shared `fromCoord`
+floor — a pointer just inside the border maps to row/column 0, as in C.
 
 ### 3.9 Reference aid — an inventory checklist + click-to-highlight (Dominosa exemplar)
 
