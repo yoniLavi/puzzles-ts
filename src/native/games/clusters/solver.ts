@@ -31,7 +31,15 @@
  * The pure play-side checks ({@link clustersStatus}, {@link findErrors}) do
  * NOT mutate, so persisted state and the renderer stay `F_ERROR`-free.
  */
-import { COLMASK, F_COLOR_0, F_COLOR_1, F_ERROR, F_SINGLE } from "./state.ts";
+import { stepBudget } from "../../engine/step-budget.ts";
+import {
+  type ClustersFill,
+  COLMASK,
+  F_COLOR_0,
+  F_COLOR_1,
+  F_ERROR,
+  F_SINGLE,
+} from "./state.ts";
 
 export const COMPLETE = 0;
 export const UNFINISHED = 1;
@@ -201,5 +209,244 @@ export function solveGame(
     if (maxdiff < 1) return UNFINISHED;
     if (solverRecurse(grid, w, h) > 0) continue;
     return UNFINISHED;
+  }
+}
+
+// --- hint plan (add-clusters-hint) -----------------------------------------
+//
+// A *parallel recorder* over the same contradiction deduction (the Undead /
+// Pattern shape, hint-authoring §9.4/§5.6a): separate code reusing this
+// module's primitives, so the generator's `solveGame`/`clustersValidate` path
+// above stays byte-identical by construction — no recorder flag threads
+// through it. Where the generator only needs *that* a colouring is refuted,
+// the hint also needs *why* (which rule trips, at which cell, on which
+// premise), so each firing re-derives its contradiction in detail.
+//
+// The plan discipline deliberately differs from `solveGame`'s pass-sweeps:
+// single-cell firings restart the row-major scan after each firing (one
+// deduction = one plan step, cheapest first), and a lookahead stall takes the
+// firing whose forcing chain is *shortest* (measured: median 2–3 forced cells
+// vs 6 for first-in-scan-order — see the change's design.md D2/D3). Both
+// rungs are deterministic, so a recomputed plan continues exactly where the
+// previous one left off. Confluence makes the different order safe: a
+// refuted colouring stays refuted as more cells fill in (the three error
+// conditions are monotone — filling cells can only create errors, never cure
+// them), so any scan order reaches the same verdict as the C solver's.
+
+/** Which of `cellInError`'s three clauses a refuted colouring trips. */
+export type ClustersRuleKind = "surrounded" | "dotOvercount" | "reachTwo";
+
+/** The rule violation a refuted colouring runs into: `cell` is where the
+ * board breaks (the tentatively-coloured cell itself, or a neighbour). */
+export interface ClustersContradiction {
+  kind: ClustersRuleKind;
+  cell: number;
+}
+
+/** One forced consequence inside a lookahead hypothetical. */
+export interface ChainStep {
+  index: number;
+  fill: ClustersFill;
+}
+
+export type ClustersReason =
+  | { kind: "direct"; at: ClustersContradiction }
+  | { kind: "chain"; steps: ChainStep[]; at: ClustersContradiction };
+
+/** One forced move: colouring `index` with `refuted` breaks `reason`, so it
+ * must be `fill`. No separate evidence list: every premise tile of the three
+ * local rules sits orthogonally adjacent to the broken cell, so the target /
+ * danger highlights already put the evidence in view. */
+export interface ClustersDeduction {
+  index: number;
+  fill: ClustersFill;
+  refuted: ClustersFill;
+  reason: ClustersReason;
+}
+
+/** The whole remaining plan. `verdict` COMPLETE means the deductions solve
+ * the board — which also *certifies the position*: the error conditions are
+ * monotone, so a complete zero-error grid is the unique solution, and a
+ * position containing a wrong tile can only end INVALID or UNFINISHED. */
+export interface ClustersHintPlan {
+  verdict: ClustersStatus;
+  deductions: ClustersDeduction[];
+}
+
+const opposite = (fill: ClustersFill): ClustersFill =>
+  fill === F_COLOR_0 ? F_COLOR_1 : F_COLOR_0;
+
+/** Which clause the filled cell `i` trips, in `cellInError`'s order. */
+function errorKind(
+  grid: Uint8Array,
+  w: number,
+  h: number,
+  i: number,
+): ClustersRuleKind | null {
+  const cell = grid[i];
+  if ((cell & COLMASK) === 0) return null;
+  const x = i % w;
+  const y = (i - x) / w;
+  const { same, other, max } = neighbourCounts(grid, w, h, x, y, cell & COLMASK);
+  if (other === max) return "surrounded";
+  if (cell & F_SINGLE && same > 1) return "dotOvercount";
+  if (!(cell & F_SINGLE) && other === max - 1) return "reachTwo";
+  return null;
+}
+
+/** After filling cell `i` on an otherwise error-free board, a new violation
+ * can only sit at `i` or an orthogonal neighbour (the three error conditions
+ * read one cell's neighbourhood). Returns the first, preferring `i` itself. */
+function contradictionAround(
+  grid: Uint8Array,
+  w: number,
+  h: number,
+  i: number,
+): ClustersContradiction | null {
+  const kind = errorKind(grid, w, h, i);
+  if (kind) return { kind, cell: i };
+  const x = i % w;
+  const y = (i - x) / w;
+  for (let d = 0; d < 4; d++) {
+    const nx = x + DX[d];
+    const ny = y + DY[d];
+    if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+    const n = ny * w + nx;
+    const nKind = errorKind(grid, w, h, n);
+    if (nKind) return { kind: nKind, cell: n };
+  }
+  return null;
+}
+
+/** The first single-cell contradiction firing in row-major order (red tried
+ * first, as `solverTry` does), or null at a stall. Leaves `grid` unchanged. */
+function firstDirectDeduction(
+  grid: Uint8Array,
+  w: number,
+  h: number,
+): ClustersDeduction | null {
+  const s = w * h;
+  for (let i = 0; i < s; i++) {
+    if (grid[i] !== 0) continue;
+    for (let d = 0; d <= 1; d++) {
+      const refuted: ClustersFill = d ? F_COLOR_1 : F_COLOR_0;
+      grid[i] = refuted;
+      const at = contradictionAround(grid, w, h, i);
+      grid[i] = 0;
+      if (at) {
+        return {
+          index: i,
+          fill: opposite(refuted),
+          refuted,
+          reason: { kind: "direct", at },
+        };
+      }
+    }
+  }
+  return null;
+}
+
+/** Play out the hypothetical "cell `i` is `refuted`": propagate single-cell
+ * forcings one at a time (restarting the scan after each, stopping the moment
+ * the board breaks). Returns the forced chain and the final contradiction, or
+ * null when the hypothetical settles without breaking (not refuted this way).
+ * Operates on a scratch copy. */
+function chainToContradiction(
+  grid: Uint8Array,
+  w: number,
+  h: number,
+  i: number,
+  refuted: ClustersFill,
+  budget: { tick(): void },
+): { steps: ChainStep[]; at: ClustersContradiction } | null {
+  const s = w * h;
+  const dup = grid.slice();
+  dup[i] = refuted;
+  const steps: ChainStep[] = [];
+  let at = contradictionAround(dup, w, h, i);
+  if (at) return { steps, at };
+  for (;;) {
+    budget.tick();
+    let fired = false;
+    for (let j = 0; j < s && !fired; j++) {
+      if (dup[j] !== 0) continue;
+      for (let d = 0; d <= 1; d++) {
+        const t: ClustersFill = d ? F_COLOR_1 : F_COLOR_0;
+        dup[j] = t;
+        if (contradictionAround(dup, w, h, j)) {
+          const fill = opposite(t);
+          dup[j] = fill;
+          steps.push({ index: j, fill });
+          at = contradictionAround(dup, w, h, j);
+          if (at) return { steps, at };
+          fired = true;
+          break;
+        }
+        dup[j] = 0;
+      }
+    }
+    if (!fired) return null;
+  }
+}
+
+/** At a single-cell stall, the lookahead firing whose forcing chain is
+ * shortest (earliest in scan order on a tie — deterministic, so a recomputed
+ * plan picks the same firing). Leaves `grid` unchanged. */
+function shortestChainDeduction(
+  grid: Uint8Array,
+  w: number,
+  h: number,
+  budget: { tick(): void },
+): ClustersDeduction | null {
+  const s = w * h;
+  let best: {
+    index: number;
+    refuted: ClustersFill;
+    chain: { steps: ChainStep[]; at: ClustersContradiction };
+  } | null = null;
+  for (let i = 0; i < s; i++) {
+    if (grid[i] !== 0) continue;
+    for (let d = 0; d <= 1; d++) {
+      const refuted: ClustersFill = d ? F_COLOR_1 : F_COLOR_0;
+      const chain = chainToContradiction(grid, w, h, i, refuted, budget);
+      if (chain) {
+        if (!best || chain.steps.length < best.chain.steps.length) {
+          best = { index: i, refuted, chain };
+        }
+        break; // this cell is decided; its other colour needs no trial
+      }
+    }
+  }
+  if (!best) return null;
+  return {
+    index: best.index,
+    fill: opposite(best.refuted),
+    refuted: best.refuted,
+    reason: { kind: "chain", steps: best.chain.steps, at: best.chain.at },
+  };
+}
+
+/** Run the deduction from the player's current grid, recording every forced
+ * move in order with the rule its refuted colouring would break — the data a
+ * hint narrates. Single-cell firings lead; a stall falls back to the
+ * shortest-chain lookahead firing. Operates on a clone. */
+export function deduceHintPlan(
+  grid0: Uint8Array,
+  w: number,
+  h: number,
+): ClustersHintPlan {
+  const grid = grid0.slice();
+  const deductions: ClustersDeduction[] = [];
+  // Hint-only path, so the budget is unconditional (Palisade precedent).
+  const budget = stepBudget("clusters hint");
+  for (;;) {
+    budget.tick();
+    const st = clustersStatus(grid, w, h);
+    if (st !== UNFINISHED) return { verdict: st, deductions };
+    const next =
+      firstDirectDeduction(grid, w, h) ?? shortestChainDeduction(grid, w, h, budget);
+    if (!next) return { verdict: UNFINISHED, deductions };
+    deductions.push(next);
+    grid[next.index] = next.fill;
   }
 }
