@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "w": 4,
+      "h": 4,
+      "n": 4,
+      "seed": "subsets-trace-a",
+      "desc": "13R,_,_R,2D,_,_UD,_R,_,14D,5,6D,_U,_,_URL,_,9"
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "n": 4,
+      "seed": "subsets-trace-b",
+      "desc": "_R,_,12DL,_D,_UR,10UR,_,_,_R,_,_,_L,3,_U,4,_UL"
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "n": 4,
+      "seed": "subsets-trace-c",
+      "desc": "7D,_RD,_D,3,_,_R,_,_UDL,_U,10U,_UL,_,12,_,_,11UL"
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "n": 4,
+      "seed": "subsets-trace-d",
+      "desc": "_D,13,_R,_,_,_URDL,14U,_U,_RD,_,5D,_L,_R,_R,_,_L"
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "n": 4,
+      "seed": "subsets-trace-e",
+      "desc": "_,_L,_,_,_URD,9,_RL,2,_RD,_R,_,_U,8,1,_UL,13L"
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "n": 4,
+      "seed": "subsets-trace-f",
+      "desc": "_,_,14L,_D,_R,_UD,_URDL,_D,_D,8,2,_,_,_L,_U,3U"
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "n": 4,
+      "seed": "subsets-trace-g",
+      "desc": "9D,_,_R,_,_,_L,_URDL,3UD,_D,11UR,_,1,_,14R,_,_L"
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "n": 4,
+      "seed": "subsets-trace-h",
+      "desc": "14,5,_RDL,_,_R,_,7,12,_UR,_D,_D,_DL,_R,_,_L,_L"
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "n": 4,
+      "seed": "subsets-trace-i",
+      "desc": "_,_RDL,13RD,_,14,_,8D,_,_D,_URDL,_,_L,_,6L,5U,_"
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "n": 4,
+      "seed": "subsets-trace-j",
+      "desc": "_,14DL,_RDL,2,_UR,_,5R,4,_R,10R,_,_D,_,_,_R,_"
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "n": 4,
+      "seed": "subsets-trace-k",
+      "desc": "11R,10D,7,_DL,_,_D,_,_,_UR,_,5L,8,_,12U,6,_U"
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "n": 4,
+      "seed": "subsets-trace-l",
+      "desc": "_,_L,_,6,_,5D,_L,_D,13R,_,10L,_,_,_URL,_U,9"
+    }
+  ]
+}
