@@ -738,6 +738,21 @@ re-derivation is impractical (Untangle stores the untangled layout). If you take
 directly), since the threading lives in the midend — a direct unit test of
 `solve(…, aux)` passes while the shipped Solve is a no-op.
 
+**Solve MUST complete the game — fix upstream's bookkeeping when the C forgot it
+(owner directive, 2026-07-21).** The collection convention is that the solve
+move's `executeMove` arm runs the completion check (so the game reports
+solved-with-help) **and** sets `cheated` (so the win flash doesn't fire on a
+solver fill). Most upstream games do both in their `'S'` arm, but not all:
+`subsets.c` returns from its `'S'` branch *before* the completion check and never
+sets `cheated`, so upstream Subsets stays "ongoing" for ever after Solve. Do
+**not** preserve that class of quirk for faithfulness — it is missing
+bookkeeping, not behaviour, and a port that keeps it is inconsistent with every
+other game in the app. This is safe to fix even on a byte-match port: the desc
+differential exercises only `newDesc`/solver/codec, never `executeMove`. Assert
+both halves through a real `Midend` (status `"solved-with-help"`, `flashLength`
+0). Exemplar: [`subsets/index.ts`](../../src/native/games/subsets/index.ts)
+(`executeMove`'s solve arm, with the divergence comment).
+
 ### 3.7 Pencil-mark games: ship the full note-taking UX (Towers exemplar)
 
 Any game with candidate pencil marks — Towers, and Solo / Keen / Unequal / Undead

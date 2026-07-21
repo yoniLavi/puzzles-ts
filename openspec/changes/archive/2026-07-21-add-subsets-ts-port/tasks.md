@@ -132,9 +132,9 @@
 
 ## Stage 2 — on owner acceptance only (design D11)
 
-- [ ] S2.1 Add `TS_PORTED` to `puzzle(subsets …)` in
+- [x] S2.1 Add `TS_PORTED` to `puzzle(subsets …)` in
       `puzzles/unreleased/CMakeLists.txt` (and drop `solver(subsets)`).
-- [ ] S2.2 Delete `puzzles/unreleased/subsets.c`.
-- [ ] S2.3 `rm -rf build/wasm/` and rebuild — Subsets TS-served, no `subsets.wasm`
+- [x] S2.2 Delete `puzzles/unreleased/subsets.c`.
+- [x] S2.3 `rm -rf build/wasm/` and rebuild — Subsets TS-served, no `subsets.wasm`
       (the `option()`-cache gotcha, playbook §1.1). Icons already exist.
-- [ ] S2.4 Archive, then commit port + archive together.
+- [x] S2.4 Archive, then commit port + archive together.

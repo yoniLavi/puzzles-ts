@@ -85,7 +85,7 @@ puzzle(sticks
 puzzle(subsets
   DISPLAYNAME "Subsets"
   DESCRIPTION "Set-defining puzzle"
-  OBJECTIVE "Place each set once, in accordance with the subset clues.")
-solver(subsets)
+  OBJECTIVE "Place each set once, in accordance with the subset clues."
+  TS_PORTED)  # native-TS port (openspec add-subsets-ts-port); no subsets.c/wasm
 
 export_variables_to_parent_scope()

@@ -250,13 +250,16 @@ unlike Tatham's `unfinished/` stubs). Stage 2, **only on owner acceptance**, add
 - **F1 — The differential matched byte-for-byte on all 12 fixtures, first
   run.** No solver-strength divergence surfaced; the dead advanced-rule block
   stayed out (D2) and the two-shuffle RNG surface (D3) held exactly.
-- **F2 — Upstream's Solve deliberately never completes the game.**
-  `execute_move`'s `'S'` branch returns *before* the completion check, and
-  nothing in subsets.c ever sets `cheated` — so after Solve the C game stays
-  "ongoing" (no flash, no win). Ported faithfully (`executeMove`'s solve arm
-  skips the check; `cheated` is a constant-false struct-parity field), with
-  a test documenting it. Toggling any slot away and back after a Solve runs
-  the completion check and *does* win — also upstream behaviour.
+- **F2 — Upstream's Solve never completes the game; fixed to the collection
+  convention (owner-directed divergence, 2026-07-21).** `execute_move`'s
+  `'S'` branch returns *before* the completion check, and nothing in
+  subsets.c ever sets `cheated` — so after Solve the C game stays "ongoing"
+  for ever. The first cut ported this faithfully; on review the owner chose
+  consistency with every other TS port: the solve arm now runs the
+  completion check (Solve ends solved-with-help) and sets `cheated` (no win
+  flash on a solver fill). Not byte-match surface (the desc differential
+  never runs `executeMove`). Codified for all future ports in playbook
+  §3.6 ("Solve MUST complete the game").
 - **F3 — "Not enough data to fill grid" is only reachable with a trailing
   comma.** `attempt_load_game` checks the separator *before* re-testing the
   loop condition, so a truncated desc like `"1"` errors "Missing separator";
