@@ -79,8 +79,8 @@ solver(spokes ${CMAKE_SOURCE_DIR}/dsf.c)
 puzzle(sticks
   DISPLAYNAME "Sticks"
   DESCRIPTION "Line-drawing puzzle"
-  OBJECTIVE "Fill in the grid with horizontal and vertical line segments.")
-solver(sticks ${CMAKE_SOURCE_DIR}/dsf.c)
+  OBJECTIVE "Fill in the grid with horizontal and vertical line segments."
+  TS_PORTED)  # native-TS port (openspec add-sticks-ts-port); no sticks.c/wasm
 
 puzzle(subsets
   DISPLAYNAME "Subsets"
