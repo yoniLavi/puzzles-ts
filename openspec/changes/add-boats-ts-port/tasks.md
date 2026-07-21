@@ -162,9 +162,10 @@
       cross-off, Check & Save hard-block on a wrong board, completion flash, Custom
       params. 0 console errors.
 - [ ] 8.6 Update `docs/porting/game-port-playbook.md` (the line-fill drag input, the
-      live-provably-wrong `findMistakes` basis, the `dsf` root-identity in a
-      Battleships solver, and the "flag-in-place, no catalog move" stage-2 for a
-      third-party `unreleased/` game that already ships C/WASM).
+      re-solve `findMistakes` basis with the C's live rule-errors additionally
+      rendered, the `dsf` root-identity in a Battleships solver, and the
+      "flag-in-place, no catalog move" stage-2 for a third-party `unreleased/` game
+      that already ships C/WASM).
 
 ## Stage 2 — on owner acceptance only
 
