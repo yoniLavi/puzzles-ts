@@ -72,8 +72,9 @@ export interface SubsetsState {
   /** Letters not yet ruled out, per cell. */
   mask: Uint16Array;
   completed: boolean;
-  /** Kept for struct parity with upstream, which declares but never sets it
-   * (its solve move does not mark the game cheated). Always false. */
+  /** Set by the solve move (with `completed`) per the collection convention
+   * — a deliberate divergence from upstream, which declares this field but
+   * never sets it (see `executeMove`'s solve arm). */
   cheated: boolean;
 }
 

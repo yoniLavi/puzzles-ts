@@ -170,9 +170,15 @@ function executeMove(state: SubsetsState, move: SubsetsMove): SubsetsState {
       next.known[i] = move.known[i];
       next.mask[i] = move.mask[i];
     }
-    // Upstream's 'S' branch returns before the completion check, so a
-    // solved-by-solver board deliberately does not set `completed` (and
-    // subsets.c never sets `cheated` at all). Reproduced faithfully.
+    // Deliberate divergence (owner 2026-07-21, playbook §3.6): upstream's
+    // 'S' branch returns before the completion check and never sets
+    // `cheated`, leaving a solved-by-solver board "ongoing" for ever. Every
+    // other port follows the collection convention — the solve move
+    // completes the game (reported solved-with-help) and marks it cheated
+    // so the win flash doesn't fire. Not byte-match surface (the desc
+    // differential never runs executeMove).
+    if (subsetsValidate(next) === "complete") next.completed = true;
+    next.cheated = next.completed;
     return next;
   }
 

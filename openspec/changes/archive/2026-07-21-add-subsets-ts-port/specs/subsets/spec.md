@@ -111,7 +111,10 @@ string.
 The game SHALL flag mistakes for Check & Save: a set-value placed in more than one
 cell, and any edge whose horseshoe (or missing-horseshoe disjointness) relation is
 violated by two decided cells. A Solve action SHALL fill the board from the solver
-unless the board is invalid. The board SHALL be formattable as text. Rendering
+unless the board is invalid, and SHALL complete the game as solved-with-help
+without firing the win flash — a deliberate divergence from upstream, whose solve
+move omits the completion bookkeeping (the collection convention wins). The board
+SHALL be formattable as text. Rendering
 SHALL show each cell's letter slots, the horseshoe arrows, a tally of every
 set-value with its placement count, and a completion flash; there SHALL be no move
 animation.

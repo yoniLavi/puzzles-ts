@@ -378,17 +378,28 @@ describe("subsets executeMove and completion", () => {
 });
 
 describe("subsets solve (through a real Midend)", () => {
-  it("Solve fills the board; upstream quirk: it does not mark completed", () => {
+  it("Solve completes the board as solved-with-help, without the flash", () => {
     const { m, status } = harness();
     expect(m.newGameFromId(FIX_ID)).toBeUndefined();
+    const before = newState(PARAMS, FIX.desc);
     expect(m.solve()).toBeUndefined();
-    // The board is fully decided...
+    // The board is fully decided and the game completes — a deliberate
+    // divergence from upstream, whose 'S' move skips the completion check
+    // and leaves the game "ongoing" for ever (collection convention wins;
+    // playbook §3.6).
     const text = m.formatAsText();
     expect(text).toBeDefined();
     expect(text).not.toContain("?");
-    // ...but upstream's 'S' move skips the completion check, so the game
-    // deliberately stays "ongoing" (subsets.c execute_move returns early).
-    expect(status()).toBe("ongoing");
+    expect(status()).toBe("solved-with-help");
+    // The solve move marks the state cheated, so the win flash stays off.
+    const solved = subsetsGame.executeMove(before, {
+      kind: "solve",
+      known: Array.from(fixtureSolution().known),
+      mask: Array.from(fixtureSolution().mask),
+    });
+    expect(solved.completed).toBe(true);
+    expect(solved.cheated).toBe(true);
+    expect(subsetsGame.flashLength?.(before, solved, 1, newUi())).toBe(0);
   });
 
   it("saveGame -> loadGame restores an equivalent game", () => {
