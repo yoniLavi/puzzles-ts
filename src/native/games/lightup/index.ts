@@ -29,6 +29,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
+import { SYMMETRY_CHOICES } from "../../engine/symmetric-blacks.ts";
 import { newLightupDesc } from "./generator.ts";
 import {
   colours,
@@ -442,14 +443,6 @@ function flashLength(
     return FLASH_TIME;
   return 0;
 }
-
-const SYMMETRY_CHOICES = [
-  "None",
-  "2-way mirror",
-  "2-way rotational",
-  "4-way mirror",
-  "4-way rotational",
-];
 
 export const lightupGame: Game<
   LightupParams,

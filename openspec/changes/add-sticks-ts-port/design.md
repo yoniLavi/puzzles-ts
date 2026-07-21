@@ -249,6 +249,55 @@ fallback). Stage 2, on owner acceptance: add `TS_PORTED` to the
 `cliprogram()` line), then `rm -rf build/wasm/` and rebuild (no `sticks.wasm`).
 Icons already exist.
 
+## Findings (recorded during implementation, 2026-07-21)
+
+- **F1 — Byte-match differential green 13/13 on the first run** (both presets,
+  all five symmetries incl. the `SYMM_ROT4` odd-centre fix-up, blackpc 20–60,
+  non-square sizes). The fixture matrix lives in
+  `puzzles/auxiliary/sticks-trace.c` → `__fixtures__/sticks-c-reference.json`.
+- **F2 — `set_blacks` promoted to a shared engine helper.** Sticks' C copies
+  it verbatim from `lightup.c`, and Light Up's TS port already carried a
+  faithful `setBlacks` — so the symmetric placement (region sizing, rejection
+  sampling, copy order, ROT4 centre draw) now lives in
+  `src/native/engine/symmetric-blacks.ts` (`placeSymmetricBlacks` + the
+  `SYMM_*` enum + `SYMMETRY_CHOICES` labels), with Light Up refactored onto it.
+  The refactor is proven byte-safe by Light Up's own differential (57/57 green
+  after the swap — every RNG draw flows through this helper).
+- **F3 — D4's input survey corrected against the C.** A plain click is a
+  *3-cycle* — left: blank→vertical→horizontal→blank, right: the reverse — not
+  the 2-cycle the design sketched; Enter/Space are the same cycles from the
+  keyboard, and only `0`/`2` (horizontal) and `1` (vertical) place directly.
+  Ported as the C has it.
+- **F4 — Two C reads are out-of-bounds (UB) and are bounds-checked in TS.**
+  Upstream's `MIDDLE_BUTTON` arm and the `DRAG_CLEAR` drag arm compute
+  `i = hy*w + hx` from an unchecked `FROMCOORD` and read `state->grid[i]`
+  directly; a pointer outside the grid reads out of bounds in C. The TS arms
+  bounds-check and treat out-of-grid as "no cell" — divergence only where C
+  has no defined behaviour (playbook §4 rule 1). Relatedly `FROMCOORD` is
+  *truncating* division, so the TS uses `Math.trunc`, not the shared
+  `fromCoord` floor (a pointer just inside the border maps to row/column 0,
+  as in C).
+- **F5 — Live errors recomputed pure; `F_ERROR` never stored.** Upstream's
+  `execute_move` re-validates with marking and stores `F_ERROR` bits in the
+  state grid; the TS keeps the persisted grid clean and `findLiveErrors`
+  recomputes the same verdicts per frame (Clusters' precedent). Byte-match
+  unaffected: the generator wholly reassigns every cell each attempt, so no
+  `F_ERROR` contamination path exists (unlike Clusters' §4.4 trap).
+- **F6 — `dsf_minimal` via a precomputed pass.** The generator's
+  `dsf_minimal(dsf, i) == i` check uses the playbook §2.2 `buildMinimal`
+  idiom (one ascending pass after all merges) — membership-determined, so
+  byte-identical regardless of the shared `Dsf`'s root choice.
+- **F7 — Accreting-drag skeleton NOT promoted to `engine/` (no-go recorded).**
+  Playbook §3.8e suggested promoting the Clusters drag lifecycle when Sticks
+  landed. Declined: Sticks' machine is materially different — the press picks
+  no paint value (orientation comes from the *drag axis* via a `DRAG_DELTA`
+  bounding box), each accreted cell stores its own per-cell value
+  (`dragMove[]`, re-writable when re-crossed), and a matching-line start
+  flips the whole drag to clearing. The only shared part is "accrete + commit
+  on release", which is a few lines; forcing one callback shape over both
+  would contort game logic to fit a contract (the standing guardrail).
+  Bricks (Clusters-like, per its C) can revisit against Clusters alone.
+
 ## Risks
 
 - **Byte-match sensitivity of `set_blacks` + the fill/clue loop.** The generator

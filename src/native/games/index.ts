@@ -54,6 +54,7 @@ import { sixteenGame } from "./sixteen/index.ts";
 import { slantGame } from "./slant/index.ts";
 import { sokobanGame } from "./sokoban/index.ts";
 import { soloGame } from "./solo/index.ts";
+import { sticksGame } from "./sticks/index.ts";
 import { tentsGame } from "./tents/index.ts";
 import { towersGame } from "./towers/index.ts";
 import { tracksGame } from "./tracks/index.ts";
@@ -108,6 +109,7 @@ export function registerAllGames(): void {
   registerGame(slantGame);
   registerGame(sokobanGame);
   registerGame(soloGame);
+  registerGame(sticksGame);
   registerGame(tentsGame);
   registerGame(towersGame);
   registerGame(tracksGame);

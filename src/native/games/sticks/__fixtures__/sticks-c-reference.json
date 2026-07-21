@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "w": 7,
+      "h": 7,
+      "blackpc": 20,
+      "symm": 2,
+      "seed": "sticks-trace-7x7-a",
+      "desc": "c5b2a2aB1a6a2_4dBB_3B2aB1aBB0e2cB2d2_3c4"
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "blackpc": 20,
+      "symm": 2,
+      "seed": "sticks-trace-7x7-b",
+      "desc": "3bB_1a1b5bB3_1b4aBc5c4cB_2b4_1B0b2eB3a3a"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "blackpc": 20,
+      "symm": 2,
+      "seed": "sticks-trace-10x10-a",
+      "desc": "1a4c2aB1_1a3e1a2B1B0b3_2a4c2aB0a1B2a1bB1BBBBb2c4aBBBBB0_2b2Ba2B2c3_1b3_1_1aBB0b5d1cB_2c1a1a"
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "blackpc": 20,
+      "symm": 2,
+      "seed": "sticks-trace-10x10-b",
+      "desc": "B0Ba2_1aB1b1bBa2c1bB3a1bB2Ba1_1B1a1_1_2d2bBa1b1B1B1_1a3bB3_2_2a2b2b1aB1b1BB2b2aB2a1_2d3B_2c3B3b3aBB"
+    },
+    {
+      "w": 5,
+      "h": 5,
+      "blackpc": 20,
+      "symm": 0,
+      "seed": "sticks-trace-5x5-none",
+      "desc": "c5aB0B1d1_1B1_4a4cBa1B1a"
+    },
+    {
+      "w": 6,
+      "h": 4,
+      "blackpc": 30,
+      "symm": 1,
+      "seed": "sticks-trace-6x4-ref2",
+      "desc": "B1_1c3_1_2aBB_2b1B0B1aB_1d"
+    },
+    {
+      "w": 8,
+      "h": 6,
+      "blackpc": 20,
+      "symm": 2,
+      "seed": "sticks-trace-8x6-rot2",
+      "desc": "B1a1B0a2eB_3cB2c4b1a2_1b3aBa1bB1c3a1aB0_1_1B0"
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "blackpc": 20,
+      "symm": 3,
+      "seed": "sticks-trace-7x7-ref4",
+      "desc": "B1_1a1bB1c2_1a1B2a1cB1aBcB1aB_2a3a2B2b6c1Ba5cB"
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "blackpc": 20,
+      "symm": 4,
+      "seed": "sticks-trace-7x7-rot4",
+      "desc": "b3b3a2_1B_2a1b2BaBB1c1b1_1aB2B0aBa1b3aB0b3c2a2"
+    },
+    {
+      "w": 8,
+      "h": 8,
+      "blackpc": 50,
+      "symm": 4,
+      "seed": "sticks-trace-8x8-rot4",
+      "desc": "a2bB1BBaBB0B1a1aBaBaBB2aB1B_3B0bBBB0dB0BBbB0aBBaB0B0aB_1B1b3BB1BaBBB0b1a"
+    },
+    {
+      "w": 5,
+      "h": 5,
+      "blackpc": 60,
+      "symm": 0,
+      "seed": "sticks-trace-5x5-b60",
+      "desc": "BBBBB1B1a1B_1BB1Ba2bBBB1B1_1aBa"
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "blackpc": 20,
+      "symm": 2,
+      "seed": "sticks-trace-4x4-a",
+      "desc": "a1aB0_1a2_1a3a2B0a2a"
+    },
+    {
+      "w": 12,
+      "h": 5,
+      "blackpc": 25,
+      "symm": 0,
+      "seed": "sticks-trace-12x5-a",
+      "desc": "1cB1B1_1_2a2a2b1a1B3bB1bB1B1_5B3aBb4bB_1d2BaBaB_2_2B0a2b2B2aB0c"
+    }
+  ]
+}
