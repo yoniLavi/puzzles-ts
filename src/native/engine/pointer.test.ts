@@ -8,13 +8,44 @@ import {
   cursorDelta,
   gridCursorMove,
   isCursorMove,
+  isMouseDown,
+  isMouseDrag,
+  isMouseRelease,
   LEFT_BUTTON,
+  LEFT_DRAG,
+  LEFT_RELEASE,
+  MIDDLE_BUTTON,
+  MIDDLE_DRAG,
+  MIDDLE_RELEASE,
   MOD_CTRL,
   MOD_MASK,
   MOD_NUM_KEYPAD,
   MOD_SHFT,
+  RIGHT_BUTTON,
+  RIGHT_DRAG,
+  RIGHT_RELEASE,
   stripModifiers,
 } from "./pointer.ts";
+
+describe("mouse button class predicates", () => {
+  it("classifies each triple and rejects the others", () => {
+    for (const b of [LEFT_BUTTON, MIDDLE_BUTTON, RIGHT_BUTTON]) {
+      expect(isMouseDown(b)).toBe(true);
+      expect(isMouseDrag(b)).toBe(false);
+      expect(isMouseRelease(b)).toBe(false);
+    }
+    for (const b of [LEFT_DRAG, MIDDLE_DRAG, RIGHT_DRAG]) {
+      expect(isMouseDrag(b)).toBe(true);
+      expect(isMouseDown(b)).toBe(false);
+    }
+    for (const b of [LEFT_RELEASE, MIDDLE_RELEASE, RIGHT_RELEASE]) {
+      expect(isMouseRelease(b)).toBe(true);
+      expect(isMouseDrag(b)).toBe(false);
+    }
+    expect(isMouseDown(CURSOR_SELECT)).toBe(false);
+    expect(isMouseRelease(CURSOR_SELECT)).toBe(false);
+  });
+});
 
 describe("cursorDelta", () => {
   it("returns the unit delta for each cursor direction", () => {

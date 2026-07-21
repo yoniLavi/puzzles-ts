@@ -888,6 +888,40 @@ is unusable without it. If you build any such flow, the normative rule is the
 carve-outs are a click that opens a menu (the menu needs the focus) and a keyboard
 activation of a button (that player is in the tab order deliberately).
 
+### 3.8e The accreting-drag paint model (Clusters exemplar; bricks/sticks share it)
+
+Distinct from Pattern's *rectangle*-fill drag (§ its `interpretMove`): the
+x-sheep grid games (Clusters, and bricks/sticks when ported) accrete an
+**arbitrary set of cells the pointer passes over** and commit them as one move on
+release. The upstream shape is a `game_ui` carrying `int dragtype` (the value
+being painted, `-1` when idle) + an `int *drag` accreted-index list, and it maps
+cleanly to two `Ui` fields (`dragType: number`, `drag: number[]`) plus this
+lifecycle in `interpretMove`:
+
+- **press** (`isMouseDown`, after coordinate bounds-check): reset `dragType=-1`,
+  `drag=[]`, then pick `dragType` by *cycling the pressed cell's* current value
+  (left and right cycle opposite ways) and seed `drag` with the pressed cell;
+  return `UI_UPDATE`.
+- **drag** (`isMouseDrag`, guarded by `dragType !== -1`): skip a cell already in
+  `drag`, already the drag value, or a no-op-clear; else push it; `UI_UPDATE`.
+- **release** (`isMouseRelease`, `drag.length > 0`): build one move from the
+  accreted cells (filtering givens/immutables), else `UI_UPDATE`.
+
+The drag continuation keys off the *button class* (`isMouseDrag`), not the exact
+press button, so a touch long-press that arrives as `RIGHT_BUTTON` (§3.8c)
+continues its own drag correctly — reason about that rather than folding right
+onto left when the right button carries meaning. The renderer previews the drag
+by recolouring `drag` cells to `dragType` in the cache key (put it in the diff
+key — §3.2). Use the shared
+[`isMouseDown`/`isMouseDrag`/`isMouseRelease`](../../src/native/engine/pointer.ts)
+(upstream `IS_MOUSE_*`, extracted with Clusters — 27 ports had each rewritten the
+three-constant `===` chain). Exemplar:
+[`clusters/index.ts`](../../src/native/games/clusters/index.ts). When bricks or
+sticks land as the second/third consumer, promote the lifecycle skeleton itself
+to `engine/` (the Ui fields + press/drag/release plumbing) with per-game
+callbacks for the cycle/filter/fill; one consumer isn't yet enough to fix the
+callback shape.
+
 ### 3.9 Reference aid — an inventory checklist + click-to-highlight (Dominosa exemplar)
 
 A game with a **fixed, enumerable inventory of pieces** the player tracks by hand
@@ -1271,6 +1305,31 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
   to `dsf.c` for exactly this (Filling's i-quirk picks a different square to skip if
   the root differs). A game that only uses the dsf for connectivity won't notice; one
   that reads `canonify(i)` as an *element* does.
+- **A transient bit the C *mutates into the grid* can leak into a generator
+  comparison — reproduce the leak.** Clusters' `clusters_validate` writes an
+  `F_ERROR` bit onto every filled cell (set on a violation, cleared otherwise), and
+  the generator never masks it: it survives the per-cell two-colour fill (only
+  *cleared* cells are re-randomised), the isolated-cell flip (`^= COLMASK` leaves
+  bit 3 untouched) and the reduce-to-dots (`|= F_SINGLE`), so it reaches the
+  dot-prune's *full-byte* `grid[i] == grid[i-1]` compare — two adjacent equal dots
+  whose `F_ERROR` bits differ escape pruning. The idiomatic clean port makes
+  `validate` non-mutating, which prunes them and diverges the desc **only after ~100
+  retries on one board in twelve** (the fixed-point + `force`-every-100 path amplifies
+  a one-cell difference into a different final board). The fix is the §4.4 rule
+  literally: keep a *mutating* validate on the generator/solver path that writes
+  `F_ERROR` exactly as C, and separate *pure* checks (`clustersStatus`/`findErrors`)
+  for play so persisted state and the renderer stay clean. General tell: any C
+  `validate`/`check` that both returns a verdict **and** writes a flag byte back into
+  the board is a byte-match hazard the moment a later full-byte comparison
+  (`==`/`memcmp`/encode) reads that byte — grep the generator for reads of the whole
+  cell, not just its masked fields. Exemplar:
+  [`clusters/solver.ts`](../../src/native/games/clusters/solver.ts) (the `F_ERROR`
+  contamination note). **Debugging method that found it in ~4 iterations** (§4.7 in
+  miniature): a throwaway C harness dumping each generation attempt's grid localised
+  the divergence to one attempt (100 matched, then one differed); a solver-only
+  harness proved the two *solvers* agreed on that board, moving the fault to the
+  pre-solve steps; a dot-set diff showed two extra dots at one corner; a full-byte
+  dump exposed the stray `F_ERROR`.
 
 ### 4.5 A generator on a shared RNG-bearing leaf library is still byte-match portable
 
