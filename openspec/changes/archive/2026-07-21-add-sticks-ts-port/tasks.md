@@ -132,11 +132,11 @@
 
 ## 9. Stage 2 — on owner acceptance only (design D10)
 
-- [ ] 9.1 Add `TS_PORTED` to the `puzzle(sticks …)` entry in
+- [x] 9.1 Add `TS_PORTED` to the `puzzle(sticks …)` entry in
       `puzzles/unreleased/CMakeLists.txt` and drop its `solver(sticks …)` line.
-- [ ] 9.2 Delete `puzzles/unreleased/sticks.c` and the `sticks-trace` harness (+ its
+- [x] 9.2 Delete `puzzles/unreleased/sticks.c` and the `sticks-trace` harness (+ its
       `cliprogram()` line).
-- [ ] 9.3 `rm -rf build/wasm/` and rebuild — sticks in the catalog, no
+- [x] 9.3 `rm -rf build/wasm/` and rebuild — sticks in the catalog, no
       `sticks.wasm`. Icons already exist. Confirm the frozen differential fixture
       still runs C-free.
-- [ ] 9.4 Archive, then commit port + archive together.
+- [x] 9.4 Archive, then commit port + archive together.
