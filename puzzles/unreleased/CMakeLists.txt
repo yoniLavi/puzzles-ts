@@ -39,7 +39,8 @@ solver(bricks)
 puzzle(clusters
   DISPLAYNAME "Clusters"
   DESCRIPTION "Red and blue grid puzzle"
-  OBJECTIVE "Fill in the grid with red and blue clusters, with all dead ends given.")
+  OBJECTIVE "Fill in the grid with red and blue clusters, with all dead ends given."
+  TS_PORTED)  # native-TS port (openspec add-clusters-ts-port); no clusters.c/wasm
 
 puzzle(crossing
   DISPLAYNAME "Crossing"

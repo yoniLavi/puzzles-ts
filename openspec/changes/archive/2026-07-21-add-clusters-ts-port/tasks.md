@@ -134,11 +134,11 @@
 
 ## 9. Stage 2 — on owner acceptance only (design D10)
 
-- [ ] 9.1 Add `TS_PORTED` to the `puzzle(clusters …)` block in
+- [x] 9.1 Add `TS_PORTED` to the `puzzle(clusters …)` block in
       `puzzles/unreleased/CMakeLists.txt` (keeps catalog metadata, stops building
       `clusters.wasm`).
-- [ ] 9.2 Delete `puzzles/unreleased/clusters.c` and the `clusters-trace` harness
+- [x] 9.2 Delete `puzzles/unreleased/clusters.c` and the `clusters-trace` harness
       (and its `cliprogram()` line).
-- [ ] 9.3 `rm -rf build/wasm/` and rebuild — clusters in the catalog, no
+- [x] 9.3 `rm -rf build/wasm/` and rebuild — clusters in the catalog, no
       `clusters.wasm` (the playbook §1.1 stale-cache gotcha). Icons already exist.
-- [ ] 9.4 Archive, then commit port + archive together.
+- [x] 9.4 Archive, then commit port + archive together.
