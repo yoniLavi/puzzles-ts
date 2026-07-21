@@ -14,9 +14,12 @@
  * `tilesize / 2` — and `computeSize` subtracts 1 to meet the outer grid line.
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import type { ClustersHintHighlights } from "./index.ts";
 import { findErrors } from "./solver.ts";
 import {
+  type ClustersMove,
   type ClustersParams,
   type ClustersState,
   type ClustersUi,
@@ -40,6 +43,18 @@ export const COL_0_DOT = 4; // dot on a red tile (dark)
 export const COL_1_DOT = 5; // dot on a blue tile (white)
 export const COL_ERROR = 6;
 export const COL_CURSOR = 7;
+// Hint legend (add-clusters-hint, §5.3/§5.4 of hint-authoring.md): the forced
+// cell fills COL_HINT blue; the tile the refuted colouring would break — the
+// one element the narration calls "ringed" — gets a double COL_HINT_DANGER
+// ring (an outline, because the tile's own colour *is* part of the premise;
+// doubled so it cannot be confused with the single red live-error frame); a
+// lookahead chain's what-if cells shade COL_HINT_CELL with a small mark of
+// the colour each would be forced to. No further premise role: every other
+// tile the narration cites is orthogonally adjacent to the target or the
+// danger tile, already in view.
+export const COL_HINT = 8;
+export const COL_HINT_CELL = 9;
+export const COL_HINT_DANGER = 10;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
@@ -51,6 +66,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_1_DOT] = [1, 1, 1];
   out[COL_ERROR] = [0.9, 0, 0];
   out[COL_CURSOR] = [0, 0.7, 0];
+  out[COL_HINT] = [0.13, 0.5, 0.85];
+  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
+  out[COL_HINT_DANGER] = [0.95, 0.6, 0.15];
   return out;
 }
 
@@ -69,12 +87,21 @@ export function computeSize(p: ClustersParams, ts: number): Size {
 const F_ERR = 1 << 8;
 const F_CUR = 1 << 9;
 
+// Hint-overlay bits, packed per cell into the OverlaySidecar (playbook §3.2:
+// the sidecar is part of the diff key, so a newly displayed or dropped hint
+// repaints on an otherwise-unchanged frame).
+const HB_TARGET = 1; // the forced cell — COL_HINT fill
+const HB_DANGER = 1 << 1; // tile that would break — double COL_HINT_DANGER ring
+const HB_CHAIN_0 = 1 << 2; // what-if cell forced red in the hypothetical
+const HB_CHAIN_1 = 1 << 3; // what-if cell forced blue in the hypothetical
+
 export interface ClustersDrawState {
   started: boolean;
   tilesize: number;
   w: number;
   h: number;
   cache: Int32Array;
+  hint: OverlaySidecar;
 }
 
 export function newDrawState(state: ClustersState): ClustersDrawState {
@@ -84,6 +111,7 @@ export function newDrawState(state: ClustersState): ClustersDrawState {
     w: state.w,
     h: state.h,
     cache: new Int32Array(state.w * state.h).fill(-1),
+    hint: new OverlaySidecar(state.w * state.h),
   };
 }
 
@@ -93,6 +121,24 @@ export function setTileSize(ds: ClustersDrawState, ts: number): void {
 
 // --- cell drawing ----------------------------------------------------------
 
+/** A one-tile-inset square ring of thickness `t` (the premise/danger cue —
+ * an outline, so the ringed tile's own colour stays visible under it). */
+function drawRing(
+  dr: GameDrawing,
+  px: number,
+  py: number,
+  size: number,
+  inset: number,
+  t: number,
+  colour: number,
+): void {
+  const o = size - 2 * inset;
+  dr.drawRect({ x: px + inset, y: py + inset, w: o, h: t }, colour);
+  dr.drawRect({ x: px + inset, y: py + inset, w: t, h: o }, colour);
+  dr.drawRect({ x: px + inset, y: py + inset + o - t, w: o, h: t }, colour);
+  dr.drawRect({ x: px + inset + o - t, y: py + inset, w: t, h: o }, colour);
+}
+
 function drawTile(
   dr: GameDrawing,
   ts: number,
@@ -101,14 +147,41 @@ function drawTile(
   tile: number,
   error: boolean,
   cursor: boolean,
+  hintBits: number,
 ): void {
   const b = border(ts);
   const px = x * ts + b;
   const py = y * ts + b;
 
-  const fill = tile & F_COLOR_1 ? COL_1 : tile & F_COLOR_0 ? COL_0 : COL_BACKGROUND;
+  // The hint target and a chain's what-if cells are always empty cells, so
+  // their highlight takes the fill (nothing underneath to hide, §5.4).
+  const fill =
+    hintBits & HB_TARGET
+      ? COL_HINT
+      : hintBits & (HB_CHAIN_0 | HB_CHAIN_1)
+        ? COL_HINT_CELL
+        : tile & F_COLOR_1
+          ? COL_1
+          : tile & F_COLOR_0
+            ? COL_0
+            : COL_BACKGROUND;
   dr.drawRect({ x: px, y: py, w: ts, h: ts }, COL_GRID);
   dr.drawRect({ x: px, y: py, w: ts - 1, h: ts - 1 }, fill);
+
+  // The small mark of the colour a what-if cell would be forced to — a
+  // deliberately tile-unlike size, so it reads as hypothetical, not placed.
+  if (hintBits & (HB_CHAIN_0 | HB_CHAIN_1)) {
+    const m = Math.floor(ts / 3);
+    dr.drawRect(
+      {
+        x: px + Math.floor((ts - m) / 2),
+        y: py + Math.floor((ts - m) / 2),
+        w: m,
+        h: m,
+      },
+      hintBits & HB_CHAIN_0 ? COL_0 : COL_1,
+    );
+  }
 
   if (tile & F_SINGLE) {
     const dot = tile & F_COLOR_1 ? COL_1_DOT : COL_0_DOT;
@@ -145,6 +218,14 @@ function drawTile(
     dr.drawRect({ x: px, y: py + ts - 1 - t, w: ts - 1, h: t }, COL_CURSOR);
   }
 
+  // The danger ring, last so nothing paints over it. Doubled — structure,
+  // not just hue, distinguishes it from the single red live-error frame.
+  if (hintBits & HB_DANGER) {
+    const rt = Math.max(2, Math.floor(ts / 12));
+    drawRing(dr, px, py, ts - 1, 1, rt, COL_HINT_DANGER);
+    drawRing(dr, px, py, ts - 1, 1 + 2 * rt, rt, COL_HINT_DANGER);
+  }
+
   dr.drawUpdate({ x: px, y: py, w: ts, h: ts });
 }
 
@@ -159,6 +240,7 @@ export function redraw(
   ui: ClustersUi,
   _animTime: number,
   flashTime: number,
+  hint?: HintStep<ClustersMove>,
 ): void {
   if (!ds) return;
   const ts = ds.tilesize;
@@ -185,6 +267,18 @@ export function redraw(
 
   const dragSet = ui.dragType !== -1 && ui.drag.length > 0 ? new Set(ui.drag) : null;
 
+  // The displayed hint step's overlay, repacked each frame (cleared when no
+  // hint is on display, so a dropped hint repaints too).
+  const hl = hint?.highlights as ClustersHintHighlights | undefined;
+  ds.hint.clear();
+  if (hl) {
+    ds.hint.add(hl.target.y * w + hl.target.x, HB_TARGET);
+    if (hl.danger) ds.hint.add(hl.danger.y * w + hl.danger.x, HB_DANGER);
+    for (const c of hl.chain) {
+      ds.hint.add(c.y * w + c.x, c.fill === F_COLOR_0 ? HB_CHAIN_0 : HB_CHAIN_1);
+    }
+  }
+
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
@@ -202,9 +296,10 @@ export function redraw(
       const cursor = ui.cursor && ui.cx === x && ui.cy === y;
 
       const packed = (tile & 0x7) | (error ? F_ERR : 0) | (cursor ? F_CUR : 0);
-      if (ds.cache[i] !== packed) {
-        drawTile(dr, ts, x, y, tile, error, cursor);
+      if (ds.cache[i] !== packed || ds.hint.stale(i)) {
+        drawTile(dr, ts, x, y, tile, error, cursor, ds.hint.packed[i]);
         ds.cache[i] = packed;
+        ds.hint.commit(i);
       }
     }
   }

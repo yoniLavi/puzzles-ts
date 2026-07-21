@@ -1,15 +1,22 @@
 /**
  * Clusters — native TS port of `puzzles/unreleased/clusters.c`. Fill the grid
- * with red and blue tiles so that every tile touches at least one same-colour
- * neighbour, and the given "dot" tiles touch exactly one. Left-click/-drag
- * paints blue (cycling to red, then clear); right-click/-drag paints red; a
- * keyboard cursor places colours with Enter/Space/0/1/2/backspace. Rule
- * violations are shown live (upstream behaviour), and Check & Save additionally
- * refuses to save while any violation stands (`findMistakes`).
+ * with red and blue tiles so that every plain tile touches **two or more**
+ * tiles of its own colour, and the given "dot" tiles touch exactly one (all
+ * exactly-one tiles are given as dots — upstream's rule statement).
+ * Left-click/-drag paints blue (cycling to red, then clear); right-click/-drag
+ * paints red; a keyboard cursor places colours with Enter/Space/0/1/2/
+ * backspace. Rule violations are shown live (upstream behaviour), and Check &
+ * Save additionally refuses to save while any violation stands
+ * (`findMistakes`). The explained hint (`add-clusters-hint`) narrates the
+ * solver's proof by contradiction: which rule the opposite colouring of the
+ * forced cell would break.
  */
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   type SolveResult,
   UI_UPDATE,
   type UiUpdate,
@@ -44,7 +51,15 @@ import {
   redraw,
   setTileSize,
 } from "./render.ts";
-import { COMPLETE, clustersStatus, findErrors, INVALID, solveGame } from "./solver.ts";
+import {
+  type ClustersDeduction,
+  COMPLETE,
+  clustersStatus,
+  deduceHintPlan,
+  findErrors,
+  INVALID,
+  solveGame,
+} from "./solver.ts";
 import {
   type ClustersFill,
   type ClustersMove,
@@ -258,6 +273,127 @@ function findMistakes(state: ClustersState): readonly ClustersMistake[] {
   return findErrors(state.grid, state.w, state.h).map((index) => ({ index }));
 }
 
+// --- hint (add-clusters-hint) ----------------------------------------------
+
+/** Highlight roles of a Clusters hint step (the render legend — see the
+ * COL_HINT block in render.ts). `target` is the forced cell; `danger` is the
+ * tile the refuted colouring would break — the only element the narration
+ * calls "ringed" — when that isn't the target itself; `chain` is a lookahead
+ * firing's what-if walk, each cell marked with the colour the hypothesis
+ * would force it to. Every other premise tile of the three local rules sits
+ * orthogonally adjacent to the target or the danger tile, so it is already
+ * in view without a highlight of its own. */
+export interface ClustersHintHighlights {
+  target: { x: number; y: number };
+  danger?: { x: number; y: number };
+  chain: { x: number; y: number; fill: ClustersFill }[];
+}
+
+const colourName = (fill: ClustersFill): string =>
+  fill === F_COLOR_0 ? "red" : "blue";
+
+/** Narrate the proof by contradiction: premise → the rule the refuted colour
+ * breaks → conclusion in the necessity voice (hint-authoring §2.1, D4). */
+function narrate(d: ClustersDeduction): string {
+  const f = colourName(d.fill);
+  const t = colourName(d.refuted);
+  const at = d.reason.at;
+
+  if (d.reason.kind === "chain") {
+    // A lookahead firing: one standing hypothesis plus forced single-cell
+    // consequences (never nested), shown statically as the marked cells.
+    const end =
+      at.kind === "dotOvercount"
+        ? "the ringed dot would touch a second tile of its own colour"
+        : at.cell === d.index
+          ? at.kind === "surrounded"
+            ? `this very cell would be sealed off from every ${t} tile`
+            : `this very cell could no longer touch two ${t} tiles`
+          : at.kind === "surrounded"
+            ? "the ringed tile would be sealed off from its own colour"
+            : "the ringed tile could no longer touch two of its own colour";
+    return `Suppose this cell were ${t}: the marked cells would each be forced in turn, until ${end} — impossible. So this cell must be ${f}.`;
+  }
+
+  if (at.cell === d.index) {
+    if (at.kind === "surrounded") {
+      return `Every neighbour of this cell is ${f}. A ${t} tile here could never touch another ${t} tile — so it must be ${f}.`;
+    }
+    // reachTwo at the cell itself (an empty cell is never a dot). Count- and
+    // edge-neutral: at a corner the board edge does part of the hemming, and
+    // "at most one" stays honest when one open neighbour remains.
+    return `If this cell were ${t}, at most one neighbour could ever match it — and every plain tile must touch two of its colour. So it must be ${f}.`;
+  }
+  if (at.kind === "dotOvercount") {
+    return `A dot touches exactly one tile of its own colour, and the ringed ${t} dot already touches its one. Another ${t} here would give it a second — so this cell must be ${f}.`;
+  }
+  if (at.kind === "surrounded") {
+    return `Painting this cell ${t} would seal the ringed ${f} tile off from every other ${f} tile — it could never join a cluster. So this cell must be ${f}.`;
+  }
+  return `If this cell were ${t}, the ringed ${f} tile could never touch two ${f} tiles — and every plain tile needs two of its colour. So this cell must be ${f}.`;
+}
+
+function buildHighlights(d: ClustersDeduction, w: number): ClustersHintHighlights {
+  const pt = (i: number): { x: number; y: number } => ({ x: i % w, y: (i / w) | 0 });
+  const at = d.reason.at;
+  return {
+    target: pt(d.index),
+    danger: at.cell !== d.index ? pt(at.cell) : undefined,
+    chain:
+      d.reason.kind === "chain"
+        ? d.reason.steps.map((s) => ({ ...pt(s.index), fill: s.fill }))
+        : [],
+  };
+}
+
+function hint(state: ClustersState): HintResult<ClustersMove, ClustersHintHighlights> {
+  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (findMistakes(state).length > 0) {
+    return {
+      ok: false,
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+  }
+  const plan = deduceHintPlan(state.grid, state.w, state.h);
+  // COMPLETE certifies the position (the error rules are monotone, so a wrong
+  // tile can never extend to a zero-error grid); anything else means some
+  // tile already placed must be wrong, and hinting would lead deeper in.
+  if (plan.verdict === INVALID) {
+    return {
+      ok: false,
+      error:
+        "These colours lead to a contradiction — a tile on the board must be wrong. Undo, or clear the tiles you are unsure of.",
+    };
+  }
+  if (plan.verdict !== COMPLETE || plan.deductions.length === 0) {
+    return { ok: false, error: "No further move can be deduced from this position." };
+  }
+  const steps: HintStep<ClustersMove, ClustersHintHighlights>[] = plan.deductions.map(
+    (d) => ({
+      move: { kind: "paint", cells: [{ index: d.index, fill: d.fill }] },
+      explanation: narrate(d),
+      highlights: buildHighlights(d, state.w),
+    }),
+  );
+  return { ok: true, steps };
+}
+
+/** A move completes the step iff it paints exactly the hinted cell with the
+ * hinted colour. A multi-cell drag (even one covering the target) changes
+ * cells the plan didn't account for, so it drops the plan to recompute. */
+function hintKeepTrack(
+  m: ClustersMove,
+  step: HintStep<ClustersMove>,
+  _state: ClustersState,
+): HintTrackVerdict {
+  if (m.kind !== "paint" || step.move.kind !== "paint") return "off";
+  if (m.cells.length !== 1) return "off";
+  const want = step.move.cells[0];
+  const got = m.cells[0];
+  return got.index === want.index && got.fill === want.fill ? "completed" : "off";
+}
+
 function flashLength(
   from: ClustersState,
   to: ClustersState,
@@ -301,6 +437,8 @@ export const clustersGame: Game<
   status,
 
   solve,
+  hint,
+  hintKeepTrack,
   findMistakes,
   textFormat,
 

@@ -46,6 +46,7 @@ const MECHANICAL = /^Start by pencilling|^Now clear the easy ones/;
  * Movement/objective games (fifteen, sixteen, netslide, flood, inertia,
  * untangle) narrate moves imperatively and are exempt from that check. */
 const DEDUCTIVE = new Set([
+  "clusters",
   "dominosa",
   "filling",
   "keen",

@@ -871,6 +871,47 @@ Two mechanics worth carrying to the next connectivity game:
   the clue, later legs (`The same clue forces this square too — it must slant toward the clue`) carry
   the necessity modal too so the voice guard passes on *every* step, not just openers.
 
+### 5.6b′ A forcing chain with no board vocabulary can be shown *statically* — mark the what-if walk (Clusters)
+
+Slant's §5.6b honest tier cites its chain's *anchor* and stops; Clusters
+(`add-clusters-hint`) goes one step further for a **contradiction solver whose
+depth-1 chains are frequent** (39–56% of boards — measured first, §1A): the
+whole hypothetical is displayed **statically in one step's highlights**. The
+target stays a plain `COL_HINT` fill ("suppose this cell were blue"), each cell
+the hypothesis would force carries a **small centre mark of its forced colour**
+(deliberately tile-unlike in size, so it reads as hypothetical, not placed —
+this is NOT the §5.1 pre-placement, which governs the *target*), and the tile
+where the contradiction lands gets a **double danger ring**. Four transferable
+mechanics:
+
+- **The multi-leg "what-if walk" journey is mechanically closed** without an
+  engine change: `HintStep.move` is required, auto-play applies every leg's
+  move for real, and the no-op-plan guard forbids dummy moves — hypothetical
+  marks can never be journey legs. Static display via highlights is the
+  compliant shape; don't rediscover this.
+- **Pick the shortest chain, not the first.** At a stall, evaluate every
+  candidate firing's per-cell-early-stopped propagation and take the shortest
+  (tie-break scan order — deterministic ⇒ recompute-stable). Clusters' first-in-
+  scan-order chains averaged 6–7 forced cells (max 32); shortest averaged ~3
+  (median 2–3, max 11), cheap enough that no display cap was needed.
+- **Reject-at-generation has a price beyond generation time**: it changes which
+  descs the generator emits, so it breaks a byte-match differential and every
+  shared board ID. At a >⅓ incidence it is simply not on the table — measure
+  before assuming the D2-style fallback is available.
+- **One ring role only.** A read-through (§6.4) caught "the ringed tile" going
+  ambiguous with two ring hues on screen; when every premise tile is
+  orthogonally adjacent to the target/danger cell, drop the premise ring
+  entirely and let "ringed" refer uniquely to the danger ring (double, so it
+  can't be confused with a single-frame live-error outline — deliberately the
+  same visual language: "would break" vs "breaks now"). Guard it: assert
+  "ringed" is uttered iff the danger highlight is set (`clusters-hint.test.ts`).
+
+Exemplars: `deduceHintPlan`/`chainToContradiction` in
+[`clusters/solver.ts`](../../src/native/games/clusters/solver.ts) (a parallel
+recorder — §9.4's shape — re-deriving each firing's reason via a
+neighbourhood-only error check), `narrate` in
+[`clusters/index.ts`](../../src/native/games/clusters/index.ts).
+
 ### 5.6c A game with a barrier/annotation affordance can teach rule-outs as board marks (Dominosa)
 
 Most deductive hints only ever *place*; a game whose own move set includes a
