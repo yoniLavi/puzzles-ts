@@ -726,6 +726,26 @@ per-tile cache word (§3.2) so they paint and clear like any overlay. Exemplars:
 [`rect/render.ts`](../../src/native/games/rect/render.ts),
 [`tracks/index.ts`](../../src/native/games/tracks/index.ts).
 
+**For a *self-validating* game, `findMistakes` is the rule checker — not a
+re-solve.** Some games' rule violations are *intrinsic to the current grid*: the
+same validity pass that decides won/ongoing already localises every broken rule.
+There `findMistakes` runs that one pass and returns the offending cells with their
+error flags, rather than re-solving to the unique solution (Bricks: three-in-a-row
+bars, gravity diamonds, over-count clues; Subsets: duplicate/violated-edge marks).
+This is *weaker* than a re-solve — a shade that is wrong but not yet rule-breaking
+won't be caught — but it is the right choice when the game **already displays those
+same marks live** (Bricks reds a clue and draws the error bar the instant a drag
+creates a violation): findMistakes and the live overlay then share one validity
+function, so Check & Save flags exactly what the board already shows. Reuse the
+flags for the overlay (Bricks passes the drag-preview grid *or* the `mistakes`
+param through the same `bricksValidate(grid, …, errors)` and draws whichever is
+present; upstream shows live errors only mid-drag, so a committed frame carries
+none until Check & Save asks). Exemplars:
+[`bricks/solver.ts`](../../src/native/games/bricks/solver.ts) `findMistakes` +
+[`bricks/render.ts`](../../src/native/games/bricks/render.ts),
+[`subsets/index.ts`](../../src/native/games/subsets/index.ts). Contrast Galaxies,
+whose mistakes are only meaningful against a re-solve.
+
 ### 3.6 `solve()` and the generator's `aux`
 
 **A `solve()` that needs the generator's `aux` only works on a freshly generated
@@ -966,6 +986,15 @@ against Clusters alone. One input idiom Sticks did add: its `FROMCOORD` is
 *truncating* division, so it uses `Math.trunc`, not the shared `fromCoord`
 floor — a pointer just inside the border maps to row/column 0, as in C.
 
+**Bricks landed and *is* Clusters-like** (`bricks/index.ts`): a single uniform
+`dragtype` (the pressed cell's cycled colour) painted across every accreted cell,
+committed as one `{kind:"paint", cells}` move on release — exactly the two-field
+lifecycle above. It still didn't warrant promoting a shared skeleton over
+`clusters` alone (two consumers, and Sticks already declined), so the extraction
+stays deferred; but bricks confirms the *shape* generalises past Clusters. Its
+`interpretMove` is a close read of the C — the only novelty is the coordinate
+conversion (§3.13).
+
 ### 3.9 Reference aid — an inventory checklist + click-to-highlight (Dominosa exemplar)
 
 A game with a **fixed, enumerable inventory of pieces** the player tracks by hand
@@ -1080,6 +1109,37 @@ release — read by the owner as "uncovered blocks re-covered." Fix (Mines desig
 it. General rule: if a transient press/preview overlay is visually indistinguishable from a
 committed state, a press that *doesn't* commit reads as a glitch — make the preview distinct
 or suppress it on the gesture that usually won't commit.
+
+### 3.13 A non-square board: bespoke geometry + an inverse coordinate map (Bricks)
+
+Some upstream games store an odd-shaped board in a *padded rectangle* and shear it
+on draw. Bricks is a hexagon: `params.w`/`h` are the user size, but the backing
+array is `w = params.w + ⌈h/2⌉ − 1` wide with the two triangular corners masked to
+a `F_BOUND` sentinel (`applyBounds`), and each row is drawn offset rightward by
+`tilesize/2` per row (`tx += row * ts/2`). Three rules make this cheap and correct:
+
+- **The mask + neighbour table are logic, not display — port them verbatim.** The
+  bounds mask decides how many playable cells the desc encodes and the fixed
+  six-step neighbour table (`{0,−1},{1,−1},{−1,0},{1,0},{−1,1},{0,1}`) drives the
+  neighbour-count validity. A cell-count or neighbour bug there desyncs the codec
+  and the solver, breaking the byte-match. Everything *visual* (the shear offset,
+  the border bevels, the origin from `game_set_offsets`) is display — match the
+  look, keep it clean (§3.3).
+- **`interpretMove` must invert the *exact* draw transform, in the same order.**
+  Undo the origin, floor to a row, *then* subtract that row's shear before flooring
+  to a column: `gy = ⌊(y − oy)/ts⌋; gx = ⌊(x − ox − gy·ts/2)/ts⌋`. Share the offset
+  helper between `render` and `index` (Bricks exports `offsets(h, ts)`) so pointer
+  mapping and drawing can never drift. The tile size is forced even (`ts & ~1`) so
+  `ts/2` is exact — do that in *both* `computeSize` and `setTileSize`.
+- **Under `NARROW_BORDERS` (the web build) `BORDER = 0`** — check the game's
+  `#ifdef`, don't assume the desktop `tilesize/2`; Bricks' `computeSize` adds the
+  half-tile shear plus one edge pixel and nothing else.
+
+An SVG dump (`toSvg(result.recording.ops, size)` from a `renderScenario`, §2.5)
+rasterised with `rsvg-convert` is the fastest way to confirm the shear is right
+before touching the browser — a wrong offset shows instantly as a staircase.
+Exemplar: [`bricks/render.ts`](../../src/native/games/bricks/render.ts) +
+[`bricks/index.ts`](../../src/native/games/bricks/index.ts).
 
 ## 4. Differential check (per-game, optional)
 

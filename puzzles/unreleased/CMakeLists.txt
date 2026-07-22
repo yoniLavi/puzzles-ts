@@ -33,8 +33,8 @@ solver(boats ${CMAKE_SOURCE_DIR}/dsf.c)
 puzzle(bricks
   DISPLAYNAME "Bricks"
   DESCRIPTION "Hexagonal shading puzzle"
-  OBJECTIVE "Shade several cells in the hexagonal grid while making sure each cell has another shaded cell below it.")
-solver(bricks)
+  OBJECTIVE "Shade several cells in the hexagonal grid while making sure each cell has another shaded cell below it."
+  TS_PORTED)  # native-TS port (openspec add-bricks-ts-port); no bricks.c/wasm
 
 puzzle(clusters
   DISPLAYNAME "Clusters"

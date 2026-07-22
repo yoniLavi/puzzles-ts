@@ -19,6 +19,7 @@
 
 import { registerGame } from "../engine/registry.ts";
 import { blackboxGame } from "./blackbox/index.ts";
+import { bricksGame } from "./bricks/index.ts";
 import { bridgesGame } from "./bridges/index.ts";
 import { clustersGame } from "./clusters/index.ts";
 import { cubeGame } from "./cube/index.ts";
@@ -76,6 +77,7 @@ import { untangleGame } from "./untangle/index.ts";
 export function registerAllGames(): void {
   registerGame(blackboxGame);
   registerGame(bridgesGame);
+  registerGame(bricksGame);
   registerGame(clustersGame);
   registerGame(cubeGame);
   registerGame(dominosaGame);
