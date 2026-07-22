@@ -11,6 +11,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
+import { Midend } from "../../engine/index.ts";
 import { CURSOR_DOWN, LEFT_BUTTON } from "../../engine/pointer.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
@@ -509,6 +510,23 @@ describe("reference-aid affordance", () => {
     const slotPoint = { x: cx * 3 * ts + ts, y: cy * 3 * ts + ts };
     subsetsGame.interpretMove(state, ui, ds, slotPoint, LEFT_BUTTON);
     expect(ui.highlightCell).toBeNull();
+  });
+
+  it("touching the reference aid dismisses a displayed hint (uiUpdateClearsHint)", () => {
+    // Regression: a displayed hint suppressed the aid, so aid clicks did
+    // nothing visible. Now a UI_UPDATE (aid interaction) clears the hint.
+    const midend = new Midend(subsetsGame);
+    expect(midend.newGameFromId("4x4n4#aid-dismiss")).toBeUndefined();
+    expect(midend.hint()).toBeUndefined();
+    expect(midend.activeHintStep()).toBeDefined();
+    // A tally click is a UI_UPDATE; it must clear the hint.
+    const ts = 36;
+    const tallyPoint = {
+      x: 0 * 3 * ts + Math.floor(2 * ts * 0.75),
+      y: Math.floor(0 * 0.75 * ts) + (4 + 2) * 2 * ts,
+    };
+    midend.processInput(tallyPoint.x, tallyPoint.y, LEFT_BUTTON);
+    expect(midend.activeHintStep()).toBeUndefined();
   });
 });
 
