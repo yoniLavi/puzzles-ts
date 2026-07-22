@@ -27,6 +27,7 @@ import { singlesGame } from "../../games/singles/index.ts";
 import { sixteenGame } from "../../games/sixteen/index.ts";
 import { slantGame } from "../../games/slant/index.ts";
 import { soloGame } from "../../games/solo/index.ts";
+import { subsetsGame } from "../../games/subsets/index.ts";
 import { towersGame } from "../../games/towers/index.ts";
 import { undeadGame } from "../../games/undead/index.ts";
 import { unequalGame } from "../../games/unequal/index.ts";
@@ -56,6 +57,7 @@ export const HINT_GAMES: [string, AnyGame][] = [
   ["sixteen", sixteenGame],
   ["slant", slantGame],
   ["solo", soloGame],
+  ["subsets", subsetsGame],
   ["towers", towersGame],
   ["undead", undeadGame],
   ["unequal", unequalGame],

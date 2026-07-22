@@ -1583,6 +1583,78 @@ specific:
   short sentence and fires rarely can stay a single-step hint.** The what-if-walk visualisation is parked
   for a future port (Solo's forcing chains may be common enough to revisit), not a debt here.
 
+### 9.4a Narrate a hidden-cube collapse by what *survives*, not what was eliminated (Subsets)
+
+Subsets (`add-subsets-hint`) is another parallel-recorder game (§9.4 shape — a separate
+`deduceHintPlan` reusing the six solver rules, so the byte-match differential is untouched by
+construction), but its cube is **doubly hidden**: the player sees per-*letter* tri-state marks, never
+the `cube[cell][value]` of candidate *set-values* the solver reasons over. Three of the six rules
+(`disjoint`, `cubeSingleCount`, `applyArrowsAdvanced`) eliminate set-values the player can't see and
+have no letter move to attach to, so they are **not steps** — they set up a `bitsFromCube` *collapse*,
+whose firing is the narratable letter conclusion. The trap is narrating a collapse by its **evidence**
+(the eliminated candidates): measured, that set is large — avg 4.4, max 14 placed-elsewhere sets — so
+enumerating it is both unreadable and dishonestly precise.
+
+**The resolution three rounds of owner review converged on: one slot per step, and make the counting
+*visible* — prefer "this set has one spot left" and spotlight it.** Three things, in order of how much
+they moved the needle:
+
+1. **One slot per step, structured attention → deduction → action.** Subsets' tri-state marks *are*
+   pencil-notes, so decide one letter per step with its own string ("The highlighted set contains C —
+   so mark C present"), never a lumped "mark A and C present and clear B" nor a shared "for the same
+   reason". A cell becoming a set is a **sub-goal journey** (`continuesPrevious` legs), but each leg's
+   string is about *its own* slot toward that sub-goal — the reconciliation of "one slot at a time"
+   with "one deduction = one journey". This alone fixed the highlight complaint: once each string is
+   about one slot, framing that one slot matches the claim.
+
+2. **The set→placement spotlight (Dominosa `highlightPair` §5.6c analog) — build it as a real player
+   aid, and reuse it in hints.** A Subsets set must be placed exactly once, so "where can this set still
+   go?" is the counting made visible. Compute candidate cells **shallowly from the board**
+   (`candidateCells`: the cell's own marks + horseshoe / missing-horseshoe relations to *decided*
+   neighbours + not-already-placed — the Dominosa "no solver, no solution leak" rule), light them
+   `COL_HINT_SPOT`, and make the tally band clickable (`ui.highlightSet`) so the player can ask it
+   directly. Because the aid is shallow, a **hidden-single** hint ("this set can go nowhere but here")
+   uses the *same* computation and its "only this cell" claim is verifiable against the same spotlight.
+
+3. **Prefer the crisp counting form, and measure.** The deduction has a dual: a *hidden single* ("this
+   set fits only one cell" — spotlight-shaped) vs a *naked single* / collapse ("this cell fits only one
+   set" — tally-shaped). Try the hidden single **before** the collapse. Measured on Subsets: it moved
+   **≈38% of counting deductions** (319 of ~830) out of the murky collapse into the verifiable
+   spotlight form, with completeness unchanged (the collapse stays the fallback). *Measure the shift* —
+   the shallow test is weaker than the cube's, so the win isn't obvious a priori.
+
+**The general lesson:** when a candidate-elimination collapse reads as "trust me, only this fits", look
+for the **dual counting deduction** ("this value has one place left"), which is usually cleaner to
+show, and give the game a **reference-aid affordance** that renders where a value can go — then both the
+player and the hint reason from the same visible picture. Where the collapse still fires (no single
+spot), narrate it per-slot against the surviving set(s) highlighted in the tally.
+
+Three follow-on refinements (owner round 2) worth copying to any counting game with a reference aid:
+(a) **make the aid two-way** — value→locations *and* location→values, over one shared "can this go
+here?" predicate (`whyCantPlace`), as one mutually-exclusive UI focus, suppressed while a hint is on
+screen; (b) **when a collapse still fires, name one *excluded* competitor and why** (`pickExclusion`) —
+prefer the concrete "already placed elsewhere" reason (it *is* the exactly-once logic the collapse
+rests on) over the subtler geometric ones, and highlight the blocker so "the highlighted cell" has a
+referent; (c) **distinguish "is placed here" from "could go here"** with a separate colour — falls out
+for free by colouring a candidate cell that is *decided* differently, since a placed value's only
+candidate is its decided home; (d) a **location→values inspect affordance must be a dedicated,
+touch-sized, inspect-*only* control**, not a side effect of an editing tap (that conflates the two) —
+Subsets' badge lives in the margin *above* the cell and widens along the top edge (it can't grow into
+the block without stealing slot taps), so it reads as belonging to the whole cell and clears a
+touch target. And a cross-game narration note that bit here: **a continuation leg must name its
+referent in full** ("the highlighted set"), never a bare "them"/"it", and signal the sub-goal it
+continues ("Still filling this cell — …") — the Towers "Continuing …" convention (§9.4 lead-vs-continues).
+
+Three Subsets-specific mechanics carried over: the recorder's `cube` **and** its elimination-provenance
+array must both persist across fixpoint iterations (refilling the provenance mis-attributes a collapse's
+evidence — a bug the D2 audit caught as an impossible `ownOnly` count); a firing decides a cell's
+letters as one journey with per-slot legs; and the tally-set tint plus the `HINT_SPOT` bit live in the
+game's overlay arrays and must each join their cache-miss test (playbook §3.2). Exemplars:
+[`subsets/solver.ts`](../../src/native/games/subsets/solver.ts) (`candidateCells`, `deduceHintPlan`),
+[`subsets/index.ts`](../../src/native/games/subsets/index.ts) (`legNarration`/`buildHighlights`,
+`tallyHit`), [`subsets/render.ts`](../../src/native/games/subsets/render.ts) (the spotlight + tally
+tint).
+
 ### 9.5 A *bespoke-solver* candidate-elimination game — thread the recorder, don't re-run (Solo)
 
 Solo (`add-solo-hint`) is the first Latin-family hint whose solver is **bespoke**
