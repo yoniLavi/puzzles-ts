@@ -590,6 +590,9 @@ export const subsetsGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
+  // Touching the reference aid (tally / inspect icon / cursor) dismisses a
+  // displayed hint, so the aid isn't suppressed by a still-active hint overlay.
+  uiUpdateClearsHint: true,
 
   defaultParams,
   presets,

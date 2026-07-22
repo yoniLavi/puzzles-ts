@@ -384,6 +384,14 @@ export interface Game<
    * games). */
   refreshHintStep?(step: HintStep<Move>, state: State): HintStep<Move> | null;
 
+  /** When true, a `UI_UPDATE` returned by `interpretMove` dismisses any
+   * displayed hint (as a real move does). Default false — a UI/cursor change
+   * leaves the hint on screen. A game sets this when its in-place UI changes
+   * are an *alternative display* the hint would fight with: Subsets' reference
+   * aid draws in the same overlay space as the hint, so touching the aid should
+   * put the hint away rather than have it silently suppress the aid. */
+  uiUpdateClearsHint?: boolean;
+
   /** Compute the cells of the current state that contradict the
    * puzzle's unique solution — the mistake-checking divergence from
    * upstream. Pure (no state mutation). Returns game-specific highlight

@@ -211,8 +211,16 @@ never from a solver or the solution:
   set that cell could still hold.
 
 The two directions SHALL be mutually exclusive, the spotlight SHALL update as
-the board changes, the reference aid SHALL be suppressed while a hint is
-displayed, and all of this SHALL be ephemeral UI state, never persisted.
+the board changes, and all of this SHALL be ephemeral UI state, never
+persisted. Because the aid and a hint draw in the same overlay space, touching
+the aid while a hint is displayed SHALL dismiss the hint (and its status text)
+so the aid is shown, rather than the aid being silently suppressed.
+
+#### Scenario: The reference aid dismisses a displayed hint
+
+- **WHEN** the player interacts with the reference aid while a hint is on
+  display
+- **THEN** the hint is dismissed and the aid is shown
 
 #### Scenario: Spotlighting a set's placements
 

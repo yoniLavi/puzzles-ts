@@ -421,7 +421,11 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     if (move === null) return false;
     if (move === UI_UPDATE) {
       // UI/cursor changed in place: redraw + notify, no history entry,
-      // no animation.
+      // no animation. A game whose UI change is an alternative display
+      // (Subsets' reference aid) dismisses any displayed hint here, so
+      // the aid isn't silently suppressed by a still-active hint;
+      // `afterTransition` re-emits the status bar without the hint text.
+      if (this.game.uiUpdateClearsHint) this.clearHint();
       this.clearAnimation();
       this.afterTransition();
       return true;
