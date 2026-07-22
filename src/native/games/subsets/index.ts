@@ -18,6 +18,9 @@
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   type SolveResult,
   UI_UPDATE,
   type UiUpdate,
@@ -45,7 +48,17 @@ import {
   type SubsetsDrawState,
   setTileSize,
 } from "./render.ts";
-import { findMistakes, solveCopy, subsetsValidate } from "./solver.ts";
+import {
+  type CollapseExclusion,
+  candidateCells,
+  deduceHintPlan,
+  findMistakes,
+  pickExclusion,
+  type SubsetsDeduction,
+  type SubsetsDeductionSet,
+  solveCopy,
+  subsetsValidate,
+} from "./solver.ts";
 import {
   CELL_HEIGHT,
   CELL_WIDTH,
@@ -69,7 +82,56 @@ import {
 const BACKSPACE = 8;
 
 function newUi(_state: SubsetsState): SubsetsUi {
-  return { cx: 0, cy: 0, cshow: false };
+  return { cx: 0, cy: 0, cshow: false, highlightSet: null, highlightCell: null };
+}
+
+/** The cell whose inspect icon a pointer is over, or null. The icon is a badge
+ * in the margin just *above* the cell block (see render.ts) — outside the block
+ * so it clearly belongs to the whole cell, not one slot — clicked to light that
+ * cell's still-possible sets in the tally without editing anything.
+ *
+ * The tap target is a strip spanning the block's top edge: it can't grow down
+ * into the block (that would steal slot taps) or right past the block's mid-line
+ * (a horseshoe sits there), so it is widened along the top instead to reach a
+ * touch-reasonable size within the available margin. */
+function iconHit(p: Point, w: number, h: number, ts: number): number | null {
+  const cw = CELL_WIDTH;
+  const ch = CELL_HEIGHT;
+  for (let cellx = 0; cellx < w; cellx++) {
+    for (let celly = 0; celly < h; celly++) {
+      const bx = (cellx * (cw + 1) + 0.5) * ts;
+      const by = (celly * (ch + 1) + 0.5) * ts;
+      if (
+        p.x >= bx - ts * 0.15 &&
+        p.x < bx + ts * 0.9 &&
+        p.y >= by - ts * 0.55 &&
+        p.y < by
+      )
+        return celly * w + cellx;
+    }
+  }
+  return null;
+}
+
+/** The tally-band set-value under a pointer, or null. Mirrors the tally layout
+ * in render.ts (each entry drawn in a `2·ts × 0.75·ts` box). */
+function tallyHit(p: Point, w: number, h: number, ts: number): number | null {
+  const cw = CELL_WIDTH;
+  const ch = CELL_HEIGHT;
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) {
+      const tx = x * (cw + 1) * ts + Math.floor(cw * ts * 0.75);
+      const ty = Math.floor(y * 0.75 * ts) + (h + 2) * ch * ts;
+      if (
+        p.x >= tx - ts &&
+        p.x < tx + ts &&
+        p.y >= ty - ts * 0.375 &&
+        p.y < ty + ts * 0.375
+      )
+        return x * h + y;
+    }
+  }
+  return null;
 }
 
 type SlotType = "known" | "unknown" | "cleared";
@@ -87,6 +149,24 @@ function interpretMove(
   const button = stripModifiers(rawButton);
   const ts = ds?.tilesize || PREFERRED_TILE_SIZE;
 
+  // --- reference aid, both directions are mutually exclusive (selecting one
+  // clears the other). A cell's top-left inspect icon lights its still-possible
+  // sets in the tally; a tally set lights its still-legal cells. ------------
+  if (button === LEFT_BUTTON) {
+    const cell = iconHit(p, w, h, ts);
+    if (cell !== null) {
+      ui.highlightCell = ui.highlightCell === cell ? null : cell;
+      ui.highlightSet = null;
+      return UI_UPDATE;
+    }
+    const cn = tallyHit(p, w, h, ts);
+    if (cn !== null) {
+      ui.highlightSet = ui.highlightSet === cn ? null : cn;
+      ui.highlightCell = null;
+      return UI_UPDATE;
+    }
+  }
+
   // --- cursor movement over the virtual slot grid, skipping the gaps -------
   const delta = cursorDelta(button);
   if (delta) {
@@ -100,6 +180,9 @@ function interpretMove(
       ui.cy = Math.max(0, Math.min(gh - 1, ui.cy + delta.dy));
       ui.cshow = true;
     } while (ui.cx % (cw + 1) === cw || ui.cy % (ch + 1) === ch);
+    // Reverse aid: the cursor cell's still-possible sets light up in the tally.
+    ui.highlightCell = Math.floor(ui.cy / (ch + 1)) * w + Math.floor(ui.cx / (cw + 1));
+    ui.highlightSet = null;
     return UI_UPDATE;
   }
 
@@ -224,6 +307,265 @@ function solve(orig: SubsetsState): SolveResult<SubsetsMove> {
   };
 }
 
+// --- hint (add-subsets-hint) ------------------------------------------------
+
+/** Highlight roles of a Subsets hint step (see the COL_HINT block in
+ * render.ts). Every narration is *attention → deduction → action*, per slot:
+ * - `target` — the cell being decided; its acted-on slot gets the bold
+ *   `COL_HINT` frame (the *action* location);
+ * - `cells` — a neighbour cell the narration calls "the highlighted cell"
+ *   (the cell across a horseshoe), framed `COL_HINT_CELL`;
+ * - `sets` — set-values the narration calls "the highlighted set(s)", tinted
+ *   in the tally band (a collapse's surviving candidates, or the placed set);
+ * - `spotlight` — the cells a *hidden single*'s set can still go in (its one
+ *   home), lit `COL_HINT_SPOT` — the same set→placement spotlight the
+ *   player-facing reference aid draws. */
+export interface SubsetsHintHighlights {
+  target: { x: number; y: number };
+  cells: { x: number; y: number }[];
+  sets: number[];
+  spotlight: { x: number; y: number }[];
+}
+
+const LETTER = (bit: number): string => String.fromCharCode(65 + bit);
+const capitalise = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** Oxford-comma join: "A", "A and C", "A, C and D". */
+function joinAnd(parts: string[]): string {
+  if (parts.length <= 1) return parts[0] ?? "";
+  if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
+  return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+}
+
+/** A set-value as "{A, C}", or "the empty set" for `{}`. */
+function setLabel(value: number, n: number): string {
+  const letters: string[] = [];
+  for (let b = 0; b < n; b++) if (value & (1 << b)) letters.push(LETTER(b));
+  return letters.length ? `{${letters.join(",")}}` : "the empty set";
+}
+
+const lettersOf = (mask: number, n: number): string => {
+  const out: string[] = [];
+  for (let b = 0; b < n; b++) if (mask & (1 << b)) out.push(LETTER(b));
+  return joinAnd(out);
+};
+
+/** The "why not X" clause a collapse appends (owner enhancement 2026-07-21):
+ * name a competitor set and the visible rule that blocks it. */
+function narrateExclusion(ex: CollapseExclusion, n: number): string {
+  const label = setLabel(ex.value, n);
+  const b = ex.block;
+  if (b.kind === "placed")
+    return ` For instance, ${label} is already placed on the board (highlighted).`;
+  if (b.kind === "arrow") {
+    return b.mustContain
+      ? ` For instance, ${label} can't go here — the horseshoe to the highlighted cell needs ${lettersOf(b.letters, n)} present.`
+      : ` For instance, ${label} can't go here — the horseshoe to the highlighted cell won't allow ${lettersOf(b.letters, n)}.`;
+  }
+  return ` For instance, ${label} can't go here — with no horseshoe to the highlighted neighbour, neither set may contain the other, but ${label} would.`;
+}
+
+/** The action a leg makes, lowercase: "mark A present" / "clear B". */
+function legAction(set: SubsetsDeductionSet): string {
+  return set.type === "known"
+    ? `mark ${LETTER(set.bit)} present`
+    : `clear ${LETTER(set.bit)}`;
+}
+
+/**
+ * The per-slot narration of leg `k` of a firing — one letter, its own string,
+ * *attention → deduction → action* (owner redesign 2026-07-21). The lead leg
+ * (`k === 0`) states the sub-goal (why this set/cell); continuation legs are
+ * terser but still specific to their own slot toward that sub-goal.
+ */
+function legNarration(d: SubsetsDeduction, k: number): string {
+  const set = d.sets[k];
+  const first = k === 0;
+  const L = LETTER(set.bit);
+  const act = legAction(set);
+  const r = d.reason;
+
+  if (r.kind === "arrowKnown") {
+    // Every leg is a letter confirmed in the subset cell. Continuation legs
+    // name the highlighted cell explicitly, so the referent is never a bare
+    // pronoun (owner 2026-07-21).
+    return first
+      ? `The highlighted cell's set lies inside this one, and its ${L} is marked — so ${L} must be here too. ${capitalise(act)}.`
+      : `Still filling this cell — the highlighted cell's ${L} is marked too, so ${act} here.`;
+  }
+  if (r.kind === "arrowMask") {
+    return first
+      ? `This cell's set lies inside the highlighted cell's, which has no ${L} — so ${L} can't be here either. ${capitalise(act)}.`
+      : `Still filling this cell — the highlighted cell has no ${L} either, so ${act} here.`;
+  }
+
+  // Placement reasons — the referent is the highlighted set(s), named in full
+  // on every leg (never "it"/"them").
+  const plural = r.kind === "collapse" && r.survivors.length > 1;
+  const ref = plural ? "the highlighted sets" : "the highlighted set";
+
+  if (!first) {
+    const cont =
+      set.type === "known"
+        ? plural
+          ? `${ref} all contain ${L} too`
+          : `${ref} also contains ${L}`
+        : plural
+          ? `none of ${ref} has ${L}`
+          : `${ref} has no ${L} either`;
+    return `Still filling this cell — ${cont}, so ${act} here.`;
+  }
+
+  const hasClause =
+    set.type === "known"
+      ? plural
+        ? `they all contain ${L}`
+        : `it contains ${L}`
+      : plural
+        ? `none of them has ${L}`
+        : `it has no ${L}`;
+  const attn =
+    r.kind === "hiddenSingle"
+      ? "The highlighted set can go nowhere but this cell."
+      : r.kind === "collapse"
+        ? plural
+          ? "Only the highlighted sets can still go in this cell."
+          : "Only the highlighted set can still go in this cell."
+        : // singlePosition (deep cube fallback)
+          "The highlighted set's other cells are all taken or blocked, so it must go here.";
+  return `${attn} ${capitalise(hasClause)} — so ${act}.`;
+}
+
+function buildHighlights(
+  state: SubsetsState,
+  d: SubsetsDeduction,
+  exclusion: CollapseExclusion | null,
+): SubsetsHintHighlights {
+  const w = state.w;
+  const pt = (i: number): { x: number; y: number } => ({
+    x: i % w,
+    y: Math.floor(i / w),
+  });
+  const r = d.reason;
+  // Arrows point at a neighbour *cell*; a placement points at the *set* in the
+  // tally; a hidden single also *spotlights* where the set can go (its one
+  // home). A collapse highlights the excluded competitor's blocker cell (#2),
+  // so "the highlighted cell" in the "why not …" clause has a referent.
+  const blockerCell = (ex: CollapseExclusion): number =>
+    ex.block.kind === "placed"
+      ? ex.block.cell
+      : ex.block.kind === "arrow" || ex.block.kind === "adjacent"
+        ? ex.block.neighbour
+        : d.pos; // "marks" never occurs here (pickExclusion filters it)
+  const cells: number[] =
+    r.kind === "arrowKnown"
+      ? [r.to]
+      : r.kind === "arrowMask"
+        ? [r.from]
+        : exclusion
+          ? [blockerCell(exclusion)]
+          : [];
+  const sets =
+    r.kind === "hiddenSingle" || r.kind === "singlePosition"
+      ? [r.value]
+      : r.kind === "collapse"
+        ? r.survivors
+        : [];
+  const spotlight =
+    r.kind === "hiddenSingle" ? candidateCells(state, r.value).map(pt) : [];
+  return { target: pt(d.pos), cells: cells.map(pt), sets, spotlight };
+}
+
+/** A firing (one deduction deciding a cell's letters) becomes one sub-goal
+ * journey: leg 0 leads with the why, the rest follow as `continuesPrevious`
+ * legs — each with its own per-slot string (owner redesign 2026-07-21). A
+ * collapse's lead also gets a "why not X" clause (#2). All of a journey's
+ * marks render in the same `COL_HINT`. */
+function stepsForFiring(
+  state: SubsetsState,
+  d: SubsetsDeduction,
+): HintStep<SubsetsMove, SubsetsHintHighlights>[] {
+  const exclusion =
+    d.reason.kind === "collapse"
+      ? pickExclusion(state, d.pos, d.reason.survivors)
+      : null;
+  const highlights = buildHighlights(state, d, exclusion);
+  const steps = d.sets.map((set, k) => ({
+    move: { kind: "set" as const, type: set.type, pos: d.pos, bit: set.bit },
+    explanation: legNarration(d, k),
+    highlights,
+    ...(k > 0 ? { continuesPrevious: true } : {}),
+  }));
+  if (exclusion && steps.length > 0)
+    steps[0].explanation += narrateExclusion(exclusion, state.n);
+  return steps;
+}
+
+function hint(state: SubsetsState): HintResult<SubsetsMove, SubsetsHintHighlights> {
+  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (findMistakes(state).length > 0) {
+    return {
+      ok: false,
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+  }
+
+  // A mark can be wrong without yet breaking a local rule (a letter the unique
+  // solution excludes). The solution is derivable from the givens, so compare
+  // and refuse honestly rather than hint on into a doomed position (design D5).
+  const { solved, result } = solveCopy(state);
+  if (result === "complete") {
+    for (let i = 0; i < state.w * state.h; i++) {
+      // `solved` reset non-givens and re-derived them; wherever the player has
+      // decided a letter, it must agree with the solution.
+      for (let b = 0; b < state.n; b++) {
+        const bit = 1 << b;
+        const playerKnows = (state.known[i] & bit) !== 0;
+        const playerClears = (state.mask[i] & bit) === 0;
+        if (!playerKnows && !playerClears) continue; // undecided letter
+        const solutionHas = (solved.known[i] & bit) !== 0;
+        if (playerKnows !== solutionHas) {
+          return {
+            ok: false,
+            error:
+              "One of your marks contradicts the solution — check your work, or clear the marks you are unsure of.",
+          };
+        }
+      }
+    }
+  }
+
+  const plan = deduceHintPlan(state);
+  if (plan.status === "invalid") {
+    return {
+      ok: false,
+      error:
+        "These marks lead to a contradiction — one must be wrong. Undo, or clear the marks you are unsure of.",
+    };
+  }
+  if (plan.deductions.length === 0) {
+    return { ok: false, error: "No further move can be deduced from this position." };
+  }
+
+  const steps = plan.deductions.flatMap((d) => stepsForFiring(state, d));
+  return { ok: true, steps };
+}
+
+/** A move completes the step iff it is exactly the hinted letter toggle
+ * (position, letter and target tri-state all match); anything else drops the
+ * plan to recompute (design D6). */
+function hintKeepTrack(
+  m: SubsetsMove,
+  step: HintStep<SubsetsMove>,
+  _state: SubsetsState,
+): HintTrackVerdict {
+  if (m.kind !== "set" || step.move.kind !== "set") return "off";
+  return m.pos === step.move.pos && m.bit === step.move.bit && m.type === step.move.type
+    ? "completed"
+    : "off";
+}
+
 function flashLength(
   from: SubsetsState,
   to: SubsetsState,
@@ -268,6 +610,8 @@ export const subsetsGame: Game<
   status,
 
   solve,
+  hint,
+  hintKeepTrack,
   findMistakes,
   textFormat,
 

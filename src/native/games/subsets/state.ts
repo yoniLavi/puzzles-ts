@@ -93,6 +93,14 @@ export interface SubsetsUi {
   cx: number;
   cy: number;
   cshow: boolean;
+  /** Reference-aid spotlight: a set-value clicked in the tally band, whose
+   * still-legal placements light up on the grid (`null` = none). Player aid,
+   * never persisted. Mutually exclusive with {@link highlightCell}. */
+  highlightSet: number | null;
+  /** The reverse aid: a cell touched on the board, whose still-possible sets
+   * light up in the tally (`null` = none). Mutually exclusive with
+   * {@link highlightSet}. Ephemeral, never persisted. */
+  highlightCell: number | null;
 }
 
 /** A Check & Save mistake: a set-value placed in more than one decided cell,
