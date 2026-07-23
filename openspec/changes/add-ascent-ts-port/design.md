@@ -328,6 +328,22 @@ Points worth recording:
   and Edges render snapshots are unchanged by this; only the Hexagon snapshot
   moved. Regular (not stretched) hexagons were chosen for the cleaner look.
 
+- **F8 — right-click toggles a two-option cell (deliberate divergence,
+  owner-requested 2026-07-23).** A cell that could take either of two
+  consecutive numbers is common in Ascent (an open path end next to a placed
+  number showing both candidates, or an empty cell adjacent to a held number).
+  Right-click (and the keyboard secondary-select, since it maps to the right
+  button) now cycles such a cell **none → lower → higher → none** instead of
+  clearing. The candidate pair comes from `candidatesFor` (`ui.ts`), which
+  covers three sources: a held origin number adjacent to the cell, an empty
+  cell already showing two path hints, and a *filled* cell adjacent to exactly
+  one consecutive placed number (so the toggle keeps working after the first
+  placement, via the reflection across that number). Middle-click stays a pure
+  clear. Options are offered without a "does it globally fit" filter — a
+  non-fitting choice shows the same `COL_ERROR` feedback a left-click placement
+  would, and toggling to the other option clears it. Unit-tested (the cycle) +
+  browser-verified for both scenarios.
+
 ## Open questions for the owner
 
 None blocking. Stage-2 catalog inclusion (D10) is the standard owner-acceptance
