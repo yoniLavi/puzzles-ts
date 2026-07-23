@@ -33,7 +33,10 @@ import {
   BRICKS_STEPS,
   type BricksMistake,
   type BricksState,
+  type CellColour,
   COL_MASK,
+  colourBits,
+  DIFF_TRICKY,
   F_BOUND,
   F_EMPTY,
   F_SHADE,
@@ -301,4 +304,200 @@ export function findMistakes(state: BricksState): BricksMistake[] {
     if (errors[i] !== 0) out.push({ index: i, flags: errors[i] });
   }
   return out;
+}
+
+// --- hint deduction (a recording projection of the same solver) -------------
+
+/**
+ * Why the opposite colour is impossible at a forced cell. The first five are
+ * single-cell (Easy-tier) contradictions read straight off the rejected
+ * trial's `FE_*` flags; `chain` is the recursive-lookahead tier (assuming a
+ * colour leads, through forced consequences, to a contradiction). All cell
+ * fields are padded-grid indices.
+ */
+export type BricksReason =
+  | { kind: "three"; cells: number[] } // shading the target makes 3 shaded in a row
+  | { kind: "unsupported"; below: number[] } // the shaded target would rest on nothing
+  | { kind: "overcount"; clue: number } // shading the target over-fills this clue
+  | { kind: "strandSupport"; above: number } // clearing the target strands this shaded brick
+  | { kind: "undercount"; clue: number } // clearing the target makes this clue unreachable
+  | { kind: "chain"; conflict: number[] }; // recursive contradiction cells
+
+export interface ForcedMove {
+  index: number;
+  to: CellColour;
+  reason: BricksReason;
+}
+
+const isClue = (v: number): boolean => !(v & COL_MASK) && !(v & F_BOUND);
+
+function errorCells(errors: Uint16Array): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < errors.length; i++) if (errors[i] !== 0) out.push(i);
+  return out;
+}
+
+/** The maximal run of consecutive shaded cells in the target's row that
+ * contains it (≥ 3 when the target's shading created a three-in-a-row). */
+function shadeRun(grid: Uint16Array, w: number, target: number): number[] {
+  const y = (target / w) | 0;
+  const x0 = target % w;
+  let lo = x0;
+  let hi = x0;
+  while (lo - 1 >= 0 && (grid[y * w + lo - 1] & COL_MASK) === F_SHADE) lo--;
+  while (hi + 1 < w && (grid[y * w + hi + 1] & COL_MASK) === F_SHADE) hi++;
+  const cells: number[] = [];
+  for (let x = lo; x <= hi; x++) cells.push(y * w + x);
+  return cells;
+}
+
+/** Classify why shading `target` (already set in `grid`) is impossible. */
+function classifyShadeTrial(
+  grid: Uint16Array,
+  errors: Uint16Array,
+  w: number,
+  h: number,
+  target: number,
+): BricksReason {
+  const x = target % w;
+  const y = (target / w) | 0;
+  if (errors[target] & (FE_LINE_LEFT | FE_LINE_RIGHT))
+    return { kind: "three", cells: shadeRun(grid, w, target) };
+  if (errors[target] & FE_ERROR) {
+    // Gravity: the shaded target has no shaded brick beneath it.
+    const below: number[] = [];
+    if (x > 0 && y < h - 1 && !(grid[(y + 1) * w + x - 1] & F_BOUND))
+      below.push((y + 1) * w + x - 1);
+    if (y < h - 1 && !(grid[(y + 1) * w + x] & F_BOUND)) below.push((y + 1) * w + x);
+    return { kind: "unsupported", below };
+  }
+  for (const [dx, dy] of BRICKS_STEPS) {
+    const nx = x + dx;
+    const ny = y + dy;
+    if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+    const j = ny * w + nx;
+    if (errors[j] & FE_ERROR && isClue(grid[j])) return { kind: "overcount", clue: j };
+  }
+  return { kind: "chain", conflict: errorCells(errors) };
+}
+
+/** Classify why clearing `target` (already set F_UNSHADE in `grid`) is impossible. */
+function classifyUnshadeTrial(
+  grid: Uint16Array,
+  errors: Uint16Array,
+  w: number,
+  h: number,
+  target: number,
+): BricksReason {
+  const x = target % w;
+  const y = (target / w) | 0;
+  // The target supports the shaded bricks at (x, y-1) and (x+1, y-1).
+  const above: number[] = [];
+  if (y > 0) above.push((y - 1) * w + x);
+  if (y > 0 && x < w - 1) above.push((y - 1) * w + x + 1);
+  for (const a of above) {
+    if (errors[a] & FE_ERROR && (grid[a] & COL_MASK) === F_SHADE)
+      return { kind: "strandSupport", above: a };
+  }
+  for (const [dx, dy] of BRICKS_STEPS) {
+    const nx = x + dx;
+    const ny = y + dy;
+    if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+    const j = ny * w + nx;
+    if (errors[j] & FE_ERROR && isClue(grid[j])) return { kind: "undercount", clue: j };
+  }
+  return { kind: "chain", conflict: errorCells(errors) };
+}
+
+/**
+ * The next single-cell (Easy-tier) forced move with its reason — the recording
+ * twin of {@link solverTry}. For the first empty cell where one colour makes
+ * the board INVALID, the cell is forced the other way; the reason is read from
+ * the rejected trial's error flags. Scans in cell order (recompute-stable).
+ */
+export function nextForcedMove(
+  grid: Uint16Array,
+  w: number,
+  h: number,
+): ForcedMove | null {
+  const s = w * h;
+  const errors = new Uint16Array(s);
+  for (let i = 0; i < s; i++) {
+    if ((grid[i] & COL_MASK) !== F_EMPTY) continue;
+    grid[i] = F_UNSHADE;
+    if (bricksValidate(grid, w, h, false, errors) === "invalid") {
+      const reason = classifyUnshadeTrial(grid, errors, w, h, i);
+      grid[i] = F_EMPTY;
+      return { index: i, to: "shade", reason };
+    }
+    grid[i] = F_SHADE;
+    if (bricksValidate(grid, w, h, false, errors) === "invalid") {
+      const reason = classifyShadeTrial(grid, errors, w, h, i);
+      grid[i] = F_EMPTY;
+      return { index: i, to: "unshade", reason };
+    }
+    grid[i] = F_EMPTY;
+  }
+  return null;
+}
+
+/**
+ * The next forced move that only the recursive lookahead finds — the recording
+ * twin of {@link solverRecurse}. Assuming a colour and solving the rest at
+ * `maxdiff - 1` reaches a contradiction, so the cell is forced the other way;
+ * the reason carries the cells where the sub-solve breaks.
+ */
+export function nextForcedMoveRecurse(
+  grid: Uint16Array,
+  w: number,
+  h: number,
+  maxdiff: number,
+): ForcedMove | null {
+  const s = w * h;
+  const errors = new Uint16Array(s);
+  for (let i = 0; i < s; i++) {
+    if ((grid[i] & COL_MASK) !== F_EMPTY) continue;
+    for (let d = 0; d <= 1; d++) {
+      const trial = grid.slice();
+      trial[i] = d ? F_SHADE : F_UNSHADE;
+      if (solveGame(trial, w, h, maxdiff - 1, false, false) === "invalid") {
+        bricksValidate(trial, w, h, false, errors);
+        return {
+          index: i,
+          to: d ? "unshade" : "shade",
+          reason: { kind: "chain", conflict: errorCells(errors) },
+        };
+      }
+    }
+  }
+  return null;
+}
+
+/** Runaway/UX cap on plan length — the player rarely follows more than a few
+ * before diverging, and a recompute yields the next batch (design D1). */
+export const HINT_PLAN_MAX = 40;
+
+/**
+ * The ordered plan of forced moves from `grid0` (the player's board): one cell
+ * per step, Easy-tier preferred, the recursive rung only at a stall, each with
+ * its reason. Deterministic, so it is recompute-stable. Caller guarantees the
+ * board is consistent with the unique solution, so every move is correct.
+ */
+export function deduceBricksPlan(
+  grid0: Uint16Array,
+  w: number,
+  h: number,
+  maxdiff: number = DIFF_TRICKY,
+): ForcedMove[] {
+  const grid = grid0.slice();
+  const plan: ForcedMove[] = [];
+  while (plan.length < HINT_PLAN_MAX) {
+    if (bricksValidate(grid, w, h, true) !== "unfinished") break;
+    let move = nextForcedMove(grid, w, h);
+    if (!move && maxdiff >= 1) move = nextForcedMoveRecurse(grid, w, h, maxdiff);
+    if (!move) break;
+    grid[move.index] = colourBits(move.to);
+    plan.push(move);
+  }
+  return plan;
 }

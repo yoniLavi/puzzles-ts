@@ -14,6 +14,9 @@
 import type { Colour, ConfigValues, Point, Size } from "../../../puzzle/types.ts";
 import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   type SolveResult,
   UI_UPDATE,
   type UiUpdate,
@@ -49,7 +52,13 @@ import {
   redraw,
   setTileSize,
 } from "./render.ts";
-import { bricksValidate, findMistakes, solveGame } from "./solver.ts";
+import {
+  type BricksReason,
+  bricksValidate,
+  deduceBricksPlan,
+  findMistakes,
+  solveGame,
+} from "./solver.ts";
 import {
   type BricksMistake,
   type BricksMove,
@@ -57,6 +66,7 @@ import {
   type BricksState,
   type BricksUi,
   bitsColour,
+  type CellColour,
   COL_MASK,
   cloneState,
   colourBits,
@@ -68,6 +78,7 @@ import {
   F_EMPTY,
   F_SHADE,
   F_UNSHADE,
+  NUM_MASK,
   newState,
   presets,
   status,
@@ -302,6 +313,124 @@ function solve(orig: BricksState): SolveResult<BricksMove> {
   return { ok: true, move: { kind: "solve", grid: colours2 } };
 }
 
+// --- hint (a second projection of the contradiction solver) -----------------
+
+/** Highlight data for a Bricks hint step: the forced cell (`target`, drawn
+ * `COL_HINT`), the colour it is forced to (`forced` — the narration says
+ * which; the render never pre-places it), and the deduction's `evidence`
+ * cells (ringed `COL_HINT_CELL`). All are padded-grid indices. */
+export interface BricksHint {
+  target: number;
+  forced: CellColour;
+  evidence: number[];
+}
+
+/** The evidence cells a reason reasons over (padded indices). */
+function evidenceOf(reason: BricksReason): number[] {
+  switch (reason.kind) {
+    case "three":
+      return reason.cells;
+    case "unsupported":
+      return reason.below;
+    case "overcount":
+    case "undercount":
+      return [reason.clue];
+    case "strandSupport":
+      return [reason.above];
+    case "chain":
+      return reason.conflict;
+  }
+}
+
+/** Narrate *why* the move is forced — premise → contradiction → conclusion in
+ * the necessity voice (the hint quality bar). Names the clue value when a clue
+ * is the evidence. */
+function narrate(reason: BricksReason, forced: CellColour, state: BricksState): string {
+  const clueVal = (i: number): number => state.grid[i] & NUM_MASK;
+  switch (reason.kind) {
+    case "three":
+      return "Shading this cell would make three shaded bricks in a row, and no row may have three — so it must stay clear.";
+    case "unsupported":
+      return "Shading this cell would leave it with no shaded brick beneath it to rest on — so it must stay clear.";
+    case "overcount": {
+      const n = clueVal(reason.clue);
+      return `Shading this cell would give the ${n} more than its ${n} shaded neighbour${n === 1 ? "" : "s"} — so it must stay clear.`;
+    }
+    case "strandSupport":
+      return "The shaded brick above rests only on this cell — clearing it would leave that brick with nothing beneath it, so it must be shaded.";
+    case "undercount": {
+      const n = clueVal(reason.clue);
+      return `The ${n} still needs more shaded neighbours and this is one of the last cells that can supply one — clearing it would put ${n} out of reach, so it must be shaded.`;
+    }
+    case "chain":
+      return forced === "unshade"
+        ? "Suppose this cell were shaded: following the forced consequences runs into a contradiction (ringed) — so it must stay clear."
+        : "Suppose this cell were left clear: following the forced consequences runs into a contradiction (ringed) — so it must be shaded.";
+  }
+}
+
+function hint(state: BricksState): HintResult<BricksMove, BricksHint> {
+  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (findMistakes(state).length > 0) {
+    return {
+      ok: false,
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+  }
+  const { w, h, grid } = state;
+
+  // Re-solve the clues and check the player's marks agree with the unique
+  // solution — Bricks' rule-validator findMistakes can't see a wrong-but-legal
+  // mark, so guard here rather than deduce onward from a doomed position.
+  const sol = grid.slice();
+  if (solveGame(sol, w, h, DIFF_TRICKY, true, true) !== "complete") {
+    return { ok: false, error: "This puzzle's solution can't be determined." };
+  }
+  for (let i = 0; i < w * h; i++) {
+    const pc = grid[i] & COL_MASK;
+    if ((pc === F_SHADE || pc === F_UNSHADE) && pc !== (sol[i] & COL_MASK)) {
+      return {
+        ok: false,
+        error:
+          "One of your marked cells doesn't match the solution — undo and rethink; a hint can't help from a wrong position.",
+      };
+    }
+  }
+
+  const plan = deduceBricksPlan(grid, w, h);
+  if (plan.length === 0) {
+    return { ok: false, error: "No next move can be deduced from this position." };
+  }
+  const steps: HintStep<BricksMove, BricksHint>[] = plan.map((m) => ({
+    move: { kind: "paint", cells: [{ index: m.index, to: m.to }] },
+    explanation: narrate(m.reason, m.to, state),
+    highlights: {
+      target: m.index,
+      forced: m.to,
+      evidence: evidenceOf(m.reason).filter((c) => c !== m.index),
+    },
+  }));
+  return { ok: true, steps };
+}
+
+/** A move completes the step when it paints the target cell to the hinted
+ * colour; touching the target with a different colour, or not touching it, is
+ * off-plan (Bricks steps are single-cell — no partial-subset case). */
+function hintKeepTrack(
+  m: BricksMove,
+  step: HintStep<BricksMove, BricksHint>,
+  _state: BricksState,
+): HintTrackVerdict {
+  if (m.kind !== "paint") return "off";
+  const hl = step.highlights;
+  if (!hl) return "off";
+  for (const c of m.cells) {
+    if (c.index === hl.target) return c.to === hl.forced ? "completed" : "off";
+  }
+  return "off";
+}
+
 function flashLength(
   from: BricksState,
   to: BricksState,
@@ -380,6 +509,8 @@ export const bricksGame: Game<
   status,
 
   solve,
+  hint,
+  hintKeepTrack,
   findMistakes,
   textFormat,
 

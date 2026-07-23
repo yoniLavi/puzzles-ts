@@ -829,6 +829,33 @@ gluing) wasn't worth it here. Two things this shape buys:
 conclusion clause. Word the premise without a flat state-of-being verb ("has nowhere to slide")
 rather than loosening the guard.
 
+### 5.6a′ Read the reason off the validator's own rejection (Bricks — a contradiction solver)
+
+When the solver forces a move by **contradiction** — tentatively set a cell, and if the board's
+validity oracle returns INVALID the cell is forced the other way — you often need *no separate
+recorder at all*, because the oracle **already localises which rule broke and where**. Bricks'
+`bricksValidate` ORs a per-cell `FE_*` flag for each violation (three-in-a-row, an unsupported
+shaded brick, an over-/under-filled clue); the hint's `nextForcedMove` re-runs the rejected trial
+with an `errors` array and reads the flags back to build the `BricksReason` — three vs gravity vs
+count, with the evidence cells falling straight out of the flagged positions. Two things make this
+clean:
+
+- **The reason is the rejected trial's flags, not the accepted move's.** The move is "cell must be
+  *unshaded*"; the *why* lives in what shading it broke. Set the trial colour, validate into
+  `errors`, classify, restore. A fixed priority (Bricks: three → gravity → count) picks the clearest
+  when several fire.
+- **The recording path stays out of the generator.** `nextForcedMove`/`deduceBricksPlan` are hint-
+  only functions beside the untouched `solveGame`, so the generator differential (`*-differential`)
+  can't drift — the §5.6a "parallel, not gated" property, for free.
+
+For the recursive (lookahead) rung, the honest v1 is a proof-by-contradiction step: hypothesis on the
+target, contradiction ringed from the sub-solve's final INVALID `errors` — narrated, never an
+un-narrated "only one fits". Showing the whole what-if walk (Clusters §5.6b′) is the enrichment.
+Exemplars: [`bricks/solver.ts`](../../src/native/games/bricks/solver.ts) (`nextForcedMove` +
+`classify*Trial`), [`bricks/index.ts`](../../src/native/games/bricks/index.ts) (`narrate`/`hint`).
+This is the shape for any game whose live-error/`findMistakes` validator already marks *which* rule
+each cell breaks (§3.5 of the port playbook) — the same pass is a ready-made reason source.
+
 ### 5.6b The honest non-local tier for a game with no on-board mark (Slant)
 
 §5.6 tolerates a non-local *technique* inside an otherwise-glance-able set; Slant

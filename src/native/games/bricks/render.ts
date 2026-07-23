@@ -20,10 +20,12 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import type { BricksHint } from "./index.ts";
 import { bricksValidate } from "./solver.ts";
 import {
   type BricksMistake,
+  type BricksMove,
   type BricksParams,
   type BricksState,
   type BricksUi,
@@ -54,6 +56,9 @@ export const COL_BORDER = 3;
 export const COL_SHADE = 4;
 export const COL_ERROR = 5;
 export const COL_CURSOR = 6;
+// Fork additions (beyond upstream's COL_* enum): the explained hint.
+export const COL_HINT = 7; // the forced cell — COL_HINT fill (blue)
+export const COL_HINT_CELL = 8; // the deduction's evidence — a light-blue ring
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
@@ -65,6 +70,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_SHADE] = [0.1, 0.1, 0.1];
   out[COL_ERROR] = [1, 0, 0];
   out[COL_CURSOR] = [0, 0.7, 0];
+  out[COL_HINT] = [0.13, 0.5, 0.85];
+  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
   return out;
 }
 
@@ -178,6 +185,11 @@ function drawRectCorners(
   seg(cx + r, cy + r, cx + (r >> 1), cy + r);
 }
 
+// Hint-overlay bits packed into the render cache word, above the cell's own
+// bits (num/bound/colour + FE_* error/cursor flags all fit under 0x1000).
+const HINT_TARGET = 1 << 12; // the forced cell — painted COL_HINT
+const HINT_EVID = 1 << 13; // a deduction-evidence cell — inset COL_HINT_CELL ring
+
 // --- one tile ---------------------------------------------------------------
 
 function drawTile(
@@ -188,13 +200,15 @@ function drawTile(
   n: number,
 ): void {
   const col =
-    n & F_BOUND
-      ? COL_MIDLIGHT
-      : (n & COL_MASK) === F_SHADE
-        ? COL_SHADE
-        : (n & COL_MASK) === F_UNSHADE || !(n & COL_MASK)
-          ? COL_HIGHLIGHT
-          : COL_MIDLIGHT;
+    n & HINT_TARGET
+      ? COL_HINT // the forced cell (empty) is painted blue — the player still applies it
+      : n & F_BOUND
+        ? COL_MIDLIGHT
+        : (n & COL_MASK) === F_SHADE
+          ? COL_SHADE
+          : (n & COL_MASK) === F_UNSHADE || !(n & COL_MASK)
+            ? COL_HIGHLIGHT
+            : COL_MIDLIGHT;
 
   dr.drawRect({ x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 }, col);
 
@@ -245,6 +259,19 @@ function drawTile(
 
   if (n & FE_CURSOR) drawRectCorners(dr, cx, cy, (ts / 3) | 0, COL_CURSOR);
 
+  // Evidence ring: an inset COL_HINT_CELL outline that leaves the cell's own
+  // content (shade / clue) visible beneath it.
+  if (n & HINT_EVID) {
+    const t = Math.max(2, (ts / 12) | 0);
+    const m = (ts / 12) | 0;
+    const in0 = m;
+    const inSz = ts - 2 * m;
+    dr.drawRect({ x: tx + in0, y: ty + in0, w: inSz, h: t }, COL_HINT_CELL);
+    dr.drawRect({ x: tx + in0, y: ty + in0, w: t, h: inSz }, COL_HINT_CELL);
+    dr.drawRect({ x: tx + in0, y: ty + ts - m - t, w: inSz, h: t }, COL_HINT_CELL);
+    dr.drawRect({ x: tx + ts - m - t, y: ty + in0, w: t, h: inSz }, COL_HINT_CELL);
+  }
+
   dr.drawUpdate({ x: tx, y: ty, w: ts + 1, h: ts + 1 });
 }
 
@@ -259,7 +286,7 @@ export function redraw(
   ui: BricksUi,
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<BricksMove, BricksHint>,
   mistakes?: readonly BricksMistake[],
 ): void {
   if (!ds) return;
@@ -267,6 +294,11 @@ export function redraw(
   const { w, h, grid } = state;
   const s = w * h;
   const { ox, oy } = offsets(h, ts);
+
+  // Index the displayed hint step's target + evidence cells.
+  const hl = hint?.highlights;
+  const hintTarget = hl?.target ?? -1;
+  const hintEvid = hl ? new Set(hl.evidence) : null;
 
   if (!ds.started) {
     const { w: fullW, h: fullH } = computeSize({ w: state.pw, h, diff: 0 }, ts);
@@ -308,6 +340,8 @@ export function redraw(
     if (flash && (n & COL_MASK) === F_SHADE) n = F_EMPTY;
     if (errorFlags) n |= errorFlags[i];
     if (ui.cshow && ui.cx === x && ui.cy === y) n |= FE_CURSOR;
+    if (i === hintTarget) n |= HINT_TARGET;
+    else if (hintEvid?.has(i)) n |= HINT_EVID;
 
     if (ds.cache[i] === n) continue;
     ds.cache[i] = n;
