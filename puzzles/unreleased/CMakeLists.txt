@@ -21,8 +21,8 @@ solver(abcd)
 puzzle(ascent
   DISPLAYNAME "Ascent"
   DESCRIPTION "Path-finding puzzle"
-  OBJECTIVE "Place each number once to create a path.")
-solver(ascent ${CMAKE_SOURCE_DIR}/matching.c)
+  OBJECTIVE "Place each number once to create a path."
+  TS_PORTED)  # native-TS port (openspec add-ascent-ts-port); no ascent.c/wasm
 
 puzzle(boats
   DISPLAYNAME "Boats"
