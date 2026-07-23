@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";
-import { LEFT_BUTTON } from "../../engine/pointer.ts";
+import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { randomNew } from "../../random/index.ts";
 import { newAscentDesc } from "./generator.ts";
@@ -15,6 +15,7 @@ import { ascentGame } from "./index.ts";
 import { COL_HIGHLIGHT } from "./render.ts";
 import { ascentSolve, SolverScratch } from "./solver.ts";
 import {
+  type AscentMove,
   type AscentParams,
   checkCompletion,
   DIFFCOUNT,
@@ -195,6 +196,68 @@ describe("ascent typed-number line preview", () => {
 
     // The preview must add at least one highlight (path) line.
     expect(countHighlightLines(true)).toBeGreaterThan(countHighlightLines(false));
+  });
+});
+
+describe("ascent right-click two-option toggle", () => {
+  it("cycles a held-adjacent cell none → lower → higher → none", () => {
+    const p = mk(6, 5, 1, MODE_RECT);
+    const { desc } = newAscentDesc(p, randomNew("toggle-seed"));
+    let state = newAscentState(p, desc);
+    const w = state.w;
+    const s = w * state.h;
+
+    const positions = new Int32Array(s).fill(-1);
+    for (let i = 0; i < s; i++) if (state.grid[i] >= 0) positions[state.grid[i]] = i;
+
+    // Placed number N at A (0 < N < last), adjacent empty B, both N±1 unplaced.
+    let cellA = -1;
+    let cellB = -1;
+    let bigN = -1;
+    outerT: for (let a = 0; a < s; a++) {
+      const nn = state.grid[a];
+      if (nn <= 0 || nn >= state.last) continue;
+      if (positions[nn - 1] >= 0 || positions[nn + 1] >= 0) continue;
+      for (let b = 0; b < s; b++) {
+        if (state.grid[b] !== NUMBER_EMPTY || !isNear(a, b, w, MODE_RECT)) continue;
+        cellA = a;
+        cellB = b;
+        bigN = nn;
+        break outerT;
+      }
+    }
+    expect(cellB).toBeGreaterThanOrEqual(0);
+
+    const ui = ascentGame.newUi(state);
+    ui.held = cellA;
+    const ds = ascentGame.newDrawState?.(state);
+    if (!ds) throw new Error("no drawstate");
+    ascentGame.setTileSize?.(ds, ascentGame.preferredTileSize ?? 48);
+    const ts = ds.tileSize;
+    const centre = {
+      x: ds.offsetX + (cellB % w) * ts + ts / 2,
+      y: ds.offsetY + Math.trunc(cellB / w) * ts + ts / 2,
+    };
+
+    const rightClick = () => {
+      const m = ascentGame.interpretMove(state, ui, ds, centre, RIGHT_BUTTON);
+      if (m && typeof m === "object") {
+        const old = state;
+        state = ascentGame.executeMove(state, m as AscentMove);
+        ascentGame.changedState?.(ui, old, state);
+      }
+      return m;
+    };
+
+    // Empty → lower (N-1).
+    rightClick();
+    expect(state.grid[cellB]).toBe(bigN - 1);
+    // lower → higher (N+1).
+    rightClick();
+    expect(state.grid[cellB]).toBe(bigN + 1);
+    // higher → empty.
+    rightClick();
+    expect(state.grid[cellB]).toBe(NUMBER_EMPTY);
   });
 });
 

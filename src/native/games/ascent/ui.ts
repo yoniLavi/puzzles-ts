@@ -320,6 +320,74 @@ export function validatePathMove(i: number, state: AscentState, ui: AscentUi): b
 
 /** Handle a click/drag at grid cell (gx,gy), mutating `ui` and returning a
  * move fragment or `null` (upstream `ascent_mouse_click`). */
+/**
+ * The two candidate numbers a right-click cycles cell `i` through, or `null`
+ * when the cell has no two-option ambiguity (so the normal clear applies).
+ * Deliberate divergence: a cell that could take either of two consecutive
+ * numbers is common in Ascent (an open path end next to a placed number, or a
+ * cell adjacent to a held number). Covers three sources — an origin number
+ * held adjacent to `i`, an empty cell already showing two path hints, and a
+ * filled cell adjacent to exactly one consecutive placed number (so toggling
+ * keeps working after the first placement). Returns the pair sorted ascending.
+ */
+function candidatesFor(
+  state: AscentState,
+  ui: AscentUi,
+  i: number,
+): [number, number] | null {
+  if (state.immutable[i]) return null;
+  const w = state.w;
+  const v = state.grid[i];
+  const canUse = (c: number) =>
+    c >= 0 &&
+    c <= state.last &&
+    (ui.positions[c] === CELL_NONE || ui.positions[c] === i);
+  const pair = (a: number, b: number): [number, number] => (a < b ? [a, b] : [b, a]);
+
+  // 1. An origin number is held and adjacent (also the "still holding the
+  //    origin, then right-click a target" case).
+  if (ui.held >= 0 && state.grid[ui.held] >= 0 && isNear(ui.held, i, w, state.mode)) {
+    const nHeld = state.grid[ui.held];
+    if (v === NUMBER_EMPTY || v === nHeld - 1 || v === nHeld + 1) {
+      const opts = [nHeld - 1, nHeld + 1].filter(canUse);
+      if (opts.length === 2) return pair(opts[0], opts[1]);
+    }
+  }
+
+  // 2. An empty cell already showing two path-hint options.
+  if (
+    v === NUMBER_EMPTY &&
+    ui.prevhints[i] >= 0 &&
+    ui.nexthints[i] >= 0 &&
+    ui.prevhints[i] !== ui.nexthints[i]
+  ) {
+    return pair(ui.prevhints[i], ui.nexthints[i]);
+  }
+
+  // 3. A filled cell adjacent to exactly one consecutive placed number: it
+  //    could be its own value or the reflection across that number.
+  if (v >= 0) {
+    const movement = movementForMode(state.mode);
+    let m = -1;
+    let count = 0;
+    for (let dir = 0; dir < movement.dircount; dir++) {
+      const j = i + movement.dirs[dir].dy * w + movement.dirs[dir].dx;
+      if (j < 0 || j >= w * state.h || !isNear(i, j, w, state.mode)) continue;
+      const nv = state.grid[j];
+      if (nv >= 0 && Math.abs(nv - v) === 1) {
+        m = nv;
+        count++;
+      }
+    }
+    if (count === 1) {
+      const other = 2 * m - v;
+      if (other !== v && canUse(other)) return pair(v, other);
+    }
+  }
+
+  return null;
+}
+
 function mouseClick(
   state: AscentState,
   ui: AscentUi,
@@ -481,9 +549,30 @@ function mouseClick(
     return null;
   }
 
-  if (button === MIDDLE_BUTTON || button === RIGHT_BUTTON) {
+  if (button === RIGHT_BUTTON) {
+    /* Deliberate divergence: on a cell with two candidate numbers, cycle
+     * none → lower → higher → none instead of clearing, so a right-click (or
+     * the keyboard secondary-select) toggles between the two options. */
+    const cands = candidatesFor(state, ui, i);
+    if (cands) {
+      const target =
+        state.grid[i] === cands[0]
+          ? cands[1]
+          : state.grid[i] === cands[1]
+            ? NUMBER_EMPTY
+            : cands[0];
+      return target === NUMBER_EMPTY
+        ? { kind: "clear", cell: i }
+        : { kind: "place", cell: i, n: target };
+    }
     if (n === NUMBER_EMPTY || state.immutable[i]) uiClear(ui);
-    return rightDragArm(); /* deliberate fallthrough */
+    return rightDragArm();
+  }
+
+  if (button === MIDDLE_BUTTON) {
+    /* Middle-click always clears (a two-option-free way to erase). */
+    if (n === NUMBER_EMPTY || state.immutable[i]) uiClear(ui);
+    return rightDragArm();
   }
 
   if (button === MIDDLE_DRAG || button === RIGHT_DRAG) return rightDragArm();
