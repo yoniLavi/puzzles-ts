@@ -526,9 +526,35 @@ export function interpretAscentMove(
     }
   }
 
-  const gy = oy < 0 ? -1 : Math.trunc(oy / tilesize);
-  if (isHexagonal(state.mode)) ox -= Math.trunc((gy * tilesize) / 2);
-  const gx = ox < 0 ? -1 : Math.trunc(ox / tilesize);
+  let gx: number;
+  let gy: number;
+  if (isHexagonal(state.mode)) {
+    /* Real hexagons (design F7): pick the cell whose centre is nearest the
+     * pointer. `(col,row)` are axial coords, so this is a small neighbourhood
+     * search around the fractional estimate. */
+    const R = tilesize / Math.sqrt(3);
+    const vp = (tilesize * Math.sqrt(3)) / 2;
+    const rowEst = Math.round((oy - R) / vp);
+    let bestD = Number.POSITIVE_INFINITY;
+    gx = -1;
+    gy = -1;
+    for (let row = rowEst - 1; row <= rowEst + 1; row++) {
+      const colEst = Math.round((ox - tilesize / 2 - (row * tilesize) / 2) / tilesize);
+      for (let col = colEst - 1; col <= colEst + 1; col++) {
+        const cx = col * tilesize + (row * tilesize) / 2 + tilesize / 2;
+        const cy = R + row * vp;
+        const d = (ox - cx) ** 2 + (oy - cy) ** 2;
+        if (d < bestD) {
+          bestD = d;
+          gx = col;
+          gy = row;
+        }
+      }
+    }
+  } else {
+    gy = oy < 0 ? -1 : Math.trunc(oy / tilesize);
+    gx = ox < 0 ? -1 : Math.trunc(ox / tilesize);
+  }
 
   if (isMouseDown(button)) {
     ui.cshow = CSHOW_NONE;
@@ -648,8 +674,12 @@ export function interpretAscentMove(
 
   if (gx >= 0 && gx < w && gy >= 0 && gy < h) {
     if (isMouseDrag(button) && ui.held >= 0 && !isNumberEdge(ui.select)) {
-      const hx = gx * tilesize + Math.trunc(tilesize / 2);
-      const hy = gy * tilesize + Math.trunc(tilesize / 2);
+      const hx = isHexagonal(state.mode)
+        ? gx * tilesize + (gy * tilesize) / 2 + tilesize / 2
+        : gx * tilesize + Math.trunc(tilesize / 2);
+      const hy = isHexagonal(state.mode)
+        ? tilesize / Math.sqrt(3) + gy * ((tilesize * Math.sqrt(3)) / 2)
+        : gy * tilesize + Math.trunc(tilesize / 2);
       /* Octagon-shaped hitbox so a near-miss doesn't force a straight line. */
       if (Math.abs(ox - hx) + Math.abs(oy - hy) > DRAG_RADIUS * tilesize) return null;
     }

@@ -7,6 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";
+import { LEFT_BUTTON } from "../../engine/pointer.ts";
 import { randomNew } from "../../random/index.ts";
 import { newAscentDesc } from "./generator.ts";
 import { ascentGame } from "./index.ts";
@@ -102,6 +103,39 @@ describe("ascent solve + completion", () => {
     const me2 = new Midend(ascentGame);
     expect(me2.loadGame(saved)).toBeUndefined();
     expect(me2.formatAsText()).not.toContain(".");
+  });
+});
+
+describe("ascent hexagonal hit-testing (design F7)", () => {
+  it("a click at each hex cell centre resolves to that cell", () => {
+    const p = mk(7, 7, 1, MODE_HEXAGON);
+    const { desc } = newAscentDesc(p, randomNew("hex-hit"));
+    const state = newAscentState(p, desc);
+    const ds = ascentGame.newDrawState?.(state);
+    if (!ds) throw new Error("no drawstate");
+    ascentGame.setTileSize?.(ds, ascentGame.preferredTileSize ?? 48);
+
+    const ts = ds.tileSize;
+    const R = ts / Math.sqrt(3);
+    const vp = (ts * Math.sqrt(3)) / 2;
+    const w = state.w;
+    const h = state.h;
+
+    let checked = 0;
+    for (let i = 0; i < w * h; i++) {
+      // Skip padding walls (the triangular hexagon corners).
+      if (state.grid[i] === -3 /* NUMBER_BOUND */) continue;
+      const col = i % w;
+      const row = Math.trunc(i / w);
+      const cx = ds.offsetX + col * ts + (row * ts) / 2 + ts / 2;
+      const cy = ds.offsetY + R + row * vp;
+
+      const ui = ascentGame.newUi(state);
+      ascentGame.interpretMove(state, ui, ds, { x: cx, y: cy }, LEFT_BUTTON);
+      expect(ui.held).toBe(i); // a left click on a playable cell holds it
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(20);
   });
 });
 

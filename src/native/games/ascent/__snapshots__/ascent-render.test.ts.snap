@@ -2550,11 +2550,11 @@ exports[`ascent render > Edges: draws arrow clues around the border 1`] = `
 ]
 `;
 
-exports[`ascent render > Hexagon: renders the offset grid without per-mode board code 1`] = `
+exports[`ascent render > Hexagon: renders real hexagonal cells (6-vertex outlines) 1`] = `
 [
   {
     "colour": 0,
-    "h": 241,
+    "h": 223,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
     "w": 241,
@@ -2562,24 +2562,48 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "y": 0,
   },
   {
-    "h": 49,
+    "h": 58,
     "op": "clip",
-    "w": 49,
-    "x": 48,
-    "y": 0,
+    "w": 50,
+    "x": 47,
+    "y": -1,
   },
   {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 49,
-    "y": 1,
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        72,
+        0,
+      ],
+      [
+        96,
+        14,
+      ],
+      [
+        96,
+        42,
+      ],
+      [
+        72,
+        55,
+      ],
+      [
+        48,
+        42,
+      ],
+      [
+        48,
+        14,
+      ],
+    ],
   },
   {
     "cx": 72,
-    "cy": 24,
+    "cy": 28,
     "fill": 2,
     "fillRgb": "rgb(253, 253, 253)",
     "op": "circle",
@@ -2593,9 +2617,9 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
     "x1": 72,
-    "x2": 96,
-    "y1": 24,
-    "y2": 72,
+    "x2": 84,
+    "y1": 28,
+    "y2": 48,
   },
   {
     "fill": -1,
@@ -2605,20 +2629,28 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "outlineRgb": "rgb(0, 0, 0)",
     "points": [
       [
-        48,
+        72,
         0,
       ],
       [
         96,
-        0,
+        14,
       ],
       [
         96,
-        48,
+        42,
+      ],
+      [
+        72,
+        55,
       ],
       [
         48,
+        42,
+      ],
+      [
         48,
+        14,
       ],
     ],
   },
@@ -2632,26 +2664,50 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "size": 24,
     "text": "12",
     "x": 72,
-    "y": 24,
+    "y": 28,
   },
   {
     "op": "unclip",
   },
   {
-    "h": 49,
+    "h": 58,
     "op": "clip",
-    "w": 49,
-    "x": 96,
-    "y": 0,
+    "w": 50,
+    "x": 95,
+    "y": -1,
   },
   {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 97,
-    "y": 1,
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        120,
+        0,
+      ],
+      [
+        144,
+        14,
+      ],
+      [
+        144,
+        42,
+      ],
+      [
+        120,
+        55,
+      ],
+      [
+        96,
+        42,
+      ],
+      [
+        96,
+        14,
+      ],
+    ],
   },
   {
     "fill": -1,
@@ -2661,20 +2717,28 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "outlineRgb": "rgb(0, 0, 0)",
     "points": [
       [
-        96,
+        120,
         0,
       ],
       [
         144,
-        0,
+        14,
       ],
       [
         144,
-        48,
+        42,
+      ],
+      [
+        120,
+        55,
       ],
       [
         96,
-        48,
+        42,
+      ],
+      [
+        96,
+        14,
       ],
     ],
   },
@@ -2682,20 +2746,44 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "op": "unclip",
   },
   {
-    "h": 49,
+    "h": 58,
     "op": "clip",
-    "w": 49,
-    "x": 144,
-    "y": 0,
+    "w": 50,
+    "x": 143,
+    "y": -1,
   },
   {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 145,
-    "y": 1,
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        168,
+        0,
+      ],
+      [
+        192,
+        14,
+      ],
+      [
+        192,
+        42,
+      ],
+      [
+        168,
+        55,
+      ],
+      [
+        144,
+        42,
+      ],
+      [
+        144,
+        14,
+      ],
+    ],
   },
   {
     "fill": -1,
@@ -2705,20 +2793,28 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "outlineRgb": "rgb(0, 0, 0)",
     "points": [
       [
-        144,
+        168,
         0,
       ],
       [
         192,
-        0,
+        14,
       ],
       [
         192,
-        48,
+        42,
+      ],
+      [
+        168,
+        55,
       ],
       [
         144,
-        48,
+        42,
+      ],
+      [
+        144,
+        14,
       ],
     ],
   },
@@ -2726,20 +2822,44 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "op": "unclip",
   },
   {
-    "h": 49,
+    "h": 58,
     "op": "clip",
-    "w": 49,
-    "x": 24,
-    "y": 48,
+    "w": 50,
+    "x": 23,
+    "y": 40,
   },
   {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 25,
-    "y": 49,
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        48,
+        42,
+      ],
+      [
+        72,
+        55,
+      ],
+      [
+        72,
+        83,
+      ],
+      [
+        48,
+        97,
+      ],
+      [
+        24,
+        83,
+      ],
+      [
+        24,
+        55,
+      ],
+    ],
   },
   {
     "fill": -1,
@@ -2749,20 +2869,28 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "outlineRgb": "rgb(0, 0, 0)",
     "points": [
       [
-        24,
         48,
+        42,
       ],
       [
         72,
-        48,
+        55,
       ],
       [
         72,
-        96,
+        83,
+      ],
+      [
+        48,
+        97,
       ],
       [
         24,
-        96,
+        83,
+      ],
+      [
+        24,
+        55,
       ],
     ],
   },
@@ -2776,30 +2904,54 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "size": 24,
     "text": "9",
     "x": 48,
-    "y": 72,
+    "y": 69,
   },
   {
     "op": "unclip",
   },
   {
-    "h": 49,
+    "h": 58,
     "op": "clip",
-    "w": 49,
-    "x": 72,
-    "y": 48,
+    "w": 50,
+    "x": 71,
+    "y": 40,
   },
   {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 73,
-    "y": 49,
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        96,
+        42,
+      ],
+      [
+        120,
+        55,
+      ],
+      [
+        120,
+        83,
+      ],
+      [
+        96,
+        97,
+      ],
+      [
+        72,
+        83,
+      ],
+      [
+        72,
+        55,
+      ],
+    ],
   },
   {
     "cx": 96,
-    "cy": 72,
+    "cy": 69,
     "fill": 2,
     "fillRgb": "rgb(253, 253, 253)",
     "op": "circle",
@@ -2813,9 +2965,9 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "rgb": "rgb(253, 253, 253)",
     "thickness": 7,
     "x1": 96,
-    "x2": 72,
-    "y1": 72,
-    "y2": 24,
+    "x2": 84,
+    "y1": 69,
+    "y2": 48,
   },
   {
     "fill": -1,
@@ -2825,20 +2977,28 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "outlineRgb": "rgb(0, 0, 0)",
     "points": [
       [
-        72,
-        48,
+        96,
+        42,
       ],
       [
         120,
-        48,
+        55,
       ],
       [
         120,
+        83,
+      ],
+      [
         96,
+        97,
       ],
       [
         72,
-        96,
+        83,
+      ],
+      [
+        72,
+        55,
       ],
     ],
   },
@@ -2852,26 +3012,50 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "size": 24,
     "text": "11",
     "x": 96,
-    "y": 72,
+    "y": 69,
   },
   {
     "op": "unclip",
   },
   {
-    "h": 49,
+    "h": 58,
     "op": "clip",
-    "w": 49,
-    "x": 120,
-    "y": 48,
+    "w": 50,
+    "x": 119,
+    "y": 40,
   },
   {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 121,
-    "y": 49,
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        144,
+        42,
+      ],
+      [
+        168,
+        55,
+      ],
+      [
+        168,
+        83,
+      ],
+      [
+        144,
+        97,
+      ],
+      [
+        120,
+        83,
+      ],
+      [
+        120,
+        55,
+      ],
+    ],
   },
   {
     "fill": -1,
@@ -2881,20 +3065,28 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "outlineRgb": "rgb(0, 0, 0)",
     "points": [
       [
-        120,
-        48,
+        144,
+        42,
       ],
       [
         168,
-        48,
+        55,
       ],
       [
         168,
-        96,
+        83,
+      ],
+      [
+        144,
+        97,
       ],
       [
         120,
-        96,
+        83,
+      ],
+      [
+        120,
+        55,
       ],
     ],
   },
@@ -2908,70 +3100,50 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "size": 24,
     "text": "15",
     "x": 144,
-    "y": 72,
+    "y": 69,
   },
   {
     "op": "unclip",
   },
   {
-    "h": 49,
+    "h": 58,
     "op": "clip",
-    "w": 49,
-    "x": 168,
-    "y": 48,
+    "w": 50,
+    "x": 167,
+    "y": 40,
   },
   {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 169,
-    "y": 49,
-  },
-  {
-    "fill": -1,
-    "fillRgb": "colour#-1",
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
     "op": "polygon",
-    "outline": 3,
-    "outlineRgb": "rgb(0, 0, 0)",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
     "points": [
       [
-        168,
-        48,
+        192,
+        42,
       ],
       [
         216,
-        48,
+        55,
       ],
       [
         216,
-        96,
+        83,
+      ],
+      [
+        192,
+        97,
       ],
       [
         168,
-        96,
+        83,
+      ],
+      [
+        168,
+        55,
       ],
     ],
-  },
-  {
-    "op": "unclip",
-  },
-  {
-    "h": 49,
-    "op": "clip",
-    "w": 49,
-    "x": 0,
-    "y": 96,
-  },
-  {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 1,
-    "y": 97,
   },
   {
     "fill": -1,
@@ -2980,218 +3152,74 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "outline": 3,
     "outlineRgb": "rgb(0, 0, 0)",
     "points": [
+      [
+        192,
+        42,
+      ],
+      [
+        216,
+        55,
+      ],
+      [
+        216,
+        83,
+      ],
+      [
+        192,
+        97,
+      ],
+      [
+        168,
+        83,
+      ],
+      [
+        168,
+        55,
+      ],
+    ],
+  },
+  {
+    "op": "unclip",
+  },
+  {
+    "h": 58,
+    "op": "clip",
+    "w": 50,
+    "x": -1,
+    "y": 82,
+  },
+  {
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        24,
+        83,
+      ],
+      [
+        48,
+        97,
+      ],
+      [
+        48,
+        125,
+      ],
+      [
+        24,
+        139,
+      ],
       [
         0,
-        96,
-      ],
-      [
-        48,
-        96,
-      ],
-      [
-        48,
-        144,
+        125,
       ],
       [
         0,
-        144,
+        97,
       ],
     ],
-  },
-  {
-    "op": "unclip",
-  },
-  {
-    "h": 49,
-    "op": "clip",
-    "w": 49,
-    "x": 48,
-    "y": 96,
-  },
-  {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 49,
-    "y": 97,
-  },
-  {
-    "fill": -1,
-    "fillRgb": "colour#-1",
-    "op": "polygon",
-    "outline": 3,
-    "outlineRgb": "rgb(0, 0, 0)",
-    "points": [
-      [
-        48,
-        96,
-      ],
-      [
-        96,
-        96,
-      ],
-      [
-        96,
-        144,
-      ],
-      [
-        48,
-        144,
-      ],
-    ],
-  },
-  {
-    "op": "unclip",
-  },
-  {
-    "h": 49,
-    "op": "clip",
-    "w": 49,
-    "x": 96,
-    "y": 96,
-  },
-  {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 97,
-    "y": 97,
-  },
-  {
-    "fill": -1,
-    "fillRgb": "colour#-1",
-    "op": "polygon",
-    "outline": 3,
-    "outlineRgb": "rgb(0, 0, 0)",
-    "points": [
-      [
-        96,
-        96,
-      ],
-      [
-        144,
-        96,
-      ],
-      [
-        144,
-        144,
-      ],
-      [
-        96,
-        144,
-      ],
-    ],
-  },
-  {
-    "op": "unclip",
-  },
-  {
-    "h": 49,
-    "op": "clip",
-    "w": 49,
-    "x": 144,
-    "y": 96,
-  },
-  {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 145,
-    "y": 97,
-  },
-  {
-    "fill": -1,
-    "fillRgb": "colour#-1",
-    "op": "polygon",
-    "outline": 3,
-    "outlineRgb": "rgb(0, 0, 0)",
-    "points": [
-      [
-        144,
-        96,
-      ],
-      [
-        192,
-        96,
-      ],
-      [
-        192,
-        144,
-      ],
-      [
-        144,
-        144,
-      ],
-    ],
-  },
-  {
-    "op": "unclip",
-  },
-  {
-    "h": 49,
-    "op": "clip",
-    "w": 49,
-    "x": 192,
-    "y": 96,
-  },
-  {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 193,
-    "y": 97,
-  },
-  {
-    "fill": -1,
-    "fillRgb": "colour#-1",
-    "op": "polygon",
-    "outline": 3,
-    "outlineRgb": "rgb(0, 0, 0)",
-    "points": [
-      [
-        192,
-        96,
-      ],
-      [
-        240,
-        96,
-      ],
-      [
-        240,
-        144,
-      ],
-      [
-        192,
-        144,
-      ],
-    ],
-  },
-  {
-    "op": "unclip",
-  },
-  {
-    "h": 49,
-    "op": "clip",
-    "w": 49,
-    "x": 24,
-    "y": 144,
-  },
-  {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 25,
-    "y": 145,
   },
   {
     "fill": -1,
@@ -3202,19 +3230,27 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "points": [
       [
         24,
-        144,
+        83,
       ],
       [
-        72,
-        144,
+        48,
+        97,
       ],
       [
-        72,
-        192,
+        48,
+        125,
       ],
       [
         24,
-        192,
+        139,
+      ],
+      [
+        0,
+        125,
+      ],
+      [
+        0,
+        97,
       ],
     ],
   },
@@ -3222,20 +3258,44 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "op": "unclip",
   },
   {
-    "h": 49,
+    "h": 58,
     "op": "clip",
-    "w": 49,
-    "x": 72,
-    "y": 144,
+    "w": 50,
+    "x": 47,
+    "y": 82,
   },
   {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 73,
-    "y": 145,
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        72,
+        83,
+      ],
+      [
+        96,
+        97,
+      ],
+      [
+        96,
+        125,
+      ],
+      [
+        72,
+        139,
+      ],
+      [
+        48,
+        125,
+      ],
+      [
+        48,
+        97,
+      ],
+    ],
   },
   {
     "fill": -1,
@@ -3246,19 +3306,27 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "points": [
       [
         72,
-        144,
+        83,
       ],
       [
-        120,
-        144,
+        96,
+        97,
       ],
       [
-        120,
-        192,
+        96,
+        125,
       ],
       [
         72,
-        192,
+        139,
+      ],
+      [
+        48,
+        125,
+      ],
+      [
+        48,
+        97,
       ],
     ],
   },
@@ -3266,20 +3334,44 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "op": "unclip",
   },
   {
-    "h": 49,
+    "h": 58,
     "op": "clip",
-    "w": 49,
-    "x": 120,
-    "y": 144,
+    "w": 50,
+    "x": 95,
+    "y": 82,
   },
   {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 121,
-    "y": 145,
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        120,
+        83,
+      ],
+      [
+        144,
+        97,
+      ],
+      [
+        144,
+        125,
+      ],
+      [
+        120,
+        139,
+      ],
+      [
+        96,
+        125,
+      ],
+      [
+        96,
+        97,
+      ],
+    ],
   },
   {
     "fill": -1,
@@ -3290,19 +3382,27 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "points": [
       [
         120,
-        144,
+        83,
       ],
       [
-        168,
         144,
+        97,
       ],
       [
-        168,
-        192,
+        144,
+        125,
       ],
       [
         120,
-        192,
+        139,
+      ],
+      [
+        96,
+        125,
+      ],
+      [
+        96,
+        97,
       ],
     ],
   },
@@ -3310,20 +3410,44 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "op": "unclip",
   },
   {
-    "h": 49,
+    "h": 58,
     "op": "clip",
-    "w": 49,
-    "x": 168,
-    "y": 144,
+    "w": 50,
+    "x": 143,
+    "y": 82,
   },
   {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 169,
-    "y": 145,
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        168,
+        83,
+      ],
+      [
+        192,
+        97,
+      ],
+      [
+        192,
+        125,
+      ],
+      [
+        168,
+        139,
+      ],
+      [
+        144,
+        125,
+      ],
+      [
+        144,
+        97,
+      ],
+    ],
   },
   {
     "fill": -1,
@@ -3334,19 +3458,27 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "points": [
       [
         168,
-        144,
+        83,
       ],
       [
-        216,
-        144,
-      ],
-      [
-        216,
         192,
+        97,
+      ],
+      [
+        192,
+        125,
       ],
       [
         168,
-        192,
+        139,
+      ],
+      [
+        144,
+        125,
+      ],
+      [
+        144,
+        97,
       ],
     ],
   },
@@ -3354,24 +3486,428 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "op": "unclip",
   },
   {
-    "h": 49,
+    "h": 58,
     "op": "clip",
-    "w": 49,
-    "x": 48,
-    "y": 192,
+    "w": 50,
+    "x": 191,
+    "y": 82,
   },
   {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 49,
-    "y": 193,
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        216,
+        83,
+      ],
+      [
+        240,
+        97,
+      ],
+      [
+        240,
+        125,
+      ],
+      [
+        216,
+        139,
+      ],
+      [
+        192,
+        125,
+      ],
+      [
+        192,
+        97,
+      ],
+    ],
+  },
+  {
+    "fill": -1,
+    "fillRgb": "colour#-1",
+    "op": "polygon",
+    "outline": 3,
+    "outlineRgb": "rgb(0, 0, 0)",
+    "points": [
+      [
+        216,
+        83,
+      ],
+      [
+        240,
+        97,
+      ],
+      [
+        240,
+        125,
+      ],
+      [
+        216,
+        139,
+      ],
+      [
+        192,
+        125,
+      ],
+      [
+        192,
+        97,
+      ],
+    ],
+  },
+  {
+    "op": "unclip",
+  },
+  {
+    "h": 58,
+    "op": "clip",
+    "w": 50,
+    "x": 23,
+    "y": 123,
+  },
+  {
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        48,
+        125,
+      ],
+      [
+        72,
+        139,
+      ],
+      [
+        72,
+        166,
+      ],
+      [
+        48,
+        180,
+      ],
+      [
+        24,
+        166,
+      ],
+      [
+        24,
+        139,
+      ],
+    ],
+  },
+  {
+    "fill": -1,
+    "fillRgb": "colour#-1",
+    "op": "polygon",
+    "outline": 3,
+    "outlineRgb": "rgb(0, 0, 0)",
+    "points": [
+      [
+        48,
+        125,
+      ],
+      [
+        72,
+        139,
+      ],
+      [
+        72,
+        166,
+      ],
+      [
+        48,
+        180,
+      ],
+      [
+        24,
+        166,
+      ],
+      [
+        24,
+        139,
+      ],
+    ],
+  },
+  {
+    "op": "unclip",
+  },
+  {
+    "h": 58,
+    "op": "clip",
+    "w": 50,
+    "x": 71,
+    "y": 123,
+  },
+  {
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        96,
+        125,
+      ],
+      [
+        120,
+        139,
+      ],
+      [
+        120,
+        166,
+      ],
+      [
+        96,
+        180,
+      ],
+      [
+        72,
+        166,
+      ],
+      [
+        72,
+        139,
+      ],
+    ],
+  },
+  {
+    "fill": -1,
+    "fillRgb": "colour#-1",
+    "op": "polygon",
+    "outline": 3,
+    "outlineRgb": "rgb(0, 0, 0)",
+    "points": [
+      [
+        96,
+        125,
+      ],
+      [
+        120,
+        139,
+      ],
+      [
+        120,
+        166,
+      ],
+      [
+        96,
+        180,
+      ],
+      [
+        72,
+        166,
+      ],
+      [
+        72,
+        139,
+      ],
+    ],
+  },
+  {
+    "op": "unclip",
+  },
+  {
+    "h": 58,
+    "op": "clip",
+    "w": 50,
+    "x": 119,
+    "y": 123,
+  },
+  {
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        144,
+        125,
+      ],
+      [
+        168,
+        139,
+      ],
+      [
+        168,
+        166,
+      ],
+      [
+        144,
+        180,
+      ],
+      [
+        120,
+        166,
+      ],
+      [
+        120,
+        139,
+      ],
+    ],
+  },
+  {
+    "fill": -1,
+    "fillRgb": "colour#-1",
+    "op": "polygon",
+    "outline": 3,
+    "outlineRgb": "rgb(0, 0, 0)",
+    "points": [
+      [
+        144,
+        125,
+      ],
+      [
+        168,
+        139,
+      ],
+      [
+        168,
+        166,
+      ],
+      [
+        144,
+        180,
+      ],
+      [
+        120,
+        166,
+      ],
+      [
+        120,
+        139,
+      ],
+    ],
+  },
+  {
+    "op": "unclip",
+  },
+  {
+    "h": 58,
+    "op": "clip",
+    "w": 50,
+    "x": 167,
+    "y": 123,
+  },
+  {
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        192,
+        125,
+      ],
+      [
+        216,
+        139,
+      ],
+      [
+        216,
+        166,
+      ],
+      [
+        192,
+        180,
+      ],
+      [
+        168,
+        166,
+      ],
+      [
+        168,
+        139,
+      ],
+    ],
+  },
+  {
+    "fill": -1,
+    "fillRgb": "colour#-1",
+    "op": "polygon",
+    "outline": 3,
+    "outlineRgb": "rgb(0, 0, 0)",
+    "points": [
+      [
+        192,
+        125,
+      ],
+      [
+        216,
+        139,
+      ],
+      [
+        216,
+        166,
+      ],
+      [
+        192,
+        180,
+      ],
+      [
+        168,
+        166,
+      ],
+      [
+        168,
+        139,
+      ],
+    ],
+  },
+  {
+    "op": "unclip",
+  },
+  {
+    "h": 58,
+    "op": "clip",
+    "w": 50,
+    "x": 47,
+    "y": 165,
+  },
+  {
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        72,
+        166,
+      ],
+      [
+        96,
+        180,
+      ],
+      [
+        96,
+        208,
+      ],
+      [
+        72,
+        222,
+      ],
+      [
+        48,
+        208,
+      ],
+      [
+        48,
+        180,
+      ],
+    ],
   },
   {
     "cx": 72,
-    "cy": 216,
+    "cy": 194,
     "fill": 2,
     "fillRgb": "rgb(253, 253, 253)",
     "op": "circle",
@@ -3387,20 +3923,28 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "outlineRgb": "rgb(0, 0, 0)",
     "points": [
       [
-        48,
-        192,
+        72,
+        166,
       ],
       [
         96,
-        192,
+        180,
       ],
       [
         96,
-        240,
+        208,
+      ],
+      [
+        72,
+        222,
       ],
       [
         48,
-        240,
+        208,
+      ],
+      [
+        48,
+        180,
       ],
     ],
   },
@@ -3414,26 +3958,50 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "size": 24,
     "text": "1",
     "x": 72,
-    "y": 216,
+    "y": 194,
   },
   {
     "op": "unclip",
   },
   {
-    "h": 49,
+    "h": 58,
     "op": "clip",
-    "w": 49,
-    "x": 96,
-    "y": 192,
+    "w": 50,
+    "x": 95,
+    "y": 165,
   },
   {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 97,
-    "y": 193,
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        120,
+        166,
+      ],
+      [
+        144,
+        180,
+      ],
+      [
+        144,
+        208,
+      ],
+      [
+        120,
+        222,
+      ],
+      [
+        96,
+        208,
+      ],
+      [
+        96,
+        180,
+      ],
+    ],
   },
   {
     "fill": -1,
@@ -3443,20 +4011,28 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "outlineRgb": "rgb(0, 0, 0)",
     "points": [
       [
-        96,
-        192,
+        120,
+        166,
       ],
       [
         144,
-        192,
+        180,
       ],
       [
         144,
-        240,
+        208,
+      ],
+      [
+        120,
+        222,
       ],
       [
         96,
-        240,
+        208,
+      ],
+      [
+        96,
+        180,
       ],
     ],
   },
@@ -3464,24 +4040,48 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "op": "unclip",
   },
   {
-    "h": 49,
+    "h": 58,
     "op": "clip",
-    "w": 49,
-    "x": 144,
-    "y": 192,
+    "w": 50,
+    "x": 143,
+    "y": 165,
   },
   {
-    "colour": 0,
-    "h": 47,
-    "op": "rect",
-    "rgb": "rgb(211, 211, 211)",
-    "w": 47,
-    "x": 145,
-    "y": 193,
+    "fill": 0,
+    "fillRgb": "rgb(211, 211, 211)",
+    "op": "polygon",
+    "outline": 0,
+    "outlineRgb": "rgb(211, 211, 211)",
+    "points": [
+      [
+        168,
+        166,
+      ],
+      [
+        192,
+        180,
+      ],
+      [
+        192,
+        208,
+      ],
+      [
+        168,
+        222,
+      ],
+      [
+        144,
+        208,
+      ],
+      [
+        144,
+        180,
+      ],
+    ],
   },
   {
     "cx": 168,
-    "cy": 216,
+    "cy": 194,
     "fill": 2,
     "fillRgb": "rgb(253, 253, 253)",
     "op": "circle",
@@ -3497,20 +4097,28 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "outlineRgb": "rgb(0, 0, 0)",
     "points": [
       [
+        168,
+        166,
+      ],
+      [
+        192,
+        180,
+      ],
+      [
+        192,
+        208,
+      ],
+      [
+        168,
+        222,
+      ],
+      [
         144,
-        192,
-      ],
-      [
-        192,
-        192,
-      ],
-      [
-        192,
-        240,
+        208,
       ],
       [
         144,
-        240,
+        180,
       ],
     ],
   },
@@ -3524,7 +4132,7 @@ exports[`ascent render > Hexagon: renders the offset grid without per-mode board
     "size": 24,
     "text": "19",
     "x": 168,
-    "y": 216,
+    "y": 194,
   },
   {
     "op": "unclip",
