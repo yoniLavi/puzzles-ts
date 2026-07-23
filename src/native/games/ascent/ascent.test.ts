@@ -8,20 +8,24 @@
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";
 import { LEFT_BUTTON } from "../../engine/pointer.ts";
+import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { randomNew } from "../../random/index.ts";
 import { newAscentDesc } from "./generator.ts";
 import { ascentGame } from "./index.ts";
+import { COL_HIGHLIGHT } from "./render.ts";
 import { ascentSolve, SolverScratch } from "./solver.ts";
 import {
   type AscentParams,
   checkCompletion,
   DIFFCOUNT,
   encodeGridDesc,
+  isNear,
   MODE_EDGES,
   MODE_HEXAGON,
   MODE_HONEYCOMB,
   MODE_ORTHOGONAL,
   MODE_RECT,
+  NUMBER_EMPTY,
   newAscentState,
   validateAscentDesc,
 } from "./state.ts";
@@ -136,6 +140,61 @@ describe("ascent hexagonal hit-testing (design F7)", () => {
       checked++;
     }
     expect(checked).toBeGreaterThan(20);
+  });
+});
+
+describe("ascent typed-number line preview", () => {
+  it("draws the connecting line for a typed preview before it commits", () => {
+    const p = mk(6, 5, 1, MODE_RECT);
+    const { desc } = newAscentDesc(p, randomNew("preview-line"));
+    const state = newAscentState(p, desc);
+    const w = state.w;
+    const s = w * state.h;
+
+    // Placed positions (number → cell).
+    const positions = new Int32Array(s).fill(-1);
+    for (let i = 0; i < s; i++) {
+      const v = state.grid[i];
+      if (v >= 0) positions[v] = i;
+    }
+
+    // Find a placed clue A and an adjacent empty cell B where a currently
+    // unplaced consecutive number could go.
+    let cellB = -1;
+    let previewNum = -1; // internal
+    outer: for (let a = 0; a < s; a++) {
+      const kv = state.grid[a];
+      if (kv < 0) continue;
+      for (let b = 0; b < s; b++) {
+        if (state.grid[b] !== NUMBER_EMPTY) continue;
+        if (!isNear(a, b, w, MODE_RECT)) continue;
+        for (const pv of [kv - 1, kv + 1]) {
+          if (pv < 0 || pv > state.last || positions[pv] >= 0) continue;
+          cellB = b;
+          previewNum = pv;
+          break outer;
+        }
+      }
+    }
+    expect(cellB).toBeGreaterThanOrEqual(0);
+
+    const countHighlightLines = (typing: boolean): number => {
+      const ui = ascentGame.newUi(state);
+      if (typing) {
+        ui.typingCell = cellB;
+        ui.typingNumber = previewNum + 1; // displayed (1-based)
+      }
+      const ds = ascentGame.newDrawState?.(state);
+      if (!ds) throw new Error("no drawstate");
+      ascentGame.setTileSize?.(ds, ascentGame.preferredTileSize ?? 48);
+      const rec = new RecordingDrawing(ascentGame.colours([0.83, 0.83, 0.83]));
+      ascentGame.redraw?.(rec, ds, null, state, 1, ui, 0, 0);
+      return rec.ops.filter((o) => o.op === "line" && o.colour === COL_HIGHLIGHT)
+        .length;
+    };
+
+    // The preview must add at least one highlight (path) line.
+    expect(countHighlightLines(true)).toBeGreaterThan(countHighlightLines(false));
   });
 });
 

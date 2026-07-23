@@ -447,6 +447,23 @@ export function redrawAscent(
     ds.path[i] = pathline;
   }
 
+  /* Deliberate divergence: preview the connecting line for a *typed* number
+   * (keyboard entry) before it is committed with Enter, so the link shows
+   * immediately. Add reciprocal segments between the preview cell and each
+   * placed consecutive neighbour it is genuinely adjacent to — only when
+   * adjacent, so a real cell never flashes an error because of a preview. */
+  const typingN = ui.typingCell >= 0 && ui.typingNumber > 0 ? ui.typingNumber - 1 : -1;
+  if (typingN >= 0 && typingN <= state.last && positions[typingN] < 0) {
+    const pc = ui.typingCell;
+    for (const nb of [typingN - 1, typingN + 1]) {
+      if (nb < 0 || nb > state.last) continue;
+      const j = positions[nb];
+      if (j < 0 || !isNear(pc, j, w, state.mode)) continue;
+      ds.path[pc] |= 1 << findDirection(pc, j, w, movement);
+      ds.path[j] |= 1 << findDirection(j, pc, w, movement);
+    }
+  }
+
   const oldNextTarget = ui.nextTargetMode & TARGET_SHOW ? ui.nextTarget : NUMBER_EMPTY;
   const oldPrevTarget = ui.prevTargetMode & TARGET_SHOW ? ui.prevTarget : NUMBER_EMPTY;
   const cursorCell = ui.cshow === CSHOW_KEYBOARD ? ui.cy * w + ui.cx : -1;
@@ -623,6 +640,18 @@ export function redrawAscent(
         const ex = hex ? (cx + nc.cx) / 2 : nc.cx;
         const ey = hex ? (cy + nc.cy) / 2 : nc.cy;
         thickLine(dr, ds.thickness, tx1, ty1, ex, ey, linecolour);
+      }
+    } else if (i === ui.typingCell) {
+      /* The typing cell skips the block above (it shows the typed number on a
+       * clean background), but still draws its half of any preview connecting
+       * line so the link is visible while typing. */
+      for (let dir = 0; dir < movement.dircount; dir++) {
+        if (!(ds.path[i] & (1 << dir))) continue;
+        const i2 = i + w * movement.dirs[dir].dy + movement.dirs[dir].dx;
+        const nc = cellCentre(i2, w, state.mode, tilesize, ds.offsetX, ds.offsetY);
+        const ex = hex ? (cx + nc.cx) / 2 : nc.cx;
+        const ey = hex ? (cy + nc.cy) / 2 : nc.cy;
+        thickLine(dr, ds.thickness, tx1, ty1, ex, ey, COL_HIGHLIGHT);
       }
     }
 
