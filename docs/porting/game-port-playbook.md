@@ -1141,6 +1141,44 @@ before touching the browser — a wrong offset shows instantly as a staircase.
 Exemplar: [`bricks/render.ts`](../../src/native/games/bricks/render.ts) +
 [`bricks/index.ts`](../../src/native/games/bricks/index.ts).
 
+### 3.14 Several grid *modes* on one substrate: a movement table, not N geometries (Ascent)
+
+A game with multiple grid shapes (Ascent: Rectangle / no-diagonals / Hexagon /
+Honeycomb / Edges) is often **not** five geometries — it is one square-grid
+substrate plus a per-mode **movement table** `{dircount, dirs: Step[]}` (with
+`dirs[n]` the inverse of `dirs[dircount−1−n]`, which the solver relies on to clear
+a neighbour's reciprocal segment). Adjacency (`isNear`), the solver, the codec and
+`checkCompletion` all read the movement table and are otherwise geometry-free;
+hexagon/honeycomb are square grids with **wall padding** (`NUMBER_WALL` promoted to
+`NUMBER_BOUND` at the border) and the half-tile visual offset is a *render* concern.
+Result: the renderer has **no per-mode board code** — faces are never filled, edges
+are straight `dot→dot` segments — so one `redraw` draws every mode and the physical
+grid size (`ascentGridSize`: Honeycomb widens `w`, Edges rings a 2-cell border) is
+the single frozen-into-IDs geometry input. Keep the **physical** `w`/`h` (state) and
+**user-facing** `w`/`h` (params) explicit and separate, exactly as the C does.
+
+Two more Ascent-surfaced patterns worth reaching for:
+
+- **Multi-method number entry reduces to a small discriminated move + an ephemeral
+  `Ui`.** Three entry gestures (click-a-number-then-adjacent, click-empty-then-type,
+  Edges drag-from-arrow) plus free-form path drawing all emit one of
+  `place`/`line`/`clear`/`solve` — the entry *state* (held cell, typing buffer, drag
+  anchor, cursor, candidate hints) lives on the `Ui`, never the state. Port upstream's
+  `interpret_move`→`mouse_click` split faithfully; the C `switch` **fallthroughs**
+  (`LEFT_BUTTON`→`LEFT_DRAG`) become an extracted arm called from the end of the prior
+  case (a real `switch` fallthrough trips `noFallthroughCasesInSwitch`).
+- **A "path-resolution post-pass" that iterates.** When a drawn line can *force*
+  placed numbers, `executeMove` runs `do { cleanPath; updatePositions } while
+  (applyPath)` after the fragment, then the completion check — a fixpoint, not a
+  single pass. Port the loop; it is subtle (a fully-drawn segment between two known
+  numbers fills the cells between them). Exemplars:
+  [`ascent/state.ts`](../../src/native/games/ascent/state.ts) (movement table +
+  `isNear`/`ascentGridSize`), [`ascent/ui.ts`](../../src/native/games/ascent/ui.ts)
+  (the entry methods), [`ascent/moves.ts`](../../src/native/games/ascent/moves.ts)
+  (the post-pass), [`ascent/solver.ts`](../../src/native/games/ascent/solver.ts)
+  (a solver-state flag that *persists across solves* on a reused scratch — a
+  byte-match-critical quirk; see the change's design F1).
+
 ## 4. Differential check (per-game, optional)
 
 **Dev-time differential spot-check** (advisory, *not* a gate): generate N boards

@@ -266,6 +266,51 @@ the unfinished games), drops the `solver(ascent …)` line, deletes
 - **`findMistakes` correctness (D6).** The re-solve must reach the *canonical*
   unique solution; verify against the differential's known-unique boards.
 
+## Implementation notes (what the port surfaced)
+
+Stage 1 landed with the byte-match differential green on **all 24 fixtures**
+(5 modes × 4 difficulties + symmetric/removeends/size variants), first run.
+Points worth recording:
+
+- **F1 — `foundEndpoints` persists across solves (byte-match critical).**
+  `ascent_solve` does *not* reset `found_endpoints`; it is initialised false in
+  the scratch and then stays set across every solve on the reused scratch. In
+  the generator (which re-solves the same scratch per candidate removal) this
+  weakens the solver on every board after the first — and that weakness is baked
+  into which puzzles ship. Reproduced verbatim in `solver.ts`; a reset there
+  diverges every non-first board (playbook §4 rule 3). `solve()` and
+  `findMistakes()` build a fresh scratch, so they are unaffected.
+
+- **F2 — the `new_game` wall flood compares `y < w - 1` (not `h - 1`).** An
+  upstream quirk that can index one row past the grid when `h < w`; C reads heap
+  garbage (≠ `NUMBER_BOUND`), an out-of-range `Int16Array` read is `undefined`
+  (also ≠ `NUMBER_BOUND`), so the term is false either way. Preserved as
+  byte-match surface with a comment.
+
+- **F3 — the `parityDeductions`-style negative shift is a no-op here.**
+  `solver_update_path`'s neighbour-clear loop runs `dir` over `0..MAXIMUM_DIRS`,
+  but bits beyond `dircount` are never set and the vacated `dirs[]` slots are
+  `{0,0}` (self) with a negative shift amount that clears a never-set bit — a
+  genuine no-op. The TS iterates to `dircount` directly (identical result,
+  no undefined arithmetic).
+
+- **F4 — Solve sets `cheated` (deliberate divergence).** Upstream's `'S'` arm
+  never sets `cheated`, so the win flash would fire on a solver fill. The port
+  sets it (playbook §3.6 — missing bookkeeping, not behaviour); the desc
+  differential exercises only `newDesc`/solver/codec, never `executeMove`, so
+  this is safe.
+
+- **F5 — the keyboard cursor is folded into the cell cache, not a blitter**
+  (playbook §3.2): the cursor sits inside a cell, so `cshow == KEYBOARD &&
+  cell == cursorCell` invalidates that cell and the corners are drawn in the
+  repaint; moving the cursor invalidates the old and new cells.
+
+- **F6 — `findMistakes` re-solves a clues-only copy** (design D6) and flags
+  placed numbers that differ from the unique solution; it returns `[]` when the
+  clues aren't uniquely soluble (guarded by `checkCompletion`). Distinct from the
+  in-play `COL_ERROR` shading (duplicate numbers / non-adjacent segments), which
+  stays ordinary render state.
+
 ## Open questions for the owner
 
 None blocking. Stage-2 catalog inclusion (D10) is the standard owner-acceptance
