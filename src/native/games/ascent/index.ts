@@ -304,6 +304,15 @@ const prefs: GamePref<AscentUi>[] = [
       ui.moveWithNumpad = v === 1;
     },
   },
+  {
+    kw: "auto-advance-runs",
+    name: "Skip past already-placed numbers when advancing",
+    type: "boolean",
+    get: (ui) => ui.autoAdvanceRuns,
+    set: (ui, v) => {
+      ui.autoAdvanceRuns = v;
+    },
+  },
 ];
 
 // --- solve & mistakes ----------------------------------------------

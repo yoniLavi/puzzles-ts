@@ -199,6 +199,59 @@ describe("ascent typed-number line preview", () => {
   });
 });
 
+describe("ascent auto-advance past a placed run", () => {
+  // A 5x5 rect scratch board: numbers 0, _, 2, 3 in a row (cell 1 is the gap,
+  // number 4 still open). Holding 0 and placing 1 should skip the placed 2-3
+  // run and land the focus on 3, recommending 4.
+  function scratch() {
+    const w = 5;
+    const h = 5;
+    const sTot = w * h;
+    const grid = new Int16Array(sTot).fill(NUMBER_EMPTY);
+    grid[0] = 0;
+    grid[2] = 2;
+    grid[3] = 3;
+    const state = {
+      w,
+      h,
+      mode: MODE_RECT,
+      last: sTot - 1,
+      grid,
+      immutable: new Uint8Array(sTot),
+      path: null,
+      completed: false,
+      cheated: false,
+    };
+    const ui = ascentGame.newUi(state);
+    const ds = ascentGame.newDrawState?.(state);
+    if (!ds) throw new Error("no drawstate");
+    ascentGame.setTileSize?.(ds, ascentGame.preferredTileSize ?? 48);
+    const centre = (cell: number) => ({
+      x: ds.offsetX + (cell % w) * ds.tileSize + ds.tileSize / 2,
+      y: ds.offsetY + Math.trunc(cell / w) * ds.tileSize + ds.tileSize / 2,
+    });
+    return { state, ui, ds, centre };
+  }
+
+  it("jumps the focus to the run's leading edge and recommends the next open number", () => {
+    const { state, ui, ds, centre } = scratch();
+    ascentGame.interpretMove(state, ui, ds, centre(0), LEFT_BUTTON); // hold 0
+    expect(ui.select).toBe(1);
+    const m = ascentGame.interpretMove(state, ui, ds, centre(1), LEFT_BUTTON); // place 1
+    expect(m).toMatchObject({ kind: "place", cell: 1, n: 1 });
+    expect(ui.held).toBe(3); // jumped past the placed 2-3 run
+    expect(ui.select).toBe(4); // now recommends the next open number
+  });
+
+  it("stays on the placed cell when the preference is off", () => {
+    const { state, ui, ds, centre } = scratch();
+    ui.autoAdvanceRuns = false;
+    ascentGame.interpretMove(state, ui, ds, centre(0), LEFT_BUTTON);
+    ascentGame.interpretMove(state, ui, ds, centre(1), LEFT_BUTTON);
+    expect(ui.held).toBe(1); // no jump — focus stays on the placed cell
+  });
+});
+
 describe("ascent right-click two-option toggle", () => {
   it("cycles a held-adjacent cell none → lower → higher → none", () => {
     const p = mk(6, 5, 1, MODE_RECT);
