@@ -93,6 +93,9 @@ export interface AscentUi {
 
   /** Preference: numpad enters numbers (false) or moves the cursor (true). */
   moveWithNumpad: boolean;
+  /** Preference: when advancing, skip past an already-placed run of numbers so
+   * the focus lands on its leading edge and recommends the next open number. */
+  autoAdvanceRuns: boolean;
 }
 
 const isCursorSelect = (b: number) => b === CURSOR_SELECT || b === CURSOR_SELECT2;
@@ -121,6 +124,7 @@ export function newAscentUi(state: AscentState): AscentUi {
     dragx: -1,
     dragy: -1,
     moveWithNumpad: false,
+    autoAdvanceRuns: true,
   };
 
   /* Cursor starts at the first non-boundary cell. */
@@ -444,7 +448,23 @@ function mouseClick(
     ) {
       if (state.path && state.path[i] & FLAG_COMPLETE) return null;
       const move: AscentMove = { kind: "place", cell: i, n: ui.select };
+      const placedNum = ui.select;
+      const placedDir = ui.dir;
       ui.held = i;
+      /* Auto-advance across an already-placed run (preference, default on):
+       * if the numbers past the one just placed are already on the board, jump
+       * the focus to the leading edge of that run so the next open number is
+       * recommended straight away — place 14 next to a placed 15-16 run and the
+       * focus jumps to 16, recommending 17, instead of stalling on 14. */
+      if (ui.autoAdvanceRuns && (placedDir === 1 || placedDir === -1)) {
+        let edge = placedNum;
+        while (true) {
+          const nxt = edge + placedDir;
+          if (nxt < 0 || nxt > state.last || ui.positions[nxt] < 0) break;
+          edge = nxt;
+        }
+        if (edge !== placedNum && ui.positions[edge] >= 0) ui.held = ui.positions[edge];
+      }
       uiSeek(ui, state);
       if (!keyboard) ui.cshow = CSHOW_NONE;
       return move;
