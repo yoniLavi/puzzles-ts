@@ -148,7 +148,7 @@
 - [x] 9.3 Full gate green (`tsc -b --noEmit` → biome → `vitest run` →
       `vite build`).
 - [x] 9.4 `openspec validate add-ascent-ts-port --strict`.
-- [ ] 9.5 Dev-verify in the browser: all five modes, the three entry methods,
+- [x] 9.5 Dev-verify in the browser: all five modes, the three entry methods,
       free-form path drawing, Edges arrow drag, Solve, Check & Save hard-block on a
       wrong number, completion flash, Custom params.
 - [x] 9.6 Update `docs/porting/game-port-playbook.md` if the port surfaces a new
@@ -156,12 +156,12 @@
 
 ## 10. Stage 2 — on owner acceptance only
 
-- [ ] 10.1 Add `TS_PORTED` to the existing `puzzle(ascent …)` entry in
+- [x] 10.1 Add `TS_PORTED` to the existing `puzzle(ascent …)` entry in
       `puzzles/unreleased/CMakeLists.txt` (in place — no CMake move) and drop the
       `solver(ascent …)` line.
-- [ ] 10.2 Delete `puzzles/unreleased/ascent.c` and the `ascent-trace` harness
+- [x] 10.2 Delete `puzzles/unreleased/ascent.c` and the `ascent-trace` harness
       (and its `cliprogram()` line).
-- [ ] 10.3 `rm -rf build/wasm/` and rebuild — ascent in the catalog, no
+- [x] 10.3 `rm -rf build/wasm/` and rebuild — ascent in the catalog, no
       `ascent.wasm`. Icons already exist. Verify the frozen differential fixture
       still runs C-free.
-- [ ] 10.4 Archive, then commit port + archive together.
+- [x] 10.4 Archive, then commit port + archive together.
