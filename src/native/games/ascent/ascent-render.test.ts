@@ -55,13 +55,19 @@ describe("ascent render", () => {
     expect(ops).toMatchSnapshot();
   });
 
-  it("Hexagon: renders the offset grid without per-mode board code", () => {
+  it("Hexagon: renders real hexagonal cells (6-vertex outlines)", () => {
     const { recording } = renderScenario({
       game: ascentGame,
       id: id(HEXAGON, "render-hex"),
     });
     const ops = recording.ops;
-    expect(ops.some((o) => o.op === "polygon" && o.outline === COL_BORDER)).toBe(true);
+    // A hexagon cell outline is a 6-vertex COL_BORDER polygon (design F7) —
+    // not the 4-vertex square the offset-square rendering would emit.
+    expect(
+      ops.some(
+        (o) => o.op === "polygon" && o.outline === COL_BORDER && o.points.length === 6,
+      ),
+    ).toBe(true);
     expect(ops.some((o) => o.op === "text")).toBe(true);
     expect(ops).toMatchSnapshot();
   });

@@ -311,6 +311,23 @@ Points worth recording:
   in-play `COL_ERROR` shading (duplicate numbers / non-adjacent segments), which
   stays ordinary render state.
 
+- **F7 — Hexagon/Honeycomb render as real hexagons (deliberate divergence,
+  owner-requested 2026-07-23).** Upstream draws these modes as offset *squares*;
+  the port draws pointy-top **hexagons**. This is faithful to the mechanics
+  (the movement table already gives 6 neighbours), squarely inside D9's display
+  latitude ("match the look, prefer clean code"), and needs no spec change. With
+  circumradius `R = ts/√3`, row pitch `ts·√3/2`, and rows offset `ts/2`, the six
+  movement directions land exactly on the six hexagon neighbours and the
+  *horizontal* layout is unchanged from the square version — so `computeOffsets`
+  and the width are untouched, and only the vertical pitch, the cell outline and
+  pixel→cell hit-testing differ. `(col,row)` are axial coordinates, so
+  hit-testing is a nearest-centre search over the 3×3 neighbourhood of the
+  fractional estimate (`ui.ts`), guarded by a round-trip test (a click at every
+  cell centre resolves to that cell). Path lines draw to the shared-edge midpoint
+  (= the midpoint of the two centres) so each cell paints its own half. The Rect
+  and Edges render snapshots are unchanged by this; only the Hexagon snapshot
+  moved. Regular (not stretched) hexagons were chosen for the cleaner look.
+
 ## Open questions for the owner
 
 None blocking. Stage-2 catalog inclusion (D10) is the standard owner-acceptance

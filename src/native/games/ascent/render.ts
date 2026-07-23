@@ -131,7 +131,32 @@ export function newAscentDrawState(state: AscentState): AscentDrawState {
 
 // --- sizing --------------------------------------------------------
 
-/** Upstream `game_compute_size` under `NARROW_BORDERS` (BORDER = 0). */
+// --- hexagonal geometry (deliberate divergence — see design F7) -----
+//
+// Hexagon/Honeycomb are drawn as *actual* pointy-top hexagons rather than
+// upstream's offset squares. The mechanics are already hexagonal (the
+// movement table gives 6 neighbours), so this is faithful to the rules and a
+// clearer picture. With circumradius R = ts/√3 and row pitch ts·√3/2, the
+// horizontal layout is identical to the square version (so `computeOffsets`
+// and the width are unchanged) and the six movement directions land exactly
+// on the six hexagon neighbours; only the vertical pitch, the cell outline
+// and pixel→cell hit-testing differ.
+
+/** Hexagon circumradius (centre → vertex) for a given tile width. */
+export function hexR(tileSize: number): number {
+  return tileSize / Math.sqrt(3);
+}
+/** Vertical distance between adjacent hex rows. */
+export function hexVpitch(tileSize: number): number {
+  return (tileSize * Math.sqrt(3)) / 2;
+}
+/** Total pixel height of `h` hex rows (top vertex at y = 0). */
+function hexPixelHeight(h: number, tileSize: number): number {
+  return 2 * hexR(tileSize) + (h - 1) * hexVpitch(tileSize);
+}
+
+/** Upstream `game_compute_size` under `NARROW_BORDERS` (BORDER = 0), with
+ * the hexagonal modes sized for real hexagons (design F7). */
 export function ascentComputeSize(
   w: number,
   h: number,
@@ -145,9 +170,48 @@ export function ascentComputeSize(
     x += tileSize * 2;
     y += tileSize * 2;
   }
+  if (isHexagonal(mode)) y = Math.ceil(hexPixelHeight(h, tileSize));
   x += 1;
   y += 1;
   return { w: x, h: y };
+}
+
+/** Centre of cell `i` in pixel space, branching on grid mode. */
+function cellCentre(
+  i: number,
+  w: number,
+  mode: number,
+  tileSize: number,
+  offsetX: number,
+  offsetY: number,
+): { cx: number; cy: number } {
+  const col = i % w;
+  const row = Math.trunc(i / w);
+  if (isHexagonal(mode)) {
+    return {
+      cx: offsetX + col * tileSize + row * (tileSize / 2) + tileSize / 2,
+      cy: offsetY + hexR(tileSize) + row * hexVpitch(tileSize),
+    };
+  }
+  return {
+    cx: offsetX + col * tileSize + tileSize / 2,
+    cy: offsetY + row * tileSize + tileSize / 2,
+  };
+}
+
+/** The six pointy-top hexagon vertices around a centre. */
+function hexVertices(cx: number, cy: number, tileSize: number): Point[] {
+  const r = hexR(tileSize);
+  const hw = tileSize / 2; // R·√3/2
+  const hr = r / 2;
+  return [
+    { x: cx, y: cy - r },
+    { x: cx + hw, y: cy - hr },
+    { x: cx + hw, y: cy + hr },
+    { x: cx, y: cy + r },
+    { x: cx - hw, y: cy + hr },
+    { x: cx - hw, y: cy - hr },
+  ];
 }
 
 /** Upstream `game_set_offsets` under `NARROW_BORDERS` (BORDER = 0). */
@@ -431,13 +495,17 @@ export function redrawAscent(
     }
   }
 
-  /* Draw squares. */
+  /* Draw cells (hexagons for the hexagonal modes, squares otherwise). */
+  const hex = isHexagonal(state.mode);
+  const r = hexR(tilesize);
   for (let i = 0; i < w * h; i++) {
-    let tx = (i % w) * tilesize + ds.offsetX;
-    const ty = Math.trunc(i / w) * tilesize + ds.offsetY;
-    if (isHexagonal(state.mode)) tx += Math.trunc((Math.trunc(i / w) * tilesize) / 2);
-    const tx1 = tx + Math.trunc(tilesize / 2);
-    const ty1 = ty + Math.trunc(tilesize / 2);
+    const { cx, cy } = cellCentre(i, w, state.mode, tilesize, ds.offsetX, ds.offsetY);
+    const tx1 = Math.round(cx);
+    const ty1 = Math.round(cy);
+    /* Top-left of a tile-sized box centred on the cell — used for the
+     * square outline (non-hex) and for centred decorations. */
+    const tx = Math.round(cx - tilesize / 2);
+    const ty = Math.round(cy - tilesize / 2);
     let sn = state.grid[i];
 
     if (sn === NUMBER_BOUND) continue;
@@ -464,12 +532,28 @@ export function redrawAscent(
     const fn = displayNumber(i, ui, state);
     sn = fn < 0 ? fn : fn & ~NUMBER_FLAG_MASK;
 
-    dr.clip({ x: tx, y: ty, w: tilesize + 1, h: tilesize + 1 });
-    dr.drawUpdate({ x: tx, y: ty, w: tilesize + 1, h: tilesize + 1 });
-    dr.drawRect(
-      { x: tx + 1, y: ty + 1, w: tilesize - 1, h: tilesize - 1 },
-      isNumberEdge(sn) ? COL_MIDLIGHT : colour,
-    );
+    const fillColour = isNumberEdge(sn) ? COL_MIDLIGHT : colour;
+    if (hex) {
+      /* Clip to the hexagon's bounding box (for drawUpdate); fill only the
+       * hexagon itself so interlocking neighbours aren't erased. */
+      const clip = {
+        x: tx1 - Math.ceil(tilesize / 2) - 1,
+        y: ty1 - Math.ceil(r) - 1,
+        w: tilesize + 2,
+        h: Math.ceil(2 * r) + 2,
+      };
+      dr.clip(clip);
+      dr.drawUpdate(clip);
+      const verts = hexVertices(cx, cy, tilesize);
+      dr.drawPolygon(verts, fillColour, fillColour);
+    } else {
+      dr.clip({ x: tx, y: ty, w: tilesize + 1, h: tilesize + 1 });
+      dr.drawUpdate({ x: tx, y: ty, w: tilesize + 1, h: tilesize + 1 });
+      dr.drawRect(
+        { x: tx + 1, y: ty + 1, w: tilesize - 1, h: tilesize - 1 },
+        fillColour,
+      );
+    }
     ds.colours[i] = colour;
 
     if (ui.typingCell !== i) {
@@ -528,31 +612,36 @@ export function redrawAscent(
         );
       }
 
-      /* Path lines to neighbours. */
+      /* Path lines to neighbours. In hex modes draw to the shared-edge
+       * midpoint (= the midpoint of the two centres) so the line stays inside
+       * this cell; the neighbour draws its own half. Square modes draw the
+       * full segment and rely on the tile clip. */
       for (let dir = 0; dir < movement.dircount; dir++) {
         if (!(ds.path[i] & (1 << dir))) continue;
         const i2 = i + w * movement.dirs[dir].dy + movement.dirs[dir].dx;
-        let tx2 = (i2 % w) * tilesize + ds.offsetX + Math.trunc(tilesize / 2);
-        if (isHexagonal(state.mode))
-          tx2 += Math.trunc((Math.trunc(i2 / w) * tilesize) / 2);
-        const ty2 =
-          Math.trunc(i2 / w) * tilesize + ds.offsetY + Math.trunc(tilesize / 2);
-        thickLine(dr, ds.thickness, tx1, ty1, tx2, ty2, linecolour);
+        const nc = cellCentre(i2, w, state.mode, tilesize, ds.offsetX, ds.offsetY);
+        const ex = hex ? (cx + nc.cx) / 2 : nc.cx;
+        const ey = hex ? (cy + nc.cy) / 2 : nc.cy;
+        thickLine(dr, ds.thickness, tx1, ty1, ex, ey, linecolour);
       }
     }
 
-    /* Square border. */
+    /* Cell border. */
     if (!isNumberEdge(sn)) {
-      dr.drawPolygon(
-        [
-          { x: tx, y: ty },
-          { x: tx + tilesize, y: ty },
-          { x: tx + tilesize, y: ty + tilesize },
-          { x: tx, y: ty + tilesize },
-        ],
-        -1,
-        COL_BORDER,
-      );
+      if (hex) {
+        dr.drawPolygon(hexVertices(cx, cy, tilesize), -1, COL_BORDER);
+      } else {
+        dr.drawPolygon(
+          [
+            { x: tx, y: ty },
+            { x: tx + tilesize, y: ty },
+            { x: tx + tilesize, y: ty + tilesize },
+            { x: tx, y: ty + tilesize },
+          ],
+          -1,
+          COL_BORDER,
+        );
+      }
     }
 
     /* Light circle on possible endpoints. */
