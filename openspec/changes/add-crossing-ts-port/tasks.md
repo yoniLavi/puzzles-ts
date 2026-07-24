@@ -178,7 +178,12 @@ All three Status points triaged; see design F9-F12 and playbook §1.0.
 - [x] 8b.5 **Reject ungenerable sizes** in `validateParams` (`MAX_AREA = 225`,
       the measured boundary), `full`-only so an existing desc still loads;
       upstream retries for ever there (design F12).
-- [x] 8b.6 Re-verify in the browser: auto-advance across and down, the direction
+- [x] 8b.6 **Reject isolated open cells** (the `.c`'s first generator TODO, and
+      owner-found in play): a candidate with an open cell in no run is retried;
+      upstream's behaviour stays reachable behind `upstreamIsolatedCells`, which
+      the differential sets, plus a test that the flag still changes the desc
+      (design F13).
+- [x] 8b.7 Re-verify in the browser: auto-advance across and down, the direction
       toggle, the neutral tiles, the flash sweep, and the size refusal.
 
 ## 9. Stage 2 — on owner acceptance only

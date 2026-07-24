@@ -176,8 +176,41 @@ function genNumbers(
   return numbers;
 }
 
+export interface CrossingGenOptions {
+  /**
+   * Accept a board containing an **isolated** open cell — one with no open
+   * orthogonal neighbour, so it lies in no run and no clue number can ever
+   * reach it. Upstream produces these (its first generator TODO is "Some
+   * puzzles have isolated squares (1x1 areas)"): the cell stays blank on a
+   * finished board, and because the completion check only inspects runs, a
+   * player can even type any digit into it and still win.
+   *
+   * The shipped game rejects such boards; this option exists **only** so the
+   * byte-match differential can reproduce upstream exactly (playbook §4.4 —
+   * keep the oracle *and* ship the fix). Measured cost of the fix: 4% of 5×5
+   * boards, 7% of 7×7, 17-18% of 9×9 and 12×12 are rejected, i.e. a few percent
+   * more attempts on a generator that makes a 9×9 board in well under a
+   * millisecond.
+   */
+  upstreamIsolatedCells?: boolean;
+}
+
+/** Does every open cell belong to some run? An open cell that doesn't is
+ * unreachable by any clue — see {@link CrossingGenOptions.upstreamIsolatedCells}. */
+function everyCellInARun(puzzle: CrossingPuzzle): boolean {
+  const { w, h, walls, acrossRun, downRun } = puzzle;
+  for (let i = 0; i < w * h; i++) {
+    if (!walls[i] && acrossRun[i] < 0 && downRun[i] < 0) return false;
+  }
+  return true;
+}
+
 /** One generation attempt — `crossing_generate`. `null` means "retry". */
-function generate(p: CrossingParams, rng: RandomState): CrossingPuzzle | null {
+function generate(
+  p: CrossingParams,
+  rng: RandomState,
+  opts: CrossingGenOptions,
+): CrossingPuzzle | null {
   const { w, h } = p;
   const walls = genWalls(w, h, p.sym, rng);
   const grid = genGrid(w, h, rng);
@@ -186,15 +219,21 @@ function generate(p: CrossingParams, rng: RandomState): CrossingPuzzle | null {
   if (!numbers) return null;
 
   const puzzle = makePuzzle(w, h, walls, numbers);
+  // Fork: no cell of a finished board may be left blank and unreachable.
+  if (!opts.upstreamIsolatedCells && !everyCellInARun(puzzle)) return null;
   // The gate: the puzzle must be solvable by pure deduction, uniquely.
   return solveCrossing(puzzle).status === "valid" ? puzzle : null;
 }
 
-export function newCrossingDesc(p: CrossingParams, rng: RandomState): { desc: string } {
+export function newCrossingDesc(
+  p: CrossingParams,
+  rng: RandomState,
+  opts: CrossingGenOptions = {},
+): { desc: string } {
   const attempt = retryLimit("crossing: generation");
   for (;;) {
     attempt();
-    const puzzle = generate(p, rng);
+    const puzzle = generate(p, rng, opts);
     if (puzzle) return { desc: encodeDesc(p.w, p.h, puzzle.walls, puzzle.numbers) };
   }
 }

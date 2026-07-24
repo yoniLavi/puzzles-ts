@@ -3,7 +3,8 @@
  *
  * For each frozen C-reference fixture (see `puzzles/auxiliary/crossing-trace.c`),
  * the TS `newCrossingDesc`, replayed over the bit-identical `random.ts` seeded
- * the same way, must reproduce the C desc byte-for-byte. Because generation
+ * the same way and asked for upstream's isolated-cell behaviour, must reproduce
+ * the C desc byte-for-byte. Because generation
  * retries until the deductive solver reaches a complete unique answer, this one
  * assertion validates the wall-growth loop (including `checkPool`'s mutating
  * test), the digit fill, the run collection order, the solver's every deduction
@@ -44,7 +45,14 @@ describeDescDifferential<Fixture, CrossingParams>({
   fixtures: data.fixtures,
   label: (f) => `${f.w}x${f.h}${f.sym ? "S" : ""} seed=${f.seed}`,
   params: (f) => ({ w: f.w, h: f.h, sym: f.sym }),
-  newDesc: newCrossingDesc,
+  // Upstream accepts boards containing an isolated open cell; the shipped
+  // generator rejects them (design F13). Reproducing the C's descriptions
+  // therefore needs upstream's behaviour explicitly — the four-line divergence
+  // is the only code this oracle cannot see, and `crossing.test.ts` asserts
+  // separately that the flag still changes the outcome, so this can't silently
+  // decay into testing the shipped path.
+  newDesc: (params, rng) =>
+    newCrossingDesc(params, rng, { upstreamIsolatedCells: true }),
   extra: (f, p) => {
     // The C desc must also pass the port's own validator, decode to exactly one
     // number per run (what a solvable Nansuke means), and re-solve to a unique
