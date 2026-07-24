@@ -185,3 +185,28 @@ supplied, so an existing puzzle of any size remains playable.
 - **WHEN** parameters larger than the generable maximum accompany a supplied
   description
 - **THEN** validation succeeds
+
+### Requirement: Crossing generates no cell that a clue cannot reach
+
+Generation SHALL reject a candidate board containing an open cell that belongs
+to no run, since no clue number can reach it: it would stay blank on a finished
+board, and — the completion check inspecting only runs — would accept any digit
+the player put there. Upstream produces such boards and records the fault as a
+generator TODO.
+
+Reproducing upstream's descriptions byte-for-byte SHALL remain possible through
+an explicit generator option, so that the C-reference differential keeps
+validating the generator, solver and codec together.
+
+#### Scenario: Every open cell of a generated board lies in a run
+
+- **WHEN** a board is generated for any preset or legal size
+- **THEN** every cell that is not a wall belongs to at least one horizontal or
+  vertical run
+
+#### Scenario: Upstream's boards remain reproducible on request
+
+- **WHEN** the generator is asked for upstream's isolated-cell behaviour on a
+  seed where upstream produces such a board
+- **THEN** it reproduces that board, and the shipped default produces a
+  different one in which every cell is reachable

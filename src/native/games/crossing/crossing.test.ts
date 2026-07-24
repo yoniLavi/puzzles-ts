@@ -290,6 +290,53 @@ describe("crossing generator", () => {
     expect(solveCrossing(state.puzzle).status).toBe("valid");
   });
 
+  it("never leaves a cell that no clue can reach", () => {
+    // Upstream's first generator TODO is "Some puzzles have isolated squares
+    // (1x1 areas)": an open cell with no open neighbour lies in no run, so it
+    // stays blank on a finished board — and since the completion check only
+    // inspects runs, a player can type any digit into it and still win.
+    for (const [label, params] of [
+      ["5x5", P5],
+      ["7x7", { w: 7, h: 7, sym: false }],
+      ["9x9", { w: 9, h: 9, sym: false }],
+      ["9x9 symmetric", { w: 9, h: 9, sym: true }],
+    ] as const) {
+      for (let s = 0; s < 12; s++) {
+        const { desc } = newCrossingDesc(params, randomNew(`iso-${label}-${s}`));
+        const { puzzle } = newState(params, desc);
+        const covered = new Set<number>();
+        for (const run of puzzle.runs) for (const i of run.cells) covered.add(i);
+        for (let i = 0; i < params.w * params.h; i++) {
+          if (!puzzle.walls[i] && !covered.has(i))
+            throw new Error(`${label} seed ${s}: cell ${i} belongs to no run`);
+        }
+      }
+    }
+  });
+
+  it("still reproduces upstream's isolated-cell boards on request", () => {
+    // The byte-match differential runs with `upstreamIsolatedCells`, so this
+    // guards the thing that would otherwise rot silently: that the flag really
+    // does change the generated board, and the oracle is therefore still
+    // checking upstream's algorithm rather than the shipped one (playbook §4.4).
+    const seed = "iso-seed-14"; // found by scan: upstream yields an isolated cell here
+    const upstream = newCrossingDesc(P5, randomNew(seed), {
+      upstreamIsolatedCells: true,
+    }).desc;
+    const shipped = newCrossingDesc(P5, randomNew(seed)).desc;
+    expect(upstream).not.toBe(shipped);
+
+    const covered = (desc: string): boolean => {
+      const { puzzle } = newState(P5, desc);
+      const seen = new Set<number>();
+      for (const run of puzzle.runs) for (const i of run.cells) seen.add(i);
+      for (let i = 0; i < 25; i++) if (!puzzle.walls[i] && !seen.has(i)) return false;
+      return true;
+    };
+    expect(covered(upstream)).toBe(false);
+    expect(covered(shipped)).toBe(true);
+  });
+
   it("grows symmetric walls 180°-rotationally", () => {
     const params = { w: 6, h: 4, sym: true };
     const { desc } = newCrossingDesc(params, randomNew("sym-shape"));

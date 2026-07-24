@@ -541,3 +541,32 @@ rather than a guessed one — and only on a `full` validation, so an existing
 description of any size stays playable. The app now answers an 18x18 request
 immediately ("Width times height must be at most 225; larger boards cannot be
 generated") instead of hanging or throwing `RetryLimitExceeded` after ~7 s.
+
+### F13 — Isolated open cells are no longer generated
+
+Upstream's first generator TODO is "Some puzzles have isolated squares (1x1
+areas)", and it means it: an open cell whose four neighbours are all walls lies
+in **no run**, so no clue number can reach it. It stays blank on a finished
+board (the owner found one bottom-left of a solved 5x5), and because the
+completion check only inspects runs, a player can type any digit into it and
+still win.
+
+Measured frequency of a board containing one: **4% at 5x5, 7% at 7x7, 17% at
+9x9, 18% at 12x12** (2-5% with symmetric walls). Rejecting those candidates
+therefore costs a few percent more attempts on a generator that produces a 9x9
+board in well under a millisecond — so this is playbook §4 rule 3, a genuine
+player-visible defect rather than a difficulty curve, and cheap to fix.
+
+The fix costs the byte-match oracle nothing, using the Spokes `upstreamDirtyGate`
+pattern (playbook §4.4): a `CrossingGenOptions.upstreamIsolatedCells` flag
+restores upstream's exact behaviour and is set **by the differential alone**. All
+25 fixtures still match the C byte-for-byte; the only code outside the oracle's
+reach is the four-line rejection itself, which gets two behavioural tests
+instead — one asserting no generated board has an unreachable cell, and one
+asserting the flag still *changes* the description on a known seed, so the
+differential cannot silently decay into testing the shipped path.
+
+Not changed: `newState` still decodes such a description faithfully if given one,
+so an existing puzzle plays exactly as before. Nothing shipped can contain one
+(Crossing has not been accepted, so no game IDs are in circulation), which is why
+this stops at generation rather than also rewriting the decoder.
