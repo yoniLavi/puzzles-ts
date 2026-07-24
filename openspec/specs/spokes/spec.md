@@ -1,7 +1,8 @@
-# spokes Specification Delta — add-spokes-hint
+# spokes Specification
 
-## ADDED Requirements
-
+## Purpose
+TBD - created by archiving change add-spokes-hint. Update Purpose after archive.
+## Requirements
 ### Requirement: Spokes explains why each hinted move is forced
 
 Spokes SHALL implement the hint hooks, and each hint SHALL narrate the argument
@@ -22,6 +23,17 @@ A hint plan SHALL be stable across recomputation: re-requesting a hint after the
 player has followed a step SHALL continue the same line of reasoning rather than
 propose a different or contradictory one.
 
+A hint SHALL be goal-oriented: it SHALL prefer a forced connection (a line) over a
+rule-out, and it SHALL NOT propose ruling out a spoke unless doing so helps a hub
+that still needs lines. A forced rule-out whose two hubs are both already
+satisfied advances nothing and SHALL NOT be hinted.
+
+#### Scenario: A useless rule-out is never hinted
+
+- **WHEN** a spoke could be ruled out but both of its hubs already have all the
+  lines they need
+- **THEN** the hint does not propose ruling it out, because it advances nothing
+
 #### Scenario: A saturated hub is explained by the count that forces it
 
 - **WHEN** a hub still needs as many lines as it has spokes left that could carry
@@ -32,8 +44,8 @@ propose a different or contradictory one.
 
 #### Scenario: The two-ones rule names the connectivity constraint
 
-- **WHEN** two adjacent hubs each need exactly one line and the spoke between them
-  must be ruled out
+- **WHEN** two adjacent hubs each still need exactly one line and the spoke
+  between them must be ruled out
 - **THEN** the hint states that joining them would finish both and seal them off
   from the rest of the board, which the one-connected-group rule forbids
 - **AND** concludes that the spoke between them is ruled out
@@ -58,3 +70,22 @@ forced when that move follows only from a mistake the player has made.
   forbids
 - **THEN** no hint step is offered, the offending lines are highlighted, and the
   player is told to resolve them first
+
+### Requirement: A diagonal line automatically rules out its crossing
+
+Spokes SHALL rule out a diagonal's crossing automatically, because a drawn
+diagonal visibly blocks the other diagonal of the same square and asking the
+player (or a hint) to mark it is noise. Drawing a diagonal line SHALL mark its
+crossing spoke; erasing that line SHALL clear the mark it placed; and a crossing
+so blocked SHALL be inert to input while the line stands. The rule-out SHALL be a
+real mark, so the solver and the hint count it, and the hint SHALL therefore never
+propose it.
+
+#### Scenario: Drawing a diagonal blocks its crossing, erasing it unblocks
+
+- **WHEN** the player draws a diagonal line across a square
+- **THEN** the crossing diagonal of that square becomes ruled out without any
+  further action, and the player cannot toggle that mark while the line remains
+- **AND WHEN** the player erases the diagonal line
+- **THEN** the automatic mark on the crossing is removed
+

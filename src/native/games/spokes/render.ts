@@ -23,18 +23,21 @@
  */
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import type { SpokesHint } from "./index.ts";
 import { SpokesScratch, spokesFindIsolated, spokesSolverRecount } from "./solver.ts";
 import {
   DIR_BOTLEFT,
   DIR_BOTRIGHT,
   getSpoke,
   SPOKE_DIRS,
+  SPOKE_EMPTY,
   SPOKE_HIDDEN,
   SPOKE_LINE,
   SPOKE_MARKED,
   type SpokesMistake,
+  type SpokesMove,
   type SpokesParams,
   type SpokesState,
   type SpokesUi,
@@ -52,6 +55,9 @@ const CORNER = 8;
 /** Below this tile size the corner pass is skipped, exactly as upstream — the
  * box would be a large fraction of a cell and would eat the spoke dots. */
 const MIN_CORNER_TILESIZE = 24;
+
+/** Width of the `COL_HINT_CELL` evidence ring outside the hub rim. */
+const HINT_RING_WIDTH = 5;
 
 const SQRTHALF = Math.SQRT1_2;
 
@@ -80,6 +86,13 @@ export const COL_CURSOR = 7;
  * adaptation inverts grey lightness about the real background.
  */
 export const COL_SATISFIED = 8;
+/** The forced spoke(s) of the displayed hint — drawn like a line, at hint
+ * colour, so the player sees *which* spoke to act on without the move being
+ * performed for them (playbook §5.1). Every leg of one firing shares it. */
+export const COL_HINT = 9;
+/** A ring around each evidence hub the hint reasons over (a light blue, the
+ * cross-game "shade the evidence" colour — playbook §5.2). */
+export const COL_HINT_CELL = 10;
 
 /** How far {@link COL_SATISFIED} steps away from the background. Large enough
  * to read at a glance across a board, small enough to keep the black clue digit
@@ -104,6 +117,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = [1, 0, 0];
   out[COL_CURSOR] = [0, 0, 1];
   out[COL_SATISFIED] = defaultBackground.map((c) => c * SATISFIED_SHADE) as Colour;
+  out[COL_HINT] = [0.13, 0.5, 0.85];
+  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
   return out;
 }
 
@@ -141,6 +156,12 @@ export interface SpokesDrawState {
    * flagged. Its own sidecar so it repaints a cell nothing else changed
    * (playbook §3.2). */
   wrong: OverlaySidecar;
+  /** Hint overlay, per cell: bits `0..7` ⇒ spoke `d` is a hint *line*
+   * (`COL_HINT`, "draw this"), {@link HINT_RING} ⇒ ring this hub as evidence
+   * (`COL_HINT_CELL`), bits `9..16` (see {@link hintMarkBit}) ⇒ spoke `d` is a
+   * hint *mark* (a `COL_HINT` rim dot, "rule this out"). Its own sidecar for the
+   * same reason as {@link wrong} (playbook §3.2). */
+  hint: OverlaySidecar;
   /** Blitter holding the pixels under the keyboard cursor, and where. */
   cursorBlitter: unknown;
   cursorSaved: boolean;
@@ -152,6 +173,14 @@ export interface SpokesDrawState {
 
 /** OR'd into a corner's cache value when its diagonal is a flagged mistake. */
 const CORNER_WRONG = 4;
+/** OR'd into a corner's cache value when its diagonal is a hint *line*. */
+const CORNER_HINT = 8;
+/** Hint sidecar bit that rings a hub as evidence (`COL_HINT_CELL`); bits
+ * `0..7` are the hint-line spokes, so this sits above them. */
+const HINT_RING = 1 << 8;
+/** Hint sidecar bit for spoke `d` as a *mark* to rule out (a `COL_HINT` rim
+ * dot). These sit above {@link HINT_RING}, disjoint from the line bits `0..7`. */
+const hintMarkBit = (d: number): number => 1 << (9 + d);
 
 export function newDrawState(state: SpokesState): SpokesDrawState {
   const n = state.w * state.h;
@@ -165,6 +194,7 @@ export function newDrawState(state: SpokesState): SpokesDrawState {
     colors: new Int32Array(n).fill(-1),
     corners: new Int8Array(n).fill(-1),
     wrong: new OverlaySidecar(n),
+    hint: new OverlaySidecar(n),
     cursorBlitter: null,
     cursorSaved: false,
     cursorX: -1,
@@ -257,7 +287,7 @@ export function redraw(
   ui: SpokesUi,
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<SpokesMove, SpokesHint>,
   mistakes?: readonly SpokesMistake[],
 ): void {
   if (!ds) return;
@@ -308,6 +338,24 @@ export function redraw(
     }
   }
 
+  // Hint overlay: flag both ends of each forced spoke (so both cells repaint
+  // and both halves of the COL_HINT line come out), and ring each evidence hub.
+  ds.hint.clear();
+  const hl = hint?.highlights;
+  if (hl) {
+    for (const sp of hl.spokes) {
+      const bit = (d: number): number =>
+        sp.state === SPOKE_LINE ? 1 << d : hintMarkBit(d);
+      ds.hint.add(sp.index, bit(sp.dir));
+      const nx = (sp.index % w) + SPOKE_DIRS[sp.dir].dx;
+      const ny = ((sp.index / w) | 0) + SPOKE_DIRS[sp.dir].dy;
+      if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+        ds.hint.add(ny * w + nx, bit(sp.dir ^ 4));
+      }
+    }
+    for (const e of hl.evidence) ds.hint.add(e, HINT_RING);
+  }
+
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
@@ -323,6 +371,7 @@ export function redraw(
           ds.colors[i] = 0;
         }
         ds.wrong.commit(i);
+        ds.hint.commit(i);
         continue;
       }
 
@@ -351,12 +400,14 @@ export function redraw(
       if (
         ds.spokes[i] === state.spokes[i] &&
         ds.colors[i] === colour &&
-        !ds.wrong.stale(i)
+        !ds.wrong.stale(i) &&
+        !ds.hint.stale(i)
       ) {
         continue;
       }
 
       const wrongBits = ds.wrong.packed[i];
+      const hintBits = ds.hint.packed[i];
 
       dr.clip({ x: x * ts, y: y * ts, w: ts, h: ts });
       // Clear a plus-shape, leaving the four corners for the diagonal pass.
@@ -384,7 +435,50 @@ export function redraw(
         }
       }
 
+      // Hint spokes: draw each forced spoke like a line in COL_HINT, but only
+      // where it is still EMPTY — a leg the player has followed is now a real
+      // black line and must not be re-tinted (playbook §5.1). Diagonals are
+      // completed across the corner by the diagonal pass, same as real lines.
+      for (let d = 0; d < 8; d++) {
+        if (!(hintBits & (1 << d))) continue;
+        if (getSpoke(state.spokes[i], d) !== SPOKE_EMPTY) continue;
+        const tx2 = tx + SPOKE_DIRS[d].dx * ts;
+        const ty2 = ty + SPOKE_DIRS[d].dy * ts;
+        if (d < 4) {
+          dr.drawLine({ x: tx2, y: ty2 }, { x: tx, y: ty }, COL_HINT, thick);
+        } else {
+          dr.drawLine({ x: tx, y: ty }, { x: tx2, y: ty2 }, COL_HINT, thick);
+        }
+      }
+
+      // Evidence ring: a light-blue annulus just outside the hub rim.
+      if (hintBits & HINT_RING) {
+        dr.drawCircle(
+          { x: tx, y: ty },
+          radius + HINT_RING_WIDTH,
+          COL_HINT_CELL,
+          COL_HINT_CELL,
+        );
+      }
+
       drawHub(dr, tx, ty, radius, thick, state.spokes[i], wrongBits, border, fill);
+
+      // Hint marks: recolour the rim dot of each still-empty spoke the hint
+      // would *rule out* (drawn on top of the hub's own faint placeable dot),
+      // so a "rule this out" reads as a mark, not as a line to draw.
+      const edge = radius - thick;
+      const pr = radius / 4;
+      for (let d = 0; d < 8; d++) {
+        if (!(hintBits & hintMarkBit(d))) continue;
+        if (getSpoke(state.spokes[i], d) !== SPOKE_EMPTY) continue;
+        const unit = spokeUnit(d);
+        dr.drawCircle(
+          { x: tx + edge * unit.x, y: ty + edge * unit.y },
+          pr,
+          COL_HINT,
+          COL_HINT,
+        );
+      }
 
       dr.drawText(
         { x: tx, y: ty },
@@ -411,6 +505,7 @@ export function redraw(
       ds.spokes[i] = state.spokes[i];
       ds.colors[i] = colour;
       ds.wrong.commit(i);
+      ds.hint.commit(i);
       dr.unclip();
     }
   }
@@ -463,7 +558,22 @@ function drawCorners(
           : diag === DIR_BOTLEFT
             ? (ds.wrong.packed[i + 1] & (1 << DIR_BOTLEFT)) !== 0
             : false;
-      const key = diag === 0 ? 0 : diag | (wrong ? CORNER_WRONG : 0);
+      // A hint diagonal only shows where there is no real line (a hint spoke is
+      // EMPTY in the state), so the two are mutually exclusive per corner.
+      const hintDiag =
+        diag !== 0
+          ? 0
+          : ds.hint.packed[i] & (1 << DIR_BOTRIGHT)
+            ? DIR_BOTRIGHT
+            : ds.hint.packed[i + 1] & (1 << DIR_BOTLEFT)
+              ? DIR_BOTLEFT
+              : 0;
+      const key =
+        diag !== 0
+          ? diag | (wrong ? CORNER_WRONG : 0)
+          : hintDiag !== 0
+            ? hintDiag | CORNER_HINT
+            : 0;
 
       if (key === ds.corners[i]) continue;
 
@@ -483,10 +593,11 @@ function drawCorners(
 
       const tx = toCoord(x, ts);
       const ty = toCoord(y, ts);
-      const col = wrong ? COL_ERROR : COL_LINE;
-      if (diag === DIR_BOTRIGHT) {
+      const drawn = diag !== 0 ? diag : hintDiag;
+      const col = wrong ? COL_ERROR : hintDiag !== 0 ? COL_HINT : COL_LINE;
+      if (drawn === DIR_BOTRIGHT) {
         dr.drawLine({ x: tx, y: ty }, { x: tx + ts, y: ty + ts }, col, thick);
-      } else if (diag === DIR_BOTLEFT) {
+      } else if (drawn === DIR_BOTLEFT) {
         dr.drawLine({ x: tx, y: ty + ts }, { x: tx + ts, y: ty }, col, thick);
       }
 

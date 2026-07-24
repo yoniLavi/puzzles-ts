@@ -22,6 +22,9 @@ import type { ConfigValues, GameStatus, Point, Size } from "../../../puzzle/type
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   type PresetMenu,
   type SolveResult,
   UI_UPDATE,
@@ -56,15 +59,19 @@ import {
   setTileSize,
   toCoord,
 } from "./render.ts";
-import { spokesSolve, spokesValidate } from "./solver.ts";
+import {
+  deduceSpokesPlan,
+  type SpokesFiring,
+  spokesSolve,
+  spokesValidate,
+} from "./solver.ts";
 import {
   clearBoard,
   cloneBoard,
   cloneState,
+  crossingSpoke,
   DIFF_NAMES,
   DIFFCOUNT,
-  DIR_BOTLEFT,
-  DIR_BOTRIGHT,
   decodeParams,
   defaultParams,
   diffFromLevel,
@@ -87,6 +94,7 @@ import {
   type SpokesState,
   type SpokesUi,
   spokesPlace,
+  syncDiagonalBlock,
   textFormat,
   validateDesc,
   validateParams,
@@ -190,9 +198,15 @@ function interpretMove(
       if ((sy + SPOKE_DIRS[dir].dy) * w + sx + SPOKE_DIRS[dir].dx !== end) continue;
 
       const old = getSpoke(state.spokes[start], dir);
-      // Also the bounds guard for the crossing checks below: an edge-column
-      // hub has no diagonal there, so `start ± 1` is never read off-grid.
       if (old === SPOKE_HIDDEN) continue;
+
+      // A diagonal whose crossing partner is already a line is auto-ruled-out
+      // and inert — the game placed that mark, so the player can't toggle it
+      // (and can't draw a crossing line). Erasing the *line* clears it.
+      const cross = crossingSpoke(state, start, dir);
+      if (cross && getSpoke(state.spokes[cross.i], cross.d) === SPOKE_LINE) {
+        return UI_UPDATE;
+      }
 
       const next =
         drag === "left"
@@ -202,22 +216,6 @@ function interpretMove(
           : old === SPOKE_EMPTY
             ? SPOKE_MARKED
             : SPOKE_EMPTY;
-
-      // Diagonals may not cross.
-      if (
-        next === SPOKE_LINE &&
-        dir === DIR_BOTLEFT &&
-        getSpoke(state.spokes[start - 1], DIR_BOTRIGHT) === SPOKE_LINE
-      ) {
-        continue;
-      }
-      if (
-        next === SPOKE_LINE &&
-        dir === DIR_BOTRIGHT &&
-        getSpoke(state.spokes[start + 1], DIR_BOTLEFT) === SPOKE_LINE
-      ) {
-        continue;
-      }
 
       return { kind: "set", index: start, dir, state: next };
     }
@@ -265,7 +263,12 @@ function executeMove(state: SpokesState, move: SpokesMove): SpokesState {
   }
 
   if (getSpoke(next.spokes[move.index], move.dir) !== SPOKE_HIDDEN) {
+    const old = getSpoke(next.spokes[move.index], move.dir);
     spokesPlace(next, move.index, move.dir, move.state);
+    // Drawing a diagonal line auto-rules-out its crossing; erasing it clears
+    // that (the player can see a line blocks the crossing, so the game marks
+    // it rather than making them).
+    syncDiagonalBlock(next, move.index, move.dir, old, move.state);
   }
   if (spokesValidate(next) === "valid") next.completed = true;
   return next;
@@ -316,6 +319,153 @@ function findMistakes(state: SpokesState): readonly SpokesMistake[] {
     }
   }
   return out;
+}
+
+// --- hint (a second projection of the deductive solver) ---------------------
+
+/**
+ * Highlight data for a Spokes hint leg. `spokes` are *all* the spokes the
+ * firing forces (only shown where the board still has them EMPTY — a leg
+ * already followed has become a real line or mark); a `SPOKE_LINE` spoke is
+ * drawn as a `COL_HINT` line ("draw this"), a `SPOKE_MARKED` spoke as a
+ * `COL_HINT` dot at its rim ("rule this out"), so the picture never claims a
+ * different action than the words. `evidence` are the hubs whose clue or lines
+ * are the argument, ringed `COL_HINT_CELL`. Every leg of one firing carries the
+ * same object, so the whole deduction stays visible while its legs are followed
+ * one at a time (design D2).
+ */
+export interface SpokesHint {
+  spokes: { index: number; dir: number; state: number }[];
+  evidence: number[];
+}
+
+/**
+ * Narrate why a firing is forced — one crisp line for a player who knows the
+ * rules, premise then conclusion, in the necessity voice (the hint quality bar).
+ * Every claim here is one {@link deduceSpokesPlan} has checked.
+ */
+function narrate(f: SpokesFiring): string {
+  switch (f.kind) {
+    case "twoOnes":
+      return "Connecting two 1-hubs would strand them from the rest — so rule out this spoke.";
+    case "saturation":
+      return f.forced.length === 1
+        ? "Only one free spoke left for this hub's count — so it must be a line."
+        : "Just enough free spokes left for this hub's count — so they must all be lines.";
+    case "exhaustion":
+      return "This hub already has its lines, so the rest can't — rule them out.";
+    case "contradiction": {
+      const asLine = f.hypothesis?.state === SPOKE_LINE;
+      const consequence =
+        f.breakKind === "overfilled"
+          ? "over-fill the ringed hub"
+          : f.breakKind === "crossing"
+            ? "force two diagonals to cross"
+            : "strand the ringed hubs";
+      return asLine
+        ? `Drawing this line would ${consequence} — so rule it out.`
+        : `Ruling this out would ${consequence} — so it must be a line.`;
+    }
+  }
+}
+
+/** The short continuation narration for legs 2+ of a multi-spoke firing — still
+ * necessity-voiced (the hint quality bar), and reading as "same deduction". */
+function continuation(f: SpokesFiring): string {
+  return f.kind === "saturation"
+    ? "And this one must be a line too."
+    : "And rule this one out too.";
+}
+
+/** All of a firing's forced spokes, as highlight geometry — the renderer draws
+ * each still-empty one in `COL_HINT` (a line for `SPOKE_LINE`, a dot for
+ * `SPOKE_MARKED`). */
+function firingSpokes(
+  f: SpokesFiring,
+): { index: number; dir: number; state: number }[] {
+  return f.forced.map(({ index, dir, state }) => ({ index, dir, state }));
+}
+
+/** Flatten one firing into its journey of legs: leg 0 carries the full
+ * narration, the rest continue it (design D2). All legs share the highlight, so
+ * the whole deduction stays on screen as its spokes are drawn one by one. */
+function stepsOfFiring(f: SpokesFiring): HintStep<SpokesMove, SpokesHint>[] {
+  const highlights: SpokesHint = {
+    spokes: firingSpokes(f),
+    evidence: f.evidenceHubs,
+  };
+  return f.forced.map((sp, leg) => ({
+    move: { kind: "set", index: sp.index, dir: sp.dir, state: sp.state },
+    explanation: leg === 0 ? narrate(f) : continuation(f),
+    highlights,
+    continuesPrevious: leg > 0,
+  }));
+}
+
+function hint(state: SpokesState): HintResult<SpokesMove, SpokesHint> {
+  if (state.completed) return { ok: false, error: "This board is already solved." };
+
+  // A hint off a contradictory board would present a "forced" move that only
+  // follows from the player's own error, so refuse and light up the offenders
+  // (Check & Save paints the same overlay — design D4).
+  if (findMistakes(state).length > 0) {
+    return {
+      ok: false,
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+  }
+  if (!solveFromClues(state)) {
+    return { ok: false, error: "This puzzle's solution can't be determined." };
+  }
+
+  const plan = deduceSpokesPlan(cloneBoard(state));
+  if (plan.length === 0) {
+    return { ok: false, error: "No further move can be deduced from this position." };
+  }
+  return { ok: true, steps: plan.flatMap((f) => stepsOfFiring(f)) };
+}
+
+/** A move completes the current leg when it sets the leg's exact spoke to the
+ * hinted state. Following a *different* spoke of the same firing reads as
+ * off-plan, but a recompute simply re-offers the firing's remaining spokes, so
+ * the deduction resumes either way (design D1 recompute-stability). */
+function hintKeepTrack(
+  m: SpokesMove,
+  step: HintStep<SpokesMove, SpokesHint>,
+  _state: SpokesState,
+): HintTrackVerdict {
+  if (m.kind !== "set") return "off";
+  const target = step.move;
+  if (target.kind !== "set") return "off";
+  return sameEdge(m, target, _state.w) && m.state === target.state
+    ? "completed"
+    : "off";
+}
+
+/** Do two `set` moves name the same edge? A spoke has two ends; a move may cite
+ * either, so compare in the canonical `dir < 4` form. */
+function sameEdge(
+  a: { index: number; dir: number },
+  b: { index: number; dir: number },
+  w: number,
+): boolean {
+  const ca = canonicalEdge(a.index, a.dir, w);
+  const cb = canonicalEdge(b.index, b.dir, w);
+  return ca.index === cb.index && ca.dir === cb.dir;
+}
+
+/** The canonical end of an edge — the `dir < 4` end, so the two ends of one
+ * spoke reduce to the same `(index, dir)`. */
+function canonicalEdge(
+  index: number,
+  dir: number,
+  w: number,
+): { index: number; dir: number } {
+  if (dir < 4) return { index, dir };
+  const nx = (index % w) + SPOKE_DIRS[dir].dx;
+  const ny = ((index / w) | 0) + SPOKE_DIRS[dir].dy;
+  return { index: ny * w + nx, dir: dir ^ 4 };
 }
 
 // --- the game ---------------------------------------------------------------
@@ -387,6 +537,8 @@ export const spokesGame: Game<
   status: (s): GameStatus => (s.completed ? "solved" : "ongoing"),
 
   solve,
+  hint,
+  hintKeepTrack,
   findMistakes,
   textFormat,
 
