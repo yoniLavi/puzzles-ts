@@ -371,26 +371,44 @@ export function lazyPopulate<M, H>(
   };
 }
 
-/** The adaptive mark-all move (design: fill, then clean obvious). If any empty cell
- * has *zero* notes, fill every note-less empty cell with all candidates
- * (`pencilAll` — today's behaviour); otherwise strike each cell's
- * {@link obviousCandidateMarks} as one atomic `pencilStrike` (marks baked here, at
- * `interpretMove` time, for deterministic replay). Returns `null` when the board is
- * already fully cleaned (no fill needed, nothing left to strike) so the press is a
- * true no-op and adds no undo entry. Typed as the game's move union `M` (the
- * `pencilAll` / `pencilStrike` variants are members of every such game's `Move`). */
+/**
+ * The representation-agnostic core of the adaptive mark-all press: fill, then
+ * clean obvious. `needsFill` is "some empty cell has *zero* notes" — when true,
+ * return a `pencilAll` (fill every note-less empty cell); otherwise compute the
+ * obvious removable marks and, if any, return them as one atomic `pencilStrike`
+ * (baked at `interpretMove` time for deterministic replay), else `null` so a
+ * fully-cleaned board's press is a true no-op that adds no undo entry.
+ *
+ * Deliberately knows nothing about how a game stores its grid/pencil or what
+ * "obvious" means: a square-Latin game passes `anyEmptyLacksNotes` +
+ * {@link obviousCandidateMarks} (via {@link adaptiveMarkAllMove}); a
+ * rectangular / non-Latin game (ABCD — adjacency + satisfied-clue eliminations
+ * over a candidate *cube*) passes its own. So "multiple presses only ever
+ * remove, never reset" reads identically across the collection. The `Mark` type
+ * is the game's own — the `pencilStrike` payload it will apply. */
+export function adaptiveMarkAll<M, Mk>(
+  needsFill: boolean,
+  computeMarks: () => readonly Mk[],
+): M | null {
+  if (needsFill) return { type: "pencilAll" } as unknown as M;
+  const marks = computeMarks();
+  if (marks.length === 0) return null;
+  return { type: "pencilStrike", marks } as unknown as M;
+}
+
+/** The square-Latin adaptive mark-all: `pencilAll` when any empty cell has zero
+ * notes, else strike each cell's {@link obviousCandidateMarks} (row/column
+ * duplicates). A thin binding of {@link adaptiveMarkAll} to the bitmask-pencil,
+ * uniqueness-region games (Keen/Towers/Solo/Mathrax/Unequal/Undead). */
 export function adaptiveMarkAllMove<M>(
   grid: ArrayLike<number>,
   pencil: ArrayLike<number>,
   w: number,
   regionsOf: (x: number, y: number) => readonly ClassifyRegion[],
 ): M | null {
-  if (anyEmptyLacksNotes(grid, pencil, w)) {
-    return { type: "pencilAll" } as unknown as M;
-  }
-  const marks = obviousCandidateMarks(grid, pencil, w, regionsOf);
-  if (marks.length === 0) return null;
-  return { type: "pencilStrike", marks } as unknown as M;
+  return adaptiveMarkAll<M, Mark>(anyEmptyLacksNotes(grid, pencil, w), () =>
+    obviousCandidateMarks(grid, pencil, w, regionsOf),
+  );
 }
 
 /** A freshly-built pencil-strike move, typed as the game's move union `M`. The

@@ -18,6 +18,7 @@
  */
 
 import { registerGame } from "../engine/registry.ts";
+import { abcdGame } from "./abcd/index.ts";
 import { ascentGame } from "./ascent/index.ts";
 import { blackboxGame } from "./blackbox/index.ts";
 import { bricksGame } from "./bricks/index.ts";
@@ -78,6 +79,7 @@ import { untangleGame } from "./untangle/index.ts";
  * per port.
  */
 export function registerAllGames(): void {
+  registerGame(abcdGame);
   registerGame(ascentGame);
   registerGame(blackboxGame);
   registerGame(bridgesGame);
