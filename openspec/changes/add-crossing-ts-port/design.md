@@ -321,3 +321,120 @@ None blocking. Two judgment calls resolved in the design, flagged for visibility
 2. **Pencil-mark extras (D5).** Sticky pencil + a mode indicator ship; adaptive
    mark-all cleanup is skipped for lack of a clean uniqueness-region model.
    Reversible if the owner wants the full §3.7 set.
+
+## Findings from the implementation
+
+### F1 — The byte-match differential came out green 25/25 on the first run
+
+All three presets (5×5, 7×7, 9×9), five symmetric-wall configurations and a
+4×2→10×7 size sweep reproduce the C description byte-for-byte. Because the
+generator retries until the deductive solver reaches a *complete unique* answer,
+that single assertion validates the wall-growth loop (including `checkPool`'s
+mutate-while-testing), the digit fill, the run-collection emission order, every
+deduction the solver makes, and the codec — all at once. Generation is also
+cheap: all 25 C fixtures take 0.6 s end to end, so no retry-budget concern
+arises and `retryLimit`'s house default is only a runaway backstop.
+
+Three details of the C that the byte-match would have caught had they been
+"tidied", and which are therefore transcribed literally with comments:
+
+- **`checkPool` both tests and mutates**, and its four quadrant rules see each
+  other's writes within the same 2×2 (the top-left rule can turn an *already
+  open* cell into a wall, which then makes the top-right rule's guard fail).
+- **The check runs *before* each cell is opened**, not after, so the loop's exit
+  state is the board as it stood one opening earlier.
+- **`checkDsf` merges on the three-valued cell state**, not on "is a wall", which
+  is what makes "the largest class containing an open cell holds every open cell"
+  a correct connectivity test.
+
+### F2 — Upstream's completion "flash" is a static colour shift; the port animates it
+
+`game_redraw` declares `bool flash` and then assigns `(int)(flashtime/FLASH_FRAME)`
+to it, so the frame counter collapses to `1` for the whole animation and every
+digit simply shows the *next* colour for 0.72 s. `FLASH_TIME` is defined as
+`FLASH_FRAME * 9` and the colour index is `(x + y + flash) % 9`, so a nine-phase
+cycle is unmistakably what was intended. Display was never in byte-parity scope
+(playbook §4 intro), the fix is one type, and the result is a real celebration
+animation, so the port keeps `flash` as the integer phase. Recorded here because
+it is a *deliberate* divergence, not an oversight; guarded by a tier-2.5 test
+asserting two flash phases paint different digit colours, and confirmed in the
+browser.
+
+### F3 — `drawRectCorners` promoted to `engine/draw.ts` (seven existing copies)
+
+Crossing's keyboard cursor would have been the **eighth** private copy of
+upstream's `misc.c draw_rect_corners` (ascent, bricks, dominosa, signpost,
+singles, spokes, subsets each carried one). It is frozen upstream code with a
+fixed shape, which is exactly the owner's "refactor as you go" criterion, so it
+moved to `src/native/engine/draw.ts` and all seven games were refactored onto it.
+The emitted line order is unchanged, so no render snapshot moved — the seven
+games' 381 tests stayed green through the refactor, which is what makes this kind
+of extraction cheap to verify.
+
+### F4 — `FROMCOORD` is truncating division, so the margin belongs to cell 0
+
+Crossing's `FROMCOORD(x) = ((x) - (tilesize/2)) / tilesize` is C integer
+division, which truncates toward zero: a pointer inside the half-tile top/left
+margin yields `0`, not `-1`. The shared `fromCoord` floors and would reject those
+pixels. Ported with `Math.trunc` (the same call Sticks made, playbook §3.8e) so a
+click just outside the grid's top-left selects the first cell exactly as the C
+build does.
+
+### F5 — Three upstream shapes that read like bugs and are not
+
+Each is commented at its site so a later reader doesn't "fix" it:
+
+- **`crossing_solver_marks`' change counter cannot spin.** It counts a cell
+  whenever `cand !== acc`, not only when the intersection removes something —
+  which would loop for ever if `acc` could exceed `cand`. It can't: a number
+  contributes to `acc` only when *every* one of its digits is still a candidate
+  in its own cell, so `acc ⊆ cand` always, and a difference means a strict subset.
+- **`crossing_validate` computes `full` across the numbers of matching length,
+  not per number**, so a run whose length matches *no* listed number keeps
+  `full = true` with `any = false` and is flagged as an error. That is the right
+  answer (no number can ever go there) but it is not what the control flow looks
+  like.
+- **`crossing_solver_confirm` scans `j` from 0**, where `NUM_BIT(0)` is a shift by
+  −1. In C that is undefined behaviour that happens to be harmless (no live mask
+  can equal the result); JS masks shift counts the same way, so the port would
+  have been bug-compatible for free — but the loop simply starts at 1, which is
+  the identical set of placements and needs no comment about UB.
+
+### F6 — The `done[]` size/index mismatch is bounded rather than reproduced
+
+`crossing_validate` allocates `done` with one entry per *number*, fills it by
+number index, and then re-scans it by *run* index. Those coincide for every
+generated board (a solvable Nansuke has exactly one number per run), but a
+hand-authored description with a mismatched count makes the C read past its
+allocation. The port sizes `done` to `max(numbers, runs)`, which is identical
+behaviour wherever the C is well-defined and simply doesn't read out of bounds
+where it isn't (playbook §4 rule 1 — divergence is free where C has no defined
+behaviour).
+
+### F7 — Two small behavioural improvements over the C, both recorded
+
+- **`solve()` reports failure instead of filling a partial answer.** Upstream's
+  `solve_game` writes whatever the solver deduced and `-` elsewhere, so an
+  unsolvable board silently half-fills. The port returns
+  `{ ok: false, error }`, matching every other port and the app's Solve
+  affordance. Unreachable on a generated board.
+- **The solve arm sets `cheated` unconditionally** (upstream ties it to
+  `completed`), per playbook §3.6, so a Solve that somehow didn't finish still
+  suppresses the celebration flash on a later manual completion.
+
+Plus one input refinement: with the fork's sticky pencil mode on, a left-click on
+a *filled* cell does not select it while in pencil mode — the cell cannot take a
+mark, so highlighting it only suggests an edit that can't happen. Upstream
+already does exactly this on its right-click (pencil-select) path.
+
+### F8 — D9's number-panel "improvement opportunity" turned out not to need one
+
+Upstream's Status notes call fitting the clue list "the largest problem", and D9
+budgeted for a reflow. Reading `draw_numbers` shows it already solves it: it
+grows the row count and shrinks the font until the widest number of each column
+fits the board width, then spreads the slack between columns. Ported as-is (with
+a loop guard), it lays out 8 numbers on a 4×2 board and 22 on a 9×9 board
+legibly, verified in the browser at both sizes. No divergence was warranted —
+the honest finding is that the C's TODO is about its *fixed window height*, which
+this frontend does not impose. Recorded so the "improvement" isn't re-scoped
+later on the strength of upstream's comment alone.

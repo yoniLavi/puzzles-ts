@@ -4,6 +4,7 @@
 # when Loopy shipped its native-TS port (openspec add-loopy-ts-port).
 cliprogram(combi-test combi-test.c)
 cliprogram(combi-trace combi-trace.c)
+cliprogram(crossing-trace crossing-trace.c)
 cliprogram(findloop-test findloop-test.c)
 cliprogram(latin-test latin-test.c)
 cliprogram(matching matching.c)

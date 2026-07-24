@@ -1,0 +1,712 @@
+/**
+ * Behavioural tests for the Crossing port (add-crossing-ts-port): the params
+ * and desc codecs (including upstream's exact validation messages and its
+ * deliberate leniency), run collection, the two-technique solver, the
+ * solver-gated generator's tier-1 properties, Solo-style input with the sticky
+ * pencil mode, `executeMove` through to completion via a real `Midend`, Solve,
+ * `findMistakes` (wrong digits *and* notes that rule the answer out), the text
+ * format, and tier-2.5 render scenarios with snapshots.
+ */
+import { describe, expect, it } from "vitest";
+import type { ChangeNotification, GameStatus } from "../../../puzzle/types.ts";
+import { UI_UPDATE } from "../../engine/game.ts";
+import { Midend } from "../../engine/index.ts";
+import {
+  CURSOR_RIGHT,
+  CURSOR_SELECT,
+  LEFT_BUTTON,
+  RIGHT_BUTTON,
+} from "../../engine/pointer.ts";
+import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
+import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { randomNew } from "../../random/index.ts";
+import cReference from "./__fixtures__/crossing-c-reference.json" with { type: "json" };
+import { newCrossingDesc } from "./generator.ts";
+import { crossingGame } from "./index.ts";
+import {
+  COL_ERROR,
+  COL_HIGHLIGHT,
+  newDrawState,
+  PREFERRED_TILE_SIZE,
+  redraw,
+  setTileSize,
+} from "./render.ts";
+import { findCrossingMistakes, solveCrossing } from "./solver.ts";
+import {
+  type CrossingMove,
+  type CrossingState,
+  type CrossingUi,
+  cloneState,
+  collectRuns,
+  decodeParams,
+  encodeDesc,
+  encodeParams,
+  newState,
+  readDesc,
+  textFormat,
+  validateBoard,
+  validateDesc,
+  validateParams,
+} from "./state.ts";
+
+const P5 = { w: 5, h: 5, sym: false };
+const FIX = cReference.fixtures[0]; // 5x5, seed crossing-5x5-1
+const FIX_ID = `5x5:${FIX.desc}`;
+const TS = PREFERRED_TILE_SIZE;
+
+/** The unique solution of the fixture board. */
+function fixtureSolution(): Uint8Array {
+  const solved = solveCrossing(newState(P5, FIX.desc).puzzle);
+  expect(solved.status).toBe("valid");
+  return solved.grid;
+}
+
+/** Every ink move that fills the fixture board with its solution. */
+function solutionMoves(): CrossingMove[] {
+  const state = newState(P5, FIX.desc);
+  const answer = fixtureSolution();
+  const moves: CrossingMove[] = [];
+  for (let y = 0; y < 5; y++)
+    for (let x = 0; x < 5; x++) {
+      const i = y * 5 + x;
+      if (state.puzzle.walls[i]) continue;
+      moves.push({ kind: "set", x, y, digit: answer[i] });
+    }
+  return moves;
+}
+
+const newUi = (): CrossingUi => crossingGame.newUi(newState(P5, FIX.desc));
+
+/** Drive `interpretMove` at the preferred tile size. */
+function press(
+  state: CrossingState,
+  ui: CrossingUi,
+  button: number,
+  x: number,
+  y: number,
+): CrossingMove | null | typeof UI_UPDATE {
+  return crossingGame.interpretMove(
+    state,
+    ui,
+    { tilesize: TS } as never,
+    { x, y },
+    button,
+  );
+}
+
+/** Pixel centre of cell (x, y) — the half-tile margin plus half a tile. */
+const cellCentre = (x: number, y: number): { x: number; y: number } => ({
+  x: (x + 1) * TS,
+  y: (y + 1) * TS,
+});
+
+/** A midend plus a reader of the last notified game status. */
+function harness() {
+  const notes: ChangeNotification[] = [];
+  const m = new Midend(crossingGame);
+  m.setCallbacks(
+    (n) => notes.push(n),
+    () => {},
+    () => {},
+  );
+  const status = (): GameStatus | undefined =>
+    (
+      [...notes].reverse().find((n) => n.type === "game-state-change") as
+        | Extract<ChangeNotification, { type: "game-state-change" }>
+        | undefined
+    )?.status;
+  return { m, status };
+}
+
+// ---------------------------------------------------------------------------
+
+describe("crossing params", () => {
+  it("encode/decode round-trips, with S only on a full encode", () => {
+    expect(encodeParams(P5, true)).toBe("5x5");
+    expect(encodeParams({ w: 7, h: 4, sym: true }, true)).toBe("7x4S");
+    expect(encodeParams({ w: 7, h: 4, sym: true }, false)).toBe("7x4");
+    expect(decodeParams("7x4S")).toEqual({ w: 7, h: 4, sym: true });
+  });
+
+  it("decodes a bare width as a square board", () => {
+    expect(decodeParams("6")).toEqual({ w: 6, h: 6, sym: false });
+    expect(decodeParams("6S")).toEqual({ w: 6, h: 6, sym: true });
+  });
+
+  it("requires both dimensions >= 2 and at least one >= 4", () => {
+    expect(validateParams(P5, true)).toBeNull();
+    expect(validateParams({ w: 4, h: 2, sym: false }, true)).toBeNull();
+    expect(validateParams({ w: 2, h: 4, sym: false }, true)).toBeNull();
+    expect(validateParams({ w: 3, h: 3, sym: false }, true)).toBe(
+      "The width or height must be at least 4",
+    );
+    expect(validateParams({ w: 1, h: 9, sym: false }, true)).toBe(
+      "Width must be at least 2",
+    );
+    expect(validateParams({ w: 9, h: 1, sym: false }, true)).toBe(
+      "Height must be at least 2",
+    );
+  });
+});
+
+describe("crossing desc codec", () => {
+  it("decodes a fixture desc and re-encodes it identically", () => {
+    const { walls, numbers } = readDesc(P5, FIX.desc);
+    expect(encodeDesc(5, 5, walls, numbers)).toBe(FIX.desc);
+  });
+
+  it("reads letters as wall runs and decimals as open runs", () => {
+    // "a2a3a2a2a2a6a1" — wall, 2 open, wall, 3 open, …
+    const { walls } = readDesc(P5, FIX.desc);
+    expect(walls[0]).toBe(1);
+    expect(walls[1]).toBe(0);
+    expect(walls[2]).toBe(0);
+    expect(walls[3]).toBe(1);
+    expect(walls.reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
+  });
+
+  it("stores the numbers sorted by (length, lexicographic)", () => {
+    const { numbers } = readDesc(P5, FIX.desc);
+    const sorted = [...numbers].sort((a, b) =>
+      a.length !== b.length ? a.length - b.length : a < b ? -1 : a > b ? 1 : 0,
+    );
+    expect(numbers).toEqual(sorted);
+  });
+
+  it("reports upstream's verdicts", () => {
+    expect(validateDesc(P5, FIX.desc)).toBeNull();
+    // '!' is not a wall character; the cursor parks and the ',' check fires.
+    expect(validateDesc(P5, "a2!3a2a2a2a6a1,12,59")).toBe(
+      "Block description is too long",
+    );
+    // More cell data than 25 cells hold.
+    expect(validateDesc(P5, "25a,12,59")).toBe("Block description is too long");
+    // The same number twice.
+    expect(validateDesc(P5, "a2a3a2a2a2a6a1,12,12")).toBe(
+      "Duplicate numbers are not supported",
+    );
+    // A number longer than the format's nine digits.
+    expect(validateDesc(P5, "a2a3a2a2a2a6a1,1234567890")).toBe(
+      "One of the numbers is too long",
+    );
+  });
+
+  it("is as lenient as upstream: single digits are dropped, short descs pass", () => {
+    // Upstream's own TODO list names the checks it omits.
+    expect(readDesc(P5, "a2a3a2a2a2a6a1,7,12").numbers).toEqual(["12"]);
+    expect(validateDesc(P5, "25,12")).toBeNull();
+  });
+});
+
+describe("crossing runs", () => {
+  it("collects horizontal runs before vertical, skipping isolated cells", () => {
+    // . . #     row 0: a run of 2; col 0: a run of 3; col 1: a run of 3;
+    // . . #     col 2 is walled except the last cell (isolated ⇒ no run).
+    // . . .
+    const walls = Uint8Array.from([0, 0, 1, 0, 0, 1, 0, 0, 0]);
+    const runs = collectRuns(3, 3, walls);
+    expect(runs.map((r) => ({ h: r.horizontal, cells: [...r.cells] }))).toEqual([
+      { h: true, cells: [0, 1] },
+      { h: true, cells: [3, 4] },
+      { h: true, cells: [6, 7, 8] },
+      { h: false, cells: [0, 3, 6] },
+      { h: false, cells: [1, 4, 7] },
+    ]);
+  });
+
+  it("does not start a run on a lone open cell", () => {
+    const walls = Uint8Array.from([0, 1, 0, 1, 1, 1, 0, 1, 0]);
+    expect(collectRuns(3, 3, walls)).toEqual([]);
+  });
+});
+
+describe("crossing solver", () => {
+  it("solves the fixture board to a complete unique grid", () => {
+    const state = newState(P5, FIX.desc);
+    const solved = solveCrossing(state.puzzle);
+    expect(solved.status).toBe("valid");
+    for (let i = 0; i < 25; i++) {
+      if (!state.puzzle.walls[i]) expect(solved.grid[i]).toBeGreaterThan(0);
+    }
+  });
+
+  it("reports progress on a board its techniques cannot finish", () => {
+    // A single 2-cell run with two candidate numbers sharing no digit position
+    // is genuinely ambiguous, so the solver stops without a contradiction.
+    const state = newState({ w: 4, h: 2, sym: false }, "2a1a1a2,12,34");
+    expect(solveCrossing(state.puzzle).status).toBe("progress");
+  });
+
+  it("reports invalid when a full run matches no listed number", () => {
+    const state = newState(P5, FIX.desc);
+    const answer = fixtureSolution();
+    const grid = answer.slice();
+    // Corrupt one cell of a full board: its run now reads as nothing listed.
+    const firstRun = state.puzzle.runs[0];
+    grid[firstRun.cells[0]] = (grid[firstRun.cells[0]] % 9) + 1;
+    expect(validateBoard(state.puzzle, grid).status).toBe("invalid");
+  });
+});
+
+describe("crossing generator", () => {
+  it("is deterministic for a seed", () => {
+    const a = newCrossingDesc(P5, randomNew("determinism"));
+    const b = newCrossingDesc(P5, randomNew("determinism"));
+    expect(a.desc).toBe(b.desc);
+  });
+
+  it.each([
+    ["5x5", { w: 5, h: 5, sym: false }],
+    ["7x7", { w: 7, h: 7, sym: false }],
+    ["9x9", { w: 9, h: 9, sym: false }],
+    ["5x5 symmetric", { w: 5, h: 5, sym: true }],
+    ["4x2", { w: 4, h: 2, sym: false }],
+    ["8x5", { w: 8, h: 5, sym: false }],
+  ])("generates a uniquely solvable %s board", (label, params) => {
+    const { desc } = newCrossingDesc(params, randomNew(`gen-${label}`));
+    expect(validateDesc(params, desc)).toBeNull();
+    const state = newState(params, desc);
+    // One number per run, and the solver finishes it outright.
+    expect(state.puzzle.numbers.length).toBe(state.puzzle.runs.length);
+    expect(solveCrossing(state.puzzle).status).toBe("valid");
+  });
+
+  it("grows symmetric walls 180°-rotationally", () => {
+    const params = { w: 6, h: 4, sym: true };
+    const { desc } = newCrossingDesc(params, randomNew("sym-shape"));
+    const { walls } = readDesc(params, desc);
+    const size = 24;
+    for (let i = 0; i < size; i++) {
+      // A cell opened by the symmetric arm opens its partner, so an *open* cell
+      // always has an open partner (a wall may still be forced by checkPool).
+      if (!walls[i]) expect(walls[size - (i + 1)]).toBe(0);
+    }
+  });
+});
+
+describe("crossing input", () => {
+  it("left-click selects an open cell and a repeat click deselects it", () => {
+    const state = newState(P5, FIX.desc);
+    const ui = newUi();
+    const open = state.puzzle.walls.indexOf(0);
+    const [ox, oy] = [open % 5, Math.floor(open / 5)];
+
+    const c = cellCentre(ox, oy);
+    expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
+    expect(ui).toMatchObject({ cx: ox, cy: oy, cshow: true, cpencil: false });
+    expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
+    expect(ui.cshow).toBe(false);
+  });
+
+  it("never selects a wall", () => {
+    const state = newState(P5, FIX.desc);
+    const ui = newUi();
+    const wall = state.puzzle.walls.indexOf(1);
+    const c = cellCentre(wall % 5, Math.floor(wall / 5));
+    expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
+    expect(ui.cshow).toBe(false);
+  });
+
+  it("right-click toggles the sticky pencil mode (the fork default)", () => {
+    const state = newState(P5, FIX.desc);
+    const ui = newUi();
+    expect(ui.pencilSticky).toBe(true);
+    const open = state.puzzle.walls.indexOf(0);
+    const c = cellCentre(open % 5, Math.floor(open / 5));
+
+    expect(press(state, ui, RIGHT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
+    expect(ui).toMatchObject({ cpencil: true, cshow: true });
+    // A left-click elsewhere keeps pencil mode on.
+    const other = cellCentre(
+      state.puzzle.walls.lastIndexOf(0) % 5,
+      Math.floor(state.puzzle.walls.lastIndexOf(0) / 5),
+    );
+    press(state, ui, LEFT_BUTTON, other.x, other.y);
+    expect(ui.cpencil).toBe(true);
+    // Right-click again turns it off.
+    press(state, ui, RIGHT_BUTTON, c.x, c.y);
+    expect(ui.cpencil).toBe(false);
+  });
+
+  it("right-click without the sticky pref is upstream's per-cell pencil select", () => {
+    const state = newState(P5, FIX.desc);
+    const ui = newUi();
+    ui.pencilSticky = false;
+    const open = state.puzzle.walls.indexOf(0);
+    const c = cellCentre(open % 5, Math.floor(open / 5));
+    press(state, ui, RIGHT_BUTTON, c.x, c.y);
+    expect(ui).toMatchObject({ cpencil: true, cshow: true });
+    press(state, ui, RIGHT_BUTTON, c.x, c.y);
+    expect(ui.cshow).toBe(false);
+  });
+
+  it("arrow keys move the cursor and Enter toggles ink/pencil", () => {
+    const state = newState(P5, FIX.desc);
+    const ui = newUi();
+    expect(press(state, ui, CURSOR_RIGHT, 0, 0)).toBe(UI_UPDATE);
+    expect(ui).toMatchObject({ cx: 1, cy: 0, cshow: true, ckey: true });
+    expect(press(state, ui, CURSOR_SELECT, 0, 0)).toBe(UI_UPDATE);
+    expect(ui.cpencil).toBe(true);
+  });
+
+  it("enters a digit, and suppresses the no-op moves locally", () => {
+    const state = newState(P5, FIX.desc);
+    const ui = newUi();
+    const open = state.puzzle.walls.indexOf(0);
+    const [ox, oy] = [open % 5, Math.floor(open / 5)];
+    const c = cellCentre(ox, oy);
+    press(state, ui, LEFT_BUTTON, c.x, c.y);
+
+    expect(press(state, ui, 0x35, 0, 0)).toEqual({
+      kind: "set",
+      x: ox,
+      y: oy,
+      digit: 5,
+    });
+    // Re-entering the same digit, and clearing an empty cell, change nothing.
+    const filled = crossingGame.executeMove(state, {
+      kind: "set",
+      x: ox,
+      y: oy,
+      digit: 5,
+    });
+    ui.cshow = true;
+    expect(press(filled, ui, 0x35, 0, 0)).toBeNull();
+    expect(press(state, ui, 8, 0, 0)).toBeNull();
+  });
+
+  it("pencil marks toggle, and never touch a filled cell", () => {
+    const state = newState(P5, FIX.desc);
+    const ui = newUi();
+    const open = state.puzzle.walls.indexOf(0);
+    const [ox, oy] = [open % 5, Math.floor(open / 5)];
+    const c = cellCentre(ox, oy);
+    press(state, ui, RIGHT_BUTTON, c.x, c.y);
+
+    expect(press(state, ui, 0x33, 0, 0)).toEqual({
+      kind: "pencil",
+      x: ox,
+      y: oy,
+      digit: 3,
+    });
+    const filled = crossingGame.executeMove(state, {
+      kind: "set",
+      x: ox,
+      y: oy,
+      digit: 5,
+    });
+    expect(press(filled, ui, 0x33, 0, 0)).toBeNull();
+  });
+
+  it("offers the 1-9 keypad plus a clear key", () => {
+    const keys = crossingGame.requestKeys?.(P5) ?? [];
+    expect(keys.map((k) => k.label)).toEqual([
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "Clear",
+    ]);
+  });
+});
+
+describe("crossing moves and completion", () => {
+  it("executeMove is pure and rejects a wall", () => {
+    const state = newState(P5, FIX.desc);
+    const before = state.grid.slice();
+    const open = state.puzzle.walls.indexOf(0);
+    crossingGame.executeMove(state, {
+      kind: "set",
+      x: open % 5,
+      y: Math.floor(open / 5),
+      digit: 7,
+    });
+    expect([...state.grid]).toEqual([...before]);
+
+    const wall = state.puzzle.walls.indexOf(1);
+    expect(() =>
+      crossingGame.executeMove(state, {
+        kind: "set",
+        x: wall % 5,
+        y: Math.floor(wall / 5),
+        digit: 7,
+      }),
+    ).toThrow();
+  });
+
+  it("filling the board completes the game and flashes", () => {
+    const { m, status } = harness();
+    expect(m.newGameFromId(FIX_ID)).toBeUndefined();
+    const moves = solutionMoves();
+    m.playMoves(moves);
+    expect(status()).toBe("solved");
+
+    // …and the same transition arms the celebration flash (no help was taken).
+    const penultimate = moves
+      .slice(0, -1)
+      .reduce((s2, mv) => crossingGame.executeMove(s2, mv), newState(P5, FIX.desc));
+    const final = crossingGame.executeMove(penultimate, moves[moves.length - 1]);
+    expect(penultimate.completed).toBe(false);
+    expect(final).toMatchObject({ completed: true, cheated: false });
+    expect(
+      crossingGame.flashLength?.(penultimate, final, 1, newUi()) ?? 0,
+    ).toBeGreaterThan(0);
+  });
+
+  it("Solve completes the game with help (no flash)", () => {
+    const { m, status } = harness();
+    expect(m.newGameFromId(FIX_ID)).toBeUndefined();
+    expect(m.solve()).toBeUndefined();
+    expect(status()).toBe("solved-with-help");
+    // `cheated` is set, so the celebration flash must not fire (playbook §3.6).
+    const start = newState(P5, FIX.desc);
+    const solveResult = crossingGame.solve?.(start, start);
+    expect(solveResult?.ok).toBe(true);
+    if (solveResult?.ok) {
+      const solved = crossingGame.executeMove(start, solveResult.move);
+      expect(solved.completed).toBe(true);
+      expect(solved.cheated).toBe(true);
+      expect(crossingGame.flashLength?.(start, solved, 1, newUi()) ?? 0).toBe(0);
+    }
+  });
+
+  it("clearing a digit un-fills the cell without un-completing", () => {
+    const state = newState(P5, FIX.desc);
+    const open = state.puzzle.walls.indexOf(0);
+    const [x, y] = [open % 5, Math.floor(open / 5)];
+    const set = crossingGame.executeMove(state, { kind: "set", x, y, digit: 4 });
+    const cleared = crossingGame.executeMove(set, { kind: "set", x, y, digit: null });
+    expect(cleared.grid[open]).toBe(0);
+  });
+
+  it("a pencil clear erases every mark in the cell", () => {
+    const state = newState(P5, FIX.desc);
+    const open = state.puzzle.walls.indexOf(0);
+    const [x, y] = [open % 5, Math.floor(open / 5)];
+    let s = crossingGame.executeMove(state, { kind: "pencil", x, y, digit: 3 });
+    s = crossingGame.executeMove(s, { kind: "pencil", x, y, digit: 8 });
+    expect(s.marks[open]).toBe((1 << 2) | (1 << 7));
+    s = crossingGame.executeMove(s, { kind: "pencil", x, y, digit: null });
+    expect(s.marks[open]).toBe(0);
+  });
+});
+
+describe("crossing findMistakes", () => {
+  it("flags a wrong digit but not a correct one", () => {
+    const state = newState(P5, FIX.desc);
+    const answer = fixtureSolution();
+    const open = state.puzzle.walls.indexOf(0);
+    const [x, y] = [open % 5, Math.floor(open / 5)];
+
+    const right = crossingGame.executeMove(state, {
+      kind: "set",
+      x,
+      y,
+      digit: answer[open],
+    });
+    expect(findCrossingMistakes(right)).toEqual([]);
+
+    const wrong = crossingGame.executeMove(state, {
+      kind: "set",
+      x,
+      y,
+      digit: (answer[open] % 9) + 1,
+    });
+    expect(findCrossingMistakes(wrong)).toEqual([{ x, y, kind: "cell" }]);
+  });
+
+  it("flags notes that have ruled out the answer, but not extra candidates", () => {
+    const state = newState(P5, FIX.desc);
+    const answer = fixtureSolution();
+    const open = state.puzzle.walls.indexOf(0);
+    const [x, y] = [open % 5, Math.floor(open / 5)];
+
+    // A note set that excludes the solution digit is a mistake…
+    const bad = cloneState(state);
+    bad.marks[open] = 0x1ff & ~(1 << (answer[open] - 1));
+    expect(findCrossingMistakes(bad)).toEqual([{ x, y, kind: "note" }]);
+
+    // …while one that merely carries extra candidates is ordinary progress.
+    const fine = cloneState(state);
+    fine.marks[open] = 0x1ff;
+    expect(findCrossingMistakes(fine)).toEqual([]);
+
+    // And no notes at all is never a mistake.
+    expect(findCrossingMistakes(state)).toEqual([]);
+  });
+});
+
+describe("crossing text format", () => {
+  it("renders the grid then the numbers grouped by length", () => {
+    const text = textFormat(newState(P5, FIX.desc)) ?? "";
+    const [grid, ...groups] = text.split("\n\n");
+    expect(grid.split("\n")).toHaveLength(5);
+    for (const row of grid.split("\n")) {
+      expect(row).toMatch(/^[#.1-9]{5}$/);
+    }
+    // Each group is "<len>: n,n,…," — the lengths ascend.
+    const lens = groups
+      .join("\n")
+      .split("\n")
+      .filter(Boolean)
+      .map((g) => Number(g.split(":")[0]));
+    expect(lens).toEqual([...lens].sort((a, b) => a - b));
+  });
+});
+
+describe("crossing rendering", () => {
+  it("draws the opening frame", () => {
+    const r = renderScenario({ game: crossingGame, id: FIX_ID });
+    expect(r.recording.ops.length).toBeGreaterThan(0);
+    // Every wall and every clue number is on screen from the first frame.
+    const texts = r.recording.ops.filter((o) => o.op === "text");
+    for (const num of newState(P5, FIX.desc).puzzle.numbers) {
+      expect(texts.some((o) => o.op === "text" && o.text === num)).toBe(true);
+    }
+    expect(r.recording.ops).toMatchSnapshot();
+  });
+
+  it("frames a full-but-unlisted run in red", () => {
+    const state = newState(P5, FIX.desc);
+    // Fill the first run with digits that spell no listed number.
+    const run = state.puzzle.runs[0];
+    const moves: CrossingMove[] = run.cells.map((i, k) => ({
+      kind: "set" as const,
+      x: i % 5,
+      y: Math.floor(i / 5),
+      digit: ((k + 7) % 9) + 1,
+    }));
+    const errRects = (r: { recording: RecordingDrawing }): number =>
+      r.recording.ops.filter((o) => o.op === "rect" && o.colour === COL_ERROR).length;
+
+    expect(errRects(renderScenario({ game: crossingGame, id: FIX_ID }))).toBe(0);
+    const dirty = renderScenario({ game: crossingGame, id: FIX_ID, moves });
+    expect(errRects(dirty)).toBeGreaterThan(0);
+    expect(dirty.recording.ops).toMatchSnapshot();
+  });
+
+  it("highlights a mistake even on a cell that was already drawn", () => {
+    // The paint-twice test (playbook §3.2): the overlay must sit in the diff
+    // key, or Check & Save — which runs a frame *after* the move that drew the
+    // cell — would silently highlight nothing.
+    const state = newState(P5, FIX.desc);
+    const answer = fixtureSolution();
+    const open = state.puzzle.walls.indexOf(0);
+    const dirty = crossingGame.executeMove(state, {
+      kind: "set",
+      x: open % 5,
+      y: Math.floor(open / 5),
+      digit: (answer[open] % 9) + 1,
+    });
+    const mistakes = findCrossingMistakes(dirty);
+    expect(mistakes).toHaveLength(1);
+
+    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
+    const ds = newDrawState(dirty);
+    setTileSize(ds, TS);
+    const ui = newUi();
+    const errLines = (dr: RecordingDrawing): number =>
+      dr.ops.filter((o) => o.op === "line" && o.colour === COL_ERROR).length;
+
+    // Frame 1 warms the cache with no overlay…
+    const first = new RecordingDrawing(palette);
+    redraw(first, ds, null, dirty, 1, ui, 0, 0);
+    expect(errLines(first)).toBe(0);
+
+    // …frame 2 adds the overlay on an otherwise unchanged board…
+    const second = new RecordingDrawing(palette);
+    redraw(second, ds, dirty, dirty, 1, ui, 0, 0, undefined, mistakes);
+    expect(errLines(second)).toBeGreaterThan(0);
+
+    // …and frame 3 clears it again.
+    const third = new RecordingDrawing(palette);
+    redraw(third, ds, dirty, dirty, 1, ui, 0, 0, undefined, []);
+    expect(errLines(third)).toBe(0);
+  });
+
+  it("highlights the selected cell and marks a keyboard cursor", () => {
+    const state = newState(P5, FIX.desc);
+    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
+    const open = state.puzzle.walls.indexOf(0);
+    const paint = (ui: CrossingUi): RecordingDrawing => {
+      const ds = newDrawState(state);
+      setTileSize(ds, TS);
+      const dr = new RecordingDrawing(palette);
+      redraw(dr, ds, null, state, 1, ui, 0, 0);
+      return dr;
+    };
+
+    const idle = paint(newUi());
+    expect(
+      idle.ops.filter((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT),
+    ).toHaveLength(0);
+
+    const selected = {
+      ...newUi(),
+      cshow: true,
+      cx: open % 5,
+      cy: Math.floor(open / 5),
+    };
+    expect(
+      paint(selected).ops.filter((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT)
+        .length,
+    ).toBe(1);
+
+    // The keyboard cursor draws corner brackets rather than a filled highlight.
+    const keyed = { ...selected, ckey: true };
+    const keyedOps = paint(keyed).ops;
+    expect(
+      keyedOps.filter((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT),
+    ).toHaveLength(0);
+    expect(
+      keyedOps.filter((o) => o.op === "line" && o.colour === COL_HIGHLIGHT).length,
+    ).toBe(8);
+  });
+
+  it("draws pencil marks in an empty cell", () => {
+    const state = newState(P5, FIX.desc);
+    const open = state.puzzle.walls.indexOf(0);
+    const noted = crossingGame.executeMove(state, {
+      kind: "pencil",
+      x: open % 5,
+      y: Math.floor(open / 5),
+      digit: 4,
+    });
+    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
+    const ds = newDrawState(noted);
+    setTileSize(ds, TS);
+    const dr = new RecordingDrawing(palette);
+    redraw(dr, ds, null, noted, 1, ui0(), 0, 0);
+    expect(dr.ops.some((o) => o.op === "text" && o.text === "4")).toBe(true);
+  });
+
+  it("cycles the digit colours while the completion flash runs", () => {
+    const solved = solutionMoves().reduce(
+      (s2, mv) => crossingGame.executeMove(s2, mv),
+      newState(P5, FIX.desc),
+    );
+    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
+    const frameColours = (flashTime: number): number[] => {
+      const ds = newDrawState(solved);
+      setTileSize(ds, TS);
+      const dr = new RecordingDrawing(palette);
+      redraw(dr, ds, null, solved, 1, ui0(), 0, flashTime);
+      return [
+        ...new Set(dr.ops.filter((o) => o.op === "rect").map((o) => o.colour ?? -1)),
+      ].sort((a, b) => a - b);
+    };
+    // Two different phases of the flash paint the digits differently — the
+    // deliberate divergence from upstream's `bool` frame counter.
+    expect(frameColours(0.7)).not.toEqual(frameColours(0.3));
+  });
+});
+
+/** A fresh ui, for the direct-redraw tests. */
+function ui0(): CrossingUi {
+  return newUi();
+}

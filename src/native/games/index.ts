@@ -24,6 +24,7 @@ import { blackboxGame } from "./blackbox/index.ts";
 import { bricksGame } from "./bricks/index.ts";
 import { bridgesGame } from "./bridges/index.ts";
 import { clustersGame } from "./clusters/index.ts";
+import { crossingGame } from "./crossing/index.ts";
 import { cubeGame } from "./cube/index.ts";
 import { dominosaGame } from "./dominosa/index.ts";
 import { fifteenGame } from "./fifteen/index.ts";
@@ -85,6 +86,7 @@ export function registerAllGames(): void {
   registerGame(bridgesGame);
   registerGame(bricksGame);
   registerGame(clustersGame);
+  registerGame(crossingGame);
   registerGame(cubeGame);
   registerGame(dominosaGame);
   registerGame(fifteenGame);

@@ -10,7 +10,7 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { drawRectOutline } from "../../engine/draw.ts";
+import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { SinglesHint } from "./index.ts";
 import {
@@ -119,29 +119,6 @@ export function setTileSize(ds: SinglesDrawState, ts: number): void {
 }
 
 // --- cursor corner brackets (misc.c draw_rect_corners) ---------------------
-
-function drawRectCorners(
-  dr: GameDrawing,
-  cx: number,
-  cy: number,
-  r: number,
-  col: number,
-): void {
-  const hr = Math.floor(r / 2);
-  const segs: [number, number, number, number][] = [
-    [cx - r, cy - r, cx - r, cy - hr],
-    [cx - r, cy - r, cx - hr, cy - r],
-    [cx - r, cy + r, cx - r, cy + hr],
-    [cx - r, cy + r, cx - hr, cy + r],
-    [cx + r, cy - r, cx + r, cy - hr],
-    [cx + r, cy - r, cx + hr, cy - r],
-    [cx + r, cy + r, cx + r, cy + hr],
-    [cx + r, cy + r, cx + hr, cy + r],
-  ];
-  for (const [x0, y0, x1, y1] of segs) {
-    dr.drawLine({ x: x0, y: y0 }, { x: x1, y: y1 }, col, 1);
-  }
-}
 
 // --- tile drawing ----------------------------------------------------------
 

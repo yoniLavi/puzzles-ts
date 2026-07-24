@@ -84,3 +84,30 @@ export function drawRectOutline(
   dr.drawLine({ x: r, y: b }, { x, y: b }, colour, 1);
   dr.drawLine({ x, y: b }, { x, y }, colour, 1);
 }
+
+/**
+ * Upstream `misc.c draw_rect_corners`: four L-shaped corner brackets on the
+ * square of radius `r` centred at `(cx, cy)`, each arm reaching halfway along
+ * its side — the collection's standard "keyboard cursor is here" mark.
+ *
+ * Promoted from seven byte-identical private copies (ascent, bricks, dominosa,
+ * signpost, singles, spokes, subsets) when Crossing would have been the eighth.
+ * The emitted line order matches upstream's, so no render snapshot moves.
+ */
+export function drawRectCorners(
+  dr: GameDrawing,
+  cx: number,
+  cy: number,
+  r: number,
+  colour: number,
+): void {
+  const hr = Math.floor(r / 2);
+  for (const sx of [-1, 1]) {
+    for (const sy of [-1, 1]) {
+      const px = cx + sx * r;
+      const py = cy + sy * r;
+      dr.drawLine({ x: px, y: py }, { x: px, y: cy + sy * hr }, colour, 1);
+      dr.drawLine({ x: px, y: py }, { x: cx + sx * hr, y: py }, colour, 1);
+    }
+  }
+}

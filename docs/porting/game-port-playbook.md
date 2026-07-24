@@ -243,6 +243,18 @@ drains one with `delpos234(todo, 0)`, i.e. in sorted order) is a different
 matter: check whether the order can affect the result before reproducing it — a
 flood fill's reachable set cannot, so that one is a plain queue.
 
+**Shared `GameDrawing` primitives live in
+[`draw.ts`](../../src/native/engine/draw.ts)** — `drawRecessedBorder` (the
+two-pentagon playfield bevel), `drawRectOutline` (upstream `draw_rect_outline`),
+and `drawRectCorners` (upstream `misc.c draw_rect_corners`, the four corner
+brackets that mark a keyboard cursor). The last was promoted from **seven**
+byte-identical private copies when Crossing would have been the eighth; if you
+find yourself typing eight `drawLine` calls around a centre point, it already
+exists. Extractions like this are cheap to *verify*, not just to make: the
+emitted op order was unchanged, so no render snapshot moved and the seven games'
+tests stayed green through the refactor — which is the check that an extraction
+of drawing code needs.
+
 **Symmetric black-square placement is shared:**
 [`symmetric-blacks.ts`](../../src/native/engine/symmetric-blacks.ts) —
 `placeSymmetricBlacks` (upstream `set_blacks`, which `sticks.c` copied
@@ -479,6 +491,19 @@ every cell misses the cache anyway, so a missing-from-the-diff-key overlay still
 paints. Exemplars: `towers.test.ts` ("highlights a mistake even when the cell was
 already drawn"), `galaxies.test.ts` ("recolours a flagged wall on a board that was
 already drawn").
+
+**A display-only counter with the wrong *type* is a bug you may just fix.** The
+§4 byte-parity rules are about the generator/solver/codec; on the drawing path
+"deliberate visual improvements are the point of the fork". Crossing's
+`game_redraw` declares `bool flash` and assigns `(int)(flashtime/FLASH_FRAME)`
+to it, so its nine-phase completion animation collapses to a single static
+colour shift — while `FLASH_TIME` is literally defined as `FLASH_FRAME * 9` and
+the colour index reads `(x + y + flash) % 9`. The intent is unambiguous, the fix
+is one type, and nothing downstream of the renderer can see it. Take it, say so
+in `design.md`, and pin it with a tier-2.5 test that two flash phases paint
+differently (a snapshot alone won't tell you the animation is *moving*). The
+general tell: a frame counter, phase index or animation step stored in a
+`bool`/`char`, or compared for truthiness where the code then uses its value.
 
 **Rendering doctrine (hard-won — see the Flip three-iteration story in
 [`AGENTS.md`](../../AGENTS.md)):** the engine paints **no pixels of its own**; each
