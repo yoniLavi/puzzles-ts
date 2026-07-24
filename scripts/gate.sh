@@ -30,13 +30,19 @@
 # This used to probe the 1-minute load average and serialise on a busy box,
 # because oversubscribing starved vitest's heaviest seed-deterministic tests
 # past their 60s timeout (at high external load the concurrent build reliably
-# flaked dsf / netslide-hint). That rationale is gone: no test is clock-gated
-# any more — there is one 600s ceiling in vitest.config.ts and no per-test
-# timeouts — so contention now makes a test *slower*, never *failed*. The probe
-# only cost time: this box runs deliberately busy, so it read "busy" nearly
-# always and put the build on the critical path for a danger that no longer
-# exists. Reliability is still the gate's first duty; it is now bought by not
-# gating on the clock rather than by hoarding cores.
+# flaked dsf / netslide-hint). The probe is still gone — it read "busy" nearly
+# always on this deliberately-busy box and put the build on the critical path —
+# but the claim that replaced it, "contention now makes a test *slower*, never
+# *failed*", is NOT true without qualification and has since been falsified: it
+# holds only up to the 600s ceiling in vitest.config.ts, and at load ~81 on 8
+# cores two Sixteen hint tests (~50s each solo, 112s for the whole file) blew
+# through it and failed this gate.
+#
+# The fix is not another timeout. It is to stop oversubscribing: vitest now caps
+# its worker pool (`maxWorkers` in vitest.config.ts, leaving two cores free) and
+# both heavy branches below run under `nice`, so a gate run yields to the
+# developer's own work instead of competing with it. Reliability is still bought
+# by not gating on the clock — now also by not starving the box.
 set -e
 
 # --- 0. Reap orphaned vitest workers from a previously-interrupted run. ---
@@ -66,12 +72,16 @@ else
   npx biome ci .
 fi
 
-# `nice` (weak on macOS but free insurance) keeps the background build below
-# vitest, which is the branch that actually blocks the commit.
+# `nice` (weak on macOS but free insurance) is applied to BOTH heavy branches,
+# so the gate yields to whatever else the developer is running rather than
+# competing with it. The build is niced hardest, since vitest is the branch that
+# actually blocks the commit.
 if command -v nice >/dev/null 2>&1; then
   NICE="nice -n 19"
+  NICE_TESTS="nice -n 10"
 else
   NICE=""
+  NICE_TESTS=""
 fi
 
 # --- 2. Heavy checks, concurrently. ---
@@ -85,7 +95,7 @@ trap 'rm -f "$build_log"' EXIT
 $NICE npx vite build >"$build_log" 2>&1 &
 build_pid=$!
 
-npm run test:run || vitest_rc=$?
+$NICE_TESTS npm run test:run || vitest_rc=$?
 wait "$build_pid" || build_rc=$?
 if [ "$build_rc" -ne 0 ]; then
   echo ""
