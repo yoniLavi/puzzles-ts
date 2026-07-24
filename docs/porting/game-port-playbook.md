@@ -1138,6 +1138,33 @@ The seam is generic (only Dominosa implements it today), mirroring `canMarkAll`:
   [`ts-engine`](../../openspec/specs/ts-engine/spec.md); exemplar
   [`dominosa/`](../../src/native/games/dominosa/).
 
+**When the inventory is already drawn on the board, make it an *input* surface
+rather than a side panel.** Crossing draws its clue list under the grid because
+upstream does; the port made that list clickable — pick a clue up, see it ghosted
+into every run that can still take it, click one to write the whole clue in as a
+single move (and, with a cell already selected, clicking a fitting clue places it
+at once). No new panel, no new engine seam: it is `interpretMove` hit-testing
+pixels the game already paints. Two rules make it safe:
+
+- **Share the layout with the renderer.** Export the function that positions the
+  inventory (`layoutNumbers` in `crossing/render.ts`) and have both `redraw` and
+  `interpretMove` call it, exactly as §3.13 requires for a sheared grid — a
+  private copy in the input path is a drift bug waiting to happen.
+- **Decide what "available" means, and stop there.** Crossing offers a clue when
+  it is the right length, agrees with the digits already typed, and isn't used
+  elsewhere — pattern-matching over the player's own entries. Testing whether it
+  would leave the *crossing* runs satisfiable is constraint propagation, i.e. the
+  puzzle, and belongs to `hint()`. The stronger version is barely more code,
+  which is exactly why the line needs stating.
+
+Also worth knowing when a game already spends its gestures: **Ascent's ghost
+grammar (left-click accepts a previewed value, right-click cycles alternatives)
+does not transplant freely.** In Crossing both gestures were taken — a repeat
+left-click flips the fill direction, right-click toggles sticky pencil — so
+picking the value from a visible inventory replaced cycling altogether, and
+showed *all* the candidates instead of one at a time. Check what a gesture
+already means before borrowing an interaction from another game.
+
 ---
 
 ### 3.10 A board that isn't decided until play starts (`supersededDesc`)

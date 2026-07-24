@@ -210,3 +210,33 @@ validating the generator, solver and codec together.
   seed where upstream produces such a board
 - **THEN** it reproduces that board, and the shipped default produces a
   different one in which every cell is reachable
+
+### Requirement: Crossing places whole clue numbers from the list
+
+The clue list SHALL be interactive. Clicking a clue SHALL pick it up, previewing
+it in every run that can still take it; clicking such a run SHALL write the whole
+clue in as a single move. With a cell already selected, clicking a clue that can
+go in its run SHALL place it immediately. Selecting a cell SHALL indicate which
+clues can still go in its run.
+
+A clue can go in a run when it is the run's length, agrees with every digit
+already entered there, and is not already written into another run. Availability
+SHALL be decided from the player's own entries alone, and SHALL NOT take the
+solution or the satisfiability of crossing runs into account, so that the aid
+does not perform the puzzle's deduction. The aid SHALL be available as a
+preference, enabled by default.
+
+#### Scenario: A clue is placed into the selected cell's run
+
+- **WHEN** a cell is selected and a clue that can go in its run is clicked
+- **THEN** the whole clue is written into that run as one move
+
+#### Scenario: A picked-up clue previews where it can go
+
+- **WHEN** a clue is clicked with no cell selected
+- **THEN** it is shown as held, and previewed in each run that can still take it
+
+#### Scenario: A clue used elsewhere is not offered again
+
+- **WHEN** a clue has been written into one run
+- **THEN** no other run offers or accepts it

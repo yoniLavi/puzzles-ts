@@ -183,7 +183,15 @@ All three Status points triaged; see design F9-F12 and playbook §1.0.
       upstream's behaviour stays reachable behind `upstreamIsolatedCells`, which
       the differential sets, plus a test that the flag still changes the desc
       (design F13).
-- [x] 8b.7 Re-verify in the browser: auto-advance across and down, the direction
+- [x] 8b.7 **Make the clue list an input surface** (owner-requested, and the
+      idea the author's scrapped drag-and-drop was for): click a clue to hold +
+      preview it, click a run to place it whole as one move, click a fitting clue
+      with a cell selected to place immediately, and dim the clues that cannot go
+      in the selected run. Fit = length + typed digits + not used elsewhere, and
+      deliberately *not* cross-run satisfiability (owner-decided) — that is the
+      solver's job. `layoutNumbers` shared by render and input; `fit-highlight`
+      pref, default on (design F14).
+- [x] 8b.8 Re-verify in the browser: auto-advance across and down, the direction
       toggle, the neutral tiles, the flash sweep, and the size refusal.
 
 ## 9. Stage 2 — on owner acceptance only

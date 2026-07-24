@@ -37,6 +37,8 @@ import {
   type CrossingPuzzle,
   type CrossingState,
   type CrossingUi,
+  numberAvailableTo,
+  placedRuns,
   validateBoard,
 } from "./state.ts";
 
@@ -59,7 +61,11 @@ export const COL_WALL_H = 8;
  * declares no dark-mode `paletteOverrides`, so appending is safe. */
 export const COL_PENCIL = 9;
 export const COL_PENCIL_BODY = 10;
-export const NCOLOURS = 11;
+/** The preview of a held clue number, ghosted into the runs it still fits. */
+export const COL_GHOST = 11;
+/** The clue number currently held, highlighted in the list. */
+export const COL_HELD = 12;
+export const NCOLOURS = 13;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = new Array(NCOLOURS);
@@ -80,6 +86,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   // Towers): clearly subordinate to an entered digit without vanishing.
   out[COL_PENCIL] = [0.5 * background[0], 0.5 * background[1], background[2]];
   out[COL_PENCIL_BODY] = [1, 0.78, 0.17];
+  // Ghost: light enough to read as "not yet placed", dark enough to read at all.
+  out[COL_GHOST] = [0.55 * background[0], 0.55 * background[1], 0.55 * background[2]];
+  out[COL_HELD] = [0, 0.35, 0.85];
   return out;
 }
 
@@ -121,6 +130,7 @@ const DF_PENCIL = 1 << 9; // pencil selection (the corner triangle)
 const DF_KEYCUR = 1 << 10; // keyboard cursor (corner brackets)
 const K_FLASH = 11; // bits 11-12: flash phase + 1 (0 = not flashing)
 const K_MARKS = 15; // bits 15-23: the nine pencil-mark bits
+const K_GHOST = 24; // bits 24-27: previewed digit of a held clue number (0 = none)
 
 export interface CrossingDrawState {
   started: boolean;
@@ -373,7 +383,18 @@ function drawCell(
 
   if (flags & DF_PENCIL) drawPencilCorner(dr, ts, tx, ty);
 
-  if (!walls[i] && !digit) drawMarks(dr, ts, tx, ty, (flags >> K_MARKS) & 0x1ff);
+  const ghost = (flags >> K_GHOST) & 0xf;
+  if (!walls[i] && !digit && ghost) {
+    // The held clue number previewed where it would land.
+    dr.drawText(
+      { x: (x + 1) * ts, y: (y + 1) * ts },
+      textOpts(Math.floor(ts / 2), "center", "mathematical"),
+      COL_GHOST,
+      String(ghost),
+    );
+  } else if (!walls[i] && !digit) {
+    drawMarks(dr, ts, tx, ty, (flags >> K_MARKS) & 0x1ff);
+  }
 
   if (flags & DF_KEYCUR)
     drawRectCorners(
@@ -396,25 +417,33 @@ function drawCell(
  * this (once `rows ≥ numcount` each column holds one number). */
 const MAX_PANEL_ROWS = 1000;
 
+/** Where one clue number sits in the panel: the text origin (left edge, text
+ * baseline) plus the box a click on it should hit. */
+export interface NumberSlot {
+  x: number;
+  y: number;
+  /** Clickable box (`x`,`y` at its top-left). */
+  hit: { x: number; y: number; w: number; h: number };
+}
+
 /**
- * Upstream `draw_numbers`: the clue list under the grid, laid out in columns of
- * `rows` entries. The row count and font size are grown/shrunk until the widest
- * number of each column fits the board width — upstream's answer to its own
- * "find a way to fit the number list on the screen" TODO, and a genuinely
- * adaptive one, so it is ported rather than replaced. Each number is coloured by
- * how many runs currently read as it: unused, used once (dimmed), or duplicated
- * (red).
+ * Lay the clue list out under the grid — upstream `draw_numbers`' sizing loop,
+ * extracted so the renderer and `interpretMove` cannot disagree about where a
+ * number is (the same rule as Bricks' shared `offsets`, playbook §3.13).
+ *
+ * The row count and font size are grown/shrunk until the widest number of each
+ * column fits the board width — upstream's answer to its own "find a way to fit
+ * the number list on the screen" TODO, and a genuinely adaptive one, so it is
+ * ported rather than replaced.
  */
-function drawNumbers(
-  dr: GameDrawing,
+export function layoutNumbers(
   ts: number,
   w: number,
   h: number,
   numbers: readonly string[],
-  colourOf: (i: number) => number,
-): void {
+): { fontsz: number; slots: NumberSlot[] } {
   const count = numbers.length;
-  if (count === 0) return;
+  if (count === 0) return { fontsz: 0, slots: [] };
 
   const hgt = 2.8 * ts;
   const wdt = w * ts;
@@ -445,7 +474,8 @@ function drawNumbers(
     rows++;
   }
 
-  const opts = textOpts(Math.trunc(fontsz), "left", "alphabetic", "fixed");
+  const rowHeight = hgt / rows;
+  const slots: NumberSlot[] = [];
   let x = 0.5 * ts - space * fontsz;
   let y = yoff;
   let len = 0;
@@ -455,8 +485,57 @@ function drawNumbers(
       y = yoff;
     }
     len = numbers[i].length;
-    dr.drawText({ x: Math.trunc(x), y: Math.trunc(y) }, opts, colourOf(i), numbers[i]);
-    y += hgt / rows;
+    const ox = Math.trunc(x);
+    const oy = Math.trunc(y);
+    slots.push({
+      x: ox,
+      y: oy,
+      // The text is left-aligned on an alphabetic baseline, so it occupies
+      // roughly one font-size above the origin; the box is padded to the row
+      // pitch so there are no dead gaps between clickable numbers.
+      hit: {
+        x: ox,
+        y: Math.trunc(oy - fontsz),
+        w: Math.max(1, Math.ceil(len * whprop * fontsz)),
+        h: Math.max(1, Math.ceil(rowHeight)),
+      },
+    });
+    y += rowHeight;
+  }
+  return { fontsz, slots };
+}
+
+/** Which clue number is at pixel `(px, py)`, or -1. */
+export function numberAtPoint(
+  ts: number,
+  w: number,
+  h: number,
+  numbers: readonly string[],
+  px: number,
+  py: number,
+): number {
+  const { slots } = layoutNumbers(ts, w, h, numbers);
+  for (let i = 0; i < slots.length; i++) {
+    const b = slots[i].hit;
+    if (px >= b.x && px < b.x + b.w && py >= b.y && py < b.y + b.h) return i;
+  }
+  return -1;
+}
+
+/** Draw the clue list, each number coloured by `colourOf`. */
+function drawNumbers(
+  dr: GameDrawing,
+  ts: number,
+  w: number,
+  h: number,
+  numbers: readonly string[],
+  colourOf: (i: number) => number,
+): void {
+  const { fontsz, slots } = layoutNumbers(ts, w, h, numbers);
+  if (slots.length === 0) return;
+  const opts = textOpts(Math.trunc(fontsz), "left", "alphabetic", "fixed");
+  for (let i = 0; i < slots.length; i++) {
+    dr.drawText({ x: slots[i].x, y: slots[i].y }, opts, colourOf(i), numbers[i]);
   }
 }
 
@@ -530,6 +609,22 @@ export function redraw(
 
   ds.wrong.packCells(mistakes, (x, y) => y * w + x);
 
+  // The held clue number, previewed in every run that can still take it, and —
+  // when a cell is selected — the list dimmed to the numbers that still fit it.
+  const placed = placedRuns(puzzle, state.grid);
+  const ghost = new Uint8Array(w * h);
+  if (ui.heldNumber !== null && ui.fitHighlight) {
+    const held = ui.heldNumber;
+    const text = numbers[held];
+    for (let r = 0; r < runs.length; r++) {
+      if (!numberAvailableTo(puzzle, state.grid, placed, r, held)) continue;
+      const cells = runs[r].cells;
+      for (let k = 0; k < cells.length; k++) {
+        if (!state.grid[cells[k]]) ghost[cells[k]] = text.charCodeAt(k) - 48;
+      }
+    }
+  }
+
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
@@ -539,6 +634,7 @@ export function redraw(
       else if (here && ui.ckey) flags |= DF_KEYCUR;
       else if (here) flags |= DF_SELECT;
       if (!walls[i] && !state.grid[i]) flags |= (state.marks[i] & 0x1ff) << K_MARKS;
+      if (ghost[i]) flags |= ghost[i] << K_GHOST;
 
       const tile =
         (state.grid[i] << K_DIGIT) |
@@ -565,9 +661,25 @@ export function redraw(
     }
   }
 
-  // The number panel: repaint only when a clue's used/duplicate state moved.
-  const colourClass = (l: number): number =>
-    done[l] === 0 ? 0 : done[l] === 1 ? 1 : 2;
+  // The number panel. Each clue reads as one of: held, already used once,
+  // duplicated, unavailable for the selected run, or free.
+  const selectedRun =
+    cshow && !ui.cpencil
+      ? ui.dir === "across"
+        ? puzzle.acrossRun[ui.cy * w + ui.cx]
+        : puzzle.downRun[ui.cy * w + ui.cx]
+      : -1;
+  const colourClass = (l: number): number => {
+    if (ui.heldNumber === l) return 3;
+    if (done[l] > 1) return 2;
+    if (done[l] === 1) return 1;
+    if (ui.fitHighlight && selectedRun >= 0) {
+      return numberAvailableTo(puzzle, state.grid, placed, selectedRun, l) ? 0 : 4;
+    }
+    return 0;
+  };
+  const CLASS_COLOUR = [COL_GRID, COL_LOWLIGHT, COL_ERROR, COL_HELD, COL_LOWLIGHT];
+
   let panelStale = false;
   for (let l = 0; l < numbers.length; l++) {
     if (ds.numberState[l] !== colourClass(l)) {
@@ -580,9 +692,7 @@ export function redraw(
     const top = tileOrigin(h - 1, ts) + ts + 2;
     const size = computeSize(puzzle, ts);
     dr.drawRect({ x: 0, y: top, w: size.w, h: size.h - top }, COL_OUTERBG);
-    drawNumbers(dr, ts, w, h, numbers, (l) =>
-      done[l] === 0 ? COL_GRID : done[l] === 1 ? COL_LOWLIGHT : COL_ERROR,
-    );
+    drawNumbers(dr, ts, w, h, numbers, (l) => CLASS_COLOUR[colourClass(l)]);
     dr.drawUpdate({ x: 0, y: top, w: size.w, h: size.h - top });
     for (let l = 0; l < numbers.length; l++) ds.numberState[l] = colourClass(l);
   }

@@ -570,3 +570,51 @@ Not changed: `newState` still decodes such a description faithfully if given one
 so an existing puzzle plays exactly as before. Nothing shipped can contain one
 (Crossing has not been accepted, so no game IDs are in circulation), which is why
 this stops at generation rather than also rewriting the decoder.
+
+### F14 — The clue list becomes an input surface (the author's scrapped idea)
+
+The author's third Status point explains that the per-digit colours were "part
+of a scrapped idea where complete numbers could be dragged and dropped with the
+mouse". F11 removed the colours; this implements the idea they were left over
+from, with clicks instead of a drag:
+
+- **Click a clue in the list to pick it up.** It is highlighted (`COL_HELD`) and
+  ghosted (`COL_GHOST`) into every run that can still take it. Clicking such a
+  run writes the whole clue in as **one move**, so it is one undo step. Clicking
+  the held clue again puts it back; clicking anywhere it cannot go drops it and
+  selects normally.
+- **With a cell already selected, clicking a fitting clue places it at once** —
+  the owner's request, and the fastest path once you know the answer.
+- **Selecting a cell dims the list** to the clues that can still go in its run.
+
+Two decisions worth keeping:
+
+**How strong the "fits" test is (owner-decided).** A clue fits a run when it is
+the right length, agrees with every digit already typed there, and is not already
+written into another run. That is *pattern matching over the player's own
+entries* — the scan they would do by eye. The tempting next step, rejecting a
+clue because it would leave a crossing run unsatisfiable, is constraint
+propagation: the solver's first deduction rung, and therefore the puzzle itself.
+It belongs to a future `hint()`, not to an input aid. The line is worth holding
+because the stronger version is barely more code and would quietly solve a large
+part of the board for the player.
+
+**Which run receives it.** A clue occupies a whole run, so its *length* settles
+the target in almost every case — most cells have only one run of that length
+through them. Only when both runs through the selected cell are the right length
+and both admit it does the existing fill direction (F10) decide. No new gesture
+was needed.
+
+**Why this grammar and not Ascent's.** Ascent ghosts a candidate into a cell,
+accepts it with a left-click and cycles alternatives with a right-click. Both of
+those gestures are already spoken for here — a repeat left-click flips the fill
+direction (F10) and right-click toggles sticky pencil — so adopting Ascent's
+grammar would have meant moving sticky pencil to middle-click. Choosing the clue
+from the list instead removes the need to cycle at all: you can see every
+candidate at once, which is strictly more information than a ghost you step
+through. Ascent's model remains right *for Ascent*, where the candidate is
+arithmetic (`N ± 1`) rather than a choice from an inventory.
+
+`layoutNumbers` in `render.ts` is shared by the renderer and `interpretMove`, so
+the two cannot disagree about where a clue is — the same rule as Bricks' shared
+`offsets` (playbook §3.13). Behind a `fit-highlight` preference, default on.

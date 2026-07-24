@@ -520,6 +520,96 @@ export function validateBoard(
   return { status, done, runErrs };
 }
 
+// --- placing a whole number (the fork's number-list aid) --------------------
+
+/**
+ * Can listed number `l` still be written into `run`?
+ *
+ * Deliberately **pattern-matching only**: the number must be the run's length
+ * and must agree with every digit already entered there. That is the scan a
+ * player does by eye down the clue list — it uses nothing but their own
+ * entries. Judging a number by whether it would leave the *crossing* runs
+ * satisfiable is constraint propagation, i.e. the puzzle itself, and belongs to
+ * a hint rather than to an input aid (owner-decided).
+ */
+export function numberFitsRun(
+  puzzle: CrossingPuzzle,
+  grid: Uint8Array,
+  run: CrossingRun,
+  l: number,
+): boolean {
+  const num = puzzle.numbers[l];
+  if (num.length !== run.cells.length) return false;
+  for (let k = 0; k < run.cells.length; k++) {
+    const digit = grid[run.cells[k]];
+    if (digit !== 0 && digit !== num.charCodeAt(k) - 48) return false;
+  }
+  return true;
+}
+
+/** For each listed number, the index of a run that currently reads exactly as
+ * it, or -1 — i.e. "where have I already used this number?". A number placed in
+ * one run is unavailable to any other (each appears exactly once). */
+export function placedRuns(puzzle: CrossingPuzzle, grid: Uint8Array): Int32Array {
+  const { numbers, runs } = puzzle;
+  const at = new Int32Array(numbers.length).fill(-1);
+  for (let r = 0; r < runs.length; r++) {
+    const cells = runs[r].cells;
+    for (let l = 0; l < numbers.length; l++) {
+      if (at[l] >= 0) continue;
+      const num = numbers[l];
+      if (num.length !== cells.length) continue;
+      let match = true;
+      for (let k = 0; k < cells.length; k++) {
+        if (grid[cells[k]] !== num.charCodeAt(k) - 48) {
+          match = false;
+          break;
+        }
+      }
+      if (match) at[l] = r;
+    }
+  }
+  return at;
+}
+
+/** Is listed number `l` available to `runIndex` — it fits, and it is not
+ * already written into some *other* run? */
+export function numberAvailableTo(
+  puzzle: CrossingPuzzle,
+  grid: Uint8Array,
+  placed: Int32Array,
+  runIndex: number,
+  l: number,
+): boolean {
+  if (placed[l] >= 0 && placed[l] !== runIndex) return false;
+  return numberFitsRun(puzzle, grid, puzzle.runs[runIndex], l);
+}
+
+/**
+ * Which run through `(x, y)` should take listed number `l`, or -1?
+ *
+ * A number occupies a whole run, so its length usually settles the question by
+ * itself; where both runs through the cell are the right length and both admit
+ * it, the player's current fill direction decides.
+ */
+export function runForNumber(
+  puzzle: CrossingPuzzle,
+  grid: Uint8Array,
+  placed: Int32Array,
+  x: number,
+  y: number,
+  l: number,
+  dir: CrossingDirection,
+): number {
+  const i = y * puzzle.w + x;
+  const preferred = dir === "across" ? puzzle.acrossRun[i] : puzzle.downRun[i];
+  const other = dir === "across" ? puzzle.downRun[i] : puzzle.acrossRun[i];
+  for (const r of [preferred, other]) {
+    if (r >= 0 && numberAvailableTo(puzzle, grid, placed, r, l)) return r;
+  }
+  return -1;
+}
+
 // --- moves and ui ----------------------------------------------------------
 
 export type CrossingMove =
@@ -527,6 +617,9 @@ export type CrossingMove =
   | { kind: "set"; x: number; y: number; digit: number | null }
   /** Note: toggle mark `digit`, or erase every mark when `null`. */
   | { kind: "pencil"; x: number; y: number; digit: number | null }
+  /** Write listed number `number` into run `run` — the whole clue at once,
+   * as one undo step (the fork's number-list placement aid). */
+  | { kind: "place"; run: number; number: number }
   /** Auto-solve: overwrite every open cell from the solver's grid. */
   | { kind: "solve"; grid: readonly number[] };
 
@@ -544,6 +637,14 @@ export interface CrossingUi {
    * set it, a repeat click at a crossing toggles it, and selecting a cell that
    * lies in only one run snaps it to that run. */
   dir: CrossingDirection;
+  /** The clue number currently picked up from the list (an index into
+   * `puzzle.numbers`), or `null`. While one is held it is previewed in every
+   * run that can still take it, and clicking such a run places it. */
+  heldNumber: number | null;
+  /** Preference (default on): dim the clue numbers that cannot go in the
+   * selected run, and preview the held one. Pure bookkeeping over the player's
+   * own entries — see {@link numberFitsRun}. */
+  fitHighlight: boolean;
   /** Preference (default on, a deliberate divergence — the game's own
    * documentation asks for it): entering a digit moves the selection to the next
    * cell of the run being filled, so a number can be typed straight in instead of
@@ -564,6 +665,8 @@ export function newUi(_state: CrossingState): CrossingUi {
     cpencil: false,
     ckey: false,
     dir: "across",
+    heldNumber: null,
+    fitHighlight: true,
     autoAdvance: true,
     pencilSticky: true,
   };
