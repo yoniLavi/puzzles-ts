@@ -515,6 +515,18 @@ mid-drag (the Pegs/Signpost case above). Exemplar:
 [`subsets/render.ts`](../../src/native/games/subsets/render.ts) (upstream's
 `draw_rect_corners` blitter cursor as a `cursor-slot` field of the cell key).
 
+**The exception: a game whose cell repaint deliberately doesn't clear the whole
+cell.** Folding the cursor into the key only erases it because the cell repaint
+paints over where it was. Spokes' repaint clears a *plus-shape*, leaving its
+four corner squares alone so a second pass can own the diagonal line running
+through the point where four cells meet — and the cursor's diagonal offsets put
+it inside exactly those corners. There the blitter is right, and it costs
+nothing testable: the recording `GameDrawing` no-ops only `blitterSave`/`Load`,
+so the cursor's own `drawLine` ops are still asserted. Check what your cell
+repaint actually clears before applying the default. Exemplar:
+[`spokes/render.ts`](../../src/native/games/spokes/render.ts) (the corner
+protocol is spelled out in its module header).
+
 ### 3.3 Palette
 
 **Mirror the C colour-enum indices when the game has dark-mode overrides.**
@@ -1460,6 +1472,24 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
   my solver too weak?" would have been an open question; with it, the answer is
   immediate and certain. This is §4's "byte-parity is the verification mechanism"
   paying off in a way that has nothing to do with fidelity.
+- **A generator's own acceptance gate may be running on a *dirty* scratch
+  board — reproduce the lifecycle, not the intent the comment states.**
+  Spokes' `spokes_generate` ends with "…and it must **not** solve one tier
+  easier", which reads like a difficulty guarantee. It isn't: the re-solve runs
+  on the scratch board with only its clue numbers refreshed, so the solver
+  starts from whatever position the *last candidate's* solve left behind —
+  often a finished solution, which validates instantly and fails the attempt
+  for no difficulty-related reason. Measured: the gate saw an already-complete
+  board in 31–45% of attempts, and 10 of 12 4×4 "Hard" boards also solve at
+  Tricky. Clearing first genuinely fixes the grading *and* changes every
+  Tricky/Hard desc, so it forfeits the byte-match. Keep the lifecycle (rule 3 —
+  a weak difficulty curve is the curve upstream shipped, not a defect), comment
+  it at the site, and **pin the observable consequence in a test** so a tidy-up
+  can't land silently. General tell: when a generator hands its solver a
+  *reused* board, ask what state that board is in on entry — the answer is part
+  of the algorithm. Exemplar:
+  [`spokes/generator.ts`](../../src/native/games/spokes/generator.ts)
+  (`spokesGenerate`) + its `spokes.test.ts` guard.
 - **An early-out that exists only under a diagnostics define is NOT release
   semantics — port the release build.** Slant's `fill_square` has "already
   filled with the opposite value" and "would make a loop" checks whose
@@ -1672,6 +1702,18 @@ load ~32). The work is correct; only the clock moved. Rules:
   fixpoints; [`engine/retry-limit.ts`](../../src/native/engine/retry-limit.ts) for
   generate-until-success retries). Make it opt-in/gated so it never touches a hot path
   (generation) where a false trip would itself be a real bug.
+
+- **Don't judge a generator's *real* cost from a vitest run.** Vitest's module
+  runner executes the code far more slowly than the shipped worker does, and a
+  parallel suite adds contention on top. Spokes' 6×6 Hard generation measured
+  ~20 s under vitest and **0.6–2.0 s** in a plain `node` process running the
+  same seeds — a ~7× gap that briefly looked like a reason to diverge from
+  upstream's algorithm. When generation cost looks like a product problem,
+  re-measure it outside the test runner *before* designing a fix; and if you
+  then optimise, a byte-match differential (§4.3) is what lets you prove the
+  optimisation changed no behaviour. (`node --cpu-prof` needs the module graph
+  to survive Node's type-stripping — a `readonly` **constructor parameter
+  property** anywhere in it, e.g. `engine/retry-limit.ts`, makes it refuse.)
 
 Normative: the `repo-layout` "test suite is deterministic under parallel load"
 requirement. If a test fails only under load, **root-cause it** — but note that

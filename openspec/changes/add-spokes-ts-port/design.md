@@ -217,6 +217,104 @@ catalog). Stage 2, on owner acceptance, adds `TS_PORTED` to the existing
 `puzzle(spokes …)` entry in `puzzles/unreleased/CMakeLists.txt` (so no `spokes.wasm`
 is built), deletes `puzzles/unreleased/spokes.c`, `rm -rf build/wasm/`, and rebuilds.
 
+## Findings from implementation (stage 1)
+
+These were discovered while building the port and either overturn or refine a
+decision above. Recorded here because each cost real investigation.
+
+### F1 — The differential is green 25/25 byte-for-byte, first run
+
+D9's bet paid off exactly as designed: 25 fixtures across all six presets, a
+size sweep down to the 2×2 minimum and up to 8×8, and every one reproduces the
+C description byte-for-byte. Because the generator is solver-gated at every
+candidate line removal, that one assertion validates the RNG draw order (one
+`randomUpto(2)` per interior cell, then the single shuffle), every deduction
+rung, **the exact recursion tiers of the contradiction look-ahead** (Tricky →
+`DIFF_LIMITED` with `ACTION_LIMIT`, Hard → `DIFF_EASY`) and the flat digit
+codec, all at once. Nothing weaker would have caught a one-rung tier mistake.
+
+### F2 — Upstream's difficulty gate re-solves a *dirty* board, and largely does not bind
+
+D4 step 4 describes the acceptance gate as "solvable at `diff` and **not** at
+`diff − 1`, so it genuinely needs its difficulty". That is what the C *says*;
+it is not what the C *does*. `spokes_generate` runs that final re-solve on the
+scratch board without clearing it first, so the solver starts from whatever
+position the **last candidate's** solve left behind — frequently a *finished*
+solution, which `spokes_validate` accepts immediately, failing the gate for
+reasons that have nothing to do with the board's difficulty.
+
+Measured consequences (fixed seeds, this port):
+
+- The gate saw an already-complete leftover board in **31–45%** of attempts
+  across 4×4/6×6 Tricky/Hard.
+- **10 of 12** 4×4 "Hard" boards also solve at Tricky; 3 of 12 "Tricky" boards
+  also solve at Easy. The tiers grade far more weakly than advertised.
+- Clearing the board before the gate *does* fix the grading (0 of 6 solve one
+  tier down at either level) — and costs 4×4 Tricky **less** time (4.8 → 1.0
+  attempts) but 4×4 Hard **more** (3.3 → 15.2 attempts, 202 → 1045 ms), because
+  the gate then genuinely constrains.
+
+**Decision: reproduce the quirk.** Per the byte-parity doctrine (playbook §4
+rule 3), a difficulty curve that is weaker than intended is not a
+player-visible defect — it is the curve upstream shipped — and the generator is
+solver-gated, so clearing the board first changes **every** Tricky and Hard
+description and forfeits the byte-match oracle (F1) along with reproducibility
+of any already-shared game ID. The quirk is commented at the site in
+`generator.ts` and pinned by a test (`keeps upstream's leftover-position
+difficulty gate`) so a well-meaning tidy-up cannot land silently. Reversing this
+is an owner call, and now a costed one.
+
+### F3 — Generation cost is fine; the alarming numbers were measurement error
+
+An early reading of "20 s for a 6×6 Hard board" turned out to be vitest
+overhead plus CPU contention, not the algorithm. Measured in a plain Node
+process (which is what the browser worker resembles): 6×6 Hard **0.6–2.0 s**,
+8×8 Hard **3.3–4.6 s**, and every preset below that is sub-second. A CPU
+profile put ~35% of generation in `spokesSolverRecount`, so that function's
+three per-cell spoke tallies were replaced by one 256-entry byte-lookup
+(`spokeCounts` in `state.ts`) — a pure constant-factor change, with the
+byte-match differential proving it altered no behaviour. No divergence needed.
+
+(A C-vs-TS speed comparison would be meaningless here: `scripts/build-native.sh`
+configures with an empty `CMAKE_BUILD_TYPE`, so the trace harness is an
+unoptimised build.)
+
+### F4 — The keyboard cursor stays a blitter, against the playbook's default
+
+Playbook §3.2 says a C cursor blitter usually should *not* become a TS blitter —
+fold the cursor into the cell's packed cache key instead, and let the cell
+repaint erase it. That does not work here. A Spokes cell repaint deliberately
+clears only a **plus-shape**, leaving its four corner squares untouched so the
+diagonal-line pass can own them (see the `render.ts` header); at its diagonal
+offsets the cursor lands inside exactly those corners, so a key-folded cursor
+would have no reliable way to be erased. The blitter is kept, and the recording
+`GameDrawing` still sees the cursor's real `drawLine` ops (only save/load are
+no-ops), so it is tier-2 testable regardless.
+
+### F5 — `validateParams` gains a difficulty check the C omits
+
+`decode_params` writes an out-of-range integer for an unrecognised difficulty
+letter and `validate_params` never checks it, so a hand-typed game id like
+`6x6dz` would index `spokes_diffchars` out of bounds in `encode_params`. The
+port decodes that to an invalid sentinel and rejects it with "Unknown
+difficulty rating" (the idiom Mathrax established). Inert on the generator
+path, so the differential is unaffected.
+
+### F6 — Not a Spokes bug: a fast click leaves the press highlight stuck
+
+Dev-verification surfaced that a plain click (press and release faster than the
+worker round-trip) leaves the pressed hub showing its green `COL_HOLDING` rim
+until the next input. It is **not** a port regression: `handlePointerDown` in
+`src/puzzle/puzzle-view-interactive.ts` awaits `processMouse(press)` before
+installing `pointerTracking`, so a `pointerup` arriving during that await is
+dropped by `handlePointerUp` and the release never reaches the game. Verified
+by unit test (press → highlight, release → cleared, both correct at the engine
+level) and by driving the **C/WASM** build of Spokes, which shows the identical
+stuck highlight. It affects every game with a press-driven overlay; Spokes just
+makes it maximally visible. Filed as its own change —
+`fix-click-release-race` — since the fix is app-shell input shared by all 49
+games.
+
 ## Risks
 
 - **Solver-gated generation cost.** Each candidate-line removal runs a full solve, and
