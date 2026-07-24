@@ -1,9 +1,38 @@
+import { availableParallelism } from "node:os";
 import { defineConfig } from "vitest/config";
+
+/**
+ * How many worker processes the suite may take.
+ *
+ * This box **runs deliberately busy with the developer's own work**, and vitest
+ * otherwise spawns one worker per logical core at normal priority — so a full
+ * run (or even an ad-hoc single-file run) saturates the machine and slows
+ * everything else down. Leaving two cores free costs a quiet box very little
+ * wall clock (the pool is already sharing a warm module graph, `isolate: false`
+ * below) and stops a test run from being the thing that makes the box
+ * unusable.
+ *
+ * It also protects the run itself. `scripts/gate.sh` used to argue that
+ * contention can only make a test *slower*, never *failed*, now that nothing is
+ * clock-gated — but that is only true up to the 600s ceiling below, and at load
+ * ~81 on 8 cores two Sixteen hint tests (~50s each solo) blew straight through
+ * it and failed the gate. Not oversubscribing in the first place is the fix
+ * that does not involve re-guessing a timeout.
+ *
+ * `VITEST_MAX_WORKERS` overrides it — set it to the core count in CI, where the
+ * box is dedicated and wall clock is what matters.
+ */
+function maxWorkers(): number {
+  const override = Number(process.env.VITEST_MAX_WORKERS);
+  if (Number.isInteger(override) && override > 0) return override;
+  return Math.max(2, availableParallelism() - 2);
+}
 
 export default defineConfig({
   test: {
     include: ["src/**/*.test.ts"],
     environment: "node",
+    maxWorkers: maxWorkers(),
     // ONE generous ceiling for the whole suite; no test sets its own.
     //
     // A timeout here is a backstop against a runaway test, NOT a performance
