@@ -51,7 +51,8 @@ solver(crossing ${CMAKE_SOURCE_DIR}/dsf.c)
 puzzle(mathrax
   DISPLAYNAME "Mathrax"
   DESCRIPTION "Latin square puzzle"
-  OBJECTIVE "Place each number according to the arithmetic clues.")
+  OBJECTIVE "Place each number according to the arithmetic clues."
+  TS_PORTED)  # native-TS port (openspec add-mathrax-ts-port); no mathrax.c/wasm
 
 puzzle(rome
   DISPLAYNAME "Rome"

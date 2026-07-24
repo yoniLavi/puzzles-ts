@@ -1,0 +1,229 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "o": 5,
+      "diff": 0,
+      "options": 63,
+      "seed": "mathrax-5-e",
+      "desc": "u2c,cS1aS0bS0S3bS3aS2a",
+      "verdict": 1
+    },
+    {
+      "o": 5,
+      "diff": 1,
+      "options": 63,
+      "seed": "mathrax-5-n",
+      "desc": "j1c4j,S1dS2bS2eM4a",
+      "verdict": 1
+    },
+    {
+      "o": 5,
+      "diff": 2,
+      "options": 63,
+      "seed": "mathrax-5-t",
+      "desc": "f3f1k,kS1S0S3b",
+      "verdict": 1
+    },
+    {
+      "o": 6,
+      "diff": 0,
+      "options": 63,
+      "seed": "mathrax-6-e",
+      "desc": "i3z,aD2bS1bA7A6bA9aA5aS4bA8A7e",
+      "verdict": 1
+    },
+    {
+      "o": 6,
+      "diff": 1,
+      "options": 63,
+      "seed": "mathrax-6-n",
+      "desc": "j6y,A5A9hA8cS3aObA8cS1a",
+      "verdict": 1
+    },
+    {
+      "o": 6,
+      "diff": 2,
+      "options": 63,
+      "seed": "mathrax-6-t",
+      "desc": "zj,bS1A6bS2S3A8S2dA8bS2A7A10S2d",
+      "verdict": 1
+    },
+    {
+      "o": 7,
+      "diff": 1,
+      "options": 63,
+      "seed": "mathrax-7-n",
+      "desc": "g1r5k5j,bD2cA7eS1eObS0S3aS3cS1aM12aObA8",
+      "verdict": 1
+    },
+    {
+      "o": 8,
+      "diff": 1,
+      "options": 63,
+      "seed": "mathrax-8-n",
+      "desc": "f3zg6a35a2i6h,eD2aS4aEkA10S1eD2bA10aA8fS3dS0S1b",
+      "verdict": 1
+    },
+    {
+      "o": 9,
+      "diff": 1,
+      "options": 63,
+      "seed": "mathrax-9-n",
+      "desc": "h5t4a7c2a8c7e9q5d8c6c3b,eA10D3S2aS3iOcM18eS2gS1aOS4aObS2nOc",
+      "verdict": 1
+    },
+    {
+      "o": 3,
+      "diff": 0,
+      "options": 63,
+      "seed": "mathrax-3-e",
+      "desc": "a3g,A4c",
+      "verdict": 1
+    },
+    {
+      "o": 3,
+      "diff": 2,
+      "options": 63,
+      "seed": "mathrax-3-t",
+      "desc": "a1e2a,cA4",
+      "verdict": 1
+    },
+    {
+      "o": 4,
+      "diff": 1,
+      "options": 63,
+      "seed": "mathrax-4-n",
+      "desc": "a1g4f,aS2fS2",
+      "verdict": 1
+    },
+    {
+      "o": 4,
+      "diff": 3,
+      "options": 63,
+      "seed": "mathrax-4-r",
+      "desc": "p,i",
+      "verdict": 2
+    },
+    {
+      "o": 5,
+      "diff": 3,
+      "options": 63,
+      "seed": "mathrax-5-r",
+      "desc": "y,p",
+      "verdict": 2
+    },
+    {
+      "o": 6,
+      "diff": 3,
+      "options": 63,
+      "seed": "mathrax-6-r",
+      "desc": "zj,y",
+      "verdict": 2
+    },
+    {
+      "o": 7,
+      "diff": 2,
+      "options": 63,
+      "seed": "mathrax-7-t",
+      "desc": "t6i1r,dS2aA8D2S1OkA10bD3bA9bS0aA9S0b",
+      "verdict": 1
+    },
+    {
+      "o": 8,
+      "diff": 0,
+      "options": 63,
+      "seed": "mathrax-8-e",
+      "desc": "f1v5j64b1p4b,S1OeD4bA9eS4dA11A9jS4aS3fS4A9aS2bA9",
+      "verdict": 1
+    },
+    {
+      "o": 9,
+      "diff": 2,
+      "options": 63,
+      "seed": "mathrax-9-t",
+      "desc": "v8q5zf9d7b,fOaS5eA11fM12fOaM6M12A12A13dS0aA10aS2dObA9S0dS0g",
+      "verdict": 1
+    },
+    {
+      "o": 6,
+      "diff": 1,
+      "options": 1,
+      "seed": "mathrax-6-n-A",
+      "desc": "d3k6b5c6b62c1a4b,bA7uA7",
+      "verdict": 1
+    },
+    {
+      "o": 6,
+      "diff": 1,
+      "options": 2,
+      "seed": "mathrax-6-n-S",
+      "desc": "n6j2d3e,aS1S1cS2cS1bS2eS1e",
+      "verdict": 1
+    },
+    {
+      "o": 6,
+      "diff": 1,
+      "options": 4,
+      "seed": "mathrax-6-n-M",
+      "desc": "a3c5b1e2h6c2b56c3,iM12o",
+      "verdict": 1
+    },
+    {
+      "o": 6,
+      "diff": 1,
+      "options": 8,
+      "seed": "mathrax-6-n-D",
+      "desc": "b16a2a6a3e43a4b2f1a34b6a,y",
+      "verdict": 1
+    },
+    {
+      "o": 6,
+      "diff": 1,
+      "options": 16,
+      "seed": "mathrax-6-n-E",
+      "desc": "3a65d4b62b6c1c25g5a1a,y",
+      "verdict": 1
+    },
+    {
+      "o": 6,
+      "diff": 1,
+      "options": 32,
+      "seed": "mathrax-6-n-O",
+      "desc": "5d12a5e6c612a4e3b2d,wOa",
+      "verdict": 1
+    },
+    {
+      "o": 6,
+      "diff": 2,
+      "options": 3,
+      "seed": "mathrax-6-t-AS",
+      "desc": "j4y,A5gA8fS4S3cA10aS1b",
+      "verdict": 1
+    },
+    {
+      "o": 6,
+      "diff": 1,
+      "options": 28,
+      "seed": "mathrax-6-n-MDE",
+      "desc": "d1b4j1a25e2g2,D2hM12lD2b",
+      "verdict": 1
+    },
+    {
+      "o": 7,
+      "diff": 0,
+      "options": 62,
+      "seed": "mathrax-7-e-noA",
+      "desc": "b15k34b7n3c3b1e2a,S0S1mD3aS2dS2aOaD2i",
+      "verdict": 1
+    },
+    {
+      "o": 5,
+      "diff": 2,
+      "options": 33,
+      "seed": "mathrax-5-t-AO",
+      "desc": "g1q,iEA5aA8c",
+      "verdict": 1
+    }
+  ]
+}

@@ -111,6 +111,14 @@ it (byte-match surface).
 4. `mathraxStripMathClues` — shuffle the `(o-1)*(o-1)` intersections and strip clues on
    the same "keep-while-solvable" rule.
 
+> **The first half of this decision was OVERTURNED during implementation — see
+> F7.** The strip loops' acceptance of an *ambiguous* verdict is not a harmless
+> quirk: it makes the entire `Recursive` tier ill-posed (30/30 sampled boards had
+> several solutions; the C fixtures are stripped to a blank grid). The port
+> requires a unique solve instead, with owner approval. The change is provably
+> inert below `Recursive`, so the byte-match on Easy/Normal/Tricky is untouched.
+> The second half — no "exactly this difficulty" gate — stands as written.
+
 **Two quirks to reproduce verbatim** (solver-gated ⇒ [playbook §4.4](../../docs/porting/game-port-playbook.md)):
 the strip loops treat `mathraxSolve` returning **any non-zero** (including `2` =
 ambiguous) as "still remove it" — do not tighten to "uniquely solvable." And the
@@ -266,3 +274,102 @@ so no `mathrax.wasm` is emitted, then archive the change with the deletion.
 
 None blocking. An explained candidate-elimination hint (Towers-grade) is a compelling
 follow-up, deliberately out of scope for this change.
+
+## Findings (recorded during implementation)
+
+### F1 — The move union follows the Latin family's shape, not D4's
+
+D4 proposed `kind: "set" | "pencil" | "markAll" | "solve"`. The implementation
+uses Keen/Towers' shape instead — `type: "set" | "pencilAll" | "pencilStrike" |
+"solve"`, with `set` carrying a `pencil` boolean. That is not cosmetic: the
+shared `adaptiveMarkAllMove` / `obviousCandidateMarks` helpers in
+`engine/candidate-hint.ts` **construct** `{type:"pencilAll"}` and
+`{type:"pencilStrike", marks}`, so §3.7's adaptive mark-all (and, later, the
+whole candidate-elimination hint framework) is only reachable with these names.
+
+### F2 — Two bitmask conventions, on purpose
+
+`mathrax.c` uses `BIT(d) = 1 << (d−1)` for *both* the solver's candidate masks
+and the player's pencil marks. The port keeps the solver's convention verbatim
+(it is byte-match surface — it decides the desc) but moves the player's marks to
+the Latin-family `1 << n`, which is what `candidate-hint.ts` reads. Marks never
+reach the desc or a save (the save codec replays moves), so the divergence is
+free. Documented at the top of `state.ts`.
+
+### F3 — `mathrax_options`' `~0` sentinel is kept as `~0`
+
+"No constraint" is upstream's `~0` (all 32 bits). JS's `-1` composes identically
+under `&`, `!x` and `x & (x−1)`, so it is kept rather than masked to
+`(1<<o)−1` — narrowing it would be a *different* value in the Easy-mode early
+return, and on a solver-gated generator a changed verdict is a changed desc.
+
+### F4 — `mathraxOptions` lives in `state.ts`, not `solver.ts`
+
+`mathrax_validate_game` (live error flags, called from `execute_move`) and the
+solver both need it. Putting it in `solver.ts` would make `state ↔ solver` a
+cycle; a clue's admissible digits are the clue's *meaning*, so it belongs with
+the clue encoding.
+
+### F5 — Upstream's `is_solver` validate branch is unreachable, so unported
+
+`mathrax_validate_game`'s third parameter is `false` at both of its call sites,
+and its `temp` scratch parameter is always `NULL`. Only the shipped branch is
+ported (playbook §4.4).
+
+### F6 — `latin_solver_alloc`'s failure return is ignored upstream
+
+`mathrax_solve` calls `latin_solver_alloc` without checking its result, then
+runs `latin_solver_main` on a partially-seeded cube; `latinSolver` returns
+`DIFF_IMPOSSIBLE` immediately instead. Alloc only fails on givens that already
+duplicate within a row/column, which the generator cannot produce and which
+`findMistakes`/`solve` cannot construct — it is reachable only from a
+hand-authored game ID, where reporting "impossible" is the better answer. Off
+the byte-match surface entirely.
+
+### F7 — **The Recursive tier generates ill-posed puzzles upstream (fixed)**
+
+Owner-approved divergence, and the change's headline finding.
+
+Both clue-stripping loops test `mathrax_solve`'s verdict for **bare
+truthiness** — but that verdict is `2` for *ambiguous*, which is truthy. Below
+`Recursive` no recursion runs, so the verdict can only be `0` (stuck) or `1`
+(solved) and nothing is wrong. At `Recursive` the generator strips straight past
+uniqueness: **30 of 30 sampled boards had more than one solution**, and the three
+C fixtures are stripped to a *completely blank grid* (`"p,i"`, `"y,p"`, `"zj,y"`
+— no givens, no clues at all).
+
+That is a genuine player-visible defect, not a difficulty curve (playbook §4
+rule 3): Check & Save can flag nothing, because `findMistakes` correctly refuses
+to judge a board with no unique answer, and Solve may show a different grid than
+the one the player legitimately finished on.
+
+**The fix** is two comparisons — both loops now require `SOLVE_UNIQUE`. It is
+*provably inert below Recursive* (that tier's verdict set is `{0,1}`, on which
+the old and new tests are identical), and the 25 Easy/Normal/Tricky byte-match
+fixtures stayed green through the change, which demonstrates it empirically.
+
+**What it costs**: the byte-match oracle on the Recursive tier alone. That tier
+keeps a weaker, order-independent check (playbook §4.8) — the trace harness now
+also records C's solver verdict per fixture, and the TS solver must reproduce it
+on all 28 descriptions, which pins the recursion path against real C output.
+
+Attribution note worth keeping: the byte-match is *why* this is confidently
+upstream's bug rather than a porting error. The TS generator reproduced C's
+Recursive descriptions byte-for-byte before the fix, so C's own solver returned
+"ambiguous" on the same intermediate boards and C accepted the removal anyway.
+
+### F8 — A half-tile strip below the board carries the pencil-mode indicator
+
+Upstream's web build sets `NARROW_BORDERS`, so `BORDER = 1` and there is no
+border to draw §3.7's pencil-mode indicator in — nor any cache-safe cell (every
+cell can carry a digit, a full pencil grid, and up to four clue circles). The
+canvas therefore gains a `tilesize/2` strip *below* the board. The grid's own
+geometry, and so `fromCoord` and the width, are exactly upstream's.
+
+### F9 — `solve` accepts an ambiguous board; `findMistakes` does not
+
+An upstream-generated `Recursive` game ID still describes an ambiguous board, and
+upstream's Solve works on one (the Latin recursion writes the first solution it
+finds). So `solve` accepts `SOLVE_UNIQUE | SOLVE_AMBIGUOUS`, while
+`findMistakes` requires uniqueness — with several solutions, a cell differing
+from the one we happened to find is not a mistake.
