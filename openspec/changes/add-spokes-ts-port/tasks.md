@@ -145,12 +145,26 @@
 - [x] 9.6 Update `docs/porting/game-port-playbook.md` if the port surfaces anything
       new (the eight-way spoke model, the half-grid cursor, the flat digit codec).
 
-## 10. Stage 2 — on owner acceptance only (design D11)
+## 10. Owner-review follow-ups (2026-07-24)
 
-- [ ] 10.1 Add `TS_PORTED` to the `puzzle(spokes …)` entry in
+- [x] 10.1 Fix the difficulty gate: run the "…and not one tier easier" check from
+      an empty position rather than the previous candidate's leftover. Keep the
+      byte-match oracle by giving the generator an `upstreamDirtyGate` option that
+      only `spokes-differential.test.ts` sets. Re-measure grading *and* cost, and
+      replace the quirk-pinning test with one that asserts honest grading.
+- [x] 10.2 Mark hubs whose spoke count is met (owner request; the Bridges fork
+      aid). New `COL_SATISFIED` a clear step below the background — upstream's
+      pure-white fill is invisible against either colour scheme's background —
+      plus a `mark-satisfied` preference, default on. Tier-2 tests for on, off and
+      the untouched board.
+- [x] 10.3 Dev-verify both in the browser and re-run the full gate.
+
+## 11. Stage 2 — on owner acceptance only (design D11)
+
+- [ ] 11.1 Add `TS_PORTED` to the `puzzle(spokes …)` entry in
       `puzzles/unreleased/CMakeLists.txt` (no `spokes.wasm` is built).
-- [ ] 10.2 Delete `puzzles/unreleased/spokes.c` and the `spokes-trace` harness (and
+- [ ] 11.2 Delete `puzzles/unreleased/spokes.c` and the `spokes-trace` harness (and
       its `cliprogram()` line); delete any advisory `scripts/diff-spokes.test.ts`.
-- [ ] 10.3 `rm -rf build/wasm/` and rebuild — spokes served by TS, no `spokes.wasm`.
+- [ ] 11.3 `rm -rf build/wasm/` and rebuild — spokes served by TS, no `spokes.wasm`.
       Icons already exist.
-- [ ] 10.4 Archive, then commit port + archive together.
+- [ ] 11.4 Archive, then commit port + archive together.

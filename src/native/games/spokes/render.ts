@@ -3,10 +3,10 @@
  *
  * Each cell holds one hub: a filled circle carrying a small dot for every
  * spoke that could exist, the clue digit in the middle, and a thick line out
- * to each connected neighbour. A hub whose clue is satisfied fills white
- * (`COL_DONE`); one whose group can draw no further line while the board is
- * still in pieces gets a red rim; the hub being dragged from (or to) turns
- * green.
+ * to each connected neighbour. A hub whose clue is satisfied greys out
+ * ({@link COL_SATISFIED}); one whose group can draw no further line while the
+ * board is still in pieces gets a red rim; the hub being dragged from (or to)
+ * turns green.
  *
  * **The corner protocol is the one subtle thing here.** A diagonal line runs
  * through the point where four cells meet, and each of those cells draws its
@@ -62,9 +62,29 @@ export const COL_BORDER = 1;
 export const COL_HOLDING = 2;
 export const COL_LINE = 3;
 export const COL_MARK = 4;
+/** Upstream's white; here it survives only as the completion-flash colour —
+ * see {@link COL_SATISFIED} for why it no longer fills a finished hub. */
 export const COL_DONE = 5;
 export const COL_ERROR = 6;
 export const COL_CURSOR = 7;
+/**
+ * Fill for a hub that already has as many spokes as its clue asks for — the
+ * "stop thinking about this one" cue, the same fork aid Bridges greys a
+ * satisfied island with.
+ *
+ * Upstream nominally has this cue already (it fills such a hub with pure white)
+ * but it is invisible in practice: against a near-white light-mode background
+ * it is barely a shade, and in dark mode `puzzle-view.ts` hands the game *pure
+ * white* as its background, so the "highlight" is exactly the background. A
+ * clear step down from the background reads in both modes, since the dark-mode
+ * adaptation inverts grey lightness about the real background.
+ */
+export const COL_SATISFIED = 8;
+
+/** How far {@link COL_SATISFIED} steps away from the background. Large enough
+ * to read at a glance across a board, small enough to keep the black clue digit
+ * and the spoke dots legible on top of it. */
+const SATISFIED_SHADE = 0.85;
 
 /**
  * Upstream takes the frontend background as-is (no `game_mkhighlight`) and
@@ -83,6 +103,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_DONE] = [1, 1, 1];
   out[COL_ERROR] = [1, 0, 0];
   out[COL_CURSOR] = [0, 0, 1];
+  out[COL_SATISFIED] = defaultBackground.map((c) => c * SATISFIED_SHADE) as Colour;
   return out;
 }
 
@@ -309,7 +330,8 @@ export function redraw(
       const ty = toCoord(y, ts);
       const lines = ds.scratch.lines[i];
 
-      const fill = lines === state.numbers[i] ? COL_DONE : COL_BACKGROUND;
+      const fill =
+        ui.markSatisfied && lines === state.numbers[i] ? COL_SATISFIED : COL_BACKGROUND;
       const border = flash
         ? COL_DONE
         : i === ui.dragStart || i === ui.dragEnd
