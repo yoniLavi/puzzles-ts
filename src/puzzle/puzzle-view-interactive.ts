@@ -274,6 +274,27 @@ export class PuzzleViewInteractive extends PuzzleView {
     readonly release: PuzzleButton;
   };
 
+  /**
+   * A press whose `processMouse` round-trip to the engine has been sent but not
+   * yet answered, so `pointerTracking` is not installed yet.
+   *
+   * Without this, a click faster than that round-trip loses its release: the
+   * `pointerup` arrives, finds no `pointerTracking`, and is dropped — so the
+   * puzzle never sees `LEFT_RELEASE`/`RIGHT_RELEASE` and any state it shows only
+   * while a press is held (a drag highlight, a lifted piece) stays on screen
+   * until some later, unrelated input. The midend's contract is one release per
+   * press, and the declined-press path below already honours it; this is the
+   * accepted-press path doing the same. `deferred` parks the release until
+   * tracking exists, and it is then replayed exactly once.
+   *
+   * This is the same shape as `detectSecondaryButton`'s `unhandledEvent`, which
+   * covers the *other* await in `handlePointerDown`.
+   */
+  private pressInFlight?: {
+    readonly pointerId: PointerEvent["pointerId"];
+    deferred?: PointerEvent;
+  };
+
   private async handlePointerDown(event: PointerEvent) {
     if (!this.puzzle || !this.canvas) {
       return;
@@ -333,7 +354,20 @@ export class PuzzleViewInteractive extends PuzzleView {
       release |= PuzzleButton.MOD_STYLUS;
     }
 
-    const consumed = await this.puzzle.processMouse(location, press);
+    // Releases arriving during this await are parked on `inFlight` rather than
+    // dropped, and replayed below once `pointerTracking` exists.
+    const inFlight: NonNullable<typeof this.pressInFlight> = { pointerId };
+    this.pressInFlight = inFlight;
+    let consumed: boolean;
+    try {
+      consumed = await this.puzzle.processMouse(location, press);
+    } finally {
+      // Only retract our own registration: a newer press may have replaced it.
+      if (this.pressInFlight === inFlight) {
+        this.pressInFlight = undefined;
+      }
+    }
+
     if (consumed) {
       this.pointerTracking = { drag, release, pointerId };
       try {
@@ -344,11 +378,22 @@ export class PuzzleViewInteractive extends PuzzleView {
       }
 
       if (unhandledEvent?.pointerId === pointerId) {
-        ({
+        await {
           pointermove: this.handlePointerMove,
           pointerup: this.handlePointerUp,
           pointercancel: this.handlePointerCancel,
-        })[unhandledEvent.type]?.call(this, unhandledEvent);
+        }[unhandledEvent.type]?.call(this, unhandledEvent);
+      }
+
+      // Exactly once: the guard fails if `unhandledEvent` above already ended
+      // this gesture (which clears `pointerTracking`), and a release parked
+      // here can never also arrive again for the same pointer.
+      if (inFlight.deferred && this.pointerTracking?.pointerId === pointerId) {
+        const deferred = inFlight.deferred;
+        await (deferred.type === "pointercancel"
+          ? this.handlePointerCancel
+          : this.handlePointerUp
+        ).call(this, deferred);
       }
     } else {
       // Puzzle doesn't want this mouse button, so don't bother tracking.
@@ -374,12 +419,16 @@ export class PuzzleViewInteractive extends PuzzleView {
       );
       // pointerCapture is automatically released on pointerup.
       this.pointerTracking = undefined;
+    } else if (this.pressInFlight?.pointerId === event.pointerId) {
+      this.pressInFlight.deferred = event;
     }
   }
 
   private async handlePointerCancel(event: PointerEvent) {
     if (this.pointerTracking?.pointerId === event.pointerId) {
       await this.cancelPointerTracking();
+    } else if (this.pressInFlight?.pointerId === event.pointerId) {
+      this.pressInFlight.deferred = event;
     }
   }
 

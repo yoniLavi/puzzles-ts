@@ -36,6 +36,7 @@ import {
   COL_ERROR,
   COL_HOLDING,
   COL_LINE,
+  COL_SATISFIED,
   newDrawState,
   PREFERRED_TILE_SIZE,
   redraw,
@@ -45,6 +46,7 @@ import { spokesSolve, spokesValidate } from "./solver.ts";
 import {
   clearBoard,
   cloneBoard,
+  cloneState,
   DIFF_EASY,
   DIFF_HARD,
   DIFF_TRICKY,
@@ -263,28 +265,37 @@ describe("spokes solver", () => {
     }
   });
 
-  it("keeps upstream's leftover-position difficulty gate", () => {
-    // A recorded finding, not an aspiration. Upstream's acceptance gate reads
-    // "…and it does *not* solve one tier easier", but it runs that re-solve on
-    // the scratch board's *leftover* position from the last candidate rather
-    // than on a cleared board — so it often rejects for reasons unrelated to
-    // the puzzle's difficulty, and lets through boards an easier tier can
-    // crack. Measured on a fixed sample: 10 of 12 4×4 "Hard" boards also solve
-    // at Tricky.
-    //
-    // Reproducing it is required — the generator is solver-gated, so clearing
-    // the board first changes every Tricky and Hard description and forfeits
-    // the byte-match differential. This test pins the observable consequence
-    // so a well-meaning tidy-up of the generator cannot land silently.
-    let easier = 0;
-    for (let k = 0; k < 4; k++) {
+  it("grades honestly: a Hard board is not crackable at Tricky", () => {
+    // The corrected difficulty gate (see `SpokesGenerateOptions`). Upstream's
+    // acceptance check reads "…and it does *not* solve one tier easier", but it
+    // re-solves the scratch board from the *leftover* position of the previous
+    // candidate rather than from empty, so it answers a question about that
+    // leftover instead of about the puzzle. Measured on 12 fixed seeds each:
+    // upstream's gate lets 10/12 4×4 and 5/12 6×6 "Hard" boards through that
+    // Tricky also cracks; clearing first gives 0/12 on both, and costs nothing
+    // (6×6 Tricky generation actually gets ~3× faster, because most of the
+    // dirty gate's rejections were spurious).
+    for (const k of [0, 1, 2, 3]) {
       const p: SpokesParams = { w: 4, h: 4, diff: "hard" };
       const { desc } = newSpokesDesc(p, randomNew(`gate-hard-${k}`));
       const b = cloneBoard(newState(p, desc));
       clearBoard(b);
-      if (spokesSolve(b, null, DIFF_TRICKY) === "valid") easier++;
+      expect(spokesSolve(b, null, DIFF_TRICKY)).not.toBe("valid");
+      clearBoard(b);
+      expect(spokesSolve(b, null, DIFF_HARD)).toBe("valid");
     }
-    expect(easier).toBeGreaterThan(0);
+  });
+
+  it("reproduces upstream's dirty gate when asked, for the differential", () => {
+    // The differential is the only caller of this flag; if it ever stopped
+    // changing the outcome, that oracle would be silently testing the shipped
+    // path instead of upstream's.
+    const p: SpokesParams = { w: 4, h: 4, diff: "hard" };
+    const clean = newSpokesDesc(p, randomNew("gate-flag"));
+    const upstream = newSpokesDesc(p, randomNew("gate-flag"), {
+      upstreamDirtyGate: true,
+    });
+    expect(clean.desc).not.toBe(upstream.desc);
   });
 
   it("solves an Easy board without the look-ahead", () => {
@@ -626,6 +637,45 @@ describe("spokes rendering", () => {
     expect(
       dr.ops.filter((o) => o.op === "line" && o.colour === 7 /* CURSOR */).length,
     ).toBe(8);
+  });
+
+  it("greys out a hub once its spoke count meets its clue", () => {
+    // Hub 0 in the fixture has clue 1, so one line satisfies it — and its
+    // partner at the far end of that line does not become satisfied by it.
+    const { recording } = renderScenario({
+      game: spokesGame,
+      id: FIX_ID,
+      moves: [{ kind: "set", index: 0, dir: DIR_RIGHT, state: SPOKE_LINE }],
+    });
+    expect(newState(FIX, FIX_DESC).numbers[0]).toBe(1);
+    expect(
+      recording.ops.some((o) => o.op === "circle" && o.fill === COL_SATISFIED),
+    ).toBe(true);
+  });
+
+  it("leaves every hub ungreyed on an untouched board", () => {
+    const { recording } = renderScenario({ game: spokesGame, id: FIX_ID });
+    expect(
+      recording.ops.some((o) => o.op === "circle" && o.fill === COL_SATISFIED),
+    ).toBe(false);
+  });
+
+  it("drops the grey when the preference is off", () => {
+    const state = newState(FIX, FIX_DESC);
+    const ui = newUi();
+    ui.markSatisfied = false;
+    const lit = cloneState(state);
+    spokesPlace(lit, 0, DIR_RIGHT, SPOKE_LINE);
+
+    const palette = spokesGame.colours(DEFAULT_BACKGROUND);
+    const ds = newDrawState(lit);
+    setTileSize(ds, TS);
+    const dr = new RecordingDrawing(palette);
+    redraw(dr, ds, null, lit, 1, ui, 0, 0);
+
+    expect(dr.ops.some((o) => o.op === "circle" && o.fill === COL_SATISFIED)).toBe(
+      false,
+    );
   });
 
   it("computes a bordered-free board size", () => {

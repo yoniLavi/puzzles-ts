@@ -558,6 +558,23 @@ cells grey. Derive the white from
 distinguishable. Exemplar:
 [`range/render.ts`](../../src/native/games/range/render.ts).
 
+**A "highlight" upstream draws as pure white may be invisible in this app — check
+both schemes.** Spokes fills a hub whose clue is satisfied with pure white
+(`COL_DONE`), which upstream's own frontends show against a grey background. Here
+it reads as nothing in light mode and as *literally the background* in dark mode,
+because `puzzle-view.ts` deliberately hands the game **pure white** as its
+background there (so that puzzles' `background × 0.9` derivations still work) and
+then adapts the returned palette itself. A cue that has to be seen must be a clear
+step **away** from the background — `defaultBackground × 0.85` is enough, and greys
+survive the dark-mode adaptation correctly because it inverts their lightness about
+the real background. When a game's own colour equals or nearly equals
+`COL_BACKGROUND`, that is a bug to fix, not fidelity to preserve (display was never
+in byte-parity scope). Pair the cue with a `GamePref` when it is a solving aid
+rather than game state — Bridges' `auto-mark-complete` and Spokes' `mark-satisfied`
+are the same control. Exemplars:
+[`spokes/render.ts`](../../src/native/games/spokes/render.ts) (`COL_SATISFIED`),
+[`bridges/render.ts`](../../src/native/games/bridges/render.ts).
+
 **Shade a completed-and-correct region with the *shared* colour, don't invent
 one.** When a game highlights a region/area the player has correctly finished
 (the local-completion feedback Galaxies and Rectangles give — *not* a
@@ -1481,15 +1498,28 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
   often a finished solution, which validates instantly and fails the attempt
   for no difficulty-related reason. Measured: the gate saw an already-complete
   board in 31–45% of attempts, and 10 of 12 4×4 "Hard" boards also solve at
-  Tricky. Clearing first genuinely fixes the grading *and* changes every
-  Tricky/Hard desc, so it forfeits the byte-match. Keep the lifecycle (rule 3 —
-  a weak difficulty curve is the curve upstream shipped, not a defect), comment
-  it at the site, and **pin the observable consequence in a test** so a tidy-up
-  can't land silently. General tell: when a generator hands its solver a
-  *reused* board, ask what state that board is in on entry — the answer is part
-  of the algorithm. Exemplar:
-  [`spokes/generator.ts`](../../src/native/games/spokes/generator.ts)
-  (`spokesGenerate`) + its `spokes.test.ts` guard.
+  Tricky. General tell: when a generator hands its solver a *reused* board, ask
+  what state that board is in on entry — the answer is part of the algorithm.
+  Exemplar: [`spokes/generator.ts`](../../src/native/games/spokes/generator.ts)
+  (`spokesGenerate`).
+
+  **How it was resolved, and the reusable move — keep the oracle *and* ship the
+  fix.** The first call was rule 3 ("a weak difficulty curve is the curve
+  upstream shipped, not a defect"), reproduce the lifecycle. The owner overruled
+  it — *upstream being clearly wrong is a reason to fix it* — and the
+  re-measurement showed the trade had been mis-costed anyway: clearing the board
+  takes 4×4/6×6 Hard from 10/12 and 5/12 over-graded to **0/12**, and generation
+  gets *faster* (6×6 Tricky 538 ms → 177 ms median), because most of the dirty
+  gate's rejections were spurious. The way to keep both: give the generator an
+  **`upstreamDirtyGate` option that restores upstream's exact behaviour and is
+  set by the differential alone**. The game ships the corrected algorithm; the
+  25 fixtures still match the C byte-for-byte; the only code outside the
+  oracle's reach is the four-line divergence itself, which gets a behavioural
+  test instead. Pair it with a test asserting the flag still *changes* the
+  outcome, or the oracle can silently decay into testing the shipped path.
+  Reach for this whenever a deliberate divergence sits on an otherwise
+  byte-matched path — it is much cheaper than either horn of "keep the bug" vs
+  "lose the differential".
 - **An early-out that exists only under a diagnostics define is NOT release
   semantics — port the release build.** Slant's `fill_square` has "already
   filled with the opposite value" and "would make a loop" checks whose

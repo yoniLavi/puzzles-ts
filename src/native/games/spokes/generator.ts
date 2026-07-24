@@ -12,7 +12,8 @@
  *    uniquely at the target difficulty. Otherwise put the line back.
  * 4. Accept only if the result additionally does *not* solve one tier easier,
  *    so the puzzle genuinely needs its difficulty (Easy is exempt — there is
- *    no easier tier).
+ *    no easier tier). **This step diverges from upstream, which runs it on a
+ *    dirty board** — see {@link SpokesGenerateOptions.upstreamDirtyGate}.
  *
  * The description is then just each hub's line count as a digit.
  *
@@ -143,22 +144,8 @@ function shufflePrefix(temp: Int32Array, count: number, rng: RandomState): void 
  *
  * Returns whether the result is acceptable at the requested difficulty.
  *
- * **A faithful quirk, deliberately kept — do not "fix" this.** The final "and
- * it must *not* solve one tier easier" gate re-runs the solver on `board` after
- * only its `numbers` have been refreshed: its `spokes` still carry whatever the
- * last candidate's solve left behind. Upstream does exactly this, so the gate
- * mostly does not measure what it claims to. Measured on fixed seeds: the gate
- * saw an already-*complete* leftover board (which validates instantly, failing
- * the attempt for no difficulty-related reason) in 31–45% of attempts, and 10
- * of 12 4×4 "Hard" boards also solve at Tricky.
- *
- * Clearing the board first would genuinely fix the grading — and would also
- * change **every** Tricky and Hard description, forfeiting the byte-match
- * differential that validates this generator, the whole tiered solver and the
- * codec together, plus the reproducibility of any shared game ID. A difficulty
- * curve weaker than intended is the curve upstream shipped, not a defect
- * (playbook §4 rule 3), so the object lifecycle is reproduced exactly.
- * `spokes.test.ts` pins the consequence so this cannot be tidied away silently.
+ * **The final gate diverges from upstream deliberately — see
+ * {@link SpokesGenerateOptions.upstreamDirtyGate}.**
  */
 function spokesGenerate(
   p: SpokesParams,
@@ -167,6 +154,7 @@ function spokesGenerate(
   scratch: SpokesScratch,
   temp: Int32Array,
   rng: RandomState,
+  upstreamDirtyGate: boolean,
 ): boolean {
   const { w, h } = p;
   const n = w * h;
@@ -199,9 +187,48 @@ function spokesGenerate(
     }
   }
 
+  // `board.numbers` is also what the caller reads to emit the desc, so this
+  // refresh happens on every path, Easy included.
   for (let k = 0; k < n; k++)
     board.numbers[k] = spokesCount(generated.spokes[k], SPOKE_LINE);
-  return diff === DIFF_EASY || spokesSolve(board, scratch, diff - 1) !== "valid";
+  if (diff === DIFF_EASY) return true;
+
+  if (!upstreamDirtyGate) {
+    // The divergence: run the gate's re-solve from an *empty* position, exactly
+    // as the strip loop above does, so its verdict is about this puzzle rather
+    // than about whatever the previous candidate left in the scratch board.
+    blankBoard(w, h, board);
+    for (let k = 0; k < n; k++)
+      board.numbers[k] = spokesCount(generated.spokes[k], SPOKE_LINE);
+    spokesGenerateClear(board);
+  }
+  return spokesSolve(board, scratch, diff - 1) !== "valid";
+}
+
+export interface SpokesGenerateOptions {
+  /**
+   * Reproduce upstream's *dirty* final-difficulty gate verbatim.
+   *
+   * Upstream's last check reads "…and it must not solve one tier easier", but
+   * it re-runs the solver on the scratch board after refreshing only its
+   * `numbers` — the `spokes` still hold whatever the previous candidate's solve
+   * left behind. So the gate frequently answers a question about the leftover
+   * position instead of about the puzzle: measured on fixed seeds it saw an
+   * already-*complete* board (which validates instantly, failing the attempt
+   * for no difficulty-related reason) in 31–45% of attempts, and it let through
+   * boards an easier tier cracks — 10 of 12 4×4 "Hard" boards also solved at
+   * Tricky. That is a plain defect, not a difficulty curve upstream chose, so
+   * {@link newSpokesDesc} clears the board first and the shipped game grades
+   * honestly.
+   *
+   * Because the generator is solver-gated, that changes every Tricky and Hard
+   * description — which would cost the byte-match differential that validates
+   * the generator, the whole tiered solver and the codec together. This flag
+   * keeps that oracle: `spokes-differential.test.ts` sets it, so the fixtures
+   * still match the C byte-for-byte and the only line the oracle no longer
+   * covers is the four-line clear below. Nothing else should ever set it.
+   */
+  readonly upstreamDirtyGate?: boolean;
 }
 
 /**
@@ -212,7 +239,11 @@ function spokesGenerate(
  * attempts), and exhausting it throws rather than returning a fallback, so no
  * seed can quietly start producing a different board.
  */
-export function newSpokesDesc(p: SpokesParams, rng: RandomState): { desc: string } {
+export function newSpokesDesc(
+  p: SpokesParams,
+  rng: RandomState,
+  options: SpokesGenerateOptions = {},
+): { desc: string } {
   const { w, h } = p;
   const n = w * h;
   const board = blankBoard(w, h);
@@ -220,8 +251,9 @@ export function newSpokesDesc(p: SpokesParams, rng: RandomState): { desc: string
   const temp = new Int32Array(n * 3);
   const scratch = new SpokesScratch(n);
 
+  const dirty = options.upstreamDirtyGate ?? false;
   const attempt = retryLimit(`spokes: generation (${w}x${h} ${p.diff})`);
-  while (!spokesGenerate(p, generated, board, scratch, temp, rng)) attempt();
+  while (!spokesGenerate(p, generated, board, scratch, temp, rng, dirty)) attempt();
 
   let desc = "";
   for (let i = 0; i < n; i++) desc += String.fromCharCode(board.numbers[i] + 48);

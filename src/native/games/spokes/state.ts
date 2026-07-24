@@ -443,10 +443,21 @@ export interface SpokesUi {
    * pair's direction pickers. */
   cx: number;
   cy: number;
+  /** Fork aid: grey out a hub once its spoke count matches its clue. Visual
+   * only — a satisfied hub stays fully editable. */
+  markSatisfied: boolean;
 }
 
 export function newUi(): SpokesUi {
-  return { dragStart: -1, dragEnd: -1, drag: "none", cshow: false, cx: 0, cy: 0 };
+  return {
+    dragStart: -1,
+    dragEnd: -1,
+    drag: "none",
+    cshow: false,
+    cx: 0,
+    cy: 0,
+    markSatisfied: true,
+  };
 }
 
 // --- text format ------------------------------------------------------------

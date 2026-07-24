@@ -249,20 +249,14 @@ Measured consequences (fixed seeds, this port):
   across 4×4/6×6 Tricky/Hard.
 - **10 of 12** 4×4 "Hard" boards also solve at Tricky; 3 of 12 "Tricky" boards
   also solve at Easy. The tiers grade far more weakly than advertised.
-- Clearing the board before the gate *does* fix the grading (0 of 6 solve one
-  tier down at either level) — and costs 4×4 Tricky **less** time (4.8 → 1.0
-  attempts) but 4×4 Hard **more** (3.3 → 15.2 attempts, 202 → 1045 ms), because
-  the gate then genuinely constrains.
+- Clearing the board before the gate *does* fix the grading.
 
-**Decision: reproduce the quirk.** Per the byte-parity doctrine (playbook §4
-rule 3), a difficulty curve that is weaker than intended is not a
-player-visible defect — it is the curve upstream shipped — and the generator is
-solver-gated, so clearing the board first changes **every** Tricky and Hard
-description and forfeits the byte-match oracle (F1) along with reproducibility
-of any already-shared game ID. The quirk is commented at the site in
-`generator.ts` and pinned by a test (`keeps upstream's leftover-position
-difficulty gate`) so a well-meaning tidy-up cannot land silently. Reversing this
-is an owner call, and now a costed one.
+**First decision: reproduce the quirk** — on the reading that a weaker-than-
+intended difficulty curve is the curve upstream shipped (playbook §4 rule 3),
+weighed against losing the byte-match oracle. **Overturned by the owner
+2026-07-24** ("it's ok to fix issues where upstream is clearly wrong"), and the
+re-measurement that followed shows the trade was never as expensive as F2
+originally costed it. See F7.
 
 ### F3 — Generation cost is fine; the alarming numbers were measurement error
 
@@ -334,3 +328,46 @@ games.
 None blocking. Spokes ships a working C/WASM fallback, its icons and augmentation
 summary exist, and the generator/solver/codec are faithfully portable with a
 byte-match oracle. The explained hint is a deliberately separate later change.
+
+### F7 — The gate is fixed, and it costs nothing (owner call, 2026-07-24)
+
+`spokesGenerate` now blanks the scratch board, re-derives the clues and clears
+it before the "…and not one tier easier" solve, exactly as the strip loop above
+it already does. Two things that were wrong in F2's costing:
+
+- **Grading**, 12 fixed seeds each. Upstream's gate: 10/12 4×4 Hard and 5/12
+  6×6 Hard boards also solve at Tricky. Cleared: **0/12 at every size and tier
+  measured**. This is not a marginal improvement — the tier label was close to
+  meaningless at 4×4 Hard.
+- **Cost** (plain Node, median of 6 seeds). 6×6 Tricky **538 ms → 177 ms**,
+  6×6 Hard 1055 ms → 1023 ms, 8×8 Hard 2853 ms → 2019 ms. Fixing it made
+  generation *faster*, because most of the dirty gate's rejections were
+  spurious: it was throwing away perfectly good boards on the strength of a
+  leftover position. F2's "4×4 Hard 3.3 → 15.2 attempts, 202 → 1045 ms" was
+  measured under vitest contention and does not reproduce (4×4 Hard is 8 ms →
+  74 ms — both trivial).
+
+**The oracle is kept.** `newSpokesDesc` takes an `upstreamDirtyGate` option that
+restores upstream's exact gate, and `spokes-differential.test.ts` — its only
+caller, guarded by a test asserting the flag still changes the outcome — sets
+it. So all 25 fixtures still match the C byte-for-byte, and the only code the
+oracle no longer covers is the four-line clear itself, which is covered
+behaviourally instead ("grades honestly: a Hard board is not crackable at
+Tricky"). This is worth naming as a reusable move: an oracle exists to validate
+*the hard parts*, and a flag that lets the differential run the upstream
+algorithm while the game ships the corrected one keeps both, at the price of one
+boolean.
+
+### F8 — The satisfied-hub cue existed upstream but was invisible (owner request)
+
+The owner asked for the Bridges-style "this cell already has all its
+connections" colour. Spokes already had it — `game_redraw` fills a hub whose
+line count matches its clue with `COL_DONE`, which is pure white — but it cannot
+be seen in either colour scheme: light mode's background is a near-white grey,
+and in dark mode `puzzle-view.ts` deliberately hands the game **pure white** as
+its background, so the "highlight" *is* the background. Display code has never
+been in byte-parity scope, so this is simply fixed: a new `COL_SATISFIED` a
+clear step below the background (greys invert correctly under the dark-mode
+adaptation, so one derivation serves both), and a `mark-satisfied` preference
+defaulting on, mirroring Bridges' `auto-mark-complete`. `COL_DONE` survives as
+the completion-flash colour only.
