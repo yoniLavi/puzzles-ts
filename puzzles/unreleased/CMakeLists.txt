@@ -15,8 +15,8 @@ set(subsets_crop 432x540 182x182+124+232)
 puzzle(abcd
   DISPLAYNAME "ABCD"
   DESCRIPTION "Letter placement puzzle"
-  OBJECTIVE "Place letters according to the numbers. Identical letters cannot touch.")
-solver(abcd)
+  OBJECTIVE "Place letters according to the numbers. Identical letters cannot touch."
+  TS_PORTED)  # native-TS port (openspec add-abcd-ts-port); no abcd.c/wasm
 
 puzzle(ascent
   DISPLAYNAME "Ascent"
