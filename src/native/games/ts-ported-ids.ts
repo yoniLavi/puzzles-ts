@@ -34,6 +34,7 @@ export const TS_PORTED_PUZZLE_IDS: ReadonlySet<string> = new Set([
   "loopy",
   "magnets",
   "map",
+  "mathrax",
   "mines",
   "mosaic",
   "net",

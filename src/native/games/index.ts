@@ -38,6 +38,7 @@ import { lightupGame } from "./lightup/index.ts";
 import { loopyGame } from "./loopy/index.ts";
 import { magnetsGame } from "./magnets/index.ts";
 import { mapGame } from "./map/index.ts";
+import { mathraxGame } from "./mathrax/index.ts";
 import { minesGame } from "./mines/index.ts";
 import { mosaicGame } from "./mosaic/index.ts";
 import { netGame } from "./net/index.ts";
@@ -96,6 +97,7 @@ export function registerAllGames(): void {
   registerGame(loopyGame);
   registerGame(magnetsGame);
   registerGame(mapGame);
+  registerGame(mathraxGame);
   registerGame(minesGame);
   registerGame(mosaicGame);
   registerGame(netGame);

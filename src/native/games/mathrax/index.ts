@@ -1,0 +1,469 @@
+/**
+ * Mathrax — native TS port of `puzzles/unreleased/mathrax.c` (© 2019 Lennard
+ * Sprong). Fill an `o × o` grid with digits `1..o`, no repeat in any row or
+ * column, so that every clue sitting on an interior grid intersection holds: an
+ * arithmetic clue means the operation gives the same result on both diagonal
+ * pairs, `=` means each diagonal pair is equal, and `E`/`O` mean all four
+ * surrounding digits are even / odd.
+ *
+ * Controls follow the Solo/Keen family: left-click (or the cursor) highlights a
+ * cell for a real entry, right-click toggles pencil mode, a digit enters or
+ * pencil-toggles that value, and backspace/space/`0` clears. Contradictions
+ * highlight red live; Check & Save additionally flags entries and notes that
+ * contradict the unique solution.
+ */
+
+import type {
+  Colour,
+  ConfigValues,
+  GameStatus,
+  KeyLabel,
+  Point,
+  Size,
+} from "../../../puzzle/types.ts";
+import { adaptiveMarkAllMove } from "../../engine/candidate-hint.ts";
+import { winFlash } from "../../engine/flash.ts";
+import {
+  type Game,
+  type PresetMenu,
+  type SolveResult,
+  UI_UPDATE,
+  type UiUpdate,
+} from "../../engine/game.ts";
+import { digitKeys } from "../../engine/key-labels.ts";
+import { rowColRegions } from "../../engine/latin-hint.ts";
+import { parseConfigInt } from "../../engine/params.ts";
+import {
+  CURSOR_SELECT,
+  CURSOR_SELECT2,
+  gridCursorMove,
+  isCursorMove,
+  LEFT_BUTTON,
+  RIGHT_BUTTON,
+  stripModifiers,
+} from "../../engine/pointer.ts";
+import { registerGame } from "../../engine/registry.ts";
+import type { RandomState } from "../../random/index.ts";
+import { newMathraxDesc } from "./generator.ts";
+import {
+  colours,
+  computeSize,
+  FLASH_TIME,
+  fromCoord,
+  type MathraxDrawState,
+  newDrawState,
+  PREFERRED_TILE_SIZE,
+  redraw,
+  setTileSize,
+} from "./render.ts";
+import { mathraxSolve, SOLVE_AMBIGUOUS, SOLVE_UNIQUE } from "./solver.ts";
+import {
+  cloneState,
+  DIFF_NAMES,
+  DIFF_RECURSIVE,
+  decodeParams,
+  defaultParams,
+  diffFromLevel,
+  diffName,
+  diffToLevel,
+  encodeParams,
+  F_IMMUTABLE,
+  type MathraxMove,
+  type MathraxParams,
+  type MathraxState,
+  type MathraxUi,
+  mathraxValidate,
+  newState,
+  newUi,
+  OPTION_ADD,
+  OPTION_DIV,
+  OPTION_EQL,
+  OPTION_MUL,
+  OPTION_ODD,
+  OPTION_SUB,
+  OPTIONSMASK,
+  STATUS_COMPLETE,
+  status,
+  validateDesc,
+  validateParams,
+} from "./state.ts";
+
+/** A player marking that contradicts the unique solution:
+ * - `"cell"` — a filled-in digit that is wrong;
+ * - `"note"` — an empty cell whose non-empty pencil notes have crossed out the
+ *   cell's solution digit (playbook §3.7). */
+export interface MathraxMistake {
+  kind: "cell" | "note";
+  x: number;
+  y: number;
+}
+
+// --- presets ---------------------------------------------------------------
+
+const PRESETS: MathraxParams[] = [
+  { o: 5, diff: "easy", options: OPTIONSMASK },
+  { o: 5, diff: "normal", options: OPTIONSMASK },
+  { o: 5, diff: "tricky", options: OPTIONSMASK },
+  { o: 6, diff: "easy", options: OPTIONSMASK },
+  { o: 6, diff: "normal", options: OPTIONSMASK },
+  { o: 6, diff: "tricky", options: OPTIONSMASK },
+  { o: 7, diff: "normal", options: OPTIONSMASK },
+  { o: 8, diff: "normal", options: OPTIONSMASK },
+  { o: 9, diff: "normal", options: OPTIONSMASK },
+];
+
+function presets(): PresetMenu<MathraxParams> {
+  return {
+    title: "Mathrax",
+    submenu: PRESETS.map((p) => ({
+      title: `${p.o}x${p.o} ${diffName(p.diff)}`,
+      params: p,
+    })),
+  };
+}
+
+// --- input -----------------------------------------------------------------
+
+function interpretMove(
+  state: MathraxState,
+  ui: MathraxUi,
+  ds: MathraxDrawState | null,
+  p: Point,
+  rawButton: number,
+): MathraxMove | null | UiUpdate {
+  const o = state.params.o;
+  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const button = stripModifiers(rawButton);
+
+  const gx = fromCoord(p.x, ts);
+  const gy = fromCoord(p.y, ts);
+
+  if (gx >= 0 && gx < o && gy >= 0 && gy < o) {
+    const filled = state.grid[gy * o + gx] !== 0;
+
+    if (button === LEFT_BUTTON) {
+      // Sticky pencil mode (fork): a left-click only moves the highlight and
+      // keeps the current mode; upstream (sticky off) reverts to real entry.
+      if (
+        ui.cshow &&
+        ui.hx === gx &&
+        ui.hy === gy &&
+        (ui.pencilSticky || !ui.cpencil)
+      ) {
+        ui.cshow = false;
+      } else {
+        ui.hx = gx;
+        ui.hy = gy;
+        ui.cshow = true;
+        if (!ui.pencilSticky) ui.cpencil = false;
+      }
+      // A given can't be edited, so never leave it highlighted.
+      if (state.flags[gy * o + gx] & F_IMMUTABLE) ui.cshow = false;
+      ui.ckey = false;
+      return UI_UPDATE;
+    }
+
+    if (button === RIGHT_BUTTON) {
+      if (ui.pencilSticky) {
+        // Toggle the persistent pencil mode (CapsLock-style), and only move the
+        // highlight onto a cell that can actually take a mark.
+        ui.cpencil = !ui.cpencil;
+        if (!filled) {
+          ui.hx = gx;
+          ui.hy = gy;
+          ui.cshow = true;
+        }
+      } else {
+        if (!ui.cshow || !ui.cpencil || ui.hx !== gx || ui.hy !== gy) {
+          ui.hx = gx;
+          ui.hy = gy;
+          ui.cpencil = true;
+          ui.cshow = true;
+        } else {
+          ui.cshow = false;
+        }
+        if (filled) ui.cshow = false;
+      }
+      ui.ckey = false;
+      return UI_UPDATE;
+    }
+  }
+
+  if (isCursorMove(button)) {
+    const moved = gridCursorMove(button, ui.hx, ui.hy, o, o) ?? { x: ui.hx, y: ui.hy };
+    ui.hx = moved.x;
+    ui.hy = moved.y;
+    ui.cshow = true;
+    ui.ckey = true;
+    return UI_UPDATE;
+  }
+
+  if (ui.cshow && button === CURSOR_SELECT) {
+    ui.cpencil = !ui.cpencil;
+    ui.ckey = true;
+    return UI_UPDATE;
+  }
+
+  // Digit entry / clear. `CURSOR_SELECT2` is the space bar; `8`/`127` are
+  // backspace and delete (upstream binds only `'\b'`, but the web frontend
+  // delivers Delete as 127 and there is nothing else it could mean here).
+  const isDigit = button >= 49 && button <= 57; // '1'..'9'
+  const isClear =
+    button === CURSOR_SELECT2 || button === 8 || button === 127 || button === 48;
+  if (ui.cshow && (isDigit || isClear)) {
+    const c = isDigit ? button - 48 : 0;
+    const i = ui.hy * o + ui.hx;
+
+    if (c > o) return null;
+    // A filled square can't take a pencil mark (reachable via the cursor).
+    if (ui.cpencil && state.grid[i] !== 0) return null;
+    // Re-entering the digit already there changes nothing.
+    if (!ui.cpencil && state.grid[i] === c) {
+      if (ui.ckey) return null;
+      ui.cshow = false;
+      return UI_UPDATE;
+    }
+    if (state.flags[i] & F_IMMUTABLE) return null;
+
+    if (!ui.ckey && !ui.cpencil) ui.cshow = false;
+    return { type: "set", x: ui.hx, y: ui.hy, n: c, pencil: ui.cpencil };
+  }
+
+  // 'M' / 'm': fill every empty cell's notes, then — on an already-noted board —
+  // strike the candidates already placed in that cell's row or column
+  // (playbook §3.7's adaptive mark-all). Mathrax's uniqueness regions are
+  // exactly the row and the column; a clue is *not* a uniqueness region.
+  if (button === 77 || button === 109) {
+    return adaptiveMarkAllMove<MathraxMove>(state.grid, state.marks, o, (x, y) =>
+      rowColRegions(x, y, o),
+    );
+  }
+
+  return null;
+}
+
+// --- moves -----------------------------------------------------------------
+
+function executeMove(state: MathraxState, move: MathraxMove): MathraxState {
+  const o = state.params.o;
+  const next = cloneState(state);
+
+  switch (move.type) {
+    case "set": {
+      const i = move.y * o + move.x;
+      if (state.flags[i] & F_IMMUTABLE) throw new Error("mathrax: cell is a given");
+      if (move.pencil) {
+        if (move.n === 0) next.marks[i] = 0;
+        else next.marks[i] ^= 1 << move.n;
+      } else {
+        next.grid[i] = move.n;
+      }
+      // Upstream recomputes the live error flags (and the completion test) after
+      // *both* a real entry and a pencil change.
+      if (mathraxValidate(o, next.grid, next.clues, next.flags) === STATUS_COMPLETE) {
+        next.completed = true;
+      }
+      return next;
+    }
+    case "pencilAll": {
+      const all = (1 << (o + 1)) - (1 << 1); // bits 1..o
+      for (let i = 0; i < o * o; i++) if (!next.grid[i]) next.marks[i] = all;
+      return next;
+    }
+    case "pencilStrike": {
+      for (const { x, y, n } of move.marks) next.marks[y * o + x] &= ~(1 << n);
+      return next;
+    }
+    case "solve": {
+      for (let i = 0; i < o * o; i++) {
+        if (!(next.flags[i] & F_IMMUTABLE)) {
+          next.grid[i] = move.grid[i];
+          next.marks[i] = 0;
+        }
+      }
+      next.completed =
+        mathraxValidate(o, next.grid, next.clues, next.flags) === STATUS_COMPLETE;
+      next.cheated = next.completed;
+      return next;
+    }
+  }
+}
+
+// --- solving ---------------------------------------------------------------
+
+/**
+ * Solve from the givens alone into a fresh grid. Derives the answer from the
+ * placed givens only — never from the player's notes, since a note can be wrong
+ * and that is exactly what `findMistakes` is checking.
+ *
+ * `requireUnique` separates the two callers. `findMistakes` needs a *unique*
+ * answer: with several solutions, a cell differing from the one we happened to
+ * find is not a mistake. `solve` does not — any complete valid grid is a
+ * legitimate answer to show, which keeps Solve working on the ambiguous boards
+ * an upstream-generated `Recursive` game ID still describes (see the
+ * divergence note in `generator.ts`).
+ */
+function solveFromGivens(
+  state: MathraxState,
+  requireUnique: boolean,
+): Uint8Array | null {
+  const o = state.params.o;
+  const grid = new Uint8Array(o * o);
+  for (let i = 0; i < o * o; i++)
+    if (state.flags[i] & F_IMMUTABLE) grid[i] = state.grid[i];
+  const verdict = mathraxSolve(o, grid, state.clues, DIFF_RECURSIVE);
+  const ok = requireUnique
+    ? verdict === SOLVE_UNIQUE
+    : verdict === SOLVE_UNIQUE || verdict === SOLVE_AMBIGUOUS;
+  return ok ? grid : null;
+}
+
+function solve(orig: MathraxState): SolveResult<MathraxMove> {
+  const soln = solveFromGivens(orig, false);
+  if (!soln) return { ok: false, error: "No solution exists for this puzzle" };
+  return { ok: true, move: { type: "solve", grid: Array.from(soln) } };
+}
+
+function findMistakes(state: MathraxState): readonly MathraxMistake[] {
+  const o = state.params.o;
+  const soln = solveFromGivens(state, true);
+  if (!soln) return [];
+
+  const out: MathraxMistake[] = [];
+  for (let i = 0; i < o * o; i++) {
+    const x = i % o;
+    const y = (i / o) | 0;
+    if (state.grid[i]) {
+      if (state.grid[i] !== soln[i]) out.push({ kind: "cell", x, y });
+    } else if (state.marks[i] !== 0 && !(state.marks[i] & (1 << soln[i]))) {
+      // Notes are first-class markings: crossing the solution digit out of a
+      // cell is as wrong as writing the wrong digit in it.
+      out.push({ kind: "note", x, y });
+    }
+  }
+  return out;
+}
+
+function flashLength(
+  from: MathraxState,
+  to: MathraxState,
+  _dir: number,
+  _ui: MathraxUi,
+): number {
+  return winFlash(from, to, FLASH_TIME);
+}
+
+// --- the game --------------------------------------------------------------
+
+/** The six clue-type checkboxes, in the Custom dialog's (and the description
+ * summary's) order. The `kw`s are the C config-name slugs, so the TS and C
+ * builds present the identical form and `augmentation.ts`'s Mathrax summary
+ * reads the keys it expects. */
+const CLUE_OPTIONS: ReadonlyArray<{ kw: string; name: string; bit: number }> = [
+  { kw: "addition-clues", name: "Addition clues", bit: OPTION_ADD },
+  { kw: "subtraction-clues", name: "Subtraction clues", bit: OPTION_SUB },
+  { kw: "multiplication-clues", name: "Multiplication clues", bit: OPTION_MUL },
+  { kw: "division-clues", name: "Division clues", bit: OPTION_DIV },
+  { kw: "equality-clues", name: "Equality clues", bit: OPTION_EQL },
+  { kw: "even-odd-clues", name: "Even/odd clues", bit: OPTION_ODD },
+];
+
+export const mathraxGame: Game<
+  MathraxParams,
+  MathraxState,
+  MathraxMove,
+  MathraxUi,
+  MathraxDrawState,
+  MathraxMistake
+> = {
+  id: "mathrax",
+  wantsStatusbar: false,
+  isTimed: false,
+  canSolve: true,
+  canFormatAsText: false,
+  canMarkAll: true,
+  // Upstream `REQUIRE_RBUTTON`: the right button is pencil mode, so a touch
+  // frontend must surface a secondary-action affordance.
+  needsRightButton: true,
+
+  defaultParams,
+  presets,
+  encodeParams,
+  decodeParams,
+  validateParams,
+
+  paramConfig: [
+    {
+      kw: "size",
+      name: "Size",
+      type: "string",
+      get: (p) => String(p.o),
+      set: (p, v) => {
+        p.o = parseConfigInt(v);
+      },
+    },
+    {
+      kw: "difficulty",
+      name: "Difficulty",
+      type: "choices",
+      choices: [...DIFF_NAMES],
+      get: (p) => diffToLevel(p.diff),
+      set: (p, v) => {
+        p.diff = diffFromLevel(v);
+      },
+    },
+    ...CLUE_OPTIONS.map(({ kw, name, bit }) => ({
+      kw,
+      name,
+      type: "boolean" as const,
+      get: (p: MathraxParams) => (p.options & bit) !== 0,
+      set: (p: MathraxParams, v: boolean) => {
+        p.options = v ? p.options | bit : p.options & ~bit;
+      },
+    })),
+  ],
+  describeParams: (p): ConfigValues => ({
+    size: String(p.o),
+    difficulty: diffToLevel(p.diff),
+    ...Object.fromEntries(
+      CLUE_OPTIONS.map(({ kw, bit }) => [kw, p.options & bit ? 1 : 0]),
+    ),
+  }),
+
+  newDesc: (p, rng: RandomState) => newMathraxDesc(p, rng),
+  validateDesc,
+  newState,
+  newUi,
+
+  interpretMove,
+  executeMove,
+  status: (s): GameStatus => status(s),
+
+  solve,
+  findMistakes,
+  requestKeys: (p): KeyLabel[] => digitKeys(p.o),
+
+  prefs: [
+    {
+      kw: "sticky-pencil-mode",
+      name: "Right-click toggles a sticky pencil mode (stays on until right-clicked again)",
+      type: "boolean",
+      get: (ui) => ui.pencilSticky,
+      set: (ui, v) => {
+        ui.pencilSticky = v;
+      },
+    },
+  ],
+
+  colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
+  preferredTileSize: PREFERRED_TILE_SIZE,
+  computeSize: (p: MathraxParams, ts: number): Size => computeSize(p, ts),
+  setTileSize,
+  newDrawState,
+  redraw,
+
+  animLength: () => 0,
+  flashLength,
+};
+
+registerGame(mathraxGame);

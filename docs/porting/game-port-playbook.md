@@ -808,8 +808,15 @@ Exemplar: [`towers/{state,index,render}.ts`](../../src/native/games/towers/index
   highlighting it just confuses) — only move the highlight onto an empty, editable
   cell.
 - **A CapsLock-style mode indicator** — a small pencil glyph drawn somewhere fixed
-  whenever pencil mode is on, so the player always sees the mode. Cheapest robust
-  encoding: a high tile-flag bit on a board cell the game's own draw never overpaints
+  whenever pencil mode is on, so the player always sees the mode. **A game with no
+  border and no spare cell should grow the canvas rather than overlap the board**:
+  Mathrax compiles the `NARROW_BORDERS` arm (`BORDER = 1`, so no border to draw in)
+  and every one of its cells can carry a digit, a full pencil grid *and* up to four
+  clue circles, so there is no cache-safe cell either — it adds a `tilesize/2` strip
+  *below* the board and puts the glyph there. Keep the grid's own geometry untouched
+  when you do, so `fromCoord` and the width stay exactly upstream's and only the
+  height changes. Otherwise the cheapest robust encoding is a high tile-flag bit on a
+  board cell the game's own draw never overpaints
   (no piece/animation overlap) **and** that is no cell's neighbour in the diff cache,
   so the per-tile cache repaints it on toggle for free (Towers uses the top-right
   clue-ring corner — its 3D towers only ever protrude up-left). A game with no such
@@ -1431,6 +1438,28 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
   less) than its name implies — diff it against C line-by-line before trusting the
   name. Exemplar: [`solo/generator.ts`](../../src/native/games/solo/generator.ts)
   `mergeSomeCages`.
+- **A generator that tests its solver's verdict for bare *truthiness* may be
+  silently shipping non-unique puzzles — check what the verdict enum contains.**
+  Mathrax's two clue-stripping loops keep a removal on `if (mathrax_solve(...))`,
+  but that function returns `-1/0/1/2` and **`2` means *ambiguous***, which is
+  truthy. Below its top tier no recursion runs, so the verdict is only ever `0`
+  or `1` and nothing is wrong — but at `Recursive` the generator strips straight
+  past uniqueness: 30 of 30 sampled boards had several solutions and the C
+  fixtures came out as *completely blank grids*. That is a genuine player-visible
+  defect (§4 rule 3), not a difficulty curve: `findMistakes` correctly refuses to
+  judge a board with no unique answer, so Check & Save silently degrades across
+  the whole tier. Fixing it is two comparisons, and is *provably inert* on the
+  tiers whose verdict set excludes the ambiguous code — so the byte-match survives
+  everywhere except the broken tier, which keeps the weaker §4.8 verdict check
+  instead. **Grep a solver-gated generator for `if (solve(` and `if (!solve(`
+  before trusting it**, and when you find one, measure the tier before deciding.
+- **The byte-match is also what lets you *attribute* a bug like that.** Before the
+  fix, the TS generator reproduced C's ambiguous descriptions byte-for-byte — so
+  C's own solver returned "ambiguous" on the same intermediate boards and C
+  accepted the removal anyway. Without the differential, "is the tier broken or is
+  my solver too weak?" would have been an open question; with it, the answer is
+  immediate and certain. This is §4's "byte-parity is the verification mechanism"
+  paying off in a way that has nothing to do with fidelity.
 - **An early-out that exists only under a diagnostics define is NOT release
   semantics — port the release build.** Slant's `fill_square` has "already
   filled with the opposite value" and "would make a loop" checks whose
