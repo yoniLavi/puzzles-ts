@@ -63,12 +63,37 @@ export function decodeParams(s: string): CrossingParams {
   return p;
 }
 
+/**
+ * The largest board the generator can actually produce, in squares.
+ *
+ * Upstream sets no upper bound at all, and `new_game_desc` retries until it
+ * succeeds — so a large Custom board makes the C spin **for ever**. It is not a
+ * question of patience: an attempt is rejected whenever any two runs read as the
+ * same number, and since the run count grows with the area, that collision
+ * becomes near-certain (a birthday problem over at most 81 two-digit numbers).
+ *
+ * Measured over a grid of shapes, 3 seeds each: every configuration of **225
+ * squares or fewer** generated 3/3 (worst case 0.9 s at 16×14), every
+ * configuration of 240 or more failed at least once, and nothing at 280+ ever
+ * generated (18×16, 20×14, 24×12, 18×18 — all 0/3 within a 10,000-attempt
+ * budget). So this is the playbook §4 "impossible ⇒ reject in `validateParams`"
+ * case rather than the "unlucky ⇒ retry" one, and 225 is the measured boundary
+ * rather than a guess. It also bounds the clue list, which is what makes the
+ * author's "no reliable way to always fit the list on screen" tractable here.
+ */
+export const MAX_AREA = 225;
+
 /** Upstream `validate_params`, in its exact order: both dimensions ≥ 2, and at
- * least one of them ≥ 4 (a 3×3 board has no room for crossing runs). */
-export function validateParams(p: CrossingParams, _full: boolean): string | null {
+ * least one of them ≥ 4 (a 3×3 board has no room for crossing runs) — plus the
+ * generable-size ceiling upstream lacks (see {@link MAX_AREA}). The ceiling
+ * applies only to a `full` validation, i.e. when a board is about to be
+ * *generated*; a description that already exists stays playable at any size. */
+export function validateParams(p: CrossingParams, full: boolean): string | null {
   if (p.w < 4 && p.h < 4) return "The width or height must be at least 4";
   if (p.w < 2) return "Width must be at least 2";
   if (p.h < 2) return "Height must be at least 2";
+  if (full && p.w * p.h > MAX_AREA)
+    return `Width times height must be at most ${MAX_AREA}; larger boards cannot be generated`;
   return null;
 }
 
@@ -148,7 +173,15 @@ export interface CrossingPuzzle {
   /** Runs derived from `walls` once (upstream recomputes them per solver, per
    * ui and per validate call). */
   readonly runs: readonly CrossingRun[];
+  /** Per cell, the index into `runs` of the horizontal run through it, or -1.
+   * Lets input answer "which number am I filling?" without searching. */
+  readonly acrossRun: Int32Array;
+  /** Per cell, the index into `runs` of the vertical run through it, or -1. */
+  readonly downRun: Int32Array;
 }
+
+/** Which way the cursor advances after a digit is entered. */
+export type CrossingDirection = "across" | "down";
 
 /** Upstream `cmp_numbers`: shorter first, then lexicographic (which, for equal
  * lengths of digits, is numeric order). */
@@ -163,7 +196,65 @@ export function makePuzzle(
   walls: Uint8Array,
   numbers: readonly string[],
 ): CrossingPuzzle {
-  return { w, h, walls, numbers, runs: collectRuns(w, h, walls) };
+  const runs = collectRuns(w, h, walls);
+  const acrossRun = new Int32Array(w * h).fill(-1);
+  const downRun = new Int32Array(w * h).fill(-1);
+  for (let r = 0; r < runs.length; r++) {
+    const map = runs[r].horizontal ? acrossRun : downRun;
+    for (const i of runs[r].cells) map[i] = r;
+  }
+  return { w, h, walls, numbers, runs, acrossRun, downRun };
+}
+
+/** The run through `(x, y)` along `dir`, or `null` when there is none (a cell
+ * can belong to a horizontal run, a vertical one, both, or — an isolated open
+ * cell — neither). */
+export function runThrough(
+  puzzle: CrossingPuzzle,
+  x: number,
+  y: number,
+  dir: CrossingDirection,
+): CrossingRun | null {
+  const map = dir === "across" ? puzzle.acrossRun : puzzle.downRun;
+  const r = map[y * puzzle.w + x];
+  return r < 0 ? null : puzzle.runs[r];
+}
+
+/** The direction the player must mean at `(x, y)`: when the cell lies in only
+ * one run there is no choice, so snap to it; otherwise keep their `dir`. */
+export function snapDirection(
+  puzzle: CrossingPuzzle,
+  x: number,
+  y: number,
+  dir: CrossingDirection,
+): CrossingDirection {
+  const across = puzzle.acrossRun[y * puzzle.w + x] >= 0;
+  const down = puzzle.downRun[y * puzzle.w + x] >= 0;
+  if (across && !down) return "across";
+  if (down && !across) return "down";
+  return dir;
+}
+
+/** True when `(x, y)` lies in both a horizontal and a vertical run, so a
+ * direction toggle there is meaningful. */
+export function atCrossing(puzzle: CrossingPuzzle, x: number, y: number): boolean {
+  const i = y * puzzle.w + x;
+  return puzzle.acrossRun[i] >= 0 && puzzle.downRun[i] >= 0;
+}
+
+/** The next cell along `dir` **within the same run**, or `null` at its end. */
+export function nextInRun(
+  puzzle: CrossingPuzzle,
+  x: number,
+  y: number,
+  dir: CrossingDirection,
+): { x: number; y: number } | null {
+  const run = runThrough(puzzle, x, y, dir);
+  if (!run) return null;
+  const at = run.cells.indexOf(y * puzzle.w + x);
+  if (at < 0 || at + 1 >= run.cells.length) return null;
+  const next = run.cells[at + 1];
+  return { x: next % puzzle.w, y: Math.floor(next / puzzle.w) };
 }
 
 // --- desc codec ------------------------------------------------------------
@@ -449,6 +540,15 @@ export interface CrossingUi {
   cpencil: boolean;
   /** The selection came from the keyboard, so it survives an entry. */
   ckey: boolean;
+  /** Which way an entered digit advances the selection. Sticky: the arrow keys
+   * set it, a repeat click at a crossing toggles it, and selecting a cell that
+   * lies in only one run snaps it to that run. */
+  dir: CrossingDirection;
+  /** Preference (default on, a deliberate divergence — the game's own
+   * documentation asks for it): entering a digit moves the selection to the next
+   * cell of the run being filled, so a number can be typed straight in instead of
+   * clicking every cell. */
+  autoAdvance: boolean;
   /** Preference (default on, the fork's shared convention): right-click toggles
    * a *sticky* pencil mode that stays on until right-clicked again (a
    * CapsLock-style toggle with an on-screen indicator) rather than upstream's
@@ -463,6 +563,8 @@ export function newUi(_state: CrossingState): CrossingUi {
     cshow: false,
     cpencil: false,
     ckey: false,
+    dir: "across",
+    autoAdvance: true,
     pencilSticky: true,
   };
 }

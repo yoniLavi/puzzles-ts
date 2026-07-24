@@ -55,33 +55,14 @@ export const COL_ERROR = 5;
 export const COL_WALL_L = 6;
 export const COL_WALL_M = 7;
 export const COL_WALL_H = 8;
-/** The nine digit colours, each a low/mid/high triple: digit `n` (1-based) has
- * its mid index at `COL_NUM_M(n - 1)`, its low at −1 and its high at +1. */
-export const COL_NUM1_L = 9;
-export const NCOLOURS = COL_NUM1_L + 27;
-/** Fork addition, appended past the upstream enum (Crossing declares no
- * dark-mode `paletteOverrides`, so a plain append is safe): the yellow body of
- * the shared pencil-mode indicator glyph. */
-export const COL_PENCIL_BODY = NCOLOURS;
-
-/** Mid-colour palette index of digit-colour `c` (`0`-based). */
-export const numMid = (c: number): number => COL_NUM1_L + 1 + c * 3;
-
-/** Upstream's nine per-digit tile colours (`bgcols`). */
-const BG_COLS = [
-  0xffa07a, // lightsalmon
-  0x98fb98, // green
-  0x7fffd4, // aquamarine
-  0x9370db, // medium purple
-  0xffa500, // orange
-  0x87cefa, // lightskyblue
-  0xddcc11, // yellow-ish
-  0x4080ff,
-  0x7092be,
-];
+/** Fork additions, appended past the (now much shorter) upstream enum. Crossing
+ * declares no dark-mode `paletteOverrides`, so appending is safe. */
+export const COL_PENCIL = 9;
+export const COL_PENCIL_BODY = 10;
+export const NCOLOURS = 11;
 
 export function colours(defaultBackground: Colour): Colour[] {
-  const out: Colour[] = new Array(NCOLOURS + 1);
+  const out: Colour[] = new Array(NCOLOURS);
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
   out[COL_OUTERBG] = defaultBackground;
   out[COL_INNERBG] = background;
@@ -95,19 +76,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_WALL_H] = wall.highlight;
   out[COL_WALL_L] = wall.lowlight;
 
-  for (let c = 0; c < 9; c++) {
-    const rgb = BG_COLS[c];
-    // Upstream divides by 256, not 255 — kept so the tiles are the same shade.
-    const mid = mkhighlightSpecific([
-      ((rgb & 0xff0000) >> 16) / 256,
-      ((rgb & 0xff00) >> 8) / 256,
-      (rgb & 0xff) / 256,
-    ]);
-    out[numMid(c)] = mid.base;
-    out[numMid(c) + 1] = mid.highlight;
-    out[numMid(c) - 1] = mid.lowlight;
-  }
-
+  // A muted blue-grey for pencil marks, the collection's convention (ABCD,
+  // Towers): clearly subordinate to an entered digit without vanishing.
+  out[COL_PENCIL] = [0.5 * background[0], 0.5 * background[1], background[2]];
   out[COL_PENCIL_BODY] = [1, 0.78, 0.17];
   return out;
 }
@@ -148,7 +119,7 @@ const K_ERR = 4; // bits 4-7: the FE_* flags
 const DF_SELECT = 1 << 8; // mouse ink selection (a highlighted background)
 const DF_PENCIL = 1 << 9; // pencil selection (the corner triangle)
 const DF_KEYCUR = 1 << 10; // keyboard cursor (corner brackets)
-const K_FLASH = 11; // bits 11-14: flash phase + 1 (0 = not flashing)
+const K_FLASH = 11; // bits 11-12: flash phase + 1 (0 = not flashing)
 const K_MARKS = 15; // bits 15-23: the nine pencil-mark bits
 
 export interface CrossingDrawState {
@@ -224,28 +195,6 @@ function drawBevelTile(
   dr.drawRect({ x: tx + 1 + hw, y: ty + 1 + hw, w: ts - 2 * hw, h: ts - 2 * hw }, mid);
   dr.unclip();
   dr.drawUpdate({ x: tx, y: ty, w: ts, h: ts });
-}
-
-/** Upstream `draw_text_outline` (misc.c): the text drawn four times offset by a
- * pixel in the outline colour, then once on top in the text colour. */
-function drawTextOutline(
-  dr: GameDrawing,
-  x: number,
-  y: number,
-  opts: DrawTextOptions,
-  textColour: number,
-  outlineColour: number,
-  text: string,
-): void {
-  for (const [dx, dy] of [
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1],
-  ]) {
-    dr.drawText({ x: x + dx, y: y + dy }, opts, outlineColour, text);
-  }
-  dr.drawText({ x, y }, opts, textColour, text);
 }
 
 /**
@@ -326,7 +275,7 @@ function drawMarks(
         y: ty + Math.floor(((4 * hy + 3) * ts) / (4 * hh + 2)),
       },
       textOpts(fontsz, "center", "mathematical"),
-      numMid(i) - 1,
+      COL_PENCIL,
       String(i + 1),
     );
     j++;
@@ -380,18 +329,27 @@ function drawCell(
   if (walls[i]) {
     drawBevelTile(dr, ts, tx, ty, COL_WALL_H, COL_WALL_M, COL_WALL_L);
   } else if (digit) {
-    // During the completion flash the digit colours cycle (see the module note).
-    const c = flash > 0 ? (x + y + flash) % 9 : digit - 1;
-    const mid = numMid(c);
-    const low = selected ? mid + 1 : mid - 1;
-    const high = selected ? mid - 1 : mid + 1;
+    // An entered digit is a raised neutral tile: the bevel is what says
+    // "placed", and the digit is plain black on it. Upstream painted each digit
+    // its own saturated colour — a leftover from a scrapped drag-and-drop design
+    // that its author asked to have removed (see the module note).
+    //
+    // The completion flash sweeps a diagonal wave of highlight/lowlight across
+    // the board (the shape ABCD uses) in place of upstream's colour cycle.
+    const mid =
+      flash < 0
+        ? COL_INNERBG
+        : (x + y) % 3 === flash
+          ? COL_HIGHLIGHT
+          : (x + y + 2) % 3 === flash
+            ? COL_LOWLIGHT
+            : COL_INNERBG;
+    const low = selected ? COL_HIGHLIGHT : COL_LOWLIGHT;
+    const high = selected ? COL_LOWLIGHT : COL_HIGHLIGHT;
     drawBevelTile(dr, ts, tx, ty, low, mid, high);
-    drawTextOutline(
-      dr,
-      (x + 1) * ts,
-      (y + 1) * ts,
+    dr.drawText(
+      { x: (x + 1) * ts, y: (y + 1) * ts },
       textOpts(Math.floor(ts / 2), "center", "mathematical"),
-      high,
       COL_GRID,
       String(digit),
     );
@@ -543,7 +501,7 @@ export function redraw(
     ds.pencilModeShown = ui.cpencil;
   }
 
-  const flash = flashTime > 0 ? Math.floor(flashTime / FLASH_FRAME) : 0;
+  const flash = flashTime > 0 ? Math.floor(flashTime / FLASH_FRAME) % 3 : -1;
   // Upstream hides the selection while the win flash runs.
   const cshow = ui.cshow && flashTime === 0;
 
