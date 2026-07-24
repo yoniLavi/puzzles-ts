@@ -26,12 +26,15 @@ import { newCrossingDesc } from "./generator.ts";
 import { crossingGame } from "./index.ts";
 import {
   COL_ERROR,
+  COL_GHOST,
   COL_GRID,
+  COL_HELD,
   COL_HIGHLIGHT,
   COL_INNERBG,
   COL_LOWLIGHT,
   COL_OUTERBG,
   COL_WALL_M,
+  layoutNumbers,
   NCOLOURS,
   newDrawState,
   PREFERRED_TILE_SIZE,
@@ -49,6 +52,9 @@ import {
   encodeDesc,
   encodeParams,
   newState,
+  numberAvailableTo,
+  numberFitsRun,
+  placedRuns,
   readDesc,
   textFormat,
   validateBoard,
@@ -606,6 +612,175 @@ describe("crossing cursor auto-advance", () => {
     const puzzle = state.puzzle;
     const i = ui.cy * 5 + ui.cx;
     if (puzzle.downRun[i] >= 0) expect(ui.dir).toBe("down");
+  });
+});
+
+describe("crossing number-list placement", () => {
+  // The author's scrapped idea was dragging whole numbers onto the grid; this
+  // is that, with clicks: pick a clue up from the list, drop it in a run.
+
+  /** Pixel centre of clue number `l` in the panel. */
+  function numberCentre(l: number): { x: number; y: number } {
+    const { slots } = layoutNumbers(TS, 5, 5, newState(P5, FIX.desc).puzzle.numbers);
+    const b = slots[l].hit;
+    return { x: b.x + Math.floor(b.w / 2), y: b.y + Math.floor(b.h / 2) };
+  }
+
+  /** A run of the fixture board and the index of a number that fits it. */
+  function fittingPair(): { run: number; number: number } {
+    const { puzzle, grid } = newState(P5, FIX.desc);
+    for (let r = 0; r < puzzle.runs.length; r++) {
+      for (let l = 0; l < puzzle.numbers.length; l++) {
+        if (numberFitsRun(puzzle, grid, puzzle.runs[r], l))
+          return { run: r, number: l };
+      }
+    }
+    throw new Error("fixture has no fitting number");
+  }
+
+  it("only offers numbers of the run's length that agree with what is typed", () => {
+    const state = newState(P5, FIX.desc);
+    const { puzzle } = state;
+    const run = puzzle.runs.find((r) => r.cells.length === 2);
+    if (!run) return;
+    // On an empty board every 2-digit clue fits a 2-cell run.
+    for (let l = 0; l < puzzle.numbers.length; l++) {
+      expect(numberFitsRun(puzzle, state.grid, run, l)).toBe(
+        puzzle.numbers[l].length === 2,
+      );
+    }
+    // Typing a digit rules out every clue that disagrees with it.
+    const two = puzzle.numbers.findIndex((n) => n.length === 2);
+    const first = Number(puzzle.numbers[two][0]);
+    const typed = crossingGame.executeMove(state, {
+      kind: "set",
+      x: run.cells[0] % 5,
+      y: Math.floor(run.cells[0] / 5),
+      digit: first,
+    });
+    for (let l = 0; l < puzzle.numbers.length; l++) {
+      const n = puzzle.numbers[l];
+      expect(numberFitsRun(puzzle, typed.grid, run, l)).toBe(
+        n.length === 2 && Number(n[0]) === first,
+      );
+    }
+  });
+
+  it("places a clue into the selected cell's run when it is clicked", () => {
+    const state = newState(P5, FIX.desc);
+    const { run, number } = fittingPair();
+    const cells = state.puzzle.runs[run].cells;
+    const ui = newUi();
+    ui.dir = state.puzzle.runs[run].horizontal ? "across" : "down";
+    const cell = cellCentre(cells[0] % 5, Math.floor(cells[0] / 5));
+    press(state, ui, LEFT_BUTTON, cell.x, cell.y);
+
+    const at = numberCentre(number);
+    const move = press(state, ui, LEFT_BUTTON, at.x, at.y);
+    expect(move).toEqual({ kind: "place", run, number });
+
+    const after = crossingGame.executeMove(state, move as CrossingMove);
+    const text = state.puzzle.numbers[number];
+    for (let k = 0; k < cells.length; k++) {
+      expect(after.grid[cells[k]]).toBe(Number(text[k]));
+    }
+  });
+
+  it("holds a clue when nothing is selected, and drops it on a run", () => {
+    const state = newState(P5, FIX.desc);
+    const { run, number } = fittingPair();
+    const ui = newUi();
+
+    const at = numberCentre(number);
+    expect(press(state, ui, LEFT_BUTTON, at.x, at.y)).toBe(UI_UPDATE);
+    expect(ui.heldNumber).toBe(number);
+    // Clicking it again puts it back.
+    press(state, ui, LEFT_BUTTON, at.x, at.y);
+    expect(ui.heldNumber).toBeNull();
+
+    press(state, ui, LEFT_BUTTON, at.x, at.y);
+    const cells = state.puzzle.runs[run].cells;
+    const cell = cellCentre(cells[0] % 5, Math.floor(cells[0] / 5));
+    const move = press(state, ui, LEFT_BUTTON, cell.x, cell.y);
+    expect(move).toMatchObject({ kind: "place", number });
+    expect(ui.heldNumber).toBeNull();
+  });
+
+  it("will not place a clue already used in another run", () => {
+    const state = newState(P5, FIX.desc);
+    const { run, number } = fittingPair();
+    const placedState = crossingGame.executeMove(state, {
+      kind: "place",
+      run,
+      number,
+    });
+    const placed = placedRuns(placedState.puzzle, placedState.grid);
+    expect(placed[number]).toBe(run);
+    // Any *other* run of the same length can no longer take it.
+    for (let r = 0; r < placedState.puzzle.runs.length; r++) {
+      if (r === run) continue;
+      expect(
+        numberAvailableTo(placedState.puzzle, placedState.grid, placed, r, number),
+      ).toBe(false);
+    }
+  });
+
+  it("previews a held clue as ghost digits, and dims the clues that cannot fit", () => {
+    const state = newState(P5, FIX.desc);
+    const { run, number } = fittingPair();
+    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
+    const paint = (ui: CrossingUi): RecordingDrawing => {
+      const ds = newDrawState(state);
+      setTileSize(ds, TS);
+      const dr = new RecordingDrawing(palette);
+      redraw(dr, ds, null, state, 1, ui, 0, 0);
+      return dr;
+    };
+    const ghostDigits = (dr: RecordingDrawing): string[] =>
+      dr.ops.flatMap((o) =>
+        o.op === "text" && o.colour === COL_GHOST ? [o.text] : [],
+      );
+
+    expect(ghostDigits(paint(newUi()))).toEqual([]);
+
+    const holding = { ...newUi(), heldNumber: number };
+    const text = state.puzzle.numbers[number];
+    const ghosted = ghostDigits(paint(holding));
+    // Every digit of the held clue is previewed in the run it fits…
+    expect(ghosted.length).toBeGreaterThanOrEqual(text.length);
+    expect(new Set(ghosted)).toEqual(new Set(text.split("")));
+    // …and the clue itself is picked out in the list.
+    expect(
+      paint(holding).ops.some((o) => o.op === "text" && o.colour === COL_HELD),
+    ).toBe(true);
+    void run;
+  });
+
+  it("dims clues that cannot go in the selected run", () => {
+    const state = newState(P5, FIX.desc);
+    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
+    const paint = (ui: CrossingUi): number => {
+      const ds = newDrawState(state);
+      setTileSize(ds, TS);
+      const dr = new RecordingDrawing(palette);
+      redraw(dr, ds, null, state, 1, ui, 0, 0);
+      return dr.ops.filter((o) => o.op === "text" && o.colour === COL_LOWLIGHT).length;
+    };
+    // With nothing selected, no clue is dimmed on a fresh board.
+    expect(paint(newUi())).toBe(0);
+
+    // Selecting a run dims every clue of the wrong length.
+    const run = state.puzzle.runs[0];
+    const ui = { ...newUi(), cshow: true, dir: run.horizontal ? "across" : "down" };
+    ui.cx = run.cells[0] % 5;
+    ui.cy = Math.floor(run.cells[0] / 5);
+    const wrongLength = state.puzzle.numbers.filter(
+      (n) => n.length !== run.cells.length,
+    ).length;
+    expect(paint(ui as CrossingUi)).toBe(wrongLength);
+
+    // …and the preference turns the whole aid off.
+    expect(paint({ ...(ui as CrossingUi), fitHighlight: false })).toBe(0);
   });
 });
 

@@ -47,6 +47,7 @@ import {
   FLASH_TIME,
   fromCoord,
   newDrawState,
+  numberAtPoint,
   PREFERRED_TILE_SIZE,
   redraw,
   setTileSize,
@@ -67,6 +68,8 @@ import {
   newState,
   newUi,
   nextInRun,
+  placedRuns,
+  runForNumber,
   snapDirection,
   status,
   textFormat,
@@ -93,6 +96,14 @@ function keyDigit(button: number): number | null | undefined {
   return undefined;
 }
 
+/** Would writing listed number `l` into run `r` change anything? It fits, so
+ * every filled cell already agrees — only an empty cell makes it a real move
+ * (playbook §1: suppress no-ops locally rather than comparing states). */
+function placementChanges(state: CrossingState, r: number, l: number): boolean {
+  void l;
+  return state.puzzle.runs[r].cells.some((i) => state.grid[i] === 0);
+}
+
 function interpretMove(
   state: CrossingState,
   ui: CrossingUi,
@@ -106,11 +117,56 @@ function interpretMove(
 
   const gx = fromCoord(point.x, ts);
   const gy = fromCoord(point.y, ts);
+  const onBoard = gx >= 0 && gx < w && gy >= 0 && gy < h;
 
-  if (gx >= 0 && gx < w && gy >= 0 && gy < h) {
+  // --- the clue list (fork): pick a number up, or place it straight away ----
+  if (!onBoard && button === LEFT_BUTTON) {
+    const l = numberAtPoint(ts, w, h, state.puzzle.numbers, point.x, point.y);
+    if (l >= 0) {
+      // With a cell selected, clicking a number that fits its run writes it in
+      // at once — the whole point of the aid.
+      if (ui.cshow && !ui.cpencil) {
+        const placed = placedRuns(state.puzzle, state.grid);
+        const run = runForNumber(
+          state.puzzle,
+          state.grid,
+          placed,
+          ui.cx,
+          ui.cy,
+          l,
+          ui.dir,
+        );
+        if (run >= 0 && placementChanges(state, run, l)) {
+          ui.heldNumber = null;
+          return { kind: "place", run, number: l };
+        }
+      }
+      // Otherwise hold it (clicking the held one again puts it back).
+      ui.heldNumber = ui.heldNumber === l ? null : l;
+      return UI_UPDATE;
+    }
+  }
+
+  if (onBoard) {
     const i = gy * w + gx;
     const editable = !walls[i];
     const filled = state.grid[i] !== 0;
+
+    if (button === LEFT_BUTTON && ui.heldNumber !== null && editable) {
+      // A number is held: clicking a run that can take it drops it in.
+      const held = ui.heldNumber;
+      const placed = placedRuns(state.puzzle, state.grid);
+      const run = runForNumber(state.puzzle, state.grid, placed, gx, gy, held, ui.dir);
+      if (run >= 0 && placementChanges(state, run, held)) {
+        ui.heldNumber = null;
+        ui.cx = gx;
+        ui.cy = gy;
+        ui.ckey = false;
+        return { kind: "place", run, number: held };
+      }
+      // Clicking anywhere it cannot go puts it back down and selects normally.
+      ui.heldNumber = null;
+    }
 
     if (button === LEFT_BUTTON) {
       // Sticky pencil mode (fork): a left-click only moves the highlight and
@@ -193,6 +249,7 @@ function interpretMove(
 
   const digit = ui.cshow ? keyDigit(button) : undefined;
   if (digit !== undefined) {
+    ui.heldNumber = null;
     const i = ui.cy * w + ui.cx;
     // Suppress no-op moves locally rather than comparing states (playbook §1).
     if (walls[i]) return null;
@@ -241,6 +298,17 @@ function executeMove(state: CrossingState, move: CrossingMove): CrossingState {
     next.completed = validateBoard(next.puzzle, next.grid).status === "valid";
     // Solved with help: the win flash must not fire (playbook §3.6).
     next.cheated = true;
+    return next;
+  }
+
+  if (move.kind === "place") {
+    const run = state.puzzle.runs[move.run];
+    const num = state.puzzle.numbers[move.number];
+    if (!run || num === undefined || num.length !== run.cells.length)
+      throw new Error("crossing: cannot place that number in that run");
+    for (let k = 0; k < run.cells.length; k++)
+      next.grid[run.cells[k]] = num.charCodeAt(k) - 48;
+    if (validateBoard(next.puzzle, next.grid).status === "valid") next.completed = true;
     return next;
   }
 
@@ -341,6 +409,15 @@ export const crossingGame: Game<
   textFormat,
 
   prefs: [
+    {
+      kw: "fit-highlight",
+      name: "Show which clue numbers can still go in the selected run",
+      type: "boolean",
+      get: (ui) => ui.fitHighlight,
+      set: (ui, v) => {
+        ui.fitHighlight = v;
+      },
+    },
     {
       kw: "auto-advance",
       name: "Entering a digit moves the selection along the number being filled",
