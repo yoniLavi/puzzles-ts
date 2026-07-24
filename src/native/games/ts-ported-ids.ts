@@ -53,6 +53,7 @@ export const TS_PORTED_PUZZLE_IDS: ReadonlySet<string> = new Set([
   "slant",
   "sokoban",
   "solo",
+  "spokes",
   "sticks",
   "subsets",
   "tents",
