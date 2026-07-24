@@ -427,14 +427,117 @@ a *filled* cell does not select it while in pencil mode — the cell cannot take
 mark, so highlighting it only suggests an edit that can't happen. Upstream
 already does exactly this on its right-click (pencil-select) path.
 
-### F8 — D9's number-panel "improvement opportunity" turned out not to need one
+### F8 — D9's number-panel worry, corrected twice
 
-Upstream's Status notes call fitting the clue list "the largest problem", and D9
-budgeted for a reflow. Reading `draw_numbers` shows it already solves it: it
-grows the row count and shrinks the font until the widest number of each column
-fits the board width, then spreads the slack between columns. Ported as-is (with
-a loop guard), it lays out 8 numbers on a 4×2 board and 22 on a 9×9 board
-legibly, verified in the browser at both sizes. No divergence was warranted —
-the honest finding is that the C's TODO is about its *fixed window height*, which
-this frontend does not impose. Recorded so the "improvement" isn't re-scoped
-later on the strength of upstream's comment alone.
+**First pass (wrong in its reasoning, and premature).** Reading `draw_numbers`
+shows it already grows the row count and shrinks the font until the widest number
+of each column fits the board width; it laid out 8 numbers on a 4x2 board and 22
+on a 9x9 legibly, so the finding recorded "no divergence warranted" and added
+that upstream's TODO is about "its *fixed window height*, which this frontend
+does not impose."
+
+**That last clause is false**: `Game.computeSize(params, tileSize)` takes params
+only, exactly like upstream's `game_compute_size`, so this fork inherits the same
+constraint — the window for a given size is fixed while the clue count varies
+with the description. The claim was also made without looking at the large end,
+which is where the author's complaint actually lives.
+
+**Second pass, with measurements.** Rendered at the top of the generable range
+(15x15, 59 numbers) the panel is genuinely fine: 5 rows x 12 columns, ~0.36 tiles
+of font. What is *not* fine is beyond it — see F12. Capping the params where
+generation actually works also caps the clue list, so "there is no reliable way
+to always fit the list on screen" stops being reachable rather than being solved
+by layout cleverness. That is the honest resolution: the framework limitation is
+real and unfixed, and the port makes it unreachable instead.
+
+### F9 — The author's own Status notes were not read, and they change the port
+
+`puzzles/unreleased/docs/crossing.md` carries a `## Status` section opening "This
+puzzle has severe problems", listing three. The port originally shipped having
+read only the `TODO` block at the top of `crossing.c`, which covers two of them
+more weakly and omits the one that mattered most (automatic cursor movement).
+The general rule is now **playbook §1.0** — read `docs/<game>.md` before the C —
+and it is load-bearing for the four remaining unreleased ports, especially
+seismic ("near-zero chance of generating sizes higher than 7x7. The generator
+step ... needs to be completely replaced").
+
+Resolutions, owner-decided where it was a taste call:
+
+- **"Inputting a complete number ... is fairly tedious and could be enhanced by
+  automatic cursor movement."** -> implemented, F10.
+- **"The colored digits ... should probably be removed entirely."** -> removed, F11.
+- **The number list cannot reliably be made to fit.** -> made unreachable, F8/F12.
+
+### F10 — Cursor auto-advance, with a crossword's direction model
+
+Entering a digit now steps the selection to the next cell of the run being
+filled, so a whole number is typed in one go instead of clicked cell by cell. The
+direction is a sticky `Ui` field, and three things keep it from becoming a hidden
+mode the player fights:
+
+- **Snapping.** Selecting a cell that lies in only one run sets the direction to
+  that run — most cells beside a wall answer the question by themselves.
+- **Arrow keys** set the direction they move in (then snap, so a Down press on a
+  cell with no vertical run doesn't leave the cursor pointing nowhere).
+- **A repeat click at a crossing toggles across/down** (the crossword
+  convention). Where there is nothing to toggle — a wall, pencil mode, or a cell
+  in a single run — the repeat click still deselects exactly as upstream's does,
+  so the gesture is never taken away without giving something back.
+
+`CrossingPuzzle` gained `acrossRun`/`downRun` (per-cell run indices, built once
+in `makePuzzle`) so all of this is lookups rather than searches. Behind an
+`auto-advance` preference, default on. Deliberately **not** implemented: any
+advance on a *clear* (crosswords move backwards there, and guessing wrong is
+worse than doing nothing) or on a pencil mark.
+
+The owner chose this over the smaller "arrows only" model, and declined the
+optional third piece — tinting the cells of the active run so the direction is
+visible. The direction is therefore currently inferred rather than shown; the
+tint remains a cheap follow-up if it reads as a hidden mode in play.
+
+### F11 — The per-digit colours are gone
+
+Upstream painted each digit `1`-`9` its own saturated tile colour. Per its
+author that was "part of a scrapped idea where complete numbers could be dragged
+and dropped ... As it stands, the colors should probably be removed entirely" —
+and they encode nothing the digit does not already say, while nine hues across a
+15x15 board are loud. Owner-confirmed, so an entered digit is now a **raised
+neutral tile with a plain black digit**: the bevel carries "placed", and a
+selected filled cell still inverts its bevel to read as pressed.
+
+Consequences worth knowing:
+
+- The palette drops from 37 entries to 11; the 27 `COL_NUM*` entries and the
+  `draw_text_outline` helper (which existed only to keep a digit legible on a
+  saturated tile) are deleted, taking ~96 lines out of the render snapshot.
+- Pencil marks lost their per-digit colour and take `COL_PENCIL`, the muted
+  blue-grey ABCD and Towers use.
+- **The completion flash had to be re-founded**, since it cycled those colours.
+  It is now the diagonal highlight/lowlight wave ABCD uses, over the same
+  `FLASH_TIME`. F2's finding (upstream's frame counter is a `bool`, so its
+  animation never moved) still applies and is still fixed — the tier-2.5 test
+  asserts a settled board paints no flash colour and that two phases light
+  *different* cells, which is what proves the wave moves.
+
+### F12 — A generable-size ceiling, because upstream has none
+
+`validate_params` sets no upper bound and `new_game_desc` retries until it
+succeeds, so a large Custom board makes the C **spin for ever**. It is not
+impatience: an attempt is rejected if any two runs read as the same number, and
+the run count grows with the area, so the collision becomes near-certain (a
+birthday problem over at most 81 two-digit numbers).
+
+Measured across a grid of shapes, 3 seeds each, 10,000-attempt budget:
+
+| area | outcome |
+| --- | --- |
+| <= 225 (15x15, 16x14, 18x12, 20x10 ...) | 3/3, worst 0.9 s |
+| 240-256 | 1/3 - 3/3, up to 3.5 s |
+| >= 280 (20x14, 18x16, 24x12, 18x18 ...) | **0/3** |
+
+That is playbook section 4's *impossible* case, not its *unlucky* one, so it is
+rejected in `validateParams` with the measured boundary (`MAX_AREA = 225`)
+rather than a guessed one — and only on a `full` validation, so an existing
+description of any size stays playable. The app now answers an 18x18 request
+immediately ("Width times height must be at most 225; larger boards cannot be
+generated") instead of hanging or throwing `RetryLimitExceeded` after ~7 s.

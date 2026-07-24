@@ -156,6 +156,31 @@
       surfaced: `drawRectCorners` promoted to `engine/draw.ts` (F3), and the
       "a display-only counter with the wrong type" tell (F2).
 
+## 8b. The author's documented problems (`puzzles/unreleased/docs/crossing.md`)
+
+Read after the port first shipped — the `.c`'s TODO block alone had been used.
+All three Status points triaged; see design F9-F12 and playbook §1.0.
+
+- [x] 8b.1 **Read the game's own Status section** and record the gap; add the
+      "read `docs/<game>.md` before the C" rule to the playbook (§1.0), naming
+      what it says about the four remaining unreleased ports (seismic especially).
+- [x] 8b.2 **Automatic cursor movement** (the author's second point): entering a
+      digit advances the selection along the run; sticky direction set by the
+      arrow keys, snapped where a cell has only one run, toggled by a repeat
+      click at a crossing; behind an `auto-advance` pref, default on (design F10).
+- [x] 8b.3 **Remove the per-digit colours** (the author's third point,
+      owner-confirmed): a neutral raised tile with a black digit, `COL_PENCIL`
+      for notes, and the completion flash re-founded as a highlight/lowlight
+      sweep since it cycled those colours (design F11).
+- [x] 8b.4 **The number list** (the author's first point): measured rather than
+      asserted — the panel is legible across the whole generable range, and the
+      framework limitation is closed by bounding the params instead (design F8).
+- [x] 8b.5 **Reject ungenerable sizes** in `validateParams` (`MAX_AREA = 225`,
+      the measured boundary), `full`-only so an existing desc still loads;
+      upstream retries for ever there (design F12).
+- [x] 8b.6 Re-verify in the browser: auto-advance across and down, the direction
+      toggle, the neutral tiles, the flash sweep, and the size refusal.
+
 ## 9. Stage 2 — on owner acceptance only
 
 - [ ] 9.1 Add `TS_PORTED` to `puzzle(crossing …)` in

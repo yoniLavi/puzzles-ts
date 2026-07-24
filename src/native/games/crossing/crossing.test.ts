@@ -12,6 +12,7 @@ import type { ChangeNotification, GameStatus } from "../../../puzzle/types.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { Midend } from "../../engine/index.ts";
 import {
+  CURSOR_DOWN,
   CURSOR_RIGHT,
   CURSOR_SELECT,
   LEFT_BUTTON,
@@ -25,7 +26,13 @@ import { newCrossingDesc } from "./generator.ts";
 import { crossingGame } from "./index.ts";
 import {
   COL_ERROR,
+  COL_GRID,
   COL_HIGHLIGHT,
+  COL_INNERBG,
+  COL_LOWLIGHT,
+  COL_OUTERBG,
+  COL_WALL_M,
+  NCOLOURS,
   newDrawState,
   PREFERRED_TILE_SIZE,
   redraw,
@@ -146,6 +153,18 @@ describe("crossing params", () => {
     expect(validateParams({ w: 9, h: 1, sym: false }, true)).toBe(
       "Height must be at least 2",
     );
+  });
+
+  it("rejects a board too large to generate, but only when generating", () => {
+    // Measured ceiling: every shape up to 225 squares generated 3/3, everything
+    // from 240 up failed at least once, and 280+ never generated. Upstream has
+    // no bound at all and simply retries for ever there.
+    expect(validateParams({ w: 15, h: 15, sym: false }, true)).toBeNull();
+    expect(validateParams({ w: 16, h: 16, sym: false }, true)).toBe(
+      "Width times height must be at most 225; larger boards cannot be generated",
+    );
+    // A description that already exists stays playable at any size.
+    expect(validateParams({ w: 16, h: 16, sym: false }, false)).toBeNull();
   });
 });
 
@@ -285,12 +304,20 @@ describe("crossing generator", () => {
 });
 
 describe("crossing input", () => {
-  it("left-click selects an open cell and a repeat click deselects it", () => {
+  it("left-click selects an open cell, and a repeat click deselects it", () => {
     const state = newState(P5, FIX.desc);
-    const ui = newUi();
-    const open = state.puzzle.walls.indexOf(0);
-    const [ox, oy] = [open % 5, Math.floor(open / 5)];
+    const puzzle = state.puzzle;
+    // Pick a cell that is NOT a crossing: at a crossing the repeat click flips
+    // the fill direction instead (see the auto-advance suite).
+    let plain = -1;
+    for (let i = 0; i < 25 && plain < 0; i++) {
+      if (puzzle.walls[i]) continue;
+      if (puzzle.acrossRun[i] < 0 || puzzle.downRun[i] < 0) plain = i;
+    }
+    expect(plain).toBeGreaterThanOrEqual(0);
+    const [ox, oy] = [plain % 5, Math.floor(plain / 5)];
 
+    const ui = newUi();
     const c = cellCentre(ox, oy);
     expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
     expect(ui).toMatchObject({ cx: ox, cy: oy, cshow: true, cpencil: false });
@@ -364,12 +391,15 @@ describe("crossing input", () => {
       digit: 5,
     });
     // Re-entering the same digit, and clearing an empty cell, change nothing.
+    // (Auto-advance has moved the selection on, so put it back deliberately.)
     const filled = crossingGame.executeMove(state, {
       kind: "set",
       x: ox,
       y: oy,
       digit: 5,
     });
+    ui.cx = ox;
+    ui.cy = oy;
     ui.cshow = true;
     expect(press(filled, ui, 0x35, 0, 0)).toBeNull();
     expect(press(state, ui, 8, 0, 0)).toBeNull();
@@ -412,6 +442,123 @@ describe("crossing input", () => {
       "9",
       "Clear",
     ]);
+  });
+});
+
+describe("crossing cursor auto-advance", () => {
+  // The game's own docs call one-cell-at-a-time entry "fairly tedious" and ask
+  // for automatic cursor movement; these pin the behaviour that answers it.
+
+  /** A horizontal run of the fixture board, and its first cell. */
+  function acrossRun(): { x: number; y: number; len: number } {
+    const puzzle = newState(P5, FIX.desc).puzzle;
+    const run = puzzle.runs.find((r) => r.horizontal);
+    if (!run) throw new Error("fixture has no horizontal run");
+    const first = run.cells[0];
+    return { x: first % 5, y: Math.floor(first / 5), len: run.cells.length };
+  }
+
+  it("steps along the run as digits are typed, and stops at its end", () => {
+    const state = newState(P5, FIX.desc);
+    const ui = newUi();
+    const { x, y, len } = acrossRun();
+    const c = cellCentre(x, y);
+    press(state, ui, LEFT_BUTTON, c.x, c.y);
+    expect(ui).toMatchObject({ cx: x, cy: y, dir: "across" });
+
+    for (let k = 0; k < len - 1; k++) {
+      expect(press(state, ui, 0x31 + k, 0, 0)).toMatchObject({
+        kind: "set",
+        digit: k + 1,
+      });
+      // The selection advanced one cell and stayed visible, so the next digit
+      // lands where the player can see it (upstream hid it after a mouse entry).
+      expect(ui).toMatchObject({ cx: x + k + 1, cy: y, cshow: true });
+    }
+    // At the end of the run it holds position rather than wrapping or leaving it.
+    press(state, ui, 0x39, 0, 0);
+    expect(ui).toMatchObject({ cx: x + len - 1, cy: y });
+  });
+
+  it("does not advance on a clear, on a pencil mark, or with the pref off", () => {
+    const { x, y } = acrossRun();
+    const c = cellCentre(x, y);
+
+    const filled = crossingGame.executeMove(newState(P5, FIX.desc), {
+      kind: "set",
+      x,
+      y,
+      digit: 4,
+    });
+    const clearing = newUi();
+    press(filled, clearing, LEFT_BUTTON, c.x, c.y);
+    press(filled, clearing, 8, 0, 0); // Backspace
+    expect(clearing).toMatchObject({ cx: x, cy: y });
+
+    const state = newState(P5, FIX.desc);
+    const pencil = newUi();
+    press(state, pencil, RIGHT_BUTTON, c.x, c.y);
+    press(state, pencil, 0x33, 0, 0);
+    expect(pencil).toMatchObject({ cx: x, cy: y });
+
+    const off = { ...newUi(), autoAdvance: false };
+    press(state, off, LEFT_BUTTON, c.x, c.y);
+    press(state, off, 0x31, 0, 0);
+    expect(off).toMatchObject({ cx: x, cy: y });
+  });
+
+  it("clicking the selected cell again flips across/down at a crossing", () => {
+    const state = newState(P5, FIX.desc);
+    const puzzle = state.puzzle;
+    // A cell that lies in both a horizontal and a vertical run.
+    let crossX = -1;
+    let crossY = -1;
+    for (let i = 0; i < 25 && crossX < 0; i++) {
+      if (puzzle.acrossRun[i] >= 0 && puzzle.downRun[i] >= 0) {
+        crossX = i % 5;
+        crossY = Math.floor(i / 5);
+      }
+    }
+    expect(crossX).toBeGreaterThanOrEqual(0);
+
+    const ui = newUi();
+    const c = cellCentre(crossX, crossY);
+    press(state, ui, LEFT_BUTTON, c.x, c.y);
+    const first = ui.dir;
+    press(state, ui, LEFT_BUTTON, c.x, c.y);
+    expect(ui.dir).not.toBe(first);
+    // Toggling keeps the cell selected — it is a mode change, not a deselect.
+    expect(ui.cshow).toBe(true);
+    press(state, ui, LEFT_BUTTON, c.x, c.y);
+    expect(ui.dir).toBe(first);
+  });
+
+  it("snaps the direction when a cell lies in only one run", () => {
+    const state = newState(P5, FIX.desc);
+    const puzzle = state.puzzle;
+    // A cell in a vertical run only: selecting it must mean "down", whatever the
+    // player last did, since there is nothing to fill across.
+    let onlyDown = -1;
+    for (let i = 0; i < 25 && onlyDown < 0; i++) {
+      if (puzzle.downRun[i] >= 0 && puzzle.acrossRun[i] < 0) onlyDown = i;
+    }
+    if (onlyDown < 0) return; // fixture-dependent; the assertion below is the point
+    const ui = newUi();
+    ui.dir = "across";
+    const c = cellCentre(onlyDown % 5, Math.floor(onlyDown / 5));
+    press(state, ui, LEFT_BUTTON, c.x, c.y);
+    expect(ui.dir).toBe("down");
+  });
+
+  it("arrow keys set the direction they move in", () => {
+    const state = newState(P5, FIX.desc);
+    const ui = newUi();
+    press(state, ui, CURSOR_DOWN, 0, 0);
+    // Down is only kept where the cell can actually be filled downwards.
+    expect(["down", "across"]).toContain(ui.dir);
+    const puzzle = state.puzzle;
+    const i = ui.cy * 5 + ui.cx;
+    if (puzzle.downRun[i] >= 0) expect(ui.dir).toBe("down");
   });
 });
 
@@ -685,7 +832,7 @@ describe("crossing rendering", () => {
     expect(dr.ops.some((o) => o.op === "text" && o.text === "4")).toBe(true);
   });
 
-  it("cycles the digit colours while the completion flash runs", () => {
+  it("sweeps highlight/lowlight across the board during the completion flash", () => {
     const solved = solutionMoves().reduce(
       (s2, mv) => crossingGame.executeMove(s2, mv),
       newState(P5, FIX.desc),
@@ -697,12 +844,64 @@ describe("crossing rendering", () => {
       const dr = new RecordingDrawing(palette);
       redraw(dr, ds, null, solved, 1, ui0(), 0, flashTime);
       return [
-        ...new Set(dr.ops.filter((o) => o.op === "rect").map((o) => o.colour ?? -1)),
+        ...new Set(dr.ops.flatMap((o) => (o.op === "rect" ? [o.colour] : []))),
       ].sort((a, b) => a - b);
     };
-    // Two different phases of the flash paint the digits differently — the
-    // deliberate divergence from upstream's `bool` frame counter.
-    expect(frameColours(0.7)).not.toEqual(frameColours(0.3));
+    // A settled board paints no tile in the flash colours; two different flash
+    // phases paint *different* cells with them, so the wave is really moving.
+    const settled = frameColours(0);
+    expect(settled).not.toContain(COL_HIGHLIGHT);
+    const early = frameColours(0.7);
+    const late = frameColours(0.3);
+    expect(early).toContain(COL_HIGHLIGHT);
+    expect(late).toContain(COL_HIGHLIGHT);
+
+    const litCells = (flashTime: number): string[] => {
+      const ds = newDrawState(solved);
+      setTileSize(ds, TS);
+      const dr = new RecordingDrawing(palette);
+      redraw(dr, ds, null, solved, 1, ui0(), 0, flashTime);
+      return dr.ops.flatMap((o) =>
+        o.op === "rect" && o.colour === COL_HIGHLIGHT ? [`${o.x},${o.y}`] : [],
+      );
+    };
+    expect(litCells(0.7)).not.toEqual(litCells(0.3));
+  });
+
+  it("paints entered digits on one neutral tile, not nine colours", () => {
+    // The per-digit colours upstream drew were a leftover from a scrapped
+    // drag-and-drop design; its author asked for them to go.
+    const withDigits = solutionMoves()
+      .slice(0, 4)
+      .reduce((s2, mv) => crossingGame.executeMove(s2, mv), newState(P5, FIX.desc));
+    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
+    expect(palette).toHaveLength(NCOLOURS);
+
+    const ds = newDrawState(withDigits);
+    setTileSize(ds, TS);
+    const dr = new RecordingDrawing(palette);
+    redraw(dr, ds, null, withDigits, 1, ui0(), 0, 0);
+
+    // Every digit is drawn in the same (grid) colour…
+    const digitColours = dr.ops.flatMap((o) =>
+      o.op === "text" && /^[1-9]$/.test(o.text) && o.size > TS / 3 ? [o.colour] : [],
+    );
+    expect(digitColours.length).toBeGreaterThan(0);
+    expect(new Set(digitColours)).toEqual(new Set([COL_GRID]));
+    // …and no tile is painted in anything outside the neutral palette.
+    const tileColours = new Set(
+      dr.ops.flatMap((o) => (o.op === "rect" ? [o.colour] : [])),
+    );
+    for (const c of tileColours) {
+      expect([
+        COL_OUTERBG,
+        COL_INNERBG,
+        COL_HIGHLIGHT,
+        COL_LOWLIGHT,
+        COL_WALL_M,
+        COL_ERROR,
+      ]).toContain(c);
+    }
   });
 });
 

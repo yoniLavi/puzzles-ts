@@ -70,6 +70,42 @@ waits for the enabling change). Open the port as **one openspec change**
 (`add-<game>-ts-port`) — proposal + tasks + design + per-game spec deltas (the
 [openspec proposal workflow](../../openspec/OPENSPEC_AGENTS.md)).
 
+### 1.0 Read the game's own docs — its author has already listed its faults
+
+**Every game in `puzzles/unreleased/` ships a `puzzles/unreleased/docs/<game>.md`
+with a `## Status` section in which its author states what is wrong with it.**
+Read it *before* the C, alongside the `TODO` block at the top of the `.c`. It is
+not a duplicate of that block: it is more candid, it is written from the
+player's side, and it says which faults the author would fix given the chance —
+which is exactly the input this fork's "deliberate divergence is the point"
+licence needs. Crossing's opens "This puzzle has severe problems" and then names
+three; the port had already shipped without addressing any of them, because only
+the `.c`'s TODO comments had been read (they cover two of the three, more
+weakly, and omit the request that mattered most).
+
+The Status sections are load-bearing for the ports still to come, not just as
+polish items but as *scoping* facts:
+
+- **seismic** — "has a near-zero chance of generating sizes higher than 7×7. The
+  generator step that creates randomly filled regions needs to be completely
+  replaced with a different approach." Plan for that before starting, not after.
+- **salad** — the pseudo-Latin machinery "is currently fairly messy and doesn't
+  allow for more complex solver techniques"; the Number Ball generator "doesn't
+  create puzzles that make good use of the concept".
+- **boats** — "the solver cannot currently handle some of the harder Battleship
+  puzzles out there."
+
+Triage each point into: *fix in the port* (cheap and clearly right — Crossing's
+missing cursor auto-advance), *ask the owner* (a taste call the author flagged —
+Crossing's colour scheme), or *record and decline* (a rewrite the port does not
+justify). Whichever you choose, write it in `design.md`; a documented problem
+that the port silently reproduces is the one outcome to avoid.
+
+Upstream Tatham games have the same thing in a different place: `puzzles.but`
+and the per-game HTML overview, plus the "Status" notes in
+`puzzles/unfinished/README`. Same rule — read what the author says is broken
+before deciding what "faithful" means.
+
 ### 1.1 Finishing an *unfinished* upstream puzzle (`puzzles/unfinished/`)
 
 A handful of upstream puzzles ship only a solver/generator — the whole frontend

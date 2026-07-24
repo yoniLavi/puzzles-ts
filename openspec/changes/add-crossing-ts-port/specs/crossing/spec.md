@@ -131,3 +131,57 @@ a number-list panel below the grid coloured by how many times each clue is place
 - **WHEN** a move fills the grid so every run matches exactly one clue number and
   each clue number is used once
 - **THEN** the game is reported solved and flashes
+
+### Requirement: Crossing advances the selection along the number being filled
+
+Entering a digit SHALL move the selection to the next cell of the run being
+filled, so that a complete number can be typed without selecting each cell — the
+enhancement the game's own documentation asks for. The behaviour SHALL be
+available as a preference, enabled by default.
+
+The direction SHALL be remembered between entries, and SHALL be set by: the
+arrow key last used; selecting a cell that belongs to only one run (which snaps
+it to that run, there being no alternative); and clicking an already-selected
+cell that belongs to both a horizontal and a vertical run, which toggles it.
+Where a repeat click has no direction to toggle, it SHALL deselect the cell as
+before. The selection SHALL NOT advance after clearing a cell or after a pencil
+mark.
+
+#### Scenario: A whole number is typed after one selection
+
+- **WHEN** a cell at the start of a run is selected and digits are typed
+- **THEN** each digit fills the next cell of that run in turn, and the selection
+  remains visible throughout
+
+#### Scenario: The selection stops at the end of the run
+
+- **WHEN** a digit is entered in the last cell of a run
+- **THEN** the selection stays on that cell rather than leaving the run
+
+#### Scenario: Clicking a crossing cell again changes direction
+
+- **WHEN** the already-selected cell lies in both a horizontal and a vertical run
+  and is clicked again
+- **THEN** the fill direction changes between across and down and the cell stays
+  selected
+
+### Requirement: Crossing rejects board sizes it cannot generate
+
+Parameter validation SHALL reject, when validating for generation, any board
+larger than the measured generable maximum, giving a reason — rather than
+retrying indefinitely as upstream does. Generation retries until every run reads
+as a distinct listed number, so the chance of success falls to zero as the board
+grows. Validation SHALL NOT apply the ceiling when a description is already
+supplied, so an existing puzzle of any size remains playable.
+
+#### Scenario: An ungenerable size is refused with a reason
+
+- **WHEN** parameters larger than the generable maximum are validated for
+  generation
+- **THEN** validation fails with a message naming the maximum
+
+#### Scenario: An existing large description still loads
+
+- **WHEN** parameters larger than the generable maximum accompany a supplied
+  description
+- **THEN** validation succeeds

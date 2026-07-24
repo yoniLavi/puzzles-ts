@@ -28,8 +28,10 @@ import {
 import { digitKeys } from "../../engine/key-labels.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
+  CURSOR_DOWN,
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  CURSOR_UP,
   gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
@@ -51,6 +53,8 @@ import {
 } from "./render.ts";
 import { type CrossingMistake, findCrossingMistakes, solveCrossing } from "./solver.ts";
 import {
+  atCrossing,
+  type CrossingDirection,
   type CrossingMove,
   type CrossingParams,
   type CrossingState,
@@ -62,6 +66,8 @@ import {
   encodeParams,
   newState,
   newUi,
+  nextInRun,
+  snapDirection,
   status,
   textFormat,
   validateBoard,
@@ -115,11 +121,19 @@ function interpretMove(
         ui.cy === gy &&
         (ui.pencilSticky || !ui.cpencil)
       ) {
-        ui.cshow = false;
+        // Crossword convention (fork): clicking the selected cell again flips
+        // between filling across and down — but only where there is something
+        // to flip, so everywhere else it still deselects, exactly as upstream.
+        if (!ui.cpencil && editable && atCrossing(state.puzzle, gx, gy)) {
+          ui.dir = ui.dir === "across" ? "down" : "across";
+        } else {
+          ui.cshow = false;
+        }
       } else {
         ui.cx = gx;
         ui.cy = gy;
         ui.cshow = true;
+        ui.dir = snapDirection(state.puzzle, gx, gy, ui.dir);
         if (!ui.pencilSticky) ui.cpencil = false;
       }
       // A wall takes nothing, and (in pencil mode) neither does a filled cell —
@@ -138,6 +152,7 @@ function interpretMove(
           ui.cx = gx;
           ui.cy = gy;
           ui.cshow = true;
+          ui.dir = snapDirection(state.puzzle, gx, gy, ui.dir);
         }
       } else {
         // Upstream: select this cell for pencil marks (or deselect a repeat).
@@ -157,11 +172,15 @@ function interpretMove(
   }
 
   if (isCursorMove(button)) {
+    // The arrow used states the axis the player is working along.
+    const axis: CrossingDirection =
+      button === CURSOR_UP || button === CURSOR_DOWN ? "down" : "across";
     const moved = gridCursorMove(button, ui.cx, ui.cy, w, h);
     if (moved) {
       ui.cx = moved.x;
       ui.cy = moved.y;
     }
+    ui.dir = snapDirection(state.puzzle, ui.cx, ui.cy, axis);
     ui.cshow = ui.ckey = true;
     return UI_UPDATE;
   }
@@ -185,9 +204,26 @@ function interpretMove(
       ? { kind: "pencil", x: ui.cx, y: ui.cy, digit }
       : { kind: "set", x: ui.cx, y: ui.cy, digit };
 
-    // A mouse-driven ink entry hides the selection again; the keyboard cursor
-    // and pencil mode both persist.
-    if (!ui.ckey && !ui.cpencil) ui.cshow = false;
+    // Auto-advance (fork, default on): entering a digit steps the selection to
+    // the next cell of the run being filled, so a whole number can be typed
+    // straight in. The game's own documentation asks for exactly this —
+    // "inputting a complete number requires selecting each cell and typing a
+    // digit one by one … could be enhanced by automatic cursor movement".
+    const advanced =
+      ui.autoAdvance && !ui.cpencil && digit !== null
+        ? nextInRun(state.puzzle, ui.cx, ui.cy, ui.dir)
+        : null;
+    if (advanced) {
+      ui.cx = advanced.x;
+      ui.cy = advanced.y;
+      // Keep the selection up so the next digit lands where it is shown; a
+      // mouse-driven entry would otherwise dismiss it (upstream, below).
+      ui.cshow = true;
+    } else if (!ui.ckey && !ui.cpencil) {
+      // Upstream: a mouse-driven ink entry hides the selection again; the
+      // keyboard cursor and pencil mode both persist.
+      ui.cshow = false;
+    }
     return move;
   }
 
@@ -305,6 +341,15 @@ export const crossingGame: Game<
   textFormat,
 
   prefs: [
+    {
+      kw: "auto-advance",
+      name: "Entering a digit moves the selection along the number being filled",
+      type: "boolean",
+      get: (ui) => ui.autoAdvance,
+      set: (ui, v) => {
+        ui.autoAdvance = v;
+      },
+    },
     {
       kw: "sticky-pencil-mode",
       name: "Right-click toggles a sticky pencil mode (stays on until right-clicked again)",
