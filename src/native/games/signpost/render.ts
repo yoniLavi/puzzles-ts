@@ -6,7 +6,7 @@
  */
 
 import type { Colour, Point } from "../../../puzzle/types.ts";
-import { drawRectOutline } from "../../engine/draw.ts";
+import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { dragReleaseMove, executeMove } from "./moves.ts";
 import {
@@ -176,26 +176,6 @@ function drawStar(
     coords.push({ x: cx + iround(r * Math.sin(a)), y: cy + iround(-r * Math.cos(a)) });
   }
   dr.drawPolygon(coords, cfill, cout);
-}
-
-function drawRectCorners(
-  dr: GameDrawing,
-  cx: number,
-  cy: number,
-  r: number,
-  col: number,
-): void {
-  const line = (x1: number, y1: number, x2: number, y2: number): void =>
-    dr.drawLine({ x: x1, y: y1 }, { x: x2, y: y2 }, col, 1);
-  const h = Math.floor(r / 2);
-  line(cx - r, cy - r, cx - r, cy - h);
-  line(cx - r, cy - r, cx - h, cy - r);
-  line(cx - r, cy + r, cx - r, cy + h);
-  line(cx - r, cy + r, cx - h, cy + r);
-  line(cx + r, cy - r, cx + r, cy - h);
-  line(cx + r, cy - r, cx + h, cy - r);
-  line(cx + r, cy + r, cx + r, cy + h);
-  line(cx + r, cy + r, cx + h, cy + r);
 }
 
 function num2col(n: number, num: number): number {

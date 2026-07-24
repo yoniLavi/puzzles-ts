@@ -20,6 +20,7 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { BricksHint } from "./index.ts";
 import { bricksValidate } from "./solver.ts";
@@ -164,25 +165,6 @@ function drawErrGravity(dr: GameDrawing, ts: number, x: number, y: number): void
     { x: x - xext, y: y + yext - xext * 2 + 1, w: xext * 2 + 1, h: xext * 2 },
     COL_HIGHLIGHT,
   );
-}
-
-function drawRectCorners(
-  dr: GameDrawing,
-  cx: number,
-  cy: number,
-  r: number,
-  col: number,
-): void {
-  const seg = (x1: number, y1: number, x2: number, y2: number) =>
-    dr.drawLine({ x: x1, y: y1 }, { x: x2, y: y2 }, col, 1);
-  seg(cx - r, cy - r, cx - r, cy - (r >> 1));
-  seg(cx - r, cy - r, cx - (r >> 1), cy - r);
-  seg(cx - r, cy + r, cx - r, cy + (r >> 1));
-  seg(cx - r, cy + r, cx - (r >> 1), cy + r);
-  seg(cx + r, cy - r, cx + r, cy - (r >> 1));
-  seg(cx + r, cy - r, cx + (r >> 1), cy - r);
-  seg(cx + r, cy + r, cx + r, cy + (r >> 1));
-  seg(cx + r, cy + r, cx + (r >> 1), cy + r);
 }
 
 // Hint-overlay bits packed into the render cache word, above the cell's own

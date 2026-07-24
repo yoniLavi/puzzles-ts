@@ -20,6 +20,7 @@ export const TS_PORTED_PUZZLE_IDS: ReadonlySet<string> = new Set([
   "bricks",
   "bridges",
   "clusters",
+  "crossing",
   "cube",
   "dominosa",
   "fifteen",

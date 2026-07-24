@@ -23,6 +23,7 @@
  */
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { SpokesHint } from "./index.ts";
@@ -223,25 +224,6 @@ function spokeUnit(d: number): Point {
   const { dx, dy } = SPOKE_DIRS[d];
   const diagonal = dx !== 0 && dy !== 0;
   return { x: diagonal ? dx * SQRTHALF : dx, y: diagonal ? dy * SQRTHALF : dy };
-}
-
-/** Upstream misc.c `draw_rect_corners`: four corner brackets around (cx, cy). */
-function drawRectCorners(
-  dr: GameDrawing,
-  cx: number,
-  cy: number,
-  r: number,
-  colour: number,
-): void {
-  const hr = Math.floor(r / 2);
-  for (const sx of [-1, 1]) {
-    for (const sy of [-1, 1]) {
-      const px = cx + sx * r;
-      const py = cy + sy * r;
-      dr.drawLine({ x: px, y: py }, { x: px, y: cy + sy * hr }, colour, 1);
-      dr.drawLine({ x: px, y: py }, { x: cx + sx * hr, y: py }, colour, 1);
-    }
-  }
 }
 
 /** The hub itself: rim, one dot per placeable spoke, then the inner fill. */

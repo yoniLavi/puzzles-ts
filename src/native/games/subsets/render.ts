@@ -24,6 +24,7 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import {
   HINT_AREA,
@@ -153,26 +154,6 @@ export function setTileSize(ds: SubsetsDrawState, ts: number): void {
 }
 
 // --- helpers ----------------------------------------------------------------
-
-/** Upstream misc.c `draw_rect_corners`: four corner brackets around
- * (cx, cy) at radius r. */
-function drawRectCorners(
-  dr: GameDrawing,
-  cx: number,
-  cy: number,
-  r: number,
-  colour: number,
-): void {
-  const hr = Math.floor(r / 2);
-  for (const sx of [-1, 1]) {
-    for (const sy of [-1, 1]) {
-      const px = cx + sx * r;
-      const py = cy + sy * r;
-      dr.drawLine({ x: px, y: py }, { x: px, y: cy + sy * hr }, colour, 1);
-      dr.drawLine({ x: px, y: py }, { x: cx + sx * hr, y: py }, colour, 1);
-    }
-  }
-}
 
 const CODE_A = "A".charCodeAt(0);
 

@@ -10,6 +10,7 @@
 
 import type { Colour, Point } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import {
   type AscentMistake,
@@ -276,25 +277,6 @@ function thickLine(
     colour,
     Math.max(1, Math.round(thickness)),
   );
-}
-
-/** Upstream misc.c `draw_rect_corners`: four corner brackets. */
-function drawRectCorners(
-  dr: GameDrawing,
-  cx: number,
-  cy: number,
-  r: number,
-  colour: number,
-): void {
-  const hr = Math.floor(r / 2);
-  for (const sx of [-1, 1]) {
-    for (const sy of [-1, 1]) {
-      const px = cx + sx * r;
-      const py = cy + sy * r;
-      dr.drawLine({ x: px, y: py }, { x: px, y: cy + sy * hr }, colour, 1);
-      dr.drawLine({ x: px, y: py }, { x: cx + sx * hr, y: py }, colour, 1);
-    }
-  }
 }
 
 const HORIZONTAL_ARROW = [0.45, 0, 0.35, 0.45, -0.45, 0.45, -0.45, -0.45, 0.35, -0.45];
