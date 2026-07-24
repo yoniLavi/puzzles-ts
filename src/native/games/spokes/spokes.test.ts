@@ -386,7 +386,7 @@ describe("spokes input", () => {
     expect(press(state, ui, LEFT_BUTTON, { x: 10, y: 4 * TS + 5 })).toBeNull();
   });
 
-  it("refuses a diagonal line that would cross an existing one", () => {
+  it("auto-rules-out the crossing when a diagonal line is drawn, and clears it on erase", () => {
     const state = newState(FIX, FIX_DESC);
     const crossed = spokesGame.executeMove(state, {
       kind: "set",
@@ -394,22 +394,28 @@ describe("spokes input", () => {
       dir: DIR_BOTRIGHT,
       state: SPOKE_LINE,
     });
-    const ui = newUi();
+    // Drawing (0,0)→(1,1) auto-marks the crossing (1,0)→(0,1): cell 1, BOTLEFT.
+    expect(getSpoke(crossed.spokes[1], DIR_BOTLEFT)).toBe(SPOKE_MARKED);
 
-    // Drag from hub (1,0) down-left towards hub (0,1) — the crossing diagonal.
+    const ui = newUi();
+    // The blocked crossing is inert to both buttons — the player can't draw a
+    // crossing line, and can't toggle the auto-mark off.
     press(crossed, ui, LEFT_BUTTON, hub(1, 0));
     press(crossed, ui, LEFT_DRAG, { x: hub(0, 1).x + 12, y: hub(0, 1).y - 12 });
     expect(ui.dragEnd).toBe(4);
     expect(press(crossed, ui, LEFT_RELEASE, hub(0, 1))).toBe(UI_UPDATE);
-
-    // A *mark* on the same spoke is still allowed — only lines may not cross.
     press(crossed, ui, RIGHT_BUTTON, hub(1, 0));
     press(crossed, ui, RIGHT_DRAG, { x: hub(0, 1).x + 12, y: hub(0, 1).y - 12 });
-    expect(press(crossed, ui, RIGHT_RELEASE, hub(0, 1))).toMatchObject({
+    expect(press(crossed, ui, RIGHT_RELEASE, hub(0, 1))).toBe(UI_UPDATE);
+
+    // Erasing the diagonal line clears the auto-mark it placed.
+    const erased = spokesGame.executeMove(crossed, {
       kind: "set",
-      dir: DIR_BOTLEFT,
-      state: SPOKE_MARKED,
+      index: 0,
+      dir: DIR_BOTRIGHT,
+      state: 1 /* SPOKE_EMPTY */,
     });
+    expect(getSpoke(erased.spokes[1], DIR_BOTLEFT)).toBe(1 /* SPOKE_EMPTY */);
   });
 
   it("draws and marks from the half-grid keyboard cursor", () => {

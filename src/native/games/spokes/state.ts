@@ -228,6 +228,56 @@ export function spokesPlace(b: SpokesBoard, i: number, dir: number, s: number): 
 }
 
 /**
+ * The crossing partner of a diagonal spoke — the other diagonal of the unit
+ * square it runs across, which cannot coexist with it as a line. `null` for an
+ * orthogonal spoke (even `dir`), which crosses nothing.
+ */
+export function crossingSpoke(
+  b: SpokesBoard,
+  index: number,
+  dir: number,
+): { i: number; d: number } | null {
+  if ((dir & 1) === 0) return null;
+  const x = index % b.w;
+  const y = (index / b.w) | 0;
+  const { dx, dy } = SPOKE_DIRS[dir];
+  const cx = Math.min(x, x + dx); // top-left cell of the square the diagonal spans
+  const cy = Math.min(y, y + dy);
+  // A ↘-family diagonal (dx === dy) is crossed by the ↙ from the top-right
+  // cell; a ↙-family one by the ↘ from the top-left cell.
+  return dx === dy
+    ? { i: cy * b.w + (cx + 1), d: DIR_BOTLEFT }
+    : { i: cy * b.w + cx, d: DIR_BOTRIGHT };
+}
+
+/**
+ * Keep a diagonal line's *crossing* auto-ruled-out. Drawing a diagonal line
+ * marks the crossing (two diagonals can't cross — the player can see it, so the
+ * game does the bookkeeping); erasing that line clears the mark it placed. A
+ * mark toggle has no crossing effect. `oldState` is the spoke's state before
+ * this set, so an erase is distinguished from a mark-clear.
+ */
+export function syncDiagonalBlock(
+  b: SpokesBoard,
+  index: number,
+  dir: number,
+  oldState: number,
+  newState: number,
+): void {
+  const c = crossingSpoke(b, index, dir);
+  if (!c) return;
+  if (newState === SPOKE_LINE) {
+    if (getSpoke(b.spokes[c.i], c.d) === SPOKE_EMPTY) {
+      spokesPlace(b, c.i, c.d, SPOKE_MARKED);
+    }
+  } else if (oldState === SPOKE_LINE && newState === SPOKE_EMPTY) {
+    if (getSpoke(b.spokes[c.i], c.d) === SPOKE_MARKED) {
+      spokesPlace(b, c.i, c.d, SPOKE_EMPTY);
+    }
+  }
+}
+
+/**
  * A fresh board: every clue `8`, every spoke `EMPTY`, then the three spokes
  * that point off each edge hidden (upstream `blank_game`).
  *

@@ -57,6 +57,7 @@ const DEDUCTIVE = new Set([
   "singles",
   "slant",
   "solo",
+  "spokes",
   "towers",
   "undead",
   "unequal",

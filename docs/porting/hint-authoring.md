@@ -207,6 +207,17 @@ Two compliant options, one non-option:
   the player to run the propagation in their head. (Existing forcing/`Extreme`-tier
   hints in the Latin family should be reviewed against this when next touched.)
 
+Where a game *ships* a forcing tier under a non-`Unreasonable` name and neither compliant
+option applies cleanly, the collection's current pragmatic stance (Spokes' Tricky/Hard
+contradiction look-ahead, the Latin `Extreme` tiers) is: state the hypothesis and the
+**classified, named** contradiction it reaches (over-count / crossing / sealed-off — not a
+generic "it breaks"), and **anchor it to the board** by highlighting *where* it breaks, so
+the conclusion rests on something the player can see rather than a claim to trust. That is
+a stopgap, not the bar — the full answer is the tentative-mark what-if walk above, which is
+a cross-game engine build (a hypothetical-mark render state), not a per-game change. Record
+the stance in the game's `design.md`, with a firing-frequency measurement showing how often
+the forcing rung actually fires (Spokes measured it: the *most* common firing on Hard).
+
 ---
 
 ## 2. Writing the narration
@@ -455,6 +466,33 @@ wrong branch. Guard the result with a **max-length assertion** over a scan of bo
 (`netslide-hint.test.ts` holds every sentence to ≤ 120 chars), so the preamble cannot creep
 back.
 
+### 2.10 Hint the move that advances the goal — not every move the solver makes
+
+A solver makes *every* forced deduction; a hint should offer the ones that move the
+player toward **solving the puzzle**, in an order that leads with progress. A recording
+pass that faithfully replays the solver's rung order inherits two smells the owner
+flagged on Spokes: it leads with bookkeeping moves over goal moves, and it hints
+deductions that are *forced but useless* — busywork that advances nothing.
+
+- **Order goal-first.** The hint is free to reorder the solver's rungs (it only needs
+  each firing to be *forced*, not to match the solver's internal order). Lead with the
+  moves that build the answer — Spokes hints a forced **connection** (line) before any
+  **rule-out** (mark). A plan that dribbles out marks before the connection they enable
+  reads as busywork even when every step is correct.
+- **Drop the useless-but-forced move.** A move can be genuinely forced yet advance
+  nothing: Spokes' rule-out of the spoke between two *already-satisfied* hubs is real
+  (they can't connect) but pointless (neither hub needs it, and it unblocks nothing).
+  Find the local "does this help?" predicate — for Spokes, *at least one endpoint hub
+  still needs lines* — and skip firings that fail it. **Verify it's safe to skip:** a
+  move worth suppressing must not be load-bearing for the solve (Spokes' both-ends-full
+  mark feeds no hub's completion, so dropping it never stalls the plan — asserted in
+  `spokes-hint.test.ts`). If suppressing a move *would* stall the plan, it wasn't
+  useless; narrate it instead.
+
+The distinction from §1B (cognitive load) — that's about a single hint being too much to
+*read*; this is about the *plan* offering moves not worth reading at all. Both point the
+same way: spend the player's attention only on what advances understanding or the board.
+
 ---
 
 ## 3. Engine mechanics (already built)
@@ -601,6 +639,23 @@ experiences the plan at **per-step granularity**, so the same "one deduction fir
 journey" grouping (rule 2) that makes auto-hint read well is also what makes the stepper
 read well.
 
+### 5.1a A game with two move *shapes* echoes each shape in the hint colour
+
+When a game's moves come in more than one visible *kind* — Spokes draws a **line**
+between hubs *or* places a **rule-out mark** — the hint highlight must use the shape
+that matches the move, recoloured `COL_HINT`, not force every suggestion into one
+shape. Spokes' first cut drew every forced spoke as a `COL_HINT` line; but three of its
+five rungs force a *mark*, and a solid blue line for a rule-out reads as *"connect
+these"* — the exact opposite of the narration ("must be ruled out"), a §2.4 picture-lies
+bug. The fix: a `SPOKE_LINE` suggestion is a `COL_HINT` line, a `SPOKE_MARKED` suggestion
+is a `COL_HINT` dot at the spoke's rim — the same two shapes the game already draws for a
+real line and a real mark. Rule of thumb: **the hint borrows the game's own vocabulary
+for the action, in the hint colour** — it never invents a shape the player would have to
+translate, and never shows the shape of the *wrong* action. (Exemplar: `spokes/render.ts`
+line-bit vs mark-bit branches; `SpokesHint.spokes[].state` carries which. This is the
+converse of §5.1's "don't pre-render the *result*": you show *where and which action*, in
+hint colour, without performing it.)
+
 ### 5.2 Show the evidence as an *area*, not one premise cell
 
 This is the visual half of quality-bar rule 1. A single shaded premise cell tells the
@@ -691,6 +746,7 @@ game:
 | Light Up | forced square(s), blue `COL_HINT` fill (bulb *and* mark targets identical — the narration says which; no bulb/blob preview) | evidence squares (a corridor of sight, a MAKESLIGHT set, a clue's placed bulbs) carried as one list, cue split by the cell's own state (§5.4): a **dark** square → `COL_HINT_CELL` shade (its blob draws on top), a **lit/bulb** square → teal `COL_HINT_LITREF` ring (a fill would hide the "already lit" premise); the unlit square a deduction protects → amber `COL_HINT_DARKREF` ring; the driving clue → its digit recolours `COL_HINT` (the Pattern clue↔move tie; the light `COL_HINT_CELL` was tried first and is unreadable as a cue — nearly white on black) |
 | Slant | forced square(s), blue `COL_HINT` fill (highlight only, no slash preview); a clue firing lights all its forced squares (equivalent moves share the colour, rule 3) and drops them as its multi-leg journey advances | a **clue** firing → the clue's digit recolours `COL_HINT` + its already-decided neighbour squares `COL_HINT_CELL` shade; a **loop/dead-end** firing → the connectivity chain / trapped-point components `COL_HINT_CELL` shade (plus the trapped points' incident squares, so a dead-end point carrying no diagonal yet is still *located*); an **equivalence** firing → teal `COL_HINT_REF` ring on the cited already-filled anchor (the honest locked-slant tier, below) |
 | Netslide | the tile being placed, `COL_HINT` fill (its wires still drawn on top, so the player sees *which* piece); the border arrow to press, `COL_HINT` | its destination outlined `COL_HINT` — **solid** when the finished board really does want that tile's wires there, **dashed** when the plan is only passing through. A movement game names one element type (the tile), so the §5.3 legend does not otherwise bite; the solid/dashed split is the non-colour cue distinguishing *arrived* from *setting up* |
+| Spokes | the forced spoke, in `COL_HINT` — **a line** ("draw this") when the move draws a line, **a rim dot** ("rule this out") when the move places a mark: the same two shapes the game draws for a real line and a real mark, in the hint colour (§5.1a) | the hubs whose clue/lines/connectivity are the argument → `COL_HINT_CELL` ring. A saturated hub forces several spokes as one multi-leg journey, all shown in the one colour (rule 2) |
 
 Two reusable lessons from the rollout: (1) **teal = "a cited black square", violet = "a
 cited white square"** is a cross-game reading worth preserving — reuse those hues for a
