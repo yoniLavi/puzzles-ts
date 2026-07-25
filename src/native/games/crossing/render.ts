@@ -68,7 +68,12 @@ export const COL_HELD = 12;
 /** Wash over a run the held clue could go in — or, when it is already on the
  * board, the run it occupies. */
 export const COL_CANDIDATE = 13;
-export const NCOLOURS = 14;
+/** Wash over the *other* run through the selected cell — the one a clue would
+ * go in if it fits that way instead. */
+export const COL_CROSS = 14;
+/** A clue that fits the crossing run rather than the one being filled. */
+export const COL_CROSSFIT = 15;
+export const NCOLOURS = 16;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = new Array(NCOLOURS);
@@ -93,6 +98,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_GHOST] = [0.55 * background[0], 0.55 * background[1], 0.55 * background[2]];
   out[COL_HELD] = [0, 0.35, 0.85];
   out[COL_CANDIDATE] = [0.72 * background[0], 0.82 * background[1], background[2]];
+  out[COL_CROSS] = [background[0], 0.9 * background[1], 0.66 * background[2]];
+  out[COL_CROSSFIT] = [0.5, 0.32, 0];
   return out;
 }
 
@@ -134,6 +141,7 @@ const DF_PENCIL = 1 << 9; // pencil selection (the corner triangle)
 const DF_KEYCUR = 1 << 10; // keyboard cursor (corner brackets)
 const K_FLASH = 11; // bits 11-12: flash phase + 1 (0 = not flashing)
 const DF_CANDIDATE = 1 << 13; // this run could take (or holds) the held clue
+const DF_CROSS = 1 << 14; // the crossing run through the selected cell
 const K_MARKS = 15; // bits 15-23: the nine pencil-mark bits
 const K_GHOST = 24; // bits 24-27: previewed digit of a held clue number (0 = none)
 
@@ -337,12 +345,11 @@ function drawCell(
   const digit = state.grid[i];
   const selected = (flags & DF_SELECT) !== 0;
   const candidate = (flags & DF_CANDIDATE) !== 0;
+  const cross = (flags & DF_CROSS) !== 0;
+  const wash = candidate ? COL_CANDIDATE : cross ? COL_CROSS : COL_INNERBG;
 
   if (!digit) {
-    dr.drawRect(
-      { x: tx, y: ty, w: ts, h: ts },
-      selected ? COL_HIGHLIGHT : candidate ? COL_CANDIDATE : COL_INNERBG,
-    );
+    dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, selected ? COL_HIGHLIGHT : wash);
   }
 
   if (walls[i]) {
@@ -357,9 +364,7 @@ function drawCell(
     // the board (the shape ABCD uses) in place of upstream's colour cycle.
     const mid =
       flash < 0
-        ? candidate
-          ? COL_CANDIDATE
-          : COL_INNERBG
+        ? wash
         : (x + y) % 3 === flash
           ? COL_HIGHLIGHT
           : (x + y + 2) % 3 === flash
@@ -533,7 +538,10 @@ export function numberAtPoint(
   return -1;
 }
 
-/** Draw the clue list, each number coloured by `colourOf`. */
+/** Draw the clue list. `colourOf` gives each clue's colour; `struckOf` marks the
+ * ones already written into the grid, which are crossed off the list exactly as
+ * a player does on paper — the distinction between "used up" and "cannot go in
+ * the run you are looking at" has to survive both being greyed. */
 function drawNumbers(
   dr: GameDrawing,
   ts: number,
@@ -541,12 +549,23 @@ function drawNumbers(
   h: number,
   numbers: readonly string[],
   colourOf: (i: number) => number,
+  struckOf: (i: number) => boolean,
 ): void {
   const { fontsz, slots } = layoutNumbers(ts, w, h, numbers);
   if (slots.length === 0) return;
   const opts = textOpts(Math.trunc(fontsz), "left", "alphabetic", "fixed");
   for (let i = 0; i < slots.length; i++) {
-    dr.drawText({ x: slots[i].x, y: slots[i].y }, opts, colourOf(i), numbers[i]);
+    const colour = colourOf(i);
+    dr.drawText({ x: slots[i].x, y: slots[i].y }, opts, colour, numbers[i]);
+    if (struckOf(i)) {
+      const y = Math.round(slots[i].y - fontsz * 0.3);
+      dr.drawLine(
+        { x: slots[i].x, y },
+        { x: slots[i].x + slots[i].hit.w, y },
+        colour,
+        Math.max(1, Math.round(fontsz / 12)),
+      );
+    }
   }
 }
 
@@ -625,6 +644,28 @@ export function redraw(
   const placed = placedRuns(puzzle, state.grid);
   const ghost = new Uint8Array(w * h);
   const candidate = new Uint8Array(w * h);
+  const crossWash = new Uint8Array(w * h);
+
+  // The two runs through the selected cell: the one being filled, and the one
+  // crossing it. The crossing run is washed so that the second colour used for
+  // its clues in the list below has something to point at.
+  const selCell = cshow && !ui.cpencil ? ui.cy * w + ui.cx : -1;
+  const activeRun =
+    selCell < 0
+      ? -1
+      : ui.dir === "across"
+        ? puzzle.acrossRun[selCell]
+        : puzzle.downRun[selCell];
+  const crossRun =
+    selCell < 0
+      ? -1
+      : ui.dir === "across"
+        ? puzzle.downRun[selCell]
+        : puzzle.acrossRun[selCell];
+  if (crossRun >= 0 && ui.fitHighlight) {
+    for (const i of runs[crossRun].cells) crossWash[i] = 1;
+  }
+
   if (ui.heldNumber !== null && ui.fitHighlight) {
     const held = ui.heldNumber;
     const alreadyOnBoard = placed[held];
@@ -664,6 +705,7 @@ export function redraw(
       if (!walls[i] && !state.grid[i]) flags |= (state.marks[i] & 0x1ff) << K_MARKS;
       if (ghost[i]) flags |= ghost[i] << K_GHOST;
       if (candidate[i]) flags |= DF_CANDIDATE;
+      else if (crossWash[i]) flags |= DF_CROSS;
 
       const tile =
         (state.grid[i] << K_DIGIT) |
@@ -690,24 +732,32 @@ export function redraw(
     }
   }
 
-  // The number panel. Each clue reads as one of: held, already used once,
-  // duplicated, unavailable for the selected run, or free.
-  const selectedRun =
-    cshow && !ui.cpencil
-      ? ui.dir === "across"
-        ? puzzle.acrossRun[ui.cy * w + ui.cx]
-        : puzzle.downRun[ui.cy * w + ui.cx]
-      : -1;
+  // The number panel. Each clue reads as one of: held, already written in
+  // (struck off), duplicated, fits the run being filled, fits the *crossing*
+  // run instead, or cannot go here at all.
   const colourClass = (l: number): number => {
     if (ui.heldNumber === l) return 3;
     if (done[l] > 1) return 2;
-    if (done[l] === 1) return 1;
-    if (ui.fitHighlight && selectedRun >= 0) {
-      return numberAvailableTo(puzzle, state.grid, placed, selectedRun, l) ? 0 : 4;
+    if (done[l] === 1) return 1; // already on the board — struck off
+    if (ui.fitHighlight && selCell >= 0) {
+      if (activeRun >= 0 && numberAvailableTo(puzzle, state.grid, placed, activeRun, l))
+        return 0;
+      // A clue that only fits the other way through this cell is still one
+      // click from being placed — clicking it puts it in the crossing run.
+      if (crossRun >= 0 && numberAvailableTo(puzzle, state.grid, placed, crossRun, l))
+        return 5;
+      return 4;
     }
     return 0;
   };
-  const CLASS_COLOUR = [COL_GRID, COL_LOWLIGHT, COL_ERROR, COL_HELD, COL_LOWLIGHT];
+  const CLASS_COLOUR = [
+    COL_GRID,
+    COL_LOWLIGHT,
+    COL_ERROR,
+    COL_HELD,
+    COL_LOWLIGHT,
+    COL_CROSSFIT,
+  ];
 
   let panelStale = false;
   for (let l = 0; l < numbers.length; l++) {
@@ -721,7 +771,15 @@ export function redraw(
     const top = tileOrigin(h - 1, ts) + ts + 2;
     const size = computeSize(puzzle, ts);
     dr.drawRect({ x: 0, y: top, w: size.w, h: size.h - top }, COL_OUTERBG);
-    drawNumbers(dr, ts, w, h, numbers, (l) => CLASS_COLOUR[colourClass(l)]);
+    drawNumbers(
+      dr,
+      ts,
+      w,
+      h,
+      numbers,
+      (l) => CLASS_COLOUR[colourClass(l)],
+      (l) => colourClass(l) === 1,
+    );
     dr.drawUpdate({ x: 0, y: top, w: size.w, h: size.h - top });
     for (let l = 0; l < numbers.length; l++) ds.numberState[l] = colourClass(l);
   }

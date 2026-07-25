@@ -216,8 +216,13 @@ validating the generator, solver and codec together.
 The clue list SHALL be interactive. Clicking a clue SHALL pick it up, previewing
 it in every run that can still take it; clicking such a run SHALL write the whole
 clue in as a single move. With a cell already selected, clicking a clue that can
-go in its run SHALL place it immediately. Selecting a cell SHALL indicate which
-clues can still go in its run.
+go in its run SHALL place it immediately.
+
+Selecting a cell SHALL indicate which clues can still go in **either** run
+through it, distinguishing a clue that fits the run being filled from one that
+fits the crossing run, since clicking either places it in the corresponding run.
+A clue already written into the grid SHALL remain distinguishable from one that
+merely cannot go in the selected run.
 
 A clue can go in a run when it is the run's length, agrees with every digit
 already entered there, and is not already written into another run. Availability
@@ -251,6 +256,18 @@ board SHALL indicate the run it occupies.
 
 - **WHEN** a clue that has been written into a run is clicked
 - **THEN** the run it occupies is indicated
+
+#### Scenario: Both runs through the selected cell are answered for
+
+- **WHEN** a cell lying in both a horizontal and a vertical run is selected
+- **THEN** clues fitting the run being filled, clues fitting the crossing run,
+  and clues fitting neither are each shown distinctly
+
+#### Scenario: A clue on the board stays distinguishable from an unavailable one
+
+- **WHEN** one clue has been written into the grid and another simply cannot go
+  in the selected run
+- **THEN** the two are shown differently
 
 #### Scenario: A clue used elsewhere is not offered again
 

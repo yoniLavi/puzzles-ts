@@ -26,6 +26,7 @@ import { newCrossingDesc } from "./generator.ts";
 import { crossingGame } from "./index.ts";
 import {
   COL_CANDIDATE,
+  COL_CROSSFIT,
   COL_ERROR,
   COL_GHOST,
   COL_GRID,
@@ -814,31 +815,87 @@ describe("crossing number-list placement", () => {
     expect(ghostDigits(dr)).toEqual([]);
   });
 
-  it("dims clues that cannot go in the selected run", () => {
+  it("splits the list by where each clue could go from the selected cell", () => {
     const state = newState(P5, FIX.desc);
     const palette = crossingGame.colours([0.827, 0.827, 0.827]);
-    const paint = (ui: CrossingUi): number => {
-      const ds = newDrawState(state);
-      setTileSize(ds, TS);
-      const dr = new RecordingDrawing(palette);
-      redraw(dr, ds, null, state, 1, ui, 0, 0);
-      return dr.ops.filter((o) => o.op === "text" && o.colour === COL_LOWLIGHT).length;
+    const textColours = (ui: CrossingUi): Map<string, number> => {
+      const dr = paintWith(state, ui);
+      const m = new Map<string, number>();
+      for (const o of dr.ops) {
+        if (o.op === "text" && state.puzzle.numbers.includes(o.text)) {
+          m.set(o.text, o.colour);
+        }
+      }
+      return m;
     };
-    // With nothing selected, no clue is dimmed on a fresh board.
-    expect(paint(newUi())).toBe(0);
+    void palette;
 
-    // Selecting a run dims every clue of the wrong length.
-    const run = state.puzzle.runs[0];
-    const ui = { ...newUi(), cshow: true, dir: run.horizontal ? "across" : "down" };
-    ui.cx = run.cells[0] % 5;
-    ui.cy = Math.floor(run.cells[0] / 5);
-    const wrongLength = state.puzzle.numbers.filter(
-      (n) => n.length !== run.cells.length,
-    ).length;
-    expect(paint(ui as CrossingUi)).toBe(wrongLength);
+    // Nothing selected: every clue reads as available.
+    for (const c of textColours(newUi()).values()) expect(c).toBe(COL_GRID);
 
-    // …and the preference turns the whole aid off.
-    expect(paint({ ...(ui as CrossingUi), fitHighlight: false })).toBe(0);
+    // Select a cell that lies in both a horizontal and a vertical run.
+    const puzzle = state.puzzle;
+    let cell = -1;
+    for (let i = 0; i < 25 && cell < 0; i++) {
+      if (puzzle.acrossRun[i] >= 0 && puzzle.downRun[i] >= 0) cell = i;
+    }
+    expect(cell).toBeGreaterThanOrEqual(0);
+    const ui: CrossingUi = {
+      ...newUi(),
+      cshow: true,
+      cx: cell % 5,
+      cy: Math.floor(cell / 5),
+      dir: "across",
+    };
+    const activeLen = puzzle.runs[puzzle.acrossRun[cell]].cells.length;
+    const crossLen = puzzle.runs[puzzle.downRun[cell]].cells.length;
+
+    const colours = textColours(ui);
+    for (const [text, colour] of colours) {
+      if (text.length === activeLen) {
+        // Fits the run being filled: plainly available.
+        expect(colour).toBe(COL_GRID);
+      } else if (text.length === crossLen) {
+        // Fits the crossing run instead — still one click from being placed,
+        // so it is distinguished rather than dimmed away.
+        expect(colour).toBe(COL_CROSSFIT);
+      } else {
+        expect(colour).toBe(COL_LOWLIGHT);
+      }
+    }
+    // Both directions really are represented (the cell is a crossing).
+    expect([...colours.values()]).toContain(COL_GRID);
+    if (activeLen !== crossLen) expect([...colours.values()]).toContain(COL_CROSSFIT);
+
+    // The preference turns the whole aid off.
+    const off = textColours({ ...ui, fitHighlight: false });
+    for (const c of off.values()) expect(c).toBe(COL_GRID);
+  });
+
+  it("crosses a clue off the list once it is on the board, without dimming alone", () => {
+    // "Already used" and "cannot go in this run" both grey out, so the used
+    // ones are struck through — the distinction the owner lost otherwise.
+    const state = newState(P5, FIX.desc);
+    const { run, number } = fittingPair();
+    const after = crossingGame.executeMove(state, { kind: "place", run, number });
+
+    const before = paintWith(state, newUi());
+    expect(
+      before.ops.filter((o) => o.op === "line" && o.colour === COL_LOWLIGHT),
+    ).toEqual([]);
+
+    const dr = paintWith(after, newUi());
+    const struck = dr.ops.filter((o) => o.op === "line" && o.colour === COL_LOWLIGHT);
+    expect(struck).toHaveLength(1);
+    // The strike sits on the clue that was placed.
+    const { slots } = layoutNumbers(TS, 5, 5, after.puzzle.numbers);
+    const slot = slots[number];
+    const line = struck[0];
+    if (line.op === "line") {
+      expect(line.x1).toBe(slot.x);
+      expect(line.y1).toBeLessThan(slot.y);
+      expect(line.y1).toBeGreaterThan(slot.y - TS);
+    }
   });
 });
 
