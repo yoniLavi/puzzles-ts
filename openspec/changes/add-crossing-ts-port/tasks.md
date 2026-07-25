@@ -191,7 +191,14 @@ All three Status points triaged; see design F9-F12 and playbook §1.0.
       deliberately *not* cross-run satisfiability (owner-decided) — that is the
       solver's job. `layoutNumbers` shared by render and input; `fit-highlight`
       pref, default on (design F14).
-- [x] 8b.8 Re-verify in the browser: auto-advance across and down, the direction
+- [x] 8b.8 **Split the preview into "where it might go" and "what it would
+      look like"** (owner-found: clicking a clue wrote its digits into every
+      candidate run at once — 10 of them for a 2-digit clue on a fresh 9x9 — and
+      two crossing candidates disagreed over the shared cell). A wash marks every
+      candidate run; digits are previewed only when one run remains; a clue
+      already on the board washes where it is, which answers "show me where this
+      one went" for free (design F15).
+- [x] 8b.9 Re-verify in the browser: auto-advance across and down, the direction
       toggle, the neutral tiles, the flash sweep, and the size refusal.
 
 ## 9. Stage 2 — on owner acceptance only

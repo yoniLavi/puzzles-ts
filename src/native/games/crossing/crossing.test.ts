@@ -25,6 +25,7 @@ import cReference from "./__fixtures__/crossing-c-reference.json" with { type: "
 import { newCrossingDesc } from "./generator.ts";
 import { crossingGame } from "./index.ts";
 import {
+  COL_CANDIDATE,
   COL_ERROR,
   COL_GHOST,
   COL_GRID,
@@ -704,6 +705,8 @@ describe("crossing number-list placement", () => {
     const move = press(state, ui, LEFT_BUTTON, cell.x, cell.y);
     expect(move).toMatchObject({ kind: "place", number });
     expect(ui.heldNumber).toBeNull();
+    // The cell stays selected, so typing carries on from where the clue landed.
+    expect(ui).toMatchObject({ cshow: true, cx: cells[0] % 5 });
   });
 
   it("will not place a clue already used in another run", () => {
@@ -725,35 +728,90 @@ describe("crossing number-list placement", () => {
     }
   });
 
-  it("previews a held clue as ghost digits, and dims the clues that cannot fit", () => {
+  /** Which runs could still take clue `l` on `st`? */
+  function candidateRuns(st: CrossingState, l: number): number[] {
+    const placed = placedRuns(st.puzzle, st.grid);
+    return st.puzzle.runs
+      .map((_r, i) => i)
+      .filter((i) => numberAvailableTo(st.puzzle, st.grid, placed, i, l));
+  }
+
+  function paintWith(st: CrossingState, ui: CrossingUi): RecordingDrawing {
+    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
+    const ds = newDrawState(st);
+    setTileSize(ds, TS);
+    const dr = new RecordingDrawing(palette);
+    redraw(dr, ds, null, st, 1, ui, 0, 0);
+    return dr;
+  }
+
+  /** How many *cells* carry the candidate wash (a bevelled tile paints its mid
+   * colour twice, so count distinct tiles rather than rects). */
+  const washedCells = (dr: RecordingDrawing): number =>
+    new Set(
+      dr.ops.flatMap((o) =>
+        o.op === "rect" && o.colour === COL_CANDIDATE
+          ? [`${Math.floor(o.x / TS)},${Math.floor(o.y / TS)}`]
+          : [],
+      ),
+    ).size;
+  const ghostDigits = (dr: RecordingDrawing): string[] =>
+    dr.ops.flatMap((o) => (o.op === "text" && o.colour === COL_GHOST ? [o.text] : []));
+
+  it("washes every run a held clue could still go in", () => {
+    const state = newState(P5, FIX.desc);
+    expect(washedCells(paintWith(state, newUi()))).toBe(0);
+
+    const l = 0;
+    const runs = candidateRuns(state, l);
+    expect(runs.length).toBeGreaterThan(1); // a fresh board leaves many options
+    const cells = new Set(runs.flatMap((r) => [...state.puzzle.runs[r].cells]));
+    const dr = paintWith(state, { ...newUi(), heldNumber: l });
+    expect(washedCells(dr)).toBe(cells.size);
+    // …and the clue itself is picked out in the list.
+    expect(dr.ops.some((o) => o.op === "text" && o.colour === COL_HELD)).toBe(true);
+  });
+
+  it("previews the digits only when a single run could take the clue", () => {
+    const state = newState(P5, FIX.desc);
+    const l = 0;
+    // Several candidates: the wash says where it might go, but writing the
+    // digits into all of them would assert placements the game cannot know
+    // (and two candidates that cross would disagree on the shared cell).
+    expect(candidateRuns(state, l).length).toBeGreaterThan(1);
+    expect(ghostDigits(paintWith(state, { ...newUi(), heldNumber: l }))).toEqual([]);
+
+    // Narrow it to one candidate by ruling the others out with typed digits.
+    const text = state.puzzle.numbers[l];
+    let narrowed = state;
+    const keep = candidateRuns(state, l)[0];
+    for (const r of candidateRuns(state, l)) {
+      if (r === keep) continue;
+      const cell = state.puzzle.runs[r].cells[0];
+      const wrong = ((text.charCodeAt(0) - 48) % 9) + 1;
+      narrowed = crossingGame.executeMove(narrowed, {
+        kind: "set",
+        x: cell % 5,
+        y: Math.floor(cell / 5),
+        digit: wrong,
+      });
+    }
+    const left = candidateRuns(narrowed, l);
+    expect(left).toEqual([keep]);
+    const ghosted = ghostDigits(paintWith(narrowed, { ...newUi(), heldNumber: l }));
+    expect(ghosted.join("")).toBe(text);
+  });
+
+  it("shows where a clue already on the board is", () => {
     const state = newState(P5, FIX.desc);
     const { run, number } = fittingPair();
-    const palette = crossingGame.colours([0.827, 0.827, 0.827]);
-    const paint = (ui: CrossingUi): RecordingDrawing => {
-      const ds = newDrawState(state);
-      setTileSize(ds, TS);
-      const dr = new RecordingDrawing(palette);
-      redraw(dr, ds, null, state, 1, ui, 0, 0);
-      return dr;
-    };
-    const ghostDigits = (dr: RecordingDrawing): string[] =>
-      dr.ops.flatMap((o) =>
-        o.op === "text" && o.colour === COL_GHOST ? [o.text] : [],
-      );
+    const after = crossingGame.executeMove(state, { kind: "place", run, number });
 
-    expect(ghostDigits(paint(newUi()))).toEqual([]);
-
-    const holding = { ...newUi(), heldNumber: number };
-    const text = state.puzzle.numbers[number];
-    const ghosted = ghostDigits(paint(holding));
-    // Every digit of the held clue is previewed in the run it fits…
-    expect(ghosted.length).toBeGreaterThanOrEqual(text.length);
-    expect(new Set(ghosted)).toEqual(new Set(text.split("")));
-    // …and the clue itself is picked out in the list.
-    expect(
-      paint(holding).ops.some((o) => o.op === "text" && o.colour === COL_HELD),
-    ).toBe(true);
-    void run;
+    const dr = paintWith(after, { ...newUi(), heldNumber: number });
+    // Exactly the run it occupies is washed — nowhere else.
+    expect(washedCells(dr)).toBe(after.puzzle.runs[run].cells.length);
+    // Its digits are already on the board, so nothing is ghosted.
+    expect(ghostDigits(dr)).toEqual([]);
   });
 
   it("dims clues that cannot go in the selected run", () => {

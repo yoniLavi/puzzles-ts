@@ -65,7 +65,10 @@ export const COL_PENCIL_BODY = 10;
 export const COL_GHOST = 11;
 /** The clue number currently held, highlighted in the list. */
 export const COL_HELD = 12;
-export const NCOLOURS = 13;
+/** Wash over a run the held clue could go in — or, when it is already on the
+ * board, the run it occupies. */
+export const COL_CANDIDATE = 13;
+export const NCOLOURS = 14;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = new Array(NCOLOURS);
@@ -89,6 +92,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   // Ghost: light enough to read as "not yet placed", dark enough to read at all.
   out[COL_GHOST] = [0.55 * background[0], 0.55 * background[1], 0.55 * background[2]];
   out[COL_HELD] = [0, 0.35, 0.85];
+  out[COL_CANDIDATE] = [0.72 * background[0], 0.82 * background[1], background[2]];
   return out;
 }
 
@@ -129,6 +133,7 @@ const DF_SELECT = 1 << 8; // mouse ink selection (a highlighted background)
 const DF_PENCIL = 1 << 9; // pencil selection (the corner triangle)
 const DF_KEYCUR = 1 << 10; // keyboard cursor (corner brackets)
 const K_FLASH = 11; // bits 11-12: flash phase + 1 (0 = not flashing)
+const DF_CANDIDATE = 1 << 13; // this run could take (or holds) the held clue
 const K_MARKS = 15; // bits 15-23: the nine pencil-mark bits
 const K_GHOST = 24; // bits 24-27: previewed digit of a held clue number (0 = none)
 
@@ -331,9 +336,13 @@ function drawCell(
   const ty = tileOrigin(y, ts);
   const digit = state.grid[i];
   const selected = (flags & DF_SELECT) !== 0;
+  const candidate = (flags & DF_CANDIDATE) !== 0;
 
   if (!digit) {
-    dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, selected ? COL_HIGHLIGHT : COL_INNERBG);
+    dr.drawRect(
+      { x: tx, y: ty, w: ts, h: ts },
+      selected ? COL_HIGHLIGHT : candidate ? COL_CANDIDATE : COL_INNERBG,
+    );
   }
 
   if (walls[i]) {
@@ -348,7 +357,9 @@ function drawCell(
     // the board (the shape ABCD uses) in place of upstream's colour cycle.
     const mid =
       flash < 0
-        ? COL_INNERBG
+        ? candidate
+          ? COL_CANDIDATE
+          : COL_INNERBG
         : (x + y) % 3 === flash
           ? COL_HIGHLIGHT
           : (x + y + 2) % 3 === flash
@@ -613,12 +624,29 @@ export function redraw(
   // when a cell is selected — the list dimmed to the numbers that still fit it.
   const placed = placedRuns(puzzle, state.grid);
   const ghost = new Uint8Array(w * h);
+  const candidate = new Uint8Array(w * h);
   if (ui.heldNumber !== null && ui.fitHighlight) {
     const held = ui.heldNumber;
-    const text = numbers[held];
-    for (let r = 0; r < runs.length; r++) {
-      if (!numberAvailableTo(puzzle, state.grid, placed, r, held)) continue;
-      const cells = runs[r].cells;
+    const alreadyOnBoard = placed[held];
+    // A clue already written in shows *where it is*; one still to place shows
+    // every run it could go in.
+    const where =
+      alreadyOnBoard >= 0
+        ? [alreadyOnBoard]
+        : runs
+            .map((_r, i) => i)
+            .filter((i) => numberAvailableTo(puzzle, state.grid, placed, i, held));
+    for (const r of where) for (const i of runs[r].cells) candidate[i] = 1;
+
+    // The digits are only previewed when there is exactly **one** run it could
+    // go in. Writing them into every candidate at once reads as the game
+    // asserting several placements (a 2-digit clue matches ten runs on a fresh
+    // 9x9), and two candidates that cross would disagree about the digit in the
+    // cell they share. One candidate is also the case where the preview is a
+    // real prediction rather than a list of options.
+    if (where.length === 1 && alreadyOnBoard < 0) {
+      const cells = runs[where[0]].cells;
+      const text = numbers[held];
       for (let k = 0; k < cells.length; k++) {
         if (!state.grid[cells[k]]) ghost[cells[k]] = text.charCodeAt(k) - 48;
       }
@@ -635,6 +663,7 @@ export function redraw(
       else if (here) flags |= DF_SELECT;
       if (!walls[i] && !state.grid[i]) flags |= (state.marks[i] & 0x1ff) << K_MARKS;
       if (ghost[i]) flags |= ghost[i] << K_GHOST;
+      if (candidate[i]) flags |= DF_CANDIDATE;
 
       const tile =
         (state.grid[i] << K_DIGIT) |

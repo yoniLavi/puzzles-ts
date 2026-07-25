@@ -161,6 +161,9 @@ function interpretMove(
         ui.heldNumber = null;
         ui.cx = gx;
         ui.cy = gy;
+        // Leave the cell selected so typing carries on from where the clue
+        // landed; without this the next keystroke is silently ignored.
+        ui.cshow = true;
         ui.ckey = false;
         return { kind: "place", run, number: held };
       }
