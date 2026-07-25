@@ -231,10 +231,26 @@ preference, enabled by default.
 - **WHEN** a cell is selected and a clue that can go in its run is clicked
 - **THEN** the whole clue is written into that run as one move
 
-#### Scenario: A picked-up clue previews where it can go
+The preview SHALL distinguish what it knows from what it is guessing: every run
+that could take the clue SHALL be indicated, but the clue's digits SHALL be shown
+in place only when exactly one such run remains. A clue already written into the
+board SHALL indicate the run it occupies.
+
+#### Scenario: A picked-up clue shows every run it could go in
 
 - **WHEN** a clue is clicked with no cell selected
-- **THEN** it is shown as held, and previewed in each run that can still take it
+- **THEN** it is shown as held, and every run that could still take it is
+  indicated, without its digits being written into any of them
+
+#### Scenario: A clue with one remaining run is previewed in place
+
+- **WHEN** only one run can still take the held clue
+- **THEN** its digits are previewed in that run's empty cells
+
+#### Scenario: A clue already on the board shows where it is
+
+- **WHEN** a clue that has been written into a run is clicked
+- **THEN** the run it occupies is indicated
 
 #### Scenario: A clue used elsewhere is not offered again
 

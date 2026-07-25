@@ -618,3 +618,31 @@ arithmetic (`N ± 1`) rather than a choice from an inventory.
 `layoutNumbers` in `render.ts` is shared by the renderer and `interpretMove`, so
 the two cannot disagree about where a clue is — the same rule as Bricks' shared
 `offsets` (playbook §3.13). Behind a `fit-highlight` preference, default on.
+
+### F15 — The preview asserted placements it could not know (owner-found)
+
+F14's first cut ghosted the held clue's digits into **every** run that could
+still take it. On the owner's 5x5 board, clicking `834` wrote `8 3 4` into both
+the left column and the bottom row at once; the board appeared to be telling the
+player where the clue went, when all it knew was where it *might*. Measured on a
+fresh 9x9: a 2-digit clue matches **10** runs, a 3-digit clue 7, a 4-digit clue
+5. It was also unsound — two candidate runs can cross, and the shared cell took
+whichever run's digit was written last, so one of the two previews could show a
+digit the clue does not have there.
+
+Split into two signals, which is what the aid actually knows:
+
+- **A wash (`COL_CANDIDATE`) over every run the clue could go in** — the honest
+  answer to "where might this fit", and calm enough to show ten at once.
+- **Ghosted digits only when exactly one run remains.** That is the case where
+  the preview is a prediction rather than a list of options, and it makes the
+  crossing-runs conflict unreachable by construction.
+
+The same wash answers the owner's other request at no extra cost: **a clue
+already written into the board washes the run it occupies**, so clicking it
+finds it. Previously that click highlighted the clue in the list and did nothing
+visible on the board.
+
+One wart the browser check caught: dropping a held clue onto a run left the
+selection hidden, so the next keystroke was silently ignored. The cell the clue
+landed on now stays selected.
