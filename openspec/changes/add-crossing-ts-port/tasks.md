@@ -198,7 +198,12 @@ All three Status points triaged; see design F9-F12 and playbook §1.0.
       candidate run; digits are previewed only when one run remains; a clue
       already on the board washes where it is, which answers "show me where this
       one went" for free (design F15).
-- [x] 8b.9 Re-verify in the browser: auto-advance across and down, the direction
+- [x] 8b.9 **Give the clue list five states** (owner-found): a used clue is
+      struck off rather than sharing the "cannot go here" grey, and both runs
+      through the selected cell are answered for — clues fitting the crossing run
+      get their own colour, with that run washed on the board to give the colour
+      a referent (design F16).
+- [x] 8b.10 Re-verify in the browser: auto-advance across and down, the direction
       toggle, the neutral tiles, the flash sweep, and the size refusal.
 
 ## 9. Stage 2 — on owner acceptance only

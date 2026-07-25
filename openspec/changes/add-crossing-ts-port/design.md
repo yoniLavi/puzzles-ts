@@ -646,3 +646,36 @@ visible on the board.
 One wart the browser check caught: dropping a held clue onto a run left the
 selection hidden, so the next keystroke was silently ignored. The cell the clue
 landed on now stays selected.
+
+### F16 — The clue list needs five states, not three (owner-found)
+
+Two faults, both from collapsing distinct meanings onto one grey.
+
+**"Already used" became indistinguishable from "cannot go here".** Before the
+aid, the list said exactly one thing: black = not yet placed, grey = placed once,
+red = placed twice. The fit-highlight then greyed out the clues that cannot go in
+the selected run — using the *same* grey, so the player lost the ability to see
+which clues they had already used. Fixed by crossing a used clue **off the list**
+with a strike-through, which is what a player does on paper: dimming now means
+"not here", striking means "used up", and the two compose.
+
+**Only one of the two runs through a cell was consulted.** `selectedRun` read the
+run along the fill direction only, so at a crossing the list answered for the
+across run and silently ignored the down one — while a click on a clue that fits
+only the crossing run *does* place it there (`runForNumber` already tries both).
+The display was therefore narrower than the behaviour. Now the list distinguishes
+them: a clue that fits the run being filled stays black, one that fits the
+**crossing** run is drawn in `COL_CROSSFIT` (amber), and only a clue that fits
+neither is dimmed.
+
+The colour needs a referent or it is just a second arbitrary shade, so **the
+crossing run is washed on the board in the matching amber** (`COL_CROSS`). This
+revisits the "no run tint" answer given when the fill-direction grammar was
+chosen: there the tint was a solution looking for a problem, here it is what
+makes a second list colour readable. The run being filled is deliberately left
+unwashed — it is the default case, and washing both would make every selection
+light up two runs.
+
+The five states are therefore: **black** fits the run you are filling · **amber**
+fits the crossing run · **grey** cannot go here · **grey struck** already on the
+board · **red** placed more than once · **blue** currently held.
