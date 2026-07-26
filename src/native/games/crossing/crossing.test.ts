@@ -25,8 +25,10 @@ import cReference from "./__fixtures__/crossing-c-reference.json" with { type: "
 import { newCrossingDesc } from "./generator.ts";
 import { crossingGame } from "./index.ts";
 import {
-  COL_CANDIDATE,
-  COL_CROSSFIT,
+  COL_ACROSS,
+  COL_ACROSSFIT,
+  COL_DOWN,
+  COL_DOWNFIT,
   COL_ERROR,
   COL_GHOST,
   COL_GRID,
@@ -751,7 +753,7 @@ describe("crossing number-list placement", () => {
   const washedCells = (dr: RecordingDrawing): number =>
     new Set(
       dr.ops.flatMap((o) =>
-        o.op === "rect" && o.colour === COL_CANDIDATE
+        o.op === "rect" && (o.colour === COL_ACROSS || o.colour === COL_DOWN)
           ? [`${Math.floor(o.x / TS)},${Math.floor(o.y / TS)}`]
           : [],
       ),
@@ -769,8 +771,9 @@ describe("crossing number-list placement", () => {
     const cells = new Set(runs.flatMap((r) => [...state.puzzle.runs[r].cells]));
     const dr = paintWith(state, { ...newUi(), heldNumber: l });
     expect(washedCells(dr)).toBe(cells.size);
-    // …and the clue itself is picked out in the list.
-    expect(dr.ops.some((o) => o.op === "text" && o.colour === COL_HELD)).toBe(true);
+    // …and the clue itself is boxed in the list (held is a shape, not a hue,
+    // because the hues are spoken for by the two dimensions).
+    expect(dr.ops.some((o) => o.op === "line" && o.colour === COL_HELD)).toBe(true);
   });
 
   it("previews the digits only when a single run could take the clue", () => {
@@ -853,23 +856,56 @@ describe("crossing number-list placement", () => {
     const colours = textColours(ui);
     for (const [text, colour] of colours) {
       if (text.length === activeLen) {
-        // Fits the run being filled: plainly available.
-        expect(colour).toBe(COL_GRID);
+        // Fits the horizontal run through the cell (dir is "across" here).
+        expect(colour).toBe(COL_ACROSSFIT);
       } else if (text.length === crossLen) {
-        // Fits the crossing run instead — still one click from being placed,
-        // so it is distinguished rather than dimmed away.
-        expect(colour).toBe(COL_CROSSFIT);
+        // Fits the vertical run instead — still one click from being placed,
+        // so it takes that dimension's colour rather than being dimmed away.
+        expect(colour).toBe(COL_DOWNFIT);
       } else {
         expect(colour).toBe(COL_LOWLIGHT);
       }
     }
     // Both directions really are represented (the cell is a crossing).
-    expect([...colours.values()]).toContain(COL_GRID);
-    if (activeLen !== crossLen) expect([...colours.values()]).toContain(COL_CROSSFIT);
+    expect([...colours.values()]).toContain(COL_ACROSSFIT);
+    if (activeLen !== crossLen) expect([...colours.values()]).toContain(COL_DOWNFIT);
 
     // The preference turns the whole aid off.
     const off = textColours({ ...ui, fitHighlight: false });
     for (const c of off.values()) expect(c).toBe(COL_GRID);
+  });
+
+  it("keeps the board wash and the list colouring on separate preferences", () => {
+    const state = newState(P5, FIX.desc);
+    const puzzle = state.puzzle;
+    let cell = -1;
+    for (let i = 0; i < 25 && cell < 0; i++) {
+      if (puzzle.acrossRun[i] >= 0 && puzzle.downRun[i] >= 0) cell = i;
+    }
+    const base: CrossingUi = {
+      ...newUi(),
+      cshow: true,
+      cx: cell % 5,
+      cy: Math.floor(cell / 5),
+    };
+    const listColoured = (ui: CrossingUi): boolean =>
+      paintWith(state, ui).ops.some(
+        (o) =>
+          o.op === "text" && (o.colour === COL_ACROSSFIT || o.colour === COL_DOWNFIT),
+      );
+
+    expect(washedCells(paintWith(state, base))).toBeGreaterThan(0);
+    expect(listColoured(base)).toBe(true);
+
+    // The board wash goes without taking the list colouring with it…
+    const noRuns = { ...base, highlightRuns: false };
+    expect(washedCells(paintWith(state, noRuns))).toBe(0);
+    expect(listColoured(noRuns)).toBe(true);
+
+    // …and vice versa.
+    const noList = { ...base, fitHighlight: false };
+    expect(washedCells(paintWith(state, noList))).toBeGreaterThan(0);
+    expect(listColoured(noList)).toBe(false);
   });
 
   it("crosses a clue off the list once it is on the board, without dimming alone", () => {

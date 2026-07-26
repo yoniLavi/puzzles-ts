@@ -679,3 +679,39 @@ light up two runs.
 The five states are therefore: **black** fits the run you are filling · **amber**
 fits the crossing run · **grey** cannot go here · **grey struck** already on the
 board · **red** placed more than once · **blue** currently held.
+
+### F17 — Colour by *dimension*, and make the two hues provably equal
+
+F16 marked only the crossing run, leaving the run being filled unwashed on the
+grounds that it was "the default case". Owner-found: that reads as an arbitrary
+asymmetry — one run lights up with no explanation of why *that* one, and the
+clues for the other have nothing to point at. Both runs through the selected
+cell are now marked. Three decisions came out of fixing it:
+
+**The hue means the dimension, not "active vs crossing".** Tying it to the run
+being filled would swap every colour on screen each time the fill direction is
+toggled. Blue is horizontal and amber is vertical, always, on the board *and* in
+the clue list — so a washed run and a clue written in the same colour are saying
+the same thing, and the list needs no legend. Where a clue fits both runs the
+fill direction breaks the tie, since that is where a click sends it.
+
+**The two hues are exact mirrors, so neither shouts louder.** The first pair was
+built ad hoc and the amber carried ~20% more chroma than the blue, which read as
+the vertical run mattering more (owner-found). They are now the same shift
+applied to the red channel for one and the blue channel for the other, green held
+equal: identical chroma (0.232) and identical mean brightness (0.728) by
+construction, verified numerically rather than by eye. The inks are built the
+same way (chroma 0.620, mean 0.300). Blue/amber is also the pair that survives
+the common forms of colour blindness best, which matters when the hue *is* the
+information.
+
+**Held became a shape, not a hue.** With both dimensions spending a colour, a
+third accent for "currently held" would have competed with them — and a held clue
+still belongs to a dimension, so it wants to keep that colour. It is boxed
+instead.
+
+**Two preferences, not one** (owner-requested). `fit-highlight` colours the clue
+list; `highlight-runs` washes the board. Some players want to know which clues
+are live without the grid being tinted, and the reverse. Holding a clue previews
+it regardless of both — that is an explicit action, and without board feedback
+there would be nothing to act on.

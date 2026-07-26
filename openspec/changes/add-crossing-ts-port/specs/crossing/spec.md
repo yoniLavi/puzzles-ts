@@ -219,10 +219,19 @@ clue in as a single move. With a cell already selected, clicking a clue that can
 go in its run SHALL place it immediately.
 
 Selecting a cell SHALL indicate which clues can still go in **either** run
-through it, distinguishing a clue that fits the run being filled from one that
-fits the crossing run, since clicking either places it in the corresponding run.
+through it, since clicking either places it in the corresponding run. Horizontal
+and vertical runs SHALL be distinguished by colour, and the same two colours
+SHALL be used both to mark a run on the board and to write the clues that fit it,
+so that the correspondence needs no legend. The colour SHALL denote the run's
+direction rather than whether it is the one being filled, so that changing the
+fill direction does not change what any colour means. The two colours SHALL be
+of equal strength, so that neither direction reads as more important.
+
 A clue already written into the grid SHALL remain distinguishable from one that
 merely cannot go in the selected run.
+
+Marking the runs on the board and colouring the clue list SHALL be separately
+available as preferences, both enabled by default.
 
 A clue can go in a run when it is the run's length, agrees with every digit
 already entered there, and is not already written into another run. Availability
@@ -260,8 +269,14 @@ board SHALL indicate the run it occupies.
 #### Scenario: Both runs through the selected cell are answered for
 
 - **WHEN** a cell lying in both a horizontal and a vertical run is selected
-- **THEN** clues fitting the run being filled, clues fitting the crossing run,
-  and clues fitting neither are each shown distinctly
+- **THEN** both runs are marked on the board, each in its direction's colour,
+  and each clue is written in the colour of the run it fits — or dimmed when it
+  fits neither
+
+#### Scenario: The board marking and the list colouring are independent
+
+- **WHEN** the preference for marking runs on the board is turned off
+- **THEN** the board is no longer marked, and the clue list is still coloured
 
 #### Scenario: A clue on the board stays distinguishable from an unavailable one
 

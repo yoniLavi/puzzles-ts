@@ -414,11 +414,20 @@ export const crossingGame: Game<
   prefs: [
     {
       kw: "fit-highlight",
-      name: "Show which clue numbers can still go in the selected run",
+      name: "Colour the clue list by where each number could go from the selected cell",
       type: "boolean",
       get: (ui) => ui.fitHighlight,
       set: (ui, v) => {
         ui.fitHighlight = v;
+      },
+    },
+    {
+      kw: "highlight-runs",
+      name: "Highlight the across and down numbers running through the selected cell",
+      type: "boolean",
+      get: (ui) => ui.highlightRuns,
+      set: (ui, v) => {
+        ui.highlightRuns = v;
       },
     },
     {

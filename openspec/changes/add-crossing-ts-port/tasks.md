@@ -203,7 +203,14 @@ All three Status points triaged; see design F9-F12 and playbook §1.0.
       through the selected cell are answered for — clues fitting the crossing run
       get their own colour, with that run washed on the board to give the colour
       a referent (design F16).
-- [x] 8b.10 Re-verify in the browser: auto-advance across and down, the direction
+- [x] 8b.10 **Colour by dimension, and match the two hues** (owner-found): mark
+      *both* runs through the selected cell, hue meaning horizontal/vertical
+      rather than active/crossing so a direction toggle changes nothing; the two
+      hues built as exact mirrors (equal chroma and mean brightness, checked
+      numerically) after the first pair gave amber ~20% more chroma; held clue
+      marked by a box since the hues are spoken for; and the board marking split
+      onto its own `highlight-runs` preference (design F17).
+- [x] 8b.11 Re-verify in the browser: auto-advance across and down, the direction
       toggle, the neutral tiles, the flash sweep, and the size refusal.
 
 ## 9. Stage 2 — on owner acceptance only
