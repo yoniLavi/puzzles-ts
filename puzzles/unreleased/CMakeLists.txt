@@ -74,8 +74,8 @@ solver(seismic ${CMAKE_SOURCE_DIR}/dsf.c)
 puzzle(spokes
   DISPLAYNAME "Spokes"
   DESCRIPTION "Wheel-connecting puzzle"
-  OBJECTIVE "Connect all hubs using horizontal, vertical and diagonal lines.")
-solver(spokes ${CMAKE_SOURCE_DIR}/dsf.c)
+  OBJECTIVE "Connect all hubs using horizontal, vertical and diagonal lines."
+  TS_PORTED)  # native-TS port (openspec add-spokes-ts-port); no spokes.c/wasm
 
 puzzle(sticks
   DISPLAYNAME "Sticks"
