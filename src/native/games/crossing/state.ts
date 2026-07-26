@@ -32,10 +32,29 @@ export interface CrossingParams {
   sym: boolean;
 }
 
+/**
+ * Upstream ships the first three. The rest are a fork addition: the solving aids
+ * make a small board quick work, so the ladder runs up to the largest board the
+ * generator can produce ({@link MAX_AREA}).
+ *
+ * The symmetric entries are not just a flavour — they are what makes the big
+ * sizes *practical*. Growing the walls in 180°-rotational pairs puts them down
+ * twice as fast, so runs stay short and the duplicate-number rejection that
+ * dominates large boards (see {@link MAX_AREA}) fires far less often. Measured
+ * medians outside the test runner: 13×13 126 ms but 13×13 symmetric 12 ms;
+ * 15×15 **1517 ms** (worst 3931 ms) but 15×15 symmetric **160 ms** (worst
+ * 229 ms). Hence the full-size board is offered symmetric, where it is instant,
+ * and the plain ladder stops at 13×13.
+ */
 export const crossingPresets: readonly CrossingParams[] = [
   { w: 5, h: 5, sym: false },
   { w: 7, h: 7, sym: false },
   { w: 9, h: 9, sym: false },
+  { w: 11, h: 11, sym: false },
+  { w: 13, h: 13, sym: false },
+  { w: 9, h: 9, sym: true },
+  { w: 13, h: 13, sym: true },
+  { w: 15, h: 15, sym: true },
 ];
 
 export function defaultParams(): CrossingParams {

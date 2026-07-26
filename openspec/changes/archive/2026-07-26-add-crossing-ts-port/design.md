@@ -715,3 +715,55 @@ list; `highlight-runs` washes the board. Some players want to know which clues
 are live without the grid being tinted, and the reverse. Holding a clue previews
 it regardless of both — that is an explicit action, and without board feedback
 there would be nothing to act on.
+
+### F18 — "Equal saturation" means equal in OKLCH, not equal in RGB
+
+F17 claimed the two dimension hues were matched because they were built as RGB
+mirrors — the same shift applied to the red channel for one and the blue channel
+for the other. The owner said they still did not match, and measuring said so
+too: rgb(152,194,211) against rgb(211,194,152) is **L=0.789 C=0.051** against
+**L=0.818 C=0.059**. The amber was both lighter *and* more colourful.
+
+Mirroring RGB channels is not a perceptual operation. The channels carry very
+different luminance (green ≫ red ≫ blue), so swapping which channel is reduced
+changes both the lightness and the colourfulness of the result. What the eye
+compares is the perceptual quantity, so that is what has to be equalised.
+
+The four colours are now constructed in **OKLCH** with identical lightness and
+identical chroma, differing only in hue — washes at `L 0.82 / C 0.07`, inks at
+`L 0.50 / C 0.115`, hues 250 (blue) and 60 (amber). The chroma is the most
+either hue can carry at that lightness with both still inside sRGB; going higher
+takes the amber ink out of gamut, which is why the pair is picked by search
+rather than by taste. They are fixed colours rather than derivations of the host
+background, like the wall shades, so the match is exact rather than contingent.
+
+**Verified against actual rendered output, twice.** A committed test reads the
+colours the renderer *emitted* (not the palette constants), converts them to
+OKLCH and asserts equal L and C — so a future edit cannot quietly unbalance them.
+And the browser frame was screenshotted and its pixels sampled with `sharp`:
+rgb(162,200,240) and rgb(231,186,151), i.e. **L 0.8192/C 0.0698 against L
+0.8203/C 0.0701** — a lightness gap 29× smaller than before and a chroma gap 27×
+smaller. (The canvas itself cannot be read from the page: it is transferred to
+the worker, so `getContext` throws. Screenshot-and-decode is the way in.)
+
+### F19 — More presets, and the surprise that symmetry makes big boards cheap
+
+The aids make a small board quick work, so the ladder now runs 5×5, 7×7, 9×9,
+11×11, 13×13 plus 9×9, 13×13 and 15×15 **symmetric**.
+
+The symmetric entries are not decoration. Growing the walls in 180°-rotational
+pairs lays them down twice as fast, so runs stay short and the duplicate-number
+rejection that dominates large boards (F12) fires far less often. Measured
+medians outside the test runner — which is the only way to read these, since
+vitest inflates them several-fold (playbook §5.2):
+
+| board | plain | symmetric |
+| --- | --- | --- |
+| 13×13 | 126 ms (worst 444 ms) | **12 ms** |
+| 15×15 | 1517 ms (worst 3931 ms) | **160 ms** (worst 229 ms) |
+
+So the largest board the generator can produce at all (`MAX_AREA = 225`) is only
+*pleasant* symmetric, and that is how it is offered; the plain ladder stops at
+13×13, with 15×15 still reachable through the Custom dialog for anyone willing
+to wait. The generator test now enumerates `crossingPresets` rather than a
+hand-written list, so a preset cannot be added without being checked.
