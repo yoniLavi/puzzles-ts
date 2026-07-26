@@ -210,7 +210,15 @@ All three Status points triaged; see design F9-F12 and playbook §1.0.
       numerically) after the first pair gave amber ~20% more chroma; held clue
       marked by a box since the hues are spoken for; and the board marking split
       onto its own `highlight-runs` preference (design F17).
-- [x] 8b.11 Re-verify in the browser: auto-advance across and down, the direction
+- [x] 8b.11 **Match the two hues in OKLCH, not RGB** (owner-found: the RGB
+      mirror still read unequal, and measured L=0.789/C=0.051 vs L=0.818/C=0.059).
+      Both now built at identical lightness and chroma, differing only in hue;
+      guarded by a test over the *emitted* colours, and verified by sampling the
+      rendered browser frame with `sharp` (design F18).
+- [x] 8b.12 **More presets, larger boards** (owner-requested): ladder to 13×13
+      plus 9×9/13×13/15×15 symmetric — symmetry makes the biggest board 10×
+      cheaper to generate, so that is where full size is offered (design F19).
+- [x] 8b.13 Re-verify in the browser: auto-advance across and down, the direction
       toggle, the neutral tiles, the flash sweep, and the size refusal.
 
 ## 9. Stage 2 — on owner acceptance only

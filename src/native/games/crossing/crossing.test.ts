@@ -9,6 +9,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { ChangeNotification, GameStatus } from "../../../puzzle/types.ts";
+import { colourToOKLCH } from "../../../utils/color.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { Midend } from "../../engine/index.ts";
 import {
@@ -48,10 +49,12 @@ import {
 import { findCrossingMistakes, solveCrossing } from "./solver.ts";
 import {
   type CrossingMove,
+  type CrossingParams,
   type CrossingState,
   type CrossingUi,
   cloneState,
   collectRuns,
+  crossingPresets,
   decodeParams,
   encodeDesc,
   encodeParams,
@@ -285,13 +288,17 @@ describe("crossing generator", () => {
   });
 
   it.each([
-    ["5x5", { w: 5, h: 5, sym: false }],
-    ["7x7", { w: 7, h: 7, sym: false }],
-    ["9x9", { w: 9, h: 9, sym: false }],
-    ["5x5 symmetric", { w: 5, h: 5, sym: true }],
+    // Every shipped preset, so a new one cannot be added without being checked.
+    ...crossingPresets.map((p): [string, CrossingParams] => [
+      `${p.w}x${p.h}${p.sym ? " symmetric" : ""}`,
+      { ...p },
+    ]),
     ["4x2", { w: 4, h: 2, sym: false }],
     ["8x5", { w: 8, h: 5, sym: false }],
-  ])("generates a uniquely solvable %s board", (label, params) => {
+  ] as [
+    string,
+    CrossingParams,
+  ][])("generates a uniquely solvable %s board", (label, params) => {
     const { desc } = newCrossingDesc(params, randomNew(`gen-${label}`));
     expect(validateDesc(params, desc)).toBeNull();
     const state = newState(params, desc);
@@ -873,6 +880,50 @@ describe("crossing number-list placement", () => {
     // The preference turns the whole aid off.
     const off = textColours({ ...ui, fitHighlight: false });
     for (const c of off.values()) expect(c).toBe(COL_GRID);
+  });
+
+  it("paints the two dimensions at equal perceived strength", () => {
+    // Checked against what is actually painted, and in OKLCH rather than RGB:
+    // matching the channels numerically is *not* the same as matching what the
+    // eye sees, since blue carries far less luminance than amber. An earlier
+    // RGB-mirrored pair measured L=0.789/C=0.051 against L=0.818/C=0.059 and
+    // read as the vertical run mattering more.
+    const state = newState(P5, FIX.desc);
+    const puzzle = state.puzzle;
+    let cell = -1;
+    for (let i = 0; i < 25 && cell < 0; i++) {
+      if (puzzle.acrossRun[i] >= 0 && puzzle.downRun[i] >= 0) cell = i;
+    }
+    const dr = paintWith(state, {
+      ...newUi(),
+      cshow: true,
+      cx: cell % 5,
+      cy: Math.floor(cell / 5),
+    });
+
+    /** The rgb() string the renderer actually emitted for a palette index. */
+    const painted = (colour: number): string => {
+      const op = dr.ops.find(
+        (o) => (o.op === "rect" || o.op === "text") && o.colour === colour,
+      );
+      if (!op || (op.op !== "rect" && op.op !== "text"))
+        throw new Error(`no ${colour}`);
+      return op.rgb;
+    };
+    const oklch = (rgbString: string): [number, number, number] => {
+      const [r, g, b] = (rgbString.match(/\d+/g) ?? []).map((v) => Number(v) / 255);
+      return colourToOKLCH([r, g, b]);
+    };
+
+    for (const [across, down] of [
+      [COL_ACROSS, COL_DOWN],
+      [COL_ACROSSFIT, COL_DOWNFIT],
+    ]) {
+      const [la, ca] = oklch(painted(across));
+      const [ld, cd] = oklch(painted(down));
+      expect(la).toBeCloseTo(ld, 2); // same lightness
+      expect(ca).toBeCloseTo(cd, 2); // same colourfulness
+    }
   });
 
   it("keeps the board wash and the list colouring on separate preferences", () => {

@@ -45,8 +45,8 @@ puzzle(clusters
 puzzle(crossing
   DISPLAYNAME "Crossing"
   DESCRIPTION "Number crossword puzzle"
-  OBJECTIVE "Place each number from the list into the crossword.")
-solver(crossing ${CMAKE_SOURCE_DIR}/dsf.c)
+  OBJECTIVE "Place each number from the list into the crossword."
+  TS_PORTED)  # native-TS port (openspec add-crossing-ts-port); no crossing.c/wasm
 
 puzzle(mathrax
   DISPLAYNAME "Mathrax"

@@ -225,7 +225,9 @@ SHALL be used both to mark a run on the board and to write the clues that fit it
 so that the correspondence needs no legend. The colour SHALL denote the run's
 direction rather than whether it is the one being filled, so that changing the
 fill direction does not change what any colour means. The two colours SHALL be
-of equal strength, so that neither direction reads as more important.
+of equal strength, so that neither direction reads as more important — equal in
+perceived lightness and colourfulness, not merely in their colour components,
+and verified against the colours actually rendered.
 
 A clue already written into the grid SHALL remain distinguishable from one that
 merely cannot go in the selected run.
@@ -272,6 +274,12 @@ board SHALL indicate the run it occupies.
 - **THEN** both runs are marked on the board, each in its direction's colour,
   and each clue is written in the colour of the run it fits — or dimmed when it
   fits neither
+
+#### Scenario: Neither direction's colour is stronger than the other's
+
+- **WHEN** the colours the renderer emits for the two directions are measured
+  perceptually
+- **THEN** they have the same lightness and the same colourfulness
 
 #### Scenario: The board marking and the list colouring are independent
 

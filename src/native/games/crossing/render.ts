@@ -105,18 +105,24 @@ export function colours(defaultBackground: Colour): Colour[] {
   // Ghost: light enough to read as "not yet placed", dark enough to read at all.
   out[COL_GHOST] = [0.55 * background[0], 0.55 * background[1], 0.55 * background[2]];
   out[COL_HELD] = [0, 0.35, 0.85];
-  // The two dimension hues are exact mirrors of each other — the same shift,
-  // applied to the red channel for one and the blue channel for the other, with
-  // green held equal. That makes them identical in chroma and in mean
-  // brightness by construction, so neither dimension shouts louder than the
-  // other (an earlier pair was built ad hoc and the amber carried ~20% more
-  // chroma than the blue, which read as the vertical run mattering more).
-  const TINT = 0.28;
-  const MID = 1 - TINT / 3.5;
-  out[COL_ACROSS] = [(1 - TINT) * background[0], MID * background[1], background[2]];
-  out[COL_DOWN] = [background[0], MID * background[1], (1 - TINT) * background[2]];
-  out[COL_ACROSSFIT] = [0, 0.28, 0.62];
-  out[COL_DOWNFIT] = [0.62, 0.28, 0];
+  // The two dimension hues are matched in **OKLCH**, not in RGB: identical
+  // lightness and identical chroma, differing only in hue (250 blue / 60
+  // amber). Matching them in RGB — the obvious thing, and the first thing tried
+  // — does not work, because the channels carry wildly different luminance: the
+  // "mirrored" pair rgb(152,194,211) / rgb(211,194,152) measured L=0.789 C=0.051
+  // against L=0.818 C=0.059, so the amber was both lighter *and* more colourful
+  // and duly looked stronger. Perceived colourfulness is what the eye compares,
+  // so it is what has to be equal.
+  //
+  // Fixed colours rather than derivations of the host background, like the wall
+  // shades above: that keeps the match exact instead of contingent, and the
+  // app's dark-mode adaptation handles both hues symmetrically anyway.
+  // Chroma is the most either hue can carry at that lightness while both stay
+  // inside sRGB.
+  out[COL_ACROSS] = [0.6358, 0.7854, 0.9429]; // L 0.82  C 0.07  h 250
+  out[COL_DOWN] = [0.9044, 0.7296, 0.5911]; // L 0.82  C 0.07  h 60
+  out[COL_ACROSSFIT] = [0.1499, 0.4005, 0.6341]; // L 0.50  C 0.115 h 250
+  out[COL_DOWNFIT] = [0.5706, 0.3156, 0.0216]; // L 0.50  C 0.115 h 60
   return out;
 }
 

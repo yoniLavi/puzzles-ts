@@ -84,7 +84,10 @@ const KEY_ZERO = 48;
 function presets(): PresetMenu<CrossingParams> {
   return {
     title: "Crossing",
-    submenu: crossingPresets.map((p) => ({ title: `${p.w}x${p.h}`, params: { ...p } })),
+    submenu: crossingPresets.map((p) => ({
+      title: `${p.w}x${p.h}${p.sym ? " symmetric" : ""}`,
+      params: { ...p },
+    })),
   };
 }
 
