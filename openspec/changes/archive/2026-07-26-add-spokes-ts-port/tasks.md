@@ -161,10 +161,10 @@
 
 ## 11. Stage 2 — on owner acceptance only (design D11)
 
-- [ ] 11.1 Add `TS_PORTED` to the `puzzle(spokes …)` entry in
+- [x] 11.1 Add `TS_PORTED` to the `puzzle(spokes …)` entry in
       `puzzles/unreleased/CMakeLists.txt` (no `spokes.wasm` is built).
-- [ ] 11.2 Delete `puzzles/unreleased/spokes.c` and the `spokes-trace` harness (and
+- [x] 11.2 Delete `puzzles/unreleased/spokes.c` and the `spokes-trace` harness (and
       its `cliprogram()` line); delete any advisory `scripts/diff-spokes.test.ts`.
-- [ ] 11.3 `rm -rf build/wasm/` and rebuild — spokes served by TS, no `spokes.wasm`.
+- [x] 11.3 `rm -rf build/wasm/` and rebuild — spokes served by TS, no `spokes.wasm`.
       Icons already exist.
-- [ ] 11.4 Archive, then commit port + archive together.
+- [x] 11.4 Archive, then commit port + archive together.
