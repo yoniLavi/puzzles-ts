@@ -540,6 +540,17 @@ in `design.md`, and pin it with a tier-2.5 test that two flash phases paint
 differently (a snapshot alone won't tell you the animation is *moving*). The
 general tell: a frame counter, phase index or animation step stored in a
 `bool`/`char`, or compared for truthiness where the code then uses its value.
+**Seismic is the second instance and widens the tell to plain data**: its
+`game_redraw` assigns a **9-bit** pencil-candidate mask to a `char`, so a
+pencilled 9 is truncated away and never drawn. So also check any bitmask/flag
+word copied into a narrower local before use — not just counters. Both fixes are
+one type each and invisible outside the renderer. When the exposing input is one
+the *generator* never produces (only a nine-cell region can hold a 9, and no
+generated Seismic board has one), hand-build the board through the game's own
+codec for the regression test rather than hunting a fixture — that also proves
+the input is genuinely reachable in play. Exemplar:
+[`seismic/render.ts`](../../src/native/games/seismic/render.ts) +
+`seismic.test.ts` ("draws every pencil mark, including a 9").
 
 **Rendering doctrine (hard-won — see the Flip three-iteration story in
 [`AGENTS.md`](../../AGENTS.md)):** the engine paints **no pixels of its own**; each
@@ -1384,6 +1395,23 @@ rate* of a generable configuration (Loopy's was ~20%, so 100 attempts fail at
 guard but turns an impossible configuration into a ten-second hang before the
 error.
 
+**And one game can be *both* failure modes, split by a parameter — measure the
+boundary and apply both fixes.** Seismic's region grower merges blindly and then
+demands every region hold exactly `1..k`, so its success rate collapses with
+board size: 1/22 at 16 cells, 1/4,167 at 36, 1/200,000 at 49, and **zero** in
+200,000 attempts at 56 and above. Neither fix alone is right — a size cap at 36
+would forbid the shipped 7×7 presets, and retry-only leaves a 10×10 Custom board
+spinning for minutes before a `RetryLimitExceeded`. So it takes both: a
+`MAX_CELLS` bound in `validateParams` for the range that provably cannot
+generate, and a retry budget sized from the *measured* worst legitimate case
+(1,184,978 attempts) for the range that can. The bound then also frees the retry
+budget to be generous, since nothing hopeless reaches it. Sweep a grid of shapes
+rather than a single dimension — the ceiling tracked cell count, not width or
+height, which neither a `w` bound nor an `h` bound would have expressed. Exemplar:
+[`seismic/state.ts`](../../src/native/games/seismic/state.ts) (`MAX_CELLS`, with
+the measurement table in its doc comment) +
+[`seismic/generator.ts`](../../src/native/games/seismic/generator.ts).
+
 **Check what a shared runner's bookkeeping actually decides before adopting
 it.** Two handoffs asserted Loopy's four deduction rungs "fit
 `runDeductionFixpoint`". They don't: the shared runner restarts from rung 0 on
@@ -1461,6 +1489,16 @@ cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
 build/native/auxiliary/<game>-trace > src/native/games/<game>/__fixtures__/<game>-c-reference.json
 ```
 
+**Record the C's own wall-clock per fixture while you are there.** One
+`clock_gettime` pair around `new_game_desc` and a `"genMs"` field costs nothing
+and converts "is the port slow?" from an impression into a fact you already have
+on disk. It mattered on Seismic, whose 7×7 presets take tens of seconds: the
+fixtures show the C at 42.9 s where the TS port takes 27.8 s on the same seed, so
+the cost is upstream's algorithm rather than anything the port introduced — which
+is the difference between a parity shortfall and a note in `design.md`. Don't
+*assert* on it (a wall-clock assertion measures the box, not the code — §5.2);
+just carry it.
+
 ### 4.3 Byte-match: the strongest bar *where there is a right answer*
 
 Because `random.ts` is bit-identical to `random.c`, a *faithful* generator port
@@ -1516,6 +1554,21 @@ scope doctrine (§4 intro) applied one level in: fidelity where there is a fact 
 matter, "write it well" where there isn't. Exemplar:
 [`inertia-trace.c`](../../puzzles/auxiliary/inertia-trace.c) →
 [`inertia-differential.test.ts`](../../src/native/games/inertia/inertia-differential.test.ts).
+
+**A codec's writer and reader can disagree — check the round-trip before
+assuming the encoder defines the format.** Upstream codecs are usually exact
+inverses, so the reflex is to transcribe the writer and trust it. Seismic's wall
+run-length encoder writes a gap run of `n` as a bare `'a' + n - 1`, which at
+`n = 26` produces `'z'` — a character its *own reader* takes to mean something
+different ("26 gaps and no wall", dropping a wall) — and past 26 leaves the
+alphabet entirely, so the reader rejects it. That range has no defined behaviour
+(§4 rule 1), so diverging there is free: chunk into the unit the reader already
+understands, and stay character-for-character identical everywhere the two agree.
+The check that makes this safe is to write the test's decoder **strictly to the
+C's reading rules** and round-trip random patterns through it, so the encoder is
+validated against upstream's grammar rather than against itself — encoder-vs-own-
+decoder would have passed happily. Exemplar:
+[`seismic/state.ts`](../../src/native/games/seismic/state.ts) (`encodeWalls`).
 
 **A `qsort`/`.sort()` that feeds only *rendering* does not threaten byte-match.**
 Only sorts (and RNG draws) on the path that produces the desc matter. Signpost's

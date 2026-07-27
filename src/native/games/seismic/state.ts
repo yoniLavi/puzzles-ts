@@ -1,0 +1,530 @@
+/**
+ * Seismic — params, immutable state, and the description codec.
+ *
+ * Seismic implements *Hakyuu* / *Ripple Effect* (© 2013 Lennard Sprong,
+ * `puzzles/unreleased/seismic.c`). The grid is partitioned into regions; a
+ * region of size `N` holds one each of `1..N`, and two equal numbers are kept
+ * apart — at least `Z` cells between two `Z`s on a row or column (**Seismic**
+ * mode), or never orthogonally/diagonally adjacent (**Tectonic** mode, whose
+ * regions are always five cells).
+ *
+ * **Regions live in the shared {@link Dsf} and need no minimal-element map.**
+ * Unlike Keen (which stores a cage's clue *at* its minimal cell), Seismic reads
+ * `dsf_canonify` only as a region *identifier* — the wall layout is emitted from
+ * a membership comparison (`canonify(a) !== canonify(b)`), the solver indexes
+ * `w·h`-sized scratch arrays by the canonical element and always re-reads them
+ * through `canonify`, and every clue is per-cell. So union-by-size's root choice
+ * is unobservable here and the shared `Dsf` is byte-match faithful as-is
+ * (playbook §2.2). Don't "restore fidelity" by adding a min-dsf variant.
+ *
+ * The `Dsf` never changes after `newState`, so every state shares the one
+ * instance by reference (the §3.1 shared-immutable pattern); a move clones only
+ * the three per-cell arrays.
+ */
+
+import { Dsf } from "../../engine/dsf.ts";
+import { parseLeadingInt } from "../../engine/params.ts";
+
+// --- difficulty ------------------------------------------------------------
+
+/** Naked singles + hidden-single-in-region only. */
+export const DIFF_EASY = 0;
+/** Adds the trial-placement deduction. */
+export const DIFF_HARD = 1;
+export const DIFFCOUNT = 2;
+
+export const DIFF_NAMES: readonly string[] = ["Easy", "Hard"];
+/** The difficulty letters `encodeParams` writes and `decodeParams` reads. */
+const DIFF_CHARS = "eh";
+
+// --- game mode -------------------------------------------------------------
+
+export const MODE_SEISMIC = 0;
+export const MODE_TECTONIC = 1;
+
+export const MODE_NAMES: readonly string[] = ["Seismic", "Tectonic"];
+
+// --- cell flags ------------------------------------------------------------
+
+/** A given: the player may not edit it. */
+export const FM_FIXED = 0x01;
+/** Live error: this number appears twice in its region. */
+export const FM_ERRORDUP = 0x02;
+/** Live error: an equal number sits within this number's keep-apart range. */
+export const FM_ERRORDIST = 0x04;
+export const FM_ERRORMASK = FM_ERRORDUP | FM_ERRORDIST;
+
+// --- candidate bit helpers -------------------------------------------------
+
+/** The candidate bit for number `n` (`1..9`) — bit `n − 1`, as upstream. */
+export const numBit = (n: number): number => 1 << (n - 1);
+/** Every candidate a region of size `k` admits: bits for `1..k`. */
+export const areaBits = (k: number): number => (1 << k) - 1;
+/** The widest candidate set (a region of nine). */
+export const ALL_MARKS = areaBits(9);
+
+// --- params ----------------------------------------------------------------
+
+export interface SeismicParams {
+  w: number;
+  h: number;
+  /** {@link DIFF_EASY} or {@link DIFF_HARD}. */
+  diff: number;
+  /** {@link MODE_SEISMIC} or {@link MODE_TECTONIC}. */
+  mode: number;
+}
+
+export const PRESETS: readonly SeismicParams[] = [
+  { w: 4, h: 4, diff: DIFF_EASY, mode: MODE_SEISMIC },
+  { w: 4, h: 4, diff: DIFF_EASY, mode: MODE_TECTONIC },
+  { w: 4, h: 4, diff: DIFF_HARD, mode: MODE_SEISMIC },
+  { w: 4, h: 4, diff: DIFF_HARD, mode: MODE_TECTONIC },
+  { w: 6, h: 6, diff: DIFF_EASY, mode: MODE_SEISMIC },
+  { w: 6, h: 6, diff: DIFF_EASY, mode: MODE_TECTONIC },
+  { w: 6, h: 6, diff: DIFF_HARD, mode: MODE_SEISMIC },
+  { w: 6, h: 6, diff: DIFF_HARD, mode: MODE_TECTONIC },
+  { w: 7, h: 7, diff: DIFF_EASY, mode: MODE_SEISMIC },
+  { w: 7, h: 7, diff: DIFF_EASY, mode: MODE_TECTONIC },
+  { w: 7, h: 7, diff: DIFF_HARD, mode: MODE_SEISMIC },
+  { w: 7, h: 7, diff: DIFF_HARD, mode: MODE_TECTONIC },
+];
+
+const DEFAULT_PRESET = 4;
+
+export function defaultParams(): SeismicParams {
+  return { ...PRESETS[DEFAULT_PRESET] };
+}
+
+export function presetName(p: SeismicParams): string {
+  return `${MODE_NAMES[p.mode]}: ${p.w}x${p.h} ${DIFF_NAMES[p.diff]}`;
+}
+
+export function encodeParams(p: SeismicParams, full: boolean): string {
+  let s = `${p.w}x${p.h}`;
+  if (p.mode === MODE_TECTONIC) s += "T";
+  if (full) s += `d${DIFF_CHARS[p.diff]}`;
+  return s;
+}
+
+export function decodeParams(s: string): SeismicParams {
+  const p = defaultParams();
+
+  const wParse = parseLeadingInt(s, 0);
+  p.w = wParse.value;
+  let i = wParse.next;
+  if (s[i] === "x") {
+    const hParse = parseLeadingInt(s, i + 1);
+    p.h = hParse.value;
+    i = hParse.next;
+  } else {
+    p.h = p.w;
+  }
+
+  // The mode letter precedes the difficulty suffix, as upstream writes it.
+  p.mode = MODE_SEISMIC;
+  if (s[i] === "T") {
+    p.mode = MODE_TECTONIC;
+    i++;
+  }
+
+  if (s[i] === "d") {
+    i++;
+    // Upstream deliberately parks an out-of-range value here so an unknown
+    // letter is rejected by validateParams rather than silently defaulted.
+    p.diff = DIFFCOUNT + 1;
+    if (i < s.length) {
+      const found = DIFF_CHARS.indexOf(s[i]);
+      if (found >= 0) p.diff = found;
+      i++;
+    }
+  }
+
+  return p;
+}
+
+/**
+ * The largest board upstream's generator can actually produce, in cells.
+ *
+ * Its region-growing stage merges across borders in a random order and then
+ * demands that *every* resulting region hold exactly `1..k` for its size — a
+ * post-hoc test it can only pass by luck, so the whole pipeline is retried until
+ * it does. Measured success rate of that stage, 200,000 attempts per shape:
+ *
+ * | cells | 16   | 25    | 36      | 48        | 49        | 56 | 64 |
+ * |-------|------|-------|---------|-----------|-----------|----|----|
+ * | rate  | 1/22 | 1/191 | 1/4,167 | 1/66,667  | 1/200,000 | 0  | 0  |
+ *
+ * so at 7×7 (49, upstream's largest preset) a board takes tens of seconds, and
+ * at 56 cells and up it never arrives. This is upstream's own documented fault —
+ * `unreleased/docs/seismic.md`: "has a near-zero chance of generating sizes
+ * higher than 7x7. The generator step that creates randomly filled regions needs
+ * to be completely replaced with a different approach."
+ *
+ * Rejecting the sizes that measurably cannot generate is playbook §4's
+ * prescribed handling ("*impossible* ⇒ reject in `validateParams`, where the
+ * Custom dialog can show a reason, rather than letting the player press 'New
+ * game' and wait for an error"), and it excludes no configuration either build
+ * can produce, so the byte-match differential is untouched. The trade-off it
+ * does carry: a hand-authored `10x10:⟨desc⟩` game ID is refused, since this
+ * engine validates params the same way for a `:desc` id as for a `#seed` one.
+ * Replacing the region generator — which would lift the ceiling *and* make 7×7
+ * instant — is the author's own recommendation and a change of its own; this
+ * bound goes away with it.
+ */
+export const MAX_CELLS = 49;
+
+export function validateParams(p: SeismicParams, _full: boolean): string | null {
+  if (p.w < 4 || p.h < 4) return "Width and height must be at least 4";
+  if (p.w * p.h > MAX_CELLS)
+    return `Width times height must be at most ${MAX_CELLS} (the generator cannot build a larger board)`;
+  if (p.diff >= DIFFCOUNT) return "Unknown difficulty rating";
+  return null;
+}
+
+export function diffToLevel(diff: number): number {
+  return diff;
+}
+
+export function diffFromLevel(level: number): number {
+  return level === DIFF_HARD ? DIFF_HARD : DIFF_EASY;
+}
+
+// --- state -----------------------------------------------------------------
+
+/** The mutable board the solver and the generator work on — exactly the part of
+ * `game_state` they touch. {@link SeismicState} satisfies it structurally, so a
+ * cloned state can be handed straight to the solver. */
+export interface SeismicBoard {
+  readonly w: number;
+  readonly h: number;
+  readonly mode: number;
+  /** The region partition. Never mutated during play. */
+  readonly dsf: Dsf;
+  /** Placed numbers, `0` = empty. */
+  readonly grid: Uint8Array;
+  /** `FM_*` bits. */
+  readonly flags: Uint8Array;
+  /** Candidate bitmask per cell — the player's pencil marks during play, the
+   * solver's live candidate set while solving. */
+  readonly marks: Uint16Array;
+}
+
+export interface SeismicState extends SeismicBoard {
+  readonly params: SeismicParams;
+  completed: boolean;
+  cheated: boolean;
+}
+
+export function blankBoard(w: number, h: number, mode: number): SeismicBoard {
+  return {
+    w,
+    h,
+    mode,
+    dsf: new Dsf(w * h),
+    grid: new Uint8Array(w * h),
+    flags: new Uint8Array(w * h),
+    marks: new Uint16Array(w * h),
+  };
+}
+
+export function cloneState(s: SeismicState): SeismicState {
+  return {
+    w: s.w,
+    h: s.h,
+    mode: s.mode,
+    // The partition is immutable for the life of the game, so every state
+    // shares one instance rather than cloning a union-find per keystroke.
+    dsf: s.dsf,
+    grid: s.grid.slice(),
+    flags: s.flags.slice(),
+    marks: s.marks.slice(),
+    params: s.params,
+    completed: s.completed,
+    cheated: s.cheated,
+  };
+}
+
+// --- moves and ui ----------------------------------------------------------
+
+export type SeismicMove =
+  /** Place (`pencil: false`) or toggle a pencil mark (`pencil: true`); `n === 0`
+   * clears the cell / all of its marks. */
+  | { type: "set"; x: number; y: number; n: number; pencil: boolean }
+  /** Upstream's `M`: fill every empty cell's marks with its region's candidates. */
+  | { type: "pencilAll" }
+  /** Fill in the solver's answer. */
+  | { type: "solve"; grid: number[] };
+
+export interface SeismicUi {
+  /** Highlighted cell. */
+  hx: number;
+  hy: number;
+  /** Whether the highlight is shown at all. */
+  cshow: boolean;
+  /** Whether the highlight was last moved by the keyboard (upstream keeps the
+   * cursor visible after a keyboard entry, but hides it after a mouse one). */
+  ckey: boolean;
+  /** Whether entry goes to pencil marks rather than the cell. */
+  cpencil: boolean;
+  /** Fork divergence (playbook §3.7): right-click toggles a *persistent* pencil
+   * mode rather than a one-shot pencil selection. */
+  pencilSticky: boolean;
+}
+
+export function newUi(_state: SeismicState): SeismicUi {
+  return {
+    hx: 0,
+    hy: 0,
+    cshow: false,
+    ckey: false,
+    cpencil: false,
+    pencilSticky: true,
+  };
+}
+
+// --- description codec -----------------------------------------------------
+
+/** Number of border positions a `w × h` grid has: every horizontal border
+ * (between two cells in a row) first, then every vertical one. */
+export function borderCount(w: number, h: number): number {
+  return (w - 1) * h + w * (h - 1);
+}
+
+const VALID = 0;
+const INVALID_WALLS = 1;
+const INVALID_REGION = 2;
+const INVALID_CLUESIZE = 3;
+
+/**
+ * Encode the border list as upstream's alternating run-length scheme: a decimal
+ * count for a run of walls, and a letter for a run of non-walls **plus the one
+ * wall that ends it** (`'a'` = one gap then a wall, …).
+ *
+ * *One deliberate divergence, confined to the range where the C's own reader
+ * cannot invert its writer.* Upstream emits a bare `'a' + erun - 1` for any gap
+ * run, which at `erun === 26` produces `'z'` — a character its decoder reads as
+ * "26 gaps and **no** following wall", losing a wall — and past 26 produces
+ * characters outside `'a'..'z'` that the decoder rejects outright. Gap runs of
+ * 26+ therefore have no defined behaviour upstream (playbook §4 rule 1), so this
+ * chunks them into `'z'` units (26 gaps, no wall — exactly what the reader
+ * already means by `'z'`) and lets the residue, or the following wall run, carry
+ * the wall. Output is character-for-character identical to the C for every run
+ * of ≤ 25, which is every run a generated puzzle has produced.
+ */
+export function encodeWalls(walls: ArrayLike<number>, ws: number): string {
+  let out = "";
+  let erun = 0;
+  let wrun = 0;
+
+  /** Emit the pending gap run; returns the wall count to continue from. */
+  const flushGaps = (): number => {
+    while (erun >= 26) {
+      out += "z";
+      erun -= 26;
+    }
+    if (erun > 0) {
+      out += String.fromCharCode(0x61 + erun - 1);
+      erun = 0;
+      // The letter already spoke for the wall that ended the run, so start the
+      // wall count one below zero: the increment below brings it back to zero.
+      return -1;
+    }
+    // A whole number of 'z' chunks absorbs no wall; count this one normally.
+    return 0;
+  };
+
+  for (let i = 0; i < ws; i++) {
+    if (!walls[i] && wrun > 0) {
+      out += String(wrun);
+      wrun = 0;
+      erun = 0;
+    } else if (walls[i] && erun > 0) {
+      wrun = flushGaps();
+    }
+
+    if (!walls[i]) erun++;
+    else wrun++;
+  }
+
+  if (wrun > 0) out += String(wrun);
+  while (erun >= 26) {
+    out += "z";
+    erun -= 26;
+  }
+  // A trailing gap run has no wall after it; the letter's implied wall falls off
+  // the end of the border list, exactly as upstream.
+  if (erun > 0) out += String.fromCharCode(0x61 + erun - 1);
+
+  return out;
+}
+
+/** Encode the clue grid: letter runs for empty cells (chunked in `'z'` = 26),
+ * the digit itself for a given. */
+export function encodeClues(grid: ArrayLike<number>, s: number): string {
+  let out = "";
+  let erun = 0;
+  const flush = () => {
+    while (erun >= 26) {
+      out += "z";
+      erun -= 26;
+    }
+    if (erun > 0) out += String.fromCharCode(0x61 + erun - 1);
+    erun = 0;
+  };
+  for (let i = 0; i < s; i++) {
+    const c = grid[i];
+    if (erun > 0 && c !== 0) flush();
+    if (c > 0) out += String(c);
+    else erun++;
+  }
+  flush();
+  return out;
+}
+
+/** The wall list plus the clue grid — upstream's `⟨walls⟩,⟨clues⟩` description. */
+export function encodeDesc(board: SeismicBoard): string {
+  const { w, h, dsf, grid } = board;
+  const ws = borderCount(w, h);
+  const walls = new Uint8Array(ws);
+
+  let i = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w - 1; x++) {
+      walls[i++] = dsf.equivalent(y * w + x, y * w + x + 1) ? 0 : 1;
+    }
+  }
+  for (let y = 0; y < h - 1; y++) {
+    for (let x = 0; x < w; x++) {
+      walls[i++] = dsf.equivalent(y * w + x, (y + 1) * w + x) ? 0 : 1;
+    }
+  }
+
+  return `${encodeWalls(walls, ws)},${encodeClues(grid, w * h)}`;
+}
+
+/** Decode a description into a fresh board, reporting upstream's verdict code
+ * rather than throwing (`validateDesc` turns it into a message). */
+function readDesc(
+  p: SeismicParams,
+  desc: string,
+): { board: SeismicBoard; valid: number } {
+  const { w, h } = p;
+  const ws = borderCount(w, h);
+  const board = blankBoard(w, h, p.mode);
+  const walls = new Uint8Array(ws);
+  let valid = VALID;
+
+  let at = 0;
+  let erun = 0;
+  let wrun = 0;
+  for (let i = 0; i < ws; i++) {
+    if (erun === 0 && wrun === 0) {
+      const c = desc[at];
+      if (c !== undefined && c >= "0" && c <= "9") {
+        const r = parseLeadingInt(desc, at);
+        wrun = r.value;
+        at = r.next;
+      } else if (c !== undefined && c >= "a" && c <= "y") {
+        // A letter is a gap run *and* the wall that ends it.
+        erun = c.charCodeAt(0) - 0x61 + 1;
+        wrun = 1;
+        at++;
+      } else if (c === "z") {
+        erun = 26;
+        at++;
+      } else {
+        valid = INVALID_WALLS;
+      }
+    }
+    if (erun > 0) {
+      walls[i] = 0;
+      erun--;
+    } else if (wrun > 0) {
+      walls[i] = 1;
+      wrun--;
+    }
+  }
+
+  const hs = (w - 1) * h;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w - 1; x++) {
+      if (!walls[y * (w - 1) + x]) board.dsf.merge(y * w + x, y * w + x + 1);
+    }
+  }
+  for (let y = 0; y < h - 1; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!walls[hs + y * w + x]) board.dsf.merge(y * w + x, (y + 1) * w + x);
+    }
+  }
+
+  // Skip the ',' separator (upstream advances unconditionally, so a truncated
+  // description simply reads the clue grid as all-empty).
+  at++;
+  erun = 0;
+  for (let i = 0; i < w * h; i++) {
+    let c = "";
+    if (erun === 0 && at < desc.length) {
+      c = desc[at++];
+      if (c >= "a" && c <= "z") erun = c.charCodeAt(0) - 0x61 + 1;
+    }
+    if (erun > 0) {
+      c = "";
+      erun--;
+    }
+    if (c >= "1" && c <= "9") {
+      board.grid[i] = c.charCodeAt(0) - 0x30;
+      board.flags[i] = FM_FIXED;
+    } else {
+      board.grid[i] = 0;
+      board.flags[i] = 0;
+    }
+  }
+
+  return { board, valid };
+}
+
+export function validateDesc(p: SeismicParams, desc: string): string | null {
+  const { board, valid: readValid } = readDesc(p, desc);
+  let valid = readValid;
+
+  if (valid === VALID) {
+    for (let i = 0; i < p.w * p.h; i++) {
+      const size = board.dsf.size(i);
+      if (size > 9) valid = INVALID_REGION;
+      if (board.grid[i] > size) valid = INVALID_CLUESIZE;
+    }
+  }
+
+  if (valid === INVALID_WALLS) return "Region description contains invalid characters";
+  if (valid === INVALID_REGION) return "A region is too large";
+  if (valid === INVALID_CLUESIZE) return "A clue is too large";
+  return null;
+}
+
+export function newState(p: SeismicParams, desc: string): SeismicState {
+  const { board } = readDesc(p, desc);
+  return { ...board, params: p, completed: false, cheated: false };
+}
+
+// --- text rendering --------------------------------------------------------
+
+export function textFormat(state: SeismicState): string {
+  const { w, h, dsf, grid } = state;
+  const rows: string[] = [];
+
+  rows.push(`+${"-+".repeat(w)}`);
+  for (let y = 0; y < h; y++) {
+    let cells = "|";
+    let under = "+";
+    for (let x = 0; x < w; x++) {
+      const c = grid[y * w + x];
+      cells += c > 0 ? String(c) : ".";
+      cells += x === w - 1 || !dsf.equivalent(y * w + x, y * w + x + 1) ? "|" : " ";
+      under += y === h - 1 || !dsf.equivalent(y * w + x, (y + 1) * w + x) ? "-" : " ";
+      under += "+";
+    }
+    rows.push(cells);
+    rows.push(under);
+  }
+  return `${rows.join("\n")}\n`;
+}
