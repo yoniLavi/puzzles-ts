@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "w": 4,
+      "h": 4,
+      "diff": 0,
+      "mode": 0,
+      "seed": "seismic-4x4-e-s",
+      "desc": "11bafa,d4c1f3",
+      "genMs": 0
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "diff": 0,
+      "mode": 1,
+      "seed": "seismic-4x4-e-t",
+      "desc": "a9bi,a3c2a35a4b3b",
+      "genMs": 0
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "diff": 1,
+      "mode": 0,
+      "seed": "seismic-4x4-h-s",
+      "desc": "2a1a1a1aa1b1d,j4b4b",
+      "genMs": 1
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "diff": 1,
+      "mode": 1,
+      "seed": "seismic-4x4-h-t",
+      "desc": "f1ab4a1ab,a4h1b3a4",
+      "genMs": 0
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "diff": 0,
+      "mode": 0,
+      "seed": "seismic-6x6-e-s",
+      "desc": "2c1aa4aaa6bb4aba2a1aba3a,g2b5l3l",
+      "genMs": 18
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "diff": 0,
+      "mode": 1,
+      "seed": "seismic-6x6-e-t",
+      "desc": "b1bac1b1aaac1cc2a1b1a2a1cc,2b4c5a1h2a1e3a5a1d4",
+      "genMs": 1952
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "diff": 1,
+      "mode": 0,
+      "seed": "seismic-6x6-h-s",
+      "desc": "2b1a1a3aa2a2a1bbaaa3a1bab1a4,zj",
+      "genMs": 238
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "diff": 1,
+      "mode": 1,
+      "seed": "seismic-6x6-h-t",
+      "desc": "aa1aa3abb2ccg2a1cb4b2a,3a2i4b5a3b2c4c3c1c",
+      "genMs": 499
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "diff": 0,
+      "mode": 0,
+      "seed": "seismic-7x7-e-s",
+      "desc": "1a1aa1ba1b1aaa3caaaa1aa1b2a2b1b1bab6b1aa,d5i1k45c6k3e",
+      "genMs": 18202
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "diff": 0,
+      "mode": 1,
+      "seed": "seismic-7x7-e-t",
+      "desc": "a1baba3aa2a1aa1aa1ab1d3a1a1abcaac2a1ae,3f54b4a5m1b1e35a2f5b",
+      "genMs": 19831
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "diff": 1,
+      "mode": 0,
+      "seed": "seismic-7x7-h-s",
+      "desc": "bbab1a2c1b1a2cabc6caa7aaa6b6,zw",
+      "genMs": 42881
+    },
+    {
+      "w": 7,
+      "h": 7,
+      "diff": 1,
+      "mode": 1,
+      "seed": "seismic-7x7-h-t",
+      "desc": "ab1a1a1aaa2aeababba2g1cb3a1b6cd,2b2f3j5h5a2a3e41a5b2b",
+      "genMs": 991
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "diff": 0,
+      "mode": 0,
+      "seed": "seismic-4x4-e-s-2",
+      "desc": "2a1a1cd4aa,b3m",
+      "genMs": 0
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "diff": 1,
+      "mode": 1,
+      "seed": "seismic-4x4-h-t-2",
+      "desc": "abacf3a1,a2a13d1f",
+      "genMs": 1
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "diff": 0,
+      "mode": 0,
+      "seed": "seismic-6x6-e-s-2",
+      "desc": "1a4a1aa2b4a1aab1cc4a5bd,f2m2n1",
+      "genMs": 145
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "diff": 1,
+      "mode": 1,
+      "seed": "seismic-6x6-h-t-2",
+      "desc": "1baa1ab1aac1bfc2aaba3da1,c3c1d4a3a41g2d4b21a",
+      "genMs": 250
+    },
+    {
+      "w": 4,
+      "h": 5,
+      "diff": 0,
+      "mode": 0,
+      "seed": "seismic-4x5-e-s",
+      "desc": "1d1a1a1b4ba1d,f5b1d2b4b",
+      "genMs": 0
+    },
+    {
+      "w": 5,
+      "h": 4,
+      "diff": 0,
+      "mode": 1,
+      "seed": "seismic-5x4-e-t",
+      "desc": "ca1cca1ac5b,2a4d1d2f3",
+      "genMs": 1
+    },
+    {
+      "w": 5,
+      "h": 5,
+      "diff": 0,
+      "mode": 0,
+      "seed": "seismic-5x5-e-s",
+      "desc": "1bba2b1a1b5a4ca2,w1a",
+      "genMs": 2
+    },
+    {
+      "w": 5,
+      "h": 5,
+      "diff": 1,
+      "mode": 0,
+      "seed": "seismic-5x5-h-s",
+      "desc": "a1a2a1a2bcf2d5,c3b3c1b4i1a",
+      "genMs": 10
+    },
+    {
+      "w": 5,
+      "h": 5,
+      "diff": 0,
+      "mode": 1,
+      "seed": "seismic-5x5-e-t",
+      "desc": "3a1ba1a1bac2a1bbba,2c2d345c1g3a",
+      "genMs": 1
+    },
+    {
+      "w": 5,
+      "h": 5,
+      "diff": 1,
+      "mode": 1,
+      "seed": "seismic-5x5-h-t",
+      "desc": "a1ba2a1aaadbb1a1f,5c213d5e2a5a3c",
+      "genMs": 21
+    },
+    {
+      "w": 6,
+      "h": 4,
+      "diff": 1,
+      "mode": 0,
+      "seed": "seismic-6x4-h-s",
+      "desc": "4bb1b5aaaa3aaa1a,e2d4m",
+      "genMs": 4
+    },
+    {
+      "w": 4,
+      "h": 6,
+      "diff": 1,
+      "mode": 1,
+      "seed": "seismic-4x6-h-t",
+      "desc": "1ca1a1aa1cba1e1d,a54b2e11h53a",
+      "genMs": 2
+    },
+    {
+      "w": 7,
+      "h": 4,
+      "diff": 0,
+      "mode": 0,
+      "seed": "seismic-7x4-e-s",
+      "desc": "b1aa1a1a1a2a5a1dba1ac,f3f12c3f4b",
+      "genMs": 16
+    },
+    {
+      "w": 4,
+      "h": 7,
+      "diff": 0,
+      "mode": 1,
+      "seed": "seismic-4x7-e-t",
+      "desc": "eaa2abd2a1a1a1aad3,b3b2a5h1c2e4a",
+      "genMs": 20
+    },
+    {
+      "w": 6,
+      "h": 5,
+      "diff": 0,
+      "mode": 0,
+      "seed": "seismic-6x5-e-s",
+      "desc": "a1a4ab1b2a1aaba10a3b,zd",
+      "genMs": 6
+    },
+    {
+      "w": 5,
+      "h": 6,
+      "diff": 1,
+      "mode": 1,
+      "seed": "seismic-5x6-h-t",
+      "desc": "2da1baba1b1aba2aa1a2bc,c2d3a4f4b2c4b2b",
+      "genMs": 97
+    }
+  ]
+}

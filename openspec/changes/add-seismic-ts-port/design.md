@@ -277,8 +277,135 @@ playbook §3.4). `paramConfig` (the Custom-type dialog) supplies Width / Height
   aperiodic geometry, no animation. The codec (D3) and the RNG draw order (D4) are
   the only byte-match-fragile surfaces, and the differential catches both.
 
-## Open questions for the owner
+## Implementation findings
 
-1. **Generation hang on large Custom sizes (Risks).** Ship faithful (no size cap,
-   same as C/WASM), or add a soft size warning as a follow-up? Recommendation:
-   ship faithful; revisit only if smoke-testing finds it unacceptable.
+Recorded after the port landed; where these overturn a decision above, this
+section is authoritative (the `add-loopy-ts-port` F1–F8 precedent).
+
+### F1 — The scaling limit, measured; D-Risks resolved by a `validateParams` bound
+
+The design left "generation hang on large Custom sizes" as an open question with
+a recommendation to ship faithful. Measuring it first (playbook §4, "measure a
+rare failure before you design the recovery for it") settled it without needing
+to ask. Success rate of the region-merge stage, 200,000 attempts per shape:
+
+| cells        | 16   | 25    | 36      | 48       | 49        | 56 | 64 |
+|--------------|------|-------|---------|----------|-----------|----|----|
+| success rate | 1/22 | 1/191 | 1/4,167 | 1/66,667 | 1/200,000 | 0  | 0  |
+
+So it is *both* failure modes at once, and they want opposite fixes:
+
+- **Up to 49 cells: unlucky, so retry** — bounded by `retryLimit`. The costliest
+  legitimate board across the 28 differential fixtures (7×7 Hard, Seismic) needed
+  **1,184,978** attempts, so `MAX_ATTEMPTS = 5_000_000` (~12× that
+  configuration's mean) never trips on a board the generator can reach.
+- **Above ~50 cells: impossible, so reject in `validateParams`** — `MAX_CELLS =
+  49`, exactly the playbook's prescription, with the Custom dialog showing the
+  reason instead of freezing for minutes. It excludes no configuration either
+  build can produce, so the byte-match differential is untouched. Verified in the
+  browser: a 10×10 submit is refused instantly with the message.
+
+The bound's one cost, recorded because it is a real (if unlikely) loss: this
+engine passes `full = true` to `validateParams` for a `:desc` game ID as well as
+a `#seed` one, so a *hand-authored* `10x10:⟨desc⟩` ID is refused too.
+
+### F2 — The wall codec is not a round-trip in the C; fixed in the range where it isn't
+
+Upstream writes a run of `n` gap borders as a bare `'a' + n - 1`, and treats that
+letter as also standing for the wall that ended the run. Its **reader** does the
+same only for `'a'..'y'`: `'z'` means "26 gaps and *no* wall". So a gap run of
+exactly 26 silently loses a wall on the way back, and a run of 27+ emits a
+character outside `'a'..'z'` that the reader rejects as invalid.
+
+That range has no defined upstream behaviour (playbook §4 rule 1), so
+`encodeWalls` chunks long runs into `'z'` units — precisely what the reader
+already means by `'z'` — and lets the residue, or the following wall run, carry
+the wall. Output is character-for-character identical to the C for every run of
+≤ 25, which is every run any generated board has produced; the 28-fixture
+byte-match confirms it. Guarded by a test that decodes with a decoder written
+strictly to the *C's* reading rules, so the encoder is checked against upstream's
+grammar rather than against itself.
+
+### F3 — `game_redraw` truncates the pencil bitmask into a `char`
+
+`game_redraw` declares `char c, p` and then assigns `p = state->marks[i1]`, but
+`marks` is a **9-bit** candidate mask. Bit 8 is lost, so **a pencilled 9 is never
+drawn**. This is playbook §3.2's "a display-only value with the wrong type is a
+bug you may just fix": fixed here (the mask is read as a `number`).
+
+It takes a nine-cell region to expose, and *no generated board has one* — the
+region grower would have to land all nine numbers in a single region — so the
+regression test hand-builds a board with one through the same codec the generator
+writes, and checks a 9 is both enterable (`interpretMove` caps entry at the
+region size) and drawn.
+
+### F4 — D9's mark-all no-go stands, but for a different reason
+
+D9 declined the adaptive fill-then-clean mark-all because "Seismic's keep-apart
+rule is not a plain uniqueness region". That reasoning is wrong — the *dsf
+region* is a plain uniqueness region (one each of `1..N`), and striking
+candidates already placed in it would be sound. The real blocker is mechanical:
+the shared `adaptiveMarkAllMove` / `obviousCandidateMarks`
+(`engine/candidate-hint.ts`) is written for a **square** board — it walks `w * w`
+cells and caps candidates at `w` — while Seismic's grid is rectangular and its
+candidate range is per region. Widening a helper five games share for one game is
+not worth it (playbook's "record the no-go with its reason"), and upstream's `M`
+is fill-only regardless. Revisit if a second rectangular candidate game appears.
+
+### F5 — The port is faster than the C, so the 7×7 cost is upstream's, not a regression
+
+The trace harness records the C's own generation milliseconds per fixture, so the
+comparison is a fact rather than an impression. The TS port is faster on every
+one — 7×7 Hard Seismic: **C 42.9 s, TS 27.8 s**; 7×7 Easy Seismic: C 18.2 s, TS
+12.4 s; 6×6 Tectonic Easy: C 1.95 s, TS 1.82 s. See "Owner decision wanted"
+below: the cost is real and worth fixing, but it is not something this port
+introduced.
+
+### F6 — D7's differential: 28/28 byte-for-byte, first run
+
+All twelve presets, both modes, both difficulties, a second seed per preset size,
+and a non-square size sweep. Because generation is solver-gated at every clue
+removal *and* graded against the tier below, that one assertion validates the
+generator's draw order, every solver rung, the region merge and both halves of
+the codec together. It also caught nothing — the port matched first time — which
+is itself the useful signal: the divergences in F2 and F3 are confined to display
+and to inputs the generator never produces, exactly as claimed.
+
+### F7 — `solve()` errors rather than filling partially
+
+Upstream's `solve_game` emits whatever the solver managed, so a board it cannot
+finish is half-filled into the player's grid irreversibly. This port returns
+`{ ok: false }` instead. Unreachable on any generated board (the generator only
+accepts boards its own solver completes), and `executeMove`'s solve arm is not on
+the differential's path, so this costs no verification.
+
+### F8 — D1 confirmed: no minimal-element map needed
+
+`dsf_canonify` is read only as a region *identifier* — accumulated into `w·h`
+scratch arrays and always re-read through `canonify`, with the wall layout emitted
+from a membership comparison. The byte-match across all 28 fixtures is the proof.
+
+### F9 — A board with no clues at all is a legitimate upstream output
+
+Several C fixtures decode to an entirely empty clue grid (`6x6dh` seed
+`seismic-6x6-h-s` is `…,zj`: 36 empty cells, no givens). The region layout alone
+forces the answer. Surprising to read, but faithful, and the solver handles it —
+worth knowing before treating a clueless board as a codec bug.
+
+## Owner decision wanted (does not block this port)
+
+**Should the region generator be replaced?** The author's own Status note asks for
+it — "the generator step that creates randomly filled regions needs to be
+completely replaced with a different approach" — and F1 quantifies why: a 7×7
+board costs 12–28 s, and 8×8 and up (10×10 being *the* common Hakyuu size) cannot
+be generated at all. A constructive region grower (grow a region cell by cell,
+placing the number it still needs, instead of merging blindly and hoping) would
+make every size instant and lift the ceiling.
+
+The cost is the one thing that makes it a decision rather than a task: it changes
+every board, so the 28-fixture byte-match — which is what validates the solver and
+codec — would have to be given up or reduced to the weaker §4.8 verdict check.
+The `upstreamDirtyGate` shape from `add-spokes-ts-port` is the escape hatch (keep
+upstream's algorithm behind an option that only the differential sets), and would
+likely apply here too. Recommendation: a separate change, after this one is
+accepted, taking that shape.

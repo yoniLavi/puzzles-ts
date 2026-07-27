@@ -52,6 +52,7 @@ import { pegsGame } from "./pegs/index.ts";
 import { rangeGame } from "./range/index.ts";
 import { rectGame } from "./rect/index.ts";
 import { samegameGame } from "./samegame/index.ts";
+import { seismicGame } from "./seismic/index.ts";
 import { separateGame } from "./separate/index.ts";
 import { signpostGame } from "./signpost/index.ts";
 import { singlesGame } from "./singles/index.ts";
@@ -114,6 +115,7 @@ export function registerAllGames(): void {
   registerGame(rangeGame);
   registerGame(rectGame);
   registerGame(samegameGame);
+  registerGame(seismicGame);
   registerGame(separateGame);
   registerGame(signpostGame);
   registerGame(singlesGame);
