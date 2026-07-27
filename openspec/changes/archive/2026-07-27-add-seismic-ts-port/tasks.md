@@ -171,16 +171,21 @@
 
 ## 11. Stage 2 — on owner acceptance only
 
-- [ ] 11.1 Add `TS_PORTED` to `puzzle(seismic …)` in
-      `puzzles/unreleased/CMakeLists.txt` (wire the `ts_ported_names` union for the
-      unreleased dir if this is the first such flip, mirroring the main-catalog
-      seam) and drop `solver(seismic …)`.
-- [ ] 11.2 Delete `puzzles/unreleased/seismic.c` and the `seismic-trace` harness
-      (and its `cliprogram()` line).
-- [ ] 11.3 `rm -rf build/wasm/` and rebuild — seismic served by TS, no
-      `seismic.wasm`. Icons already exist. The frozen differential fixture still
-      runs C-free.
-- [ ] 11.4 Archive, then commit port + archive together.
+- [x] 11.1 Added `TS_PORTED` to `puzzle(seismic …)` in
+      `puzzles/unreleased/CMakeLists.txt` and dropped `solver(seismic …)`. The
+      `ts_ported_names` union was already wired for the unreleased dir (abcd was
+      the first such flip), so this was the one-line flag.
+- [x] 11.2 Deleted `puzzles/unreleased/seismic.c` (2,069 lines) and
+      `puzzles/auxiliary/seismic-trace.c` plus its `cliprogram()` line. The frozen
+      `__fixtures__/seismic-c-reference.json` stays as the gated differential's
+      baseline.
+- [x] 11.3 `rm -rf build/wasm/` and rebuilt: seismic keeps its catalog entry
+      (name / description / objective / `collection: unreleased`) with **no**
+      `seismic.wasm`. Icons already existed. Browser-verified with the C gone —
+      the board generates, a digit enters, mark-all fills per-region candidate
+      sets; 0 console errors. The frozen differential runs C-free and is green.
+- [x] 11.4 Archived as `2026-07-27-add-seismic-ts-port`; stage 2 + archive
+      committed together.
 
 ## 12. Findings recorded during implementation
 

@@ -68,8 +68,8 @@ solver(salad ${CMAKE_SOURCE_DIR}/latin.c)
 puzzle(seismic
   DISPLAYNAME "Seismic"
   DESCRIPTION "Number placement puzzle"
-  OBJECTIVE "Place numbers in each area, keeping enough distance between equal numbers.")
-solver(seismic ${CMAKE_SOURCE_DIR}/dsf.c)
+  OBJECTIVE "Place numbers in each area, keeping enough distance between equal numbers."
+  TS_PORTED)  # native-TS port (openspec add-seismic-ts-port); no seismic.c/wasm
 
 puzzle(spokes
   DISPLAYNAME "Spokes"
