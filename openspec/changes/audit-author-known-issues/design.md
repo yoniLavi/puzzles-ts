@@ -68,6 +68,13 @@ rewrite; Salad's is a request for shared pseudo-Latin support upstream never
 built. Those are proposed, not attempted, and the audit stays a sweep rather than
 becoming an umbrella for unrelated work.
 
+Seismic's is the worked example of that discipline, and of the alternative timing:
+its port measured the limit precisely (1 in 200,000 successes at 49 cells, none
+above ~50) and opened `replace-seismic-region-generator` there and then, because
+the measurement was in hand and would otherwise have to be redone. So a port that
+*quantifies* an author's complaint should open the change itself; this audit is
+the backstop for the ones that didn't.
+
 ## Risks
 
 - **The sweep becomes a rubber stamp.** Mitigated by D2: a "fixed" verdict has to
