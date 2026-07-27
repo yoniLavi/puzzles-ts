@@ -62,7 +62,10 @@ Explicitly **not** in this change:
 - **Any rewrite an author asked for that amounts to a new generator.** Seismic's
   Status says its region generator "needs to be completely replaced"; if the
   port has not solved it by then, the audit records it and proposes a change —
-  it does not attempt it inline.
+  it does not attempt it inline. (**Seismic's is already proposed** as
+  `replace-seismic-region-generator`, opened when the port measured the limit
+  rather than waiting for this sweep. The audit still records the item; it just
+  has a change to point at instead of writing one.)
 
 ## Sequencing
 
