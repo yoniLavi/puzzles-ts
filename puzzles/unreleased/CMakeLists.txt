@@ -27,8 +27,8 @@ puzzle(ascent
 puzzle(boats
   DISPLAYNAME "Boats"
   DESCRIPTION "Boat-placing puzzle"
-  OBJECTIVE "Find the fleet in the grid.")
-solver(boats ${CMAKE_SOURCE_DIR}/dsf.c)
+  OBJECTIVE "Find the fleet in the grid."
+  TS_PORTED)  # native-TS port (openspec add-boats-ts-port); no boats.c/wasm
 
 puzzle(bricks
   DISPLAYNAME "Bricks"

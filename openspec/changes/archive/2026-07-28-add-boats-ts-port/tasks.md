@@ -169,10 +169,10 @@
 
 ## Stage 2 — on owner acceptance only
 
-- [ ] 9.1 Add `TS_PORTED` to the existing `puzzle(boats …)` entry in
+- [x] 9.1 Add `TS_PORTED` to the existing `puzzle(boats …)` entry in
       `puzzles/unreleased/CMakeLists.txt` (no move; drop `solver(boats … dsf.c)`).
-- [ ] 9.2 Delete `puzzles/unreleased/boats.c` and the `boats-trace` harness (+ its
+- [x] 9.2 Delete `puzzles/unreleased/boats.c` and the `boats-trace` harness (+ its
       `cliprogram` line).
-- [ ] 9.3 `rm -rf build/wasm/` and rebuild — boats in the catalog, no `boats.wasm`;
+- [x] 9.3 `rm -rf build/wasm/` and rebuild — boats in the catalog, no `boats.wasm`;
       the frozen differential fixture still runs C-free. Icons already exist.
-- [ ] 9.4 Archive, then commit port + archive together.
+- [x] 9.4 Archive, then commit port + archive together.
