@@ -1,4 +1,31 @@
-# Findings — fix-worker-repaint-nonsquare (PARKED 2026-07-21)
+# Findings — fix-worker-repaint-nonsquare (WITHDRAWN 2026-07-28)
+
+## Re-confirmation, 2026-07-28 (the pass that closed it)
+
+The change was reopened one last time before archiving, to check the 2026-07-21
+result still held on a tree that had gained ~20 commits since (nine game ports,
+the app-shell click/release fix, the custom-params dialog work).
+
+Both URLs the proposal names as staying blank were loaded cold in a **visible**
+Chrome (`document.visibilityState === "visible"` asserted *first*, driven via
+the `playwright-cli` skill, viewport 1280×720):
+
+| URL | Canvas | Result |
+|---|---|---|
+| `/loopy?type=5x4t9dh` (4x5 Dodecagonal, Hard) | 741×487 non-square | **fully painted on first load** — grid, clues, dots all present |
+| `/loopy?type=5x4t14dh` (4x5 Kagome, Hard) | non-square | **fully painted on first load** |
+
+Zero console errors on either. No menu had to be opened, no resize forced. This
+is the third independent non-reproduction; the owner withdrew the change.
+
+**Scope note (owner directive, same day):** WebKit and Firefox — listed below as
+"the gap" — are **explicitly out of scope for this phase**. Chrome-only browser
+verification is sufficient evidence here (see `AGENTS.md`, "Browser checks:
+Chrome only"). The item below is retained as history, not as outstanding work.
+
+---
+
+## Original pass (2026-07-21)
 
 **Status: parked as not-reproducible.** Owner decision 2026-07-21, after a full
 diagnosis pass. The change's core hypothesis — "a repaint is being dropped on

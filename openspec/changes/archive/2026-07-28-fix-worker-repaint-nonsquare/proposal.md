@@ -1,6 +1,27 @@
 # fix-worker-repaint-nonsquare
 
+> **WITHDRAWN 2026-07-28 — the second cause does not exist.** Owner decision,
+> after two independent diagnosis passes failed to reproduce it. **No code was
+> written and the `ts-engine` spec delta was NOT applied** (archived with
+> `--skip-specs`; the delta file is retained below as a record of what was
+> proposed, not of what shipped).
+>
+> The half of this change that *was* real — "the first palette install must
+> repaint" — shipped earlier with `add-loopy-ts-port` and is live in
+> `worker-adapter.ts` `setDrawingPalette` with a regression test in
+> `worker-adapter.test.ts`. That is the whole of the fix; nothing further was
+> warranted.
+>
+> Evidence: `FINDINGS.md` (2026-07-21 full instrumentation pass, plus a
+> 2026-07-28 re-confirmation on the current tree). Read the "How to resume"
+> section there before reopening this — in particular, a blank board seen in the
+> MCP "claude-in-chrome" tool proves nothing, and was the source of the original
+> false signal.
+
 ## Why
+
+*(Everything below is the proposal as originally written. Its second-cause
+claim was subsequently disproved — see the banner above and `FINDINGS.md`.)*
 
 A board can fail to appear on first load. `TsWorkerPuzzle.redraw()` is gated on
 `paletteReady` and **silently drops** any repaint requested before the palette
