@@ -1,36 +1,60 @@
 /**
- * Seismic's generator — `new_game_desc` and its four stages from `seismic.c`.
+ * Seismic's generator.
  *
- * The pipeline, retried wholesale until every stage succeeds:
- *  1. **Fill a full solution.** Seismic shuffles the cells and drops the lowest
- *     legal number into each; Tectonic walks them in order, picks a random legal
- *     number from a per-cell shuffle, then relabels the digits by frequency.
- *  2. **Grow the regions.** Start from singletons, shuffle the border list and
- *     merge across a border whenever the two regions share no number — so a
- *     region of size `k` automatically holds `k` distinct numbers. Fail if any
- *     region ends up holding something other than exactly `1..k`.
+ * The pipeline, retried until every stage succeeds:
+ *  1. **Partition the grid into regions** — {@link growRegions}.
+ *  2. **Fill a full solution into that partition** — {@link fillRegions}.
  *  3. **Strip clues.** Shuffle the cells and remove each one whose removal
- *     leaves the puzzle still solvable at the target difficulty.
+ *     leaves the puzzle still solvable at the target difficulty ({@link genClues}).
  *  4. **Grade.** Accept only when the result solves at `diff` and *not* one
- *     tier easier.
+ *     tier easier ({@link genDiff}).
  *
- * Because stages 3 and 4 gate on the solver's verdict, the published clue set —
- * and so the description — is decided by the solver's exact deductive power, and
- * a byte-match differential against the C validates generator, solver and codec
- * in one assertion (playbook §4.4).
+ * Stages 3 and 4 are upstream's, untouched. Because they gate on the solver's
+ * verdict, the published clue set — and so the description — is decided by the
+ * solver's exact deductive power.
  *
- * **Known scaling limit, upstream's own (`docs/seismic.md`):** "has a near-zero
- * chance of generating sizes higher than 7x7. The generator step that creates
- * randomly filled regions needs to be completely replaced." That is the game
- * upstream shipped and its presets stop at 7×7; stage 2's blind merge is what
- * fails, and rewriting it would change every board. Ported faithfully, with the
- * retry loop bounded so an unreachable size fails loudly instead of spinning the
- * worker for ever (playbook §4.6).
+ * # Stages 1–2 replace upstream's, deliberately
+ *
+ * Upstream runs the first two stages **the other way round**: fill a solution
+ * over singleton regions first, then grow regions by merging across randomly
+ * ordered borders whenever the two sides share no number, and only at the very
+ * end check that every region holds exactly `1..k` for its size `k`. That check
+ * can only pass by luck, because "share no number" is far weaker than the
+ * invariant the result must satisfy — merging a `{1}` region with a `{3}` region
+ * is permitted and yields `{1, 3}`, which needs `{1, 2}` and can never be
+ * repaired. So the algorithm walks into dead states and finds out at the end,
+ * discarding the whole board. Measured success rate of that stage:
+ *
+ * | cells | 16   | 25    | 36      | 48        | 49        | 56 | 64 |
+ * |-------|------|-------|---------|-----------|-----------|----|----|
+ * | rate  | 1/22 | 1/191 | 1/4,167 | 1/66,667  | 1/200,000 | 0  | 0  |
+ *
+ * — so 7×7 took **9–25 seconds** and nothing above ~50 cells generated at all,
+ * which is why `MAX_CELLS` used to bar 10×10, the size Hakyuu is normally played
+ * at. This is upstream's own documented fault, and its author asked for exactly
+ * this fix (`unreleased/docs/seismic.md`: "The generator step that creates
+ * randomly filled regions needs to be completely replaced with a different
+ * approach"), which makes it a playbook §4 rule-3 divergence — a real defect the
+ * author identified, not a difficulty curve they chose.
+ *
+ * Inverting the two stages removes the failure entirely: the region sizes are
+ * fixed **before** any number is placed, so a region of size `k` is asking for
+ * `1..k` from the start rather than discovering at the end that it holds
+ * `{1, 3}`. See `replace-seismic-region-generator`.
+ *
+ * # The byte-match oracle is retained, not sacrificed
+ *
+ * Upstream's two stages survive behind
+ * {@link SeismicGenerateOptions.upstreamRegionGrower}, which **only the
+ * differential test sets**. All 28 frozen fixtures still match the C
+ * byte-for-byte, so the solver, the clue-stripping loop and the codec keep the
+ * oracle that validates them; only the new partition-and-fill sits outside it,
+ * and it carries property tests instead (playbook §4.4).
  */
 
 import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
-import type { RandomState } from "../../random/index.ts";
+import { type RandomState, randomUpto } from "../../random/index.ts";
 import { placeNumber, SOLVE_FAILED, solveGame } from "./solver.ts";
 import {
   ALL_MARKS,
@@ -45,24 +69,43 @@ import {
 } from "./state.ts";
 
 /**
- * The runaway guard on the retry loop (playbook §4.6).
+ * The runaway guard on the retry loop for the **shipped** generator
+ * (playbook §4.6).
  *
- * It has to be enormous, because upstream's region-growing stage succeeds by
- * luck: measured over the 28 differential fixtures, the costliest legitimate
- * board (7×7 Hard, Seismic) needed **1,184,978** attempts, and 7×7 boards
- * routinely need several hundred thousand. Five million is roughly twelve times
- * the mean of that worst configuration, so a board the generator can reach will
- * not trip it, while a porting divergence still fails with a labelled error
- * rather than owning the worker for ever.
- *
- * The sizes that provably *cannot* generate never get here at all —
- * `validateParams` rejects them up front (see `MAX_CELLS`), which is what keeps
- * this bound free to be generous.
+ * An attempt is now cheap and almost always productive: the partition cannot
+ * fail and the fill essentially never backtracks, so an attempt is discarded
+ * only by the *grading* stage — a Hard request that came out solvable at Easy.
+ * Measured, that costs a handful of attempts at every preset and never more than
+ * low hundreds. Ten thousand leaves three orders of magnitude of headroom while
+ * still turning a porting divergence into a labelled error in seconds rather
+ * than a hung worker.
  */
-const MAX_ATTEMPTS = 5_000_000;
+const MAX_ATTEMPTS = 10_000;
 
-/** Stage 1, Seismic: visit the cells in a random order and take the lowest
- * number still legal there. Fails when a cell has no legal number left. */
+/**
+ * The runaway guard for the **oracle** path
+ * ({@link SeismicGenerateOptions.upstreamRegionGrower}), which needs a wildly
+ * larger bound because upstream's region-growing stage succeeds by luck:
+ * measured over the 28 differential fixtures, the costliest legitimate board
+ * (7×7 Hard, Seismic) needed **1,184,978** attempts. Five million is roughly
+ * twelve times the mean of that worst configuration.
+ *
+ * This bound is reachable only from the differential test, and it is the single
+ * clearest statement of why the shipped path no longer uses this algorithm.
+ */
+const MAX_ATTEMPTS_UPSTREAM = 5_000_000;
+
+/**
+ * **Upstream stage 1, Seismic. RETAINED DELIBERATELY — do not delete as dead
+ * code.** It is unreachable in production (only `upstreamRegionGrower` reaches
+ * it) and that is the point: together with {@link tectonicGenNumbers} and
+ * {@link genAreas} it is the *oracle* the byte-match differential runs against.
+ * Deleting the "unused" branch would silently delete the differential's ability
+ * to validate the solver, the clue-stripping loop and the codec against the C.
+ *
+ * Visit the cells in a random order and take the lowest number still legal
+ * there. Fails when a cell has no legal number left.
+ */
 function genNumbers(board: SeismicBoard, rng: RandomState): boolean {
   const { w, h, marks } = board;
   const s = w * h;
@@ -91,8 +134,11 @@ function genNumbers(board: SeismicBoard, rng: RandomState): boolean {
 }
 
 /**
- * Stage 1, Tectonic: every region is five cells, so fill sequentially with a
- * random legal digit, then **relabel** through a frequency map.
+ * **Upstream stage 1, Tectonic. RETAINED DELIBERATELY as differential oracle —
+ * see {@link genNumbers}.**
+ *
+ * Fill sequentially with a random legal digit, then **relabel** through a
+ * frequency map.
  *
  * The relabel is upstream's, reproduced as written: the map is built by
  * repeatedly taking the most frequent remaining digit (ties keeping the lower
@@ -146,10 +192,15 @@ function tectonicGenNumbers(board: SeismicBoard, rng: RandomState): boolean {
 }
 
 /**
- * Stage 2: merge regions across randomly-ordered borders whenever the two sides
- * share no number. Fails if any resulting region does not hold exactly `1..k`
- * for its size `k` — which is what makes larger grids near-impossible (a blind
- * merge order strands regions holding, say, `{1, 3}`).
+ * **Upstream stage 2. RETAINED DELIBERATELY as differential oracle — see
+ * {@link genNumbers}.** Replaced in production by
+ * {@link growRegions} + {@link fillRegions}.
+ *
+ * Merge regions across randomly-ordered borders whenever the two sides share no
+ * number. Fails if any resulting region does not hold exactly `1..k` for its
+ * size `k` — which is what makes larger grids near-impossible (a blind merge
+ * order strands regions holding, say, `{1, 3}`), and so the whole reason this
+ * change exists.
  */
 function genAreas(board: SeismicBoard, rng: RandomState): boolean {
   const { w, h, grid, dsf } = board;
@@ -189,6 +240,255 @@ function genAreas(board: SeismicBoard, rng: RandomState): boolean {
   }
 
   return true;
+}
+
+// --- the constructive generator (stages 1–2, replacing upstream's) ----------
+
+/**
+ * The largest region a mode admits: Tectonic numbers run `1..5`, Seismic
+ * `1..9`, and a region of size `k` must hold exactly `1..k`. Exported as the
+ * single source of truth the structural property tests check against.
+ */
+export function maxRegionSize(mode: number): number {
+  return mode === MODE_TECTONIC ? 5 : 9;
+}
+
+/**
+ * The sizes {@link growRegions} aims for in Seismic mode, drawn uniformly.
+ *
+ * **Chosen by measurement against upstream, not invented.** Region layout is
+ * emergent in the C (it falls out of random merging) and so is not readable from
+ * its source — but it *is* recoverable from the 28 frozen C descriptions, whose
+ * partitions decode to:
+ *
+ * | size | 1     | 2     | 3     | 4     | 5    | 6    |
+ * |------|-------|-------|-------|-------|------|------|
+ * | C    | 28.4% | 16.8% | 27.7% | 20.0% | 5.8% | 1.3% |
+ *
+ * — mean 2.62, and **never above 6** even though Seismic's numbers run to 9.
+ * That ceiling is not arbitrary: a size-`k` region needs `k` distinct numbers,
+ * and the keep-apart rule (an `n` bars the `n` cells either side on both axes)
+ * makes large regions progressively harder to satisfy, so aiming higher would
+ * only make the fill backtrack.
+ *
+ * This table aims a little larger than upstream (mean draw 3.5) because the
+ * *realised* distribution comes out smaller than the draw — a region stops early
+ * when it runs out of free neighbours, and the leftover pockets are small. The
+ * realised mean lands at ~2.9 against upstream's 2.62, with the same shape and
+ * the same size-6 ceiling. Deliberately **not** matched exactly: there is no
+ * oracle for region layout (it is display-adjacent taste, playbook §4), the C's
+ * distribution is an artefact of a broken algorithm rather than a design, and
+ * its 28% singletons are the least interesting cells on the board — a size-1
+ * region is forced to `1`, so it is a free given.
+ */
+const SEISMIC_REGION_SIZES: readonly number[] = [2, 3, 3, 4, 4, 5];
+
+/** The size to aim for next. Tectonic wants fives (upstream realises 63.5% of
+ * them, and five-cell regions are what the puzzle is called after); it still
+ * gets a tail of smaller regions from pockets, exactly as upstream does. */
+function drawRegionSize(mode: number, rng: RandomState): number {
+  if (mode === MODE_TECTONIC) return 5;
+  return SEISMIC_REGION_SIZES[randomUpto(rng, SEISMIC_REGION_SIZES.length)];
+}
+
+/**
+ * **Stage 1 (new): partition the grid into connected regions**, sizes drawn from
+ * {@link drawRegionSize}, writing the partition into `board.dsf`.
+ *
+ * This always succeeds — no number constraints are in play yet, and every pocket
+ * it could strand is itself a legal region (any size from 1 up to the mode's
+ * maximum is legal, and a pocket larger than the maximum is simply partitioned
+ * by a later pass of the same loop). That is the whole reason the pipeline is
+ * inverted: upstream's stage 2 could fail, this cannot.
+ *
+ * Two heuristics keep the shapes reasonable:
+ *  - **Seed at the most constrained free cell** (fewest free neighbours, ties
+ *    broken randomly). Consuming awkward cells — corners, and the necks left
+ *    behind by earlier regions — before they are surrounded is what keeps the
+ *    board from filling up with stranded singletons.
+ *  - **Grow into a uniformly random frontier cell**, which gives organic blobs
+ *    rather than the rigid combs a min-degree growth rule produces.
+ *
+ * A region that runs out of frontier before reaching its target simply ends
+ * short; that is legal, and it is where the small tail of the realised size
+ * distribution comes from.
+ */
+export function growRegions(board: SeismicBoard, rng: RandomState): void {
+  const { w, h, dsf } = board;
+  const s = w * h;
+  dsf.reinit();
+
+  /** Cells not yet claimed by a region. */
+  const free = new Uint8Array(s).fill(1);
+  let remaining = s;
+
+  const nb: number[] = [];
+  const neighbours = (i: number): number[] => {
+    nb.length = 0;
+    const x = i % w;
+    const y = (i / w) | 0;
+    if (x > 0) nb.push(i - 1);
+    if (x < w - 1) nb.push(i + 1);
+    if (y > 0) nb.push(i - w);
+    if (y < h - 1) nb.push(i + w);
+    return nb;
+  };
+  const freeDegree = (i: number): number => {
+    let n = 0;
+    for (const j of neighbours(i)) if (free[j]) n++;
+    return n;
+  };
+
+  const frontier: number[] = [];
+
+  while (remaining > 0) {
+    // Seed: fewest free neighbours, ties broken by reservoir sampling so the
+    // choice is uniform among equally-constrained cells.
+    let seed = -1;
+    let bestDegree = 5;
+    let ties = 0;
+    for (let i = 0; i < s; i++) {
+      if (!free[i]) continue;
+      const d = freeDegree(i);
+      if (d < bestDegree) {
+        bestDegree = d;
+        seed = i;
+        ties = 1;
+      } else if (d === bestDegree) {
+        ties++;
+        if (randomUpto(rng, ties) === 0) seed = i;
+      }
+    }
+
+    const target = Math.min(drawRegionSize(board.mode, rng), remaining);
+    let size = 1;
+    free[seed] = 0;
+    remaining--;
+    frontier.length = 0;
+    for (const j of neighbours(seed)) if (free[j]) frontier.push(j);
+
+    while (size < target && frontier.length > 0) {
+      // Swap-remove a uniformly random frontier entry. Entries can be stale
+      // (claimed by this same region via another neighbour) or duplicated;
+      // both are filtered here rather than kept unique, which would cost a set
+      // lookup per push for no behavioural difference.
+      const k = randomUpto(rng, frontier.length);
+      const cell = frontier[k];
+      frontier[k] = frontier[frontier.length - 1];
+      frontier.pop();
+      if (!free[cell]) continue;
+
+      free[cell] = 0;
+      remaining--;
+      dsf.merge(seed, cell);
+      size++;
+      for (const j of neighbours(cell)) if (free[j]) frontier.push(j);
+    }
+  }
+}
+
+/**
+ * How many cell placements {@link fillRegions} may try before giving up and
+ * asking for a fresh partition.
+ *
+ * The fill is a most-constrained-first search with backtracking, so a *typical*
+ * board is solved in about one placement per cell — measured, the mean is under
+ * 1.05 nodes per cell across every preset. The budget is therefore enormous
+ * relative to the work: it is a runaway guard for a pathological partition, not
+ * a tuning knob. Exhausting it costs one re-partition, which is cheap and
+ * bounded by the caller's own {@link MAX_ATTEMPTS}.
+ */
+const FILL_NODE_BUDGET = 200_000;
+
+/**
+ * **Stage 2 (new): fill the partition with a complete, legal solution.**
+ *
+ * Reuses the solver's own {@link placeNumber} as the propagator rather than
+ * writing a second one — place `n`, and it strikes `n` from the cells the mode's
+ * keep-apart rule forbids it in and from the rest of that cell's region. So the
+ * rules this enforces are, by construction, the ones the solver judges by.
+ *
+ * The search is most-constrained-cell-first with candidates tried in random
+ * order and chronological backtracking. Because every cell's candidate set
+ * starts as `areaBits(regionSize)` and same-region cells strike each other's
+ * choices, a completed fill gives every size-`k` region exactly `1..k` and
+ * satisfies the keep-apart rule — it is valid by construction, with no post-hoc
+ * check needed (the property tests assert this independently rather than trust
+ * it).
+ *
+ * Returns false if the budget runs out, which means "re-partition", not "this
+ * board is impossible".
+ */
+export function fillRegions(board: SeismicBoard, rng: RandomState): boolean {
+  const { w, h, grid, marks, dsf } = board;
+  const s = w * h;
+
+  grid.fill(0);
+  for (let i = 0; i < s; i++) marks[i] = areaBits(dsf.size(i));
+
+  let budget = FILL_NODE_BUDGET;
+  const areas = new Int32Array(s);
+
+  /**
+   * Can every region still house every number it owes?
+   *
+   * This is **the solver's own Hard-rung feasibility test** (`solverAttempt`'s
+   * inner check), reused as the search's pruning rule. Forward-checking alone —
+   * which is all {@link placeNumber} does — is far too weak here: Seismic's
+   * keep-apart rule bars an `n` from the `n` cells either side on *both* axes,
+   * so a placement can starve a distant region of its last home for some number
+   * without touching any cell the placement itself looks at. Without this test
+   * the search only discovers such a dead end many levels deeper, and 10×10
+   * boards thrash to exhaustion; with it they fill essentially first try.
+   */
+  const regionsViable = (): boolean => {
+    areas.fill(0);
+    for (let j = 0; j < s; j++) areas[dsf.canonify(j)] |= marks[j];
+    for (let j = 0; j < s; j++) {
+      if (j !== dsf.canonify(j)) continue;
+      // Candidate sets only ever shrink from `areaBits(size)`, so anything
+      // other than equality means some number has lost every home.
+      if (areas[j] !== areaBits(dsf.size(j))) return false;
+    }
+    return true;
+  };
+
+  const step = (): boolean => {
+    let target = -1;
+    let bestCount = 10;
+    for (let i = 0; i < s; i++) {
+      if (grid[i] !== 0) continue;
+      let count = 0;
+      for (let n = 1; n <= 9; n++) if (marks[i] & numBit(n)) count++;
+      // A cell with nothing left: this branch is dead, backtrack immediately.
+      if (count === 0) return false;
+      if (count < bestCount) {
+        bestCount = count;
+        target = i;
+        // Nothing beats a forced cell, so stop looking.
+        if (count === 1) break;
+      }
+    }
+    // No empty cell left: the board is full, and full means valid here.
+    if (target < 0) return true;
+
+    const candidates: number[] = [];
+    for (let n = 1; n <= 9; n++) if (marks[target] & numBit(n)) candidates.push(n);
+    shuffle(candidates, rng);
+
+    const gridSave = grid.slice();
+    const marksSave = marks.slice();
+    for (const n of candidates) {
+      if (budget-- <= 0) return false;
+      placeNumber(board, target % w, (target / w) | 0, n);
+      if (regionsViable() && step()) return true;
+      grid.set(gridSave);
+      marks.set(marksSave);
+    }
+    return false;
+  };
+
+  return step();
 }
 
 /** Stage 3: strip each clue, in a random order, whenever the board still solves
@@ -244,29 +544,64 @@ function scratchCopy(board: SeismicBoard): SeismicBoard {
   };
 }
 
-function genPuzzle(board: SeismicBoard, rng: RandomState, diff: number): boolean {
-  if (board.mode === MODE_TECTONIC) {
-    if (!tectonicGenNumbers(board, rng)) return false;
-  } else if (!genNumbers(board, rng)) {
-    return false;
+export interface SeismicGenerateOptions {
+  /**
+   * Build the regions with **upstream's** fill-then-merge stages
+   * ({@link genNumbers} / {@link tectonicGenNumbers} / {@link genAreas}) instead
+   * of {@link growRegions} + {@link fillRegions}.
+   *
+   * **Only `seismic-differential.test.ts` sets this**, and it must stay that
+   * way: it is what keeps all 28 frozen fixtures matching the C byte-for-byte,
+   * and with them the oracle over the solver, the clue-stripping loop and the
+   * codec. It is *not* a fallback, a preference, or a thing to expose in the UI
+   * — it reinstates the 9–25 s 7×7 generation this change exists to remove.
+   *
+   * `seismic.test.ts` asserts that this flag still *changes* the description, so
+   * the oracle cannot silently decay into re-testing the shipped path.
+   */
+  upstreamRegionGrower?: boolean;
+}
+
+function genPuzzle(
+  board: SeismicBoard,
+  rng: RandomState,
+  diff: number,
+  upstreamRegionGrower: boolean,
+): boolean {
+  if (upstreamRegionGrower) {
+    if (board.mode === MODE_TECTONIC) {
+      if (!tectonicGenNumbers(board, rng)) return false;
+    } else if (!genNumbers(board, rng)) {
+      return false;
+    }
+    if (!genAreas(board, rng)) return false;
+  } else {
+    growRegions(board, rng);
+    // A budget-exhausted fill means "this partition was awkward"; returning
+    // false sends the caller round for a fresh one.
+    if (!fillRegions(board, rng)) return false;
   }
-  if (!genAreas(board, rng)) return false;
   genClues(board, rng, diff);
   return genDiff(board, diff);
 }
 
-export function newSeismicDesc(p: SeismicParams, rng: RandomState): { desc: string } {
+export function newSeismicDesc(
+  p: SeismicParams,
+  rng: RandomState,
+  options: SeismicGenerateOptions = {},
+): { desc: string } {
+  const upstreamRegionGrower = options.upstreamRegionGrower ?? false;
   const board = blankBoard(p.w, p.h, p.mode);
   const attempt = retryLimit(
-    `seismic: ${p.w}x${p.h} generation (upstream's generator does not scale past 7x7)`,
-    MAX_ATTEMPTS,
+    `seismic: ${p.w}x${p.h} generation`,
+    upstreamRegionGrower ? MAX_ATTEMPTS_UPSTREAM : MAX_ATTEMPTS,
   );
 
   for (;;) {
     attempt();
     board.grid.fill(0);
     board.dsf.reinit();
-    if (genPuzzle(board, rng, p.diff)) break;
+    if (genPuzzle(board, rng, p.diff, upstreamRegionGrower)) break;
   }
 
   return { desc: encodeDesc(board) };

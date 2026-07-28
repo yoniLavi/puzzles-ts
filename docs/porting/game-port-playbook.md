@@ -1661,6 +1661,49 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
   Reach for this whenever a deliberate divergence sits on an otherwise
   byte-matched path — it is much cheaper than either horn of "keep the bug" vs
   "lose the differential".
+
+  **Now used twice, so treat it as the default technique, not a Spokes trick.**
+  `replace-seismic-region-generator` applied the identical shape at a much larger
+  scale: Seismic's whole *region generator* was replaced (upstream's fill-then-merge
+  succeeded roughly once in 200,000 attempts at 7×7, taking 25 s, and never at all
+  above ~50 cells), yet all 28 fixtures still byte-match because upstream's two
+  stages survive behind `upstreamRegionGrower`, which only the differential sets.
+  Note how much oracle that preserves: the replaced stages are *upstream* of the
+  clue-stripping and grading loops, so the solver's verdict on every intermediate
+  board, the codec and the difficulty gate all keep their byte-exact check while
+  the stage that was actually rewritten moves to property tests. Two rules that
+  transfer:
+  - **Comment the retained code at every definition as deliberately-unreachable
+    oracle**, or a later reader deletes the "dead" branch and silently deletes the
+    differential with it.
+  - **The retained path may need its own constants.** Seismic's runaway guard had
+    to split into `MAX_ATTEMPTS` (10,000, the shipped path) and
+    `MAX_ATTEMPTS_UPSTREAM` (5,000,000, because upstream's grower legitimately
+    needs ~1.2M attempts). One shared bound would either strangle the oracle or
+    make a real divergence hang.
+
+  Exemplar: [`seismic/generator.ts`](../../src/native/games/seismic/generator.ts)
+  (`SeismicGenerateOptions.upstreamRegionGrower`).
+- **When you replace a generator, the thing you must *not* guess is the shape of
+  what it produced — and you may be able to recover it from the frozen fixtures.**
+  Seismic's region-size distribution is emergent in the C (it falls out of random
+  merging), so it is unreadable from the source and looks like a pure taste call.
+  But it is recoverable: decode the frozen C descriptions and histogram the result
+  (upstream: mean region 2.62, never above 6 despite numbers running to 9). That
+  turns "invent a distribution" into "match a measured one, and deviate
+  deliberately". Whenever a rewrite has a free parameter that the *old* output
+  implicitly fixed, check whether the fixtures already answer it.
+- **Reusing the solver's propagator is necessary but often not sufficient — reuse
+  its *pruning* test too.** Seismic's new fill was designed around `placeNumber`
+  (place `n`, strike it from the keep-apart cells and the rest of the region).
+  That is only forward-checking, and under a distance-scaled rule a placement can
+  starve a *distant* region of its last home for some number without touching any
+  cell the placement itself looks at — so the search finds out many levels too
+  late and thrashes. Adding `solverAttempt`'s "can every region still house every
+  number it owes?" check as the pruning rule cut one configuration from 2,731 ms
+  to 211 ms. If a constructive generator built on a solver's propagation is
+  backtracking far more than ~1 node per cell, the missing piece is usually a
+  global feasibility test the solver already implements.
 - **An early-out that exists only under a diagnostics define is NOT release
   semantics — port the release build.** Slant's `fill_square` has "already
   filled with the opposite value" and "would make a loop" checks whose

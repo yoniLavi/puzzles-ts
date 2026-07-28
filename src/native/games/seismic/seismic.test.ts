@@ -19,7 +19,7 @@ import {
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew, randomUpto } from "../../random/index.ts";
 import cReference from "./__fixtures__/seismic-c-reference.json" with { type: "json" };
-import { newSeismicDesc } from "./generator.ts";
+import { maxRegionSize, newSeismicDesc } from "./generator.ts";
 import { seismicGame } from "./index.ts";
 import {
   COL_BORDER,
@@ -55,9 +55,12 @@ import {
   FM_ERRORDIST,
   FM_ERRORDUP,
   FM_FIXED,
-  MAX_CELLS,
+  MAX_CELLS_SEISMIC,
+  MAX_CELLS_TECTONIC,
+  MODE_NAMES,
   MODE_SEISMIC,
   MODE_TECTONIC,
+  maxCells,
   newState,
   newUi,
   numBit,
@@ -170,17 +173,26 @@ describe("seismic params", () => {
     ).toMatch(/at least 4/);
   });
 
-  it("rejects boards the generator provably cannot build", () => {
-    // Measured: upstream's region stage never succeeds past ~50 cells, so the
-    // Custom dialog refuses those rather than freezing (see MAX_CELLS).
-    expect(MAX_CELLS).toBe(7 * 7);
+  it("bounds the board area per mode, since the two modes differ sharply", () => {
+    // Seismic's keep-apart rule scales with the number's value, so its packing
+    // stays near capacity however big the grid gets; Tectonic's is mere
+    // adjacency and reaches 10×10. Both bounds are measured, not guessed — see
+    // MAX_CELLS_SEISMIC's doc comment for the timing tables.
+    expect(maxCells(MODE_SEISMIC)).toBe(MAX_CELLS_SEISMIC);
+    expect(maxCells(MODE_TECTONIC)).toBe(MAX_CELLS_TECTONIC);
+    expect(MAX_CELLS_TECTONIC).toBeGreaterThan(MAX_CELLS_SEISMIC);
+
+    // 10×10 is the size Hakyuu is normally played at: reachable in Tectonic,
+    // refused with a reason in Seismic rather than freezing the worker.
     expect(
-      validateParams({ w: 8, h: 8, diff: DIFF_EASY, mode: MODE_SEISMIC }, true),
-    ).toMatch(/at most 49/);
-    // The largest preset stays inside the bound.
-    expect(
-      validateParams({ w: 7, h: 7, diff: DIFF_HARD, mode: MODE_TECTONIC }, true),
+      validateParams({ w: 10, h: 10, diff: DIFF_HARD, mode: MODE_TECTONIC }, true),
     ).toBeNull();
+    expect(
+      validateParams({ w: 10, h: 10, diff: DIFF_EASY, mode: MODE_SEISMIC }, true),
+    ).toMatch(/at most 72 in Seismic mode/);
+
+    // Every preset stays inside its own mode's bound.
+    for (const p of PRESETS) expect(validateParams(p, true)).toBeNull();
   });
 
   it("names presets the way upstream's menu does", () => {
@@ -423,6 +435,187 @@ describe("seismic generator", () => {
       const board = newState(p, desc);
       expect(solveGame(board, p.diff)).not.toBe(SOLVE_FAILED);
     }
+  });
+});
+
+// --- the constructive generator ---------------------------------------------
+
+/**
+ * These are what **replaces the byte-match** for the shipped region generator.
+ *
+ * `replace-seismic-region-generator` inverted upstream's first two stages
+ * (partition first, then fill), which necessarily leaves the frozen C
+ * descriptions behind — upstream's stages survive only behind
+ * `upstreamRegionGrower`, where the differential still runs them. So everything
+ * the byte-match was implicitly guaranteeing about the *regions* has to be
+ * stated and checked directly here (design D4): the structure, the mode's
+ * keep-apart rule, unique solubility at the requested band, and determinism.
+ *
+ * Every case is a fixed seed, so the work and the verdict are identical on every
+ * run, and nothing is clock-gated (playbook §5.2).
+ */
+describe("seismic constructive generator", () => {
+  /** The configurations swept below — small enough to stay fast, but covering
+   * both modes, both difficulties, square and oblong. */
+  const SWEEP: SeismicParams[] = [
+    { w: 4, h: 4, diff: DIFF_EASY, mode: MODE_SEISMIC },
+    { w: 4, h: 4, diff: DIFF_HARD, mode: MODE_SEISMIC },
+    { w: 4, h: 4, diff: DIFF_EASY, mode: MODE_TECTONIC },
+    { w: 4, h: 4, diff: DIFF_HARD, mode: MODE_TECTONIC },
+    { w: 6, h: 5, diff: DIFF_EASY, mode: MODE_SEISMIC },
+    { w: 5, h: 6, diff: DIFF_HARD, mode: MODE_TECTONIC },
+  ];
+  const SEEDS = ["p0", "p1", "p2"];
+
+  /** Generate, then recover the unique solution with the solver. Returns both
+   * the puzzle (clues + regions) and the completed grid. */
+  function generated(p: SeismicParams, seed: string) {
+    const { desc } = newSeismicDesc(p, randomNew(seed));
+    const puzzle = newState(p, desc);
+    const solved = newState(p, desc);
+    const diff = solveGame(solved, p.diff);
+    return { desc, puzzle, solved, diff };
+  }
+
+  /** The cells of each region, keyed by canonical root. */
+  function regionsOf(board: SeismicState): Map<number, number[]> {
+    const out = new Map<number, number[]>();
+    for (let i = 0; i < board.w * board.h; i++) {
+      const c = board.dsf.canonify(i);
+      const cells = out.get(c);
+      if (cells) cells.push(i);
+      else out.set(c, [i]);
+    }
+    return out;
+  }
+
+  it("partitions into connected regions, each holding exactly 1..k", () => {
+    for (const p of SWEEP) {
+      for (const seed of SEEDS) {
+        const { solved } = generated(p, `struct-${seed}`);
+        const label = `${MODE_NAMES[p.mode]} ${p.w}x${p.h} d${p.diff} ${seed}`;
+
+        for (const [, cells] of regionsOf(solved)) {
+          // No region may exceed what its mode's numbers can fill.
+          expect(cells.length, label).toBeLessThanOrEqual(maxRegionSize(p.mode));
+
+          // Connected: a flood fill from one cell reaches the whole region.
+          const inRegion = new Set(cells);
+          const seen = new Set<number>([cells[0]]);
+          const queue = [cells[0]];
+          while (queue.length > 0) {
+            const i = queue.pop() as number;
+            const x = i % p.w;
+            const y = (i / p.w) | 0;
+            for (const j of [
+              x > 0 ? i - 1 : -1,
+              x < p.w - 1 ? i + 1 : -1,
+              y > 0 ? i - p.w : -1,
+              y < p.h - 1 ? i + p.w : -1,
+            ]) {
+              if (j >= 0 && inRegion.has(j) && !seen.has(j)) {
+                seen.add(j);
+                queue.push(j);
+              }
+            }
+          }
+          expect(seen.size, `${label}: region not connected`).toBe(cells.length);
+
+          // Exactly 1..k, each once — the invariant upstream could only hope for.
+          expect(
+            [...cells.map((i) => solved.grid[i])].sort((a, b) => a - b),
+            label,
+          ).toEqual(cells.map((_, n) => n + 1));
+        }
+      }
+    }
+  });
+
+  it("satisfies the mode's keep-apart rule across the whole solution", () => {
+    for (const p of SWEEP) {
+      for (const seed of SEEDS) {
+        const { solved } = generated(p, `rule-${seed}`);
+        const label = `${MODE_NAMES[p.mode]} ${p.w}x${p.h} d${p.diff} ${seed}`;
+        const at = (x: number, y: number) => solved.grid[y * p.w + x];
+
+        for (let y = 0; y < p.h; y++) {
+          for (let x = 0; x < p.w; x++) {
+            const n = at(x, y);
+            expect(n, `${label}: unfilled cell`).toBeGreaterThan(0);
+            if (p.mode === MODE_SEISMIC) {
+              // Seismic: two n's must be more than n cells apart on a row/column.
+              for (let d = 1; d <= n; d++) {
+                if (x + d < p.w) expect(at(x + d, y), label).not.toBe(n);
+                if (y + d < p.h) expect(at(x, y + d), label).not.toBe(n);
+              }
+            } else {
+              // Tectonic: no two equal numbers even diagonally adjacent.
+              for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                  if (!dx && !dy) continue;
+                  const nx = x + dx;
+                  const ny = y + dy;
+                  if (nx < 0 || ny < 0 || nx >= p.w || ny >= p.h) continue;
+                  expect(at(nx, ny), label).not.toBe(n);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it("is uniquely soluble at exactly the requested band, and round-trips", () => {
+    for (const p of SWEEP) {
+      for (const seed of SEEDS) {
+        const { desc, puzzle, diff } = generated(p, `band-${seed}`);
+        const label = `${MODE_NAMES[p.mode]} ${p.w}x${p.h} d${p.diff} ${seed}`;
+
+        // The codec's halves are exact inverses, or a fresh game would not load.
+        expect(validateDesc(p, desc), label).toBeNull();
+        expect(encodeDesc(puzzle), label).toBe(desc);
+
+        // Soluble at the requested difficulty. The solver never backtracks, so
+        // driving the board to completion *is* the uniqueness proof.
+        expect(diff, label).not.toBe(SOLVE_FAILED);
+
+        // ...and NOT one tier easier, or it belongs in the easier band.
+        if (p.diff > DIFF_EASY) {
+          const easier = newState(p, desc);
+          expect(
+            solveGame(easier, p.diff - 1),
+            `${label}: solvable one tier down`,
+          ).toBe(SOLVE_FAILED);
+        }
+      }
+    }
+  });
+
+  it("is deterministic: the same seed gives the same description", () => {
+    for (const p of SWEEP) {
+      const a = newSeismicDesc(p, randomNew("determinism")).desc;
+      const b = newSeismicDesc(p, randomNew("determinism")).desc;
+      expect(b).toBe(a);
+    }
+  });
+
+  it("still differs from upstream's grower, so the oracle cannot decay", () => {
+    // The differential runs `upstreamRegionGrower: true`. If the flag ever
+    // stopped changing anything, those 28 byte-match assertions would silently
+    // become a test of the shipped path against itself — and the whole point of
+    // keeping upstream's stages alive would be lost. Design D3.
+    let differences = 0;
+    for (const p of SWEEP) {
+      const shipped = newSeismicDesc(p, randomNew("oracle-check")).desc;
+      const upstream = newSeismicDesc(p, randomNew("oracle-check"), {
+        upstreamRegionGrower: true,
+      }).desc;
+      if (shipped !== upstream) differences++;
+    }
+    expect(differences, "the two generators produced identical output").toBe(
+      SWEEP.length,
+    );
   });
 });
 

@@ -11,10 +11,20 @@
  * same order, and that the two-part run-length codec agrees. One assertion,
  * generator + solver + codec (playbook §4.4).
  *
- * The fixtures span all twelve presets, both modes, both difficulties and a
- * non-square size sweep. They stop at 7×7 because upstream's generator does:
- * its region stage succeeds roughly once in 200,000 attempts there and never
- * above ~50 cells (see `MAX_CELLS` in `state.ts`).
+ * The fixtures span all twelve of upstream's presets, both modes, both
+ * difficulties and a non-square size sweep. They stop at 7×7 because upstream's
+ * generator does: its region stage succeeds roughly once in 200,000 attempts
+ * there and never above ~50 cells.
+ *
+ * **These run against the retained upstream region grower, not the shipped
+ * one.** `replace-seismic-region-generator` replaced upstream's fill-then-merge
+ * stages (the cause of that 1-in-200,000), but kept them reachable behind
+ * `upstreamRegionGrower` precisely so this differential survives: everything
+ * downstream of the regions — the solver's verdict on every intermediate board,
+ * the clue-stripping loop, the codec — keeps its byte-exact oracle. The shipped
+ * partition-and-fill is covered by property tests in `seismic.test.ts` instead,
+ * along with an assertion that this flag still *changes* the output, so the
+ * oracle cannot decay into re-testing the shipped path.
  *
  * Regenerate while `puzzles/unreleased/seismic.c` still exists (it is deleted at
  * owner acceptance; the fixture stays as this test's frozen baseline):
@@ -51,6 +61,11 @@ const data = cReference as { fixtures: Fixture[] };
  * than hidden inside a 28-case loop. */
 const isSlow = (f: Fixture) => f.w * f.h >= 49;
 
+/** The differential — and *only* the differential — runs upstream's region
+ * grower, so the frozen descs stay reproducible byte-for-byte. */
+const newDesc = (p: SeismicParams, rng: Parameters<typeof newSeismicDesc>[1]) =>
+  newSeismicDesc(p, rng, { upstreamRegionGrower: true });
+
 const label = (f: Fixture) =>
   `${MODE_NAMES[f.mode]} ${f.w}x${f.h} diff=${f.diff} seed=${f.seed}`;
 const params = (f: Fixture): SeismicParams => ({
@@ -72,7 +87,7 @@ describeDescDifferential<Fixture, SeismicParams>({
   fixtures: data.fixtures.filter((f) => !isSlow(f)),
   label,
   params,
-  newDesc: newSeismicDesc,
+  newDesc,
   extra,
 });
 
@@ -81,6 +96,6 @@ describeDescDifferential<Fixture, SeismicParams>({
   fixtures: data.fixtures.filter(isSlow),
   label,
   params,
-  newDesc: newSeismicDesc,
+  newDesc,
   extra,
 });
