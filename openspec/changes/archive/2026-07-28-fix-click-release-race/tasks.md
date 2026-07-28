@@ -38,4 +38,9 @@
       leaves no stranded overlay, and an ordinary press-drag-release still
       works, on both the TS and C/WASM paths.
 - [x] 3.3 Full gate green; `openspec validate fix-click-release-race --strict`.
-- [ ] 3.4 Archive with the fix.
+- [x] 3.4 Archive with the fix. **Done 2026-07-28.** The fix itself shipped
+      earlier in `ee35240` (alongside the Spokes work it was found in); this
+      change was left open only for the archive step. Re-verified before
+      archiving: `pressInFlight` parks a `pointerup`/`pointercancel` that beats
+      the round-trip and replays it exactly once, and the five `press/release
+      delivery` tests in `puzzle-view-interactive.test.ts` pass.
