@@ -24,18 +24,17 @@ SHALL reflect whichever stage is actually the limit — the region fill or the
 clue-stripping loop. The retry loops below any bound SHALL be finite, so a
 divergence fails with a labelled error rather than running forever.
 
-The bound SHALL be **per mode**, because the two modes are limited by different
-mechanisms and by materially different amounts. Seismic's keep-apart rule scales
-with the number's value, so demand and capacity for each value both grow linearly
-with area and the packing stays near capacity at every size; Tectonic's rule is
-mere adjacency, so its limit is instead the clue-stripping loop's cost. A single
-shared bound would either bar boards one mode can build or admit boards the other
-cannot.
+The bound SHALL be set by the **worst-case** generation time over repeated seeds,
+not by the median and not by mere reachability. A size that generates
+successfully but whose slowest runs take tens of seconds SHALL be rejected: that
+is the same defect the constructive generator was introduced to remove, and
+admitting it at a different size would reintroduce it. Establishing a bound
+therefore requires repeating the slow sizes over several seeds, because medians
+at the top of the range conceal tails an order of magnitude worse.
 
-Presets SHALL include board sizes the puzzle is normally played at, and SHALL
-include 10×10 — named by the game's own author as the common Hakyuu size — **in
-whichever modes the measurement shows it is reachable in**. A preset SHALL NOT be
-offered for a configuration the generator cannot reliably produce.
+Presets SHALL include only board sizes the generator produces reliably by that
+measure. A preset SHALL NOT be offered for a configuration whose worst case is a
+long wait, however normal that size is for the puzzle in general.
 
 The grid SHALL be partitioned into regions, and a region of size N SHALL require
 one instance of each number from 1 to N. In Seismic mode two equal numbers Z on
@@ -56,20 +55,20 @@ reproducible without matching any particular canonical-element choice.
 - **THEN** a board is produced whose unique solution is reachable by the solver at
   the preset's difficulty band
 
-#### Scenario: A board the size the puzzle is normally played at is generable
+#### Scenario: A board larger than upstream could build is generable
 
-- **WHEN** a 10×10 board is requested in a mode the measurement shows it is
-  reachable in
-- **THEN** it is accepted by validation and a soluble board is produced
+- **WHEN** a board larger than upstream's 7×7 ceiling is requested, within the
+  measured bound
+- **THEN** it is accepted by validation and a soluble board is produced promptly
 
-#### Scenario: A size the generator cannot reach is still refused up front
+#### Scenario: A size whose worst case is a long wait is refused up front
 
-- **WHEN** parameters beyond the bound the shipped generator was measured to reach
-  *in that mode* are validated
-- **THEN** they are rejected with a stated reason naming the mode, rather than
-  accepted and left to generate indefinitely
-- **AND** the same size may be accepted in the other mode, where it was measured
-  to be reachable
+- **WHEN** parameters beyond the measured bound are validated — whether the
+  generator fails on them outright or merely takes tens of seconds on its slower
+  seeds
+- **THEN** they are rejected with a stated reason, rather than accepted and left
+  to generate
+- **AND** the refusal applies in both game modes, since the bound is shared
 
 ### Requirement: Seismic descriptions use the run-length wall and clue encoding
 

@@ -124,9 +124,19 @@ function(build_platform_extras)
         string(JSON obj SET "${obj}" "description" "\"${description_${name}}\"")
         string(JSON obj SET "${obj}" "objective" "\"${objective_${name}}\"")
         string(JSON obj SET "${obj}" "collection" "\"${collection_${name}}\"")
+        # A puzzle is flagged "experimental" in the app only while it really is
+        # one — i.e. an upstream *unfinished* puzzle someone opted into building.
+        #
+        # Crossing and Seismic used to be special-cased here as well, because
+        # puzzles-unreleased's author had abandoned them. That no longer
+        # describes what this fork ships: both are native TS ports, owner
+        # accepted, with the author's own documented faults addressed rather than
+        # inherited — Crossing's three Status-section problems in
+        # `add-crossing-ts-port`, and Seismic's "the generator step ... needs to
+        # be completely replaced" in `replace-seismic-region-generator`. Warning
+        # players off a finished, fixed puzzle is now simply inaccurate.
         list(FIND PUZZLES_ENABLE_UNFINISHED ${name} unfinished_pos)
-        # (Also treat puzzles-unreleased's "abandoned" Crossing and Seismic as unfinished.)
-        if (unfinished_pos GREATER -1 OR name STREQUAL "crossing" OR name STREQUAL "seismic")
+        if (unfinished_pos GREATER -1)
             string(JSON obj SET "${obj}" "unfinished" "true")
         endif()
         string(JSON puzzles_map SET "${puzzles_map}" "${name}" "${obj}")
