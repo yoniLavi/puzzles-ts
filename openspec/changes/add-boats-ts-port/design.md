@@ -302,6 +302,129 @@ indices C-identical, since `augmentation.ts` darkens **index 4 (water)** via
   `can_format_as_text_now` is static `true`. Port it (widen to `string` — a
   normal adopter).
 
+## Findings — decisions the implementation overturned or added
+
+Recorded after the port landed. Numbered `F<n>` per the repo convention; each
+supersedes or extends the `D<n>` above it.
+
+### F1 — `validate_params` is the *only* guard against an infinite generation hang
+
+`new_game_desc` retries fleet placement in an **unbounded** loop
+(`while(!boats_generate_fleet(...))`), so a fleet that cannot physically fit
+spins for ever rather than failing. Nothing downstream bounds it. The one guard
+is `validate_params`' final check, which *actually places the whole fleet* with
+the RNG-free first-fit — so it is load-bearing behaviour, not a nicety, and the
+port reproduces it exactly (including upstream's normalisation of the board to
+`min(w,h) × max(w,h)`, which makes the verdict orientation-independent).
+
+Measured with a throwaway C probe over `w,h ∈ [2,12]`, `fleet ∈ [1,5]`: the
+default pyramid needs `5×5` at fleet 3, `7×7` at fleet 4 and `10×10` at fleet 5.
+The first fixture sweep hit this — a `5×4 f3` case hung the trace harness for
+ten minutes before it was traced to an unfittable fleet upstream would have
+refused. This is **not** a Seismic-style size cap: nothing generable is slow
+(the whole 34-fixture sweep generates in under a second), so `validateParams`
+alone is the right and sufficient guard. A `retryLimit` backstop wraps the outer
+loop anyway, because upstream's own relaxation ladder ends in an `assert` that a
+release build compiles out.
+
+### F2 — Upstream's solver is **not monotone in `maxDiff`**, and that silently broke Solve and Check & Save on Easy boards
+
+The single most consequential finding. Raising the difficulty cap can turn a
+solved board into a stuck one:
+
+- `boats_check_dsf` runs only from Normal upward. Its final loop adds each
+  **unfinished** run of length `k` to `tempfleet[k-1]` as though it were a
+  finished size-`k` boat, then flags `STATUS_INVALID` when a size that is
+  already fully placed appears to overflow. A partial run that will still grow
+  therefore reports a contradiction the board does not have.
+- `boats_validate_full_state` returns that INVALID, which **breaks the solve
+  loop immediately**; the final verdict pass runs without the dsf, sees merely
+  INCOMPLETE, and reports "stuck".
+
+Measured across the twelve presets, 20 seeds each: **13–17 of 20 Easy boards are
+stuck at the maximum cap** while solving fine at Easy; Normal, Tricky and Hard
+are never affected (an Easy board is the only kind the generator never gates
+against these techniques). Not one stuck board carried a wrong square — the
+solver *stops*, it does not err, and no board ever produced a differing
+solution. **Confirmed identical in the C** via a throwaway `boats-dbg` harness
+(`maxdiff 0 → 0`, `maxdiff 1..4 → -1` on the same desc), so this is upstream's
+behaviour, not a porting divergence.
+
+It matters because `solve_game` and `findMistakes` both solve at `DIFFCOUNT`:
+
+- **Solve** returned an error (upstream: a partial fill that leaves the board
+  unsolved) on ~70% of Easy boards — three of the twelve presets.
+- **`findMistakes` returned `[]`**, so `canFindMistakes` stayed true while
+  Check & Save checked nothing and would happily store a wrong board. That is
+  precisely the failure playbook §3.5 exists to prevent, and the same class as
+  the Mathrax ambiguous-tier defect.
+
+**Fix: at the call sites, not in the solver** (`solveAtAnyTier` in `solver.ts`)
+— try each difficulty cap in ascending order and take the first that solves.
+Rationale, and why this beats the Spokes/Seismic `upstream*` flag shape here:
+
+- A false *abort* only ever makes the solver **weaker**, never wrong, and the
+  generator re-verifies every board with the same solver — so every generated
+  puzzle is correct and uniquely solvable exactly as it stands. Playbook §4
+  rule 3: a weaker solver is the difficulty curve upstream shipped.
+- Repairing `checkDsf` would change the solver's verdict on intermediate
+  boards, hence which puzzles exist, hence **every** description — costing the
+  byte-match oracle to fix something that was never wrong in generation.
+- Asking each cap costs at most four solves on a path that runs once per Solve
+  or Check press, and leaves the solver byte-exact against the C.
+
+Verified in the browser: on a 10×10 Easy board, Solve now completes the fleet
+and Check & Save hard-blocks a provably-wrong cell ("1 mistake found").
+
+### F3 — `game_can_format_as_text_now` is param-dependent; widen the return, don't add a hook
+
+D9 said to "port `game_text_format`, `can_format_as_text_now` is static
+`true`". It is not: `boats.c:567` returns `params->w <= 10 && params->h <= 10`
+(an 11-wide board's numbers have no single-character column). The static
+`Game.canFormatAsText` flag cannot express that, so — following playbook §3.3
+and the Loopy precedent — `textFormat` returns `undefined` for the params it
+cannot render, and no `canFormatAsTextNow?(params)` hook is added.
+
+### F4 — the desc encoder never flushes its **trailing** run (byte-match surface)
+
+`new_game_desc`'s run-length loop emits a run only when it meets a clue or hits
+the 26-square cap, so a board whose last squares carry no clue simply encodes
+short — and an all-clue-less grid encodes as *no grid part at all* (the 4×4
+Easy fixture's desc ends at its last comma). `validate_desc` accordingly
+rejects only a grid that is **too long**. The spec delta's "distinguishing too
+much from too little" for grid squares was wrong on this point and is corrected;
+the distinction it describes applies to the border-clue count, which does have
+both messages.
+
+### F5 — `validateFullState` mutates the board, and the solver depends on it
+
+`boats_validate_full_state` calls `boats_adjust_ships`, which rewrites every
+`SHIP_VAGUE` into its resolved shape. Several deductions test for a specific
+shape, and the fleet inventory only counts boats whose ends it can see, so
+porting the validator as a pure predicate would silently disable much of the
+solver (the playbook §4.4 mutating-validate hazard, as with Clusters' `F_ERROR`).
+This is why the solver and generator work on a mutable `BoatsBoard` and only
+`executeMove`/`redraw` touch the immutable `BoatsState`.
+
+### F6 — `boats_solver_place_ship`'s `assert` is undefined behaviour; bounds-check instead
+
+Upstream asserts its square is in bounds where `place_water` returns 0. A
+release build compiles the assert out and indexes out of bounds — so the C has
+no defined behaviour there (playbook §4 rule 1) and the port returns 0. Not
+reachable from a generated board, but a hand-written game ID can reach it via
+`centersTrivial` on an edge-row centre clue.
+
+### F7 — Solve reports an error rather than applying a partial fill
+
+Upstream's `solve_game` returns the solver's *partial* grid when the deduction
+does not finish (only `diff == -2` is an error), so upstream's Solve can leave a
+board part-filled, unsolved, and with `cheated` unset. The port returns an error
+instead. This is the playbook §3.6 rule ("Solve MUST complete the game") applied
+to a case upstream got wrong, and it is safe on a byte-matched port because the
+differential exercises only `newDesc`/solver/codec, never `executeMove`. With
+F2 in place it is also nearly unreachable: every generated board solves at some
+tier.
+
 ## Risks
 
 - **The solver is the bulk of the port and its verdict gates the desc.** ~1,000
