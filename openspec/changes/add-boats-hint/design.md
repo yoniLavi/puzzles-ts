@@ -198,12 +198,15 @@ Proposed as **`add-boats-fleet-aid`**, to be scaffolded after this lands.
   three rows away. Where the contradiction is not adjacent to the move, say so
   honestly (§5.6) rather than ringing a misleading "cause".
 
-## Open questions for the owner
+## Owner decisions (2026-07-28)
 
-1. **Auto-place the diagonal waters?** When a hint places a ship, the four
-   diagonal neighbours are water by rule. The port already applies them in
-   `executeMove`, so the hint's move does the right thing — the question is only
-   whether the *highlight* should show them (teaching the rule) or stay on the
-   ship alone (less noise). Recommendation: show them shaded, not narrated.
-2. **Should the fleet aid (D8) be scaffolded now or after acceptance?** It is
-   independent; scaffolding it early costs nothing but adds an open change.
+Both open questions are **resolved**; no blocking questions remain.
+
+1. **The diagonal waters that follow a ship placement are *shaded, not
+   narrated*.** They are highlighted as part of the same step — so the player
+   sees the never-touch rule doing its work — but they get no sentence of their
+   own (hint-authoring §2.9: the *rules* of the game belong in the help; a hint
+   step explains *this* move). Task 6.3 carries this.
+2. **The fleet aid (D8) is scaffolded *after* this change is accepted**, not
+   alongside it. Task 8.1 is therefore a follow-up marker, not work for this
+   change.

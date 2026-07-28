@@ -91,7 +91,8 @@
       different actions reads as one action.
 - [ ] 6.3 Evidence as an *area* (§5.2): shade the line / the run / the clue,
       don't ring a single cell. The diagonal waters that follow a ship placement
-      are shaded, not narrated (open question 1).
+      are **shaded, not narrated** (owner decision 1 — they are the never-touch
+      rule doing its work, not a separate deduction).
 - [ ] 6.4 Fold both into the per-tile cache key via the existing
       `OverlaySidecar` (playbook §3.2) so the overlay paints and clears.
 - [ ] 6.5 Tier-2.5 render scenario per tier + snapshot; assert the forced squares
@@ -115,4 +116,5 @@
 ## 8. Follow-up, not this change
 
 - [ ] 8.1 Scaffold `add-boats-fleet-aid` (design D8) — the Crossing-style
-      inventory aid over the fleet display. Timing is open question 2.
+      inventory aid over the fleet display. **After this change is accepted**
+      (owner decision 2), not alongside it.
