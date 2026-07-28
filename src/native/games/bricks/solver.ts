@@ -29,6 +29,7 @@
  * guarantee the puzzle strictly requires the selected tier, so "Tricky may
  * yield a Normal-difficulty board" is intended, not a defect.
  */
+import { deduceHintPlan } from "../../engine/hint-plan.ts";
 import {
   BRICKS_STEPS,
   type BricksMistake,
@@ -489,15 +490,16 @@ export function deduceBricksPlan(
   h: number,
   maxdiff: number = DIFF_TRICKY,
 ): ForcedMove[] {
-  const grid = grid0.slice();
-  const plan: ForcedMove[] = [];
-  while (plan.length < HINT_PLAN_MAX) {
-    if (bricksValidate(grid, w, h, true) !== "unfinished") break;
-    let move = nextForcedMove(grid, w, h);
-    if (!move && maxdiff >= 1) move = nextForcedMoveRecurse(grid, w, h, maxdiff);
-    if (!move) break;
-    grid[move.index] = colourBits(move.to);
-    plan.push(move);
-  }
-  return plan;
+  return deduceHintPlan<Uint16Array, ForcedMove, BricksStatus>({
+    board: grid0.slice(),
+    status: (grid) => bricksValidate(grid, w, h, true),
+    incomplete: "unfinished",
+    next: (grid) =>
+      nextForcedMove(grid, w, h) ??
+      (maxdiff >= 1 ? nextForcedMoveRecurse(grid, w, h, maxdiff) : null),
+    apply: (grid, move) => {
+      grid[move.index] = colourBits(move.to);
+    },
+    planCap: HINT_PLAN_MAX,
+  }).plan;
 }

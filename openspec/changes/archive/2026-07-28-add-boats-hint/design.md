@@ -210,3 +210,78 @@ Both open questions are **resolved**; no blocking questions remain.
 2. **The fleet aid (D8) is scaffolded *after* this change is accepted**, not
    alongside it. Task 8.1 is therefore a follow-up marker, not work for this
    change.
+
+## What implementation changed (recorded 2026-07-28)
+
+Seven decisions above survived contact; these did not, and the reasons are the
+reusable part.
+
+### D1 refined — the recording pass is its own module
+
+`boats/hint-solver.ts`, not an addition to `solver.ts`. The C is gone, so a
+frozen 34-fixture snapshot is the only guard left on `solveBoats`; putting the
+recording pass in a separate file makes "the solver is untouched" checkable from
+the file list rather than by reading a diff. `solver.ts` gained exactly three
+`export` keywords (`placeShip`, `placeWater`, `fillRow`) and no behaviour.
+
+### D3 gained two techniques, because the hint resumes and the solver does not
+
+`solveBoats` opens with `solverInitial`, which **wipes the grid** and re-derives
+it from the given clues. A hint cannot do that — it must start from the player's
+board. So two things upstream hides inside that wipe had to become ordinary
+narratable techniques, and both turned out to be improvements:
+
+- **`givenClue`** — the end-cap derivations (`▲` ⇒ the boat continues below, and
+  water above). Previously invisible; genuinely teachable.
+- **`neverTouch`** — the diagonal water `placeShip` applies as a side effect.
+  Leaving it silent would put water on the deduction's board that the player
+  cannot see, and a later narration would then describe a board that isn't
+  theirs (§2.8). Emitting it also covers the player's *own* placements, which is
+  what makes the plan resumable at all.
+
+### D4 sharpened — the breach classifier must be **total**
+
+The Bricks pattern applies, but reading flags off a validator only works if you
+enumerate *every* way it can say no. `validateFullState` reports INVALID from
+five places; `checkFleet` flags cells only for a boat the fleet has no room for
+at all (never the second copy of a size it holds one of), and `adjustShips`'
+ship-total check flags nothing. The first cut returned "no reason" for those and
+the finder skipped the trial — so the **entire Hard tier produced zero firings**,
+visible only as "Hard boards stall" in a convergence sweep. Every branch now ends
+in a reason, with `unfinishable` as an honest catch-all.
+
+The **`local` flag was dropped**: none of the refutation phrasings claims the
+contradiction is adjacent, so there was no honest consumer for it.
+
+### D6 sharpened — a journey completes leg by leg, and a rectangle move can lie
+
+Two mechanics the design didn't anticipate, both now in the guide (§5.5a, §5.5b):
+
+- The midend advances on `"completed"` and **holds** on `"onTrack"`, so
+  `hintKeepTrack` must judge the displayed *leg*. A journey-wide criterion means
+  leg 1 never completes and `executeHint` re-applies it for ever.
+- A Boats `fill` move is a **rectangle** with `from: "-"`, so it sets every
+  still-empty square in its span. A step may only widen its span over squares
+  that are already decided **on the board as that step fires** — which is why
+  each firing carries its own grid snapshot. And because the never-touch water
+  is decided by the deduction, it is folded into the step's move and required
+  for the leg's completion; otherwise the plan's board and the player's board
+  diverge exactly there, and a later rectangle over-fills.
+
+### D7 — no partial extraction was needed
+
+All four games fitted, Subsets included (the design hedged that it might not).
+Its rungs apply-as-they-detect, which is precisely why `apply` is optional. One
+deviation: the helper takes an already-cloned `board` rather than a `clone`
+callback. Extracting it immediately paid for itself — the toy unit test caught
+`if (!firing)` treating a falsy-but-real firing (`0`) as "deduction exhausted",
+a bug none of the four games' object-shaped firings could ever have exposed.
+
+### One technique is a safety net, not a shipped narration
+
+`mustGrow` (`minExpandDsf`) fires **zero** times over 200 generated boards across
+every preset and both "remove numbers" settings — a cheaper rung, usually
+`allWaterPlaced`, always reaches its position first. It is kept but moved to the
+bottom of the Normal rung, so it fires only when nothing else can. Its narration
+is the one string here not exercised by a generated board; deleting it was the
+alternative, and risked stranding a board the sample didn't cover.

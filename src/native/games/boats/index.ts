@@ -34,6 +34,9 @@ import type {
 } from "../../../puzzle/types.ts";
 import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   type PresetMenu,
   type SolveResult,
   UI_UPDATE,
@@ -57,6 +60,13 @@ import {
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import { newBoatsDesc, validateParams } from "./generator.ts";
+import {
+  type BoatsBreach,
+  type BoatsFiring,
+  type BoatsLine,
+  type BoatsSquare,
+  deduceBoatsPlan,
+} from "./hint-solver.ts";
 import {
   type BoatsDrawState,
   colours,
@@ -92,6 +102,10 @@ import {
   PRESETS,
   presetParams,
   presetTitle,
+  SHIP_BOTTOM,
+  SHIP_LEFT,
+  SHIP_SINGLE,
+  SHIP_TOP,
   SHIP_VAGUE,
   STATUS_COMPLETE,
   textFormat,
@@ -288,6 +302,287 @@ function status(s: BoatsState): GameStatus {
   return s.completed ? "solved" : "ongoing";
 }
 
+// --- hint (a second projection of the deduction engine) ---------------------
+
+/**
+ * What a Boats hint step marks on the board. `targets` are the squares to
+ * decide — drawn in `COL_HINT` in the shape of the action each one is (a boat
+ * mark for a segment, a water mark for water), because a single colour standing
+ * for two different actions reads as one action (hint-authoring §5.1a).
+ * `evidence` is the area the deduction reasons over, shaded `COL_HINT_CELL`.
+ */
+export interface BoatsHint {
+  targets: BoatsSquare[];
+  evidence: { x: number; y: number }[];
+}
+
+const plural = (n: number): string => (n === 1 ? "" : "s");
+
+/** A line as the player reads it: 1-based, counting from the top / the left. */
+function lineName(line: BoatsLine): string {
+  return `${line.horizontal ? "Row" : "Column"} ${line.index + 1}`;
+}
+
+/**
+ * A hidden occupancy number the deduction recovered is not a number the player
+ * can see, so a narration citing it says where it came from first (§2.8: name a
+ * board element by what the player can see or count). Only reachable with
+ * "Remove numbers" on.
+ */
+function lineIntro(line: BoatsLine): string {
+  return line.deduced
+    ? `${lineName(line)}'s hidden number can only be ${line.clue}. `
+    : "";
+}
+
+/** The consequence clause of a refutation — the rule the rejected trial broke,
+ * read off the validator's own rejection (hint-authoring §5.6a′). */
+function breachClause(breach: BoatsBreach): string {
+  switch (breach.kind) {
+    case "collision":
+      return "two boats would end up touching corner to corner";
+    case "count":
+      return `${lineName(breach.line).toLowerCase()} could no longer reach its ${breach.line.clue}`;
+    case "fleet":
+      return "it would complete a boat the fleet has no room for";
+    case "fleetTotal":
+      return breach.tooMany
+        ? "there would be more boat squares than the whole fleet has"
+        : "too little open water would be left to fit the rest of the fleet";
+    case "clue":
+      return "a given segment's own shape would be contradicted";
+    case "unfinishable":
+      return "the rest of the fleet could no longer be placed legally";
+  }
+}
+
+/**
+ * Narrate *why* the firing is forced: indication → reasoning → conclusion in
+ * the necessity voice (hint-authoring §2). The never-touch water a placement
+ * drags along is deliberately **not** narrated — it is a rule of the game, shown
+ * by the highlight rather than restated every step (§2.9, owner decision
+ * 2026-07-28).
+ */
+function narrate(f: BoatsFiring): string {
+  const t = f.technique;
+  const ships = f.squares.filter((s) => s.ship).length;
+  const waters = f.squares.length - ships;
+
+  switch (t.kind) {
+    case "givenClue": {
+      const side =
+        t.shape === SHIP_TOP
+          ? { on: "top", into: "below it", behind: "above it" }
+          : t.shape === SHIP_BOTTOM
+            ? { on: "bottom", into: "above it", behind: "below it" }
+            : t.shape === SHIP_LEFT
+              ? { on: "left", into: "to its right", behind: "to its left" }
+              : { on: "right", into: "to its left", behind: "to its right" };
+      if (t.shape === SHIP_SINGLE)
+        return "This given segment is a whole one-square boat, so all four squares beside it must be water.";
+      if (ships === 0)
+        return `This segment is a boat's ${side.on} end, so nothing can sit ${side.behind} — that square must be water.`;
+      if (waters === 0)
+        return `This segment is a boat's ${side.on} end, so its boat must continue into the square ${side.into}.`;
+      return `This segment is a boat's ${side.on} end, so its boat must continue ${side.into} — and the square ${side.behind} must be water.`;
+    }
+
+    case "neverTouch":
+      return `Boats never touch, not even at a corner — so the square${plural(waters)} diagonally beside this segment must be water.`;
+
+    case "lineSatisfied":
+      // Read at both extremes (§2.7): "shows the 0 ships its number allows" is
+      // nonsense, and a 0 line is the common case worth its own sentence.
+      return t.line.clue === 0
+        ? `${lineIntro(t.line)}${lineName(t.line)}'s number is 0, so every square in it must be water.`
+        : `${lineIntro(t.line)}${lineName(t.line)} already shows the ${t.line.clue} ship${plural(t.line.clue)} its number allows, so every remaining square in it must be water.`;
+
+    case "lineForced":
+      return ships === 1
+        ? `${lineIntro(t.line)}${lineName(t.line)} still needs one more ship and has just one free square left, so that square must hold a boat segment.`
+        : `${lineIntro(t.line)}${lineName(t.line)} still needs ${ships} more ships and has only ${ships} free squares left, so every one of them must hold a boat segment.`;
+
+    case "allWaterPlaced":
+      return "Every square of water the puzzle has room for is already marked, so every square still free must hold a boat segment.";
+
+    case "centreForced":
+      return t.vertical
+        ? "This middle segment has water beside it, so its boat can't lie across — it must run up and down through here."
+        : "This middle segment has water above or below it, so its boat must lie across — through the squares either side.";
+
+    case "isolated":
+      return "Every 1-boat is already placed, and this square is walled in by water on all four sides — so it must be water.";
+
+    case "mustExtend":
+      return "With every 1-boat already placed, this segment can't stand alone — and water blocks three sides, so its boat must continue here.";
+
+    case "centreCount": {
+      const room = t.line.clue;
+      const lie = t.vertical ? "lying across" : "standing up through";
+      return `${lineIntro(t.line)}${lineName(t.line)} has ${room === 0 ? "no room for another ship" : "room for only one more ship"}, but a boat ${lie} this middle segment needs two — so it can't go that way.`;
+    }
+
+    case "growTooLong":
+      return t.largest === 0
+        ? "Every boat in the fleet has been found, so any square still free must be water."
+        : `Filling this square would make a boat of ${t.joined}, and the largest one still missing is ${t.largest} — so it must be water.`;
+
+    case "mustGrow":
+      return `Every ${t.length}-boat is already placed, so this unfinished boat can't stop at ${t.length} — it must continue into this square.`;
+
+    case "runTooShort":
+      return `Filling this run would make a boat of ${t.length}, but every ${t.length}-boat is already placed — so the free square must be water.`;
+
+    case "onlyRunsLeft":
+      return t.runs === 1
+        ? `Only one run can still hold the ${t.size}-boat, so it must go there — and these squares are covered wherever it sits.`
+        : `Only ${t.runs} runs can still hold the ${t.runs} remaining ${t.size}-boats, so every one is used — these squares are covered either way.`;
+
+    case "sharedDiagonal": {
+      const side = t.line.horizontal ? "above and below" : "either side of";
+      return `${lineIntro(t.line)}${lineName(t.line)} can take only ${t.room} more water square${plural(t.room)}, so one of these must be a boat segment — either way, the squares ${side} the middle one must be water.`;
+    }
+
+    case "refuted":
+      return t.trialShip
+        ? `If this square held a boat segment, ${breachClause(t.breach)} — so it must be water.`
+        : `If this square were water, ${breachClause(t.breach)} — so it must hold a boat segment.`;
+  }
+}
+
+/**
+ * The moves one firing asks for, in reading order with boats before water.
+ *
+ * A `fill` move is a rectangle with `from: "-"`, so it sets every *still-empty*
+ * square in its span — which makes a whole-line deduction one move rather than
+ * eight. The span is therefore only widened when every square in it is either a
+ * target or already decided **on the board as this firing fired**; anything else
+ * would quietly decide a square the step never claimed.
+ */
+function legMoves(f: BoatsFiring, w: number, squares: BoatsSquare[]): BoatsMove[] {
+  const out: BoatsMove[] = [];
+  const fill = (x0: number, y0: number, x1: number, y1: number, ship: boolean) =>
+    ({ kind: "fill", x0, y0, x1, y1, from: "-", to: ship ? "B" : "W" }) as BoatsMove;
+
+  for (const ship of [true, false]) {
+    const group = squares.filter((s) => s.ship === ship);
+    if (group.length === 0) continue;
+
+    const x0 = Math.min(...group.map((s) => s.x));
+    const x1 = Math.max(...group.map((s) => s.x));
+    const y0 = Math.min(...group.map((s) => s.y));
+    const y1 = Math.max(...group.map((s) => s.y));
+
+    let spanIsOurs = x0 === x1 || y0 === y1;
+    for (let x = x0; spanIsOurs && x <= x1; x++)
+      for (let y = y0; spanIsOurs && y <= y1; y++) {
+        if (f.grid[y * w + x] !== EMPTY) continue; // untouched by a `from: "-"` fill
+        if (!group.some((s) => s.x === x && s.y === y)) spanIsOurs = false;
+      }
+
+    if (spanIsOurs) out.push(fill(x0, y0, x1, y1, ship));
+    else for (const s of group) out.push(fill(s.x, s.y, s.x, s.y, ship));
+  }
+  return out;
+}
+
+/**
+ * One firing is **one journey**: a deduction that forces several squares is a
+ * single hint whose continuation legs are flagged `continuesPrevious`, so the
+ * midend keeps it displayed across the legs and auto-play walks them as one
+ * (hint-authoring §5.5). The narration rides on the opening leg; the rest carry
+ * the same highlight so the picture never shrinks mid-journey.
+ */
+function stepsFor(f: BoatsFiring, w: number): HintStep<BoatsMove, BoatsHint>[] {
+  // The never-touch water a placement drags along is part of *this* step — it
+  // is the rule doing its work, not a further deduction — so it is highlighted
+  // and moved with the firing, and never narrated separately.
+  const targets = [...f.squares, ...f.consequences];
+  const highlights: BoatsHint = { targets, evidence: f.evidence };
+  const explanation = narrate(f);
+
+  return legMoves(f, w, targets).map((move, i) => ({
+    move,
+    explanation,
+    highlights,
+    continuesPrevious: i > 0,
+  }));
+}
+
+function hint(state: BoatsState): HintResult<BoatsMove, BoatsHint> {
+  if (state.completed) return { ok: false, error: "This board is already solved." };
+
+  // A re-solve, so this also catches the placement that breaks no rule *yet*
+  // but appears in no solution — deducing onward from a doomed board would
+  // produce confident nonsense (hint-authoring §4).
+  if (findBoatsMistakes(state).length > 0)
+    return {
+      ok: false,
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+
+  const plan = deduceBoatsPlan(state);
+  const steps = plan.firings.flatMap((f) => stepsFor(f, state.params.w));
+  if (steps.length === 0)
+    return { ok: false, error: "No next move can be deduced from this position." };
+  return { ok: true, steps };
+}
+
+/**
+ * A move completes the step when every square **this leg** asks for ends up as
+ * asked.
+ *
+ * The judgement is per *leg*, not per journey, and that distinction is
+ * load-bearing: the midend advances the plan on `"completed"` and holds the
+ * same step on `"onTrack"`, so a journey whose legs could only complete
+ * together would stall on its first leg for ever (and `executeHint` would
+ * re-apply that leg on every tick). A leg's own squares are the journey's
+ * targets that fall inside its move's rectangle and match its fill, so the
+ * split needs nothing stored beyond `step.move`.
+ *
+ * No shrink-in-place is needed on `"onTrack"` (contrast Filling): a Boats fill
+ * carries `from: "-"`, so re-applying a partly-done leg touches only what is
+ * still empty.
+ */
+function hintKeepTrack(
+  m: BoatsMove,
+  step: HintStep<BoatsMove, BoatsHint>,
+  state: BoatsState,
+): HintTrackVerdict {
+  if (m.kind !== "fill" || step.move.kind !== "fill") return "off";
+  const hl = step.highlights;
+  if (!hl) return "off";
+
+  const leg = step.move;
+  const legTargets = hl.targets.filter(
+    (t) =>
+      t.x >= leg.x0 &&
+      t.x <= leg.x1 &&
+      t.y >= leg.y0 &&
+      t.y <= leg.y1 &&
+      t.ship === (leg.to === "B"),
+  );
+  if (legTargets.length === 0) return "off";
+
+  const { w } = state.params;
+  const after = executeMove(state, m);
+  let done = 0;
+  for (const t of legTargets) {
+    const i = t.y * w + t.x;
+    const want: BoatsFill = t.ship ? "B" : "W";
+    if (fillOf(after.grid[i]) === want) {
+      done++;
+      continue;
+    }
+    // Touched one of this leg's squares and set it to something else.
+    if (fillOf(after.grid[i]) !== fillOf(state.grid[i])) return "off";
+  }
+
+  if (done === legTargets.length) return "completed";
+  return done > 0 ? "onTrack" : "off";
+}
+
 function flashLength(from: BoatsState, to: BoatsState): number {
   return !from.completed && to.completed && !from.cheated && !to.cheated
     ? FLASH_TIME
@@ -393,6 +688,8 @@ export const boatsGame: Game<
 
   solve,
   findMistakes: findBoatsMistakes,
+  hint,
+  hintKeepTrack,
   textFormat,
 
   colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),

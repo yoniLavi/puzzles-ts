@@ -12,6 +12,7 @@
  * order verbatim; do not strengthen or weaken (design D2 of
  * add-subsets-ts-port).
  */
+import { deduceHintPlan as accumulateHintPlan } from "../../engine/hint-plan.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import {
   ADJTHAN,
@@ -985,49 +986,44 @@ export function deduceHintPlan(orig: SubsetsState): SubsetsHintPlan {
   const cube = new Uint8Array(s * n2).fill(1);
   const counts = new Int32Array(s);
   const elim: (ElimEvidence | undefined)[] = new Array(s * n2);
-  const deductions: SubsetsDeduction[] = [];
   const budget = stepBudget("subsets hint");
 
-  for (;;) {
-    budget.tick();
-    const status = subsetsValidate(work, null, counts);
-    if (status !== "unfinished") return { status, deductions };
-
+  // Every rung *applies as it detects* (each `next*Firing` writes the letter or
+  // clears the mask it found), so the shared loop takes no `apply` callback.
+  const nextFiring = (state: SubsetsState): SubsetsDeduction | null => {
     // Rung 1: horseshoe arrows — direct letter propagation, no cube needed.
-    const arrow = nextArrowFiring(work);
-    if (arrow) {
-      deductions.push(arrow);
-      continue;
-    }
+    const arrow = nextArrowFiring(state);
+    if (arrow) return arrow;
 
     // Rung 2: a hidden single — "this set fits only one cell" (shallow, so the
     // player can verify it with the same spotlight). Tried before the collapse
     // so the crisp counting form wins where it exists.
-    const hidden = nextHiddenSingle(work, counts);
-    if (hidden) {
-      deductions.push(hidden);
-      continue;
-    }
+    const hidden = nextHiddenSingle(state, counts);
+    if (hidden) return hidden;
 
     // Rungs 3+: engage the cube. Shrink it to a fixpoint (the value-only
     // rules), then look for a letter collapse, then a last-place placement.
     // `cube` and `elim` both persist across iterations (the cube shrinks
     // monotonically, so an elimination's reason is stable) — refilling `elim`
     // would lose the provenance of candidates removed in an earlier iteration.
-    shrinkCube(work, cube, counts, elim);
+    shrinkCube(state, cube, counts, elim);
 
-    const collapse = nextCollapseFiring(work, cube, elim);
-    if (collapse) {
-      deductions.push(collapse);
-      continue;
-    }
+    return (
+      nextCollapseFiring(state, cube, elim) ?? nextSinglePosition(state, counts, cube)
+    );
+  };
 
-    const single = nextSinglePosition(work, counts, cube);
-    if (single) {
-      deductions.push(single);
-      continue;
-    }
-
-    return { status: "unfinished", deductions };
-  }
+  const { status, plan } = accumulateHintPlan<
+    SubsetsState,
+    SubsetsDeduction,
+    SubsetsStatus
+  >({
+    board: work,
+    // Recounts into `counts`, which rung 2 and the cube shrink both read.
+    status: (state) => subsetsValidate(state, null, counts),
+    incomplete: "unfinished",
+    next: nextFiring,
+    budget,
+  });
+  return { status, deductions: plan };
 }
