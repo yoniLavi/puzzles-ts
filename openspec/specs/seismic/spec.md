@@ -15,15 +15,27 @@ and a known difficulty, matching upstream. A game ID SHALL encode the width,
 height, mode and difficulty and round-trip through decode, with a bare number
 decoding as a square grid.
 
-Validation SHALL additionally reject a board of more than 49 cells, with a reason
-the Custom-type dialog can display. This is a deliberate divergence from upstream,
-which imposes no bound and simply never returns: the generator's region-growing
-stage succeeds by chance, and its measured success rate collapses from 1 in 22 at
-16 cells to 1 in 200,000 at 49 and to nothing at all at 56 and above. The bound is
-set at 49 because that is the largest board upstream itself ships a preset for, so
-no configuration either implementation can actually produce is excluded. The
-retry loop below the bound SHALL be finite, so a divergence fails with a labelled
-error rather than running forever.
+Any size bound in validation SHALL be derived from a measurement of the *shipped*
+generator rather than inherited, and SHALL carry a reason the Custom-type dialog
+can display. The previous bound of 49 cells described upstream's fill-then-merge
+region grower, which this change replaces; a constructive grower reaches larger
+boards, so the bound SHALL be re-measured and raised. Where a bound remains it
+SHALL reflect whichever stage is actually the limit — the region fill or the
+clue-stripping loop. The retry loops below any bound SHALL be finite, so a
+divergence fails with a labelled error rather than running forever.
+
+The bound SHALL be **per mode**, because the two modes are limited by different
+mechanisms and by materially different amounts. Seismic's keep-apart rule scales
+with the number's value, so demand and capacity for each value both grow linearly
+with area and the packing stays near capacity at every size; Tectonic's rule is
+mere adjacency, so its limit is instead the clue-stripping loop's cost. A single
+shared bound would either bar boards one mode can build or admit boards the other
+cannot.
+
+Presets SHALL include board sizes the puzzle is normally played at, and SHALL
+include 10×10 — named by the game's own author as the common Hakyuu size — **in
+whichever modes the measurement shows it is reachable in**. A preset SHALL NOT be
+offered for a configuration the generator cannot reliably produce.
 
 The grid SHALL be partitioned into regions, and a region of size N SHALL require
 one instance of each number from 1 to N. In Seismic mode two equal numbers Z on
@@ -44,11 +56,20 @@ reproducible without matching any particular canonical-element choice.
 - **THEN** a board is produced whose unique solution is reachable by the solver at
   the preset's difficulty band
 
-#### Scenario: A board the generator cannot build is refused up front
+#### Scenario: A board the size the puzzle is normally played at is generable
 
-- **WHEN** parameters describing more than 49 cells are validated
-- **THEN** they are rejected with a stated reason, rather than accepted and left to
-  generate indefinitely
+- **WHEN** a 10×10 board is requested in a mode the measurement shows it is
+  reachable in
+- **THEN** it is accepted by validation and a soluble board is produced
+
+#### Scenario: A size the generator cannot reach is still refused up front
+
+- **WHEN** parameters beyond the bound the shipped generator was measured to reach
+  *in that mode* are validated
+- **THEN** they are rejected with a stated reason naming the mode, rather than
+  accepted and left to generate indefinitely
+- **AND** the same size may be accepted in the other mode, where it was measured
+  to be reachable
 
 ### Requirement: Seismic descriptions use the run-length wall and clue encoding
 
@@ -81,11 +102,29 @@ deduction at Hard — reporting the difficulty reached or that the puzzle is not
 uniquely soluble. The solver SHALL enforce the mode's keep-apart rule and the
 one-of-each-number-per-region rule while eliminating candidates.
 
-The generator SHALL fill a full valid solution, merge singleton cells into regions
-in a randomised order while no region gains a repeated number, strip clues while
-the puzzle stays soluble at the target difficulty, and accept a puzzle only when
-it is soluble at that difficulty and not at the difficulty below. Generation from
-a given seed SHALL be reproducible, reusing the bit-identical random source.
+The generator SHALL partition the grid into connected regions **before** placing
+any number, and SHALL then fill each region with the numbers 1 to its size by
+searching over the solver's own candidate propagation, so that a region holds
+exactly the numbers it requires by construction. It SHALL NOT depend on a
+post-hoc test that a randomly-merged region happens to hold a valid number set:
+that is upstream's approach, its author records it as needing replacement, and its
+success rate falls to nothing above roughly fifty cells. The generator SHALL then
+strip clues while the puzzle stays soluble at the target difficulty, and accept a
+puzzle only when it is soluble at that difficulty and not at the difficulty below
+— both stages unchanged. Generation from a given seed SHALL be reproducible,
+reusing the bit-identical random source.
+
+Every generated board SHALL satisfy, by test rather than by luck: every region is
+connected and holds exactly the numbers 1 to its size; the mode's keep-apart rule
+holds across the whole solution; and the description round-trips through the
+codec.
+
+Upstream's fill-then-merge generator SHALL be retained behind an option that only
+the differential test sets, so that the frozen C-reference fixtures continue to
+match byte-for-byte and the solver, the description codec and the clue-stripping
+loop keep that oracle. A test SHALL assert that the option still changes the
+generated description, so the oracle cannot decay into re-testing the shipped
+path.
 
 #### Scenario: The solver grades a puzzle's difficulty
 
@@ -97,6 +136,21 @@ a given seed SHALL be reproducible, reusing the bit-identical random source.
 
 - **WHEN** the same seed is used twice for the same parameters
 - **THEN** both runs produce the identical board description
+
+#### Scenario: Every region is valid by construction
+
+- **WHEN** a board is generated at any preset
+- **THEN** each of its regions is connected and holds exactly one of each number
+  from 1 to that region's size, and no two equal numbers violate the mode's
+  keep-apart rule
+
+#### Scenario: The C-reference oracle still applies to the unchanged stages
+
+- **WHEN** the differential test generates each frozen fixture with upstream's
+  region grower selected
+- **THEN** the description matches the recorded C description byte-for-byte, and a
+  further test confirms that deselecting the option produces a different
+  description
 
 ### Requirement: Seismic input, note-taking and completion
 

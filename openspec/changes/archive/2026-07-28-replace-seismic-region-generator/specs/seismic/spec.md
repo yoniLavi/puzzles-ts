@@ -18,15 +18,23 @@ Any size bound in validation SHALL be derived from a measurement of the *shipped
 generator rather than inherited, and SHALL carry a reason the Custom-type dialog
 can display. The previous bound of 49 cells described upstream's fill-then-merge
 region grower, which this change replaces; a constructive grower reaches larger
-boards, so the bound SHALL be re-measured and raised, or removed with the reason
-recorded in the code. Where a bound remains it SHALL reflect whichever stage is
-actually the limit — the region fill or the clue-stripping loop. The retry loops
-below any bound SHALL be finite, so a divergence fails with a labelled error
-rather than running forever.
+boards, so the bound SHALL be re-measured and raised. Where a bound remains it
+SHALL reflect whichever stage is actually the limit — the region fill or the
+clue-stripping loop. The retry loops below any bound SHALL be finite, so a
+divergence fails with a labelled error rather than running forever.
 
-Presets SHALL include board sizes the puzzle is normally played at, including
-10×10 — reachable only once the region generator is replaced, and named by the
-game's own author as the common Hakyuu size.
+The bound SHALL be **per mode**, because the two modes are limited by different
+mechanisms and by materially different amounts. Seismic's keep-apart rule scales
+with the number's value, so demand and capacity for each value both grow linearly
+with area and the packing stays near capacity at every size; Tectonic's rule is
+mere adjacency, so its limit is instead the clue-stripping loop's cost. A single
+shared bound would either bar boards one mode can build or admit boards the other
+cannot.
+
+Presets SHALL include board sizes the puzzle is normally played at, and SHALL
+include 10×10 — named by the game's own author as the common Hakyuu size — **in
+whichever modes the measurement shows it is reachable in**. A preset SHALL NOT be
+offered for a configuration the generator cannot reliably produce.
 
 The grid SHALL be partitioned into regions, and a region of size N SHALL require
 one instance of each number from 1 to N. In Seismic mode two equal numbers Z on
@@ -49,15 +57,18 @@ reproducible without matching any particular canonical-element choice.
 
 #### Scenario: A board the size the puzzle is normally played at is generable
 
-- **WHEN** a 10×10 board is requested in either mode
+- **WHEN** a 10×10 board is requested in a mode the measurement shows it is
+  reachable in
 - **THEN** it is accepted by validation and a soluble board is produced
 
 #### Scenario: A size the generator cannot reach is still refused up front
 
-- **WHEN** parameters beyond whatever bound the shipped generator was measured to
-  reach are validated
-- **THEN** they are rejected with a stated reason, rather than accepted and left to
-  generate indefinitely
+- **WHEN** parameters beyond the bound the shipped generator was measured to reach
+  *in that mode* are validated
+- **THEN** they are rejected with a stated reason naming the mode, rather than
+  accepted and left to generate indefinitely
+- **AND** the same size may be accepted in the other mode, where it was measured
+  to be reachable
 
 ### Requirement: Seismic ports the deductive solver and solver-gated generator
 

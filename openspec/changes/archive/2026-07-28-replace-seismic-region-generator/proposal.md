@@ -1,5 +1,18 @@
 # replace-seismic-region-generator
 
+> **Implemented 2026-07-28, with one goal dropped by owner agreement.** The
+> headline defect is fixed: Seismic 7×7 went from **24.9 s to 108 ms** and the
+> 28-fixture byte-match oracle survived intact. **But consequence 2 below is only
+> half-met — 10×10 is reachable in *Tectonic* mode and is NOT reachable in
+> *Seismic* mode**, which is the mode the author's "10x10 is a common size for
+> Hakyuu puzzles" refers to. Nine region-size distributions were measured against
+> it; the best managed 34 fills per 100 partitions, and only by changing what the
+> puzzle looks like at every size. The reason is structural (Seismic's keep-apart
+> rule scales with the number's value, so the packing stays near capacity at every
+> board size) and lifting it needs a different fill algorithm, not a tuned
+> constant. See `design.md` F4 for the measurements, and F5 for the bounds that
+> did move: `MAX_CELLS` 49 → 72 (Seismic) / 100 (Tectonic).
+
 ## Why
 
 **Seismic's board generator does not scale, and its own author says so.**
