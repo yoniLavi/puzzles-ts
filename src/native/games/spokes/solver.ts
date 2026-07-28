@@ -29,6 +29,7 @@
  */
 
 import { Dsf } from "../../engine/dsf.ts";
+import { deduceHintPlan } from "../../engine/hint-plan.ts";
 import {
   cloneBoard,
   copyBoard,
@@ -661,16 +662,15 @@ export function deduceSpokesPlan(
   const b = cloneBoard(board0);
   const s = new SpokesScratch(b.w * b.h);
   const copy = diff >= DIFF_TRICKY ? cloneBoard(b) : null;
-  const plan: SpokesFiring[] = [];
 
-  while (plan.length < HINT_PLAN_MAX) {
-    if (spokesValidate(b, s) !== "incomplete") break;
-    const firing = nextSpokesFiring(b, s, copy, diff);
-    if (!firing) break;
-    applyFiring(b, firing);
-    plan.push(firing);
-  }
-  return plan;
+  return deduceHintPlan<SpokesBoard, SpokesFiring, SpokesStatus>({
+    board: b,
+    status: (board) => spokesValidate(board, s),
+    incomplete: "incomplete",
+    next: (board) => nextSpokesFiring(board, s, copy, diff),
+    apply: applyFiring,
+    planCap: HINT_PLAN_MAX,
+  }).plan;
 }
 
 /**

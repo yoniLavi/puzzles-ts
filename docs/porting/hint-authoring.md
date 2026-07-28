@@ -528,7 +528,58 @@ The `Game` hooks and the `Midend` lifecycle are in
   it before every (re-)display so a kept plan step that has gone stale is repaired or
   dropped. Needed by candidate-elimination games with note-clearing side effects.
 
+### The plan loop itself is shared — `engine/hint-plan.ts`
+
+Every recording pass ends up writing the same five lines, and five games arrived at
+them independently before it was extracted (`add-boats-hint`, design D7). Use
+[`deduceHintPlan`](../../src/native/engine/hint-plan.ts) rather than a sixth copy:
+
+```ts
+const { status, plan } = deduceHintPlan<Board, Firing, Status>({
+  board: cloneBoard(orig),          // the caller clones — one game-specific line
+  status: (b) => myValidate(b),
+  incomplete: "unfinished",         // the status value meaning "keep deducing"
+  next: (b) => nextFiring(b),       // null ⇒ deduction exhausted
+  apply: (b, f) => applyFiring(b, f),   // omit when `next` applies as it detects
+  planCap: HINT_PLAN_MAX,           // UX bound (Spokes/Bricks)
+  budget: stepBudget("mygame hint"),// §7.2 non-termination guard (Clusters/Subsets)
+});
+```
+
+Only the **loop** is shared: every rung order, reason type and narration string stays in
+its game. Three things worth knowing before you wire it up:
+
+- **Both bounds are parameters on purpose.** A plan-length cap and a `StepBudget` answer
+  different questions ("stop nagging" vs "this rule isn't advancing"), and collapsing
+  them to one would silently retune the games that chose the other.
+- **`status()` is called before `next()` every iteration, and that ordering can be
+  load-bearing.** Subsets' validator refills the `counts` array its later rungs read, so
+  the status call is not merely a check — don't "optimise" it away.
+- **Omit `apply` when your rungs mutate as they detect.** Re-applying a firing that has
+  already been applied is not merely redundant; for a rung that reads its own effect it
+  is wrong.
+
+Adopters: Spokes, Bricks, Clusters, Subsets, Boats. Each refactor was proved
+behaviour-preserving by its existing hint tests passing **unedited** — if a test has to
+change, the extraction changed behaviour; stop and re-evaluate rather than updating it.
+
 ### Recording the deduction
+
+**A solver that *wipes the board* cannot be replayed as-is (Boats).** §7.1 says a
+recording solver written to run from empty is not automatically resumable; Boats is the
+sharp end of that. `solveBoats` opens with `solverInitial`, which **clears the grid** and
+re-derives it from the given clues — so calling it for a hint would throw away everything
+the player has placed. Two consequences worth copying:
+
+- **Whatever the wipe folded in becomes an ordinary narratable technique.** The clue
+  derivations that lived inside `solverInitial` ("this given ▲ is a boat's top end, so its
+  boat continues below") became a `givenClue` firing like any other, which is *better* —
+  it is a real technique a player should learn, and it was previously invisible.
+- **So do the placement's side effects.** `placeShip` also waters the four diagonals
+  (boats never touch). Left as a silent side effect that only the deduction's board
+  knows about, it puts water on the reasoning board the player cannot see — and then a
+  later narration describes a board that isn't theirs (§2.8). Boats emits it instead as
+  a `neverTouch` firing, which also covers the player's *own* placements.
 
 **Inline (Range).** The solver's rules already drive the board to a solution; thread an
 *optional* `record(cell, value, reason)` callback through them (built only on the hint
@@ -826,6 +877,36 @@ journey (`continuesPrevious: false`) and the rest continue it (`true`); per-cell
 independent steps. See `fillRow` +
 [`unruly/solver.ts`](../../src/native/games/unruly/solver.ts) `deduceHintPlan`.
 
+### 5.5a A multi-leg journey completes **leg by leg** — `hintKeepTrack` judges the displayed leg
+
+The midend advances the plan on `"completed"` and **holds the same step** on `"onTrack"`. So a
+`hintKeepTrack` that asks "are all of this *journey's* squares placed?" makes leg 1 permanently
+incomplete: the plan never advances, and `executeHint` re-applies leg 1 on every tick. Judge the
+**leg** — the squares this step's own move asks for — and let the journey advance through its legs
+naturally. Boats derives the leg's squares from `step.move`'s rectangle plus its fill value, so
+nothing extra is stored; the journey's full `highlights` still ride on every leg, so the picture
+never shrinks mid-hint. Guard it with a test that walks a real journey and asserts *each* leg
+verdicts `"completed"` (`boats-hint.test.ts`, "completes a journey leg by leg").
+
+### 5.5b A region/rectangle move must not reach past the squares the step claimed
+
+Where a game's `Move` fills an *area* rather than a named set of cells — Boats' `fill` is a
+rectangle with `from: "-"`, so it sets every still-empty square in its span — a step that widens its
+span for convenience can silently decide squares the narration never mentioned, and decide them
+**wrongly**. Two rules:
+
+- **Widen the span only when every square in it is either a target or already decided**, checked
+  against the board *as this step fires* — which means each firing must carry its own grid snapshot
+  (the §5.2 pattern, for the move and not only for the shading).
+- **Keep the plan's board and the player's board reconcilable.** Anything the deduction decides as
+  a side effect (Boats' never-touch water) is a square the player's board *doesn't* have unless some
+  step asked for it. Either emit it as its own firing, or fold it into the step's move and require
+  it for completion — but never let the deduction quietly know something the player was never told.
+  Guard with "never asks for a square the step did not claim": apply each step, and assert every
+  square whose *decidedness* changed appears in that step's targets. (Compare decidedness, not raw
+  cell bytes — Boats' `executeMove` runs `adjustShips`, which rewrites a placed `SHIP_VAGUE` into
+  its resolved shape; that is a byte change, not a decision.)
+
 ### 5.6 When the evidence is genuinely non-local — say so honestly
 
 Three of Filling's four techniques have clean local evidence; the fourth — candidate
@@ -903,6 +984,27 @@ clean:
 - **The recording path stays out of the generator.** `nextForcedMove`/`deduceBricksPlan` are hint-
   only functions beside the untouched `solveGame`, so the generator differential (`*-differential`)
   can't drift — the §5.6a "parallel, not gated" property, for free.
+
+**The classifier must be TOTAL, and this is where it goes wrong (Boats).** Reading a reason off a
+validator only works if you enumerate *every* way that validator can say no — including the paths
+that set **no flag at all**. Boats’ `validateFullState` reports INVALID from five places, but
+`checkFleet` marks cells only for a boat the fleet has no room for *at all* (never for the second
+copy of a size it holds one of), and `adjustShips`’ ship-total check marks nothing, ever. The first
+cut returned `null` for those, the finder skipped the trial as unclassifiable — and the **entire
+Hard tier silently produced zero firings**, which showed up only as "Hard boards stall" in a
+convergence sweep, never as an error. Two habits that would have caught it:
+
+- **Mirror the oracle’s own decision sequence** when writing the classifier, rather than listing the
+  flags you happen to know about; then every `return INVALID` in the oracle has a matching branch.
+- **End in an honest catch-all, never in "no reason".** Boats’ last branch is `unfinishable`
+  ("the rest of the fleet could no longer be placed legally") — vaguer than the others, still true,
+  and infinitely better than dropping a sound deduction. Pair it with a per-technique coverage sweep
+  over generated boards so a rung that never fires is *visible*.
+
+**Name the flag by what it actually means.** `FE_FLEET` marks a *completed* boat of a size the fleet
+has no room for, so "the fleet would need a boat it doesn’t have" was a mis-description of the very
+thing the classifier had just read; "it would complete a boat the fleet has no room for" is both
+truer and clearer. A reason lifted off a flag inherits the flag’s exact meaning — go read it.
 
 For the recursive (lookahead) rung, the honest v1 is a proof-by-contradiction step: hypothesis on the
 target, contradiction ringed from the sub-solve's final INVALID `errors` — narrated, never an

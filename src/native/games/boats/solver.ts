@@ -84,7 +84,7 @@ export type BoatsSolveResult =
  * out of bounds or already water). Writing over a ship yields `CORRUPT`, which
  * is how the solver signals a contradiction to the validator.
  */
-function placeWater(b: BoatsBoard, x: number, y: number): number {
+export function placeWater(b: BoatsBoard, x: number, y: number): number {
   const { w, h, grid } = b;
   if (x < 0 || x >= w || y < 0 || y >= h) return 0;
   const i = y * w + x;
@@ -112,7 +112,7 @@ function placeWater(b: BoatsBoard, x: number, y: number): number {
  * edge row whose boat cannot be perpendicular), but a hand-written game ID can
  * reach it, and a silent out-of-bounds read is the worse answer.
  */
-function placeShip(b: BoatsBoard, x: number, y: number): number {
+export function placeShip(b: BoatsBoard, x: number, y: number): number {
   const { w, h, grid } = b;
   if (x < 0 || x >= w || y < 0 || y >= h) return 0;
   const i = y * w + x;
@@ -133,7 +133,7 @@ function placeShip(b: BoatsBoard, x: number, y: number): number {
 }
 
 /** Upstream `boats_solver_fill_row`: fill an axis-aligned block. */
-function fillRow(
+export function fillRow(
   b: BoatsBoard,
   sx: number,
   sy: number,

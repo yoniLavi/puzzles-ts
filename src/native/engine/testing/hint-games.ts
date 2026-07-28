@@ -10,6 +10,7 @@
  *
  * Dev/test-only; never imported by production code.
  */
+import { boatsGame } from "../../games/boats/index.ts";
 import { clustersGame } from "../../games/clusters/index.ts";
 import { dominosaGame } from "../../games/dominosa/index.ts";
 import { fifteenGame } from "../../games/fifteen/index.ts";
@@ -41,6 +42,7 @@ export type AnyGame = Game<any, any, any, any, any, any>;
 
 /** Every game that ships a `hint()`, by puzzle id. */
 export const HINT_GAMES: [string, AnyGame][] = [
+  ["boats", boatsGame],
   ["clusters", clustersGame],
   ["dominosa", dominosaGame],
   ["filling", fillingGame],

@@ -35,10 +35,12 @@
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import type { BoatsHint } from "./index.ts";
 import type { BoatsMistake } from "./solver.ts";
 import {
+  type BoatsMove,
   type BoatsParams,
   type BoatsState,
   type BoatsUi,
@@ -89,6 +91,15 @@ export const COL_COUNT = 11;
 export const COL_COUNT_ERROR = 12;
 export const COL_COLLISION_ERROR = 13;
 export const COL_COLLISION_TEXT = 14;
+/**
+ * The hint colours are appended **past** the upstream enum. Safe here
+ * specifically because `augmentation.ts` darkens this game's palette by index
+ * (`paletteOverrides: { 4: 0.6 }` for the water), so only indices at or below 14
+ * are spoken for — a *reindexed* palette would mis-target that override
+ * (playbook §3.3).
+ */
+export const COL_HINT = 15;
+export const COL_HINT_CELL = 16;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
@@ -107,6 +118,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_COUNT_ERROR] = [1, 0, 0];
   out[COL_COLLISION_ERROR] = [1, 0, 0];
   out[COL_COLLISION_TEXT] = [1, 1, 1];
+  out[COL_HINT] = [0.13, 0.5, 0.85];
+  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
   return out;
 }
 
@@ -174,7 +187,8 @@ export interface BoatsDrawState {
   h: number;
   fleet: number;
   /** Per-tile last-drawn contents (−1 = never drawn): the segment shape in bits
-   * 0–3, the live error/cursor flags in bits 4–7, and the flash phase in bit 8. */
+   * 0–3, the live error/cursor flags in bits 4–7, the flash phase in bit 8, and
+   * the displayed hint step's role for this square in bits 9–11. */
   tiles: Int32Array;
   /** Last-drawn `STATUS_*` for each of the `w + h` border numbers. */
   border: Int32Array;
@@ -389,9 +403,59 @@ function drawFleet(
 
 // --- the frame -------------------------------------------------------------
 
+// Hint bits, folded into the per-tile cache key so the overlay both paints and
+// clears (playbook §3.2 — a hint bit outside the key is a hint that never
+// repaints a warm frame).
+const HINT_SHIP = 1 << 9; // a square the step asks for a boat segment on
+const HINT_WATER = 1 << 10; // …or for water
+const HINT_EVID = 1 << 11; // a square the deduction reasons over
+
 /** Pack a cell's drawn appearance into the per-tile cache word. */
-function tileKey(ship: number, flags: number, flash: boolean): number {
-  return ship | (flags << 4) | ((flash ? 1 : 0) << 8);
+function tileKey(ship: number, flags: number, flash: boolean, hint: number): number {
+  return ship | (flags << 4) | ((flash ? 1 : 0) << 8) | hint;
+}
+
+/** The per-cell hint bits for the displayed step. */
+function hintBits(
+  step: HintStep<BoatsMove, BoatsHint> | undefined,
+  w: number,
+  h: number,
+): Int32Array | null {
+  const hl = step?.highlights;
+  if (!hl) return null;
+  const bits = new Int32Array(w * h);
+  for (const c of hl.evidence)
+    if (c.x >= 0 && c.y >= 0 && c.x < w && c.y < h) bits[c.y * w + c.x] |= HINT_EVID;
+  // Targets win over evidence on the same cell — the action outranks its reason.
+  for (const t of hl.targets)
+    if (t.x >= 0 && t.y >= 0 && t.x < w && t.y < h)
+      bits[t.y * w + t.x] =
+        (bits[t.y * w + t.x] & ~HINT_EVID) | (t.ship ? HINT_SHIP : HINT_WATER);
+  return bits;
+}
+
+/** The two tildes Boats draws for a *given* water square — reused in the hint
+ * colour so a "place water here" suggestion speaks the game's own vocabulary
+ * rather than a shape the player would have to translate (§5.1a). */
+function drawWaves(
+  dr: GameDrawing,
+  tx: number,
+  ty: number,
+  ts: number,
+  colour: number,
+): void {
+  for (const frac of [0.42, 0.58])
+    dr.drawText(
+      { x: tx + ts / 2, y: ty + ts * frac },
+      {
+        align: "center",
+        baseline: "mathematical",
+        fontType: "variable",
+        size: (ts / 2) | 0,
+      },
+      colour,
+      "~",
+    );
 }
 
 export function redraw(
@@ -403,7 +467,7 @@ export function redraw(
   ui: BoatsUi,
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<BoatsMove, BoatsHint>,
   mistakes?: readonly BoatsMistake[],
 ): void {
   if (!ds) return;
@@ -505,6 +569,7 @@ export function redraw(
   }
 
   const drag = dragBounds(ui);
+  const hints = flashTime === 0 ? hintBits(hint, w, h) : null;
 
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
@@ -534,14 +599,19 @@ export function redraw(
         ship = ui.dragTo === "B" ? SHIP_VAGUE : ui.dragTo === "W" ? WATER : EMPTY;
       }
 
-      const key = tileKey(ship, cellFlags[i], flash);
+      const hintBit = hints ? hints[i] : 0;
+      const key = tileKey(ship, cellFlags[i], flash, hintBit);
       if (ds.tiles[i] === key && !ds.wrong.stale(i)) continue;
       ds.tiles[i] = key;
 
       dr.drawUpdate({ x: tx, y: ty, w: ts + 1, h: ts + 1 });
+      // Shade an *undecided* evidence square, ring a decided one: a light-blue
+      // fill over water or a segment would paint over the very thing that makes
+      // the square evidence (hint-authoring §5.4).
+      const shadeEvidence = hintBit & HINT_EVID && ship === EMPTY;
       dr.drawRect(
         { x: tx, y: ty, w: ts, h: ts },
-        ship !== EMPTY ? COL_WATER : COL_BACKGROUND,
+        shadeEvidence ? COL_HINT_CELL : ship !== EMPTY ? COL_WATER : COL_BACKGROUND,
       );
       drawRectOutline(dr, tx, ty, ts + 1, ts + 1, COL_GRID);
 
@@ -556,18 +626,29 @@ export function redraw(
       } else if (!flash && state.gridClues[i] === WATER) {
         // A *given* water square is marked with waves; player water is the
         // plain blue fill.
-        for (const frac of [0.42, 0.58])
-          dr.drawText(
-            { x: tx + ts / 2, y: ty + ts * frac },
-            {
-              align: "center",
-              baseline: "mathematical",
-              fontType: "variable",
-              size: (ts / 2) | 0,
-            },
-            COL_GRID,
-            "~",
-          );
+        drawWaves(dr, tx, ty, ts, COL_GRID);
+      }
+
+      // The hint marks *where and which action*, in the game's own vocabulary
+      // and the hint colour — it never performs the move (§5.1/§5.1a). A boat
+      // suggestion is the unresolved-segment square; a water suggestion is the
+      // same waves a given water square carries.
+      if (hintBit & (HINT_SHIP | HINT_WATER)) {
+        if (hintBit & HINT_SHIP) drawSegment(dr, tx, ty, ts + 1, SHIP_VAGUE, COL_HINT);
+        else drawWaves(dr, tx, ty, ts, COL_HINT);
+      }
+
+      // A decided evidence square keeps its own colour and gets an inset ring.
+      if (hintBit & HINT_EVID && ship !== EMPTY) {
+        const inset = (ts / 6) | 0;
+        drawRectOutline(
+          dr,
+          tx + inset,
+          ty + inset,
+          ts - inset * 2 + 1,
+          ts - inset * 2 + 1,
+          COL_HINT_CELL,
+        );
       }
 
       if (isShip(ship) && cellFlags[i] & FE_FLEET)

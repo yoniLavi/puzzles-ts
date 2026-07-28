@@ -31,6 +31,7 @@
  * The pure play-side checks ({@link clustersStatus}, {@link findErrors}) do
  * NOT mutate, so persisted state and the renderer stay `F_ERROR`-free.
  */
+import { deduceHintPlan as accumulateHintPlan } from "../../engine/hint-plan.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import {
   type ClustersFill,
@@ -435,18 +436,22 @@ export function deduceHintPlan(
   w: number,
   h: number,
 ): ClustersHintPlan {
-  const grid = grid0.slice();
-  const deductions: ClustersDeduction[] = [];
   // Hint-only path, so the budget is unconditional (Palisade precedent).
   const budget = stepBudget("clusters hint");
-  for (;;) {
-    budget.tick();
-    const st = clustersStatus(grid, w, h);
-    if (st !== UNFINISHED) return { verdict: st, deductions };
-    const next =
-      firstDirectDeduction(grid, w, h) ?? shortestChainDeduction(grid, w, h, budget);
-    if (!next) return { verdict: UNFINISHED, deductions };
-    deductions.push(next);
-    grid[next.index] = next.fill;
-  }
+  const { status, plan } = accumulateHintPlan<
+    Uint8Array,
+    ClustersDeduction,
+    ClustersStatus
+  >({
+    board: grid0.slice(),
+    status: (grid) => clustersStatus(grid, w, h),
+    incomplete: UNFINISHED,
+    next: (grid) =>
+      firstDirectDeduction(grid, w, h) ?? shortestChainDeduction(grid, w, h, budget),
+    apply: (grid, d) => {
+      grid[d.index] = d.fill;
+    },
+    budget,
+  });
+  return { verdict: status, deductions: plan };
 }
