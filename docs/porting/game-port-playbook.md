@@ -827,6 +827,20 @@ per-tile cache word (§3.2) so they paint and clear like any overlay. Exemplars:
 [`rect/render.ts`](../../src/native/games/rect/render.ts),
 [`tracks/index.ts`](../../src/native/games/tracks/index.ts).
 
+**When the C already draws live rule errors, ship *both* layers — they are not
+alternatives.** Boats colours a broken row count, a diagonal boat collision, an
+over-populated fleet and a contradicted given clue as you play, with no solver
+call. It is tempting to make `findMistakes` return exactly those and be done.
+Don't: the live checks are a **strict subset**, and the gap is the dangerous
+one — a player can put a locally-legal boat on a square the unique solution has
+as water without yet breaking any rule, and a live-only hook would let Check &
+Save bless that board (the §3.5 failure again). Keep the live errors (they are
+free, immediate, and what the C build showed) *and* base `findMistakes` on the
+re-solve. Render them so both read: Boats recolours a wrong **ship** red and
+additionally insets a red outline, which is what makes a wrong **water** square
+— which has no ship to recolour — visible at all. Exemplar:
+[`boats/render.ts`](../../src/native/games/boats/render.ts).
+
 **For a *self-validating* game, `findMistakes` is the rule checker — not a
 re-solve.** Some games' rule violations are *intrinsic to the current grid*: the
 same validity pass that decides won/ongoing already localises every broken rule.
@@ -1245,6 +1259,36 @@ it. General rule: if a transient press/preview overlay is visually indistinguish
 committed state, a press that *doesn't* commit reads as a glitch — make the preview distinct
 or suppress it on the gesture that usually won't commit.
 
+### 3.12a A line-fill drag: press picks the *transformation*, release commits it
+
+Distinct again from Pattern's rectangle fill and Clusters' accreting paint
+(§3.8e): Boats' drag fills **one row or column**, and the press decides not a
+paint *value* but a `from → to` **pair** — "every square that currently reads
+`from`, in the line I drag out, becomes `to`". Left-click cycles the pressed
+square (empty→boat→water→empty) and the cycle's result is the `to`; right-click
+toggles water. Four `Ui` fields carry it (`dragFrom`, `dragTo`, anchor, current),
+and three rules make it behave:
+
+- **The axis is chosen per drag event, not at the press**: whichever coordinate
+  has moved *less* snaps back to the anchor (`abs(gx − dsx) < abs(gy − dsy)`),
+  so a drag can change its mind about direction mid-gesture.
+- **`from` is a filter, and `'*'` means "whatever is there"**. Clearing to water
+  with the left button widens `from` to `'*'` so one sweep flattens a mixed line;
+  a `from`-filtered drag paints only the squares that match, which is what makes
+  "turn all my guesses in this row into water" a single gesture.
+- **A no-op is rejected at `interpretMove`, not by comparing states** (§1): the
+  shared predicate that decides "would this fill change anything?" is the same
+  one `executeMove` filters with, so they cannot drift.
+- The far-edge click target is widened by one (`gx === w → w−1`) so the number
+  row/column is a grab handle for its line — small, and worth keeping.
+
+Because the drag continues off the *button class* (`isMouseDrag`/`isMouseRelease`,
+§3.8e) rather than the exact press button, a touch long-press that arrives as
+`RIGHT_BUTTON` (§3.8c) starts and finishes its own water drag correctly — the
+right answer for a game that genuinely uses the secondary button, where folding
+right onto left would be wrong. Exemplar:
+[`boats/index.ts`](../../src/native/games/boats/index.ts).
+
 ### 3.13 A non-square board: bespoke geometry + an inverse coordinate map (Bricks)
 
 Some upstream games store an odd-shaped board in a *padded rectangle* and shear it
@@ -1372,6 +1416,18 @@ know you are also trading away the oracle. Four rules for deciding, learned on
   dense `O(numDots²)` matrix is ~576 MB at 50×50. Structure is not behaviour:
   the replacement is exact, so this costs no fidelity at all — the trap would
   have been transcribing it faithfully *because* it was the C's shape.
+
+**A `validate_params` that does real work is load-bearing — port it before you
+port anything that depends on it.** Upstream param validation is usually a few
+bound checks, so it is tempting to leave for last. Boats' last check *places the
+entire fleet* with the RNG-free first-fit, and it is the **only** thing standing
+between the player and an infinite loop: `new_game_desc` retries fleet placement
+unboundedly, so an unfittable fleet (the default 3,2,1 in 5×4 — measured) spins
+for ever. This is not a Seismic-style cost problem (everything generable is fast)
+and no retry budget is the right answer; the *feasibility* check is. The tell is
+a `validate_params` that allocates, calls a generator helper, or builds a board.
+Grep for one before writing the trace-harness fixture list — a hang there is how
+this one was found, ten minutes into a run that should have taken a second.
 
 **Measure a "rare failure" before you design the recovery for it.** A generator
 that fails on some inputs invites the reflex "retry, it's just an unlucky seed".
@@ -1555,6 +1611,19 @@ matter, "write it well" where there isn't. Exemplar:
 [`inertia-trace.c`](../../puzzles/auxiliary/inertia-trace.c) →
 [`inertia-differential.test.ts`](../../src/native/games/inertia/inertia-differential.test.ts).
 
+**An encoder that never flushes its trailing run is a *format*, not a bug —
+don't "complete" it.** Boats' run-length grid encoder emits a run only when it
+meets a clue or hits its 26-square cap, so a board whose final squares carry no
+clue simply encodes short, and a board with no clues at all encodes as its
+border numbers alone (`"0,3,0,1,1,0,2,1,"` — the desc just stops). Its
+`validate_desc` agrees: it rejects *too many* grid squares and says nothing
+about too few. Flushing the tail "for symmetry" would diverge every desc whose
+last cell is clue-less, which is most of them. Same family as the writer/reader
+disagreement below: read what the **reader** accepts before deciding what the
+writer owes it — and mirror that asymmetry in the port's `validateDesc` and in
+the spec (this port's spec delta had to be corrected, having asked for a
+too-few-squares rejection the C does not make).
+
 **A codec's writer and reader can disagree — check the round-trip before
 assuming the encoder defines the format.** Upstream codecs are usually exact
 inverses, so the reflex is to transcribe the writer and trust it. Seismic's wall
@@ -1727,6 +1796,36 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
   diverges the desc. When a C early-out looks load-bearing, check which
   `#ifdef` it lives under before porting it. Exemplar:
   [`slant/solver.ts`](../../src/native/games/slant/solver.ts) `fillSquare`.
+- **A solver may not be *monotone in its difficulty cap* — check before wiring
+  Solve and `findMistakes` to the maximum.** The reflex (every port to date) is
+  `solve(board, MAX_DIFF)`: more techniques can only help. Boats disproves it.
+  Its unfinished-boat dsf check runs only from Normal upward and counts a
+  partial run of length `k` as a *finished* size-`k` boat, so when every
+  size-`k` boat is placed it reports a contradiction the board doesn't have —
+  and because the validator's INVALID breaks the solve loop, the solver
+  **stops**. Measured: **13–17 of 20 Easy boards** are stuck at the maximum cap
+  while solving fine at Easy; Normal and above are untouched, because only an
+  Easy board is never gated against those techniques. The C does exactly the
+  same (confirm with a throwaway `<game>-dbg.c` that solves one desc at each
+  cap — one file, ten minutes, and it converts "my port is broken" into "this
+  is upstream" with certainty).
+  - **The consequence is severe and silent**: `findMistakes` re-solves, gets
+    stuck, returns `[]` — so `canFindMistakes` stays true while Check & Save
+    checks nothing and stores a wrong board. That is the §3.5 failure the hook
+    exists to prevent, reached by a completely different route than Mathrax's.
+  - **Fix at the call site, not in the solver.** A false *abort* only makes the
+    solver weaker, never wrong, and a solver-gated generator re-verifies every
+    board with the same solver — so the boards that exist are all correct
+    (rule 3). Repairing the check would change every intermediate verdict, hence
+    every desc, hence the byte-match oracle, to fix something generation never
+    got wrong. Ask each cap in ascending order and take the first that solves
+    (`solveAtAnyTier` in [`boats/solver.ts`](../../src/native/games/boats/solver.ts)):
+    four solves on a once-per-click path, solver left byte-exact.
+  - **The tell**, worth one cheap check on any tiered solver: generate boards at
+    the *lowest* tier and solve them at the *highest*. If that ever fails, you
+    have this bug — and a port that only ever tests "solves at its own
+    difficulty" will never see it. (Boats' differential was 34/34 green
+    throughout.)
 - **Some deductions branch on the canonical-DSF-root *identity*, so the shared
   [`Dsf`](../../src/native/engine/dsf.ts) must match `dsf.c`'s root choice** (tie →
   the *second* `merge` arg; the larger class otherwise). The shared `Dsf` was aligned
@@ -1974,6 +2073,19 @@ Two stages (owner-confirmed default since Galaxies):
    [`puzzles/CMakeLists.txt`](../../puzzles/CMakeLists.txt) (keeps catalog/icon
    metadata, builds no wasm) and delete `puzzles/<game>.c`. Rebuild wasm and confirm
    the game still appears in the catalog with no `<game>.wasm`.
+
+**A third-party `puzzles/unreleased/` game that already ships C/WASM is the
+easy case: flag in place, no catalog move.** Contrast §1.1's `unfinished/`
+games, which are absent from the catalog and so must be *moved* into the main
+`CMakeLists.txt` during stage 1 just to be visible. An `unreleased/` game
+already has its `puzzle(<game> …)` entry built into `catalog.json` and already
+runs on C/WASM, so stage 1 is just the two registration edits
+(`ts-ported-ids.ts` + `games/index.ts`) — `ts-ported-ids.test.ts` stays green
+because the id is already in the catalog, and the C build remains the fallback
+exactly as for a Tatham game. Stage 2 adds `TS_PORTED` to the entry where it
+already sits in `puzzles/unreleased/CMakeLists.txt`, drops any `solver(<game>
+…)` line beside it, and deletes the `.c`. Still `rm -rf build/wasm/` before the
+rebuild.
 
 Until acceptance the game stays unregistered and runs on C — the cost of this
 discipline is ~zero.

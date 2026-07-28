@@ -41,20 +41,34 @@ a run-length sequence in which a lowercase letter denotes a run of that many emp
 squares and an uppercase letter denotes a single given clue — water or one of the
 boat-segment shapes (single, vague/unknown, top, bottom, left, right, centre).
 
-Validation SHALL reject a description that carries the wrong number of grid
-squares (distinguishing too much from too little), that carries the wrong number
-of border-clue slots, or that uses an unknown character.
+The run-length sequence SHALL be written so that a run is emitted only when a
+given clue follows it or the run reaches the maximum a single letter can carry,
+which means a description whose final squares carry no clue legitimately encodes
+short — a board with no given clues at all encodes as its border clues alone.
+
+Validation SHALL reject a description that carries **more** grid squares than
+the board holds, that carries the wrong number of border-clue slots
+(distinguishing too many from too few), or that uses an unknown character. It
+SHALL NOT reject a description that carries fewer grid squares than the board
+holds, since that is the ordinary encoding of a board whose last squares have no
+clue.
 
 #### Scenario: A generated description round-trips
 
 - **WHEN** a description is generated and then decoded into a board
 - **THEN** re-encoding that board yields the identical description
 
-#### Scenario: A description with the wrong number of squares is rejected
+#### Scenario: A description with too many squares is rejected
 
-- **WHEN** a description whose decoded grid area differs from the board area is
+- **WHEN** a description whose decoded grid area exceeds the board area is
   validated
-- **THEN** it is rejected with a message distinguishing too much from too little
+- **THEN** it is rejected
+
+#### Scenario: A description with no given clues is accepted
+
+- **WHEN** a description carrying the right number of border clues and no grid
+  clues at all is validated
+- **THEN** it is accepted, and decodes to a board with no given squares
 
 ### Requirement: Boats ports the four-tier deductive solver faithfully
 
@@ -68,6 +82,15 @@ satisfies the guess-free-generation policy at every named difficulty.
 Boat connectivity SHALL be computed over the shared disjoint-set structure, whose
 canonical root identity the solver reads (the canonical square of a boat run), so
 the port SHALL NOT substitute a union-find with a different root rule.
+
+The solver's deductive power is **not monotone in its difficulty cap**: the
+unfinished-boat disjoint-set check, which runs only from the second tier upward,
+can report a contradiction on a board that has none and abandon the solve. It
+never places a wrong square, so every generated board remains correct and
+uniquely solvable, but a board generated at the easiest tier may fail to solve
+under a higher cap. Any consumer that solves a board of unknown difficulty —
+Solve, and the mistake check — SHALL therefore try each difficulty tier and use
+the first that succeeds, rather than solving once at the maximum.
 
 The generator SHALL use the solver to guarantee a unique solution at exactly the
 requested difficulty: it SHALL place a random fleet, derive the border clues,
@@ -121,8 +144,9 @@ flash on completion.
 - **THEN** the offending cells and the count are shown in the error colour and are
   reported by `findMistakes`
 
-#### Scenario: Completing the fleet wins
+#### Scenario: Completing the fleet wins, without filling in the water
 
-- **WHEN** the last boat is placed so the whole fleet is located and surrounded by
-  water
-- **THEN** the game is reported solved and flashes
+- **WHEN** the last boat is placed so that every row and column count is met and
+  the fleet is exactly accounted for
+- **THEN** the game is reported solved and flashes, even if squares the player
+  never marked as water remain undecided
