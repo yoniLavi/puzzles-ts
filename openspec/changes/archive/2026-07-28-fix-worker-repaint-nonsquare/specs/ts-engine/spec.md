@@ -1,5 +1,18 @@
 # ts-engine Specification Delta — fix-worker-repaint-nonsquare
 
+> **NOT APPLIED.** This change was withdrawn 2026-07-28 as not reproducible and
+> archived with `openspec archive --skip-specs`. This delta was **never merged
+> into `openspec/specs/ts-engine/spec.md`** — it is retained only as a record of
+> what was proposed. Do not cite it as a live requirement.
+>
+> Why it was not applied: the requirement below asserts "the first frame is
+> painted", which three diagnosis passes showed **already holds** — the worker's
+> offscreen bitmap was fully painted in every configuration tested. Adopting it
+> would have specced an invariant nothing violates, while implying a fix had
+> landed that never did. If the symptom ever resurfaces, `FINDINGS.md` argues the
+> requirement would need reframing around "the first frame reaches the *screen*",
+> which is a different guarantee at a different seam.
+
 ## ADDED Requirements
 
 ### Requirement: The first frame paints regardless of palette and resize ordering

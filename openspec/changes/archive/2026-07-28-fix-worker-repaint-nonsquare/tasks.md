@@ -1,5 +1,16 @@
 # Tasks — fix-worker-repaint-nonsquare
 
+> **WITHDRAWN 2026-07-28 (owner decision): the second cause does not exist.**
+> Re-confirmed on the current tree — both proposal-named URLs
+> (`/loopy?type=5x4t9dh`, `/loopy?type=5x4t14dh`) paint fully on first load in a
+> visible Chrome, 0 console errors. Archived with `--skip-specs`: §2 and §3 were
+> never done and the §4 spec delta was never applied, deliberately. The real
+> half of the fix (first-palette-install repaint) shipped with
+> `add-loopy-ts-port` and is covered by `worker-adapter.test.ts`. See
+> `FINDINGS.md` for the full evidence and the resume conditions.
+
+---
+
 > **PARKED 2026-07-21 (owner decision): not reproducible.** A full diagnosis
 > pass (see `FINDINGS.md`) could not reproduce the blank non-square board in any
 > Chromium configuration — headless-visible, headed (real compositor + CSS
