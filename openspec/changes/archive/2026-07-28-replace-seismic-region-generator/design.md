@@ -275,7 +275,42 @@ Two corrections to intuitions held during implementation, both worth keeping:
 backjumping, or restarts with value-ordering), not a tuned constant. That is a
 change of its own and was not attempted here.
 
-## F5 — D5 resolved: the bound is per mode, and both halves moved
+## F7 — **F5 RETRACTED same day: the bound is 64, shared, and 10×10 is gone**
+
+F5 below is wrong and is kept only as the record of how. It set a per-mode bound
+(Seismic 72 / Tectonic 100) and shipped a Tectonic 10×10 preset, on **single-seed
+timings** — 10×10 happened to measure 22 ms and 4.7 s, which looked fine.
+
+Two follow-up measurements corrected it:
+
+1. **Exhaustive sweep** of all 392 accepted `(w, h, mode, difficulty)`
+   combinations: **zero failures**. So nothing offered was actually unreachable —
+   F5's bounds were sound *as reachability bounds*.
+2. **Repeating the slow sizes over nine seeds each**, which is what F5 failed to
+   do:
+
+   | Tectonic    | median    | worst of 9 |
+   |-------------|-----------|------------|
+   | 8×8  (64)   | 0.3–1.8 s | **2.3 s**  |
+   | 10×8 (80)   | 1.4–1.9 s | 17.0 s     |
+   | 9×9  (81)   | 1.1–1.5 s | 16.2 s     |
+   | 10×10 (100) | 4.9–6.2 s | 18.3 s     |
+
+   10×10 is **consistently** slow — 2.6 s even at its best — not unlucky-seed
+   slow. Shipping it as a preset would have reintroduced, at a different size,
+   precisely the 12–28 s wait this change existed to remove.
+
+Shipped instead: a single `MAX_CELLS = 64`, presets at 8×8 in both modes, and no
+10×10 in either. The per-mode split went with it — two modes with the same limit
+did not justify the machinery.
+
+**The transferable lesson: bound a generator by its tail, not its median.** A
+median-based bound looks great and ships a size that hangs for 18 seconds one
+time in nine. One sample per configuration is enough to answer "does this work?"
+and not nearly enough to answer "should we offer this?" — and the second question
+is the one a bound exists to settle.
+
+## F5 — (RETRACTED, see F7) D5 resolved: the bound is per mode, and both halves moved
 
 `MAX_CELLS = 49` became `MAX_CELLS_SEISMIC = 72` and `MAX_CELLS_TECTONIC = 100`,
 each measured end-to-end rather than inferred. A single bound could not express

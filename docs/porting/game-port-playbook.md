@@ -1684,6 +1684,19 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
 
   Exemplar: [`seismic/generator.ts`](../../src/native/games/seismic/generator.ts)
   (`SeismicGenerateOptions.upstreamRegionGrower`).
+- **Bound a generator by its TAIL, not its median — one seed per size is not a
+  measurement.** Seismic's new bound was first set from single-seed timings per
+  configuration, which said 10×10 Tectonic cost 22 ms–4.7 s; it shipped as a
+  preset. Repeating the slow sizes over nine seeds each showed medians of
+  4.9–6.2 s hiding a **worst case of 18.3 s**, and the same at 80–81 cells
+  (medians ~1.5 s, tails 16–17 s). The preset was withdrawn and the bound dropped
+  from 100 cells to 64 — the largest size whose *worst* run stays near two
+  seconds. Note the trap precisely: an exhaustive sweep of all 392 accepted
+  configurations had **zero failures**, so every size was genuinely reachable.
+  Reachability answers "does this work?"; only the tail answers "should we offer
+  this?", and a bound exists to settle the second question. Whenever a generator
+  bound is being set or raised, repeat the sizes near it across several seeds
+  before believing the number.
 - **When you replace a generator, the thing you must *not* guess is the shape of
   what it produced — and you may be able to recover it from the frozen fixtures.**
   Seismic's region-size distribution is emergent in the C (it falls out of random

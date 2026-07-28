@@ -55,12 +55,10 @@ import {
   FM_ERRORDIST,
   FM_ERRORDUP,
   FM_FIXED,
-  MAX_CELLS_SEISMIC,
-  MAX_CELLS_TECTONIC,
+  MAX_CELLS,
   MODE_NAMES,
   MODE_SEISMIC,
   MODE_TECTONIC,
-  maxCells,
   newState,
   newUi,
   numBit,
@@ -173,25 +171,26 @@ describe("seismic params", () => {
     ).toMatch(/at least 4/);
   });
 
-  it("bounds the board area per mode, since the two modes differ sharply", () => {
-    // Seismic's keep-apart rule scales with the number's value, so its packing
-    // stays near capacity however big the grid gets; Tectonic's is mere
-    // adjacency and reaches 10×10. Both bounds are measured, not guessed — see
-    // MAX_CELLS_SEISMIC's doc comment for the timing tables.
-    expect(maxCells(MODE_SEISMIC)).toBe(MAX_CELLS_SEISMIC);
-    expect(maxCells(MODE_TECTONIC)).toBe(MAX_CELLS_TECTONIC);
-    expect(MAX_CELLS_TECTONIC).toBeGreaterThan(MAX_CELLS_SEISMIC);
+  it("bounds the board area by the worst case, not the median", () => {
+    // Every size up to 100 cells is *reachable* (an exhaustive sweep of all 392
+    // accepted combinations had zero failures), but above 64 the generation tail
+    // runs to 15-18 s — the very defect this generator was replaced to remove.
+    // See MAX_CELLS's doc comment for the measurements.
+    expect(MAX_CELLS).toBe(8 * 8);
 
-    // 10×10 is the size Hakyuu is normally played at: reachable in Tectonic,
-    // refused with a reason in Seismic rather than freezing the worker.
+    // The largest offered board is accepted...
     expect(
-      validateParams({ w: 10, h: 10, diff: DIFF_HARD, mode: MODE_TECTONIC }, true),
+      validateParams({ w: 8, h: 8, diff: DIFF_HARD, mode: MODE_TECTONIC }, true),
     ).toBeNull();
-    expect(
-      validateParams({ w: 10, h: 10, diff: DIFF_EASY, mode: MODE_SEISMIC }, true),
-    ).toMatch(/at most 72 in Seismic mode/);
+    // ...and 10×10 — the size upstream's TODO names — is refused with a reason
+    // in BOTH modes, rather than left to generate for twenty seconds.
+    for (const mode of [MODE_SEISMIC, MODE_TECTONIC]) {
+      expect(validateParams({ w: 10, h: 10, diff: DIFF_EASY, mode }, true)).toMatch(
+        /at most 64/,
+      );
+    }
 
-    // Every preset stays inside its own mode's bound.
+    // Every preset stays inside the bound.
     for (const p of PRESETS) expect(validateParams(p, true)).toBeNull();
   });
 
