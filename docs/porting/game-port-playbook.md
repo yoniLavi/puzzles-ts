@@ -573,6 +573,25 @@ the input is genuinely reachable in play. Exemplar:
 [`seismic/render.ts`](../../src/native/games/seismic/render.ts) +
 `seismic.test.ts` ("draws every pencil mark, including a 9").
 
+**A clue-ring tile that erases its own area can rub out a line the *cell* drew
+on the shared boundary pixel.** Games with a margin of clues around the play
+area (the Latin family, Salad, Rome) usually repaint one clue tile at a time:
+fill it with the background, then draw the letter. But the grid's outermost
+border line belongs to the neighbouring **cell**, and on one edge it lands on
+the clue tile's own first pixel — so a symmetric `ts − 1` erase wipes it. Only
+that one edge is affected, which is why upstream's four erases look
+gratuitously inconsistent (Salad's right clue is `tx+1, ty+1, TILE_SIZE-2`
+against `tx, ty, TILE_SIZE-1` for the other three). **That asymmetry is
+load-bearing: do not fold the four sides into one uniform rect.** Salad shipped
+exactly that tidy-up and lost the right-hand border of every row that *had* a
+right clue — visible only on the edge, and only for clued rows, so it reads as
+a font/anti-aliasing artefact rather than a bug. Pin it with a tier-2.5
+assertion on the *invariant* ("no clue-tile erase overlaps the grid's outline
+box"), not on the pixel offset, so a different fix still passes; exemplar
+`salad-render.test.ts` ("does not let a border clue's erase wipe the grid's
+outline"). Cheapest way to see it at all: `toSvg` the frame and rasterise it
+(§3.13) — at 1× the missing hairline is easy to miss.
+
 **Rendering doctrine (hard-won — see the Flip three-iteration story in
 [`AGENTS.md`](../../AGENTS.md)):** the engine paints **no pixels of its own**; each
 game fills its own background in the `!ds.started` branch. `Midend.size` is

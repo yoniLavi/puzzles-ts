@@ -3640,12 +3640,12 @@ exports[`salad render scenarios > draws the ABC End View border clues in the mar
   },
   {
     "colour": 0,
-    "h": 39,
+    "h": 38,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
-    "w": 39,
-    "x": 200,
-    "y": 40,
+    "w": 38,
+    "x": 201,
+    "y": 41,
   },
   {
     "align": "center",
@@ -3703,12 +3703,12 @@ exports[`salad render scenarios > draws the ABC End View border clues in the mar
   },
   {
     "colour": 0,
-    "h": 39,
+    "h": 38,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
-    "w": 39,
-    "x": 200,
-    "y": 120,
+    "w": 38,
+    "x": 201,
+    "y": 121,
   },
   {
     "align": "center",

@@ -16,6 +16,7 @@ import {
 } from "../../engine/testing/render-scenario.ts";
 import { saladGame } from "./index.ts";
 import {
+  COL_BACKGROUND,
   COL_BORDERCLUE,
   COL_G_HOLE,
   COL_HIGHLIGHT,
@@ -75,6 +76,45 @@ describe("salad render scenarios", () => {
       "C",
     ]);
     expect(recording.ops).toMatchSnapshot();
+  });
+
+  it("does not let a border clue's erase wipe the grid's outline", () => {
+    // Regression (owner-reported): the four clue tiles abut the play area, and
+    // the grid's outermost boundary lines are drawn by the neighbouring *cells*
+    // on the shared pixel. A clue that erases its whole tile therefore rubs out
+    // the boundary — which happened on the right edge, so every row carrying a
+    // right-hand clue lost its outer cell border. Assert the invariant (no
+    // background fill may cover a boundary line) rather than the pixel offset,
+    // so a different fix still passes.
+    const ts = saladGame.preferredTileSize ?? 32;
+    const o = LETTERS_P.order;
+    const { recording } = renderScenario({ game: saladGame, id: LETTERS_ID });
+
+    // The grid's outline, as a closed box: the cells paint their borders on
+    // `x = ts`/`x = (o+1)·ts` and `y = ts−1`/`y = (o+1)·ts−1`. No clue-tile
+    // erase may touch it.
+    const box = {
+      x0: ts,
+      x1: (o + 1) * ts,
+      y0: ts - 1,
+      y1: (o + 1) * ts - 1,
+    };
+    // Only the clue-tile erases matter: they are the background fills smaller
+    // than a whole tile (a cell's own repaint is `ts × ts` and legitimately
+    // repaints its own borders straight afterwards).
+    const erases = recording.ops.filter(
+      (op) => op.op === "rect" && op.colour === COL_BACKGROUND && op.w < ts,
+    );
+    expect(erases.length).toBeGreaterThan(0);
+    for (const e of erases) {
+      if (e.op !== "rect") continue;
+      const overlaps =
+        e.x <= box.x1 &&
+        e.x + e.w - 1 >= box.x0 &&
+        e.y <= box.y1 &&
+        e.y + e.h - 1 >= box.y0;
+      expect({ x: e.x, y: e.y, overlaps }).toEqual({ x: e.x, y: e.y, overlaps: false });
+    }
   });
 
   it("draws Number Ball's balls and crosses", () => {
