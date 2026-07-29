@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "order": 4,
+      "nums": 3,
+      "mode": 0,
+      "diff": 0,
+      "seed": "salad-trace-0",
+      "desc": "CaCbAfBaAa,p",
+      "solverDiff": 0,
+      "genMs": 0.3
+    },
+    {
+      "order": 4,
+      "nums": 3,
+      "mode": 0,
+      "diff": 1,
+      "seed": "salad-trace-1",
+      "desc": "aBcCcAbAbB,p",
+      "solverDiff": 0,
+      "genMs": 0.4
+    },
+    {
+      "order": 5,
+      "nums": 3,
+      "mode": 0,
+      "diff": 0,
+      "seed": "salad-trace-2",
+      "desc": "cAABdCaCdCCa,y",
+      "solverDiff": 0,
+      "genMs": 0.8
+    },
+    {
+      "order": 5,
+      "nums": 3,
+      "mode": 0,
+      "diff": 1,
+      "seed": "salad-trace-3",
+      "desc": "aBbBaAcAbAaCcB,y",
+      "solverDiff": 0,
+      "genMs": 1.1
+    },
+    {
+      "order": 5,
+      "nums": 3,
+      "mode": 1,
+      "diff": 0,
+      "seed": "salad-trace-4",
+      "desc": "d1cO32b3aXa1d2b",
+      "solverDiff": 0,
+      "genMs": 0.6
+    },
+    {
+      "order": 5,
+      "nums": 3,
+      "mode": 1,
+      "diff": 1,
+      "seed": "salad-trace-5",
+      "desc": "bOa1X2bX3f1Of",
+      "solverDiff": 0,
+      "genMs": 0.9
+    },
+    {
+      "order": 5,
+      "nums": 4,
+      "mode": 0,
+      "diff": 0,
+      "seed": "salad-trace-6",
+      "desc": "aAdDaBCbDBbACb,y",
+      "solverDiff": 0,
+      "genMs": 0.8
+    },
+    {
+      "order": 5,
+      "nums": 4,
+      "mode": 0,
+      "diff": 1,
+      "seed": "salad-trace-7",
+      "desc": "aCAfBCbDcBBa,y",
+      "solverDiff": 0,
+      "genMs": 1.9
+    },
+    {
+      "order": 6,
+      "nums": 3,
+      "mode": 1,
+      "diff": 0,
+      "seed": "salad-trace-8",
+      "desc": "hX2aXaOa3OdOc2c3aOOaOa",
+      "solverDiff": 0,
+      "genMs": 0.6
+    },
+    {
+      "order": 6,
+      "nums": 3,
+      "mode": 1,
+      "diff": 1,
+      "seed": "salad-trace-9",
+      "desc": "aObXb32bX3f2OaOa2aXg3X",
+      "solverDiff": 0,
+      "genMs": 1.4
+    },
+    {
+      "order": 6,
+      "nums": 4,
+      "mode": 0,
+      "diff": 0,
+      "seed": "salad-trace-10",
+      "desc": "aDaADcDeCBCeAA,zj",
+      "solverDiff": 0,
+      "genMs": 2.5
+    },
+    {
+      "order": 6,
+      "nums": 4,
+      "mode": 0,
+      "diff": 1,
+      "seed": "salad-trace-11",
+      "desc": "bADAbAaDDaCaBACaDaBBb,zj",
+      "solverDiff": 0,
+      "genMs": 6.3
+    },
+    {
+      "order": 6,
+      "nums": 4,
+      "mode": 1,
+      "diff": 0,
+      "seed": "salad-trace-12",
+      "desc": "c24X2Oi1Ob43c1bXc3b",
+      "solverDiff": 0,
+      "genMs": 0.7
+    },
+    {
+      "order": 6,
+      "nums": 4,
+      "mode": 1,
+      "diff": 1,
+      "seed": "salad-trace-13",
+      "desc": "a3b2bO4Xc13bObXXg34dX",
+      "solverDiff": 0,
+      "genMs": 4.7
+    },
+    {
+      "order": 7,
+      "nums": 4,
+      "mode": 0,
+      "diff": 0,
+      "seed": "salad-trace-14",
+      "desc": "bCBCaAbDCDDDDDAaAcBbCb,zw",
+      "solverDiff": 0,
+      "genMs": 5.3
+    },
+    {
+      "order": 7,
+      "nums": 4,
+      "mode": 0,
+      "diff": 1,
+      "seed": "salad-trace-15",
+      "desc": "aBaABCaCCABaCbAaCaDDaBbDb,zw",
+      "solverDiff": 0,
+      "genMs": 27.4
+    },
+    {
+      "order": 7,
+      "nums": 4,
+      "mode": 1,
+      "diff": 0,
+      "seed": "salad-trace-16",
+      "desc": "aXa1aX3aX4a1aXOb4c4XbXaXdXaXa1g3d",
+      "solverDiff": 0,
+      "genMs": 1.4
+    },
+    {
+      "order": 7,
+      "nums": 4,
+      "mode": 1,
+      "diff": 1,
+      "seed": "salad-trace-17",
+      "desc": "b4b3a4OaOd3a1cO2fXaX2aXb1aXf42a",
+      "solverDiff": 0,
+      "genMs": 3.8
+    },
+    {
+      "order": 8,
+      "nums": 5,
+      "mode": 0,
+      "diff": 0,
+      "seed": "salad-trace-18",
+      "desc": "cECaBCCBAaCbDbDCaCbADaEaCaB,iBjXXtXfAaXl",
+      "solverDiff": 0,
+      "genMs": 11.5
+    },
+    {
+      "order": 8,
+      "nums": 5,
+      "mode": 0,
+      "diff": 1,
+      "seed": "salad-trace-19",
+      "desc": "aDaBaCcDaEaEDaCAEAaAcCAAEBaE,qBdXfDdXCeXiAl",
+      "solverDiff": 1,
+      "genMs": 29.1
+    },
+    {
+      "order": 8,
+      "nums": 5,
+      "mode": 1,
+      "diff": 0,
+      "seed": "salad-trace-20",
+      "desc": "a5XbXbO2aX1cXa43hXa2bX2c31c5aXXa4a1XbXXcO5aO2",
+      "solverDiff": 0,
+      "genMs": 3.2
+    },
+    {
+      "order": 8,
+      "nums": 5,
+      "mode": 1,
+      "diff": 1,
+      "seed": "salad-trace-21",
+      "desc": "Xa2aX5X11aX2XXd4Xa1XXXb31bXa5mXXbXbXa2cXb5",
+      "solverDiff": 0,
+      "genMs": 15.3
+    },
+    {
+      "order": 3,
+      "nums": 2,
+      "mode": 0,
+      "diff": 0,
+      "seed": "salad-trace-22",
+      "desc": "cBcAcA,i",
+      "solverDiff": 0,
+      "genMs": 0.1
+    },
+    {
+      "order": 3,
+      "nums": 2,
+      "mode": 1,
+      "diff": 0,
+      "seed": "salad-trace-23",
+      "desc": "b2Ob2b",
+      "solverDiff": 0,
+      "genMs": 0.1
+    },
+    {
+      "order": 4,
+      "nums": 2,
+      "mode": 1,
+      "diff": 1,
+      "seed": "salad-trace-24",
+      "desc": "XbOc2X1f",
+      "solverDiff": 0,
+      "genMs": 0.8
+    },
+    {
+      "order": 7,
+      "nums": 6,
+      "mode": 0,
+      "diff": 0,
+      "seed": "salad-trace-25",
+      "desc": "aAaBFaBDaAaCDaBCCcDaFaADb,zw",
+      "solverDiff": 0,
+      "genMs": 273.4
+    },
+    {
+      "order": 9,
+      "nums": 5,
+      "mode": 0,
+      "diff": 0,
+      "seed": "salad-trace-26",
+      "desc": "DaEAbAEcEEaBAcCbDDcBEBaDAaAD,aDaXzaXaDcXdXeBjXCfXfCXe",
+      "solverDiff": 0,
+      "genMs": 18.6
+    },
+    {
+      "order": 9,
+      "nums": 8,
+      "mode": 1,
+      "diff": 1,
+      "seed": "salad-trace-27",
+      "desc": "a4Xc8233Ob7a14d6a1X5773b4a5a6a6a21e16b3g2a7a1c46c2c8cXa",
+      "solverDiff": 0,
+      "genMs": 10.5
+    }
+  ]
+}

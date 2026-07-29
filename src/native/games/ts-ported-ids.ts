@@ -48,6 +48,7 @@ export const TS_PORTED_PUZZLE_IDS: ReadonlySet<string> = new Set([
   "pegs",
   "range",
   "rect",
+  "salad",
   "samegame",
   "seismic",
   "separate",

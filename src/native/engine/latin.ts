@@ -473,6 +473,21 @@ export interface LatinSolverConfig<Ctx> {
    * order. When set, a fixpoint step budget is also installed. Leaving it unset
    * (generator/solve path) keeps that path byte-for-byte unchanged. */
   recorder?: DeductionRecorder;
+  /**
+   * Extra candidate-cube constraints to apply *after* `alloc` and *before* the
+   * deduction fixpoint — the slot upstream games use between
+   * `latin_solver_alloc` and `latin_solver_main`. Salad's Number Ball clues are
+   * the case: a ball ("this square holds a symbol") or a cross ("this one does
+   * not") rules candidates out of a cell without placing any digit, so it
+   * cannot be expressed through the seeded `grid`.
+   *
+   * Deliberately **not** re-applied inside `latinSolverRecurse`, because
+   * upstream's recursion likewise re-allocs a bare sub-solver and re-runs only
+   * `latin_solver_top`. That is sound for the only consumer, which passes
+   * `diffRecursive = DIFF_IMPOSSIBLE` and so never recurses; a future recursing
+   * consumer would have to revisit it.
+   */
+  seed?: (solver: LatinSolver) => void;
   /** Optional `o³` output buffer that receives the final candidate cube
    * (upstream copies `solver.cube` into `state->hints` after solving). Unequal's
    * greedy clue-assembly generator reads the remaining-possibility counts off
@@ -634,6 +649,7 @@ export function latinSolver<Ctx>(
     if (cfg.cubeOut) cfg.cubeOut.set(solver.cube);
     return DIFF_IMPOSSIBLE;
   }
+  cfg.seed?.(solver);
   // Enable recording only *after* alloc, so seeding the cube from the givens
   // (a flurry of `place`s) is not mistaken for deductions the hint should teach.
   if (cfg.recorder) {
