@@ -15,7 +15,7 @@
  * re-derivation, shared so every Latin game tells the truth the same way.
  */
 
-import { joinNums } from "./candidate-hint.ts";
+import type { NoteEncoding } from "./candidate-hint.ts";
 
 /** A forced single placement, classified against the working board:
  * - `naked` — the cell's own candidates are exactly `{n}`;
@@ -49,9 +49,10 @@ export function classifyPlacementInRegions<R extends ClassifyRegion>(
   cell: number,
   n: number,
   regions: readonly R[],
+  enc?: NoteEncoding,
 ): { kind: "naked" } | { kind: "hidden"; region: R } | { kind: "forced" } {
-  if (pencil[cell] === 1 << n) return { kind: "naked" };
-  const bit = 1 << n;
+  const bit = (enc?.bit ?? ((v: number): number => 1 << v))(n);
+  if (pencil[cell] === bit) return { kind: "naked" };
   for (const region of regions) {
     let hidden = true;
     for (let i = 0; i < region.cells.length; i++) {
@@ -110,6 +111,7 @@ export function classifyPlacement(
   y: number,
   n: number,
   w: number,
+  enc?: NoteEncoding,
 ): SinglePlacement {
   const c = classifyPlacementInRegions(
     grid,
@@ -117,6 +119,7 @@ export function classifyPlacement(
     y * w + x,
     n,
     rowColRegions(x, y, w),
+    enc,
   );
   if (c.kind === "hidden")
     return { kind: "hidden", line: c.region.line, index: c.region.index };
@@ -143,8 +146,9 @@ export function singlePlacementReason(
   y: number,
   n: number,
   w: number,
+  enc?: NoteEncoding,
 ): SingleReason {
-  const c = classifyPlacement(grid, pencil, x, y, n, w);
+  const c = classifyPlacement(grid, pencil, x, y, n, w, enc);
   switch (c.kind) {
     case "naked":
       return { kind: "single" };
@@ -178,32 +182,92 @@ export type GenericLatinReason =
   | { kind: "set" }
   | { kind: "forcing" };
 
-/** Narrate a generic Latin reason — the six arms that read *identically* across
- * the row/column Latin games (Keen, Unequal). Shared so a wording improvement to,
- * say, the hidden-single sentence lands in one place instead of drifting between
- * those games. `ns` is the value list the arm refers to (the placed value for a
- * single, the struck values for `set` / `forcing`).
+/**
+ * The value vocabulary a game's cells are spoken in — the *only* thing that used
+ * to keep a letter-valued Latin game off the shared narration arms below
+ * (`add-salad-hint`, design D5). Three games kept private copies of the same six
+ * arms; two of those copies differed **solely** in the noun and how a value
+ * prints (Group's elements are letters `a`–`z`; Salad's symbols are `A`–`C` or
+ * `1`–`3` depending on its mode).
  *
- * Scope is deliberately the **row/column** games only: Solo's generic arms diverge
- * (its single/dup/set name "row, column **and block**" and its `hiddenSingle` names
- * a block/diagonal region), and Towers narrates the whole family in "height"
- * vocabulary with a single value, not an `ns` list — both keep their own `narrate`
- * (see `docs/porting/hint-authoring.md` §9.2). Each row/column game still owns its
- * game-specific arms (Keen's cage*, Unequal's greater/lesser/adjacent*) and
- * delegates only the generic ones here. */
-export function narrateLatinReason(reason: GenericLatinReason, ns: number[]): string {
+ * `noun` is the singular ("number", "element", "letter"); its plural is
+ * `${noun}s`, which is right for every value word in the collection. `value`
+ * renders one value.
+ *
+ * **Who declines, and why** (measured against the arms, not assumed):
+ * **Towers** needs the value *qualified* in some arms and bare in others
+ * ("height 5 can go in only this cell … so it must be 5"), i.e. two renderers
+ * for six arms; **Solo** names a different region set per arm ("row, column
+ * **and** block", plus block/diagonal region names in `hiddenSingle`). Both stay
+ * on their own `narrate` — one vocabulary can't express a per-arm difference,
+ * and forcing it would read worse than the duplication (hint-authoring §9.2's
+ * standing rule).
+ */
+export interface LatinVocab {
+  /** Singular noun for a cell's value: "number", "element", "letter", … */
+  noun: string;
+  /** How one value prints. */
+  value(n: number): string;
+  /** What the game calls a board position. Default "cell"; Salad's board is
+   * squares, and mixing the two words inside one game's hints reads as sloppy. */
+  cell?: string;
+}
+
+const NUMBER_VOCAB: LatinVocab = { noun: "number", value: (n) => String(n) };
+
+/** "a" or "an" for `s` — chosen by how the *word* is pronounced, so a letter
+ * value ("an A", "a B") and a digit ("a 6", "an 8") both read correctly. The
+ * arms below say "There's already a …", which without this reads "a A" / "a 8"
+ * (the latter a pre-existing wart in the digit games' narration). */
+function indefinite(s: string): string {
+  return /^(?:[aefhilmnorsx]|8|11|18)/i.test(s) ? "an" : "a";
+}
+
+/** Narrate a generic Latin reason — the six arms that read *identically* across
+ * the row/column Latin games once their value vocabulary is factored out
+ * ({@link LatinVocab}): Keen and Unequal (numbers), Group (elements) and Salad
+ * (letters or numbers). Shared so a wording improvement to, say, the
+ * hidden-single sentence lands in one place instead of drifting between them.
+ * `ns` is the value list the arm refers to (the placed value for a single, the
+ * struck values for `set` / `forcing`).
+ *
+ * `vocab` defaults to plain numbers, so the two original callers are unchanged.
+ * Each game still owns its game-specific arms (Keen's cage*, Unequal's
+ * greater/lesser/adjacent*, Salad's border/count/sync, Group's associativity)
+ * and delegates only the generic ones here. */
+export function narrateLatinReason(
+  reason: GenericLatinReason,
+  ns: number[],
+  vocab: LatinVocab = NUMBER_VOCAB,
+): string {
+  const { noun } = vocab;
+  const v = vocab.value;
+  const cell = vocab.cell ?? "cell";
+  const cells = `${cell}s`;
+  // `joinWith(xs.map(String))` is exactly `joinNums(xs)`, so the digit games'
+  // lists are byte-identical to before.
+  const list = (xs: number[]): string => joinWith(xs.map(v));
   switch (reason.kind) {
     case "single":
-      return `Every other number has been ruled out in this cell, so it can only be ${ns[0]}.`;
+      return `Every other ${noun} has been ruled out in this ${cell}, so it can only be ${v(ns[0])}.`;
     case "hiddenSingle":
-      return `In this ${reason.line === "row" ? "row" : "column"}, ${reason.n} can go in only this cell — every other cell in the ${reason.line === "row" ? "row" : "column"} has ruled it out — so it must be ${reason.n}.`;
+      return `In this ${reason.line === "row" ? "row" : "column"}, ${v(reason.n)} can go in only this ${cell} — every other ${cell} in the ${reason.line === "row" ? "row" : "column"} has ruled it out — so it must be ${v(reason.n)}.`;
     case "forcedSingle":
-      return `Working through this cell's row and column together, only ${reason.n} can still go here — so it must be ${reason.n}.`;
-    case "dup":
-      return `There's already a ${reason.n} in this row and column, so we must cross out the ${reason.n} from the other cells they pass through.`;
+      return `Working through this ${cell}'s row and column together, only ${v(reason.n)} can still go here — so it must be ${v(reason.n)}.`;
+    case "dup": {
+      const d = v(reason.n);
+      return `There's already ${indefinite(d)} ${d} in this row and column, so we must cross out the ${d} from the other ${cells} they pass through.`;
+    }
     case "set":
-      return `Another group of cells already accounts for a fixed set of numbers that includes ${joinNums(ns)}, so we must cross out ${joinNums(ns)} here.`;
+      return `Another group of ${cells} already accounts for a fixed set of ${noun}s that includes ${list(ns)}, so we must cross out ${list(ns)} here.`;
     case "forcing":
-      return `Following a chain of two-candidate cells, placing ${ns[0]} here would force a contradiction further along — so we must cross out ${joinNums(ns)}.`;
+      return `Following a chain of two-candidate ${cells}, placing ${v(ns[0])} here would force a contradiction further along — so we must cross out ${list(ns)}.`;
   }
+}
+
+/** {@link joinNums} over already-rendered values: `["A","B"]` → "A and B". */
+export function joinWith(parts: string[]): string {
+  if (parts.length <= 1) return parts[0] ?? "";
+  if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
+  return `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }

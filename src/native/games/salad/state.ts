@@ -21,6 +21,8 @@
  * re-encoding them would buy nothing and make the codec harder to audit.
  */
 
+import type { NoteEncoding } from "../../engine/candidate-hint.ts";
+import { type RowColRegion, rowColRegions } from "../../engine/latin-hint.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
 
 // --- difficulty ------------------------------------------------------------
@@ -223,16 +225,91 @@ export function scratchBoard(b: SaladBoard): SaladBoard {
  */
 export type SaladEntry = number | "cross" | "circle" | "clear";
 
+/** One pencil mark a {@link SaladMove} strike clears: candidate `n` at
+ * `(x, y)`, where `n` in `1..nums` is a symbol and `n === nums + 1` is the
+ * "might be empty" X mark — so one formula, `1 << (n − 1)`, covers both. */
+export interface SaladMark {
+  x: number;
+  y: number;
+  n: number;
+}
+
 export type SaladMove =
   /** Upstream `R x,y,c` — a real entry (symbol, cross, circle or clear). */
   | { type: "set"; x: number; y: number; value: SaladEntry }
   /** Upstream `P x,y,c` — a pencil mark. `"circle"` is upstream's oddity: it
    * toggles the *real* circle marker without emptying the square. */
   | { type: "pencil"; x: number; y: number; value: SaladEntry }
-  /** Upstream `M` — fill every empty square with all its candidate marks. */
+  /** Fork addition, for the hint (hint-authoring §9.2): clear a list of pencil
+   * marks atomically. The per-square `pencil` move is a *toggle*, so a
+   * re-applied strike would put the mark back; this one only ever removes, which
+   * makes one deduction forcing several strikes a single idempotent,
+   * resume-safe step. Additive to the union, so saved move logs replay
+   * unchanged. */
+  | { type: "pencilStrike"; marks: SaladMark[] }
+  /** Pencil in the candidates of every square that carries **no** mark yet,
+   * leaving the player's own narrowed notes alone — the collection-wide
+   * `pencilAll` (the fill half of the adaptive Mark-all press, and the hint's
+   * opener).
+   *
+   * Deliberately *not* upstream's resetting `markAll` below, and that is the
+   * whole point: resetting every square to the full candidate set silently threw
+   * away deductions the player had already pencilled (owner-reported
+   * 2026-07-29, on the hint's opener and then on the Mark-all button itself).
+   * Additive, so it is idempotent and resume-safe. */
+  | { type: "pencilAll" }
+  /** Upstream `M` — fill every empty square with all its candidate marks,
+   * *resetting* any the player had narrowed.
+   *
+   * **Legacy replay only.** No input emits it any more (the Mark-all button and
+   * the `M` key go through the adaptive, additive path above), but a saved move
+   * log recorded before that change replays through here, so its behaviour must
+   * not drift. */
   | { type: "markAll" }
   /** Upstream `S…` — the solved board, one entry per cell (0 = a hole). */
   | { type: "solve"; cells: number[] };
+
+// --- the note representation ------------------------------------------------
+//
+// One definition of "how Salad's pencil marks are encoded", shared by the play
+// path (the adaptive Mark-all press in `index.ts`) and the hint (`hint.ts`), so
+// the two can never disagree about which bit is which candidate.
+
+/**
+ * Salad's projection onto the shared candidate helpers: candidate `n` sits at
+ * bit `n − 1`, and the alphabet is `nums` symbols plus the "might be empty" X
+ * mark at bit `nums` — **shorter than the grid order**, which is why the value
+ * count has to be stated separately from the stride.
+ */
+export function saladNotes(nums: number): NoteEncoding {
+  return { bit: (n) => 1 << (n - 1), values: nums + 1 };
+}
+
+/** A square's uniqueness regions: its row and its column, and nothing else
+ * (Salad has no blocks). */
+export function saladRegions(o: number): (x: number, y: number) => RowColRegion[] {
+  return (x, y) => rowColRegions(x, y, o);
+}
+
+/**
+ * Is there a square the player could pencil into that carries no mark yet? The
+ * fill half of the adaptive Mark-all press, and the hint's populate latch.
+ *
+ * Note this is **not** the shared `anyEmptyLacksNotes`: a square marked
+ * definitely-empty is blank *and* legitimately holds no notes for ever, so that
+ * predicate would report "needs filling" on a finished board.
+ */
+export function needsPencilFill(b: {
+  order: number;
+  grid: Uint8Array;
+  holes: Uint8Array;
+  marks: Int32Array;
+}): boolean {
+  for (let i = 0; i < b.order * b.order; i++) {
+    if (b.grid[i] === 0 && b.holes[i] !== CROSS && b.marks[i] === 0) return true;
+  }
+  return false;
+}
 
 // --- ui --------------------------------------------------------------------
 
@@ -484,6 +561,35 @@ export function borderScans(
     { start: o2 - o + i, step: -o, end: i - o, clue: i + o * 2 },
     { start: (i + 1) * o - 1, step: -1, end: i * o - 1, clue: i + o * 3 },
   ];
+}
+
+/** The single scan belonging to border clue `cd` — the inverse of the clue
+ * numbering {@link borderScans} lays out (`cd % o` names the line, `cd / o` the
+ * side, in the top / left / bottom / right order the clue array uses). The hint
+ * reads its line of sight through this rather than re-deriving the geometry. */
+export function borderScanFor(
+  cd: number,
+  o: number,
+): { start: number; step: number; end: number; clue: number } {
+  return borderScans(cd % o, o)[(cd / o) | 0];
+}
+
+/** Which side of the board clue `cd` sits on, and therefore which kind of line
+ * it looks along. */
+export function clueSide(
+  cd: number,
+  o: number,
+): { side: "top" | "left" | "bottom" | "right"; axis: "row" | "column" } {
+  switch ((cd / o) | 0) {
+    case 0:
+      return { side: "top", axis: "column" };
+    case 1:
+      return { side: "left", axis: "row" };
+    case 2:
+      return { side: "bottom", axis: "column" };
+    default:
+      return { side: "right", axis: "row" };
+  }
 }
 
 /** Upstream `salad_checkborders`: every border clue matches the first symbol

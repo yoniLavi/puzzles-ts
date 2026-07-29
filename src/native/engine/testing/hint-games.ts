@@ -26,6 +26,7 @@ import { netslideGame } from "../../games/netslide/index.ts";
 import { palisadeGame } from "../../games/palisade/index.ts";
 import { patternGame } from "../../games/pattern/index.ts";
 import { rangeGame } from "../../games/range/index.ts";
+import { saladGame } from "../../games/salad/index.ts";
 import { singlesGame } from "../../games/singles/index.ts";
 import { sixteenGame } from "../../games/sixteen/index.ts";
 import { slantGame } from "../../games/slant/index.ts";
@@ -60,6 +61,7 @@ export const HINT_GAMES: [string, AnyGame][] = [
   ["palisade", palisadeGame],
   ["pattern", patternGame],
   ["range", rangeGame],
+  ["salad", saladGame],
   ["singles", singlesGame],
   ["sixteen", sixteenGame],
   ["slant", slantGame],

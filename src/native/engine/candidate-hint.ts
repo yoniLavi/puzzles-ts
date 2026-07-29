@@ -39,6 +39,44 @@ export interface Mark {
   n: number;
 }
 
+/**
+ * How a game projects the solver's values onto the player's pencil-note bits —
+ * the one thing the mark helpers below need to know about a game's note
+ * representation (`add-salad-hint`, design D3).
+ *
+ * Two games differ from the Latin family's `1 << n`: **Crossing** and **Salad**
+ * both store candidate `n` at bit `n − 1` (their values start at 1 and 0 means
+ * "no note"), and Salad's note alphabet (`nums` symbols + one "might be empty"
+ * mark) is *shorter* than its grid order. Supplying the encoding is strictly
+ * cheaper than a game re-deriving the helpers, and omitting it reproduces
+ * today's behaviour exactly — so every existing call site is untouched.
+ *
+ * **What this deliberately is *not*.** `add-salad-hint`'s design proposed a
+ * richer `CandidateVocabulary` with a *many-to-one* arm (`valuesFor(bit)`), for
+ * Salad's `order − nums` interchangeable hole symbols that all collapse onto one
+ * player note. Threading it through found **no consumer**: a helper here only
+ * ever asks "which note bit does this *placed* value occupy?" or "is this cell's
+ * note set down to one?", and on Salad's board no hole symbol is ever placed
+ * (holes live in a separate marker array) nor ever singled (which hole symbol
+ * sits where is undecidable, and immaterial). The collapse lives entirely in
+ * Salad's own step emission — where it *is* the game's sync deduction. Recorded
+ * as a non-migration in `docs/porting/hint-authoring.md` §9.7 rather than built
+ * speculatively.
+ */
+export interface NoteEncoding {
+  /** The pencil-mask bit for candidate `n`. Default `1 << n`. */
+  bit?(n: number): number;
+  /** The highest candidate value a cell may note. Default: the grid order `w`.
+   * Salad's is `nums + 1` (its symbols plus the "might be empty" mark) on an
+   * `order`-strided grid, so the two genuinely differ. */
+  values?: number;
+}
+
+/** `enc.bit`, defaulted to the Latin family's `1 << n`. */
+function bitOf(enc: NoteEncoding | undefined): (n: number) => number {
+  return enc?.bit ?? ((n: number): number => 1 << n);
+}
+
 /** The three move variants a candidate-elimination hint plan ever emits. Every
  * such game's `Move` union is a superset of these (it also carries `solve` and
  * incidental fields); the generic plan functions act only on this subset and
@@ -140,18 +178,24 @@ export function anyEmptyLacksNotes(
   return false;
 }
 
-/** Index of the first recorded placement whose cell is *not yet* on the working
- * grid: every op before it is valid against the current working grid (placements
+/** Index of the first recorded placement whose cell is *not yet* decided on the
+ * working board: every op before it is valid against that board (placements
  * before it are already reflected), so a strike there can be surfaced now with a
  * premise the player's board supports (hint-authoring §9.3, the
- * "facing-place buries clue deductions" gotcha). */
+ * "facing-place buries clue deductions" gotcha).
+ *
+ * `placed` is "which cells the solver's placements are already reflected in".
+ * For most games that is simply the working grid; **Salad** is the first where
+ * the two differ — the cube may place one of its interchangeable *hole* symbols
+ * in a cell the player settles with an empty-square marker, leaving the grid
+ * blank for ever — so it passes a grid marked at those cells too. */
 export function firstUnreflectedPlaceIndex(
   ops: readonly DeductionRecord[],
-  grid: ArrayLike<number>,
+  placed: ArrayLike<number>,
   w: number,
 ): number {
   for (let i = 0; i < ops.length; i++) {
-    if (ops[i].kind === "place" && grid[ops[i].y * w + ops[i].x] === 0) return i;
+    if (ops[i].kind === "place" && placed[ops[i].y * w + ops[i].x] === 0) return i;
   }
   return ops.length;
 }
@@ -168,12 +212,20 @@ export function nextStrike<R extends DeductionRecord>(
   grid: ArrayLike<number>,
   pencil: ArrayLike<number>,
   w: number,
+  opts?: {
+    /** The note encoding, when the game's is not `1 << n`. */
+    enc?: NoteEncoding;
+    /** Which cells count as already-decided for the placement window — see
+     * {@link firstUnreflectedPlaceIndex}. Defaults to `grid`. */
+    placed?: ArrayLike<number>;
+  },
 ): R[] | null {
-  const lim = firstUnreflectedPlaceIndex(ops, grid, w);
+  const bit = bitOf(opts?.enc);
+  const lim = firstUnreflectedPlaceIndex(ops, opts?.placed ?? grid, w);
   const liveAt = (op: R): boolean =>
     op.kind === "elim" &&
     grid[op.y * w + op.x] === 0 &&
-    (pencil[op.y * w + op.x] & (1 << op.n)) !== 0 &&
+    (pencil[op.y * w + op.x] & bit(op.n)) !== 0 &&
     (op.reason as { kind?: string }).kind !== "dup";
   let i = 0;
   while (i < lim) {
@@ -193,11 +245,11 @@ export function nextStrike<R extends DeductionRecord>(
  * e.g. killer-cage) reason or re-derive the *why* from the working board. */
 export function nextPlace<R extends DeductionRecord>(
   ops: readonly R[],
-  grid: ArrayLike<number>,
+  placed: ArrayLike<number>,
   w: number,
 ): R | null {
   for (const op of ops) {
-    if (op.kind === "place" && grid[op.y * w + op.x] === 0) return op;
+    if (op.kind === "place" && placed[op.y * w + op.x] === 0) return op;
   }
   return null;
 }
@@ -228,9 +280,10 @@ export function regionDuplicateMarks(
   n: number,
   w: number,
   regions: readonly ClassifyRegion[],
+  enc?: NoteEncoding,
 ): Mark[] {
   const home = y * w + x;
-  const bit = 1 << n;
+  const bit = bitOf(enc)(n);
   const seen = new Set<number>();
   const marks: Mark[] = [];
   for (const region of regions) {
@@ -258,13 +311,23 @@ export function findRegionDuplicate(
   pencil: ArrayLike<number>,
   w: number,
   regionsOf: (x: number, y: number) => readonly ClassifyRegion[],
+  enc?: NoteEncoding,
 ): RegionDuplicate | null {
   for (let i = 0; i < w * w; i++) {
     const v = grid[i];
     if (v === 0) continue;
     const px = i % w;
     const py = (i / w) | 0;
-    const marks = regionDuplicateMarks(grid, pencil, px, py, v, w, regionsOf(px, py));
+    const marks = regionDuplicateMarks(
+      grid,
+      pencil,
+      px,
+      py,
+      v,
+      w,
+      regionsOf(px, py),
+      enc,
+    );
     if (marks.length > 0) return { px, py, n: v, marks };
   }
   return null;
@@ -285,7 +348,10 @@ export function obviousCandidateMarks(
   pencil: ArrayLike<number>,
   w: number,
   regionsOf: (x: number, y: number) => readonly ClassifyRegion[],
+  enc?: NoteEncoding,
 ): Mark[] {
+  const bit = bitOf(enc);
+  const values = enc?.values ?? w;
   const marks: Mark[] = [];
   for (let i = 0; i < w * w; i++) {
     if (grid[i] !== 0) continue;
@@ -297,7 +363,7 @@ export function obviousCandidateMarks(
     for (const region of regionsOf(x, y)) {
       for (let k = 0; k < region.cells.length; k++) {
         const v = grid[region.cells[k]];
-        if (v !== 0) placed |= 1 << v;
+        if (v !== 0) placed |= bit(v);
       }
     }
     let removable = notes & placed;
@@ -308,7 +374,7 @@ export function obviousCandidateMarks(
       removable &= removable - 1;
       if (removable === 0) continue;
     }
-    for (let n = 1; n <= w; n++) if (removable & (1 << n)) marks.push({ x, y, n });
+    for (let n = 1; n <= values; n++) if (removable & bit(n)) marks.push({ x, y, n });
   }
   return marks;
 }
@@ -317,19 +383,23 @@ export function obviousCandidateMarks(
  * games modulo the game's own noun ("number", "height", …). Undead's opener
  * ("pencilling every monster into…") is structurally different and stays
  * game-local. */
-export function populateText(noun: string): string {
-  return `Start by pencilling in every candidate ${noun} in each empty cell, so the eliminations that follow have something to cross out.`;
+export function populateText(noun: string, cell = "cell"): string {
+  return `Start by pencilling in every candidate ${noun} in each empty ${cell}, so the eliminations that follow have something to cross out.`;
 }
 
 /** Narration for the obvious-cleanup step, parameterised by the game's noun,
- * its placement verb ("standing", "placed"), and its region phrase ("row or
- * column", "row, column or block"). */
+ * its placement verb ("standing", "placed"), its region phrase ("row or
+ * column", "row, column or block") — and what it calls a board position, which
+ * defaults to "cell" but is Salad's "square" (see {@link populateText}: the two
+ * setup strings and the generic narration arms must agree, or one game's hints
+ * read in two vocabularies). */
 export function cleanObviousText(
   noun: string,
   placedVerb: string,
   regions: string,
+  cell = "cell",
 ): string {
-  return `Now clear the easy ones: in each cell, cross out any ${noun} already ${placedVerb} in its ${regions} — the same cleanup the “fill all pencil marks” button does.`;
+  return `Now clear the easy ones: in each ${cell}, cross out any ${noun} already ${placedVerb} in its ${regions} — the same cleanup the “fill all pencil marks” button does.`;
 }
 
 /** The populate/mark-all opener step. It deliberately declares **no board
@@ -405,9 +475,10 @@ export function adaptiveMarkAllMove<M>(
   pencil: ArrayLike<number>,
   w: number,
   regionsOf: (x: number, y: number) => readonly ClassifyRegion[],
+  enc?: NoteEncoding,
 ): M | null {
   return adaptiveMarkAll<M, Mark>(anyEmptyLacksNotes(grid, pencil, w), () =>
-    obviousCandidateMarks(grid, pencil, w, regionsOf),
+    obviousCandidateMarks(grid, pencil, w, regionsOf, enc),
   );
 }
 
@@ -446,8 +517,9 @@ export interface CandidateMoveAdapter<M> {
   read(m: M): CandidateMove | null;
   /** Build a strike over `marks` in the game's own move shape. */
   strike(marks: Mark[]): M;
-  /** The pencil-mask bit for candidate `n`. Defaults to `1 << n`, the
-   * `0`-means-empty encoding the Latin games share. */
+  /** The pencil-mask bit for candidate `n` — {@link NoteEncoding.bit}, carried
+   * here too so a game wires the dialect in one object. Defaults to `1 << n`,
+   * the `0`-means-empty encoding the Latin games share. */
   bit?(n: number): number;
 }
 
@@ -489,20 +561,27 @@ export function emitObviousCleanStep<M, H>(
   w: number,
   regionsOf: (x: number, y: number) => readonly ClassifyRegion[],
   explanation: string,
+  opts?: { enc?: NoteEncoding; adapter?: CandidateMoveAdapter<M> },
 ): boolean {
-  const obvious = obviousCandidateMarks(grid, pencil, w, regionsOf);
+  const dialect = adapterOf(opts?.adapter);
+  const bit = bitOf(opts?.enc);
+  const obvious = obviousCandidateMarks(grid, pencil, w, regionsOf, opts?.enc);
   if (obvious.length === 0) return false;
-  for (const m of obvious) pencil[m.y * w + m.x] &= ~(1 << m.n);
+  for (const m of obvious) pencil[m.y * w + m.x] &= ~bit(m.n);
   const prev = steps[steps.length - 1];
+  // "Fill, then clear the obvious ones" is one setup journey. Reading the
+  // previous move through the dialect (rather than sniffing a `type` field) is
+  // what lets a game whose populate move is spelled differently — Salad's
+  // `markAll` — still get the continuation.
   const continuesPrevious =
-    prev !== undefined && (prev.move as { type?: string }).type === "pencilAll";
+    prev !== undefined && dialect.read(prev.move)?.type === "pencilAll";
   const highlights: CandidateHighlights = {
     area: [],
     targets: obvious.map((m) => ({ x: m.x, y: m.y })),
     marks: obvious,
   };
   steps.push({
-    move: strikeMove<M>(obvious),
+    move: dialect.strike(obvious),
     explanation,
     highlights: highlights as unknown as H,
     continuesPrevious,
@@ -531,7 +610,7 @@ export function keepCandidateHintTrack<M, H extends CandidateHighlights>(
   adapter?: CandidateMoveAdapter<M>,
 ): HintTrackVerdict {
   const dialect = adapterOf(adapter);
-  const bit = dialect.bit ?? ((n: number): number => 1 << n);
+  const bit = bitOf(dialect);
   const pm = dialect.read(m);
   const sm = dialect.read(step.move);
   if (pm === null || sm === null) return "off";
@@ -586,7 +665,7 @@ export function refreshCandidateHintStep<M, H extends CandidateHighlights>(
   adapter?: CandidateMoveAdapter<M>,
 ): HintStep<M, H> | null {
   const dialect = adapterOf(adapter);
-  const bit = dialect.bit ?? ((n: number): number => 1 << n);
+  const bit = bitOf(dialect);
   const m = dialect.read(step.move);
   if (m === null) return step;
   if (m.type === "pencilStrike") {

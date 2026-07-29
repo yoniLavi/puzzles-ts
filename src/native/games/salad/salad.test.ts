@@ -541,14 +541,47 @@ describe("salad input", () => {
     expect(ui.hpencil).toBe(true);
   });
 
-  it("'M' is emitted only while it would change something", () => {
+  it("'M' fills, then only ever removes — never resets the player's notes", () => {
+    // Owner-directed 2026-07-29: the Mark-all press is the collection's adaptive
+    // one (shared `adaptiveMarkAll`) — first press fills the squares with no
+    // marks, later presses clear the candidates a placed symbol already rules
+    // out. It must never reset a square the player has narrowed, which is what
+    // upstream's `M` (`markAll`, now legacy-replay-only) does.
     const s = newState(NUMBERS.p, NUMBERS.desc);
     const ui = newUi(s);
-    expect(saladGame.interpretMove(s, ui, null, { x: 0, y: 0 }, 109)).toEqual({
-      type: "markAll",
+    const press = (st: typeof s) =>
+      saladGame.interpretMove(st, ui, null, { x: 0, y: 0 }, 109);
+
+    // 1. Fill.
+    expect(press(s)).toEqual({ type: "pencilAll" });
+    const filled = saladGame.executeMove(s, { type: "pencilAll" });
+
+    // 2. Clean: strike the candidates the given symbols already rule out.
+    const second = press(filled);
+    expect((second as { type: string }).type).toBe("pencilStrike");
+    const cleaned = saladGame.executeMove(filled, second as SaladMove);
+    for (let i = 0; i < s.order * s.order; i++) {
+      // Only ever removes.
+      expect(cleaned.marks[i] & ~filled.marks[i]).toBe(0);
+    }
+
+    // 3. Converges: a third press has nothing left to remove.
+    expect(press(cleaned)).toBeNull();
+
+    // 4. A narrowed square survives a press that fills elsewhere.
+    const narrowed = saladGame.executeMove(cleaned, {
+      type: "set",
+      x: 0,
+      y: 0,
+      value: "clear",
     });
-    const filled = saladGame.executeMove(s, { type: "markAll" });
-    expect(saladGame.interpretMove(filled, ui, null, { x: 0, y: 0 }, 109)).toBeNull();
+    const kept = narrowed.marks.slice();
+    const refill = press(narrowed);
+    expect(refill).toEqual({ type: "pencilAll" });
+    const after = saladGame.executeMove(narrowed, refill as SaladMove);
+    for (let i = 1; i < s.order * s.order; i++) {
+      expect(after.marks[i]).toBe(kept[i]);
+    }
   });
 
   it("cannot select or overwrite a fixed clue", () => {
