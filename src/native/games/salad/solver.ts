@@ -27,6 +27,7 @@
  * user-solver of its own).
  */
 
+import type { DeductionRecord } from "../../engine/deduction-record.ts";
 import {
   DIFF_IMPOSSIBLE,
   LatinSolver,
@@ -157,6 +158,31 @@ function latinholesSolverCount(solver: LatinSolver, b: SaladBoard): number {
 // --- the ABC End View border deduction -------------------------------------
 
 /**
+ * Why a border-clue elimination is forced — the premise Salad's hint narrates
+ * (hint path only; every allocation below is gated on `solver.recorder`, so the
+ * generator path builds none of these).
+ */
+export type BorderReason =
+  /** Near the clue: the first square that could hold a symbol must hold the
+   * clue's, so every *other* symbol is ruled out of it. `skipped` counts the
+   * already-known-empty squares between the clue and this one. */
+  | { kind: "borderNear"; clue: number; clueVal: number; skipped: number }
+  /** Past the clue's reach: the clue's own symbol cannot sit this far in.
+   * `reach` is how many squares from the clue it may still sit (0-based), which
+   * starts at `order − nums` (the line's whole hole budget), is reduced by the
+   * `tightenedBy` empty squares already marked beyond it, and is cut off
+   * outright at `circleAt` if a square in between is known to hold a symbol. */
+  | {
+      kind: "borderFar";
+      clue: number;
+      clueVal: number;
+      reach: number;
+      holes: number;
+      tightenedBy: number;
+      circleAt: number | null;
+    };
+
+/**
  * Upstream `salad_letters_solver_dir`, for one border clue looking inward:
  *
  * - **Near the clue**, until the first square that isn't a known hole, no
@@ -180,6 +206,7 @@ function saladLettersSolverDir(
 
   const o = solver.o;
   const nums = b.nums;
+  const rec = solver.recorder;
   let nchanged = 0;
 
   // The furthest the clue symbol can sit from the clue: one square per hole the
@@ -192,6 +219,9 @@ function saladLettersSolverDir(
   let dist = 0;
   let found = false;
   let outofrange = false;
+  // Hint-only provenance for the far arm: which square (if any) cut the reach
+  // short by being known to hold a symbol, and how many squares to walk back.
+  let circleAt: number | null = null;
 
   for (let i = si; i !== ei; i += di) {
     const x = i % o;
@@ -202,6 +232,21 @@ function saladLettersSolverDir(
         if (j === clue) continue;
         const pos = solver.cubepos(x, y, j);
         if (solver.cube[pos]) {
+          if (rec) {
+            rec({
+              kind: "elim",
+              x,
+              y,
+              n: j,
+              reason: {
+                kind: "borderNear",
+                clue: cd,
+                clueVal: clue,
+                skipped: dist,
+              } satisfies BorderReason,
+              group: solver.group,
+            });
+          }
           solver.cube[pos] = 0;
           nchanged++;
         }
@@ -213,13 +258,36 @@ function saladLettersSolverDir(
     if (outofrange) {
       const pos = solver.cubepos(x, y, clue);
       if (solver.cube[pos]) {
+        if (rec) {
+          rec({
+            kind: "elim",
+            x,
+            y,
+            n: clue,
+            reason: {
+              kind: "borderFar",
+              clue: cd,
+              clueVal: clue,
+              reach: maxdist,
+              holes: o - nums,
+              tightenedBy: o - nums - maxdist,
+              circleAt,
+            } satisfies BorderReason,
+            group: solver.group,
+          });
+        }
         solver.cube[pos] = 0;
         nchanged++;
       }
     }
     dist++;
 
-    if (b.holes[i] === CIRCLE || dist > maxdist) outofrange = true;
+    if (b.holes[i] === CIRCLE) {
+      if (!outofrange) circleAt = i;
+      outofrange = true;
+    } else if (dist > maxdist) {
+      outofrange = true;
+    }
   }
 
   return nchanged;
@@ -231,16 +299,33 @@ function saladLettersSolver(solver: LatinSolver, b: SaladBoard): number {
   let nchanged = 0;
   for (let i = 0; i < solver.o; i++) {
     for (const s of borderScans(i, solver.o)) {
-      nchanged += saladLettersSolverDir(solver, b, s.start, s.step, s.end, s.clue);
+      const n = saladLettersSolverDir(solver, b, s.start, s.step, s.end, s.clue);
+      nchanged += n;
+      // **Hint path only**: one *clue's* scan is one firing, so stop after the
+      // first that fires and let the driver open a new `group`. Without this the
+      // whole sweep lands in one group and a hint step would gather strikes from
+      // unrelated clues in unrelated lines under one clue's narration (§3's
+      // group-per-firing-not-per-pass trap — caught here by a highlight test
+      // finding a "far" step whose targets spanned three rows). Gated, so the
+      // generator sweeps every clue exactly as upstream does.
+      if (n && solver.recorder) return nchanged;
     }
   }
   return nchanged;
 }
 
-/** Upstream `salad_solver_easy`: the whole salad-specific rung. */
+/** Upstream `salad_solver_easy`: the whole salad-specific rung. On the hint path
+ * each of its three deductions returns separately, for the group-per-firing
+ * reason above. */
 function saladSolverEasy(solver: LatinSolver, b: SaladBoard): number {
+  const recording = solver.recorder !== undefined;
   let nchanged = latinholesSolverSync(solver, b);
-  if (b.mode === GAMEMODE_LETTERS) nchanged += saladLettersSolver(solver, b);
+  if (nchanged && recording) return nchanged;
+  if (b.mode === GAMEMODE_LETTERS) {
+    const n = saladLettersSolver(solver, b);
+    nchanged += n;
+    if (n && recording) return nchanged;
+  }
   nchanged += latinholesSolverCount(solver, b);
   return nchanged;
 }
@@ -260,6 +345,74 @@ function seedGridClues(solver: LatinSolver, b: SaladBoard): void {
     else if (clue === CIRCLE) placeCircle(solver, b, x, y);
     else if (clue) solver.place(x, y, clue);
   }
+}
+
+/** Seed the cube from a board's *confirmed markers* — the hint path's analogue
+ * of {@link seedGridClues}. A cross or ball is a real entry (Check & Save flags a
+ * wrong one), so it is a fact the working cube may assume; the player's *pencil
+ * notes* never are (hint-authoring §9.1's soundness boundary). Symbols need no
+ * seeding here because they sit in `b.grid`, which `LatinSolver.alloc` places. */
+function seedMarkers(solver: LatinSolver, b: SaladBoard): void {
+  const o = b.order;
+  for (let i = 0; i < o * o; i++) {
+    const x = i % o;
+    const y = (i / o) | 0;
+    if (b.holes[i] === CROSS) placeCross(solver, b, x, y);
+    else if (b.holes[i] === CIRCLE) placeCircle(solver, b, x, y);
+  }
+}
+
+/** What one recording run of the solver saw, from the player's board forward. */
+export interface SaladDeductions {
+  /** Every candidate cleared / cell placed, in solver order, each carrying the
+   * reason that forced it. Values run over the *whole* order-`o` alphabet, so an
+   * op with `n > nums` concerns one of the interchangeable hole symbols and has
+   * no player-visible note (see `hint.ts`). */
+  ops: DeductionRecord[];
+  /** The marker array at the deduction fixpoint: which squares are forced empty
+   * ({@link CROSS}) or forced to hold a symbol ({@link CIRCLE}). Salad's hole
+   * deductions write markers rather than candidates, so this — not `ops` — is
+   * where "this square must be empty" shows up. */
+  holes: Uint8Array;
+  /** The grid at the fixpoint, for the same reason. */
+  grid: Uint8Array;
+}
+
+/**
+ * Run the solver over a copy of `b` at `maxdiff` with recording on, and report
+ * everything it deduced (hint path only). Deductive only — both of Salad's tiers
+ * pass `diffRecursive = DIFF_IMPOSSIBLE`, so there is nothing to cap.
+ *
+ * The generator/solve path never sets `cfg.recorder`, so every reason allocation
+ * and record threaded through the deductions above is inert there — proved by the
+ * 28-fixture byte-match differential staying green unedited.
+ */
+export function recordSaladDeductions(b: SaladBoard, maxdiff: number): SaladDeductions {
+  const o = b.order;
+  const grid = b.grid.slice();
+  const holes = b.holes.slice();
+  const work: SaladBoard = { ...b, grid, holes };
+  const ops: DeductionRecord[] = [];
+
+  const cfg: LatinSolverConfig<SaladBoard> = {
+    maxdiff,
+    diffSimple: DIFF_EASY,
+    diffSet0: DIFF_HARD,
+    diffSet1: DIFF_HARD,
+    diffForcing: DIFF_HARD,
+    diffRecursive: DIFF_IMPOSSIBLE,
+    usersolvers: [saladSolverEasy, null],
+    valid: () => true,
+    ctx: work,
+    seed: (solver) => {
+      seedMarkers(solver, work);
+    },
+    recorder: (rec) => ops.push(rec),
+    budgetLabel: "salad hint",
+  };
+  latinSolver(grid, o, cfg);
+
+  return { ops, holes, grid };
 }
 
 /**

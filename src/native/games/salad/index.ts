@@ -21,6 +21,7 @@ import type {
   Point,
   Size,
 } from "../../../puzzle/types.ts";
+import { adaptiveMarkAll, obviousCandidateMarks } from "../../engine/candidate-hint.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
@@ -44,6 +45,7 @@ import {
 import { registerGame } from "../../engine/registry.ts";
 import type { RandomState } from "../../random/index.ts";
 import { newSaladDesc } from "./generator.ts";
+import { hint, hintKeepTrack, refreshHintStep } from "./hint.ts";
 import {
   colours,
   computeSize,
@@ -67,15 +69,19 @@ import {
   GAMEMODE_LETTERS,
   GAMEMODE_NUMBERS,
   isComplete,
+  needsPencilFill,
   newState,
   newUi,
   PRESETS,
   presetLabel,
   type SaladEntry,
+  type SaladMark,
   type SaladMove,
   type SaladParams,
   type SaladState,
   type SaladUi,
+  saladNotes,
+  saladRegions,
   symbolRange,
   textFormat,
   validateDesc,
@@ -227,20 +233,22 @@ function interpretMove(
     }
   }
 
-  // 'M' / 'm': fill every empty square with all its candidate marks — emitted
-  // only when it would actually change something.
+  // 'M' / 'm' (and the toolbar's pencil-marks button): the collection's adaptive
+  // Mark-all press — fill the squares that have no marks yet, else clear the
+  // candidates a placed symbol already rules out of its row or column. **Only
+  // ever adds or removes; never resets** (owner-directed 2026-07-29), so pressing
+  // it can't undo deductions the player has pencilled. Upstream's resetting `M`
+  // (`markAll`) is no longer reachable from input.
   if (button === 77 || button === 109) {
-    const allmarks = (1 << (nums + 1)) - 1;
-    const marks = (1 << nums) - 1;
-    for (let i = 0; i < o * o; i++) {
-      if (
-        !state.grid[i] &&
-        state.holes[i] !== CROSS &&
-        state.marks[i] !== (state.holes[i] === CIRCLE ? marks : allmarks)
-      ) {
-        return { type: "markAll" };
-      }
-    }
+    return adaptiveMarkAll<SaladMove, SaladMark>(needsPencilFill(state), () =>
+      obviousCandidateMarks(
+        state.grid,
+        state.marks,
+        o,
+        saladRegions(o),
+        saladNotes(nums),
+      ),
+    );
   }
 
   return null;
@@ -267,14 +275,29 @@ function executeMove(state: SaladState, move: SaladMove): SaladState {
       next.cheated = true;
       return next;
     }
-    case "markAll": {
+    case "markAll":
+    case "pencilAll": {
       const allmarks = (1 << (nums + 1)) - 1;
       const marks = (1 << nums) - 1;
+      // `pencilAll` fills only the squares that carry no mark yet, so it can
+      // never throw away notes the player has narrowed; `markAll` (upstream's
+      // `M`) *resets* every fillable square and survives for replay of move logs
+      // saved before the button moved to the additive path.
+      const fillOnly = move.type === "pencilAll";
       for (let i = 0; i < o * o; i++) {
         if (!state.grid[i] && state.holes[i] !== CROSS) {
+          if (fillOnly && state.marks[i] !== 0) continue;
           next.marks[i] = state.holes[i] === CIRCLE ? marks : allmarks;
         }
       }
+      return next;
+    }
+    case "pencilStrike": {
+      // Only ever removes, so replaying it is idempotent (unlike the `pencil`
+      // toggle) and a partly-followed hint strike stays safe to re-apply. Mark
+      // `n = nums + 1` is the "might be empty" X, which `1 << (n − 1)` places at
+      // bit `nums` — the same formula as a symbol's bit.
+      for (const { x, y, n } of move.marks) next.marks[y * o + x] &= ~(1 << (n - 1));
       return next;
     }
     default: {
@@ -408,6 +431,9 @@ export const saladGame: Game<
   status: (s): GameStatus => (s.completed ? "solved" : "ongoing"),
 
   solve,
+  hint,
+  hintKeepTrack,
+  refreshHintStep,
   findMistakes: saladFindMistakes,
   requestKeys: (p): KeyLabel[] => {
     // Upstream `game_request_keys`: the symbol keys, then X, O and clear.

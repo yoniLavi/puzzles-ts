@@ -1670,7 +1670,11 @@ stale-plan guard (§7.3) all apply here; this section is the pencil-note-*specif
 >
 > **The `hint()` entry and the generic-Latin narration arms are shared.** Two small slices of the "meaning" layer turned out genuinely identical and were extracted (`extract-candidate-hint-entry`, `share-latin-reason-narration`): (a) the `Game.hint` *entry* — completed-board refusal, `findMistakes` refusal, `autoPencil ?? false` default, empty-plan refusal, the three refusal strings — is `candidateHint(state, ui, findMistakes, buildSteps)` in `candidate-hint.ts`; every candidate game's `hint` is a one-line call to it. (b) The *generic Latin reason* narration arms (`single` / `hiddenSingle` / `forcedSingle` / `dup` / `set` / `forcing`) read byte-identically across the **row/column** Latin games, so `narrateLatinReason(reason, ns)` in `latin-hint.ts` owns them; Keen and Unequal `narrate` their game-specific arms (cages / inequality+adjacency clues) then `default: return narrateLatinReason(reason, ns)`. **Solo and Towers keep their own `narrate`** and are *not* on the shared narrator — Solo's generic arms name "row, column **and block**" and use region names (block/diagonal), and Towers narrates the whole family in "height" vocabulary with a single value not an `ns` list; forcing either onto the shared narrator would mean per-game overrides for half its arms, which reads worse than the duplication. The rule that held: extract the entry/arms that are *verbatim* across ≥2 games, leave the ones that diverge local.
 >
+> **…and the *value vocabulary* is a parameter, which brought Group and Salad onto them (`add-salad-hint`, design D5).** The reason Group kept a private copy of the six arms was never the arms — it was that its values are elements `a`–`z`, not digits; Salad's are `A`–`C` *or* `1`–`3` by mode, and it calls a board position a *square*, not a cell. So `narrateLatinReason(reason, ns, vocab?)` takes an optional `LatinVocab { noun, value(n), cell? }`; omit it and you get plain numbers, byte-identical to before (Keen's and Unequal's assertions pass unedited — the guardrail). Two knock-ons worth copying: the shared `dup` arm now picks **"a"/"an" by the rendered value**, which is what Group's local copy had reworded around ("already contain a" reads as an article for element `a`) and which also quietly fixed "a 8" for the digit games; and one vocabulary cannot express a *per-arm* difference, so **Towers still declines** (it wants the value qualified in two arms — "height 5 can go in only this cell … so it must be 5" — and bare in the rest) as does **Solo** (its region phrase varies per arm). Measured verdict, not assumed: extract when the only difference is the vocabulary; decline when an arm's *shape* differs.
+>
 > **The move *dialect* is a parameter — don't rename a game's moves to fit (`add-crossing-hint`).** `keepCandidateHintTrack` / `refreshCandidateHintStep` used to read a hard-coded `type` discriminator and a `1 << n` pencil bit. That is the Latin family's dialect, not a property of the pattern: **Crossing** discriminates on `kind` and stores candidate `n` at bit `n − 1`, and **Group**'s `set`/`pencil` carry a *cell list* rather than an `x`/`y` pair. Renaming either is not an option — the save format replays the **move log**, so a discriminator rename breaks every existing save — so both helpers now take an optional `CandidateMoveAdapter<M>`: `read(m)` maps a game move onto the canonical `CandidateMove` (or `null` for "not one of these, so off-plan"), `strike(marks)` builds a strike in the game's own shape, and an optional `bit(n)` supplies the mask encoding. Omit it and you get `typeKeyedCandidateMoves`, so the four Latin games' call sites are untouched. Two things it bought immediately: Crossing wires both hooks in ~10 lines, and **Group's hand-rolled copy of the same ~78 lines was deleted** in favour of a 12-line adapter (its tests passing unedited is what proved the extraction behaviour-preserving — the guardrail that has now held six times).
+>
+> **The note *encoding* is a parameter too — and only the half that had a consumer (`add-salad-hint`, design D3).** The mark helpers (`obviousCandidateMarks`, `regionDuplicateMarks`, `classifyPlacementInRegions` / `classifyPlacement` / `singlePlacementReason`, `nextStrike`) take an optional `NoteEncoding { bit?(n), values? }`: `bit` is the same mask function the move adapter carries, and `values` is the highest candidate a cell may note when that is *shorter* than the grid order (Salad notes `nums` symbols plus one "might be empty" mark on an `order`-strided grid). Omitted ⇒ `1 << n` and `values = w`, so no existing call site changes. **`nextStrike`/`nextPlace`/`firstUnreflectedPlaceIndex` also gained a `placed` grid distinct from `grid`** — "which cells are already decided" versus "which cells can still take notes". They coincide everywhere but Salad, where the cube places one of its interchangeable hole symbols in a square the player settles with an *empty-square marker*: the grid entry stays blank for ever, so judging by `grid` alone leaves that op permanently unreflected and walls off every strike recorded after it. If your game has a way to decide a cell that doesn't write a value into the grid, you need this.
 >
 > **Not every candidate game fits, and Undead is the recorded no-go.** The shared helpers still assume `0`-empty, `{x, y}` cells on a `w`-strided grid, and a plain `{...highlights, targets, marks}` shrink. Undead breaks all three at once (`MON_NONE = 7` is its empty sentinel, its marks are `{cell, monster}` over a **1-D border-ringed** board with the monster *bit* as the value, and its highlight shrink has to re-project cell → x/y through `monsterCellXY`). It was re-evaluated against the adapter above when that landed and **declined**: fitting it would mean a third adapter method that rebuilds the highlights, at which point the game supplies the logic and the "helper keeps all the logic" property — the whole point — is gone. Undead keeps its own copies. A documented non-migration is a fine outcome; don't contort a game onto the shared shape.
 
@@ -2067,6 +2071,93 @@ changes one decision — worth reading before hinting a game that shares any of 
 Exemplars: `group/{solver,index,render}.ts`; guards: `group-hint.test.ts` +
 `group-render-scenario.test.ts` (associativity frame) + `groupGame` in
 `hint-resume.test.ts`.
+
+### 9.7 A candidate game whose value set is *not uniform* — and whose conclusions are markers, not placements (Salad)
+
+Salad (`add-salad-hint`) is the first candidate-elimination game where several solver values
+collapse onto **one** player note, and the first where the thing a deduction concludes is often not
+a placement at all. Everything else in §9 transfers unchanged (the soundness boundary, `pencilStrike`,
+lazy populate, the one-shot obvious clean, `refreshHintStep`); these five points are what a game
+shaped like it will hit.
+
+1. **Find where the game's values *are* uniform, and put the collapse only at the edge.** Salad is a
+   pseudo-Latin square: upstream fakes "`nums` symbols per line, the rest empty" with a *complete*
+   order-`o` square whose symbols above `nums` are reinterpreted as holes. So **in the cube the holes
+   are perfectly Latin** — every shared helper's uniqueness assumption is already true there — and
+   only the *player-facing projection* is many-to-one. That single observation is what kept the
+   abstraction small: the design had proposed a `CandidateVocabulary` with a `valuesFor(bit)` arm for
+   the collapse, and threading it found **no consumer**, because a shared helper only ever asks "which
+   note bit does this *placed* value occupy?" or "are this cell's notes down to one?" — and no hole
+   symbol is ever placed on the player's grid or singled. What survived is the bit offset alone
+   (`NoteEncoding`, §9's callout). **Look for the uniform view before generalising the helper.**
+2. **A conclusion that writes no value into the grid is a fourth move shape.** Salad settles a square's
+   *emptiness* with a marker (`set { value: "cross" | "circle" }`), which is neither a placement nor a
+   note strike. The `CandidateMoveAdapter` reads it as `null` (⇒ off-plan) and the game's
+   `hintKeepTrack` / `refreshHintStep` judge it in ~12 lines *before* delegating — in particular
+   `refreshHintStep` must resolve a marker step by reading the **marker array**, because the shared
+   placement arm waits for `grid[cell] !== 0`, which for a cross never comes. Reuse the mechanics for
+   the three canonical shapes; keep the fourth local.
+3. **Re-derive a marker's *why* from the visible board, cheapest first — and then measure how often
+   the honest weak arm fires.** Salad's sync and count deductions write markers rather than
+   candidates, so their conclusions are not worth recording: the plan re-derives them (§9.3a's rule,
+   applied to markers) in order — a line's *counts* first (visible and countable, §2.8), then a note
+   collapse onto the empty-square mark, and only then a `forcedCross`/`forcedCircle` arm ("taking this
+   row and column together…", the marker analogue of `forcedSingle`). A 60-board sweep across both
+   modes and both difficulties then showed the weak arms firing **zero** times, and no board refusing
+   — so the plan is entirely concrete techniques in practice, with the weak arms kept as the backstop
+   that stops a step ever being wordless (their wording pinned by a direct `narrate` unit test, since
+   the walk never reaches them). **Do the sweep; "there is a fallback" and "the fallback is what the
+   player sees" are very different situations.**
+4. **Only record the deduction whose *premise* you could not otherwise recover.** Salad threads the
+   recorder through the ABC End View border scan **alone** — the one deduction that both strikes
+   candidates the player holds notes for *and* carries a premise (which clue, how far its symbol can
+   reach, what shortened that reach) the working board can't reconstruct. Sync/count need no recorder
+   at all. That kept the gated surface to one function, and the 28-fixture byte-match differential
+   green unedited.
+5. **The "group per firing, not per pass" trap bites hard here, and a *highlight* test is what caught
+   it.** Salad's whole rung is one `usersolvers[0]` call doing sync + all `4·order` clue scans + the
+   counts, so one `beforeRung` group covered every clue on the board — and a hint step gathered strikes
+   from unrelated clues in unrelated lines under one clue's narration. The fix is the §9.5 gated
+   early return (`if (n && solver.recorder) return`) at *both* levels, per clue and per sub-deduction.
+   It was invisible in the narration and in "does the plan solve the board"; what surfaced it was a
+   tier-1 assertion that **a step's targets lie inside the area it shades**. Assert the
+   premise/conclusion geometry, not just the words.
+
+Also of note: Salad's "placed grid" for the soundness boundary is `grid` **plus** `holes` — a cross or
+ball is a real entry that Check & Save flags when wrong, so the working cube may assume it, exactly as
+it assumes a written symbol. Pencil notes still never seed it.
+
+Exemplars: [`salad/hint.ts`](../../src/native/games/salad/hint.ts) (the walk, the reason union, the
+narration), [`salad/solver.ts`](../../src/native/games/salad/solver.ts) (`recordSaladDeductions`, the
+gated border recorder), [`salad/render.ts`](../../src/native/games/salad/render.ts) (the ghosted entry
+per move shape, §5.1a); guards: `salad-hint.test.ts`, the hint frames in `salad-render.test.ts`, and
+`salad` in `hint-resume.test.ts` / `hint-overlay.test.ts` / `hint-quality.test.ts`.
+
+**A populate step must never *reset* the player's notes — and the shared helper still does
+(owner-reported 2026-07-29).** The opener reused the game's mark-all move, which by design resets
+every fillable cell to the full candidate set. That is a fine thing for a *player* to ask for and a
+destructive thing for a *hint* to do on their behalf: on any board with some pencilled cells and some
+blank ones it threw away deductions already made. And the latch makes it worse rather than catching it
+— "populate is needed" is *some* cell lacks notes, so one blank cell triggers a whole-board reset.
+
+Salad's fix, and the shape to copy: an **additive** `pencilAll` (fill only cells with no mark yet),
+used by the opener *and* by the Mark-all press via the shared `adaptiveMarkAll`, so a press only ever
+adds or removes; upstream's resetting move stays in the union for replay of already-saved move logs
+and is documented as unreachable from input. **The working copy must mirror the additive fill
+exactly**, or the plan goes on to teach strikes on candidates the player had already crossed out —
+steps whose mark is invisible on their board.
+
+> ⚠️ **The rest of the family still has this.** `lazyPopulate` fills *every* empty cell, and
+> `pencilAll`'s `executeMove` in Towers, Keen, Unequal, Solo and Group **resets** — even though
+> `adaptiveMarkAll`'s own contract says "fill every *note-less* empty cell". Fixing them is a one-line
+> change each, but it alters the replay semantics of a shipped move (a saved log's Mark-all pressed
+> after narrowing notes would rebuild a different board), so it is a save-compatibility call and wants
+> its own change. See `add-salad-hint` design `F8`.
+
+**Known follow-up, not a defect:** Salad has no auto-pencil preference, so — like Group — its plan
+teaches every placement's row/column note cull as an explicit `continuesPrevious` strike. That is the
+most frequent step in a full plan. If Salad ever gains the `auto-pencil` pref the Latin family ships,
+those legs fold away for free (the walk already honours `autoClean`).
 
 ---
 

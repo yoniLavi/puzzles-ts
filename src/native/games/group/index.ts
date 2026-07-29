@@ -46,6 +46,8 @@ import { clearKey } from "../../engine/key-labels.ts";
 import { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE } from "../../engine/latin.ts";
 import {
   hiddenSingleLine,
+  type LatinVocab,
+  narrateLatinReason,
   rowColRegions,
   type SingleReason,
   singlePlacementReason,
@@ -501,22 +503,21 @@ const CLEAN_OBVIOUS_TEXT = cleanObviousText("element", "placed", "row or column"
  * reason is re-derived into. */
 type NarratableReason = HintReason | SingleReason;
 
-/** Join a list of element letters for narration: `[a]`→"a", `[a,b]`→"a and b",
- * `[a,b,c]`→"a, b and c". */
-function joinCh(vals: number[], id: boolean): string {
-  const s = vals.map((v) => toChar(v, id));
-  if (s.length <= 1) return s[0] ?? "";
-  if (s.length === 2) return `${s[0]} and ${s[1]}`;
-  return `${s.slice(0, -1).join(", ")} and ${s[s.length - 1]}`;
+/** Group's value vocabulary for the shared generic-Latin narration arms: its
+ * values are the elements `a`–`z`, not digits (`share-latin-reason-narration`
+ * extended by `add-salad-hint` design D5 — Group was the copy that proved one
+ * vocabulary parameter enough). */
+function groupVocab(id: boolean): LatinVocab {
+  return { noun: "element", value: (n) => toChar(n, id) };
 }
 
 /** Narrate *why* a firing is forced (hint-authoring §2): indication → reasoning →
  * necessity-voice conclusion, every cell named by the element letter it shows.
  * `ns` is the value list the step acts on (a placement passes its single value; a
- * strike its struck values). The generic Latin arms mirror `narrateLatinReason`
- * but interpolate `toChar` letters instead of digits, since Group's values are
- * the elements a–z. `identityFill`'s *first-leg* text lives here; its continuation
- * legs are narrated in {@link emitIdentityFillJourney}. */
+ * strike its struck values). The six generic Latin arms are delegated to
+ * `narrateLatinReason` under {@link groupVocab}; only Group's own three
+ * techniques are spelled out here. `identityFill`'s *first-leg* text lives here;
+ * its continuation legs are narrated in {@link emitIdentityFillJourney}. */
 function narrate(reason: NarratableReason, ns: number[], id: boolean): string {
   const ch = (n: number): string => toChar(n, id);
   switch (reason.kind) {
@@ -545,22 +546,11 @@ function narrate(reason: NarratableReason, ns: number[], id: boolean): string {
         : `${O}·${E} = ${ch(reason.product)}`;
       return `${product}, not ${O} — the identity leaves every element unchanged, so ${E} can't be the identity. Cross out its identity marks.`;
     }
-    case "single":
-      return `Every other element has been ruled out in this cell, so it can only be ${ch(ns[0])}.`;
-    case "hiddenSingle": {
-      const line = reason.line === "row" ? "row" : "column";
-      return `In this ${line}, ${ch(reason.n)} can go in only this cell — every other cell in the ${line} has ruled it out — so it must be ${ch(reason.n)}.`;
-    }
-    case "forcedSingle":
-      return `Working through this cell's row and column together, only ${ch(reason.n)} can still go here — so it must be ${ch(reason.n)}.`;
-    case "dup":
-      // "contain X" (not "there's already X") dodges the a/an trap — element
-      // letters like "a" would read as the indefinite article after "already".
-      return `This row and column already contain ${ch(reason.n)}, so we must cross out ${ch(reason.n)} from the other cells they pass through.`;
-    case "set":
-      return `Another group of cells already accounts for a fixed set of elements that includes ${joinCh(ns, id)}, so we must cross out ${joinCh(ns, id)} here.`;
-    case "forcing":
-      return `Following a chain of two-candidate cells, placing ${ch(ns[0])} here would force a contradiction further along — so we must cross out ${joinCh(ns, id)}.`;
+    default:
+      // The six generic arms, in element vocabulary. The shared `dup` arm picks
+      // "a"/"an" by the rendered value, which is what Group's local copy dodged
+      // by rewording ("already contain a" reads as an article for element `a`).
+      return narrateLatinReason(reason, ns, groupVocab(id));
   }
 }
 

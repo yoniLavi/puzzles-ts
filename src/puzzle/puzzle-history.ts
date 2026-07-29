@@ -329,8 +329,11 @@ export class PuzzleHistory extends SignalWatcher(LitElement) {
     await this.puzzle?.hint();
   }
 
-  /** Inject the 'M' key (ASCII 77): the game fills every empty cell with all
-   * candidate pencil marks. Only games with `canMarkAll` show this control. */
+  /** Inject the 'M' key (ASCII 77): the game's adaptive Mark-all press — fill
+   * every cell that has no pencil marks yet, else clear the candidates already
+   * ruled out by a placed value. Only ever adds or removes, so a press can't
+   * undo the player's own deductions. Only games with `canMarkAll` show this
+   * control. */
   private async handleMarkAll() {
     await this.puzzle?.processKey(77);
   }

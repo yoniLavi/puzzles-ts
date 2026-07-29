@@ -473,6 +473,10 @@ export interface LatinSolverConfig<Ctx> {
    * order. When set, a fixpoint step budget is also installed. Leaving it unset
    * (generator/solve path) keeps that path byte-for-byte unchanged. */
   recorder?: DeductionRecorder;
+  /** What the recorder's fixpoint budget calls itself if it trips. Defaults to
+   * the first consumer's label; a game that records passes its own so a runaway
+   * fixpoint names the game that owns it. */
+  budgetLabel?: string;
   /**
    * Extra candidate-cube constraints to apply *after* `alloc` and *before* the
    * deduction fixpoint — the slot upstream games use between
@@ -654,7 +658,7 @@ export function latinSolver<Ctx>(
   // (a flurry of `place`s) is not mistaken for deductions the hint should teach.
   if (cfg.recorder) {
     solver.recorder = cfg.recorder;
-    solver.budget = stepBudget("towers hint");
+    solver.budget = stepBudget(cfg.budgetLabel ?? "towers hint");
   }
   const ret = latinSolverTop(solver, cfg);
   // Expose the final candidate cube (upstream's `memcpy(state->hints, ...)`),
