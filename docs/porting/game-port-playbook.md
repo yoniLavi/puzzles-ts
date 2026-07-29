@@ -1320,6 +1320,18 @@ before touching the browser — a wrong offset shows instantly as a staircase.
 Exemplar: [`bricks/render.ts`](../../src/native/games/bricks/render.ts) +
 [`bricks/index.ts`](../../src/native/games/bricks/index.ts).
 
+**The rule generalises past geometry: any rule the input and the display *both*
+need is one function, called by both.** Coordinates are only the obvious case.
+Crossing's clue list is an input surface, so it shares `layoutNumbers` (where a
+clue is) — but it also *colours* each clue by which run a click would send it to,
+and that rule was written twice: `runForNumber` for the click, an inline loop in
+`redraw` for the colour. They agreed until the rule got a tie-break, at which
+point the list said "this goes down" while the click put it across (owner-reported
+on Crossing). The fix is not to fix both copies but to delete one — `redraw` now
+asks `runForNumber`, so the colour cannot name a run the click disagrees with.
+**Tell:** a predicate in `redraw` that answers a question about *what a move would
+do*. That belongs to the move code; render should be asking, not deciding.
+
 ### 3.14 Several grid *modes* on one substrate: a movement table, not N geometries (Ascent)
 
 A game with multiple grid shapes (Ascent: Rectangle / no-diagonals / Hexagon /

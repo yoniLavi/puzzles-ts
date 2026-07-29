@@ -19,7 +19,16 @@ import type {
   Size,
 } from "../../../puzzle/types.ts";
 import {
+  type CandidateMoveAdapter,
+  candidateHint,
+  keepCandidateHintTrack,
+  refreshCandidateHintStep,
+} from "../../engine/candidate-hint.ts";
+import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   type PresetMenu,
   type SolveResult,
   UI_UPDATE,
@@ -41,7 +50,13 @@ import {
 import { registerGame } from "../../engine/registry.ts";
 import { newCrossingDesc } from "./generator.ts";
 import {
+  type CrossingFiring,
+  deduceCrossingPlan,
+  narrateCrossing,
+} from "./hint-solver.ts";
+import {
   type CrossingDrawState,
+  type CrossingHint,
   colours,
   computeSize,
   FLASH_TIME,
@@ -58,6 +73,7 @@ import {
   type CrossingDirection,
   type CrossingMove,
   type CrossingParams,
+  type CrossingPuzzle,
   type CrossingState,
   type CrossingUi,
   cloneState,
@@ -318,6 +334,17 @@ function executeMove(state: CrossingState, move: CrossingMove): CrossingState {
     return next;
   }
 
+  if (move.kind === "pencilStrike") {
+    // Only ever removes, so replaying it is idempotent (unlike a `pencil`
+    // toggle) and a partly-followed strike stays safe to re-apply.
+    for (const { x, y, n } of move.marks) {
+      const j = y * w + x;
+      if (walls[j]) throw new Error("crossing: cannot edit a wall");
+      next.marks[j] &= ~(1 << (n - 1));
+    }
+    return next;
+  }
+
   const i = move.y * w + move.x;
   if (move.x < 0 || move.x >= w || move.y < 0 || move.y >= h)
     throw new Error("crossing: move out of range");
@@ -352,6 +379,179 @@ function solve(orig: CrossingState): SolveResult<CrossingMove> {
   if (result.status !== "valid")
     return { ok: false, error: "Solver could not find a unique solution." };
   return { ok: true, move: { kind: "solve", grid: Array.from(result.grid) } };
+}
+
+// --- hint (add-crossing-hint) -----------------------------------------------
+
+/**
+ * How Crossing's `Move` union reads as the shared candidate shapes. Crossing
+ * discriminates on `kind`, not `type`, and stores candidate `n` in bit `n − 1`
+ * — so the shared mechanics take the dialect as a parameter rather than the
+ * game renaming its moves (which would break every saved move log).
+ */
+const crossingCandidateMoves: CandidateMoveAdapter<CrossingMove> = {
+  read: (m) => {
+    if (m.kind === "set" && m.digit !== null)
+      return { type: "set", x: m.x, y: m.y, n: m.digit, pencil: false };
+    if (m.kind === "pencil" && m.digit !== null)
+      return { type: "set", x: m.x, y: m.y, n: m.digit, pencil: true };
+    if (m.kind === "pencilStrike") return { type: "pencilStrike", marks: [...m.marks] };
+    return null; // `place`, `solve`, and the two "clear this" moves are off-plan
+  },
+  strike: (marks) => ({ kind: "pencilStrike", marks }),
+  bit: (n) => 1 << (n - 1),
+};
+
+const cellAt = (puzzle: CrossingPuzzle, i: number): { x: number; y: number } => ({
+  x: i % puzzle.w,
+  y: Math.floor(i / puzzle.w),
+});
+
+/** The move a firing asks for, in the game's own vocabulary — a whole number
+ * into a run, one digit, or a rule-out (design D3). */
+function hintMove(puzzle: CrossingPuzzle, f: CrossingFiring): CrossingMove {
+  switch (f.technique) {
+    case "onlyNumber":
+      return { kind: "place", run: f.run, number: f.number };
+    case "sharedDigit":
+    case "crossRuns":
+      return { ...cellAt(puzzle, f.cell), kind: "set", digit: f.digit };
+    case "noteStrike":
+      return {
+        kind: "pencilStrike",
+        marks: f.digits.map((n) => ({ ...cellAt(puzzle, f.cell), n })),
+      };
+  }
+}
+
+/**
+ * What the hint draws. The evidence for every technique is "which listed
+ * numbers still fit this run", and that set lives in the **clue list**, not on
+ * the board — so the premise the narration cites is only visible if the panel
+ * is part of the highlight (design D2). Hence `numbers` beside the usual
+ * area/targets/marks.
+ */
+function hintHighlights(puzzle: CrossingPuzzle, f: CrossingFiring): CrossingHint {
+  const runCells = (r: number): { x: number; y: number }[] =>
+    puzzle.runs[r].cells.map((i) => cellAt(puzzle, i));
+  switch (f.technique) {
+    case "onlyNumber":
+      return {
+        area: runCells(f.run),
+        // Only the squares the move actually writes into; the ones already
+        // filled are the premise, and stay part of the shaded area.
+        targets: f.fill.map((i) => cellAt(puzzle, i)),
+        marks: [],
+        numbers: f.fitting,
+        numberTarget: f.number,
+      };
+    case "sharedDigit":
+      return {
+        area: runCells(f.run),
+        targets: [cellAt(puzzle, f.cell)],
+        marks: [],
+        numbers: f.fitting,
+        numberTarget: null,
+      };
+    case "crossRuns":
+      return {
+        area: [...runCells(f.acrossRun), ...runCells(f.downRun)],
+        targets: [cellAt(puzzle, f.cell)],
+        marks: [],
+        numbers: f.fitting,
+        numberTarget: null,
+      };
+    case "noteStrike":
+      return {
+        area: runCells(f.run),
+        targets: [cellAt(puzzle, f.cell)],
+        marks: f.digits.map((n) => ({ ...cellAt(puzzle, f.cell), n })),
+        numbers: f.fitting,
+        numberTarget: null,
+      };
+  }
+}
+
+/** One firing is one step — a whole run filled by one deduction is one hint,
+ * not one per square (quality-bar rule 2), which is exactly what the `place`
+ * move buys. */
+function buildSteps(state: CrossingState): HintStep<CrossingMove, CrossingHint>[] {
+  const { puzzle } = state;
+  return deduceCrossingPlan(state).firings.map((f) => ({
+    move: hintMove(puzzle, f),
+    explanation: narrateCrossing(puzzle, f),
+    highlights: hintHighlights(puzzle, f),
+  }));
+}
+
+function hint(state: CrossingState): HintResult<CrossingMove, CrossingHint> {
+  return candidateHint(state, undefined, findCrossingMistakes, buildSteps);
+}
+
+/**
+ * Classify a player move against the displayed step. `state` is the **pre-move**
+ * board (hint-authoring §5.5a).
+ *
+ * The whole-run step is the one shape the shared helper cannot read, and it
+ * needs care: a player who types the number in digit by digit — which
+ * auto-advance makes the natural way to do it — is following the hint just as
+ * much as one who clicks the clue, so each correct digit is `onTrack` until the
+ * run's last empty square completes it.
+ */
+function hintKeepTrack(
+  m: CrossingMove,
+  step: HintStep<CrossingMove, CrossingHint>,
+  state: CrossingState,
+): HintTrackVerdict {
+  const sm = step.move;
+  if (sm.kind === "place") {
+    if (m.kind === "place")
+      return m.run === sm.run && m.number === sm.number ? "completed" : "off";
+    if (m.kind !== "set" || m.digit === null) return "off";
+    const run = state.puzzle.runs[sm.run];
+    const num = state.puzzle.numbers[sm.number];
+    const k = run.cells.indexOf(m.y * state.puzzle.w + m.x);
+    if (k < 0 || m.digit !== num.charCodeAt(k) - 48) return "off";
+    const empty = run.cells.filter((i) => state.grid[i] === 0).length;
+    return empty <= 1 ? "completed" : "onTrack";
+  }
+  return keepCandidateHintTrack(
+    m,
+    step,
+    state.marks,
+    state.puzzle.w,
+    crossingCandidateMoves,
+  );
+}
+
+/** Validate-at-display (§7.3): a whole-run step is resolved once the run is
+ * full, and shrinks its targets to the squares still to write; everything else
+ * is the shared behaviour. */
+function refreshHintStep(
+  step: HintStep<CrossingMove, CrossingHint>,
+  state: CrossingState,
+): HintStep<CrossingMove, CrossingHint> | null {
+  const m = step.move;
+  if (m.kind === "place") {
+    const cells = state.puzzle.runs[m.run].cells;
+    const empty = cells.filter((i) => state.grid[i] === 0);
+    if (empty.length === 0) return null;
+    if (!step.highlights || empty.length === cells.length) return step;
+    return {
+      ...step,
+      highlights: {
+        ...step.highlights,
+        targets: empty.map((i) => cellAt(state.puzzle, i)),
+      },
+    };
+  }
+  return refreshCandidateHintStep(
+    step,
+    state.grid,
+    state.marks,
+    state.puzzle.w,
+    crossingCandidateMoves,
+  );
 }
 
 function flashLength(from: CrossingState, to: CrossingState): number {
@@ -411,6 +611,34 @@ export const crossingGame: Game<
 
   solve,
   findMistakes: findCrossingMistakes,
+  hint,
+  hintKeepTrack,
+  refreshHintStep,
+  /**
+   * Selecting a square, moving the cursor or picking a clue up puts a displayed
+   * hint away — **unless the player is working inside the squares the hint is
+   * about** (owner-directed).
+   *
+   * The flag is needed at all because Crossing's hint *suppresses* the
+   * selection's run wash, so the two never mean "washed square" at once: without
+   * it a click did nothing visible, and there was no way out of hint mode
+   * (Subsets shipped the same bug for the same reason). The exception is what
+   * keeps following a hint by hand workable — clicking into a hinted run to type
+   * its number in must not delete the explanation of what to type. The cursor
+   * stays visible on those squares because `render.ts` switches to a dark corner
+   * cue wherever the hint owns the background.
+   *
+   * Everything a firing is about — the run(s) it reasons over and the squares it
+   * acts on — is already in `area`/`targets`, so this is exactly "am I inside
+   * the highlight?".
+   */
+  uiUpdateClearsHint(step, _state, ui) {
+    const hl = step.highlights as CrossingHint | undefined;
+    if (!hl || !ui.cshow) return true; // nothing shown, or nothing selected
+    const here = (cs: readonly { x: number; y: number }[]): boolean =>
+      cs.some((c) => c.x === ui.cx && c.y === ui.cy);
+    return !(here(hl.area) || here(hl.targets));
+  },
   requestKeys: (): KeyLabel[] => digitKeys(9),
   textFormat,
 

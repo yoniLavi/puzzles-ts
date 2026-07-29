@@ -372,6 +372,24 @@ find the premise that actually discriminates and say *that*. Cheap guard: assert
 phrase present and the false one absent (`singles-hint.test.ts` "corner4" checks
 `not.toContain("one white per line")`).
 
+**One technique can be forced several different ways — carry *which*, don't pick a favourite
+(Crossing).** A "only one candidate is left" rung looks like it needs one sentence, but the
+candidates can die of unrelated causes, and naming the wrong one is this same bug. Crossing's
+whole-run placement fires when exactly one listed number still fits a run, and the others can
+be out because they are *the wrong length*, because they are *already written in elsewhere*, or
+because they *contradict a digit already in the run*. The first cut said "only one N-digit
+number left matches what is already in this run" for all three — which on a **fresh board**
+(the opener the player sees first, and the commonest firing) cites digits that do not exist:
+vacuous as a premise and visibly false as a sentence. The fix is a `because` field on the
+firing, set where the elimination is actually computed, and one sentence per cause — the
+opener became *"This run is 6 squares long, and only one number in the list is 6 digits — so it
+must be 197665."*, which the player can verify by counting. Two habits: **compute the reason at
+the point of elimination, not at narration time** (only the finder knows why the others died),
+and **sanity-read the fresh-board firing specifically** — §2.7's degenerate-extreme check
+applies to *the board*, not only to interpolated values. Guard: assert each cause's phrasing
+*and* that the ones with nothing entered never say "already in this run"
+(`crossing-hint.test.ts` "states the premise that actually rules the other numbers out").
+
 ### 2.5 Keep the narration terse
 
 Explaining *why* is the bar, but say it in one sentence, not three (owner-directed).
@@ -736,6 +754,82 @@ this deduction's evidence area is non-empty — is still worth a per-game test: 
 filter left the area empty): the connectivity rule treats every non-black cell as
 white, so shade non-black neighbours, not only marked-white ones.
 
+#### 5.2a When half the evidence lives **off the board** — highlight that surface too (Crossing)
+
+A game whose deduction reasons over a **clue list, palette or tray** rather than only over cells
+has half its premise outside the grid, and shading the grid alone tells the player *that* there
+is a reason while hiding the part that does the work. Every Crossing technique turns on "which
+listed numbers still fit this run" — a fact that lives in the number panel under the board — so
+the hint highlights **both**: the run's squares as the area, and the still-fitting numbers as a
+patch behind their text in the panel, with the number a whole-run placement writes in taking the
+stronger target colour. The narration and the picture then agree: *"only one number in the list
+is 6 digits"* points at exactly one highlighted clue. Two things that made it cheap and one that
+made it correct:
+
+- **The layout is already shared.** Crossing's `layoutNumbers` was extracted during the port so
+  `interpretMove` and `redraw` could not disagree about where a clue is (playbook §3.13); the
+  hint just reads it. If your game's off-board surface is laid out inline in `redraw`, extract it
+  first.
+- **Its cache is separate from the per-tile one.** The `OverlaySidecar` covers the grid; the
+  panel has its own per-clue state array, so the hint class has to be folded into *that* key too
+  or the patch never paints (playbook §3.2 applies per surface, not per game).
+- **Ride behind the existing aid, don't replace it.** Crossing already colours the clue list by
+  which run each number could go in. The hint draws its patch *under* that ink instead of
+  overriding the colour, so both aids stay readable. Guard it: assert the step names at
+  least one clue **and** that a hint-coloured rect lands below the grid
+  (`crossing-hint.test.ts` "names at least one listed number as evidence").
+
+#### 5.2b If a hint *suppresses* one of the board's own displays, it MUST dismiss on `UI_UPDATE`
+
+The counterpart to §5.2a, and a bug that has now shipped **twice** — Subsets first, Crossing
+after (owner-reported both times). When a hint takes over a surface the game also uses for
+something else (Subsets' reference aid; Crossing's selected-run wash, suppressed so blue and
+green can't both mean "washed square"), the suppression is invisible until the player touches
+that surface — and then **nothing happens at all**: no wash, no aid, no change, and no way out
+of hint mode short of finding the right toolbar button.
+
+The reason it slips through is a real gap in the plumbing: `hintKeepTrack` is only consulted for
+**moves**. In a game whose board clicks *are* moves, going your own way returns `"off"` and the
+hint drops — which is why "clicking elsewhere dismisses the hint" feels like a collection-wide
+rule. In a **selection-based** game (the whole pencil-notes family, plus Crossing) a click is a
+`UI_UPDATE`, which never reaches `hintKeepTrack`, so nothing dismisses anything.
+
+Implement **`Game.uiUpdateClearsHint(step, state, ui)`** — the midend calls it on every
+`UI_UPDATE` while a plan is stored, with the ui **after** `interpretMove` has moved the cursor,
+and drops the plan when it returns true. Two shapes:
+
+- **`() => true`** — dismiss on any UI change. The simplest rule, and enough when the hint marks
+  nothing the player has to select in order to act on it (Subsets: its hint targets are slots,
+  its aid is a separate surface).
+- **Answer per step** — dismiss *unless* the player is working inside the squares the hint is
+  about. Crossing does this (owner-directed): its whole-run placement is followed by clicking
+  into the run and typing the number, and losing the explanation mid-way is the wrong trade.
+  Everything a firing is about is already in `highlights.area`/`targets`, so the predicate is
+  "am I inside the highlight?" and nothing new has to be stored.
+
+**If you answer `false` anywhere the hint paints, the cursor cue becomes your problem.** The
+hint owns the background on those squares, so a *background-only* selection cue (Crossing's
+`DF_SELECT` highlight, and most games') is invisible exactly when the player is about to type
+there — you have kept the hint and lost the caret. Fall back to a **foreground** cue on hinted
+squares, in a colour that reads against the hint: Crossing draws the keyboard cursor's corner
+marks for a mouse selection too, in dark `COL_GRID` rather than the near-white `COL_HIGHLIGHT`
+the green would swallow (same switch for the pencil-mode triangle). Guard it with the
+*discriminator*, not just the presence: assert the corner cue appears on a hinted square **and
+does not** on a plain selection — otherwise the test passes on the cell outline every square
+already draws (`crossing-hint.test.ts` "keeps the cursor visible on a square the hint has
+painted").
+
+Two more things worth knowing: **dropping the plan costs nothing** when the deduction is
+deterministic and cheap (Crossing recomputes in milliseconds and re-shows the same step on the
+next Hint press) — weigh it if your hint is expensive. And the hook is a **method, not a
+function property**: `Game` is stored type-erased in the registry, where a function property's
+contravariant parameters do not survive the erasure, while method syntax is checked bivariantly
+like every other hook here.
+
+The other selection-based games (Towers, Solo, Keen, Unequal, Undead, ABCD, Group) do **not**
+set it: their hints suppress nothing, so a click there still visibly moves the selection. The
+trigger for this rule is *suppression*, not selection.
+
 ### 5.3 Distinct *roles* get distinct colours — the element-type legend
 
 Quality-bar rule 3 ("equivalent moves share a colour") has a converse: **premise cells that
@@ -797,7 +891,22 @@ game:
 | Light Up | forced square(s), blue `COL_HINT` fill (bulb *and* mark targets identical — the narration says which; no bulb/blob preview) | evidence squares (a corridor of sight, a MAKESLIGHT set, a clue's placed bulbs) carried as one list, cue split by the cell's own state (§5.4): a **dark** square → `COL_HINT_CELL` shade (its blob draws on top), a **lit/bulb** square → teal `COL_HINT_LITREF` ring (a fill would hide the "already lit" premise); the unlit square a deduction protects → amber `COL_HINT_DARKREF` ring; the driving clue → its digit recolours `COL_HINT` (the Pattern clue↔move tie; the light `COL_HINT_CELL` was tried first and is unreadable as a cue — nearly white on black) |
 | Slant | forced square(s), blue `COL_HINT` fill (highlight only, no slash preview); a clue firing lights all its forced squares (equivalent moves share the colour, rule 3) and drops them as its multi-leg journey advances | a **clue** firing → the clue's digit recolours `COL_HINT` + its already-decided neighbour squares `COL_HINT_CELL` shade; a **loop/dead-end** firing → the connectivity chain / trapped-point components `COL_HINT_CELL` shade (plus the trapped points' incident squares, so a dead-end point carrying no diagonal yet is still *located*); an **equivalence** firing → teal `COL_HINT_REF` ring on the cited already-filled anchor (the honest locked-slant tier, below) |
 | Netslide | the tile being placed, `COL_HINT` fill (its wires still drawn on top, so the player sees *which* piece); the border arrow to press, `COL_HINT` | its destination outlined `COL_HINT` — **solid** when the finished board really does want that tile's wires there, **dashed** when the plan is only passing through. A movement game names one element type (the tile), so the §5.3 legend does not otherwise bite; the solid/dashed split is the non-colour cue distinguishing *arrived* from *setting up* |
+| Crossing | the squares to write into, solid **green** `COL_HINT` (green, not the collection's blue — see the note below); a struck note keeps its normal `COL_PENCIL` digit + strikethrough on a *non*-target background, so the candidate being ruled out stays legible | the run(s) reasoned over → pale-green `COL_HINT_CELL` shade (its entered digits draw on top, the Filling case of §5.4); **and the still-fitting listed numbers → the same two shades as a patch behind their text in the clue panel**, because half the premise lives off the board (§5.2a) |
 | Spokes | the forced spoke, in `COL_HINT` — **a line** ("draw this") when the move draws a line, **a rim dot** ("rule this out") when the move places a mark: the same two shapes the game draws for a real line and a real mark, in the hint colour (§5.1a) | the hubs whose clue/lines/connectivity are the argument → `COL_HINT_CELL` ring. A saturated hub forces several spokes as one multi-leg journey, all shown in the one colour (rule 2) |
+
+**If the game has already spent the hint hue, the *hint* moves — and takes the board with it
+(Crossing).** `COL_HINT` blue is the collection's default, not a mandate, and it is the wrong
+choice in a game whose own legend already means something in blue. Crossing washes a horizontal
+run pale blue and a vertical one amber (**the hue *is* the information** — the clue list is
+coloured to match, which is why the pair was matched in OKLCH in the first place), and the
+collection's hint blue measures L 0.82 C 0.07 h 250 against that wash's L 0.83 C 0.06 h 245 — a
+hint mark the player reads as "across". So Crossing's hint took **green**, the far corner of the
+wheel from both dimension hues, and — the half that actually settles it — **a displayed hint
+suppresses the run wash entirely**, so only one meaning of "washed square" is ever on screen.
+Dismissing the hint brings the wash straight back. Rule of thumb: check the new hint colour
+against the game's *existing* legend in OKLCH before assuming the default, and when two washes
+would coexist, decide which one owns the board while it is up rather than trying to make both
+legible at once.
 
 Two reusable lessons from the rollout: (1) **teal = "a cited black square", violet = "a
 cited white square"** is a cross-game reading worth preserving — reuse those hues for a
@@ -1561,7 +1670,9 @@ stale-plan guard (§7.3) all apply here; this section is the pencil-note-*specif
 >
 > **The `hint()` entry and the generic-Latin narration arms are shared.** Two small slices of the "meaning" layer turned out genuinely identical and were extracted (`extract-candidate-hint-entry`, `share-latin-reason-narration`): (a) the `Game.hint` *entry* — completed-board refusal, `findMistakes` refusal, `autoPencil ?? false` default, empty-plan refusal, the three refusal strings — is `candidateHint(state, ui, findMistakes, buildSteps)` in `candidate-hint.ts`; every candidate game's `hint` is a one-line call to it. (b) The *generic Latin reason* narration arms (`single` / `hiddenSingle` / `forcedSingle` / `dup` / `set` / `forcing`) read byte-identically across the **row/column** Latin games, so `narrateLatinReason(reason, ns)` in `latin-hint.ts` owns them; Keen and Unequal `narrate` their game-specific arms (cages / inequality+adjacency clues) then `default: return narrateLatinReason(reason, ns)`. **Solo and Towers keep their own `narrate`** and are *not* on the shared narrator — Solo's generic arms name "row, column **and block**" and use region names (block/diagonal), and Towers narrates the whole family in "height" vocabulary with a single value not an `ns` list; forcing either onto the shared narrator would mean per-game overrides for half its arms, which reads worse than the duplication. The rule that held: extract the entry/arms that are *verbatim* across ≥2 games, leave the ones that diverge local.
 >
-> **Not every candidate game fits.** The shared move/helpers assume `0`-empty, `1<<n` digit candidates on a `w×w` grid, and `{x,y,n}` cells. Undead (§9.4) breaks all of these (a `MON_NONE` sentinel, a 1-D monster bitmask, a `{cell, monster}` move union) and keeps its own copies — a documented non-migration is a fine outcome; don't contort a game onto the shared shape.
+> **The move *dialect* is a parameter — don't rename a game's moves to fit (`add-crossing-hint`).** `keepCandidateHintTrack` / `refreshCandidateHintStep` used to read a hard-coded `type` discriminator and a `1 << n` pencil bit. That is the Latin family's dialect, not a property of the pattern: **Crossing** discriminates on `kind` and stores candidate `n` at bit `n − 1`, and **Group**'s `set`/`pencil` carry a *cell list* rather than an `x`/`y` pair. Renaming either is not an option — the save format replays the **move log**, so a discriminator rename breaks every existing save — so both helpers now take an optional `CandidateMoveAdapter<M>`: `read(m)` maps a game move onto the canonical `CandidateMove` (or `null` for "not one of these, so off-plan"), `strike(marks)` builds a strike in the game's own shape, and an optional `bit(n)` supplies the mask encoding. Omit it and you get `typeKeyedCandidateMoves`, so the four Latin games' call sites are untouched. Two things it bought immediately: Crossing wires both hooks in ~10 lines, and **Group's hand-rolled copy of the same ~78 lines was deleted** in favour of a 12-line adapter (its tests passing unedited is what proved the extraction behaviour-preserving — the guardrail that has now held six times).
+>
+> **Not every candidate game fits, and Undead is the recorded no-go.** The shared helpers still assume `0`-empty, `{x, y}` cells on a `w`-strided grid, and a plain `{...highlights, targets, marks}` shrink. Undead breaks all three at once (`MON_NONE = 7` is its empty sentinel, its marks are `{cell, monster}` over a **1-D border-ringed** board with the monster *bit* as the value, and its highlight shrink has to re-project cell → x/y through `monsterCellXY`). It was re-evaluated against the adapter above when that landed and **declined**: fitting it would mean a third adapter method that rebuilds the highlights, at which point the game supplies the logic and the "helper keeps all the logic" property — the whole point — is gone. Undead keeps its own copies. A documented non-migration is a fine outcome; don't contort a game onto the shared shape.
 
 ### 9.1 The recorder and the soundness boundary
 
@@ -1941,11 +2052,12 @@ changes one decision — worth reading before hinting a game that shares any of 
   `nextPlace`, `nextStrike`, `lazyPopulate`, `emitObviousCleanStep`, the
   `OverlaySidecar`) but **emits placements as the native `set {cells:[{x,y}], n}`** (so
   a player following a hint produces the exact move the plan expects), adds only
-  `pencilAll`/`pencilStrike` for the hint-execution path, and writes **game-specific
-  `hintKeepTrack`/`refreshHintStep`** that read the native move shape (the shared
-  `keepCandidateHintTrack` reads `set {x,y,n,pencil}`, which a Group player never
-  produces). Contorting the game's moves to fit the shared contract is the wrong trade
-  — reuse the mechanics, keep the meaning.
+  `pencilAll`/`pencilStrike` for the hint-execution path. Contorting the game's moves to
+  fit the shared contract is the wrong trade — reuse the mechanics, keep the meaning.
+  Group originally paid for that with hand-rolled `hintKeepTrack`/`refreshHintStep`
+  copies; `add-crossing-hint` made the *dialect* a parameter instead (the
+  `CandidateMoveAdapter` in the §9 callout), so both are now one-line delegations over a
+  12-line adapter and the duplication is gone without the moves changing.
 - **Re-adding a dropped play move for the hint is fine (with owner sign-off).** Group's
   port dropped upstream's `'M'` (mark-all); the populate step wants a fill-all a player
   can follow by hand, so it was re-added as a real `pencilAll` move. Its elements being
