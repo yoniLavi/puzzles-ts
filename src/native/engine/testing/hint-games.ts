@@ -13,6 +13,7 @@
 import { boatsGame } from "../../games/boats/index.ts";
 import { bricksGame } from "../../games/bricks/index.ts";
 import { clustersGame } from "../../games/clusters/index.ts";
+import { crossingGame } from "../../games/crossing/index.ts";
 import { dominosaGame } from "../../games/dominosa/index.ts";
 import { fifteenGame } from "../../games/fifteen/index.ts";
 import { fillingGame } from "../../games/filling/index.ts";
@@ -46,6 +47,7 @@ export const HINT_GAMES: [string, AnyGame][] = [
   ["boats", boatsGame],
   ["bricks", bricksGame],
   ["clusters", clustersGame],
+  ["crossing", crossingGame],
   ["dominosa", dominosaGame],
   ["filling", fillingGame],
   ["fifteen", fifteenGame],

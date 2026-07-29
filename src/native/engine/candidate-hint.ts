@@ -22,8 +22,8 @@
  * this module supports.
  */
 
+import type { DeductionRecord } from "./deduction-record.ts";
 import type { HintResult, HintStep, HintTrackVerdict } from "./game.ts";
-import type { DeductionRecord } from "./latin.ts";
 import type { ClassifyRegion } from "./latin-hint.ts";
 
 /** A board cell. */
@@ -419,6 +419,55 @@ function strikeMove<M>(marks: Mark[]): M {
   return { type: "pencilStrike", marks } as unknown as M;
 }
 
+// --- the per-game move adapter ---------------------------------------------
+
+/**
+ * How a game's own `Move` union maps onto the three canonical
+ * {@link CandidateMove} shapes the generic plan mechanics act on.
+ *
+ * The mechanics below (`keepCandidateHintTrack`, `refreshCandidateHintStep`)
+ * are pure bookkeeping over "is this a strike / a placement / a populate, and
+ * which candidate does it touch?" — but they used to answer that by reading a
+ * hard-coded `type` discriminator and a `1 << n` pencil bit. That is one
+ * game family's dialect, not a property of the pattern: **Crossing
+ * discriminates on `kind` and stores candidate `n` in bit `n − 1`**, and
+ * **Group**'s moves carry a *cell list* rather than an `x`/`y` pair. Renaming
+ * either game's discriminator is not an option — the save format replays the
+ * move log, so it would break every existing save — so the mechanics take the
+ * dialect as a parameter instead (`add-crossing-hint`, design D7).
+ *
+ * A game supplies two one-liners (plus a bit encoding where it differs); the
+ * helper keeps all the logic.
+ */
+export interface CandidateMoveAdapter<M> {
+  /** Read a game move as one of the canonical shapes, or `null` when it is
+   * none of them (a whole-run placement, a multi-cell fill, a clear). A move
+   * that reads as `null` is simply off-plan. */
+  read(m: M): CandidateMove | null;
+  /** Build a strike over `marks` in the game's own move shape. */
+  strike(marks: Mark[]): M;
+  /** The pencil-mask bit for candidate `n`. Defaults to `1 << n`, the
+   * `0`-means-empty encoding the Latin games share. */
+  bit?(n: number): number;
+}
+
+/** The default dialect: moves discriminated by a `type` field carrying the
+ * canonical shapes verbatim, candidates at bit `n` (Towers, Unequal, Keen,
+ * Solo). */
+export const typeKeyedCandidateMoves: CandidateMoveAdapter<{ type: string }> = {
+  read: (m) => {
+    const cm = m as unknown as CandidateMove;
+    return cm.type === "set" || cm.type === "pencilAll" || cm.type === "pencilStrike"
+      ? cm
+      : null;
+  },
+  strike: (marks) => strikeMove(marks),
+};
+
+function adapterOf<M>(adapter?: CandidateMoveAdapter<M>): CandidateMoveAdapter<M> {
+  return adapter ?? (typeKeyedCandidateMoves as unknown as CandidateMoveAdapter<M>);
+}
+
 /** Emit the one-shot "clear the obvious candidates" step into a candidate-
  * elimination hint plan — the bulk equivalent of the adaptive Mark-all second
  * press. Strikes every {@link obviousCandidateMarks} (each pencilled value already
@@ -474,14 +523,18 @@ export function emitObviousCleanStep<M, H>(
  * concrete {@link CandidateHighlights} every such game shares; a game's
  * `HintStep<Move, GameHint>` is accepted because `GameHint` is structurally
  * `CandidateHighlights`. */
-export function keepCandidateHintTrack<M extends { type: string }>(
+export function keepCandidateHintTrack<M, H extends CandidateHighlights>(
   m: M,
-  step: HintStep<M, CandidateHighlights>,
+  step: HintStep<M, H>,
   pencil: ArrayLike<number>,
   w: number,
+  adapter?: CandidateMoveAdapter<M>,
 ): HintTrackVerdict {
-  const pm = m as unknown as CandidateMove;
-  const sm = step.move as unknown as CandidateMove;
+  const dialect = adapterOf(adapter);
+  const bit = dialect.bit ?? ((n: number): number => 1 << n);
+  const pm = dialect.read(m);
+  const sm = dialect.read(step.move);
+  if (pm === null || sm === null) return "off";
   if (sm.type === "pencilAll") return pm.type === "pencilAll" ? "completed" : "off";
   if (sm.type === "set") {
     return pm.type === "set" &&
@@ -500,10 +553,10 @@ export function keepCandidateHintTrack<M extends { type: string }>(
     // A pencil toggle clears the candidate iff it is present now; if it is already
     // absent the toggle would *re-add* it — off-plan. (The candidate being present
     // is exactly what makes the strike the right move to follow.)
-    if (!(pencil[pm.y * w + pm.x] & (1 << pm.n))) return "off";
+    if (!(pencil[pm.y * w + pm.x] & bit(pm.n))) return "off";
     const remaining = sm.marks.filter((_, j) => j !== hit);
     if (remaining.length === 0) return "completed";
-    step.move = strikeMove<M>(remaining);
+    step.move = dialect.strike(remaining);
     if (step.highlights) {
       step.highlights = {
         ...step.highlights,
@@ -525,28 +578,35 @@ export function keepCandidateHintTrack<M extends { type: string }>(
  * cell is filled; a populate step once every empty cell already has notes.
  *
  * Generic over the game's move `M` (see {@link keepCandidateHintTrack}). */
-export function refreshCandidateHintStep<M extends { type: string }>(
-  step: HintStep<M, CandidateHighlights>,
+export function refreshCandidateHintStep<M, H extends CandidateHighlights>(
+  step: HintStep<M, H>,
   grid: ArrayLike<number>,
   pencil: ArrayLike<number>,
   w: number,
-): HintStep<M, CandidateHighlights> | null {
-  const m = step.move as unknown as CandidateMove;
+  adapter?: CandidateMoveAdapter<M>,
+): HintStep<M, H> | null {
+  const dialect = adapterOf(adapter);
+  const bit = dialect.bit ?? ((n: number): number => 1 << n);
+  const m = dialect.read(step.move);
+  if (m === null) return step;
   if (m.type === "pencilStrike") {
     const live = m.marks.filter(
-      ({ x, y, n }) => grid[y * w + x] === 0 && (pencil[y * w + x] & (1 << n)) !== 0,
+      ({ x, y, n }) => grid[y * w + x] === 0 && (pencil[y * w + x] & bit(n)) !== 0,
     );
     if (live.length === 0) return null;
     if (live.length === m.marks.length) return step;
     return {
       ...step,
-      move: strikeMove<M>(live),
+      move: dialect.strike(live),
+      // A game's own highlight type carries extra fields (Crossing's clue-list
+      // premise); spreading keeps them, and only the two the shrink touches
+      // are replaced.
       highlights: step.highlights
-        ? {
+        ? ({
             ...step.highlights,
             targets: live.map((k) => ({ x: k.x, y: k.y })),
             marks: live,
-          }
+          } as H)
         : undefined,
     };
   }

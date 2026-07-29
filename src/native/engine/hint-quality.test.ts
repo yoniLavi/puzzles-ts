@@ -47,6 +47,7 @@ const MECHANICAL = /^Start by pencilling|^Now clear the easy ones/;
  * untangle) narrate moves imperatively and are exempt from that check. */
 const DEDUCTIVE = new Set([
   "clusters",
+  "crossing",
   "dominosa",
   "filling",
   "keen",

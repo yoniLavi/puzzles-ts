@@ -22,6 +22,7 @@
 
 import { type RandomState, randomUpto } from "../random/index.ts";
 import { type DeductionRung, runDeductionFixpoint } from "./deduction-fixpoint.ts";
+import type { DeductionRecorder } from "./deduction-record.ts";
 import { shuffle } from "./shuffle.ts";
 import { type StepBudget, stepBudget } from "./step-budget.ts";
 
@@ -53,19 +54,13 @@ export type LatinReason =
   /** A forcing-chain elimination. */
   | { kind: "forcing" };
 
-/** One recorded deduction operation. Emitted in solver order on the hint path;
- * `group` ties together every record of a single deduction *firing* (one
- * top-level deduction attempt), so a firing forcing several strikes becomes one
- * grouped hint step. `reason` is a {@link LatinReason} or a game-specific reason. */
-export interface DeductionRecord {
-  kind: "place" | "elim";
-  x: number;
-  y: number;
-  n: number;
-  reason: unknown;
-  group: number;
-}
-export type DeductionRecorder = (rec: DeductionRecord) => void;
+/** The recorded-deduction shape lives in its own module (nothing about it is
+ * Latin — see [`deduction-record.ts`](./deduction-record.ts)); re-exported here
+ * so the Latin games keep importing it from the solver they already import. */
+export type {
+  DeductionRecord,
+  DeductionRecorder,
+} from "./deduction-record.ts";
 
 export class LatinSolver {
   readonly o: number;

@@ -425,7 +425,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       // (Subsets' reference aid) dismisses any displayed hint here, so
       // the aid isn't silently suppressed by a still-active hint;
       // `afterTransition` re-emits the status bar without the hint text.
-      if (this.game.uiUpdateClearsHint) this.clearHint();
+      if (this.uiUpdateDismisses()) this.clearHint();
       this.clearAnimation();
       this.afterTransition();
       return true;
@@ -587,6 +587,16 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * narrate. */
   private get displayedHintStep(): HintStep<Move> | undefined {
     return this.hintDisplayed ? this.currentHintStep : undefined;
+  }
+
+  /** Does this `UI_UPDATE` put the hint away? Asked only while a plan is stored
+   * (with nothing stored there is nothing to dismiss), and *after*
+   * `interpretMove` has updated the ui — so a game answering per step sees the
+   * cursor where the player just put it. */
+  private uiUpdateDismisses(): boolean {
+    const step = this.currentHintStep;
+    if (step === undefined) return false;
+    return this.game.uiUpdateClearsHint?.(step, this.state, this.ui) ?? false;
   }
 
   private clearHint(): void {

@@ -18,16 +18,18 @@ import type {
 } from "../../../puzzle/types.ts";
 import {
   adaptiveMarkAllMove,
-  anyEmptyLacksNotes,
+  type CandidateMoveAdapter,
   candidateHint,
   cleanObviousText,
   emitObviousCleanStep,
   firstUnreflectedPlaceIndex,
+  keepCandidateHintTrack,
   lazyPopulate,
   nakedSingle,
   nextPlace,
   nextStrike,
   populateText,
+  refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
 import {
@@ -800,86 +802,50 @@ function hint(
   return candidateHint(state, undefined, findMistakes, (s) => buildSteps(s));
 }
 
+/**
+ * How Group's `Move` union reads as the shared candidate shapes: its `set` /
+ * `pencil` carry a *cell list* (for the diagonal multifill) rather than an
+ * `x`/`y` pair, so a hint's single-cell move is `cells[0]` and a real multifill
+ * is off-plan. Everything else — the shrink-in-place bookkeeping, the
+ * "a toggle only counts when the candidate is present" rule — is the shared
+ * mechanics, which this replaced a byte-identical hand-rolled copy of.
+ */
+const groupCandidateMoves: CandidateMoveAdapter<GroupMove> = {
+  read: (m) => {
+    if ((m.type === "set" || m.type === "pencil") && m.n > 0 && m.cells.length === 1) {
+      const { x, y } = m.cells[0];
+      return { type: "set", x, y, n: m.n, pencil: m.type === "pencil" };
+    }
+    if (m.type === "pencilAll") return { type: "pencilAll" };
+    if (m.type === "pencilStrike") return { type: "pencilStrike", marks: [...m.marks] };
+    return null;
+  },
+  strike: (marks) => ({ type: "pencilStrike", marks }),
+};
+
 /** Classify a player move against the displayed hint step (the engine's
- * keep-track contract). A placement completes a `set` step; a native `pencil`
- * toggle that *clears* one of a strike step's marks shrinks it (`onTrack`) or
- * finishes it (`completed`); a Mark-all completes a `pencilAll` step; anything
- * else drops the plan. `state` is the PRE-move board. */
+ * keep-track contract). `state` is the PRE-move board. */
 function hintKeepTrack(
   m: GroupMove,
   step: HintStep<GroupMove, GroupHint>,
   state: GroupState,
 ): HintTrackVerdict {
-  const w = state.w;
-  const sm = step.move;
-  if (sm.type === "pencilAll") return m.type === "pencilAll" ? "completed" : "off";
-  if (sm.type === "set") {
-    if (m.type !== "set" || m.n <= 0 || m.cells.length !== 1) return "off";
-    const c = m.cells[0];
-    const s = sm.cells[0];
-    return c.x === s.x && c.y === s.y && m.n === sm.n ? "completed" : "off";
-  }
-  if (sm.type === "pencilStrike") {
-    // A manual strike is a right-click pencil toggle of a single candidate.
-    if (m.type !== "pencil" || m.n <= 0 || m.cells.length !== 1) return "off";
-    const c = m.cells[0];
-    const hit = sm.marks.findIndex((k) => k.x === c.x && k.y === c.y && k.n === m.n);
-    if (hit < 0) return "off"; // touched a non-target candidate
-    // The toggle clears the candidate iff it is present now; an absent candidate
-    // would be *re-added* — off-plan.
-    if (!(state.pencil[c.y * w + c.x] & (1 << m.n))) return "off";
-    const remaining = sm.marks.filter((_, j) => j !== hit);
-    if (remaining.length === 0) return "completed";
-    step.move = { type: "pencilStrike", marks: remaining };
-    if (step.highlights) {
-      step.highlights = {
-        ...step.highlights,
-        targets: remaining.map((k) => ({ x: k.x, y: k.y })),
-        marks: remaining,
-      };
-    }
-    return "onTrack";
-  }
-  return "off";
+  return keepCandidateHintTrack(m, step, state.pencil, state.w, groupCandidateMoves);
 }
 
 /** Re-validate a stored hint step against the current board before it is
- * (re-)displayed (the engine's "never show a stale step" guarantee): drop a
- * strike step's dead marks (or resolve it), resolve a placement once its cell is
- * filled, resolve a populate once every empty cell has notes. */
+ * (re-)displayed (the engine's "never show a stale step" guarantee). */
 function refreshHintStep(
   step: HintStep<GroupMove, GroupHint>,
   state: GroupState,
 ): HintStep<GroupMove, GroupHint> | null {
-  const w = state.w;
-  const m = step.move;
-  if (m.type === "pencilStrike") {
-    const live = m.marks.filter(
-      ({ x, y, n }) =>
-        state.grid[y * w + x] === 0 && (state.pencil[y * w + x] & (1 << n)) !== 0,
-    );
-    if (live.length === 0) return null;
-    if (live.length === m.marks.length) return step;
-    return {
-      ...step,
-      move: { type: "pencilStrike", marks: live },
-      highlights: step.highlights
-        ? {
-            ...step.highlights,
-            targets: live.map((k) => ({ x: k.x, y: k.y })),
-            marks: live,
-          }
-        : undefined,
-    };
-  }
-  if (m.type === "set" && m.n > 0) {
-    const c = m.cells[0];
-    return state.grid[c.y * w + c.x] !== 0 ? null : step;
-  }
-  if (m.type === "pencilAll") {
-    return anyEmptyLacksNotes(state.grid, state.pencil, w) ? step : null;
-  }
-  return step;
+  return refreshCandidateHintStep(
+    step,
+    state.grid,
+    state.pencil,
+    state.w,
+    groupCandidateMoves,
+  );
 }
 
 // --- config / params summary -----------------------------------------------

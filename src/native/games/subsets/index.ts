@@ -592,7 +592,10 @@ export const subsetsGame: Game<
   canFormatAsText: true,
   // Touching the reference aid (tally / inspect icon / cursor) dismisses a
   // displayed hint, so the aid isn't suppressed by a still-active hint overlay.
-  uiUpdateClearsHint: true,
+  // Unconditional: Subsets' hint marks no square the player types into, so
+  // there is no follow-by-hand flow to keep the explanation up for (contrast
+  // Crossing, which answers per step).
+  uiUpdateClearsHint: () => true,
 
   defaultParams,
   presets,

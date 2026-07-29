@@ -384,13 +384,31 @@ export interface Game<
    * games). */
   refreshHintStep?(step: HintStep<Move>, state: State): HintStep<Move> | null;
 
-  /** When true, a `UI_UPDATE` returned by `interpretMove` dismisses any
-   * displayed hint (as a real move does). Default false — a UI/cursor change
-   * leaves the hint on screen. A game sets this when its in-place UI changes
-   * are an *alternative display* the hint would fight with: Subsets' reference
-   * aid draws in the same overlay space as the hint, so touching the aid should
-   * put the hint away rather than have it silently suppress the aid. */
-  uiUpdateClearsHint?: boolean;
+  /** Does this `UI_UPDATE` dismiss the hint, as a real move that goes off-plan
+   * does? Absent ⇒ never: a UI/cursor change leaves the hint on screen, which
+   * is right for a game whose hint suppresses nothing.
+   *
+   * A game needs this when its in-place UI changes are an *alternative display*
+   * the hint would fight with, because the hint then **suppresses** something
+   * and the suppression is invisible until the player touches it — at which
+   * point nothing happens at all, and there is no way out of hint mode. Subsets'
+   * reference aid draws in the hint's overlay space; Crossing's hint takes over
+   * the board's colouring from the selected-run wash. Both shipped that bug.
+   *
+   * `() => true` dismisses on every UI change — the simplest rule, and enough
+   * when the game has no "follow this by hand" flow to protect. Answering per
+   * step dismisses *selectively*: `ui` is the **post-`interpretMove`** ui, so
+   * the new cursor position is already in it. Crossing keeps its hint up while
+   * the player works inside the squares it is about, so a hinted number can be
+   * typed in by hand without the explanation vanishing.
+   *
+   * A game that answers `false` anywhere its hint paints **must** make sure its
+   * cursor cue still reads against the hint colours — the hint owns the
+   * background there, so a background-only selection cue becomes invisible
+   * exactly when the player needs it (see `crossing/render.ts`).
+   *
+   * Called only while a plan is stored, with that plan's current step. Pure. */
+  uiUpdateClearsHint?(step: HintStep<Move>, state: State, ui: Ui): boolean;
 
   /** Compute the cells of the current state that contradict the
    * puzzle's unique solution — the mistake-checking divergence from

@@ -608,8 +608,21 @@ export function numberAvailableTo(
  * Which run through `(x, y)` should take listed number `l`, or -1?
  *
  * A number occupies a whole run, so its length usually settles the question by
- * itself; where both runs through the cell are the right length and both admit
- * it, the player's current fill direction decides.
+ * itself. Where both runs through the cell admit it, **the one the board
+ * already constrains wins**: agreeing with digits the player has entered is
+ * evidence of what they meant, where a blank run admits every unused number of
+ * its length and so is no evidence at all. Only a genuine tie — both runs
+ * equally constrained — is settled by the current fill direction.
+ *
+ * That ordering was the wrong way round at first, and it is worth stating why
+ * the obvious rule fails: with `4_1` written across and the crossing down run
+ * still blank, clicking clue `421` wrote it *downwards*, because the sticky
+ * fill direction happened to be "down" and got to decide. The board plainly
+ * showed a nearly-finished word that only `421` completes; no player reads that
+ * as an instruction to fill three empty squares instead.
+ *
+ * The renderer colours the clue list through this same function, so the colour
+ * a clue is written in always names the run a click would actually send it to.
  */
 export function runForNumber(
   puzzle: CrossingPuzzle,
@@ -623,10 +636,16 @@ export function runForNumber(
   const i = y * puzzle.w + x;
   const preferred = dir === "across" ? puzzle.acrossRun[i] : puzzle.downRun[i];
   const other = dir === "across" ? puzzle.downRun[i] : puzzle.acrossRun[i];
-  for (const r of [preferred, other]) {
-    if (r >= 0 && numberAvailableTo(puzzle, grid, placed, r, l)) return r;
-  }
-  return -1;
+  const takes = (r: number): boolean =>
+    r >= 0 && numberAvailableTo(puzzle, grid, placed, r, l);
+
+  if (!takes(preferred)) return takes(other) ? other : -1;
+  if (!takes(other)) return preferred;
+
+  // Both admit it: how much of each run is already written decides.
+  const entered = (r: number): number =>
+    puzzle.runs[r].cells.reduce((n, c) => n + (grid[c] !== 0 ? 1 : 0), 0);
+  return entered(other) > entered(preferred) ? other : preferred;
 }
 
 // --- moves and ui ----------------------------------------------------------
@@ -636,6 +655,12 @@ export type CrossingMove =
   | { kind: "set"; x: number; y: number; digit: number | null }
   /** Note: toggle mark `digit`, or erase every mark when `null`. */
   | { kind: "pencil"; x: number; y: number; digit: number | null }
+  /** Clear a list of notes atomically — the hint's rule-out move. A `pencil`
+   * toggle is *one* candidate and is not idempotent (re-applying it would put
+   * the note back), so one deduction ruling out several candidates needs a move
+   * that only ever removes (hint-authoring §9.2). Players produce it only by
+   * following a hint; typing produces `pencil` toggles as before. */
+  | { kind: "pencilStrike"; marks: readonly { x: number; y: number; n: number }[] }
   /** Write listed number `number` into run `run` — the whole clue at once,
    * as one undo step (the fork's number-list placement aid). */
   | { kind: "place"; run: number; number: number }
