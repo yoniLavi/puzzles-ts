@@ -373,6 +373,27 @@ easier after one cross-box hard hit" early return, all in the transposed cube sp
 [`group/solver.ts`](../../src/native/games/group/solver.ts) (associativity
 forward-deduction + identity-hidden elimination; the 5th consumer, reusing latin.ts
 with **zero** changes — Group is "two `usersolvers` + a `valid`" and nothing else).
+**A clue that constrains a cell without placing a digit needs the `seed` hook.**
+`latinSolver` seeds its cube from the working grid, which covers every given
+*digit* — but Salad's Number Ball clues are a ball ("a symbol lives here") and a
+cross ("none does"), which rule candidates out of a cell while placing nothing.
+Upstream applies exactly that class of constraint in the gap between
+`latin_solver_alloc` and `latin_solver_main`, and `LatinSolverConfig.seed` is
+that gap. It is **not** re-applied inside `latinSolverRecurse`, faithfully to the
+C (whose recursion re-allocs a bare sub-solver) — sound only for a game that
+never recurses, so check your `diffRecursive` before relying on it.
+
+**A pseudo-Latin game's solved grid is not a full square, and that is correct.**
+Salad fakes "some squares stay empty" by treating the order-`o` square's symbols
+above `nums` as holes — and *which* of those interchangeable hole symbols lands
+where is genuinely undetermined, so the cube never collapses on those cells and
+the solver leaves them at 0. The acceptance test is therefore upstream's
+`latinholes_check` (which counts a 0 **or** an above-`nums` symbol as a hole),
+never "the grid is full" or the difficulty `latinSolver` reports. Read a cell's
+solution as `grid[i] <= nums ? grid[i] : 0`, and expect a test that asserts a
+complete square to fail for a reason that has nothing wrong with it. Exemplar:
+[`salad/solver.ts`](../../src/native/games/salad/solver.ts).
+
 Group's port surfaced one reusable byte-parity trap: **a `usersolver`'s
 contradiction `return -1` may sit inside `#ifdef STANDALONE_SOLVER`, so the
 *shipped game build* has an empty `else` and silently skips the impossible

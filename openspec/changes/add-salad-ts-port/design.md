@@ -298,11 +298,98 @@ throughout stage 1:
 - **Two modes double the surface** (codec, solver branch, generator, render). Each is
   small, but the differential must exercise both, and the render tests both.
 
-## Open questions for the owner
+## Open questions for the owner — both resolved during implementation
 
-1. **Statusbar** — the C shows an informational character-range label (`A~C`),
-   `STYLUS_BASED`-gated. Surface it the cheapest way the engine already supports
-   (as movement games surface a move count) or omit it; decide during
-   implementation and record which way it went. Not a gameplay concern.
-2. **Presets** — keep all eleven upstream presets (a spread of modes/sizes), or trim?
-   Default: keep all eleven.
+1. **Statusbar — kept.** `cmake/platforms/webapp.cmake` defines `NARROW_BORDERS` but
+   **not** `STYLUS_BASED`, so the C/WASM build this port replaces *does* show the
+   `A~C` range label and sets `wants_statusbar`. Parity therefore means keeping it:
+   the port sets `wantsStatusbar: true` and implements `statusbarText`.
+2. **Presets — all eleven kept**, as the stated default.
+
+## Findings from implementation
+
+### F1 — `latinSolver` gained a `seed` hook (a shared-engine change)
+
+Salad's ball/cross grid clues rule candidates out of a cell **without placing a
+digit**, so they cannot travel through the grid `latinSolver` seeds itself from.
+Upstream applies them in the gap between `latin_solver_alloc` and
+`latin_solver_main`, and that gap had no TS equivalent. `LatinSolverConfig` now
+carries an optional `seed?: (solver: LatinSolver) => void`, invoked exactly there.
+
+It is deliberately **not** re-applied inside `latinSolverRecurse`, because upstream's
+recursion likewise re-allocs a bare sub-solver and re-runs only `latin_solver_top`;
+that is sound for Salad, which passes `diffRecursive = DIFF_IMPOSSIBLE` and never
+recurses. The hook is documented with that caveat so a future recursing consumer
+has to think about it rather than inherit a silent bug.
+
+### F2 — the differential: 28/28 byte-for-byte, first run
+
+`puzzles/auxiliary/salad-trace.c` records all eleven presets × both difficulties plus
+a six-case size sweep (3×3 up to 9×9, including 9n8 — the densest legal board — and
+both sides of the `order < 8` empty-grid rule). The TS `newDesc` reproduces the C
+description byte-for-byte on **every** fixture, on the first run, and the TS solver
+reaches the same minimal-difficulty verdict the C recorded. Generation is fast: the C
+harness's own `genMs` runs 0.1 ms – 273 ms across the whole matrix.
+
+### F3 — `salad_solve` is a boolean, and a solved board legitimately leaves holes blank
+
+D3 read as though the solver produces a full order-`o` square. It does not, and the
+distinction matters for `findMistakes` and for reading the solver's output. The hole
+symbols (`nums+1 .. order`) are **interchangeable** — nothing in the puzzle decides
+which of them sits where — so the cube never collapses on those cells and the solver
+leaves them at 0. Upstream's acceptance test is `latinholes_check`, which counts a 0
+*or* an above-`nums` symbol as a hole, so this is correct rather than "unfinished",
+and `salad_solve`'s return is a plain solved/not-solved boolean with the difficulty
+`latin_solver_main` reports discarded. The port therefore derives a cell's solution as
+`grid[i] <= nums ? grid[i] : 0` and reads `holes[i]` for the marker, and the tests
+assert exactly that (rather than the fuller square the design implied).
+
+### F4 — the author's Status notes, triaged (playbook §1.0)
+
+`puzzles/unreleased/docs/salad.md` names two faults:
+
+- *"The system for pseudo-latin squares is currently fairly messy, and doesn't allow
+  for more complex solver techniques… would greatly benefit from upstream support for
+  latin squares where a symbol can appear more than once per row."* — **recorded and
+  declined.** This is a `latin.ts` framework project (a repeats-aware cube), not a
+  port; taking it on would also change every board Salad generates and so throw away
+  the byte-match oracle that made this port verifiable. The messiness is confined to
+  the hole↔candidate translation, which `solver.ts` documents at its head.
+- *"The Number Ball generator currently doesn't create puzzles that make good use of
+  the concept, in my opinion."* — **recorded and declined for the port**, for the same
+  byte-match reason, and flagged as the natural follow-up if the owner wants it: the
+  fix is a different clue-selection strategy, which is a design change with its own
+  taste call. Upstream's own quality gate (throw the board away if every hole falls
+  out with no number entered, `DIFF_HOLESONLY`) is ported faithfully.
+
+One thing the docs *do* fix for free: they document Space as a clear key, which the C
+never wired up (`interpret_move` accepts only `'\b'`). The port accepts Space, Delete
+and the app's `CURSOR_SELECT2` alongside Backspace — a free, clearly-right divergence
+that also makes the shared keypad's clear key work.
+
+### F5 — declines, recorded
+
+- **`adaptiveMarkAllMove` not adopted.** Salad's `M` stays fill-only. Its pencil
+  bitmap is `1 << (n−1)` where the candidate-family helper assumes `1 << n`, and its
+  extra "might be empty" mark (bit `nums`) is not a row/column candidate at all, so
+  the "strike the obvious candidates" pass would need a Salad-specific meaning before
+  it could run. Revisit with a Salad hint, where the same model is needed anyway.
+- **No `order` upper bound in `validateParams`.** Upstream has none, and the measured
+  cost does not justify inventing one: the largest legal board on the shipped
+  presets generates in 30 ms, and the 9×9 sweep cases in 10–19 ms. This is *not* the
+  Seismic situation (a generator that provably cannot produce large boards); if a
+  Custom board ever proves slow, measure the tail before setting a bound (playbook
+  §4.4).
+- **Upstream's `DIFFCOUNT` off-by-one is not reproduced.** `lenof(salad_diffchars)`
+  counts the string's NUL, so the C's `validate_params` accepts `diff == 2`. The port
+  uses `DIFFCOUNT = 2`. The difference is unreachable — `custom_params` can only emit
+  0 or 1, and `decode_params` parks an unrecognised letter out of range either way.
+
+### F6 — `findMistakes` has four kinds, not three
+
+The design listed a wrong symbol, a cross where a symbol belongs, a circle where a
+hole belongs, and a note that crosses out the solution value. That is what shipped
+(`"cell"` / `"cross"` / `"circle"` / `"note"`), with one refinement: a square carrying
+a *fixed* bare ball is still checked, because the ball is given but the symbol inside
+it is the player's. All four render as the same inset red box — a wrong **empty**
+square has no glyph to recolour, so the box is what makes it visible at all.
