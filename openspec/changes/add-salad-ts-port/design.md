@@ -393,3 +393,24 @@ hole belongs, and a note that crosses out the solution value. That is what shipp
 a *fixed* bare ball is still checked, because the ball is given but the symbol inside
 it is the player's. All four render as the same inset red box — a wrong **empty**
 square has no glyph to recolour, so the box is what makes it visible at all.
+
+### F7 — the border clue's erase rect is asymmetric on purpose (owner-found)
+
+Shipped in the first cut and fixed on owner report: the grid's right-hand cell
+borders were missing on every row that carried a right border clue. Cause — each
+clue tile repaints itself (fill background, draw letter), but the grid's
+outermost border line is drawn by the neighbouring **cell**, and on the right
+edge it lands at exactly `(order+1)·ts`, which is the right clue tile's own
+origin. Upstream compensates with a one-off `tx+1, ty+1, TILE_SIZE-2` for the
+right clue against `tx, ty, TILE_SIZE-1` for the other three; the port had
+flattened all four into one uniform rect, which is precisely the tidy-up that
+breaks it. The other three edges are safe because their boundary lines land at
+`ts − 1` / `ts` / `(order+1)·ts − 1`, all outside their clue tile's erase.
+
+Fixed by restoring the asymmetry (as a named `inset` with the reasoning at the
+call site) and guarded by a tier-2.5 test asserting the **invariant** — no
+clue-tile erase may overlap the grid's outline box — rather than the pixel
+offset, so a different fix would still pass. Also added to the playbook (§3.2),
+since every clue-ring game shares the shape. Method note: the missing hairline
+is invisible at 1× and was found by eye in the app; a `toSvg` + `rsvg-convert`
+dump at 3× shows it immediately, and that is now the recommended check.

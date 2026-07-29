@@ -515,12 +515,26 @@ export function redraw(
   }
 
   // Border clues, in the one-tile margin.
+  //
+  // Each clue erases its own margin tile before drawing the letter, and the
+  // erase rect is **deliberately asymmetric on the right edge** (`inset`). A
+  // clue tile abuts the play area, and the grid's outermost boundary line is
+  // drawn *by the neighbouring cell*, on the shared pixel — so an erase that
+  // includes that pixel wipes it. Only the right column is affected: the last
+  // cell's right edge sits at exactly `(o+1)·ts`, which is the right clue
+  // tile's own origin, whereas the top/left/bottom boundaries land at
+  // `ts − 1` / `ts` / `(o+1)·ts − 1`, all outside their clue tile's `ts − 1`
+  // erase. Upstream spells this as a one-off `tx+1, ty+1, TILE_SIZE-2` for the
+  // right clue only; keep it. (Flattening the four sides into one uniform rect
+  // is exactly the tidy-up that shipped a board missing the right-hand cell
+  // borders of every row that *had* a right clue — pinned below by
+  // `salad-render.test.ts`.)
   for (let i = 0; i < o; i++) {
     const spots = [
-      { j: i, tx: (i + 1) * ts, ty: 0 },
-      { j: i + o, tx: 0, ty: (i + 1) * ts },
-      { j: i + o * 2, tx: (i + 1) * ts, ty: (o + 1) * ts },
-      { j: i + o * 3, tx: (o + 1) * ts, ty: (i + 1) * ts },
+      { j: i, tx: (i + 1) * ts, ty: 0, inset: 0 },
+      { j: i + o, tx: 0, ty: (i + 1) * ts, inset: 0 },
+      { j: i + o * 2, tx: (i + 1) * ts, ty: (o + 1) * ts, inset: 0 },
+      { j: i + o * 3, tx: (o + 1) * ts, ty: (i + 1) * ts, inset: 1 },
     ];
     for (const spot of spots) {
       if (!s.borderclues[spot.j]) continue;
@@ -528,7 +542,13 @@ export function redraw(
       ds.borderDrawn[spot.j] = ds.borderfs[spot.j];
 
       const colour = ds.borderfs[spot.j] & FD_ERROR ? COL_E_BORDERCLUE : COL_BORDERCLUE;
-      dr.drawRect({ x: spot.tx, y: spot.ty, w: ts - 1, h: ts - 1 }, COL_BACKGROUND);
+      const erase = {
+        x: spot.tx + spot.inset,
+        y: spot.ty + spot.inset,
+        w: ts - 1 - spot.inset,
+        h: ts - 1 - spot.inset,
+      };
+      dr.drawRect(erase, COL_BACKGROUND);
       dr.drawText(
         { x: spot.tx + Math.floor(ts / 2), y: spot.ty + Math.floor(ts / 2) },
         {
@@ -540,7 +560,7 @@ export function redraw(
         colour,
         String.fromCharCode(64 + s.borderclues[spot.j]),
       );
-      dr.drawUpdate({ x: spot.tx, y: spot.ty, w: ts - 1, h: ts - 1 });
+      dr.drawUpdate(erase);
     }
   }
 
