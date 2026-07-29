@@ -225,10 +225,11 @@ function interpretMove(
   // helper five games share for this one game is not worth it; upstream's `M` is
   // fill-only too, so this is also the C's behaviour.
   if (button === 0x4d || button === 0x6d) {
+    // The fill is additive, so the gate is "some empty cell has *no* notes" —
+    // not "some cell differs from its region's full set", which would keep
+    // emitting a move that changes nothing (an undo entry per press).
     for (let i = 0; i < w * h; i++) {
-      if (grid[i] === 0 && marks[i] !== areaBits(dsf.size(i))) {
-        return { type: "pencilAll" };
-      }
+      if (grid[i] === 0 && marks[i] === 0) return { type: "pencilAll" };
     }
   }
 
@@ -257,8 +258,14 @@ function executeMove(state: SeismicState, move: SeismicMove): SeismicState {
       return next;
     }
     case "pencilAll": {
+      // **Additive**: fill only the cells that have no notes yet, never reset one
+      // the player has narrowed (owner-reported on Salad, 2026-07-29 — resetting
+      // threw away their own deductions). `adaptiveMarkAll`'s contract always said
+      // "fill every *note-less* empty cell".
       for (let i = 0; i < w * h; i++) {
-        if (next.grid[i] === 0) next.marks[i] = areaBits(dsf.size(i));
+        if (next.grid[i] === 0 && next.marks[i] === 0) {
+          next.marks[i] = areaBits(dsf.size(i));
+        }
       }
       return next;
     }

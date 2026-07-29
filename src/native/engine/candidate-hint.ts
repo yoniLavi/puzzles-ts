@@ -419,7 +419,15 @@ export function populateStep<M, H>(move: M, explanation: string): HintStep<M, H>
  * step emitted) until an elimination actually needs notes to cross out. The
  * four consumers (Towers, Unequal, Keen, Solo) shared this closure verbatim
  * before it was hoisted. `done()` reports whether notes already exist —
- * builders use it to decide when to emit the one-off obvious-cleanup step. */
+ * builders use it to decide when to emit the one-off obvious-cleanup step.
+ *
+ * The fill is **additive**, mirroring `pencilAll`'s move: a cell the player has
+ * already narrowed keeps its notes. Both halves matter and for different
+ * reasons — the *move* must not throw away the player's deductions, and this
+ * *working copy* must agree with it or the plan goes on to teach strikes on
+ * candidates that are no longer on their board (owner-reported on Salad,
+ * 2026-07-29; the latch below hid it whenever every empty cell already had at
+ * least one note). */
 export function lazyPopulate<M, H>(
   state: { grid: ArrayLike<number>; pencil: ArrayLike<number> },
   wGrid: ArrayLike<number>,
@@ -433,7 +441,7 @@ export function lazyPopulate<M, H>(
     ensure(): void {
       if (populated) return;
       const all = (1 << (w + 1)) - (1 << 1);
-      for (let i = 0; i < w * w; i++) if (!wGrid[i]) wPen[i] = all;
+      for (let i = 0; i < w * w; i++) if (!wGrid[i] && wPen[i] === 0) wPen[i] = all;
       steps.push(populateStep({ type: "pencilAll" } as unknown as M, explanation));
       populated = true;
     },

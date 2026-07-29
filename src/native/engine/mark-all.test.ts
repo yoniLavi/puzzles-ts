@@ -1,0 +1,214 @@
+/**
+ * Cross-game guarantee: **the Mark-all press only ever adds or removes pencil
+ * marks — it never resets them.**
+ *
+ * This exists because the collection shipped the opposite for months and nothing
+ * caught it. Every `pencilAll` implementation filled *every* empty cell with the
+ * full candidate set, so pressing Mark-all (or asking for a hint, whose opener
+ * reuses the same move) on a board with **some** narrowed cells and **some** blank
+ * ones threw away the player's own deductions. It went unnoticed because the
+ * usual latch — "does any empty cell lack notes?" — hides it whenever every empty
+ * cell already has at least one note, which is the common case; you only see it on
+ * the mixed board. Owner-reported on Salad, twice (the hint's opener, then the
+ * button), and then fixed across all ten games that offer the press.
+ *
+ * The properties pinned here are deliberately representation-agnostic — each game
+ * only says *where* its notes live — so a new game with a Mark-all press joins by
+ * adding one row.
+ */
+import { describe, expect, it } from "vitest";
+import { abcdGame } from "../games/abcd/index.ts";
+import { groupGame } from "../games/group/index.ts";
+import { keenGame } from "../games/keen/index.ts";
+import { mathraxGame } from "../games/mathrax/index.ts";
+import { saladGame } from "../games/salad/index.ts";
+import { seismicGame } from "../games/seismic/index.ts";
+import { soloGame } from "../games/solo/index.ts";
+import { towersGame } from "../games/towers/index.ts";
+import { undeadGame } from "../games/undead/index.ts";
+import { unequalGame } from "../games/unequal/index.ts";
+import { randomNew } from "../random/index.ts";
+import { UI_UPDATE } from "./game.ts";
+import { type AnyGame, firstLeaf } from "./testing/hint-games.ts";
+
+/** Where a game keeps its pencil marks, and how many array slots one cell owns
+ * (ABCD's notes are a candidate *cube*: `n` contiguous slots per cell — see its
+ * `cuboid(x, y, i, n, w) = i + x*n + y*n*w`). */
+interface Row {
+  name: string;
+  game: AnyGame;
+  // biome-ignore lint/suspicious/noExplicitAny: a deliberately game-agnostic probe.
+  notes: (state: any) => Int32Array | Uint8Array | Uint16Array;
+  // biome-ignore lint/suspicious/noExplicitAny: params shape differs per game.
+  slots?: (params: any) => number;
+}
+
+/** Every game answering `canMarkAll`. */
+const MARK_ALL_GAMES: Row[] = [
+  { name: "towers", game: towersGame, notes: (s) => s.pencil },
+  { name: "keen", game: keenGame, notes: (s) => s.pencil },
+  { name: "unequal", game: unequalGame, notes: (s) => s.pencil },
+  { name: "solo", game: soloGame, notes: (s) => s.pencil },
+  { name: "group", game: groupGame, notes: (s) => s.pencil },
+  { name: "mathrax", game: mathraxGame, notes: (s) => s.marks },
+  { name: "seismic", game: seismicGame, notes: (s) => s.marks },
+  { name: "salad", game: saladGame, notes: (s) => s.marks },
+  { name: "undead", game: undeadGame, notes: (s) => s.pencils },
+  { name: "abcd", game: abcdGame, notes: (s) => s.pencil, slots: (p) => p.n },
+];
+
+it("every game offering the press is enrolled here", () => {
+  // A game that ships `canMarkAll` without a row above would be unguarded.
+  for (const { name, game } of MARK_ALL_GAMES) {
+    expect(game.canMarkAll, `${name} does not offer a Mark-all press`).toBe(true);
+  }
+});
+
+/** Press `M` — ASCII **77**, exactly what the toolbar button injects
+ * (`puzzle-history.ts` `handleMarkAll`) — and apply whatever it asks for. Returns
+ * the new state, or `null` when the press is a true no-op.
+ *
+ * Uppercase matters: Group intercepts only `'M'`, because lowercase `'m'` is its
+ * element 13 for `w >= 13`. Probing with 109 there enters a value instead. */
+function press(
+  row: Row,
+  // biome-ignore lint/suspicious/noExplicitAny: game-agnostic probe.
+  state: any,
+  // biome-ignore lint/suspicious/noExplicitAny: game-agnostic probe.
+  ui: any,
+  // biome-ignore lint/suspicious/noExplicitAny: game-agnostic probe.
+): any | null {
+  const move = row.game.interpretMove(state, ui, null, { x: 0, y: 0 }, 77);
+  if (move === null || move === UI_UPDATE) return null;
+  return row.game.executeMove(state, move);
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: game-agnostic probe.
+function board(row: Row, seed: string): { state: any; ui: any; params: any } {
+  const params = firstLeaf(row.game.presets());
+  const { desc } = row.game.newDesc(params, randomNew(seed));
+  const state = row.game.newState(params, desc);
+  return { state, ui: row.game.newUi(state), params };
+}
+
+describe("the Mark-all press converges", () => {
+  for (const row of MARK_ALL_GAMES) {
+    it(`${row.name}: repeated presses reach a true no-op`, () => {
+      // Fill, then clean, then nothing — a further press must add no undo entry
+      // at all rather than re-applying a move that changes nothing.
+      const { state, ui } = board(row, `markall-${row.name}`);
+      let cur = state;
+      let presses = 0;
+      for (; presses < 6; presses++) {
+        const next = press(row, cur, ui);
+        if (next === null) break;
+        cur = next;
+      }
+      expect(presses, `${row.name}: did not converge`).toBeLessThan(6);
+      expect(press(row, cur, ui)).toBeNull();
+    });
+  }
+});
+
+/** Remove exactly one candidate from cell `cell`, leaving at least one behind —
+ * i.e. *narrow* it, the way a player crossing out a note does. Reports whether
+ * the cell had two candidates to narrow between. Handles both note shapes: a
+ * bitmask in one slot, or ABCD's one-flag-per-slot cube. */
+function narrowOne(
+  notes: Int32Array | Uint8Array | Uint16Array,
+  cell: number,
+  slots: number,
+): boolean {
+  if (slots === 1) {
+    const v = notes[cell];
+    if (v === 0 || (v & (v - 1)) === 0) return false; // needs two candidates
+    notes[cell] = v & (v - 1); // clear the lowest set bit
+    return true;
+  }
+  const set: number[] = [];
+  for (let k = 0; k < slots; k++) if (notes[cell + k]) set.push(k);
+  if (set.length < 2) return false;
+  notes[cell + set[0]] = 0;
+  return true;
+}
+
+describe("the Mark-all press never resets a note the player narrowed", () => {
+  for (const row of MARK_ALL_GAMES) {
+    it(`${row.name}: a fill leaves every already-noted cell bit-for-bit alone`, () => {
+      const { state, ui, params } = board(row, `narrow-${row.name}`);
+
+      // Run the press to convergence, so every fillable cell carries notes.
+      let cur = state;
+      for (let i = 0; i < 6; i++) {
+        const next = press(row, cur, ui);
+        if (next === null) break;
+        cur = next;
+      }
+
+      // Reproduce the reported board: one cell **narrowed** by hand, a *different*
+      // one blank, so the press has something to fill and something to spare.
+      //
+      // Poking the arrays directly is deliberate. The point is to build the state
+      // shape, not the route to it — the per-cell pencil toggle differs in every
+      // game, and `cur` is a fresh clone from `executeMove`, so nothing shared is
+      // mutated. Note the *narrowing* is what makes this test bite: with no
+      // narrowed cell, a resetting fill writes back exactly what was there and the
+      // bug hides (which it did in the first cut of this test — Towers has no
+      // givens, so its clean press strikes nothing and every cell keeps its full
+      // candidate set).
+      const slots = row.slots?.(params) ?? 1;
+      const notes = row.notes(cur);
+      let narrowed = -1;
+      for (let i = 0; i + slots <= notes.length; i += slots) {
+        if (narrowOne(notes, i, slots)) {
+          narrowed = i;
+          break;
+        }
+      }
+      expect(
+        narrowed,
+        `${row.name}: no cell had two candidates to narrow between`,
+      ).toBeGreaterThanOrEqual(0);
+
+      let blank = -1;
+      for (let i = 0; i + slots <= notes.length; i += slots) {
+        if (i === narrowed) continue;
+        let any = false;
+        for (let k = 0; k < slots; k++) if (notes[i + k] !== 0) any = true;
+        if (any) {
+          blank = i;
+          break;
+        }
+      }
+      expect(
+        blank,
+        `${row.name}: no second noted cell to blank`,
+      ).toBeGreaterThanOrEqual(0);
+      for (let k = 0; k < slots; k++) notes[blank + k] = 0;
+      const before = Array.from(notes);
+
+      const after = press(row, cur, ui);
+      expect(
+        after,
+        `${row.name}: the press did not refill the blank cell`,
+      ).not.toBeNull();
+      const filled = Array.from(row.notes(after));
+
+      // The blank cell is filled again…
+      expect(
+        filled.slice(blank, blank + slots).some((v) => v !== 0),
+        `${row.name}: the note-less cell was not refilled`,
+      ).toBe(true);
+      // …and every other cell is untouched — in particular the narrowed one keeps
+      // the candidate it lost. This is the whole regression: a resetting fill
+      // widens every narrowed cell back to its full set.
+      for (let i = 0; i < before.length; i++) {
+        if (i >= blank && i < blank + slots) continue;
+        expect(
+          filled[i],
+          `${row.name}: the fill changed an already-noted cell at index ${i}`,
+        ).toBe(before[i]);
+      }
+    });
+  }
+});

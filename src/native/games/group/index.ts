@@ -400,7 +400,14 @@ function executeMove(from: GroupState, move: GroupMove): GroupState {
     case "pencilAll": {
       const ret = cloneState(from);
       const all = (1 << (w + 1)) - (1 << 1); // bits 1..w set
-      for (let i = 0; i < a; i++) if (!ret.grid[i]) ret.pencil[i] = all;
+      // **Additive**: fill only the cells that have no notes yet, never reset one
+      // the player has narrowed. Resetting threw away their own deductions on any
+      // board with some pencilled cells and some blank ones (owner-reported on
+      // Salad, 2026-07-29); `adaptiveMarkAll`'s contract always said "fill every
+      // *note-less* empty cell" — this is the games catching up with it.
+      for (let i = 0; i < a; i++) {
+        if (!ret.grid[i] && ret.pencil[i] === 0) ret.pencil[i] = all;
+      }
       return ret;
     }
     case "pencilStrike": {

@@ -161,8 +161,17 @@ function interpretMove(
     return UI_UPDATE;
   }
 
-  // Fill all pencil marks.
-  if (button === KEY_M || button === KEY_m) return { type: "markAll" };
+  // Fill all pencil marks — additively, and only when some undecided cell has
+  // none, so a press on an already-noted board is a true no-op rather than an
+  // undo entry that changes nothing.
+  if (button === KEY_M || button === KEY_m) {
+    for (let i = 0; i < common.numTotal; i++) {
+      if (state.guess[i] === MON_NONE && state.pencils[i] === 0) {
+        return { type: "markAll" };
+      }
+    }
+    return null;
+  }
 
   const xinfo = common.xinfo;
 
@@ -341,8 +350,12 @@ function executeMove(state: UndeadState, move: UndeadMove): UndeadState {
       for (const { cell, monster } of move.marks) next.pencils[cell] &= ~monster;
       break;
     case "markAll":
+      // **Additive**: fill only the cells that have no notes yet, never reset one
+      // the player has narrowed (owner-reported on Salad, 2026-07-29 — resetting
+      // threw away their own deductions on any board with some pencilled cells
+      // and some blank ones).
       for (let i = 0; i < common.numTotal; i++) {
-        if (next.guess[i] === MON_NONE) next.pencils[i] = 7;
+        if (next.guess[i] === MON_NONE && next.pencils[i] === 0) next.pencils[i] = 7;
       }
       break;
     case "hintDone":
@@ -682,7 +695,12 @@ function buildSteps(state: UndeadState): HintStep<UndeadMove, UndeadHint>[] {
   let populated = !anyEmptyLacksNotes(wGuess, wPen, numTotal);
   const ensurePopulated = (): void => {
     if (populated) return;
-    for (let i = 0; i < numTotal; i++) if (wGuess[i] === MON_NONE) wPen[i] = MON_NONE;
+    // Mirrors the additive `markAll` above: a cell the player has already
+    // narrowed keeps its notes, so the plan never strikes a candidate that is
+    // no longer on their board.
+    for (let i = 0; i < numTotal; i++) {
+      if (wGuess[i] === MON_NONE && wPen[i] === 0) wPen[i] = MON_NONE;
+    }
     steps.push({
       move: { type: "markAll" },
       explanation: POPULATE_TEXT,

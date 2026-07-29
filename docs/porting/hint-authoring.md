@@ -2147,12 +2147,16 @@ and is documented as unreachable from input. **The working copy must mirror the 
 exactly**, or the plan goes on to teach strikes on candidates the player had already crossed out —
 steps whose mark is invisible on their board.
 
-> ⚠️ **The rest of the family still has this.** `lazyPopulate` fills *every* empty cell, and
-> `pencilAll`'s `executeMove` in Towers, Keen, Unequal, Solo and Group **resets** — even though
-> `adaptiveMarkAll`'s own contract says "fill every *note-less* empty cell". Fixing them is a one-line
-> change each, but it alters the replay semantics of a shipped move (a saved log's Mark-all pressed
-> after narrowing notes would rebuild a different board), so it is a save-compatibility call and wants
-> its own change. See `add-salad-hint` design `F8`.
+> **Fixed collection-wide (owner-directed 2026-07-30).** All ten games offering the press — Towers,
+> Keen, Unequal, Solo, Group, Mathrax, Seismic, Salad, Undead, ABCD — now fill additively, as does the
+> shared `lazyPopulate`, so a hint opener and a Mark-all press both only ever add or remove. Two gates
+> had to move with it (Seismic's and Undead's asked "does any cell differ from the full set?", which an
+> additive fill never satisfies — that would emit an undo entry per press for ever). Guarded by
+> `engine/mark-all.test.ts`, which every such game joins with one row; the guard was
+> **mutation-checked against all ten** — worth knowing because its *first* cut passed against the old
+> behaviour, since a fill that resets writes back exactly what was there unless some cell is genuinely
+> **narrowed**. A test for this class must narrow a cell by hand. Background: `add-salad-hint` design
+> `F8`.
 
 **Known follow-up, not a defect:** Salad has no auto-pencil preference, so — like Group — its plan
 teaches every placement's row/column note cull as an explicit `continuesPrevious` strike. That is the
