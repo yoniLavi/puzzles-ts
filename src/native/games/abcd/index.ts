@@ -255,11 +255,26 @@ function executeMove(state: AbcdState, move: AbcdMove): AbcdState {
       return next;
     }
     case "pencilAll": {
-      // Fill every empty cell's whole candidate cube (the first mark-all press).
-      for (let y = 0; y < p.h; y++)
-        for (let x = 0; x < w; x++)
-          if (next.grid[y * w + x] === EMPTY)
-            for (let z = 0; z < n; z++) next.pencil[cuboid(x, y, z, n, w)] = 1;
+      // Fill every *note-less* empty cell's whole candidate cube (the first
+      // mark-all press).
+      // **Additive**: fill only the cells that have no notes yet, never reset one
+      // the player has narrowed (owner-reported on Salad, 2026-07-29 — resetting
+      // threw away their own deductions). `adaptiveMarkAll`'s contract always said
+      // "fill every *note-less* empty cell".
+      for (let y = 0; y < p.h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (next.grid[y * w + x] !== EMPTY) continue;
+          let hasNote = false;
+          for (let z = 0; z < n; z++) {
+            if (next.pencil[cuboid(x, y, z, n, w)]) {
+              hasNote = true;
+              break;
+            }
+          }
+          if (hasNote) continue;
+          for (let z = 0; z < n; z++) next.pencil[cuboid(x, y, z, n, w)] = 1;
+        }
+      }
       return next;
     }
     case "pencilStrike": {

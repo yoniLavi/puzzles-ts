@@ -267,7 +267,14 @@ function executeMove(state: MathraxState, move: MathraxMove): MathraxState {
     }
     case "pencilAll": {
       const all = (1 << (o + 1)) - (1 << 1); // bits 1..o
-      for (let i = 0; i < o * o; i++) if (!next.grid[i]) next.marks[i] = all;
+      // **Additive**: fill only the cells that have no notes yet, never reset one
+      // the player has narrowed. Resetting threw away their own deductions on any
+      // board with some pencilled cells and some blank ones (owner-reported on
+      // Salad, 2026-07-29); `adaptiveMarkAll`'s contract always said "fill every
+      // *note-less* empty cell" — this is the games catching up with it.
+      for (let i = 0; i < o * o; i++) {
+        if (!next.grid[i] && next.marks[i] === 0) next.marks[i] = all;
+      }
       return next;
     }
     case "pencilStrike": {
