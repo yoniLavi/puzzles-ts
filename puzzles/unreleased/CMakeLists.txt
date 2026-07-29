@@ -62,8 +62,8 @@ puzzle(rome
 puzzle(salad
   DISPLAYNAME "Salad"
   DESCRIPTION "Pseudo-Latin square puzzle"
-  OBJECTIVE "Place each character once in every row and column. Some squares remain empty.")
-solver(salad ${CMAKE_SOURCE_DIR}/latin.c)
+  OBJECTIVE "Place each character once in every row and column. Some squares remain empty."
+  TS_PORTED)  # native-TS port (openspec add-salad-ts-port); no salad.c/wasm
 
 puzzle(seismic
   DISPLAYNAME "Seismic"

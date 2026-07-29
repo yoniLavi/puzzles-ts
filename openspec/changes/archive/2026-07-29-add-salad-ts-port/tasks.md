@@ -150,10 +150,10 @@
 
 ## Stage 2 — on owner acceptance only
 
-- [ ] S2.1 Add `TS_PORTED` to `puzzle(salad …)` in
+- [x] S2.1 Add `TS_PORTED` to `puzzle(salad …)` in
       `puzzles/unreleased/CMakeLists.txt` and drop `solver(salad …/latin.c)`.
-- [ ] S2.2 Delete `puzzles/unreleased/salad.c` and the `salad-trace` harness (and its
+- [x] S2.2 Delete `puzzles/unreleased/salad.c` and the `salad-trace` harness (and its
       `cliprogram()` line).
-- [ ] S2.3 `rm -rf build/wasm/` and rebuild — salad in the catalog, no `salad.wasm`
+- [x] S2.3 `rm -rf build/wasm/` and rebuild — salad in the catalog, no `salad.wasm`
       (playbook §1.1 cache gotcha). Icons already exist.
-- [ ] S2.4 Archive, then commit port + archive together.
+- [x] S2.4 Archive, then commit port + archive together.
