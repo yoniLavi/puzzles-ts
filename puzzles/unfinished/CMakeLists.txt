@@ -6,9 +6,12 @@
 # TS_PORTED, and sokoban.c (+ the sokoban-trace harness) were deleted at
 # stage-2 acceptance.
 
-# Slide is a native-TS game in the main catalog (openspec add-slide-ts-port);
-# its puzzle() moved to the main CMakeLists with TS_PORTED. slide.c (+ the
-# slide-trace harness) stay here as the reference until stage-2 acceptance.
+# Slide is a native-TS game in the main catalog (openspec add-slide-ts-port); its
+# puzzle() moved to the main CMakeLists with TS_PORTED, and slide.c (+ the
+# slide-trace harness) were deleted at stage-2 acceptance.
+#
+# No puzzle() remains in this directory: every game that was here is now a
+# native-TS port in the main catalog, so this subdirectory builds no wasm at all.
 
 # These unfinished programs don't even have the structure of a puzzle
 # game yet; they're just command-line programs containing test

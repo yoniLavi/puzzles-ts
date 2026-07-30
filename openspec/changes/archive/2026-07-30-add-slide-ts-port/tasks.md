@@ -132,11 +132,23 @@
       drag-preview/`changedState` interaction, the two-role `tree234` replacement,
       and the visited-set cost finding).
 
-## 9. Stage 2 — on owner acceptance only
+## 9. Stage 2 — owner-accepted 2026-07-30
 
-- [ ] 9.1 Delete `puzzles/unfinished/slide.c` and `puzzles/auxiliary/slide-trace.c`
+- [x] 9.1 Deleted `puzzles/unfinished/slide.c` and `puzzles/auxiliary/slide-trace.c`
       (+ its `cliprogram()` line). The frozen fixture stays as the gated check's
-      baseline.
-- [ ] 9.2 `rm -rf build/wasm/` and rebuild to confirm nothing regressed.
-- [ ] 9.3 Archive, then commit port + archive together.
-- [ ] 9.4 Decide the three author-flagged graphics items (design "Open questions").
+      baseline, and the differential's header now says the oracle must be recovered
+      from git history rather than rebuilt in place. `puzzles/.gitignore` keeps its
+      `/unfinished/slide` entries, matching every prior port (it still lists every
+      already-deleted game).
+- [x] 9.2 `rm -rf build/wasm build/native` and rebuilt: slide in the catalog, no
+      `slide.wasm`, and `unfinished/` emits no wasm at all. **Only
+      `nullgame.wasm` remains in the whole build.**
+- [x] 9.3 Archived (→ `openspec/specs/slide/spec.md`, 4 requirements) and committed
+      with the C deletion.
+
+## 10. Carried forward (not blocking)
+
+- [ ] 10.1 The three author-flagged graphics items, incl. the target green the owner
+      raised on acceptance — kept as-is for now, with the analysis in this change's
+      `design.md` "Open questions" §3 and a pointer in the migration-status memory.
+      Scope an openspec change if/when they are greenlit.

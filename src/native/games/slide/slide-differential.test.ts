@@ -14,7 +14,11 @@
  * published board with the TS solver, so the solver is also checked against a
  * number the generator didn't hand it.
  *
- * Regenerate the fixture (only possible while the C still exists):
+ * The fixture is a **frozen snapshot**: `puzzles/unfinished/slide.c` and its
+ * `slide-trace.c` harness were both deleted when the port shipped at
+ * owner-confirmed parity, so this can no longer be regenerated in place. Recover
+ * both from git history (they died in the `add-slide-ts-port` stage-2 commit) if
+ * you ever need to rebuild the oracle, then:
  *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
  *   (cd build/native && make slide-trace)
  *   build/native/auxiliary/slide-trace \

@@ -428,6 +428,24 @@ board.
      and the main block, and leave the target marker pale."* Walls, ordinary blocks
      and the floor all derive from the one host background, so they are told apart
      only by their bevels. Legible, but flat.
+
+     **Owner raised the target green specifically (2026-07-30): keeping it for
+     now, no better shared colour exists.** It is not a palette constant — upstream
+     derives it as `[background.r, highlight.g, background.b]`, i.e. the background
+     with its green channel pushed all the way to the *highlight's* green (1.0),
+     which is why it is the loudest thing on the board: `#b8ffeb` on the light
+     theme. The repo's one shared region colour,
+     `correctRegionColour(background)` (`#93a1b3` there), means "the player has
+     correctly **completed** this region" (upstream Rectangles' `COL_CORRECT`) —
+     a different claim from "this is the goal", and since Slide's blocks are
+     *already* background-coloured a subtle grey darkening would read as ordinary
+     floor rather than a target. Note the author's own instruction is to leave the
+     target marker **pale** and darken everything else, so the two halves of this
+     bullet are one change, not two: raising the contrast of the tiles/walls/main
+     block is what would let the green stop carrying all of it. If instead the green
+     alone is to come down, the shape to keep is upstream's — raise the
+     *background's* green part-way rather than to `highlight.g` — so the dark-mode
+     `paletteSwaps` in `augmentation.ts` keep working.
    - *"The cattle grid effect is still disgusting. Think of something completely
      different."* This is the forcefield/exit marking — the crosshatch beside the
      green target.
