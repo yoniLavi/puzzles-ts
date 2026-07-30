@@ -18,6 +18,10 @@ Because Rome is a uniquely-solvable logic puzzle whose difficulty tiers are all
 pure deduction, it SHALL implement `findMistakes`, and Check & Save SHALL
 hard-block while any mistake is present.
 
+Rome SHALL offer the two upstream highlight preferences — highlighting the
+squares whose arrows reach a goal, and highlighting the squares of a loop —
+with upstream's defaults (the first on, the second off).
+
 #### Scenario: Every preset produces a soluble board
 
 - **WHEN** a new game is generated for any preset or legal size and difficulty
@@ -115,3 +119,28 @@ interpolated arrow animation.
 
 - **WHEN** two squares in the same outlined region hold the same arrow direction
 - **THEN** `findMistakes` flags both squares and Check & Save is hard-blocked
+
+### Requirement: Rome mistake-checking covers arrows that break no rule
+
+Mistake-checking SHALL report both the rule violations the board already shows
+as the player works — an arrow pointing off the grid, an arrow duplicated inside
+an outlined region, and an arrow that forms a loop — and, separately, any arrow
+the player has placed that contradicts the puzzle's unique solution even though
+it breaks no rule. The unique solution SHALL be re-derived from the fixed clues
+alone, never from anything the player has entered, and when the board is not
+deducible from those clues no contradiction SHALL be reported.
+
+An empty square SHALL NOT be reported as a mistake, and a pencil mark SHALL NOT
+be reported as a mistake however it disagrees with the solution, because Rome's
+pencil marks carry no fixed meaning.
+
+#### Scenario: A legal-looking arrow that contradicts the solution is flagged
+
+- **WHEN** an arrow is placed that breaks no rule but differs from the unique
+  solution's arrow for that square
+- **THEN** it is reported as a mistake and Check & Save is hard-blocked
+
+#### Scenario: Pencil marks are never mistakes
+
+- **WHEN** a square carries pencil marks that exclude the solution's direction
+- **THEN** no mistake is reported for that square

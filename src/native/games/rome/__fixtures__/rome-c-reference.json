@@ -1,0 +1,239 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "w": 4,
+      "h": 4,
+      "diff": 0,
+      "seed": "rome-trace-0",
+      "desc": "a2a2b4c3a,aRXcLLURUbLaU",
+      "solverDiff": 0,
+      "genMs": 0.2
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "diff": 1,
+      "seed": "rome-trace-1",
+      "desc": "2b1a5a3bb,XaLbLULRaLe",
+      "solverDiff": 1,
+      "genMs": 0.7
+    },
+    {
+      "w": 4,
+      "h": 4,
+      "diff": 2,
+      "seed": "rome-trace-2",
+      "desc": "2c1aaa2b5a,RXeLRDaDd",
+      "solverDiff": 2,
+      "genMs": 0.4
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "diff": 0,
+      "seed": "rome-trace-3",
+      "desc": "aaa1aa4a1a2a1ab7b1ac7a3a,aDaLRcRaDbULRbRcDLaXLUbUaUaRa",
+      "solverDiff": 0,
+      "genMs": 2.0
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "diff": 1,
+      "seed": "rome-trace-4",
+      "desc": "baaba1ab2a1a2b11a1ab6a2a,bRcRbLRaRbRcRaUDLRcLLXcLa",
+      "solverDiff": 1,
+      "genMs": 2.4
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "diff": 2,
+      "seed": "rome-trace-5",
+      "desc": "a1a2aa2a1aa1aa3baa6cba3a1a2,gLRbUbXRcLaLcUDbUaRcL",
+      "solverDiff": 2,
+      "genMs": 4.7
+    },
+    {
+      "w": 8,
+      "h": 8,
+      "diff": 0,
+      "seed": "rome-trace-6",
+      "desc": "3b7a3a3aa1a1a1c1aa1a2a3a2b3bba1b4aaab12a2c1aa,eLDLUDaLXaRbLRaDeUaLaUUbDaDaLbUaUaURcLbRDaURUe",
+      "solverDiff": 0,
+      "genMs": 6.4
+    },
+    {
+      "w": 8,
+      "h": 8,
+      "diff": 1,
+      "seed": "rome-trace-7",
+      "desc": "1a1aaaaab1a2aa3aa16a2ab1a10a2a1ac1ba1aaadaaa1a1,aLcLRbRaRaUDaRbDbLDaLbRdDcLDUbLDaRaLdULaLRbXbLa",
+      "solverDiff": 1,
+      "genMs": 8.3
+    },
+    {
+      "w": 8,
+      "h": 8,
+      "diff": 2,
+      "seed": "rome-trace-8",
+      "desc": "a1bba1a2b1b1a2aba2aba3aa1a4a8bb3b2a3aa9a1a1b1b,RdDcLDaLDcXaDbDaRbRaLbDaLUaUDaXLUDUcRbLeLUcUL",
+      "solverDiff": 2,
+      "genMs": 12.8
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "diff": 0,
+      "seed": "rome-trace-9",
+      "desc": "5a1a1a1a1aa1a2b1ab1a6b4a2ab1aa1a2ba3a2aa1a1ca1a5ab2aa4a1a3b2d4a4aa5a4bb6b1b,cXaLaLaLDRaLaDbLDbURRaLbLaRDUDbLdRRDUbRDaUbLDbXaXaRaRcLDRaDLDcDaUdDRaRaURaRbLc",
+      "solverDiff": 0,
+      "genMs": 16.2
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "diff": 1,
+      "seed": "rome-trace-10",
+      "desc": "a2ba1a4a1a3a1aa1aa2a1aab2a1c2aa3aa1aaaa8a1ab10ba1ab3a3c3aa2a5c4b2ab3b1aa1a2a,fLDaXRaLRXLDbLXbULRbLUaUaRDaULDcULbRbURaDaUbDaDaLaURDaRcDUaLaULdDdLDDXUbUaLc",
+      "solverDiff": 1,
+      "genMs": 16.9
+    },
+    {
+      "w": 10,
+      "h": 10,
+      "diff": 2,
+      "seed": "rome-trace-11",
+      "desc": "aa2ab1a9aaba4baaab2b2a1a10a10a1a1a4a1ab1aa4a2a1b5b4a4a3a4baba1dab2aa3,aRaRaRaRDbDDLRaDUdXaDUcDbLRdUbRaLRaRUbDaLcUDUDbURUbXcLcDRUbXcULUUaDRaRbRaLb",
+      "solverDiff": 2,
+      "genMs": 16.3
+    },
+    {
+      "w": 3,
+      "h": 3,
+      "diff": 0,
+      "seed": "rome-trace-12",
+      "desc": "3b3aa,XaLaUaRb",
+      "solverDiff": 0,
+      "genMs": 0.1
+    },
+    {
+      "w": 3,
+      "h": 3,
+      "diff": 1,
+      "seed": "rome-trace-13",
+      "desc": "ac5a,bXRcLa",
+      "solverDiff": 1,
+      "genMs": 0.2
+    },
+    {
+      "w": 3,
+      "h": 3,
+      "diff": 2,
+      "seed": "rome-trace-14",
+      "desc": "2a3ba,aDfX",
+      "solverDiff": 2,
+      "genMs": 44.1
+    },
+    {
+      "w": 3,
+      "h": 5,
+      "diff": 0,
+      "seed": "rome-trace-15",
+      "desc": "1a1a3a2abaa,DaLaXaUcLd",
+      "solverDiff": 0,
+      "genMs": 0.2
+    },
+    {
+      "w": 5,
+      "h": 3,
+      "diff": 0,
+      "seed": "rome-trace-16",
+      "desc": "a3b3b2baa,bDXcLbUcU",
+      "solverDiff": 0,
+      "genMs": 0.2
+    },
+    {
+      "w": 3,
+      "h": 7,
+      "diff": 2,
+      "seed": "rome-trace-17",
+      "desc": "a1c1aaca4aa2a2,cUcUaXcUDaLcL",
+      "solverDiff": 2,
+      "genMs": 1.2
+    },
+    {
+      "w": 7,
+      "h": 3,
+      "diff": 2,
+      "seed": "rome-trace-18",
+      "desc": "a1ba3c9a1d,hUbUaDcURaX",
+      "solverDiff": 2,
+      "genMs": 3.4
+    },
+    {
+      "w": 4,
+      "h": 7,
+      "diff": 1,
+      "seed": "rome-trace-19",
+      "desc": "a1a4a1a4b2b1aa1a4aa1b,aRcDdUbUcRXaUfU",
+      "solverDiff": 1,
+      "genMs": 1.3
+    },
+    {
+      "w": 7,
+      "h": 4,
+      "diff": 1,
+      "seed": "rome-trace-20",
+      "desc": "ab3ba1a2a1a1a6a1a1a3b,bLbDDUcUcUaUbUaLXaLb",
+      "solverDiff": 1,
+      "genMs": 1.8
+    },
+    {
+      "w": 5,
+      "h": 5,
+      "diff": 0,
+      "seed": "rome-trace-21",
+      "desc": "3a3aaab2aa2aaa5b1,RaXfURaLcRbUbLUa",
+      "solverDiff": 0,
+      "genMs": 0.6
+    },
+    {
+      "w": 9,
+      "h": 6,
+      "diff": 1,
+      "seed": "rome-trace-22",
+      "desc": "2a1a1a6a1aab1a4a2a2b3b4c1aa5a2b4bc3a2,aXDRDaDRaDUaDaDdLRRbDaUaUDLeRaRXcLUeRRaU",
+      "solverDiff": 1,
+      "genMs": 5.2
+    },
+    {
+      "w": 6,
+      "h": 9,
+      "diff": 2,
+      "seed": "rome-trace-23",
+      "desc": "1ac2aa13b1aa6aa1a6aabab2a2ab5aaba1a,bRcUaLLDdDaDaRdRUaXDUULcDbUbLUaLaLg",
+      "solverDiff": 2,
+      "genMs": 5.8
+    },
+    {
+      "w": 12,
+      "h": 12,
+      "diff": 0,
+      "seed": "rome-trace-24",
+      "desc": "aa1a1aaa2a4b7baa12aa1aaaa3ba4aa11a19a1aa1a4b1ba1a1a1aa1b2b6c1a1b2aa6a5b4a1ba3ab3a1abbcd1b8a1bb2a2,aLeRaLfLUaDRaLDbDRaLUbLRbDLUaULUaXaLDRDXaLaLaDUDaLbRaLRgLULbLUDbLbLRUDURDbURDbDaUUbUdUaLULULRbUaDLUDaLUaRURcRcL",
+      "solverDiff": 0,
+      "genMs": 40.8
+    },
+    {
+      "w": 12,
+      "h": 12,
+      "diff": 2,
+      "seed": "rome-trace-25",
+      "desc": "2aaabaa1ab3a3a2a2aa1a1aa5a3a8aaaa5a1aa1a2a2aa5bb1a1a1b2b2bc11b2cb2a3a2aa1b4a1b2aa5aa1a2c2b1b6b2b7ac2a1a3a3,ReRaLbDbDbUaLaURaDLaDULfRaLaDUaLUaRcDdDLULcLUaRUbLUbLXRUaRDLdDaLDUcLUDbUDRDLUXLDbLDRDaRaRaLcLDcUbLbLfRc",
+      "solverDiff": 2,
+      "genMs": 52.5
+    }
+  ]
+}

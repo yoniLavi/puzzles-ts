@@ -424,10 +424,26 @@ solver-gate on *exactly* the target difficulty (§4.4 — the published cage clu
 depend on the TS solver's verdict matching C). Exemplar:
 [`keen/generator.ts`](../../src/native/games/keen/generator.ts).
 
+**`dsf_new_min` does NOT change what `dsf_canonify` returns — check before you
+design around it.** It allocates a *separate* `min[]` array that only
+`dsf_minimal` reads; `dsf_canonify` on a min-dsf is the ordinary union-by-size
+root, exactly like the shared `Dsf`'s. Rome's `design.md` assumed the opposite
+and planned to extend `engine/dsf.ts`; the correction cut both ways and is worth
+carrying because both halves recur. (a) **Nothing needed extending**: Rome's one
+`dsf_minimal` call marks every square in a goal's component, which is *exactly* a
+same-class test (`dsf.equivalent`) — the C's scan from the class minimum is an
+optimisation, not a semantic. (b) **But the root's identity became byte-match
+surface**: precisely *because* the root isn't the minimum, `rome_naked_pairs`'
+`for (k = c; k < s; k++)` genuinely skips region members below it, weakening the
+deduction on those regions — a real quirk baked into which puzzles the
+solver-gated generator emits, and portable only because `engine/dsf.ts` already
+mirrors `dsf.c`'s tie-break. Implementing the design's premise would have changed
+every board. **Tell:** a loop bounded by `dsf_canonify(...)` used as an *index
+value* rather than as an identity to compare.
+
 **A cage/region game over the shared `Dsf` needs a precomputed minimal-element
-map.** Upstream `dsf_new_min` makes `dsf_canonify` return a class's *smallest-indexed*
-cell, and games that store a per-cage clue at its minimal cell (Keen) or list cages in
-minimal-cell order rely on that identity, not just connectivity. The shared
+map.** Games that store a per-cage clue at its minimal cell (Keen) or list cages in
+minimal-cell order rely on `dsf_minimal`'s identity, not just connectivity. The shared
 [`engine/dsf.ts`](../../src/native/engine/dsf.ts) `Dsf` uses union-by-size and does
 **not** track a minimal element. Don't add a min-dsf variant to the leaf: precompute
 `minimal[i] = smallest j with canonify(j) === canonify(i)` once after all merges (a
@@ -591,6 +607,21 @@ box"), not on the pixel offset, so a different fix still passes; exemplar
 `salad-render.test.ts` ("does not let a border clue's erase wipe the grid's
 outline"). Cheapest way to see it at all: `toSvg` the frame and rasterise it
 (§3.13) — at 1× the missing hairline is easy to miss.
+
+**Some games draw their grid lines as *negative space* — don't "add" the lines
+you can't find.** Rome's `game_redraw` contains no line-drawing at all: the
+first frame floods the whole canvas with `COL_BORDER`, and every square then
+paints its own background rect *inset* by one pixel everywhere and by a further
+`GRIDEXTRA` on each side that meets a **different outlined region**. What
+survives the fills is the grid — a hairline between squares of one region, a
+double-width line along a region boundary — so the region outlines cost zero
+drawing code and fall out of four `dsf` comparisons. Two things follow: a port
+that "helpfully" strokes the boundaries will double-draw, and the *inset* is the
+thing to assert in a tier-2.5 test (compare a square whose neighbour shares its
+region against one whose doesn't, and expect a wider rect), not a line op that
+does not exist. Exemplar:
+[`rome/render.ts`](../../src/native/games/rome/render.ts) + `rome-render.test.ts`
+("insets a square's fill on each side that meets a different region").
 
 **Rendering doctrine (hard-won — see the Flip three-iteration story in
 [`AGENTS.md`](../../AGENTS.md)):** the engine paints **no pixels of its own**; each
@@ -992,6 +1023,14 @@ Exemplar: [`towers/{state,index,render}.ts`](../../src/native/games/towers/index
   from the notes (a note can be wrong; that is what is being checked). This is the
   template for Solo / Keen / Unequal / Undead. Normative: the `findMistakes`
   requirement in [`ts-engine`](../../openspec/specs/ts-engine/spec.md).
+  - **Carve-out: this only holds where notes *are* candidates.** Rome's marks
+    are the same four arrow directions its solver uses as a candidate set, so
+    the convention looks like it applies — but the game's own docs say its
+    pencil marks "can be used for any purpose", and a player as likely marks
+    what they have ruled *out*. With no agreed meaning there is no reading of a
+    note that can be called wrong, so Rome checks placed arrows only. Read the
+    game's documentation (§1.0) before applying this rule; where you decline,
+    record the reason in `design.md`.
 
 The **explained, pencil-notes-based hint** these games want is its own change — see
 the "candidate-elimination games" section of
