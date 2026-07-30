@@ -6,11 +6,9 @@
 # TS_PORTED, and sokoban.c (+ the sokoban-trace harness) were deleted at
 # stage-2 acceptance.
 
-puzzle(slide
-  DISPLAYNAME "Slide"
-  DESCRIPTION "Sliding block puzzle"
-  OBJECTIVE "Slide the blocks to let the key block out.")
-solver(slide)
+# Slide is a native-TS game in the main catalog (openspec add-slide-ts-port);
+# its puzzle() moved to the main CMakeLists with TS_PORTED. slide.c (+ the
+# slide-trace harness) stay here as the reference until stage-2 acceptance.
 
 # These unfinished programs don't even have the structure of a puzzle
 # game yet; they're just command-line programs containing test

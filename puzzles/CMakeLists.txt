@@ -273,6 +273,13 @@ puzzle(slant
   DESCRIPTION "Maze-drawing puzzle"
   OBJECTIVE "Draw a maze of slanting lines that matches the clues.")
 
+puzzle(slide
+  TS_PORTED  # native-TS port (openspec add-slide-ts-port); no slide.c/wasm.
+             # Finishes upstream's unfinished puzzle; was in unfinished/.
+  DISPLAYNAME "Slide"
+  DESCRIPTION "Sliding block puzzle"
+  OBJECTIVE "Slide the blocks to let the key block out.")
+
 puzzle(sokoban
   TS_PORTED  # native-TS port (openspec add-sokoban-ts-port); no sokoban.c/wasm.
              # Finishes upstream's unfinished puzzle; was in unfinished/.

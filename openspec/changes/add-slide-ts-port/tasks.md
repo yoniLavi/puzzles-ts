@@ -1,150 +1,142 @@
 # Tasks — add-slide-ts-port
 
+> **Stage boundary corrected during implementation.** The brief put the catalog
+> move in stage 2. For an `unfinished/` game that is wrong: the game is absent from
+> `catalog.json`, so registering it alone makes `ts-ported-ids.test.ts` fail and the
+> game still doesn't appear — it cannot be smoke-tested at all until its `puzzle()`
+> moves into the main `CMakeLists.txt` (playbook §1.1, as for Sokoban / Separate /
+> Group). So the catalog move is **stage 1**; what stays gated on owner acceptance
+> is the **C deletion**.
+
 ## 1. Scaffold and survey
 
-- [ ] 1.1 `scripts/new-game-port.sh slide` to stamp `src/native/games/slide/`
-      with typed `Game<…>` stubs; read `galaxies/` and a movement exemplar
-      (`sixteen/`, `netslide/`) end-to-end first.
-- [ ] 1.2 Confirm the long-tail-risk checklist is clean (design intro): no
-      `supersededDesc`, no state-string undo, no `#ifdef EDITOR` letters, no print
-      promise. Record it in `design.md` if anything surprises.
+- [x] 1.1 `src/native/games/slide/` written against the C reference, on the
+      established multi-file shape (`state` / `solver` / `generator` / `moves` /
+      `render` / `index`).
+- [x] 1.2 Long-tail-risk checklist clean (design intro): no `supersededDesc`, no
+      state-string undo, no `#ifdef EDITOR` letters, no print promise. Three
+      *frontend* traps did bite and are recorded as design F1.
 
 ## 2. Params, state and desc codec
 
-- [ ] 2.1 `SlideParams { w, h, maxmoves }`; `encodeParams`/`decodeParams`
-      (`%dx%d` then `m%d` for a limit or `u` for none; `decodeParams` reads
-      `maxmoves` only on `m`, sets `-1` on `u`).
-- [ ] 2.2 `validateParams` in upstream order: `w ≤ MAXWID (251)` → `w ≥ 5` →
-      `h ≥ 4`. `maxmoves` is unclamped.
-- [ ] 2.3 `paramConfig` (Width, Height, "Solution length limit") — keys matching
-      the C config slugs (playbook §3.4); numeric `set` via `parseConfigInt`.
-- [ ] 2.4 Presets — the three upstream presets (`7×6 max 25`, `7×6 no limit`,
-      `8×6 no limit`); `describeParams` emits the keys `augmentation.ts` reads
-      (playbook §3.4). Owner may trim (design D9).
-- [ ] 2.5 State: canonical `board` (`Uint8Array`, the anchor/main/dist/empty/wall
-      byte encoding), immutable `forcefield` (`Uint8Array`/`boolean[]` shared by
-      reference across states — §3.1 shared-frozen pattern), `tx`/`ty`,
-      `minmoves`, `lastmoved`/`lastmovedPos`, `movecount`, `completed`, `cheated`,
-      and the stored-solution fields `soln`/`solnIndex` (design D4).
-- [ ] 2.6 Desc codec: the run-length block encoding (`d<dist>`, `f`-prefix
-      forcefield, `a`/`m`/`e`/`w` + optional count) composed with `,tx,ty,minmoves`
-      (`minmoves` optional on read). Port `new_game`'s decode and `new_game_desc`'s
-      encode as exact inverses — byte-match surface (design D6).
-- [ ] 2.7 `validateDesc`: reject too-much/too-little data (distinguishing which),
-      `≠ 1` main piece, out-of-range/invalid `d` back-references, unknown
-      characters, missing target coords.
+- [x] 2.1 `SlideParams { w, h, maxmoves }`; `encodeParams`/`decodeParams`
+      (`%dx%d` then `m%d` or `u`; an absent suffix keeps the default limit, as
+      upstream's mutate-a-default-struct decode does).
+- [x] 2.2 `validateParams` in upstream order (`w ≤ 251` → `w ≥ 5` → `h ≥ 4`), plus
+      two rejections upstream cannot satisfy: `MAX_CELLS` and a zero move limit
+      (design F2/F8).
+- [x] 2.3 `paramConfig` (Width / Height / "Solution length limit") with the C's
+      config slugs and `parseConfigInt`. Browser-verified.
+- [x] 2.4 All three upstream presets; `describeParams` emits the keys
+      `augmentation.ts` reads (`width` / `height` / `solution-length-limit`).
+- [x] 2.5 State: canonical `board`, immutable `forcefield` shared by reference,
+      `tx`/`ty`, `minmoves`, `lastmoved`/`lastmovedPos`, `movecount`, `completed`,
+      `cheated`, `soln`/`solnIndex`.
+- [x] 2.6 Desc codec ported as exact inverses (byte-match surface, incl. the
+      quirk that a `d` cell carries no forcefield prefix).
+- [x] 2.7 `validateDesc` rejects every case upstream does, distinguishing too much
+      from too little data.
 
 ## 3. The BFS solver (idiomatic `tree234` replacement)
 
-- [ ] 3.1 `solveBoard(w, h, board, forcefield, tx, ty, movelimit)` → minimum move
-      count or `-1`, optionally the move list. Visited = `Map`/`Set` keyed by the
-      canonical board bytes; queue = plain array FIFO (design D1). **No `tree234`,
-      no `SortedMultiset`** — record why in `solver.ts`'s module doc.
-- [ ] 3.2 The per-board expansion: build the block linked-list (`next`/`which`),
-      then for each anchor BFS the cells it can slide to (walls, other blocks,
-      forcefield-vs-main rules), enqueueing each new canonical board with a
-      parent pointer; stop when the main anchor reaches `(tx,ty)` or the queue
-      empties or `movelimit` is hit.
-- [ ] 3.3 Solution reconstruction: backtrack parent pointers, diffing consecutive
-      boards to recover each `(from, to)` anchor move (`slide.c:590-616`).
-- [ ] 3.4 Tier-1 tests: a hand-built tiny board solves to a known minimum; an
-      unsolvable board returns `-1`; `movelimit` cuts the search at the right depth.
+- [x] 3.1 `solveBoard(...)`, with the reasoning for *not* porting `tree234` and
+      *not* using `SortedMultiset` in the module doc. The visited set is a hashed
+      bucket map with exact byte comparison — `memcmp` semantics, no per-candidate
+      allocation (design F8: the obvious string key was 35% of generation time).
+- [x] 3.2 Per-board expansion ported verbatim, including the direction order and
+      the apparently redundant re-enqueue of the anchor's own square, because the
+      enumeration order decides which shortest route is reported and the generator
+      is gated on it.
+- [x] 3.3 Solution reconstruction by diffing consecutive boards.
+- [x] 3.4 Tier-1 tests: a hand-built board's known minimum, an insoluble board,
+      the move limit cutting the search at the right depth, and the forcefield rule
+      in both directions.
 
 ## 4. The generator
 
-- [ ] 4.1 `generateBoard` over the solver: wall border + singleton fill, the
-      **fixed** main piece and **fixed** target + forcefield cells (port upstream's
-      unvaried placement, FIXMEs and all — design D6), remove singletons in scan
-      order until soluble.
-- [ ] 4.2 The edge-merge phase: build the inter-block edge list, **one
-      `shuffle`**, then merge-if-still-soluble with the `tried_merge[wh*wh]`
-      matrix and the dsf-canonical propagation ported verbatim (byte-match
-      surface).
-- [ ] 4.3 `newDesc` emitting the desc + `,tx,ty,minmoves`; `aux` carries nothing
-      the solver can't re-derive (Slide's `solve` re-runs the BFS), so no `aux`
-      threading (playbook §3.6).
-- [ ] 4.4 Tier-1: every preset and a small size sweep generate a soluble board
-      whose `minmoves` matches a fresh `solveBoard`.
+- [x] 4.1 Wall border + singleton fill, the fixed main piece and fixed target +
+      forcefield exit (upstream's unvaried placement, FIXMEs and all), singletons
+      removed in scan order until soluble — **plus the missing final check**
+      (design F2).
+- [x] 4.2 The edge-merge phase: one `shuffle`, then merge-if-still-soluble with the
+      `tried_merge` matrix and its read-after-write propagation ported verbatim.
+- [x] 4.3 `newDesc` emitting the desc + `,tx,ty,minmoves`; no `aux` (Slide's
+      `solve` re-runs the BFS).
+- [x] 4.4 Tier-1: presets and small sizes generate soluble boards whose `minmoves`
+      matches a fresh solve; the smallest sizes generate at all (design F2).
 
 ## 5. Input, moves and completion
 
-- [ ] 5.1 Move model: the `SlideMove` discriminated union
-      (`{ kind: "move"; from; to } | { kind: "solve"; moves }`), not a move string
-      (design D4).
-- [ ] 5.2 `interpretMove` drag phases (design D5): grab (`LEFT_BUTTON` →
-      reachable-set BFS on the ephemeral `Ui`), follow (`LEFT_DRAG` →
-      Manhattan-spiral snap to nearest reachable, `UI_UPDATE`), release
-      (`LEFT_RELEASE` → emit a `move` if the anchor moved, else `UI_UPDATE`).
-      Convert the pointer with the shared `fromCoord` (round fractional input;
-      `BORDER = 0`).
-- [ ] 5.3 Spacebar → next stored-solution step (design D4): emit the next
-      `{ kind: "move" }` from `state.soln`, adjusting the source for a
-      partially-moved piece (`slide.c:1411-1414`).
-- [ ] 5.4 `executeMove`: `movePiece` (the linked-list walk, `slide.c:1423`); the
-      move-counting quirks (same piece again doesn't count, revert decrements —
-      `lastmoved`/`lastmovedPos`); the stored-solution advance/stray/finish
-      bookkeeping; set `completed` when the main anchor reaches `(tx,ty)`.
-- [ ] 5.5 `solve()` returns `{ kind: "solve", moves }` from a fresh
-      `solveBoard(..., movelimit = -1)`; error on unsolvable / already-solved.
-      Test Solve **through a real `Midend`** (the soln threading lives in the
-      move path, playbook §3.6).
-- [ ] 5.6 `textFormat` — the board text (`board_text_format`); `canFormatAsText`
-      stays static `true` (works on any `w×h`, design D8).
+- [x] 5.1 `SlideMove` discriminated union, not a move string.
+- [x] 5.2 `interpretMove` drag phases (grab → reachability BFS; follow →
+      Manhattan-spiral snap; release → move or `UI_UPDATE`), via the shared
+      `fromCoord` with `BORDER = 0`. Right folds onto left for touch (design F1).
+- [x] 5.3 Step key → next stored-route step, bound to the buttons the frontend
+      **actually delivers** (design F1 — upstream's `' '` is dead code here).
+- [x] 5.4 `executeMove`: `movePiece`, the move-counting quirks, the route
+      advance/stray/finish bookkeeping, and completion.
+- [x] 5.5 `solve()` from a fresh BFS — **from the current position**, fixing the
+      defect in design F3. Tested through a real `Midend`.
+- [x] 5.6 `textFormat` (with the two display-only corrections, design F5).
+- [x] 5.7 `changedState` cancels a drag left dangling across a state change
+      (design F4) — not in the brief; upstream asserts here.
 
 ## 6. Rendering
 
-- [ ] 6.1 Palette in C enum order (background + three highlight/lowlight triples
-      each for normal / dragging / main / main-dragging / target — `slide.c:81-104`,
-      the "base then highlight then lowlight" ordering `draw_tile` depends on).
-      Derive from the app background; do **not** luminance-adjust for dark mode
-      (playbook §3.3 — the app owns it).
-- [ ] 6.2 `computeSize`/`setTileSize`: `w*TILESIZE` × `h*TILESIZE`, `BORDER = 0`
-      (`NARROW_BORDERS` arm, design D7).
-- [ ] 6.3 `redraw`: per-tile piece rendering with light/shadow bevels and inter-block
-      borders (via a dsf over the board, `find_piecepart`), packed into an
-      `Int32Array` cache key (playbook §3.2). **Every drag/solve overlay in the
-      diff key** or it won't repaint.
-- [ ] 6.4 The drag-follow + **landing shadow** overlay driven off the ephemeral
-      drag `Ui` (piece follows pointer lit up; shadow at `dragCurrpos`), and the
-      solve-piece highlight when a stored path exists (design D3). If `render`
-      needs the release-move helper, split it into `moves.ts` (playbook §3.2).
-- [ ] 6.5 The completion flash over `FLASH_TIME = 0.3 s` (three intervals). No
-      slide interpolation — `animLength` is `0` (design D3).
-- [ ] 6.6 Tier-2.5 render-scenario tests + snapshots: a grabbed piece, a
-      mid-drag frame with its landing shadow, a solve-highlight frame, and a
-      completion-flash frame.
+- [x] 6.1 Palette in C enum order (the `augmentation.ts` dark-mode `paletteSwaps`
+      are keyed by index, and `drawTile` derives `ch`/`cl` as `cc+1`/`cc+2`).
+      No luminance adjustment — the app owns dark mode.
+- [x] 6.2 `computeSize`/`setTileSize`: `w*TILESIZE × h*TILESIZE`, `BORDER = 0`.
+- [x] 6.3 `redraw` with per-tile `Int32Array` cache. Every overlay (drag, route
+      highlight, shadow, flash) is part of the one packed word, so all are in the
+      diff key by construction.
+- [x] 6.4 Drag-follow + landing shadow off the ephemeral drag `Ui`, and the
+      route-piece highlight. `movePiece`/`executeMove` live in `moves.ts` so
+      `render` and `index` don't form a cycle.
+- [x] 6.5 Completion flash over `FLASH_TIME`; no slide interpolation.
+- [x] 6.6 Tier-2.5 render scenarios + snapshots: opening frame, a mid-drag frame,
+      a route frame with its shadow, the highlight advancing, and two *different*
+      flash phases (a snapshot alone can't show the animation is moving). The drag
+      and route frames are captured on a **warm** draw state.
 
 ## 7. Differential
 
-- [ ] 7.1 `puzzles/auxiliary/slide-trace.c` on the established pattern; add its
-      `cliprogram()` line.
-- [ ] 7.2 Fixture matrix: every preset plus a size sweep (design D6), each seed
-      dumping the generated desc and its `minmoves`.
-- [ ] 7.3 `slide-differential.test.ts`: TS `newDesc` reproduces the C desc
-      byte-for-byte **and** the TS `solveBoard` reports the same minimum move
-      count for each C board.
+- [x] 7.1 `puzzles/auxiliary/slide-trace.c` + its `cliprogram()` line.
+- [x] 7.2 Fixture matrix: all three presets, a size sweep, three move-limited
+      boards; each records the desc, an independently re-derived `minMoves`, and the
+      C's own `genMs`. Sizes below 5×5 are excluded — the C aborts there (F2).
+- [x] 7.3 `slide-differential.test.ts`: **13/13 byte-for-byte, first run**, plus
+      TS-solver agreement on every board's minimum (design F7).
 
-## 8. Registration and stage 1 close-out
+## 8. Registration, catalog move and stage-1 close-out
 
-- [ ] 8.1 Register in `ts-ported-ids.ts` + `games/index.ts` (TS-served).
-      `puzzles/unfinished/slide.c` stays — stage-2 gate.
-- [ ] 8.2 Statusbar (design D8): surface move count / minimum the cheapest way the
-      engine already supports; record which way it went.
-- [ ] 8.3 Full gate green (`tsc -b --noEmit` → biome → `vitest run` →
-      `vite build`).
-- [ ] 8.4 `openspec validate add-slide-ts-port --strict`.
-- [ ] 8.5 Dev-verify in the browser: grab / drag / snap / release, spacebar
-      Solve stepping, completion flash, move counter, Custom params.
-- [ ] 8.6 Update `docs/porting/game-port-playbook.md` (movement-drag input, the
-      landing-shadow render, the two-role-`tree234` replacement).
+- [x] 8.1 Registered in `ts-ported-ids.ts` + `games/index.ts`.
+- [x] 8.2 `puzzle(slide …)` moved from `puzzles/unfinished/CMakeLists.txt` into the
+      main `puzzles/CMakeLists.txt` with `TS_PORTED`; `solver(slide)` dropped.
+      `rm -rf build/wasm/` then rebuilt — slide is in the catalog with no
+      `slide.wasm`, and icons already existed. (Only `nullgame.wasm` remains in the
+      whole build.)
+- [x] 8.3 Statusbar via the existing `wantsStatusbar` + `statusbarText` — no engine
+      addition needed (design F6, resolving D8).
+- [x] 8.4 Full gate green (`tsc -b --noEmit` → biome → `vitest run` →
+      `vite build`): 5280 tests, 241 files.
+- [x] 8.5 `openspec validate add-slide-ts-port --strict`.
+- [x] 8.6 Dev-verified in Chrome: board renders (walls, bevelled blocks, blue main
+      block, green target, cattle-grid exit); drag grab/follow/snap/release with the
+      block lit up at its landing square; move counter and all four statusbar
+      states; Solve installing a route with the next-block highlight + landing
+      shadow; Space walking the route to completion in exactly `minmoves` moves;
+      the completion flash; deep-link by game ID; the Custom dialog with all three
+      fields and the `MAX_CELLS` rejection message. **0 console errors.**
+- [x] 8.7 Update `docs/porting/game-port-playbook.md` (the dead-step-key trap, the
+      drag-preview/`changedState` interaction, the two-role `tree234` replacement,
+      and the visited-set cost finding).
 
-## 9. Stage 2 — on owner acceptance only (gated on the catalog decision, design D9)
+## 9. Stage 2 — on owner acceptance only
 
-- [ ] 9.1 Move `puzzle(slide …)` from `puzzles/unfinished/CMakeLists.txt` into the
-      **main** `puzzles/CMakeLists.txt` with `TS_PORTED` (and drop `solver(slide)`).
-- [ ] 9.2 Delete `puzzles/unfinished/slide.c`.
-- [ ] 9.3 `rm -rf build/wasm/` and rebuild — slide in the catalog, no `slide.wasm`
-      (the playbook §1.1 gotcha: the entry *moved*, so the cache must be cleared).
-      Icons already exist.
-- [ ] 9.4 Archive, then commit port + archive together.
-</content>
+- [ ] 9.1 Delete `puzzles/unfinished/slide.c` and `puzzles/auxiliary/slide-trace.c`
+      (+ its `cliprogram()` line). The frozen fixture stays as the gated check's
+      baseline.
+- [ ] 9.2 `rm -rf build/wasm/` and rebuild to confirm nothing regressed.
+- [ ] 9.3 Archive, then commit port + archive together.
+- [ ] 9.4 Decide the three author-flagged graphics items (design "Open questions").

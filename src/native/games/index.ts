@@ -61,6 +61,7 @@ import { signpostGame } from "./signpost/index.ts";
 import { singlesGame } from "./singles/index.ts";
 import { sixteenGame } from "./sixteen/index.ts";
 import { slantGame } from "./slant/index.ts";
+import { slideGame } from "./slide/index.ts";
 import { sokobanGame } from "./sokoban/index.ts";
 import { soloGame } from "./solo/index.ts";
 import { spokesGame } from "./spokes/index.ts";
@@ -127,6 +128,7 @@ export function registerAllGames(): void {
   registerGame(singlesGame);
   registerGame(sixteenGame);
   registerGame(slantGame);
+  registerGame(slideGame);
   registerGame(sokobanGame);
   registerGame(soloGame);
   registerGame(spokesGame);

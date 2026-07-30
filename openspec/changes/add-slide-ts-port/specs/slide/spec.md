@@ -10,9 +10,19 @@ TypeScript engine.
 
 Parameters SHALL be a width, a height, and a solution-length limit (`maxmoves`,
 where a negative value means no limit). Validation SHALL require width at least 5
-and at most 251, and height at least 4, matching upstream; the solution-length
-limit SHALL NOT be otherwise constrained. A game ID SHALL encode the width,
-height and limit and round-trip through decode.
+and at most 251, and height at least 4, matching upstream. A game ID SHALL encode
+the width, height and limit and round-trip through decode.
+
+Validation SHALL additionally reject two parameter sets upstream accepts, each
+because the generator provably cannot satisfy it:
+
+- a board whose **cell count exceeds a documented bound**, because generation
+  runs an exhaustive breadth-first search whose memory grows explosively with
+  board area and, past the bound, exhausts the heap rather than merely running
+  slowly. The bound SHALL be at least as large as the largest shipped preset, and
+  the measurements that set it SHALL be recorded with it.
+- a solution-length limit of **zero**, which asks for a board that starts
+  finished.
 
 Slide SHALL be played by mouse or touch drag only — it has no keyboard cursor —
 and SHALL declare no `findMistakes` hook, because every reachable board is a
@@ -28,6 +38,12 @@ legal state and the puzzle has no notion of a wrong-but-legal position.
 
 - **WHEN** a parameter set is encoded to a game ID and decoded
 - **THEN** the same width, height and solution-length limit are recovered
+
+#### Scenario: A board too large to generate is rejected with a reason
+
+- **WHEN** parameters whose cell count exceeds the documented bound are validated
+- **THEN** they are rejected with a message the custom-parameters dialog can show,
+  rather than being accepted and then exhausting memory during generation
 
 ### Requirement: Slide descriptions use the upstream run-length block encoding
 
@@ -73,6 +89,13 @@ singleton blocks until the board becomes soluble, then attempt to merge adjacent
 blocks in a randomised order, keeping a merge only while the board stays soluble.
 Generation from a given seed SHALL be reproducible.
 
+The generator SHALL test solubility **after** its final singleton removal as well
+as before each one. Upstream tests only before, so a board that becomes soluble
+only once its last singleton goes falls through its loop into an abort — which is
+every board at the smallest legal size. The added check draws no randomness and is
+unreachable on any board upstream generates successfully, so it SHALL NOT change
+any description upstream produces.
+
 #### Scenario: The solver returns the shortest solution
 
 - **WHEN** a soluble board is solved
@@ -95,9 +118,19 @@ Only the main block SHALL be permitted to pass a forcefield cell.
 
 Moving the same block again SHALL NOT increment the displayed move count, and
 returning a block to where it started SHALL decrement it, so that a multi-step
-slide of one block counts as a single move. A stored solution SHALL be
-step-through-able: after Solve, pressing the step key SHALL make the next move
-along the stored path, and straying from or completing the path SHALL discard it.
+slide of one block counts as a single move.
+
+Solve SHALL install a shortest route **from the current position**, for the player
+to walk one step at a time, rather than filling the board in — the route is the
+feature. Pressing the step key SHALL make the next move along the stored route;
+straying from the route or finishing it SHALL discard it. The step key SHALL be
+one the frontend actually delivers: upstream binds the space *character*, which
+this frontend never sends (it maps Space and Enter to the cursor-select buttons),
+so a literal transcription would leave an installed route unwalkable.
+
+A drag left in progress across a state change (an undo made while the pointer is
+still down) SHALL be cancelled, so no frame is ever asked to preview a block
+against a board it no longer fits.
 
 Rendering SHALL draw each block with bevelled highlights, SHALL show the dragged
 block following the pointer with a landing shadow at its snapped destination,

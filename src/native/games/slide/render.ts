@@ -1,0 +1,664 @@
+/**
+ * Slide's palette and renderer (upstream `game_colours` / `game_redraw` /
+ * `draw_tile` / `draw_piecepart` / `draw_wallpart`).
+ *
+ * There is **no slide animation**: upstream's `game_anim_length` returns 0, and
+ * all the movement feedback lives here (design D3) —
+ *
+ *  - while dragging, the picked-up block is drawn *following the pointer*, lit
+ *    up (`FG_DRAGGING`), by simulating the release move and drawing the result;
+ *  - the target area is tinted green wherever the main block would land;
+ *  - forcefield squares carry a "cattle grid" so it reads that nothing but the
+ *    main block may cross them;
+ *  - when a Solve route is installed, the next block to move is highlighted
+ *    (`FG_SOLVEPIECE`) and a lowlight *shadow* of it is drawn where it should
+ *    end up (`FG_SHADOW`);
+ *  - completing the puzzle plays a three-interval flash.
+ *
+ * The palette keeps the C enum's index order exactly, because
+ * `src/puzzle/augmentation.ts` gives slide dark-mode `paletteSwaps` keyed by
+ * **colour index** (`[[1,2],[4,5],[7,8],[10,11]]` — each base colour's
+ * highlight/lowlight pair). Reindexing would silently mis-target those
+ * (playbook §3.3). The order is also load-bearing inside `drawTile`, which
+ * derives a highlight/lowlight from a base as `cc+1`/`cc+2` — the C's comment
+ * "Do not break this, or draw_tile() will get confused."
+ *
+ * `draw_piecepart` is the one place this port stays a close transcription
+ * rather than a rewrite. Its own author wrote "there's a lot of very fiddly
+ * logic here and all I could really think to do was give it my best shot and
+ * then test it and correct all the typos" — a 5×5 subdivision of the tile with
+ * up to five cases per section. Verbatim transcription is the low-risk way to
+ * reproduce a shape like that (playbook §4, "porting ease"), so the 29
+ * `maybeRect` calls below stay 1:1 with the C and auditable against it.
+ */
+
+import type { Colour, Point, Rect, Size } from "../../../puzzle/types.ts";
+import { mkhighlight, mkhighlightSpecific } from "../../engine/colour-mkhighlight.ts";
+import { Dsf } from "../../engine/dsf.ts";
+import type { GameDrawing } from "../../engine/game.ts";
+import { coord as gridCoord } from "../../engine/geometry.ts";
+import { movePiece } from "./moves.ts";
+import {
+  EMPTY,
+  isDist,
+  MAINANCHOR,
+  type SlideState,
+  type SlideUi,
+  WALL,
+} from "./state.ts";
+
+// --- palette (indices C-identical; see the module header) ---------------
+
+export const COL_BACKGROUND = 0;
+export const COL_HIGHLIGHT = 1;
+export const COL_LOWLIGHT = 2;
+export const COL_DRAGGING = 3;
+export const COL_DRAGGING_HIGHLIGHT = 4;
+export const COL_DRAGGING_LOWLIGHT = 5;
+export const COL_MAIN = 6;
+export const COL_MAIN_HIGHLIGHT = 7;
+export const COL_MAIN_LOWLIGHT = 8;
+export const COL_MAIN_DRAGGING = 9;
+export const COL_MAIN_DRAGGING_HIGHLIGHT = 10;
+export const COL_MAIN_DRAGGING_LOWLIGHT = 11;
+export const COL_TARGET = 12;
+export const COL_TARGET_HIGHLIGHT = 13;
+export const COL_TARGET_LOWLIGHT = 14;
+export const NCOLOURS = 15;
+
+/** Upstream `raise_colour`: two parts `src` to one part `limit`. */
+function raise(src: Colour, limit: Colour): Colour {
+  return [
+    (2 * src[0] + limit[0]) / 3,
+    (2 * src[1] + limit[1]) / 3,
+    (2 * src[2] + limit[2]) / 3,
+  ];
+}
+
+export function colours(defaultBackground: Colour): Colour[] {
+  const out = new Array<Colour>(NCOLOURS);
+  const { background, highlight, lowlight } = mkhighlight(defaultBackground);
+
+  out[COL_BACKGROUND] = background;
+  out[COL_HIGHLIGHT] = highlight;
+  out[COL_LOWLIGHT] = lowlight;
+
+  // A dragged block is lit up a bit.
+  out[COL_DRAGGING] = raise(background, highlight);
+  out[COL_DRAGGING_HIGHLIGHT] = raise(highlight, highlight);
+  out[COL_DRAGGING_LOWLIGHT] = raise(lowlight, highlight);
+
+  // The main block is tinted blue.
+  const main = mkhighlightSpecific([background[0], background[1], highlight[2]]);
+  out[COL_MAIN] = main.base;
+  out[COL_MAIN_HIGHLIGHT] = main.highlight;
+  out[COL_MAIN_LOWLIGHT] = main.lowlight;
+  out[COL_MAIN_DRAGGING] = raise(main.base, main.highlight);
+  out[COL_MAIN_DRAGGING_HIGHLIGHT] = raise(main.highlight, main.highlight);
+  out[COL_MAIN_DRAGGING_LOWLIGHT] = raise(main.lowlight, main.highlight);
+
+  // The target area on the floor is tinted green.
+  const target = mkhighlightSpecific([background[0], highlight[1], background[2]]);
+  out[COL_TARGET] = target.base;
+  out[COL_TARGET_HIGHLIGHT] = target.highlight;
+  out[COL_TARGET_LOWLIGHT] = target.lowlight;
+
+  return out;
+}
+
+// --- geometry ---------------------------------------------------------
+
+export const PREFERRED_TILE_SIZE = 32;
+/** The web build defines `NARROW_BORDERS` (playbook §3.2), so the board is
+ * exactly `w*TILESIZE` by `h*TILESIZE` with no border at all. */
+export const BORDER = 0;
+
+export const FLASH_INTERVAL = 0.1;
+export const FLASH_TIME = 3 * FLASH_INTERVAL;
+
+const borderWidth = (ts: number): number => 1 + Math.floor(ts / 20);
+const highlightWidth = (ts: number): number => 1 + Math.floor(ts / 16);
+
+export function computeSize(p: { w: number; h: number }, ts: number): Size {
+  return { w: p.w * ts + 2 * BORDER, h: p.h * ts + 2 * BORDER };
+}
+
+// --- the packed per-tile value ----------------------------------------
+
+const BG_NORMAL = 0x00000001;
+const BG_TARGET = 0x00000002;
+const BG_FORCEFIELD = 0x00000004;
+const FLASH_LOW = 0x00000008;
+const FLASH_HIGH = 0x00000010;
+const FG_WALL = 0x00000020;
+const FG_MAIN = 0x00000040;
+const FG_NORMAL = 0x00000080;
+const FG_DRAGGING = 0x00000100;
+const FG_SHADOW = 0x00000200;
+const FG_SOLVEPIECE = 0x00000400;
+/** Shift of the block's own border/corner flags within the packed value. */
+const FG_MAINPIECESH = 11;
+/** Shift of the solve-shadow's border/corner flags. */
+const FG_SHADOWSH = 19;
+
+const PIECE_LBORDER = 0x01;
+const PIECE_TBORDER = 0x02;
+const PIECE_RBORDER = 0x04;
+const PIECE_BBORDER = 0x08;
+const PIECE_TLCORNER = 0x10;
+const PIECE_TRCORNER = 0x20;
+const PIECE_BLCORNER = 0x40;
+const PIECE_BRCORNER = 0x80;
+const PIECE_MASK = 0xff;
+
+/** `!((a|b) &~ val)` — both flags present. */
+const hasAll = (val: number, mask: number): boolean => (val & mask) === mask;
+
+// --- draw state -------------------------------------------------------
+
+export interface SlideDrawState {
+  started: boolean;
+  tilesize: number;
+  w: number;
+  h: number;
+  /** Last-drawn packed value per cell; `-1` forces a repaint. Every overlay
+   * (drag, solve highlight, shadow, flash) is part of this one word, so they
+   * all sit in the diff key by construction (playbook §3.2). */
+  grid: Int32Array;
+}
+
+export function newDrawState(state: SlideState): SlideDrawState {
+  return {
+    started: false,
+    tilesize: 0,
+    w: state.w,
+    h: state.h,
+    grid: new Int32Array(state.w * state.h).fill(-1),
+  };
+}
+
+export function setTileSize(ds: SlideDrawState, ts: number): void {
+  ds.tilesize = ts;
+}
+
+// --- the fiddly bit: one section of one tile ---------------------------
+
+const TYPE_MASK = 0xf000;
+const COL_MASK = 0x0fff;
+const TYPE_RECT = 0x0000;
+const TYPE_TLCIRC = 0x4000;
+const TYPE_TRCIRC = 0x5000;
+const TYPE_BLCIRC = 0x6000;
+const TYPE_BRCIRC = 0x7000;
+/** Passed as a colour to mean "leave this section alone". */
+const SKIP = -1;
+
+/**
+ * Fill one rectangular section of a tile (upstream `maybe_rect`). `coltype`
+ * is a palette index optionally ORed with a `TYPE_*CIRC` code, which asks for
+ * a rounded corner — a quadrant of a circle inscribed in the section, with the
+ * centre at whichever corner the code names. `SKIP` draws nothing.
+ *
+ * With two colours, the quadrant is split along its diagonal by walking
+ * Bresenham's circle directly and filling a horizontal and a vertical span per
+ * step, because the drawing API has no draw-sector primitive.
+ */
+function maybeRect(dr: GameDrawing, rect: Rect, coltype: number, col2: number): void {
+  if (coltype === SKIP) return;
+  const colour = coltype & COL_MASK;
+  const type = coltype & TYPE_MASK;
+
+  if (type === TYPE_RECT) {
+    dr.drawRect(rect, colour);
+    return;
+  }
+
+  dr.clip(rect);
+
+  const r = rect.w - 1;
+  const cx = rect.x + (type & 0x1000 ? r : 0);
+  const cy = rect.y + (type & 0x2000 ? r : 0);
+
+  if (col2 === SKIP || col2 === coltype) {
+    dr.drawCircle({ x: cx, y: cy }, r, colour, colour);
+  } else {
+    const xm = type & 0x1000 ? -1 : 1;
+    const ym = type & 0x2000 ? -1 : 1;
+    let by = r;
+    let bx = 0;
+    let bd = 0;
+    while (by >= bx) {
+      const x1 = cx + xm * bx;
+      const y1 = cy + ym * bx;
+      let x2 = cx + xm * by;
+      let y2 = y1;
+      dr.drawRect(
+        {
+          x: Math.min(x1, x2),
+          y: Math.min(y1, y2),
+          w: Math.abs(x1 - x2) + 1,
+          h: Math.abs(y1 - y2) + 1,
+        },
+        colour,
+      );
+      x2 = x1;
+      y2 = cy + ym * by;
+      dr.drawRect(
+        {
+          x: Math.min(x1, x2),
+          y: Math.min(y1, y2),
+          w: Math.abs(x1 - x2) + 1,
+          h: Math.abs(y1 - y2) + 1,
+        },
+        col2,
+      );
+
+      bd += 2 * bx + 1;
+      const bd2 = bd - (2 * by - 1);
+      if (Math.abs(bd2) < Math.abs(bd)) {
+        bd = bd2;
+        by--;
+      }
+      bx++;
+    }
+  }
+
+  dr.unclip();
+}
+
+/**
+ * A wall square (upstream `draw_wallpart`). Walls fill their tile edge to edge
+ * — no gap, so adjacent walls read as one continuous mass — with a bevel on
+ * each side that faces something other than another wall, and a mitred
+ * diagonal where a highlight and a lowlight edge meet.
+ */
+function drawWallpart(
+  dr: GameDrawing,
+  ts: number,
+  tx: number,
+  ty: number,
+  val: number,
+  cl: number,
+  cc: number,
+  ch: number,
+): void {
+  const hw = highlightWidth(ts);
+
+  dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, cc);
+  if (val & PIECE_LBORDER) dr.drawRect({ x: tx, y: ty, w: hw, h: ts }, ch);
+  if (val & PIECE_RBORDER) dr.drawRect({ x: tx + ts - hw, y: ty, w: hw, h: ts }, cl);
+  if (val & PIECE_TBORDER) dr.drawRect({ x: tx, y: ty, w: ts, h: hw }, ch);
+  if (val & PIECE_BBORDER) dr.drawRect({ x: tx, y: ty + ts - hw, w: ts, h: hw }, cl);
+
+  const bottomLeftTriangle: Point[] = [
+    { x: tx - 1, y: ty + ts - hw - 1 },
+    { x: tx + hw, y: ty + ts - hw - 1 },
+    { x: tx - 1, y: ty + ts },
+  ];
+  const topRightTriangle: Point[] = [
+    { x: tx + ts - hw - 1, y: ty - 1 },
+    { x: tx + ts, y: ty - 1 },
+    { x: tx + ts - hw - 1, y: ty + hw },
+  ];
+
+  if (hasAll(val, PIECE_BBORDER | PIECE_LBORDER)) {
+    dr.drawRect({ x: tx, y: ty + ts - hw, w: hw, h: hw }, cl);
+    dr.clip({ x: tx, y: ty + ts - hw, w: hw, h: hw });
+    dr.drawPolygon(bottomLeftTriangle, ch, ch);
+    dr.unclip();
+  } else if (val & PIECE_BLCORNER) {
+    dr.drawRect({ x: tx, y: ty + ts - hw, w: hw, h: hw }, ch);
+    dr.clip({ x: tx, y: ty + ts - hw, w: hw, h: hw });
+    dr.drawPolygon(bottomLeftTriangle, cl, cl);
+    dr.unclip();
+  }
+
+  if (hasAll(val, PIECE_TBORDER | PIECE_RBORDER)) {
+    dr.drawRect({ x: tx + ts - hw, y: ty, w: hw, h: hw }, cl);
+    dr.clip({ x: tx + ts - hw, y: ty, w: hw, h: hw });
+    dr.drawPolygon(topRightTriangle, ch, ch);
+    dr.unclip();
+  } else if (val & PIECE_TRCORNER) {
+    dr.drawRect({ x: tx + ts - hw, y: ty, w: hw, h: hw }, ch);
+    dr.clip({ x: tx + ts - hw, y: ty, w: hw, h: hw });
+    dr.drawPolygon(topRightTriangle, cl, cl);
+    dr.unclip();
+  }
+
+  if (val & PIECE_TLCORNER) dr.drawRect({ x: tx, y: ty, w: hw, h: hw }, ch);
+  if (val & PIECE_BRCORNER)
+    dr.drawRect({ x: tx + ts - hw, y: ty + ts - hw, w: hw, h: hw }, cl);
+}
+
+/**
+ * One tile's worth of a movable block (upstream `draw_piecepart`, transcribed
+ * 1:1 — see the module header for why).
+ *
+ * Blocks do not fill their tile: there is a `BORDER_WIDTH` gap around the
+ * block's outer edges, then a `HIGHLIGHT_WIDTH` bevel, and rounded corners.
+ * The tile is ruled into 25 sections by four horizontal and four vertical
+ * lines (at `BORDER_WIDTH` and `BORDER_WIDTH + HIGHLIGHT_WIDTH` from each
+ * side), and each section is decided separately from the border/corner flags.
+ */
+function drawPiecepart(
+  dr: GameDrawing,
+  ts: number,
+  tx: number,
+  ty: number,
+  val: number,
+  cl: number,
+  cc: number,
+  ch: number,
+): void {
+  const bw = borderWidth(ts);
+  const hw = highlightWidth(ts);
+
+  const x = [tx, tx + bw, tx + bw + hw, ts + tx - bw - hw, ts + tx - bw, tx + ts];
+  const y = [ty, ty + bw, ty + bw + hw, ts + ty - bw - hw, ts + ty - bw, ty + ts];
+
+  const mr = (p: number, q: number, coltype: number, col2 = SKIP): void =>
+    maybeRect(
+      dr,
+      { x: x[p], y: y[q], w: x[p + 1] - x[p], h: y[q + 1] - y[q] },
+      coltype,
+      col2,
+    );
+
+  const tb = val & PIECE_TBORDER;
+  const bb = val & PIECE_BBORDER;
+  const lb = val & PIECE_LBORDER;
+  const rb = val & PIECE_RBORDER;
+  const tl = val & PIECE_TLCORNER;
+  const tr = val & PIECE_TRCORNER;
+  const bl = val & PIECE_BLCORNER;
+  const br = val & PIECE_BRCORNER;
+
+  mr(0, 0, val & (PIECE_TLCORNER | PIECE_TBORDER | PIECE_LBORDER) ? SKIP : cc);
+  mr(1, 0, tl ? ch : tb ? SKIP : lb ? ch : cc);
+  mr(2, 0, tb ? SKIP : cc);
+  mr(3, 0, tr ? cl : tb ? SKIP : rb ? cl : cc);
+  mr(4, 0, val & (PIECE_TRCORNER | PIECE_TBORDER | PIECE_RBORDER) ? SKIP : cc);
+
+  mr(0, 1, tl ? ch : lb ? SKIP : tb ? ch : cc);
+  mr(1, 1, tl ? cc : SKIP);
+  mr(
+    1,
+    1,
+    tl
+      ? ch | TYPE_TLCIRC
+      : hasAll(val, PIECE_TBORDER | PIECE_LBORDER)
+        ? ch | TYPE_BRCIRC
+        : tb || lb
+          ? ch
+          : cc,
+  );
+  mr(2, 1, tb ? ch : cc);
+  mr(3, 1, tr ? cc : SKIP);
+  mr(
+    3,
+    1,
+    (val & (PIECE_TBORDER | PIECE_RBORDER)) === PIECE_TBORDER
+      ? ch
+      : (val & (PIECE_TBORDER | PIECE_RBORDER)) === PIECE_RBORDER
+        ? cl
+        : hasAll(val, PIECE_TBORDER | PIECE_RBORDER)
+          ? cl | TYPE_BLCIRC
+          : tr
+            ? cl | TYPE_TRCIRC
+            : cc,
+    ch,
+  );
+  mr(4, 1, tr ? ch : rb ? SKIP : tb ? ch : cc);
+
+  mr(0, 2, lb ? SKIP : cc);
+  mr(1, 2, lb ? ch : cc);
+  mr(2, 2, cc);
+  mr(3, 2, rb ? cl : cc);
+  mr(4, 2, rb ? SKIP : cc);
+
+  mr(0, 3, bl ? cl : lb ? SKIP : bb ? cl : cc);
+  mr(1, 3, bl ? cc : SKIP);
+  mr(
+    1,
+    3,
+    (val & (PIECE_BBORDER | PIECE_LBORDER)) === PIECE_BBORDER
+      ? cl
+      : (val & (PIECE_BBORDER | PIECE_LBORDER)) === PIECE_LBORDER
+        ? ch
+        : hasAll(val, PIECE_BBORDER | PIECE_LBORDER)
+          ? ch | TYPE_TRCIRC
+          : bl
+            ? ch | TYPE_BLCIRC
+            : cc,
+    cl,
+  );
+  mr(2, 3, bb ? cl : cc);
+  mr(3, 3, br ? cc : SKIP);
+  mr(
+    3,
+    3,
+    br
+      ? cl | TYPE_BRCIRC
+      : hasAll(val, PIECE_BBORDER | PIECE_RBORDER)
+        ? cl | TYPE_TLCIRC
+        : bb || rb
+          ? cl
+          : cc,
+  );
+  mr(4, 3, br ? cl : rb ? SKIP : bb ? cl : cc);
+
+  mr(0, 4, val & (PIECE_BLCORNER | PIECE_BBORDER | PIECE_LBORDER) ? SKIP : cc);
+  mr(1, 4, bl ? ch : bb ? SKIP : lb ? ch : cc);
+  mr(2, 4, bb ? SKIP : cc);
+  mr(3, 4, br ? cl : bb ? SKIP : rb ? cl : cc);
+  mr(4, 4, val & (PIECE_BRCORNER | PIECE_BBORDER | PIECE_RBORDER) ? SKIP : cc);
+}
+
+/** Upstream `draw_tile`. */
+function drawTile(
+  dr: GameDrawing,
+  ds: SlideDrawState,
+  gx: number,
+  gy: number,
+  val: number,
+): void {
+  const ts = ds.tilesize;
+  const tx = gridCoord(gx, ts, BORDER);
+  const ty = gridCoord(gy, ts, BORDER);
+
+  // Background: the floor, or the target area's green.
+  let cc = val & BG_TARGET ? COL_TARGET : COL_BACKGROUND;
+  let ch = cc + 1;
+  let cl = cc + 2;
+  if (val & FLASH_LOW) cc = cl;
+  else if (val & FLASH_HIGH) cc = ch;
+
+  dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, cc);
+  if (val & BG_FORCEFIELD) {
+    // A cattle grid, to say that nothing but the main block slides over this.
+    const hw = highlightWidth(ts);
+    const n = 3 * Math.floor(ts / (3 * hw));
+    for (let i = 1; i < n; i += 3) {
+      dr.drawRect({ x: tx, y: ty + Math.floor((ts * i) / n), w: ts, h: hw }, cl);
+      dr.drawRect({ x: tx + Math.floor((ts * i) / n), y: ty, w: hw, h: ts }, cl);
+    }
+  }
+
+  // Midground: a shadow of the block, for displaying a Solve route.
+  if (val & FG_SHADOW)
+    drawPiecepart(dr, ts, tx, ty, (val >> FG_SHADOWSH) & PIECE_MASK, cl, cl, cl);
+
+  // Foreground: a section of a block, or of the wall.
+  if (val & FG_WALL) {
+    cc = COL_BACKGROUND;
+    ch = cc + 1;
+    cl = cc + 2;
+    if (val & FLASH_LOW) cc = cl;
+    else if (val & FLASH_HIGH) cc = ch;
+
+    drawWallpart(dr, ts, tx, ty, (val >> FG_MAINPIECESH) & PIECE_MASK, cl, cc, ch);
+  } else if (val & (FG_MAIN | FG_NORMAL)) {
+    if (val & FG_DRAGGING) cc = val & FG_MAIN ? COL_MAIN_DRAGGING : COL_DRAGGING;
+    else cc = val & FG_MAIN ? COL_MAIN : COL_BACKGROUND;
+    ch = cc + 1;
+    cl = cc + 2;
+
+    if (val & FLASH_LOW) cc = cl;
+    else if (val & (FLASH_HIGH | FG_SOLVEPIECE)) cc = ch;
+
+    drawPiecepart(dr, ts, tx, ty, (val >> FG_MAINPIECESH) & PIECE_MASK, cl, cc, ch);
+  }
+
+  dr.drawUpdate({ x: tx, y: ty, w: ts, h: ts });
+}
+
+/**
+ * Which of this square's four sides and four corners face something that is
+ * not part of the same block (upstream `find_piecepart`). A corner flag means
+ * "the diagonal neighbour is a different block even though both adjoining
+ * sides are ours", i.e. a concave notch.
+ */
+function findPiecepart(w: number, h: number, dsf: Dsf, x: number, y: number): number {
+  const i = y * w + x;
+  const canon = dsf.canonify(i);
+  let val = 0;
+
+  if (x === 0 || canon !== dsf.canonify(i - 1)) val |= PIECE_LBORDER;
+  if (y === 0 || canon !== dsf.canonify(i - w)) val |= PIECE_TBORDER;
+  if (x === w - 1 || canon !== dsf.canonify(i + 1)) val |= PIECE_RBORDER;
+  if (y === h - 1 || canon !== dsf.canonify(i + w)) val |= PIECE_BBORDER;
+  if (!(val & (PIECE_TBORDER | PIECE_LBORDER)) && canon !== dsf.canonify(i - 1 - w))
+    val |= PIECE_TLCORNER;
+  if (!(val & (PIECE_TBORDER | PIECE_RBORDER)) && canon !== dsf.canonify(i + 1 - w))
+    val |= PIECE_TRCORNER;
+  if (!(val & (PIECE_BBORDER | PIECE_LBORDER)) && canon !== dsf.canonify(i - 1 + w))
+    val |= PIECE_BLCORNER;
+  if (!(val & (PIECE_BBORDER | PIECE_RBORDER)) && canon !== dsf.canonify(i + 1 + w))
+    val |= PIECE_BRCORNER;
+  return val;
+}
+
+// --- redraw -----------------------------------------------------------
+
+export function redraw(
+  dr: GameDrawing,
+  ds: SlideDrawState | null,
+  _prev: SlideState | null,
+  state: SlideState,
+  _dir: number,
+  ui: SlideUi,
+  _animTime: number,
+  flashTime: number,
+): void {
+  if (!ds) return;
+  const { w, h } = state;
+  const wh = w * h;
+  const ts = ds.tilesize;
+
+  if (!ds.started) {
+    // The engine paints no pixels of its own (playbook §3.2 doctrine).
+    const size = computeSize({ w, h }, ts);
+    dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
+    ds.started = true;
+  }
+
+  // The board we display, which is not state's board while a drag is in
+  // progress: the dragged block is drawn where it would land on release.
+  const board = state.board.slice();
+  if (ui.dragging) {
+    if (
+      !movePiece(
+        w,
+        h,
+        state.board,
+        board,
+        state.forcefield,
+        ui.dragAnchor,
+        ui.dragCurrpos,
+      )
+    ) {
+      // Upstream asserts here. A drag can only be left dangling against a
+      // board it no longer fits if the state changed underneath it (an undo
+      // with the pointer still down), which `changedState` cancels — but draw
+      // the plain board rather than throwing if it ever happens anyway.
+      board.set(state.board);
+    }
+  }
+
+  // Where the installed Solve route wants to move next, if any.
+  let solvesrc = -1;
+  let solvedst = -1;
+  if (state.soln) {
+    const step = state.soln[state.solnIndex];
+    solvesrc = step.from;
+    solvedst = step.to;
+    if (solvesrc === state.lastmovedPos) solvesrc = state.lastmoved;
+    if (solvesrc === ui.dragAnchor) solvesrc = ui.dragCurrpos;
+  }
+
+  // A dsf over the displayed board, so we can tell which edges are internal to
+  // a block and which are boundaries. Walls join up with each other.
+  const dsf = new Dsf(wh);
+  let mainanchor = -1;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+
+      if (isDist(board[i])) dsf.merge(i, i - board[i]);
+      if (board[i] === MAINANCHOR) mainanchor = i;
+      if (board[i] === WALL) {
+        if (x > 0 && board[i - 1] === WALL) dsf.merge(i, i - 1);
+        if (y > 0 && board[i - w] === WALL) dsf.merge(i, i - w);
+      }
+    }
+  if (mainanchor < 0) throw new Error("slide: board has no main block");
+
+  const mainpos = dsf.canonify(mainanchor);
+  const dragpos = ui.dragCurrpos > 0 ? dsf.canonify(ui.dragCurrpos) : -1;
+  const solvepos = solvesrc >= 0 ? dsf.canonify(solvesrc) : -1;
+
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+
+      // Is this square part of the target area? Translate it by the offset
+      // that would take the target back to where the main block is, and see
+      // whether it lands on the main block.
+      let j = i + mainanchor - (state.ty * w + state.tx);
+      while (j >= 0 && j < wh && isDist(board[j])) j -= board[j];
+      let val = j === mainanchor ? BG_TARGET : BG_NORMAL;
+
+      if (state.forcefield[i]) val |= BG_FORCEFIELD;
+
+      if (flashTime > 0) {
+        const flashtype = Math.floor(flashTime / FLASH_INTERVAL) & 1;
+        val |= flashtype ? FLASH_LOW : FLASH_HIGH;
+      }
+
+      if (board[i] !== EMPTY) {
+        const canon = dsf.canonify(i);
+
+        if (board[i] === WALL) val |= FG_WALL;
+        else if (canon === mainpos) val |= FG_MAIN;
+        else val |= FG_NORMAL;
+        if (canon === dragpos) val |= FG_DRAGGING;
+        if (canon === solvepos) val |= FG_SOLVEPIECE;
+
+        val |= findPiecepart(w, h, dsf, x, y) << FG_MAINPIECESH;
+      }
+
+      // Mid-route: a shadow of the block where the route wants it to end up.
+      if (solvepos >= 0) {
+        const si = i - solvedst + solvesrc;
+        if (si >= 0 && si < wh && dsf.canonify(si) === solvepos) {
+          val |= findPiecepart(w, h, dsf, si % w, Math.floor(si / w)) << FG_SHADOWSH;
+          val |= FG_SHADOW;
+        }
+      }
+
+      if (val !== ds.grid[i]) {
+        drawTile(dr, ds, x, y, val);
+        ds.grid[i] = val;
+      }
+    }
+}
