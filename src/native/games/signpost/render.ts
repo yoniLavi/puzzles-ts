@@ -8,6 +8,7 @@
 import type { Colour, Point } from "../../../puzzle/types.ts";
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { ERROR } from "../../engine/palette.ts";
 import { dragReleaseMove, executeMove } from "./moves.ts";
 import {
   FLAG_ERROR,
@@ -80,7 +81,7 @@ export function buildPalette(
     ret[COL_GRID][i] = background[i] / 1.3;
   }
   ret[COL_NUMBER_SET] = [0, 0, 0.9];
-  ret[COL_ERROR] = [1, 0, 0];
+  ret[COL_ERROR] = ERROR;
   ret[COL_DRAG_ORIGIN] = [0.2, 1, 0.2];
 
   for (let c = 0; c < 8; c++) {

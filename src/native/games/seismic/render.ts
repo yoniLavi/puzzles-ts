@@ -34,6 +34,7 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { ERROR, INK, PENCIL_BODY } from "../../engine/palette.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   FM_ERRORMASK,
@@ -78,13 +79,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = background;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
-  out[COL_BORDER] = [0, 0, 0];
-  out[COL_NUM_FIXED] = [0, 0, 0];
+  out[COL_BORDER] = INK;
+  out[COL_NUM_FIXED] = INK;
   out[COL_NUM_GUESS] = [0, 0.5, 0];
-  out[COL_NUM_ERROR] = [1, 0, 0];
+  out[COL_NUM_ERROR] = ERROR;
   out[COL_NUM_PENCIL] = [0, 0.5, 0.5];
-  out[COL_ERRORDIST] = [1, 0, 0];
-  out[COL_PENCIL_BODY] = [1, 0.78, 0.17];
+  out[COL_ERRORDIST] = ERROR;
+  out[COL_PENCIL_BODY] = PENCIL_BODY;
   return out;
 }
 

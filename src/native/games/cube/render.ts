@@ -11,6 +11,7 @@
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { INK } from "../../engine/palette.ts";
 import { type Bbox, enumGridSquares, findBbox } from "./grid.ts";
 import { SOLIDS, transformPoly } from "./solids.ts";
 import type { CubeParams, CubeState, KeyPair } from "./state.ts";
@@ -35,7 +36,7 @@ export interface CubeDrawState {
 export function colours(defaultBackground: Colour): Colour[] {
   const ret: Colour[] = [];
   ret[COL_BACKGROUND] = defaultBackground;
-  ret[COL_BORDER] = [0, 0, 0];
+  ret[COL_BORDER] = INK;
   ret[COL_BLUE] = [0, 0, 1];
   return ret;
 }

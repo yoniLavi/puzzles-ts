@@ -292,7 +292,7 @@ exports[`filling hint render scenario > paints the target(s) blue and shades the
     "colour": 8,
     "h": 32,
     "op": "rect",
-    "rgb": "rgb(217, 235, 252)",
+    "rgb": "rgb(209, 230, 252)",
     "w": 32,
     "x": 144,
     "y": 16,

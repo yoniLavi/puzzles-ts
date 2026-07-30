@@ -26,6 +26,7 @@ import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { ERROR, HINT_ACTION, HINT_EVIDENCE, INK, PAPER } from "../../engine/palette.ts";
 import type { SpokesHint } from "./index.ts";
 import { SpokesScratch, spokesFindIsolated, spokesSolverRecount } from "./solver.ts";
 import {
@@ -112,14 +113,14 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_BORDER] = [0.3, 0.3, 0.3];
   out[COL_HOLDING] = [0, 1, 0];
-  out[COL_LINE] = [0, 0, 0];
+  out[COL_LINE] = INK;
   out[COL_MARK] = [0.3, 0.3, 1];
-  out[COL_DONE] = [1, 1, 1];
-  out[COL_ERROR] = [1, 0, 0];
+  out[COL_DONE] = PAPER;
+  out[COL_ERROR] = ERROR;
   out[COL_CURSOR] = [0, 0, 1];
   out[COL_SATISFIED] = defaultBackground.map((c) => c * SATISFIED_SHADE) as Colour;
-  out[COL_HINT] = [0.13, 0.5, 0.85];
-  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
+  out[COL_HINT] = HINT_ACTION;
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
 }
 

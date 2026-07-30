@@ -28,6 +28,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
+import { GRID_MID, INK, PAPER } from "../../engine/palette.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -685,15 +686,15 @@ export const minesGame: Game<
     ret[COL_4] = [0, 0, 0.5];
     ret[COL_5] = [0.5, 0, 0];
     ret[COL_6] = [0, 0.5, 0.5];
-    ret[COL_7] = [0, 0, 0];
-    ret[COL_8] = [0.5, 0.5, 0.5];
-    ret[COL_MINE] = [0, 0, 0];
+    ret[COL_7] = INK;
+    ret[COL_8] = GRID_MID;
+    ret[COL_MINE] = INK;
     ret[COL_BANG] = [1, 0, 0];
     ret[COL_CROSS] = [1, 0, 0];
     ret[COL_FLAG] = [1, 0, 0];
-    ret[COL_FLAGBASE] = [0, 0, 0];
-    ret[COL_QUERY] = [0, 0, 0];
-    ret[COL_HIGHLIGHT] = [1, 1, 1];
+    ret[COL_FLAGBASE] = INK;
+    ret[COL_QUERY] = INK;
+    ret[COL_HIGHLIGHT] = PAPER;
     ret[COL_LOWLIGHT] = [(bg[0] * 2) / 3, (bg[1] * 2) / 3, (bg[2] * 2) / 3];
     ret[COL_WRONGNUMBER] = [1, 0.6, 0.6];
     ret[COL_CURSOR] = [

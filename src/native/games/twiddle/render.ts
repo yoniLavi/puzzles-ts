@@ -10,6 +10,7 @@ import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
+import { INK } from "../../engine/palette.ts";
 import type { TwiddleParams, TwiddleState, TwiddleUi } from "./state.ts";
 
 // --- constants --------------------------------------------------------
@@ -478,7 +479,7 @@ export function buildColours(bg: Colour, hi: Colour, lo: Colour): Colour[] {
   const highCursor: Colour = [bg[0] * 1.0, bg[1] * 0.5, bg[2] * 0.5];
   const out: Colour[] = new Array(NCOLOURS);
   out[COL_BACKGROUND] = bg;
-  out[COL_TEXT] = [0, 0, 0];
+  out[COL_TEXT] = INK;
   out[COL_HIGHLIGHT] = hi;
   out[COL_HIGHLIGHT_GENTLE] = clampColour([bg[0] * 1.1, bg[1] * 1.1, bg[2] * 1.1]);
   out[COL_LOWLIGHT] = lo;

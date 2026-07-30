@@ -14,6 +14,7 @@ import type { Colour, Point, Rect, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { ERROR, INK } from "../../engine/palette.ts";
 import {
   BALL_CORRECT,
   BALL_GUESS,
@@ -104,14 +105,14 @@ export function colours(defaultBackground: Colour): Colour[] {
   ret[COL_BACKGROUND] = bg;
   ret[COL_HIGHLIGHT] = highlight;
   ret[COL_LOWLIGHT] = lowlight;
-  ret[COL_BALL] = [0, 0, 0];
-  ret[COL_WRONG] = [1, 0, 0];
+  ret[COL_BALL] = INK;
+  ret[COL_WRONG] = ERROR;
   ret[COL_BUTTON] = [0, 1, 0];
   ret[COL_CURSOR] = [1, 0, 0];
   ret[COL_GRID] = [bg[0] * 0.9, bg[1] * 0.9, bg[2] * 0.9];
   ret[COL_LOCK] = [bg[0] * 0.7, bg[1] * 0.7, bg[2] * 0.7];
   ret[COL_COVER] = [bg[0] * 0.5, bg[1] * 0.5, bg[2] * 0.5];
-  ret[COL_TEXT] = [0, 0, 0];
+  ret[COL_TEXT] = INK;
   ret[COL_FLASHTEXT] = [0, 1, 0];
   return ret;
 }

@@ -13,6 +13,7 @@ import type { Colour, Point, Rect, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { ERROR, GRID_MID, INK, PAPER } from "../../engine/palette.ts";
 import { copyAndApplyDrag } from "./moves.ts";
 import {
   ALLDIR,
@@ -65,16 +66,16 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = background;
   out[COL_TRACK_BACKGROUND] = highlight;
   out[COL_GRID] = mix(background, highlight, 0.5);
-  out[COL_TRACK_CLUE] = [0, 0, 0];
-  out[COL_TRACK] = [0.5, 0.5, 0.5];
-  out[COL_CLUE] = [0, 0, 0];
+  out[COL_TRACK_CLUE] = INK;
+  out[COL_TRACK] = GRID_MID;
+  out[COL_CLUE] = INK;
   out[COL_CURSOR] = [0.3, 0.3, 0.3];
-  out[COL_ERROR_BACKGROUND] = [1, 1, 1];
+  out[COL_ERROR_BACKGROUND] = PAPER;
   out[COL_SLEEPER] = [0.5, 0.4, 0.1];
-  out[COL_ERROR] = [1, 0, 0];
+  out[COL_ERROR] = ERROR;
   out[COL_DRAGON] = [0, 0, 1];
   out[COL_DRAGOFF] = [0.8, 0.8, 1];
-  out[COL_FLASH] = [1, 1, 1];
+  out[COL_FLASH] = PAPER;
   return out;
 }
 

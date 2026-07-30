@@ -15,6 +15,7 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { ERROR, HINT_ACTION, HINT_EVIDENCE, INK, PAPER } from "../../engine/palette.ts";
 import type { DominosaHint } from "./index.ts";
 import {
   DINDEX,
@@ -56,10 +57,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   const { background } = mkhighlight(defaultBackground);
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
-  out[COL_TEXT] = [0, 0, 0];
-  out[COL_DOMINO] = [0, 0, 0];
+  out[COL_TEXT] = INK;
+  out[COL_DOMINO] = INK;
   out[COL_DOMINOCLASH] = [0.5, 0, 0];
-  out[COL_DOMINOTEXT] = [1, 1, 1];
+  out[COL_DOMINOTEXT] = PAPER;
   out[COL_EDGE] = [
     (background[0] * 2) / 3,
     (background[1] * 2) / 3,
@@ -67,9 +68,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   ];
   out[COL_HIGHLIGHT_1] = [0.85, 0.2, 0.2];
   out[COL_HIGHLIGHT_2] = [0.3, 0.85, 0.2];
-  out[COL_MISTAKE] = [1, 0, 0];
-  out[COL_HINT] = [0.13, 0.5, 0.85];
-  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
+  out[COL_MISTAKE] = ERROR;
+  out[COL_HINT] = HINT_ACTION;
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
   out[COL_REFERENCE] = [0.6, 0.2, 0.8];
   return out;
 }

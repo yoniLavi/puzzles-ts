@@ -14,6 +14,7 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { INK, PAPER } from "../../engine/palette.ts";
 import {
   barrelLabel,
   DEEP_PIT,
@@ -61,13 +62,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = background;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
-  out[COL_OUTLINE] = [0, 0, 0];
+  out[COL_OUTLINE] = INK;
   out[COL_PLAYER] = [0, 1, 0];
   out[COL_BARREL] = [0.6, 0.3, 0];
   out[COL_TARGET] = [...lowlight];
   out[COL_PIT] = [lowlight[0] / 2, lowlight[1] / 2, lowlight[2] / 2];
-  out[COL_DEEP_PIT] = [0, 0, 0];
-  out[COL_TEXT] = [1, 1, 1];
+  out[COL_DEEP_PIT] = INK;
+  out[COL_TEXT] = PAPER;
   out[COL_GRID] = [...lowlight];
   out[COL_WALL] = [
     (3 * background[0] + highlight[0]) / 4,

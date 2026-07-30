@@ -143,7 +143,7 @@ exports[`salad hint frames > previews a holds-a-symbol marker as a ball in the h
     "colour": 20,
     "h": 40,
     "op": "rect",
-    "rgb": "rgb(217, 235, 252)",
+    "rgb": "rgb(209, 230, 252)",
     "w": 40,
     "x": 120,
     "y": 40,
@@ -204,7 +204,7 @@ exports[`salad hint frames > previews a holds-a-symbol marker as a ball in the h
     "fillRgb": "colour#-1",
     "op": "circle",
     "outline": 19,
-    "outlineRgb": "rgb(33, 102, 191)",
+    "outlineRgb": "rgb(33, 128, 217)",
     "r": 16,
   },
   {
@@ -214,7 +214,7 @@ exports[`salad hint frames > previews a holds-a-symbol marker as a ball in the h
     "fillRgb": "colour#-1",
     "op": "circle",
     "outline": 19,
-    "outlineRgb": "rgb(33, 102, 191)",
+    "outlineRgb": "rgb(33, 128, 217)",
     "r": 15,
   },
   {
@@ -222,7 +222,7 @@ exports[`salad hint frames > previews a holds-a-symbol marker as a ball in the h
     "fillRgb": "colour#-1",
     "op": "polygon",
     "outline": 19,
-    "outlineRgb": "rgb(33, 102, 191)",
+    "outlineRgb": "rgb(33, 128, 217)",
     "points": [
       [
         121,
@@ -247,7 +247,7 @@ exports[`salad hint frames > previews a holds-a-symbol marker as a ball in the h
     "fillRgb": "colour#-1",
     "op": "polygon",
     "outline": 19,
-    "outlineRgb": "rgb(33, 102, 191)",
+    "outlineRgb": "rgb(33, 128, 217)",
     "points": [
       [
         122,
@@ -523,7 +523,7 @@ exports[`salad hint frames > previews a holds-a-symbol marker as a ball in the h
     "colour": 20,
     "h": 40,
     "op": "rect",
-    "rgb": "rgb(217, 235, 252)",
+    "rgb": "rgb(209, 230, 252)",
     "w": 40,
     "x": 120,
     "y": 80,
@@ -845,7 +845,7 @@ exports[`salad hint frames > previews a holds-a-symbol marker as a ball in the h
     "colour": 20,
     "h": 40,
     "op": "rect",
-    "rgb": "rgb(217, 235, 252)",
+    "rgb": "rgb(209, 230, 252)",
     "w": 40,
     "x": 120,
     "y": 120,
@@ -1135,7 +1135,7 @@ exports[`salad hint frames > previews a holds-a-symbol marker as a ball in the h
     "colour": 20,
     "h": 40,
     "op": "rect",
-    "rgb": "rgb(217, 235, 252)",
+    "rgb": "rgb(209, 230, 252)",
     "w": 40,
     "x": 120,
     "y": 160,
@@ -1457,7 +1457,7 @@ exports[`salad hint frames > previews a holds-a-symbol marker as a ball in the h
     "colour": 20,
     "h": 40,
     "op": "rect",
-    "rgb": "rgb(217, 235, 252)",
+    "rgb": "rgb(209, 230, 252)",
     "w": 40,
     "x": 120,
     "y": 200,
@@ -1778,7 +1778,7 @@ exports[`salad hint frames > previews a placement as its own symbol, and strikes
     "colour": 20,
     "h": 40,
     "op": "rect",
-    "rgb": "rgb(217, 235, 252)",
+    "rgb": "rgb(209, 230, 252)",
     "w": 40,
     "x": 120,
     "y": 40,
@@ -1846,7 +1846,7 @@ exports[`salad hint frames > previews a placement as its own symbol, and strikes
     "colour": 19,
     "fontType": "variable",
     "op": "text",
-    "rgb": "rgb(33, 102, 191)",
+    "rgb": "rgb(33, 128, 217)",
     "size": 20,
     "text": "3",
     "x": 140,
@@ -1857,7 +1857,7 @@ exports[`salad hint frames > previews a placement as its own symbol, and strikes
     "fillRgb": "colour#-1",
     "op": "polygon",
     "outline": 19,
-    "outlineRgb": "rgb(33, 102, 191)",
+    "outlineRgb": "rgb(33, 128, 217)",
     "points": [
       [
         121,
@@ -1882,7 +1882,7 @@ exports[`salad hint frames > previews a placement as its own symbol, and strikes
     "fillRgb": "colour#-1",
     "op": "polygon",
     "outline": 19,
-    "outlineRgb": "rgb(33, 102, 191)",
+    "outlineRgb": "rgb(33, 128, 217)",
     "points": [
       [
         122,
@@ -3723,7 +3723,7 @@ exports[`salad hint frames > previews an empty-square marker as a cross in the h
     "colour": 20,
     "h": 40,
     "op": "rect",
-    "rgb": "rgb(217, 235, 252)",
+    "rgb": "rgb(209, 230, 252)",
     "w": 40,
     "x": 120,
     "y": 80,
@@ -3768,7 +3768,7 @@ exports[`salad hint frames > previews an empty-square marker as a cross in the h
   {
     "colour": 19,
     "op": "line",
-    "rgb": "rgb(33, 102, 191)",
+    "rgb": "rgb(33, 128, 217)",
     "thickness": 3,
     "x1": 128,
     "x2": 152,
@@ -3778,7 +3778,7 @@ exports[`salad hint frames > previews an empty-square marker as a cross in the h
   {
     "colour": 19,
     "op": "line",
-    "rgb": "rgb(33, 102, 191)",
+    "rgb": "rgb(33, 128, 217)",
     "thickness": 3,
     "x1": 128,
     "x2": 152,
@@ -3790,7 +3790,7 @@ exports[`salad hint frames > previews an empty-square marker as a cross in the h
     "fillRgb": "colour#-1",
     "op": "polygon",
     "outline": 19,
-    "outlineRgb": "rgb(33, 102, 191)",
+    "outlineRgb": "rgb(33, 128, 217)",
     "points": [
       [
         121,
@@ -3815,7 +3815,7 @@ exports[`salad hint frames > previews an empty-square marker as a cross in the h
     "fillRgb": "colour#-1",
     "op": "polygon",
     "outline": 19,
-    "outlineRgb": "rgb(33, 102, 191)",
+    "outlineRgb": "rgb(33, 128, 217)",
     "points": [
       [
         122,
@@ -4904,7 +4904,7 @@ exports[`salad hint frames > shades the run a clue's symbol is confined to, and 
     "colour": 20,
     "h": 40,
     "op": "rect",
-    "rgb": "rgb(217, 235, 252)",
+    "rgb": "rgb(209, 230, 252)",
     "w": 40,
     "x": 40,
     "y": 40,
@@ -5208,7 +5208,7 @@ exports[`salad hint frames > shades the run a clue's symbol is confined to, and 
     "colour": 20,
     "h": 40,
     "op": "rect",
-    "rgb": "rgb(217, 235, 252)",
+    "rgb": "rgb(209, 230, 252)",
     "w": 40,
     "x": 40,
     "y": 80,
@@ -5536,7 +5536,7 @@ exports[`salad hint frames > shades the run a clue's symbol is confined to, and 
     "colour": 20,
     "h": 40,
     "op": "rect",
-    "rgb": "rgb(217, 235, 252)",
+    "rgb": "rgb(209, 230, 252)",
     "w": 40,
     "x": 40,
     "y": 120,
@@ -5629,7 +5629,7 @@ exports[`salad hint frames > shades the run a clue's symbol is confined to, and 
     "fillRgb": "colour#-1",
     "op": "polygon",
     "outline": 19,
-    "outlineRgb": "rgb(33, 102, 191)",
+    "outlineRgb": "rgb(33, 128, 217)",
     "points": [
       [
         41,
@@ -5654,7 +5654,7 @@ exports[`salad hint frames > shades the run a clue's symbol is confined to, and 
     "fillRgb": "colour#-1",
     "op": "polygon",
     "outline": 19,
-    "outlineRgb": "rgb(33, 102, 191)",
+    "outlineRgb": "rgb(33, 128, 217)",
     "points": [
       [
         42,
@@ -5924,7 +5924,7 @@ exports[`salad hint frames > shades the run a clue's symbol is confined to, and 
     "colour": 20,
     "h": 40,
     "op": "rect",
-    "rgb": "rgb(217, 235, 252)",
+    "rgb": "rgb(209, 230, 252)",
     "w": 40,
     "x": 40,
     "y": 160,
@@ -6017,7 +6017,7 @@ exports[`salad hint frames > shades the run a clue's symbol is confined to, and 
     "fillRgb": "colour#-1",
     "op": "polygon",
     "outline": 19,
-    "outlineRgb": "rgb(33, 102, 191)",
+    "outlineRgb": "rgb(33, 128, 217)",
     "points": [
       [
         41,
@@ -6042,7 +6042,7 @@ exports[`salad hint frames > shades the run a clue's symbol is confined to, and 
     "fillRgb": "colour#-1",
     "op": "polygon",
     "outline": 19,
-    "outlineRgb": "rgb(33, 102, 191)",
+    "outlineRgb": "rgb(33, 128, 217)",
     "points": [
       [
         42,
@@ -6323,7 +6323,7 @@ exports[`salad hint frames > shades the run a clue's symbol is confined to, and 
     "colour": 19,
     "fontType": "variable",
     "op": "text",
-    "rgb": "rgb(33, 102, 191)",
+    "rgb": "rgb(33, 128, 217)",
     "size": 20,
     "text": "C",
     "x": 60,

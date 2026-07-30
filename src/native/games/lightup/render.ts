@@ -15,6 +15,7 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { HINT_ACTION, HINT_EVIDENCE, INK, PAPER } from "../../engine/palette.ts";
 import type { LightupHint, LightupMistake } from "./index.ts";
 import {
   F_BLACK,
@@ -53,13 +54,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = [bg[0] / 1.5, bg[1] / 1.5, bg[2] / 1.5];
-  out[COL_BLACK] = [0, 0, 0];
-  out[COL_LIGHT] = [1, 1, 1];
+  out[COL_BLACK] = INK;
+  out[COL_LIGHT] = PAPER;
   out[COL_LIT] = [1, 1, 0];
   out[COL_ERROR] = [1, 0.25, 0.25];
   out[COL_CURSOR] = [bg[0] / 2, bg[1] / 2, bg[2] / 2];
-  out[COL_HINT] = [0.13, 0.5, 0.85];
-  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
+  out[COL_HINT] = HINT_ACTION;
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
   out[COL_HINT_LITREF] = [0.0, 0.78, 0.55];
   out[COL_HINT_DARKREF] = [0.98, 0.78, 0.42];
   return out;

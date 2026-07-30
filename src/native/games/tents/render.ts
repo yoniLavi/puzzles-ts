@@ -17,6 +17,7 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { ERROR, ERROR_TEXT, INK } from "../../engine/palette.ts";
 import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
 import {
   BLANK,
@@ -50,15 +51,15 @@ export const COL_MISTAKE = 9;
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
-  out[COL_GRID] = [0, 0, 0];
+  out[COL_GRID] = INK;
   out[COL_GRASS] = [0.7, 1.0, 0.5];
   out[COL_TREETRUNK] = [0.6, 0.4, 0.0];
   out[COL_TREELEAF] = [0.0, 0.7, 0.0];
   out[COL_TENT] = [0.8, 0.7, 0.0];
-  out[COL_ERROR] = [1.0, 0.0, 0.0];
-  out[COL_ERRTEXT] = [1.0, 1.0, 1.0];
+  out[COL_ERROR] = ERROR;
+  out[COL_ERRTEXT] = ERROR_TEXT;
   out[COL_ERRTRUNK] = [0.6, 0.0, 0.0];
-  out[COL_MISTAKE] = [0.85, 0.0, 0.0];
+  out[COL_MISTAKE] = ERROR;
   return out;
 }
 

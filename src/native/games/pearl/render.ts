@@ -15,6 +15,7 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { ERROR, INK, PAPER } from "../../engine/palette.ts";
 import { interpretUiDrag } from "./moves.ts";
 import {
   CW,
@@ -56,14 +57,14 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = background;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
-  out[COL_BLACK] = [0, 0, 0];
-  out[COL_WHITE] = [1, 1, 1];
+  out[COL_BLACK] = INK;
+  out[COL_WHITE] = PAPER;
   out[COL_GRID] = [0.4, 0.4, 0.4];
-  out[COL_ERROR] = [1, 0, 0];
-  out[COL_FLASH] = [1, 1, 1];
+  out[COL_ERROR] = ERROR;
+  out[COL_FLASH] = PAPER;
   out[COL_DRAGON] = [0, 0, 1];
   out[COL_DRAGOFF] = [0.8, 0.8, 1];
-  out[COL_MISTAKE] = [1, 0, 0];
+  out[COL_MISTAKE] = ERROR;
   return out;
 }
 
