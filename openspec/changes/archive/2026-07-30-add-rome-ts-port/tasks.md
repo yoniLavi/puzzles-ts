@@ -178,15 +178,15 @@
 - [x] 9.1 Added `TS_PORTED` to the existing `puzzle(rome …)` entry in
       `puzzles/unreleased/CMakeLists.txt` (the entry stayed put — no CMakeLists
       move; there was no `solver(rome …)` line to drop).
-- [ ] 9.2 **Delete `puzzles/unreleased/rome.c` and `puzzles/auxiliary/rome-trace.c`**
-      — the `cliprogram(rome-trace …)` line is already removed, so the two files
-      are unreferenced by any build. **Left for the owner to run:** the agent's
+- [x] 9.2 Deleted `puzzles/unreleased/rome.c` and `puzzles/auxiliary/rome-trace.c`
+      (with the `cliprogram(rome-trace …)` line). Run by the owner — the agent's
       file-deletion was refused twice by the sandbox permission classifier.
-      ```
-      git rm puzzles/unreleased/rome.c puzzles/auxiliary/rome-trace.c
-      ```
-      Nothing depends on this: `TS_PORTED` already means neither file is
-      compiled, and the frozen differential fixture runs C-free.
+      Confirmed afterwards: no source, build or doc file references either path
+      (the only `rome-trace` strings left are RNG *seed names* inside the frozen
+      fixture), a clean `rm -rf build/wasm/` rebuild still puts rome in the
+      catalog with no `rome.wasm`, and all 81 Rome tests — the byte-match
+      differential included — pass with the C gone, which is what proves the
+      differential is genuinely C-free rather than merely untested.
 - [x] 9.3 `rm -rf build/wasm/` and rebuilt — **rome is in `catalog.json` with no
       `rome.wasm`** (only `nullgame.wasm` + `slide.wasm` remain, Slide being the
       last unported Tatham `unfinished/` game). Icons already existed.
