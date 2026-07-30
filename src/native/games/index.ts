@@ -52,6 +52,7 @@ import { pearlGame } from "./pearl/index.ts";
 import { pegsGame } from "./pegs/index.ts";
 import { rangeGame } from "./range/index.ts";
 import { rectGame } from "./rect/index.ts";
+import { romeGame } from "./rome/index.ts";
 import { saladGame } from "./salad/index.ts";
 import { samegameGame } from "./samegame/index.ts";
 import { seismicGame } from "./seismic/index.ts";
@@ -117,6 +118,7 @@ export function registerAllGames(): void {
   registerGame(pegsGame);
   registerGame(rangeGame);
   registerGame(rectGame);
+  registerGame(romeGame);
   registerGame(saladGame);
   registerGame(samegameGame);
   registerGame(seismicGame);

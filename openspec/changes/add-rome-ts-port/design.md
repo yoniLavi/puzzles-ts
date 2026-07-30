@@ -303,7 +303,122 @@ after `rm -rf build/wasm/` (so no `rome.wasm` is emitted). Icons already exist.
 
 1. **Catalog acceptance (D11).** Stage 2 (flip `TS_PORTED`, delete the C) rides
    the usual owner-acceptance gate; stage 1 stands regardless.
-2. **Highlight prefs (D8).** Ship the two upstream highlight toggles
-   (goal-reaching on, loops off) as user-togglable prefs, or keep them as fixed
-   defaults for now? (Recommendation: keep the defaults; add a prefs surface only
-   if the app grows one.)
+2. ~~**Highlight prefs (D8).**~~ **Resolved during implementation** — see F3.
+
+## Findings during implementation
+
+Recorded here because several of them overturn a decision above.
+
+### F1 — D7 was wrong about `dsf_new_min`, and the correction cuts both ways
+
+D7 said Rome relies on a "min-canonical" forest whose `dsf_canonify` returns a
+class's smallest index, and that `engine/dsf.ts` might need extending. **It
+does not, and it doesn't.** `dsf_new_min` allocates a *separate* `min[]` array
+that only `dsf_minimal` reads; `dsf_canonify` on a min-dsf is the ordinary
+union-by-size root, identical to the shared `Dsf`'s.
+
+Both halves of that matter:
+
+- **No extension is needed.** Rome's single `dsf_minimal` use (marking the
+  squares that reach a goal) is *exactly* a same-class test — its scan from the
+  class minimum is an optimisation, not a semantic — so it ports to
+  `dsf.equivalent(x, i)`. Task 8.2 is therefore "already covered", not
+  "extended".
+- **But the shared `Dsf`'s root *identity* became load-bearing.** Because the
+  canonical root is not the minimum, `rome_naked_pairs`' `for (k = c; k < s; k++)`
+  can genuinely skip region members whose index is below the root, weakening the
+  deduction on exactly those regions. That is a real upstream quirk, it is
+  solver-gated into the generator, and it is portable only because
+  `engine/dsf.ts` already reproduces `dsf.c`'s tie-break (larger class wins;
+  second argument on a tie). Had D7's premise been implemented, every board
+  would have changed. Preserved verbatim with a comment at the site.
+
+### F2 — `findMistakes` ships **both** layers, overriding D5
+
+D5 specified the rule-violation set alone (off-grid / duplicate / loop). That is
+what upstream computes, and it is what the board already shows live — but it is
+a *strict subset* of "wrong", and the gap is the dangerous one: a player can
+place an arrow that breaks no rule and still contradicts the unique solution,
+and a live-only hook would let Check & Save store that board. That is precisely
+the failure `findMistakes` exists to prevent (playbook §3.5, and the Boats
+finding of 2026-07-28, which postdates this design).
+
+So `findMistakes` returns the rule violations **and** re-solves from the fixed
+clues, flagging every placed arrow the unique solution disagrees with
+(`kind: "wrong"`), returning `[]` for that layer when the board is not
+deducible. The renderer keeps upstream's passive red *and* adds an inset red
+ring for the flagged squares — the ring is what makes a wrong-but-legal arrow
+visible at all, since it has nothing to recolour.
+
+**Pencil marks are deliberately not checked.** The cross-game convention
+(playbook §3.7) treats a note that has crossed out the true value as a mistake,
+but that reading only holds where notes *are* candidates. Rome's own
+documentation says its pencil marks "can be used for any purpose" — a player may
+equally be marking the arrows they have ruled *out* — so no reading of a note
+can be called wrong. Declined with the reason recorded, per the
+refactor-as-you-go guardrail.
+
+### F3 — the two highlight preferences ship as real preferences (D8 open question)
+
+The recommendation in the open question ("keep the defaults; add a prefs surface
+only if the app grows one") was written as if the app had none. It does:
+`Game.prefs` has existed since Untangle. So both upstream toggles ship as
+preferences with upstream's own keywords (`goal`, `loop`), labels and defaults
+(goal-reaching **on**, loops **off**), persisted per puzzle by the midend.
+
+### F4 — the desc codec's writer and reader disagree above 25, harmlessly
+
+The wall encoder emits `z` for a run of 26 non-walls **and consumes the wall
+that follows**, while the decoder reads `z` as 26 non-walls with *no* trailing
+wall (and a longer run leaves the alphabet entirely). Both sides are reproduced
+verbatim rather than "completed" — the disagreement is unreachable, because a
+region holds at most four squares, so the longest run of consecutive non-walls a
+Rome board can produce is a handful. Same family as the Seismic finding
+(playbook §4.3): read what the *reader* accepts before deciding what the writer
+owes it.
+
+### F5 — two generator scratch structures are deliberately never reset
+
+`rome_generate_arrows` allocates its cluster-detection forest and its `suggest`
+array once and calls `rome_join_arrows` inside the fill loop **without
+reinitialising either**. Merges therefore accumulate across the whole fill —
+and since every still-empty square has an arrow mask of zero, they *all* merge
+early and stay merged — while `suggest` only ever gains bits. It also ORs the
+neighbour's whole cell (goal and error bits included) into `suggest`, where
+those bits are inert. All of it feeds the arrow choices and hence the
+description, so all of it is reproduced as-is.
+
+### F6 — no `FD_TOGOAL` bit can ever land on an empty square
+
+Worth writing down because it is what makes upstream's `solve_game` safe.
+`rome_solve` initialises its candidate sets from the grid *before* the first
+validity check clears the display bits, so a square carrying only `FD_TOGOAL`
+would be read as non-empty and given an empty candidate set — a stuck solver.
+It cannot happen: a goal's component is `{G} ∪ {X : X → Y, Y ∈ component}`, so
+every member other than the goal has an arrow. Pinned by a test.
+
+### F7 — an idiomatic speed-up that is provably the same traversal
+
+`rome_naked_pairs` rescans the whole board for each candidate square (an
+`O(cells²)` inner pair of scans, inside a fixpoint, inside a per-clue
+generation loop). Both scans are "region members in ascending index order,
+above a lower bound", so the port precomputes ascending member lists once per
+solve and filters them by the same bounds — including the F1 skip. Identical
+traversal, identical verdicts, and the 26/26 byte-match is the proof. Generation
+measures 3–60 ms across the presets against the C's 0.2–17 ms recorded in the
+fixtures, i.e. the same order of magnitude and no product concern.
+
+### F8 — `interpretMove`'s release check masks to the arrow bits
+
+Upstream compares the whole cell (`c == state->grid[y*w+x]`) when deciding
+whether a drag release is a no-op, so a square already carrying an error bit
+emits a move that changes nothing but still takes an undo slot. The port
+compares the arrow bits, which suppresses the genuine no-op. Input layer only —
+the desc differential never runs `interpretMove`.
+
+### F9 — Solve reports an error rather than filling a board it cannot finish
+
+Upstream's `solve_game` writes out whatever the solver reached, so on a board it
+cannot deduce (a hand-written `:desc`) Solve leaves a partial fill and no win.
+The port returns "Unable to solve this puzzle." instead. Generated boards are
+solver-gated, so this changes nothing on any reachable puzzle.
