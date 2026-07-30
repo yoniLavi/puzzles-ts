@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "w": 7,
+      "h": 6,
+      "maxmoves": 25,
+      "seed": "slide-trace-0",
+      "desc": "w8md1a2d1w2d6d1ad1aw2a4efewad7d1aefew7,5,3,24",
+      "minMoves": 24,
+      "genMs": 86.1
+    },
+    {
+      "w": 7,
+      "h": 6,
+      "maxmoves": -1,
+      "seed": "slide-trace-1",
+      "desc": "w8md1ad1aw2d6d1ad7d7w2a3d1efewad1a2efew7,5,3,47",
+      "minMoves": 47,
+      "genMs": 236.5
+    },
+    {
+      "w": 8,
+      "h": 6,
+      "maxmoves": -1,
+      "seed": "slide-trace-2",
+      "desc": "w9md1a3d1w2d7d1ad1d7d1w2a2d1ad1efewd8a2d1aefew8,6,3,62",
+      "minMoves": 62,
+      "genMs": 3317.7
+    },
+    {
+      "w": 5,
+      "h": 5,
+      "maxmoves": -1,
+      "seed": "slide-trace-3",
+      "desc": "w6md1aw2d4d1efewa2efew5,3,2,6",
+      "minMoves": 6,
+      "genMs": 0.1
+    },
+    {
+      "w": 6,
+      "h": 5,
+      "maxmoves": -1,
+      "seed": "slide-trace-4",
+      "desc": "w7md1a2w2d5d1aefewa3efew6,4,2,11",
+      "minMoves": 11,
+      "genMs": 1.1
+    },
+    {
+      "w": 5,
+      "h": 6,
+      "maxmoves": -1,
+      "seed": "slide-trace-5",
+      "desc": "w6md1aw2d4d1aw2a2efewad5efew5,3,3,14",
+      "minMoves": 14,
+      "genMs": 0.5
+    },
+    {
+      "w": 7,
+      "h": 5,
+      "maxmoves": -1,
+      "seed": "slide-trace-6",
+      "desc": "w8md1ad1aw2d6d1a2efewa2d1aefew7,5,2,31",
+      "minMoves": 31,
+      "genMs": 14.6
+    },
+    {
+      "w": 6,
+      "h": 6,
+      "maxmoves": -1,
+      "seed": "slide-trace-7",
+      "desc": "w7md1a2w2d5d1ad1w2ad1aefewad1aefew6,4,3,19",
+      "minMoves": 19,
+      "genMs": 7.8
+    },
+    {
+      "w": 8,
+      "h": 5,
+      "maxmoves": -1,
+      "seed": "slide-trace-8",
+      "desc": "w9md1a2d1aw2d7d1ad1aefewa2d1ad1efew8,6,2,50",
+      "minMoves": 50,
+      "genMs": 147.1
+    },
+    {
+      "w": 6,
+      "h": 8,
+      "maxmoves": -1,
+      "seed": "slide-trace-9",
+      "desc": "w7md1ad1w2d5d1a2w2a3d6w2ad6ad1w2ad1aefewd5d5d1efew6,4,5,158",
+      "minMoves": 158,
+      "genMs": 1107.5
+    },
+    {
+      "w": 6,
+      "h": 5,
+      "maxmoves": 10,
+      "seed": "slide-trace-10",
+      "desc": "w7md1aew2d5d1aefewa3efew6,4,2,10",
+      "minMoves": 10,
+      "genMs": 2.2
+    },
+    {
+      "w": 7,
+      "h": 5,
+      "maxmoves": 20,
+      "seed": "slide-trace-11",
+      "desc": "w8md1a3w2d6d1ad1efewa4efew7,5,2,20",
+      "minMoves": 20,
+      "genMs": 19.4
+    },
+    {
+      "w": 7,
+      "h": 6,
+      "maxmoves": 40,
+      "seed": "slide-trace-12",
+      "desc": "w8md1a3w2d6d1ad1d7w2a2d6d1efewd7d7a2efew7,5,3,30",
+      "minMoves": 30,
+      "genMs": 136.4
+    }
+  ]
+}

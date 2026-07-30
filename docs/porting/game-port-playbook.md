@@ -154,8 +154,23 @@ What stays gated on owner acceptance is the **C deletion** (stage 2): keep
 `puzzles/unfinished/<game>.c` on disk as the reference (and to back `<game>-trace`)
 until acceptance, then delete it + the trace harness + archive together. Sokoban
 followed exactly this: catalog move + register + rebuild in one step, C retained.
-(Separate and Group are the prior instances.) The trace harness `#include`s the C at
-its unfinished path — `#include "../unfinished/<game>.c"`, not `../<game>.c`.
+(Separate and Group are the prior instances; Slide is the fourth.) The trace harness
+`#include`s the C at its unfinished path — `#include "../unfinished/<game>.c"`, not
+`../<game>.c`.
+
+**Expect an unfinished game to `abort()` somewhere its own `validate_params`
+allows — and find out where before writing the trace-harness fixture list.** These
+files were never played at their edges, so their asserts are load-bearing in a way a
+shipped game's are not. Slide's `generate_board` tests solubility *before* each
+singleton removal and never after the last one, so a board that becomes soluble only
+when its final singleton goes falls out of the loop into
+`assert(!"We shouldn't get here")` — which is **every board at 5×4 and 6×4**, and
+5×4 is the smallest size its `validate_params` admits. That is §4 rule 1 territory
+(the C has no defined behaviour there, so diverging is free): run the missing check,
+confirm it draws no randomness and is unreachable on anything the C generates
+successfully, and the byte-match survives untouched. Two practical consequences —
+**exclude the aborting sizes from the fixture matrix** (there is no C answer to
+match), and cover them with a behavioural test instead.
 
 ---
 
@@ -278,6 +293,28 @@ convention. A `tree234` used as a **worklist** (netslide's `compute_active`
 drains one with `delpos234(todo, 0)`, i.e. in sorted order) is a different
 matter: check whether the order can affect the result before reproducing it — a
 flood fill's reachable set cannot, so that one is a plain queue.
+
+**Read *how many* roles the `tree234`s in one function are playing before reaching
+for the shared leaf at all.** `slide.c`'s `solve_board` builds two, and neither is
+an ordered multiset: `sorted` exists purely to **deduplicate by exact bytes**
+(comparator `memcmp`, ordering never read out), and `queue` is created with a
+**`NULL` comparator** and driven by `addpos234`/`delpos234(queue, 0)` — a null
+comparator means it isn't a sorted collection at all, just an index-addressed
+**FIFO**. So the idiomatic replacement is a keyed set plus a plain array, and
+`SortedMultiset` would be the wrong answer twice over. **Tell:** `newtree234(NULL)`,
+or a comparator whose result the algorithm never reads back in order.
+
+**Then don't take the obvious key encoding on faith — profile it.** That port's
+design said "the board is small, so a per-node full-board key is acceptable; do not
+prematurely hash." Measurement said the opposite: a
+`String.fromCharCode(...board)` key per candidate move was **35% of total generation
+time**, because most candidates turn out to be duplicates whose key is built and
+thrown away. A 32-bit FNV-1a hash bucketed to an exact byte comparison keeps
+`memcmp` semantics with no per-candidate allocation and made the whole generator
+**3.4× faster** — from ~2.4× the C's wall clock to ~0.7× it. This is the safest
+possible place to optimise, and the reason is §4.3: a byte-match differential proves
+the substitution changed no behaviour, so the only question left is speed. Exemplar:
+[`slide/solver.ts`](../../src/native/games/slide/solver.ts) (`hashOf`/`sameBoard`).
 
 **Shared `GameDrawing` primitives live in
 [`draw.ts`](../../src/native/engine/draw.ts)** — `drawRecessedBorder` (the
@@ -645,6 +682,19 @@ those live in `index.ts`, `render` ↔ `index` is a cycle. Split them into a sma
 sprite (save the background under the moving arrow, restore next frame) — a second
 exemplar after Pegs — lives in `render.ts`. Exemplar:
 [`signpost/moves.ts`](../../src/native/games/signpost/moves.ts).
+
+**And such a game needs `changedState` to cancel a dangling drag — upstream
+asserts here.** A drag preview names a *piece* on the board (Slide's
+`ui.dragAnchor`), and the board can change while the pointer is still down: an undo
+from the toolbar or keyboard mid-drag. Upstream's `game_changed_state` is empty and
+its `game_redraw` `assert`s that the simulated move succeeds, so that sequence is
+an assertion failure in the C and a thrown error in a naive port. Cancel the drag in
+`changedState` — a bare `UI_UPDATE` (which is all a grab or a drag-follow is) never
+reaches that hook, so the gesture is unharmed — and make the preview fall back to
+the plain board rather than throwing, so a future path here degrades instead of
+crashing. **Tell:** a `redraw` that calls the game's own move helper on `ui` state
+and can't handle "no". Exemplar:
+[`slide/index.ts`](../../src/native/games/slide/index.ts) (`changedState`).
 
 **A C *cursor* blitter usually shouldn't become a TS blitter.** Upstream often
 saves/restores the pixels under the keyboard cursor with a blitter so it can draw
@@ -1090,6 +1140,19 @@ game binds no other meaning to those digits — a deliberate divergence that cos
 nothing and restores the input. Grep a game's `.c` for `MOD_NUM_KEYPAD` before porting
 its input, and say what you did in `design.md`. Exemplar:
 [`inertia/index.ts`](../../src/native/games/inertia/index.ts) (`DIGIT_DIRECTIONS`).
+
+**The same trap, one layer up: a whole *feature* can hang off a key this frontend
+never sends.** Slide's Solve doesn't fill the board in — it installs a shortest
+route the player walks one step at a time, and upstream binds that step to
+`button == ' '`. `puzzleKeyMap` maps Space to `CURSOR_SELECT2` and Enter to
+`CURSOR_SELECT`, so the bare space character never arrives: a faithful
+transcription ships a route that literally cannot be walked, and the C build has
+the identical dead binding so it never shows up as a parity difference either. When
+a game's `interpret_move` compares `button` against a **character literal**, check
+`puzzleKeyMap` before porting it; the fix is to accept the buttons the frontend
+does deliver (keeping the literal too costs nothing). Exemplar:
+[`slide/index.ts`](../../src/native/games/slide/index.ts) (`isStepKey`), and
+Inertia does the same for its route-following with `CURSOR_SELECT`/`SELECT2`.
 
 ### 3.8b Touch: the midend strips `MOD_STYLUS` for you (and a guard proves it)
 
@@ -1857,6 +1920,17 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
   this?", and a bound exists to settle the second question. Whenever a generator
   bound is being set or raised, repeat the sizes near it across several seeds
   before believing the number.
+  - **Optimise first, then bound — a bound set on unoptimised code can exclude a
+    shipped preset.** Slide's tail at its largest upstream preset (8×6) measured
+    **22.8 s** before the visited-set fix in §2.1 and **1.8 s** after, so a bound
+    drawn from the first number would have forbidden a board upstream ships. Do the
+    cheap profiling pass before fixing the constant.
+  - **And check whether the wall is time or *memory*.** Slide's cost curve doesn't
+    end in a slow generation: at 54 cells the BFS exhausts a 4 GB heap after four
+    minutes. That is the difference between a retry budget (which assumes failure is
+    recoverable) and a hard `validateParams` bound — in the worker an OOM is a crash,
+    not an error message the Custom dialog can show. Measure at least one size past
+    where you intend to draw the line, and note which way it fails.
 - **When you replace a generator, the thing you must *not* guess is the shape of
   what it produced — and you may be able to recover it from the frozen fixtures.**
   Seismic's region-size distribution is emergent in the C (it falls out of random

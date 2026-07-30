@@ -235,6 +235,160 @@ offers `7×6 max 25`, `7×6 no limit`, `8×6 no limit`. The move-limit presets m
 generation slower (upstream notes this) but produce tighter puzzles. Default to
 porting all three; the owner may trim.
 
+## Findings from implementation
+
+Decisions the C survey did not settle, recorded as they were resolved.
+
+### F1 — The step key upstream binds cannot fire here; `MAX_CELLS` and a zero limit can't be satisfied
+
+Three `validateParams`/input facts that only implementation surfaced:
+
+- **`button == ' '` is dead code in this frontend.** `puzzle-view-interactive.ts`'s
+  `puzzleKeyMap` maps Space to `CURSOR_SELECT2` and Enter to `CURSOR_SELECT`, so a
+  faithful transcription of Slide's step key would ship a route nobody can walk —
+  the §3.8a family of trap, and invisible as a parity difference because the C
+  build has the same dead binding. The port accepts both select buttons (and a bare
+  space, harmlessly). Browser-verified.
+- **Slide's only gesture is a press-and-drag, so §3.8c bites hard.**
+  `detectSecondaryButton` delivers a finger that stays within 8px for 350ms as
+  `RIGHT_BUTTON` — i.e. "press a block, pause to work out where you want it, then
+  drag" dies exactly when the player stops to think, and only on touch. Slide has
+  no use for a secondary button at all, so right folds onto left (`asPrimary`).
+- **A cell-count bound is needed, and it is tight.** See F8.
+
+### F2 — Upstream aborts on every board at its own minimum size (fixed)
+
+`generate_board` tests solubility *before* each singleton removal and never after
+the last one, so a board that becomes soluble only when its final singleton goes
+falls out of the loop into `assert(!"We shouldn't get here")`. That is not a corner
+case: it is **every 5×4 and 6×4 board**, and 5×4 is the smallest size
+`validate_params` admits. (The interior is 3×2, the main block is a 2×2 needing
+both remaining squares to travel, and a lone singleton can only shuffle between
+them — so it is deadlocked until the singleton goes, at which point the main block
+slides straight out.)
+
+Running the missing final check is playbook §4 rule 1 — divergence is free where
+the C has no defined behaviour. It draws no randomness and is unreachable on any
+board the C generates successfully (those leave the loop by the early branch), so
+**every byte-matched description is untouched**; it only gives an answer where
+upstream aborted. Confirmed by the differential staying 13/13 green. The boards it
+yields at those sizes are trivial (one move), which is inherent to the geometry
+rather than a defect in the fix; the trace-harness matrix therefore starts at 5×5
+(there is no C answer to match below it).
+
+A `maxmoves` of 0 reaches the same abort by a different route — nothing is solvable
+in no moves — so `validateParams` rejects it where the Custom dialog can say why.
+
+### F3 — Upstream's Solve solves the *starting* board, not the current one (fixed)
+
+`solve_game`'s first parameter is `states[0]`, and `slide.c` passes `state->board`
+— the initial board — even though its own comment says "attempt to find the
+shortest solution **from the current position**", and even though its
+`execute_move` goes to trouble rewriting the route's first move for a block the
+player has already part-way nudged (which only makes sense from the current
+position). As shipped, any Solve after any move installs a route whose first step
+is illegal, so the step key does nothing at all: a genuine player-visible defect
+(§4 rule 3), invisible to a desc differential. The port solves `curr`.
+
+Its neighbouring `nmoves == 0` guard ("Puzzle is already solved") is also
+unreachable, because `solve_board` tests the goal only on a board it has just
+*generated* and so never answers 0 — on a finished board it cheerfully reports the
+one irrelevant move that leaves the main block where it is. Testing the start board
+at the call site makes the message upstream clearly intended actually appear. Fixed
+at the call site, not in the solver, so the generator's verdicts are untouched.
+
+### F4 — `game_changed_state` is empty, and a dangling drag then asserts (fixed)
+
+`game_redraw` previews an in-progress drag by calling `move_piece` and asserting it
+succeeds. Nothing cancels the drag when the state changes underneath it, so an undo
+made with the pointer still down leaves `ui.drag_anchor` pointing at a square the
+new board may not have a block on — an assertion failure upstream, and a thrown
+error in a naive port. `changedState` now cancels the drag (a `UI_UPDATE`, which is
+all a grab or drag-follow is, never reaches that hook, so the gesture is unharmed),
+and `redraw` additionally falls back to the plain board rather than throwing.
+
+### F5 — Two display-only corrections in the text format
+
+`board_text_format` decides "is this the main block?" with `data[t] == MAINANCHOR`
+where `t` is the block's *disjoint-set root*. Union-by-size makes that root the
+second square of a two-square merge, so `data[t]` is a `DIST` byte and the main
+block is drawn `%` like any other — the `*` case can only fire for a *one-square*
+main block, which the generator never makes. It also compares a class *index*
+against the raw `EMPTY`/`WALL` bytes (253/252), which alias real indices once
+`w*h > 252`. Both are display-only with unambiguous intent (playbook §3.2), and the
+desc differential never touches this path, so both are fixed: membership decides
+the main block, and distinct negative sentinels keep empty squares mutually equal
+without colliding with a class.
+
+Relatedly, `new_game` accepts only lowercase `f` as the forcefield prefix while
+`validate_desc` accepts `F` too, so a hand-typed `F…` validated and then decoded as
+a **wall**. `newState` accepts both, aligning the pair; the generator never emits
+`F`, so no byte-matched desc can move.
+
+### F6 — Statusbar: no engine addition needed (resolves D8)
+
+`Game.wantsStatusbar` + `statusbarText` already exist and are widely used, so
+Slide's `"[Auto-solved. |COMPLETED! |Auto-solver used. ]Moves: N (min M)"` line is
+one hook and no new mechanism. Browser-verified in all four of its states.
+
+### F7 — The differential is the headline result
+
+13 fixtures spanning all three presets, a size sweep and three move-limited boards,
+and the TS `newDesc` reproduces the C's description **byte-for-byte on every one,
+first run** (27 assertions, counting the independent solver-agreement checks).
+Because the generator is solver-gated at every singleton removal *and* every block
+merge, that one assertion validates the exhaustive BFS solver's verdict on every
+intermediate board, the disjoint-set merge bookkeeping (including its
+read-after-write `tried_merge` propagation), the run-length codec and the single
+`shuffle` draw all at once.
+
+### F8 — The generator's real bound is memory, not patience — and the visited set was a third of the cost
+
+D1's key-encoding advice ("do not prematurely hash") turned out to be exactly
+backwards, and measurement is what showed it. Profiling an 8×6 generation put
+**35% of total time in `keyOf`** — building a `String.fromCharCode(...)` board key
+for every candidate move, most of which are duplicates that are then discarded.
+Replacing the `Map<string, …>` with a 32-bit FNV-1a hash bucketed to exact byte
+comparison — identical `memcmp` semantics, no allocation per candidate — gave a
+**3.4× speedup**, taking the port from ~2.4× the C's time to ~0.7× it (faster than
+the C on all 13 fixtures). The byte-match differential is what made this safe to do
+at all: it proves the substitution changed no behaviour.
+
+Only then is the bound measurable honestly. Per playbook §4.4 ("bound by the tail,
+not the median"), 5–7 seeds per size in a plain `node` process:
+
+| cells | size | min | median | worst |
+| --- | --- | --- | --- | --- |
+| 42 | 7×6 | 0.07 s | 0.16 s | 0.25 s |
+| 45 | 9×5 | 0.64 s | 0.97 s | 1.12 s |
+| 48 | 8×6 | 0.74 s | 1.18 s | 1.84 s |
+| 48 | 12×4 | 0.69 s | 0.70 s | 1.23 s |
+| 48 | 6×8 | 0.52 s | 2.73 s | 5.59 s |
+| 49 | 7×7 | 0.94 s | 4.92 s | 14.70 s |
+| 50 | 10×5 | 6.79 s | 8.75 s | 17.51 s |
+| 54 | 9×6 | — | — | **4 GB heap OOM** |
+
+So `MAX_CELLS = 48` — exactly the area of the largest upstream preset, so no
+preset is lost. The reason this is a **bound** rather than a retry budget is the
+last row: past the cliff the generator does not fail, it exhausts the heap, which
+in the worker is a crash and not an error message. The check is on cell count
+because that is what the cost tracks (12×4 and 6×8 are the same area and differ
+only 4× in the tail, while 8×6 → 9×6 is one extra column and unbounded).
+
+The tail also matters *below* the bound: before the optimisation the 8×6 preset's
+worst measured seed took **22.8 s**; it is now 1.8 s. Had the bound been set from
+the pre-optimisation numbers it would have excluded a shipped preset.
+
+### F9 — Author-flagged graphics: recorded, not guessed (see "Open questions")
+
+Upstream's TODO block names three graphics complaints, and playbook §1.0 requires
+each to be triaged rather than silently reproduced. All three are taste calls the
+author flagged, so they go to the owner with a rendered frame rather than being
+guessed at; the port ships upstream's appearance. Notably the "excessive"
+next-piece highlight is confirmed on screen: `FG_SOLVEPIECE` paints the block in
+`COL_HIGHLIGHT`, which on a light host is *pure white* and reads as a hole in the
+board.
+
 ## Risks
 
 - **Solver memory/time.** The BFS visits every reachable canonical board, storing
@@ -255,8 +409,30 @@ porting all three; the owner may trim.
 
 ## Open questions for the owner
 
-1. **Catalog inclusion (D9).** Ship Slide as a catalog puzzle now, or register it
-   TS-served but hold the catalog move? (Recommendation: ship it.)
-2. **Presets (D9).** Keep all three upstream presets including the move-limited
-   one, or trim?
+1. **Catalog inclusion (D9)** — *answered by the mechanics, not by taste.* An
+   `unfinished/` game is absent from `catalog.json`, so it cannot be smoke-tested
+   at all until its `puzzle()` moves into the main `CMakeLists.txt` (playbook
+   §1.1); the catalog move is therefore part of **stage 1**, as it was for Sokoban,
+   Separate and Group. Done. What stays gated on acceptance is the stage-2 C
+   deletion. If the owner would rather Slide not ship, the revert is one CMakeLists
+   entry plus the two registration lines.
+2. **Presets (D9).** All three upstream presets ship. Worth knowing when judging
+   them: 7×6 generates in ~0.1–0.3 s, but **8×6 takes 0.7–1.8 s** (and its area is
+   the `MAX_CELLS` bound, F8). Trimming to the two 7×6 presets is a one-line change
+   if the 8×6 wait is unwelcome — but it is the most interesting of the three (the
+   boards it makes run to 110 minimum moves).
+3. **The three graphics complaints the author left in the TODO block** (F9). The
+   port reproduces upstream's appearance; each of these is a small, contained,
+   display-only change if wanted:
+   - *"All the colours are a bit wishy-washy. Probably darken the tiles, the walls
+     and the main block, and leave the target marker pale."* Walls, ordinary blocks
+     and the floor all derive from the one host background, so they are told apart
+     only by their bevels. Legible, but flat.
+   - *"The cattle grid effect is still disgusting. Think of something completely
+     different."* This is the forcefield/exit marking — the crosshatch beside the
+     green target.
+   - *"The highlight for next-piece-to-move in the solver is excessive, and the
+     shadow blends in too well with the piece lowlights."* Confirmed on screen: the
+     next block is painted `COL_HIGHLIGHT`, i.e. pure white on a light host. The
+     shadow reads better than the author feared, but the highlight really is loud.
 </content>
