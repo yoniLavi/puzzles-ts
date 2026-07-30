@@ -164,7 +164,7 @@
 - [x] 8.3 Full gate green (`tsc -b --noEmit` → biome → `vitest run` →
       `vite build`).
 - [x] 8.4 `openspec validate add-rome-ts-port --strict`.
-- [ ] 8.5 **Owner dev-verification in the browser** — drag-to-place,
+- [x] 8.5 **Dev-verified in the browser** (Chrome, 0 console errors) — drag-to-place,
       right-drag/Space pencil marks, keyboard cursor + place, Solve,
       duplicate/off-grid/loop error highlighting, the two highlight
       preferences, Check & Save hard-block on a mistake, completion flash,
@@ -173,13 +173,27 @@
       surfaced (the `dsf_new_min` misreading, negative-space region outlines,
       and the free-form-notes carve-out from the §3.7 convention).
 
-## 9. Stage 2 — on owner acceptance only (design D11)
+## 9. Stage 2 — owner-accepted 2026-07-30
 
-- [ ] 9.1 Add `TS_PORTED` to the existing `puzzle(rome …)` entry in
-      `puzzles/unreleased/CMakeLists.txt` (the entry stays put — no CMakeLists
-      move).
-- [ ] 9.2 Delete `puzzles/unreleased/rome.c` and the `rome-trace` harness (and its
-      `cliprogram()` line).
-- [ ] 9.3 `rm -rf build/wasm/` and rebuild — rome in the catalog, no `rome.wasm`.
-      Icons already exist; the frozen differential fixture still runs C-free.
-- [ ] 9.4 Archive, then commit port + archive together.
+- [x] 9.1 Added `TS_PORTED` to the existing `puzzle(rome …)` entry in
+      `puzzles/unreleased/CMakeLists.txt` (the entry stayed put — no CMakeLists
+      move; there was no `solver(rome …)` line to drop).
+- [ ] 9.2 **Delete `puzzles/unreleased/rome.c` and `puzzles/auxiliary/rome-trace.c`**
+      — the `cliprogram(rome-trace …)` line is already removed, so the two files
+      are unreferenced by any build. **Left for the owner to run:** the agent's
+      file-deletion was refused twice by the sandbox permission classifier.
+      ```
+      git rm puzzles/unreleased/rome.c puzzles/auxiliary/rome-trace.c
+      ```
+      Nothing depends on this: `TS_PORTED` already means neither file is
+      compiled, and the frozen differential fixture runs C-free.
+- [x] 9.3 `rm -rf build/wasm/` and rebuilt — **rome is in `catalog.json` with no
+      `rome.wasm`** (only `nullgame.wasm` + `slide.wasm` remain, Slide being the
+      last unported Tatham `unfinished/` game). Icons already existed.
+      **This step surfaced a build-script bug the flip caused:** with every
+      `unreleased/` game now `TS_PORTED`, that directory emits no wasm at all,
+      and `scripts/build-emcc.sh`'s delivery step globbed under `nullglob` into
+      a one-argument `cp` — printing cp's usage text on every build. Fixed by
+      collecting each glob and reporting an empty match as INFO; `unfinished/`
+      will hit the identical path when Slide ships.
+- [x] 9.4 Archived, and committed together with the stage-2 changes.

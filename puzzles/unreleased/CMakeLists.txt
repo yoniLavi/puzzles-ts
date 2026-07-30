@@ -57,7 +57,8 @@ puzzle(mathrax
 puzzle(rome
   DISPLAYNAME "Rome"
   DESCRIPTION "Arrow-placing puzzle"
-  OBJECTIVE "Fill the grid with arrows leading to a goal.")
+  OBJECTIVE "Fill the grid with arrows leading to a goal."
+  TS_PORTED)  # native-TS port (openspec add-rome-ts-port); no rome.c/wasm
 
 puzzle(salad
   DISPLAYNAME "Salad"

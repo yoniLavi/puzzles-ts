@@ -31,6 +31,18 @@ import {
 
 const P = (w: number, diff: number, id: boolean): GroupParams => ({ w, diff, id });
 
+/**
+ * The optional `Game` hooks Group implements, narrowed once. Asserting them
+ * here beats a `!` at each call site (a compile-time claim nothing checks) and
+ * beats `?.` (which would silently make the assertion vacuous if a hook were
+ * ever dropped): if one goes missing, this fails immediately and says which.
+ * None of the three reads `this`, so calling them unbound is safe.
+ */
+const { solve, flashLength, findMistakes } = groupGame;
+if (!solve || !flashLength || !findMistakes) {
+  throw new Error("group: expected the solve / flashLength / findMistakes hooks");
+}
+
 /** A completed grid is a valid group table iff Latin + associative. */
 function isValidGroupTable(grid: Uint8Array, w: number): boolean {
   // Latin: each element once per row and column.
@@ -126,7 +138,7 @@ describe("moves and completion", () => {
   it("solve() completes the board to a valid group table", () => {
     const p = P(6, DIFF_NORMAL, true);
     const { state, aux } = freshGame(p);
-    const res = groupGame.solve!(state, state, aux);
+    const res = solve(state, state, aux);
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     const done = groupGame.executeMove(state, res.move);
@@ -139,7 +151,7 @@ describe("moves and completion", () => {
   it("the completion flash fires on a genuine (non-cheated) completion", () => {
     const p = P(6, DIFF_NORMAL, true);
     const { state, aux } = freshGame(p);
-    const res = groupGame.solve!(state, state, aux);
+    const res = solve(state, state, aux);
     if (!res.ok) throw new Error("unsolvable");
     const solved = groupGame.executeMove(state, res.move);
     const before = cloneState(solved);
@@ -147,7 +159,7 @@ describe("moves and completion", () => {
     before.cheated = false;
     const after = cloneState(solved);
     after.cheated = false; // as if the player placed the last cell themselves
-    expect(groupGame.flashLength!(before, after, +1, newUi(state))).toBeGreaterThan(0);
+    expect(flashLength(before, after, +1, newUi(state))).toBeGreaterThan(0);
   });
 
   it("a multifill set writes every listed cell", () => {
@@ -214,15 +226,15 @@ describe("findMistakes", () => {
     const state = newState(p, desc);
 
     // Solve to the unique solution, then corrupt one non-immutable cell.
-    const res = groupGame.solve!(state, state, aux);
+    const res = solve(state, state, aux);
     if (!res.ok) throw new Error("unsolvable");
     const solved = groupGame.executeMove(state, res.move);
-    expect(groupGame.findMistakes!(solved)).toHaveLength(0);
+    expect(findMistakes(solved)).toHaveLength(0);
 
     const idx = solved.grid.findIndex((_, i) => !state.immutable[i]);
     const bad = cloneState(solved);
     bad.grid[idx] = (bad.grid[idx] % p.w) + 1;
-    const mistakes = groupGame.findMistakes!(bad);
+    const mistakes = findMistakes(bad);
     expect(mistakes.length).toBeGreaterThan(0);
     expect(mistakes.some((m) => m.y * p.w + m.x === idx)).toBe(true);
   });
