@@ -178,16 +178,29 @@ sed -e '/type EmbindString/d' -e 's/EmbindString/string/g' \
   || echo "[WARN] nullgame.d.ts found in ${BUILD_DIR}."
 
 # Then deliver all of the puzzle-specific wasm files (and related sourcemaps).
+#
+# A subdirectory legitimately emits NO wasm once every game in it is TS_PORTED:
+# `unreleased/` reached that state when Rome shipped (openspec add-rome-ts-port),
+# and `unfinished/` will when Slide does. Under `nullglob` an unmatched pattern
+# vanishes, which would leave `cp "${DIST_DIR}/"` a one-argument call — so the
+# glob is collected first and an empty match reported as INFO, not as a `cp`
+# usage error. (This used to print cp's usage text on every build.)
 shopt -s nullglob  # (release builds don't generate .map files)
-cp "${BUILD_DIR}"/*.{wasm,map} "${DIST_DIR}/" \
-  || echo "[WARN] No .wasm files found in ${BUILD_DIR}."
+deliver_wasm() {
+  local label="$1" dir="$2"
+  local files=("${dir}"/*.wasm "${dir}"/*.map)
+  if (( ${#files[@]} )); then
+    cp "${files[@]}" "${DIST_DIR}/"
+  else
+    echo "[INFO] No ${label} .wasm files — every game there is TS_PORTED."
+  fi
+}
+deliver_wasm "core" "${BUILD_DIR}"
 if [[ -d "${BUILD_DIR}/unfinished" ]]; then
-  cp "${BUILD_DIR}"/unfinished/*.{wasm,map} "${DIST_DIR}/" \
-    || echo "[WARN] No unfinished .wasm files found."
+  deliver_wasm "unfinished" "${BUILD_DIR}/unfinished"
 fi
 if [[ -d "${BUILD_DIR}/unreleased" ]]; then
-  cp "${BUILD_DIR}"/unreleased/*.{wasm,map} "${DIST_DIR}/" \
-    || echo "[WARN] No unreleased .wasm files found."
+  deliver_wasm "unreleased" "${BUILD_DIR}/unreleased"
 fi
 shopt -u nullglob
 
