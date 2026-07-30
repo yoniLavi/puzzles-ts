@@ -12,6 +12,7 @@ import type { Colour, Point } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { ERROR, INK } from "../../engine/palette.ts";
 import {
   type AscentMistake,
   type AscentState,
@@ -251,10 +252,10 @@ export function ascentColours(defaultBackground: Colour): Colour[] {
   ret[COL_MIDLIGHT] = background;
   ret[COL_HIGHLIGHT] = highlight;
   ret[COL_LOWLIGHT] = lowlight;
-  ret[COL_BORDER] = [0, 0, 0];
+  ret[COL_BORDER] = INK;
   ret[COL_LINE] = [0, 0.5, 0];
   ret[COL_IMMUTABLE] = [0, 0, 1];
-  ret[COL_ERROR] = [1, 0, 0];
+  ret[COL_ERROR] = ERROR;
   ret[COL_CURSOR] = [0, 0.7, 0];
   ret[COL_ARROW] = [1, 1, 0.8];
   return ret;

@@ -37,6 +37,7 @@ import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { ERROR, HINT_ACTION, HINT_EVIDENCE, INK, PAPER } from "../../engine/palette.ts";
 import type { BoatsHint } from "./index.ts";
 import type { BoatsMistake } from "./solver.ts";
 import {
@@ -104,22 +105,22 @@ export const COL_HINT_CELL = 16;
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
-  out[COL_GRID] = [0, 0, 0];
-  out[COL_CURSOR_A] = [0, 0, 0];
-  out[COL_CURSOR_B] = [1, 1, 1];
+  out[COL_GRID] = INK;
+  out[COL_CURSOR_A] = INK;
+  out[COL_CURSOR_B] = PAPER;
   out[COL_WATER] = [0.5, 0.7, 1];
   out[COL_SHIP_CLUE] = [0.1, 0.1, 0.1];
-  out[COL_SHIP_GUESS] = [0, 0, 0];
+  out[COL_SHIP_GUESS] = INK;
   out[COL_SHIP_ERROR] = [0.8, 0, 0];
   out[COL_SHIP_FLEET] = [0, 0.5, 0];
   out[COL_SHIP_FLEET_DONE] = [0.7, 0.7, 0.7];
-  out[COL_SHIP_FLEET_STRIPE] = [0, 0, 0];
-  out[COL_COUNT] = [0, 0, 0];
-  out[COL_COUNT_ERROR] = [1, 0, 0];
-  out[COL_COLLISION_ERROR] = [1, 0, 0];
-  out[COL_COLLISION_TEXT] = [1, 1, 1];
-  out[COL_HINT] = [0.13, 0.5, 0.85];
-  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
+  out[COL_SHIP_FLEET_STRIPE] = INK;
+  out[COL_COUNT] = INK;
+  out[COL_COUNT_ERROR] = ERROR;
+  out[COL_COLLISION_ERROR] = ERROR;
+  out[COL_COLLISION_TEXT] = PAPER;
+  out[COL_HINT] = HINT_ACTION;
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
 }
 

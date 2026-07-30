@@ -14,6 +14,7 @@
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { ERROR, INK } from "../../engine/palette.ts";
 import {
   anticlockwise,
   clockwise,
@@ -53,10 +54,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   ];
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
-  out[COL_WIRE] = [0, 0, 0];
+  out[COL_WIRE] = INK;
   out[COL_POWERED] = [0, 1, 1]; // powered wires/endpoints are cyan
   out[COL_BARRIER] = [1, 0, 0];
-  out[COL_ERR] = [1, 0, 0];
+  out[COL_ERR] = ERROR;
   out[COL_ENDPOINT] = [0, 0, 1]; // unpowered endpoints are blue
   out[COL_BORDER] = scale(0.5); // tile borders: darker grey than bg
   out[COL_LOCKED] = scale(0.75); // locked tiles: grey between the two

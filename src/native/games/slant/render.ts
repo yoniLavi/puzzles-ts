@@ -13,6 +13,13 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import {
+  ERROR,
+  HINT_ACTION,
+  HINT_BLACKREF,
+  HINT_EVIDENCE,
+  INK,
+} from "../../engine/palette.ts";
 import type { SlantHint } from "./index.ts";
 import type {
   SlantMistake,
@@ -47,16 +54,16 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_GRID] = scale(background, 0.7);
-  out[COL_INK] = [0, 0, 0];
-  out[COL_SLANT1] = [0, 0, 0];
-  out[COL_SLANT2] = [0, 0, 0];
-  out[COL_ERROR] = [1, 0, 0];
+  out[COL_INK] = INK;
+  out[COL_SLANT1] = INK;
+  out[COL_SLANT2] = INK;
+  out[COL_ERROR] = ERROR;
   out[COL_CURSOR] = highlight; // a background highlight, per game_mkhighlight
   out[COL_FILLEDSQUARE] = background;
   out[COL_GROUNDED] = scale(background, 0.8);
-  out[COL_HINT] = [0.13, 0.5, 0.85];
-  out[COL_HINT_CELL] = [0.82, 0.9, 0.99];
-  out[COL_HINT_REF] = [0.0, 0.78, 0.55];
+  out[COL_HINT] = HINT_ACTION;
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
+  out[COL_HINT_REF] = HINT_BLACKREF;
   return out;
 }
 

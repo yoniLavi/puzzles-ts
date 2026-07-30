@@ -19,6 +19,14 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import {
+  ERROR,
+  HINT_EVIDENCE,
+  HINT_FILL,
+  INK,
+  PAPER,
+  PENCIL_BODY,
+} from "../../engine/palette.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   CELL_MIRROR_L,
@@ -75,19 +83,19 @@ export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
   const out: Colour[] = [];
   out[COL_BACKGROUND] = bg;
-  out[COL_GRID] = [0, 0, 0];
-  out[COL_TEXT] = [0, 0, 0];
-  out[COL_ERROR] = [1, 0, 0];
+  out[COL_GRID] = INK;
+  out[COL_TEXT] = INK;
+  out[COL_ERROR] = ERROR;
   out[COL_HIGHLIGHT] = [0.78 * bg[0], 0.78 * bg[1], 0.78 * bg[2]];
-  out[COL_FLASH] = [1, 1, 1];
+  out[COL_FLASH] = PAPER;
   // Note: upstream derives all three monster shades from bg[0] (the red channel).
   out[COL_GHOST] = [bg[0] * 0.5, bg[0], bg[0]];
   out[COL_ZOMBIE] = [bg[0] * 0.5, bg[0], bg[0] * 0.5];
   out[COL_VAMPIRE] = [bg[0], bg[0] * 0.9, bg[0] * 0.9];
   out[COL_DONE] = [bg[0] / 1.5, bg[1] / 1.5, bg[2] / 1.5];
-  out[COL_PENCIL_BODY] = [1, 0.78, 0.17];
-  out[COL_HINT] = [0.62, 0.81, 0.96];
-  out[COL_HINT_CELL] = [0.85, 0.92, 0.99];
+  out[COL_PENCIL_BODY] = PENCIL_BODY;
+  out[COL_HINT] = HINT_FILL;
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
 }
 

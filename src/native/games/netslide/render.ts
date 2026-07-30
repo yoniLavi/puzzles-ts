@@ -14,6 +14,7 @@
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { HINT_ACTION, INK } from "../../engine/palette.ts";
 import type { NetslideHint } from "./hint.ts";
 import {
   ACTIVE,
@@ -74,16 +75,16 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_FLASHING] = scale(defaultBackground, 0.75);
   out[COL_BORDER] = scale(defaultBackground, 0.5);
-  out[COL_WIRE] = [0, 0, 0];
+  out[COL_WIRE] = INK;
   out[COL_ENDPOINT] = [0, 0, 1]; // an unpowered endpoint is blue
   out[COL_POWERED] = [0, 1, 1]; // a powered wire or endpoint is cyan
   out[COL_BARRIER] = [1, 0, 0];
   out[COL_LOWLIGHT] = scale(defaultBackground, 0.8);
-  out[COL_TEXT] = [0, 0, 0];
+  out[COL_TEXT] = INK;
   // The same blue Sixteen marks a hinted tile with — the two are the same kind of
   // game and should read the same way. Black wires and cyan powered wires both
   // stay legible on it.
-  out[COL_HINT] = [0.3, 0.5, 0.9];
+  out[COL_HINT] = HINT_ACTION;
   return out;
 }
 

@@ -24,6 +24,14 @@ import {
   hintMarkBit,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
+import {
+  ERROR,
+  HINT_ACTION,
+  HINT_EVIDENCE,
+  INK,
+  PAPER,
+  PENCIL_BODY,
+} from "../../engine/palette.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { SaladHint } from "./hint.ts";
 import type { SaladMistake } from "./solver.ts";
@@ -79,13 +87,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = background;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
-  out[COL_BORDER] = [0, 0, 0];
-  out[COL_BORDERCLUE] = [0, 0, 0];
+  out[COL_BORDER] = INK;
+  out[COL_BORDERCLUE] = INK;
   out[COL_PENCIL] = [0.5 * background[0], 0.5 * background[1], background[2]];
-  out[COL_I_NUM] = [0, 0, 0];
-  out[COL_I_BALL] = [0, 0, 0];
-  out[COL_I_BALLBG] = [1, 1, 1];
-  out[COL_I_HOLE] = [0, 0, 0];
+  out[COL_I_NUM] = INK;
+  out[COL_I_BALL] = INK;
+  out[COL_I_BALLBG] = PAPER;
+  out[COL_I_HOLE] = INK;
   out[COL_G_NUM] = [0, 0.5, 0];
   out[COL_G_BALL] = [0, 0.1, 0];
   out[COL_G_BALLBG] = [0.95, 1, 0.95];
@@ -93,10 +101,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_E_BORDERCLUE] = [1, 0, 0];
   out[COL_E_NUM] = [1, 0, 0];
   out[COL_E_HOLE] = [1, 0, 0];
-  out[COL_MISTAKE] = [1, 0, 0];
-  out[COL_PENCIL_BODY] = [1, 0.78, 0.17];
-  out[COL_HINT] = [0.13, 0.4, 0.75];
-  out[COL_HINT_CELL] = [0.85, 0.92, 0.99];
+  out[COL_MISTAKE] = ERROR;
+  out[COL_PENCIL_BODY] = PENCIL_BODY;
+  out[COL_HINT] = HINT_ACTION;
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
 }
 

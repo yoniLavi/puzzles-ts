@@ -19,6 +19,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
+import { ERROR, INK, PAPER } from "../../engine/palette.ts";
 import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -826,17 +827,17 @@ export const galaxiesGame: Game<
     ]);
     const ret = new Array<Colour>(NCOLOURS);
     ret[COL_BACKGROUND] = bg;
-    ret[COL_WHITEBG] = [1, 1, 1];
+    ret[COL_WHITEBG] = PAPER;
     ret[COL_BLACKBG] = [bg[0] * 0.3, bg[1] * 0.3, bg[2] * 0.3];
-    ret[COL_WHITEDOT] = [1, 1, 1];
-    ret[COL_BLACKDOT] = [0, 0, 0];
+    ret[COL_WHITEDOT] = PAPER;
+    ret[COL_BLACKDOT] = INK;
     ret[COL_GRID] = [bg[0] * 0.8, bg[1] * 0.8, bg[2] * 0.8];
-    ret[COL_EDGE] = [0, 0, 0];
-    ret[COL_ARROW] = [0, 0, 0];
+    ret[COL_EDGE] = INK;
+    ret[COL_ARROW] = INK;
     ret[COL_CURSOR] = [Math.min(bg[0] * 1.4, 1), bg[1] * 0.8, bg[2] * 0.8];
     // Mistake highlight: a strong red that reads on both white and black
     // region fills and the page background.
-    ret[COL_MISTAKE] = [0.85, 0.1, 0.1];
+    ret[COL_MISTAKE] = ERROR;
     return ret;
   },
 

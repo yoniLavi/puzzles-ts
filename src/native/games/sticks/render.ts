@@ -19,6 +19,7 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { ERROR, INK, PAPER } from "../../engine/palette.ts";
 import { findLiveErrors } from "./solver.ts";
 import {
   F_BLOCK,
@@ -46,10 +47,10 @@ export const COL_CURSOR = 5;
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
-  out[COL_GRID] = [0, 0, 0];
+  out[COL_GRID] = INK;
   out[COL_LINE] = [0, 0.7, 0];
-  out[COL_NUMBER] = [1, 1, 1];
-  out[COL_ERROR] = [1, 0, 0];
+  out[COL_NUMBER] = PAPER;
+  out[COL_ERROR] = ERROR;
   out[COL_CURSOR] = [0, 0, 1];
   return out;
 }

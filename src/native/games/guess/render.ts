@@ -8,6 +8,7 @@
 
 import type { Colour, Point, Rect, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { INK, PAPER } from "../../engine/palette.ts";
 import {
   FEEDBACK_CORRECTCOLOUR,
   FEEDBACK_CORRECTPLACE,
@@ -240,12 +241,12 @@ export function colours(defaultBackground: Colour): Colour[] {
 
   for (let i = 0; i < 10; i++) ret[COL_1 + i] = [...PEG_RGB[i]] as Colour;
 
-  ret[COL_FRAME] = [0, 0, 0];
-  ret[COL_CURSOR] = [0, 0, 0];
+  ret[COL_FRAME] = INK;
+  ret[COL_CURSOR] = INK;
   ret[COL_FLASH] = [0.5, 1.0, 1.0];
   ret[COL_HOLD] = [1.0, 0.5, 0.5];
-  ret[COL_CORRECTPLACE] = [0, 0, 0];
-  ret[COL_CORRECTCOLOUR] = [1.0, 1.0, 1.0];
+  ret[COL_CORRECTPLACE] = INK;
+  ret[COL_CORRECTCOLOUR] = PAPER;
 
   // Darken the background if needed so pure-white COL_CORRECTCOLOUR
   // stays distinguishable from it (borrowed from fifteen.c).

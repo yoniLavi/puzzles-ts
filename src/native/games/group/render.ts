@@ -18,6 +18,7 @@
 import type { Colour, DrawTextOptions, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { ERROR, HINT_EVIDENCE, HINT_FILL, INK } from "../../engine/palette.ts";
 import type { GroupMove } from "./state.ts";
 import {
   checkErrors,
@@ -54,15 +55,15 @@ export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
   const out: Colour[] = [];
   out[COL_BACKGROUND] = bg;
-  out[COL_GRID] = [0, 0, 0];
+  out[COL_GRID] = INK;
   out[COL_USER] = [0, 0.6 * bg[1], 0];
   out[COL_HIGHLIGHT] = [0.78 * bg[0], 0.78 * bg[1], 0.78 * bg[2]];
-  out[COL_ERROR] = [1, 0, 0];
+  out[COL_ERROR] = ERROR;
   out[COL_PENCIL] = [0.5 * bg[0], 0.5 * bg[1], bg[2]];
   out[COL_DIAGONAL] = [0.95 * bg[0], 0.95 * bg[1], 0.95 * bg[2]];
-  out[COL_MISTAKE] = [1, 0, 0];
-  out[COL_HINT] = [0.62, 0.81, 0.96];
-  out[COL_HINT_CELL] = [0.85, 0.92, 0.99];
+  out[COL_MISTAKE] = ERROR;
+  out[COL_HINT] = HINT_FILL;
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
 }
 

@@ -16,6 +16,7 @@
 
 import type { Colour, Rect, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { ERROR, INK } from "../../engine/palette.ts";
 import { gridDrawRect } from "./moves.ts";
 import type {
   RectDrawState,
@@ -48,10 +49,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_DRAG] = [1, 0, 0];
   out[COL_DRAGERASE] = [0.2, 0.2, 1];
   out[COL_CORRECT] = [0.75 * bg[0], 0.75 * bg[1], 0.75 * bg[2]];
-  out[COL_LINE] = [0, 0, 0];
-  out[COL_TEXT] = [0, 0, 0];
+  out[COL_LINE] = INK;
+  out[COL_TEXT] = INK;
   out[COL_CURSOR] = [1, 0.5, 0.5];
-  out[COL_MISTAKE] = [1, 0, 0];
+  out[COL_MISTAKE] = ERROR;
   return out;
 }
 

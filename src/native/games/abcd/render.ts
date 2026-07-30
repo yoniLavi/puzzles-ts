@@ -24,6 +24,7 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { ERROR, GRID_MID, INK, PENCIL_BODY } from "../../engine/palette.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   type AbcdState,
@@ -62,15 +63,15 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_OUTERBG] = outer;
   out[COL_INNERBG] = inner;
-  out[COL_GRID] = [0.5, 0.5, 0.5];
+  out[COL_GRID] = GRID_MID;
   out[COL_BORDERLETTER] = [0, 0, 0.6 * outer[1]];
-  out[COL_TEXT] = [0, 0, 0];
+  out[COL_TEXT] = INK;
   out[COL_GUESS] = [0, 0.6 * inner[1], 0];
-  out[COL_ERROR] = [1, 0, 0];
+  out[COL_ERROR] = ERROR;
   out[COL_PENCIL] = [0.5 * inner[0], 0.5 * inner[1], inner[2]];
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
-  out[COL_PENCIL_BODY] = [1, 0.78, 0.17];
+  out[COL_PENCIL_BODY] = PENCIL_BODY;
   return out;
 }
 

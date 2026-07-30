@@ -31,6 +31,7 @@ import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { ERROR, INK } from "../../engine/palette.ts";
 import type { RomeMistake } from "./index.ts";
 import {
   EMPTY,
@@ -93,10 +94,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = background;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
-  out[COL_BORDER] = [0, 0, 0];
-  out[COL_ARROW_FIXED] = [0, 0, 0];
+  out[COL_BORDER] = INK;
+  out[COL_ARROW_FIXED] = INK;
   out[COL_ARROW_GUESS] = [0, 0.5, 0];
-  out[COL_ARROW_ERROR] = [1, 0, 0];
+  out[COL_ARROW_ERROR] = ERROR;
   out[COL_ARROW_PENCIL] = [0, 0.5, 0.5];
   out[COL_ARROW_ENTRY] = [0, 0, 1];
   out[COL_ERRORBG] = [1, 0.85 * background[1], 0.85 * background[2]];

@@ -2,6 +2,7 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { INK, PAPER } from "../../engine/palette.ts";
 import type { SamegameState, SamegameUi } from "./state.ts";
 
 // --- tile-size metrics ------------------------------------------------
@@ -55,8 +56,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = new Array<Colour>(NCOLOURS);
   out[COL_BACKGROUND] = background;
   for (let i = 0; i < 9; i++) out[COL_1 + i] = PLAY_COLOURS[i];
-  out[COL_IMPOSSIBLE] = [0, 0, 0];
-  out[COL_SEL] = [1, 1, 1];
+  out[COL_IMPOSSIBLE] = INK;
+  out[COL_SEL] = PAPER;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   return out;

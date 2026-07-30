@@ -9,6 +9,13 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import {
+  ERROR,
+  HINT_ACTION,
+  HINT_BLACKREF,
+  HINT_EVIDENCE,
+  HINT_WHITEREF,
+} from "../../engine/palette.ts";
 import type { PatternHint } from "./index.ts";
 import { lineHasError } from "./solver.ts";
 import {
@@ -59,11 +66,11 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_EMPTY] = grey(1);
   out[COL_CURSOR_GUIDE] = grey(0.5);
   out[COL_CURSOR] = [1, 0.25, 0.25];
-  out[COL_ERROR] = [1, 0, 0];
-  out[COL_HINT] = [0.13, 0.5, 0.85];
-  out[COL_HINT_CELL] = [0.7, 0.84, 0.98];
-  out[COL_HINT_BLACKREF] = [0.0, 0.78, 0.55];
-  out[COL_HINT_WHITEREF] = [0.62, 0.3, 0.82];
+  out[COL_ERROR] = ERROR;
+  out[COL_HINT] = HINT_ACTION;
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
+  out[COL_HINT_BLACKREF] = HINT_BLACKREF;
+  out[COL_HINT_WHITEREF] = HINT_WHITEREF;
   return out;
 }
 

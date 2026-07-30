@@ -24,6 +24,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
+import { PAPER } from "../../engine/palette.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -748,7 +749,7 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
     const ret: Colour[] = new Array(NCOLOURS);
     ret[COL_BACKGROUND] = [bg[0], bg[1], bg[2]];
     ret[COL_WRONG] = [bg[0] / 3, bg[1] / 3, bg[2] / 3];
-    ret[COL_RIGHT] = [1, 1, 1];
+    ret[COL_RIGHT] = PAPER;
     ret[COL_GRID] = [bg[0] / 1.5, bg[1] / 1.5, bg[2] / 1.5];
     ret[COL_DIAG] = ret[COL_GRID];
     ret[COL_HINT] = [1, 0, 0];

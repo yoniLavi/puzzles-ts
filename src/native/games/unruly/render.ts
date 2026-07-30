@@ -11,6 +11,7 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlightSpecific } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { ERROR, HINT_ACTION, HINT_EVIDENCE } from "../../engine/palette.ts";
 import type { UnrulyHint } from "./index.ts";
 import {
   FE_COL_MATCH,
@@ -78,9 +79,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_0_HIGHLIGHT] = zero.highlight;
   out[COL_0_LOWLIGHT] = zero.lowlight;
   out[COL_CURSOR] = [0, 0.7, 0];
-  out[COL_ERROR] = [1, 0, 0];
-  out[COL_HINT] = [0.13, 0.5, 0.85];
-  out[COL_HINT_CELL] = [0.7, 0.84, 0.98];
+  out[COL_ERROR] = ERROR;
+  out[COL_HINT] = HINT_ACTION;
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
   // Cited premise / pivotal cells. A single ring colour (not the cross-game
   // teal/violet black/white-ref pair): Unruly's ring set is mixed — filled
   // black cells, a balanced reference row holding both colours, and empty

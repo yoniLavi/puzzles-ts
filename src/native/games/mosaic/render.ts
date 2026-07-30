@@ -7,6 +7,7 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { ERROR } from "../../engine/palette.ts";
 import {
   type MosaicMistake,
   type MosaicParams,
@@ -42,7 +43,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_MARKED] = [20 / 255, 20 / 255, 20 / 255];
   out[COL_BLANK] = [236 / 255, 236 / 255, 236 / 255];
   out[COL_TEXT_SOLVED] = [100 / 255, 100 / 255, 100 / 255];
-  out[COL_ERROR] = [1, 0, 0];
+  out[COL_ERROR] = ERROR;
   out[COL_CURSOR] = [1, 200 / 255, 200 / 255];
   return out;
 }

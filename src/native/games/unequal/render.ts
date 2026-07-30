@@ -16,6 +16,14 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import {
+  ERROR,
+  GRID_MID,
+  HINT_EVIDENCE,
+  HINT_FILL,
+  INK,
+  PENCIL_BODY,
+} from "../../engine/palette.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { UnequalMove } from "./state.ts";
 import {
@@ -63,16 +71,16 @@ export function colours(defaultBackground: Colour): Colour[] {
   const bg = background;
   const out: Colour[] = [];
   out[COL_BACKGROUND] = bg;
-  out[COL_GRID] = [0.5, 0.5, 0.5];
-  out[COL_TEXT] = [0, 0, 0];
+  out[COL_GRID] = GRID_MID;
+  out[COL_TEXT] = INK;
   out[COL_GUESS] = [0, 0.6 * bg[1], 0];
-  out[COL_ERROR] = [1, 0, 0];
+  out[COL_ERROR] = ERROR;
   out[COL_PENCIL] = [0.5 * bg[0], 0.5 * bg[1], bg[2]];
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
-  out[COL_PENCIL_BODY] = [1, 0.78, 0.17];
-  out[COL_HINT] = [0.62, 0.81, 0.96];
-  out[COL_HINT_CELL] = [0.85, 0.92, 0.99];
+  out[COL_PENCIL_BODY] = PENCIL_BODY;
+  out[COL_HINT] = HINT_FILL;
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
 }
 
