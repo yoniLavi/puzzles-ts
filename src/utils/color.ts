@@ -69,42 +69,59 @@ function invertLightness([l, c, h]: OKLCH, bgl: number): OKLCH {
 }
 
 /**
- * Adjusts chromatic colors for dark mode:
- * - Compress lightness to ensure visibility against the dark background
- *   while preventing overly-light colors that wouldn't be "dark mode".
- * - Boost chroma for darker colors to retain their apparent color.
- * - Clamp chroma to avoid "neon" / garish colors.
+ * Adjusts chromatic colors for dark mode: invert lightness exactly as a gray is
+ * inverted, then restore the apparent colorfulness that inverting costs.
+ *
+ * WHY INVERT RATHER THAN COMPRESS. This used to compress lightness into a fixed
+ * band (`[bgl + 0.15, 0.8]`) without reference to the background at all, while
+ * grays went through {@link invertLightness}, which is relative to it. A color
+ * that was a subtle tint OF THE BOARD therefore became a bright patch ON it: in
+ * Slide, the floor inverted to L 0.20 while the "slightly green floor" compressed
+ * to L 0.78 — two colors 0.089 apart in light mode landing 0.427 apart in dark.
+ * Measured across the collection, 150 colors in 45 of 57 games broke that way,
+ * every one in the same direction.
+ *
+ * The old comment here said the compression was a compromise between colors used
+ * as text (which want lightness) and colors used as fills (which want darkness),
+ * and that "knowing the intended use of the color could improve the results
+ * significantly". It turns out the intended use does not have to be known,
+ * because THE LIGHT PALETTE ALREADY ENCODES IT IN THE LIGHTNESS: text and thin
+ * lines are dark on light paper, large fills are pale on it. Inverting therefore
+ * sends text light and fills dark, which is the right answer for both from one
+ * rule. Against a 0.2 background:
+ *
+ * | color                          | light L | old L | new L |
+ * | ------------------------------ | ------- | ----- | ----- |
+ * | Slide target zone (large fill) |    0.92 | 0.769 | 0.310 |
+ * | Flood tile (large fill)        |    0.87 | 0.753 | 0.356 |
+ * | error red (mark)               |    0.63 | 0.661 | 0.561 |
+ * | Solo killer outline (thin)     |    0.45 | 0.588 | 0.696 |
+ * | ABCD border letters (text)     |    0.35 | 0.544 | 0.767 |
+ *
+ * The old rule squashed all five into 0.54–0.77 — text and giant fills within
+ * 0.23 of each other, with text DARKER than the fills it is drawn on. This one
+ * spreads them and puts them in the right order.
+ *
+ * This is now the FALLBACK, for colors that are a game's own. A color that comes
+ * from a shared role in `native/engine/palette.ts` carries an authored value per
+ * scheme and never reaches here — see `hand-author-dark-palette`.
  */
 function adjustChromatic([l, c, h]: OKLCH, bgl: number): OKLCH {
-  // These numbers are hand tuned, and try to strike a balance between:
-  // - Colors used for text/lines on a dark background, which need more lightness
-  //   (ABCD is a good test, also Solo killer region outline)
-  // - Colors used for filled regions, where lower lightness would work better
-  //   (Flood and Same Game; Signpost note colors used as text bg)
-  // Knowing the intended use of the color could improve the results significantly.
-  // (Also, color.js has some contrast and chromatic adaptation functions
-  // that might be useful.)
-
-  // Compress lightness, with some extra boost at the low end.
-  const compressedL = compressLightness(l, {
-    floor: bgl + 0.15,
-    headroom: 0.2,
-    boost: 0.8,
-  });
+  const [invertedL] = invertLightness([l, c, h], bgl);
 
   // Hunt Effect / Helmholtz-Kohlrausch compensation:
   // At lower luminance, colors appear less colorful. Boost the chroma
   // of darker colors so they remain distinct and don't fade to gray.
-  const boostC = 1 + 0.5 * (1 - compressedL);
+  const boostC = 1 + 0.5 * (1 - invertedL);
   let adjustedC = c * boostC;
 
   // Glare prevention:
   // High lightness + high chroma on dark backgrounds causes "neon" glare.
   // Clamp chroma strictly for light colors, but allow more for dark colors.
-  const maxChroma = 0.25 - 0.15 * compressedL;
+  const maxChroma = 0.25 - 0.15 * invertedL;
   adjustedC = clamp(0, adjustedC, maxChroma);
 
-  return [compressedL, adjustedC, h];
+  return [invertedL, adjustedC, h];
 }
 
 /**
