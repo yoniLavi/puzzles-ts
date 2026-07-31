@@ -8,7 +8,19 @@
 import type { Colour, Point } from "../../../puzzle/types.ts";
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { ERROR } from "../../engine/palette.ts";
+import { ERROR, INK } from "../../engine/palette.ts";
+import {
+  SIGNPOST_DRAG_ORIGIN,
+  SIGNPOST_NUMBER_SET,
+  SIGNPOST_NUMBER_SET_MID,
+  SIGNPOST_ON_REGION_FAINT,
+  SIGNPOST_ON_REGION_MID,
+  SIGNPOST_REGION_BACKGROUNDS,
+  signpostArrowDim,
+  signpostCursor,
+  signpostGrid,
+  signpostWashedRegion,
+} from "../../engine/palette-games.ts";
 import { dragReleaseMove, executeMove } from "./moves.ts";
 import {
   FLAG_ERROR,
@@ -57,58 +69,41 @@ const F_DIM = 0x040;
 
 // --- palette ----------------------------------------------------------
 
-const BG_COLS = [
-  0xffffff, 0xffa07a, 0x98fb98, 0x7fffd4, 0xc3a6ff, 0xffa500, 0x87cefa, 0xffff00,
-];
-
-/** Port of `game_colours`: 12 named colours + four 16-entry ramps. */
+/**
+ * Port of `game_colours`: 12 named colours + four 16-entry ramps.
+ *
+ * Every value comes from the token table. Upstream builds all seventy-six
+ * entries by arithmetic on eight hex constants; here the arithmetic that does not
+ * involve the host background has moved into `palette-games.ts`, so what is left
+ * is the *index mapping* — which slot each token occupies — which is the part
+ * that has to match the C enum and the part a renderer actually needs.
+ */
 export function buildPalette(
   background: Colour,
   highlight: Colour,
   lowlight: Colour,
 ): Colour[] {
-  const n = COL_X0 + NBACKGROUNDS;
-  const ret: Colour[] = Array.from({ length: n }, () => [0, 0, 0]);
+  const ret: Colour[] = new Array(COL_X0 + NBACKGROUNDS);
 
   ret[COL_BACKGROUND] = [...background];
   ret[COL_HIGHLIGHT] = [...highlight];
   ret[COL_LOWLIGHT] = [...lowlight];
 
-  for (let i = 0; i < 3; i++) {
-    ret[COL_NUMBER][i] = 0;
-    ret[COL_ARROW][i] = 0;
-    ret[COL_CURSOR][i] = background[i] / 2;
-    ret[COL_GRID][i] = background[i] / 1.3;
-  }
-  ret[COL_NUMBER_SET] = [0, 0, 0.9];
+  ret[COL_NUMBER] = INK;
+  ret[COL_ARROW] = INK;
+  ret[COL_CURSOR] = signpostCursor(background);
+  ret[COL_GRID] = signpostGrid(background);
+  ret[COL_NUMBER_SET] = SIGNPOST_NUMBER_SET;
+  ret[COL_NUMBER_SET_MID] = SIGNPOST_NUMBER_SET_MID;
   ret[COL_ERROR] = ERROR;
-  ret[COL_DRAG_ORIGIN] = [0.2, 1, 0.2];
+  ret[COL_DRAG_ORIGIN] = SIGNPOST_DRAG_ORIGIN;
+  ret[COL_ARROW_BG_DIM] = signpostArrowDim(background);
 
-  for (let c = 0; c < 8; c++) {
-    const v = BG_COLS[c];
-    ret[COL_B0 + c] = [
-      ((v & 0xff0000) >> 16) / 256,
-      ((v & 0xff00) >> 8) / 256,
-      (v & 0xff) / 256,
-    ];
-  }
-  // Second-half backgrounds interpolate consecutive first-half entries
-  // (and, for c=7, the already-written B0+8) — replicate the C order.
-  for (let c = 0; c < 8; c++) {
-    for (let i = 0; i < 3; i++) {
-      ret[COL_B0 + 8 + c][i] = (ret[COL_B0 + c][i] + ret[COL_B0 + c + 1][i]) / 2;
-    }
-  }
-
-  const average = (r: number, a: number, b: number, w: number): void => {
-    for (let i = 0; i < 3; i++) ret[r][i] = ret[a][i] + w * (ret[b][i] - ret[a][i]);
-  };
-  average(COL_ARROW_BG_DIM, COL_BACKGROUND, COL_ARROW, 0.1);
-  average(COL_NUMBER_SET_MID, COL_B0, COL_NUMBER_SET, 0.3);
   for (let c = 0; c < NBACKGROUNDS; c++) {
-    average(COL_M0 + c, COL_B0 + c, COL_NUMBER, 0.3);
-    average(COL_D0 + c, COL_B0 + c, COL_NUMBER, 0.1);
-    average(COL_X0 + c, COL_BACKGROUND, COL_B0 + c, 0.5);
+    ret[COL_B0 + c] = SIGNPOST_REGION_BACKGROUNDS[c];
+    ret[COL_M0 + c] = SIGNPOST_ON_REGION_MID[c];
+    ret[COL_D0 + c] = SIGNPOST_ON_REGION_FAINT[c];
+    ret[COL_X0 + c] = signpostWashedRegion(background, SIGNPOST_REGION_BACKGROUNDS[c]);
   }
   return ret;
 }

@@ -445,23 +445,34 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     const paletteRGB = await this.puzzle.getColourPalette(defaultBackgroundColour);
     let palette = paletteRGB.map(colourToOKLCH);
 
-    // Apply dark mode adjustments and overrides from puzzleAugmentations.
+    // Apply dark mode adjustments and overrides.
     //
-    // Two sources, same vocabulary. The palette itself may carry per-index
-    // decisions — a colour that came from a scheme-aware role such as
-    // `PIECE_BLACK` says "do not adapt me", because a black peg that inverts to
-    // white tells the player the piece is the other colour. A per-puzzle entry
-    // in `augmentation.ts` is the more specific statement and wins, so a game
-    // that wants its black *lifted* rather than preserved (Light Up's wall) can
-    // still say so.
+    // Three ways an index can get its dark-mode colour, most specific first:
+    //
+    // 1. a per-puzzle entry in `augmentation.ts` — a fixed OKLCH colour, a
+    //    lightness nudge, or `false` for "leave the light value alone";
+    // 2. the **authored** dark value of the token the game used, which the
+    //    engine reports per index in sRGB (`darkPalette`) because the token's
+    //    scheme values cannot cross the worker boundary attached to the colour;
+    // 3. otherwise, calculation — `darkModeColor`, which is what every colour
+    //    did before the token table existed and what every token that has not
+    //    been given a dark value still does.
+    //
+    // A per-puzzle entry wins over an authored one because it is the more
+    // specific statement: a game that wants its black *lifted* rather than
+    // preserved (Light Up's wall) says so there. A lightness nudge is the one
+    // that composes — it scales whichever colour the first two steps produced.
     if (isDarkMode) {
-      const fromPalette = await this.puzzle.darkModeOverrides(defaultBackgroundColour);
+      const authored = await this.puzzle.darkPalette(defaultBackgroundColour);
       palette = palette.map(([l, c, h], i) => {
-        const override = darkMode?.paletteOverrides?.[i] ?? fromPalette[i];
+        const override = darkMode?.paletteOverrides?.[i];
         if (Array.isArray(override)) {
           [l, c, h] = override;
         } else if (override !== false) {
-          [l, c, h] = darkModeColor([l, c, h], bgl);
+          const authoredDark = authored[i];
+          [l, c, h] = authoredDark
+            ? colourToOKLCH(authoredDark)
+            : darkModeColor([l, c, h], bgl);
           if (typeof override === "number") {
             l *= override;
             if (l < 0) {

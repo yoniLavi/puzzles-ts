@@ -344,9 +344,10 @@ export class WorkerPuzzle implements FrontendConstructorArgs, PuzzleEngineSurfac
     return this.frontend.getColourPalette(defaultBackground);
   }
 
-  /** A C palette is a plain list of triples and carries no scheme decisions of
-   * its own; dark mode for these games is entirely the frontend's business. */
-  darkModeOverrides(): Record<number, false> {
+  /** A C palette is a plain list of triples and carries no authored scheme
+   * values of its own; dark mode for these games is entirely the frontend's
+   * business. */
+  darkPalette(): Record<number, Colour> {
     return {};
   }
 

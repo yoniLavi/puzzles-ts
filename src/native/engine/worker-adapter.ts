@@ -220,8 +220,8 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
     return this.engine.getColourPalette(defaultBackground);
   }
 
-  darkModeOverrides(defaultBackground: Colour): Record<number, false> {
-    return this.engine.darkModeOverrides(defaultBackground);
+  darkPalette(defaultBackground: Colour): Record<number, Colour> {
+    return this.engine.darkPalette(defaultBackground);
   }
   size(maxSize: Size, isUserSize: boolean, devicePixelRatio: number): Size {
     return this.engine.size(maxSize, isUserSize, devicePixelRatio);
