@@ -180,8 +180,12 @@ distinguishable named set is designed once instead of per game.
       → The first is enforced continuously by task 4.2's guard across all 57 games,
       not confirmed once. The second follows from 5.1: a scheme is a value per token,
       and the 172-token edit reached every game without touching one.
-- [ ] 5.3 Full gate green; `openspec validate colour-tokens-per-scheme --strict`.
-- [ ] 5.4 Owner acceptance, then archive.
+- [x] 5.3 Full gate green; `openspec validate colour-tokens-per-scheme --strict`.
+      → Green on every commit in the change (6423 tests), and valid.
+- [x] 5.4 Owner acceptance, then archive.
+      → Accepted 2026-07-31, with the direction that the ~190 tokens this change
+      named should now collapse to ~10–20 with specific semantics — scaffolded as
+      `consolidate-colour-palette`, which this change is the precondition for.
 
 ## Follow-up
 
