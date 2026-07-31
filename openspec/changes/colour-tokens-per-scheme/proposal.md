@@ -62,3 +62,20 @@ a colour from it.
   property that makes a 300-value migration safe to review.
 - No save-format, bundle or runtime impact: the same values reach the same palette
   indices; only where they are written changes.
+
+## Scope boundary (owner direction, 2026-07-31)
+
+This change **relocates**; it does not retune. Its review property is *zero values
+changed*, which is what makes a 687-entry diff across 57 games reviewable, and
+design D3 forbids mixing the two into one commit.
+
+The collection should not end up with ~190 named colours. The owner's target is
+**~10–20 colours with specific semantics**, referenced semantically, with a
+truthful name where a game genuinely wants a named colour (a hint that says "fill
+with yellow"). That is `consolidate-colour-palette`, and this change is its
+precondition rather than a competing answer: every colour is now a named entry in
+one table, reached through one import pattern, so collapsing 190 names onto ~14 is
+an edit to the table and to import lines — not a hunt through 57 games. Authoring
+dark values is likewise deferred there, since ~190 hand-picked values for tokens
+about to be merged would be wasted, and consolidation dissolves the
+enumerated-set separation problem by designing one distinguishable set once.
