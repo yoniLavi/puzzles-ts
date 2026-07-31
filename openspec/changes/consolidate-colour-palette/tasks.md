@@ -37,11 +37,15 @@
 
       | set | upstream | light | dark |
       | --- | --- | --- | --- |
-      | ten (flood, guess) | 0.134 | **0.159** | **0.158** (was 0.070) |
+      | ten (flood, guess) | 0.134 | **0.159** | **0.143** (was 0.070) |
       | nine (samegame) | 0.127 | 0.159 | 0.158 |
-      | six counts (mines) | 0.142 | 0.159 | 0.144 |
-      | eight fills (signpost) | 0.071 | 0.087 | 0.081 |
-      | four fills (map) | 0.077 | 0.115 | 0.123 |
+      | six counts (mines) | 0.142 | 0.159 | 0.150 |
+      | eight fills (signpost) | 0.071 | 0.087 | 0.100 |
+      | four fills (map) | 0.077 | 0.115 | 0.120 |
+
+      The dark ten-set was 0.158 on the first cut and is 0.143 now: owner
+      acceptance found that the extra separation had been **bought by making
+      yellow a cream** (see design F10). 0.143 is the honest number.
 
 - [x] 1.3 Settle the intensity axis at **two** steps (a solid and a wash) and add a
       third only against a case the two cannot serve (D3). Record any case that
@@ -140,6 +144,14 @@
       pre-existing).
       **One judgement to look at**: that lit square is now a soft cream rather than
       a saturated yellow — correct for a fill, and less punchy than upstream.
+      → **Owner acceptance found two more the measurement was happy with** (design
+      F10): dark `YELLOW` had been pushed to lightness 0.95 — a cream, not a yellow
+      — because that is where the ten-set's worst pair was largest, and four dark
+      washes sat *below* the lightness a game draws its own cells at, so Crossing's
+      across/down highlight read as a hole in the board. Both are palette values,
+      fixed in `DESIGN` rather than at the point of use. All three bounds are now
+      asserted in `colours.test.ts`, because an optimiser never complains about
+      what it is trading away.
       → A second defect found by a *new* instrument, `scripts/colour-collide.test.ts`
       (design F9): Subsets' cursor, hint slot and hint spotlight all resolved to
       blue, collapsing a deliberate three-part hint into one colour. Cursor is
