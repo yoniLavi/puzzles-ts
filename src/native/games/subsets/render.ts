@@ -24,7 +24,7 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { BLUE, ORANGE } from "../../engine/colours.ts";
+import { GREEN, ORANGE, PURPLE } from "../../engine/colours.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import {
@@ -99,10 +99,15 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_FIXED] = INK;
   out[COL_GUESS] = playerEntryColour(background);
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = BLUE;
+  // Purple, because Subsets has spent the usual two: the hint's decided slot is
+  // blue and the player's own entries are green.
+  out[COL_CURSOR] = PURPLE;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  out[COL_HINT_SPOT] = HINT_ACTION;
+  // The "could still go here" spotlight is its own third emphasis, not the hint
+  // action again: this deduction genuinely has three parts and the middle one is
+  // the interesting one, so it keeps a hue of its own.
+  out[COL_HINT_SPOT] = GREEN;
   out[COL_HINT_PLACED] = ORANGE;
   return out;
 }
