@@ -728,7 +728,7 @@ exports[`Loopy render scenarios: error highlighting > reddens all three YES edge
   {
     "colour": 4,
     "op": "line",
-    "rgb": "rgb(255, 0, 0)",
+    "rgb": "rgb(223, 34, 37)",
     "thickness": 3,
     "x1": 3,
     "x2": 35,
@@ -738,7 +738,7 @@ exports[`Loopy render scenarios: error highlighting > reddens all three YES edge
   {
     "colour": 4,
     "op": "line",
-    "rgb": "rgb(255, 0, 0)",
+    "rgb": "rgb(223, 34, 37)",
     "thickness": 3,
     "x1": 35,
     "x2": 35,
@@ -748,7 +748,7 @@ exports[`Loopy render scenarios: error highlighting > reddens all three YES edge
   {
     "colour": 4,
     "op": "line",
-    "rgb": "rgb(255, 0, 0)",
+    "rgb": "rgb(223, 34, 37)",
     "thickness": 3,
     "x1": 35,
     "x2": 67,

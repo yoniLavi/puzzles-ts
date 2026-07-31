@@ -411,7 +411,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -572,7 +572,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -906,7 +906,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1433,7 +1433,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1552,7 +1552,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -1877,7 +1877,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -2173,7 +2173,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -2339,7 +2339,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -2383,7 +2383,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -2497,7 +2497,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -2743,7 +2743,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -2787,7 +2787,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3000,7 +3000,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3465,7 +3465,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3753,7 +3753,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -3816,7 +3816,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
   },
   {
     "fill": 7,
-    "fillRgb": "rgb(153, 255, 255)",
+    "fillRgb": "rgb(40, 186, 193)",
     "op": "polygon",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",
@@ -4019,7 +4019,7 @@ exports[`inertia rendering > draws the opening frame 1`] = `
     "cx": 305,
     "cy": 177,
     "fill": 4,
-    "fillRgb": "rgb(0, 255, 0)",
+    "fillRgb": "rgb(33, 167, 73)",
     "op": "circle",
     "outline": 1,
     "outlineRgb": "rgb(0, 0, 0)",

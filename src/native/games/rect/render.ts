@@ -5,7 +5,7 @@
  *
  * The per-cell cache word packs exactly upstream's `visible[]` — the four edge
  * values (0/1/2/3) and four corner values (2 bits each) around the cell, plus
- * the `CORRECT` and `CURSOR` bits — into an `Int32Array` (playbook §3.2). Four
+ * the `F_CORRECT` and `F_CURSOR` bits — into an `Int32Array` (playbook §3.2). Four
  * extra bits carry the `findMistakes` wrong-edge overlay so it repaints and
  * clears through the same cache. The drag preview is drawn into a scratch copy
  * of the edges before the corner pass, so it too lives entirely in the word.
@@ -16,13 +16,15 @@
 
 import type { Colour, Rect, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { correctRegionColour, ERROR, INK } from "../../engine/palette.ts";
 import {
-  RECT_CURSOR,
-  RECT_DRAG,
-  RECT_DRAG_ERASE,
-  rectGrid,
-} from "../../engine/palette-games.ts";
+  CURSOR,
+  correctRegionColour,
+  DRAG_ADD,
+  DRAG_REMOVE,
+  ERROR,
+  INK,
+} from "../../engine/palette.ts";
+import { rectGrid } from "../../engine/palette-games.ts";
 import { gridDrawRect } from "./moves.ts";
 import type {
   RectDrawState,
@@ -52,19 +54,19 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = rectGrid(bg);
-  out[COL_DRAG] = RECT_DRAG;
-  out[COL_DRAGERASE] = RECT_DRAG_ERASE;
+  out[COL_DRAG] = DRAG_ADD;
+  out[COL_DRAGERASE] = DRAG_REMOVE;
   out[COL_CORRECT] = correctRegionColour(bg);
   out[COL_LINE] = INK;
   out[COL_TEXT] = INK;
-  out[COL_CURSOR] = RECT_CURSOR;
+  out[COL_CURSOR] = CURSOR;
   out[COL_MISTAKE] = ERROR;
   return out;
 }
 
 // --- cache-word bits -------------------------------------------------------
-const CORRECT = 1 << 16;
-const CURSOR = 1 << 17;
+const F_CORRECT = 1 << 16;
+const F_CURSOR = 1 << 17;
 const M_TOP = 1 << 18;
 const M_BOTTOM = 1 << 19;
 const M_LEFT = 1 << 20;
@@ -117,7 +119,11 @@ function drawTile(
     cy + 1,
     tile - 1,
     tile - 1,
-    bgflags & CURSOR ? COL_CURSOR : bgflags & CORRECT ? COL_CORRECT : COL_BACKGROUND,
+    bgflags & F_CURSOR
+      ? COL_CURSOR
+      : bgflags & F_CORRECT
+        ? COL_CORRECT
+        : COL_BACKGROUND,
   );
 
   const num = state.grid[y * w + x];
@@ -291,8 +297,8 @@ export function redraw(
       if (x + 1 < w) c |= corners[y * w + (x + 1)] << 10;
       if (y + 1 < h) c |= corners[(y + 1) * w + x] << 12;
       if (x + 1 < w && y + 1 < h) c |= corners[(y + 1) * w + (x + 1)] << 14;
-      if (state.correct[y * w + x] && !flashTime) c |= CORRECT;
-      if (ui.cursorVisible && ui.cursorX === x && ui.cursorY === y) c |= CURSOR;
+      if (state.correct[y * w + x] && !flashTime) c |= F_CORRECT;
+      if (ui.cursorVisible && ui.cursorX === x && ui.cursorY === y) c |= F_CURSOR;
 
       let mistake = 0;
       if (wrongH[y * w + x]) mistake |= M_TOP;

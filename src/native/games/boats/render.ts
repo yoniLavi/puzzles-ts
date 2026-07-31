@@ -34,17 +34,11 @@
  */
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import { BLUE_WASH, GREEN, GREY_BOLD, GREY_WASH } from "../../engine/colours.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { ERROR, HINT_ACTION, HINT_EVIDENCE, INK, PAPER } from "../../engine/palette.ts";
-import {
-  BOATS_FLEET,
-  BOATS_FLEET_DONE,
-  BOATS_SHIP_CLUE,
-  BOATS_SHIP_ERROR,
-  BOATS_WATER,
-} from "../../engine/palette-games.ts";
 import type { BoatsHint } from "./index.ts";
 import type { BoatsMistake } from "./solver.ts";
 import {
@@ -115,12 +109,12 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_GRID] = INK;
   out[COL_CURSOR_A] = INK;
   out[COL_CURSOR_B] = PAPER;
-  out[COL_WATER] = BOATS_WATER;
-  out[COL_SHIP_CLUE] = BOATS_SHIP_CLUE;
+  out[COL_WATER] = BLUE_WASH;
+  out[COL_SHIP_CLUE] = GREY_BOLD;
   out[COL_SHIP_GUESS] = INK;
-  out[COL_SHIP_ERROR] = BOATS_SHIP_ERROR;
-  out[COL_SHIP_FLEET] = BOATS_FLEET;
-  out[COL_SHIP_FLEET_DONE] = BOATS_FLEET_DONE;
+  out[COL_SHIP_ERROR] = ERROR;
+  out[COL_SHIP_FLEET] = GREEN;
+  out[COL_SHIP_FLEET_DONE] = GREY_WASH;
   out[COL_SHIP_FLEET_STRIPE] = INK;
   out[COL_COUNT] = INK;
   out[COL_COUNT_ERROR] = ERROR;

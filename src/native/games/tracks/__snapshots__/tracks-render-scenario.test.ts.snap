@@ -372,7 +372,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 35,
     "x2": 54,
@@ -382,7 +382,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 34,
     "x2": 48,
@@ -392,7 +392,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 31,
     "x2": 36,
@@ -402,7 +402,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 29,
     "x2": 24,
@@ -412,7 +412,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 26,
     "x2": 12,
@@ -422,7 +422,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 25,
     "x2": 6,
@@ -432,7 +432,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 25,
     "x2": 6,
@@ -442,7 +442,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 26,
     "x2": 12,
@@ -452,7 +452,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 29,
     "x2": 24,
@@ -462,7 +462,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 31,
     "x2": 36,
@@ -472,7 +472,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 34,
     "x2": 48,
@@ -482,7 +482,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 35,
     "x2": 54,
@@ -1828,7 +1828,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 185,
     "x2": 204,
@@ -1838,7 +1838,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 184,
     "x2": 198,
@@ -1848,7 +1848,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 181,
     "x2": 186,
@@ -1858,7 +1858,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 179,
     "x2": 174,
@@ -1868,7 +1868,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 176,
     "x2": 162,
@@ -1878,7 +1878,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 175,
     "x2": 156,
@@ -1888,7 +1888,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 175,
     "x2": 156,
@@ -1898,7 +1898,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 176,
     "x2": 162,
@@ -1908,7 +1908,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 179,
     "x2": 174,
@@ -1918,7 +1918,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 181,
     "x2": 186,
@@ -1928,7 +1928,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 184,
     "x2": 198,
@@ -1938,7 +1938,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 185,
     "x2": 204,
@@ -2424,7 +2424,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 185,
     "x2": 204,
@@ -2434,7 +2434,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 184,
     "x2": 198,
@@ -2444,7 +2444,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 181,
     "x2": 186,
@@ -2454,7 +2454,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 179,
     "x2": 174,
@@ -2464,7 +2464,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 176,
     "x2": 162,
@@ -2474,7 +2474,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 175,
     "x2": 156,
@@ -2484,7 +2484,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 175,
     "x2": 156,
@@ -2494,7 +2494,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 176,
     "x2": 162,
@@ -2504,7 +2504,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 179,
     "x2": 174,
@@ -2514,7 +2514,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 181,
     "x2": 186,
@@ -2524,7 +2524,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 184,
     "x2": 198,
@@ -2534,7 +2534,7 @@ exports[`Tracks render scenarios > opener frame: clue numbers + A/B labels drawn
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(128, 102, 26)",
+    "rgb": "rgb(114, 67, 16)",
     "thickness": 3,
     "x1": 185,
     "x2": 204,

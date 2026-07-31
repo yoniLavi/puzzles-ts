@@ -31,6 +31,7 @@
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { BLUE, BLUE_WASH, GREY, ORANGE, WHITE } from "../../engine/colours.ts";
 import {
   type Game,
   parseConfigInt,
@@ -38,17 +39,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { INK } from "../../engine/palette.ts";
-import {
-  UNTANGLE_CROSSED_LINE,
-  UNTANGLE_CURSOR_POINT,
-  UNTANGLE_DRAG_POINT,
-  UNTANGLE_FLASH_1,
-  UNTANGLE_FLASH_2,
-  UNTANGLE_HINT,
-  UNTANGLE_NEIGHBOUR,
-  UNTANGLE_POINT,
-} from "../../engine/palette-games.ts";
+import { ERROR, INK, PAPER } from "../../engine/palette.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -512,15 +503,15 @@ export const untangleGame: Game<
       lowlight, // 0 COL_SYSBACKGROUND (dead space, darker)
       background, // 1 COL_BACKGROUND (play area)
       INK, // 2 COL_LINE
-      UNTANGLE_CROSSED_LINE, // 3 COL_CROSSEDLINE
+      ERROR, // 3 COL_CROSSEDLINE
       INK, // 4 COL_OUTLINE
-      UNTANGLE_POINT, // 5 COL_POINT
-      UNTANGLE_DRAG_POINT, // 6 COL_DRAGPOINT
-      UNTANGLE_CURSOR_POINT, // 7 COL_CURSORPOINT
-      UNTANGLE_NEIGHBOUR, // 8 COL_NEIGHBOUR
-      UNTANGLE_FLASH_1, // 9 COL_FLASH1
-      UNTANGLE_FLASH_2, // 10 COL_FLASH2
-      UNTANGLE_HINT, // 11 COL_HINT
+      BLUE, // 5 COL_POINT
+      WHITE, // 6 COL_DRAGPOINT
+      GREY, // 7 COL_CURSORPOINT
+      BLUE_WASH, // 8 COL_NEIGHBOUR
+      GREY, // 9 COL_FLASH1
+      PAPER, // 10 COL_FLASH2
+      ORANGE, // 11 COL_HINT
     ];
   },
   computeSize: (p: UntangleParams, tileSize: number): Size => {

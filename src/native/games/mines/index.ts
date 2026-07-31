@@ -18,6 +18,16 @@ import type {
   Point,
   Size,
 } from "../../../puzzle/types.ts";
+import {
+  BLACK,
+  BLUE,
+  BLUE_BOLD,
+  GREEN,
+  PINK,
+  RED,
+  RED_BOLD,
+  TEAL,
+} from "../../engine/colours.ts";
 import { fromCoord } from "../../engine/geometry.ts";
 import {
   type Game,
@@ -28,20 +38,8 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { ERROR, GRID_MID, INK, PAPER, PIECE_BLACK } from "../../engine/palette.ts";
-import {
-  MINES_COUNT_1,
-  MINES_COUNT_2,
-  MINES_COUNT_3,
-  MINES_COUNT_4,
-  MINES_COUNT_5,
-  MINES_COUNT_6,
-  MINES_CURSOR,
-  MINES_FLAG,
-  MINES_WRONG_COUNT,
-  minesLowlight,
-  minesUnclearedFace,
-} from "../../engine/palette-games.ts";
+import { ERROR, ERROR_WASH, GRID_MID, INK, PAPER } from "../../engine/palette.ts";
+import { minesLowlight, minesUnclearedFace } from "../../engine/palette-games.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -693,24 +691,32 @@ export const minesGame: Game<
     const ret: Colour[] = new Array(NCOLOURS);
     ret[COL_BACKGROUND] = bg;
     ret[COL_BACKGROUND2] = minesUnclearedFace(bg);
-    ret[COL_1] = MINES_COUNT_1;
-    ret[COL_2] = MINES_COUNT_2;
-    ret[COL_3] = MINES_COUNT_3;
-    ret[COL_4] = MINES_COUNT_4;
-    ret[COL_5] = MINES_COUNT_5;
-    ret[COL_6] = MINES_COUNT_6;
+    // Upstream's count colours, and by now most players' expectation of what a
+    // minesweeper looks like: 1 blue, 2 green, 3 red, 4 navy, 5 maroon, 6 teal.
+    // The two dark ones are why the palette has a bold step at all — a wash is a
+    // fill, and these are digits.
+    ret[COL_1] = BLUE;
+    ret[COL_2] = GREEN;
+    ret[COL_3] = RED;
+    ret[COL_4] = BLUE_BOLD;
+    ret[COL_5] = RED_BOLD;
+    ret[COL_6] = TEAL;
     ret[COL_7] = INK;
     ret[COL_8] = GRID_MID;
-    ret[COL_MINE] = PIECE_BLACK;
+    ret[COL_MINE] = BLACK;
     ret[COL_BANG] = ERROR;
     ret[COL_CROSS] = ERROR;
-    ret[COL_FLAG] = MINES_FLAG;
+    // Red because a flag is yours and deliberate, not because anything is
+    // wrong — but the same red, which is what the collection has one of.
+    ret[COL_FLAG] = RED;
     ret[COL_FLAGBASE] = INK;
     ret[COL_QUERY] = INK;
     ret[COL_HIGHLIGHT] = PAPER;
     ret[COL_LOWLIGHT] = minesLowlight(bg);
-    ret[COL_WRONGNUMBER] = MINES_WRONG_COUNT;
-    ret[COL_CURSOR] = MINES_CURSOR;
+    ret[COL_WRONGNUMBER] = ERROR_WASH;
+    // Pink: it has to read on a cleared square and an uncleared one alike, and
+    // the board's own greys and the count digits have the rest spoken for.
+    ret[COL_CURSOR] = PINK;
     return ret;
   },
   computeSize(p: MinesParams, tileSize: number): Size {

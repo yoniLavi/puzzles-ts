@@ -23,17 +23,20 @@
  */
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import { BLUE, PURPLE } from "../../engine/colours.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import { ERROR, HINT_ACTION, HINT_EVIDENCE, INK, PAPER } from "../../engine/palette.ts";
 import {
-  SPOKES_BORDER,
-  SPOKES_CURSOR,
-  SPOKES_HOLDING,
-  SPOKES_MARK,
-  spokesSatisfied,
-} from "../../engine/palette-games.ts";
+  ERROR,
+  GRID_DARK,
+  HELD,
+  HINT_ACTION,
+  HINT_EVIDENCE,
+  INK,
+  PAPER,
+} from "../../engine/palette.ts";
+import { spokesSatisfied } from "../../engine/palette-games.ts";
 import type { SpokesHint } from "./index.ts";
 import { SpokesScratch, spokesFindIsolated, spokesSolverRecount } from "./solver.ts";
 import {
@@ -117,13 +120,13 @@ export const COL_HINT_CELL = 10;
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
-  out[COL_BORDER] = SPOKES_BORDER;
-  out[COL_HOLDING] = SPOKES_HOLDING;
+  out[COL_BORDER] = GRID_DARK;
+  out[COL_HOLDING] = HELD;
   out[COL_LINE] = INK;
-  out[COL_MARK] = SPOKES_MARK;
+  out[COL_MARK] = BLUE;
   out[COL_DONE] = PAPER;
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = SPOKES_CURSOR;
+  out[COL_CURSOR] = PURPLE;
   out[COL_SATISFIED] = spokesSatisfied(defaultBackground);
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;

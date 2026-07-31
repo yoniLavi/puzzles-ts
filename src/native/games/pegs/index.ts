@@ -16,6 +16,7 @@
 
 import type { Colour, GameStatus, Point, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { BLUE, BLUE_WASH } from "../../engine/colours.ts";
 import {
   coord as coordE,
   fromCoord as fromCoordE,
@@ -25,7 +26,6 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { PEGS_CURSOR, PEGS_PEG } from "../../engine/palette-games.ts";
 import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -778,7 +778,7 @@ function colours(defaultBackground: Colour): Colour[] {
     lowlight: lo,
   } = mkhighlight(defaultBackground);
 
-  return [bg, hi, lo, PEGS_PEG, PEGS_CURSOR];
+  return [bg, hi, lo, BLUE, BLUE_WASH];
 }
 
 // --- computeSize / setTileSize ---------------------------------------

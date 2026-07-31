@@ -7,15 +7,10 @@
  */
 
 import type { Colour, Point, Rect, Size } from "../../../puzzle/types.ts";
+import { BLACK, PINK_WASH, TEAL_WASH, TEN, WHITE } from "../../engine/colours.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { INK, PIECE_BLACK, PIECE_WHITE } from "../../engine/palette.ts";
-import {
-  GUESS_FLASH,
-  GUESS_HOLD,
-  GUESS_PEGS,
-  guessBoard,
-  guessEmptySlot,
-} from "../../engine/palette-games.ts";
+import { INK } from "../../engine/palette.ts";
+import { guessBoard, guessEmptySlot } from "../../engine/palette-games.ts";
 import {
   FEEDBACK_CORRECTCOLOUR,
   FEEDBACK_CORRECTPLACE,
@@ -232,14 +227,16 @@ export function setTileSize(ds: GuessDrawState, tilesize: number): void {
 export function colours(defaultBackground: Colour): Colour[] {
   const ret: Colour[] = new Array(NCOLOURS);
 
-  for (let i = 0; i < 10; i++) ret[COL_1 + i] = GUESS_PEGS[i];
+  for (let i = 0; i < 10; i++) ret[COL_1 + i] = TEN[i];
 
   ret[COL_FRAME] = INK;
   ret[COL_CURSOR] = INK;
-  ret[COL_FLASH] = GUESS_FLASH;
-  ret[COL_HOLD] = GUESS_HOLD;
-  ret[COL_CORRECTPLACE] = PIECE_BLACK;
-  ret[COL_CORRECTCOLOUR] = PIECE_WHITE;
+  // The win flash and the held-peg slot are washes, not pegs: they sit
+  // *behind* a peg and must not be mistaken for one of the ten.
+  ret[COL_FLASH] = TEAL_WASH;
+  ret[COL_HOLD] = PINK_WASH;
+  ret[COL_CORRECTPLACE] = BLACK;
+  ret[COL_CORRECTCOLOUR] = WHITE;
   ret[COL_BACKGROUND] = guessBoard(defaultBackground);
   ret[COL_EMPTY] = guessEmptySlot(defaultBackground);
 

@@ -24,6 +24,7 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { BLUE, ORANGE } from "../../engine/colours.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import {
@@ -31,14 +32,14 @@ import {
   HINT_TARGET,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
-import { ERROR, GRID_MID, HINT_ACTION, INK } from "../../engine/palette.ts";
 import {
-  SUBSETS_CURSOR,
-  SUBSETS_GUESS,
-  SUBSETS_HINT_CELL,
-  SUBSETS_HINT_PLACED,
-  SUBSETS_HINT_SPOT,
-} from "../../engine/palette-games.ts";
+  ERROR,
+  GRID_MID,
+  HINT_ACTION,
+  HINT_EVIDENCE,
+  INK,
+  playerEntryColour,
+} from "../../engine/palette.ts";
 import type { SubsetsHintHighlights } from "./index.ts";
 import { candidateCells, candidateSets, subsetsValidate } from "./solver.ts";
 import {
@@ -96,13 +97,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_FIXED] = INK;
-  out[COL_GUESS] = SUBSETS_GUESS;
+  out[COL_GUESS] = playerEntryColour(background);
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = SUBSETS_CURSOR;
+  out[COL_CURSOR] = BLUE;
   out[COL_HINT] = HINT_ACTION;
-  out[COL_HINT_CELL] = SUBSETS_HINT_CELL;
-  out[COL_HINT_SPOT] = SUBSETS_HINT_SPOT;
-  out[COL_HINT_PLACED] = SUBSETS_HINT_PLACED;
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
+  out[COL_HINT_SPOT] = HINT_ACTION;
+  out[COL_HINT_PLACED] = ORANGE;
   return out;
 }
 

@@ -13,13 +13,10 @@
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { BROWN, GREEN } from "../../engine/colours.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { INK, PAPER, wallColour } from "../../engine/palette.ts";
-import {
-  SOKOBAN_BARREL,
-  SOKOBAN_PLAYER,
-  sokobanPit,
-} from "../../engine/palette-games.ts";
+import { sokobanPit } from "../../engine/palette-games.ts";
 import {
   barrelLabel,
   DEEP_PIT,
@@ -68,8 +65,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_OUTLINE] = INK;
-  out[COL_PLAYER] = SOKOBAN_PLAYER;
-  out[COL_BARREL] = SOKOBAN_BARREL;
+  out[COL_PLAYER] = GREEN;
+  out[COL_BARREL] = BROWN;
   out[COL_TARGET] = [...lowlight];
   out[COL_PIT] = sokobanPit(lowlight);
   out[COL_DEEP_PIT] = INK;

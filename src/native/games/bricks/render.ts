@@ -20,10 +20,16 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { BLACK } from "../../engine/colours.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { ERROR, HINT_ACTION, HINT_EVIDENCE, INK } from "../../engine/palette.ts";
-import { BRICKS_CURSOR, BRICKS_SHADE } from "../../engine/palette-games.ts";
+import {
+  CURSOR,
+  ERROR,
+  HINT_ACTION,
+  HINT_EVIDENCE,
+  INK,
+} from "../../engine/palette.ts";
 import type { BricksHint } from "./index.ts";
 import { bricksValidate } from "./solver.ts";
 import {
@@ -70,9 +76,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_LOWLIGHT] = lowlight;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_BORDER] = INK;
-  out[COL_SHADE] = BRICKS_SHADE;
+  out[COL_SHADE] = BLACK;
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = BRICKS_CURSOR;
+  out[COL_CURSOR] = CURSOR;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;

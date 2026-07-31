@@ -10,15 +10,10 @@
 
 import type { Colour, Point } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { BLUE, YELLOW_WASH } from "../../engine/colours.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { ERROR, INK } from "../../engine/palette.ts";
-import {
-  ASCENT_ARROW,
-  ASCENT_CURSOR,
-  ASCENT_IMMUTABLE,
-  ASCENT_LINE,
-} from "../../engine/palette-games.ts";
+import { CURSOR, ERROR, INK, playerEntryColour } from "../../engine/palette.ts";
 import {
   type AscentMistake,
   type AscentState,
@@ -259,11 +254,11 @@ export function ascentColours(defaultBackground: Colour): Colour[] {
   ret[COL_HIGHLIGHT] = highlight;
   ret[COL_LOWLIGHT] = lowlight;
   ret[COL_BORDER] = INK;
-  ret[COL_LINE] = ASCENT_LINE;
-  ret[COL_IMMUTABLE] = ASCENT_IMMUTABLE;
+  ret[COL_LINE] = playerEntryColour(background);
+  ret[COL_IMMUTABLE] = BLUE;
   ret[COL_ERROR] = ERROR;
-  ret[COL_CURSOR] = ASCENT_CURSOR;
-  ret[COL_ARROW] = ASCENT_ARROW;
+  ret[COL_CURSOR] = CURSOR;
+  ret[COL_ARROW] = YELLOW_WASH;
   return ret;
 }
 

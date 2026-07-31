@@ -35,7 +35,6 @@ import {
   isGrayChroma,
   type OKLCH,
   oklchToColour,
-  tintGrays,
 } from "../src/utils/color.ts";
 import { clamp } from "../src/utils/math.ts";
 import "../src/native/games/index.ts";
