@@ -125,53 +125,77 @@ type Steps = { base: Step; wash?: Step; bold?: Step };
  * therefore held down to what orange can reach — the constraint runs that way
  * because orange's gamut is the narrower of the two at both lightnesses.
  *
+ * ## Three bounds the dark column is held inside, and why
+ *
+ * A search maximises separation, and left alone it will buy separation with
+ * anything not nailed down. Three bounds are what stop it, each from a defect it
+ * produced on the way — **do not widen them to recover a decimal place**:
+ *
+ * - **A colour may not leave its own name.** Dark yellow first came out at
+ *   lightness 0.95 and chroma 0.104: the lightest entry in the palette, at half
+ *   the chroma it can carry, which is a **cream**. It bought the ten-set 0.158
+ *   that way. Yellow is now capped at 0.86, the set is 0.143, and that is the
+ *   better trade — 0.143 is still twice what upstream's set measured in dark
+ *   (0.070) and above what it measured in *light* (0.134), and a yellow that
+ *   reads as white fails the truthful-name rule outright.
+ * - **A wash sits where the board's own cells sit.** Four dark washes were at
+ *   0.34-and-below when a game's cells are drawn nearer 0.44, so Crossing's
+ *   across/down highlight came out *darker* than the squares it was highlighting
+ *   and read as a hole in the board rather than a mark on it. The dark wash band
+ *   is 0.34–0.48.
+ * - **The bold step stays the emphatic end.** In dark mode that means *lighter*
+ *   than the base — which the search will happily invert for yellow, whose base
+ *   is already near the top of its gamut. Every hue's dark bold is at least 0.05
+ *   above its dark base; yellow's is the one that had to move (0.91) rather than
+ *   sit at the uniform 0.84 the others share.
+ *
  * A **third scheme** is this table with a third column.
  */
 const DESIGN: Record<string, { h: number; light: Steps; dark: Steps }> = {
   RED: {
     h: 27,
     light: { base: [0.58, 0.22], wash: [0.78, 0.085], bold: [0.42, 0.161] },
-    dark: { base: [0.62, 0.22], wash: [0.26, 0.07], bold: [0.84, 0.084] },
+    dark: { base: [0.62, 0.22], wash: [0.34, 0.131], bold: [0.83, 0.09] },
   },
   ORANGE: {
     h: 62,
     light: { base: [0.72, 0.156], wash: [0.81, 0.07], bold: [0.42, 0.091] },
-    dark: { base: [0.72, 0.156], wash: [0.26, 0.057], bold: [0.84, 0.076] },
+    dark: { base: [0.69, 0.149], wash: [0.38, 0.075], bold: [0.84, 0.076] },
   },
   YELLOW: {
     h: 100,
     light: { base: [0.86, 0.168], wash: [0.91, 0.07], bold: [0.42, 0.082] },
-    dark: { base: [0.95, 0.104], wash: [0.39, 0.076], bold: [0.84, 0.16] },
+    dark: { base: [0.8, 0.156], wash: [0.48, 0.08], bold: [0.91, 0.16] },
   },
   GREEN: {
     h: 148,
     light: { base: [0.64, 0.174], wash: [0.81, 0.07], bold: [0.42, 0.115] },
-    dark: { base: [0.73, 0.199], wash: [0.26, 0.07], bold: [0.84, 0.16] },
+    dark: { base: [0.72, 0.196], wash: [0.4, 0.07], bold: [0.84, 0.16] },
   },
   TEAL: {
     h: 200,
     light: { base: [0.72, 0.115], wash: [0.94, 0.072], bold: [0.42, 0.067] },
-    dark: { base: [0.71, 0.114], wash: [0.44, 0.07], bold: [0.84, 0.134] },
+    dark: { base: [0.72, 0.115], wash: [0.48, 0.077], bold: [0.84, 0.134] },
   },
   BLUE: {
     h: 258,
     light: { base: [0.57, 0.199], wash: [0.81, 0.07], bold: [0.42, 0.091] },
-    dark: { base: [0.62, 0.195], wash: [0.26, 0.057], bold: [0.84, 0.076] },
+    dark: { base: [0.62, 0.195], wash: [0.38, 0.075], bold: [0.84, 0.076] },
   },
   PURPLE: {
     h: 308,
     light: { base: [0.53, 0.22], wash: [0.9, 0.06], bold: [0.42, 0.2] },
-    dark: { base: [0.6, 0.22], wash: [0.41, 0.075], bold: [0.84, 0.098] },
+    dark: { base: [0.6, 0.22], wash: [0.46, 0.07], bold: [0.84, 0.098] },
   },
   PINK: {
     h: 350,
     light: { base: [0.72, 0.198], wash: [0.84, 0.07], bold: [0.42, 0.165] },
-    dark: { base: [0.75, 0.171], wash: [0.35, 0.085], bold: [0.84, 0.099] },
+    dark: { base: [0.75, 0.171], wash: [0.4, 0.12], bold: [0.84, 0.099] },
   },
   GREY: {
     h: 0,
     light: { base: [0.6, 0], wash: [0.78, 0], bold: [0.42, 0] },
-    dark: { base: [0.43, 0], wash: [0.32, 0], bold: [0.84, 0] },
+    dark: { base: [0.44, 0], wash: [0.3, 0], bold: [0.84, 0] },
   },
   /** Brown is dark, low-chroma orange, and it is its **own** name rather than an
    * intensity of orange for one reason: it must not invert. Orange's bold step

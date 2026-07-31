@@ -185,6 +185,52 @@ describe("the named colours", () => {
     }
   });
 
+  it("keeps a colour inside its own name", () => {
+    // A search that maximises separation will buy it with anything not nailed
+    // down, and the first thing it reached for was yellow's lightness: dark
+    // YELLOW came out at 0.95 with half the chroma it can carry, which is a
+    // **cream**. It bought the ten-set 0.158 that way, and the palette's own
+    // truthful-name rule is what says no.
+    //
+    // Bounded per name rather than in general, because there is no general form
+    // of "still looks yellow" — this is a list of the ones with somewhere to go
+    // wrong, and yellow is the one that did.
+    const bounds: Record<string, [lo: number, hi: number]> = {
+      YELLOW: [0.74, 0.88],
+      ORANGE: [0.6, 0.84],
+      RED: [0.48, 0.72],
+      BLUE: [0.4, 0.76],
+      BROWN: [0.34, 0.62],
+    };
+    for (const [name, [lo, hi]] of Object.entries(bounds)) {
+      const c = named.find(([n]) => n === name)?.[1];
+      if (!c) throw new Error(`${name} is not a named colour`);
+      for (const [scheme, resolve] of [
+        ["light", light],
+        ["dark", dark],
+      ] as const) {
+        expect(resolve(c)[0], `${name} in ${scheme}`).toBeGreaterThanOrEqual(lo);
+        expect(resolve(c)[0], `${name} in ${scheme}`).toBeLessThanOrEqual(hi);
+      }
+    }
+  });
+
+  it("keeps the bold step on the emphatic side of the base", () => {
+    // "Bold" is *away from the board*: darker than the base under a light
+    // scheme, lighter under a dark one. The search inverts this for yellow given
+    // the chance, because yellow's base already sits near the top of its gamut —
+    // and an inverted bold is not a weaker version of the step, it is the other
+    // step wearing its name.
+    for (const [name] of named) {
+      if (!name.endsWith("_BOLD")) continue;
+      const base = named.find(([n]) => n === name.replace("_BOLD", ""))?.[1];
+      const bold = named.find(([n]) => n === name)?.[1];
+      if (!base || !bold) throw new Error(`${name} has no base`);
+      expect(light(bold)[0], `${name} in light`).toBeLessThan(light(base)[0] - 0.04);
+      expect(dark(bold)[0], `${name} in dark`).toBeGreaterThan(dark(base)[0] + 0.04);
+    }
+  });
+
   it("keeps a wash on the board's side of every scheme", () => {
     // A wash is a fill that content is drawn ON. In light mode that means light
     // enough for black text; in dark mode it means DARK enough for light text —

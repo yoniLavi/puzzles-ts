@@ -235,6 +235,39 @@ pre-existing `COL_I_BALL` = `COL_I_HOLE` — the *given* ball and hole have alwa
 shared one ink, so the guessed pair sharing one green mirrors the structure the
 game already had.
 
+### F10 — Owner acceptance found two dark values the measurement was happy with
+
+Both are the same mistake in different clothes: a search maximises what it is
+given, and it will buy that with anything not bounded. Neither defect broke a
+single assertion.
+
+**Yellow became a cream.** The search put dark `YELLOW` at lightness 0.95 and
+chroma 0.104 — the lightest entry in the palette, at half the chroma the hue can
+carry — because that is where the ten-set's worst pair is largest. The measure
+said 0.158; the board said white. Yellow is now capped at 0.86 and the set reads
+**0.143**, which is the honest trade and still twice what upstream's set measured
+in dark (0.070) and above what it measured in *light* (0.134). Recorded because
+it is tempting to read 0.158 → 0.143 as a regression: the 0.158 was **bought with
+the defect**.
+
+**Four washes went under the board.** The dark wash step ran down to 0.26, but a
+game's own cells are drawn nearer 0.44 — so Crossing's across/down highlight came
+out *darker than the squares it was highlighting* and read as a hole rather than a
+mark. The wash step's rule was "dark enough for light text", which is a bound in
+one direction only; it needed the other. Dark washes are now 0.34–0.48.
+
+Fixing the first exposed a third: yellow's base sits near the top of its gamut, so
+once capped, the search inverted its **bold** step to sit *below* the base —
+which is not a weaker bold, it is the wash wearing the bold's name. Every hue's
+dark bold is now at least 0.05 above its base, and yellow's is the one that had to
+leave the uniform 0.84 the others share.
+
+All three are now **tests**, not comments (`colours.test.ts`): a colour stays
+inside its own name, a wash stays on the board's side in *both* directions, and a
+bold stays on the emphatic side of its base. The lesson generalises past colour —
+an optimised artefact needs its bounds asserted, because the optimiser's own
+objective will never complain about the thing it is trading away.
+
 ## Risks
 
 - **A 57-game appearance change.** Mitigated by D6's ordering (the palette is
