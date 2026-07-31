@@ -594,6 +594,14 @@ export class Puzzle {
     return this.workerPuzzle.getColourPalette(defaultBackground);
   }
 
+  /** Per-index dark-mode decisions carried by the palette itself, in
+   * `augmentation.ts`'s `paletteOverrides` vocabulary. */
+  public async darkModeOverrides(
+    defaultBackground: Colour,
+  ): Promise<Record<number, false>> {
+    return this.workerPuzzle.darkModeOverrides(defaultBackground);
+  }
+
   // Whether size() has been successfully called yet.
   private hasSize = false;
 

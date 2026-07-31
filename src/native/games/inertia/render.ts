@@ -17,7 +17,7 @@ import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { coord as coordE } from "../../engine/geometry.ts";
-import { INK, PAPER, wallColour } from "../../engine/palette.ts";
+import { INK, PAPER, PIECE_BLACK, wallColour } from "../../engine/palette.ts";
 import type { InertiaHintHighlights } from "./hint.ts";
 import {
   BLANK,
@@ -69,7 +69,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   ret[COL_OUTLINE] = INK;
   ret[COL_PLAYER] = [0, 1, 0];
   ret[COL_DEAD_PLAYER] = [1, 0, 0];
-  ret[COL_MINE] = INK;
+  ret[COL_MINE] = PIECE_BLACK;
   ret[COL_GEM] = [0.6, 1, 1];
   ret[COL_WALL] = wallColour(background, highlight);
   ret[COL_HINT] = [1, 1, 0];

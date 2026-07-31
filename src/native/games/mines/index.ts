@@ -28,7 +28,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { GRID_MID, INK, PAPER } from "../../engine/palette.ts";
+import { GRID_MID, INK, PAPER, PIECE_BLACK } from "../../engine/palette.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -688,7 +688,7 @@ export const minesGame: Game<
     ret[COL_6] = [0, 0.5, 0.5];
     ret[COL_7] = INK;
     ret[COL_8] = GRID_MID;
-    ret[COL_MINE] = INK;
+    ret[COL_MINE] = PIECE_BLACK;
     ret[COL_BANG] = [1, 0, 0];
     ret[COL_CROSS] = [1, 0, 0];
     ret[COL_FLAG] = [1, 0, 0];

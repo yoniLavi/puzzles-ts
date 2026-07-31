@@ -171,14 +171,10 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{pegs-per-guess}x{guesses}, {colours} colours{allow-blanks:| + blank}{allow-duplicates:, no duplicates|}",
     ),
-    darkMode: {
-      paletteOverrides: { 16: false, 17: false }, // black and white pegs
-    },
   },
   inertia: {
     describeConfig: configFormatter("{width}x{height}"),
     darkMode: {
-      paletteOverrides: { 6: false }, // black mine
       paletteSwaps: [[2, 3]], // 3D
     },
   },
@@ -290,7 +286,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       "{width}x{height}, {mines} mines{ensure-solubility:, risky|}",
     ),
     darkMode: {
-      paletteOverrides: { 0: [0.2, 0, 0], 10: false, 14: 0.8 }, // bg, black mine, white flag base
+      paletteOverrides: { 0: [0.2, 0, 0], 14: 0.8 }, // bg, white flag base
       paletteSwaps: [
         [0, 1], // cleared/uncleared background
         [16, 17], // 3D edges
@@ -358,16 +354,13 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   pattern: {
     describeConfig: configFormatter("{width}x{height}"),
-    darkMode: {
-      paletteOverrides: { 1: false, 2: false }, // white and black squares
-    },
   },
   pearl: {
     describeConfig: configFormatter(
       "{width}x{height} {difficulty:Easy|Tricky}{allow-unsoluble:|, ambiguous}",
     ),
     darkMode: {
-      paletteOverrides: { 0: 1.15, 3: false, 4: false }, // lighten bg, preserve black, white
+      paletteOverrides: { 0: 1.15 }, // lighten bg
     },
   },
   pegs: {

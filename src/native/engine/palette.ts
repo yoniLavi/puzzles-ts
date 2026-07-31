@@ -69,6 +69,47 @@ export const INK: Colour = [0, 0, 0];
  * frame. The counterpart to {@link INK} (28 sites, in two spellings). */
 export const PAPER: Colour = [1, 1, 1];
 
+/**
+ * A colour that must keep its exact value when the colour scheme changes.
+ *
+ * Attached to the colour itself rather than held in a lookup, because it is a
+ * property *of the colour's meaning*. The engine reads it off the resolved
+ * palette (`Midend.darkModeOverrides`) and hands it to the frontend in the same
+ * vocabulary `augmentation.ts` already speaks, so nothing downstream learns a new
+ * concept — `false` there has always meant "do not adapt this index".
+ */
+type Preserved = Colour & { readonly darkMode: false };
+
+const preserve = (c: Colour): Preserved =>
+  Object.assign([...c] as Colour, { darkMode: false as const });
+
+/** True when a palette entry carries a scheme decision of its own. */
+export function schemeDecision(c: Colour): false | undefined {
+  return (c as Partial<Preserved>).darkMode;
+}
+
+/**
+ * **This game object is black** — a black peg, a black mine, the filled squares
+ * of a two-colour game. Not {@link INK}, despite being the same colour.
+ *
+ * The distinction only shows up in dark mode, and it is the whole difference
+ * between the two: `INK` is *maximum contrast against the surface*, so it must
+ * invert or text ends up darker than the tile it is drawn on. This is *the piece's
+ * own identity*, so inverting it would tell the player the piece is the other
+ * colour — a white peg where the rules say black.
+ *
+ * Seven games had already discovered this and worked around it one at a time, by
+ * pinning the index in `augmentation.ts` with comments reading "black and white
+ * pegs", "black mine", "white and black squares", "preserve black, white". Those
+ * fifteen per-game entries are this role, written out fifteen times; they are
+ * deleted in favour of it.
+ */
+export const PIECE_BLACK: Colour = preserve([0, 0, 0]);
+
+/** The counterpart to {@link PIECE_BLACK}: **this game object is white** — a
+ * white peg, a white pearl, the empty squares of a two-colour game. */
+export const PIECE_WHITE: Colour = preserve([1, 1, 1]);
+
 /** A mid-grey grid line, for games that want the grid to recede rather than
  * carry the drawing (Blackbox, Guess, Tents). */
 export const GRID_MID: Colour = [0.5, 0.5, 0.5];

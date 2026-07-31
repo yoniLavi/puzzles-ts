@@ -445,10 +445,19 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     const paletteRGB = await this.puzzle.getColourPalette(defaultBackgroundColour);
     let palette = paletteRGB.map(colourToOKLCH);
 
-    // Apply dark mode adjustments and overrides from puzzleAugmentations
+    // Apply dark mode adjustments and overrides from puzzleAugmentations.
+    //
+    // Two sources, same vocabulary. The palette itself may carry per-index
+    // decisions — a colour that came from a scheme-aware role such as
+    // `PIECE_BLACK` says "do not adapt me", because a black peg that inverts to
+    // white tells the player the piece is the other colour. A per-puzzle entry
+    // in `augmentation.ts` is the more specific statement and wins, so a game
+    // that wants its black *lifted* rather than preserved (Light Up's wall) can
+    // still say so.
     if (isDarkMode) {
+      const fromPalette = await this.puzzle.darkModeOverrides(defaultBackgroundColour);
       palette = palette.map(([l, c, h], i) => {
-        const override = darkMode?.paletteOverrides?.[i];
+        const override = darkMode?.paletteOverrides?.[i] ?? fromPalette[i];
         if (Array.isArray(override)) {
           [l, c, h] = override;
         } else if (override !== false) {

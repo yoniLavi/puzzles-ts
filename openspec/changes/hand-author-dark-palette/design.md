@@ -192,6 +192,49 @@ claim that can be computed should be computed — an eye comparing two dark gree
 adjacent to seven other colours is not a reliable instrument, and "this looks worse"
 was about to cost a correct change.
 
+### F3 — The piece split, kept deliberately small
+
+Two simplifications were taken on the owner's "keep things as simple as possible"
+steer, and both improved the change:
+
+**Only the colours a human had already classified were moved.** The temptation was to
+re-classify all 86 `INK` and 33 `PAPER` uses from their local enum names — `COL_BALL`,
+`COL_DOMINO`, `COL_SLANT1`, `COL_NEGATIVE` and so on are all arguably pieces. That is
+119 judgement calls, most of them mine, on a distinction only visible in dark mode.
+Instead the change moves **the eight colours in five games where `augmentation.ts`
+already recorded the answer** — guess's two pegs, mines' and inertia's mines, pattern's
+two squares, pearl's two pearls — each with a comment naming it. Anything else can move
+later, when someone sees it wrong; nothing is worse in the meantime, because those
+colours keep the behaviour they have today.
+
+`flood`'s separator and `unruly`'s six tile indices were *not* moved despite being on
+the same list. Flood's is a line the game wants black (structure, deliberately
+preserved) rather than a piece, so `PIECE_BLACK` would misname it; unruly's are
+`mkhighlightSpecific` bevel *trios*, and a preserved derived trio is a mechanism this
+change would have had to invent for one game. Both keep their per-game override, which
+is what per-game overrides are for.
+
+**The engine speaks the vocabulary the app already has.** Rather than a scheme
+parameter threaded through four layers with the frontend learning about roles, the
+engine exposes `darkModeOverrides(background)` returning `Record<number, false>` — the
+*same shape* as `augmentation.ts`'s `paletteOverrides`, where `false` has always meant
+"do not adapt this index". `puzzle-view.ts` changes by one line:
+
+```
+const override = darkMode?.paletteOverrides?.[i] ?? fromPalette[i];
+```
+
+No new concept reaches the frontend, per-puzzle entries still win (so Light Up can keep
+*lifting* its black rather than preserving it), and the mechanism extends to an authored
+dark *colour* later by returning an OKLCH triple instead of `false` — which
+`puzzle-view` already handles.
+
+Net: 8 colours moved, 8 override entries and 2 now-empty `darkMode` blocks deleted, one
+method added, one line changed in the frontend, no visual change (the colours behave as
+they did — the rule is just stated once instead of five times). Verified in Chrome:
+Pearl's black and white pearls and Pattern's black and white squares are correct in dark
+mode with their per-game overrides gone.
+
 ## Risks
 
 - **Dark mode changes in most games at once.** Mitigated by authoring rather than

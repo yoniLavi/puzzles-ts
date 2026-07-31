@@ -36,6 +36,7 @@ import {
   type PresetMenu,
   UI_UPDATE,
 } from "./game.ts";
+import { schemeDecision } from "./palette.ts";
 import { MOD_STYLUS } from "./pointer.ts";
 import { decodeSave, encodeSave, type SaveEnvelope } from "./save.ts";
 
@@ -120,6 +121,9 @@ export interface EngineCore {
    * retaining them across future new games, and repaint. */
   setPreferences(values: ConfigValues): string | undefined;
   getColourPalette(defaultBackground: Colour): Colour[];
+  /** Per-index dark-mode decisions the palette itself carries; see the
+   * implementation on {@link Midend}. */
+  darkModeOverrides(defaultBackground: Colour): Record<number, false>;
   preferredSize(): Size;
   /** Purely informational: compute the puzzle's preferred pixel size
    * for the given max, record the resolved tile/window size, and
@@ -1060,6 +1064,30 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   getColourPalette(defaultBackground: Colour): Colour[] {
     return this.game.colours(defaultBackground);
+  }
+
+  /**
+   * Per-index dark-mode decisions the *palette itself* carries, in the same
+   * vocabulary as `augmentation.ts`'s `paletteOverrides` (`false` = "do not
+   * adapt this index").
+   *
+   * A colour that came from a scheme-aware role — `PIECE_BLACK`, `PIECE_WHITE` —
+   * states how it behaves when the scheme changes, and this reports that per
+   * index so the frontend can apply it exactly as it applies a per-puzzle one.
+   * The tag lives on the colour and cannot survive transfer to the frontend
+   * (structured clone keeps an array's indices and drops its other properties),
+   * so it is read off here, engine-side, and sent as plain data.
+   *
+   * A per-puzzle entry in `augmentation.ts` still wins: it is the more specific
+   * statement, and a game that wants its black lifted rather than preserved
+   * (Light Up's wall) says so there.
+   */
+  darkModeOverrides(defaultBackground: Colour): Record<number, false> {
+    const out: Record<number, false> = {};
+    this.game.colours(defaultBackground).forEach((colour, i) => {
+      if (colour && schemeDecision(colour) === false) out[i] = false;
+    });
+    return out;
   }
 
   private get preferredTileSize(): number {

@@ -492,9 +492,13 @@ function sharedColours(): Set<string> {
   for (const c of [background, highlight, lowlight]) out.add(key(c));
   for (const [name, value] of Object.entries(roles)) {
     if (typeof value === "function") {
-      // A background-derived role: resolve it against this background, and
-      // against the pure white the app hands games in dark mode.
-      out.add(key(resolve(value, background, highlight)));
+      // A background-derived role resolves to a Colour; anything else exported
+      // as a function is a helper (`schemeDecision`), not a role. Decided by
+      // what it returns rather than by its name, so a genuinely broken export
+      // still reaches the throw below.
+      const derived = resolve(value, background, highlight);
+      if (!Array.isArray(derived) || derived.length !== 3) continue;
+      out.add(key(derived));
       out.add(key(resolve(value, [1, 1, 1], mkhighlight([1, 1, 1]).highlight)));
     } else if (Array.isArray(value) && value.length === 3) {
       out.add(key(value as Colour));
@@ -509,10 +513,17 @@ describe("the shared colour vocabulary", () => {
   it("names a role exactly once", () => {
     // Two roles with the same value would be two names for one colour — the very
     // duplication this module exists to remove.
+    //
+    // Unless they differ in what they do when the SCHEME changes, which is a real
+    // difference even though it is invisible in light mode: `PIECE_BLACK` is the
+    // same black as `INK` on paper, and stays black in dark mode where `INK`
+    // inverts. So the identity of a role is (value, scheme behaviour), not value
+    // alone.
     const byValue = new Map<string, string[]>();
     for (const [name, value] of Object.entries(roles)) {
       if (typeof value === "function") continue;
-      const k = key(value as Colour);
+      const colour = value as Colour;
+      const k = `${key(colour)}|${roles.schemeDecision(colour) ?? "adapts"}`;
       byValue.set(k, [...(byValue.get(k) ?? []), name]);
     }
     for (const [value, names] of byValue) {
@@ -524,6 +535,34 @@ describe("the shared colour vocabulary", () => {
         `${value} is shared by ${names.join(", ")}`,
       ).toBeLessThan(2);
     }
+  });
+
+  it("keeps a piece's black and white across the scheme flip", () => {
+    // The distinction only exists in dark mode, so this is where it is pinned:
+    // ink is maximum contrast against the surface and must invert, while a
+    // piece's black is the piece's identity — inverting it would tell the player
+    // the piece is the other colour.
+    expect(roles.schemeDecision(roles.PIECE_BLACK)).toBe(false);
+    expect(roles.schemeDecision(roles.PIECE_WHITE)).toBe(false);
+    expect(roles.schemeDecision(roles.INK)).toBeUndefined();
+    expect(roles.schemeDecision(roles.PAPER)).toBeUndefined();
+    // ...and they are still ordinary colours everywhere else, so a game can
+    // assign one without any special handling in its renderer.
+    expect([...roles.PIECE_BLACK]).toEqual([0, 0, 0]);
+    expect([...roles.PIECE_WHITE]).toEqual([1, 1, 1]);
+  });
+
+  it("reports a game's scheme decisions by palette index", () => {
+    // The engine hands these to the frontend as plain per-index data, because
+    // the tag rides on the colour and would not survive structured clone.
+    const pearl = getTsGame("pearl");
+    if (!pearl) throw new Error("pearl not registered");
+    const decisions = pearl
+      .colours(BG)
+      .map((c, i) => (c && roles.schemeDecision(c) === false ? i : -1))
+      .filter((i) => i >= 0);
+    // COL_BLACK = 3 and COL_WHITE = 4: the two pearls.
+    expect(decisions).toEqual([3, 4]);
   });
 
   it("keeps the three hint emphases distinct", () => {
@@ -550,6 +589,9 @@ describe("the shared colour vocabulary", () => {
       for (const [name, value] of Object.entries(roles)) {
         if (typeof value !== "function") continue;
         const derived = resolve(value, background, highlight);
+        // Helper exports (`schemeDecision`) are not derived roles — see
+        // `sharedColours`.
+        if (!Array.isArray(derived) || derived.length !== 3) continue;
         expect(
           distance(derived, background),
           `${name} against ${bg.join(",")}`,
