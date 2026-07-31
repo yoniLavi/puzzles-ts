@@ -14,6 +14,12 @@ import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { ERROR, INK } from "../../engine/palette.ts";
 import {
+  ASCENT_ARROW,
+  ASCENT_CURSOR,
+  ASCENT_IMMUTABLE,
+  ASCENT_LINE,
+} from "../../engine/palette-games.ts";
+import {
   type AscentMistake,
   type AscentState,
   FLAG_COMPLETE,
@@ -253,11 +259,11 @@ export function ascentColours(defaultBackground: Colour): Colour[] {
   ret[COL_HIGHLIGHT] = highlight;
   ret[COL_LOWLIGHT] = lowlight;
   ret[COL_BORDER] = INK;
-  ret[COL_LINE] = [0, 0.5, 0];
-  ret[COL_IMMUTABLE] = [0, 0, 1];
+  ret[COL_LINE] = ASCENT_LINE;
+  ret[COL_IMMUTABLE] = ASCENT_IMMUTABLE;
   ret[COL_ERROR] = ERROR;
-  ret[COL_CURSOR] = [0, 0.7, 0];
-  ret[COL_ARROW] = [1, 1, 0.8];
+  ret[COL_CURSOR] = ASCENT_CURSOR;
+  ret[COL_ARROW] = ASCENT_ARROW;
   return ret;
 }
 

@@ -63,7 +63,7 @@
  */
 
 import type { Colour } from "../../puzzle/types.ts";
-import { scale, token } from "./colour-token.ts";
+import { divide, scale, token } from "./colour-token.ts";
 
 // Naming: these are colour *values* and deliberately do NOT carry the `COL_`
 // prefix, which throughout this codebase means "a palette **index**" — every game
@@ -250,6 +250,35 @@ export function highlightWash(background: Colour): Colour {
  */
 export function lineMaybeColour(background: Colour): Colour {
   return [0.9 * background[0], 0.9 * background[1], 0];
+}
+
+/**
+ * **Ruled out**: an edge the player has marked as definitely *not* a line — the
+ * sibling of {@link lineMaybeColour}, and used by the same three games (Loopy's
+ * `COL_FAINT`, Palisade's and Separate's `COL_LINE_NO`).
+ *
+ * A tenth off the background rather than a colour of its own, because a ruled-out
+ * edge should read as *board* — the player has decided nothing is there, and the
+ * mark exists only to record that they decided it. Three independent ports wrote
+ * the identical `background × 0.9`, which is the audit's convergence test passing
+ * about as cleanly as it can.
+ */
+export function lineNoColour(background: Colour): Colour {
+  return scale(background, 0.9);
+}
+
+/**
+ * **This clue is used up** — a row count, column count or clue number the board
+ * has already satisfied, greyed back so the player's eye skips it and lands on
+ * the clues that still have work in them.
+ *
+ * Magnets, Towers and Undead all wrote `background / 1.5`, under the same local
+ * name `COL_DONE`, for the same meaning. Note this is *not*
+ * {@link correctRegionColour}: that one shades an area of the board as correct,
+ * this one retires a clue in the margin.
+ */
+export function clueDoneColour(background: Colour): Colour {
+  return divide(background, 1.5);
 }
 
 /**

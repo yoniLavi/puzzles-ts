@@ -12,6 +12,8 @@ import type {
 import { UI_UPDATE } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HINT_SETTING_UP, workingOn } from "../../engine/hint-vocab.ts";
+import { INK } from "../../engine/palette.ts";
+import { SIXTEEN_HINT } from "../../engine/palette-games.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -465,10 +467,7 @@ function colours(defaultBackground: Colour): Colour[] {
     lowlight: lo,
   } = mkhighlight(defaultBackground);
 
-  const text: Colour = [0, 0, 0];
-  // Hint colour: a clear blue for highlighting hint tiles.
-  const hint: Colour = [0.3, 0.5, 0.9];
-  return [bg, text, hi, lo, hint];
+  return [bg, INK, hi, lo, SIXTEEN_HINT];
 }
 
 function redraw(

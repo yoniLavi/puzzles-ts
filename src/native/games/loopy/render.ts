@@ -33,7 +33,13 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Grid } from "../../engine/grid.ts";
 import { gridComputeSize, gridFindIncentre } from "../../engine/grid.ts";
-import { ERROR, INK, lineMaybeColour, PAPER } from "../../engine/palette.ts";
+import {
+  ERROR,
+  INK,
+  lineMaybeColour,
+  lineNoColour,
+  PAPER,
+} from "../../engine/palette.ts";
 import { gridTypeOf, type LoopyParams } from "./params.ts";
 import {
   faceOrder,
@@ -179,12 +185,6 @@ export function computeSize(p: LoopyParams, tileSize: number): Size {
  * what makes it a yellow rather than a grey.)
  */
 export function colours(defaultBackground: Colour): Colour[] {
-  const faint: Colour = [
-    defaultBackground[0] * 0.9,
-    defaultBackground[1] * 0.9,
-    defaultBackground[2] * 0.9,
-  ];
-
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_FOREGROUND] = INK;
@@ -192,7 +192,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HIGHLIGHT] = PAPER;
   out[COL_MISTAKE] = ERROR;
   out[COL_SATISFIED] = INK;
-  out[COL_FAINT] = faint;
+  out[COL_FAINT] = lineNoColour(defaultBackground);
   return out;
 }
 

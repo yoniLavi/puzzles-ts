@@ -25,6 +25,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
+import { PEGS_CURSOR, PEGS_PEG } from "../../engine/palette-games.ts";
 import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -777,10 +778,7 @@ function colours(defaultBackground: Colour): Colour[] {
     lowlight: lo,
   } = mkhighlight(defaultBackground);
 
-  const peg: Colour = [0, 0, 1];
-  const cursor: Colour = [0.5, 0.5, 1];
-
-  return [bg, hi, lo, peg, cursor];
+  return [bg, hi, lo, PEGS_PEG, PEGS_CURSOR];
 }
 
 // --- computeSize / setTileSize ---------------------------------------

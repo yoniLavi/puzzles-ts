@@ -16,6 +16,11 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { ERROR, PAPER, PIECE_BLACK, PIECE_WHITE } from "../../engine/palette.ts";
+import {
+  PEARL_DRAG_OFF,
+  PEARL_DRAG_ON,
+  PEARL_GRID,
+} from "../../engine/palette-games.ts";
 import { interpretUiDrag } from "./moves.ts";
 import {
   CW,
@@ -59,11 +64,11 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_LOWLIGHT] = lowlight;
   out[COL_BLACK] = PIECE_BLACK;
   out[COL_WHITE] = PIECE_WHITE;
-  out[COL_GRID] = [0.4, 0.4, 0.4];
+  out[COL_GRID] = PEARL_GRID;
   out[COL_ERROR] = ERROR;
   out[COL_FLASH] = PAPER;
-  out[COL_DRAGON] = [0, 0, 1];
-  out[COL_DRAGOFF] = [0.8, 0.8, 1];
+  out[COL_DRAGON] = PEARL_DRAG_ON;
+  out[COL_DRAGOFF] = PEARL_DRAG_OFF;
   out[COL_MISTAKE] = ERROR;
   return out;
 }

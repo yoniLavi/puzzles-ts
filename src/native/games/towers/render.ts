@@ -16,6 +16,7 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import {
+  clueDoneColour,
   ERROR,
   HINT_EVIDENCE,
   HINT_FILL,
@@ -63,7 +64,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HIGHLIGHT] = highlightWash(bg);
   out[COL_ERROR] = ERROR;
   out[COL_PENCIL] = pencilColour(bg);
-  out[COL_DONE] = [bg[0] / 1.5, bg[1] / 1.5, bg[2] / 1.5];
+  out[COL_DONE] = clueDoneColour(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_FILL;
   out[COL_HINT_CELL] = HINT_EVIDENCE;

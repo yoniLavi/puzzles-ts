@@ -35,6 +35,7 @@ import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { ERROR, INK, PENCIL_BODY } from "../../engine/palette.ts";
+import { SEISMIC_GUESS, SEISMIC_PENCIL } from "../../engine/palette-games.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   FM_ERRORMASK,
@@ -81,9 +82,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_LOWLIGHT] = lowlight;
   out[COL_BORDER] = INK;
   out[COL_NUM_FIXED] = INK;
-  out[COL_NUM_GUESS] = [0, 0.5, 0];
+  out[COL_NUM_GUESS] = SEISMIC_GUESS;
   out[COL_NUM_ERROR] = ERROR;
-  out[COL_NUM_PENCIL] = [0, 0.5, 0.5];
+  out[COL_NUM_PENCIL] = SEISMIC_PENCIL;
   out[COL_ERRORDIST] = ERROR;
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   return out;

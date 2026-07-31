@@ -36,6 +36,17 @@ import {
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
 import { ERROR, INK, PENCIL_BODY, pencilColour } from "../../engine/palette.ts";
+import {
+  CROSSING_ACROSS,
+  CROSSING_ACROSS_FIT,
+  CROSSING_DOWN,
+  CROSSING_DOWN_FIT,
+  CROSSING_HELD,
+  CROSSING_HINT,
+  CROSSING_HINT_CELL,
+  CROSSING_WALL,
+  crossingGhost,
+} from "../../engine/palette-games.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { CrossingMistake } from "./solver.ts";
 import {
@@ -105,7 +116,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_GRID] = INK;
   out[COL_ERROR] = ERROR;
 
-  const wall = mkhighlightSpecific([0.3, 0.3, 0.3]);
+  const wall = mkhighlightSpecific(CROSSING_WALL);
   out[COL_WALL_M] = wall.base;
   out[COL_WALL_H] = wall.highlight;
   out[COL_WALL_L] = wall.lowlight;
@@ -114,9 +125,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   // Towers): clearly subordinate to an entered digit without vanishing.
   out[COL_PENCIL] = pencilColour(background);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
-  // Ghost: light enough to read as "not yet placed", dark enough to read at all.
-  out[COL_GHOST] = [0.55 * background[0], 0.55 * background[1], 0.55 * background[2]];
-  out[COL_HELD] = [0, 0.35, 0.85];
+  out[COL_GHOST] = crossingGhost(background);
+  out[COL_HELD] = CROSSING_HELD;
   // The two dimension hues are matched in **OKLCH**, not in RGB: identical
   // lightness and identical chroma, differing only in hue (250 blue / 60
   // amber). Matching them in RGB — the obvious thing, and the first thing tried
@@ -131,10 +141,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   // app's dark-mode adaptation handles both hues symmetrically anyway.
   // Chroma is the most either hue can carry at that lightness while both stay
   // inside sRGB.
-  out[COL_ACROSS] = [0.6358, 0.7854, 0.9429]; // L 0.82  C 0.07  h 250
-  out[COL_DOWN] = [0.9044, 0.7296, 0.5911]; // L 0.82  C 0.07  h 60
-  out[COL_ACROSSFIT] = [0.1499, 0.4005, 0.6341]; // L 0.50  C 0.115 h 250
-  out[COL_DOWNFIT] = [0.5706, 0.3156, 0.0216]; // L 0.50  C 0.115 h 60
+  out[COL_ACROSS] = CROSSING_ACROSS;
+  out[COL_DOWN] = CROSSING_DOWN;
+  out[COL_ACROSSFIT] = CROSSING_ACROSS_FIT;
+  out[COL_DOWNFIT] = CROSSING_DOWN_FIT;
   // The hint pair — a **deliberate departure** from the collection's blue
   // `COL_HINT` (documented in the change's design.md). Crossing has already
   // spent blue: `COL_ACROSS` is a pale blue wash meaning "this is a horizontal
@@ -144,8 +154,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   // green — the far corner of the wheel from both dimension hues — and a
   // displayed hint suppresses the run wash, so only one meaning of "washed
   // square" is ever on screen at a time. Matched in OKLCH like the pair above.
-  out[COL_HINT] = [0.3811, 0.7399, 0.4024]; // L 0.72  C 0.15  h 145
-  out[COL_HINT_CELL] = [0.8523, 0.9559, 0.8515]; // L 0.94  C 0.045 h 145
+  out[COL_HINT] = CROSSING_HINT;
+  out[COL_HINT_CELL] = CROSSING_HINT_CELL;
   return out;
 }
 

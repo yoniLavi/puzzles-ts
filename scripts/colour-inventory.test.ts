@@ -32,9 +32,8 @@ import "../src/native/games/index.ts";
 /** The same light host background `palette.test.ts` uses. */
 const BG: Colour = [0.827, 0.827, 0.827];
 
-/** A second, deliberately non-grey background. A local colour that moves between
- * the two is *relative* to the board and becomes a shared derivation over tokens;
- * one that stays put is absolute and becomes an authored token. */
+/** A second, deliberately non-grey background, so the report can say whether an
+ * entry tracks the board. */
 const BG2: Colour = [0.6, 0.7, 0.8];
 
 const OUT = "openspec/changes/colour-tokens-per-scheme/inventory.md";
@@ -121,7 +120,6 @@ it("regenerates the colour inventory", () => {
   const lines: string[] = [];
   let total = 0;
   let sharedCount = 0;
-  const localValues = new Set<string>();
   let localCount = 0;
   let derivedCount = 0;
   const perGame: string[] = [];
@@ -138,15 +136,16 @@ it("regenerates the colour inventory", () => {
     palette.forEach((c, i) => {
       if (!c) return;
       total += 1;
+      // An entry is either a token outright, or *computed* — the bevel trio, a
+      // wash of the board, a point on a ramp. A computed value has nothing to
+      // look up, which is why "does a game write a colour" is answered by
+      // `palette-source.test.ts` reading the sources rather than here.
       const source = byToken.get(c) ?? shared.get(key(c));
-      const derived = key(c) !== key(alt[i]);
+      const tracksBoard = key(c) !== key(alt[i]);
       if (source) sharedCount += 1;
-      else if (derived) derivedCount += 1;
-      else {
-        localCount += 1;
-        localValues.add(key(c));
-      }
-      const local = derived ? "*derived*" : "*local*";
+      else if (tracksBoard) derivedCount += 1;
+      else localCount += 1;
+      const local = tracksBoard ? "*computed (tracks the board)*" : "*computed*";
       const name = names.get(i);
       perGame.push(
         `| ${i} | ${name ? `\`${name}\`` : "—"} | \`[${c.join(", ")}]\` |` +
@@ -164,15 +163,13 @@ it("regenerates the colour inventory", () => {
   lines.push(
     `**Totals:** ${total} palette entries across ${ids.length} games. ` +
       `${sharedCount} (${Math.round((100 * sharedCount) / total)}%) are a token ` +
-      `from the table. ${localCount} (${localValues.size} distinct values) are ` +
-      `still written as literals in a game, and ${derivedCount} are still derived ` +
-      "inside one.\n",
+      `from the table outright; the other ${localCount + derivedCount} are ` +
+      `computed from tokens by a shared function — ${derivedCount} of them ` +
+      `relative to the host background, ${localCount} not (a bevel trio built ` +
+      "from a token's own value).\n",
   );
   lines.push("## Per game\n");
   lines.push(...perGame);
   writeFileSync(OUT, `${lines.join("\n")}\n`);
-  console.log(
-    `${OUT}: ${total} entries, ${sharedCount} shared, ${localCount} local ` +
-      `(${localValues.size} distinct)`,
-  );
+  console.log(`${OUT}: ${total} entries, ${sharedCount} tokens`);
 });

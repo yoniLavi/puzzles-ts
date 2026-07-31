@@ -20,6 +20,11 @@ import {
   type UiUpdate,
 } from "../../engine/index.ts";
 import { ERROR, INK, PAPER } from "../../engine/palette.ts";
+import {
+  galaxiesBlackRegion,
+  galaxiesCursor,
+  galaxiesGrid,
+} from "../../engine/palette-games.ts";
 import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -820,21 +825,17 @@ export const galaxiesGame: Game<
     // white-themed host renders `COL_BACKGROUND === COL_WHITEBG` and a
     // closed white region disappears into the page — exactly the bug
     // owner reported on 2026-05-23. Mirrors `misc.c` lines 232-288.
-    const bg = mkhighlightBackground([
-      defaultBackground[0],
-      defaultBackground[1],
-      defaultBackground[2],
-    ]);
+    const bg = mkhighlightBackground([...defaultBackground]);
     const ret = new Array<Colour>(NCOLOURS);
     ret[COL_BACKGROUND] = bg;
     ret[COL_WHITEBG] = PAPER;
-    ret[COL_BLACKBG] = [bg[0] * 0.3, bg[1] * 0.3, bg[2] * 0.3];
+    ret[COL_BLACKBG] = galaxiesBlackRegion(bg);
     ret[COL_WHITEDOT] = PAPER;
     ret[COL_BLACKDOT] = INK;
-    ret[COL_GRID] = [bg[0] * 0.8, bg[1] * 0.8, bg[2] * 0.8];
+    ret[COL_GRID] = galaxiesGrid(bg);
     ret[COL_EDGE] = INK;
     ret[COL_ARROW] = INK;
-    ret[COL_CURSOR] = [Math.min(bg[0] * 1.4, 1), bg[1] * 0.8, bg[2] * 0.8];
+    ret[COL_CURSOR] = galaxiesCursor(bg);
     // Mistake highlight: a strong red that reads on both white and black
     // region fills and the page background.
     ret[COL_MISTAKE] = ERROR;

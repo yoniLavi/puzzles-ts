@@ -37,6 +37,7 @@ import { mkhighlight, mkhighlightSpecific } from "../../engine/colour-mkhighligh
 import { Dsf } from "../../engine/dsf.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord as gridCoord } from "../../engine/geometry.ts";
+import { slideMainBlockBase, slideTargetBase } from "../../engine/palette-games.ts";
 import { movePiece } from "./moves.ts";
 import {
   EMPTY,
@@ -89,7 +90,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_DRAGGING_LOWLIGHT] = raise(lowlight, highlight);
 
   // The main block is tinted blue.
-  const main = mkhighlightSpecific([background[0], background[1], highlight[2]]);
+  const main = mkhighlightSpecific(slideMainBlockBase(background, highlight));
   out[COL_MAIN] = main.base;
   out[COL_MAIN_HIGHLIGHT] = main.highlight;
   out[COL_MAIN_LOWLIGHT] = main.lowlight;
@@ -98,7 +99,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_MAIN_DRAGGING_LOWLIGHT] = raise(main.lowlight, main.highlight);
 
   // The target area on the floor is tinted green.
-  const target = mkhighlightSpecific([background[0], highlight[1], background[2]]);
+  const target = mkhighlightSpecific(slideTargetBase(background, highlight));
   out[COL_TARGET] = target.base;
   out[COL_TARGET_HIGHLIGHT] = target.highlight;
   out[COL_TARGET_LOWLIGHT] = target.lowlight;

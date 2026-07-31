@@ -18,6 +18,13 @@ import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { coord as coordE } from "../../engine/geometry.ts";
 import { INK, PAPER, PIECE_BLACK, wallColour } from "../../engine/palette.ts";
+import {
+  INERTIA_DEAD_PLAYER,
+  INERTIA_GEM,
+  INERTIA_HINT,
+  INERTIA_HINT_GOAL,
+  INERTIA_PLAYER,
+} from "../../engine/palette-games.ts";
 import type { InertiaHintHighlights } from "./hint.ts";
 import {
   BLANK,
@@ -67,14 +74,14 @@ export function colours(defaultBackground: Colour): Colour[] {
   ret[COL_HIGHLIGHT] = highlight;
   ret[COL_LOWLIGHT] = lowlight;
   ret[COL_OUTLINE] = INK;
-  ret[COL_PLAYER] = [0, 1, 0];
-  ret[COL_DEAD_PLAYER] = [1, 0, 0];
+  ret[COL_PLAYER] = INERTIA_PLAYER;
+  ret[COL_DEAD_PLAYER] = INERTIA_DEAD_PLAYER;
   ret[COL_MINE] = PIECE_BLACK;
-  ret[COL_GEM] = [0.6, 1, 1];
+  ret[COL_GEM] = INERTIA_GEM;
   ret[COL_WALL] = wallColour(background, highlight);
-  ret[COL_HINT] = [1, 1, 0];
+  ret[COL_HINT] = INERTIA_HINT;
   ret[COL_AIM] = PAPER;
-  ret[COL_HINT_GOAL] = [0.7, 0.15, 1];
+  ret[COL_HINT_GOAL] = INERTIA_HINT_GOAL;
 
   return ret;
 }

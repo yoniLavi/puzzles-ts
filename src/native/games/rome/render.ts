@@ -32,6 +32,13 @@ import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { ERROR, errorWash, INK } from "../../engine/palette.ts";
+import {
+  ROME_ARROW_ENTRY,
+  ROME_ARROW_GUESS,
+  ROME_ARROW_PENCIL,
+  ROME_GOAL,
+  romeGoalBackground,
+} from "../../engine/palette-games.ts";
 import type { RomeMistake } from "./index.ts";
 import {
   EMPTY,
@@ -96,13 +103,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_LOWLIGHT] = lowlight;
   out[COL_BORDER] = INK;
   out[COL_ARROW_FIXED] = INK;
-  out[COL_ARROW_GUESS] = [0, 0.5, 0];
+  out[COL_ARROW_GUESS] = ROME_ARROW_GUESS;
   out[COL_ARROW_ERROR] = ERROR;
-  out[COL_ARROW_PENCIL] = [0, 0.5, 0.5];
-  out[COL_ARROW_ENTRY] = [0, 0, 1];
+  out[COL_ARROW_PENCIL] = ROME_ARROW_PENCIL;
+  out[COL_ARROW_ENTRY] = ROME_ARROW_ENTRY;
   out[COL_ERRORBG] = errorWash(background);
-  out[COL_GOALBG] = [0.95 * background[0], 0.95 * background[1], 1];
-  out[COL_GOAL] = [0, 0, 0.5];
+  out[COL_GOALBG] = romeGoalBackground(background);
+  out[COL_GOAL] = ROME_GOAL;
   return out;
 }
 

@@ -37,6 +37,7 @@ import {
   pencilColour,
   playerEntryColour,
 } from "../../engine/palette.ts";
+import { soloKiller, soloXDiagonals } from "../../engine/palette-games.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   checkKillerCageSum,
@@ -72,14 +73,14 @@ export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
   const out: Colour[] = [];
   out[COL_BACKGROUND] = bg;
-  out[COL_XDIAGONALS] = [0.9 * bg[0], 0.9 * bg[1], 0.9 * bg[2]];
+  out[COL_XDIAGONALS] = soloXDiagonals(bg);
   out[COL_GRID] = INK;
   out[COL_CLUE] = INK;
   out[COL_USER] = playerEntryColour(bg);
   out[COL_HIGHLIGHT] = highlightWash(bg);
   out[COL_ERROR] = ERROR;
   out[COL_PENCIL] = pencilColour(bg);
-  out[COL_KILLER] = [0.5 * bg[0], 0.5 * bg[1], 0.1 * bg[2]];
+  out[COL_KILLER] = soloKiller(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_FILL;
   out[COL_HINT_CELL] = HINT_EVIDENCE;

@@ -12,6 +12,14 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlightSpecific } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { ERROR, HINT_ACTION, HINT_EVIDENCE } from "../../engine/palette.ts";
+import {
+  UNRULY_BLACK,
+  UNRULY_CURSOR,
+  UNRULY_EMPTY,
+  UNRULY_GRID,
+  UNRULY_HINT_REF,
+  UNRULY_WHITE,
+} from "../../engine/palette-games.ts";
 import type { UnrulyHint } from "./index.ts";
 import {
   FE_COL_MATCH,
@@ -61,24 +69,22 @@ export const COL_HINT = 11;
 export const COL_HINT_CELL = 12;
 export const COL_HINT_REF = 13;
 
-const grey = (v: number): Colour => [v, v, v];
-
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
-  out[COL_GRID] = grey(0.3);
-  out[COL_EMPTY] = grey(0.5);
-  // COL_1 ("black") base 0.2, COL_0 ("white") base 0.95 — highlight/lowlight
-  // (and a possibly-shifted base) derived exactly as game_mkhighlight_specific.
-  const one = mkhighlightSpecific(grey(0.2));
+  out[COL_GRID] = UNRULY_GRID;
+  out[COL_EMPTY] = UNRULY_EMPTY;
+  // Highlight/lowlight (and a possibly-shifted base) derived from each tile
+  // colour exactly as game_mkhighlight_specific does.
+  const one = mkhighlightSpecific(UNRULY_BLACK);
   out[COL_1] = one.base;
   out[COL_1_HIGHLIGHT] = one.highlight;
   out[COL_1_LOWLIGHT] = one.lowlight;
-  const zero = mkhighlightSpecific(grey(0.95));
+  const zero = mkhighlightSpecific(UNRULY_WHITE);
   out[COL_0] = zero.base;
   out[COL_0_HIGHLIGHT] = zero.highlight;
   out[COL_0_LOWLIGHT] = zero.lowlight;
-  out[COL_CURSOR] = [0, 0.7, 0];
+  out[COL_CURSOR] = UNRULY_CURSOR;
   out[COL_ERROR] = ERROR;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
@@ -88,7 +94,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   // reserved windows — so a state-derived colour is ill-defined. Orange keeps
   // it clear of the blue move and of the teal/violet "decided black/white"
   // meaning those hues carry in Singles/Range.
-  out[COL_HINT_REF] = [0.95, 0.6, 0.15];
+  out[COL_HINT_REF] = UNRULY_HINT_REF;
   return out;
 }
 

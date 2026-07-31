@@ -11,6 +11,12 @@ import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { INK } from "../../engine/palette.ts";
+import {
+  twiddleCursorHigh,
+  twiddleCursorLow,
+  twiddleGentleHighlight,
+  twiddleGentleLowlight,
+} from "../../engine/palette-games.ts";
 import type { TwiddleParams, TwiddleState, TwiddleUi } from "./state.ts";
 
 // --- constants --------------------------------------------------------
@@ -476,19 +482,14 @@ function clampColour(c: Colour): Colour {
 /** Build the Twiddle palette from a base background + highlight/lowlight
  * (the gentle bevels and the red-tinged cursor colours). */
 export function buildColours(bg: Colour, hi: Colour, lo: Colour): Colour[] {
-  const highCursor: Colour = [bg[0] * 1.0, bg[1] * 0.5, bg[2] * 0.5];
   const out: Colour[] = new Array(NCOLOURS);
   out[COL_BACKGROUND] = bg;
   out[COL_TEXT] = INK;
   out[COL_HIGHLIGHT] = hi;
-  out[COL_HIGHLIGHT_GENTLE] = clampColour([bg[0] * 1.1, bg[1] * 1.1, bg[2] * 1.1]);
+  out[COL_HIGHLIGHT_GENTLE] = clampColour(twiddleGentleHighlight(bg));
   out[COL_LOWLIGHT] = lo;
-  out[COL_LOWLIGHT_GENTLE] = clampColour([bg[0] * 0.9, bg[1] * 0.9, bg[2] * 0.9]);
-  out[COL_HIGHCURSOR] = clampColour(highCursor);
-  out[COL_LOWCURSOR] = clampColour([
-    highCursor[0] * 0.6,
-    highCursor[1] * 0.6,
-    highCursor[2] * 0.6,
-  ]);
+  out[COL_LOWLIGHT_GENTLE] = clampColour(twiddleGentleLowlight(bg));
+  out[COL_HIGHCURSOR] = clampColour(twiddleCursorHigh(bg));
+  out[COL_LOWCURSOR] = clampColour(twiddleCursorLow(bg));
   return out;
 }

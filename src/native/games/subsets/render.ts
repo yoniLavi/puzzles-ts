@@ -32,6 +32,13 @@ import {
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
 import { ERROR, GRID_MID, HINT_ACTION, INK } from "../../engine/palette.ts";
+import {
+  SUBSETS_CURSOR,
+  SUBSETS_GUESS,
+  SUBSETS_HINT_CELL,
+  SUBSETS_HINT_PLACED,
+  SUBSETS_HINT_SPOT,
+} from "../../engine/palette-games.ts";
 import type { SubsetsHintHighlights } from "./index.ts";
 import { candidateCells, candidateSets, subsetsValidate } from "./solver.ts";
 import {
@@ -89,13 +96,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_FIXED] = INK;
-  out[COL_GUESS] = [0, 0.5, 0];
+  out[COL_GUESS] = SUBSETS_GUESS;
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = [0, 0, 1];
+  out[COL_CURSOR] = SUBSETS_CURSOR;
   out[COL_HINT] = HINT_ACTION;
-  out[COL_HINT_CELL] = [0.55, 0.75, 0.95];
-  out[COL_HINT_SPOT] = [0.1, 0.62, 0.4];
-  out[COL_HINT_PLACED] = [0.82, 0.5, 0.1];
+  out[COL_HINT_CELL] = SUBSETS_HINT_CELL;
+  out[COL_HINT_SPOT] = SUBSETS_HINT_SPOT;
+  out[COL_HINT_PLACED] = SUBSETS_HINT_PLACED;
   return out;
 }
 

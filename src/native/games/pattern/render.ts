@@ -15,9 +15,16 @@ import {
   HINT_BLACKREF,
   HINT_EVIDENCE,
   HINT_WHITEREF,
+  INK,
   PIECE_BLACK,
   PIECE_WHITE,
 } from "../../engine/palette.ts";
+import {
+  PATTERN_CURSOR,
+  PATTERN_CURSOR_GUIDE,
+  PATTERN_GRID,
+  PATTERN_UNKNOWN,
+} from "../../engine/palette-games.ts";
 import type { PatternHint } from "./index.ts";
 import { lineHasError } from "./solver.ts";
 import {
@@ -54,20 +61,18 @@ export const COL_HINT_CELL = 10;
 export const COL_HINT_BLACKREF = 11;
 export const COL_HINT_WHITEREF = 12;
 
-const grey = (v: number): Colour => [v, v, v];
-
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   // Upstream pattern.c shifts COL_BACKGROUND off pure white via mkhighlight
   // so a pure-white empty cell stays distinguishable from the surround.
   out[COL_BACKGROUND] = mkhighlight(defaultBackground).background;
-  out[COL_GRID] = grey(0.3);
-  out[COL_UNKNOWN] = grey(0.5);
-  out[COL_TEXT] = grey(0);
+  out[COL_GRID] = PATTERN_GRID;
+  out[COL_UNKNOWN] = PATTERN_UNKNOWN;
+  out[COL_TEXT] = INK;
   out[COL_FULL] = PIECE_BLACK;
   out[COL_EMPTY] = PIECE_WHITE;
-  out[COL_CURSOR_GUIDE] = grey(0.5);
-  out[COL_CURSOR] = [1, 0.25, 0.25];
+  out[COL_CURSOR_GUIDE] = PATTERN_CURSOR_GUIDE;
+  out[COL_CURSOR] = PATTERN_CURSOR;
   out[COL_ERROR] = ERROR;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;

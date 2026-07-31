@@ -9,6 +9,14 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { ERROR } from "../../engine/palette.ts";
 import {
+  MOSAIC_BLANK,
+  MOSAIC_CURSOR,
+  MOSAIC_GRID,
+  MOSAIC_MARKED,
+  MOSAIC_TEXT_SOLVED,
+  MOSAIC_UNMARKED,
+} from "../../engine/palette-games.ts";
+import {
   type MosaicMistake,
   type MosaicParams,
   type MosaicState,
@@ -38,13 +46,13 @@ const COL_TEXT_LIGHT = COL_BLANK;
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
-  out[COL_UNMARKED] = [148 / 255, 196 / 255, 190 / 255];
-  out[COL_GRID] = [0, 102 / 255, 99 / 255];
-  out[COL_MARKED] = [20 / 255, 20 / 255, 20 / 255];
-  out[COL_BLANK] = [236 / 255, 236 / 255, 236 / 255];
-  out[COL_TEXT_SOLVED] = [100 / 255, 100 / 255, 100 / 255];
+  out[COL_UNMARKED] = MOSAIC_UNMARKED;
+  out[COL_GRID] = MOSAIC_GRID;
+  out[COL_MARKED] = MOSAIC_MARKED;
+  out[COL_BLANK] = MOSAIC_BLANK;
+  out[COL_TEXT_SOLVED] = MOSAIC_TEXT_SOLVED;
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = [1, 200 / 255, 200 / 255];
+  out[COL_CURSOR] = MOSAIC_CURSOR;
   return out;
 }
 

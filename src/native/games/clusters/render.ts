@@ -17,6 +17,13 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { ERROR, HINT_ACTION, HINT_EVIDENCE, INK, PAPER } from "../../engine/palette.ts";
+import {
+  CLUSTERS_0,
+  CLUSTERS_0_DOT,
+  CLUSTERS_1,
+  CLUSTERS_CURSOR,
+  CLUSTERS_HINT_DANGER,
+} from "../../engine/palette-games.ts";
 import type { ClustersHintHighlights } from "./index.ts";
 import { findErrors } from "./solver.ts";
 import {
@@ -61,15 +68,15 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_GRID] = INK;
-  out[COL_0] = [0.8, 0.5, 0.5];
-  out[COL_1] = [0.1, 0.1, 0.8];
-  out[COL_0_DOT] = [0.1, 0.1, 0.1];
+  out[COL_0] = CLUSTERS_0;
+  out[COL_1] = CLUSTERS_1;
+  out[COL_0_DOT] = CLUSTERS_0_DOT;
   out[COL_1_DOT] = PAPER;
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = [0, 0.7, 0];
+  out[COL_CURSOR] = CLUSTERS_CURSOR;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  out[COL_HINT_DANGER] = [0.95, 0.6, 0.15];
+  out[COL_HINT_DANGER] = CLUSTERS_HINT_DANGER;
   return out;
 }
 

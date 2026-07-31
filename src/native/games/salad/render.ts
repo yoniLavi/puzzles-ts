@@ -33,6 +33,12 @@ import {
   PENCIL_BODY,
   pencilColour,
 } from "../../engine/palette.ts";
+import {
+  SALAD_GUESS_BALL,
+  SALAD_GUESS_BALL_BG,
+  SALAD_GUESS_HOLE,
+  SALAD_GUESS_NUM,
+} from "../../engine/palette-games.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { SaladHint } from "./hint.ts";
 import type { SaladMistake } from "./solver.ts";
@@ -95,13 +101,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_I_BALL] = INK;
   out[COL_I_BALLBG] = PAPER;
   out[COL_I_HOLE] = INK;
-  out[COL_G_NUM] = [0, 0.5, 0];
-  out[COL_G_BALL] = [0, 0.1, 0];
-  out[COL_G_BALLBG] = [0.95, 1, 0.95];
-  out[COL_G_HOLE] = [0, 0.25, 0];
-  out[COL_E_BORDERCLUE] = [1, 0, 0];
-  out[COL_E_NUM] = [1, 0, 0];
-  out[COL_E_HOLE] = [1, 0, 0];
+  out[COL_G_NUM] = SALAD_GUESS_NUM;
+  out[COL_G_BALL] = SALAD_GUESS_BALL;
+  out[COL_G_BALLBG] = SALAD_GUESS_BALL_BG;
+  out[COL_G_HOLE] = SALAD_GUESS_HOLE;
+  out[COL_E_BORDERCLUE] = ERROR;
+  out[COL_E_NUM] = ERROR;
+  out[COL_E_HOLE] = ERROR;
   out[COL_MISTAKE] = ERROR;
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_ACTION;
