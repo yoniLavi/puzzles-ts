@@ -11,6 +11,14 @@
  * existing role sails through both. That is exactly how the collection ended up
  * with `[0.85, 0.0, 0.0]` and `[0.85, 0, 0]` in two games, and one hint wash in
  * two values across eighteen. This test is the thing that would have objected.
+ *
+ * **What it deliberately does not check**: *provenance*. It compares resolved
+ * values, so a game that writes `[0.78 * bg[0], …]` longhand passes exactly as if
+ * it had imported `highlightWash` — the colour is right, the sharing is not.
+ * Catching that means inspecting source, which is the brittle regex hunt design
+ * D7 rejected. The rule "take player-facing colours from `palette.ts`" is carried
+ * by the port playbook (§3.3) and by review; this guard's job is the one a human
+ * reviewer is worst at — noticing that a *new* colour appeared.
  */
 import { describe, expect, it } from "vitest";
 import type { Colour } from "../../puzzle/types.ts";
@@ -48,8 +56,8 @@ const GAME_LOCAL: Record<string, { why: string; colours: string[] }> = {
     colours: ["0,0,1", "0,0.5,0", "0,0.7,0", "1,1,0.8"],
   },
   blackbox: {
-    why: "ball, laser and marker colours",
-    colours: ["0,1,0", "0.579,0.579,0.579", "0.744,0.744,0.744"],
+    why: "ball, laser and marker colours, plus COL_COVER — the shade a hidden square is covered with",
+    colours: ["0,1,0", "0.414,0.414,0.414", "0.579,0.579,0.579", "0.744,0.744,0.744"],
   },
   boats: {
     why: "water, ship, fleet and clue colours",
@@ -103,8 +111,14 @@ const GAME_LOCAL: Record<string, { why: string; colours: string[] }> = {
     colours: ["0.3,0.5,0.9"],
   },
   filling: {
-    why: "region shading",
-    colours: ["0,0.496,0", "0.579,0.579,0.579", "0.744,0.744,0.744", "1,0.703,0.703"],
+    why: "region shading, plus its own COL_CURSOR (see palette.ts: cursor colour is per game, not a role)",
+    colours: [
+      "0,0.496,0",
+      "0.414,0.414,0.414",
+      "0.579,0.579,0.579",
+      "0.744,0.744,0.744",
+      "1,0.703,0.703",
+    ],
   },
   flip: {
     why: "the two tile faces",
@@ -158,8 +172,14 @@ const GAME_LOCAL: Record<string, { why: string; colours: string[] }> = {
     colours: ["0,0.496,0", "0.414,0.414,0.827"],
   },
   lightup: {
-    why: "COL_ERROR is a pale red *fill* behind a lit cell, so its paleness is load-bearing the way HINT_FILL's is",
-    colours: ["0.551,0.551,0.551", "0.98,0.78,0.42", "1,0.25,0.25", "1,1,0"],
+    why: "COL_ERROR is a pale red *fill* behind a lit cell, so its paleness is load-bearing the way HINT_FILL's is; COL_CURSOR is its own (cursor colour is per game, not a role)",
+    colours: [
+      "0.414,0.414,0.414",
+      "0.551,0.551,0.551",
+      "0.98,0.78,0.42",
+      "1,0.25,0.25",
+      "1,1,0",
+    ],
   },
   loopy: {
     why: "per-tiling line/dot colours",
@@ -210,11 +230,11 @@ const GAME_LOCAL: Record<string, { why: string; colours: string[] }> = {
   },
   net: {
     why: "wire, barrier and powered-state colours",
-    colours: ["0,0,1", "0,1,1"],
+    colours: ["0,0,1", "0,1,1", "0.414,0.414,0.414"],
   },
   netslide: {
     why: "wire, barrier and powered-state colours",
-    colours: ["0,0,1", "0,1,1", "0.662,0.662,0.662"],
+    colours: ["0,0,1", "0,1,1", "0.414,0.414,0.414", "0.662,0.662,0.662"],
   },
   palisade: {
     why: "region and wall colours",
@@ -233,8 +253,8 @@ const GAME_LOCAL: Record<string, { why: string; colours: string[] }> = {
     colours: ["0,0,1", "0.5,0.5,1"],
   },
   rect: {
-    why: "the region shading colours",
-    colours: ["0.2,0.2,1", "1,0.5,0.5"],
+    why: "the region shading colours, plus its own grid grey",
+    colours: ["0.2,0.2,1", "0.414,0.414,0.414", "1,0.5,0.5"],
   },
   rome: {
     why: "arrow and goal colours",
@@ -280,6 +300,7 @@ const GAME_LOCAL: Record<string, { why: string; colours: string[] }> = {
       "0.347,0.697,0.58",
       "0.369,0.563,0.684",
       "0.381,0.692,0.498",
+      "0.414,0.414,0.414",
       "0.416,0.686,0.416",
       "0.44,0.576,0.638",
       "0.446,0.896,0.745",
@@ -385,8 +406,8 @@ const GAME_LOCAL: Record<string, { why: string; colours: string[] }> = {
     ],
   },
   spokes: {
-    why: "hub and spoke colours",
-    colours: ["0,0,1", "0,1,0", "0.3,0.3,0.3", "0.3,0.3,1"],
+    why: "hub and spoke colours, plus COL_SATISFIED — a hub whose spokes are all placed",
+    colours: ["0,0,1", "0,1,0", "0.3,0.3,0.3", "0.3,0.3,1", "0.703,0.703,0.703"],
   },
   sticks: {
     why: "the two stick orientations",
@@ -449,6 +470,21 @@ const GAME_LOCAL: Record<string, { why: string; colours: string[] }> = {
   },
 };
 
+/**
+ * Call a derived role, whatever it takes.
+ *
+ * Most roles are a function of the background alone; `wallColour` also needs the
+ * highlight, because "a quarter of the way from the floor toward its bevel" is
+ * what the colour *means*. Dispatching on arity keeps that one exception from
+ * needing a hand-maintained list here — a new role is picked up automatically.
+ */
+// biome-ignore lint/complexity/noBannedTypes: the role table is heterogeneous by design.
+function resolve(fn: Function, background: Colour, highlight: Colour): Colour {
+  return fn.length === 2
+    ? (fn as (b: Colour, h: Colour) => Colour)(background, highlight)
+    : (fn as (b: Colour) => Colour)(background);
+}
+
 /** Every colour the shared vocabulary can produce, at this background. */
 function sharedColours(): Set<string> {
   const out = new Set<string>();
@@ -456,11 +492,10 @@ function sharedColours(): Set<string> {
   for (const c of [background, highlight, lowlight]) out.add(key(c));
   for (const [name, value] of Object.entries(roles)) {
     if (typeof value === "function") {
-      // A background-derived role: resolve it against this background.
-      const derived = (value as (b: Colour) => Colour)(background);
-      out.add(key(derived));
-      // ...and against the pure white the app hands games in dark mode.
-      out.add(key((value as (b: Colour) => Colour)([1, 1, 1])));
+      // A background-derived role: resolve it against this background, and
+      // against the pure white the app hands games in dark mode.
+      out.add(key(resolve(value, background, highlight)));
+      out.add(key(resolve(value, [1, 1, 1], mkhighlight([1, 1, 1]).highlight)));
     } else if (Array.isArray(value) && value.length === 3) {
       out.add(key(value as Colour));
     } else {
@@ -511,10 +546,10 @@ describe("the shared colour vocabulary", () => {
     const distance = (a: Colour, b: Colour) =>
       Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
     for (const bg of [BG, [1, 1, 1] as Colour]) {
-      const { background } = mkhighlight(bg);
+      const { background, highlight } = mkhighlight(bg);
       for (const [name, value] of Object.entries(roles)) {
         if (typeof value !== "function") continue;
-        const derived = (value as (b: Colour) => Colour)(background);
+        const derived = resolve(value, background, highlight);
         expect(
           distance(derived, background),
           `${name} against ${bg.join(",")}`,
@@ -537,7 +572,9 @@ describe("no game holds an undeclared colour", () => {
         .map((c, i) => ({ i, c }))
         .filter(({ c }) => c && !shared.has(key(c)) && !declared.has(key(c)));
       expect(
-        undeclared.map((u) => `index ${u.i} = [${u.c.join(", ")}]`),
+        // Report the rounded *key*, which is what GAME_LOCAL takes — printing the
+        // raw triple sends you to add a declaration that then doesn't match.
+        undeclared.map((u) => `index ${u.i} = "${key(u.c)}" (raw [${u.c.join(", ")}])`),
         `${id} holds a colour that is neither a shared role nor declared ` +
           `game-local — map it to a role in palette.ts, or add it to GAME_LOCAL ` +
           `with a reason`,

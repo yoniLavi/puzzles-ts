@@ -33,7 +33,7 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Grid } from "../../engine/grid.ts";
 import { gridComputeSize, gridFindIncentre } from "../../engine/grid.ts";
-import { ERROR, INK, PAPER } from "../../engine/palette.ts";
+import { ERROR, INK, lineMaybeColour, PAPER } from "../../engine/palette.ts";
 import { gridTypeOf, type LoopyParams } from "./params.ts";
 import {
   faceOrder,
@@ -188,7 +188,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_FOREGROUND] = INK;
-  out[COL_LINEUNKNOWN] = [faint[0], faint[1], 0];
+  out[COL_LINEUNKNOWN] = lineMaybeColour(defaultBackground);
   out[COL_HIGHLIGHT] = PAPER;
   out[COL_MISTAKE] = ERROR;
   out[COL_SATISFIED] = INK;

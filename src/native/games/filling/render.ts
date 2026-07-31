@@ -12,7 +12,14 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { HINT_EVIDENCE, HINT_FILL, INK } from "../../engine/palette.ts";
+import {
+  errorWash,
+  HINT_EVIDENCE,
+  HINT_FILL,
+  highlightWash,
+  INK,
+  playerEntryColour,
+} from "../../engine/palette.ts";
 import type { FillingHint } from "./index.ts";
 import {
   DX,
@@ -42,10 +49,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = INK;
-  out[COL_HIGHLIGHT] = [0.7 * bg[0], 0.7 * bg[1], 0.7 * bg[2]];
+  out[COL_HIGHLIGHT] = highlightWash(bg);
   out[COL_CORRECT] = [0.9 * bg[0], 0.9 * bg[1], 0.9 * bg[2]];
-  out[COL_ERROR] = [1, 0.85 * bg[1], 0.85 * bg[2]];
-  out[COL_USER] = [0, 0.6 * bg[1], 0];
+  out[COL_ERROR] = errorWash(bg);
+  out[COL_USER] = playerEntryColour(bg);
   out[COL_CURSOR] = [0.5 * bg[0], 0.5 * bg[1], 0.5 * bg[2]];
   out[COL_HINT] = HINT_FILL;
   out[COL_HINT_CELL] = HINT_EVIDENCE;

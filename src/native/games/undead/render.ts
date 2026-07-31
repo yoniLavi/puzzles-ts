@@ -23,6 +23,7 @@ import {
   ERROR,
   HINT_EVIDENCE,
   HINT_FILL,
+  highlightWash,
   INK,
   PAPER,
   PENCIL_BODY,
@@ -86,7 +87,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_GRID] = INK;
   out[COL_TEXT] = INK;
   out[COL_ERROR] = ERROR;
-  out[COL_HIGHLIGHT] = [0.78 * bg[0], 0.78 * bg[1], 0.78 * bg[2]];
+  out[COL_HIGHLIGHT] = highlightWash(bg);
   out[COL_FLASH] = PAPER;
   // Note: upstream derives all three monster shades from bg[0] (the red channel).
   out[COL_GHOST] = [bg[0] * 0.5, bg[0], bg[0]];

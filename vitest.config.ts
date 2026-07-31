@@ -14,10 +14,12 @@ import { defineConfig } from "vitest/config";
  *
  * It also protects the run itself. `scripts/gate.sh` used to argue that
  * contention can only make a test *slower*, never *failed*, now that nothing is
- * clock-gated — but that is only true up to the 600s ceiling below, and at load
- * ~81 on 8 cores two Sixteen hint tests (~50s each solo) blew straight through
- * it and failed the gate. Not oversubscribing in the first place is the fix
- * that does not involve re-guessing a timeout.
+ * clock-gated — but that is only true up to the ceiling below, and at load ~81
+ * on 8 cores two Sixteen hint tests (~50s each solo) blew straight through the
+ * then-600s value and failed the gate. Not oversubscribing in the first place is
+ * the fix that does not involve re-guessing a timeout. (It is not sufficient on
+ * its own: the box is shared, so a run can be starved by work this config has no
+ * say over — hence the deliberately absurd ceiling below.)
  *
  * `VITEST_MAX_WORKERS` overrides it — set it to the core count in CI, where the
  * box is dedicated and wall clock is what matters.
@@ -48,16 +50,30 @@ export default defineConfig({
     // History: this was 5s, then 60s, with five per-test overrides bumped
     // 30s -> 60s -> 120s as the suite grew, and it still failed a green commit
     // at load ~32 on 8 cores. Chasing that number per test was the bug; the
-    // overrides are gone and this single ceiling replaces them.
+    // overrides are gone and this single ceiling replaces them. Then 600s was
+    // *itself* blown through: at load ~95, `bricks-differential` took **783s**
+    // and failed a commit whose tree had already gated green minutes earlier
+    // (2026-07-30). Re-running it would only have added load — the failure mode
+    // is self-compounding, which is what makes it worth over-provisioning.
     //
-    // The ceiling costs nothing when tests pass, and it was never the real hang
-    // guard anyway: these tests are synchronous, so a runaway loop blocks the
+    // So the number is now an hour: ~4.6x the worst elapsed time ever observed
+    // here, chosen to be *absurd* rather than merely generous, because every
+    // previous value was picked to be "obviously enough" and was not.
+    //
+    // Over-provisioning is close to free, because this ceiling was never the
+    // real hang guard: these tests are synchronous, so a runaway loop blocks the
     // event loop and this `setTimeout` cannot fire (the same mechanism that
     // orphans workers — see scripts/reap-orphaned-workers.sh). Actual runaway
     // protection lives where it can work: `engine/retry-limit.ts` bounds every
-    // generator retry, and `stepBudget` bounds the solver/hint loops.
-    testTimeout: 600_000,
-    hookTimeout: 600_000,
+    // generator retry, and `stepBudget` bounds the solver/hint loops. What the
+    // ceiling *can* do is reject a good commit for being unlucky about when it
+    // ran, which is the only thing it has actually done so far.
+    //
+    // If a run ever legitimately approaches this, the answer is still not a
+    // bigger number: it is that something became genuinely non-terminating, and
+    // the bound that catches that lives in retry-limit.ts.
+    testTimeout: 3_600_000,
+    hookTimeout: 3_600_000,
     // Reuse each worker's loaded module graph across test files instead of
     // re-importing it per file. The default `forks` pool isolates every file,
     // re-paying import+transform (~50s cumulative here) 169 times; turning

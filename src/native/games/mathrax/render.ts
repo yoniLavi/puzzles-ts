@@ -23,7 +23,7 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import { ERROR, INK, PENCIL_BODY } from "../../engine/palette.ts";
+import { ERROR, errorWash, INK, PENCIL_BODY } from "../../engine/palette.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   CLUE_ADD,
@@ -78,7 +78,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = ERROR;
   // Faithful to upstream: the red channel is saturated and the other two are
   // derived from the *background*, so the error wash tints rather than replaces.
-  out[COL_ERRORBG] = [1, 0.85 * background[1], 0.85 * background[2]];
+  out[COL_ERRORBG] = errorWash(background);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   return out;
 }

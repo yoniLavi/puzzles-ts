@@ -35,7 +35,7 @@ import {
   hintMarkBit,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
-import { ERROR, INK, PENCIL_BODY } from "../../engine/palette.ts";
+import { ERROR, INK, PENCIL_BODY, pencilColour } from "../../engine/palette.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { CrossingMistake } from "./solver.ts";
 import {
@@ -112,7 +112,7 @@ export function colours(defaultBackground: Colour): Colour[] {
 
   // A muted blue-grey for pencil marks, the collection's convention (ABCD,
   // Towers): clearly subordinate to an entered digit without vanishing.
-  out[COL_PENCIL] = [0.5 * background[0], 0.5 * background[1], background[2]];
+  out[COL_PENCIL] = pencilColour(background);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   // Ghost: light enough to read as "not yet placed", dark enough to read at all.
   out[COL_GHOST] = [0.55 * background[0], 0.55 * background[1], 0.55 * background[2]];

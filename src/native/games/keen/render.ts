@@ -20,8 +20,11 @@ import {
   ERROR,
   HINT_EVIDENCE,
   HINT_FILL,
+  highlightWash,
   INK,
   PENCIL_BODY,
+  pencilColour,
+  playerEntryColour,
 } from "../../engine/palette.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
@@ -60,10 +63,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = INK;
-  out[COL_USER] = [0, 0.6 * bg[1], 0];
-  out[COL_HIGHLIGHT] = [0.78 * bg[0], 0.78 * bg[1], 0.78 * bg[2]];
+  out[COL_USER] = playerEntryColour(bg);
+  out[COL_HIGHLIGHT] = highlightWash(bg);
   out[COL_ERROR] = ERROR;
-  out[COL_PENCIL] = [0.5 * bg[0], 0.5 * bg[1], bg[2]];
+  out[COL_PENCIL] = pencilColour(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_FILL;
   out[COL_HINT_CELL] = HINT_EVIDENCE;

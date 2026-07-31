@@ -31,6 +31,7 @@ import {
   INK,
   PAPER,
   PENCIL_BODY,
+  pencilColour,
 } from "../../engine/palette.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { SaladHint } from "./hint.ts";
@@ -89,7 +90,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_LOWLIGHT] = lowlight;
   out[COL_BORDER] = INK;
   out[COL_BORDERCLUE] = INK;
-  out[COL_PENCIL] = [0.5 * background[0], 0.5 * background[1], background[2]];
+  out[COL_PENCIL] = pencilColour(background);
   out[COL_I_NUM] = INK;
   out[COL_I_BALL] = INK;
   out[COL_I_BALLBG] = PAPER;

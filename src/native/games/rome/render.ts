@@ -31,7 +31,7 @@ import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import { ERROR, INK } from "../../engine/palette.ts";
+import { ERROR, errorWash, INK } from "../../engine/palette.ts";
 import type { RomeMistake } from "./index.ts";
 import {
   EMPTY,
@@ -100,7 +100,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ARROW_ERROR] = ERROR;
   out[COL_ARROW_PENCIL] = [0, 0.5, 0.5];
   out[COL_ARROW_ENTRY] = [0, 0, 1];
-  out[COL_ERRORBG] = [1, 0.85 * background[1], 0.85 * background[2]];
+  out[COL_ERRORBG] = errorWash(background);
   out[COL_GOALBG] = [0.95 * background[0], 0.95 * background[1], 1];
   out[COL_GOAL] = [0, 0, 0.5];
   return out;
