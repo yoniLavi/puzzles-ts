@@ -211,6 +211,30 @@ decision. Four of the thirteen were (boats' water, bricks' brick, mosaic's unmar
 tiles, tents' grass); the other nine patch a derived colour or the host background,
 which is a per-board judgement the palette cannot make.
 
+### F9 — The failure mode of a consolidation is a *collision*, and it needs its own instrument
+
+Nothing in the review plan looked for two meanings landing on one colour, and
+`scripts/colour-collide.test.ts` was written after the fact because one did:
+Subsets' keyboard cursor, its hint's decided slot and its hint's "could still go
+here" spotlight all resolved to blue, collapsing a three-part deduction the game
+had deliberately given three colours. Fixed — cursor `PURPLE`, spotlight `GREEN`
+— and the instrument stays, because this is the failure mode of *any* pass that
+replaces many colours with few.
+
+It cannot be a gate: **most duplicates are correct** (one ink for a game's givens
+and its grid, one red for its four kinds of error — 170 such pairs, all
+deliberate). Its value is as a **before/after diff**, like `inventory.md`, so a
+pair that newly appears is a pair that just collapsed. It names pairs by the
+game's own `COL_*` constants, because "subsets 8 vs 11" is not a finding and
+"`COL_CURSOR` = `COL_HINT_SPOT`" is.
+
+A second candidate was checked and **kept**: Salad's guessed ball and guessed
+hole now share one green, where upstream had two near-identical dark greens. The
+report is what makes the case, by putting the new pair directly under the
+pre-existing `COL_I_BALL` = `COL_I_HOLE` — the *given* ball and hole have always
+shared one ink, so the guessed pair sharing one green mirrors the structure the
+game already had.
+
 ## Risks
 
 - **A 57-game appearance change.** Mitigated by D6's ordering (the palette is

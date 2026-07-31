@@ -140,6 +140,12 @@
       pre-existing).
       **One judgement to look at**: that lit square is now a soft cream rather than
       a saturated yellow — correct for a fill, and less punchy than upstream.
+      → A second defect found by a *new* instrument, `scripts/colour-collide.test.ts`
+      (design F9): Subsets' cursor, hint slot and hint spotlight all resolved to
+      blue, collapsing a deliberate three-part hint into one colour. Cursor is
+      `PURPLE`, spotlight `GREEN`. The instrument stays — a collision is the failure
+      mode of any pass that replaces many colours with few, and it is invisible to
+      both the suite and the inventory.
 - [x] 5.4 Update playbook §3.3 again: a new port picks a meaning, and reaches for a
       named colour only where the name is load-bearing to the player.
 - [x] 5.5 Full gate green; `openspec validate consolidate-colour-palette --strict`.

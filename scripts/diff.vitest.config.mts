@@ -14,6 +14,7 @@ export default defineConfig({
       "scripts/diff-*.test.ts",
       "scripts/colour-inventory.test.ts",
       "scripts/colour-dark-check.test.ts",
+      "scripts/colour-collide.test.ts",
     ],
     environment: "node",
   },
