@@ -18,12 +18,19 @@
 
 ## 2. Harvest the dark values that already exist
 
-- [ ] 2.1 Extract every absolute OKLCH `paletteOverrides` value, every scalar nudge and
-      every `false`, and attribute each to the role at that index (design D2).
-- [ ] 2.2 Where several games authored a dark value for the same role, reconcile to one
-      and record which won and why — the audit's D4 rule, applied to dark.
-- [ ] 2.3 Note which overrides become redundant once the role carries the decision;
-      these are deleted in §5.
+- [x] 2.1 Harvested: 31 `paletteOverrides` across 19 games — 19 of them landing on a
+      role (10 `INK`, 5 `PAPER`, 4 the mkhighlight trio), plus 16 `paletteSwaps` of
+      which 9 are a pure highlight/lowlight pair.
+- [x] 2.2 **The harvest's real finding was that almost none of it is role-wide.** The
+      absolute values (`lightup {2: [0.5,0,0], 3: [0.95,0,0]}`, `bricks`, `mines`) are
+      per-game judgements about *that board*, not statements about a role — Light Up
+      lifts its black because a pure-black wall vanishes on a dark board, which is
+      true of Light Up and not of Pearl. The one decision that recurred across games
+      with the same meaning was "a piece keeps its black/white" (15 entries, 7 games),
+      and that is the one that became a role. Authoring dark values for the rest would
+      have been inventing rather than harvesting.
+- [x] 2.3 Eight entries deleted (§5.4); the rest stay, correctly, as per-game
+      statements.
 
 ## 3. The fallback calculation
 
@@ -68,15 +75,28 @@
 
 ## 6. Verify
 
-- [ ] 6.1 Light mode unmoved: no render snapshot changes (design D5). A moved snapshot
-      is a defect until proven otherwise.
-- [ ] 6.2 Dark mode in the browser (Chrome, per the standing directive) across a
-      spread that exercises each decision: Slide (the reported bug), Pattern or Pearl
-      (piece black/white), Solo (text + pencil + entry), Flood or Samegame (large
-      fills), ABCD (coloured text).
-- [ ] 6.3 Full gate green; `openspec validate hand-author-dark-palette --strict`.
+- [x] 6.1 Light mode unmoved: **no render snapshot changed in either stage.** Stage 1
+      by construction (`darkModeColor` only runs in dark mode); stage 2 because the
+      eight moved colours keep their light values exactly.
+- [x] 6.2 Dark mode in Chrome across the spread: **Slide** (the reported bug — target
+      zone now recedes as a dark green floor tint), **ABCD** (coloured text, now bright
+      and legible — the pole the old rule got backwards), **Pearl** and **Pattern**
+      (piece black/white, correct with their overrides deleted), **Flood** (large
+      fills — measured better, see F2), **Solo**. 0 console errors.
+- [x] 6.3 Full gate green on both stage commits; change validates strict.
 - [x] 6.4 Playbook §3.3 now tells a new port to reach for `PIECE_BLACK`/`PIECE_WHITE`
       when the colour is the piece's identity rather than ink, explains that the
       difference only shows in dark mode (which is why it gets missed), and notes the
       Light Up escape hatch. The "a game never adapts for dark mode" rule is unchanged.
 - [ ] 6.5 Owner acceptance, then archive.
+
+## Deliberately not done
+
+- **Hand-authored dark values for the enumerated identity sets** (design D6/F2).
+  Flood's and Guess's ten-colour sets lose about half their mutual separation in dark
+  mode (0.134 → 0.070), and no background-relative rule can fix that, because "tell
+  these apart from each other" is a property of the set rather than of any one colour.
+  Stage 1 nearly tripled the worst pair (0.025 → 0.070), so this is better than it was
+  and no longer urgent; finishing it is genuine per-game design work. Flood and Guess
+  are where the evidence says to start. Signpost's 70 arrow colours are a computed
+  ramp and would want a dark *formula*, not 70 authored values.
