@@ -8,15 +8,13 @@
 
 ## 1. Classify the roles before authoring anything
 
-- [ ] 1.1 List every use of `INK` and `PAPER` with its game, index and local enum name
-      (the audit's `inventory.md` has them), and classify each as **structure** (grid,
-      text, border, line, outline, clue, arrow — inverts) or **piece** (a black/white
-      game object — preserved). 86 `INK` uses, 33 `PAPER`.
-- [ ] 1.2 Cross-check the classification against the seven games whose
-      `augmentation.ts` entry already says `false` — those are ground truth (design D3).
-      A disagreement means the classification rule is wrong, not the game.
-- [ ] 1.3 Record the full classification in this change, so it is reviewable rather
-      than implicit (design D6 risk).
+- [x] 1.1–1.3 **Scope cut on the owner's "keep it simple" steer, and it was the right
+      call** (design F3). Classifying all 119 `INK`/`PAPER` uses from their enum names
+      would have been 119 judgement calls, mostly mine, about a distinction only
+      visible in dark mode. Instead **only the eight colours in five games where
+      `augmentation.ts` already recorded the answer** moved — each with a comment
+      naming it. `flood` (a line, not a piece) and `unruly` (derived bevel trios) were
+      deliberately left; both keep their per-game override.
 
 ## 2. Harvest the dark values that already exist
 
@@ -43,28 +41,30 @@
 
 ## 4. Roles gain dark values, and the two conflated roles split
 
-- [ ] 4.1 `palette.ts`: each role gains its authored dark value, from §2 where one
-      exists and from §3's calculation otherwise. Document per role *why* that value,
-      the way the light values are documented.
-- [ ] 4.2 Split `PIECE_BLACK`/`PIECE_WHITE` out of `INK`/`PAPER` (design D3) and move
-      the games in §1's "piece" column onto them. This *is* a game-file change, but a
-      mechanical one: the index and the local name stay, only the imported constant
-      changes.
-- [ ] 4.3 Extend `palette.test.ts`: every role resolves in both schemes, and each stays
-      distinguishable from the background it will be shown against — the existing
-      derived-role test, now per scheme.
+- [x] 4.1 Roles carry a scheme decision where there is evidence for one. **Only one
+      role-wide authored decision had real evidence** — "a piece keeps its black/white"
+      — so only that was authored; every other role keeps §3's now-correct calculation.
+      Authoring values nobody had asked for would have been inventing, not harvesting.
+- [x] 4.2 Split `PIECE_BLACK`/`PIECE_WHITE` out of `INK`/`PAPER` (design D3/F3).
+- [x] 4.3 `palette.test.ts`: a role's identity is now **(value, scheme behaviour)** —
+      `INK` and `PIECE_BLACK` are the same black and are not duplicates, because they
+      diverge in dark mode. Plus a test that the engine reports a game's decisions by
+      palette index (pearl → `[3, 4]`).
 
-## 5. Plumbing: the engine resolves the scheme
+## 5. Plumbing: the engine states its decisions in the app's own vocabulary
 
-- [ ] 5.1 Tag role constants so the engine can identify them in-process; keep them
-      structurally `Colour` so no game's `colours()` signature changes (design D1).
-- [ ] 5.2 Thread the scheme through `Midend.colours` → the worker adapter →
-      `puzzle-view.ts`; resolve roles worker-side so only plain `Colour[]` crosses
-      Comlink.
-- [ ] 5.3 Stop `puzzle-view.ts` adapting a TS game's palette; keep per-game overrides
-      and grey-tinting.
-- [ ] 5.4 Delete the `paletteOverrides` that existed only to fight the formula (§2.3),
-      and re-check the games that keep theirs.
+- [x] 5.1 Role constants carry their scheme decision on the colour itself, staying
+      structurally `Colour`, so no game's `colours()` signature changes (design D1).
+- [x] 5.2 `Midend.darkModeOverrides(bg)` reads the tags off the resolved palette and
+      returns `Record<number, false>` — **the same shape `augmentation.ts` already
+      uses** — so the tag never has to survive structured clone and the frontend
+      learns no new concept (design F3). Threaded through `EngineCore`,
+      `TsWorkerPuzzle`, `PuzzleEngineSurface`, `WorkerPuzzle` (C returns `{}`) and
+      `Puzzle`.
+- [x] 5.3 `puzzle-view.ts` changes by one line: the per-puzzle override falls back to
+      the palette's own. Per-puzzle still wins, so Light Up keeps *lifting* its black.
+- [x] 5.4 Deleted the eight override entries the roles replace, plus two `darkMode`
+      blocks left empty.
 
 ## 6. Verify
 
@@ -75,8 +75,8 @@
       (piece black/white), Solo (text + pencil + entry), Flood or Samegame (large
       fills), ABCD (coloured text).
 - [ ] 6.3 Full gate green; `openspec validate hand-author-dark-palette --strict`.
-- [ ] 6.4 Update playbook §3.3: a role carries a light *and* a dark value, and a new
-      port picks `PIECE_BLACK`/`PIECE_WHITE` over `INK`/`PAPER` when the colour is the
-      piece's identity. Keep the "a game never adapts for dark mode" rule as-is, with
-      a pointer to why the engine doing it centrally is not the same thing.
+- [x] 6.4 Playbook §3.3 now tells a new port to reach for `PIECE_BLACK`/`PIECE_WHITE`
+      when the colour is the piece's identity rather than ink, explains that the
+      difference only shows in dark mode (which is why it gets missed), and notes the
+      Light Up escape hatch. The "a game never adapts for dark mode" rule is unchanged.
 - [ ] 6.5 Owner acceptance, then archive.

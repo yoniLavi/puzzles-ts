@@ -741,6 +741,20 @@ legible *against the board* has to be a function of the background, not a fixed
 pale value (see the Spokes `COL_DONE` note below — that is this rule's failure
 mode).
 
+**If the colour means "this piece is black/white", use `PIECE_BLACK` /
+`PIECE_WHITE`, not `INK` / `PAPER`.** They are the same colour, and the
+difference only shows up in dark mode — which is exactly why it gets missed. `INK`
+is *maximum contrast against the surface*, so it inverts, or your text ends up
+darker than the tile it is drawn on. A piece's black is *the piece's own
+identity*, so it is preserved: inverting it would tell the player the piece is the
+other colour, a white peg where the rules say black. Five games worked this out
+one at a time and pinned the index in `augmentation.ts` before it was a role
+(guess's pegs, mines' and inertia's mines, pattern's squares, pearl's pearls). If
+your game has a black/white *thing* rather than black/white *ink*, you now get it
+right for free. A game that wants its black **lifted** rather than preserved (Light
+Up's wall, invisible if left pure black) still says so in `augmentation.ts`, which
+wins over the role.
+
 **A colour that is genuinely your game's own must be *declared*, not just
 written.** `palette.test.ts` resolves every registered game's palette and fails on
 any colour that is neither a role nor listed in its `GAME_LOCAL` table — so a new

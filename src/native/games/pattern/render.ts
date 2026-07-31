@@ -15,6 +15,8 @@ import {
   HINT_BLACKREF,
   HINT_EVIDENCE,
   HINT_WHITEREF,
+  PIECE_BLACK,
+  PIECE_WHITE,
 } from "../../engine/palette.ts";
 import type { PatternHint } from "./index.ts";
 import { lineHasError } from "./solver.ts";
@@ -62,8 +64,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_GRID] = grey(0.3);
   out[COL_UNKNOWN] = grey(0.5);
   out[COL_TEXT] = grey(0);
-  out[COL_FULL] = grey(0);
-  out[COL_EMPTY] = grey(1);
+  out[COL_FULL] = PIECE_BLACK;
+  out[COL_EMPTY] = PIECE_WHITE;
   out[COL_CURSOR_GUIDE] = grey(0.5);
   out[COL_CURSOR] = [1, 0.25, 0.25];
   out[COL_ERROR] = ERROR;
