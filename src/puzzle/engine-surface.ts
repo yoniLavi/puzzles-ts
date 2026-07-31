@@ -91,7 +91,7 @@ export interface PuzzleEngineSurface {
    * adapt this index"). Empty when the palette states nothing of its own — the
    * C/WASM engine never does.
    */
-  darkModeOverrides(defaultBackground: Colour): Record<number, false>;
+  darkPalette(defaultBackground: Colour): Record<number, Colour>;
   size(maxSize: Size, isUserSize: boolean, devicePixelRatio: number): Size;
   preferredSize(): Size;
   formatAsText(): string | undefined;

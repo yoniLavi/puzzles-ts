@@ -26,6 +26,7 @@ import { TS_PORTED_PUZZLE_IDS } from "../games/ts-ported-ids.ts";
 import { getTsGame } from "./registry.ts";
 import "../games/index.ts";
 import { mkhighlight } from "./colour-mkhighlight.ts";
+import { darkValue } from "./colour-token.ts";
 import * as roles from "./palette.ts";
 
 /** A light host background, standing in for the frontend's theme colour. */
@@ -523,7 +524,8 @@ describe("the shared colour vocabulary", () => {
     for (const [name, value] of Object.entries(roles)) {
       if (typeof value === "function") continue;
       const colour = value as Colour;
-      const k = `${key(colour)}|${roles.schemeDecision(colour) ?? "adapts"}`;
+      const dark = darkValue(colour);
+      const k = `${key(colour)}|${dark ? key(dark) : "adapts"}`;
       byValue.set(k, [...(byValue.get(k) ?? []), name]);
     }
     for (const [value, names] of byValue) {
@@ -542,10 +544,10 @@ describe("the shared colour vocabulary", () => {
     // ink is maximum contrast against the surface and must invert, while a
     // piece's black is the piece's identity — inverting it would tell the player
     // the piece is the other colour.
-    expect(roles.schemeDecision(roles.PIECE_BLACK)).toBe(false);
-    expect(roles.schemeDecision(roles.PIECE_WHITE)).toBe(false);
-    expect(roles.schemeDecision(roles.INK)).toBeUndefined();
-    expect(roles.schemeDecision(roles.PAPER)).toBeUndefined();
+    expect(darkValue(roles.PIECE_BLACK)).toEqual([0, 0, 0]);
+    expect(darkValue(roles.PIECE_WHITE)).toEqual([1, 1, 1]);
+    expect(darkValue(roles.INK)).toBeUndefined();
+    expect(darkValue(roles.PAPER)).toBeUndefined();
     // ...and they are still ordinary colours everywhere else, so a game can
     // assign one without any special handling in its renderer.
     expect([...roles.PIECE_BLACK]).toEqual([0, 0, 0]);
@@ -559,7 +561,7 @@ describe("the shared colour vocabulary", () => {
     if (!pearl) throw new Error("pearl not registered");
     const decisions = pearl
       .colours(BG)
-      .map((c, i) => (c && roles.schemeDecision(c) === false ? i : -1))
+      .map((c, i) => (c && darkValue(c) ? i : -1))
       .filter((i) => i >= 0);
     // COL_BLACK = 3 and COL_WHITE = 4: the two pearls.
     expect(decisions).toEqual([3, 4]);

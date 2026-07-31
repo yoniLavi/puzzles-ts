@@ -10,7 +10,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    include: ["scripts/diff-*.test.ts"],
+    include: ["scripts/diff-*.test.ts", "scripts/colour-inventory.test.ts"],
     environment: "node",
   },
 });

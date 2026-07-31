@@ -28,6 +28,7 @@ import type {
   Size,
 } from "../../puzzle/types.ts";
 import { randomNew } from "../random/index.ts";
+import { darkValue } from "./colour-token.ts";
 import {
   type ActiveHint,
   type Game,
@@ -36,7 +37,6 @@ import {
   type PresetMenu,
   UI_UPDATE,
 } from "./game.ts";
-import { schemeDecision } from "./palette.ts";
 import { MOD_STYLUS } from "./pointer.ts";
 import { decodeSave, encodeSave, type SaveEnvelope } from "./save.ts";
 
@@ -121,9 +121,9 @@ export interface EngineCore {
    * retaining them across future new games, and repaint. */
   setPreferences(values: ConfigValues): string | undefined;
   getColourPalette(defaultBackground: Colour): Colour[];
-  /** Per-index dark-mode decisions the palette itself carries; see the
-   * implementation on {@link Midend}. */
-  darkModeOverrides(defaultBackground: Colour): Record<number, false>;
+  /** The authored dark-mode value of each palette index that has one; see
+   * the implementation on {@link Midend}. */
+  darkPalette(defaultBackground: Colour): Record<number, Colour>;
   preferredSize(): Size;
   /** Purely informational: compute the puzzle's preferred pixel size
    * for the given max, record the resolved tile/window size, and
@@ -1067,25 +1067,28 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   }
 
   /**
-   * Per-index dark-mode decisions the *palette itself* carries, in the same
-   * vocabulary as `augmentation.ts`'s `paletteOverrides` (`false` = "do not
-   * adapt this index").
+   * The **authored dark-mode value** of every palette index whose token states
+   * one, as sRGB in the same unit the token table is written in.
    *
-   * A colour that came from a scheme-aware role — `PIECE_BLACK`, `PIECE_WHITE` —
-   * states how it behaves when the scheme changes, and this reports that per
-   * index so the frontend can apply it exactly as it applies a per-puzzle one.
-   * The tag lives on the colour and cannot survive transfer to the frontend
-   * (structured clone keeps an array's indices and drops its other properties),
-   * so it is read off here, engine-side, and sent as plain data.
+   * A token carries its dark value as a property of the array (see
+   * `colour-token.ts`), which cannot survive transfer to the frontend —
+   * structured clone keeps an array's indices and drops its other own
+   * properties. So it is read off here, engine-side, and sent as plain
+   * per-index data.
    *
-   * A per-puzzle entry in `augmentation.ts` still wins: it is the more specific
-   * statement, and a game that wants its black lifted rather than preserved
-   * (Light Up's wall) says so there.
+   * An index that is **absent** has no authored dark value and is adapted by
+   * `utils/color.ts`'s calculation, which is what every colour did before
+   * tokens existed. That is what lets a scheme be authored token by token.
+   *
+   * A per-puzzle entry in `augmentation.ts` still wins over this: it is the more
+   * specific statement, and a game that wants its black *lifted* rather than
+   * preserved (Light Up's wall) says so there.
    */
-  darkModeOverrides(defaultBackground: Colour): Record<number, false> {
-    const out: Record<number, false> = {};
+  darkPalette(defaultBackground: Colour): Record<number, Colour> {
+    const out: Record<number, Colour> = {};
     this.game.colours(defaultBackground).forEach((colour, i) => {
-      if (colour && schemeDecision(colour) === false) out[i] = false;
+      const dark = colour && darkValue(colour);
+      if (dark) out[i] = [...dark] as Colour;
     });
     return out;
   }

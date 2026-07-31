@@ -13,16 +13,45 @@
 
 ## 1. Set up the table and prove the shape on one game
 
-- [ ] 1.1 Reshape `src/native/engine/palette.ts` into a token table: each token a name,
+- [x] 1.1 Reshape `src/native/engine/palette.ts` into a token table: each token a name,
       a documented meaning, and a value **per scheme** (design D1). Existing roles move
       across unchanged in value — this is a rename-and-restructure, not a retune.
-- [ ] 1.2 Keep derived colours as **functions over tokens** (D2): the `mkhighlight`
+      → Three modules, because the halves have different invariants and a wildcard
+      import must see colours only: `colour-token.ts` (the `token()` declaration +
+      `darkValue()` reader + the `scale`/`mix` combinators), `palette.ts` (shared
+      roles, "each value named once"), `palette-games.ts` (per-game vocabularies,
+      game-id-prefixed, duplicate values across games *allowed* — Cube's die face and
+      Untangle's vertex are both blue and free to diverge).
+- [x] 1.2 Keep derived colours as **functions over tokens** (D2): the `mkhighlight`
       trio, the background-derived roles, Signpost's ramps. Do not flatten them into
       authored values.
-- [ ] 1.3 Resolution: a token with no value for the active scheme falls back to
+      → Measured the split first: resolving every palette at two different host
+      backgrounds and diffing separates the 280 game-local entries into **206
+      absolute** (138 distinct — these become tokens) and **74 background-derived**
+      (these must become named derivations). That classification is now a column in
+      `inventory.md`, so the worklist maintains itself.
+- [x] 1.3 Resolution: a token with no value for the active scheme falls back to
       `utils/color.ts`'s calculation, so the migration can land game by game (D3).
-- [ ] 1.4 Do **Signpost** first — 70 of the 302 entries, and it is 8 tokens plus
+      → `Midend.darkModeOverrides` (`Record<number, false>`) generalised to
+      `Midend.darkPalette` (`Record<number, Colour>`): the authored dark value of every
+      index whose token states one, in **sRGB** — the unit the table is written in —
+      converted to OKLCH by `puzzle-view.ts`, which already owns the colour-space
+      plumbing (this keeps `colorjs.io` out of the worker bundle). An absent index is
+      calculated, exactly as before. `false` is gone from the palette side: a token
+      that must not move states `dark` equal to its light value, which is the same
+      thing said positively. Verified equivalent for `PIECE_BLACK`/`PIECE_WHITE`.
+- [x] 1.4 Do **Signpost** first — 70 of the 302 entries, and it is 8 tokens plus
       interpolation (D6). If the design survives Signpost it survives everything.
+      → It survived, and better than the design guessed: **10 tokens absorb 51 of the
+      70 entries**, because the ramps that do not involve the host background
+      (`B8..B15`, `M0..M15`, `D0..D15`, `NUMBER_SET_MID`) are *constants* and can be
+      computed in the table, not in the game. `buildPalette` is now pure index
+      mapping — the part that has to match the C enum — with zero colour values and
+      zero arithmetic. **All 76 entries byte-identical at full precision** (the
+      interpolations are exact: `a + w*(b-a)` is upstream's own expression, and the
+      `(a+b)/2` midpoints are exactly representable). Upstream's divide-by-**256**
+      quirk and its read-while-writing region-15 quirk are both preserved, in the
+      table, with the reasoning next to them.
 
 ## 2. The mechanical pass: no game holds a literal
 

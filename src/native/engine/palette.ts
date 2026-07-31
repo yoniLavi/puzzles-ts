@@ -1,10 +1,27 @@
 /**
- * The collection's shared **semantic colour roles** — the colours that mean
- * something to the *player*, each defined in exactly one place.
+ * The collection's **colour token table** — every colour any game shows, named
+ * for what it means to the player and defined in exactly one place.
  *
- * This is the counterpart to [`colour-mkhighlight.ts`](./colour-mkhighlight.ts),
- * which owns *structural* colour (a game's background and its bevel
- * highlight/lowlight trio) and keeps owning it. Nothing here duplicates that.
+ * A game contains no colour value. It references a token from here, or calls a
+ * shared function from here whose inputs are tokens. The table has two halves,
+ * and they exist for different reasons:
+ *
+ * - **this file** — the ~18 *shared roles*, the meanings two or more games have
+ *   in common (an error, a hint, a pencil mark). Their invariant is that each
+ *   value is named **once**: two roles with the same value would be two names for
+ *   one colour, which is the duplication the whole exercise removes.
+ * - [`palette-games.ts`](./palette-games.ts) — the *per-game vocabularies*, a
+ *   game's own identity colours and its enumerated sets. Two games may hold the
+ *   same value there and that is not duplication: Cube's die face and Untangle's
+ *   vertex are both pure blue today and are free to diverge under a scheme,
+ *   because they are not the same thing.
+ *
+ * The split is not filing: it is the two halves having **different invariants**,
+ * and a game's import line saying which claim it is making.
+ *
+ * [`colour-mkhighlight.ts`](./colour-mkhighlight.ts) owns *structural* colour (a
+ * game's background and its bevel highlight/lowlight trio) and keeps owning it.
+ * Nothing here duplicates that.
  *
  * ## Why this exists
  *
@@ -23,15 +40,15 @@
  *   in eight — a difference no one can see, that no one chose, and that a second
  *   colour theme would have had to reproduce twice.
  *
- * ## The rule for what belongs here
+ * ## The rule for what belongs in *this* half
  *
- * A colour is a role **only where two or more games use it to mean the same
- * thing to the player**. A colour that is part of one game's visual identity, or
- * a member of its own enumerated set whose members exist to be told apart from
- * *each other* (Guess's pegs, Map's regions, Samegame's and Flood's tiles,
- * Mines' per-number digits), stays defined by that game — but is *declared* as
- * game-local in `palette.test.ts`, so the distinction is a recorded decision and
- * a new undeclared colour still fails.
+ * A colour is a shared role **only where two or more games use it to mean the
+ * same thing to the player**. A colour that is part of one game's visual
+ * identity, or a member of its own enumerated set whose members exist to be told
+ * apart from *each other* (Guess's pegs, Map's regions, Samegame's and Flood's
+ * tiles, Mines' per-number digits), is a token in `palette-games.ts` under that
+ * game's prefix. Both are tokens; only one is a claim that two games mean the
+ * same thing, and that claim is what has to be earned.
  *
  * ## Absolute vs background-derived
  *
@@ -46,6 +63,7 @@
  */
 
 import type { Colour } from "../../puzzle/types.ts";
+import { scale, token } from "./colour-token.ts";
 
 // Naming: these are colour *values* and deliberately do NOT carry the `COL_`
 // prefix, which throughout this codebase means "a palette **index**" — every game
@@ -70,25 +88,6 @@ export const INK: Colour = [0, 0, 0];
 export const PAPER: Colour = [1, 1, 1];
 
 /**
- * A colour that must keep its exact value when the colour scheme changes.
- *
- * Attached to the colour itself rather than held in a lookup, because it is a
- * property *of the colour's meaning*. The engine reads it off the resolved
- * palette (`Midend.darkModeOverrides`) and hands it to the frontend in the same
- * vocabulary `augmentation.ts` already speaks, so nothing downstream learns a new
- * concept — `false` there has always meant "do not adapt this index".
- */
-type Preserved = Colour & { readonly darkMode: false };
-
-const preserve = (c: Colour): Preserved =>
-  Object.assign([...c] as Colour, { darkMode: false as const });
-
-/** True when a palette entry carries a scheme decision of its own. */
-export function schemeDecision(c: Colour): false | undefined {
-  return (c as Partial<Preserved>).darkMode;
-}
-
-/**
  * **This game object is black** — a black peg, a black mine, the filled squares
  * of a two-colour game. Not {@link INK}, despite being the same colour.
  *
@@ -104,11 +103,11 @@ export function schemeDecision(c: Colour): false | undefined {
  * fifteen per-game entries are this role, written out fifteen times; they are
  * deleted in favour of it.
  */
-export const PIECE_BLACK: Colour = preserve([0, 0, 0]);
+export const PIECE_BLACK: Colour = token([0, 0, 0], [0, 0, 0]);
 
 /** The counterpart to {@link PIECE_BLACK}: **this game object is white** — a
  * white peg, a white pearl, the empty squares of a two-colour game. */
-export const PIECE_WHITE: Colour = preserve([1, 1, 1]);
+export const PIECE_WHITE: Colour = token([1, 1, 1], [1, 1, 1]);
 
 /** A mid-grey grid line, for games that want the grid to recede rather than
  * carry the drawing (Blackbox, Guess, Tents). */
@@ -186,12 +185,6 @@ export const HINT_WHITEREF: Colour = [0.62, 0.3, 0.82];
 export const PENCIL_BODY: Colour = [1, 0.78, 0.17];
 
 // --- background-derived roles -----------------------------------------
-
-/** Scale a background by a factor, per channel. The shape almost every
- * background-derived colour in the collection takes. */
-function scale(background: Colour, factor: number): Colour {
-  return [background[0] * factor, background[1] * factor, background[2] * factor];
-}
 
 /**
  * The shared "this region/area is correctly completed" shade — the
