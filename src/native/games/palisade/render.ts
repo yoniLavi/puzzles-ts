@@ -11,7 +11,13 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { correctRegionColour, mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { ERROR, HINT_ACTION, HINT_EVIDENCE, INK } from "../../engine/palette.ts";
+import {
+  ERROR,
+  HINT_ACTION,
+  HINT_EVIDENCE,
+  INK,
+  lineMaybeColour,
+} from "../../engine/palette.ts";
 import {
   BORDER,
   BORDER_D,
@@ -59,7 +65,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   out[COL_CORRECT] = correctRegionColour(background);
-  out[COL_LINE_MAYBE] = [background[0] * DARKER, background[1] * DARKER, 0];
+  out[COL_LINE_MAYBE] = lineMaybeColour(background);
   out[COL_LINE_NO] = [
     background[0] * DARKER,
     background[1] * DARKER,

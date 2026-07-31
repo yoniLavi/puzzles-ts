@@ -165,27 +165,86 @@ function scale(background: Colour, factor: number): Colour {
  */
 export { correctRegionColour } from "./colour-mkhighlight.ts";
 
-/** A pencil mark: the background at half strength, so notes read as clearly
- * subordinate to placed values whatever the host background is. */
+/**
+ * A pencil mark — the candidate values a player has noted but not committed.
+ * Eight games draw these (`COL_PENCIL` in Solo, Keen, Towers, Unequal, Group,
+ * ABCD, Salad and Crossing), and all eight want the same thing: something
+ * clearly *subordinate* to a placed digit, but still legible at the quarter-size
+ * a pencil mark is drawn at.
+ *
+ * Darkening two channels and leaving blue at full strength is upstream's answer
+ * and a good one — it reads as "a note" by hue rather than by contrast alone, so
+ * it survives being small. Note it is deliberately **not** a neutral grey: a grey
+ * at this lightness competes with the grid lines it sits between.
+ */
 export function pencilColour(background: Colour): Colour {
-  return scale(background, 0.5);
+  return [0.5 * background[0], 0.5 * background[1], background[2]];
+}
+
+/**
+ * **The player put this here** — the digit or letter you entered, as opposed to
+ * the clue the puzzle gave you (which is {@link INK}). The single most important
+ * distinction in every digit-entry game, and seven of them make it with this
+ * same green: Solo, Keen, Towers, Group and Filling's `COL_USER`, Unequal's and
+ * ABCD's `COL_GUESS`.
+ *
+ * Derived because it is a *foreground on the board*: the green tracks the
+ * background's own brightness so it stays a readable glyph colour rather than a
+ * fixed green that the dark-mode pass has to rescue.
+ */
+export function playerEntryColour(background: Colour): Colour {
+  return [0, 0.6 * background[1], 0];
 }
 
 /** A gently emphasised cell — the "you are here" / "this line is selected" wash
- * that must stay a *background*, not become a foreground. */
+ * that must stay a *background*, not become a foreground. Six games'
+ * `COL_HIGHLIGHT` (Solo, Keen, Towers, Group, Undead, Filling). */
 export function highlightWash(background: Colour): Colour {
   return scale(background, 0.78);
 }
 
 /**
- * A cue that must be **seen** against the board without becoming a foreground
- * colour: a satisfied clue, a completed hub, a locked tile.
+ * **Undecided**: an edge or line the player has explicitly marked as "I don't
+ * know yet", distinct both from a drawn line and from an empty one. Loopy's
+ * `COL_LINEUNKNOWN` and Palisade's and Separate's `COL_LINE_MAYBE`.
  *
- * A clear step away from the background is the requirement here. Upstream
- * frequently draws these pure white, which reads as nothing in light mode and as
- * *literally the background* in dark mode, where the app supplies pure white —
- * so a fixed colour is the wrong tool and this is derived.
+ * A background-toned olive — the background's own brightness with blue removed,
+ * so it reads as a *marked* edge without competing with a real line. All three
+ * games also carry the identical `paletteOverrides: { n: 0.6 }` dark-mode patch,
+ * which is the strongest available evidence that they are one role: three
+ * independent ports converged on both the colour and its correction.
  */
-export function satisfiedColour(background: Colour): Colour {
-  return scale(background, 0.85);
+export function lineMaybeColour(background: Colour): Colour {
+  return [0.9 * background[0], 0.9 * background[1], 0];
+}
+
+/**
+ * A **pale red fill behind content that must stay readable** — the fill
+ * counterpart to {@link ERROR}'s stroke, in the same way {@link HINT_FILL} is
+ * the fill counterpart to {@link HINT_ACTION}. Filling's `COL_ERROR`, Mathrax's
+ * and Rome's `COL_ERRORBG`.
+ *
+ * Red is pinned at full strength and only green and blue track the background:
+ * that is what keeps it unmistakably *red* while staying pale enough for a black
+ * digit on top. Light Up's `[1, 0.25, 0.25]` is the same idea at a fixed value
+ * and stays game-local — it is a lit-cell fill tuned against Light Up's own
+ * yellow, not a general wash.
+ */
+export function errorWash(background: Colour): Colour {
+  return [1, 0.85 * background[1], 0.85 * background[2]];
+}
+
+/**
+ * An impassable **wall** in a movement game — Inertia's and Sokoban's
+ * `COL_WALL`: the background nudged a quarter of the way toward its highlight,
+ * so a wall reads as solid board rather than as a drawn object.
+ *
+ * Takes the highlight as well as the background because that is what the colour
+ * means: "not quite the floor, in the direction the bevel already goes". Deriving
+ * it from a fixed grey instead would break the moment either game's background
+ * changes.
+ */
+export function wallColour(background: Colour, highlight: Colour): Colour {
+  const mix = (i: number): number => (3 * background[i] + highlight[i]) / 4;
+  return [mix(0), mix(1), mix(2)];
 }

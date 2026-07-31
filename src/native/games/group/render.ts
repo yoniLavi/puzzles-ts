@@ -18,7 +18,15 @@
 import type { Colour, DrawTextOptions, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import { ERROR, HINT_EVIDENCE, HINT_FILL, INK } from "../../engine/palette.ts";
+import {
+  ERROR,
+  HINT_EVIDENCE,
+  HINT_FILL,
+  highlightWash,
+  INK,
+  pencilColour,
+  playerEntryColour,
+} from "../../engine/palette.ts";
 import type { GroupMove } from "./state.ts";
 import {
   checkErrors,
@@ -56,10 +64,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = INK;
-  out[COL_USER] = [0, 0.6 * bg[1], 0];
-  out[COL_HIGHLIGHT] = [0.78 * bg[0], 0.78 * bg[1], 0.78 * bg[2]];
+  out[COL_USER] = playerEntryColour(bg);
+  out[COL_HIGHLIGHT] = highlightWash(bg);
   out[COL_ERROR] = ERROR;
-  out[COL_PENCIL] = [0.5 * bg[0], 0.5 * bg[1], bg[2]];
+  out[COL_PENCIL] = pencilColour(bg);
   out[COL_DIAGONAL] = [0.95 * bg[0], 0.95 * bg[1], 0.95 * bg[2]];
   out[COL_MISTAKE] = ERROR;
   out[COL_HINT] = HINT_FILL;

@@ -23,6 +23,8 @@ import {
   HINT_FILL,
   INK,
   PENCIL_BODY,
+  pencilColour,
+  playerEntryColour,
 } from "../../engine/palette.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { UnequalMove } from "./state.ts";
@@ -73,9 +75,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = GRID_MID;
   out[COL_TEXT] = INK;
-  out[COL_GUESS] = [0, 0.6 * bg[1], 0];
+  out[COL_GUESS] = playerEntryColour(bg);
   out[COL_ERROR] = ERROR;
-  out[COL_PENCIL] = [0.5 * bg[0], 0.5 * bg[1], bg[2]];
+  out[COL_PENCIL] = pencilColour(bg);
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_PENCIL_BODY] = PENCIL_BODY;

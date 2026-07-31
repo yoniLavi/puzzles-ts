@@ -722,6 +722,47 @@ protocol is spelled out in its module header).
 
 ### 3.3 Palette
 
+**Take every player-facing colour from
+[`engine/palette.ts`](../../src/native/engine/palette.ts); never write an RGB
+triple for one.** The module names the *roles* two or more games use to mean the
+same thing — `INK`, `PAPER`, `ERROR`, the three hint emphases, `PENCIL_BODY`,
+`GRID_MID` — plus the background-derived ones (`pencilColour`,
+`playerEntryColour`, `highlightWash`, `errorWash`, `lineMaybeColour`,
+`wallColour`, `correctRegionColour`). Write `out[COL_ERROR] = ERROR;`: the roles
+deliberately drop the `COL_` prefix, which in this codebase means "a palette
+**index**", so your game's own index constants keep matching its C enum and the
+two namespaces never collide. Read the module's header before adding anything —
+each role documents what it means to the player and why it is absolute or
+derived.
+
+Note that the derived roles matter more than they look. `puzzle-view.ts` hands a
+game **pure white** as its background in dark mode, so a colour that must stay
+legible *against the board* has to be a function of the background, not a fixed
+pale value (see the Spokes `COL_DONE` note below — that is this rule's failure
+mode).
+
+**A colour that is genuinely your game's own must be *declared*, not just
+written.** `palette.test.ts` resolves every registered game's palette and fails on
+any colour that is neither a role nor listed in its `GAME_LOCAL` table — so a new
+port with an undeclared colour fails the suite until you either map it to a role
+or add it with a one-line reason. Declare it when the colour is part of that
+game's identity, or a member of its own set whose job is to be told apart from the
+*other members* rather than to carry a meaning that recurs elsewhere: Guess's
+pegs, Map's regions, Mines' per-number digits — and, less obviously, your cursor
+colour, which seventeen games each chose to stand out against their own board.
+
+The test for which it is: **have other ports converged on this value, or
+diverged?** Eight games independently wrote the identical pencil blue — that is a
+role. Seventeen games wrote seventeen different cursors — that is not, and
+unifying them would be re-tuning colours for their own sake. When in doubt, keep
+it local and say why; a role can always be promoted once a second genuine
+consumer appears, and D2 of `audit-game-colour-palette` is explicit that a role
+with one adopter is the `PointerAction` mistake.
+
+The guard compares *values*, so writing `[0.78 * bg[0], …]` longhand passes as
+though you had imported `highlightWash`. It won't catch you; review will. Import
+the role.
+
 **Mirror the C colour-enum indices when the game has dark-mode overrides.**
 `src/puzzle/augmentation.ts` may carry a `paletteOverrides` map for a game keyed by
 **colour index** (Unruly's `{3..8: false}` preserves its black/white tiles + bevels
@@ -772,7 +813,7 @@ are the same control. Exemplars:
 one.** When a game highlights a region/area the player has correctly finished
 (the local-completion feedback Galaxies and Rectangles give — *not* a
 global-solution check), fill it with
-[`correctRegionColour(background)`](../../src/native/engine/colour-mkhighlight.ts)
+[`correctRegionColour(background)`](../../src/native/engine/palette.ts)
 (a neutral grey, `0.75 × background`, upstream Rectangles' `COL_CORRECT`
 convention), placed at a `COL_CORRECT` palette index. Reach for the shared
 constant rather than a per-game hue (a green invented for Separate/Palisade was
