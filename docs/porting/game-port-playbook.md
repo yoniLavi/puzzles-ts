@@ -722,24 +722,51 @@ protocol is spelled out in its module header).
 
 ### 3.3 Palette
 
-**Take every player-facing colour from
-[`engine/palette.ts`](../../src/native/engine/palette.ts); never write an RGB
-triple for one.** The module names the *roles* two or more games use to mean the
-same thing — `INK`, `PAPER`, `ERROR`, the three hint emphases, `PENCIL_BODY`,
-`GRID_MID` — plus the background-derived ones (`pencilColour`,
-`playerEntryColour`, `highlightWash`, `errorWash`, `lineMaybeColour`,
-`wallColour`, `correctRegionColour`). Write `out[COL_ERROR] = ERROR;`: the roles
-deliberately drop the `COL_` prefix, which in this codebase means "a palette
-**index**", so your game's own index constants keep matching its C enum and the
-two namespaces never collide. Read the module's header before adding anything —
-each role documents what it means to the player and why it is absolute or
-derived.
+**A game contains no colour value. Not one.** Every colour your game shows is a
+reference to a token in the collection's colour table, or a call to a shared
+function from it. The table is in two halves behind two import paths:
 
-Note that the derived roles matter more than they look. `puzzle-view.ts` hands a
-game **pure white** as its background in dark mode, so a colour that must stay
-legible *against the board* has to be a function of the background, not a fixed
-pale value (see the Spokes `COL_DONE` note below — that is this rule's failure
-mode).
+- [`engine/palette.ts`](../../src/native/engine/palette.ts) — the **shared
+  roles**, the meanings two or more games have in common: `INK`, `PAPER`,
+  `ERROR`, the three hint emphases, `PENCIL_BODY`, `GRID_MID`, plus the
+  background-derived `pencilColour`, `playerEntryColour`, `highlightWash`,
+  `errorWash`, `lineMaybeColour`, `lineNoColour`, `clueDoneColour`, `wallColour`,
+  `correctRegionColour`. Its invariant is that **each value is named once**.
+- [`engine/palette-games.ts`](../../src/native/engine/palette-games.ts) — the
+  **per-game vocabularies**, prefixed with the game's id (`SIGNPOST_REGION_3`,
+  `slantGrid`). Two games may hold the same value here and that is not
+  duplication: Cube's die face and Untangle's vertex are both blue and are free to
+  diverge under a scheme.
+
+Write `out[COL_ERROR] = ERROR;`. Tokens deliberately drop the `COL_` prefix, which
+in this codebase means "a palette **index**", so your game's own index constants
+keep matching its C enum and the two namespaces never collide.
+
+**If no token fits, add one — to the table, with a meaning.** Name it for what it
+means to the player, not for what it looks like (`FLOOD_TILE_3`, not
+`FLOOD_ORANGE`): an appearance name is a lie the moment a second scheme gives it a
+different appearance, which is the whole point of a token table. Where a colour
+genuinely has no meaning beyond "the fourth one", the numbered name is the honest
+one. Which half it goes in is the audit's convergence test: **have other ports
+converged on this value, or diverged?** Eight games independently wrote the
+identical pencil blue — that is a shared role. Seventeen games wrote seventeen
+different cursors — that is not, and unifying them would be re-tuning colours for
+their own sake.
+
+**A colour defined *relative* to something is a named function, also in the
+table.** `slantGrid(background)`, `undeadGhost(background)`,
+`mkhighlightSpecific(UNRULY_BLACK)`. Do not open-code `bg[0] * 0.9` in your game:
+it is the same colour decision written as arithmetic, and it puts the decision
+somewhere a scheme cannot reach. The derived form matters more than it looks —
+`puzzle-view.ts` hands a game **pure white** as its background in dark mode, so a
+colour that must stay legible *against the board* has to be a function of the
+background, not a fixed pale value (the Spokes `COL_DONE` note below is this
+rule's failure mode).
+
+Two arithmetic traps, both worth a sentence because both cost a diff:
+`scale(c, 2/3)` is **not** `(c * 2) / 3` and `scale(c, 1/1.5)` is **not** `c / 1.5`
+— neither ratio is representable, so pre-computing it rounds once more. Use
+`fraction(c, 2, 3)` and `divide(c, 1.5)`, which keep upstream's *operation*.
 
 **If the colour means "this piece is black/white", use `PIECE_BLACK` /
 `PIECE_WHITE`, not `INK` / `PAPER`.** They are the same colour, and the
@@ -748,34 +775,30 @@ is *maximum contrast against the surface*, so it inverts, or your text ends up
 darker than the tile it is drawn on. A piece's black is *the piece's own
 identity*, so it is preserved: inverting it would tell the player the piece is the
 other colour, a white peg where the rules say black. Five games worked this out
-one at a time and pinned the index in `augmentation.ts` before it was a role
+one at a time and pinned the index in `augmentation.ts` before it was a token
 (guess's pegs, mines' and inertia's mines, pattern's squares, pearl's pearls). If
 your game has a black/white *thing* rather than black/white *ink*, you now get it
 right for free. A game that wants its black **lifted** rather than preserved (Light
 Up's wall, invisible if left pure black) still says so in `augmentation.ts`, which
-wins over the role.
+wins over the token.
 
-**A colour that is genuinely your game's own must be *declared*, not just
-written.** `palette.test.ts` resolves every registered game's palette and fails on
-any colour that is neither a role nor listed in its `GAME_LOCAL` table — so a new
-port with an undeclared colour fails the suite until you either map it to a role
-or add it with a one-line reason. Declare it when the colour is part of that
-game's identity, or a member of its own set whose job is to be told apart from the
-*other members* rather than to carry a meaning that recurs elsewhere: Guess's
-pegs, Map's regions, Mines' per-number digits — and, less obviously, your cursor
-colour, which seventeen games each chose to stand out against their own board.
+**A token states its value per colour scheme, and may leave one out.** `token(light,
+dark)` declares both; `token(light)` leaves dark to `utils/color.ts`'s calculation,
+which is a supported state, not a gap. Stating `dark` equal to `light` is how to
+say "this colour means the same thing under every scheme". The dark value rides on
+the array as an own property, so **assign the token, never a copy of it**:
+`[...PIECE_BLACK]` is the right colour with its scheme decision silently removed,
+and no test can catch that in general (an untagged `[0,0,0]` is equally well a
+copied `PIECE_BLACK` or a perfectly correct `INK`).
 
-The test for which it is: **have other ports converged on this value, or
-diverged?** Eight games independently wrote the identical pencil blue — that is a
-role. Seventeen games wrote seventeen different cursors — that is not, and
-unifying them would be re-tuning colours for their own sake. When in doubt, keep
-it local and say why; a role can always be promoted once a second genuine
-consumer appears, and D2 of `audit-game-colour-palette` is explicit that a role
-with one adopter is the `PointerAction` mistake.
-
-The guard compares *values*, so writing `[0.78 * bg[0], …]` longhand passes as
-though you had imported `highlightWash`. It won't catch you; review will. Import
-the role.
+**What enforces all of this**:
+[`palette-source.test.ts`](../../src/native/engine/palette-source.test.ts) reads
+your game's source and fails on a colour literal, on channel-indexing the
+background, on importing the colour combinators, and on importing another game's
+token. `palette.test.ts` keeps the value-level invariants (no duplicate role, every
+derived role visible against both host backgrounds). If you are adding a
+three-number array that genuinely is not a colour, declare it in that test's
+`NOT_COLOURS` with a reason — it has two entries and should stay about that size.
 
 **Mirror the C colour-enum indices when the game has dark-mode overrides.**
 `src/puzzle/augmentation.ts` may carry a `paletteOverrides` map for a game keyed by

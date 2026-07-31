@@ -98,36 +98,96 @@
       a token outright; the other 64 are computed from tokens by a shared
       function.
 
-## 3. Author the dark values
+## 3. Author the dark values → **moved to `consolidate-colour-palette`**
 
-- [ ] 3.1 Start with the enumerated sets, where the need is measured:
-      `hand-author-dark-palette` F2 put flood's and guess's worst pairwise separation at
-      **0.070 in dark against 0.134 in light**. Author ten mutually-distinguishable dark
-      colours per set; verify with the same pairwise metric, not by eye.
-- [ ] 3.2 Then everything else, game by game, checking both schemes in Chrome.
-- [ ] 3.3 Retire each `augmentation.ts` `paletteOverrides` entry as its token absorbs
-      the decision; note which must stay (a genuine per-board judgement such as Light
-      Up's lifted black).
+Owner direction, 2026-07-31, mid-change: the collection should not *have* ~190
+game colours. It should have **~10–20, each with a specific meaning**, with games
+referencing semantics — and where a game genuinely wants a named colour (a hint
+that says "fill with yellow"), the name must be truthful. That is a separate
+change; this one stays the relocation whose review property is *0 values changed*
+(design D3, and the reason a 687-entry diff was reviewable at all).
+
+Authoring dark values here would be wasted twice over: ~190 hand-picked values
+for tokens about to collapse into ~14, and the enumerated-set problem the
+authoring pass exists to solve **disappears by construction** once one
+distinguishable named set is designed once instead of per game.
+
+- [x] 3.1 Start with the enumerated sets, where the need is measured.
+      → **Measured, not authored.** `scripts/colour-dark-check.test.ts` reproduces
+      `puzzle-view.ts`'s dark pipeline and reports worst-pair separation per set:
+      flood **0.070** and guess **0.070** against 0.134 in light, samegame 0.097
+      against 0.127, map 0.067 against 0.077 (as close in light — no defect), mines
+      0.118 against 0.108 (**better** in dark — no defect). A bounded optimiser
+      confirmed the deficiency is fixable within hue — flood reaches 0.158 and
+      samegame 0.214 by moving lightness ≤0.18 and never losing chroma — so the
+      three real cases are settled and the values are the consolidation's to pick.
+      The instrument stays; the scratch optimiser was deleted.
+- [x] 3.2 Then everything else, game by game.
+      → **No defect to fix.** The same tool lists every colour whose relationship to
+      the board moves between schemes: **21 of 687**, and every one is a decision
+      somebody already made — the `PIECE_BLACK`/`PIECE_WHITE` tokens (guess, inertia,
+      mines, pattern, pearl) or an existing `augmentation.ts` override (bricks,
+      flood, galaxies, lightup, mines, solo, unruly). `hand-author-dark-palette`'s
+      calculated fallback is sound for everything the consolidation does not touch,
+      and the spec explicitly supports a token leaving a scheme value unstated.
+- [x] 3.3 Retire each `augmentation.ts` `paletteOverrides` entry as its token absorbs
+      the decision; note which must stay.
+      → Left in place deliberately, and now *audited* rather than assumed: all 21
+      background-relationship outliers trace to one, which is the evidence for
+      whether each is still earning its keep. Retiring them belongs with the
+      consolidation, where the tokens that would absorb them are decided.
 
 ## 4. Close the door
 
-- [ ] 4.1 Shrink `GAME_LOCAL` to empty as tokens absorb it, then **delete it** rather
+- [x] 4.1 Shrink `GAME_LOCAL` to empty as tokens absorb it, then **delete it** rather
       than leaving a permanently-empty escape hatch (D4).
-- [ ] 4.2 Add the check that actually matches the requirement: a lint rule over
+      → Deleted. It was replaced rather than emptied: the same job (notice a *new*
+      colour) is now derivable from the table instead of hand-maintained.
+- [x] 4.2 Add the check that actually matches the requirement: a lint rule over
       `src/native/games/**` forbidding a numeric colour literal in `colours()`. The
       value-based guard cannot see provenance (audit F6), so it cannot close this on its
       own.
-- [ ] 4.3 Update playbook §3.3: a new port picks tokens and never writes a colour; if
+      → `src/native/engine/palette-source.test.ts`, a vitest rule rather than a biome
+      one so it can carry its reasoning and its failure messages. **Five** rules, not
+      one: no colour literal, no channel-indexing the background, no importing the
+      colour combinators, every per-game token imported by the game its name claims,
+      and no token nothing uses. Scoped to whole game *sources* rather than to
+      `colours()`, because several games build their palette in a helper.
+      **Every rule was mutation-tested, and one was broken**: the combinator-import
+      rule matched the comment-stripped copy of the source, and an import path is a
+      string literal, so it could never fire. The ownership rule then found a real
+      bug — `SIGNPOST_REGION_BACKGROUNDS` re-wrapped its eight authored tokens into
+      copies, which would have left every named region unable to carry a scheme
+      value.
+- [x] 4.3 Update playbook §3.3: a new port picks tokens and never writes a colour; if
       no token fits, it adds one to the table with a meaning.
+      → Rewritten: the two halves and which one a new colour goes in, naming for
+      meaning, derived colours as named functions, the `fraction`/`divide` rounding
+      traps, `token(light, dark)` and why a game must assign a token rather than a
+      copy, and what the source guard will fail you for.
 
 ## 5. Verify and close out
 
-- [ ] 5.1 **Demonstrate D7, don't assert it**: change one scheme's appearance wholesale
+- [x] 5.1 **Demonstrate D7, don't assert it**: change one scheme's appearance wholesale
       from one file, observe the blast radius, revert. The audit's F9 is the template.
-- [ ] 5.2 Confirm no game file contains a colour value; confirm adding a third scheme
+      → Gave **172 tokens** an authored dark value with one blanket edit to
+      `palette-games.ts`. Typecheck clean, **no game file touched**, and the only
+      test that objected was the one deliberately pinning today's set of authored
+      tokens (Pearl reported five scheme decisions instead of two — correct). So
+      "restyling a scheme is an edit to the table" is now observed, not claimed.
+- [x] 5.2 Confirm no game file contains a colour value; confirm adding a third scheme
       would touch no game.
+      → The first is enforced continuously by task 4.2's guard across all 57 games,
+      not confirmed once. The second follows from 5.1: a scheme is a value per token,
+      and the 172-token edit reached every game without touching one.
 - [ ] 5.3 Full gate green; `openspec validate colour-tokens-per-scheme --strict`.
 - [ ] 5.4 Owner acceptance, then archive.
+
+## Follow-up
+
+`consolidate-colour-palette` — reduce the ~190 tokens this change named to ~10–20
+colours with specific semantics, and make every reference semantic except where a
+game genuinely wants a named colour, whose name must then be truthful.
 
 ## Out of scope
 
