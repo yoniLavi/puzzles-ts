@@ -17,7 +17,13 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { ERROR, INK } from "../../engine/palette.ts";
+import { clueDoneColour, ERROR, INK } from "../../engine/palette.ts";
+import {
+  MAGNETS_CURSOR,
+  MAGNETS_NEUTRAL,
+  MAGNETS_NOT,
+  MAGNETS_POSITIVE,
+} from "../../engine/palette-games.ts";
 import {
   COLUMN,
   clueIndex,
@@ -64,12 +70,12 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_LOWLIGHT] = lowlight;
   out[COL_TEXT] = INK;
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = [0.9, 0.9, 0.9];
-  out[COL_DONE] = [background[0] / 1.5, background[1] / 1.5, background[2] / 1.5];
-  out[COL_NEUTRAL] = [0.1, 0.6, 0.1];
+  out[COL_CURSOR] = MAGNETS_CURSOR;
+  out[COL_DONE] = clueDoneColour(background);
+  out[COL_NEUTRAL] = MAGNETS_NEUTRAL;
   out[COL_NEGATIVE] = INK;
-  out[COL_POSITIVE] = [0.8, 0, 0];
-  out[COL_NOT] = [0.2, 0.2, 1];
+  out[COL_POSITIVE] = MAGNETS_POSITIVE;
+  out[COL_NOT] = MAGNETS_NOT;
   out[COL_MISTAKE] = ERROR;
   return out;
 }

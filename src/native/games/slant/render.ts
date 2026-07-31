@@ -20,6 +20,7 @@ import {
   HINT_EVIDENCE,
   INK,
 } from "../../engine/palette.ts";
+import { slantGrid, slantGrounded } from "../../engine/palette-games.ts";
 import type { SlantHint } from "./index.ts";
 import type {
   SlantMistake,
@@ -50,17 +51,16 @@ export const COL_HINT_REF = 11; // a cited filled anchor (teal ring)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight } = mkhighlight(defaultBackground);
-  const scale = (c: Colour, f: number): Colour => [c[0] * f, c[1] * f, c[2] * f];
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
-  out[COL_GRID] = scale(background, 0.7);
+  out[COL_GRID] = slantGrid(background);
   out[COL_INK] = INK;
   out[COL_SLANT1] = INK;
   out[COL_SLANT2] = INK;
   out[COL_ERROR] = ERROR;
   out[COL_CURSOR] = highlight; // a background highlight, per game_mkhighlight
   out[COL_FILLEDSQUARE] = background;
-  out[COL_GROUNDED] = scale(background, 0.8);
+  out[COL_GROUNDED] = slantGrounded(background);
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   out[COL_HINT_REF] = HINT_BLACKREF;

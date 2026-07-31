@@ -16,6 +16,13 @@ import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { ERROR, HINT_ACTION, HINT_EVIDENCE, INK, PAPER } from "../../engine/palette.ts";
+import {
+  DOMINOSA_CLASH,
+  DOMINOSA_HIGHLIGHT_1,
+  DOMINOSA_HIGHLIGHT_2,
+  DOMINOSA_REFERENCE,
+  dominosaEdge,
+} from "../../engine/palette-games.ts";
 import type { DominosaHint } from "./index.ts";
 import {
   DINDEX,
@@ -59,19 +66,15 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = background;
   out[COL_TEXT] = INK;
   out[COL_DOMINO] = INK;
-  out[COL_DOMINOCLASH] = [0.5, 0, 0];
+  out[COL_DOMINOCLASH] = DOMINOSA_CLASH;
   out[COL_DOMINOTEXT] = PAPER;
-  out[COL_EDGE] = [
-    (background[0] * 2) / 3,
-    (background[1] * 2) / 3,
-    (background[2] * 2) / 3,
-  ];
-  out[COL_HIGHLIGHT_1] = [0.85, 0.2, 0.2];
-  out[COL_HIGHLIGHT_2] = [0.3, 0.85, 0.2];
+  out[COL_EDGE] = dominosaEdge(background);
+  out[COL_HIGHLIGHT_1] = DOMINOSA_HIGHLIGHT_1;
+  out[COL_HIGHLIGHT_2] = DOMINOSA_HIGHLIGHT_2;
   out[COL_MISTAKE] = ERROR;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  out[COL_REFERENCE] = [0.6, 0.2, 0.8];
+  out[COL_REFERENCE] = DOMINOSA_REFERENCE;
   return out;
 }
 

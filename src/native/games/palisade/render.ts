@@ -17,6 +17,7 @@ import {
   HINT_EVIDENCE,
   INK,
   lineMaybeColour,
+  lineNoColour,
 } from "../../engine/palette.ts";
 import {
   BORDER,
@@ -53,8 +54,6 @@ export const COL_HINT = 6; // every edge the deduction forces this step (blue)
 export const COL_HINT_CELL = 7; // referenced-cell shading (a light blue)
 export const COL_CORRECT = 8; // a completed, correct region (shared grey shade)
 
-const DARKER = 0.9;
-
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight } = mkhighlight(defaultBackground);
   const out: Colour[] = [];
@@ -66,11 +65,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   out[COL_CORRECT] = correctRegionColour(background);
   out[COL_LINE_MAYBE] = lineMaybeColour(background);
-  out[COL_LINE_NO] = [
-    background[0] * DARKER,
-    background[1] * DARKER,
-    background[2] * DARKER,
-  ];
+  out[COL_LINE_NO] = lineNoColour(background);
   return out;
 }
 

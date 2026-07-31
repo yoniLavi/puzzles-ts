@@ -11,6 +11,8 @@ import type {
 } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { workingOn } from "../../engine/hint-vocab.ts";
+import { INK } from "../../engine/palette.ts";
+import { FIFTEEN_HINT } from "../../engine/palette-games.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
@@ -236,9 +238,7 @@ function colours(defaultBackground: Colour): Colour[] {
     highlight: hi,
     lowlight: lo,
   } = mkhighlight(defaultBackground);
-  const text: Colour = [0, 0, 0];
-  const hint: Colour = [0.3, 0.5, 0.9];
-  return [bg, text, hi, lo, hint];
+  return [bg, INK, hi, lo, FIFTEEN_HINT];
 }
 
 function drawTile(

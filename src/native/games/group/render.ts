@@ -27,6 +27,7 @@ import {
   pencilColour,
   playerEntryColour,
 } from "../../engine/palette.ts";
+import { groupDiagonal } from "../../engine/palette-games.ts";
 import type { GroupMove } from "./state.ts";
 import {
   checkErrors,
@@ -68,7 +69,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HIGHLIGHT] = highlightWash(bg);
   out[COL_ERROR] = ERROR;
   out[COL_PENCIL] = pencilColour(bg);
-  out[COL_DIAGONAL] = [0.95 * bg[0], 0.95 * bg[1], 0.95 * bg[2]];
+  out[COL_DIAGONAL] = groupDiagonal(bg);
   out[COL_MISTAKE] = ERROR;
   out[COL_HINT] = HINT_FILL;
   out[COL_HINT_CELL] = HINT_EVIDENCE;

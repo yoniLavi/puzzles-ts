@@ -25,6 +25,12 @@ import {
   type UiUpdate,
 } from "../../engine/index.ts";
 import { PAPER } from "../../engine/palette.ts";
+import {
+  FLIP_CURSOR,
+  FLIP_HINT,
+  flipGrid,
+  flipWrongFace,
+} from "../../engine/palette-games.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -747,13 +753,13 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
   colours(defaultBackground): Colour[] {
     const bg = defaultBackground;
     const ret: Colour[] = new Array(NCOLOURS);
-    ret[COL_BACKGROUND] = [bg[0], bg[1], bg[2]];
-    ret[COL_WRONG] = [bg[0] / 3, bg[1] / 3, bg[2] / 3];
+    ret[COL_BACKGROUND] = [...bg];
+    ret[COL_WRONG] = flipWrongFace(bg);
     ret[COL_RIGHT] = PAPER;
-    ret[COL_GRID] = [bg[0] / 1.5, bg[1] / 1.5, bg[2] / 1.5];
+    ret[COL_GRID] = flipGrid(bg);
     ret[COL_DIAG] = ret[COL_GRID];
-    ret[COL_HINT] = [1, 0, 0];
-    ret[COL_CURSOR] = [0.8, 0, 0];
+    ret[COL_HINT] = FLIP_HINT;
+    ret[COL_CURSOR] = FLIP_CURSOR;
     return ret;
   },
 

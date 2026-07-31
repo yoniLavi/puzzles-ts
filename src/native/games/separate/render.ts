@@ -13,7 +13,7 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { correctRegionColour, mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { ERROR, INK, lineMaybeColour } from "../../engine/palette.ts";
+import { ERROR, INK, lineMaybeColour, lineNoColour } from "../../engine/palette.ts";
 import {
   BORDER,
   BORDER_D,
@@ -44,8 +44,6 @@ export const COL_LINE_NO = 4;
 export const COL_ERROR = 5;
 export const COL_CORRECT = 6; // a completed, correct region (shared grey shade)
 
-const DARKER = 0.9;
-
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight } = mkhighlight(defaultBackground);
   const out: Colour[] = [];
@@ -55,11 +53,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = ERROR;
   out[COL_CORRECT] = correctRegionColour(background);
   out[COL_LINE_MAYBE] = lineMaybeColour(background);
-  out[COL_LINE_NO] = [
-    background[0] * DARKER,
-    background[1] * DARKER,
-    background[2] * DARKER,
-  ];
+  out[COL_LINE_NO] = lineNoColour(background);
   return out;
 }
 

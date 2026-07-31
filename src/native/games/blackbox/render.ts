@@ -16,6 +16,14 @@ import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { ERROR, INK } from "../../engine/palette.ts";
 import {
+  BLACKBOX_BUTTON,
+  BLACKBOX_CURSOR,
+  BLACKBOX_FLASH_TEXT,
+  blackboxCover,
+  blackboxGrid,
+  blackboxLock,
+} from "../../engine/palette-games.ts";
+import {
   BALL_CORRECT,
   BALL_GUESS,
   BALL_LOCK,
@@ -107,13 +115,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   ret[COL_LOWLIGHT] = lowlight;
   ret[COL_BALL] = INK;
   ret[COL_WRONG] = ERROR;
-  ret[COL_BUTTON] = [0, 1, 0];
-  ret[COL_CURSOR] = [1, 0, 0];
-  ret[COL_GRID] = [bg[0] * 0.9, bg[1] * 0.9, bg[2] * 0.9];
-  ret[COL_LOCK] = [bg[0] * 0.7, bg[1] * 0.7, bg[2] * 0.7];
-  ret[COL_COVER] = [bg[0] * 0.5, bg[1] * 0.5, bg[2] * 0.5];
+  ret[COL_BUTTON] = BLACKBOX_BUTTON;
+  ret[COL_CURSOR] = BLACKBOX_CURSOR;
+  ret[COL_GRID] = blackboxGrid(bg);
+  ret[COL_LOCK] = blackboxLock(bg);
+  ret[COL_COVER] = blackboxCover(bg);
   ret[COL_TEXT] = INK;
-  ret[COL_FLASHTEXT] = [0, 1, 0];
+  ret[COL_FLASHTEXT] = BLACKBOX_FLASH_TEXT;
   return ret;
 }
 

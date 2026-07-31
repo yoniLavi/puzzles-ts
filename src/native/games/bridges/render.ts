@@ -20,6 +20,13 @@
 import type { Colour } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing } from "../../engine/game.ts";
+import { INK } from "../../engine/palette.ts";
+import {
+  BRIDGES_SELECTED,
+  BRIDGES_WARNING,
+  bridgesCursor,
+  bridgesGrid,
+} from "../../engine/palette-games.ts";
 import {
   type BridgesMistake,
   type BridgesParams,
@@ -137,26 +144,18 @@ export function computeSize(
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const [br, bgc, bb] = background;
   // COL_HINT = COL_LOWLIGHT; COL_GRID = (HINT + BACKGROUND) / 2; COL_MARK = HIGHLIGHT.
-  const grid: Colour = [
-    (lowlight[0] + br) / 2,
-    (lowlight[1] + bgc) / 2,
-    (lowlight[2] + bb) / 2,
-  ];
-  // COL_CURSOR: red channel brightened, green/blue dimmed (bridges.c 2742-2744).
-  const cursor: Colour = [Math.min(br * 1.4, 1), bgc * 0.8, bb * 0.8];
   return [
     background, // COL_BACKGROUND
-    [0, 0, 0], // COL_FOREGROUND
+    INK, // COL_FOREGROUND
     highlight, // COL_HIGHLIGHT
     lowlight, // COL_LOWLIGHT
-    [0.25, 1, 0.25], // COL_SELECTED
+    BRIDGES_SELECTED, // COL_SELECTED
     highlight, // COL_MARK (= HIGHLIGHT)
     lowlight, // COL_HINT (= LOWLIGHT)
-    grid, // COL_GRID
-    [1, 0.25, 0.25], // COL_WARNING (also the mistake overlay colour)
-    cursor, // COL_CURSOR
+    bridgesGrid(background, lowlight), // COL_GRID
+    BRIDGES_WARNING, // COL_WARNING (also the mistake overlay colour)
+    bridgesCursor(background), // COL_CURSOR
   ];
 }
 

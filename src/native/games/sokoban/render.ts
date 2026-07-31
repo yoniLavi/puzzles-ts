@@ -16,6 +16,11 @@ import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { INK, PAPER, wallColour } from "../../engine/palette.ts";
 import {
+  SOKOBAN_BARREL,
+  SOKOBAN_PLAYER,
+  sokobanPit,
+} from "../../engine/palette-games.ts";
+import {
   barrelLabel,
   DEEP_PIT,
   INITIAL,
@@ -63,10 +68,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_OUTLINE] = INK;
-  out[COL_PLAYER] = [0, 1, 0];
-  out[COL_BARREL] = [0.6, 0.3, 0];
+  out[COL_PLAYER] = SOKOBAN_PLAYER;
+  out[COL_BARREL] = SOKOBAN_BARREL;
   out[COL_TARGET] = [...lowlight];
-  out[COL_PIT] = [lowlight[0] / 2, lowlight[1] / 2, lowlight[2] / 2];
+  out[COL_PIT] = sokobanPit(lowlight);
   out[COL_DEEP_PIT] = INK;
   out[COL_TEXT] = PAPER;
   out[COL_GRID] = [...lowlight];

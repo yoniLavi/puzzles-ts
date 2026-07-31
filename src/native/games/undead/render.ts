@@ -20,6 +20,7 @@ import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import {
+  clueDoneColour,
   ERROR,
   HINT_EVIDENCE,
   HINT_FILL,
@@ -28,6 +29,11 @@ import {
   PAPER,
   PENCIL_BODY,
 } from "../../engine/palette.ts";
+import {
+  undeadGhost,
+  undeadVampire,
+  undeadZombie,
+} from "../../engine/palette-games.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   CELL_MIRROR_L,
@@ -89,11 +95,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = ERROR;
   out[COL_HIGHLIGHT] = highlightWash(bg);
   out[COL_FLASH] = PAPER;
-  // Note: upstream derives all three monster shades from bg[0] (the red channel).
-  out[COL_GHOST] = [bg[0] * 0.5, bg[0], bg[0]];
-  out[COL_ZOMBIE] = [bg[0] * 0.5, bg[0], bg[0] * 0.5];
-  out[COL_VAMPIRE] = [bg[0], bg[0] * 0.9, bg[0] * 0.9];
-  out[COL_DONE] = [bg[0] / 1.5, bg[1] / 1.5, bg[2] / 1.5];
+  out[COL_GHOST] = undeadGhost(bg);
+  out[COL_ZOMBIE] = undeadZombie(bg);
+  out[COL_VAMPIRE] = undeadVampire(bg);
+  out[COL_DONE] = clueDoneColour(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_FILL;
   out[COL_HINT_CELL] = HINT_EVIDENCE;

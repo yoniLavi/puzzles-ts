@@ -16,6 +16,13 @@ import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { ERROR, INK } from "../../engine/palette.ts";
 import {
+  NET_BARRIER,
+  NET_ENDPOINT,
+  NET_POWERED,
+  netBorder,
+  netLocked,
+} from "../../engine/palette-games.ts";
+import {
   anticlockwise,
   clockwise,
   D,
@@ -47,20 +54,15 @@ export const COL_BARRIER = 6;
 export const COL_ERR = 7;
 
 export function colours(defaultBackground: Colour): Colour[] {
-  const scale = (f: number): Colour => [
-    defaultBackground[0] * f,
-    defaultBackground[1] * f,
-    defaultBackground[2] * f,
-  ];
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_WIRE] = INK;
-  out[COL_POWERED] = [0, 1, 1]; // powered wires/endpoints are cyan
-  out[COL_BARRIER] = [1, 0, 0];
+  out[COL_POWERED] = NET_POWERED;
+  out[COL_BARRIER] = NET_BARRIER;
   out[COL_ERR] = ERROR;
-  out[COL_ENDPOINT] = [0, 0, 1]; // unpowered endpoints are blue
-  out[COL_BORDER] = scale(0.5); // tile borders: darker grey than bg
-  out[COL_LOCKED] = scale(0.75); // locked tiles: grey between the two
+  out[COL_ENDPOINT] = NET_ENDPOINT;
+  out[COL_BORDER] = netBorder(defaultBackground);
+  out[COL_LOCKED] = netLocked(defaultBackground);
   return out;
 }
 

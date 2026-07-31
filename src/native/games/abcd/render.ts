@@ -32,6 +32,7 @@ import {
   pencilColour,
   playerEntryColour,
 } from "../../engine/palette.ts";
+import { abcdBorderLetter } from "../../engine/palette-games.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import {
   type AbcdState,
@@ -71,7 +72,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_OUTERBG] = outer;
   out[COL_INNERBG] = inner;
   out[COL_GRID] = GRID_MID;
-  out[COL_BORDERLETTER] = [0, 0, 0.6 * outer[1]];
+  out[COL_BORDERLETTER] = abcdBorderLetter(outer);
   out[COL_TEXT] = INK;
   out[COL_GUESS] = playerEntryColour(inner);
   out[COL_ERROR] = ERROR;

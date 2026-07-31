@@ -38,6 +38,17 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
+import { INK } from "../../engine/palette.ts";
+import {
+  UNTANGLE_CROSSED_LINE,
+  UNTANGLE_CURSOR_POINT,
+  UNTANGLE_DRAG_POINT,
+  UNTANGLE_FLASH_1,
+  UNTANGLE_FLASH_2,
+  UNTANGLE_HINT,
+  UNTANGLE_NEIGHBOUR,
+  UNTANGLE_POINT,
+} from "../../engine/palette-games.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -500,22 +511,16 @@ export const untangleGame: Game<
     return [
       lowlight, // 0 COL_SYSBACKGROUND (dead space, darker)
       background, // 1 COL_BACKGROUND (play area)
-      [0, 0, 0], // 2 COL_LINE
-      [1, 0, 0], // 3 COL_CROSSEDLINE
-      [0, 0, 0], // 4 COL_OUTLINE
-      [0, 0, 1], // 5 COL_POINT
-      [1, 1, 1], // 6 COL_DRAGPOINT
-      [0.5, 0.5, 0.5], // 7 COL_CURSORPOINT
-      // 8 COL_NEIGHBOUR — neighbours of the dragged vertex. Light blue
-      // (not the upstream red) so it doesn't read as "danger"/error,
-      // which red is reserved for here (crossed edges).
-      [0.45, 0.7, 1], // 8 COL_NEIGHBOUR
-      [0.5, 0.5, 0.5], // 9 COL_FLASH1
-      [1, 1, 1], // 10 COL_FLASH2
-      // 11 COL_HINT — the suggested move (line + destination marker).
-      // Orange: distinct from blue points, light-blue neighbours, and the
-      // red crossed edges.
-      [1, 0.55, 0], // 11 COL_HINT
+      INK, // 2 COL_LINE
+      UNTANGLE_CROSSED_LINE, // 3 COL_CROSSEDLINE
+      INK, // 4 COL_OUTLINE
+      UNTANGLE_POINT, // 5 COL_POINT
+      UNTANGLE_DRAG_POINT, // 6 COL_DRAGPOINT
+      UNTANGLE_CURSOR_POINT, // 7 COL_CURSORPOINT
+      UNTANGLE_NEIGHBOUR, // 8 COL_NEIGHBOUR
+      UNTANGLE_FLASH_1, // 9 COL_FLASH1
+      UNTANGLE_FLASH_2, // 10 COL_FLASH2
+      UNTANGLE_HINT, // 11 COL_HINT
     ];
   },
   computeSize: (p: UntangleParams, tileSize: number): Size => {

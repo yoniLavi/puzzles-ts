@@ -14,6 +14,13 @@ import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { ERROR, GRID_MID, INK, PAPER } from "../../engine/palette.ts";
+import {
+  TRACKS_CURSOR,
+  TRACKS_DRAG_OFF,
+  TRACKS_DRAG_ON,
+  TRACKS_SLEEPER,
+  tracksGrid,
+} from "../../engine/palette-games.ts";
 import { copyAndApplyDrag } from "./moves.ts";
 import {
   ALLDIR,
@@ -57,24 +64,19 @@ export const COL_ERROR_BACKGROUND = 12;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight } = mkhighlight(defaultBackground);
-  const mix = (a: Colour, b: Colour, p: number): Colour => [
-    a[0] * (1 - p) + b[0] * p,
-    a[1] * (1 - p) + b[1] * p,
-    a[2] * (1 - p) + b[2] * p,
-  ];
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_TRACK_BACKGROUND] = highlight;
-  out[COL_GRID] = mix(background, highlight, 0.5);
+  out[COL_GRID] = tracksGrid(background, highlight);
   out[COL_TRACK_CLUE] = INK;
   out[COL_TRACK] = GRID_MID;
   out[COL_CLUE] = INK;
-  out[COL_CURSOR] = [0.3, 0.3, 0.3];
+  out[COL_CURSOR] = TRACKS_CURSOR;
   out[COL_ERROR_BACKGROUND] = PAPER;
-  out[COL_SLEEPER] = [0.5, 0.4, 0.1];
+  out[COL_SLEEPER] = TRACKS_SLEEPER;
   out[COL_ERROR] = ERROR;
-  out[COL_DRAGON] = [0, 0, 1];
-  out[COL_DRAGOFF] = [0.8, 0.8, 1];
+  out[COL_DRAGON] = TRACKS_DRAG_ON;
+  out[COL_DRAGOFF] = TRACKS_DRAG_OFF;
   out[COL_FLASH] = PAPER;
   return out;
 }

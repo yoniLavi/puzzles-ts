@@ -21,6 +21,11 @@ import {
   INK,
   PAPER,
 } from "../../engine/palette.ts";
+import {
+  SINGLES_BLACK_NUM,
+  SINGLES_CURSOR,
+  SINGLES_HINT_STRAND,
+} from "../../engine/palette-games.ts";
 import type { SinglesHint } from "./index.ts";
 import {
   F_BLACK,
@@ -64,13 +69,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_LOWLIGHT] = lowlight;
   out[COL_BLACK] = INK;
   out[COL_WHITE] = PAPER;
-  out[COL_BLACKNUM] = [0.4, 0.4, 0.4];
+  out[COL_BLACKNUM] = SINGLES_BLACK_NUM;
   out[COL_GRID] = lowlight; // COL_GRID == COL_LOWLIGHT
-  out[COL_CURSOR] = [0.2, 0.8, 0];
+  out[COL_CURSOR] = SINGLES_CURSOR;
   out[COL_ERROR] = ERROR;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  out[COL_HINT_STRAND] = [0.98, 0.78, 0.42];
+  out[COL_HINT_STRAND] = SINGLES_HINT_STRAND;
   out[COL_HINT_BLACKREF] = HINT_BLACKREF;
   out[COL_HINT_WHITEREF] = HINT_WHITEREF;
   return out;

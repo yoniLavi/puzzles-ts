@@ -35,7 +35,13 @@ import type { Colour } from "../../puzzle/types.ts";
  *
  * The corollary is that a game must assign a token, never a copy of one:
  * `[...PIECE_BLACK]` is the right colour with its scheme decision silently
- * removed.
+ * removed. **No test can catch that in general**, and it is worth knowing why: a
+ * copy is detectable only by value, and value is exactly what does not identify a
+ * token — an untagged `[0, 0, 0]` is equally well a copied `PIECE_BLACK` or a
+ * perfectly correct `INK`. What does hold the line is that tokens are frozen and
+ * there is no reason to copy one; `palette.test.ts` catches the neighbouring
+ * mistake (a token nobody references at all), and that is how the copy inside
+ * `SIGNPOST_REGION_BACKGROUNDS` was found.
  */
 type Token = Colour & { readonly dark?: Colour };
 
@@ -76,6 +82,19 @@ export function darkValue(c: Colour): Colour | undefined {
  */
 export function scale(colour: Colour, factor: number): Colour {
   return [colour[0] * factor, colour[1] * factor, colour[2] * factor];
+}
+
+/**
+ * A colour **divided** by a number.
+ *
+ * Distinct from `scale(c, 1 / k)` for the same reason {@link fraction} is: the
+ * reciprocal is usually not representable, so pre-computing it rounds once more
+ * than upstream's `c / 1.5` does. Upstream writes several derivations as a
+ * division; keeping the operation as well as the value means the resolved
+ * palette does not shift by an ULP when a colour moves into the table.
+ */
+export function divide(colour: Colour, divisor: number): Colour {
+  return [colour[0] / divisor, colour[1] / divisor, colour[2] / divisor];
 }
 
 /**

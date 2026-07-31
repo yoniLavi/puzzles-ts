@@ -55,13 +55,48 @@
 
 ## 2. The mechanical pass: no game holds a literal
 
-- [ ] 2.1 Enumerated sets next — flood, guess, samegame, map, mines (D6.2).
-- [ ] 2.2 Then the 25 games with ≤3 literals; then the remainder.
-- [ ] 2.3 Per batch: **zero snapshot movement**. Anything that moves is a mistake to
+- [x] 2.1 Enumerated sets next — flood, guess, samegame, map, mines (D6.2).
+      → Three findings recorded on the tokens themselves: Flood's and Guess's ten
+      values are **identical** (upstream wrote the list twice) and stay two sets per
+      D1; **Flood's hues are a player-visible contract** because its hint says "Fill
+      with red", so a scheme may darken a tile but not re-hue it; and Mines'
+      count-3 digit and its flag are both pure red but are **not** the `ERROR` role,
+      which the old value-based guard had been silently filing them as.
+- [x] 2.2 Then the 25 games with ≤3 literals; then the remainder.
+      → Done in one pass over the remaining 48 games (79 exact-match source edits,
+      any miss an assertion rather than a silent no-op). Two colours were promoted
+      to **shared roles** on the audit's own convergence test — `lineNoColour`
+      (Loopy's `COL_FAINT`, Palisade's and Separate's `COL_LINE_NO`: three ports,
+      identical `background × 0.9`, identical meaning, and the exact sibling of the
+      existing `lineMaybeColour`) and `clueDoneColour` (Magnets, Towers and Undead,
+      all `background / 1.5` under the same local name `COL_DONE`).
+      **No-goes recorded:** cursor stays per game (the audit examined it and found
+      17 games with 17 deliberately different cursors — four x-sheep ports agreeing
+      does not overturn that); Net and Netslide keep separate prefixes for their
+      three shared wire colours (a two-game family is not a collection-wide
+      meaning, and the prefix rule is what makes the guard mechanical); and the
+      fixed `[0, 0.5, 0]` "you entered this" green in five games is **not** merged
+      into the background-derived `playerEntryColour` role, because at 0.4962 they
+      differ and merging would be a retune, not a relocation (D3). Left as a
+      candidate for a later pass.
+- [x] 2.3 Per batch: **zero snapshot movement**. Anything that moves is a mistake to
       find, not a diff to accept (D5).
-- [ ] 2.4 Regenerate the audit's `inventory.md` as the reviewable artefact — it diffs
+      → Held throughout; 6033 native tests green with no snapshot re-baselining.
+      The rule earned its keep twice, both times on **one ULP**: `scale(bg, 2/3)`
+      is not `(bg * 2) / 3` and `scale(bg, 1/1.5)` is not `bg / 1.5`, because
+      neither ratio is representable. Invisible on screen, visible in a
+      full-precision inventory diff. The fix was `fraction()` and `divide()`
+      combinators that keep upstream's *operation*, not just its value.
+- [x] 2.4 Regenerate the audit's `inventory.md` as the reviewable artefact — it diffs
       *resolved palettes* across commits, so it proves the relocation changed nothing.
       (Generator recipe is in `2026-07-31-audit-game-colour-palette`.)
+      → `scripts/colour-inventory.test.ts`, regenerated after every batch and
+      committed, at **full precision** so an ULP cannot hide. It classifies by
+      **token identity** rather than by value, which is what let it distinguish
+      Mines' red digit from the error red. Across the whole mechanical pass:
+      184 lines relabelled, **0 values changed**. 623 of 687 entries (91%) are now
+      a token outright; the other 64 are computed from tokens by a shared
+      function.
 
 ## 3. Author the dark values
 

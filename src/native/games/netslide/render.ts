@@ -15,6 +15,14 @@
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HINT_ACTION, INK } from "../../engine/palette.ts";
+import {
+  NETSLIDE_BARRIER,
+  NETSLIDE_ENDPOINT,
+  NETSLIDE_POWERED,
+  netslideBorder,
+  netslideFlashing,
+  netslideLowlight,
+} from "../../engine/palette-games.ts";
 import type { NetslideHint } from "./hint.ts";
 import {
   ACTIVE,
@@ -68,18 +76,17 @@ export const COL_TEXT = 8;
 export const COL_HINT = 9;
 
 export function colours(defaultBackground: Colour): Colour[] {
-  const scale = (c: Colour, f: number): Colour => [c[0] * f, c[1] * f, c[2] * f];
   const out: Colour[] = [];
   // Netslide takes the frontend background as-is (upstream calls
   // `frontend_default_colour` directly, not `game_mkhighlight`).
   out[COL_BACKGROUND] = defaultBackground;
-  out[COL_FLASHING] = scale(defaultBackground, 0.75);
-  out[COL_BORDER] = scale(defaultBackground, 0.5);
+  out[COL_FLASHING] = netslideFlashing(defaultBackground);
+  out[COL_BORDER] = netslideBorder(defaultBackground);
   out[COL_WIRE] = INK;
-  out[COL_ENDPOINT] = [0, 0, 1]; // an unpowered endpoint is blue
-  out[COL_POWERED] = [0, 1, 1]; // a powered wire or endpoint is cyan
-  out[COL_BARRIER] = [1, 0, 0];
-  out[COL_LOWLIGHT] = scale(defaultBackground, 0.8);
+  out[COL_ENDPOINT] = NETSLIDE_ENDPOINT;
+  out[COL_POWERED] = NETSLIDE_POWERED;
+  out[COL_BARRIER] = NETSLIDE_BARRIER;
+  out[COL_LOWLIGHT] = netslideLowlight(defaultBackground);
   out[COL_TEXT] = INK;
   // The same blue Sixteen marks a hinted tile with — the two are the same kind of
   // game and should read the same way. Black wires and cyan powered wires both

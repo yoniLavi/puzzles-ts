@@ -27,6 +27,13 @@ import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { ERROR, HINT_ACTION, HINT_EVIDENCE, INK, PAPER } from "../../engine/palette.ts";
+import {
+  SPOKES_BORDER,
+  SPOKES_CURSOR,
+  SPOKES_HOLDING,
+  SPOKES_MARK,
+  spokesSatisfied,
+} from "../../engine/palette-games.ts";
 import type { SpokesHint } from "./index.ts";
 import { SpokesScratch, spokesFindIsolated, spokesSolverRecount } from "./solver.ts";
 import {
@@ -99,7 +106,6 @@ export const COL_HINT_CELL = 10;
 /** How far {@link COL_SATISFIED} steps away from the background. Large enough
  * to read at a glance across a board, small enough to keep the black clue digit
  * and the spoke dots legible on top of it. */
-const SATISFIED_SHADE = 0.85;
 
 /**
  * Upstream takes the frontend background as-is (no `game_mkhighlight`) and
@@ -111,14 +117,14 @@ const SATISFIED_SHADE = 0.85;
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
-  out[COL_BORDER] = [0.3, 0.3, 0.3];
-  out[COL_HOLDING] = [0, 1, 0];
+  out[COL_BORDER] = SPOKES_BORDER;
+  out[COL_HOLDING] = SPOKES_HOLDING;
   out[COL_LINE] = INK;
-  out[COL_MARK] = [0.3, 0.3, 1];
+  out[COL_MARK] = SPOKES_MARK;
   out[COL_DONE] = PAPER;
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = [0, 0, 1];
-  out[COL_SATISFIED] = defaultBackground.map((c) => c * SATISFIED_SHADE) as Colour;
+  out[COL_CURSOR] = SPOKES_CURSOR;
+  out[COL_SATISFIED] = spokesSatisfied(defaultBackground);
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;

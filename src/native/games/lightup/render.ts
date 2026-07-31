@@ -15,7 +15,20 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { HINT_ACTION, HINT_EVIDENCE, INK, PAPER } from "../../engine/palette.ts";
+import {
+  HINT_ACTION,
+  HINT_BLACKREF,
+  HINT_EVIDENCE,
+  INK,
+  PAPER,
+} from "../../engine/palette.ts";
+import {
+  LIGHTUP_ERROR_FILL,
+  LIGHTUP_HINT_DARKREF,
+  LIGHTUP_LIT,
+  lightupCursor,
+  lightupGrid,
+} from "../../engine/palette-games.ts";
 import type { LightupHint, LightupMistake } from "./index.ts";
 import {
   F_BLACK,
@@ -53,16 +66,16 @@ export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
   const out: Colour[] = [];
   out[COL_BACKGROUND] = bg;
-  out[COL_GRID] = [bg[0] / 1.5, bg[1] / 1.5, bg[2] / 1.5];
+  out[COL_GRID] = lightupGrid(bg);
   out[COL_BLACK] = INK;
   out[COL_LIGHT] = PAPER;
-  out[COL_LIT] = [1, 1, 0];
-  out[COL_ERROR] = [1, 0.25, 0.25];
-  out[COL_CURSOR] = [bg[0] / 2, bg[1] / 2, bg[2] / 2];
+  out[COL_LIT] = LIGHTUP_LIT;
+  out[COL_ERROR] = LIGHTUP_ERROR_FILL;
+  out[COL_CURSOR] = lightupCursor(bg);
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  out[COL_HINT_LITREF] = [0.0, 0.78, 0.55];
-  out[COL_HINT_DARKREF] = [0.98, 0.78, 0.42];
+  out[COL_HINT_LITREF] = HINT_BLACKREF;
+  out[COL_HINT_DARKREF] = LIGHTUP_HINT_DARKREF;
   return out;
 }
 

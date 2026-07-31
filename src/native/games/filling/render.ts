@@ -20,6 +20,7 @@ import {
   INK,
   playerEntryColour,
 } from "../../engine/palette.ts";
+import { fillingCorrect, fillingCursor } from "../../engine/palette-games.ts";
 import type { FillingHint } from "./index.ts";
 import {
   DX,
@@ -50,10 +51,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = INK;
   out[COL_HIGHLIGHT] = highlightWash(bg);
-  out[COL_CORRECT] = [0.9 * bg[0], 0.9 * bg[1], 0.9 * bg[2]];
+  out[COL_CORRECT] = fillingCorrect(bg);
   out[COL_ERROR] = errorWash(bg);
   out[COL_USER] = playerEntryColour(bg);
-  out[COL_CURSOR] = [0.5 * bg[0], 0.5 * bg[1], 0.5 * bg[2]];
+  out[COL_CURSOR] = fillingCursor(bg);
   out[COL_HINT] = HINT_FILL;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
