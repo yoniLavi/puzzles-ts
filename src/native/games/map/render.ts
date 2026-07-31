@@ -10,6 +10,7 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { ERROR, ERROR_TEXT, INK } from "../../engine/palette.ts";
+import { MAP_REGIONS } from "../../engine/palette-games.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -42,22 +43,14 @@ export const COL_MISTAKE = 8;
 const FOUR = 4;
 const FIVE = 5;
 
-/** Upstream `map_colours` (non-vivid). */
-const MAP_COLOURS: readonly Colour[] = [
-  [0.7, 0.5, 0.4],
-  [0.8, 0.7, 0.4],
-  [0.5, 0.6, 0.4],
-  [0.55, 0.45, 0.35],
-];
-
 export function colours(defaultBackground: Colour): Colour[] {
   const ret: Colour[] = [];
   ret[COL_BACKGROUND] = defaultBackground;
   ret[COL_GRID] = INK;
-  ret[COL_0] = [...MAP_COLOURS[0]] as Colour;
-  ret[COL_1] = [...MAP_COLOURS[1]] as Colour;
-  ret[COL_2] = [...MAP_COLOURS[2]] as Colour;
-  ret[COL_3] = [...MAP_COLOURS[3]] as Colour;
+  ret[COL_0] = MAP_REGIONS[0];
+  ret[COL_1] = MAP_REGIONS[1];
+  ret[COL_2] = MAP_REGIONS[2];
+  ret[COL_3] = MAP_REGIONS[3];
   ret[COL_ERROR] = ERROR;
   ret[COL_ERRTEXT] = ERROR_TEXT;
   ret[COL_MISTAKE] = ERROR;

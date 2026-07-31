@@ -35,7 +35,7 @@
  */
 
 import type { Colour } from "../../puzzle/types.ts";
-import { mix, scale, token } from "./colour-token.ts";
+import { fraction, mix, scale, token } from "./colour-token.ts";
 import { INK } from "./palette.ts";
 
 // --- signpost ----------------------------------------------------------
@@ -142,3 +142,248 @@ export const signpostArrowDim = (background: Colour): Colour =>
  * board rather than authored, so it stays a wash under any host background. */
 export const signpostWashedRegion = (background: Colour, region: Colour): Colour =>
   mix(background, region, 0.5);
+
+// --- flood --------------------------------------------------------------
+
+/**
+ * Flood's ten tile colours — and the one set in the collection whose **hue is a
+ * player-visible contract**, not just an appearance.
+ *
+ * The hint narrates moves as *"Fill with red"* (`COLOUR_NAMES` in the game's
+ * renderer), so a scheme may darken or desaturate a tile but must not turn the
+ * red one purple: the sentence would stop being true. That is the exception that
+ * proves this table's naming rule — the tokens are numbered rather than named for
+ * their colour precisely so the *name* does not encode what the scheme is allowed
+ * to change, while the doc records what it is not.
+ *
+ * Ten values shared, character for character, with {@link GUESS_PEG_1} and its
+ * nine siblings: upstream wrote the same list twice. They stay two sets, because
+ * a Flood tile and a Guess peg are not the same thing to a player and there is no
+ * reason a scheme must move both. Same values today; free to diverge.
+ */
+export const FLOOD_TILE_1 = token([1, 0, 0]);
+/** @see FLOOD_TILE_1 */
+export const FLOOD_TILE_2 = token([1, 1, 0]);
+/** @see FLOOD_TILE_1 */
+export const FLOOD_TILE_3 = token([0, 1, 0]);
+/** @see FLOOD_TILE_1 */
+export const FLOOD_TILE_4 = token([0.2, 0.3, 1]);
+/** @see FLOOD_TILE_1 */
+export const FLOOD_TILE_5 = token([1, 0.5, 0]);
+/** @see FLOOD_TILE_1 */
+export const FLOOD_TILE_6 = token([0.5, 0, 0.7]);
+/** @see FLOOD_TILE_1 */
+export const FLOOD_TILE_7 = token([0.5, 0.3, 0.3]);
+/** @see FLOOD_TILE_1 */
+export const FLOOD_TILE_8 = token([0.4, 0.8, 1]);
+/** @see FLOOD_TILE_1 */
+export const FLOOD_TILE_9 = token([0.7, 1, 0.7]);
+/** @see FLOOD_TILE_1 */
+export const FLOOD_TILE_10 = token([1, 0.6, 1]);
+
+/** The ten in the order the game numbers them; `COLOUR_NAMES` is parallel. */
+export const FLOOD_TILES: readonly Colour[] = [
+  FLOOD_TILE_1,
+  FLOOD_TILE_2,
+  FLOOD_TILE_3,
+  FLOOD_TILE_4,
+  FLOOD_TILE_5,
+  FLOOD_TILE_6,
+  FLOOD_TILE_7,
+  FLOOD_TILE_8,
+  FLOOD_TILE_9,
+  FLOOD_TILE_10,
+];
+
+// --- guess --------------------------------------------------------------
+
+/**
+ * Guess's ten peg colours — the game itself, since a Guess board carries no other
+ * information. Their only meaning is *"a different peg from that one"*, so the
+ * property a scheme must preserve is **mutual separation**, not any individual
+ * hue.
+ *
+ * Measured worst pair in `hand-author-dark-palette` F2: 0.134 in light against
+ * 0.070 in dark, and no background-relative formula can improve that, because
+ * "tell these ten apart" is a property of the set rather than of any member.
+ * These are therefore among the first tokens that want authored dark values.
+ *
+ * The same ten values as {@link FLOOD_TILE_1}'s set; see the note there for why
+ * they are not one set.
+ */
+export const GUESS_PEG_1 = token([1, 0, 0]);
+/** @see GUESS_PEG_1 */
+export const GUESS_PEG_2 = token([1, 1, 0]);
+/** @see GUESS_PEG_1 */
+export const GUESS_PEG_3 = token([0, 1, 0]);
+/** @see GUESS_PEG_1 */
+export const GUESS_PEG_4 = token([0.2, 0.3, 1]);
+/** @see GUESS_PEG_1 */
+export const GUESS_PEG_5 = token([1, 0.5, 0]);
+/** @see GUESS_PEG_1 */
+export const GUESS_PEG_6 = token([0.5, 0, 0.7]);
+/** @see GUESS_PEG_1 */
+export const GUESS_PEG_7 = token([0.5, 0.3, 0.3]);
+/** @see GUESS_PEG_1 */
+export const GUESS_PEG_8 = token([0.4, 0.8, 1]);
+/** @see GUESS_PEG_1 */
+export const GUESS_PEG_9 = token([0.7, 1, 0.7]);
+/** @see GUESS_PEG_1 */
+export const GUESS_PEG_10 = token([1, 0.6, 1]);
+
+/** The ten in the order the game numbers them. */
+export const GUESS_PEGS: readonly Colour[] = [
+  GUESS_PEG_1,
+  GUESS_PEG_2,
+  GUESS_PEG_3,
+  GUESS_PEG_4,
+  GUESS_PEG_5,
+  GUESS_PEG_6,
+  GUESS_PEG_7,
+  GUESS_PEG_8,
+  GUESS_PEG_9,
+  GUESS_PEG_10,
+];
+
+/** **You solved it** — the pale cyan Guess flashes the board with on a win. */
+export const GUESS_FLASH = token([0.5, 1, 1]);
+
+/** **This peg is held** — the colour under a peg you have picked up and are
+ * dragging, so the slot you lifted it from still reads as occupied. */
+export const GUESS_HOLD = token([1, 0.5, 0.5]);
+
+/**
+ * Guess's board background, darkened when the host's is too pale.
+ *
+ * A white peg (`PIECE_WHITE`) on a white board is invisible, so the board steps
+ * back until the two separate — upstream borrows the rule from Fifteen. It is a
+ * derivation rather than a value because what it means is *"far enough from the
+ * board that a white peg shows"*, which depends on the board.
+ */
+export const guessBoard = (defaultBackground: Colour): Colour => {
+  const max = Math.max(...defaultBackground);
+  return max * 1.2 > 1
+    ? scale(defaultBackground, 1 / (max * 1.2))
+    : [...defaultBackground];
+};
+
+/** **No peg here** — an empty slot, sunk two-thirds of the way down from the
+ * board so a hint can point at it. */
+export const guessEmptySlot = (defaultBackground: Colour): Colour =>
+  fraction(guessBoard(defaultBackground), 2, 3);
+
+// --- samegame -----------------------------------------------------------
+
+/**
+ * Samegame's nine tile colours. Like Guess's pegs they exist only to be told
+ * apart, but the game is played by *clicking groups of the same colour*, so the
+ * separation has to survive at small tile sizes and across a crowded board —
+ * measured worst pair 0.127 light / 0.102 dark.
+ */
+export const SAMEGAME_TILE_1 = token([0, 0, 1]);
+/** @see SAMEGAME_TILE_1 */
+export const SAMEGAME_TILE_2 = token([0, 0.5, 0]);
+/** @see SAMEGAME_TILE_1 */
+export const SAMEGAME_TILE_3 = token([1, 0, 0]);
+/** @see SAMEGAME_TILE_1 */
+export const SAMEGAME_TILE_4 = token([0.7, 0.7, 0]);
+/** @see SAMEGAME_TILE_1 */
+export const SAMEGAME_TILE_5 = token([1, 0, 1]);
+/** @see SAMEGAME_TILE_1 */
+export const SAMEGAME_TILE_6 = token([0, 0.8, 0.8]);
+/** @see SAMEGAME_TILE_1 */
+export const SAMEGAME_TILE_7 = token([0.5, 0.5, 1]);
+/** @see SAMEGAME_TILE_1 */
+export const SAMEGAME_TILE_8 = token([0.2, 0.8, 0.2]);
+/** @see SAMEGAME_TILE_1 */
+export const SAMEGAME_TILE_9 = token([1, 0.5, 0.5]);
+
+/** The nine in the order the game numbers them. */
+export const SAMEGAME_TILES: readonly Colour[] = [
+  SAMEGAME_TILE_1,
+  SAMEGAME_TILE_2,
+  SAMEGAME_TILE_3,
+  SAMEGAME_TILE_4,
+  SAMEGAME_TILE_5,
+  SAMEGAME_TILE_6,
+  SAMEGAME_TILE_7,
+  SAMEGAME_TILE_8,
+  SAMEGAME_TILE_9,
+];
+
+// --- map ----------------------------------------------------------------
+
+/**
+ * Map's four region colours — the smallest enumerated set in the collection, and
+ * the only one whose size is a *theorem*: four colours suffice to colour any
+ * planar map, which is the puzzle.
+ *
+ * Upstream calls these the non-vivid set. They are deliberately muted earth
+ * tones rather than saturated hues, because a Map board is almost entirely
+ * region fill and four saturated colours at that area are unpleasant to look at
+ * for the length of a game.
+ */
+export const MAP_REGION_0 = token([0.7, 0.5, 0.4]);
+/** @see MAP_REGION_0 */
+export const MAP_REGION_1 = token([0.8, 0.7, 0.4]);
+/** @see MAP_REGION_0 */
+export const MAP_REGION_2 = token([0.5, 0.6, 0.4]);
+/** @see MAP_REGION_0 */
+export const MAP_REGION_3 = token([0.55, 0.45, 0.35]);
+
+/** The four in region order. */
+export const MAP_REGIONS: readonly Colour[] = [
+  MAP_REGION_0,
+  MAP_REGION_1,
+  MAP_REGION_2,
+  MAP_REGION_3,
+];
+
+// --- mines --------------------------------------------------------------
+
+/**
+ * Mines' per-count digit colours — upstream's, and by now most players'
+ * expectation of what a minesweeper looks like: 1 blue, 2 green, 3 red, 4 navy,
+ * 5 maroon, 6 teal.
+ *
+ * Counts 7 and 8 are left as {@link INK} and {@link GRID_MID} in the game rather
+ * than pulled in here. They are the two upstream ran out of hues for and fell
+ * back to plain text for, and text is what they should stay: a scheme lifting ink
+ * for dark mode should lift them with it.
+ *
+ * Note that count 3 is pure red and is **not** the `ERROR` role despite sharing
+ * its value today — a scheme is free to move one without the other, which is
+ * exactly the distinction a token table exists to make possible.
+ */
+export const MINES_COUNT_1 = token([0, 0, 1]);
+/** @see MINES_COUNT_1 */
+export const MINES_COUNT_2 = token([0, 0.5, 0]);
+/** @see MINES_COUNT_1 */
+export const MINES_COUNT_3 = token([1, 0, 0]);
+/** @see MINES_COUNT_1 */
+export const MINES_COUNT_4 = token([0, 0, 0.5]);
+/** @see MINES_COUNT_1 */
+export const MINES_COUNT_5 = token([0.5, 0, 0]);
+/** @see MINES_COUNT_1 */
+export const MINES_COUNT_6 = token([0, 0.5, 0.5]);
+
+/** **A flag you planted** — red because it is yours and deliberate, not because
+ * anything is wrong; the mistake reds are the `ERROR` role. */
+export const MINES_FLAG = token([1, 0, 0]);
+
+/** **This count is impossible** — the pale red wash behind a number the board
+ * has already contradicted. */
+export const MINES_WRONG_COUNT = token([1, 0.6, 0.6]);
+
+/** Mines' keyboard cursor: a pink tint of the highlight, so it reads on both a
+ * cleared square and an uncleared one. */
+export const MINES_CURSOR = token([1, 0.5, 0.5]);
+
+/** **Not cleared yet** — the uncleared square's face, a twentieth darker than the
+ * board so the grid of unknowns reads as slightly raised without a bevel. */
+export const minesUnclearedFace = (background: Colour): Colour =>
+  fraction(background, 19, 20);
+
+/** Mines' bevel lowlight — two-thirds of the board, deeper than the
+ * `mkhighlight` trio's because an uncleared square is drawn tall. */
+export const minesLowlight = (background: Colour): Colour => fraction(background, 2, 3);

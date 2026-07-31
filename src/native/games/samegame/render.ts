@@ -3,6 +3,7 @@ import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { INK, PAPER } from "../../engine/palette.ts";
+import { SAMEGAME_TILES } from "../../engine/palette-games.ts";
 import type { SamegameState, SamegameUi } from "./state.ts";
 
 // --- tile-size metrics ------------------------------------------------
@@ -38,24 +39,11 @@ const COL_HIGHLIGHT = 12;
 const COL_LOWLIGHT = 13;
 const NCOLOURS = 14;
 
-/** The nine fixed play colours (upstream `game_colours`), each RGB 0..1. */
-const PLAY_COLOURS: Colour[] = [
-  [0, 0, 1], // 1 blue
-  [0, 0.5, 0], // 2 green
-  [1, 0, 0], // 3 red
-  [0.7, 0.7, 0], // 4 yellow
-  [1, 0, 1], // 5 magenta
-  [0, 0.8, 0.8], // 6 cyan
-  [0.5, 0.5, 1], // 7 light blue
-  [0.2, 0.8, 0.2], // 8 light green
-  [1, 0.5, 0.5], // 9 pink
-];
-
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
   const out: Colour[] = new Array<Colour>(NCOLOURS);
   out[COL_BACKGROUND] = background;
-  for (let i = 0; i < 9; i++) out[COL_1 + i] = PLAY_COLOURS[i];
+  for (let i = 0; i < 9; i++) out[COL_1 + i] = SAMEGAME_TILES[i];
   out[COL_IMPOSSIBLE] = INK;
   out[COL_SEL] = PAPER;
   out[COL_HIGHLIGHT] = highlight;
