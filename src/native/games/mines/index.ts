@@ -28,7 +28,20 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { GRID_MID, INK, PAPER, PIECE_BLACK } from "../../engine/palette.ts";
+import { ERROR, GRID_MID, INK, PAPER, PIECE_BLACK } from "../../engine/palette.ts";
+import {
+  MINES_COUNT_1,
+  MINES_COUNT_2,
+  MINES_COUNT_3,
+  MINES_COUNT_4,
+  MINES_COUNT_5,
+  MINES_COUNT_6,
+  MINES_CURSOR,
+  MINES_FLAG,
+  MINES_WRONG_COUNT,
+  minesLowlight,
+  minesUnclearedFace,
+} from "../../engine/palette-games.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -679,29 +692,25 @@ export const minesGame: Game<
     const bg = defaultBackground;
     const ret: Colour[] = new Array(NCOLOURS);
     ret[COL_BACKGROUND] = bg;
-    ret[COL_BACKGROUND2] = [(bg[0] * 19) / 20, (bg[1] * 19) / 20, (bg[2] * 19) / 20];
-    ret[COL_1] = [0, 0, 1];
-    ret[COL_2] = [0, 0.5, 0];
-    ret[COL_3] = [1, 0, 0];
-    ret[COL_4] = [0, 0, 0.5];
-    ret[COL_5] = [0.5, 0, 0];
-    ret[COL_6] = [0, 0.5, 0.5];
+    ret[COL_BACKGROUND2] = minesUnclearedFace(bg);
+    ret[COL_1] = MINES_COUNT_1;
+    ret[COL_2] = MINES_COUNT_2;
+    ret[COL_3] = MINES_COUNT_3;
+    ret[COL_4] = MINES_COUNT_4;
+    ret[COL_5] = MINES_COUNT_5;
+    ret[COL_6] = MINES_COUNT_6;
     ret[COL_7] = INK;
     ret[COL_8] = GRID_MID;
     ret[COL_MINE] = PIECE_BLACK;
-    ret[COL_BANG] = [1, 0, 0];
-    ret[COL_CROSS] = [1, 0, 0];
-    ret[COL_FLAG] = [1, 0, 0];
+    ret[COL_BANG] = ERROR;
+    ret[COL_CROSS] = ERROR;
+    ret[COL_FLAG] = MINES_FLAG;
     ret[COL_FLAGBASE] = INK;
     ret[COL_QUERY] = INK;
     ret[COL_HIGHLIGHT] = PAPER;
-    ret[COL_LOWLIGHT] = [(bg[0] * 2) / 3, (bg[1] * 2) / 3, (bg[2] * 2) / 3];
-    ret[COL_WRONGNUMBER] = [1, 0.6, 0.6];
-    ret[COL_CURSOR] = [
-      ret[COL_HIGHLIGHT][0],
-      ret[COL_HIGHLIGHT][0] / 2,
-      ret[COL_HIGHLIGHT][0] / 2,
-    ];
+    ret[COL_LOWLIGHT] = minesLowlight(bg);
+    ret[COL_WRONGNUMBER] = MINES_WRONG_COUNT;
+    ret[COL_CURSOR] = MINES_CURSOR;
     return ret;
   },
   computeSize(p: MinesParams, tileSize: number): Size {

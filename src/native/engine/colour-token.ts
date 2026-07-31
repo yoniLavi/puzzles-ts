@@ -79,6 +79,27 @@ export function scale(colour: Colour, factor: number): Colour {
 }
 
 /**
+ * A **fraction** of a colour, multiplied before it is divided.
+ *
+ * Not the same as `scale(c, num / den)`, and the difference is why this exists:
+ * a ratio like `2/3` is not representable in binary, so pre-computing it rounds
+ * once more than upstream's `(c * 2) / 3` does. One ULP, invisible on screen, and
+ * visible in a full-precision diff of the resolved palette — which is the artefact
+ * this change is reviewed against, so it is worth keeping exact.
+ */
+export function fraction(
+  colour: Colour,
+  numerator: number,
+  denominator: number,
+): Colour {
+  return [
+    (colour[0] * numerator) / denominator,
+    (colour[1] * numerator) / denominator,
+    (colour[2] * numerator) / denominator,
+  ];
+}
+
+/**
  * `weight` of the way from `from` to `to`, per channel — the other shape a
  * derived colour takes, and the one that composes *tokens* rather than the
  * background. Signpost builds three 16-entry ramps out of eight region tokens

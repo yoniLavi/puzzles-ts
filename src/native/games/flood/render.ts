@@ -3,6 +3,7 @@ import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import { drawRecessedBorder as drawBevel, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { INK } from "../../engine/palette.ts";
+import { FLOOD_TILES } from "../../engine/palette-games.ts";
 import { fill } from "./solver.ts";
 import {
   FILLX,
@@ -33,22 +34,6 @@ const COL_1 = 2; // COL_1..COL_10 are 2..11
 const COL_HIGHLIGHT = 12;
 const COL_LOWLIGHT = 13;
 
-/** The ten fixed play colours (upstream `game_colours`), each RGB in
- * 0..1: red, yellow, green, blue, orange, purple, brown, light blue,
- * light green, pink. */
-const PLAY_COLOURS: Colour[] = [
-  [1, 0, 0],
-  [1, 1, 0],
-  [0, 1, 0],
-  [0.2, 0.3, 1],
-  [1, 0.5, 0],
-  [0.5, 0, 0.7],
-  [0.5, 0.3, 0.3],
-  [0.4, 0.8, 1],
-  [0.7, 1, 0.7],
-  [1, 0.6, 1],
-];
-
 export const COLOUR_NAMES = [
   "red",
   "yellow",
@@ -67,7 +52,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_SEPARATOR] = INK;
-  for (let i = 0; i < 10; i++) out[COL_1 + i] = PLAY_COLOURS[i];
+  for (let i = 0; i < 10; i++) out[COL_1 + i] = FLOOD_TILES[i];
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   return out;

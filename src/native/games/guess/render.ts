@@ -10,6 +10,13 @@ import type { Colour, Point, Rect, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { INK, PIECE_BLACK, PIECE_WHITE } from "../../engine/palette.ts";
 import {
+  GUESS_FLASH,
+  GUESS_HOLD,
+  GUESS_PEGS,
+  guessBoard,
+  guessEmptySlot,
+} from "../../engine/palette-games.ts";
+import {
   FEEDBACK_CORRECTCOLOUR,
   FEEDBACK_CORRECTPLACE,
   type GuessParams,
@@ -222,43 +229,19 @@ export function setTileSize(ds: GuessDrawState, tilesize: number): void {
 
 // --- colours ----------------------------------------------------------
 
-const PEG_RGB: Colour[] = [
-  [1.0, 0.0, 0.0], // red
-  [1.0, 1.0, 0.0], // yellow
-  [0.0, 1.0, 0.0], // green
-  [0.2, 0.3, 1.0], // blue
-  [1.0, 0.5, 0.0], // orange
-  [0.5, 0.0, 0.7], // purple
-  [0.5, 0.3, 0.3], // brown
-  [0.4, 0.8, 1.0], // light blue
-  [0.7, 1.0, 0.7], // light green
-  [1.0, 0.6, 1.0], // pink
-];
-
 export function colours(defaultBackground: Colour): Colour[] {
   const ret: Colour[] = new Array(NCOLOURS);
-  const bg: Colour = [defaultBackground[0], defaultBackground[1], defaultBackground[2]];
 
-  for (let i = 0; i < 10; i++) ret[COL_1 + i] = [...PEG_RGB[i]] as Colour;
+  for (let i = 0; i < 10; i++) ret[COL_1 + i] = GUESS_PEGS[i];
 
   ret[COL_FRAME] = INK;
   ret[COL_CURSOR] = INK;
-  ret[COL_FLASH] = [0.5, 1.0, 1.0];
-  ret[COL_HOLD] = [1.0, 0.5, 0.5];
+  ret[COL_FLASH] = GUESS_FLASH;
+  ret[COL_HOLD] = GUESS_HOLD;
   ret[COL_CORRECTPLACE] = PIECE_BLACK;
   ret[COL_CORRECTCOLOUR] = PIECE_WHITE;
-
-  // Darken the background if needed so pure-white COL_CORRECTCOLOUR
-  // stays distinguishable from it (borrowed from fifteen.c).
-  let max = bg[0];
-  for (let i = 1; i < 3; i++) if (bg[i] > max) max = bg[i];
-  if (max * 1.2 > 1.0) {
-    for (let i = 0; i < 3; i++) bg[i] /= max * 1.2;
-  }
-  ret[COL_BACKGROUND] = bg;
-
-  // COL_EMPTY: distinguishable from the background for hint purposes.
-  ret[COL_EMPTY] = [(bg[0] * 2) / 3, (bg[1] * 2) / 3, (bg[2] * 2) / 3];
+  ret[COL_BACKGROUND] = guessBoard(defaultBackground);
+  ret[COL_EMPTY] = guessEmptySlot(defaultBackground);
 
   return ret;
 }
