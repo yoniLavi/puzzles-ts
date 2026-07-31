@@ -8,9 +8,9 @@
  */
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
+import { FOUR_FILLS } from "../../engine/colours.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { ERROR, ERROR_TEXT, INK } from "../../engine/palette.ts";
-import { MAP_REGIONS } from "../../engine/palette-games.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -47,10 +47,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   const ret: Colour[] = [];
   ret[COL_BACKGROUND] = defaultBackground;
   ret[COL_GRID] = INK;
-  ret[COL_0] = MAP_REGIONS[0];
-  ret[COL_1] = MAP_REGIONS[1];
-  ret[COL_2] = MAP_REGIONS[2];
-  ret[COL_3] = MAP_REGIONS[3];
+  ret[COL_0] = FOUR_FILLS[0];
+  ret[COL_1] = FOUR_FILLS[1];
+  ret[COL_2] = FOUR_FILLS[2];
+  ret[COL_3] = FOUR_FILLS[3];
   ret[COL_ERROR] = ERROR;
   ret[COL_ERRTEXT] = ERROR_TEXT;
   ret[COL_MISTAKE] = ERROR;

@@ -15,16 +15,10 @@
  * every overlay (playbook §3.2). Edge numbers diff a parallel error-flag array.
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
+import { BROWN, GREEN, GREEN_WASH, ORANGE, RED_BOLD } from "../../engine/colours.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { ERROR, ERROR_TEXT, INK } from "../../engine/palette.ts";
-import {
-  TENTS_ERROR_TRUNK,
-  TENTS_GRASS,
-  TENTS_TENT,
-  TENTS_TREE_LEAF,
-  TENTS_TREE_TRUNK,
-} from "../../engine/palette-games.ts";
 import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
 import {
   BLANK,
@@ -59,13 +53,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_GRID] = INK;
-  out[COL_GRASS] = TENTS_GRASS;
-  out[COL_TREETRUNK] = TENTS_TREE_TRUNK;
-  out[COL_TREELEAF] = TENTS_TREE_LEAF;
-  out[COL_TENT] = TENTS_TENT;
+  out[COL_GRASS] = GREEN_WASH;
+  out[COL_TREETRUNK] = BROWN;
+  out[COL_TREELEAF] = GREEN;
+  out[COL_TENT] = ORANGE;
   out[COL_ERROR] = ERROR;
   out[COL_ERRTEXT] = ERROR_TEXT;
-  out[COL_ERRTRUNK] = TENTS_ERROR_TRUNK;
+  out[COL_ERRTRUNK] = RED_BOLD;
   out[COL_MISTAKE] = ERROR;
   return out;
 }

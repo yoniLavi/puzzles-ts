@@ -10,9 +10,9 @@
  */
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import { BLUE } from "../../engine/colours.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { INK } from "../../engine/palette.ts";
-import { CUBE_FACE } from "../../engine/palette-games.ts";
 import { type Bbox, enumGridSquares, findBbox } from "./grid.ts";
 import { SOLIDS, transformPoly } from "./solids.ts";
 import type { CubeParams, CubeState, KeyPair } from "./state.ts";
@@ -38,7 +38,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   const ret: Colour[] = [];
   ret[COL_BACKGROUND] = defaultBackground;
   ret[COL_BORDER] = INK;
-  ret[COL_BLUE] = CUBE_FACE;
+  ret[COL_BLUE] = BLUE;
   return ret;
 }
 

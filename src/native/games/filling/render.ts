@@ -13,7 +13,7 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import {
-  errorWash,
+  ERROR_WASH,
   HINT_EVIDENCE,
   HINT_FILL,
   highlightWash,
@@ -52,7 +52,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_GRID] = INK;
   out[COL_HIGHLIGHT] = highlightWash(bg);
   out[COL_CORRECT] = fillingCorrect(bg);
-  out[COL_ERROR] = errorWash(bg);
+  out[COL_ERROR] = ERROR_WASH;
   out[COL_USER] = playerEntryColour(bg);
   out[COL_CURSOR] = fillingCursor(bg);
   out[COL_HINT] = HINT_FILL;

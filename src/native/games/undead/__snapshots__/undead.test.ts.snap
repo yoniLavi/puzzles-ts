@@ -750,7 +750,7 @@ exports[`undead render > redraws the initial frame and a partially-filled board 
     "colour": 3,
     "fontType": "variable",
     "op": "text",
-    "rgb": "rgb(255, 0, 0)",
+    "rgb": "rgb(223, 34, 37)",
     "size": 32,
     "text": "0",
     "x": 176,

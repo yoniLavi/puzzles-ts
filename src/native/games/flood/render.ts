@@ -1,9 +1,9 @@
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { TEN, TEN_NAMES } from "../../engine/colours.ts";
 import { drawRecessedBorder as drawBevel, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { INK } from "../../engine/palette.ts";
-import { FLOOD_TILES } from "../../engine/palette-games.ts";
 import { fill } from "./solver.ts";
 import {
   FILLX,
@@ -34,25 +34,23 @@ const COL_1 = 2; // COL_1..COL_10 are 2..11
 const COL_HIGHLIGHT = 12;
 const COL_LOWLIGHT = 13;
 
-export const COLOUR_NAMES = [
-  "red",
-  "yellow",
-  "green",
-  "blue",
-  "orange",
-  "purple",
-  "brown",
-  "light blue",
-  "light green",
-  "pink",
-];
+/**
+ * The ten tiles, as the hint says them: *"Fill with orange"*.
+ *
+ * Re-exported from the palette rather than written here, because the sentence is
+ * a claim about the board and the only thing between it and a lie is that the
+ * word and the colour come from the same place. A scheme may restyle a tile; it
+ * may not turn the one the hint calls orange into something a player would call
+ * another colour.
+ */
+export const COLOUR_NAMES = TEN_NAMES;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_SEPARATOR] = INK;
-  for (let i = 0; i < 10; i++) out[COL_1 + i] = FLOOD_TILES[i];
+  for (let i = 0; i < 10; i++) out[COL_1 + i] = TEN[i];
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   return out;

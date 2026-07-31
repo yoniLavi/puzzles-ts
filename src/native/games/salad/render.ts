@@ -17,6 +17,7 @@
 
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { GREEN_BOLD, GREEN_WASH } from "../../engine/colours.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import {
   HINT_AREA,
@@ -32,13 +33,8 @@ import {
   PAPER,
   PENCIL_BODY,
   pencilColour,
+  playerEntryColour,
 } from "../../engine/palette.ts";
-import {
-  SALAD_GUESS_BALL,
-  SALAD_GUESS_BALL_BG,
-  SALAD_GUESS_HOLE,
-  SALAD_GUESS_NUM,
-} from "../../engine/palette-games.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { SaladHint } from "./hint.ts";
 import type { SaladMistake } from "./solver.ts";
@@ -101,10 +97,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_I_BALL] = INK;
   out[COL_I_BALLBG] = PAPER;
   out[COL_I_HOLE] = INK;
-  out[COL_G_NUM] = SALAD_GUESS_NUM;
-  out[COL_G_BALL] = SALAD_GUESS_BALL;
-  out[COL_G_BALLBG] = SALAD_GUESS_BALL_BG;
-  out[COL_G_HOLE] = SALAD_GUESS_HOLE;
+  out[COL_G_NUM] = playerEntryColour(background);
+  out[COL_G_BALL] = GREEN_BOLD;
+  out[COL_G_BALLBG] = GREEN_WASH;
+  out[COL_G_HOLE] = GREEN_BOLD;
   out[COL_E_BORDERCLUE] = ERROR;
   out[COL_E_NUM] = ERROR;
   out[COL_E_HOLE] = ERROR;

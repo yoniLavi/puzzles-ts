@@ -13,12 +13,10 @@
  */
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import { BLUE, RED, TEAL } from "../../engine/colours.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HINT_ACTION, INK } from "../../engine/palette.ts";
 import {
-  NETSLIDE_BARRIER,
-  NETSLIDE_ENDPOINT,
-  NETSLIDE_POWERED,
   netslideBorder,
   netslideFlashing,
   netslideLowlight,
@@ -83,9 +81,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_FLASHING] = netslideFlashing(defaultBackground);
   out[COL_BORDER] = netslideBorder(defaultBackground);
   out[COL_WIRE] = INK;
-  out[COL_ENDPOINT] = NETSLIDE_ENDPOINT;
-  out[COL_POWERED] = NETSLIDE_POWERED;
-  out[COL_BARRIER] = NETSLIDE_BARRIER;
+  out[COL_ENDPOINT] = BLUE;
+  out[COL_POWERED] = TEAL;
+  out[COL_BARRIER] = RED;
   out[COL_LOWLIGHT] = netslideLowlight(defaultBackground);
   out[COL_TEXT] = INK;
   // The same blue Sixteen marks a hinted tile with — the two are the same kind of

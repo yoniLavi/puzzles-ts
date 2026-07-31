@@ -28,17 +28,18 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { BLUE, BLUE_BOLD } from "../../engine/colours.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import { ERROR, errorWash, INK } from "../../engine/palette.ts";
 import {
-  ROME_ARROW_ENTRY,
-  ROME_ARROW_GUESS,
-  ROME_ARROW_PENCIL,
-  ROME_GOAL,
-  romeGoalBackground,
-} from "../../engine/palette-games.ts";
+  ERROR,
+  ERROR_WASH,
+  INK,
+  pencilColour,
+  playerEntryColour,
+} from "../../engine/palette.ts";
+import { romeGoalBackground } from "../../engine/palette-games.ts";
 import type { RomeMistake } from "./index.ts";
 import {
   EMPTY,
@@ -103,13 +104,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_LOWLIGHT] = lowlight;
   out[COL_BORDER] = INK;
   out[COL_ARROW_FIXED] = INK;
-  out[COL_ARROW_GUESS] = ROME_ARROW_GUESS;
+  out[COL_ARROW_GUESS] = playerEntryColour(background);
   out[COL_ARROW_ERROR] = ERROR;
-  out[COL_ARROW_PENCIL] = ROME_ARROW_PENCIL;
-  out[COL_ARROW_ENTRY] = ROME_ARROW_ENTRY;
-  out[COL_ERRORBG] = errorWash(background);
+  out[COL_ARROW_PENCIL] = pencilColour(background);
+  out[COL_ARROW_ENTRY] = BLUE;
+  out[COL_ERRORBG] = ERROR_WASH;
   out[COL_GOALBG] = romeGoalBackground(background);
-  out[COL_GOAL] = ROME_GOAL;
+  out[COL_GOAL] = BLUE_BOLD;
   return out;
 }
 

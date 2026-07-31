@@ -28,6 +28,15 @@
 
 import type { Colour, DrawTextOptions, Size } from "../../../puzzle/types.ts";
 import { mkhighlight, mkhighlightSpecific } from "../../engine/colour-mkhighlight.ts";
+import {
+  BLUE,
+  BLUE_BOLD,
+  BLUE_WASH,
+  GREEN,
+  GREEN_WASH,
+  ORANGE_BOLD,
+  ORANGE_WASH,
+} from "../../engine/colours.ts";
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import {
@@ -35,18 +44,14 @@ import {
   hintMarkBit,
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
-import { ERROR, INK, PENCIL_BODY, pencilColour } from "../../engine/palette.ts";
 import {
-  CROSSING_ACROSS,
-  CROSSING_ACROSS_FIT,
-  CROSSING_DOWN,
-  CROSSING_DOWN_FIT,
-  CROSSING_HELD,
-  CROSSING_HINT,
-  CROSSING_HINT_CELL,
-  CROSSING_WALL,
-  crossingGhost,
-} from "../../engine/palette-games.ts";
+  ERROR,
+  GRID_DARK,
+  INK,
+  PENCIL_BODY,
+  pencilColour,
+} from "../../engine/palette.ts";
+import { crossingGhost } from "../../engine/palette-games.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { CrossingMistake } from "./solver.ts";
 import {
@@ -116,7 +121,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_GRID] = INK;
   out[COL_ERROR] = ERROR;
 
-  const wall = mkhighlightSpecific(CROSSING_WALL);
+  const wall = mkhighlightSpecific(GRID_DARK);
   out[COL_WALL_M] = wall.base;
   out[COL_WALL_H] = wall.highlight;
   out[COL_WALL_L] = wall.lowlight;
@@ -126,7 +131,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL] = pencilColour(background);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_GHOST] = crossingGhost(background);
-  out[COL_HELD] = CROSSING_HELD;
+  out[COL_HELD] = BLUE;
   // The two dimension hues are matched in **OKLCH**, not in RGB: identical
   // lightness and identical chroma, differing only in hue (250 blue / 60
   // amber). Matching them in RGB — the obvious thing, and the first thing tried
@@ -141,10 +146,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   // app's dark-mode adaptation handles both hues symmetrically anyway.
   // Chroma is the most either hue can carry at that lightness while both stay
   // inside sRGB.
-  out[COL_ACROSS] = CROSSING_ACROSS;
-  out[COL_DOWN] = CROSSING_DOWN;
-  out[COL_ACROSSFIT] = CROSSING_ACROSS_FIT;
-  out[COL_DOWNFIT] = CROSSING_DOWN_FIT;
+  out[COL_ACROSS] = BLUE_WASH;
+  out[COL_DOWN] = ORANGE_WASH;
+  out[COL_ACROSSFIT] = BLUE_BOLD;
+  out[COL_DOWNFIT] = ORANGE_BOLD;
   // The hint pair — a **deliberate departure** from the collection's blue
   // `COL_HINT` (documented in the change's design.md). Crossing has already
   // spent blue: `COL_ACROSS` is a pale blue wash meaning "this is a horizontal
@@ -154,8 +159,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   // green — the far corner of the wheel from both dimension hues — and a
   // displayed hint suppresses the run wash, so only one meaning of "washed
   // square" is ever on screen at a time. Matched in OKLCH like the pair above.
-  out[COL_HINT] = CROSSING_HINT;
-  out[COL_HINT_CELL] = CROSSING_HINT_CELL;
+  out[COL_HINT] = GREEN;
+  out[COL_HINT_CELL] = GREEN_WASH;
   return out;
 }
 

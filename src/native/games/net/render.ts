@@ -13,15 +13,10 @@
  */
 
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
+import { BLUE, RED, TEAL } from "../../engine/colours.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { ERROR, INK } from "../../engine/palette.ts";
-import {
-  NET_BARRIER,
-  NET_ENDPOINT,
-  NET_POWERED,
-  netBorder,
-  netLocked,
-} from "../../engine/palette-games.ts";
+import { netBorder, netLocked } from "../../engine/palette-games.ts";
 import {
   anticlockwise,
   clockwise,
@@ -57,10 +52,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_WIRE] = INK;
-  out[COL_POWERED] = NET_POWERED;
-  out[COL_BARRIER] = NET_BARRIER;
+  out[COL_POWERED] = TEAL;
+  out[COL_BARRIER] = RED;
   out[COL_ERR] = ERROR;
-  out[COL_ENDPOINT] = NET_ENDPOINT;
+  out[COL_ENDPOINT] = BLUE;
   out[COL_BORDER] = netBorder(defaultBackground);
   out[COL_LOCKED] = netLocked(defaultBackground);
   return out;

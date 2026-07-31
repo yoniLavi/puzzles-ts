@@ -6,16 +6,16 @@
  * last thirds of the flash.
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
+import {
+  BLACK,
+  GREY,
+  PINK_WASH,
+  TEAL_BOLD,
+  TEAL_WASH,
+  WHITE,
+} from "../../engine/colours.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { ERROR } from "../../engine/palette.ts";
-import {
-  MOSAIC_BLANK,
-  MOSAIC_CURSOR,
-  MOSAIC_GRID,
-  MOSAIC_MARKED,
-  MOSAIC_TEXT_SOLVED,
-  MOSAIC_UNMARKED,
-} from "../../engine/palette-games.ts";
 import {
   type MosaicMistake,
   type MosaicParams,
@@ -46,13 +46,13 @@ const COL_TEXT_LIGHT = COL_BLANK;
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
-  out[COL_UNMARKED] = MOSAIC_UNMARKED;
-  out[COL_GRID] = MOSAIC_GRID;
-  out[COL_MARKED] = MOSAIC_MARKED;
-  out[COL_BLANK] = MOSAIC_BLANK;
-  out[COL_TEXT_SOLVED] = MOSAIC_TEXT_SOLVED;
+  out[COL_UNMARKED] = TEAL_WASH;
+  out[COL_GRID] = TEAL_BOLD;
+  out[COL_MARKED] = BLACK;
+  out[COL_BLANK] = WHITE;
+  out[COL_TEXT_SOLVED] = GREY;
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = MOSAIC_CURSOR;
+  out[COL_CURSOR] = PINK_WASH;
   return out;
 }
 

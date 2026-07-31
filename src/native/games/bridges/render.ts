@@ -20,13 +20,8 @@
 import type { Colour } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { INK } from "../../engine/palette.ts";
-import {
-  BRIDGES_SELECTED,
-  BRIDGES_WARNING,
-  bridgesCursor,
-  bridgesGrid,
-} from "../../engine/palette-games.ts";
+import { ERROR_WASH, HELD, INK } from "../../engine/palette.ts";
+import { bridgesCursor, bridgesGrid } from "../../engine/palette-games.ts";
 import {
   type BridgesMistake,
   type BridgesParams,
@@ -150,11 +145,11 @@ export function colours(defaultBackground: Colour): Colour[] {
     INK, // COL_FOREGROUND
     highlight, // COL_HIGHLIGHT
     lowlight, // COL_LOWLIGHT
-    BRIDGES_SELECTED, // COL_SELECTED
+    HELD, // COL_SELECTED
     highlight, // COL_MARK (= HIGHLIGHT)
     lowlight, // COL_HINT (= LOWLIGHT)
     bridgesGrid(background, lowlight), // COL_GRID
-    BRIDGES_WARNING, // COL_WARNING (also the mistake overlay colour)
+    ERROR_WASH, // COL_WARNING (also the mistake overlay colour)
     bridgesCursor(background), // COL_CURSOR
   ];
 }

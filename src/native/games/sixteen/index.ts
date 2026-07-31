@@ -12,8 +12,7 @@ import type {
 import { UI_UPDATE } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { HINT_SETTING_UP, workingOn } from "../../engine/hint-vocab.ts";
-import { INK } from "../../engine/palette.ts";
-import { SIXTEEN_HINT } from "../../engine/palette-games.ts";
+import { HINT_ACTION, INK } from "../../engine/palette.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -467,7 +466,7 @@ function colours(defaultBackground: Colour): Colour[] {
     lowlight: lo,
   } = mkhighlight(defaultBackground);
 
-  return [bg, INK, hi, lo, SIXTEEN_HINT];
+  return [bg, INK, hi, lo, HINT_ACTION];
 }
 
 function redraw(

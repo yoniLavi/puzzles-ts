@@ -12,13 +12,11 @@
 
 import type { Colour, Point, Rect, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { GREEN, RED } from "../../engine/colours.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { ERROR, INK } from "../../engine/palette.ts";
 import {
-  BLACKBOX_BUTTON,
-  BLACKBOX_CURSOR,
-  BLACKBOX_FLASH_TEXT,
   blackboxCover,
   blackboxGrid,
   blackboxLock,
@@ -115,13 +113,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   ret[COL_LOWLIGHT] = lowlight;
   ret[COL_BALL] = INK;
   ret[COL_WRONG] = ERROR;
-  ret[COL_BUTTON] = BLACKBOX_BUTTON;
-  ret[COL_CURSOR] = BLACKBOX_CURSOR;
+  ret[COL_BUTTON] = GREEN;
+  ret[COL_CURSOR] = RED;
   ret[COL_GRID] = blackboxGrid(bg);
   ret[COL_LOCK] = blackboxLock(bg);
   ret[COL_COVER] = blackboxCover(bg);
   ret[COL_TEXT] = INK;
-  ret[COL_FLASHTEXT] = BLACKBOX_FLASH_TEXT;
+  ret[COL_FLASHTEXT] = GREEN;
   return ret;
 }
 

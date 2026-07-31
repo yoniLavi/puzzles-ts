@@ -24,13 +24,8 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { PAPER } from "../../engine/palette.ts";
-import {
-  FLIP_CURSOR,
-  FLIP_HINT,
-  flipGrid,
-  flipWrongFace,
-} from "../../engine/palette-games.ts";
+import { CURSOR, HINT_ACTION, PAPER } from "../../engine/palette.ts";
+import { flipGrid, flipWrongFace } from "../../engine/palette-games.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -758,8 +753,8 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
     ret[COL_RIGHT] = PAPER;
     ret[COL_GRID] = flipGrid(bg);
     ret[COL_DIAG] = ret[COL_GRID];
-    ret[COL_HINT] = FLIP_HINT;
-    ret[COL_CURSOR] = FLIP_CURSOR;
+    ret[COL_HINT] = HINT_ACTION;
+    ret[COL_CURSOR] = CURSOR;
     return ret;
   },
 

@@ -6,12 +6,11 @@
  */
 
 import type { Colour, Point } from "../../../puzzle/types.ts";
+import { BLUE_BOLD, GREEN } from "../../engine/colours.ts";
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { ERROR, INK } from "../../engine/palette.ts";
 import {
-  SIGNPOST_DRAG_ORIGIN,
-  SIGNPOST_NUMBER_SET,
   SIGNPOST_NUMBER_SET_MID,
   SIGNPOST_ON_REGION_FAINT,
   SIGNPOST_ON_REGION_MID,
@@ -93,10 +92,13 @@ export function buildPalette(
   ret[COL_ARROW] = INK;
   ret[COL_CURSOR] = signpostCursor(background);
   ret[COL_GRID] = signpostGrid(background);
-  ret[COL_NUMBER_SET] = SIGNPOST_NUMBER_SET;
+  // **This square's number is fixed** — a clue you were given, or one the
+  // chain has forced, as opposed to one still floating.
+  ret[COL_NUMBER_SET] = BLUE_BOLD;
   ret[COL_NUMBER_SET_MID] = SIGNPOST_NUMBER_SET_MID;
   ret[COL_ERROR] = ERROR;
-  ret[COL_DRAG_ORIGIN] = SIGNPOST_DRAG_ORIGIN;
+  // **You are dragging from here** — where an in-progress link starts.
+  ret[COL_DRAG_ORIGIN] = GREEN;
   ret[COL_ARROW_BG_DIM] = signpostArrowDim(background);
 
   for (let c = 0; c < NBACKGROUNDS; c++) {

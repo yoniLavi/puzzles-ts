@@ -729,7 +729,7 @@ exports[`seismic rendering > highlights a mistake on a board that was already dr
     "colour": 6,
     "fontType": "variable",
     "op": "text",
-    "rgb": "rgb(255, 0, 0)",
+    "rgb": "rgb(223, 34, 37)",
     "size": 20,
     "text": "4",
     "x": 22,
@@ -738,7 +738,7 @@ exports[`seismic rendering > highlights a mistake on a board that was already dr
   {
     "colour": 6,
     "op": "line",
-    "rgb": "rgb(255, 0, 0)",
+    "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
     "x1": 4,
     "x2": 38,
@@ -748,7 +748,7 @@ exports[`seismic rendering > highlights a mistake on a board that was already dr
   {
     "colour": 6,
     "op": "line",
-    "rgb": "rgb(255, 0, 0)",
+    "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
     "x1": 38,
     "x2": 38,
@@ -758,7 +758,7 @@ exports[`seismic rendering > highlights a mistake on a board that was already dr
   {
     "colour": 6,
     "op": "line",
-    "rgb": "rgb(255, 0, 0)",
+    "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
     "x1": 38,
     "x2": 4,
@@ -768,7 +768,7 @@ exports[`seismic rendering > highlights a mistake on a board that was already dr
   {
     "colour": 6,
     "op": "line",
-    "rgb": "rgb(255, 0, 0)",
+    "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
     "x1": 4,
     "x2": 4,
@@ -778,7 +778,7 @@ exports[`seismic rendering > highlights a mistake on a board that was already dr
   {
     "colour": 6,
     "op": "line",
-    "rgb": "rgb(255, 0, 0)",
+    "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
     "x1": 5,
     "x2": 37,
@@ -788,7 +788,7 @@ exports[`seismic rendering > highlights a mistake on a board that was already dr
   {
     "colour": 6,
     "op": "line",
-    "rgb": "rgb(255, 0, 0)",
+    "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
     "x1": 37,
     "x2": 37,
@@ -798,7 +798,7 @@ exports[`seismic rendering > highlights a mistake on a board that was already dr
   {
     "colour": 6,
     "op": "line",
-    "rgb": "rgb(255, 0, 0)",
+    "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
     "x1": 37,
     "x2": 5,
@@ -808,7 +808,7 @@ exports[`seismic rendering > highlights a mistake on a board that was already dr
   {
     "colour": 6,
     "op": "line",
-    "rgb": "rgb(255, 0, 0)",
+    "rgb": "rgb(223, 34, 37)",
     "thickness": 1,
     "x1": 5,
     "x2": 5,
@@ -1499,7 +1499,7 @@ exports[`seismic rendering > inks a player's entry differently from a given 1`] 
     "colour": 5,
     "fontType": "variable",
     "op": "text",
-    "rgb": "rgb(0, 128, 0)",
+    "rgb": "rgb(0, 127, 0)",
     "size": 20,
     "text": "3",
     "x": 22,

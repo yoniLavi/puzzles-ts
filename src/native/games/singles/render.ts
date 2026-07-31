@@ -10,9 +10,11 @@
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
 import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { GREY, ORANGE } from "../../engine/colours.ts";
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import {
+  CURSOR,
   ERROR,
   HINT_ACTION,
   HINT_BLACKREF,
@@ -21,11 +23,6 @@ import {
   INK,
   PAPER,
 } from "../../engine/palette.ts";
-import {
-  SINGLES_BLACK_NUM,
-  SINGLES_CURSOR,
-  SINGLES_HINT_STRAND,
-} from "../../engine/palette-games.ts";
 import type { SinglesHint } from "./index.ts";
 import {
   F_BLACK,
@@ -69,13 +66,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_LOWLIGHT] = lowlight;
   out[COL_BLACK] = INK;
   out[COL_WHITE] = PAPER;
-  out[COL_BLACKNUM] = SINGLES_BLACK_NUM;
+  out[COL_BLACKNUM] = GREY;
   out[COL_GRID] = lowlight; // COL_GRID == COL_LOWLIGHT
-  out[COL_CURSOR] = SINGLES_CURSOR;
+  out[COL_CURSOR] = CURSOR;
   out[COL_ERROR] = ERROR;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  out[COL_HINT_STRAND] = SINGLES_HINT_STRAND;
+  out[COL_HINT_STRAND] = ORANGE;
   out[COL_HINT_BLACKREF] = HINT_BLACKREF;
   out[COL_HINT_WHITEREF] = HINT_WHITEREF;
   return out;

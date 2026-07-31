@@ -79,14 +79,11 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
         "fleet-configuration": (value) => (value ? `, fleet ${value}` : ""),
       },
     ),
-    darkMode: {
-      paletteOverrides: { 4: 0.6 }, // darken the water
-    },
   },
   bricks: {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Normal|Tricky}"),
     darkMode: {
-      paletteOverrides: { 0: [0.4, 0, 0], 2: [0.6, 0, 0], 4: [0.1, 0, 0] }, // bg, no-brick, brick
+      paletteOverrides: { 0: [0.4, 0, 0], 2: [0.6, 0, 0] }, // bg, no-brick
     },
   },
   bridges: {
@@ -305,9 +302,6 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
           : `, ${value ? "slower" : "faster"} generation`;
       },
     }),
-    darkMode: {
-      paletteOverrides: { 1: 0.6 }, // unmarked tiles
-    },
   },
   net: {
     describeConfig: configFormatter(
@@ -526,9 +520,6 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   tents: {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Tricky}"),
-    darkMode: {
-      paletteOverrides: { 2: 0.5 }, // darken grass
-    },
   },
   towers: {
     describeConfig: configFormatter(

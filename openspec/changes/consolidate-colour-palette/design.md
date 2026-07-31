@@ -131,6 +131,86 @@ say what it means to the player and why no existing meaning or named colour
 serves. An exception with a reason is fine; the failure mode is thirty of them,
 which is how the collection got here.
 
+## Findings — what implementation changed about the above
+
+Recorded because each was a decision the design got wrong or left open, and the
+reasoning is worth more than the outcome.
+
+### F1 — Brown is not a hue, and that is why it is a name
+
+D1 assumed the palette's chromatic half was a set of hues. Measured, orange and
+brown at the wash and bold steps are **0.01 apart**: brown *is* dark, low-chroma
+orange, so it costs no hue. But it could not simply *be* orange's bold step,
+because the bold step goes **light** in dark mode (that is what bold means — the
+emphatic end, which on a dark board is the light end), and a light brown is not
+brown. Flood names it to the player, so D2 applies: it is its own name, with its
+own value per scheme, like a piece's black.
+
+### F2 — An intensity may not be named for its appearance
+
+The obvious names were `_PALE` and `_DEEP`. Both are lies in one of the two
+schemes: a fill that content is drawn *on top of* must be light under a light
+scheme and **dark** under a dark one, or the content stops being readable. D2 says
+a name that reaches a player must be true in every scheme — so the steps are named
+for their **role**, `_WASH` and `_BOLD`, and the ten-set Flood narrates is built
+only from names that survive the flip.
+
+### F3 — The third intensity was forced, and by Mines
+
+D3 said start at two and add a third only against a case the two cannot serve.
+**Mines is that case.** Its count digits are 1-blue against 4-navy and 3-red
+against 5-maroon — pairs that must be told apart *as digits*, and a wash is a
+fill, not a digit. Nothing else in the collection forced a fourth.
+
+### F4 — `HINT_EVIDENCE` changed hue rather than becoming a third blue
+
+D3 anticipated the hint vocabulary wanting three steps of one colour. It does not:
+seven games paint an evidence region and a target cell at once, and as two blues
+**eight hundredths of a lightness apart** they were all but the same colour. The
+distinction the player needs — *this is what I am reasoning from, that is what I
+am concluding* — survives a hue change and did not survive a shade change. Evidence
+is `TEAL_WASH`; the third step stayed unspent for Mines (F3).
+
+### F5 — Crossing's matched pair dissolved into the palette, and immediately proved why
+
+D7 listed Crossing's OKLCH-matched dimension pair as an exception candidate. It is
+not an exception: it is a **constraint on the palette**, and blue's and orange's
+wash and bold steps are now tied in lightness *and* chroma, in both schemes, with
+blue held down to what orange's narrower gamut can reach.
+
+Worth recording that the first cut tied the **wash** pair and not the **bold**
+pair, and Crossing's own `paints the two dimensions at equal perceived strength`
+test caught it — which is the argument for having moved the constraint into the
+palette rather than leaving it as a game's private discipline.
+
+### F6 — `errorWash` graduated out of D4
+
+D4 said colours defined relative to the board stay functions. One was a function
+only because a wash had to track the board *before* the wash step existed, and —
+being handed pure white in dark mode — it could not. `ERROR_WASH = RED_WASH` now
+authors both schemes. The general rule: a colour that is genuinely absolute wants
+to be a *named* colour, precisely because a named colour authors both schemes
+where a derivation handed pure white cannot.
+
+### F7 — Map's earth tones went, and the measurement is why
+
+The Risks section flags them as deliberate, and they were: four saturated hues
+over a whole board are unpleasant to look at for the length of a game. But they
+measured **0.077**, the worst set in the collection, in a game whose entire point
+is telling neighbouring regions apart. The wash step answers the original concern
+(these are fills, and fills are what the step is for) at 0.115 light / 0.123 dark.
+Mosaic's teal, by contrast, survived intact — its identity was a *hue*, and a hue
+is exactly what the palette has.
+
+### F8 — A retired override is one that started fighting an authored value
+
+D5 did not say how to tell an absorbed `paletteOverrides` entry from a live one.
+The test is mechanical: an override aimed at an index that now carries an
+**authored** dark value is no longer correcting a calculation, it is overriding a
+decision. Four of the thirteen were (boats' water, bricks' brick, mosaic's unmarked
+tiles, tents' grass); the other nine patch a derived colour or the host background,
+which is a per-board judgement the palette cannot make.
+
 ## Risks
 
 - **A 57-game appearance change.** Mitigated by D6's ordering (the palette is

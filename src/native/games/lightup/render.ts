@@ -13,22 +13,18 @@
  * (black) and 3 (light).
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
+import { ORANGE, YELLOW_WASH } from "../../engine/colours.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import {
+  ERROR_WASH,
   HINT_ACTION,
   HINT_BLACKREF,
   HINT_EVIDENCE,
   INK,
   PAPER,
 } from "../../engine/palette.ts";
-import {
-  LIGHTUP_ERROR_FILL,
-  LIGHTUP_HINT_DARKREF,
-  LIGHTUP_LIT,
-  lightupCursor,
-  lightupGrid,
-} from "../../engine/palette-games.ts";
+import { lightupCursor, lightupGrid } from "../../engine/palette-games.ts";
 import type { LightupHint, LightupMistake } from "./index.ts";
 import {
   F_BLACK,
@@ -69,13 +65,18 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_GRID] = lightupGrid(bg);
   out[COL_BLACK] = INK;
   out[COL_LIGHT] = PAPER;
-  out[COL_LIT] = LIGHTUP_LIT;
-  out[COL_ERROR] = LIGHTUP_ERROR_FILL;
+  // The **wash** step, not plain yellow: a lit square is a large fill with
+  // bulbs and clue digits drawn on top of it, and its job is to read as *the
+  // board, lit* rather than as an object placed on the board. Plain yellow is a
+  // near-board tint under a light scheme and a bright patch under a dark one —
+  // the regression `hand-author-dark-palette` F1 found in Slide's target zone.
+  out[COL_LIT] = YELLOW_WASH;
+  out[COL_ERROR] = ERROR_WASH;
   out[COL_CURSOR] = lightupCursor(bg);
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   out[COL_HINT_LITREF] = HINT_BLACKREF;
-  out[COL_HINT_DARKREF] = LIGHTUP_HINT_DARKREF;
+  out[COL_HINT_DARKREF] = ORANGE;
   return out;
 }
 

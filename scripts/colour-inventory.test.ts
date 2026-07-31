@@ -22,6 +22,7 @@ import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { it } from "vitest";
 import { mkhighlight } from "../src/native/engine/colour-mkhighlight.ts";
+import * as colours from "../src/native/engine/colours.ts";
 import * as roles from "../src/native/engine/palette.ts";
 import * as gameTokens from "../src/native/engine/palette-games.ts";
 import { getTsGame } from "../src/native/engine/registry.ts";
@@ -36,31 +37,51 @@ const BG: Colour = [0.827, 0.827, 0.827];
  * entry tracks the board. */
 const BG2: Colour = [0.6, 0.7, 0.8];
 
-const OUT = "openspec/changes/colour-tokens-per-scheme/inventory.md";
+const OUT = "openspec/changes/consolidate-colour-palette/inventory.md";
 
 const key = (c: Colour): string => c.map((v) => Math.round(v * 1000) / 1000).join(",");
 
 /**
- * Token **object** → its name, for both halves of the table.
+ * Colour **object** → what to call it, over all three layers.
  *
  * By identity rather than by value, because value is ambiguous exactly where it
- * matters: `INK` and `PIECE_BLACK` are both pure black and behave oppositely
- * under a scheme flip. A palette entry that *is* the token answers the question
- * outright.
+ * matters: `INK` and `BLACK` are both pure black and behave oppositely under a
+ * scheme flip. A palette entry that *is* the colour answers the question outright.
+ *
+ * Since `consolidate-colour-palette` the meanings are **references**, so several
+ * of them resolve to one object (`CURSOR` and `HELD` are both `GREEN`) and
+ * identity cannot say which one a game meant. The report therefore names the
+ * colour — which is unambiguous and is what "what did this become" is asking —
+ * and lists the meanings that resolve to it in brackets.
  */
 function tokenNames(): Map<Colour, string> {
   const out = new Map<Colour, string>();
   const add = (name: string, v: unknown): void => {
     if (Array.isArray(v) && v.length === 3 && typeof v[0] === "number") {
-      out.set(v as Colour, name);
+      // First name wins: the sets (`TEN[0]`) come after the colours they are
+      // built from, and `RED` is the better answer than `TEN[0]`.
+      if (!out.has(v as Colour)) out.set(v as Colour, name);
     } else if (Array.isArray(v)) {
       v.forEach((e, i) => {
         add(`${name}[${i}]`, e);
       });
     }
   };
-  for (const [name, value] of Object.entries({ ...roles, ...gameTokens }))
+  for (const [name, value] of Object.entries({ ...colours, ...gameTokens }))
     add(name, value);
+
+  const meanings = new Map<Colour, string[]>();
+  for (const [name, value] of Object.entries(roles)) {
+    if (typeof value === "function") continue;
+    if (!Array.isArray(value) || value.length !== 3) continue;
+    const c = value as Colour;
+    meanings.set(c, [...(meanings.get(c) ?? []), name]);
+    if (!out.has(c)) out.set(c, name); // INK and PAPER own no named colour
+  }
+  for (const [c, names] of meanings) {
+    const base = out.get(c);
+    if (base && !names.includes(base)) out.set(c, `${base} (${names.join(", ")})`);
+  }
   return out;
 }
 
@@ -71,7 +92,7 @@ function sharedByValue(): Map<string, string> {
   out.set(key(background), "mkhighlight.background");
   out.set(key(highlight), "mkhighlight.highlight");
   out.set(key(lowlight), "mkhighlight.lowlight");
-  for (const [name, value] of Object.entries(roles)) {
+  for (const [name, value] of Object.entries({ ...colours, ...roles })) {
     if (typeof value === "function") {
       const derived =
         value.length === 2
