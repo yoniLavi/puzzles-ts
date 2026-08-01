@@ -65,5 +65,9 @@ met, the change may end at §1.
 
 ## 6. Stage 2 — on owner acceptance only
 
-- [ ] 6.1 Delete `puzzles/unfinished/path.c` and its build entry.
+- [ ] 6.1 Add `path` to `src/puzzle/catalog-data.ts` (+ the two icon PNGs) so it
+      is playable; `catalog-registry.test.ts` holds catalog and registry together.
+      (This task used to read "delete `puzzles/unfinished/path.c` and its build
+      entry" — there is no build entry, and the source now lives at
+      `reference/path.c` in this change, travelling into the archive with it.)
 - [ ] 6.2 Archive, then commit game + archive together.

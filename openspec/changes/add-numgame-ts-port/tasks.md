@@ -66,7 +66,10 @@ answer to "should this game exist at all" may end the change here.
 
 ## 6. Stage 2 — on owner acceptance only
 
-- [ ] 6.1 Delete `puzzles/unfinished/numgame.c` and its `unfinished/CMakeLists`
-      entry (it is a standalone utility, not a `puzzle()` — confirm how it is
-      built and remove that).
+- [ ] 6.1 Add `numgame` to `src/puzzle/catalog-data.ts` (+ the two icon PNGs) so
+      it is playable; `catalog-registry.test.ts` holds catalog and registry
+      together. (This task used to read "delete `puzzles/unfinished/numgame.c`
+      and its `unfinished/CMakeLists` entry" — there is no CMake any more, and the
+      source now lives at `reference/numgame.c` in this change, travelling into
+      the archive with it.)
 - [ ] 6.2 Archive, then commit game + archive together.

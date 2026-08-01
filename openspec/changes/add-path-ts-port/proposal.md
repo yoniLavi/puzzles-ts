@@ -55,8 +55,15 @@ committing to the full game (see Impact).
 - **The game frontend, invented**: the connection-based data model and
   click-drag-to-link UI upstream sketched in its header comment, plus rendering,
   win detection, and a hint.
-- **Stage 2, on owner acceptance**: register `path` in the catalog (new entry +
-  new icons) and delete `puzzles/unfinished/path.c`.
+- **Stage 2, on owner acceptance**: register `path` in the catalog (a new entry
+  in `src/puzzle/catalog-data.ts` + new icons).
+
+The reference upstream source is at [`reference/path.c`](reference/path.c),
+moved here by `retire-c-engine` from `puzzles/unfinished/`. Read
+[`reference/README.md`](reference/README.md) first: **it does not compile and is
+not an oracle** — it is a generator with no solver, whose own header says its
+grids "are not of suitable quality to be used directly as puzzles". It is here
+for its strategy, not its output.
 
 Explicitly **not** in this change: any from-C byte-match differential — there is
 no C game and no C solver to match. Assurance is behavioural (the solver proves

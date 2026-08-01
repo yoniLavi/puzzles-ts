@@ -95,9 +95,16 @@ loses its game list and help. Build the app after each stage.
 - [x] 4.4 **Move `puzzles/auxiliary/doc/*.svg` to `docs/`** (D5) — they document
       the hat/spectre tilings, which are live TypeScript in
       `src/native/engine/tilings/`, not deleted C.
-- [x] 4.5 Keep: `puzzles/LICENCE`, `puzzles/puzzles.but`, `puzzles/html/**`,
-      `puzzles/unfinished/{path,numgame}.c` + their `README` (unbuilt
-      references for the two scaffolded greenfield ports).
+- [x] 4.5 Keep: `puzzles/LICENCE`, `puzzles/puzzles.but`, `puzzles/html/**`.
+      **Amended on owner review:** the two unbuilt greenfield references were
+      going to stay at `puzzles/unfinished/`, but they are dead weight in a tree
+      whose only other job is serving help. They moved instead to
+      `openspec/changes/add-{path,numgame}-ts-port/reference/`, beside the work
+      that reads them, each with a provenance/licence README; upstream's
+      `unfinished/README` (all of it about the CMake build) went. `openspec
+      validate --all --strict` passes with a `reference/` subdirectory in a
+      change (81/81), and `openspec archive` renames the whole change directory,
+      so they travel into the archive. `puzzles/` now holds **no C at all**.
 
 ## 5. Remove the wasm-era guards and the engine badges
 

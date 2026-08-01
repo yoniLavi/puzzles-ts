@@ -133,14 +133,18 @@ Explicitly **not** in this change:
 - **`puzzles/puzzles.but` and `puzzles/html/**`** stay *here*. They are the
   upstream-authored help sources the app serves, they have no C dependency, and
   moving them is the separate `rehome-upstream-help-sources` change.
-- **The unfinished puzzles** (`puzzles/unfinished/`) are out of scope — they are
-  governed by `add-path-ts-port` and `add-numgame-ts-port`, and both are
-  explicitly sequenced *after* this change. `path.c` and `numgame.c` stay as
-  unbuilt reading references. Note the consequence: with `common` (nullfe/misc/
-  malloc/random) gone there is no native build left, so Numgame's "check against
-  a hand-run of the C utility if ever wanted" now needs a git checkout of an
-  older tree. That is accepted — it is the same one-way divergence the released
-  oracle already implies.
+- **The unfinished puzzles' *implementations*** are out of scope — they are
+  governed by `add-path-ts-port` and `add-numgame-ts-port`, both explicitly
+  sequenced *after* this change. Their sources are kept as **reading
+  references**, but not under `puzzles/`: on owner review they moved to
+  `openspec/changes/add-{path,numgame}-ts-port/reference/`, beside the changes
+  that read them, each with a README carrying provenance, the MIT notice, and an
+  explicit "this does not compile". Note the consequence, which is the point of
+  saying it out loud: with `common` (nullfe/misc/malloc/random) gone there is no
+  native build, so Numgame's "check against a hand-run of the C utility if ever
+  wanted" is **not** merely inconvenient — it is false as written, because the
+  utility needed the engine and not just its own file. That is accepted; it is
+  the same one-way divergence the released oracle already implies.
 
 ## Impact
 
