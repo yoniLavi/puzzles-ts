@@ -14,14 +14,19 @@ Components:
 - puzzle-config: implements an extensible dialog for custom game types and preferences
 
 Other code:
-- Puzzle class (puzzle.ts): primary interface to the C puzzle from JS
+- Puzzle class (puzzle.ts): primary interface to the puzzle engine from the UI
   - Runs in the main thread
-  - Proxies puzzle methods to the wasm code running in the worker (using comlink)
+  - Proxies puzzle methods to the engine running in the worker (using comlink)
   - Exposes puzzle state as reactive properties (using lit-labs/signals)
-  - Provides methods for calling useful midend functions exposed by Frontend
-- WorkerPuzzle class (worker.ts)
+  - Provides methods for calling useful midend functions
+- worker.ts
   - Runs in a web worker
-  - Loads the Emscripten-generated wasm module for the specified puzzle
-  - Manages a C++ `Frontend` object, which provides JS access to the midend functions (using Embind)
-  - Implements the required frontend callbacks
+  - Constructs the native TypeScript engine (`src/native/engine/`) for the
+    requested puzzle and exposes it over Comlink as a `PuzzleEngineSurface`
 - Drawing class (drawing.ts): implements the puzzle drawing API, running in the worker
+
+Historical note: until `retire-c-engine` this layer had two implementations
+behind `PuzzleEngineSurface` — the TypeScript one above, and a `WorkerPuzzle`
+that loaded an Emscripten-built wasm module per puzzle and drove a C++
+`Frontend` through Embind. Every game is native TypeScript now, so the worker
+constructs the TS engine unconditionally and there is no wasm in the app.

@@ -24,6 +24,6 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/puzzles", "!!!notes"]
+    "includes": ["**", "!**/puzzles", "!**/docs/tilings", "!!!notes"]
   }
 }

@@ -4,7 +4,6 @@ import { customElement } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import type { FavoriteChangeEvent } from "../components/catalog-card.ts";
 import rawHomeScreenCSS from "../css/home-screen.css?inline";
-import { isTsPorted } from "../native/games/ts-ported-ids.ts";
 import { puzzleDataMap, puzzleIds } from "../puzzle/catalog.ts";
 import { puzzlePageUrl } from "../routing.ts";
 import { savedGames } from "../store/saved-games.ts";
@@ -163,7 +162,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
     );
   }
 
-  private renderPuzzleGrid(puzzleIds: string[], heading?: string) {
+  private renderPuzzleGrid(puzzleIds: readonly string[], heading?: string) {
     return html`
       <section part="puzzle-section">
         ${heading ? html`<h2>${heading}</h2>` : nothing}
@@ -192,7 +191,6 @@ export class HomeScreen extends SignalWatcher(Screen) {
         ?game-in-progress=${savedGames.autoSavedPuzzles.has(puzzleId)}
         ?favorite=${isFavorite}
         ?unfinished=${unfinished}
-        ?ts-ported=${isTsPorted(puzzleId)}
       ></catalog-card>
     `;
   }

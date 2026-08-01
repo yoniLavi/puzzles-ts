@@ -1,17 +1,10 @@
-import { puzzles } from "../assets/puzzles/catalog.json";
+import { type PuzzleData, puzzleCatalog } from "./catalog-data.ts";
 
-export { puzzleIds, version } from "../assets/puzzles/catalog.json";
+export type { PuzzleData } from "./catalog-data.ts";
+export { puzzleIds } from "./catalog-data.ts";
 
 export interface PuzzleDataMap {
   [id: string]: PuzzleData;
 }
 
-export interface PuzzleData {
-  name: string;
-  description: string;
-  objective: string;
-  collection: string;
-  unfinished?: boolean;
-}
-
-export const puzzleDataMap: Readonly<PuzzleDataMap> = puzzles;
+export const puzzleDataMap: Readonly<PuzzleDataMap> = puzzleCatalog;

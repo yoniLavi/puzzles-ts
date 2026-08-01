@@ -7,7 +7,7 @@ import { getTsGame } from "../native/engine/registry.ts";
 // `isolate: false` a sibling file may have reset the shared registry after
 // this module's import-time registration ran.
 import { registerAllGames } from "../native/games/index.ts";
-import { TS_PORTED_PUZZLE_IDS } from "../native/games/ts-ported-ids.ts";
+import { puzzleIds } from "./catalog.ts";
 
 beforeAll(registerAllGames);
 
@@ -53,7 +53,7 @@ function configFor(game: AnyGame, p: unknown): ConfigValues {
 const TEMPLATE_FIELD = /\{[a-z0-9-]+(?::[^}]*)?}/;
 
 describe("describeParams covers every augmentation template field", () => {
-  for (const id of TS_PORTED_PUZZLE_IDS) {
+  for (const id of puzzleIds) {
     const aug = puzzleAugmentations[id as PuzzleId];
     if (!aug?.describeConfig) {
       continue;
@@ -61,7 +61,7 @@ describe("describeParams covers every augmentation template field", () => {
     const describeConfig = aug.describeConfig;
     it(`${id}: no unsubstituted {field} placeholder in any preset header`, () => {
       const game = getTsGame(id);
-      expect(game, `${id} is in TS_PORTED_PUZZLE_IDS but not registered`).toBeDefined();
+      expect(game, `${id} is in the catalog but not registered`).toBeDefined();
       if (!game) {
         return;
       }

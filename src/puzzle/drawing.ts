@@ -1,13 +1,5 @@
-import type {
-  Drawing as DrawingHandle,
-  DrawingImpl,
-  DrawTextOptions,
-  FontInfo,
-  Point,
-  PuzzleModule,
-  Rect,
-  Size,
-} from "./types.ts";
+import type { GameDrawing } from "../native/engine/game.ts";
+import type { DrawTextOptions, FontInfo, Point, Rect, Size } from "./types.ts";
 
 // Type definitions
 
@@ -25,9 +17,17 @@ interface Blitter {
 }
 
 /**
- * Drawing class for canvas-based rendering
+ * Drawing class for canvas-based rendering.
+ *
+ * It used to declare `implements DrawingImpl<Blitter>` — a type derived from
+ * the Embind `DrawingWrapper`, because this class was originally handed to
+ * `Module.Drawing.implement()` as the JS side of the C drawing API. With the C
+ * engine retired (`retire-c-engine`) that indirection is gone, and the two
+ * interfaces turned out to be the same interface written twice: the engine's
+ * own `GameDrawing` is what every game actually draws through, and this class
+ * already satisfied it structurally. It now says so.
  */
-export class Drawing implements DrawingImpl<Blitter> {
+export class Drawing implements GameDrawing<Blitter> {
   private readonly canvas: OffscreenCanvas;
   private context: OffscreenCanvasRenderingContext2D;
   private palette: string[] = [];
@@ -56,13 +56,9 @@ export class Drawing implements DrawingImpl<Blitter> {
     this.context = context;
   }
 
-  bind(module: PuzzleModule): DrawingHandle {
-    return module.Drawing.implement(this);
-  }
-
   /**
    * Install the color palette, which must be CSS color strings
-   * in the same order as the return from Frontend.getColourPalette.
+   * in the same order as the game's `colours()` return.
    * (Does not redraw anything already on the canvas.)
    * Returns true if an already set palette was replaced.
    */
@@ -112,7 +108,7 @@ export class Drawing implements DrawingImpl<Blitter> {
   }
 
   /*
-   * DrawingImpl
+   * GameDrawing
    */
 
   // cached text metrics

@@ -98,7 +98,6 @@ export class Puzzle {
       needsRightButton,
       isTimed,
       wantsStatusbar,
-      engineType,
     }: PuzzleStaticAttributes,
   ) {
     const catalogData = puzzleDataMap[puzzleId];
@@ -115,7 +114,6 @@ export class Puzzle {
     this.needsRightButton = needsRightButton;
     this.isTimed = isTimed;
     this.wantsStatusbar = wantsStatusbar;
-    this.engineType = engineType;
   }
 
   private async initialize(): Promise<void> {
@@ -214,7 +212,6 @@ export class Puzzle {
   public readonly needsRightButton: boolean;
   public readonly isTimed: boolean;
   public readonly wantsStatusbar: boolean;
-  public readonly engineType: PuzzleStaticAttributes["engineType"];
 
   // Reactive properties
   private _status = signal<GameStatus>("ongoing");

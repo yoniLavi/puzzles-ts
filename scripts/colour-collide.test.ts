@@ -28,7 +28,7 @@ import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { it } from "vitest";
 import { getTsGame } from "../src/native/engine/registry.ts";
-import { TS_PORTED_PUZZLE_IDS } from "../src/native/games/ts-ported-ids.ts";
+import { puzzleIds } from "../src/puzzle/catalog.ts";
 import type { Colour } from "../src/puzzle/types.ts";
 import { colourToOKLCH, isGrayChroma, type OKLCH } from "../src/utils/color.ts";
 import "../src/native/games/index.ts";
@@ -76,7 +76,7 @@ it("reports palette entries a game cannot tell apart", () => {
     "newly appears is two meanings that just collapsed into one.\n",
   ];
   let total = 0;
-  for (const id of [...TS_PORTED_PUZZLE_IDS].sort()) {
+  for (const id of [...puzzleIds].sort()) {
     const game = getTsGame(id);
     if (!game) continue;
     const palette = game.colours([0.827, 0.827, 0.827]);

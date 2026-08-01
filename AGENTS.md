@@ -23,10 +23,20 @@ Keep this managed block so 'openspec update' can refresh the instructions. Note:
 
 ## Project at a glance
 
-PWA port of [Simon Tatham's Portable Puzzle Collection][sgt-puzzles]. Two halves:
+PWA port of [Simon Tatham's Portable Puzzle Collection][sgt-puzzles]. **As of
+`retire-c-engine` (2026-08-01) it is a TypeScript project, end to end.**
 
-- **C/C++ puzzles** in `/puzzles` (git subtree of upstream + `puzzles/unreleased`), compiled to WebAssembly via host-native Emscripten (see `Brewfile`).
+- **All 57 games + the engine** in `/src/native/` — `engine/` (the midend, the
+  `Game` interface, the registry, the drawing/colour contracts) and
+  `games/<puzzleId>/` (one directory per game). Plain TypeScript, no build step
+  of their own.
 - **TypeScript web app** in `/src` using Lit web components and Vite. Targets Baseline 2023 (see `src/preflight.ts`).
+- **`/puzzles`** is now only upstream's *help sources* (`puzzles.but` for the
+  manual, `html/` for the overview pages), the MIT licences, and two unbuilt
+  `unfinished/` C files kept as reading references for the greenfield
+  Path/Numgame builds. **Nothing under it is compiled; there is no build system
+  there at all.** Moving the help sources out is the scaffolded follow-up
+  `rehome-upstream-help-sources`.
 
 The long-term goal is to replace the C engine with native TypeScript, **top-down and product-value-first**. The authoritative statement of the migration approach is the `ts-migration` capability spec (`openspec/specs/ts-migration/spec.md`); this section is the readable summary. The prior bottom-up, byte-identical-fidelity doctrine was superseded on 2026-05-18 by the `pivot-to-top-down-ts` change and is preserved on branch `legacy/seam-by-seam-fidelity` + tag `pre-ts-pivot` in case of reversal.
 
@@ -49,13 +59,21 @@ Replace the C/WASM puzzle engine with native TypeScript, ordered so that **user-
 - **Direct parent**: [medmunds/puzzles-web]. A PWA shell over upstream's C compiled to WASM via Emscripten, using a C++ `webapp.cpp` + Embind as a typed frontend adapter, running the WASM in a Web Worker (via Comlink), with a Lit/Web-Awesome/Vite TS app. The `puzzles/` directory is a git subtree of upstream with a small number of local patches.
 - **This project**: forked from puzzles-web. Replaces the C engine with native TypeScript, top-down, eventually displacing it entirely while deliberately growing beyond upstream's feature set.
 
-## Upstream policy: no merges; C is a reference, not an oracle
+## Upstream policy: no merges; the C is gone, and it was a reference not an oracle
 
-This project is **not tracking upstream**. We forked from medmunds/puzzles-web at a specific point, which forked from Simon Tatham's puzzles at a specific point. No future merges from either upstream into the `puzzles/` subtree.
+**Terminal state reached 2026-08-01 (`retire-c-engine`): there is no C engine.**
+The sources, the Embind adapter, the Emscripten build, the leaf bridges and the
+worker's WASM path are all deleted. What follows is the policy that governed the
+migration and still governs how to think about upstream; read it as history plus
+one live rule (**no merges, ever**).
+
+This project is **not tracking upstream**. We forked from medmunds/puzzles-web at a specific point, which forked from Simon Tatham's puzzles at a specific point. No future merges from either upstream into `puzzles/`.
+
+**Where the reference went.** The C is in git history — `git show <tag>:puzzles/<game>.c` still works, and `pre-ts-pivot` / the per-port commits bracket it. What is *not* recoverable cheaply is a *running* C build to ask new questions of; that is the one-way door the release of the byte-match oracle already implied, and it is closed now. A new question is answered behaviourally.
 
 1. **The C source under `puzzles/` is a readable *reference* and a dev-time *differential-check* source — not an immutable byte-oracle.** It encodes years of subtle generator/solver logic (uniqueness, difficulty grading, symmetry) that is priceless to *read* when porting and to *spot-check against* in dev. It is still not casually edited (it's a stable reference and the no-merge subtree), but the reason is "don't churn the reference," not "byte parity is a release gate." There is no characterization-corpus parity bar.
 
-2. **Files we added live in `puzzles/` too but follow our rules.** `puzzles/webapp.cpp` (the Embind adapter), `puzzles/random_bridge.js`, the harnesses under `puzzles/auxiliary/*`, and project-side CMake edits are *our code in upstream's directory*. Edit them freely. Test: does the file appear in the original Simon Tatham repository? If yes, it's the reference — change it only with cause. If no, it's ours.
+2. ~~**Files we added live in `puzzles/` too but follow our rules.**~~ Historical: `webapp.cpp`, `random_bridge.js`, the `auxiliary/*` harnesses and the project-side CMake edits were *our code in upstream's directory*, and the test for "may I edit this?" was "does it appear in the original Simon Tatham repository?". All of it is deleted; everything remaining under `puzzles/` is upstream's, so the test now has only one answer.
 
 - `puzzles/LICENCE` stays intact (MIT obligation, independent of tracking policy).
 - A game's C source **is deleted when that game's TS port ships** (per-game, not deferred to a whole-rewrite endpoint — see "C deletion" below). `puzzles/` goes away entirely only when the last game is ported.
@@ -64,7 +82,7 @@ This project is **not tracking upstream**. We forked from medmunds/puzzles-web a
 
 1. **Build the TS midend + a clean `Game` interface first.** Undo/redo/timer/preset/serialise (clean TS save format) plus the interface every ported game implements. This is the keystone — every product goal (new games, quick-save, mistake-check, hints, per-game aids) needs it. It is *first*, not last.
 2. **Port games top-down, by behaviour.** Simplest first (Cube/Flip/Pegs) to establish the pattern, then the games we want to enhance (Galaxies for the cell↔dot aid), then outward to the rest. A game is "done" when it plays correctly under manual + behavioural tests and a dev-time differential spot-check against the C build looks right.
-3. **Per-game hybrid, parity-gated.** C/WASM remains the runtime for every not-yet-ported game; ported games run their TS implementation; the app presents both uniformly. A game is registered (TS-served), marked `TS_PORTED`, and its C deleted **only once verified at full behavioural parity with the C build — including rendering, animation, and input — by owner acceptance testing, not a green automated suite alone** (a suite asserting only state transitions can be fully green while the game does not render — this happened with Flip). Until parity, the game stays unregistered and runs on C (the empty-registry path *is* the fallback; the cost of this rule is ~zero discipline). A parity shortfall is **never** to be called "cosmetic" or "out of scope" or deferred without explicit owner approval — it blocks registration. Authoritative: `ts-migration` spec, "Per-game hybrid; C deleted per game".
+3. **Per-game hybrid, parity-gated** — *the migration mechanism, now retired with the C it switched against (`retire-c-engine`, 2026-08-01). The parity bar it encodes still governs any game-facing change; the fallback it describes no longer exists.* C/WASM remained the runtime for every not-yet-ported game; ported games run their TS implementation; the app presents both uniformly. A game is registered (TS-served), marked `TS_PORTED`, and its C deleted **only once verified at full behavioural parity with the C build — including rendering, animation, and input — by owner acceptance testing, not a green automated suite alone** (a suite asserting only state transitions can be fully green while the game does not render — this happened with Flip). Until parity, the game stays unregistered and runs on C (the empty-registry path *is* the fallback; the cost of this rule is ~zero discipline). A parity shortfall is **never** to be called "cosmetic" or "out of scope" or deferred without explicit owner approval — it blocks registration. Authoritative: `ts-migration` spec, "Per-game hybrid; C deleted per game".
 4. **Leaf libraries are ported lazily, idiomatically, on demand.** When a game being ported needs dsf / tree234 / sort / findloop, write an idiomatic TS equivalent as an ordinary module dependency (dsf ≈ a ~20-line union-find; tree234 ≈ a Map or sorted structure). No standalone bridged seams, no corpora.
 
 ### Why this approach (alternatives considered and rejected)
@@ -79,7 +97,7 @@ There is **no inherited test suite**. We build the discipline from scratch, now 
 
 1. **Behavioural tests per ported game / module.** Ordinary unit/integration tests asserting the thing behaves correctly (generates solvable boards, solver solves them, input transitions are right, serialise/deserialise round-trips). Property tests where there's a closed-form invariant ("combi emits exactly C(n,r) lex-ordered tuples") — cheap, additive, catches unrecorded-input regressions.
 2. **Dev-time differential spot-check.** An advisory harness that generates N boards from both the C build and the TS port for the same seed and surfaces diffs for human review. Review signal, **not** a pass/fail gate. Per-game tightening (a stricter check for a generator with brutal uniqueness constraints) is allowed but is not the default.
-3. **Pre-commit gate stays:** `tsc -b --noEmit` → biome (lint + format + import order; staged files in the hook, whole tree in CI/manual — see Git section) → `vitest run` → `vite build` (the production build is in the gate because tsc/lint/vitest never exercise `vite build`, and two prod-only breakages once sat undetected on main; needs `build:wasm` assets present).
+3. **Pre-commit gate stays:** `tsc -b --noEmit` → biome (lint + format + import order; staged files in the hook, whole tree in CI/manual — see Git section) → `vitest run` → `vite build` (the production build is in the gate because tsc/lint/vitest never exercise `vite build`, and two prod-only breakages once sat undetected on main; it needs no generated assets since `retire-c-engine` — the catalog is committed source).
 4. NEVER EVER attempt to bypass pre-commit validation. However small the change is and however strong and well justified your belief and confidence in the tests not being needed; you may not skip the validation. These tests are critical to our code integrity and security. Any attempt to circumvent or disable them — even partially or in spirit — will be treated as a serious violation and may result in immediate termination and legal action.
 
 
@@ -155,12 +173,18 @@ Top-down, product-value first:
 6. **Cross-game features** — the `hint()` hook **shipped** (`add-hint-system` 2026-05-27, deepened to plan-carrying hints by `add-hint-plans` 2026-06-10; Sixteen is the first implementer). The `findMistakes()` hook + Galaxies implementation **shipped** (`add-findmistakes-galaxies`) and the one-slot **quick-save** + combined **Check & Save** button **shipped** (`add-quick-save-check-save`) — both 2026-06-10, dev-verified, owner-acceptance pending. Item 6 is now closed (hint + mistake-check + quick-save all landed).
 7. **Outward** — remaining games, simplest-first; leaf libs pulled in idiomatically as needed; worker existence re-evaluated once games are TS (it exists for heavy WASM; light TS games may not need it).
 8. **`random.c`** is already TS (`random.ts`); keep it.
+9. **`retire-c-engine`** — **landed 2026-08-01.** The terminal state: the C
+   engine, the Emscripten build, the leaf-bridge flags and the worker's WASM
+   path are gone. `puzzles/` holds upstream's help sources, the licences, and
+   two unbuilt references. The follow-up `rehome-upstream-help-sources` moves
+   the help sources under `help/`.
 
 **Where the order goes next (owner, 2026-08-01).** Every game is ported and the
 authors' known-issue lists are reconciled, so:
 
-1. **`retire-c-engine`** — the next change to implement. Its only dependency
-   (`audit-author-known-issues`) is archived.
+1. ~~**`retire-c-engine`**~~ — **done, 2026-08-01.** See the entry at the end of
+   "What's been done" for what it removed, and the two things the review of it
+   found that the change had not anticipated.
 2. **A round or two of refactoring** on the TypeScript-only codebase, so the work
    below lands on cleaner code. The 48 per-game differentials are the net for
    this: each imports a *frozen JSON fixture* and keeps working with no C
@@ -183,16 +207,21 @@ history if a question ever genuinely needs it.
 
 ## Build commands
 
-- `npm run build:wasm` — compiles the puzzle wasm + manual into `src/assets/puzzles/` via `scripts/build-emcc.sh`. **Defaults to hybrid TS+C**: `USE_TS_LEAVES` defaults ON (CMake) and `VITE_USE_TS_LEAVES` defaults ON (worker), so zero-arg `npm run build:wasm && npm run dev` ships the hybrid build that production runs. Set `USE_TS_LEAVES=0` (paired with `VITE_USE_TS_LEAVES=0` on the worker side) to fall back to pure C — useful when bisecting whether a regression came from a TS port or the C reference. (Note: this umbrella is *runtime mechanics*; the migration strategy is per-game per the `ts-migration` spec, not per-leaf.) Per-module overrides (`USE_TS_RANDOM`, future `USE_TS_COMBI`, …) flip individual seams against the umbrella in either direction; per-module Vite env vars similarly override `VITE_USE_TS_LEAVES`. The worker fails closed at WASM instantiation if the CMake and Vite flag sets disagree (`assertWasmBridgesCoherent` in `src/puzzle/worker.ts`). When transitioning between flag combinations, reset cmake's cache with `rm -rf build/wasm/` before the next `npm run build:wasm` — cmake's `option()` honours previously-cached values, so a stale cache will silently win.
-- `npm run build:assets` — alias for `build:wasm`. Kept as a wrapper so existing muscle memory and the `npm run build` doc-string still work; per-puzzle thumbnail icons are a committed snapshot (see `openspec/specs/puzzle-icons/spec.md`), not a build output.
-- `scripts/build-native.sh [target...]` — host-native build of the harness sources in `puzzles/auxiliary/` (default target: `random-trace`). Output: `build/native/`. These back the dev-time differential spot-check (C vs TS port); run on demand, no npm wrapper because it's not part of `build:assets`.
+- `npm run build:assets` — runs `scripts/build-manual.sh`: halibut over
+  `puzzles/puzzles.but` into `src/assets/manual/`. **This is the entire asset
+  build.** It is optional in the sense that the app builds without it — the
+  manual pages simply do not exist and each overview page drops its "manual"
+  link. There is no wasm build: `npm run build:wasm`, `scripts/build-emcc.sh`,
+  `scripts/build-native.sh`, the whole CMake tree and the `USE_TS_LEAVES` /
+  `USE_TS_<MODULE>` / `VITE_USE_TS_*` flag family all went with
+  `retire-c-engine`. If you find a doc still mentioning them, it is stale.
 - `npm run dev` — vite dev server.
-- `npm run build` — production app build (tsc + vite). Assumes `build:assets` already ran.
+- `npm run build` — production app build (tsc + vite). Needs no generated input: the game catalog is committed source (`src/puzzle/catalog-data.ts`). Run `build:assets` first if you want the in-app manual included.
 - `npm run preview` — preview production build.
 - `npm run check` — biome format + lint with autofix.
 - `npm run test` / `npm run test:run` — vitest.
 
-`src/assets/puzzles/` is gitignored (regenerate via `build:wasm`). `src/assets/icons/` is **committed** as a frozen snapshot of per-puzzle thumbnails; adding a new puzzle requires producing two PNGs by hand (see `openspec/specs/puzzle-icons/spec.md`). `src/asset-integrity.test.ts` asserts every catalog `puzzleId` has both its PNGs (64×64 and 128×128) and that every `new URL(<path>, import.meta.url)` reference in `src/` resolves. Everything under `build/` is gitignored too.
+`src/assets/manual/` is gitignored (regenerate via `build:assets`); it is the only generated directory under `src/assets/`. `src/assets/icons/` is **committed** as a frozen snapshot of per-puzzle thumbnails; adding a new puzzle requires producing two PNGs by hand (see `openspec/specs/puzzle-icons/spec.md`). `src/asset-integrity.test.ts` asserts every catalog `puzzleId` has both its PNGs (64×64 and 128×128) and that every `new URL(<path>, import.meta.url)` reference in `src/` resolves. Everything under `build/` is gitignored too.
 
 ## Code conventions
 
@@ -203,16 +232,16 @@ history if a question ever genuinely needs it.
 - **Persistence**: IndexedDB via Dexie.js (`src/store/db.ts`).
 - **WASM**: runs in a web worker, exposed via Comlink (`src/puzzle/`).
 - **Styling**: Web Awesome design tokens.
-- **C code in `/puzzles`**: it's a *reference*, not an oracle (see "Upstream policy"). Don't churn it casually — it's a stable reference and a no-merge subtree — but it carries no byte-parity release gate. A game's C is deleted when its TS port ships. Files we added there (`webapp.cpp`, `*_bridge.js`, `auxiliary/*`) are ours — edit freely.
+- **`/puzzles`**: no C engine remains (`retire-c-engine`). What is there is upstream's *help sources* and licences, plus two unbuilt `unfinished/` references. Treat it as read-only upstream material; changing the words in a served help page is a content decision, not a refactor.
 
 ## Constraints
 
 DO NOT:
-- Casually churn the upstream C source under `/puzzles` or `/puzzles/unreleased` — it's a stable reference and a no-merge subtree (see "Upstream policy"). Reading it to port a game is the *expected* use. Deleting a game's C when its TS port ships is also expected. Our own additions there (`webapp.cpp`, `*_bridge.js`, `auxiliary/*`) are fine to edit.
+- Edit upstream's remaining material under `/puzzles` (the manual source, the overview fragments, the licences) without cause — it is a no-merge subtree of someone else's words that the app serves verbatim.
 - Break Baseline 2023 browser compatibility.
 - Use top-level await, dynamic `import()`, or `import.meta` in `src/preflight.ts` — preflight runs on older browsers to gate the rest of the app.
 - Add dependencies without considering bundle size and offline (PWA) support.
-- Commit generated assets in `src/assets/puzzles/` or anything under `build/`. (`src/assets/icons/` is the exception — it's a committed snapshot maintained per `openspec/specs/puzzle-icons/spec.md`; add the two required PNGs by hand when a new puzzle joins the catalog.)
+- Commit generated assets in `src/assets/manual/` or anything under `build/`. (`src/assets/icons/` is the exception — it's a committed snapshot maintained per `openspec/specs/puzzle-icons/spec.md`; add the two required PNGs by hand when a new puzzle joins the catalog.)
 - Catch unrecoverable errors only to log them — let them propagate so Sentry records them.
 
 DO:
@@ -228,33 +257,37 @@ DO:
 
 Three roles to keep distinct:
 
-- **`puzzles/`** (in-tree subtree of upstream). The trimmed upstream source (engine only; the GTK frontend was removed in `drop-icon-generation`), including `auxiliary/`. Reference + dev-time differential-check source; a game's C is deleted when its TS port ships. Project tooling (the differential-check harness, any auxiliary tooling) lives under `puzzles/auxiliary/`.
-- **`../puzzles/`** (sibling clone). Useful only for running upstream's own tools (`benchmark.sh`, future upstream auxiliary tests) unmodified. **Not** a place to put our work.
+- **`puzzles/`** — what is left of the in-tree upstream subtree after `retire-c-engine`: `puzzles.but` and `html/` (help sources the app serves), the two MIT `LICENCE` files, and `unfinished/{path,numgame}.c` as unbuilt reading references. **No build system, nothing compiled.** The scaffolded `rehome-upstream-help-sources` moves the help sources under `help/` and settles what the directory is still for.
+- **`../puzzles/`** (sibling clone). The place to go if a question genuinely needs upstream's C — this repo no longer has any. **Not** a place to put our work.
 - **`../puzzles-web/`** (sibling clone). The pre-fork baseline; useful as a diff reference in early phases.
 
 Build outputs are partitioned under `/build/` (all gitignored):
 
-- `/build/wasm/` — Emscripten cmake build (from `build-emcc.sh`).
-- `/build/native/` — characterization-harness binaries (from `build-native.sh`).
+(Both former occupants — `/build/wasm/` from the Emscripten cmake build and
+`/build/native/` from the characterization harnesses — went with
+`retire-c-engine`. Nothing writes under `/build/` today; the directory and its
+gitignore entry are kept for whatever comes next.)
 
 Source tree under `src/`:
 
 - `src/screens/` — top-level screen components.
 - `src/dialogs/` — modal/popover Lit components.
 - `src/components/` — reusable leaf Lit components.
-- `src/native/<module>/` — TS ports of shared engine modules (today: `random/{index.ts, bridge.ts, sha1.ts, *.test.ts}`). The TS midend and per-game ports introduced by the top-down plan will land here / under a sibling games dir; exact layout is decided in `ts-midend-and-game-interface`.
-- `src/assets/` (generated), `src/css/` (styles), `src/puzzle/` (puzzle runtime + Comlink worker), `src/store/` (Dexie schema), `src/utils/` (general-purpose helpers).
+- `src/native/engine/` — the midend, the `Game` interface, the registry, the drawing/colour/palette contracts, and the in-process test harness (`engine/testing/`).
+- `src/native/games/<puzzleId>/` — one directory per game (all 57).
+- `src/native/random/` — the bit-identical RNG port (`index.ts`, `sha1.ts`, fixtures). Kept so shared game IDs reproduce across builds.
+- `src/assets/` (`icons/` committed, `manual/` generated), `src/css/` (styles), `src/puzzle/` (puzzle runtime + Comlink worker + the committed `catalog-data.ts`), `src/store/` (Dexie schema), `src/utils/` (general-purpose helpers).
 - HTML page entries, main bootstrap (`main.ts`), preflight gate (`preflight.ts`), service worker (`sw.ts`), and cross-cutting modules (`routing.ts`, `color-scheme.ts`, `color-scheme-init.ts`, `icons.ts`) live at `src/` root.
 
 ## Special files
 
-- `puzzles/webapp.cpp` — frontend adapter between C puzzle code and TS via Embind.
-- `src/puzzle/puzzle.ts`, `src/puzzle/worker.ts` — how the wasm frontend is exposed to the rest of the app.
+- `src/puzzle/catalog-data.ts` — the committed game catalog. Adding a game means editing this **and** `src/native/games/index.ts`; `catalog-registry.test.ts` holds them together.
+- `src/puzzle/puzzle.ts`, `src/puzzle/worker.ts` — how the engine is exposed to the rest of the app.
 - `templates/index.html.hbs`, `templates/puzzle.html.hbs` — handlebars templates for static page generation (handled by `vite-plugins/extra-pages.ts`).
 - `src/preflight.ts` — Baseline 2023 capability checks.
 - `src/store/db.ts` — Dexie schema.
 - `src/sw.ts` — service worker (Workbox + vite-plugin-pwa).
-- `puzzles/auxiliary/` — host-native harness sources (e.g. `random-trace.c`). Under the new plan these back the dev-time *differential spot-check* (generate N boards from C vs the TS port for the same seed, surface diffs) — an advisory dev aid, not a gating corpus.
+- `docs/tilings/` — upstream's hat/spectre construction diagrams, moved out of `puzzles/auxiliary/doc/` by `retire-c-engine` because they document live TypeScript (`src/native/engine/tilings/`) rather than deleted C.
 
 ## Work management
 
@@ -356,6 +389,20 @@ Recorded here as durable reference, not a changelog (commit history carries the 
 
   **Then the owner released the byte-match oracle** (2026-08-01): it was a porting tool, porting is done, so *"matching the C is no longer a reason not to improve a game"*. See the doctrine section above. That reopened a set of declines this very sweep had made on oracle grounds, re-triaged in the audit's §3c and scaffolded as five changes — and scoping them found that **"currently no difficulty settings" hides three different sizes**: Clusters already implements *both* deduction levels and just always gates at the deeper one (nothing to invent); Subsets' second rung is sitting commented out in upstream (`// TODO repair this`); Sticks has one technique and nothing in reserve, so it must invent deductions and opens with a gating spike.
 
+- **The C engine, retired** (`retire-c-engine`, 2026-08-01). The terminal state of the migration: the C sources, `webapp.cpp`, the Emscripten build, the whole CMake tree, the `USE_TS_LEAVES` / `USE_TS_<MODULE>` flag family, the worker's `WorkerPuzzle` + coherence check, `scripts/build-{emcc,native}.sh`, the `wasm-sourcemaps` vite plugin, `@sentry/wasm` and the CSP `'wasm-unsafe-eval'` allowance are all gone. `puzzles/` retains only upstream's help sources (`puzzles.but`, `html/`), the two MIT licences, and `unfinished/{path,numgame}.c` as unbuilt references; relocating the help sources is the scaffolded follow-up `rehome-upstream-help-sources`.
+
+  **Reviewing the change against the build before implementing found two things it had not anticipated, and both are the same shape — at the end of a migration, the dependency inverts.**
+
+  (a) **The app's TypeScript vocabulary was generated by the toolchain being deleted.** `src/puzzle/types.ts` re-exported fourteen types out of the Emscripten-generated `emcc-runtime.d.ts` — `Colour`, `Point`, `Size`, `Rect`, `ConfigDescription` (as `ReturnType<Frontend[…]>`) and the rest — and **202 files import from it**: the whole engine, all 57 games, the render harness, the palette. So a generated file in a *gitignored assets directory* was the root of the type graph, and `tsc` had never once run on a tree without it. The fix was ~90 lines hand-authored in place; the verification is that **not one of the 202 importers changed**, and the only errors the first typecheck produced were the four `engineType` sites being removed deliberately. If a downstream file had wanted an edit, a shape had drifted.
+
+  (b) **The catalog metadata existed only in the CMake files.** The design had said the catalog could be generated "from the TS catalog metadata (the same data `ts-ported-ids.ts` and the per-game registrations already hold)". It could not: `ts-ported-ids.ts` was a bare `Set<string>` and the `Game` interface carries no display metadata — every game's name/description/objective/collection lived *only* in the `puzzle()` macro calls. It is now `src/puzzle/catalog-data.ts`, committed, verified by an independent parse of those macro calls against the last generated `catalog.json` (57 games, **zero field differences**). Two warts died with it: the version string came from cmake's `VCSID`, and **`vite.config.ts` imported the gitignored `catalog.json` at config-load time**, so a clean checkout could not parse the vite config until the wasm build had run.
+
+  **A third list of games dissolved on contact.** `TS_PORTED_PUZZLE_IDS` fed the "TS" badges; with the badges removed (owner decision — a chip on all 57 cards marks no distinction) and no unported game left, the set was necessarily the whole catalog. It is gone, and `catalog-registry.test.ts` asserts catalog ≡ registry in **both** directions instead. Adding a game is now two edits, not three.
+
+  **The tail was the guards, not the engine.** The C left a CSP allowance, a Sentry wasm frame filter, a source-map workaround, an Emscripten-abort message in the crash dialog, a `dependencies.json` fetch in the About dialog that would have 404'd, and a scaffolding script still telling the next contributor to write a `*-trace.c`. Each individually still "worked"; together they told the next reader the app still ran wasm. **Deleting the mechanism is the easy half; the guards are what convey the false picture.**
+
+  Verified: the standalone halibut manual is **byte-identical** to the cmake-built one (45 pages, `diff -rq` clean); production build emits **zero** wasm, 57 puzzle pages, 61 overview pages, 45 manual pages.
+
 **Two review methods worth reusing.** Colours move deliberately here, so there is no no-op diff to check; instead (i) 44 moved snapshot files were reviewed **mechanically** — every changed line in every one is an `rgb`/`fillRgb`/`outlineRgb` value, which proves no op was added, removed or moved, and beats eyeballing 44 files; (ii) the light-and-dark **browser pass found the one regression the suite could not** — Light Up's lit square was plain `YELLOW`, a near-board tint in light mode and a *bright patch* in dark, which is exactly the Slide failure mode `hand-author-dark-palette` F1 identified. It is a large fill, so it is `YELLOW_WASH`. `scripts/colour-dark-check.test.ts` is what surfaced it: its background-relationship count went 2 → 56, and the one entry in the 56 that was a **fill** rather than a mark, a never-invert identity, or pre-existing was the defect.
 
 ## Helper extractions: status
@@ -382,7 +429,7 @@ Things this fork has been avoiding but that will trip future games. Not urgent; 
 
 ## Known unresolved questions
 
-- ~~Per-game switch shape~~ — **decided** (`ts-midend-and-game-interface`): a **runtime `puzzleId`→`Game` registry**, not a build flag. Present ⇒ TS midend; absent ⇒ C/WASM. `USE_TS_LEAVES` stays orthogonal (C-internal leaf bridges only). Alternatives (`USE_TS_<GAME>` flag / catalog field / tree-shake) and rationale: that change's `design.md`.
+- ~~Per-game switch shape~~ — **decided, then dissolved.** `ts-midend-and-game-interface` chose a **runtime `puzzleId`→`Game` registry** over a build flag (present ⇒ TS midend; absent ⇒ C/WASM; alternatives and rationale in that change's `design.md`). `retire-c-engine` removed the thing it switched *to*, so the registry is no longer a decision point — a game absent from it is simply unplayable, which `catalog-registry.test.ts` guards in both directions.
 - ~~Where the TS midend + `Game` interface + per-game ports live in `src/`~~ — **decided** (same change, codified in the `repo-layout` spec): `src/native/engine/` for the engine, `src/native/games/<puzzleId>/` for ports; the retired mandatory `__fixtures__/` corpus was dropped from `src/native/<module>`.
 - Whether the Web Worker survives once games are TS. It exists for heavy WASM; light TS games may not need it. Re-evaluate after the first few game ports (flagged in the `ts-migration` spec).
 - Whether any single game ever warrants reinstating a stricter (corpus-like) differential check — a generator with brutal uniqueness constraints might. Left as a per-game tightening option, not a global default.
@@ -398,16 +445,18 @@ Things this fork has been avoiding but that will trip future games. Not urgent; 
 ## Documentation
 
 The in-app help system is assembled from three sources:
-- `/help` — main help pages (this fork's additions/divergences).
-- `/puzzles/html` — upstream per-puzzle overview.
-- `/puzzles/puzzles.but` — upstream manual, built into HTML by halibut as part of `build:wasm`.
+- `/help` — main help pages (this fork's additions/divergences), plus `help/games/` (the per-puzzle pages this project maintains).
+- `/puzzles/html` — upstream per-puzzle overview fragments.
+- `/puzzles/puzzles.but` — upstream manual, built into HTML by halibut via `npm run build:assets`.
+
+The last two move under `help/` in the scaffolded `rehome-upstream-help-sources`.
 
 Update `/help` when adding features that diverge from upstream.
 
 ## Git
 
 - Main branch: `main`.
-- Husky pre-commit runs `tsc -b --noEmit` → biome → `vitest run` → `vite build` (blocks on any failure). The biome step is the read-only form of `biome check` (lint rules, formatting, **and** import order — so a lint-clean-but-unformatted file can't land and re-open the drift that once made `npm run check` reformat ~150 untouched files). It is **scoped by role**: the per-commit hook checks only the *staged* files (`biome check --staged`, via `GATE_BIOME_STAGED=1`), while CI and a manual `npm run gate` check the *whole tree* (`biome ci .`) as the backstop for `--no-verify` bypasses and biome-upgrade restyles. `npm run check` remains the fixer. The final `vite build` catches production-only breakage (vite-plugin closeBundle crashes, unresolved `?raw`/asset imports, plugin/dep regressions) that the other three never exercise; it assumes `npm run build:wasm` has populated `src/assets/puzzles/`. See `.husky/pre-commit`.
+- Husky pre-commit runs `tsc -b --noEmit` → biome → `vitest run` → `vite build` (blocks on any failure). The biome step is the read-only form of `biome check` (lint rules, formatting, **and** import order — so a lint-clean-but-unformatted file can't land and re-open the drift that once made `npm run check` reformat ~150 untouched files). It is **scoped by role**: the per-commit hook checks only the *staged* files (`biome check --staged`, via `GATE_BIOME_STAGED=1`), while CI and a manual `npm run gate` check the *whole tree* (`biome ci .`) as the backstop for `--no-verify` bypasses and biome-upgrade restyles. `npm run check` remains the fixer. The final `vite build` catches production-only breakage (vite-plugin closeBundle crashes, unresolved `?raw`/asset imports, plugin/dep regressions) that the other three never exercise; it needs no generated assets (the catalog is committed source since `retire-c-engine`). See `.husky/pre-commit`.
 
 [sgt-puzzles]: https://git.tartarus.org/?p=simon/puzzles.git
 [medmunds/puzzles-web]: https://github.com/medmunds/puzzles-web

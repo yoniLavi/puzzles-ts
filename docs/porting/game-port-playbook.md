@@ -1,5 +1,34 @@
 # Game Port Playbook
 
+> ## ⚠️ Read this first: there is no C any more (2026-08-01)
+>
+> `retire-c-engine` deleted the C engine, the Emscripten build, every
+> `puzzles/auxiliary/*-trace.c` harness and `scripts/build-native.sh`. **Every
+> instruction in this guide that says "read `puzzles/<game>.c`", "record a
+> fixture", "build the trace harness", or "regenerate against C" is history, not
+> a step you can follow.** The C is in git history if you need to read it; there
+> is no running build to ask new questions of.
+>
+> What is still live, and why this file is still the guide:
+>
+> - **The 48 frozen differentials keep working** — each imports a JSON fixture
+>   and never shells anything. They are the regression net for refactoring. Do
+>   not delete them; do not try to re-baseline one (you cannot).
+> - **The idiomatic-TS rules, the render/cache patterns, the hint bar, the test
+>   tiers, the two-stage parity gate and every per-game lesson below are
+>   unchanged.** They were never about the C being present.
+> - **A *new* game (Path, Numgame) has no oracle at all.** Its assurance is
+>   behavioural: "every generated board is uniquely solvable at exactly its
+>   stated difficulty" as a property test. `scripts/new-game-port.sh` scaffolds
+>   that instead of a differential stub.
+> - **Registration is two edits now**, not three: `src/native/games/index.ts`
+>   and `src/puzzle/catalog-data.ts` (the committed catalog).
+>   `catalog-registry.test.ts` holds them together. There is no
+>   `ts-ported-ids.ts` and no CMake `TS_PORTED` flag.
+>
+> Sections written in the past tense about porting *from* C are kept because the
+> lessons in them are about the games, not the toolchain.
+
 > **v2 (2026-06-22) — restructured live wiki.** Codified from the first 19 ports
 > (Flip → Towers) and re-organised around the port *lifecycle* (before → scaffold
 > → write → differential → test → gate → close). **Update this file whenever you
@@ -134,23 +163,24 @@ to design. Two things make it tractable and low-risk:
   the wall-bounded region has reached size `k`), mirroring the "only flag
   provably-wrong state" philosophy the wall/size errors already follow.
 
-Making it **user-visible** is a catalog move, not just registration (§6): move its
-`puzzle(<game> …)` out of `puzzles/unfinished/CMakeLists.txt` into the **main**
-`puzzles/CMakeLists.txt` with `TS_PORTED`. **Gotcha (cost a rebuild):
-`rm -rf build/wasm/` before the rebuild** — CMake's cached config still lists the
-game under `unfinished` and re-emits its `<game>.wasm` until the cache is cleared
-(the CLAUDE.md "reset the cmake cache" rule bites hardest here, since the entry
-*moved* rather than just gaining a flag).
+Making it **user-visible** is a catalog entry, not just registration (§6): add it
+to [`src/puzzle/catalog-data.ts`](../../src/puzzle/catalog-data.ts).
+*(Historical: this used to mean moving its `puzzle(<game> …)` out of
+`puzzles/unfinished/CMakeLists.txt` into the main `puzzles/CMakeLists.txt` with
+`TS_PORTED` — and the gotcha that cost a rebuild was needing `rm -rf build/wasm/`
+first, because CMake's cached config still listed the game under `unfinished` and
+re-emitted its `<game>.wasm` until the cache was cleared. Both the CMake tree and
+that footgun are gone.)*
 
 **The two-stage gate (§6) partly collapses for an unfinished game — there is no
 in-app C fallback.** A shipped game runs on C/WASM until its TS port is registered,
 so stage 1 ("register for smoke-testing") leaves a working fallback if the port has a
 bug. An **unfinished** game has none: it is gated behind `PUZZLES_ENABLE_UNFINISHED`
-and is **absent from the catalog**, so registering it in `ts-ported-ids.ts` +
-`games/index.ts` alone makes `ts-ported-ids.test.ts` fail (its id isn't in
-`catalog.json`) and the game still doesn't appear. So to smoke-test it *at all* you
-must do the catalog move (main `CMakeLists.txt` + `TS_PORTED`, rebuild) as part of
-stage 1 — the TS impl is the only implementation from the first moment it is visible.
+and is **absent from the catalog**, so registering it in `games/index.ts` alone
+makes `catalog-registry.test.ts` fail (its id isn't catalogued) and the game still
+doesn't appear. So to smoke-test it *at all* you must add its catalog entry
+(`src/puzzle/catalog-data.ts`; historically: the main `CMakeLists.txt` +
+`TS_PORTED`, rebuild) as part of stage 1 — the TS impl is the only implementation from the first moment it is visible.
 What stays gated on owner acceptance is the **C deletion** (stage 2): keep
 `puzzles/unfinished/<game>.c` on disk as the reference (and to back `<game>-trace`)
 until acceptance, then delete it + the trace harness + archive together. Sokoban
@@ -2362,15 +2392,17 @@ is also in [`AGENTS.md`](../../AGENTS.md). **Never call a parity shortfall
 Two stages (owner-confirmed default since Galaxies):
 
 1. **Register for smoke-testing** as soon as the automated suite is green — add the
-   game to [`ts-ported-ids.ts`](../../src/native/games/ts-ported-ids.ts) and import it
+   game to [`catalog-data.ts`](../../src/puzzle/catalog-data.ts) and import it
    in [`games/index.ts`](../../src/native/games/index.ts) so `registerGame(...)` runs.
    The empty-registry path is the C/WASM fallback; a registered game serves its TS
    impl. The owner smoke-tests the TS path in `npm run dev`.
-2. **Flip `TS_PORTED` + delete `.c` only on owner acceptance** — add `TS_PORTED` to
-   the game's `puzzle()` in
-   [`puzzles/CMakeLists.txt`](../../puzzles/CMakeLists.txt) (keeps catalog/icon
-   metadata, builds no wasm) and delete `puzzles/<game>.c`. Rebuild wasm and confirm
-   the game still appears in the catalog with no `<game>.wasm`.
+2. **Delete the `.c` only on owner acceptance** — *(historical: this meant adding
+   `TS_PORTED` to the game's `puzzle()` in `puzzles/CMakeLists.txt`, which kept the
+   catalog/icon metadata while building no wasm, then deleting `puzzles/<game>.c`
+   and rebuilding to confirm the game still appeared with no `<game>.wasm`.)*
+   There is no C and no wasm build since `retire-c-engine`, so stage 2 has no
+   mechanical content left — what survives is the rule that **owner acceptance,
+   not a green suite, is the gate** on calling a game done.
 
 **A third-party `puzzles/unreleased/` game that already ships C/WASM is the
 easy case: flag in place, no catalog move.** Contrast §1.1's `unfinished/`
@@ -2378,7 +2410,7 @@ games, which are absent from the catalog and so must be *moved* into the main
 `CMakeLists.txt` during stage 1 just to be visible. An `unreleased/` game
 already has its `puzzle(<game> …)` entry built into `catalog.json` and already
 runs on C/WASM, so stage 1 is just the two registration edits
-(`ts-ported-ids.ts` + `games/index.ts`) — `ts-ported-ids.test.ts` stays green
+(`catalog-data.ts` + `games/index.ts`) — `catalog-registry.test.ts` stays green
 because the id is already in the catalog, and the C build remains the fallback
 exactly as for a Tatham game. Stage 2 adds `TS_PORTED` to the entry where it
 already sits in `puzzles/unreleased/CMakeLists.txt`, drops any `solver(<game>
@@ -2394,7 +2426,7 @@ discipline is ~zero.
 
 Keep the openspec change current as you go (tasks ticked, design decisions
 recorded). The pre-commit gate (`tsc -b --noEmit` → `biome lint` → `vitest run` →
-`vite build`) must be green; the prod build needs `npm run build:wasm` assets
+`vite build`) must be green; the prod build needs no generated assets
 present. **Format only your own files** — `biome lint` (the gate) does *not* apply
 the import-organize assist, so the committed tree carries import-order drift that
 `npm run check` (`biome check --write .`) "fixes" across **70+ unrelated files**,

@@ -26,8 +26,8 @@ import { writeFileSync } from "node:fs";
 import { it } from "vitest";
 import { darkValue } from "../src/native/engine/colour-token.ts";
 import { getTsGame } from "../src/native/engine/registry.ts";
-import { TS_PORTED_PUZZLE_IDS } from "../src/native/games/ts-ported-ids.ts";
 import { puzzleAugmentations } from "../src/puzzle/augmentation.ts";
+import { puzzleIds } from "../src/puzzle/catalog.ts";
 import type { Colour, PuzzleId } from "../src/puzzle/types.ts";
 import {
   colourToOKLCH,
@@ -141,7 +141,7 @@ it("measures dark mode", () => {
   lines.push("| game | # | ΔL light | ΔL dark | authored? |");
   lines.push("| --- | --- | --- | --- | --- |");
   let violations = 0;
-  for (const id of [...TS_PORTED_PUZZLE_IDS].sort()) {
+  for (const id of [...puzzleIds].sort()) {
     const game = getTsGame(id);
     if (!game) continue;
     const lightPal = game.colours(lightInput);

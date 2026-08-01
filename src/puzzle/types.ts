@@ -1,36 +1,83 @@
 /**
- * Additional typing for the Emscripten generated code.
+ * The app's shared puzzle vocabulary: geometry, colours, config descriptions
+ * and the change notifications the engine emits.
+ *
+ * These declarations used to be *re-exported from the Emscripten-generated*
+ * `src/assets/puzzles/emcc-runtime.d.ts` — so the native TypeScript engine's
+ * type vocabulary was, literally, emitted by `emcc --emit-tsd` from
+ * `webapp.cpp`. 202 files import from this module, which made a generated file
+ * in a gitignored assets directory the root of the type graph; nothing noticed
+ * because `tsc` only ever ran on trees where `build:wasm` had already been run.
+ *
+ * `retire-c-engine` hand-authored them here instead, preserving every shape
+ * exactly so that not one importer had to change. Several are still upstream's
+ * C structures seen through a JS lens (`Colour` is an RGB triple in 0..1, not a
+ * CSS string; `Rect`/`Point`/`Size` are the drawing API's coordinate records),
+ * which is why they read the way they do.
  */
 
-import type {
-  ClassHandle,
-  DrawingWrapper,
-  Frontend,
-  MainModule,
-  NotifyGameIdChange,
-  NotifyGameStateChange,
-  NotifyParamsChange,
-  Point,
-  Size,
-} from "../assets/puzzles/emcc-runtime";
+/** An RGB triple, each component in 0..1 — the puzzle drawing API's colour
+ * representation, as fed to and returned by a game's `colours()`. */
+export type Colour = [number, number, number];
 
-// (Re-export generated types so other code doesn't need to dig into assets.)
-export type {
-  Colour,
-  Drawing,
-  DrawingWrapper,
-  DrawTextOptions,
-  Frontend,
-  FrontendConstructorArgs,
-  KeyLabel,
-  NotifyGameIdChange,
-  NotifyGameStateChange,
-  NotifyParamsChange,
-  Point,
-  PresetMenuEntry,
-  Rect,
-  Size,
-} from "../assets/puzzles/emcc-runtime";
+export type Point = {
+  x: number;
+  y: number;
+};
+
+export type Size = {
+  w: number;
+  h: number;
+};
+
+export type Rect = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
+/** A label for an on-screen key the game wants offered, and the button code
+ * pressing it should deliver. */
+export type KeyLabel = {
+  label: string;
+  button: number;
+};
+
+/** One entry in the game-type preset menu; `submenu` makes it a nested group
+ * rather than a selectable preset. */
+export type PresetMenuEntry = {
+  title: string;
+  params: string;
+  submenu?: PresetMenuEntry[] | undefined;
+};
+
+export type DrawTextOptions = {
+  align: "left" | "center" | "right";
+  baseline: "alphabetic" | "mathematical";
+  fontType: "fixed" | "variable";
+  size: number;
+};
+
+export type NotifyGameIdChange = {
+  type: "game-id-change";
+  currentGameId: string;
+  randomSeed?: string | undefined;
+};
+
+export type NotifyGameStateChange = {
+  type: "game-state-change";
+  status: "ongoing" | "solved" | "solved-with-help" | "lost";
+  currentMove: number;
+  totalMoves: number;
+  canUndo: boolean;
+  canRedo: boolean;
+};
+
+export type NotifyParamsChange = {
+  type: "params-change";
+  params: string;
+};
 
 export interface NotifyStatusBarChange {
   type: "status-bar-change";
@@ -41,9 +88,21 @@ export interface NotifyStatusBarChange {
 export type PuzzleId = string;
 export type EncodedParams = string;
 
-export type ConfigDescription = ReturnType<Frontend["getPreferencesConfig"]>;
-export type ConfigItem = ReturnType<Frontend["getPreferencesConfig"]>["items"]["any"];
-export type ConfigValues = ReturnType<Frontend["getPreferences"]>;
+/** One field in a config dialog (custom game params, or preferences). */
+export type ConfigItem =
+  | { type: "string"; name: string }
+  | { type: "boolean"; name: string }
+  | { type: "choices"; name: string; choicenames: string[] };
+
+/** A whole config dialog: a title and its fields, keyed by field id. */
+export type ConfigDescription = {
+  title: string;
+  items: { [id: string]: ConfigItem };
+};
+
+/** The values of a `ConfigDescription`'s fields, keyed by the same ids.
+ * A `choices` field's value is its zero-based index. */
+export type ConfigValues = Record<string, string | boolean | number>;
 
 export type ChangeNotification =
   | NotifyGameIdChange
@@ -87,32 +146,24 @@ export enum PuzzleButton {
   MOD_MASK = 0x7800 /* mask for all modifiers */,
 }
 
-/** Which engine implementation backs this puzzle instance. Surfaced
- * for the dev-mode "TS" / "C" badge in the puzzle header, so an owner
- * doing parity testing can see at a glance which path they're playing
- * on. Fixed at construction time per puzzle. */
-export type PuzzleEngineType = "ts" | "wasm";
-
 export interface PuzzleStaticAttributes {
   displayName: string;
   canConfigure: boolean;
   canSolve: boolean;
   canHint: boolean;
-  /** The game can check the board for mistakes (the TS `findMistakes`
-   * hook). False for C/WASM games. */
+  /** The game can check the board for mistakes (the `findMistakes` hook). */
   canFindMistakes: boolean;
   /** The game supports "fill all pencil marks" (upstream's `M` key). Gates
-   * the toolbar mark-all button. False for C/WASM games. */
+   * the toolbar mark-all button. */
   canMarkAll: boolean;
-  /** The game offers a reference aid (the TS `reference` hook) — a checklist
+  /** The game offers a reference aid (the `reference` hook) — a checklist
    * of its fixed inventory with found status. Gates the toolbar reference
-   * button. False for C/WASM games. */
+   * button. */
   hasReference: boolean;
   // TODO: canFormatAsTextEver: boolean;
   needsRightButton: boolean;
   isTimed: boolean;
   wantsStatusbar: boolean;
-  engineType: PuzzleEngineType;
 }
 
 /** One entry in a game's reference aid: a piece from the puzzle's fixed
@@ -134,30 +185,6 @@ export interface ReferenceModel {
   items: ReferenceItem[];
   selected: string | null;
   columns?: number;
-}
-
-/**
- * Required JS-side implementation for Drawing API
- */
-export interface DrawingImpl<Blitter = unknown>
-  extends Omit<DrawingWrapper, keyof ClassHandle | "notifyOnDestruction">,
-    Partial<Pick<DrawingWrapper, "notifyOnDestruction">> {
-  // Redeclare blitter methods to improve typing
-  blitterNew(size: Size): Blitter;
-  blitterFree(blitter: Blitter): void;
-  blitterSave(blitter: Blitter, origin: Point): void;
-  blitterLoad(blitter: Blitter, origin?: Point): void;
-}
-
-/**
- * The Emscripten generated module object
- */
-export interface PuzzleModule extends MainModule {
-  // Replace `any` args for Drawing.implement()
-  Drawing: {
-    implement(drawing: DrawingImpl): DrawingWrapper;
-    extend: MainModule["Drawing"]["extend"];
-  };
 }
 
 /**

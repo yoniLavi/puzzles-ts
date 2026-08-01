@@ -9,7 +9,6 @@ import {
 import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { version as puzzlesVersion } from "../puzzle/catalog.ts";
 import { cssNative, cssWATweaks } from "../utils/css.ts";
 
 // Register components
@@ -145,16 +144,15 @@ export class AboutDialog extends LitElement {
         return dependencies;
       }
 
-      const dependencies = (
-        await Promise.all([
-          // package.json dependencies, from rollup-plugin-license via vite:
-          loadJson(`${import.meta.env.BASE_URL}dependencies-app.json`),
-          // Emscripten/WASM dependencies, from puzzles/emcc-dependency-info.py:
-          loadJson(
-            new URL("../assets/puzzles/dependencies.json", import.meta.url).href,
-          ),
-        ])
-      ).flat();
+      // package.json dependencies, from rollup-plugin-license via vite.
+      // There used to be a second source here — `dependencies.json`, the
+      // Emscripten/musl notices produced by puzzles/emcc-dependency-info.py
+      // from the wasm source maps. `retire-c-engine` removed it: we no longer
+      // ship any of that code, so attributing it would be inaccurate rather
+      // than generous.
+      const dependencies = await loadJson(
+        `${import.meta.env.BASE_URL}dependencies-app.json`,
+      );
 
       // Sort by name ignoring leading "@" (and other punctuation)
       const { compare } = new Intl.Collator(undefined, {
@@ -181,9 +179,7 @@ export class AboutDialog extends LitElement {
             by&nbsp;<span translate="no">Mike&nbsp;Edmunds</span>
           </p>
           <p>
-            Version <span class="version">${appVersion}</span><br>
-            Compatible with <span translate="no">Portable Puzzle Collection</span> 
-            version&nbsp;<span class="version">${puzzlesVersion}</span>
+            Version <span class="version">${appVersion}</span>
           </p>
           <p>
             This is open source software. Source code and more on GitHub:

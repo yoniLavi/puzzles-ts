@@ -277,7 +277,6 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       needsRightButton: this.game.needsRightButton ?? false,
       isTimed: this.game.isTimed,
       wantsStatusbar: this.game.wantsStatusbar,
-      engineType: "ts",
     };
   }
 

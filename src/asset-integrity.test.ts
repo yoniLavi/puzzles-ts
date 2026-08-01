@@ -89,8 +89,12 @@ describe("new URL(..., import.meta.url) references resolve", () => {
     .flatMap(([path, contents]) => findUrlRefs(path, contents));
 
   it("finds references to scan (sanity)", () => {
-    // Bare minimum: catalog-card.ts and worker.ts both use this pattern.
-    expect(refs.length).toBeGreaterThanOrEqual(2);
+    // Keeps the sweep below from passing vacuously if the regex or the
+    // module glob breaks. The bound was 2 (catalog-card.ts's per-puzzle icons
+    // and worker.ts's `<puzzleId>.wasm`) until `retire-c-engine` deleted the
+    // wasm load and the About dialog's `dependencies.json` fetch, leaving the
+    // icons as the only such reference in the app.
+    expect(refs.length).toBeGreaterThanOrEqual(1);
   });
 
   it.each(refs)("$source:$line — $rawPath", ({

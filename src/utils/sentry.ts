@@ -1,12 +1,9 @@
 import * as Sentry from "@sentry/browser";
-import { wasmIntegration } from "@sentry/wasm";
 
 // This is a shorter version of the ignoreErrors list in crash-dialog.
 // (Sentry ignores many errors by default. Also there are some where
 // we don't want to show the crash-dialog but we *do* want Sentry capture.)
 const ignoreErrors: (string | RegExp)[] = [
-  // Emscripten runtime aborted wasm load on navigation/refresh:
-  /RuntimeError:\s*Aborted\s*\(NetworkError.*Build with -sASSERTIONS/i,
   "Network error: Response body loading was aborted",
   // Chrome iOS "Translate" bug (in anonymous script):
   /^RangeError: Maximum call stack size exceeded.*at \?.*undefined:/,
@@ -18,18 +15,18 @@ const ignoreErrors: (string | RegExp)[] = [
 
 export function initSentry() {
   if (import.meta.env.VITE_SENTRY_DSN) {
-    const integrations = [wasmIntegration()];
-
-    if (import.meta.env.VITE_SENTRY_FILTER_APPLICATION_ID) {
-      integrations.push(
-        Sentry.thirdPartyErrorFilterIntegration({
-          filterKeys: [import.meta.env.VITE_SENTRY_FILTER_APPLICATION_ID],
-          // don't use "drop-if" here -- see beforeSend below.
-          // (Also, Sentry likely identifies our wasm as third-party frames.)
-          behaviour: "apply-tag-if-contains-third-party-frames",
-        }),
-      );
-    }
+    // This list used to be seeded with `wasmIntegration()` to symbolicate
+    // frames from the puzzle wasm; with the C engine retired there is no wasm
+    // to symbolicate, so the third-party filter is all that remains.
+    const integrations = import.meta.env.VITE_SENTRY_FILTER_APPLICATION_ID
+      ? [
+          Sentry.thirdPartyErrorFilterIntegration({
+            filterKeys: [import.meta.env.VITE_SENTRY_FILTER_APPLICATION_ID],
+            // don't use "drop-if" here -- see beforeSend below.
+            behaviour: "apply-tag-if-contains-third-party-frames",
+          }),
+        ]
+      : [];
 
     Sentry.init({
       dsn: import.meta.env.VITE_SENTRY_DSN,
@@ -56,24 +53,6 @@ export function initSentry() {
         return breadcrumb;
       },
       beforeSend(event, hint) {
-        // An error in wasm loaded from the worker will be incorrectly identified
-        // as third-party. This is fixed in @sentry/browser and @sentry/wasm 10.38.0,
-        // but wasm must be generated with build_id (and ideally DWARF alongside).
-        // Until then, undo third_party_code if any stack frame's filename is (roughly):
-        //   /assets/[puzzleid]-[hash].wasm
-        //   /src/assets/puzzles/[puzzleid].wasm  (dev)
-        const reWasm = /\/(assets|src\/assets\/puzzles)\/[^/]+\.wasm/;
-        if (
-          event.tags?.third_party_code &&
-          event.exception?.values?.some((exception) =>
-            exception.stacktrace?.frames?.some(
-              (frame) => frame.filename && reWasm.test(frame.filename),
-            ),
-          )
-        ) {
-          delete event.tags.third_party_code;
-        }
-
         // If thirdPartyErrorFilterIntegration identified third_party_code,
         // mark the original error instance for crash-dialog to ignore.
         if (event.tags?.third_party_code) {
