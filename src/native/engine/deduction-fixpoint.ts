@@ -1,6 +1,26 @@
 /**
- * The shared deduction-fixpoint runner: the one ordered-rung loop every logic
- * game's solver/hint hand-rolled before this.
+ * The shared deduction-fixpoint runner: an ordered-rung loop that several logic
+ * games' solvers and hints share.
+ *
+ * **It does not fit every logic game, and it is important not to read it as
+ * though it should.** This header used to claim it was "the one ordered-rung
+ * loop every logic game hand-rolled", and that claim did real damage: it turns
+ * the question "does this game fit?" into "why has this game not been adopted
+ * yet?", and it produced two separate handoffs asserting that Loopy fits when it
+ * does not. The audited position (`adopt-shared-deduction-fixpoint`, 2026-08-01)
+ * is that the ladder *shape* is near-universal while the bookkeeping wrapped
+ * around it is per-game — and that bookkeeping is often what decides which
+ * puzzles exist. A solver whose loop *looks* like this one is not evidence that
+ * it is this one; the differential is.
+ *
+ * Known no-gos, each read rather than inferred: **Loopy** (its
+ * `(thresholdDiff, thresholdIndex)` bookkeeping is not this runner's grade
+ * bookkeeping), **Unruly** (grades by difficulty constant, not rung index),
+ * **Singles** (drains an op queue once per iteration, and signals contradiction
+ * by a flag rather than a `< 0` return), **Spokes** (its tier is defined by an
+ * accumulated action count, not by which rung fired), **Clusters** (its early-out
+ * is three-valued, not boolean) and **Lightup** (its rungs are fused into one
+ * pass in upstream's scan order, which is load-bearing for generation).
  *
  * A logic game's generator and its explained hint are two projections of **one
  * deduction engine** (`adopt-narratable-deduction-engine`): the generator runs
@@ -17,9 +37,10 @@
  * The **techniques stay per-game** (a nonogram overlap is nothing like a sudoku
  * hidden single); only this loop, the difficulty cap, the recorder-gated budget,
  * and the grade bookkeeping live here. Call sites: `engine/latin.ts`
- * (`latinSolverTop`), `games/filling/solver.ts` (`FillingSolver.run`),
- * `games/undead/solver.ts` (`recordUndeadDeductions`), and
- * `games/pattern/solver.ts` (`deduceHintPlan`).
+ * (`latinSolverTop`, and through it the eleven latin-family games),
+ * `games/filling/solver.ts` (`FillingSolver.run`), `games/undead/solver.ts`
+ * (`recordUndeadDeductions`), `games/pattern/solver.ts` (`deduceHintPlan`) and
+ * `games/magnets/solver.ts` (`solve`, `solveUnnumbered`).
  */
 import type { StepBudget } from "./step-budget.ts";
 

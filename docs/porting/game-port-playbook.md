@@ -2472,6 +2472,23 @@ Three rules, each learned by getting it wrong (`establish-refactor-baseline`):
    the ceiling, so their true complexity is unmeasured and a stable 255 does not
    mean "no regression".
 
+**Before adopting a shared abstraction, check its stated scope against its real
+one.** `engine/deduction-fixpoint.ts` used to call itself "the one ordered-rung
+loop every logic game hand-rolled" while fitting five call sites out of forty-odd
+solvers, and that overclaim produced two wrong handoffs about Loopy. It now names
+its known non-fits. The recurring shape: the ladder is generic, but the
+bookkeeping wrapped around it is the game — Unruly grades by difficulty constant
+rather than rung index, Singles drains an op queue per iteration, Spokes defines
+a tier by accumulated action count, Lightup's rung order is load-bearing for
+generation. **A solver whose loop resembles the shared one is not evidence that
+it is the shared one; the differential is.**
+
+**A difficulty-capped solver must be monotone in its cap** — a board solvable at
+cap `d` must solve at every cap above it — and a converted or newly-tiered game
+ships a property test saying so (`magnets.test.ts` is the pattern). Boats is the
+known exception, recorded with its workaround: solve at each tier, take the first
+that succeeds.
+
 **Shared game mechanics live in `src/native/engine/`.** `border-grid.ts` is the
 worked example: Palisade and Separate both mark the edges *between* cells with a
 tri-state, and that mechanic — the bit vocabulary, the closest-edge hit test, the
