@@ -30,6 +30,21 @@ repeats-aware cube — counting, pairing, forcing on the hole itself — cannot 
 written against a translation layer, which is exactly why the solver is weak and
 why the Number Ball generator has little to gate against.
 
+## Sequencing (owner decision, 2026-08-01)
+
+**Waits for `retire-c-engine`**, and possibly for a round or two of refactoring
+after it, so this lands on a TypeScript-only codebase rather than alongside the
+C teardown. Nothing here needs the C build: this game's differential imports a
+frozen JSON fixture and keeps working with no C present.
+
+Note the one-way consequence of that order — with no C build there is no
+re-baselining a fixture against upstream. Where this change diverges, the fixture
+is retired or re-founded on properties, not re-recorded. That is the intended
+effect of the released oracle, not an accident of the sequencing.
+
+
+**And after `grade-difficulty-tiers-honestly`**, which settles whether Salad's existing tiers bind at all — re-grading a solver against tiers that were never honest would confuse two changes in one.
+
 ## What Changes
 
 - **Teach `engine/latin.ts` a symbol that may repeat**, with a declared

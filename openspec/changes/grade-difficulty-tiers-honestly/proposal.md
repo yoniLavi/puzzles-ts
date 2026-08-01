@@ -27,6 +27,19 @@ Copy that shape.
 The gap is a minority, not the norm: Boats, Rome, Seismic, Towers, Galaxies,
 Undead, Keen and Tracks already accept only at exactly the requested tier.
 
+## Sequencing (owner decision, 2026-08-01)
+
+**Waits for `retire-c-engine`**, and possibly for a round or two of refactoring
+after it, so this lands on a TypeScript-only codebase rather than alongside the
+C teardown. Nothing here needs the C build: this game's differential imports a
+frozen JSON fixture and keeps working with no C present.
+
+Note the one-way consequence of that order — with no C build there is no
+re-baselining a fixture against upstream. Where this change diverges, the fixture
+is retired or re-founded on properties, not re-recorded. That is the intended
+effect of the released oracle, not an accident of the sequencing.
+
+
 ## What Changes
 
 - **Bricks and Mathrax reject a board solvable one tier below the requested one**,

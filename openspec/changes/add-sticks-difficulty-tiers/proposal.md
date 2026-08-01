@@ -20,6 +20,21 @@ It is still worth doing: a game with one difficulty is a game with one shape, an
 Sticks' `%age of black squares` and `Symmetry` parameters vary the *look* of a
 board without varying the thinking it asks for.
 
+## Sequencing (owner decision, 2026-08-01)
+
+**Waits for `retire-c-engine`**, and possibly for a round or two of refactoring
+after it, so this lands on a TypeScript-only codebase rather than alongside the
+C teardown. Nothing here needs the C build: this game's differential imports a
+frozen JSON fixture and keeps working with no C present.
+
+Note the one-way consequence of that order — with no C build there is no
+re-baselining a fixture against upstream. Where this change diverges, the fixture
+is retired or re-founded on properties, not re-recorded. That is the intended
+effect of the released oracle, not an accident of the sequencing.
+
+
+**Last of the three difficulty-tier changes**, after Clusters and Subsets: it is the only one that has to invent a deduction, so it should inherit a settled pattern for everything else.
+
 ## What Changes
 
 - **Find the rungs first, in a spike, before committing to the feature.** Sticks

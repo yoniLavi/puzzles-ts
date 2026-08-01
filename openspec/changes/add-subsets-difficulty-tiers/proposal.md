@@ -21,6 +21,21 @@ Difficulty has to come from deductive depth, and repairing the arrow rule is wha
 creates a second rung to grade against: with a stronger solver the generator can
 leave more cells blank, which is exactly what makes a harder Subsets.
 
+## Sequencing (owner decision, 2026-08-01)
+
+**Waits for `retire-c-engine`**, and possibly for a round or two of refactoring
+after it, so this lands on a TypeScript-only codebase rather than alongside the
+C teardown. Nothing here needs the C build: this game's differential imports a
+frozen JSON fixture and keeps working with no C present.
+
+Note the one-way consequence of that order — with no C build there is no
+re-baselining a fixture against upstream. Where this change diverges, the fixture
+is retired or re-founded on properties, not re-recorded. That is the intended
+effect of the released oracle, not an accident of the sequencing.
+
+
+**After `add-clusters-difficulty-tiers`**, which establishes the parameter / preset / game-ID / differential pattern on a game with no deduction to invent.
+
 ## What Changes
 
 - **Repair the disabled arrow deduction** — port upstream's commented-out block,

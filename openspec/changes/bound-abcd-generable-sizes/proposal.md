@@ -30,6 +30,12 @@ The consequence today is that a player who types `10x10` with four letters gets
 `RetryLimitExceeded`, rather than the immediate explained refusal Seismic gives
 for the same class of limit (`MAX_CELLS`, `replace-seismic-region-generator`).
 
+## Sequencing (owner decision, 2026-08-01)
+
+**Waits for `retire-c-engine`**, and possibly for a round or two of refactoring
+after it, so this lands on a TypeScript-only codebase. Nothing here needs the C
+build.
+
 ## What Changes
 
 - **Refuse the un-generable configurations up front**, in `validateParams` when
