@@ -72,10 +72,12 @@ work should not guess them:
 1. **The name shown to players.** `repoName` is "Puzzles web app" and
    `package.json` says `puzzles-ts`. Neither reads like a product. Options: keep
    "Puzzles web app", promote `puzzles-ts`, or a new name.
-2. **Where bug reports and discussion go.** Is there a GitHub remote for this
-   project to point at? Until there is, the links have no correct target — and
-   leaving them on `medmunds/puzzles-web` misroutes reports about code Mike
-   Edmunds did not write.
+2. **Where bug reports and discussion go.** The project **has** a remote —
+   `https://github.com/yoniLavi/puzzles-ts.git` — so the source-code link has an
+   obvious target. What is undecided is whether that repository is public and
+   whether Issues/Discussions are enabled there; a link to a disabled tab is
+   worse than no link. Leaving them on `medmunds/puzzles-web` misroutes reports
+   about code Mike Edmunds did not write.
 3. **The deployment URL.** `README.md`'s "Play the puzzles" points at
    `puzzles.twistymaze.com`, which is puzzles-web's deployment, not this one's.
 4. **The version string.** `package.json` is `0.0.1` and the README calls that
