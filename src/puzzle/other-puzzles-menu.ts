@@ -4,7 +4,6 @@ import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { repeat } from "lit/directives/repeat.js";
-import { isTsPorted } from "../native/games/ts-ported-ids.ts";
 import { homePageUrl, puzzlePageUrl } from "../routing.ts";
 import { settings } from "../store/settings.ts";
 import { cssWATweaks } from "../utils/css.ts";
@@ -98,17 +97,6 @@ export class OtherPuzzlesMenu extends SignalWatcher(LitElement) {
                           width="32"
                           height="32"
                       >
-                      ${
-                        // Mirror the home catalog: a green "TS" chip flags a
-                        // game on the native engine; unported (C/WASM) games
-                        // carry no chip — the unmarked state.
-                        isTsPorted(id)
-                          ? html`<span
-                              class="ts-badge"
-                              title="Ported to the native TypeScript engine"
-                            >TS</span>`
-                          : nothing
-                      }
                     </span>
                     <span class="game-name">${puzzleDataMap[id].name}</span>
                   </a>`;
@@ -193,26 +181,6 @@ export class OtherPuzzlesMenu extends SignalWatcher(LitElement) {
           border-radius: var(--wa-border-radius-s, 0.25rem);
           background-color: var(--wa-color-neutral-fill-quiet);
         }
-      }
-
-      /* Green "TS" chip pinned to the thumbnail's bottom-right corner, exactly
-       * as on the home catalog card. */
-      .ts-badge {
-        position: absolute;
-        inset-block-end: -2px;
-        inset-inline-end: -2px;
-
-        padding-inline: 0.25em;
-        border-radius: var(--wa-border-radius-s, 0.2em);
-
-        font-size: 9px;
-        font-weight: var(--wa-font-weight-semibold, 600);
-        line-height: 1.3;
-        letter-spacing: 0.03em;
-
-        color: var(--wa-color-success-on-loud, white);
-        background-color: var(--wa-color-success-fill-loud, #2e7d32);
-        user-select: none;
       }
 
       .game-name {

@@ -18,10 +18,10 @@
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
+import { puzzleIds } from "../../puzzle/catalog.ts";
 // Registers every ported game; `beforeAll` re-runs it in case a sibling
 // file reset the shared registry under `isolate: false`.
 import { registerAllGames } from "../games/index.ts";
-import { TS_PORTED_PUZZLE_IDS } from "../games/ts-ported-ids.ts";
 import { randomNew } from "../random/index.ts";
 import type { Game } from "./game.ts";
 import { Midend } from "./midend.ts";
@@ -54,7 +54,7 @@ function press(
 }
 
 describe("touch input reaches every ported game", () => {
-  for (const id of TS_PORTED_PUZZLE_IDS) {
+  for (const id of puzzleIds) {
     const game = getTsGame(id);
     if (!game) continue;
 
@@ -100,6 +100,6 @@ describe("touch input reaches every ported game", () => {
   }
 
   it("the registry is populated, so the sweep above is not vacuous", () => {
-    expect(TS_PORTED_PUZZLE_IDS.size).toBeGreaterThan(25);
+    expect(puzzleIds.length).toBeGreaterThan(25);
   });
 });

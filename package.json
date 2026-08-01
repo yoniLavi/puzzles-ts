@@ -6,8 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:wasm": "scripts/build-emcc.sh",
-    "build:assets": "npm run build:wasm",
+    "build:assets": "scripts/build-manual.sh",
     "preview": "vite preview",
     "format": "biome format --write .",
     "lint": "biome lint .",
@@ -29,7 +28,6 @@
     "@lit/context": "^1.1.6",
     "@material-design-icons/svg": "^0.14.15",
     "@sentry/browser": "^10.49.0",
-    "@sentry/wasm": "^10.49.0",
     "colorjs.io": "^0.5.2",
     "comlink": "^4.4.2",
     "dexie": "^4.4.2",

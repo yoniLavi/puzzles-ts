@@ -80,7 +80,7 @@ EOF
 cat > "${DIR}/solver.ts" <<EOF
 import type { ${P}State } from "./state.ts";
 
-/** TODO: port the upstream solver's deductions (read puzzles/${GAME}.c). */
+/** TODO: implement this game's deductions. */
 export function solve${P}(_s: ${P}State): never {
   throw new Error("${GAME} solver: not implemented");
 }
@@ -255,62 +255,45 @@ EOF
 # single `it.todo` marker is live, which keeps vitest happy (a fully-commented
 # *.test.ts fails collection) and the file type-checks before any fixture
 # exists. Uncomment the body once __fixtures__/${GAME}-c-reference.json exists.
-cat > "${DIR}/${GAME}-differential.test.ts" <<EOF
+# NOTE: since `retire-c-engine` there is no C build, so a NEW game has no
+# upstream oracle to differ against — the frozen fixtures under
+# src/native/games/*/__fixtures__/ belong to games ported while the C existed.
+# A greenfield game's assurance is behavioural: "every generated board is
+# uniquely solvable at exactly its stated difficulty" as a property test. This
+# scaffold therefore emits that, not a differential stub.
+cat > "${DIR}/${GAME}-generation.test.ts" <<EOF
 /**
- * Gated C-vs-TS differential for ${GAME} — SCAFFOLD STUB.
+ * Generation invariants for ${GAME} — SCAFFOLD STUB.
  *
- * A differential is per-game OPTIONAL — it earns its place on solver/codec
- * games (uniqueness/difficulty loops, non-obvious codecs), not every port. If
- * ${GAME} skips it, delete this file and note the skip in the port's design.md.
+ * Ports made while the C engine existed could lean on a byte-match
+ * differential: because the generator is solver-gated, one desc comparison
+ * validated generator, solver and codec at once. `retire-c-engine` removed
+ * that build, so a new game states the property directly instead.
  *
- * If it earns one, regenerate the frozen fixture while puzzles/${GAME}.c still
- * exists (the C is deleted at acceptance):
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make ${GAME}-trace)
- *   build/native/auxiliary/${GAME}-trace \\
- *     > src/native/games/${GAME}/__fixtures__/${GAME}-c-reference.json
- *
- * Then replace the \`it.todo\` below with the wiring commented underneath it.
- * Most ports use the shared byte-for-byte desc-match helper; solver-agreement
- * (decode + solve + difficulty) stays inline (playbook §4).
+ * Fill this in with the strongest claim the game can actually support — for a
+ * logic puzzle that is normally: for each difficulty tier, a sample of
+ * generated boards is (a) solvable by the solver at that tier, and (b) NOT
+ * solvable at the tier below, so the tier means something.
  */
 import { describe, it } from "vitest";
 
-describe("${GAME} differential (scaffold stub)", () => {
-  it.todo("record a C fixture, then enable the byte-match differential below");
+describe("${GAME} generation", () => {
+  it.todo("every generated board is uniquely solvable at exactly its tier");
 });
-
-// Uncomment once __fixtures__/${GAME}-c-reference.json exists (delete the
-// \`it.todo\` stub above), and adjust Fixture/params to this game's shape:
-//
-// import { describeDescDifferential } from "../../engine/testing/differential.ts";
-// import cReference from "./__fixtures__/${GAME}-c-reference.json" with { type: "json" };
-// import { new${P}Desc } from "./generator.ts";
-// import type { ${P}Params } from "./state.ts";
-//
-// interface Fixture { seed: string; desc: string; w: number; h: number; }
-// const data = cReference as { fixtures: Fixture[] };
-//
-// describeDescDifferential<Fixture, ${P}Params>({
-//   title: "${GAME} differential (frozen C reference)",
-//   fixtures: data.fixtures,
-//   label: (f) => \`\${f.w}x\${f.h} seed=\${f.seed}\`,
-//   params: (f) => ({ w: f.w, h: f.h }),
-//   newDesc: new${P}Desc,
-// });
 EOF
 
 echo "Scaffolded ${DIR}:"
 echo "  state.ts solver.ts generator.ts render.ts index.ts"
-echo "  ${GAME}.test.ts ${GAME}-differential.test.ts (commented stub) __fixtures__/"
+echo "  ${GAME}.test.ts ${GAME}-generation.test.ts (stub) __fixtures__/"
 echo ""
 echo "Now do the parts that need judgement (the script will not):"
-echo "  1. Read puzzles/${GAME}.c as the logic reference; fill the stubs."
-echo "  2. Register the port (do these two together — the gate checks they agree):"
+echo "  1. Fill the stubs. (There is no C reference to read: retire-c-engine"
+echo "     deleted the engine. If upstream ever had one, it is in git history.)"
+echo "  2. Register the game (do these two together — the gate checks they agree):"
 echo "       - add 'import \"./${GAME}/index.ts\";' to src/native/games/index.ts"
-echo "       - add \"${GAME}\" to TS_PORTED_PUZZLE_IDS in src/native/games/ts-ported-ids.ts"
-echo "  3. Write puzzles/auxiliary/${GAME}-trace.c + its cliprogram() line for the"
-echo "     differential fixture, if this game earns a differential (solver/codec)."
+echo "       - add its catalog entry to src/puzzle/catalog-data.ts"
+echo "  3. Fill in ${GAME}-generation.test.ts: say what replaces the byte-match"
+echo "     oracle for this game, and assert it."
 echo "  4. Add the two icon PNGs (src/assets/icons/${GAME}-{64,128}d8.png) via the"
 echo "     ?screenshot capture mode — see openspec/specs/puzzle-icons/spec.md."
 echo "  5. Open an openspec change for the port (openspec proposal)."

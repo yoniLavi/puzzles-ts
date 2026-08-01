@@ -1,14 +1,17 @@
 /**
- * The per-game engine registry: the runtime decision point for the
- * per-game hybrid. A `puzzleId` present here is served by the TS midend;
- * absent, it falls back to the C/WASM build. This is deliberately NOT a
- * build flag — see `openspec/specs/ts-engine/spec.md` and the change's
- * design.md for why a runtime registry beats `USE_TS_<GAME>` /
- * catalog-field / tree-shake alternatives.
+ * The per-game engine registry: `puzzleId` → the game's TS implementation.
  *
- * Ships empty: with no game registered, the production runtime is the
- * unchanged all-WASM path. Each later game-port change adds exactly one
- * `registerGame(...)` call from the game's own module.
+ * It began as the runtime decision point for the per-game hybrid — present
+ * here meant "served by the TS midend", absent meant "fall back to C/WASM" —
+ * and shipped empty, so production was the unchanged all-WASM path until the
+ * first port registered itself. It was deliberately not a build flag; see
+ * `openspec/specs/ts-engine/spec.md` for why a runtime registry beat
+ * `USE_TS_<GAME>` / catalog-field / tree-shake alternatives.
+ *
+ * With `retire-c-engine` there is no fallback and no decision left to make:
+ * a game absent from here cannot be played at all, which is why
+ * `catalog-registry.test.ts` asserts the registry and the catalog are the
+ * same set of games in both directions.
  */
 
 import type { Game } from "./game.ts";
@@ -55,9 +58,16 @@ export function getTsGame(
   return games.get(puzzleId);
 }
 
+/** All registered puzzle ids. Must equal the catalog — see
+ * `catalog-registry.test.ts`. */
+export function registeredGameIds(): string[] {
+  return [...factories.keys()];
+}
+
 /**
- * Construct the engine core for `puzzleId`, or `undefined` if no TS
- * game is registered (caller falls back to the WASM path).
+ * Construct the engine core for `puzzleId`, or `undefined` if no game is
+ * registered under that id (which now means the id is simply unplayable —
+ * there is no C/WASM fallback left to take).
  */
 export function createTsEngine(puzzleId: string): EngineCore | undefined {
   return factories.get(puzzleId)?.();

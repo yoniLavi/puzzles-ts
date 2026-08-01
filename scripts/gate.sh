@@ -19,9 +19,10 @@
 # unresolved `?raw`/asset imports, plugin/dep regressions) is otherwise
 # invisible until deploy — exactly how two such bugs sat undetected on main.
 # `tsc` already covers the `tsc &&` half of `npm run build`, so run `vite build`
-# directly (leaner, no double typecheck). Assumes `npm run build:wasm` has
-# populated src/assets/puzzles/ (the same precondition `npm run build`
-# documents).
+# directly (leaner, no double typecheck). Needs no generated assets: since
+# `retire-c-engine` the catalog is committed source and the only generated
+# artefact is the manual (`npm run build:assets`), whose absence just omits the
+# manual pages.
 #
 # CONCURRENCY. `vitest` and `vite build` share no inputs or outputs, so they
 # always run concurrently and the gate's wall clock is ~max(vitest, build)

@@ -1,11 +1,16 @@
-// On-demand config for the ADVISORY live differential checks (all games).
+// On-demand config for the ADVISORY, non-gating checks under scripts/.
 // Kept separate from vitest.config.ts so the commit/CI gate (which uses the
-// default config, include `src/**`) never runs these. Each diff test
-// self-guards when its fixture or native trace binary is absent, so
-// collecting them all under one config is safe. Usage:
-//   ./scripts/build-native.sh <game>-trace   # for the games that shell a binary
-//   npm run diff                              # run every advisory diff
-//   npx vitest run -c scripts/diff.vitest.config.mts -t galaxies   # one game
+// default config, include `src/**`) never runs these — they are slow, or they
+// report rather than assert. Usage:
+//   npm run diff                                                   # run them all
+//   npx vitest run -c scripts/diff.vitest.config.mts -t collide    # one of them
+//
+// This used to also collect the per-game live differential checks
+// (`scripts/diff-*.test.ts`), which generated boards from the C build and the
+// TS port for the same seed. Those went game by game as each port landed, and
+// the C build itself went with `retire-c-engine`; the *frozen-fixture*
+// differentials in src/native/games/<game>/ are what survive, and they run in
+// the gate. The glob is kept because it costs nothing and reads as the history.
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({

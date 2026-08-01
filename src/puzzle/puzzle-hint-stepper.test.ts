@@ -22,7 +22,6 @@ const ATTRS: PuzzleStaticAttributes = {
   needsRightButton: false,
   isTimed: false,
   wantsStatusbar: true,
-  engineType: "wasm",
 };
 
 /** Build a Puzzle around a stub worker that records hint/executeHint calls.

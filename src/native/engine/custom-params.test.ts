@@ -1,11 +1,10 @@
 import { beforeAll, describe, expect, it } from "vitest";
-
+import { puzzleIds } from "../../puzzle/catalog.ts";
 // Register every TS-ported game so the round-trip guard below can drive
 // each game's declared `paramConfig`. `beforeAll` re-runs it because under
 // `isolate: false` a sibling file (worker-adapter) may have reset the
 // shared registry after this module's import-time registration ran.
 import { registerAllGames } from "../games/index.ts";
-import { TS_PORTED_PUZZLE_IDS } from "../games/ts-ported-ids.ts";
 import type { Game, ParamConfigItem, PresetMenu } from "./game.ts";
 import { Midend } from "./midend.ts";
 import { getTsGame } from "./registry.ts";
@@ -189,7 +188,7 @@ function allPresetParams(game: AnyGame): unknown[] {
 }
 
 describe("Every registered game with paramConfig round-trips its presets", () => {
-  for (const id of TS_PORTED_PUZZLE_IDS) {
+  for (const id of puzzleIds) {
     const game = getTsGame(id);
     if (!game?.paramConfig) continue;
     it(`${id}: getCustomParams∘setCustomParams ≡ identity through ConfigValues`, () => {

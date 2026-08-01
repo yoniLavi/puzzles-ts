@@ -26,7 +26,7 @@ import * as colours from "../src/native/engine/colours.ts";
 import * as roles from "../src/native/engine/palette.ts";
 import * as gameTokens from "../src/native/engine/palette-games.ts";
 import { getTsGame } from "../src/native/engine/registry.ts";
-import { TS_PORTED_PUZZLE_IDS } from "../src/native/games/ts-ported-ids.ts";
+import { puzzleIds } from "../src/puzzle/catalog.ts";
 import type { Colour } from "../src/puzzle/types.ts";
 import "../src/native/games/index.ts";
 
@@ -137,7 +137,7 @@ function indexNames(id: string): Map<number, string> {
 it("regenerates the colour inventory", () => {
   const shared = sharedByValue();
   const byToken = tokenNames();
-  const ids = [...TS_PORTED_PUZZLE_IDS].sort();
+  const ids = [...puzzleIds].sort();
   const lines: string[] = [];
   let total = 0;
   let sharedCount = 0;
@@ -147,7 +147,7 @@ it("regenerates the colour inventory", () => {
 
   for (const id of ids) {
     const game = getTsGame(id);
-    if (!game) throw new Error(`${id} is in TS_PORTED_PUZZLE_IDS but not registered`);
+    if (!game) throw new Error(`${id} is in the catalog but not registered`);
     const palette = game.colours(BG);
     const alt = game.colours(BG2);
     const names = indexNames(id);

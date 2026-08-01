@@ -6,10 +6,16 @@
 
 With no game served by C/WASM, the build SHALL produce the two artefacts the app
 depends on — the game `catalog.json` and the in-app manual HTML — **without the
-Emscripten toolchain**. The catalog SHALL be generated from the TypeScript
-catalog metadata (every game is TS-served, so the catalog is exactly the set of
-registered TS games). The manual SHALL continue to be built by halibut from
-`puzzles.but`, detached from any wasm-compilation step.
+Emscripten toolchain**. The catalog SHALL be derived from a **committed
+TypeScript catalog source** holding each game's display metadata (every game is
+TS-served, so the catalog is exactly the set of registered TS games); that
+metadata previously existed only in the CMake `puzzle()` calls being deleted, so
+it moves rather than being re-derived. The manual SHALL continue to be built by
+halibut from `puzzles.but`, detached from any wasm-compilation step.
+
+The build configuration SHALL NOT depend on any generated, gitignored artefact at
+config-load time, so a clean checkout is configurable before anything has been
+generated.
 
 A clean checkout SHALL build the app and serve every game and its help pages
 with no Emscripten toolchain installed.
@@ -18,9 +24,15 @@ with no Emscripten toolchain installed.
 
 - **WHEN** the app is built from a clean checkout on a machine without the
   Emscripten toolchain
-- **THEN** `catalog.json` and the manual HTML are produced
+- **THEN** the catalog and the manual HTML are produced
 - **AND** the app lists every game and serves its help pages
 - **AND** no wasm artifact is produced or required
+
+#### Scenario: A clean checkout needs no generated artefact to configure
+
+- **WHEN** the build is configured on a checkout where nothing has been generated
+- **THEN** the configuration loads and the build proceeds
+- **AND** the game catalog is read from committed source
 
 ## REMOVED Requirements
 
