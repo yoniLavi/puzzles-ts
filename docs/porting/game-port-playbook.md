@@ -2296,6 +2296,29 @@ visual/integration smoke only. Tiers are codified in
   ops **plus** `toMatchSnapshot`). **New render code SHOULD ship one.**
 - **Tier 3** — components + persistence (`happy-dom`, `fake-indexeddb`).
 
+**A shared engine module needs a test *of its own*, even when the differentials
+already protect it** (`audit-test-suite-strength`). Extracting logic from a game
+into `src/native/engine/` moves the code but not its tests: the game's frozen
+differential still catches a defect in it, so nothing goes red and the module
+quietly ends up with no local assertions. That is adequate *protection* and poor
+*feedback* — the failure arrives as a differing description string after a full
+generate-and-compare run, instead of as a named rule in 100 ms, and it is
+invisible to the "run just the files I touched" habit §5 otherwise encourages.
+The audit measured this: `deduction-fixpoint.ts`'s central `grade` semantics
+survived its own test file, `latin.test.ts` *and* four consumer games' complete
+directories, dying only under the full suite; and `wires.ts` (413 lines, nine
+importers) had no test file at all. **So: when you extract, write the extracted
+module's tests in the same change**, stating the rules its doc comment claims
+rather than pinning values. Exemplar:
+[`wires.test.ts`](../../src/native/engine/wires.test.ts).
+
+**And check a new test actually discriminates, by breaking the code under it.**
+Writing the test is not the same as the test working: `wires.test.ts`'s
+"needs the connection to exist from BOTH sides" passed with the both-sides check
+*deleted*, because the case it chose was one an unrelated guard already caught.
+Flip the line the test is for, confirm it goes red, put it back. It takes seconds
+and it is the only thing that distinguishes an assertion from a decoration.
+
 **A byte-match differential does NOT exercise the interactive completion path —
 drive `executeMove` → completion in a unit test too.** The generator/solver
 differential (§4) runs the solver, whose `check_completion` is called with

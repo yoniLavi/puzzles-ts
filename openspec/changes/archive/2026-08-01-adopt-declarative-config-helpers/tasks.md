@@ -89,6 +89,14 @@
       by all 44 two-dimension games; the two shared pencil prefs are called by
       all ten and all five. The only deliberate non-share is `auto-pencil`'s
       *label*, recorded above and in the helper's own doc comment.
+- [x] 4.4 **Swept for anything else of this shape, and recorded the one no-go.**
+      Across all 57 games there are now **28 distinct hand-written `prefs`
+      items**, and exactly **one** appears in two games: `kw: "appearance"` /
+      `name: "Puzzle appearance"` in Pearl and Towers. It is **not** extracted,
+      because the two share only the label — Towers offers `["2D", "3D"]` over
+      `ui.threeD`, Pearl `["Traditional", "Loopy-style"]` over `ui.guiStyle`.
+      That is a coincidence of wording, not a shared decision, and a helper over
+      it would contort two unrelated preferences into one contract.
 
 ## 5. Finding worth carrying (fed to `audit-test-suite-strength`)
 

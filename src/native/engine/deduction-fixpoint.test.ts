@@ -70,6 +70,46 @@ describe("runDeductionFixpoint", () => {
     expect(res).toEqual({ grade: 2, impossible: false });
   });
 
+  it("never lets the grade regress when a hard rung unlocks an easier one", () => {
+    // The load-bearing case for `grade = Math.max(grade, r)`, and the one the
+    // test above cannot see: it fires the hard rung *last*, so `grade = r` would
+    // score it identically. Here rung 2 fires first and then unlocks work for
+    // rung 0 — which is the normal shape, since the ladder restarts from the top
+    // after every firing. Without the max, the reported grade would be the
+    // *last* rung that fired rather than the highest, and that grade is what a
+    // solver-gated generator accepts a board's difficulty on.
+    //
+    // Found by the mutation audit (`audit-test-suite-strength`): with this
+    // assertion absent, `grade = r` survived this file, `latin.test.ts` and all
+    // four consumer game directories, and was killed only by the full suite.
+    let r2 = 1;
+    let r0 = 0;
+    const rungs: DeductionRung[] = [
+      () => (r0-- > 0 ? 1 : 0),
+      () => 0,
+      () => {
+        if (r2-- > 0) {
+          r0 = 2; // the hard deduction leaves easy work behind
+          return 1;
+        }
+        return 0;
+      },
+    ];
+    expect(runDeductionFixpoint({ rungs })).toEqual({ grade: 2, impossible: false });
+  });
+
+  it("keeps baseGrade as a floor even when a lower-indexed rung fires", () => {
+    // `baseGrade` is the difficulty floor (`latinSolverTop` passes `diffSimple`),
+    // not merely the no-rung-fired default — a rung below it firing must not
+    // grade the board easier than the floor.
+    let once = 1;
+    const rungs: DeductionRung[] = [() => (once-- > 0 ? 1 : 0), () => 0];
+    expect(runDeductionFixpoint({ rungs, baseGrade: 3 })).toEqual({
+      grade: 3,
+      impossible: false,
+    });
+  });
+
   it("caps the ladder at maxRung — a higher rung is never attempted", () => {
     const tried: number[] = [];
     const rungs: DeductionRung[] = [
