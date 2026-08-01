@@ -253,3 +253,64 @@ reason than the heuristic gave:
   measurement: two of the five mutation probes found real gaps.
 
 ---
+
+---
+
+## 6. What persists, and what this cost
+
+### The decision (task 4.1)
+
+**Keep the config; do not fold it into `metrics.sh`; do not gate; do not ratchet.**
+
+`scripts/stryker.config.mjs` stays, authored rather than JSON so the three
+settings that decide feasibility carry their reasons — and they are the whole
+value of keeping it, because each was measured rather than guessed and each is
+the difference between "runs" and "does not". `npm run mutation` is its entry
+point. It is **not** folded into `npm run metrics`: that harness finishes in a
+couple of minutes and this takes hours, and silently making it forty times
+slower would get it stopped rather than read.
+
+No ratchet, and none is possible by construction — `thresholds.break` is `null`
+and the score is recorded nowhere as a target. A number that invites maximising
+invites tests written against mutants rather than against behaviour.
+
+### The recommendation this audit ends with, which is not the one it started with
+
+**The cheap instruments outperformed the expensive one, per unit of effort, by a
+wide margin — and that ordering should shape what gets done next.**
+
+Of the five substantive results here, the mutation run produced one (§4). The
+other four came from: the sanity check the change *mandated before trusting the
+harness* (§3 — the audit's sharpest finding, five minutes of work); a 60-line
+script (§1); hand-injected probes against the differentials (§2); and a
+filename sweep that then had to be corrected (§5, §5a).
+
+That is not an argument against mutation testing — §4's systematic coverage is
+the only reason "nothing else survives in these modules" can be said at all, and
+no cheap instrument could have said it. It is an argument about **order**: run
+the cheap instruments first, act on them, and reach for the expensive one to
+close the remaining question rather than to open it.
+
+### The cost, stated plainly
+
+Four attempts were needed, and the reasons are worth recording because they are
+all properties of *this* codebase meeting *this* tool:
+
+1. A dry run that must execute the suite **serially** (Stryker forces
+   `maxWorkers: 1`), so the default 5-minute timeout cannot work.
+2. **39% of mutants are static** (module-scope), each costing a whole suite run
+   — 97% of the estimated time, an observed ETA of ~678 hours. Skipped, and
+   reported as skipped.
+3. Contention: an identical dry run took **19 min 11 s** while other work ran and
+   **7 min 34 s** after `right-size-the-test-gate` cut the suite. Mutation-testing
+   cost is *derived* from suite cost, twice — once for the dry run and once per
+   mutant.
+4. **Cost per mutant is the size of its covering set**, which is why `midend.ts`
+   dominates: nearly every test in the collection constructs a `Midend`, so its
+   covering set is essentially the whole suite.
+
+**The transferable rule, before reaching for mutation testing anywhere else:**
+its affordability is decided by how much of the target is module-scope code,
+multiplied by how slow the suite is with parallelism switched off, multiplied by
+how broad the target's covering set is. None of those three is visible from the
+line count of the module you want to mutate.

@@ -73,10 +73,14 @@ Full triage in [`findings.md`](findings.md); this file records what was done.
 
 ## 4. Decide what, if anything, persists
 
-- [ ] 4.1 See findings.md §6 for the decision and its reason.
+- [x] 4.1 **Decision: keep the config, don't fold it into `metrics.sh`, don't
+      gate, don't ratchet.** Reasons in findings.md §6 — chiefly that the three
+      feasibility settings are the value being preserved, and that a harness
+      taking hours must not be attached to one taking minutes.
 - [x] 4.2 **No ratchet on the mutation score**, and none added. The score is not
       recorded as a target anywhere; `thresholds.break` is `null`.
-- [ ] 4.3 Follow-up decision recorded in findings.md §6.
+- [ ] 4.3 Follow-up scaffolding — pending the survivor list, which is what
+      would name the specific games worth mutating.
 
 ## 5. Close out
 
