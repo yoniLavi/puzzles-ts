@@ -53,15 +53,110 @@ interface DependencyInfo {
 }
 
 /**
+ * Inline markdown, for the one input that is markdown: `[text](url)` links,
+ * `` `code` `` spans and `**bold**`. Recurses into link text so a
+ * ``[`path`](url)`` renders its code span too.
+ *
+ * Only *absolute* links become anchors. `LICENSE.md`'s links are repo-relative
+ * (`./licences/sgt-puzzles-LICENCE`), which resolve on GitHub but to nothing in
+ * the deployed app — rendering those as anchors would manufacture broken links,
+ * so they render as plain text.
+ */
+function renderInlineMarkdown(text: string): (HTMLTemplateResult | string)[] {
+  const out: (HTMLTemplateResult | string)[] = [];
+  const inline = /\[([^\]]+)\]\(([^)]+)\)|`([^`]+)`|\*\*([^*]+)\*\*/g;
+  let consumed = 0;
+  for (const match of text.matchAll(inline)) {
+    const [whole, linkText, url, code, bold] = match;
+    if (match.index > consumed) {
+      out.push(text.slice(consumed, match.index));
+    }
+    if (linkText !== undefined && url !== undefined) {
+      const inner = renderInlineMarkdown(linkText);
+      out.push(
+        /^https?:\/\//.test(url)
+          ? html`<a href=${url} target="_blank">${inner}</a>`
+          : html`${inner}`,
+      );
+    } else if (code !== undefined) {
+      out.push(html`<code>${code}</code>`);
+    } else if (bold !== undefined) {
+      out.push(html`<strong>${bold}</strong>`);
+    }
+    consumed = match.index + whole.length;
+  }
+  if (consumed < text.length) {
+    out.push(text.slice(consumed));
+  }
+  return out;
+}
+
+/**
+ * One markdown block. Returns `null` for a block that renders to nothing, so
+ * the caller can keep looking for somewhere to put its label.
+ *
+ * The level-1 heading is dropped: it is the document title, and the dialog
+ * already supplies one (the `label` argument, plus the summary above it).
+ * Deeper headings become bold lines — this is a licence panel, not a document
+ * viewer, so it wants no heading hierarchy of its own.
+ */
+function markdownBlockToHTML(
+  block: string,
+  label: string | HTMLTemplateResult | typeof nothing,
+): HTMLTemplateResult | null {
+  const lines = block
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) {
+    return null;
+  }
+
+  const heading = /^(#{1,6})\s+(.*)$/.exec(lines[0]);
+  if (heading) {
+    if (heading[1].length === 1) {
+      return null;
+    }
+    return html`<p>${label}<strong>${renderInlineMarkdown(heading[2])}</strong></p>`;
+  }
+
+  if (lines[0].startsWith("- ")) {
+    // Wrapped continuation lines belong to the item above them.
+    const items: string[] = [];
+    for (const line of lines) {
+      if (line.startsWith("- ")) {
+        items.push(line.slice(2));
+      } else if (items.length > 0) {
+        items[items.length - 1] += ` ${line}`;
+      }
+    }
+    return html`
+      ${label === nothing ? nothing : html`<p>${label}</p>`}
+      <ul>${items.map((item) => html`<li>${renderInlineMarkdown(item)}</li>`)}</ul>
+    `;
+  }
+
+  return html`<p>${label}${renderInlineMarkdown(lines.join(" "))}</p>`;
+}
+
+/**
  * Format text as html:
  * - Split into <p> at double NLs (but ignore single NL as plain text wrapping)
  * - Convert CR to <br> (special convention for dependencies.json from puzzles)
  * - Omit ----- or ===== (and longer sequences)
  * Optional label is inserted at the start of the first paragraph if provided.
+ *
+ * `markdown: true` additionally renders headings, `- ` lists and inline
+ * markdown. It is **opt-in and belongs only to this project's own
+ * `LICENSE.md`**: upstream's `LICENCE` notices and third-party dependency
+ * notices are plain text, and reinterpreting them would turn a stray bracket or
+ * asterisk in someone's copyright line into a link or emphasis — silently
+ * rewriting a legal notice.
  */
-function licenseTextToHTML(
+export function licenseTextToHTML(
   text: string,
   label?: string | HTMLTemplateResult,
+  { markdown = false }: { markdown?: boolean } = {},
 ): HTMLTemplateResult {
   const result: HTMLTemplateResult[] = [];
   const divider = /^\s*(?:={3,}|-{3,})\s*$/;
@@ -76,6 +171,17 @@ function licenseTextToHTML(
       continue;
     }
     lastParagraphWasDivider = false;
+    if (markdown) {
+      const block = markdownBlockToHTML(
+        paragraph,
+        firstParagraph && label ? label : nothing,
+      );
+      if (block) {
+        result.push(block);
+        firstParagraph = false;
+      }
+      continue;
+    }
     const lines = paragraph
       .replace(/[-=]{5,}/g, "")
       .split("\r")
@@ -237,6 +343,7 @@ export class AboutDialog extends LitElement {
           ${licenseTextToHTML(
             appLicenseText,
             html`<strong>${repoName /* NOT appName */}</strong><br>`,
+            { markdown: true },
           )}
 
           <wa-divider></wa-divider>
