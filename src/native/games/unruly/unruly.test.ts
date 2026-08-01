@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../random/index.ts";
+import {
+  type Cell,
+  DIFF_EASY,
+  DIFF_NORMAL,
+  DIFF_TRIVIAL,
+  EMPTY,
+  ONE,
+  ZERO,
+} from "./constants.ts";
 import { newDesc } from "./generator.ts";
 import {
   findMistakes,
@@ -10,24 +19,17 @@ import {
   validateRows,
 } from "./solver.ts";
 import {
-  type Cell,
-  DIFF_EASY,
-  DIFF_NORMAL,
-  DIFF_TRIVIAL,
   decodeParams,
-  EMPTY,
   encodeGrid,
   encodeParams,
   executeMove,
   newState,
-  ONE,
   presets,
   status,
   type UnrulyParams,
   type UnrulyState,
   validateDesc,
   validateParams,
-  ZERO,
 } from "./state.ts";
 
 function params(w2: number, h2: number, diff: number, unique = false): UnrulyParams {

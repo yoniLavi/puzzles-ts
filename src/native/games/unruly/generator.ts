@@ -8,6 +8,7 @@
 import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { type RandomState, randomUpto } from "../../random/index.ts";
+import { type Cell, DIFF_TRIVIAL, EMPTY, ONE, ZERO } from "./constants.ts";
 import {
   type GridView,
   newScratch,
@@ -16,15 +17,7 @@ import {
   validateCounts,
   validateRows,
 } from "./solver.ts";
-import {
-  type Cell,
-  DIFF_TRIVIAL,
-  EMPTY,
-  encodeGrid,
-  ONE,
-  type UnrulyParams,
-  ZERO,
-} from "./state.ts";
+import { encodeGrid, type UnrulyParams } from "./state.ts";
 
 function blankView(p: UnrulyParams): GridView {
   return {

@@ -29,6 +29,7 @@ import {
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
+import { type Cell, EMPTY, ONE, ZERO } from "./constants.ts";
 import { newDesc } from "./generator.ts";
 import {
   colours,
@@ -47,14 +48,11 @@ import {
   solveToString,
 } from "./solver.ts";
 import {
-  type Cell,
   decodeParams,
   defaultParams,
-  EMPTY,
   encodeParams,
   executeMove,
   newState,
-  ONE,
   presets,
   status,
   textFormat,
@@ -65,7 +63,6 @@ import {
   type UnrulyUi,
   validateDesc,
   validateParams,
-  ZERO,
 } from "./state.ts";
 
 function newUi(_state: UnrulyState): UnrulyUi {
