@@ -75,6 +75,28 @@ for (const r of rows.sort((a, b) => a.src.localeCompare(b.src))) {
   );
 }
 
+// Triage is over *classes*, not instances: 293 survivors walked in file order is
+// unmanageable, but "every StringLiteral mutant in this module's error messages"
+// is one decision. Group by (module, mutator) first, then list.
+console.log(
+  `\n## Survivor clusters by (module, mutator) — triage these, not the list\n`,
+);
+const clusters = new Map();
+for (const s of survivors) {
+  const key = `${base(s.file)}\t${s.mutator}\t${s.status}`;
+  const c = clusters.get(key) ?? { n: 0, lines: [] };
+  c.n++;
+  if (c.lines.length < 6) c.lines.push(s.line);
+  clusters.set(key, c);
+}
+console.log(
+  `${pad("module", 24)}${pad("mutator", 26)}${pad("status", 12)}${pad("n", 5)}example lines`,
+);
+for (const [key, c] of [...clusters].sort((a, b) => b[1].n - a[1].n)) {
+  const [f, m, st] = key.split("\t");
+  console.log(pad(f, 24) + pad(m, 26) + pad(st, 12) + pad(c.n, 5) + c.lines.join(", "));
+}
+
 console.log(`\n## Survivors and uncovered mutants (${survivors.length})\n`);
 for (const s of survivors.sort(
   (a, b) => a.file.localeCompare(b.file) || (a.line ?? 0) - (b.line ?? 0),
