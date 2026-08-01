@@ -11,9 +11,6 @@
  * (edges contradicting the unique solution) folds into the same edge-error bits.
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
-import { correctRegionColour, mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import type { GameDrawing } from "../../engine/game.ts";
-import { ERROR, INK, lineMaybeColour, lineNoColour } from "../../engine/palette.ts";
 import {
   BORDER,
   BORDER_D,
@@ -23,10 +20,15 @@ import {
   DX,
   DY,
   outOfBounds,
-  type SeparateMistake,
-  type SeparateParams,
-  type SeparateState,
-  type SeparateUi,
+} from "../../engine/border-grid.ts";
+import { correctRegionColour, mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import type { GameDrawing } from "../../engine/game.ts";
+import { ERROR, INK, lineMaybeColour, lineNoColour } from "../../engine/palette.ts";
+import type {
+  SeparateMistake,
+  SeparateParams,
+  SeparateState,
+  SeparateUi,
 } from "./state.ts";
 
 export const PREFERRED_TILE_SIZE = 48;

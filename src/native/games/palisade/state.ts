@@ -13,39 +13,37 @@
  * two cells it separates, so every edit records both sides.
  */
 import type { GameStatus } from "../../../puzzle/types.ts";
-import { Dsf } from "../../engine/dsf.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
 
-// --- border-flag constants ------------------------------------------------
+// The edge bit encoding, direction tables and bounds test are shared with the
+// other border-marking region game and live in `engine/border-grid.ts`. Each
+// module here imports them from there directly rather than through this file —
+// a pass-through re-export is a second name for one thing, and jscpd scored the
+// two games' identical re-export lists as duplication in their own right.
 
-export const BORDER_U = 1;
-export const BORDER_R = 2;
-export const BORDER_D = 4;
-export const BORDER_L = 8;
-export const BORDER_MASK = BORDER_U | BORDER_R | BORDER_D | BORDER_L;
-
-/** A wall on edge `dir` (0=U,1=R,2=D,3=L). */
-export const BORDER = (dir: number): number => 1 << dir;
-/** The "no-wall" mark for a wall bit (high nibble). */
-export const DISABLED = (border: number): number => border << 4;
-/** Opposite direction (U↔D, R↔L). */
-export const FLIP = (dir: number): number => dir ^ 2;
+import {
+  BORDER,
+  BORDER_D,
+  BORDER_L,
+  BORDER_MASK,
+  BORDER_R,
+  BORDER_U,
+  buildDsf,
+  DISABLED,
+  DX,
+  DY,
+  initBorders,
+  outOfBounds,
+} from "../../engine/border-grid.ts";
 
 /** Clue sentinel: no clue shown in this cell. */
 export const EMPTY = -1;
-
-export const DX = [0, +1, 0, -1] as const;
-export const DY = [-1, 0, +1, 0] as const;
 
 const BITCOUNT = [0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4] as const;
 /** Number of walls enabled in a border byte. */
 export function bitcount(flags: number): number {
   return BITCOUNT[flags & BORDER_MASK];
-}
-
-export function outOfBounds(x: number, y: number, w: number, h: number): boolean {
-  return x < 0 || x >= w || y < 0 || y >= h;
 }
 
 // --- types ----------------------------------------------------------------
@@ -157,52 +155,6 @@ export function validateParams(p: PalisadeParams, full: boolean): string | null 
 }
 
 // --- borders --------------------------------------------------------------
-
-/** A fresh border byte array with only the grid-rim walls set. */
-export function initBorders(w: number, h: number): Uint8Array {
-  const borders = new Uint8Array(w * h);
-  const wh = w * h;
-  for (let c = 0; c < w; c++) {
-    borders[c] |= BORDER_U;
-    borders[wh - 1 - c] |= BORDER_D;
-  }
-  for (let r = 0; r < h; r++) {
-    borders[r * w] |= BORDER_L;
-    borders[wh - 1 - r * w] |= BORDER_R;
-  }
-  return borders;
-}
-
-/**
- * Connected components along `borders`. `black=true`: merge across an
- * edge with no wall (the regions the walls divide the grid into).
- * `black=false`: merge across an edge explicitly marked no-wall (the
- * "definitely one region" components used for error highlighting).
- */
-export function buildDsf(
-  w: number,
-  h: number,
-  borders: Uint8Array,
-  black: boolean,
-): Dsf {
-  const dsf = new Dsf(w * h);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = y * w + x;
-      if (
-        x + 1 < w &&
-        (black ? !(borders[i] & BORDER_R) : borders[i] & DISABLED(BORDER_R))
-      )
-        dsf.merge(i, i + 1);
-      if (
-        y + 1 < h &&
-        (black ? !(borders[i] & BORDER_D) : borders[i] & DISABLED(BORDER_D))
-      )
-        dsf.merge(i, i + w);
-    }
-  }
-  return dsf;
-}
 
 /**
  * A state is solved iff the walls divide the grid into components every

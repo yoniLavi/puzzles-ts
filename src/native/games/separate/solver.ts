@@ -19,15 +19,16 @@
  * The generator only keeps a board the solver fully solves, so on a real board
  * running this to a fixpoint yields *the* unique partition.
  */
-import { Dsf } from "../../engine/dsf.ts";
+
 import {
   BORDER_D,
   BORDER_L,
   BORDER_R,
   BORDER_U,
   initBorders,
-  type SeparateParams,
-} from "./state.ts";
+} from "../../engine/border-grid.ts";
+import { Dsf } from "../../engine/dsf.ts";
+import type { SeparateParams } from "./state.ts";
 
 /** Solver verdict, mirroring upstream's 0/1/2. */
 export const STUCK = 0;

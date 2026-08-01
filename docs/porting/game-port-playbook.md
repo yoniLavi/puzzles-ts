@@ -2472,6 +2472,20 @@ Three rules, each learned by getting it wrong (`establish-refactor-baseline`):
    the ceiling, so their true complexity is unmeasured and a stable 255 does not
    mean "no regression".
 
+**Shared game mechanics live in `src/native/engine/`.** `border-grid.ts` is the
+worked example: Palisade and Separate both mark the edges *between* cells with a
+tri-state, and that mechanic — the bit vocabulary, the closest-edge hit test, the
+half-cell cursor, `initBorders`/`buildDsf` — is now one module instead of two
+byte-identical copies (469 clone lines → 280). The test for what belongs there is
+not "is this the same text" but **"would a change here have to happen in both
+games at once?"**; per-tile render loops look alike everywhere and stay per-game,
+because the error conditions inside them differ. Each game keeps its own `Move`
+type: the shared code reports which edge and how its state should cycle, never a
+move, so two save formats stay uncoupled. And note the trap — the first cut
+re-exported the vocabulary through each game's `state.ts`, which recreated the
+clone as two identical re-export blocks. Import shared things from where they
+live.
+
 **Module layering is enforced** by `src/module-layering.test.ts`: no game
 imports another game (shared behaviour goes in `src/native/engine/`), the engine
 does not import games (except `engine/testing/hint-games.ts`, the hint

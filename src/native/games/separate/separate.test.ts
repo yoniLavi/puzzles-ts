@@ -6,6 +6,7 @@
  * mistakes-overlay frame) driven through a real Midend.
  */
 import { describe, expect, it } from "vitest";
+import { BORDER, BORDER_D, BORDER_R } from "../../engine/border-grid.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
 import { newSeparateDesc } from "./generator.ts";
@@ -13,9 +14,6 @@ import { separateGame } from "./index.ts";
 import { COL_CORRECT, COL_ERROR } from "./render.ts";
 import { solve, solveToBorders } from "./solver.ts";
 import {
-  BORDER,
-  BORDER_D,
-  BORDER_R,
   decodeParams,
   encodeDesc,
   encodeParams,

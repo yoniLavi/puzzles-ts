@@ -3,6 +3,7 @@
 // live error reddening for an over-large region, the findMistakes
 // overlay edge, the clue text, and the cursor outline.
 import { describe, expect, it } from "vitest";
+import { BORDER } from "../../engine/border-grid.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../random/index.ts";
 import {
@@ -18,7 +19,6 @@ import {
 } from "./render.ts";
 import { newDesc, solveToBorders } from "./solver.ts";
 import {
-  BORDER,
   newState,
   type PalisadeHint,
   type PalisadeMove,
