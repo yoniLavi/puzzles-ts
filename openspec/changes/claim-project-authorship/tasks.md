@@ -4,8 +4,13 @@
 
 - [ ] 0.1 The name shown to players (`repoName` = "Puzzles web app";
       `package.json` = `puzzles-ts`).
-- [ ] 0.2 The destination for source / discussion / bug-report links. Until a
-      remote for this project exists, these have no correct target.
+- [ ] 0.2 The destination for source / discussion / bug-report links.
+      **`git remote -v` says `https://github.com/yoniLavi/puzzles-ts.git`** — so
+      a target does exist, and the earlier "there is no remote to point at" was
+      wrong. What is still the owner's call: whether that repository is public,
+      and whether Issues/Discussions are enabled on it. Source-code link can
+      point there regardless; bug-report and forum links need the features
+      turned on, or they should be dropped rather than pointed at a 404.
 - [ ] 0.3 The deployment URL for README's "Play the puzzles" (currently
       `puzzles.twistymaze.com`, which is puzzles-web's).
 - [ ] 0.4 The version string (`package.json` `0.0.1`).
