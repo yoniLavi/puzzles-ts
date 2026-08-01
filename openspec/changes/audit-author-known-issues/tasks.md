@@ -46,12 +46,14 @@ The result is [`audit.md`](audit.md), archived with this change.
       answered the third part (the target green) on 2026-07-30.
 - [x] 3.3 File a follow-up change for each item too large to land here, with the
       author's own words quoted in its `## Why`:
-      `bound-abcd-generable-sizes`, `add-sokoban-level-packs`,
-      `refine-slide-appearance`. A fourth, `reach-ten-by-ten-seismic`, was drafted
-      and **withdrawn before implementation** on the owner's question — it is two
-      independent projects, buys one board size, and rests on a feasibility
-      question nobody has answered. Reasoning and the one experiment that would
-      settle it are in `audit.md` §3a.
+      `bound-abcd-generable-sizes` and `refine-slide-appearance`. Two more were
+      drafted and then **withdrawn before implementation** on owner review:
+      `reach-ten-by-ten-seismic` (two independent projects, buys one board size,
+      rests on a feasibility question nobody has answered — `audit.md` §3a) and
+      `add-sokoban-level-packs` (nofix: the collection stays entirely procedurally
+      generated, and the procedural alternative is not cheap — §3b, archived at
+      `2026-08-01-add-sokoban-level-packs` with its spec delta unapplied).
+      Withdrawing the Seismic one exposed a real defect, now fixed (§3a).
 - [x] 3.4 Where a verdict must outlive `puzzles/`, add it to the game's
       capability spec (`abcd`, `boats`, `seismic`).
 

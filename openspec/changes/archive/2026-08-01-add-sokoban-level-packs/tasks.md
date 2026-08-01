@@ -1,5 +1,9 @@
 # Tasks — add-sokoban-level-packs
 
+> **WITHDRAWN 2026-08-01 — nofix. No task below was started.** See the banner in
+> `proposal.md` for the decision and for the reframing of the procedural
+> alternative.
+
 ## 1. Source the levels (gating)
 
 - [ ] 1.1 Identify a level set with a licence compatible with this fork's MIT

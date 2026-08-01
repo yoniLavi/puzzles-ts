@@ -138,6 +138,73 @@ upgrades are worth costing. **UNSAT** ⇒ 10×10 is impossible at upstream's loo
 the only question left is a product one — is a coarser-region Seismic wanted at
 every size? That is a half-day spike, and its likely answer makes the rest moot.
 
+### On building a shared CP/SAT solver — the door is open, and Path is the trigger
+
+The first objection raised against a shared constraint engine was that it would be
+**un-narratable**: this repo's solvers and hints are two projections of one
+deduction engine, and a SAT answer explains nothing. **The owner corrected that
+(2026-08-01), and the correction holds**: several games already ship an
+*Unreasonable* tier that the solver can reach and the hint cannot, so "solves it
+but cannot explain it" is an established, acceptable shape here. Narratability is
+not the blocker.
+
+**The real blocker is the byte-match oracle, and it is narrower than it looks.**
+On every ported game the generator is solver-gated, so its accept/reject decisions
+must reproduce C's *deductive* solver's verdicts exactly; swapping in a SAT
+uniqueness check would change which puzzles exist and forfeit the differential
+across the collection. So SAT is usable only where there is no oracle to lose:
+**already-diverged generator internals, and greenfield games.**
+
+That leaves exactly two candidate sites, and they are not equally weighted:
+
+- **Seismic's region fill** — already diverged (the constructive grower replaced
+  upstream's stages), so a feasibility oracle there costs nothing. Real, but it is
+  one stage of one game.
+- **Path (Numberlink)** — greenfield, and *load-bearing*. Upstream's own header
+  says it plainly: *"There remains the question of unique solutions, however. I
+  fear there is no alternative but to write — somehow! — a solver."* Numberlink is
+  NP-complete, it is a classic SAT benchmark, and "prove uniqueness" is exactly
+  the query SAT answers naturally (exclude the known solution, ask again).
+  `add-path-ts-port` already gates itself on a solver-feasibility spike whose
+  approach it deliberately leaves open.
+
+**So: not now, and not speculatively.** Building the engine before Path's spike
+would be framework infrastructure ahead of the game that pressures it — the exact
+mistake `scaffold-scene-graph-game-contract` made, which this repo keeps a
+postmortem for. The right sequencing is that **Path's gating spike evaluates SAT
+as one of its candidate approaches**; if it wins there, Seismic's fill is the
+second consumer that would justify making it shared rather than Path-local. That
+is the owner's "useful across multiple games" test answered with evidence instead
+of speculation. Recorded in `add-path-ts-port`'s D1.
+
+## 3b. Sokoban's levels — nofix, and why the procedural alternative is not cheap
+
+`add-sokoban-level-packs` was filed by this audit and **withdrawn unimplemented**
+on the owner's decision: the collection stays entirely procedurally generated, and
+authored levels for one game would make Sokoban the exception to the property
+that defines the whole thing — every board comes from a seed.
+
+The alternative the owner was open to — take inspiration from known-good levels
+and reverse-engineer a *better procedural* generator — was examined and is not the
+cheap option it sounds like:
+
+- **Upstream's technique is not the deficiency.** `sokobanGenerate` already uses
+  the standard method: start from a solved position and play *backwards*, pulling
+  barrels rather than pushing. That is why every level is solvable by construction
+  and needs no solver to gate it.
+- **What it lacks is selection.** It makes N inverse moves and emits whatever
+  position it lands on — no scoring, no candidate pool, no rejection. Sokoban
+  quality lives almost entirely in that step: how far the barrels finish from
+  their targets, whether the solution forces a non-obvious ordering, whether the
+  corridors are trivial.
+- **So "generate N, score, keep the best" needs a Sokoban solver**, to know a
+  candidate's minimum push count at all — precisely the component the reverse-play
+  design exists to avoid needing, and Sokoban solving is PSPACE-complete
+  (tractable at these sizes, but a real piece of work).
+
+That is what makes the high-effort-low-value read correct rather than merely
+cautious: the cheap-sounding version is not cheap.
+
 ## 3. Upstream Tatham — games this fork finished
 
 `puzzles/unfinished/README` explains only *why* the directory exists ("half-written,
@@ -148,7 +215,7 @@ each file's header.
 |---|---|---|
 | **group** | "…too esoteric (not to mention *hard*) for me to be comfortable presenting it to the general public"; TODO: more solver techniques (inverses, hard-mode associativity) | **Declined.** The esotericism is a shipping judgement this fork made differently — Group ships, with a hint (`add-group-hint`). The extra solver techniques strengthen the solver and change every board; rule 3. |
 | **slide** | TODO: improve the generator; and three graphics complaints (wishy-washy colours, "the cattle grid effect is still disgusting", an excessive next-piece highlight) | Generator: **declined** — `add-slide-ts-port` found it "mostly sensible already" as the author himself notes, and the move-limit slowness is inherent. Graphics: the target green was **decided by the owner** on 2026-07-30 (keep it); the other two → **`refine-slide-appearance`**. |
-| **sokoban** | "Random generation is too simplistic to be credible, but the rest of the gameplay works well enough to use it with hand-written level descriptions." | **Promoted → `add-sokoban-level-packs`.** `add-sokoban-ts-port` weighed this explicitly, shipped the faithful generator as option (A), and recorded curated levels as "a compelling, separate, owner-greenlit follow-up" — which was never filed. Licensing is the gating constraint. |
+| **sokoban** | "Random generation is too simplistic to be credible, but the rest of the gameplay works well enough to use it with hand-written level descriptions." | **Declined — nofix** (owner, 2026-08-01). `add-sokoban-level-packs` was filed (`add-sokoban-ts-port` had recorded curated levels as "a compelling, separate, owner-greenlit follow-up") and then **withdrawn unimplemented**: this collection stays entirely procedurally generated, and a hand-curated pack for one game would make Sokoban the exception to the property that defines the whole thing. The procedural alternative was examined too and is not cheap — see §3b. Archived at `2026-08-01-add-sokoban-level-packs` with its spec delta deliberately unapplied. |
 
 ## 4. What the sweep is worth knowing for
 
@@ -159,8 +226,8 @@ each file's header.
   quietly recorded the only live defect either source had (`Certain custom fleets
   don't fit in the UI`). Reading the more candid source alone is not enough.
 - **"Declined" was the right answer far more often than "outstanding".** Of the
-  ~30 points swept, two were live defects, three were promoted, one was declined
-  after a dedicated change had already attacked it (§3a), and the rest were
+  ~30 points swept, three were live defects, two were promoted, two were declined
+  only after a change had been drafted for them (§3a, §3b), and the rest were
   either already resolved by a port or are requests to make a solver stronger —
   which playbook §4 rule 3 refuses on principle, because a weaker solver *is* the
   difficulty curve upstream shipped.
