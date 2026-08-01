@@ -17,24 +17,29 @@ decoding as a square grid.
 
 Any size bound in validation SHALL be derived from a measurement of the *shipped*
 generator rather than inherited, and SHALL carry a reason the Custom-type dialog
-can display. The previous bound of 49 cells described upstream's fill-then-merge
-region grower, which this change replaces; a constructive grower reaches larger
-boards, so the bound SHALL be re-measured and raised. Where a bound remains it
-SHALL reflect whichever stage is actually the limit — the region fill or the
+can display, naming the mode it applies to. Where a bound remains it SHALL
+reflect whichever stage is actually the limit — the region fill or the
 clue-stripping loop. The retry loops below any bound SHALL be finite, so a
 divergence fails with a labelled error rather than running forever.
 
-The bound SHALL be set by the **worst-case** generation time over repeated seeds,
-not by the median and not by mere reachability. A size that generates
-successfully but whose slowest runs take tens of seconds SHALL be rejected: that
-is the same defect the constructive generator was introduced to remove, and
-admitting it at a different size would reintroduce it. Establishing a bound
-therefore requires repeating the slow sizes over several seeds, because medians
-at the top of the range conceal tails an order of magnitude worse.
+**The bound SHALL be per mode, because the two modes are stopped by different
+things and the distinction is not a matter of degree.** Tectonic's limit is
+*reachability*: every size up to 100 cells generates, some of them slowly.
+Seismic's is *possibility*: 10×10 does not generate at all — each attempt runs
+for around sixteen seconds and then exhausts its retry budget — and no amount of
+waiting changes that, so its bound SHALL stay at the largest area whose worst
+observed run is short. Raising Seismic's bound SHALL require repeating the slow
+sizes over several seeds; a bound set from medians is the error this game has
+already shipped and retracted once.
 
-Presets SHALL include only board sizes the generator produces reliably by that
-measure. A preset SHALL NOT be offered for a configuration whose worst case is a
-long wait, however normal that size is for the puzzle in general.
+**A size the player types in the Custom dialog MAY be one that takes seconds to
+generate; a preset SHALL NOT.** A preset is offered to everyone who opens the
+Type menu, so a long generation there is a wait nobody chose, whereas a Custom
+size is a wait the player asked for knowing the board they wanted. Presets SHALL
+therefore stop well inside the bound, and this SHALL be asserted rather than left
+to convention. This is what makes 10×10 — the size upstream's own notes call
+standard for Hakyuu — available in Tectonic mode without reintroducing the long
+menu wait the constructive generator was written to remove.
 
 The grid SHALL be partitioned into regions, and a region of size N SHALL require
 one instance of each number from 1 to N. In Seismic mode two equal numbers Z on
@@ -59,16 +64,26 @@ reproducible without matching any particular canonical-element choice.
 
 - **WHEN** a board larger than upstream's 7×7 ceiling is requested, within the
   measured bound
-- **THEN** it is accepted by validation and a soluble board is produced promptly
+- **THEN** it is accepted by validation and a soluble board is produced
 
-#### Scenario: A size whose worst case is a long wait is refused up front
+#### Scenario: The standard Hakyuu size is available where it can be built
 
-- **WHEN** parameters beyond the measured bound are validated — whether the
-  generator fails on them outright or merely takes tens of seconds on its slower
-  seeds
-- **THEN** they are rejected with a stated reason, rather than accepted and left
-  to generate
-- **AND** the refusal applies in both game modes, since the bound is shared
+- **WHEN** a 10×10 board is requested in Tectonic mode from the Custom dialog
+- **THEN** it is accepted by validation and a soluble board is produced
+- **AND** no preset offers that size, so it is reached only by a player who asked
+  for it
+
+#### Scenario: A size the generator cannot build is refused up front
+
+- **WHEN** a 10×10 board is requested in Seismic mode
+- **THEN** it is rejected with a stated reason naming the mode, rather than
+  accepted and left to churn until its retry budget is exhausted
+
+#### Scenario: A size whose worst case is a long wait is kept out of the menu
+
+- **WHEN** presets are enumerated
+- **THEN** none of them is a size whose generation tail runs to tens of seconds,
+  whatever the validation bound admits
 
 ### Requirement: Seismic descriptions use the run-length wall and clue encoding
 

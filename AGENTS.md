@@ -156,6 +156,31 @@ Top-down, product-value first:
 7. **Outward** — remaining games, simplest-first; leaf libs pulled in idiomatically as needed; worker existence re-evaluated once games are TS (it exists for heavy WASM; light TS games may not need it).
 8. **`random.c`** is already TS (`random.ts`); keep it.
 
+**Where the order goes next (owner, 2026-08-01).** Every game is ported and the
+authors' known-issue lists are reconciled, so:
+
+1. **`retire-c-engine`** — the next change to implement. Its only dependency
+   (`audit-author-known-issues`) is archived.
+2. **A round or two of refactoring** on the TypeScript-only codebase, so the work
+   below lands on cleaner code. The 48 per-game differentials are the net for
+   this: each imports a *frozen JSON fixture* and keeps working with no C
+   present, and a refactor that changes a solver's verdict changes which boards
+   exist — which is exactly what they catch.
+3. **Then the improvements the released oracle unblocked** —
+   `grade-difficulty-tiers-honestly` first (the tiers exist and merely fail to
+   bind), then `add-clusters-difficulty-tiers` → `add-subsets-difficulty-tiers` →
+   `add-sticks-difficulty-tiers` in that order (increasing amounts of deduction
+   to invent), plus `add-latin-repeats-support`, `bound-abcd-generable-sizes` and
+   `refine-slide-appearance`.
+4. **Greenfield last**: Path, then Numgame.
+
+One consequence of that order, intended rather than accidental: **after
+`retire-c-engine` a divergence is one-way.** With no C build there is no
+answering "what would upstream have produced?" for a new question and no
+re-baselining a fixture against it, so a deliberate divergence retires or
+re-founds its fixture rather than re-recording it. `puzzles/` stays in git
+history if a question ever genuinely needs it.
+
 ## Build commands
 
 - `npm run build:wasm` — compiles the puzzle wasm + manual into `src/assets/puzzles/` via `scripts/build-emcc.sh`. **Defaults to hybrid TS+C**: `USE_TS_LEAVES` defaults ON (CMake) and `VITE_USE_TS_LEAVES` defaults ON (worker), so zero-arg `npm run build:wasm && npm run dev` ships the hybrid build that production runs. Set `USE_TS_LEAVES=0` (paired with `VITE_USE_TS_LEAVES=0` on the worker side) to fall back to pure C — useful when bisecting whether a regression came from a TS port or the C reference. (Note: this umbrella is *runtime mechanics*; the migration strategy is per-game per the `ts-migration` spec, not per-leaf.) Per-module overrides (`USE_TS_RANDOM`, future `USE_TS_COMBI`, …) flip individual seams against the umbrella in either direction; per-module Vite env vars similarly override `VITE_USE_TS_LEAVES`. The worker fails closed at WASM instantiation if the CMake and Vite flag sets disagree (`assertWasmBridgesCoherent` in `src/puzzle/worker.ts`). When transitioning between flag combinations, reset cmake's cache with `rm -rf build/wasm/` before the next `npm run build:wasm` — cmake's `option()` honours previously-cached values, so a stale cache will silently win.
@@ -318,6 +343,18 @@ Recorded here as durable reference, not a changelog (commit history carries the 
   **Crossing's OKLCH-matched dimension pair moved into the palette** and immediately justified the move: blue's and orange's wash *and* bold steps are now tied in lightness and chroma, and the first cut tied only the wash pair — caught by Crossing's own equal-strength test. A game cannot be trusted to maintain a constraint that is really the palette's.
 
   **What only owner acceptance caught, and the shape of it.** Three defects survived a green suite, and all three are the same mistake: *a search maximises what it is given and buys it with anything not bounded*. Dark `YELLOW` was pushed to lightness 0.95 at half its available chroma — the lightest entry in the palette, a **cream** — because that is where the ten-set's worst pair was largest; capping it at 0.86 costs the set 0.158 → 0.143, and that number is the honest one, because the 0.158 *was* the defect. Four dark washes sat below the lightness a game draws its own cells at, so Crossing's across/down highlight came out darker than the squares it highlighted and read as a hole in the board — the wash rule ("dark enough for light text") was a bound in one direction only. And fixing yellow exposed a third: with its base near the top of its gamut, the search inverted yellow's **bold** step to sit *below* the base, which is not a weaker bold but the wash wearing its name. All three are now assertions in `colours.test.ts` rather than comments. Generalises past colour: **an optimised artefact needs its bounds asserted, because the objective will never complain about what it is trading away.**
+
+- **The authors' own known-issue lists, reconciled — and the oracle released** (`audit-author-known-issues`, archived 2026-08-01). Every third-party puzzle shipped a `docs/<game>.md` whose `## Status` was its author stating what was wrong with the game, and **those pages are served to players** at `/help/<puzzleId>.html` — so Clusters' help still ended "There are currently no difficulty settings" and Crossing's still opened "This puzzle has severe problems" and named three, all since fixed. ~30 author-stated points were swept across three sources (the `## Status` sections, the `TODO`/`FIXME` blocks recovered from git history since every unreleased `.c` is deleted, and upstream's `unfinished/` headers) and each given one of four verdicts. `puzzles.but` came back empty — upstream's prose states design facts, not faults. The table is archived as that change's `audit.md`, because its sources die with `puzzles/`.
+
+  **Three live defects, all fixed.** Boats' fleet display broke rows only *between* whole batches, so a fleet with more boats of one size than fit across the board drew past the canvas edge **where it is clipped** — `/boats?type=4x8f1dn,7` (which validates and generates) showed *five of its seven boats*. ABCD committed entries that changed nothing, so re-typing the letter already in a cell cost an undo step (its own `TODO Prevent operations which do nothing`). And Seismic refused 10×10 in **both** modes on a shared `MAX_CELLS = 64`, though Tectonic 10×10 generates fine (41 ms–7.2 s measured) and only Seismic's fill fails (~16 s per attempt, then `RetryLimitExceeded`); the bound is per-mode again, presets stay at 8×8 and that is now *asserted*. **The transferable shape: when one bound serves two mechanisms, retiring the stricter one silently takes the looser one with it** — nothing caught it because "10×10 is not offered" was true either way.
+
+  **The 13 help pages moved to `help/games/`** (a page served to players cannot live in the tree `retire-c-engine` deletes, and a page we rewrite is no longer reference material), lost their `## Status` sections, and gained what the ports actually ship. A `repo-layout` requirement now fixes both the location and the rule: these pages introduce the puzzle, never the state of its implementation.
+
+  **Method note, and the reason the sweep needed both sources**: the `## Status` and the `.c` `TODO` disagree about what matters, in *both* directions. Crossing's best request (cursor auto-advance) was only in the Status; Boats' only live defect ("Certain custom fleets don't fit in the UI") was only in the TODO. Reading the more candid source alone is not enough — playbook §1.0 now says so.
+
+  **Two changes were drafted and withdrawn, and withdrawing one found a bug.** `reach-ten-by-ten-seismic` is two independent projects (fill *and* clue-stripping), buys one board size, and rests on a SAT/UNSAT question nobody has answered — asking "is this worth a session?" is what surfaced the shared-bound defect above. `add-sokoban-level-packs` is a **nofix**: the collection stays entirely procedurally generated. Its procedural alternative was examined and is not cheap — the reverse-play technique is not the deficiency, the *absence of any selection step* is, and "generate N, score, keep the best" needs a Sokoban solver, precisely what reverse-play exists to avoid.
+
+  **Then the owner released the byte-match oracle** (2026-08-01): it was a porting tool, porting is done, so *"matching the C is no longer a reason not to improve a game"*. See the doctrine section above. That reopened a set of declines this very sweep had made on oracle grounds, re-triaged in the audit's §3c and scaffolded as five changes — and scoping them found that **"currently no difficulty settings" hides three different sizes**: Clusters already implements *both* deduction levels and just always gates at the deeper one (nothing to invent); Subsets' second rung is sitting commented out in upstream (`// TODO repair this`); Sticks has one technique and nothing in reserve, so it must invent deductions and opens with a gating spike.
 
 **Two review methods worth reusing.** Colours move deliberately here, so there is no no-op diff to check; instead (i) 44 moved snapshot files were reviewed **mechanically** — every changed line in every one is an `rgb`/`fillRgb`/`outlineRgb` value, which proves no op was added, removed or moved, and beats eyeballing 44 files; (ii) the light-and-dark **browser pass found the one regression the suite could not** — Light Up's lit square was plain `YELLOW`, a near-board tint in light mode and a *bright patch* in dark, which is exactly the Slide failure mode `hand-author-dark-palette` F1 identified. It is a large fill, so it is `YELLOW_WASH`. `scripts/colour-dark-check.test.ts` is what surfaced it: its background-relationship count went 2 → 56, and the one entry in the 56 that was a **fill** rather than a mark, a never-invert identity, or pre-existing was the defect.
 

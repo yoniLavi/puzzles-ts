@@ -89,6 +89,12 @@ letter count; clearing SHALL accept Backspace, Space, and `0`. A fill-all-marks
 command SHALL set every empty cell's candidate marks. A Solve command SHALL fill the
 grid with the unique solution.
 
+An entry that would leave the state exactly as it is SHALL produce no move, and so
+no history entry: re-entering the letter a cell already holds, or clearing a cell
+that is already empty and carries no marks. Clearing an empty cell that *does*
+carry marks SHALL remain a real move, because it wipes them. The decision SHALL be
+made locally from that cell's own contents, never by comparing serialised states.
+
 Rendering SHALL draw the letter grid with edge clues and corner letters, SHALL show
 pencil marks in empty cells and the cursor highlight, SHALL colour a clue and a
 letter red while a rule is violated (a clue over- or under-satisfied, or identical
@@ -104,6 +110,16 @@ rule.
 - **WHEN** a cell is selected and a letter key (or its digit) within the letter
   count is pressed
 - **THEN** that letter is placed in the cell
+
+#### Scenario: Re-entering the letter already present costs no undo step
+
+- **WHEN** a cell already holds a letter and that same letter is entered again
+- **THEN** no move is produced and the undo history is unchanged
+
+#### Scenario: Clearing a cell that holds only marks is a real move
+
+- **WHEN** an empty cell carrying pencil marks is cleared
+- **THEN** a move is produced, and undoing it restores the marks
 
 #### Scenario: Completing the grid correctly wins
 

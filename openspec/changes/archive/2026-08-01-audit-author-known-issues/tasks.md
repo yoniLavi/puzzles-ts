@@ -80,4 +80,4 @@ The result is [`audit.md`](audit.md), archived with this change.
       is a named gate before the C reference is removed.
 - [x] 5.2 Note the dependency in `retire-c-engine`'s proposal.
 - [x] 5.3 Full gate green; `openspec validate audit-author-known-issues --strict`.
-- [ ] 5.4 Archive with the audit table included, so it survives the subtree.
+- [x] 5.4 Archive with the audit table included, so it survives the subtree.

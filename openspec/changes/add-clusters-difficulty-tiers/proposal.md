@@ -22,6 +22,21 @@ forfeits the differential"; the owner released that constraint on 2026-08-01.
 What is left is unusually cheap for a difficulty feature: **no new deduction has
 to be invented.**
 
+## Sequencing (owner decision, 2026-08-01)
+
+**Waits for `retire-c-engine`**, and possibly for a round or two of refactoring
+after it, so this lands on a TypeScript-only codebase rather than alongside the
+C teardown. Nothing here needs the C build: this game's differential imports a
+frozen JSON fixture and keeps working with no C present.
+
+Note the one-way consequence of that order — with no C build there is no
+re-baselining a fixture against upstream. Where this change diverges, the fixture
+is retired or re-founded on properties, not re-recorded. That is the intended
+effect of the released oracle, not an accident of the sequencing.
+
+
+**Do this one first of the three difficulty-tier changes.** It is the only one where no deduction has to be invented, so it establishes the parameter / preset / game-ID / differential pattern that `add-subsets-difficulty-tiers` and `add-sticks-difficulty-tiers` then reuse.
+
 ## What Changes
 
 - **Two tiers: Easy (level 0 suffices) and Tricky (level 1 required).** Easy

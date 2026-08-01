@@ -25,6 +25,12 @@ background-coloured. The other two were left open, and display work is explicitl
 in this fork's scope (`feedback_byte_parity_scope`: display was never a parity
 surface).
 
+## Sequencing (owner decision, 2026-08-01)
+
+**Waits for `retire-c-engine`**, and possibly for a round or two of refactoring
+after it, so this lands on a TypeScript-only codebase. Nothing here needs the C
+build.
+
 ## What Changes
 
 - **Give the board some contrast.** Walls, ordinary blocks and the floor stop
