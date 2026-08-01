@@ -1,7 +1,5 @@
 # ABCD
 
-![](https://raw.githubusercontent.com/x-sheep/puzzles-unreleased/master/docs/img/abcd.png)
-
 You're given an empty grid, and several rows of numbers on the side. You have to write a letter in every empty cell, following these rules:
 
 1. The numbers on the edge indicate how many instances of a specific letter appear in that row or column.
@@ -17,7 +15,7 @@ ABCD uses the same control scheme as Solo, but with letters instead of numbers.
 
 Left-click to select a cell, then type a letter on your keyboard to enter it. Press Backspace or Space to clear a cell.
 
-Right-click a cell, then type a letter to add a pencil mark. Pencil marks can be used for any purpose.
+Right-click a cell, then type a letter to add a pencil mark. Pencil marks can be used for any purpose. A preference makes right-click switch on a *sticky* pencil mode instead, which stays on until you right-click again.
 
 You can also use the arrow keys to move the selected cell around. Press Enter to toggle between entering letters and entering pencil marks.
 
@@ -38,6 +36,3 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dd>When disabled, letters cannot be diagonally adjacent (in addition to letters not being orthogonally adjacent).</dd>
 </dl>
 
-## Status
-
-This puzzle is fully implemented and playable.

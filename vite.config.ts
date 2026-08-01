@@ -459,7 +459,9 @@ export default defineConfig(async ({ command, mode }) => {
           },
           {
             // Our own help pages, served at /help/...
-            sources: "help/**/*.md",
+            // Deliberately non-recursive: `help/games/` is rendered by its own
+            // entry below, with the per-puzzle template.
+            sources: "help/*.md",
             transforms: [
               renderMarkdown({
                 html: true, // allow HTML tags in markdown
@@ -504,20 +506,13 @@ export default defineConfig(async ({ command, mode }) => {
             ],
           },
           {
-            // Puzzles-unreleased help pages, served at /help/<puzzleId>.html
-            // from markdown provided with puzzles-unreleased source
-            sources: "puzzles/unreleased/docs/*.md",
-            resolve: { url: "help/", path: "puzzles/unreleased/docs/" },
+            // Per-puzzle help pages for the games that have no upstream halibut
+            // manual, served at /help/<puzzleId>.html. Adapted from the
+            // documentation shipped with puzzles-unreleased; ours to maintain.
+            sources: "help/games/*.md",
+            resolve: { url: "help/", path: "help/games/" },
             transforms: [
-              // In markdown source, strip the raw.githubusercontent image
-              ({ source, ...data }) => ({
-                ...commonTemplateData,
-                source: String(source).replace(
-                  /!\[.*]\(https:\/\/raw\.githubusercontent\.com.*\)/m,
-                  "",
-                ),
-                ...data,
-              }),
+              (data) => ({ ...commonTemplateData, ...data }),
               renderMarkdown({
                 html: true, // allow HTML tags in markdown
                 linkify: true,

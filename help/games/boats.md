@@ -1,7 +1,5 @@
 # Boats
 
-![](https://raw.githubusercontent.com/x-sheep/puzzles-unreleased/master/docs/img/boats.png)
-
 You're given a grid, and a list of boats which must be located inside that grid. Boats can be rotated. Two boats cannot be horizontally, vertically or diagonally adjacent.
 
 The numbers on the side indicate the amount of cells inside that row or column which are occupied by a boat.
@@ -39,6 +37,3 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dd>When enabled, the difficulty is increased by hiding certain number clues.</dd>
 </dl>
 
-## Status
-
-This puzzle is playable. The solver cannot currently handle some of the harder Battleship puzzles out there.

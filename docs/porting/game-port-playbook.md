@@ -72,39 +72,40 @@ waits for the enabling change). Open the port as **one openspec change**
 
 ### 1.0 Read the game's own docs — its author has already listed its faults
 
-**Every game in `puzzles/unreleased/` ships a `puzzles/unreleased/docs/<game>.md`
-with a `## Status` section in which its author states what is wrong with it.**
-Read it *before* the C, alongside the `TODO` block at the top of the `.c`. It is
-not a duplicate of that block: it is more candid, it is written from the
-player's side, and it says which faults the author would fix given the chance —
-which is exactly the input this fork's "deliberate divergence is the point"
-licence needs. Crossing's opens "This puzzle has severe problems" and then names
-three; the port had already shipped without addressing any of them, because only
-the `.c`'s TODO comments had been read (they cover two of the three, more
-weakly, and omit the request that mattered most).
+**A game's author has usually written down what is wrong with it, and it is not
+in the code.** Every game in `puzzles/unreleased/` shipped a `docs/<game>.md`
+with a `## Status` section saying so in the player's own terms; upstream Tatham
+puts the equivalent in each `unfinished/` file's header comment. Read it *before*
+the C, alongside the `TODO` block at the top of the `.c`. It is not a duplicate
+of that block: it is more candid, and it says which faults the author would fix
+given the chance — which is exactly the input this fork's "deliberate divergence
+is the point" licence needs.
 
-The Status sections are load-bearing for the ports still to come, not just as
-polish items but as *scoping* facts:
+**Where to find them now.** The unreleased pages were rewritten into player-facing
+help (`help/games/<game>.md`) by `audit-author-known-issues`, which stripped the
+`## Status` sections — a player is not the audience for a statement about an
+implementation. Every one of them, with its verdict, is in that change's
+[`audit.md`](../../openspec/changes/archive/) in the archive; the original text is
+in git history, as are the `.c` TODO blocks for every game whose C has been
+deleted (`git log --diff-filter=D -- puzzles/unreleased/<game>.c`).
 
-- **seismic** — "has a near-zero chance of generating sizes higher than 7×7. The
-  generator step that creates randomly filled regions needs to be completely
-  replaced with a different approach." Plan for that before starting, not after.
-- **salad** — the pseudo-Latin machinery "is currently fairly messy and doesn't
-  allow for more complex solver techniques"; the Number Ball generator "doesn't
-  create puzzles that make good use of the concept".
-- **boats** — "the solver cannot currently handle some of the harder Battleship
-  puzzles out there."
+**Read both sources, because they disagree in both directions.** Crossing's
+Status opened "This puzzle has severe problems" and named the request that most
+improved the game (cursor auto-advance) — the `.c` did not, and the port shipped
+without it because only the `.c` had been read. Boats is the mirror image: its
+Status states a difficulty-curve preference that was rightly declined, while its
+`.c` quietly recorded the only live defect either source had ("Certain custom
+fleets don't fit in the UI"), which went unfixed for the same reason in reverse.
 
 Triage each point into: *fix in the port* (cheap and clearly right — Crossing's
 missing cursor auto-advance), *ask the owner* (a taste call the author flagged —
 Crossing's colour scheme), or *record and decline* (a rewrite the port does not
-justify). Whichever you choose, write it in `design.md`; a documented problem
-that the port silently reproduces is the one outcome to avoid.
-
-Upstream Tatham games have the same thing in a different place: `puzzles.but`
-and the per-game HTML overview, plus the "Status" notes in
-`puzzles/unfinished/README`. Same rule — read what the author says is broken
-before deciding what "faithful" means.
+justify — usually "make the solver stronger", which §4 rule 3 refuses on
+principle). Whichever you choose, write it in `design.md`; a documented problem
+that the port silently reproduces is the one outcome to avoid. And if the port
+*quantifies* the complaint, open the follow-up change there and then — the
+measurement is in hand and would otherwise have to be redone
+(`replace-seismic-region-generator` is the worked example).
 
 ### 1.1 Finishing an *unfinished* upstream puzzle (`puzzles/unfinished/`)
 

@@ -1,7 +1,5 @@
 # Mathrax
 
-![](https://raw.githubusercontent.com/x-sheep/puzzles-unreleased/master/docs/img/mathrax.png)
-
 You have a square grid; each square may contain a digit from 1 to the size of the grid, and some squares have clues overlapping them. Your objective is to fill the grid with numbers so that no number appears more than once in a row or column, and all clues are satisfied.
 
 The following clues can appear:
@@ -11,7 +9,7 @@ The following clues can appear:
 * An '=' indicates that diagonally adjacent digits are equal.
 * A number indicates the result of the given operation when applied to each pair of diagonally adjacent digits. (topleft * bottomright) = (topright * bottomleft)
 
-The inventor of Mathrax is unknown. 
+The inventor of Mathrax is unknown.
 
 More information: https://www.janko.at/Raetsel/Mathrax/index.htm
 
@@ -21,9 +19,9 @@ Mathrax uses the same control scheme as Solo.
 
 Left-click to select a cell, then type a number on your keyboard to enter it. Press Backspace or Space to clear a cell.
 
-Right-click a cell, then type a number to add a pencil mark. Pencil marks can be used for any purpose.
+Right-click a cell, then type a number to add a pencil mark. Pencil marks can be used for any purpose. A preference makes right-click switch on a *sticky* pencil mode instead, which stays on until you right-click again.
 
-You can also use the arrow keys to move the selected cell around. Press Enter to toggle between entering number and entering pencil marks.
+You can also use the arrow keys to move the selected cell around. Press Enter to toggle between entering numbers and entering pencil marks.
 
 Press the 'M' key to fill every empty cell with all possible pencil marks.
 
@@ -50,8 +48,3 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dd>Allows Even clues and Odd clues to appear.</dd>
 </dl>
 
-## Status
-
-This game is fully implemented and playable.
-
-I haven't properly tested the Recursive difficulty level. It's possible that it works exactly the same as Hard mode.

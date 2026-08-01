@@ -1,7 +1,5 @@
 # Clusters
 
-![](https://raw.githubusercontent.com/x-sheep/puzzles-unreleased/master/docs/img/clusters.png)
-
 You're given a grid, with several dots inside colored squares. Your objective is to fill every empty space with one of two colors while following these rules:
 
 1. Tiles which are adjacent to 1 other tile of the same color are denoted with a dot. All of these tiles are given.
@@ -24,6 +22,3 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dd>Size of the grid in squares.</dd>
 </dl>
 
-## Status
-
-This puzzle is playable. There are currently no difficulty settings.

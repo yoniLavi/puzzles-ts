@@ -35,7 +35,11 @@ import {
   COL_SHIP_ERROR,
   COL_SHIP_GUESS,
   COL_WATER,
+  computeSize,
   FLASH_TIME,
+  fleetLayout,
+  fleetRowLimit,
+  fleetRows,
   PREFERRED_TILE_SIZE,
 } from "./render.ts";
 import { findBoatsMistakes, solveBoats, solveToGrid } from "./solver.ts";
@@ -803,5 +807,71 @@ describe("boats textFormat", () => {
 
     const big = params({ w: 10, h: 12, fleet: 5, fleetData: defaultFleet(5) });
     expect(textFormat(generated(big, "boats-text-2"))).toBeUndefined();
+  });
+});
+
+// --- fleet display layout --------------------------------------------------
+
+describe("boats fleet display layout", () => {
+  /** No boat may be drawn past the right edge of the canvas — the guarantee
+   * behind upstream's `TODO ui: Certain custom fleets don't fit in the UI`. */
+  const fitsOnItsRow = (p: BoatsParams): boolean =>
+    [...fleetLayout(p)].every((s) => s.fx + s.width <= fleetRowLimit(p));
+
+  it("keeps every shipped preset's fleet inside the canvas", () => {
+    for (let i = 0; i < PRESETS.length; i++) {
+      const p = presetParams(i);
+      expect(fitsOnItsRow(p), encodeParams(p, true)).toBe(true);
+    }
+  });
+
+  it("wraps a batch wider than a whole row rather than overflowing it", () => {
+    // Nine size-1 boats are 9.0 tile units wide; a 5-wide board's rows hold 7.
+    const p = params({ w: 5, h: 5, fleet: 3, fleetData: [9, 0, 0] });
+    expect(fitsOnItsRow(p)).toBe(true);
+    expect(fleetRows(p)).toBe(2);
+    // …and the taller display is reflected in the canvas the midend asks for.
+    const one = computeSize(params({ w: 5, h: 5, fleet: 3, fleetData: [3, 0, 0] }), 32);
+    expect(computeSize(p, 32).h).toBeGreaterThan(one.h);
+  });
+
+  it("lays out exactly as upstream wherever upstream fitted", () => {
+    // Upstream's algorithm verbatim: break only between whole batches, and let
+    // an over-wide batch run off the edge. Wherever it stayed inside the row
+    // limit its layout is the contract, so the repair must reproduce it.
+    const upstream = (p: BoatsParams): { fx: number; row: number; width: number }[] => {
+      const out: { fx: number; row: number; width: number }[] = [];
+      let fx = 0.5;
+      let row = 0;
+      for (let size = 0; size < p.fleet; size++) {
+        const width = (size + 1) * 0.75 + 0.25;
+        if (fx + p.fleetData[size] * width > p.w + 2 && fx !== 0.5) {
+          fx = 0.5;
+          row++;
+        }
+        for (let copy = 0; copy < p.fleetData[size]; copy++) {
+          out.push({ fx, row, width });
+          fx += width;
+        }
+      }
+      return out;
+    };
+
+    const cases = [
+      ...PRESETS.map((_, i) => presetParams(i)),
+      params({ w: 8, h: 8, fleet: 3, fleetData: [4, 2, 1] }),
+      params({ w: 6, h: 6, fleet: 4, fleetData: [3, 2, 1, 1] }),
+      params({ w: 12, h: 12, fleet: 5, fleetData: [5, 4, 3, 2, 1] }),
+    ];
+    let compared = 0;
+    for (const p of cases) {
+      const want = upstream(p);
+      if (!want.every((s) => s.fx + s.width <= p.w + 2)) continue;
+      compared++;
+      const got = [...fleetLayout(p)].map(({ fx, row, width }) => ({ fx, row, width }));
+      expect(got, encodeParams(p, true)).toEqual(want);
+    }
+    // The skip guard must not be silently eating the whole table.
+    expect(compared).toBeGreaterThan(5);
   });
 });
