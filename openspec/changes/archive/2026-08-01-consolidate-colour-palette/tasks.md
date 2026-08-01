@@ -170,7 +170,15 @@
       Snapshots: 44 files re-baselined, and the review is mechanical rather than by
       eye — **every changed line in every one is an `rgb`/`fillRgb`/`outlineRgb`
       value**, so not one op was added, removed or moved.
-- [ ] 5.6 Owner acceptance on the **appearance**, then archive.
+- [x] 5.6 Owner acceptance on the **appearance**, then archive.
+      → **Accepted 2026-08-01.** Acceptance found four defects a green suite could
+      not, three of them one mechanism (design F10, F11): *"brightest" is not a
+      colour, it is a scheme-relative idea* — anything defined as an extreme of the
+      board flips to the other extreme when the dark pass inverts it. Dark yellow
+      became a cream, four dark washes sank below the cells they highlighted, and
+      Crossing's selected square came out pure black. The fourth (F11) was
+      Crossing using two steps of each hue where the hue *is* the information.
+      All fixed and re-verified in both schemes; the bounds are tests now.
 
 ## Out of scope
 
