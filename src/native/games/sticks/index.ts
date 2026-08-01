@@ -21,7 +21,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import { parseConfigInt } from "../../engine/params.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_LEFT,
   CURSOR_RIGHT,
@@ -382,24 +382,7 @@ export const sticksGame: Game<
     symmetry: p.symm,
   }),
   paramConfig: [
-    {
-      kw: "width",
-      name: "Width",
-      type: "string",
-      get: (p) => String(p.w),
-      set: (p, v) => {
-        p.w = parseConfigInt(v);
-      },
-    },
-    {
-      kw: "height",
-      name: "Height",
-      type: "string",
-      get: (p) => String(p.h),
-      set: (p, v) => {
-        p.h = parseConfigInt(v);
-      },
-    },
+    ...dimensionParamConfig<SticksParams>(),
     {
       kw: "percentage-of-black-squares",
       name: "%age of black squares",

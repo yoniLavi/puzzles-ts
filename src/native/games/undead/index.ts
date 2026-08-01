@@ -33,6 +33,10 @@ import {
 import { clearKey } from "../../engine/key-labels.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
+  pencilKeepHighlightPref,
+  stickyPencilPref,
+} from "../../engine/pencil-prefs.ts";
+import {
   CURSOR_DOWN,
   CURSOR_LEFT,
   CURSOR_RIGHT,
@@ -931,24 +935,8 @@ export const undeadGame: Game<
   textFormat,
 
   prefs: [
-    {
-      kw: "sticky-pencil-mode",
-      name: "Right-click toggles a sticky pencil mode (stays on until right-clicked again)",
-      type: "boolean",
-      get: (ui) => ui.pencilSticky,
-      set: (ui, v) => {
-        ui.pencilSticky = v;
-      },
-    },
-    {
-      kw: "pencil-keep-highlight",
-      name: "Keep mouse highlight after changing a pencil mark",
-      type: "boolean",
-      get: (ui) => ui.pencilKeepHighlight,
-      set: (ui, v) => {
-        ui.pencilKeepHighlight = v;
-      },
-    },
+    stickyPencilPref<UndeadUi>(),
+    pencilKeepHighlightPref<UndeadUi>(),
     {
       kw: "monsters",
       name: "Monster representation",

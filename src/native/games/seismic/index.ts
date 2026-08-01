@@ -30,7 +30,8 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
-import { parseConfigInt } from "../../engine/params.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
+import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -362,24 +363,7 @@ export const seismicGame: Game<
   validateParams,
 
   paramConfig: [
-    {
-      kw: "width",
-      name: "Width",
-      type: "string",
-      get: (p) => String(p.w),
-      set: (p, v) => {
-        p.w = parseConfigInt(v);
-      },
-    },
-    {
-      kw: "height",
-      name: "Height",
-      type: "string",
-      get: (p) => String(p.h),
-      set: (p, v) => {
-        p.h = parseConfigInt(v);
-      },
-    },
+    ...dimensionParamConfig<SeismicParams>(),
     {
       kw: "difficulty",
       name: "Difficulty",
@@ -424,17 +408,7 @@ export const seismicGame: Game<
   requestKeys: (p): KeyLabel[] => digitKeys(p.mode === MODE_TECTONIC ? 5 : 9),
   textFormat,
 
-  prefs: [
-    {
-      kw: "sticky-pencil-mode",
-      name: "Right-click toggles a sticky pencil mode (stays on until right-clicked again)",
-      type: "boolean",
-      get: (ui) => ui.pencilSticky,
-      set: (ui, v) => {
-        ui.pencilSticky = v;
-      },
-    },
-  ],
+  prefs: [stickyPencilPref<SeismicUi>()],
 
   colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,

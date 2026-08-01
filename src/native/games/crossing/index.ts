@@ -36,6 +36,7 @@ import {
 } from "../../engine/game.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
+import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
 import {
   CURSOR_DOWN,
   CURSOR_SELECT,
@@ -670,15 +671,7 @@ export const crossingGame: Game<
         ui.autoAdvance = v;
       },
     },
-    {
-      kw: "sticky-pencil-mode",
-      name: "Right-click toggles a sticky pencil mode (stays on until right-clicked again)",
-      type: "boolean",
-      get: (ui) => ui.pencilSticky,
-      set: (ui, v) => {
-        ui.pencilSticky = v;
-      },
-    },
+    stickyPencilPref<CrossingUi>(),
   ],
 
   colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),

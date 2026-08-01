@@ -11,7 +11,7 @@
 
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
 import { type GridType, gridValidateParams } from "../../engine/grid.ts";
-import { parseConfigInt, parseLeadingInt } from "../../engine/params.ts";
+import { dimensionParamConfig, parseLeadingInt } from "../../engine/params.ts";
 
 /**
  * Loopy's grid types, in **Loopy's own ordering** — which is deliberately not
@@ -163,24 +163,7 @@ export function validateParams(p: LoopyParams, _full: boolean): string | null {
 }
 
 export const paramConfig: ParamConfigItem<LoopyParams>[] = [
-  {
-    kw: "width",
-    name: "Width",
-    type: "string",
-    get: (p) => String(p.w),
-    set: (p, v) => {
-      p.w = parseConfigInt(v);
-    },
-  },
-  {
-    kw: "height",
-    name: "Height",
-    type: "string",
-    get: (p) => String(p.h),
-    set: (p, v) => {
-      p.h = parseConfigInt(v);
-    },
-  },
+  ...dimensionParamConfig<LoopyParams>(),
   {
     kw: "type",
     name: "Grid type",

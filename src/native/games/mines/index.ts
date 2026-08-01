@@ -40,7 +40,7 @@ import {
 } from "../../engine/index.ts";
 import { ERROR, ERROR_WASH, GRID_MID, INK, PAPER } from "../../engine/palette.ts";
 import { minesLowlight, minesUnclearedFace } from "../../engine/palette-games.ts";
-import { parseConfigInt } from "../../engine/params.ts";
+import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -270,24 +270,7 @@ export const minesGame: Game<
     };
   },
   paramConfig: [
-    {
-      kw: "width",
-      name: "Width",
-      type: "string",
-      get: (p) => String(p.w),
-      set: (p, v) => {
-        p.w = parseConfigInt(v);
-      },
-    },
-    {
-      kw: "height",
-      name: "Height",
-      type: "string",
-      get: (p) => String(p.h),
-      set: (p, v) => {
-        p.h = parseConfigInt(v);
-      },
-    },
+    ...dimensionParamConfig<MinesParams>(),
     {
       kw: "mines",
       name: "Mines",

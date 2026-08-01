@@ -27,6 +27,7 @@ import {
 } from "../../engine/game.ts";
 import { clearKey } from "../../engine/key-labels.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
+import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -450,17 +451,7 @@ export const abcdGame: Game<
   requestKeys,
   textFormat,
 
-  prefs: [
-    {
-      kw: "sticky-pencil-mode",
-      name: "Right-click toggles a sticky pencil mode (stays on until right-clicked again)",
-      type: "boolean",
-      get: (ui) => ui.pencilSticky,
-      set: (ui, v) => {
-        ui.pencilSticky = v;
-      },
-    },
-  ],
+  prefs: [stickyPencilPref<AbcdUi>()],
 
   colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,

@@ -10,6 +10,7 @@ import {
   ZERO,
 } from "./constants.ts";
 import { newDesc } from "./generator.ts";
+import { unrulyGame } from "./index.ts";
 import {
   findMistakes,
   newScratch,
@@ -42,6 +43,27 @@ describe("params", () => {
     const enc = encodeParams(p, true);
     expect(enc).toBe("10x8udn");
     expect(decodeParams(enc)).toEqual(p);
+  });
+
+  it("drives w2/h2 from the shared Width/Height dialog items", () => {
+    // Unruly maps `dimensionParamConfig` onto `w2`/`h2` rather than `w`/`h`.
+    // The engine's get∘set round-trip guard cannot see a *swapped* mapping —
+    // both accessors would name the same wrong field, so the round trip stays
+    // the identity — so the fields are named here, where the fact lives.
+    const cfg = unrulyGame.paramConfig ?? [];
+    const width = cfg.find((i) => i.kw === "width");
+    const height = cfg.find((i) => i.kw === "height");
+    if (width?.type !== "string" || height?.type !== "string")
+      throw new Error("Unruly must expose Width and Height as text fields");
+
+    const p = params(8, 8, DIFF_EASY);
+    width.set(p, "14");
+    height.set(p, "10");
+    expect(p).toEqual(params(14, 10, DIFF_EASY));
+    expect(width.get(p)).toBe("14");
+    expect(height.get(p)).toBe("10");
+    // The mapping is load-bearing all the way to the game id.
+    expect(encodeParams(p, true)).toBe("14x10de");
   });
 
   it("decodes a bare square size", () => {

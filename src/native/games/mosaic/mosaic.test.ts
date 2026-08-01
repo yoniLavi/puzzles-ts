@@ -53,6 +53,27 @@ describe("Mosaic params", () => {
     );
   });
 
+  it("drives width/height from the shared Width/Height dialog items", () => {
+    // Mosaic maps `dimensionParamConfig` onto `width`/`height` rather than
+    // `w`/`h`. The engine's get∘set round-trip guard cannot see a *swapped*
+    // mapping — both accessors would name the same wrong field, so the round
+    // trip stays the identity — so the fields are named here.
+    const cfg = mosaicGame.paramConfig ?? [];
+    const width = cfg.find((i) => i.kw === "width");
+    const height = cfg.find((i) => i.kw === "height");
+    if (width?.type !== "string" || height?.type !== "string")
+      throw new Error("Mosaic must expose Width and Height as text fields");
+
+    const p = { width: 5, height: 5, aggressive: true };
+    width.set(p, "12");
+    height.set(p, "9");
+    expect(p).toEqual({ width: 12, height: 9, aggressive: true });
+    expect(width.get(p)).toBe("12");
+    expect(height.get(p)).toBe("9");
+    // The mapping is load-bearing all the way to the game id.
+    expect(encodeParams(p, true)).toBe("12x9");
+  });
+
   it("decodes round-trips and square shorthand", () => {
     expect(decodeParams("10x8")).toEqual({ width: 10, height: 8, aggressive: true });
     expect(decodeParams("50x50h0")).toEqual({
