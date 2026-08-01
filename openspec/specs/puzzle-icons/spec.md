@@ -7,10 +7,9 @@ TBD - created by archiving change drop-icon-generation. Update Purpose after arc
 
 The repository SHALL maintain two committed PNG files per cataloged
 puzzle in `src/assets/icons/`: `<puzzleId>-64d8.png` (64×64) and
-`<puzzleId>-128d8.png` (128×128). For every `puzzleId` in
-`src/assets/puzzles/catalog.json`'s `puzzleIds` array, both files MUST
-be present and tracked in git — `src/assets/icons/` is a *committed
-snapshot*, not a generated directory.
+`<puzzleId>-128d8.png` (128×128). For every `puzzleId` in the catalog
+(`src/puzzle/catalog-data.ts`), both files MUST be present and tracked in git —
+`src/assets/icons/` is a *committed snapshot*, not a generated directory.
 
 The two files SHALL be the only icon-asset shapes the home-screen
 catalog reads. Specifically, `src/components/catalog-card.ts` consumes
@@ -25,15 +24,14 @@ stability; new icons MAY be PNG24 without changing the suffix.
 #### Scenario: Catalog completeness is asserted in tests
 
 - **WHEN** `npm run test:run` runs `src/asset-integrity.test.ts`
-- **THEN** every `puzzleId` in `catalog.json` is asserted to have
+- **THEN** every `puzzleId` in the catalog is asserted to have
   `<puzzleId>-64d8.png` and `<puzzleId>-128d8.png` present in
   `src/assets/icons/`
 - **AND** a test failure names the missing file path
 
 #### Scenario: A new puzzle is added to the catalog
 
-- **WHEN** a contributor adds a new puzzle to `catalog.json` (e.g. by
-  promoting one from `puzzles/unreleased/`)
+- **WHEN** a contributor adds a new puzzle to `src/puzzle/catalog-data.ts`
 - **AND** does not provide the matching `<puzzleId>-{64d8,128d8}.png`
   files in `src/assets/icons/`
 - **THEN** `npm run test:run` fails on the catalog-completeness test
@@ -44,8 +42,8 @@ stability; new icons MAY be PNG24 without changing the suffix.
 
 - **WHEN** a contributor inspects `.gitignore`
 - **THEN** `src/assets/icons/` is NOT ignored
-- **AND** the only generated-asset directory under `src/assets/`
-  remains `src/assets/puzzles/` (output of `npm run build:wasm`)
+- **AND** the only generated-asset directory under `src/assets/` is
+  `src/assets/manual/` (output of `npm run build:assets`)
 
 ### Requirement: Adding a new puzzle's icons is a manual screenshot workflow
 
@@ -57,38 +55,22 @@ for this work.
 
 The preferred procedure SHALL be:
 
-1. Add the new puzzle to the WASM build (its source under `puzzles/`
-   and its catalog entry); run `npm run build:wasm` and `npm run dev`.
+1. Add the new puzzle — register it in `src/native/games/index.ts` and add its
+   catalog entry to `src/puzzle/catalog-data.ts` — then run `npm run dev`.
+   (This step used to require building the puzzle's C into wasm; there is no
+   such build any more.)
 2. Open the puzzle in the dev server with the capture param
    (`http://localhost:5173/<puzzleId>?screenshot`); accept the default
    preset; re-roll with **New game** until the board is representative.
 3. Activate **Capture icons**; the two correctly-named, correctly-sized
-   PNGs (`<puzzleId>-64d8.png`, `<puzzleId>-128d8.png`) download
-   directly.
-4. Move the two files into `src/assets/icons/`.
-5. Run `npm run test:run` to confirm the asset-integrity test passes.
-6. Commit the new PNGs alongside the new puzzle's other changes.
+   PNGs (`<puzzleId>-64d8.png`, `<puzzleId>-128d8.png`) download.
 
-A manual fallback (no capture param available) remains valid: take a
-DevTools "Capture node screenshot" of the canvas and resize it to 64×64
-and 128×128 in any image tool. PNG24 is acceptable; the existing icons
-are PNG-with-palette but new icons need not match.
+#### Scenario: A new puzzle's icons are produced without a build toolchain
 
-#### Scenario: Contributor produces icons without brew GTK installed
-
-- **WHEN** a contributor follows the procedure above on a machine that
-  does NOT have `gtk+3`, `pkgconf`, `imagemagick`, or `oxipng` installed
-- **THEN** the procedure completes successfully end-to-end
-- **AND** the resulting PNGs satisfy `src/asset-integrity.test.ts`
-
-#### Scenario: PR review covers visual quality
-
-- **WHEN** a PR adds new icon files
-- **THEN** the reviewer SHALL inspect the rendered home-screen card
-  visually (via `npm run dev` or the staging deploy) before approving,
-  to ensure the icon is visually consistent with the existing 53 icons
-- **AND** any visual-style drift (DPI mismatch, background mismatch,
-  off-center crop) SHALL be addressed before merge
+- **WHEN** a contributor adds a puzzle and needs its icons
+- **THEN** registering the game and adding its catalog entry is enough to open
+  it in the dev server
+- **AND** no wasm or C toolchain step is involved
 
 ### Requirement: Dev-only screenshot capture mode
 
