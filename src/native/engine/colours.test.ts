@@ -178,7 +178,8 @@ describe("the named colours", () => {
       const steps = named.filter(
         ([n]) => n === base || n === `${base}_WASH` || n === `${base}_BOLD`,
       );
-      expect(steps.length, base).toBe(3);
+      // Orange has no wash: nothing needs one (see DESIGN).
+      expect(steps.length, base).toBeGreaterThanOrEqual(2);
       for (const resolve of [light, dark]) {
         expect(worstPair(steps, resolve).d, base).toBeGreaterThan(0.1);
       }
@@ -251,20 +252,14 @@ describe("the named colours", () => {
     // amber came out both lighter and more colourful. Perceived colourfulness is
     // what the eye compares, so it is what has to be equal — and that is a
     // property of the palette, not something a game can be trusted to maintain.
-    // Both steps: the wash pair colours a run in progress, the bold pair colours
-    // one that is fully placed, and the second pair carries the same obligation
-    // as the first. (Missed on the first cut — the wash pair was tied and the
-    // bold pair was not, and Crossing's own equal-strength test caught it.)
-    for (const [a, b] of [
-      [colours.BLUE_WASH, colours.ORANGE_WASH],
-      [colours.BLUE_BOLD, colours.ORANGE_BOLD],
-    ]) {
-      for (const resolve of [light, dark]) {
-        const [bl, bc] = resolve(a);
-        const [ol, oc] = resolve(b);
-        expect(ol).toBeCloseTo(bl, 3);
-        expect(oc).toBeCloseTo(bc, 3);
-      }
+    // The bold pair, which is what Crossing uses for both halves of the job —
+    // the board's run highlight and the clue list's ink are one colour per
+    // direction, not two shades of each.
+    for (const resolve of [light, dark]) {
+      const [bl, bc] = resolve(colours.BLUE_BOLD);
+      const [ol, oc] = resolve(colours.ORANGE_BOLD);
+      expect(ol).toBeCloseTo(bl, 3);
+      expect(oc).toBeCloseTo(bc, 3);
     }
   });
 

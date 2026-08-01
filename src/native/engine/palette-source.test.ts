@@ -30,7 +30,18 @@
  * intended shape, not an exception to it.
  */
 import { describe, expect, it } from "vitest";
+import * as colours from "./colours.ts";
 import * as gameTokens from "./palette-games.ts";
+
+/** The meanings layer, as text — a named colour counts as used when a meaning
+ * is defined over it, not only when a game imports it directly. */
+const paletteSource: string = Object.values(
+  import.meta.glob<string>("./palette.ts", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }),
+)[0];
 
 /** The per-game half of the table, as text — needed to see that a set's members
  * are used by the aggregate the games import. */
@@ -210,4 +221,51 @@ describe("a per-game token belongs to the game it names", () => {
     );
     expect(dead).toEqual([]);
   });
+});
+
+/**
+ * A **named colour with no consumer** is a colour decision nobody can see.
+ *
+ * The same rule the per-game half has had all along, now over `colours.ts`,
+ * because the consolidation made it reachable: Crossing's down-run was the only
+ * consumer of `ORANGE_WASH`, and when it moved to the bold step the wash sat in
+ * the table declaring a shade of orange that nothing on any board could show.
+ * That is exactly the state the palette is small in order to avoid.
+ *
+ * "Used" spans all three ways a colour reaches a board: a game imports it, a
+ * meaning in `palette.ts` is defined over it, or one of the sets in `colours.ts`
+ * itself gathers it up (`RED` is in `TEN`, which is what Flood imports).
+ */
+it("declares no named colour nothing can show", () => {
+  const imported = (src: string): string[] => {
+    const m = /import\s*\{([^}]*)\}\s*from\s*"[^"]*colours\.ts"/.exec(src);
+    return m
+      ? m[1]
+          .split(",")
+          .map((n) => n.trim())
+          .filter(Boolean)
+      : [];
+  };
+  const byGames = new Set(gameSources().flatMap(({ src }) => imported(src)));
+  // The meanings layer and the board-relative layer both build on named colours
+  // (`ERROR` is `RED`; Signpost's region ramp is built from `EIGHT_FILLS`), and
+  // a colour reaching a board through either of them is used.
+  const byMeanings = new Set([...imported(paletteSource), ...imported(tableSource)]);
+  const table = code(
+    Object.values(
+      import.meta.glob<string>("./colours.ts", {
+        query: "?raw",
+        import: "default",
+        eager: true,
+      }),
+    )[0],
+  );
+  const dead = Object.keys(colours).filter(
+    (n) =>
+      !byGames.has(n) &&
+      !byMeanings.has(n) &&
+      // Mentioned once is its own declaration; twice means a set gathers it.
+      (table.match(new RegExp(`\\b${n}\\b`, "g")) ?? []).length < 2,
+  );
+  expect(dead).toEqual([]);
 });
