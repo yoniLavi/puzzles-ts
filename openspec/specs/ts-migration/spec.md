@@ -173,11 +173,20 @@ manual — by generating them without the C toolchain. The game catalog's metada
 SHALL move to a committed TypeScript source, since it existed only in the CMake
 files being deleted.
 
-What remains under `puzzles/` after retirement SHALL be exactly: the MIT
-`LICENCE` notices, and the upstream-authored help sources the app serves
-(`puzzles.but` and `puzzles/html/**`). **No C source SHALL remain there**, and no
-build system SHALL remain there. Relocating the help sources out of `puzzles/` is
-a separate change, not a condition of retiring the engine.
+`puzzles/` SHALL NOT survive the migration. Retirement leaves it holding only
+the MIT `LICENCE` notices and the upstream-authored help sources the app serves;
+each of those then goes where its role says it belongs, and the directory is
+deleted. **No C source and no build system SHALL remain in the repository's
+working tree** at any point after retirement.
+
+- The served help sources — the halibut manual source and the per-puzzle
+  overview fragments — SHALL live under `help/`, because a page the app serves
+  is an input to this project's build rather than upstream reference material.
+  Their relocation SHALL change no URL and no word of their content.
+- The upstream MIT notices SHALL live in `licences/`, byte-identical to what
+  each upstream project ships. What they cover after the migration is the whole
+  of `src/native/` and the served help sources, so they are not a subdirectory's
+  concern.
 
 A C source kept as a **reading reference** for scaffolded future work SHALL live
 with the change that reads it (`openspec/changes/<change>/reference/`), not in
@@ -187,11 +196,13 @@ reference is archived alongside the work that consumed it, and that a reference
 nobody ends up needing is deleted with its change rather than accumulating in a
 tree whose remaining purpose is unrelated.
 
-#### Scenario: No C remains under `puzzles/` after retirement
+#### Scenario: `puzzles/` does not survive the migration
 
-- **WHEN** the repository is inspected after retirement
-- **THEN** `puzzles/` contains no C source and no build system
-- **AND** what remains is the licences and the served help sources
+- **WHEN** the repository is inspected after retirement and rehoming
+- **THEN** `puzzles/` does not exist
+- **AND** the served help sources are under `help/` and the MIT notices under
+  `licences/`
+- **AND** no C source and no build system remain in the working tree
 
 #### Scenario: A reading reference is kept with its change
 
