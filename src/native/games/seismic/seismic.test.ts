@@ -55,7 +55,8 @@ import {
   FM_ERRORDIST,
   FM_ERRORDUP,
   FM_FIXED,
-  MAX_CELLS,
+  MAX_CELLS_SEISMIC,
+  MAX_CELLS_TECTONIC,
   MODE_NAMES,
   MODE_SEISMIC,
   MODE_TECTONIC,
@@ -171,27 +172,35 @@ describe("seismic params", () => {
     ).toMatch(/at least 4/);
   });
 
-  it("bounds the board area by the worst case, not the median", () => {
-    // Every size up to 100 cells is *reachable* (an exhaustive sweep of all 392
-    // accepted combinations had zero failures), but above 64 the generation tail
-    // runs to 15-18 s — the very defect this generator was replaced to remove.
-    // See MAX_CELLS's doc comment for the measurements.
-    expect(MAX_CELLS).toBe(8 * 8);
+  it("bounds each mode by what limits that mode", () => {
+    // The two bounds answer different questions — see `MAX_CELLS_SEISMIC`'s doc
+    // comment. Tectonic's is reachability (every size to 100 cells generates;
+    // 10×10 takes seconds, which the owner accepts for a size the player typed).
+    // Seismic's is possibility: 10×10 does not generate at all, and takes ~16 s
+    // per attempt to say so.
+    expect(MAX_CELLS_TECTONIC).toBe(10 * 10);
+    expect(MAX_CELLS_SEISMIC).toBe(8 * 8);
 
-    // The largest offered board is accepted...
+    // 10×10 — the size upstream's TODO names — is available in Tectonic...
     expect(
-      validateParams({ w: 8, h: 8, diff: DIFF_HARD, mode: MODE_TECTONIC }, true),
+      validateParams({ w: 10, h: 10, diff: DIFF_EASY, mode: MODE_TECTONIC }, true),
     ).toBeNull();
-    // ...and 10×10 — the size upstream's TODO names — is refused with a reason
-    // in BOTH modes, rather than left to generate for twenty seconds.
-    for (const mode of [MODE_SEISMIC, MODE_TECTONIC]) {
-      expect(validateParams({ w: 10, h: 10, diff: DIFF_EASY, mode }, true)).toMatch(
-        /at most 64/,
-      );
-    }
+    // ...and refused in Seismic, with a reason naming the mode, rather than left
+    // to churn for sixteen seconds and throw.
+    expect(
+      validateParams({ w: 10, h: 10, diff: DIFF_EASY, mode: MODE_SEISMIC }, true),
+    ).toMatch(/at most 64 in Seismic mode/);
+    // Past Tectonic's own bound it is refused too.
+    expect(
+      validateParams({ w: 11, h: 11, diff: DIFF_EASY, mode: MODE_TECTONIC }, true),
+    ).toMatch(/at most 100 in Tectonic mode/);
 
-    // Every preset stays inside the bound.
-    for (const p of PRESETS) expect(validateParams(p, true)).toBeNull();
+    // Every preset stays inside its mode's bound — and presets stop well short
+    // of it, because a preset is a wait nobody chose (see the doc comment).
+    for (const p of PRESETS) {
+      expect(validateParams(p, true)).toBeNull();
+      expect(p.w * p.h).toBeLessThanOrEqual(8 * 8);
+    }
   });
 
   it("names presets the way upstream's menu does", () => {
