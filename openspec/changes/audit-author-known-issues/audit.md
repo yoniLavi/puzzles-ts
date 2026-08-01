@@ -217,6 +217,35 @@ each file's header.
 | **slide** | TODO: improve the generator; and three graphics complaints (wishy-washy colours, "the cattle grid effect is still disgusting", an excessive next-piece highlight) | Generator: **declined** — `add-slide-ts-port` found it "mostly sensible already" as the author himself notes, and the move-limit slowness is inherent. Graphics: the target green was **decided by the owner** on 2026-07-30 (keep it); the other two → **`refine-slide-appearance`**. |
 | **sokoban** | "Random generation is too simplistic to be credible, but the rest of the gameplay works well enough to use it with hand-written level descriptions." | **Declined — nofix** (owner, 2026-08-01). `add-sokoban-level-packs` was filed (`add-sokoban-ts-port` had recorded curated levels as "a compelling, separate, owner-greenlit follow-up") and then **withdrawn unimplemented**: this collection stays entirely procedurally generated, and a hand-curated pack for one game would make Sokoban the exception to the property that defines the whole thing. The procedural alternative was examined too and is not cheap — see §3b. Archived at `2026-08-01-add-sokoban-level-packs` with its spec delta deliberately unapplied. |
 
+## 3c. The oracle was released after this sweep — what that reopens
+
+**Owner, 2026-08-01, after the table below was written:** *"I'm actually happy to
+release the constraint of having the C implementation as our Oracle — it was only
+a temporary one for the porting, but now that we've finished porting, I'm very
+happy to diverge in favour of a better play experience, wherever it's worth it."*
+
+That matters here because **"it would change every board and forfeit the
+byte-match oracle" is a reason this table gives for several declines**, and it is
+no longer a reason. Re-triaged, separating the verdicts that rested on the oracle
+from the ones that stand on their own:
+
+| Item | Still declined? |
+|---|---|
+| **bricks** — "Tricky may generate a Normal puzzle" | **No — reopened, and it is the strongest of these.** The decline called it "intended behaviour", which was true of upstream and is not a defence of shipping it: a player picks Tricky and gets Normal. Precedent exists in-repo — `spokes` spec, "grades its difficulty tiers honestly", which corrected exactly this shape *and kept the byte-match* by retaining upstream's original check for the differential alone. |
+| **mathrax** — same shape, undocumented | **No — reopened.** Its generator "gates only at `maxdiff`… does not reject a puzzle that turns out solvable at a *lower* difficulty than requested". Same defect as bricks; the author never wrote it down. |
+| **ascent, salad** — same shape, unverified | **Open question.** Neither generator shows a lower-tier rejection; a sweep should confirm before assuming. Boats, Rome, Seismic, Towers, Galaxies, Undead, Keen and Tracks all *do* grade honestly, so the gap is a minority, not the norm. |
+| **salad (a)** — repeats-aware Latin cube | **No — reopened**, and now the largest of them. It was declined as "a `latin.ts` framework project… would change every Salad board and throw away the byte-match oracle". The second half is void; the first half is still a real size estimate. Its payoff is the author's own: stronger solver techniques, hence better Number Ball puzzles (his second complaint). |
+| **clusters, sticks, subsets** — no difficulty tiers | **No — reopened.** Declined partly on "changes every board, forfeits the differential". What remains is honest scope: each needs new solver rungs. Subsets additionally has upstream's own disabled deduction (`// TODO repair this`) sitting there commented out. |
+| **boats** — "solver cannot handle harder Battleships" | **No — reopened.** Declined on the weaker-solver rule, whose "changes every board" half is now void. What survives is the judgement call: is a stronger top tier a better game here? |
+| **abcd** — diagonal-mode solver techniques | **Still declined**, but now on value rather than principle — a niche mode of one game. |
+| **crossing** — more difficulty levels | **Reopened, low priority.** Crossing already gained the most from its port. |
+| **seismic** — 10×10 (§3a) | **Unchanged.** The oracle was never the blocker; the fill is. But a CP/SAT feasibility check is now easier to justify, and §3a's reopening experiment is the same one. |
+| **sokoban** (§3b), **spokes** (varied layouts) | **Unchanged** — declined by owner decision and as a stated wish respectively, neither on oracle grounds. |
+
+**The technique that makes most of these cheaper than they look**: Spokes showed
+you can diverge *and* keep the differential, by leaving upstream's original code
+path reachable from the test alone. Reach for that before retiring a fixture set.
+
 ## 4. What the sweep is worth knowing for
 
 - **The two sources disagree about what matters, in both directions.** Crossing's
