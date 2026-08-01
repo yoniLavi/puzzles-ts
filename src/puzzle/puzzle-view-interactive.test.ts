@@ -80,6 +80,7 @@ describe("wantsKeyEvent copy handling", () => {
 /** The private pointer handlers, reached without going through Lit's render. */
 interface PointerHost {
   handlePointerDown(event: PointerEvent): Promise<void>;
+  handlePointerMove(event: PointerEvent): Promise<void>;
   handlePointerUp(event: PointerEvent): Promise<void>;
   handlePointerCancel(event: PointerEvent): Promise<void>;
 }
@@ -107,22 +108,24 @@ function pointerEvent(type: string, overrides: Record<string, unknown> = {}) {
  * test says so — that pending window is exactly where the release used to be
  * dropped. Returns the buttons the puzzle actually received, in order.
  */
-function makePointerView(consumed = true) {
+function makePointerView(consumed = true, canvasOrigin = { left: 0, top: 0 }) {
   const received: number[] = [];
+  const locations: { x: number; y: number }[] = [];
   let releasePress: (() => void) | undefined;
   const pressLanded = new Promise<void>((resolve) => {
     releasePress = resolve;
   });
 
   const puzzle = {
-    processMouse: vi.fn(async (_location: unknown, button: number) => {
+    processMouse: vi.fn(async (location: { x: number; y: number }, button: number) => {
       received.push(button);
+      locations.push(location);
       if (button === PuzzleButton.LEFT_BUTTON) await pressLanded;
       return consumed;
     }),
   };
   const canvas = {
-    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    getBoundingClientRect: () => canvasOrigin,
     setPointerCapture: vi.fn(),
     hasPointerCapture: () => false,
     releasePointerCapture: vi.fn(),
@@ -135,6 +138,7 @@ function makePointerView(consumed = true) {
   return {
     host: view as unknown as PointerHost,
     received,
+    locations,
     // Let the press reach `processMouse` and park there.
     inFlight: async () => {
       await Promise.resolve();
@@ -214,5 +218,38 @@ describe("press/release delivery", () => {
     await down;
 
     expect(received).toEqual([PuzzleButton.LEFT_BUTTON]);
+  });
+});
+
+describe("pointer coordinates", () => {
+  // Both terms of the canvas-relative subtraction are fractional in general: a
+  // pointer reports a sub-pixel position, and a centred canvas routinely lands
+  // on a half-pixel edge. Games draw with whole-pixel arithmetic that has no
+  // slack for the difference -- Map's drag blob saves a TILESIZE+3 blitter that
+  // is exactly flush with the circle it covers at even tile sizes, so a
+  // fractional origin (truncated by getImageData) left the circle's rightmost
+  // column and bottom row unerased: a trail of scratch marks along the drag.
+  // The C/WASM engine never saw a fraction, because Embind truncated to `int`.
+  const HALF_PIXEL_CANVAS = { left: 263.5, top: 109.5 };
+
+  it("delivers whole-pixel coordinates from a sub-pixel pointer", async () => {
+    const { host, locations, answerPress } = makePointerView(true, HALF_PIXEL_CANVAS);
+
+    answerPress(); // press round-trip completes immediately
+    await host.handlePointerDown(
+      pointerEvent("pointerdown", { clientX: 522.1099853, clientY: 312.4400024 }),
+    );
+    await host.handlePointerMove(
+      pointerEvent("pointermove", { clientX: 529.4799805, clientY: 315.5499878 }),
+    );
+
+    // Floor, not round: the second point's .98 must not carry to 266. Games
+    // locate a cell by `Math.floor(x / tileSize)`, and flooring first leaves
+    // that unchanged -- rounding would shift every cell boundary by half a
+    // pixel.
+    expect(locations).toEqual([
+      { x: 258, y: 202 },
+      { x: 265, y: 206 },
+    ]);
   });
 });

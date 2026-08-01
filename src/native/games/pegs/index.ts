@@ -843,14 +843,19 @@ function drawTile(
     v -= GRID_CURSOR;
   }
 
+  // Whole pixels: upstream's TILESIZE/2 &c. are integer divisions, and the
+  // drawing API is defined on integer coordinates. At an odd tile size a bare
+  // `/` leaves a half-pixel that anti-aliases the pegs and, worse, shifts the
+  // drag sprite's flush TILESIZE blitter off the tile it has to erase.
+  const half = Math.floor(ts / 2);
   if (v === GRID_HOLE) {
     const bg = cursor ? COL_HIGHLIGHT : COL_LOWLIGHT;
-    dr.drawCircle({ x: x + ts / 2, y: y + ts / 2 }, ts / 4, bg, bg);
+    dr.drawCircle({ x: x + half, y: y + half }, Math.floor(ts / 4), bg, bg);
   } else if (v === GRID_PEG) {
     const outerBg = cursor || jumping ? COL_CURSOR : COL_PEG;
     const innerBg = !cursor || jumping ? COL_PEG : COL_CURSOR;
-    dr.drawCircle({ x: x + ts / 2, y: y + ts / 2 }, ts / 3, outerBg, outerBg);
-    dr.drawCircle({ x: x + ts / 2, y: y + ts / 2 }, ts / 4, innerBg, innerBg);
+    dr.drawCircle({ x: x + half, y: y + half }, Math.floor(ts / 3), outerBg, outerBg);
+    dr.drawCircle({ x: x + half, y: y + half }, Math.floor(ts / 4), innerBg, innerBg);
   }
 
   dr.drawUpdate({ x, y, w: ts, h: ts });
@@ -1017,8 +1022,8 @@ function redraw(
       ds.dragBackground = dr.blitterNew({ w: ts, h: ts });
     }
     ds.dragging = true;
-    ds.dragX = ui.dx - ts / 2;
-    ds.dragY = ui.dy - ts / 2;
+    ds.dragX = ui.dx - Math.floor(ts / 2);
+    ds.dragY = ui.dy - Math.floor(ts / 2);
     dr.blitterSave(ds.dragBackground, { x: ds.dragX, y: ds.dragY });
     drawTile(dr, ds, ds.dragX, ds.dragY, GRID_PEG, -1);
   }

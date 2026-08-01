@@ -118,9 +118,21 @@ export class PuzzleViewInteractive extends PuzzleView {
       throw new Error("getPuzzleLocation called before render (?!)");
     }
     const canvasRect = this.canvas.getBoundingClientRect();
+    // Floor to whole pixels: the drawing API is defined on integer pixels, and
+    // games do whole-pixel arithmetic with no slack for a sub-pixel shift.
+    // Both terms are fractional in general -- pointers report sub-pixel
+    // positions, and a centred canvas routinely lands on a half-pixel edge.
+    // The C/WASM engine never saw that, because Embind truncates to `int` at
+    // the boundary; the TS engine takes `number` and let it through. Symptom:
+    // Map's drag blob, whose TILESIZE+3 blitter is exactly flush with the
+    // circle it saves at even tile sizes, so a fractional origin (truncated by
+    // getImageData) left the circle's last column and row unerased -- a trail
+    // of scratch marks across the board.
+    // Flooring leaves every hit test unchanged, since floor(floor(x)/ts) is
+    // floor(x/ts) -- games locate a cell by exactly that division.
     return {
-      x: event.clientX - canvasRect.left,
-      y: event.clientY - canvasRect.top,
+      x: Math.floor(event.clientX - canvasRect.left),
+      y: Math.floor(event.clientY - canvasRect.top),
     };
   }
 
