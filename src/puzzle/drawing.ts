@@ -256,6 +256,13 @@ export class Drawing implements DrawingImpl<Blitter> {
     blitter.imageData = undefined;
   }
 
+  /**
+   * Callers must pass a whole-pixel origin. `getImageData`/`putImageData` take
+   * integer arguments, so a fractional origin is truncated -- while whatever
+   * the game draws over it is *not*, and a blitter sized to fit its sprite
+   * exactly (upstream's are) then fails to erase the sprite's last column and
+   * row. Map's drag blob trailed scratch marks across the board that way.
+   */
   blitterSave(blitter: Blitter, { x, y }: Point): void {
     const { w, h } = blitter;
     if (w < 1 || h < 1) {
