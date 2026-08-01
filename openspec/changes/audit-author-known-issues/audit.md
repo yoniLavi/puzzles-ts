@@ -246,6 +246,21 @@ from the ones that stand on their own:
 you can diverge *and* keep the differential, by leaving upstream's original code
 path reachable from the test alone. Reach for that before retiring a fixture set.
 
+**Owner picked four to pursue, and scoping them found that two of the three
+"add difficulty tiers" items are not the same size at all** — the phrase
+"currently no difficulty settings" hides three different situations:
+
+| Change | What the game actually has |
+|---|---|
+| `grade-difficulty-tiers-honestly` (bricks, mathrax, + survey) | The tiers exist and simply do not bind. Smallest, and Spokes' template applies directly. |
+| `add-clusters-difficulty-tiers` | **Both deduction levels are already implemented** — `solverTry` and `solverRecurse` — and the generator just always gates at the deeper one. Nothing to invent; expose and grade. |
+| `add-subsets-difficulty-tiers` | One deduction is sitting **commented out in upstream** (`// TODO repair this`). Repairing it *is* the second rung, so the repair and the tiers are one piece of work, in that order. Board size cannot carry difficulty here — 4×4 is the only bijection. |
+| `add-sticks-difficulty-tiers` | Genuinely nothing in reserve: one technique, no second rung. Adding tiers means **inventing deductions**, so it opens with a gating spike and may legitimately end there. Sequenced after Clusters, which establishes the params/ID/differential pattern on the easy case. |
+| `add-latin-repeats-support` (salad) | Framework work in `latin.ts`, gated on the whole Latin family's differentials staying green — the author's own request, and his second complaint is downstream of it. |
+
+Boats' stronger top tier was offered and **not** taken; it stays declined, now on
+preference rather than on the oracle.
+
 ## 4. What the sweep is worth knowing for
 
 - **The two sources disagree about what matters, in both directions.** Crossing's
