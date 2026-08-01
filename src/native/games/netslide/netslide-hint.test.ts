@@ -8,6 +8,7 @@ import type { HintStep } from "../../engine/game.ts";
 import { Midend } from "../../engine/midend.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { seedBudget } from "../../engine/testing/slow.ts";
 import { randomNew } from "../../random/index.ts";
 import { type NetslideHint, parseAux } from "./hint.ts";
 import { netslideGame } from "./index.ts";
@@ -463,6 +464,15 @@ describe("netslide hint convergence", () => {
   // cannot fail to shorten the way home.
   const SEEDS = ["conv-a", "conv-b", "conv-c", "conv-d"];
 
+  /** The 3x3 boards are cheap, so they keep all four seeds. The 5x5 wrapping
+   * ones are where the exact endgame search runs, and they were **32 s** of the
+   * suite between them; the gate takes two of the four and `npm run test:slow`
+   * takes all four. Two independent boards still exercise the guarantee — a plan
+   * that wandered or looped would do so on essentially any board, which is how
+   * both of Netslide's original failures presented. */
+  const seedsFor = (params: NetslideParams): readonly string[] =>
+    params === HARD_5X5 ? SEEDS.slice(0, seedBudget(2, SEEDS.length)) : SEEDS;
+
   for (const withAux of [true, false]) {
     for (const params of [EASY_3X3, HARD_5X5]) {
       const label = `${params.w}x${params.h}${params.wrapping ? " wrapping" : ""}`;
@@ -471,7 +481,7 @@ describe("netslide hint convergence", () => {
         : "with no answer to work from";
 
       it(`${label}: following the hint finishes the board, ${aim}`, () => {
-        for (const seed of SEEDS) {
+        for (const seed of seedsFor(params)) {
           const { desc, aux } = netslideGame.newDesc(
             params,
             randomNew(`${label}-${withAux}-${seed}`),

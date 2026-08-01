@@ -91,6 +91,10 @@ describeDescDifferential<Fixture, SeismicParams>({
   extra,
 });
 
+// The 7x7s cost **272 s** — 23% of the entire suite — and every configuration
+// they carry (mode 0/1 × difficulty 0/1) is already asserted above by the 4x4,
+// 5x5 and 6x6 fixtures. What they add is board *size* over the same code paths,
+// which is worth having but not on every commit: `npm run test:slow`.
 describeDescDifferential<Fixture, SeismicParams>({
   title: "seismic differential, 7x7 (frozen C reference; slow by construction)",
   fixtures: data.fixtures.filter(isSlow),
@@ -98,4 +102,5 @@ describeDescDifferential<Fixture, SeismicParams>({
   params,
   newDesc,
   extra,
+  slow: true,
 });

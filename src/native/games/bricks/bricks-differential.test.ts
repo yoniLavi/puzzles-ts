@@ -27,13 +27,17 @@ interface Fixture {
 }
 const data = cReference as { fixtures: Fixture[] };
 
-describeDescDifferential<Fixture, BricksParams>({
-  title: "bricks differential (frozen C reference)",
-  fixtures: data.fixtures,
-  label: (f) => `${f.w}x${f.h}d${f.diff} seed=${f.seed}`,
-  params: (f) => ({ w: f.w, h: f.h, diff: f.diff }),
+/** The 12x8 Tricky fixture alone costs **100 s** of the suite's 1,178 — 87% of
+ * this file. Its difficulty is already carried by the 7x6, 8x5 and 10x8 Tricky
+ * fixtures, so it adds board size against the same generator/solver/codec path,
+ * not a configuration. It runs under `npm run test:slow`. */
+const isSlow = (f: Fixture) => f.w * f.h >= 96;
+
+const common = {
+  label: (f: Fixture) => `${f.w}x${f.h}d${f.diff} seed=${f.seed}`,
+  params: (f: Fixture): BricksParams => ({ w: f.w, h: f.h, diff: f.diff }),
   newDesc: newBricksDesc,
-  extra: (f, p) => {
+  extra: (f: Fixture, p: BricksParams) => {
     // Codec inverse: validate → decode → re-encode is the identity.
     expect(validateDesc(p, f.desc)).toBeNull();
     const state = newState(p, f.desc);
@@ -44,4 +48,17 @@ describeDescDifferential<Fixture, BricksParams>({
       "complete",
     );
   },
+};
+
+describeDescDifferential<Fixture, BricksParams>({
+  title: "bricks differential (frozen C reference)",
+  fixtures: data.fixtures.filter((f) => !isSlow(f)),
+  ...common,
+});
+
+describeDescDifferential<Fixture, BricksParams>({
+  title: "bricks differential, 12x8 (frozen C reference; slow by construction)",
+  fixtures: data.fixtures.filter(isSlow),
+  ...common,
+  slow: true,
 });

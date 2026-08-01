@@ -64,6 +64,39 @@ function hintOf(state: BoatsState) {
   return r;
 }
 
+/**
+ * Where the scan below *first* finds each technique, recorded so the search can
+ * start there instead of grinding through every earlier preset.
+ *
+ * This is a pure speed-up, not a weakening: the scan is ordered and
+ * deterministic, so its first hit for a kind IS this pair — starting here
+ * returns the identical firing and board. It mattered: reaching `refuted` and
+ * `sharedDiagonal` (both at preset 8) meant generating and fully plan-walking
+ * every board of presets 0, 1, 4 and 7 first, at ~10-14 s per narration test.
+ *
+ * If the generator ever moves, the pinned pair simply stops matching and the
+ * full scan runs as before — correctness does not depend on this table being
+ * right, only speed does. Re-record it by deleting an entry and re-running.
+ */
+const FIRST_FOUND_AT: Partial<
+  Record<BoatsFiring["technique"]["kind"], readonly [preset: number, seed: number]>
+> = {
+  allWaterPlaced: [0, 0],
+  centreCount: [9, 3],
+  centreForced: [0, 1],
+  givenClue: [0, 0],
+  growTooLong: [1, 0],
+  isolated: [7, 8],
+  lineForced: [0, 0],
+  lineSatisfied: [0, 1],
+  mustExtend: [0, 2],
+  neverTouch: [0, 1],
+  onlyRunsLeft: [1, 0],
+  refuted: [8, 0],
+  runTooShort: [1, 7],
+  sharedDiagonal: [8, 0],
+};
+
 /** Scan fixed seeds for the first board whose plan contains `kind`, and return
  * that firing together with the state it fired from — the idiom for reaching a
  * specific deduction without hand-crafting a desc (hint-authoring §8). */
@@ -71,8 +104,24 @@ function findFiring(
   kind: BoatsFiring["technique"]["kind"],
   presets: readonly number[] = [0, 1, 4, 7, 8, 9, 11],
 ): { firing: BoatsFiring; state: BoatsState } {
+  const pinned = FIRST_FOUND_AT[kind];
+  if (pinned && presets.includes(pinned[0])) {
+    const hit = scan(kind, [pinned[0]], pinned[1], pinned[1] + 1);
+    if (hit) return hit;
+  }
+  const hit = scan(kind, presets, 0, 12);
+  if (hit) return hit;
+  throw new Error(`no generated board reached the ${kind} technique`);
+}
+
+function scan(
+  kind: BoatsFiring["technique"]["kind"],
+  presets: readonly number[],
+  from: number,
+  to: number,
+): { firing: BoatsFiring; state: BoatsState } | null {
   for (const preset of presets) {
-    for (let s = 0; s < 12; s++) {
+    for (let s = from; s < to; s++) {
       const start = board(preset, `find-${kind}-${preset}-${s}`, s % 2 === 0);
       let state = start;
       for (let guard = 0; guard < 60; guard++) {
@@ -95,7 +144,7 @@ function findFiring(
       }
     }
   }
-  throw new Error(`no generated board reached the ${kind} technique`);
+  return null;
 }
 
 describe("boats hint — soundness", () => {

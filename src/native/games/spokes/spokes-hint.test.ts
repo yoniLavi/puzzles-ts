@@ -16,6 +16,7 @@ import {
   DEFAULT_BACKGROUND,
   renderScenario,
 } from "../../engine/testing/render-scenario.ts";
+import { seedBudget } from "../../engine/testing/slow.ts";
 import { randomNew } from "../../random/index.ts";
 import { newSpokesDesc } from "./generator.ts";
 import { type SpokesHint, spokesGame } from "./index.ts";
@@ -198,7 +199,13 @@ describe("hints only rule out a spoke when it helps a hub still needing lines", 
   it("never marks a spoke whose both hubs are already satisfied", () => {
     // Across many boards, walk the whole plan and assert every rule-out touches
     // at least one hub that still needs lines (the busywork the owner flagged).
-    for (let seed = 0; seed < 60; seed++) {
+    //
+    // The seed count is a confidence dial, not a threshold: a rule that emitted
+    // useless rule-outs would do so on nearly every board, so the gate's 8 seeds
+    // (× 3 difficulties = 24 full plan walks) catch a systematic violation just
+    // as surely as 60 did — at 238 s, this one test was **20% of the entire
+    // suite**. `npm run test:slow` still scans all 60 for the rare case.
+    for (let seed = 0; seed < seedBudget(8, 60); seed++) {
       for (const preset of [EASY, TRICKY, HARD]) {
         const { desc } = newSpokesDesc(
           preset,

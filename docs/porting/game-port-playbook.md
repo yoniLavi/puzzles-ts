@@ -2312,7 +2312,28 @@ module's tests in the same change**, stating the rules its doc comment claims
 rather than pinning values. Exemplar:
 [`wires.test.ts`](../../src/native/engine/wires.test.ts).
 
+**Keep a test's cost proportional to what it catches** (`right-size-the-test-gate`).
+The gate is paid on every commit, and five files were once 66% of it. Three
+treatments, in order of how little they lose:
+1. **Short-circuit a deterministic search.** A "scan seeds until a board shows
+   technique X" loop finds the same pair every time — record it and start there.
+   This loses *nothing* (see `FIRST_FOUND_AT` in
+   [`boats-hint.test.ts`](../../src/native/games/boats/boats-hint.test.ts): 63 s →
+   6.4 s), and a stale pin must fall back to the full scan, never fail.
+2. **Turn a seed count down** with `seedBudget(gate, full)` — but only for a
+   property whose violation would be *systematic*, and say how many assertions
+   the reduced count still executes (Spokes: 8 seeds still make 375 rule-out
+   assertions, against 2,998 at 60).
+3. **Defer to `npm run test:slow`** (`slow: true` on `describeDescDifferential`,
+   or `describeSlow`/`itSlow`) — only where the cost is board **size** rather
+   than configuration. **Never defer the only fixture covering a configuration**,
+   and state at the call site what still covers it. Run the slow tier once per
+   refactoring round; a tier nobody runs is worse than a deleted test, because
+   the file still reads as coverage.
+
 **And check a new test actually discriminates, by breaking the code under it.**
+This applies double to a test you just made *cheaper* — the failure mode that
+optimisation causes is a test that still passes and no longer catches anything.
 Writing the test is not the same as the test working: `wires.test.ts`'s
 "needs the connection to exist from BOTH sides" passed with the both-sides check
 *deleted*, because the case it chose was one an unrelated guard already caught.
