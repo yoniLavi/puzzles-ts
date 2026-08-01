@@ -19,7 +19,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import { parseConfigInt } from "../../engine/params.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -424,24 +424,7 @@ export const romeGame: Game<
     difficulty: p.diff,
   }),
   paramConfig: [
-    {
-      kw: "width",
-      name: "Width",
-      type: "string",
-      get: (p) => String(p.w),
-      set: (p, v) => {
-        p.w = parseConfigInt(v);
-      },
-    },
-    {
-      kw: "height",
-      name: "Height",
-      type: "string",
-      get: (p) => String(p.h),
-      set: (p, v) => {
-        p.h = parseConfigInt(v);
-      },
-    },
+    ...dimensionParamConfig<RomeParams>(),
     {
       kw: "difficulty",
       name: "Difficulty",

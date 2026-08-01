@@ -52,6 +52,11 @@ import {
 } from "../../engine/latin-hint.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
+  autoPencilPref,
+  pencilKeepHighlightPref,
+  stickyPencilPref,
+} from "../../engine/pencil-prefs.ts";
+import {
   CURSOR_DOWN,
   CURSOR_LEFT,
   CURSOR_RIGHT,
@@ -729,33 +734,11 @@ export const keenGame: Game<
   requestKeys: (p): KeyLabel[] => digitKeys(p.w),
 
   prefs: [
-    {
-      kw: "auto-pencil",
-      name: "When you place a number, remove it from pencil marks in its row and column",
-      type: "boolean",
-      get: (ui) => ui.autoPencil,
-      set: (ui, v) => {
-        ui.autoPencil = v;
-      },
-    },
-    {
-      kw: "sticky-pencil-mode",
-      name: "Right-click toggles a sticky pencil mode (stays on until right-clicked again)",
-      type: "boolean",
-      get: (ui) => ui.pencilSticky,
-      set: (ui, v) => {
-        ui.pencilSticky = v;
-      },
-    },
-    {
-      kw: "pencil-keep-highlight",
-      name: "Keep mouse highlight after changing a pencil mark",
-      type: "boolean",
-      get: (ui) => ui.pencilKeepHighlight,
-      set: (ui, v) => {
-        ui.pencilKeepHighlight = v;
-      },
-    },
+    autoPencilPref<KeenUi>(
+      "When you place a number, remove it from pencil marks in its row and column",
+    ),
+    stickyPencilPref<KeenUi>(),
+    pencilKeepHighlightPref<KeenUi>(),
   ],
 
   colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),

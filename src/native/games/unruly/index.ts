@@ -17,7 +17,7 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
-import { parseConfigInt } from "../../engine/params.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -352,26 +352,10 @@ export const unrulyGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  // Unruly's params use `w2`/`h2` (the full grid dims) rather than `w`/`h`.
   paramConfig: [
-    {
-      kw: "width",
-      name: "Width",
-      type: "string",
-      get: (p) => String(p.w2),
-      set: (p, v) => {
-        p.w2 = parseConfigInt(v);
-      },
-    },
-    {
-      kw: "height",
-      name: "Height",
-      type: "string",
-      get: (p) => String(p.h2),
-      set: (p, v) => {
-        p.h2 = parseConfigInt(v);
-      },
-    },
+    // Upstream's `w2`/`h2` are the *full* grid extent, not halves — the names
+    // are historical — so the fields are mapped rather than the game renamed.
+    ...dimensionParamConfig<UnrulyParams>({ w: "w2", h: "h2" }),
     {
       kw: "difficulty",
       name: "Difficulty",

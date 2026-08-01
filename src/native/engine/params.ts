@@ -95,11 +95,37 @@ function stripTrailingZeros(s: string): string {
 }
 
 /**
+ * Keys of `P` holding a **plain** `number`. Deliberately narrower than
+ * "numeric key": a field typed as a literal union (a difficulty index
+ * `0 | 1 | 2`) is excluded, because a free-text integer box must not be
+ * allowed to write an out-of-union value into it.
+ */
+type PlainNumberKey<P> = {
+  [K in keyof P]-?: number extends P[K] ? (P[K] extends number ? K : never) : never;
+}[keyof P];
+
+/** Which fields of `P` hold the width and the height. */
+export interface DimensionFields<P> {
+  w: PlainNumberKey<P>;
+  h: PlainNumberKey<P>;
+}
+
+const DEFAULT_DIMENSION_FIELDS = { w: "w", h: "h" };
+
+/**
  * The two `width`/`height` `ParamConfigItem`s that virtually every grid
  * game's "Custom type…" dialog needs — the params analogue of the shared
  * dimension *parser* above. A plain w/h game declares its whole custom
  * form as `paramConfig: dimensionParamConfig()`; a variant game spreads
  * these first and appends its own fields.
+ *
+ * A game whose params spell their dimensions differently (Mosaic's
+ * `width`/`height`, Unruly's `w2`/`h2` — upstream names for the *full*
+ * grid extent, not halves) passes the field pair rather than being
+ * renamed to fit: `dimensionParamConfig<UnrulyParams>({ w: "w2", h: "h2" })`.
+ * Contorting a game's own types to satisfy a shared helper is the failure
+ * this project's refactoring guardrails exist to prevent, and a helper
+ * only *most* games can call is the drift it exists to prevent.
  *
  * The `kw`s (`"width"`/`"height"`) and labels (`"Width"`/`"Height"`)
  * match the C/WASM path, where upstream's config labels slugify to the
@@ -111,25 +137,33 @@ function stripTrailingZeros(s: string): string {
  */
 export function dimensionParamConfig<
   P extends { w: number; h: number },
->(): ParamConfigItem<P>[] {
+>(): ParamConfigItem<P>[];
+export function dimensionParamConfig<P>(
+  fields: DimensionFields<P>,
+): ParamConfigItem<P>[];
+export function dimensionParamConfig<P>(
+  fields: DimensionFields<P> = DEFAULT_DIMENSION_FIELDS as DimensionFields<P>,
+): ParamConfigItem<P>[] {
   return [
-    {
-      kw: "width",
-      name: "Width",
-      type: "string",
-      get: (p) => String(p.w),
-      set: (p, v) => {
-        p.w = parseConfigInt(v);
-      },
-    },
-    {
-      kw: "height",
-      name: "Height",
-      type: "string",
-      get: (p) => String(p.h),
-      set: (p, v) => {
-        p.h = parseConfigInt(v);
-      },
-    },
+    dimensionItem("width", "Width", fields.w),
+    dimensionItem("height", "Height", fields.h),
   ];
+}
+
+function dimensionItem<P>(
+  kw: string,
+  name: string,
+  field: PlainNumberKey<P>,
+): ParamConfigItem<P> {
+  return {
+    kw,
+    name,
+    type: "string",
+    get: (p) => String(p[field]),
+    set: (p, v) => {
+      // `PlainNumberKey` guarantees this field holds a plain `number`, but TS
+      // cannot narrow a write through a generic key, so the target is asserted.
+      (p as Record<PlainNumberKey<P>, number>)[field] = parseConfigInt(v);
+    },
+  };
 }

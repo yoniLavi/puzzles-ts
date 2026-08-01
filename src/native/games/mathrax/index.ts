@@ -33,6 +33,7 @@ import {
 import { digitKeys } from "../../engine/key-labels.ts";
 import { rowColRegions } from "../../engine/latin-hint.ts";
 import { parseConfigInt } from "../../engine/params.ts";
+import { stickyPencilPref } from "../../engine/pencil-prefs.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -450,17 +451,7 @@ export const mathraxGame: Game<
   findMistakes,
   requestKeys: (p): KeyLabel[] => digitKeys(p.o),
 
-  prefs: [
-    {
-      kw: "sticky-pencil-mode",
-      name: "Right-click toggles a sticky pencil mode (stays on until right-clicked again)",
-      type: "boolean",
-      get: (ui) => ui.pencilSticky,
-      set: (ui, v) => {
-        ui.pencilSticky = v;
-      },
-    },
-  ],
+  prefs: [stickyPencilPref<MathraxUi>()],
 
   colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
   preferredTileSize: PREFERRED_TILE_SIZE,

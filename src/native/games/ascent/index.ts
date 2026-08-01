@@ -18,7 +18,7 @@ import type {
   SolveResult,
   UiUpdate,
 } from "../../engine/game.ts";
-import { parseConfigInt } from "../../engine/params.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { RandomState } from "../../random/index.ts";
 import { newAscentDesc } from "./generator.ts";
@@ -235,24 +235,7 @@ function describeParams(p: AscentParams): ConfigValues {
 }
 
 const paramConfig: ParamConfigItem<AscentParams>[] = [
-  {
-    kw: "width",
-    name: "Width",
-    type: "string",
-    get: (p) => String(p.w),
-    set: (p, v) => {
-      p.w = parseConfigInt(v);
-    },
-  },
-  {
-    kw: "height",
-    name: "Height",
-    type: "string",
-    get: (p) => String(p.h),
-    set: (p, v) => {
-      p.h = parseConfigInt(v);
-    },
-  },
+  ...dimensionParamConfig<AscentParams>(),
   {
     kw: "always-show-start-and-end-points",
     name: "Always show start and end points",

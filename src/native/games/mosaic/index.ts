@@ -7,7 +7,7 @@
  */
 import type { Colour, Point, Size } from "../../../puzzle/types.ts";
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
-import { parseConfigInt } from "../../engine/params.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -243,24 +243,7 @@ export const mosaicGame: Game<
   validateParams,
   // Mosaic's params use `width`/`height` (not the shared helper's `w`/`h`).
   paramConfig: [
-    {
-      kw: "width",
-      name: "Width",
-      type: "string",
-      get: (p) => String(p.width),
-      set: (p, v) => {
-        p.width = parseConfigInt(v);
-      },
-    },
-    {
-      kw: "height",
-      name: "Height",
-      type: "string",
-      get: (p) => String(p.height),
-      set: (p, v) => {
-        p.height = parseConfigInt(v);
-      },
-    },
+    ...dimensionParamConfig<MosaicParams>({ w: "width", h: "height" }),
     {
       kw: "aggressive-generation",
       name: "Aggressive generation",

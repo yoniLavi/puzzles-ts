@@ -48,3 +48,21 @@ description codec, so no differential or render snapshot may move.
 - **BECAUSE** a regression here surfaces as an empty or mislabelled dialog, which
   no unit test observes — the failure that made `add-ts-custom-params-config`
   necessary in the first place
+
+#### Scenario: A helper is parameterised by a player-visible string
+
+- **WHEN** a shared declarative helper's label differs between games because it
+  states a game-specific fact (the auto-pencil preference names the regions that
+  game's placement clears)
+- **THEN** the label is a **required** argument, never a default
+- **BECAUSE** a default that only some callers want is a sentence a game can
+  inherit while it is silently wrong about that game
+
+#### Scenario: A get/set round-trip is offered as the guard
+
+- **WHEN** a declarative item's `get` and `set` name the same field, and a test
+  asserts `set∘get` is the identity
+- **THEN** that test does NOT establish which field the item drives, and a direct
+  assertion naming the field is added where the game defines it
+- **BECAUSE** a test whose only observer is the thing under test cannot establish
+  ground truth — the round trip is the identity whether "Width" drives `w2` or `h2`

@@ -998,16 +998,27 @@ fields spreads that then appends. **Conventions that keep it correct:**
 - **Numeric `set` uses `parseConfigInt(v)`, never `Number.parseInt`** — atoi
   semantics: empty/garbled → 0, which `validateParams` then rejects with its message.
   `Number.parseInt` yields `NaN`, which slips past every `<`/`>` bound check.
-- **Non-`w`/`h` dimension games write their own width/height items** (Mosaic
-  `width`/`height`, Unruly `w2`/`h2`) rather than the shared helper; square games
-  (Keen/Towers/Unequal, Solo `c`/`r`) supply a single size item.
+- **Never hand-write the width/height pair.** Every game with two dimensions calls
+  `dimensionParamConfig()`; a game that spells its fields differently passes the
+  field map — `dimensionParamConfig<MosaicParams>({ w: "width", h: "height" })`,
+  `dimensionParamConfig<UnrulyParams>({ w: "w2", h: "h2" })` — rather than being
+  renamed to fit (`adopt-declarative-config-helpers`; a game contorted to satisfy a
+  shared contract is the failure the guardrails exist to prevent, and a helper only
+  *most* games call is drift with a helper's name on it). Square games
+  (Keen/Towers/Unequal, Solo `c`/`r`) supply a single size item instead.
 - **Cross-field folds run in array order** — the midend applies each `set` in order,
   so Solo's `jigsaw` item (`c *= r; r = 1`) must come *after* its column/row items,
   matching upstream `custom_params`.
 - **The round-trip guard** (`custom-params.test.ts`) drives every registered game's
   presets through `get`∘`set` and asserts identity — it catches a wrong inverse for
   free, but *not* a wrong label/choice list, so eyeball those against
-  `augmentation.ts`.
+  `augmentation.ts`. It is also **blind to a swapped field map**: `get` and `set`
+  name the same field, so the round trip is the identity whether "Width" drives
+  `w2` or `h2`. A game passing a field map therefore asserts the mapping directly,
+  where the fact lives — see the `drives w2/h2 from the shared Width/Height dialog
+  items` test in [`unruly.test.ts`](../../src/native/games/unruly/unruly.test.ts).
+  The general lesson: *a test whose only observer is the thing under test cannot
+  establish ground truth.*
 Exemplars: [`pattern/index.ts`](../../src/native/games/pattern/index.ts) (pure w/h),
 [`towers/index.ts`](../../src/native/games/towers/index.ts) (size + difficulty),
 [`solo/index.ts`](../../src/native/games/solo/index.ts) (the jigsaw fold).
@@ -1168,6 +1179,14 @@ Exemplar: [`towers/{state,index,render}.ts`](../../src/native/games/towers/index
     note), with a guard that never empties a cell's last note. Use the same `regionsOf`
     the game's hint uses (Keen: row/col only — a cage is **not** a uniqueness region);
     games without a row/col model (Undead) keep plain fill-only.
+- **Declare the pencil preferences from `engine/pencil-prefs.ts`, never by hand.**
+  `stickyPencilPref<Ui>()` and `pencilKeepHighlightPref<Ui>()` carry the wording ten
+  and five games respectively share; `autoPencilPref<Ui>(name)` takes the label as an
+  argument *because* its sentence names the regions the game clears ("its row, column
+  and block" in Solo, "its row and column" in Keen, and Towers places a *tower*).
+  Sharing only the keyword and plumbing is the honest amount to share
+  (`adopt-declarative-config-helpers`); a label copied is a label that drifts, and
+  this one is player-visible. `pencil-prefs.test.ts` fails on a divergent copy.
 - **Sticky pencil mode — a `pencilSticky` `Ui` boolean (default true) via the
   `prefs` hook.** When on, right-click *toggles* a persistent pencil mode and
   left-click only moves the highlight (don't reset the pencil flag); when off,
