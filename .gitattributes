@@ -1,6 +1,6 @@
 help/** linguist-documentation
 
-puzzles/** linguist-vendored
-puzzles/cmake/platforms/webapp.cmake -linguist-vendored
-puzzles/emcc-dependency-info.py -linguist-vendored
-puzzles/webapp.cpp -linguist-vendored
+# Upstream's own words, served verbatim: the manual source and the per-puzzle
+# overview fragments. Ours to build and present, not to write.
+help/upstream/manual/** linguist-vendored
+help/upstream/overviews/** linguist-vendored

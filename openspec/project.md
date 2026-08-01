@@ -27,7 +27,7 @@ Vitest runs the TS tests under `src/**/*.test.ts` (see `vitest.config.ts`). The 
 
 - Biome is the source of truth — run `npm run check` (which runs `biome check --write .`). Husky enforces `biome check --write --no-errors-on-unmatched` on staged files.
 - TypeScript: strict mode; no `any` unless justified.
-- There is no C engine (`retire-c-engine`). `puzzles/` holds upstream's help sources (`puzzles.but`, `html/`), the MIT licences, and two unbuilt `unfinished/` references — all upstream's words, not casually churned. See `AGENTS.md` "Upstream policy".
+- There is no C engine (`retire-c-engine`) and no `puzzles/` directory (`rehome-upstream-help-sources`). Upstream's words live in `help/upstream/` (the manual source and the per-puzzle overview pages the app serves, verbatim) and `licences/` (the MIT notices) — not casually churned. See `AGENTS.md` "Upstream policy".
 
 ### Architecture Patterns
 

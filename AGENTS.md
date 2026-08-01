@@ -31,12 +31,12 @@ PWA port of [Simon Tatham's Portable Puzzle Collection][sgt-puzzles]. **As of
   `games/<puzzleId>/` (one directory per game). Plain TypeScript, no build step
   of their own.
 - **TypeScript web app** in `/src` using Lit web components and Vite. Targets Baseline 2023 (see `src/preflight.ts`).
-- **`/puzzles`** is now only upstream's *help sources* (`puzzles.but` for the
-  manual, `html/` for the overview pages), the MIT licences, and two unbuilt
-  `unfinished/` C files kept as reading references for the greenfield
-  Path/Numgame builds. **Nothing under it is compiled; there is no build system
-  there at all.** Moving the help sources out is the scaffolded follow-up
-  `rehome-upstream-help-sources`.
+- **`/puzzles` no longer exists** (`rehome-upstream-help-sources`, 2026-08-01).
+  Upstream's *help sources* are `help/upstream/` (`manual/puzzles.but` for the
+  manual, `overviews/` for the per-puzzle pages), the MIT notices are
+  `licences/`, and the two unbuilt `unfinished/` C files live with the changes
+  that read them. **No C, no build system, nothing compiled, anywhere in the
+  tree.**
 
 The long-term goal is to replace the C engine with native TypeScript, **top-down and product-value-first**. The authoritative statement of the migration approach is the `ts-migration` capability spec (`openspec/specs/ts-migration/spec.md`); this section is the readable summary. The prior bottom-up, byte-identical-fidelity doctrine was superseded on 2026-05-18 by the `pivot-to-top-down-ts` change and is preserved on branch `legacy/seam-by-seam-fidelity` + tag `pre-ts-pivot` in case of reversal.
 
@@ -75,8 +75,8 @@ This project is **not tracking upstream**. We forked from medmunds/puzzles-web a
 
 2. ~~**Files we added live in `puzzles/` too but follow our rules.**~~ Historical: `webapp.cpp`, `random_bridge.js`, the `auxiliary/*` harnesses and the project-side CMake edits were *our code in upstream's directory*, and the test for "may I edit this?" was "does it appear in the original Simon Tatham repository?". All of it is deleted; everything remaining under `puzzles/` is upstream's, so the test now has only one answer.
 
-- `puzzles/LICENCE` stays intact (MIT obligation, independent of tracking policy).
-- A game's C source **is deleted when that game's TS port ships** (per-game, not deferred to a whole-rewrite endpoint — see "C deletion" below). `puzzles/` goes away entirely only when the last game is ported.
+- The upstream MIT notices stay intact (obligation, independent of tracking policy). They are now `licences/sgt-puzzles-LICENCE` and `licences/puzzles-unreleased-LICENCE`, and the About dialog `?raw`-imports both — they are live build inputs, not archive material.
+- A game's C source **was deleted when that game's TS port shipped** (per-game, not deferred to a whole-rewrite endpoint — see "C deletion" below). `puzzles/` itself went once the last game landed and its help sources were rehomed.
 
 ## Approach: top-down, product-value first
 
@@ -175,9 +175,9 @@ Top-down, product-value first:
 8. **`random.c`** is already TS (`random.ts`); keep it.
 9. **`retire-c-engine`** — **landed 2026-08-01.** The terminal state: the C
    engine, the Emscripten build, the leaf-bridge flags and the worker's WASM
-   path are gone. `puzzles/` holds upstream's help sources, the licences, and
-   two unbuilt references. The follow-up `rehome-upstream-help-sources` moves
-   the help sources under `help/`.
+   path are gone. `puzzles/` was left holding upstream's help sources and the
+   licences; the follow-up `rehome-upstream-help-sources` **landed the same day**
+   and moved them to `help/upstream/` and `licences/`, deleting `puzzles/`.
 
 **Where the order goes next (owner, 2026-08-01).** Every game is ported and the
 authors' known-issue lists are reconciled, so:
@@ -208,7 +208,7 @@ history if a question ever genuinely needs it.
 ## Build commands
 
 - `npm run build:assets` — runs `scripts/build-manual.sh`: halibut over
-  `puzzles/puzzles.but` into `src/assets/manual/`. **This is the entire asset
+  `help/upstream/manual/puzzles.but` into `src/assets/manual/`. **This is the entire asset
   build.** It is optional in the sense that the app builds without it — the
   manual pages simply do not exist and each overview page drops its "manual"
   link. There is no wasm build: `npm run build:wasm`, `scripts/build-emcc.sh`,
@@ -232,12 +232,13 @@ history if a question ever genuinely needs it.
 - **Persistence**: IndexedDB via Dexie.js (`src/store/db.ts`).
 - **WASM**: runs in a web worker, exposed via Comlink (`src/puzzle/`).
 - **Styling**: Web Awesome design tokens.
-- **`/puzzles`**: no C engine remains (`retire-c-engine`). What is there is upstream's *help sources* and licences, plus two unbuilt `unfinished/` references. Treat it as read-only upstream material; changing the words in a served help page is a content decision, not a refactor.
+- **`help/upstream/`**: upstream's *help sources* — the manual source and the per-puzzle overview fragments, rendered verbatim. Treat as read-only upstream material; changing the words in a served help page is a content decision, not a refactor. (`/puzzles` is gone — `rehome-upstream-help-sources`.)
 
 ## Constraints
 
 DO NOT:
-- Edit upstream's remaining material under `/puzzles` (the manual source, the overview fragments, the licences) without cause — it is a no-merge subtree of someone else's words that the app serves verbatim.
+- Edit upstream's material under `help/upstream/` (the manual source, the overview fragments) or the notices in `licences/` without cause — they are someone else's words that the app serves verbatim.
+- Name a new help source directory after a URL subdirectory the build emits pages into. `help/manual/` is specifically forbidden: the manual is served at `/help/manual/*`, and a real directory there shadows the generated page namespace and fails `vite build` with `EISDIR`. Hence `help/upstream/manual/`.
 - Break Baseline 2023 browser compatibility.
 - Use top-level await, dynamic `import()`, or `import.meta` in `src/preflight.ts` — preflight runs on older browsers to gate the rest of the app.
 - Add dependencies without considering bundle size and offline (PWA) support.
@@ -257,7 +258,7 @@ DO:
 
 Three roles to keep distinct:
 
-- **`puzzles/`** — what is left of the in-tree upstream subtree after `retire-c-engine`: `puzzles.but` and `html/` (help sources the app serves) and the two MIT `LICENCE` files. **No C at all, no build system, nothing compiled.** The two experimental sources that were kept as reading references (`unfinished/{path,numgame}.c`) moved into the changes that read them — `openspec/changes/add-{path,numgame}-ts-port/reference/` — each with a README stating that it does not compile, is not an oracle, and what it *is* good for. The scaffolded `rehome-upstream-help-sources` moves the help sources under `help/`, after which `puzzles/` is licences alone.
+- **`puzzles/`** — **gone** (`rehome-upstream-help-sources`, 2026-08-01). `retire-c-engine` had already emptied it of C, leaving only the help sources and the licences; each then went where its role says it belongs — `help/upstream/{manual,overviews}/` for the served pages, `licences/` for the MIT notices — and the directory was deleted. **No C at all, anywhere, no build system, nothing compiled.** The two experimental sources kept as reading references (`unfinished/{path,numgame}.c`) live in the changes that read them — `openspec/changes/add-{path,numgame}-ts-port/reference/` — each with a README stating that it does not compile, is not an oracle, and what it *is* good for. A directory named for a source tree that no longer exists is a false signal, which is why keeping it for three licence files was declined.
 - **`../puzzles/`** (sibling clone). The place to go if a question genuinely needs upstream's C — this repo no longer has any. **Not** a place to put our work.
 - **`../puzzles-web/`** (sibling clone). The pre-fork baseline; useful as a diff reference in early phases.
 
@@ -440,18 +441,18 @@ Things this fork has been avoiding but that will trip future games. Not urgent; 
 ## License & attribution
 
 - **Web app code**: MIT (`LICENSE.md`).
-- **Upstream puzzles**: MIT (`puzzles/LICENCE`) — kept intact wherever the subtree lives. Satisfies MIT's "include in all copies" obligation.
-- **Top-level `LICENSE.md`** carries a layered MIT notice crediting, in chronological order: Simon Tatham + upstream contributors (deferring to `puzzles/LICENCE` for the full list), Mike Edmunds (puzzles-web), Yoni Lavi (this project). Single MIT body covers all three.
-- **`CREDITS.md`** is the graceful gesture with explicit thanks and links to upstream and puzzles-web. Legal compliance is satisfied by the layered MIT notice alone.
+- **Upstream puzzles**: MIT (`licences/sgt-puzzles-LICENCE`) — kept byte-identical. Satisfies MIT's "include in all copies" obligation. Lennard Sprong's `puzzles-unreleased`, the source of thirteen games, is `licences/puzzles-unreleased-LICENCE` (identical text today; kept as its own file because it is a second project's notice). Both are `?raw`-imported by the About dialog, so moving one without repointing that import breaks the production build.
+- **Top-level `LICENSE.md`** carries a layered MIT notice crediting, in chronological order: Simon Tatham + upstream contributors (deferring to `licences/sgt-puzzles-LICENCE` for the full list), Lennard Sprong (puzzles-unreleased), Mike Edmunds (puzzles-web), Yoni Lavi (this project). Single MIT body covers all four.
+- **`CREDITS.md`** is the graceful gesture with explicit thanks and links to upstream, puzzles-unreleased and puzzles-web. Legal compliance is satisfied by the layered MIT notice alone.
 
 ## Documentation
 
-The in-app help system is assembled from three sources:
-- `/help` — main help pages (this fork's additions/divergences), plus `help/games/` (the per-puzzle pages this project maintains).
-- `/puzzles/html` — upstream per-puzzle overview fragments.
-- `/puzzles/puzzles.but` — upstream manual, built into HTML by halibut via `npm run build:assets`.
+The in-app help system is assembled from three sources, **all under `help/`** since `rehome-upstream-help-sources`:
+- `help/*.md` — main help pages (this fork's additions/divergences), plus `help/games/` (the per-puzzle pages this project maintains).
+- `help/upstream/overviews/` — upstream per-puzzle overview fragments.
+- `help/upstream/manual/puzzles.but` — upstream manual, built into HTML by halibut via `npm run build:assets`.
 
-The last two move under `help/` in the scaffolded `rehome-upstream-help-sources`.
+The split is by *authorship*: `help/upstream/` is verbatim upstream material (its README says so and points at the licence); everything else under `help/` is ours. The rule the layout encodes is that **a page the app serves is a build input**, whoever wrote it — so none of them may sit in an upstream reference tree.
 
 Update `/help` when adding features that diverge from upstream.
 

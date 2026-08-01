@@ -1,6 +1,10 @@
 #!/bin/bash
-# Build the in-app manual: halibut over upstream's `puzzles/puzzles.but`,
+# Build the in-app manual: halibut over upstream's `help/upstream/manual/puzzles.but`,
 # producing one HTML page per puzzle in src/assets/manual/.
+#
+# The source lives at help/upstream/manual/ rather than help/manual/ on purpose:
+# the manual is served under the URL subdirectory /help/manual/, and a real
+# directory of that name shadows the generated page namespace (EISDIR at build).
 #
 # Run from the repo root:
 #   ./scripts/build-manual.sh
@@ -29,7 +33,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-SRC="${REPO_ROOT}/puzzles/puzzles.but"
+SRC="${REPO_ROOT}/help/upstream/manual/puzzles.but"
 OUT_DIR="${REPO_ROOT}/src/assets/manual"
 
 if [ ! -f "${SRC}" ]; then

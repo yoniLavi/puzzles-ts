@@ -469,10 +469,11 @@ export default defineConfig(async ({ command, mode }) => {
             ],
           },
           {
-            // Puzzle overview pages, served at /help/<puzzleId>.html,
-            // from html fragments provided with puzzles source
-            sources: "puzzles/html/**/*.html",
-            resolve: { url: "help/", path: "puzzles/html/" },
+            // Puzzle overview pages, served at /help/<puzzleId>.html, from
+            // upstream's html fragments (upstream's words; see
+            // help/upstream/README.md).
+            sources: "help/upstream/overviews/**/*.html",
+            resolve: { url: "help/", path: "help/upstream/overviews/" },
             transforms: [
               ({ source, ...data }) => {
                 // first line of fragment is (bare) title, with optional leading `directive:`;
