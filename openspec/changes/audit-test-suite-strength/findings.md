@@ -184,4 +184,26 @@ So this is not a coverage hole. It is the **feedback** shape of §3 again, and a
 the size (`wires.ts` is bigger than five of the seven modules this audit
 mutated) it is where a local test would pay for itself first.
 
+**Acted on for the two largest.** `wires.ts` (413 lines, 9 importers) gained 25
+tests and `symmetric-blacks.ts` (151 lines, 7 importers) gained 15, each stating
+the rules the module's own doc comment claims and each mutation-checked against
+the line it covers. Two things that came out of doing it, both worth more than
+the tests themselves:
+
+- **Writing a test is not the same as the test working.** `wires.test.ts`'s
+  "needs the connection from BOTH sides" passed with the both-sides check
+  *deleted*, because the case it happened to choose was one an unrelated guard
+  already caught. Only breaking the line revealed that.
+- **The division of labour between a local test and a differential can be
+  checked, and should be.** In `symmetric-blacks.ts`, mutating
+  `if (!rotate) rw += wodd` changes the 4-fold region size on an odd-width board
+  — so it changes *which boards exist* without breaking any symmetry, and it
+  survives every local test by design. Light Up's and Sticks' differentials fail
+  on it. That is the correct place for it to be caught, and the test file now
+  says so, having verified it rather than asserting it.
+
+Still without a local test, in descending order of size: `divvy.ts` (231 lines,
+4 importers), `grid-core.ts` (11 importers), `grid-geometry.ts`, the three
+`grid-tilings-*.ts`, `deduction-record.ts`, `registry.ts`, `pencil-indicator.ts`.
+
 ---
