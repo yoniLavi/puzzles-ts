@@ -57,20 +57,40 @@ for (const [src, entry] of Object.entries(report.files ?? {})) {
 
 const pad = (s, n) => String(s).padEnd(n);
 console.log("## Per-module outcome\n");
+// Every status the schema defines gets a column, and the columns are asserted to
+// sum to the mutant count. `ignoreStatic: true` reports the 836 module-scope
+// mutants as "Ignored" — a status my first cut had no column for, which would
+// have made the audit's own deliberate gap vanish from the audit's own table.
+const STATUSES = [
+  "Killed",
+  "Survived",
+  "NoCoverage",
+  "Timeout",
+  "Ignored",
+  "RuntimeError",
+  "CompileError",
+  "Pending",
+];
 console.log(
-  `${pad("module", 24)}${pad("killed", 8)}${pad("surv", 6)}${pad("nocov", 7)}${pad("t/o", 5)}${pad("err", 5)}killed-by-own-tests`,
+  pad("module", 24) +
+    STATUSES.map((s) => pad(s.toLowerCase().slice(0, 9), 11)).join("") +
+    pad("total", 7) +
+    "killed-by-own-tests",
 );
 for (const r of rows.sort((a, b) => a.src.localeCompare(b.src))) {
   const k = r.counts.Killed ?? 0;
   const own =
     k === 0 ? "—" : `${r.localKill}/${k} (${Math.round((100 * r.localKill) / k)}%)`;
+  const shown = STATUSES.reduce((n, st) => n + (r.counts[st] ?? 0), 0);
+  const all = Object.values(r.counts).reduce((n, v) => n + v, 0);
+  if (shown !== all) {
+    const missing = Object.keys(r.counts).filter((st) => !STATUSES.includes(st));
+    throw new Error(`unaccounted mutant status in ${r.src}: ${missing.join(", ")}`);
+  }
   console.log(
     pad(base(r.src), 24) +
-      pad(k, 8) +
-      pad(r.counts.Survived ?? 0, 6) +
-      pad(r.counts.NoCoverage ?? 0, 7) +
-      pad(r.counts.Timeout ?? 0, 5) +
-      pad(r.counts.RuntimeError ?? r.counts.CompileError ?? 0, 5) +
+      STATUSES.map((st) => pad(r.counts[st] ?? 0, 11)).join("") +
+      pad(all, 7) +
       own,
   );
 }
