@@ -5,7 +5,8 @@
 **The porting job the heaviest tests were built for is over, and their cost is
 now paid on every commit for confidence the gate does not need.**
 
-Measured (`/tmp` run, 250 files, 1,178 s of test time):
+Measured (250 files, 1,178 s of *summed per-test duration* — a relative measure,
+good for locating the cost; the saving itself is quoted in CPU time below):
 
 - **5 files are 66% of all test time**; the top 3 are 56%.
 - Worse, the cost is not breadth — **about 10 individual tests are ~54% of the
@@ -47,6 +48,8 @@ What moves off the per-commit path is only the largest board of each such family
 - **Verify every touched test still discriminates**, by breaking the code it
   covers and watching it fail. A cheaper test that no longer catches anything is
   the failure mode this change could most easily cause.
+- **Quote the saving in CPU time, not wall clock.** This box runs other work, and
+  summed per-test duration inflates exactly the heavy tests being cut.
 
 ## Impact
 

@@ -2,9 +2,26 @@
 
 ## 1. Measure first
 
-- [x] 1.1 Per-file and per-test timings via `vitest --reporter=json`. Baseline:
-      **1,178 s of test time across 250 files**; five files 66%; ~10 individual
-      tests ~54%.
+- [x] 1.1 Per-file and per-test timings via `vitest --reporter=json`, to find
+      *where* the cost is: **1,178 s of summed test duration across 250 files**;
+      five files 66%; ~10 individual tests ~54%. That located the targets, which
+      is all a relative measure needs to do.
+- [x] 1.2 **Re-measured the saving in CPU time, and the first number was wrong.**
+      Summed per-test `duration` is *wall clock per test*, so on a box running
+      other work the heaviest tests inflate most and cutting them flatters the
+      result. `/usr/bin/time` on the whole run (`user + sys`, which includes
+      reaped children, so the worker pool is counted) is contention-robust.
+      Measured on the six changed files: **372.7 s -> 51.3 s of CPU**, and the
+      whole gate-tier suite **~606 s -> 285 s of CPU — a real saving of 53%**,
+      not the 68-70% the duration sums suggested. The lesson is the one this
+      session met twice already: an instrument's *unit* is part of its
+      correctness, and "summed per-test duration" measures how long tests
+      appeared to take, not what they cost.
+- [x] 1.3 Gate CPU after, for where the next lever is: **vitest 285 s (76%)**,
+      vite build 46 s (12%), `tsc -b` 33 s (9%), `biome ci .` 12 s (3%).
+      Tests are still three quarters of the gate, but the remaining test cost is
+      spread — no single test is over ~7% — so further cutting has real leverage
+      but no cheap targets left.
 
 ## 2. The opt-in tier
 
@@ -70,9 +87,11 @@
 
 ## 5. Close out
 
-- [x] 5.1 Result: **1,178 s → ~354 s of test time, −70%**, and the distribution
-      is now flat — the worst file is 30 s where it was 297 s, and the worst
-      single test ~7% where it was 20%.
+- [x] 5.1 Result: **~606 s → 285 s of suite CPU, −53%** (task 1.2 — the
+      duration-sum figure of −70% was contention-inflated and is not the one to
+      quote). The distribution is also flat now, which matters as much as the
+      total: the worst file is 30 s where it was 297 s, and the worst single test
+      ~7% where it was 20%.
 - [x] 5.2 Playbook updated: the three treatments, and the rule that a test made
       cheaper must be re-checked for discrimination.
 - [x] 5.3 Full gate green.
