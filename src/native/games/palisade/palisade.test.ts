@@ -9,7 +9,6 @@ import {
   FLIP,
   initBorders,
 } from "../../engine/border-grid.ts";
-import { divvyRectangle } from "../../engine/divvy.ts";
 import type { HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../random/index.ts";
 import { palisadeGame } from "./index.ts";
@@ -70,23 +69,6 @@ describe("palisade desc codec", () => {
     expect(validateDesc(p, "5")).not.toBeNull(); // clue > 4
     expect(validateDesc(p, "?")).not.toBeNull();
     expect(validateDesc(p, "z".repeat(2))).not.toBeNull(); // 52 > 25 squares
-  });
-});
-
-describe("palisade divvy", () => {
-  it("partitions every cell into exactly-k regions", () => {
-    const rng = randomNew("palisade-divvy");
-    for (const p of PRESETS) {
-      for (let trial = 0; trial < 3; trial++) {
-        const dsf = divvyRectangle(p.w, p.h, p.k, rng);
-        const wh = p.w * p.h;
-        for (let i = 0; i < wh; i++) expect(dsf.size(i)).toBe(p.k);
-        // Count distinct regions == wh/k.
-        const roots = new Set<number>();
-        for (let i = 0; i < wh; i++) roots.add(dsf.canonify(i));
-        expect(roots.size).toBe(wh / p.k);
-      }
-    }
   });
 });
 

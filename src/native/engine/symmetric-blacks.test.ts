@@ -1,8 +1,9 @@
 /**
  * Tier-1 tests for the shared symmetric black-square placer.
  *
- * Written by `audit-test-suite-strength` §5: 151 lines shared by seven files,
- * with no test file of its own — every guarantee it had lived in Light Up's and
+ * Written by `audit-test-suite-strength` §5: 151 lines shared by seven files.
+ * `sticks.test.ts` imported the `SYMM_*` *constants*, but `placeSymmetricBlacks`
+ * itself had no direct test at all — its guarantees lived in Light Up's and
  * Sticks' frozen differentials, which do catch its defects but report them as a
  * differing description string rather than as the rule that broke.
  *
