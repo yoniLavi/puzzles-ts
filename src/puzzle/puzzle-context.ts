@@ -150,7 +150,7 @@ export class PuzzleContext extends SignalWatcher(LitElement) {
     return event;
   }
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: contents;
     }

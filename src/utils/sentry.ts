@@ -40,14 +40,14 @@ export function initSentry() {
           // Skip breadcrumbs for fetch("data:...") URIs (like all of our icon images)
           if (
             breadcrumb.type === "http" &&
-            typeof breadcrumb.data?.url === "string" &&
-            breadcrumb.data.url.startsWith("data:")
+            typeof breadcrumb.data?.["url"] === "string" &&
+            breadcrumb.data["url"].startsWith("data:")
           ) {
             return null;
           }
           // Replace ui.click message "body > top-component" with shadow path
-          if (breadcrumb.category === "ui.click" && hint?.event instanceof Event) {
-            breadcrumb.message = describeEventComposedPath(hint.event);
+          if (breadcrumb.category === "ui.click" && hint?.["event"] instanceof Event) {
+            breadcrumb.message = describeEventComposedPath(hint["event"]);
           }
         } catch {}
         return breadcrumb;
@@ -55,7 +55,7 @@ export function initSentry() {
       beforeSend(event, hint) {
         // If thirdPartyErrorFilterIntegration identified third_party_code,
         // mark the original error instance for crash-dialog to ignore.
-        if (event.tags?.third_party_code) {
+        if (event.tags?.["third_party_code"]) {
           if (hint?.originalException instanceof Error) {
             // @ts-expect-error: TS2339: Adding custom property to Error object
             hint.originalException.__third_party_code__ = true;

@@ -131,7 +131,7 @@ export class CatalogCard extends LitElement {
     this.iconLoaded = true;
   }
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     css`
       * {

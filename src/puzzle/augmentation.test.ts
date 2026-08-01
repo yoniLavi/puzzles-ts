@@ -40,11 +40,11 @@ function allPresetParams(game: AnyGame): unknown[] {
 function configFor(game: AnyGame, p: unknown): ConfigValues {
   const rec = p as Record<string, unknown>;
   const base: ConfigValues = {};
-  if ("w" in rec && rec.w !== undefined) {
-    base.width = String(rec.w);
+  if ("w" in rec && rec["w"] !== undefined) {
+    base["width"] = String(rec["w"]);
   }
-  if ("h" in rec && rec.h !== undefined) {
-    base.height = String(rec.h);
+  if ("h" in rec && rec["h"] !== undefined) {
+    base["height"] = String(rec["h"]);
   }
   return { ...base, ...game.describeParams?.(p) };
 }

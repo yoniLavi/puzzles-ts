@@ -165,7 +165,7 @@ export class EnterGameIDDialog extends SignalWatcher(LitElement) {
     this.open = false;
   }
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     css`
       :host {

@@ -24,11 +24,11 @@ export class HeadMatter extends LitElement {
   private originalNodes = new Set<HTMLElement>();
   private addedNodes = new Set<HTMLElement>();
 
-  render() {
+  override render() {
     return html`<slot @slotchange=${this.handleSlotChange}></slot>`;
   }
 
-  disconnectedCallback() {
+  override disconnectedCallback() {
     super.disconnectedCallback();
     this.restoreHead();
   }

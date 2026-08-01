@@ -55,18 +55,18 @@ function isSaveEnvelope(value: unknown): value is SaveEnvelope {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
   return (
-    v.v === 1 &&
-    typeof v.puzzleId === "string" &&
-    typeof v.params === "string" &&
-    typeof v.desc === "string" &&
+    v["v"] === 1 &&
+    typeof v["puzzleId"] === "string" &&
+    typeof v["params"] === "string" &&
+    typeof v["desc"] === "string" &&
     // Additive and optional: a save written before desc supersession existed
     // simply omits it, and every non-superseding game still does.
-    (v.privDesc === undefined || typeof v.privDesc === "string") &&
-    Array.isArray(v.moves) &&
-    typeof v.pos === "number" &&
-    typeof v.timerElapsed === "number" &&
-    typeof v.usedSolve === "boolean" &&
-    (v.ui === undefined || typeof v.ui === "string")
+    (v["privDesc"] === undefined || typeof v["privDesc"] === "string") &&
+    Array.isArray(v["moves"]) &&
+    typeof v["pos"] === "number" &&
+    typeof v["timerElapsed"] === "number" &&
+    typeof v["usedSolve"] === "boolean" &&
+    (v["ui"] === undefined || typeof v["ui"] === "string")
   );
 }
 

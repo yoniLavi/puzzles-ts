@@ -90,8 +90,11 @@ describe("engine preferences hook", () => {
   it("builds a config description from the declarative prefs", () => {
     const cfg = start().getPreferencesConfig();
     expect(cfg.title).toBe("__pref__");
-    expect(cfg.items.highlight).toEqual({ type: "boolean", name: "Highlight things" });
-    expect(cfg.items.style).toEqual({
+    expect(cfg.items["highlight"]).toEqual({
+      type: "boolean",
+      name: "Highlight things",
+    });
+    expect(cfg.items["style"]).toEqual({
       type: "choices",
       name: "Display style",
       choicenames: ["Circles", "Numbers"],

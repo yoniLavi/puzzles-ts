@@ -352,7 +352,7 @@ export class SavedGameList extends SignalWatcher(LitElement) {
 
   // TODO: focus, :focus-within styling, keyboard nav and roving tabIndex
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     css`
       :host {

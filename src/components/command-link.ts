@@ -55,7 +55,7 @@ export class CommandLink extends LitElement {
     return html`<button data-command=${this.command}>${icon}<slot></slot></span>`;
   }
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     css`
       :host {

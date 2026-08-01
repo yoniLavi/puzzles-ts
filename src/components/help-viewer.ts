@@ -309,7 +309,7 @@ export class HelpViewer extends LitElement {
   // Styles
   //
 
-  static styles = [
+  static override styles = [
     cssNative,
     cssWATweaks,
     css`

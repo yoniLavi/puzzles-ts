@@ -53,7 +53,7 @@ abstract class GameFileDialog extends LitElement {
     }
   }
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     css`
       wa-dialog {

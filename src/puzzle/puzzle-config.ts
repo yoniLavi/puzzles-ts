@@ -52,7 +52,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
   /**
    * The title for the dialog, per the config
    */
-  get title(): string {
+  override get title(): string {
     return this._title.get();
   }
 
@@ -351,7 +351,7 @@ abstract class PuzzleConfigForm extends SignalWatcher(LitElement) {
     return form.clientWidth - inlinePadding;
   }
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     css`
       :host {
@@ -541,7 +541,7 @@ abstract class PuzzleConfigDialog extends SignalWatcher(LitElement) {
     return this.form?.reloadValues();
   }
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     css`
       :host {

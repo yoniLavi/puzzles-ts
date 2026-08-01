@@ -269,7 +269,7 @@ export class PuzzleEndNotification extends SignalWatcher(LitElement) {
     // "Out of options",
   ] as const;
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     css`
       :host {

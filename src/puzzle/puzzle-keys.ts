@@ -122,7 +122,7 @@ export class PuzzleKeys extends SignalWatcher(LitElement) {
     }
   }
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     css`
       :host {

@@ -490,7 +490,7 @@ export class SettingsDialog extends SignalWatcher(LitElement) {
     }
   }
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     cssNative, // for links
     css`
