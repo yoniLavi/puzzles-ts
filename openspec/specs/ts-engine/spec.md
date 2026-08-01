@@ -195,26 +195,29 @@ placeholder for the first real port to fix, as follows.
 
 ### Requirement: The worker exposes one shared puzzle-engine surface
 
-The C/WASM-backed puzzle and the TS-midend-backed puzzle SHALL both
-implement one shared `PuzzleEngineSurface` interface enumerating the
-Comlink-exposed methods the app drives. The worker factory SHALL
-return that interface and the app's remote puzzle type SHALL be built
-from it. There SHALL NOT be an unchecked cast bridging the two
-implementations at the dispatch seam; conformance SHALL be
-compiler-checked on both implementations.
+The worker SHALL expose exactly one puzzle-engine implementation — the
+TS-midend-backed puzzle — behind the `PuzzleEngineSurface` interface the app
+drives over Comlink. With the C engine retired, the C/WASM-backed
+implementation, the WASM-instantiation path, and the leaf-bridge coherence
+check SHALL be removed, and the worker's dispatch SHALL always construct the TS
+engine rather than choosing between two implementations.
 
-#### Scenario: Both implementations are compiler-checked against one surface
+`PuzzleEngineSurface` SHALL be retained (or inlined) so the app-facing remote
+puzzle type keeps the same shape it had; removing the C implementation SHALL NOT
+require changes to `src/screens/`, `src/dialogs/`, `src/puzzle/puzzle.ts`, the
+drawing canvas, or `src/store/`.
 
-- **WHEN** either the C/WASM-backed or the TS-midend-backed puzzle
-  drifts from the shared surface
-- **THEN** it is a type error at build time
-- **AND** the dispatch seam constructs either implementation without
-  an `as unknown as` cast
+#### Scenario: The worker constructs the TS engine unconditionally
 
-#### Scenario: The app's remote type is unchanged
+- **WHEN** the worker opens any game
+- **THEN** it constructs the TS-midend-backed puzzle
+- **AND** there is no C/WASM implementation or WASM-coherence check to select
+  between
 
-- **WHEN** the shared surface is introduced
-- **THEN** the app-side remote puzzle type keeps the same shape it had
+#### Scenario: The app's remote type is unchanged by the removal
+
+- **WHEN** the C implementation is removed
+- **THEN** the app-side remote puzzle type keeps the same shape
 - **AND** no `src/screens/`, `src/dialogs/`, `src/puzzle/puzzle.ts`,
   drawing-canvas, or `src/store/` code changes to consume it
 

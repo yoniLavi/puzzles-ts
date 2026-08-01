@@ -209,40 +209,59 @@ a byte-oracle).
 - **THEN** that tier MAY require guessing and its hint MAY be non-deductive there,
   without violating this policy
 
-### Requirement: Author-stated known issues are reconciled before the C is retired
+### Requirement: The C engine is fully retired once every game is ported
 
-Each ported game's **author-written known-issue list** SHALL be reconciled
-against the behaviour the port shipped, and the outcome recorded, before the
-`puzzles/` reference tree is removed. The lists are the `## Status` section of
-`puzzles/unreleased/docs/<game>.md` for the third-party games, the `TODO` /
-`FIXME` block at the head of each game's C source, and upstream's own notes for
-the games this project finished rather than ported.
+The C/WASM engine SHALL be removed entirely once the last game has been ported
+and registered at parity: no game is served by C at runtime, and the C sources,
+the Embind adapter, the Emscripten build, the worker's WASM dispatch path, and
+the leaf-bridge flag machinery SHALL all be deleted. This is the terminal state
+the per-game hybrid was migrating toward; reaching it retires the hybrid rather
+than contradicting it.
 
-Every stated point SHALL be classified as **fixed** (citing the shipped
-behaviour or a test, not a design note), **deliberately declined** (citing the
-reason), **pending an owner decision**, or **outstanding** (with a follow-up
-change filed). A point an author identified as a defect SHALL NOT be reproduced
-without a recorded reason.
+Removal SHALL preserve the artefacts the app still depends on that were
+previously produced by the Emscripten build — the game catalog and the in-app
+manual — by generating them without the C toolchain. The game catalog's metadata
+SHALL move to a committed TypeScript source, since it existed only in the CMake
+files being deleted.
 
-Where a verdict is a behavioural divergence from the author's intent, it SHALL
-be recorded in that game's capability specification, so that the reasoning
-survives the deletion of the reference tree.
+What remains under `puzzles/` after retirement SHALL be exactly: the MIT
+`LICENCE` notices, and the upstream-authored help sources the app serves
+(`puzzles.but` and `puzzles/html/**`). **No C source SHALL remain there**, and no
+build system SHALL remain there. Relocating the help sources out of `puzzles/` is
+a separate change, not a condition of retiring the engine.
 
-#### Scenario: A ported game's author notes are reconciled
+A C source kept as a **reading reference** for scaffolded future work SHALL live
+with the change that reads it (`openspec/changes/<change>/reference/`), not in
+`puzzles/`, and SHALL carry a README recording its provenance, its licence, and
+the fact that it cannot be compiled or run. Colocating it this way means the
+reference is archived alongside the work that consumed it, and that a reference
+nobody ends up needing is deleted with its change rather than accumulating in a
+tree whose remaining purpose is unrelated.
 
-- **WHEN** the known-issue list for a ported game is reviewed
-- **THEN** every point in it carries one of the four verdicts, and each "fixed"
-  verdict names the behaviour or test that demonstrates it
+#### Scenario: No C remains under `puzzles/` after retirement
 
-#### Scenario: A silently reproduced defect is caught
+- **WHEN** the repository is inspected after retirement
+- **THEN** `puzzles/` contains no C source and no build system
+- **AND** what remains is the licences and the served help sources
 
-- **WHEN** an author-identified defect was reproduced by a port with no recorded
-  reason
-- **THEN** it is reported as outstanding and a follow-up change is filed
+#### Scenario: A reading reference is kept with its change
 
-#### Scenario: The reference tree is not removed before the sweep
+- **WHEN** an upstream C source is retained as reading material for a scaffolded
+  change
+- **THEN** it lives under that change's `reference/` directory
+- **AND** a README there states its provenance, its licence, and that it does
+  not compile
 
-- **WHEN** removal of the `puzzles/` reference tree is proposed
-- **THEN** the reconciliation is complete, since the author's notes live inside
-  that tree and are otherwise lost
+#### Scenario: No game runs on C after retirement
+
+- **WHEN** the app opens any game after the C engine is retired
+- **THEN** the game is served by the TypeScript engine
+- **AND** no wasm artifact is loaded and no C source is compiled
+
+#### Scenario: The catalog and manual survive the toolchain removal
+
+- **WHEN** the app is built from a clean checkout with no Emscripten toolchain
+  present
+- **THEN** the game catalog and the in-app manual are produced
+- **AND** the app lists every game and serves its help pages
 
