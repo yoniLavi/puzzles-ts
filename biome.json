@@ -24,6 +24,6 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/puzzles", "!**/docs/tilings", "!!!notes"]
+    "includes": ["**", "!**/help/upstream", "!**/docs/tilings", "!!!notes"]
   }
 }

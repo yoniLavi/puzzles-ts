@@ -18,7 +18,7 @@
 # whole apparatus went, and the run is faster for it.
 #
 # The manual build stays, and is the one thing here that is NOT a gate
-# precondition. `npm run build:assets` (halibut over `puzzles/puzzles.but`) is
+# precondition. `npm run build:assets` (halibut over `help/upstream/manual/puzzles.but`) is
 # the only generated asset left; running it is what exercises
 # `scripts/build-manual.sh` and vite's manual-page rendering path, which no test
 # covers. If it is ever dropped, the gate still passes — the manual pages are

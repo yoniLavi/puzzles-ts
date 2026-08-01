@@ -21,8 +21,8 @@ import "../components/command-link"; // may appear in embedded text (e.g., priva
 
 // Raw content
 import appLicenseText from "../../LICENSE.md?raw";
-import puzzlesLicenseText from "../../puzzles/LICENCE?raw";
-import unreleasedLicenseText from "../../puzzles/unreleased/LICENCE?raw";
+import unreleasedLicenseText from "../../licences/puzzles-unreleased-LICENCE?raw";
+import puzzlesLicenseText from "../../licences/sgt-puzzles-LICENCE?raw";
 import privacyHtml from "../assets/privacy.html?raw";
 
 // The name of this repo's project (which is covered by its LICENSE)

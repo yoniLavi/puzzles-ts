@@ -17,6 +17,7 @@ the *construction*, which the port reproduces exactly. `retire-c-engine` moved
 them out of `puzzles/` rather than deleting them with the rest of the tree.
 
 They are unmodified upstream material, MIT-licensed with the rest of the
-collection (see [`puzzles/LICENCE`](../../puzzles/LICENCE)). Some references in
+collection (see
+[`licences/sgt-puzzles-LICENCE`](../../licences/sgt-puzzles-LICENCE)). Some references in
 them point at C files that no longer exist here; read those as pointers into
 upstream's repository, not this one.

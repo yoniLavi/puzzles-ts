@@ -75,9 +75,11 @@ Everything below is for building or contributing.
   its port was accepted at parity, then flipped over and its C was deleted.
 
 - **`puzzles/`** was a frozen git subtree of the upstream C collection, read as
-  a *reference* while porting. It now holds only upstream's help sources (the
-  manual and the per-puzzle overview pages the app serves), the MIT licences,
-  and two unbuilt experimental sources kept for a future greenfield game.
+  a *reference* while porting. It is gone. What outlived it moved to where it
+  belongs: upstream's help sources to [help/upstream/](help/upstream), the MIT
+  notices to [licences/](licences), and the two unbuilt experimental sources
+  kept for future greenfield games to the openspec changes that read them. The
+  C itself is in git history.
 
 This replaced an earlier bottom-up, byte-identical-fidelity plan
 (preserved on branch `legacy/seam-by-seam-fidelity` + tag
@@ -111,9 +113,11 @@ templates under [templates/](templates/). `src/` is organised by role:
 
 The UI uses Lit web components and [Web Awesome][Web Awesome] design
 tokens; reactive state via `@lit-labs/signals`; offline via a Workbox
-service worker; telemetry via Sentry. The in-app help is assembled from
-[help/](help) (this fork's pages), `puzzles/html` (upstream per-puzzle
-overviews), and the upstream manual built from `puzzles/puzzles.but`.
+service worker; telemetry via Sentry. The in-app help all lives under
+[help/](help): this fork's own pages at the top level and in
+[help/games/](help/games), and upstream's own words — the per-puzzle overview
+fragments and the manual source — under
+[help/upstream/](help/upstream), verbatim and with a README saying so.
 
 [Web Awesome]: https://webawesome.com/docs/
 
@@ -161,8 +165,8 @@ the migration rules of record are the `ts-migration` capability spec.
 ## License
 
 The web app code (including local modifications/additions to the puzzles
-code) is MIT — see [LICENSE](./LICENSE). [puzzles/LICENCE](puzzles/LICENCE)
-covers the upstream subtree and the upstream manual
-(`puzzles/puzzles.but`), also MIT. The built app bundles several open
+code) is MIT — see [LICENSE](./LICENSE). The upstream notices in
+[licences/](licences) cover the ported games and the upstream help sources
+(`help/upstream/`), also MIT. The built app bundles several open
 source packages; required notices are in the app's *About* dialog (open
 an issue if any seem missing).
