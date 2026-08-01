@@ -32,6 +32,33 @@ constraints) with a bounded search fallback is the likely shape, mirroring how
 the deductive games in this repo grade difficulty. Record the choice in the
 spike.
 
+**A SAT/CP encoding is an explicit candidate for that spike** (owner-scoped,
+2026-08-01), and this is the change that decides whether one gets built at all.
+Numberlink is a classic SAT benchmark, and "prove uniqueness" is the query SAT
+answers most naturally: solve, add a clause excluding that solution, solve again.
+Two objections were raised and only one survived:
+
+- *It cannot narrate its reasoning, and this repo's solvers double as hint
+  engines.* **Withdrawn** — several games already ship an *Unreasonable* tier the
+  solver reaches and the hint does not, so "solves it but cannot explain it" is an
+  established shape. A SAT-backed uniqueness gate needs no narration at all; the
+  *hint* would still come from the deductive rungs, which is the same split those
+  games already have.
+- *It would forfeit the byte-match differential.* **Stands, but does not apply
+  here.** On a ported game the generator is solver-gated, so its accept/reject
+  decisions must reproduce C's deductive verdicts exactly, and a SAT uniqueness
+  check would change which puzzles exist. Path has **no C game and no C solver**
+  (D3), so there is nothing to forfeit — which is precisely why the question
+  belongs in this spike and nowhere else.
+
+If SAT wins here, **Seismic's region fill is the second consumer** that would
+justify promoting it from Path-local to shared: that fill is already diverged from
+upstream, so it has no oracle to lose either, and its 10×10 feasibility question
+is a SAT query (see the audit archived with `audit-author-known-issues`, §3a). Do
+**not** build a shared constraint engine before this spike — infrastructure ahead
+of the game that pressures it is the mistake
+`openspec/postmortems/2026-05-21-scene-graph-withdrawal.md` records.
+
 ## D2 — `path.c` is a seed, not an oracle
 
 Its path-growing strategy (repeatedly add a path, or extend one end and push

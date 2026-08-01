@@ -1,5 +1,40 @@
 # add-sokoban-level-packs
 
+> **WITHDRAWN 2026-08-01 — nofix. Owner decision: this collection stays entirely
+> procedurally generated.** No authored level data exists anywhere else in the
+> collection, and introducing a hand-curated pack for one game would make Sokoban
+> the exception to the property that defines the whole thing — every board comes
+> from a seed. **No code was written and the `sokoban` spec delta was NOT
+> applied** (archived with `--skip-specs`; the delta below records what was
+> proposed, not what shipped).
+>
+> **The author's complaint stands and is accepted as-is.** Sokoban ships the
+> levels upstream's reverse-play generator produces, which its author calls "too
+> simplistic to be credible". That is the same experience the C build gave, and it
+> is honest rather than hidden.
+>
+> **The one alternative the owner was open to — reverse-engineering known-good
+> levels into a better *procedural* generator — was examined and is not cheap.**
+> The reframing is worth keeping if it is ever revisited:
+>
+> - Upstream's technique is not the deficiency. `sokobanGenerate` already uses the
+>   standard method — start from a solved position and play *backwards*, pulling
+>   barrels rather than pushing them — which is why every level is solvable by
+>   construction and needs no solver to gate it.
+> - What it lacks is **selection**. It makes N inverse moves and emits whatever
+>   position it lands on. There is no scoring, no candidate pool, no rejection.
+>   Level quality in Sokoban lives almost entirely in that step: how far the
+>   barrels end up from their targets, whether the solution forces a non-obvious
+>   ordering, whether the corridors are trivial.
+> - So the cheap-sounding version — generate N, score, keep the best — needs a
+>   **Sokoban solver**, to know a candidate's minimum push count at all. That is
+>   precisely the component the reverse-play design exists to avoid needing, and
+>   Sokoban solving is PSPACE-complete (tractable at these sizes, but a real
+>   piece of work). The cheap version is not cheap, which is what makes the
+>   owner's high-effort-low-value instinct correct rather than merely cautious.
+>
+> Recorded in the audit archived with `audit-author-known-issues`.
+
 ## Why
 
 **Sokoban is the one game in the collection whose author says, in the first
