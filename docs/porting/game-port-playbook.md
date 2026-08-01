@@ -2480,6 +2480,15 @@ its Baseline 2023 gate. The same file ratchets runtime import cycles at zero.
 Every rule there has been verified to fail when violated — a layering rule that
 has never fired may not work, and its whole value is firing years from now.
 
+**One lint rule is deliberately off.** `complexity/useLiteralKeys` wants
+`v.foo` wherever a string-literal key is used — the exact inverse of tsconfig's
+`noPropertyAccessFromIndexSignature`, which requires `v["foo"]` for a property
+that comes from an index signature. Enabling the compiler flag put 52 sites in
+direct contradiction between the two tools. The flag wins (bracket access
+truthfully marks a key as dynamic, which is what `ConfigValues` and the save
+codec's unknown-shaped input actually are), so the biome rule is off. When
+adding a lint rule, check it does not invert a compiler flag.
+
 And when reading a raw madge cycle count: it is **not** a runtime-cycle count
 here. `verbatimModuleSyntax` erases `import type`, and moving a shared type
 behind one *is* the standard cycle fix — so madge reports the fix as the problem.
