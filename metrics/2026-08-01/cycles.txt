@@ -1,0 +1,26 @@
+raw cycles reported by madge: 20
+erased at build time (>=1 type-only edge): 19
+RUNTIME cycles: 1
+
+RUNTIME  native/games/unruly/solver.ts > native/games/unruly/state.ts
+
+--- erased (type-only somewhere in the loop) ---
+  components/command-link.ts > screens/screen.ts > components/help-viewer.ts  [type-only, dynamic, value]
+  components/command-link.ts > screens/screen.ts > dialogs/about-dialog.ts  [type-only, dynamic, value]
+  native/engine/candidate-hint.ts > native/engine/latin-hint.ts  [type-only, type-only]
+  native/games/ascent/render.ts > native/games/ascent/ui.ts  [value, type-only]
+  native/games/boats/index.ts > native/games/boats/render.ts  [value, type-only]
+  native/games/bricks/index.ts > native/games/bricks/render.ts  [value, type-only]
+  native/games/clusters/index.ts > native/games/clusters/render.ts  [value, type-only]
+  native/games/dominosa/index.ts > native/games/dominosa/render.ts  [value, type-only]
+  native/games/filling/index.ts > native/games/filling/render.ts  [value, type-only]
+  native/games/lightup/index.ts > native/games/lightup/render.ts  [value, type-only]
+  native/games/map/map-data.ts > native/games/map/state.ts  [type-only, type-only]
+  native/games/pattern/index.ts > native/games/pattern/render.ts  [value, type-only]
+  native/games/range/index.ts > native/games/range/render.ts  [value, type-only]
+  native/games/rome/index.ts > native/games/rome/render.ts  [value, type-only]
+  native/games/singles/index.ts > native/games/singles/render.ts  [value, type-only]
+  native/games/slant/index.ts > native/games/slant/render.ts  [value, type-only]
+  native/games/spokes/index.ts > native/games/spokes/render.ts  [value, type-only]
+  native/games/subsets/index.ts > native/games/subsets/render.ts  [value, type-only]
+  native/games/unruly/index.ts > native/games/unruly/render.ts  [value, type-only]

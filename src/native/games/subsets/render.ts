@@ -173,6 +173,7 @@ const CODE_A = "A".charCodeAt(0);
 
 // --- redraw -----------------------------------------------------------------
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: per-tile cache-miss dispatch across clue, candidate, hint and mistake overlays.
 export function redraw(
   dr: GameDrawing,
   ds: SubsetsDrawState | null,

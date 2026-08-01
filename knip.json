@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/main.ts",
+    "src/preflight.ts",
+    "src/sw.ts",
+    "src/color-scheme-init.ts",
+    "vite-plugins/*.ts",
+    "scripts/*.mjs",
+    "**/*.test.ts"
+  ],
+  "project": ["src/**/*.ts", "vite-plugins/**/*.ts", "scripts/**/*.mjs"],
+  "ignoreDependencies": ["jscpd", "madge"],
+  "ignore": ["src/test-setup/icons.ts"],
+  "ignoreBinaries": ["scripts/build-manual.sh"]
+}

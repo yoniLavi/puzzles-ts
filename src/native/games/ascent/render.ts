@@ -371,6 +371,7 @@ function displayNumber(i: number, ui: AscentUi, state: AscentState): number {
 
 // --- redraw --------------------------------------------------------
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one redraw covering five grid modes (square/hex/honeycomb variants) on a shared substrate.
 export function redrawAscent(
   dr: GameDrawing,
   ds: AscentDrawState | null,

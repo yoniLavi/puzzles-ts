@@ -100,6 +100,7 @@ const lineBits = (line: SticksLine): number =>
 const bitsLine = (bits: number): SticksLine =>
   bits & F_HOR ? "hor" : bits & F_VER ? "ver" : "none";
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: input dispatch over button x cursor x the three edge states.
 function interpretMove(
   state: SticksState,
   ui: SticksUi,

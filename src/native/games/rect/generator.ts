@@ -132,6 +132,7 @@ function findRect(w: number, h: number, grid: Int32Array, x: number, y: number):
   return { x: tx, y: ty, w: rw, h: rh };
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: generate-and-check with uniqueness enforcement and rectangle merging.
 export function newDesc(
   params: RectParams,
   rs: RandomState,

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.12/schema.json",
+  "linter": {
+    "rules": {
+      "recommended": false,
+      "complexity": {
+        "noExcessiveCognitiveComplexity": {
+          "level": "error",
+          "options": {
+            "maxAllowedComplexity": 15
+          }
+        }
+      }
+    }
+  },
+  "files": {
+    "includes": ["**", "!**/*.test.ts", "!**/__snapshots__/**", "!**/__fixtures__/**"]
+  }
+}

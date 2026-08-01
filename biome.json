@@ -9,6 +9,14 @@
       },
       "style": {
         "noParameterAssign": "off"
+      },
+      "complexity": {
+        "noExcessiveCognitiveComplexity": {
+          "level": "error",
+          "options": {
+            "maxAllowedComplexity": 150
+          }
+        }
       }
     }
   },
@@ -24,6 +32,6 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/help/upstream", "!**/docs/tilings", "!!!notes"]
+    "includes": ["**", "!**/help/upstream", "!**/docs/tilings", "!!!notes", "!metrics"]
   }
 }

@@ -145,6 +145,7 @@ export function presets() {
  * the generated grid reproduces bit-for-bit (the differential anchor,
  * design D6/R1). Returns the grid as a flat colour array.
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: grid generation with colour-run constraints and solvability retry.
 function genGrid(w: number, h: number, nc: number, rng: RandomState): number[] {
   const wh = w * h;
   const tc = nc + 1; // sentinel "provisional" colour during verification

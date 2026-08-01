@@ -134,6 +134,7 @@ function presets(): PresetMenu<UndeadParams> {
   };
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: input dispatch over button x cursor x pencil-mark mode x monster type.
 function interpretMove(
   state: UndeadState,
   ui: UndeadUi,

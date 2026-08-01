@@ -84,6 +84,7 @@ function squarecmp(a: Square, b: Square): number {
  * area", only allowed once `allowBigPerturbs`. Returns the list of changes, or
  * `null` to give up.
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: mine perturbation: the open-square repair loop that makes a first click safe.
 function mineperturb(
   ctx: MineCtx,
   grid: Int8Array,
