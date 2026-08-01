@@ -17,10 +17,14 @@ generation has to survive the teardown.
 
 ## Depends on
 
-- **`audit-author-known-issues`** must land first. The authors' own known-issue
-  lists live inside `puzzles/` — `puzzles/unreleased/docs/<game>.md` and the
-  `TODO` blocks at the head of each `.c` — and this change deletes that tree
-  wholesale, so anything unreconciled at that point is lost with it.
+- **`audit-author-known-issues`** — **landed.** The authors' own known-issue
+  lists lived inside `puzzles/`, which this change deletes wholesale. They are
+  now reconciled and preserved: every point and its verdict is in that change's
+  archived `audit.md`, and the per-puzzle help pages that carried them have moved
+  out of the subtree to `help/games/` (a `repo-layout` requirement now says they
+  must not live in `puzzles/`). Note for this teardown: **`help/games/` is a
+  source directory, not a build output** — the vite entry that renders it reads
+  from `help/games/`, no longer from `puzzles/unreleased/docs/`.
 
 ## What Changes
 

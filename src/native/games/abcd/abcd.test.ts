@@ -30,6 +30,7 @@ import {
   type AbcdMove,
   type AbcdParams,
   type AbcdState,
+  type AbcdUi,
   cuboid,
   decodeParams,
   EMPTY,
@@ -166,6 +167,54 @@ describe("abcd moves through a Midend", () => {
     expect(stateOf(me).pencil[cuboid(0, 0, 1, n, w)]).toBe(1);
     me.playMoves([{ type: "pencil", x: 0, y: 0, letter: 1 }]); // toggle off
     expect(stateOf(me).pencil[cuboid(0, 0, 1, n, w)]).toBe(0);
+  });
+
+  it("costs no undo step for an entry that would change nothing", () => {
+    // Upstream's own `TODO Prevent operations which do nothing`: re-typing the
+    // letter already in a cell, or clearing an already-empty one, used to be a
+    // committed move the player then had to undo.
+    const p = P(5, 5, 4);
+    const ts = abcdGame.preferredTileSize ?? 36;
+    const st = newState(p, newAbcdDesc(p, randomNew("noop-1")).desc);
+    const ds = newDrawState(st);
+    setTileSize(ds, ts);
+    const at = (s: AbcdState, x: number, y: number): AbcdUi => {
+      const ui = newUi(s);
+      ui.hshow = true;
+      ui.hcursor = true;
+      ui.hx = x;
+      ui.hy = y;
+      return ui;
+    };
+    const KEY_A = 97; // 'a' — letter 0
+    const KEY_B = 98; // 'b' — letter 1
+    const CLEAR = 8; // Backspace
+
+    // An empty cell: clearing it changes nothing, typing into it does.
+    expect(abcdGame.interpretMove(st, at(st, 0, 0), ds, { x: 0, y: 0 }, CLEAR)).toBe(
+      null,
+    );
+    const first = abcdGame.interpretMove(st, at(st, 0, 0), ds, { x: 0, y: 0 }, KEY_A);
+    expect(first).toEqual({ type: "enter", x: 0, y: 0, letter: 0 });
+
+    // With that letter placed, re-typing it is a no-op; a different one is not.
+    const s1 = abcdGame.executeMove(st, first as AbcdMove);
+    expect(abcdGame.interpretMove(s1, at(s1, 0, 0), ds, { x: 0, y: 0 }, KEY_A)).toBe(
+      null,
+    );
+    expect(abcdGame.interpretMove(s1, at(s1, 0, 0), ds, { x: 0, y: 0 }, KEY_B)).toEqual(
+      { type: "enter", x: 0, y: 0, letter: 1 },
+    );
+    expect(abcdGame.interpretMove(s1, at(s1, 0, 0), ds, { x: 0, y: 0 }, CLEAR)).toEqual(
+      { type: "enter", x: 0, y: 0, letter: null },
+    );
+
+    // Clearing an empty cell that still carries notes *does* change something —
+    // `executeMove` wipes its pencil cube — so it must stay a real move.
+    const noted = abcdGame.executeMove(st, { type: "pencil", x: 1, y: 1, letter: 2 });
+    expect(
+      abcdGame.interpretMove(noted, at(noted, 1, 1), ds, { x: 0, y: 0 }, CLEAR),
+    ).toEqual({ type: "enter", x: 1, y: 1, letter: null });
   });
 
   it("adaptive mark-all: first M fills empty cells; repeat M only strikes, never resets", () => {

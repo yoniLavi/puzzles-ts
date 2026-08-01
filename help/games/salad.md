@@ -1,7 +1,5 @@
 # Salad
 
-![](https://raw.githubusercontent.com/x-sheep/puzzles-unreleased/master/docs/img/salad.png)
-
 You have a square grid; each square may contain a character from A (or 1) to a given maximum. Your objective is to put characters in some of the squares, so each character appears exactly once in each row and column.
 
 The rules vary depending on the game mode:
@@ -11,7 +9,7 @@ The rules vary depending on the game mode:
 
 Number Ball was invented by Inaba Naoki. The original puzzles are available here: http://www.janko.at/Raetsel/Nanbaboru/index.htm
 
-I don't know who first designed ABC End View.
+The designer of ABC End View is unknown.
 
 ## Controls
 
@@ -21,7 +19,7 @@ Left-click to select a cell, then type a letter or number on your keyboard to en
 
 Press 'X' to mark a cell as empty, or press 'O' to mark a cell as "definitely not empty".
 
-Right-click a cell, then type a letter or number to add a pencil mark. Pencil marks can be used for any purpose. The letter 'X' can also be used to indicate a cell that might be empty.
+Right-click a cell, then type a letter or number to add a pencil mark. Pencil marks can be used for any purpose. The letter 'X' can also be used to indicate a cell that might be empty. A preference makes right-click switch on a *sticky* pencil mode instead, which stays on until you right-click again.
 
 You can also use the arrow keys to move the selected cell around. Press Enter to toggle between entering letters/numbers and entering pencil marks.
 
@@ -42,10 +40,3 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dd>Determine the difficulty of the generated puzzle.</dd>
 </dl>
 
-## Status
-
-This puzzle is playable.
-
-The system for pseudo-latin squares is currently fairly messy, and doesn't allow for more complex solver techniques. This puzzle would greatly benefit from upstream support for latin squares where a symbol (specifically, the empty square) can appear more than once per row. This would allow for more puzzle types in the future to reuse a great deal of code.
-
-The Number Ball generator currently doesn't create puzzles that make good use of the concept, in my opinion.

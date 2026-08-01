@@ -1,7 +1,5 @@
 # Sticks
 
-![](https://raw.githubusercontent.com/x-sheep/puzzles-unreleased/master/docs/img/sticks.png)
-
 You are given a grid with several black cells. Fill every blank cell with a line, which connects two cell edges and goes horizontally or vertically through the center of the cell. The lines must follow these rules:
 
 1. A number overlapping a line indicates the length of that line.
@@ -33,6 +31,3 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dd>Allows you to specify the required symmetry of the black squares in the grid.</dd>
 </dl>
 
-## Status
-
-This puzzle is playable. There are currently no difficulty settings.

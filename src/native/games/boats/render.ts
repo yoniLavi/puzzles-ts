@@ -147,23 +147,63 @@ export function fromCoord(pixel: number, ts: number): number {
   return Math.floor((pixel - BORDER) / ts);
 }
 
+/** One boat's slot in the fleet display. */
+export interface FleetSlot {
+  /** Zero-based size index — this boat is `size + 1` segments long. */
+  size: number;
+  /** Which copy of that size, `0 … fleetData[size] - 1`. */
+  copy: number;
+  /** Left edge, in tile units along its row. */
+  fx: number;
+  /** Width including its trailing margin, in tile units. */
+  width: number;
+  /** Which row of the fleet display it sits on. */
+  row: number;
+}
+
+/** The rightmost tile-unit column a fleet row may reach. */
+export const fleetRowLimit = (p: BoatsParams): number => p.w + 2;
+
 /**
- * How many rows the fleet display needs — upstream's `boats_draw_fleet` run in
- * measuring mode (`dr == NULL`). Boats of one size are laid out together and
- * wrap to a new row when the next batch would run past the board's width.
+ * Where every boat in the fleet display goes — upstream's `boats_draw_fleet`
+ * layout walk, shared by the measurer ({@link fleetRows}) and the drawer so the
+ * two cannot disagree about how many rows there are.
+ *
+ * Upstream breaks a row **between whole batches**, keeping one size's boats
+ * together. That is kept. What it lacks is a break *within* a batch, so a fleet
+ * holding more boats of one size than fit on a row — nine size-1 boats on a
+ * 5-wide board, say — ran straight off the right edge of the canvas, which is
+ * the author's own `TODO ui: Certain custom fleets don't fit in the UI`. The
+ * second test below is that break. It is a pure repair rather than a relayout:
+ * whenever the batch-level test let a batch through, every boat in it fits too,
+ * so the per-boat test cannot fire and the layout is unchanged.
  */
-export function fleetRows(p: BoatsParams): number {
+export function* fleetLayout(p: BoatsParams): Generator<FleetSlot> {
+  const limit = fleetRowLimit(p);
   let fx = FLEET_X;
-  let y = 0;
-  for (let i = 0; i < p.fleet; i++) {
-    const batchWidth = p.fleetData[i] * ((i + 1) * FLEET_SIZE + FLEET_MARGIN);
-    if (fx + batchWidth > p.w + 2 && fx !== FLEET_X) {
+  let row = 0;
+  for (let size = 0; size < p.fleet; size++) {
+    const width = (size + 1) * FLEET_SIZE + FLEET_MARGIN;
+    if (fx + p.fleetData[size] * width > limit && fx !== FLEET_X) {
       fx = FLEET_X;
-      y++;
+      row++;
     }
-    fx += p.fleetData[i] * ((i + 1) * FLEET_SIZE + FLEET_MARGIN);
+    for (let copy = 0; copy < p.fleetData[size]; copy++) {
+      if (fx + width > limit && fx !== FLEET_X) {
+        fx = FLEET_X;
+        row++;
+      }
+      yield { size, copy, fx, width, row };
+      fx += width;
+    }
   }
-  return y + 1;
+}
+
+/** How many rows the fleet display needs. */
+export function fleetRows(p: BoatsParams): number {
+  let rows = 1;
+  for (const slot of fleetLayout(p)) rows = Math.max(rows, slot.row + 1);
+  return rows;
 }
 
 /** Upstream `game_compute_size`: the board plus one row/column of numbers, the
@@ -331,76 +371,54 @@ function drawFleet(
   const slope =
     (FLEET_SIZE * ts - STRIPE_SIZE * 2) / (fleet * FLEET_SIZE * ts - STRIPE_SIZE * 2);
 
-  let fx = FLEET_X;
-  let row = 0;
+  for (const { size: i, copy: j, fx: startFx, width: boatWidth, row } of fleetLayout(
+    p,
+  )) {
+    if (!full && fleetCount[i] === ds.fleetCount[i]) continue;
 
-  for (let i = 0; i < fleet; i++) {
-    const batchWidth = fleetData[i] * ((i + 1) * FLEET_SIZE + FLEET_MARGIN);
-    if (fx + batchWidth > p.w + 2 && fx !== FLEET_X) {
-      fx = FLEET_X;
-      row++;
+    const rect = {
+      x: fxCoord(startFx),
+      y: fyCoord(row),
+      w: boatWidth * ts,
+      h: FLEET_SIZE * ts,
+    };
+    dr.drawUpdate(rect);
+    dr.drawRect(rect, COL_BACKGROUND);
+
+    const found = j < fleetCount[i];
+    const colour = found ? COL_SHIP_FLEET_DONE : COL_SHIP_FLEET;
+
+    let fx = startFx;
+    for (let k = 0; k <= i; k++) {
+      const ship =
+        i === 0
+          ? SHIP_SINGLE
+          : k === 0
+            ? SHIP_LEFT
+            : k === i
+              ? SHIP_RIGHT
+              : SHIP_CENTER;
+      drawSegment(dr, fxCoord(fx), fyCoord(row), ts * FLEET_SIZE, ship, colour);
+      fx += FLEET_SIZE;
     }
 
-    for (let j = 0; j < fleetData[i]; j++) {
-      const boatWidth = (i + 1) * FLEET_SIZE + FLEET_MARGIN;
-      if (!full && fleetCount[i] === ds.fleetCount[i]) {
-        fx += boatWidth;
-        continue;
-      }
-
-      const startFx = fx;
-      dr.drawUpdate({
-        x: fxCoord(startFx),
-        y: fyCoord(row),
-        w: boatWidth * ts,
-        h: FLEET_SIZE * ts,
-      });
-      dr.drawRect(
-        {
-          x: fxCoord(startFx),
-          y: fyCoord(row),
-          w: boatWidth * ts,
-          h: FLEET_SIZE * ts,
-        },
-        COL_BACKGROUND,
+    if (found) {
+      // Red rather than black when more boats of this size are on the board
+      // than the fleet holds.
+      const stripe =
+        fleetData[i] >= fleetCount[i] ? COL_SHIP_FLEET_STRIPE : COL_COUNT_ERROR;
+      const cy = fyCoord(row) + (FLEET_SIZE * ts) / 2;
+      const stripeH = slope * ((i + 1) * FLEET_SIZE * ts - STRIPE_SIZE * 2);
+      dr.drawLine(
+        { x: fxCoord(startFx) + STRIPE_SIZE, y: cy + stripeH / 2 },
+        { x: fxCoord(fx) - STRIPE_SIZE, y: cy - stripeH / 2 },
+        stripe,
+        STRIPE_SIZE,
       );
-
-      const found = j < fleetCount[i];
-      const colour = found ? COL_SHIP_FLEET_DONE : COL_SHIP_FLEET;
-
-      for (let k = 0; k <= i; k++) {
-        const ship =
-          i === 0
-            ? SHIP_SINGLE
-            : k === 0
-              ? SHIP_LEFT
-              : k === i
-                ? SHIP_RIGHT
-                : SHIP_CENTER;
-        drawSegment(dr, fxCoord(fx), fyCoord(row), ts * FLEET_SIZE, ship, colour);
-        fx += FLEET_SIZE;
-      }
-
-      if (found) {
-        // Red rather than black when more boats of this size are on the board
-        // than the fleet holds.
-        const stripe =
-          fleetData[i] >= fleetCount[i] ? COL_SHIP_FLEET_STRIPE : COL_COUNT_ERROR;
-        const cy = fyCoord(row) + (FLEET_SIZE * ts) / 2;
-        const stripeH = slope * ((i + 1) * FLEET_SIZE * ts - STRIPE_SIZE * 2);
-        dr.drawLine(
-          { x: fxCoord(startFx) + STRIPE_SIZE, y: cy + stripeH / 2 },
-          { x: fxCoord(fx) - STRIPE_SIZE, y: cy - stripeH / 2 },
-          stripe,
-          STRIPE_SIZE,
-        );
-      }
-
-      fx += FLEET_MARGIN;
     }
-
-    ds.fleetCount[i] = fleetCount[i];
   }
+
+  for (let i = 0; i < fleet; i++) ds.fleetCount[i] = fleetCount[i];
 }
 
 // --- the frame -------------------------------------------------------------

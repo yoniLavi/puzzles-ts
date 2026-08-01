@@ -1,11 +1,8 @@
 # Bricks
 
-![](https://raw.githubusercontent.com/x-sheep/puzzles-unreleased/master/docs/img/bricks.png)
+You're given a hexagonal grid with numbers in some of its cells. Your objective is to shade several cells while following these rules:
 
-Objective of the game: Shade several cells in the hexagonal grid 
-while following these rules:
-1. Each shaded cell must have at least one shaded cell below it
-   (unless it's on the bottom row).
+1. Each shaded cell must have at least one shaded cell below it (unless it's on the bottom row).
 2. There can't be 3 or more consecutive shaded cells in a horizontal line.
 3. A number indicates the amount of shaded cells around it.
 4. Cells with numbers cannot be shaded.
@@ -31,6 +28,3 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dd>Determine the difficulty of the generated puzzle. Higher difficulties require more complex reasoning.</dd>
 </dl>
 
-## Status
-
-This puzzle is playable. Selecting Tricky difficulty may generate a puzzle at Normal difficulty instead.

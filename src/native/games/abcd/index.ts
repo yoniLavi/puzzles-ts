@@ -108,6 +108,28 @@ function keyLetter(button: number, n: number): number | null | undefined {
   return undefined;
 }
 
+/**
+ * Would writing `letter` into `(x, y)` leave the state exactly as it is?
+ *
+ * The two arms mirror `executeMove`'s two `enter` branches: placing a letter
+ * touches only the grid, so it is a no-op iff that letter is already there;
+ * clearing also wipes the cell's pencil cube, so it is a no-op only when the
+ * cell is empty *and* carries no notes.
+ */
+function noOpEntry(
+  state: AbcdState,
+  x: number,
+  y: number,
+  letter: number | null,
+): boolean {
+  const { w, n } = state.params;
+  const cell = state.grid[y * w + x];
+  if (letter !== null) return cell === letter;
+  if (cell !== EMPTY) return false;
+  for (let z = 0; z < n; z++) if (state.pencil[cuboid(x, y, z, n, w)]) return false;
+  return true;
+}
+
 function interpretMove(
   state: AbcdState,
   ui: AbcdUi,
@@ -193,6 +215,12 @@ function interpretMove(
   if (letter !== undefined) {
     // In pencil mode a filled square can't be changed.
     if (ui.hpencil && state.grid[ui.hy * w + ui.hx] !== EMPTY) return null;
+
+    // Suppress an entry that would change nothing, so it costs no undo step
+    // (upstream's own `/* TODO Prevent operations which do nothing */`, which
+    // its `interpret_move` never got to). Locally decided, as the playbook
+    // requires — never by comparing serialised states.
+    if (!ui.hpencil && noOpEntry(state, ui.hx, ui.hy, letter)) return null;
 
     const move: AbcdMove =
       letter === null

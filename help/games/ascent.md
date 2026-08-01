@@ -1,7 +1,5 @@
 # Ascent
 
-![](https://raw.githubusercontent.com/x-sheep/puzzles-unreleased/master/docs/img/ascent.png)
-
 You're given a grid, with several numbers inside. Your objective is to place each number exactly once, so a path is formed from the lowest number (i.e. 1) to the highest number. Two numbers that are in sequence must be horizontally, vertically or diagonally adjacent.
 
 The puzzle can be played on a rectangular or hexagonal grid. It's also possible to play on a rectangular grid while not allowing the path to move diagonally.
@@ -22,11 +20,13 @@ There are three ways to enter a number:
 
 3. In Edges mode, click and drag from an edge number, then release in an empty grid cell in the same row, column or diagonal.
 
-To remove numbers, right-click or right-drag a number.
+To remove numbers, right-click or right-drag a number. Middle-click clears too.
 
 It's also possible to draw a path while the numbers inside the path are still unknown. Left-click and drag across cells to draw a line. Right-click or right-drag to clear the line going through a cell.
 
 If a path has only a single number, the endpoints will display one or two smaller numbers, which represent the numbers which are valid for this cell.
+
+Where a cell has exactly two candidate numbers like that, right-clicking cycles through them instead of clearing — empty, then the lower number, then the higher, then empty again — so an either-or square can be tried both ways without typing. Middle-click still clears it outright.
 
 ## Ascent parameters
 
@@ -45,6 +45,3 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dd>Determine the difficulty of the generated puzzle. Higher difficulties require more complex reasoning.</dd>
 </dl>
 
-## Status
-
-This puzzle is fully implemented and playable.
