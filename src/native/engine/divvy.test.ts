@@ -111,6 +111,30 @@ describe("divvyRectangle", () => {
     });
   }
 
+  it("holds across successive draws from one RNG, over every Palisade preset", () => {
+    // Palisade generates many regions from a single `RandomState`, so the
+    // interesting case is repeated calls threading one stream — not a fresh seed
+    // each time. (This absorbs the `palisade divvy` block that used to live in
+    // `palisade.test.ts`: same shapes, and it never checked connectivity.)
+    const rng = randomNew("palisade-divvy");
+    for (const [w, h, k] of [
+      [5, 5, 5],
+      [8, 6, 6],
+      [10, 8, 8],
+      [15, 12, 10],
+    ] as const) {
+      for (let trial = 0; trial < 3; trial++) {
+        const dsf = divvyRectangle(w, h, k, rng);
+        const groups = regions(dsf, w, h);
+        expect(groups).toHaveLength((w * h) / k);
+        for (const g of groups) {
+          expect(g).toHaveLength(k);
+          expect(connected(g, w), `${w}x${h} k=${k} trial ${trial}`).toBe(true);
+        }
+      }
+    }
+  });
+
   it("holds over many seeds, not just a lucky one", () => {
     // The retry loop means a rare failed attempt is invisible from one seed; a
     // partition rule that is subtly wrong shows up as a region of the wrong size

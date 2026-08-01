@@ -213,8 +213,43 @@ satisfy every structural assertion. Also measured rather than assumed: its
 and the test file says so. Distinguishing "not covered" from "not reachable" is
 the whole of triage class (b).
 
-Still without a local test, in descending order of reach: `grid-core.ts` (11
-importers), `grid-geometry.ts`, the three `grid-tilings-*.ts`,
-`deduction-record.ts`, `registry.ts`, `pencil-indicator.ts`.
+### 5a. The list above was measured with the wrong unit — corrected
+
+"Has no file named `<module>.test.ts`" is **not** "has no local test", and
+believing it nearly bought a redundant `grid-core.test.ts`. Re-measured by asking
+which test files *import* each module:
+
+| module | direct test importer |
+| --- | --- |
+| `grid-core.ts` | `grid-trim.test.ts` (+ `grid.test.ts` exercises `gridNewSquare` through the barrel it documents as the entry point) |
+| `grid-geometry.ts` | `grid-incentre.test.ts` |
+| `grid-tilings.ts` | `grid-desc.test.ts`, `grid-trim.test.ts` |
+| `registry.ts` | seven test files |
+| `colour-token.ts` | `colours.test.ts`, `palette.test.ts` |
+| `palette-games.ts` | `palette-source.test.ts` |
+
+So most of §5's list was already covered locally, by a test named after the
+*barrel* or the *behaviour* rather than the file. **This is the fourth instance
+this session of an instrument's unit being part of its correctness** — and the
+first where the wrong unit would have caused work rather than a false alarm.
+
+Genuinely reached by no test at all: `grid-tilings-{basic,hex,dodec}.ts` (only
+through the tested `grid-tilings.ts`), `deduction-record.ts`, `hint-vocab.ts`,
+`pencil-indicator.ts` — all small, and the first group is covered by
+`grid-differential.test.ts` end to end.
+
+The three files written above were still the right three, but for a sharper
+reason than the heuristic gave:
+
+- `wires.ts` — no importer of any kind in a test. Correct as stated.
+- `divvy.ts` — `palisade.test.ts` imported it, but tested only sizes and region
+  counts, never **connectivity**, and did it from a game's test file for an
+  engine module with three consumers. The engine test now owns it (absorbing
+  Palisade's shapes and its successive-draws-from-one-RNG case) and that block is
+  deleted, so there is one place to update rather than two.
+- `symmetric-blacks.ts` — `sticks.test.ts` imported only the `SYMM_*`
+  *constants*; `placeSymmetricBlacks` itself had no direct test. And the proof
+  that the distant coverage was insufficient is not an argument but a
+  measurement: two of the five mutation probes found real gaps.
 
 ---
