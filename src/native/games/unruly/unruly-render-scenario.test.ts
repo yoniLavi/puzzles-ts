@@ -6,11 +6,12 @@
 import { describe, expect, it } from "vitest";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { randomNew } from "../../random/index.ts";
+import { type Cell, ONE, ZERO } from "./constants.ts";
 import { newDesc } from "./generator.ts";
 import { type UnrulyHint, unrulyGame } from "./index.ts";
 import { COL_0, COL_1, COL_ERROR, COL_GRID, COL_HINT } from "./render.ts";
 import { solveToString } from "./solver.ts";
-import { type Cell, newState, ONE, type UnrulyMove, ZERO } from "./state.ts";
+import { newState, type UnrulyMove } from "./state.ts";
 
 describe("Unruly render scenarios", () => {
   it("matches the opener-frame snapshot of a fixed generated board", () => {

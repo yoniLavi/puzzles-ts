@@ -21,6 +21,7 @@ import {
   UNDECIDED,
 } from "../../engine/palette.ts";
 import { UNRULY_BLACK, UNRULY_WHITE } from "../../engine/palette-games.ts";
+import { EMPTY, ONE, ZERO } from "./constants.ts";
 import type { UnrulyHint } from "./index.ts";
 import {
   FE_COL_MATCH,
@@ -32,15 +33,12 @@ import {
   validateCounts,
   validateRows,
 } from "./solver.ts";
-import {
-  EMPTY,
-  ONE,
-  type UnrulyMistake,
-  type UnrulyMove,
-  type UnrulyParams,
-  type UnrulyState,
-  type UnrulyUi,
-  ZERO,
+import type {
+  UnrulyMistake,
+  UnrulyMove,
+  UnrulyParams,
+  UnrulyState,
+  UnrulyUi,
 } from "./state.ts";
 
 export const PREFERRED_TILE_SIZE = 32;

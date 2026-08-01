@@ -5,20 +5,17 @@
 // placement animation.
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../random/index.ts";
+import { type Cell, EMPTY as E, ONE as O, ZERO as Z } from "./constants.ts";
 import { newDesc } from "./generator.ts";
 import { type UnrulyHint, unrulyGame } from "./index.ts";
 import { PLACE_ANIM_TIME } from "./render.ts";
 import { deduceHintPlan } from "./solver.ts";
 import {
-  type Cell,
-  EMPTY as E,
   isComplete,
   newState,
-  ONE as O,
   type UnrulyMove,
   type UnrulyParams,
   type UnrulyState,
-  ZERO as Z,
 } from "./state.ts";
 
 /** Build a state directly from a grid of cell values (no immutable clues). */

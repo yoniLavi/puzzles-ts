@@ -10,16 +10,8 @@
  * working grid.
  */
 import { stepBudget } from "../../engine/step-budget.ts";
-import {
-  DIFF_EASY,
-  DIFF_NORMAL,
-  DIFF_TRIVIAL,
-  EMPTY,
-  ONE,
-  type UnrulyMistake,
-  type UnrulyState,
-  ZERO,
-} from "./state.ts";
+import { DIFF_EASY, DIFF_NORMAL, DIFF_TRIVIAL, EMPTY, ONE, ZERO } from "./constants.ts";
+import type { UnrulyMistake, UnrulyState } from "./state.ts";
 
 /** A temporary fill used by the near-complete technique so it doesn't
  * perturb the running counts; never appears in a real state. */

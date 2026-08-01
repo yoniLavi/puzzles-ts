@@ -2472,6 +2472,14 @@ Three rules, each learned by getting it wrong (`establish-refactor-baseline`):
    the ceiling, so their true complexity is unmeasured and a stable 255 does not
    mean "no regression".
 
+**Module layering is enforced** by `src/module-layering.test.ts`: no game
+imports another game (shared behaviour goes in `src/native/engine/`), the engine
+does not import games (except `engine/testing/hint-games.ts`, the hint
+enrollment file), neither imports the app shell, and `preflight.ts` stays inside
+its Baseline 2023 gate. The same file ratchets runtime import cycles at zero.
+Every rule there has been verified to fail when violated — a layering rule that
+has never fired may not work, and its whole value is firing years from now.
+
 And when reading a raw madge cycle count: it is **not** a runtime-cycle count
 here. `verbatimModuleSyntax` erases `import type`, and moving a shared type
 behind one *is* the standard cycle fix — so madge reports the fix as the problem.

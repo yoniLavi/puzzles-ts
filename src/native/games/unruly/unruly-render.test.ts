@@ -4,6 +4,7 @@
 // completion-flash highlight shift, and the cache suppressing unchanged tiles.
 import { describe, expect, it } from "vitest";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { type Cell, ONE, ZERO } from "./constants.ts";
 import type { UnrulyHint } from "./index.ts";
 import {
   COL_0,
@@ -22,16 +23,13 @@ import {
   type UnrulyDrawState,
 } from "./render.ts";
 import {
-  type Cell,
   encodeGrid,
   executeMove,
   newState,
-  ONE,
   type UnrulyMove,
   type UnrulyParams,
   type UnrulyState,
   type UnrulyUi,
-  ZERO,
 } from "./state.ts";
 
 interface Op {

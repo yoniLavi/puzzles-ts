@@ -11,23 +11,18 @@
 import type { GameStatus } from "../../../puzzle/types.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
+import {
+  type Cell,
+  DIFF_CHARS,
+  DIFF_COUNT,
+  DIFF_EASY,
+  DIFF_NAMES,
+  DIFF_NORMAL,
+  DIFF_TRIVIAL,
+  ONE,
+  ZERO,
+} from "./constants.ts";
 import { validateCounts, validateRows } from "./solver.ts";
-
-// --- cell values (upstream `enum { EMPTY, N_ONE, N_ZERO, BOGUS }`) -------
-// BOGUS is solver-internal only (a temporary fill that doesn't perturb the
-// running counts) and never appears in a real state; it lives in solver.ts.
-export const EMPTY = 0;
-export const ONE = 1;
-export const ZERO = 2;
-export type Cell = typeof EMPTY | typeof ONE | typeof ZERO;
-
-// --- difficulty (upstream DIFFLIST: Trivial, Easy, Normal) ---------------
-export const DIFF_TRIVIAL = 0;
-export const DIFF_EASY = 1;
-export const DIFF_NORMAL = 2;
-export const DIFF_COUNT = 3;
-export const DIFF_NAMES = ["Trivial", "Easy", "Normal"] as const;
-export const DIFF_CHARS = "ten"; // ENCODE chars, indexed by difficulty
 
 // --- types ---------------------------------------------------------------
 
