@@ -1648,9 +1648,29 @@ an end (owner-stated, 2026-07-20).** It is the default there — but because it
 2. **It is porting ease.** Transcribing upstream's logic verbatim is the
    lowest-risk way to get a hard algorithm right.
 
-So **you may let it go for a bigger benefit** — just do it deliberately, and
-know you are also trading away the oracle. Four rules for deciding, learned on
-`add-loopy-ts-port`:
+**Both of those jobs are now finished, and the owner released the constraint
+(2026-08-01):** *"it was only a temporary one for the porting, but now that we've
+finished porting, I'm very happy to diverge in favour of a better play
+experience, wherever it's worth it."* Every game is ported, so **matching the C
+is no longer a reason not to improve a game**, and "it would change every board"
+is a cost to weigh rather than an objection that ends the discussion.
+
+Two things it does not change, and one technique it makes the default:
+
+- **"Wherever it's worth it" is the whole test.** A divergence still needs a
+  stated player-visible benefit. Tidiness is still not one.
+- **Say what replaces the oracle.** The byte-match was the strongest assurance
+  available; dropping it leaves a hole. The standard filling is a property test —
+  every generated board uniquely solvable at *exactly* its stated difficulty —
+  which is weaker but real. `replace-seismic-region-generator` and the Mathrax
+  Recursive divergence both did this; copy them.
+- **Try to keep both.** You often need not choose. **Spokes** ships a corrected
+  difficulty-acceptance check *and* retains upstream's original one, reachable by
+  the differential alone (`spokes` spec, "grades its difficulty tiers honestly"),
+  so the frozen fixtures still byte-match against the old path while players get
+  the better boards. Reach for that shape before retiring a differential.
+
+Four rules for deciding, learned on `add-loopy-ts-port`:
 
 - **Divergence is free where C has no defined behaviour.** Upstream aborts on a
   degenerate Penrose patch (`dsf_new(0)`). Retrying with a fresh description
@@ -1667,8 +1687,18 @@ know you are also trading away the oracle. Four rules for deciding, learned on
 - **Diverge for a genuine player-visible defect, not for tidiness.** A solver
   that deduces *falsely* can generate a puzzle with no unique solution — that is
   worth fixing and recording, even at the cost of the differential. A solver
-  that is merely *weaker* than intended is not a defect; it is the difficulty
-  curve upstream shipped.
+  that is merely *weaker* than intended was **not**, until 2026-08-01.
+
+  **Amended 2026-08-01.** The rule used to continue: *"a solver that is merely
+  weaker than intended is not a defect; it is the difficulty curve upstream
+  shipped, and fixing it changes every board."* That clause was doing two jobs
+  and only one survives. *Tidiness is still not a reason* — do not strengthen a
+  solver because you can. But **"it changes every board" is no longer an
+  objection**, so a weaker-than-intended solver *is* fair game where the stronger
+  one makes the game better to play. The clearest case is a difficulty tier that
+  does not mean what it says: Bricks' own documentation admits "selecting Tricky
+  difficulty may generate a puzzle at Normal difficulty instead", which is a
+  player-visible defect that this clause used to protect.
 - **Diverge where the C shape doesn't fit a browser.** `grid_trim_vigorously`'s
   dense `O(numDots²)` matrix is ~576 MB at 50×50. Structure is not behaviour:
   the replacement is exact, so this costs no fidelity at all — the trap would

@@ -122,17 +122,25 @@ Aspirational next step (owner-flagged 2026-06-15, not yet committed): lift Fifte
 
 Port to the most idiomatic TS shape — classes over handle-passing, `[Symbol.iterator]()` over `while (next())`, `boolean` over `0|1`, GC over explicit `free()`, modern data structures over C-array mirrors. Use the C as a *reference for the logic* (what deductions the solver makes, how the generator ensures uniqueness), not as a control-flow template to mirror line-for-line. There is no corpus that a refactor could break, so write it clean the first time; the dev-time differential spot-check catches gross divergence.
 
-### Byte-parity is a tool, not a debt (owner-stated 2026-07-04 and 2026-07-20)
+### Byte-parity is a tool, not a debt — and the porting job it existed for is over (owner-stated 2026-07-04, 2026-07-20, released 2026-08-01)
 
 **Display code was never in scope** (2026-07-04): rendering, layout, geometry, animation and colours target *neat visuals and clean code*, not pixel-for-pixel reproduction. Deliberate visual improvements are the point of the fork.
 
-**On the generator/solver/codec path, byte-parity is the default — but as a *means*, not an end** (2026-07-20). It buys exactly two things: it is the **verification mechanism** (on a solver-gated generator the desc depends on the solver's verdict on every intermediate board, so one byte-match assertion validates generator, solver and codec together — nothing else available is as strong), and it is **porting ease** (verbatim transcription is the lowest-risk way to get a hard algorithm right). **You may let it go for a bigger benefit** — deliberately, recorded, and knowing you are also giving up the oracle.
+**On the generator/solver/codec path, byte-parity was the default while porting** (2026-07-20). It bought exactly two things: it was the **verification mechanism** (on a solver-gated generator the desc depends on the solver's verdict on every intermediate board, so one byte-match assertion validates generator, solver and codec together), and it was **porting ease** (verbatim transcription is the lowest-risk way to get a hard algorithm right).
+
+**Both jobs are done, and the constraint is released** (owner, 2026-08-01): *"it was only a temporary one for the porting, but now that we've finished porting, I'm very happy to diverge in favour of a better play experience, wherever it's worth it."* Every game is ported. **Matching the C is no longer a reason not to improve a game.** "It would change every board" is now a *cost to weigh*, not an objection that ends the discussion — and where the improvement is real, changing every board is the point.
+
+Three things this does **not** license:
+
+1. **Churn.** "Wherever it's worth it" is the whole test. A divergence still needs a stated player-visible benefit; tidiness is still not one (playbook §4 rule 3's second half survives its first half).
+2. **Losing the assurance silently.** The byte-match was the strongest verification available, and dropping it leaves a hole that must be filled deliberately — normally "every generated board is uniquely solvable at exactly its stated difficulty" as a property test. Say what replaces the oracle, in the change.
+3. **Assuming you must choose.** **Often you can diverge and keep the oracle as a test.** Spokes is the worked example (`spokes` spec, "grades its difficulty tiers honestly"): it ships a corrected acceptance check *and* retains upstream's original one, reachable by the differential alone, so the byte-match fixtures still pass against the old path while players get the better boards. Reach for that shape before retiring a differential.
 
 Four rules, from `add-loopy-ts-port`; the followable form is [`game-port-playbook.md`](docs/porting/game-port-playbook.md) §4 intro:
 
 1. **Divergence is free where C has no defined behaviour.** Upstream aborts on a degenerate Penrose patch, so retrying with a fresh desc diverges *only* on the seeds where C crashes. Take those — there is nothing to match.
 2. **Price the quirk before paying or refusing it.** "Bug-compatibility" sounds expensive and usually isn't: one quirk cost a single line plus a comment, another cost literally nothing (TS's `%` truncates exactly like C's). Don't narrate a sacrifice you aren't making.
-3. **Diverge for a genuine player-visible defect, not for tidiness.** A solver that deduces *falsely* can generate a puzzle with no unique solution — fix it and record it. A solver that is merely *weaker* than intended is not a defect; it is the difficulty curve upstream shipped, and "fixing" it changes every board.
+3. **Diverge for a genuine player-visible defect, not for tidiness.** A solver that deduces *falsely* can generate a puzzle with no unique solution — fix it and record it. **Amended 2026-08-01:** this rule used to continue "a solver that is merely *weaker* than intended is not a defect; it is the difficulty curve upstream shipped, and fixing it changes every board." The second clause was doing two jobs and only one survives. *Tidiness is still not a reason* — don't strengthen a solver because you can. But "it changes every board" is no longer an objection, so a weaker-than-intended solver **is** now fair game when the stronger one makes the game better to play: it is the difference between a tier that means something and one that doesn't.
 4. **Diverge where the C shape doesn't fit a browser.** `grid_trim_vigorously`'s dense `O(numDots²)` matrix is ~576 MB at 50×50. Structure is not behaviour — the replacement was exact, so this cost no fidelity at all; the trap would have been transcribing it faithfully *because* it was the C's shape.
 
 ## Migration order
