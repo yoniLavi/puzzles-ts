@@ -57,6 +57,13 @@ Full triage in [`findings.md`](findings.md); this file records what was done.
       present: a real render bug was injected into `crossing/render.ts` and the
       suite run **with `-u`**, so the snapshots re-baselined around it — **5
       tests still failed**. findings.md §1.
+- [x] 3.2b **Acted on §5 for the two largest modules with no local test.**
+      `wires.ts` (413 lines, 9 importers) gained 25 tests, `symmetric-blacks.ts`
+      (151 lines, 7 importers) gained 15 — each stating the rules its own doc
+      comment claims, each mutation-checked against the line it covers, and four
+      real gaps found that a green first run had hidden. One probe survives *by
+      design* and is recorded as differential-pinned, verified rather than
+      assumed.
 - [x] 3.3 **What was NOT covered, stated plainly.** The 57 games' solvers,
       generators and renderers were **not** mutated — out of scope by design.
       Only the seven named engine modules were. The other ~83 engine modules
