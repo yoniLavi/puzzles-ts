@@ -73,7 +73,13 @@ export default {
   tempDirName: ".stryker-tmp",
   cleanTempDir: true,
   concurrency: 6,
-  timeoutMS: 120_000,
+  // Generous, but no longer absurd. Stryker's budget is
+  // `baseline * timeoutFactor + timeoutMS`, and a timeout counts as *killed*, so
+  // a tight value costs information rather than correctness. It was 120 s when
+  // the suite's worst single test was ~240 s; `right-size-the-test-gate` brought
+  // that to ~10 s, and 57 timeouts at 120 s each had become a large share of the
+  // run's wall clock.
+  timeoutMS: 30_000,
   timeoutFactor: 2,
   // Mutations routinely produce type errors (a `string` where a `number` went);
   // the audit is about runtime behaviour, so the sandbox copies are `@ts-nocheck`d.

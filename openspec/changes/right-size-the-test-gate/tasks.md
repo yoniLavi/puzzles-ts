@@ -41,6 +41,22 @@
       original failures (wandering plans, an outright loop) presented on
       essentially any board.
 
+- [x] 3.6 **Second pass, and where it stops.** Re-measuring showed the top test
+      had fallen from 25% of the suite to 7%, so the remaining candidates were
+      weighed individually rather than swept:
+      - **Pearl `pearl-4` (10×10 Easy) → deferred.** 27 s, 7% of the suite and
+        more than the 12×8 fixture beside it. Easy stays asserted every commit by
+        the 6×6, 7×7 and 8×8 fixtures plus the 6×6 `nosolve` variant — the same
+        full ladder that made Seismic's case clean. 30 s → 6.4 s.
+      - **Spokes 6×6 Tricky/Hard → NO-GO** (15 s left on the table). Deferring
+        them would leave those two difficulties covered *only* by 4×4 and 2×2
+        boards: the 6×6 is their only mid-size case, so this is a materially
+        thinner net rather than a free saving. The rule is "the largest board of
+        a family whose configurations are covered by *smaller boards*", not "the
+        largest board, full stop".
+      - **Slide 8×6 / 6×8 → NO-GO** (16 s), same reason: `maxmoves = -1` at that
+        size is the top of its ladder, not a duplicate rung.
+
 ## 4. Verify the cheaper tests still catch things
 
 - [x] 4.1 Spokes: assertion volume measured at both seed counts (375 vs 2,998),
@@ -49,13 +65,14 @@
       is unchanged by construction — all 41 tests still pass.
 - [x] 4.3 Deferred fixtures verified to actually run under `npm run test:slow`,
       and the **whole** slow tier run green.
-- [x] 4.4 Gate green: 6,510 passing, 0 failing, exactly 5 deferred.
+- [x] 4.4 Gate green: 6,509 passing, 0 failing, exactly 6 deferred (4 Seismic
+      7×7, 1 Bricks 12×8, 1 Pearl 10×10); slow tier 6,515 passing.
 
 ## 5. Close out
 
-- [x] 5.1 Result: **1,178 s → 381 s of test time, −68%**, and the distribution is
-      now flat — the worst file is 30 s where it was 297 s. No single test is
-      more than ~8% of the suite.
+- [x] 5.1 Result: **1,178 s → ~354 s of test time, −70%**, and the distribution
+      is now flat — the worst file is 30 s where it was 297 s, and the worst
+      single test ~7% where it was 20%.
 - [x] 5.2 Playbook updated: the three treatments, and the rule that a test made
       cheaper must be re-checked for discrimination.
 - [x] 5.3 Full gate green.
