@@ -51,3 +51,26 @@ may justify itself as a no-op.
   strengthened
 - **BECAUSE** a snapshot alone can be re-baselined with `vitest -u` and the
   guarantee silently lost
+
+#### Scenario: A shared module's semantics are pinned only by a distant consumer
+
+- **WHEN** a mutant in a shared engine module survives that module's own test file
+  and is killed only by a game's tests or a frozen differential
+- **THEN** an assertion is added to the module's own test file, naming the
+  behaviour rather than the mutant
+- **BECAUSE** coverage several layers away is adequate as *protection* and poor as
+  *feedback*: it makes the repository's own test-run economy — run just the
+  relevant test files, let the commit hook be the single full run — systematically
+  misleading while engine code is being changed, which is the one situation where
+  it is most relied on
+
+#### Scenario: An audit instrument reports a count
+
+- **WHEN** a measuring script counts violations of a stated rule
+- **THEN** its unit of measurement SHALL be checked against the unit the rule is
+  about before its count is believed or acted on
+- **BECAUSE** the snapshot-pairing check reported six violations measured per
+  `it(...)` block and zero measured per `describe(...)` — all six phantom, and the
+  per-test unit was not the more conservative reading but simply the wrong one.
+  A stricter unit does not make a check safer; it makes it wrong in the other
+  direction
