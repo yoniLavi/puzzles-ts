@@ -17,21 +17,33 @@ manual — by generating them without the C toolchain. The game catalog's metada
 SHALL move to a committed TypeScript source, since it existed only in the CMake
 files being deleted.
 
-What remains under `puzzles/` after retirement SHALL be exactly: `LICENCE` (the
-upstream MIT notice), the upstream-authored help sources the app serves
-(`puzzles.but` and `puzzles/html/**`), and the unbuilt `unfinished/` sources kept
-as reading references for the two scaffolded greenfield ports. Nothing under
-`puzzles/` SHALL be compiled, and no build system SHALL remain there. Relocating
-the help sources out of `puzzles/` is a separate change, not a condition of
-retiring the engine.
+What remains under `puzzles/` after retirement SHALL be exactly: the MIT
+`LICENCE` notices, and the upstream-authored help sources the app serves
+(`puzzles.but` and `puzzles/html/**`). **No C source SHALL remain there**, and no
+build system SHALL remain there. Relocating the help sources out of `puzzles/` is
+a separate change, not a condition of retiring the engine.
 
-#### Scenario: Nothing under `puzzles/` is compiled after retirement
+A C source kept as a **reading reference** for scaffolded future work SHALL live
+with the change that reads it (`openspec/changes/<change>/reference/`), not in
+`puzzles/`, and SHALL carry a README recording its provenance, its licence, and
+the fact that it cannot be compiled or run. Colocating it this way means the
+reference is archived alongside the work that consumed it, and that a reference
+nobody ends up needing is deleted with its change rather than accumulating in a
+tree whose remaining purpose is unrelated.
 
-- **WHEN** the repository is built from a clean checkout after retirement
-- **THEN** no source under `puzzles/` is compiled and no build system remains
-  there
-- **AND** what remains is the licence, the served help sources, and unbuilt
-  reading references
+#### Scenario: No C remains under `puzzles/` after retirement
+
+- **WHEN** the repository is inspected after retirement
+- **THEN** `puzzles/` contains no C source and no build system
+- **AND** what remains is the licences and the served help sources
+
+#### Scenario: A reading reference is kept with its change
+
+- **WHEN** an upstream C source is retained as reading material for a scaffolded
+  change
+- **THEN** it lives under that change's `reference/` directory
+- **AND** a README there states its provenance, its licence, and that it does
+  not compile
 
 #### Scenario: No game runs on C after retirement
 

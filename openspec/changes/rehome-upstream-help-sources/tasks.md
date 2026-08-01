@@ -6,8 +6,11 @@
       `scripts/build-manual.sh`.
 - [ ] 1.3 Carry the attribution: these are upstream's words. Note the origin
       where the files now live, and keep the MIT notice reachable from them.
-- [ ] 2.1 Decide and execute what remains of `puzzles/` (see proposal): the two
-      `LICENCE` files and the unbuilt `unfinished/{path,numgame}.c` references.
+- [ ] 2.1 Decide and execute what remains of `puzzles/` (see proposal). After
+      the moves above that is **the two `LICENCE` files and `unreleased/README.md`
+      alone** — the greenfield C references already moved into their own changes
+      (`openspec/changes/add-{path,numgame}-ts-port/reference/`), so there is no
+      C anywhere under `puzzles/`.
 - [ ] 3.1 Update the `repo-layout` help-page requirement to cover every
       player-facing help page, not only project-authored ones.
 - [ ] 4.1 `npm run build:assets && npm run build`; assert `dist/help/` still has

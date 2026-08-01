@@ -27,9 +27,16 @@ on the *greenfield* builds (Path, Numgame) **on the TS-only system**.
 Two reasons this is the right order for Numgame specifically:
 
 1. **Almost nothing is lost by waiting.** There is no C *game* to byte-match —
-   only the standalone arithmetic solver, whose results can be checked against a
-   hand-run of the C utility if ever wanted, independently of the Emscripten
-   build being alive. Retiring C costs Numgame essentially nothing.
+   only the standalone arithmetic solver. ~~whose results can be checked against
+   a hand-run of the C utility if ever wanted, independently of the Emscripten
+   build being alive.~~ **That second clause was wrong, and `retire-c-engine`
+   proved it**: `numgame.c` was a `cliprogram` linked against the engine's
+   `common` library (`malloc.c`, `misc.c`, `nullfe.c`), so "independently of the
+   Emscripten build" was never true — it needed the C engine, not just its own
+   file, and the engine is gone. The solver is verified against its own
+   invariants instead (every expression it emits evaluates to the number it is
+   filed under; reachable-set counts are stable). Retiring C still costs Numgame
+   essentially nothing; the *reason* was just misstated.
 2. **It becomes a deliberate ergonomics test.** This is a *build*, not a port —
    inventing the whole game (UI, move model, difficulty) over a small ported
    solver. Doing that on the C-free TS-only system is precisely the "how
@@ -58,7 +65,14 @@ it.
   associativity inflating path counts and the "obviousness" of operations). The
   proposal must decide how much of that to take on versus ship a simple metric.
 - **Stage 2, on owner acceptance**: register `numgame` in the catalog (it never
-  had an entry — new icons required) and delete `puzzles/unfinished/numgame.c`.
+  had an entry — a new entry in `src/puzzle/catalog-data.ts`, new icons required).
+
+The reference upstream source is at [`reference/numgame.c`](reference/numgame.c),
+moved here by `retire-c-engine` from `puzzles/unfinished/`. Read
+[`reference/README.md`](reference/README.md) first — and note that writing it
+**corrected the claim in "Sequencing" below**: the C utility cannot be hand-run
+any more. It linked the engine's `common` library, not just its own file, and
+that library is deleted. The TS solver is verified against its own invariants.
 
 Explicitly **not** in this change: a from-C byte-match differential of the
 *game* (there is no C game to match); only the solver's *arithmetic results* can
