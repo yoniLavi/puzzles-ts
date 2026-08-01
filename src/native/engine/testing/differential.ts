@@ -16,6 +16,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { type RandomState, randomNew } from "../../random/index.ts";
+import { describeSlow } from "./slow.ts";
 
 /** The minimum a byte-match fixture must carry: a seed and the C-recorded desc. */
 export interface DescFixture {
@@ -39,6 +40,14 @@ export interface DescDifferentialOptions<F extends DescFixture, P> {
    * byte-match (e.g. `validateDesc(p, f.desc)` is null).
    */
   extra?: (fixture: F, params: P) => void;
+  /**
+   * Run only under `npm run test:slow` (see `./slow.ts`). For the *largest
+   * board* of a family whose every mode/difficulty/grid-type is already covered
+   * by smaller fixtures in the same file — those cost the gate minutes and add
+   * size, not configuration. **Never** for the only fixture covering a
+   * configuration; say in the call site what still covers it.
+   */
+  slow?: boolean;
 }
 
 /**
@@ -67,8 +76,8 @@ export function expectDescMatches<F extends DescFixture, P>(
 export function describeDescDifferential<F extends DescFixture, P>(
   opts: DescDifferentialOptions<F, P>,
 ): void {
-  const { title, fixtures, params, newDesc, label, extra } = opts;
-  describe(title, () => {
+  const { title, fixtures, params, newDesc, label, extra, slow } = opts;
+  (slow ? describeSlow : describe)(title, () => {
     for (const f of fixtures) {
       const name = label ? label(f) : `seed=${f.seed}`;
       it(`${name}: TS desc matches C byte-for-byte`, () => {
