@@ -190,8 +190,8 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
         symmetry: (value, _, config) => {
           // Choices. Presets vary: 7x7 is 4-way rotational, 10x10 and 14x14 are 2-way rotational.
           // 4-way is only valid with square grid.
-          const width = Number(config.width);
-          const height = Number(config.height);
+          const width = Number(config["width"]);
+          const height = Number(config["height"]);
           const defaultChoice = width === height && width * height < 50 ? 4 : 2;
           const choice = Number(value);
           const symmetry = [
@@ -253,7 +253,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: (config) => {
       const { size } = config;
       const difficulty = ["Easy", "Normal", "Tricky", "Recursive"][
-        Number(config.difficulty)
+        Number(config["difficulty"])
       ];
       const enabledClues: string[] = [];
       const disabledClues: string[] = [];
@@ -384,9 +384,9 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   salad: {
     describeConfig: (config) => {
       const isNumbers = Number(config["game-mode"]) > 0;
-      const size = Number(config.size);
-      const symbols = Number(config.symbols);
-      const difficulty = Number(config.difficulty) === 0 ? "" : " Extreme";
+      const size = Number(config["size"]);
+      const symbols = Number(config["symbols"]);
+      const difficulty = Number(config["difficulty"]) === 0 ? "" : " Extreme";
       const range = isNumbers
         ? `1~${symbols}`
         : `A~${String.fromCharCode(65 + symbols - 1)}`;
@@ -457,9 +457,9 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: (config) => {
       const width = Number(config["columns-of-sub-blocks"]);
       const height = Number(config["rows-of-sub-blocks"]);
-      const isJigsaw = Boolean(config.jigsaw);
-      const isKiller = Boolean(config.killer);
-      const isX = Boolean(config.x);
+      const isJigsaw = Boolean(config["jigsaw"]);
+      const isKiller = Boolean(config["killer"]);
+      const isX = Boolean(config["x"]);
       const difficulty = [
         "Trivial",
         "Basic",
@@ -467,7 +467,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
         "Advanced",
         "Extreme",
         "Unreasonable",
-      ][Number(config.difficulty)];
+      ][Number(config["difficulty"])];
       const symmetry = [
         "no symmetry", // default for Killer
         "2-way rotation", // default for all but Killer
@@ -477,8 +477,8 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
         "4-way mirror",
         "4-way diagonal mirror",
         "8-way mirror",
-      ][Number(config.symmetry)];
-      const hasDefaultSymmetry = config.symmetry === (isKiller ? 0 : 1);
+      ][Number(config["symmetry"])];
+      const hasDefaultSymmetry = config["symmetry"] === (isKiller ? 0 : 1);
 
       // Replicate preset titles
       const dimensions = isJigsaw ? `${width * height} Jigsaw` : `${width}x${height}`;
@@ -555,7 +555,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       const shuffles = Number(config["number-of-shuffling-moves"])
         ? `, ${Number(config["number-of-shuffling-moves"])} shuffles`
         : "";
-      return `${config.width}x${config.height}${description}${blockSizeDescription}${shuffles}`;
+      return `${config["width"]}x${config["height"]}${description}${blockSizeDescription}${shuffles}`;
     },
     darkMode: {
       paletteSwaps: [

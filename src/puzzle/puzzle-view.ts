@@ -510,7 +510,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
   // Styles
   //
 
-  static styles = [
+  static override styles = [
     css`
       :host {
         /* Padding around everything, spacing between puzzle and status bar */

@@ -11,7 +11,7 @@ let isDark: boolean | null = defaultIsDark;
 
 try {
   isDark =
-    localStorage.colorScheme === undefined
+    localStorage["colorScheme"] === undefined
       ? defaultIsDark
       : ((
           {
@@ -19,7 +19,7 @@ try {
             light: false,
             system: null,
           } as Record<string, boolean | null>
-        )[localStorage.colorScheme] ?? null);
+        )[localStorage["colorScheme"]] ?? null);
 } catch {} // Ignore privacy manager errors
 
 if (isDark === null) {

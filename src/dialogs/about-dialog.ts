@@ -381,7 +381,7 @@ export class AboutDialog extends LitElement {
     return html`<a href=${link} target="_blank">${text ?? link}</a>`;
   }
 
-  static styles = [
+  static override styles = [
     cssNative,
     cssWATweaks,
     css`

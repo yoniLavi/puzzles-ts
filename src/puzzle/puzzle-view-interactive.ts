@@ -81,7 +81,7 @@ export class PuzzleViewInteractive extends PuzzleView {
 
   // Safari will not render :focus-visible on a custom element itself, only on
   // native elements within it. So (manually) delegate focus to the contentPart.
-  protected contentTabIndex = "0";
+  protected override contentTabIndex = "0";
 
   override focus(options?: FocusOptions) {
     this.contentPart?.focus(options);
@@ -524,7 +524,7 @@ export class PuzzleViewInteractive extends PuzzleView {
   // Styles
   //
 
-  static styles = [
+  static override styles = [
     ...PuzzleView.styles,
     css`
       [part="content"]:focus-visible {

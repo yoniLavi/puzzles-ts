@@ -85,7 +85,7 @@ function stateFromRows(rows: string[]): SokobanState {
       if (ch === "u" || ch === "v") {
         px = x;
         py = y;
-        grid[y * w + x] = ch === "v" ? CH.t : CH.s;
+        grid[y * w + x] = ch === "v" ? CH["t"] : CH["s"];
       } else {
         grid[y * w + x] = CH[ch];
       }

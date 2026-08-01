@@ -20,7 +20,33 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
     "noUncheckedSideEffectImports": true
+
+    /* Two further strictness flags are deliberately NOT enabled. Measured
+       against this tree on 2026-08-01 (`tighten-type-checking`); the rule is to
+       adopt a flag on the evidence of what it costs and buys here, never from a
+       generic strictness checklist.
+
+       noUncheckedIndexedAccess — 9,028 errors, concentrated in the solvers
+         (dominosa 195, loopy 194, grid-geometry 150, rect 133). It applies to
+         Int32Array as well as plain arrays, and typed arrays are this repo's
+         deliberate house pattern for game state and render cache keys. Where an
+         index is derived from the loop bounds immediately above it, the flag
+         reports an impossibility whose only available fix is `!` at every
+         access: no runtime safety, and arithmetic that is harder to read. Where
+         the guarantee IS earned — parsing a game ID, a description, or a saved
+         game — use a checked accessor at that boundary instead.
+
+       exactOptionalPropertyTypes — 108 errors across 51 files. At nearly every
+         site the honest fix is to widen `x?: T` to `x?: T | undefined`, which
+         restores exactly the semantics already in force, so the churn buys
+         documentation rather than correctness. No site was found where
+         absent-versus-present-undefined is load-bearing: the two
+         persistence-adjacent cases (store/settings.ts, store/saved-games.ts)
+         round-trip identically either way. Worth revisiting if a future format
+         ever distinguishes a missing key from an explicit null. */
   },
   "include": ["src"]
 }

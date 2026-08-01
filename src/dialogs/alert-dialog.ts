@@ -73,7 +73,7 @@ export class AlertDialog extends LitElement {
     this.resolveClosedPromise?.();
   }
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     css`
       :host {

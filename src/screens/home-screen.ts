@@ -219,7 +219,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
   // Styles
   //
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     cssNative,
     css`${unsafeCSS(rawHomeScreenCSS)}`,

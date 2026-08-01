@@ -111,7 +111,7 @@ export class AppToast extends LitElement {
     `;
   }
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     css`
       :host {

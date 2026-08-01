@@ -279,7 +279,7 @@ export class CrashDialog extends LitElement {
     window.location.reload();
   }
 
-  static styles = [
+  static override styles = [
     cssWATweaks,
     css`
       :host {

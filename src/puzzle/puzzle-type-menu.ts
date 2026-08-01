@@ -277,7 +277,7 @@ export class PuzzleTypeMenu extends SignalWatcher(LitElement) {
   // Styles
   //
   // TODO: investigate styling active wa-dropdown-item like an sl-select option
-  static styles = [
+  static override styles = [
     cssWATweaks,
     css`
       :host {

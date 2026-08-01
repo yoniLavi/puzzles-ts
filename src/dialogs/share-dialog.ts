@@ -274,7 +274,7 @@ export class ShareDialog extends SignalWatcher(LitElement) {
     (event.target as HTMLInputElement | HTMLTextAreaElement).select();
   }
 
-  static styles = [
+  static override styles = [
     cssNative,
     cssWATweaks,
     css`
