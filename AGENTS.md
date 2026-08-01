@@ -242,7 +242,7 @@ DO NOT:
 - Break Baseline 2023 browser compatibility.
 - Use top-level await, dynamic `import()`, or `import.meta` in `src/preflight.ts` — preflight runs on older browsers to gate the rest of the app.
 - Add dependencies without considering bundle size and offline (PWA) support.
-- Commit generated assets in `src/assets/manual/` or anything under `build/`. (`src/assets/icons/` is the exception — it's a committed snapshot maintained per `openspec/specs/puzzle-icons/spec.md`; add the two required PNGs by hand when a new puzzle joins the catalog.)
+- Commit generated assets in `src/assets/manual/` or `dist/`. (`src/assets/icons/` is the exception — it's a committed snapshot maintained per `openspec/specs/puzzle-icons/spec.md`; add the two required PNGs by hand when a new puzzle joins the catalog.)
 - Catch unrecoverable errors only to log them — let them propagate so Sentry records them.
 
 DO:
@@ -262,12 +262,13 @@ Three roles to keep distinct:
 - **`../puzzles/`** (sibling clone). The place to go if a question genuinely needs upstream's C — this repo no longer has any. **Not** a place to put our work.
 - **`../puzzles-web/`** (sibling clone). The pre-fork baseline; useful as a diff reference in early phases.
 
-Build outputs are partitioned under `/build/` (all gitignored):
-
-(Both former occupants — `/build/wasm/` from the Emscripten cmake build and
-`/build/native/` from the characterization harnesses — went with
-`retire-c-engine`. Nothing writes under `/build/` today; the directory and its
-gitignore entry are kept for whatever comes next.)
+The build output is `dist/` (gitignored), plus the generated
+`src/assets/manual/`. **`/build/` no longer exists**
+(`prune-dead-toolchain-leftovers`): both its occupants — `/build/wasm/` from the
+Emscripten cmake build and `/build/native/` from the characterization harnesses
+— went with `retire-c-engine`, and the empty partition it left, kept "for
+whatever comes next", was 65 MB of stale CMake output on disk and an entry in
+the root-layout spec that named the empty directory while omitting the real one.
 
 Source tree under `src/`:
 
