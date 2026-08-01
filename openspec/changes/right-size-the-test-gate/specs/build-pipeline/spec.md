@@ -40,6 +40,21 @@ The opt-in tier SHALL be run as part of a refactoring round, alongside
 `npm run metrics`. A tier nobody ever runs is worse than a deleted test, because
 the file still reads as coverage.
 
+A saving claimed for the gate SHALL be quoted in **CPU time** (`user + sys` over
+the whole run), not in wall clock and not in summed per-test durations. This box
+runs other work in parallel, and summed per-test duration is wall clock per test
+— so it inflates exactly the heavy tests a right-sizing pass removes, and
+flatters the result. Measured here: the duration sums reported a 68–70% saving
+where the CPU measurement showed **53%**. Per-test durations remain the right
+tool for *locating* cost, because a relative measure is all that needs to be.
+
+#### Scenario: A gate saving is reported
+
+- **WHEN** a change claims to have reduced the gate's cost
+- **THEN** the figure quoted is CPU time before and after
+- **BECAUSE** a wall-clock or summed-duration figure measures how long the tests
+  appeared to take under whatever else the box was doing, not what they cost
+
 #### Scenario: A test is made cheaper
 
 - **WHEN** a test's cost is reduced by any of the three treatments
