@@ -195,26 +195,6 @@ the frame it is computed (sidecar in the render diff key).
 - **WHEN** a mark sits on a square the solution leaves empty
 - **THEN** it is not reported as a mistake
 
-### Requirement: Light Up is parity-gated, then served from TS with its C deleted
-
-The game SHALL first be registered (TS-ported id list + `games/index.ts`
-import) for owner smoke-testing while `puzzles/lightup.c` remains the
-catalog/wasm source. Only on owner-accepted full behavioural parity
-(rendering, input, flash) SHALL the game's `puzzle()` gain `TS_PORTED` and
-`puzzles/lightup.c` (with its `solver()` line and the trace harness) be
-deleted, in the same commit that archives this change.
-
-#### Scenario: Registered game serves the TS implementation
-
-- **WHEN** `lightup` is present in the runtime registry
-- **THEN** the midend serves the TS `Game` implementation rather than the
-  C/WASM path
-
-#### Scenario: C deletion is gated on owner acceptance
-
-- **WHEN** owner acceptance of full parity has not yet happened
-- **THEN** `TS_PORTED` is not set and `puzzles/lightup.c` is not deleted
-
 ### Requirement: Light Up ships an explained deductive hint
 
 The game SHALL implement `hint()` returning a plan of narrated steps computed

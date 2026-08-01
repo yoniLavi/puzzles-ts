@@ -164,26 +164,6 @@ it is computed.
 - **THEN** that cell is returned as a mistake and rendered with the mistake
   overlay on the next redraw
 
-### Requirement: Pattern is parity-gated, then served from TS with its C deleted
-
-The game SHALL first be registered (added to the TS-ported id list and imported
-so `registerGame` runs) for owner smoke-testing while `puzzles/pattern.c` remains
-the catalog/wasm source via the empty-registry fallback. Only on owner-accepted
-full behavioural parity (rendering, animation, input) SHALL the game's
-`puzzle()` gain `TS_PORTED` (keeping catalog/icon metadata, building no wasm) and
-`puzzles/pattern.c` be deleted, in the same commit that archives this change.
-
-#### Scenario: Registered game serves the TS implementation
-
-- **WHEN** `pattern` is present in the runtime registry
-- **THEN** the midend serves the TS `Game` implementation rather than the
-  C/WASM path
-
-#### Scenario: C deletion is gated on owner acceptance
-
-- **WHEN** owner acceptance of full parity has not yet happened
-- **THEN** `TS_PORTED` is not set and `puzzles/pattern.c` is not deleted
-
 ### Requirement: Pattern provides an explained, deductive hint
 
 Pattern SHALL implement the Hint System hooks (`hint`, `hintKeepTrack`, and

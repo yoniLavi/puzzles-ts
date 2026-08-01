@@ -1,46 +1,35 @@
-# CI backstop for the TS-migration port work.
+# CI backstop for this project.
 #
-# This project is trunk-based (no PRs), so the gate runs post-push on `main`:
-# it runs the SAME gate as the husky pre-commit hook (`npm run gate`:
-# tsc -b --noEmit → biome ci → vitest run → vite build), so a `--no-verify`
-# commit or a fresh clone whose hooks never installed can no longer land
-# breakage on `main` undetected. (If contributors arrive later and PRs become
-# useful, add a `pull_request:` trigger here.)
+# Trunk-based (no PRs), so the gate runs post-push on `main`: it runs the SAME
+# gate as the husky pre-commit hook (`npm run gate`: tsc -b --noEmit → biome ci
+# → vitest run → vite build), so a `--no-verify` commit or a fresh clone whose
+# hooks never installed can no longer land breakage on `main` undetected. (If
+# contributors arrive later and PRs become useful, add a `pull_request:` trigger
+# here.)
 #
-# Why the gate needs the WASM assets (no cheap no-WASM tier): the typecheck,
-# tests, AND the production build all import generated artifacts from
-# `src/assets/puzzles/` — `src/puzzle/catalog.ts` imports `catalog.json`;
-# `src/puzzle/{types,worker}.ts` import `emcc-runtime`. Without those, `tsc -b`,
-# `vitest`, and `vite build` all fail. So the assets must be present before the
-# gate — but they don't have to be *rebuilt* every run.
+# The gate needs NO generated assets. This workflow used to say the opposite —
+# "no cheap no-WASM tier", because `src/puzzle/{catalog,types,worker}.ts`
+# imported artifacts out of `src/assets/puzzles/` — and it carried an emsdk
+# setup, apt packages, a `build:wasm` step and a cache of the wasm output keyed
+# on `hashFiles('puzzles/**')` to keep all that off the critical path.
+# `retire-c-engine` deleted the C engine: the catalog is committed source
+# (`src/puzzle/catalog-data.ts`) and the types are hand-authored, so a clean
+# checkout type-checks, tests and builds with nothing generated at all. The
+# whole apparatus went, and the run is faster for it.
 #
-# Why the assets are cached: `build:wasm` (+ emsdk setup + apt) is ~3.5 min,
-# while the gate itself is ~30s. The wasm output is deterministic given the C
-# sources under `puzzles/` and the emscripten version, and those change only
-# ~once per port (when a game's `.c` is deleted). So we cache
-# `src/assets/puzzles/` keyed on `hashFiles('puzzles/**')` + the emsdk version
-# and skip apt/emsdk/build:wasm on a hit: a TS-only push is ~1 min; a push that
-# touches `puzzles/**` or bumps emscripten pays the full rebuild and re-caches.
-# (This is why "make wasm a manual-only job" doesn't work — a no-asset default
-# job would fail at `tsc`. Caching gives the same fast default without that.)
-#
-# emsdk is pinned to the Brewfile's emscripten version (5.0.7). A large
-# emscripten jump can shift wasm output (the Brewfile warns this); if the
-# Brewfile's emscripten moves, bump EMSDK_VERSION here to match (which also
-# busts the asset cache, forcing a clean rebuild).
+# The manual build stays, and is the one thing here that is NOT a gate
+# precondition. `npm run build:assets` (halibut over `puzzles/puzzles.but`) is
+# the only generated asset left; running it is what exercises
+# `scripts/build-manual.sh` and vite's manual-page rendering path, which no test
+# covers. If it is ever dropped, the gate still passes — the manual pages are
+# simply absent from `dist/help/manual/`.
 name: CI
 
 on:
   push:
     branches: [main]
-  # Manual trigger — run the gate on demand, optionally forcing a clean wasm
-  # rebuild (ignore the asset cache) when you suspect the cache is stale.
+  # Manual trigger — run the gate on demand.
   workflow_dispatch:
-    inputs:
-      force_wasm_rebuild:
-        description: "Rebuild wasm assets even on a cache hit"
-        type: boolean
-        default: false
 
 # Cancel an in-progress run when a newer commit lands on the same ref — the
 # older run's result is moot.
@@ -52,61 +41,31 @@ jobs:
   gate:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      # Keep in sync with the Brewfile's `emscripten` version.
-      EMSDK_VERSION: 5.0.7
     steps:
       - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v6
         with:
-          # Node >= 24: the wasm-sourcemaps vite plugin uses RegExp.escape,
-          # which landed in V8 / Node 24 (vite-plugins/wasm-sourcemaps.ts).
-          # Node 22 builds the app fine until that plugin runs, then fails
-          # `vite build` with "RegExp.escape is not a function".
+          # Current LTS-track major; matches the local dev environment. (This
+          # used to be pinned by a hard requirement — the deleted
+          # `vite-plugins/wasm-sourcemaps.ts` used `RegExp.escape`, which needs
+          # V8 in Node 24, and `vite build` failed on Node 22. That plugin went
+          # with the wasm it patched, so the pin is now a preference.)
           node-version: 24
           cache: npm
 
-      # Restore the generated wasm assets. On a hit, the apt/emsdk/build steps
-      # below are skipped entirely. Key busts on any change under puzzles/, to
-      # the build script, or to the emscripten version.
-      - name: Restore generated wasm assets
-        id: wasm-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: src/assets/puzzles
-          key: wasm-assets-emsdk${{ env.EMSDK_VERSION }}-${{ hashFiles('puzzles/**', 'scripts/build-emcc.sh') }}
-
-      # build:wasm needs halibut (in-app manual), jq (catalog post-processing),
-      # and cmake (build harness) — the same host tools the Brewfile installs.
-      - name: Install wasm build system packages
-        if: steps.wasm-cache.outputs.cache-hit != 'true' || inputs.force_wasm_rebuild
+      # halibut builds the in-app manual (see the header note). It is the only
+      # native tool this project still needs, and the only one in the Brewfile.
+      - name: Install halibut (in-app manual)
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends halibut jq cmake
-
-      - name: Set up Emscripten
-        if: steps.wasm-cache.outputs.cache-hit != 'true' || inputs.force_wasm_rebuild
-        uses: mymindstorm/setup-emsdk@v16
-        with:
-          version: ${{ env.EMSDK_VERSION }}
+          sudo apt-get install -y --no-install-recommends halibut
 
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Build wasm assets (required by the gate)
-        if: steps.wasm-cache.outputs.cache-hit != 'true' || inputs.force_wasm_rebuild
-        run: npm run build:wasm
-
-      # Persist a freshly-built set so the next push hits the cache. Skipped on
-      # a hit (the key already holds these assets). Runs before the gate so a
-      # later gate failure (a real TS regression) doesn't waste the rebuild.
-      - name: Save generated wasm assets
-        if: steps.wasm-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: src/assets/puzzles
-          key: ${{ steps.wasm-cache.outputs.cache-primary-key }}
+      - name: Build the in-app manual
+        run: npm run build:assets
 
       - name: Run the gate (typecheck → lint/format → test → prod build)
         run: npm run gate

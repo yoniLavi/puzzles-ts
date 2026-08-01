@@ -153,19 +153,3 @@ is not uniquely deducible `findMistakes` SHALL return an empty list.
   Check & Save runs
 - **THEN** `findMistakes` includes that edge and it renders in the error colour
 
-### Requirement: Separate is registered, catalogued, and its C is deleted
-
-On owner-accepted full behavioural parity, `separate` SHALL be registered in the
-TS game registry, moved from `puzzles/unfinished/CMakeLists.txt` into the main
-catalog with `TS_PORTED` (so it lists in the catalog and ships its two per-puzzle
-icon PNGs but builds no `separate.c`/wasm), and `puzzles/unfinished/separate.c`
-SHALL be deleted. Because `separate` was `divvy_rectangle`'s last C consumer,
-`puzzles/divvy.c` (and `divvy-test.c`, its `core_obj` entry, and its declaration
-in `puzzles.h`) SHALL also be deleted.
-
-#### Scenario: Separate appears in the catalog with no wasm
-
-- **WHEN** the wasm build runs after stage 2
-- **THEN** `separate` is present in the catalog with both icon sizes and no
-  `separate.wasm`, and `divvy.c` is no longer compiled
-

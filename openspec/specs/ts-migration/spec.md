@@ -78,57 +78,6 @@ parity is a release gate.
 - **THEN** the divergence is expected and acceptable
 - **AND** it is NOT treated as a fidelity regression
 
-### Requirement: Per-game hybrid; C deleted per game
-
-The build SHALL support a per-game hybrid: each game is served either
-by its C/WASM implementation or by its TS port, independently of
-other games.
-
-A game SHALL be registered as TS-served (and its `TS_PORTED` catalog
-marker set) ONLY once its TS port has been verified at **full
-behavioural parity** with the C build — including rendering,
-animation, and input, not merely internal state transitions. Parity
-verification SHALL include owner acceptance testing; a green automated
-suite is necessary but NOT sufficient (a suite asserting only state
-transitions can be fully green while the game does not render). Until a
-game is verified at parity it SHALL remain unregistered and run on
-C/WASM (the empty-registry path is the fallback mechanism — no new
-switch is required).
-
-A game's C source SHALL be deleted only AFTER it has been registered
-under the parity rule above — C deletion is per game and follows
-parity verification, NOT merely "the port compiles and tests pass".
-The C/WASM path SHALL remain the runtime for every not-yet-parity
-game until then. The collection is fully migrated when the last game
-is ported; only then does `puzzles/` go away entirely.
-
-A shortfall in a ported game's parity (rendering, animation, input,
-or behaviour) SHALL NOT be characterised as "cosmetic", "out of
-scope", or otherwise deferred without explicit owner approval; it is a
-parity regression that blocks registration.
-
-#### Scenario: Unported games keep working during the migration
-
-- **WHEN** some games have TS ports and others do not
-- **THEN** ported games run their TS implementation
-- **AND** unported games run their C/WASM implementation
-- **AND** the app presents both uniformly to the user
-
-#### Scenario: A port that is not yet at parity stays on C
-
-- **WHEN** a game's TS port passes the automated suite but has not
-  been owner-verified at full behavioural parity (e.g. rendering or
-  animation is incomplete)
-- **THEN** it is NOT registered and NOT marked `TS_PORTED`
-- **AND** the game continues to run on C/WASM
-- **AND** its C source is NOT deleted
-
-#### Scenario: C for a game is removed only after parity registration
-
-- **WHEN** a game's TS port has been verified at parity and registered
-- **THEN** that game's C source is deleted from `puzzles/`
-- **AND** the deletion does not wait for other games to be ported
-
 ### Requirement: Clean TS save format; future game IDs stay stable
 
 The project SHALL use a clean TypeScript-native save format. Backward
@@ -264,4 +213,37 @@ tree whose remaining purpose is unrelated.
   present
 - **THEN** the game catalog and the in-app manual are produced
 - **AND** the app lists every game and serves its help pages
+
+### Requirement: Game work is accepted by exercising it, not by a green suite
+
+Acceptance of work on a game SHALL require the owner to exercise the actual
+behaviour — rendering, animation, and input, not merely internal state
+transitions. This covers a new game, a rendering or input change, an animation,
+and a hint. A passing automated suite alone SHALL NOT be treated as done.
+
+This is the durable half of the retired "per-game hybrid" requirement, stated
+separately because it is a rule about **verification**, not about the C build it
+was originally written around. It was bought expensively: Flip's port shipped
+with a fully green suite and did not render at all, then took three further
+iterations on the rendering pipeline, each surfacing a distinct real defect. A
+suite that asserts only state transitions is entirely compatible with a game that
+draws nothing.
+
+A shortfall found this way SHALL NOT be dismissed as "cosmetic" or "out of
+scope", nor deferred without explicit owner agreement. Under the hybrid this was
+enforceable by withholding registration, with the C still there to serve the
+game. There is no such fallback now, which makes the discipline more important
+rather than less — this bar is the only thing between a broken game and a player.
+
+#### Scenario: A green suite is not sufficient
+
+- **WHEN** a game's automated tests pass but the owner has not exercised its
+  rendering, animation and input
+- **THEN** the work is not accepted, and the change is not archived
+
+#### Scenario: A parity shortfall is not deferred silently
+
+- **WHEN** exercising a game surfaces a rendering, animation or input shortfall
+- **THEN** it is fixed, or deferred only with explicit owner agreement, and never
+  reclassified as out of scope to avoid fixing it
 
