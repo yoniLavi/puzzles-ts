@@ -145,6 +145,7 @@ class AllocScratch {
     return true;
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the hard-mode generator's placement search with backtracking.
   tryHard(rng: RandomState): boolean {
     const n = this.n;
     const w = this.w;

@@ -29,6 +29,7 @@ export interface SolveResult {
   soln: Int8Array;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: deduction ladder over tent/tree pairing constraints with row/column counts.
 export function tentsSolve(
   w: number,
   h: number,

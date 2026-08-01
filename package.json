@@ -19,7 +19,8 @@
     "diff": "vitest run --passWithNoTests -c scripts/diff.vitest.config.mts",
     "gate": "sh scripts/gate.sh",
     "test:shuffle": "vitest run --passWithNoTests --sequence.shuffle.files=true",
-    "prepare": "husky"
+    "prepare": "husky",
+    "metrics": "sh scripts/metrics.sh"
   },
   "dependencies": {
     "@awesome.me/webawesome": "^3.5.0",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",
+    "@lit/reactive-element": "^2.1.2",
     "@mdit/plugin-attrs": "^0.25.2",
     "@mdit/plugin-icon": "^0.24.2",
     "@sentry/vite-plugin": "^5.2.0",
@@ -47,10 +49,14 @@
     "handlebars": "^4.7.9",
     "happy-dom": "^20.10.2",
     "husky": "^9.1.7",
+    "jscpd": "^4.2.5",
+    "knip": "^5.88.1",
+    "madge": "^8.0.0",
     "markdown-it": "^14.1.1",
     "markdown-it-anchor": "^9.2.0",
     "rollup-plugin-license": "^3.7.1",
     "rollup-plugin-visualizer": "^7.0.1",
+    "tinyglobby": "^0.2.17",
     "typescript": "~5.9.0",
     "vite": "^7.3.2",
     "vite-plugin-pwa": "^1.2.0",
@@ -58,7 +64,6 @@
     "vitest": "^4.1.6",
     "workbox-core": "^7.3.0",
     "workbox-precaching": "^7.3.0",
-    "workbox-routing": "^7.3.0",
     "workbox-window": "^7.3.0"
   },
   "overrides": {

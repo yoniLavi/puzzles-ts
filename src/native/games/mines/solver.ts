@@ -240,6 +240,7 @@ function knownSquares(
  * perturbation steps required (>0). `n < 0` disables the global mine-count
  * deduction (used when the total is unknown).
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the set-intersection solver plus its perturbation retry; upstream's hardest single function.
 export function minesolve(
   w: number,
   h: number,

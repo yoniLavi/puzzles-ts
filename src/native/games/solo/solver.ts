@@ -809,6 +809,7 @@ class SolverUsage {
    * The main deduction driver (`solver`'s body). Mutates `this.grid` and writes
    * `dlev.diff`/`dlev.kdiff`. Recurses through the module-level `runSolver`.
    */
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Solo's full technique ladder from naked singles up to set/forcing-chain rungs.
   run(
     blocksImmutable: BlockStructure,
     kblocksImmutable: BlockStructure | null,

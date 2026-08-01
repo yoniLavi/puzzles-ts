@@ -25,9 +25,17 @@ rather than assumed:
 | Cross-game clone lines | **2,180** across 151 blocks | The usable part of the above |
 | Dead code (knip) | 1 unused file, 1 devDep, 5 vite-plugin exports | ~30 lines; not a phase |
 | `any` density | ~0 (`any` appears 22×, nearly all the English word) | `type-coverage` would be a no-op |
-| Import cycles (madge) | **20** (16 of a single `index↔render` shape) | Real, cheap to fix |
-| **Cognitive complexity** | **814 functions > 15; median 30, p90 83, p95 108** | **The one metric with real signal** |
-| Unused biome suppressions | 35 | Free deletion |
+| Import cycles (madge) | **20** raw, of which **1** is a runtime cycle | Real, cheap to fix |
+| **Cognitive complexity** | **814 functions > 15; median 29, p90 80, p95 100** | **The one metric with real signal** |
+| ~~Unused biome suppressions~~ | ~~35~~ → **0** | **Withdrawn — see below** |
+
+**One row of that table was wrong, and how it was wrong is the reason the
+harness exists.** The "35 unused biome suppressions, free deletion" line came
+from running biome with a measuring config that sets `recommended: false` to
+isolate the complexity rule — which makes every `biome-ignore` comment for every
+*other* rule report as unused. Measured against the real config the count is
+**0**. An instrument reports what you configured it to ask, and a configuration
+written to isolate one signal will happily manufacture another.
 
 The single most useful number is the last row of that table's middle block:
 **cognitive complexity is the only metric here that is both bad and actionable**,
@@ -53,9 +61,10 @@ aspiration, so the gate blocks regression without ever blocking work.
   hour) but at a threshold set to just above today's worst honest value, lowered
   deliberately by later changes as complexity comes down. The rule's job at this
   stage is *"no new function may be worse than the worst one we have"*.
-- **Take the free deletions**: knip's unused file, unused devDependency and
-  unused vite-plugin exports; the 35 unused biome suppression comments; and
-  knip's three unlisted dependencies declared properly.
+- **Take the free deletions**: knip's unused devDependency, and its three
+  unlisted dependencies either declared properly or recorded as false positives.
+  (The "unused file" and the "35 unused suppressions" both dissolved on
+  inspection — see Impact.)
 - **Record the rejected recommendations with their measurements**, in
   `design.md`, so the next person proposing `type-coverage`, a knip deletion
   phase, or `eslint-plugin-sonarjs` finds the number that says why not.

@@ -39,6 +39,7 @@ const F_MUL = 0x04;
 const F_DIV = 0x08;
 const BAD_SHIFT = 4;
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: cage construction plus clue assignment, gated on the solver reaching the requested tier.
 export function newKeenDesc(
   p: KeenParams,
   rng: RandomState,

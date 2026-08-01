@@ -462,6 +462,7 @@ function dlineSetOppAtLeastOne(
  * are what lets deductions propagate along diagonal chains of faces joined at a
  * dot (the classic `3-2-…-2-3` chain in square grids).
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the dline deduction rung: 4 line-states x 4 dline orientations x face/dot context, all interdependent. Splitting it hides which case feeds which.
 function dlineDeductions(ss: SolverState): number {
   const g = ss.grid;
   const s = ss.state;

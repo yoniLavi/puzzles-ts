@@ -2425,14 +2425,20 @@ discipline is ~zero.
 ## 7. Close out
 
 Keep the openspec change current as you go (tasks ticked, design decisions
-recorded). The pre-commit gate (`tsc -b --noEmit` → `biome lint` → `vitest run` →
-`vite build`) must be green; the prod build needs no generated assets
-present. **Format only your own files** — `biome lint` (the gate) does *not* apply
-the import-organize assist, so the committed tree carries import-order drift that
-`npm run check` (`biome check --write .`) "fixes" across **70+ unrelated files**,
-producing a huge churn diff that has nothing to do with your port. Scope formatting
-to your port (`biome check --write src/native/games/<game>/`) and confirm the gate
-with `biome lint .`, never a repo-wide `npm run check`. On owner acceptance, do
+recorded). The pre-commit gate (`tsc -b --noEmit` → `biome check` → `vitest run` →
+`vite build`) must be green; the prod build needs no generated assets present.
+
+*(Historical note, resolved: this section used to say "format only your own files,
+never a repo-wide `npm run check`", because the gate ran `biome lint` — which
+skips formatting and import order — so the tree carried drift that a repo-wide
+fixer would "fix" across 70+ unrelated files. Both halves were closed in July
+2026: `6b4ff96` formatted the tree wholesale and `b42a829` moved the gate to
+`biome check`/`biome ci`, so drift cannot re-accumulate and `npm run check` is a
+no-op on an unmodified tree. Verified again 2026-08-01 — a repo-wide
+`npm run check` during `establish-refactor-baseline` touched only the files that
+change had edited.)*
+
+On owner acceptance, do
 stage 2 (§6) and **archive the change**
 (`openspec archive add-<game>-ts-port --yes`) in the same commit as the C deletion.
 See "Keep openspec changes current" in memory and the workflow in
@@ -2440,3 +2446,34 @@ See "Keep openspec changes current" in memory and the workflow in
 
 If the game gets an explained hint, that is a **separate** change — see
 [hint-authoring.md](./hint-authoring.md).
+
+## 8. Refactoring metrics (`npm run metrics`)
+
+`npm run metrics` records duplication (jscpd), runtime import cycles (madge,
+calibrated), dead code (knip) and cognitive complexity (biome) into a dated,
+committed `metrics/<date>/` snapshot. It is deliberately **not** in the gate —
+its value is the diff between rounds, and a slow whole-tree scan buys a
+per-commit gate nothing. Run it at the start and end of any refactoring change
+and quote the delta.
+
+Three rules, each learned by getting it wrong (`establish-refactor-baseline`):
+
+1. **Thresholds are ratchets, never aspirations.** `biome.json` caps cognitive
+   complexity at 150 with 19 individually-suppressed exceptions. Lower it when a
+   change earns it; never raise it to accommodate new code, and never suppress
+   without a specific reason — the suppression list *is* the work queue.
+2. **Confirm every finding against the config the project actually runs.** The
+   measuring config (`scripts/metrics-complexity.json`) sets
+   `recommended: false` to isolate the complexity rule, which makes every
+   `biome-ignore` for every other rule report as unused. That manufactured a
+   phantom "35 free deletions" before anyone checked; the real count is 0.
+3. **Know where your instruments clamp.** Biome's complexity counter **saturates
+   at 255** — a function of true complexity 300 reports 255. Six solvers sit at
+   the ceiling, so their true complexity is unmeasured and a stable 255 does not
+   mean "no regression".
+
+And when reading a raw madge cycle count: it is **not** a runtime-cycle count
+here. `verbatimModuleSyntax` erases `import type`, and moving a shared type
+behind one *is* the standard cycle fix — so madge reports the fix as the problem.
+Measured 2026-08-01: 20 raw, 1 runtime. `scripts/metrics-cycles.mjs` does the
+calibration and treats an edge it cannot classify as a failure, not as clean.

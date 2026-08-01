@@ -469,6 +469,7 @@ function colours(defaultBackground: Colour): Colour[] {
   return [bg, INK, hi, lo, HINT_ACTION];
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: redraw with mid-slide interpolation: every tile can be in one of several animation phases.
 function redraw(
   dr: GameDrawing,
   ds: SixteenDrawState | null,

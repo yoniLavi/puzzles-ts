@@ -1,0 +1,26 @@
+- Finding files
+Processed 724 files (2.6s) (10 warnings)
+
+✖ Found 20 circular dependencies!
+
+1) components/command-link.ts > screens/screen.ts > components/help-viewer.ts
+2) components/command-link.ts > screens/screen.ts > dialogs/about-dialog.ts
+3) native/engine/candidate-hint.ts > native/engine/latin-hint.ts
+4) native/games/ascent/render.ts > native/games/ascent/ui.ts
+5) native/games/boats/index.ts > native/games/boats/render.ts
+6) native/games/bricks/index.ts > native/games/bricks/render.ts
+7) native/games/clusters/index.ts > native/games/clusters/render.ts
+8) native/games/dominosa/index.ts > native/games/dominosa/render.ts
+9) native/games/filling/index.ts > native/games/filling/render.ts
+10) native/games/lightup/index.ts > native/games/lightup/render.ts
+11) native/games/map/map-data.ts > native/games/map/state.ts
+12) native/games/pattern/index.ts > native/games/pattern/render.ts
+13) native/games/range/index.ts > native/games/range/render.ts
+14) native/games/rome/index.ts > native/games/rome/render.ts
+15) native/games/singles/index.ts > native/games/singles/render.ts
+16) native/games/slant/index.ts > native/games/slant/render.ts
+17) native/games/spokes/index.ts > native/games/spokes/render.ts
+18) native/games/subsets/index.ts > native/games/subsets/render.ts
+19) native/games/unruly/solver.ts > native/games/unruly/state.ts
+20) native/games/unruly/index.ts > native/games/unruly/render.ts
+

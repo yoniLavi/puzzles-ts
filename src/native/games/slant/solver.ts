@@ -217,6 +217,7 @@ function vbitmapClear(
  * The solver (upstream `slant_solve`). Writes the deduced solution into
  * `soln` and returns the verdict.
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: deduction ladder plus dsf loop-avoidance; the two are interleaved by design, not by accident.
 export function slantSolve(
   w: number,
   h: number,

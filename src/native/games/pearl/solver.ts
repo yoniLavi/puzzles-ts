@@ -35,6 +35,7 @@ import {
  * @param partial when true, transcribe the partial workspace even if unsolved
  * @returns 0 inconsistent, 1 unique, 2 ambiguous
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the whole deduction ladder in one pass; the rungs share loop state that extracting would have to thread back through.
 export function pearlSolve(
   w: number,
   h: number,

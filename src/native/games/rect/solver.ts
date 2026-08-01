@@ -95,6 +95,7 @@ function removeNumberPlacement(
   number.npoints--;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: recursive rectangle placement with pruning; the branch structure IS the algorithm.
 export function rectSolver(
   w: number,
   h: number,
