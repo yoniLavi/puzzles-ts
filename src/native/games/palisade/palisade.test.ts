@@ -1,22 +1,24 @@
 import { describe, expect, it } from "vitest";
+import {
+  BORDER,
+  BORDER_MASK,
+  buildDsf,
+  DISABLED,
+  DX,
+  DY,
+  FLIP,
+  initBorders,
+} from "../../engine/border-grid.ts";
 import { divvyRectangle } from "../../engine/divvy.ts";
 import type { HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../random/index.ts";
 import { palisadeGame } from "./index.ts";
 import { deduceForcedEdges, newDesc, solver, solveToBorders } from "./solver.ts";
 import {
-  BORDER,
-  BORDER_MASK,
   bitcount,
-  buildDsf,
-  DISABLED,
-  DX,
-  DY,
   decodeParams,
   encodeDesc,
   encodeParams,
-  FLIP,
-  initBorders,
   isSolved,
   newState,
   type PalisadeHint,

@@ -6,8 +6,8 @@ import { describe, expect, it } from "vitest";
 import { palisadeGame } from "../../games/palisade/index.ts";
 import { COL_GRID, COL_HINT } from "../../games/palisade/render.ts";
 import { newDesc } from "../../games/palisade/solver.ts";
-import { BORDER } from "../../games/palisade/state.ts";
 import { randomNew } from "../../random/index.ts";
+import { BORDER } from "../border-grid.ts";
 import { renderScenario } from "./render-scenario.ts";
 import { toSvg } from "./svg-drawing.ts";
 

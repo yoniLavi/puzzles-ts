@@ -10,25 +10,21 @@
  * them while the solver still uniquely solves the board.
  */
 
+import {
+  BORDER,
+  DISABLED,
+  DX,
+  DY,
+  FLIP,
+  initBorders,
+  outOfBounds,
+} from "../../engine/border-grid.ts";
 import { divvyRectangle } from "../../engine/divvy.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { RandomState } from "../../random/index.ts";
-import {
-  BORDER,
-  bitcount,
-  DISABLED,
-  DX,
-  DY,
-  EMPTY,
-  encodeDesc,
-  FLIP,
-  initBorders,
-  isSolved,
-  outOfBounds,
-  type PalisadeParams,
-} from "./state.ts";
+import { bitcount, EMPTY, encodeDesc, isSolved, type PalisadeParams } from "./state.ts";
 
 // --- hint-mode deduction trace --------------------------------------------
 

@@ -9,6 +9,17 @@
  * regions); the `findMistakes` overlay folds into the same error bits.
  */
 import type { Colour, Size } from "../../../puzzle/types.ts";
+import {
+  BORDER,
+  BORDER_D,
+  BORDER_MASK,
+  BORDER_R,
+  buildDsf,
+  DISABLED,
+  DX,
+  DY,
+  outOfBounds,
+} from "../../engine/border-grid.ts";
 import { correctRegionColour, mkhighlight } from "../../engine/colour-mkhighlight.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import {
@@ -20,17 +31,8 @@ import {
   lineNoColour,
 } from "../../engine/palette.ts";
 import {
-  BORDER,
-  BORDER_D,
-  BORDER_MASK,
-  BORDER_R,
   bitcount,
-  buildDsf,
-  DISABLED,
-  DX,
-  DY,
   EMPTY,
-  outOfBounds,
   type PalisadeHint,
   type PalisadeMistake,
   type PalisadeMove,
