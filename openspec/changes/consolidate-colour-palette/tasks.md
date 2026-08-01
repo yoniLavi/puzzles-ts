@@ -101,10 +101,15 @@
       → **Mosaic keeps its teal board** — `TEAL_WASH` unmarked, `TEAL_BOLD` grid; the
       identity was a hue, and a hue is what the palette has.
       **Crossing's OKLCH-matched pair is now the palette's obligation, not
-      Crossing's**: blue's and orange's wash *and* bold steps are tied in lightness
-      and chroma in `colours.ts`. (The bold half was missed on the first cut and
-      Crossing's own equal-strength test caught it — which is the argument for
-      having moved the constraint into the palette.)
+      Crossing's**: blue's and orange's **bold** steps are tied in lightness and
+      chroma in `colours.ts`. (The tie was first applied to the wash pair only and
+      Crossing's own equal-strength test caught the gap — which is the argument for
+      having moved the constraint into the palette.) Owner acceptance then went
+      further, and rightly: the board's run highlight and the clue list's ink are
+      **one colour per direction** now rather than two steps of each, because the
+      hue *is* the information (design F11). That left `ORANGE_WASH` dead, and the
+      guard added to catch it found three more that had shipped dead — the palette
+      is 26 named colours, not 30 (F12).
       **Map's muted earth tones went.** They were chosen so four saturated hues over
       a whole board would not be unpleasant; the wash step answers that already, and
       the earth tones measured 0.077 — the worst set in the collection, in a game

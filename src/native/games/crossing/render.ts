@@ -31,11 +31,10 @@ import { mkhighlight, mkhighlightSpecific } from "../../engine/colour-mkhighligh
 import {
   BLUE,
   BLUE_BOLD,
-  BLUE_WASH,
   GREEN,
   GREEN_WASH,
   ORANGE_BOLD,
-  ORANGE_WASH,
+  PURPLE_WASH,
 } from "../../engine/colours.ts";
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
@@ -48,6 +47,7 @@ import {
   ERROR,
   GRID_DARK,
   INK,
+  PAPER,
   PENCIL_BODY,
   pencilColour,
 } from "../../engine/palette.ts";
@@ -109,7 +109,34 @@ export const COL_HINT = 17;
 /** The deduction's evidence — the run(s) it reasons over, and the listed
  * numbers that still fit them. */
 export const COL_HINT_CELL = 18;
-export const NCOLOURS = 19;
+/**
+ * A placed digit sitting **on** a run highlight.
+ *
+ * The run colours are the same values the clue list inks its numbers in, so the
+ * board and the list say "across" and "down" with one colour each rather than
+ * two shades of each. That makes the highlight a *strong* fill — light under a
+ * dark scheme, dark under a light one — and `COL_GRID` is the wrong ink on it in
+ * both, being exactly the opposite in each. This is `PAPER`, which adapts the
+ * other way round from ink and is therefore right in both without a second
+ * decision.
+ */
+export const COL_RUNTEXT = 19;
+/**
+ * **Type here** — the empty square the keyboard is pointing at.
+ *
+ * A colour of its own rather than `COL_HIGHLIGHT`, which is what it used to be:
+ * the highlight is `mkhighlight`'s near-white, and the app's dark-mode pass
+ * inverts it, so the one square that should be the most inviting on the board
+ * came out **pure black** — reading as a hole rather than an invitation. Anything
+ * defined as "brightest" has that problem, because brightest is relative to the
+ * scheme; only an authored colour is prominent in both.
+ *
+ * Purple because Crossing has spent the alternatives: blue and amber are the two
+ * run directions, green is the hint, red is an error. The wash step, because a
+ * held clue previews a ghosted digit on this square and has to stay readable.
+ */
+export const COL_SELECTED = 20;
+export const NCOLOURS = 21;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = new Array(NCOLOURS);
@@ -132,29 +159,40 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_GHOST] = crossingGhost(background);
   out[COL_HELD] = BLUE;
-  // The two dimension hues are matched in **OKLCH**, not in RGB: identical
-  // lightness and identical chroma, differing only in hue (250 blue / 60
-  // amber). Matching them in RGB — the obvious thing, and the first thing tried
-  // — does not work, because the channels carry wildly different luminance: the
-  // "mirrored" pair rgb(152,194,211) / rgb(211,194,152) measured L=0.789 C=0.051
-  // against L=0.818 C=0.059, so the amber was both lighter *and* more colourful
-  // and duly looked stronger. Perceived colourfulness is what the eye compares,
-  // so it is what has to be equal.
+  // **One colour per direction**, on the board and in the clue list alike.
   //
-  // Fixed colours rather than derivations of the host background, like the wall
-  // shades above: that keeps the match exact instead of contingent, and the
-  // app's dark-mode adaptation handles both hues symmetrically anyway.
-  // Chroma is the most either hue can carry at that lightness while both stay
-  // inside sRGB.
-  out[COL_ACROSS] = BLUE_WASH;
-  out[COL_DOWN] = ORANGE_WASH;
+  // These four slots used to be two shades of each hue: a wash under the board's
+  // run highlight, and the bold step for the list's ink. That is defensible — a
+  // fill and an ink want opposite lightness — but it made the player learn the
+  // link between a navy square and light-blue text, when the whole point of the
+  // hue is to say "across" in one glance. So the board takes the list's colour,
+  // and the digit that lands on a highlighted square switches to
+  // {@link COL_RUNTEXT} rather than the highlight giving way.
+  //
+  // The pair is matched in **OKLCH**, not in RGB: identical lightness and
+  // identical chroma, differing only in hue (258 blue / 62 amber). Matching in
+  // RGB — the obvious thing, and the first thing tried — does not work, because
+  // the channels carry wildly different luminance: the "mirrored" pair
+  // rgb(152,194,211) / rgb(211,194,152) measured L=0.789 C=0.051 against
+  // L=0.818 C=0.059, so the amber was both lighter *and* more colourful and duly
+  // looked stronger. Perceived colourfulness is what the eye compares, so it is
+  // what has to be equal — and that match is the palette's job now, pinned by
+  // `colours.test.ts`, not a discipline this file has to keep.
+  // The board slot and the list slot hold the same value on purpose — that *is*
+  // the change. They stay two indices because they are two surfaces, and a
+  // future scheme wanting to separate them again should not have to re-derive
+  // which is which; `scripts/colour-collide.test.ts` reports the pair, and this
+  // is the note that says it is meant.
+  out[COL_ACROSS] = BLUE_BOLD;
   out[COL_ACROSSFIT] = BLUE_BOLD;
+  out[COL_DOWN] = ORANGE_BOLD;
   out[COL_DOWNFIT] = ORANGE_BOLD;
+  out[COL_RUNTEXT] = PAPER;
+  out[COL_SELECTED] = PURPLE_WASH;
   // The hint pair — a **deliberate departure** from the collection's blue
   // `COL_HINT` (documented in the change's design.md). Crossing has already
-  // spent blue: `COL_ACROSS` is a pale blue wash meaning "this is a horizontal
-  // run", and the collection's hint blue measures within a whisker of it
-  // (L 0.82 C 0.07 h 250 vs L 0.83 C 0.06 h 245). A hint mark the player reads
+  // spent blue: `COL_ACROSS` means "this is a horizontal run", and the
+  // collection's hint blue is the same hue. A hint mark the player reads
   // as "across" is worse than a hint in an unfamiliar hue, so the hint takes
   // green — the far corner of the wheel from both dimension hues — and a
   // displayed hint suppresses the run wash, so only one meaning of "washed
@@ -462,19 +500,13 @@ function drawCell(
       : hintBits !== 0
         ? COL_HINT_CELL
         : -1;
-  const wash =
-    hintWash >= 0
-      ? hintWash
-      : flags & DF_ACROSS
-        ? COL_ACROSS
-        : flags & DF_DOWN
-          ? COL_DOWN
-          : COL_INNERBG;
+  const runWash = flags & DF_ACROSS ? COL_ACROSS : flags & DF_DOWN ? COL_DOWN : -1;
+  const wash = hintWash >= 0 ? hintWash : runWash >= 0 ? runWash : COL_INNERBG;
 
   if (!digit) {
     dr.drawRect(
       { x: tx, y: ty, w: ts, h: ts },
-      hintWash >= 0 ? hintWash : selected ? COL_HIGHLIGHT : wash,
+      hintWash >= 0 ? hintWash : selected ? COL_SELECTED : wash,
     );
   }
 
@@ -502,7 +534,7 @@ function drawCell(
     dr.drawText(
       { x: (x + 1) * ts, y: (y + 1) * ts },
       textOpts(Math.floor(ts / 2), "center", "mathematical"),
-      COL_GRID,
+      mid === runWash ? COL_RUNTEXT : COL_GRID,
       String(digit),
     );
   }

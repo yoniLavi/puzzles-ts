@@ -38,6 +38,7 @@ import {
   COL_INNERBG,
   COL_LOWLIGHT,
   COL_OUTERBG,
+  COL_SELECTED,
   COL_WALL_M,
   layoutNumbers,
   NCOLOURS,
@@ -1214,7 +1215,7 @@ describe("crossing rendering", () => {
 
     const idle = paint(newUi());
     expect(
-      idle.ops.filter((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT),
+      idle.ops.filter((o) => o.op === "rect" && o.colour === COL_SELECTED),
     ).toHaveLength(0);
 
     const selected = {
@@ -1223,10 +1224,16 @@ describe("crossing rendering", () => {
       cx: open % 5,
       cy: Math.floor(open / 5),
     };
+    // Its own colour, NOT the bevel highlight: the highlight is mkhighlight's
+    // near-white and the dark-mode pass inverts it, so the one square that should
+    // be the most inviting on the board came out pure black.
     expect(
-      paint(selected).ops.filter((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT)
+      paint(selected).ops.filter((o) => o.op === "rect" && o.colour === COL_SELECTED)
         .length,
     ).toBe(1);
+    expect(
+      paint(selected).ops.filter((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT),
+    ).toHaveLength(0);
 
     // The keyboard cursor draws corner brackets rather than a filled highlight.
     const keyed = { ...selected, ckey: true };

@@ -268,6 +268,44 @@ bold stays on the emphatic side of its base. The lesson generalises past colour 
 an optimised artefact needs its bounds asserted, because the optimiser's own
 objective will never complain about the thing it is trading away.
 
+### F11 — One colour per meaning beats one colour per *surface*
+
+Owner-reported: Crossing looked like it used **two pairs** of colours — a navy/brown
+pair washing the board's selected runs, and a light-blue/amber pair inking the
+clue list. It was really one pair of hues at two steps, and the split was
+defensible: a fill and an ink want opposite lightness in any scheme, which is
+exactly what `_WASH` and `_BOLD` are for.
+
+Defensible and still wrong. The hue *is* the information in Crossing — it says
+"across" or "down" — and making the player learn that a navy square and light-blue
+text mean the same thing spends the very legibility the hue was chosen for. The
+board now takes the clue list's colour outright.
+
+The obstacle was one line, not a trade: the run colour is also the middle of the
+bevelled tile a **placed digit** sits on, and that digit is drawn in ink — so a
+bold fill left a near-white digit on a light square in dark mode, and would have
+left black on dark in light mode. The fix is `COL_RUNTEXT = PAPER`, which adapts
+the *opposite* way from ink and is therefore correct in both schemes without a
+second decision. Recorded because the first read of this was "a real constraint,
+here are three options with tradeoffs", and it was not: it was a two-line change
+behind a badly-explained obstacle.
+
+### F12 — The palette needs a dead-colour guard too, and it found four
+
+Moving Crossing's runs to the bold step left `ORANGE_WASH` with no consumer — a
+shade of orange declared in the table that nothing on any board could show, which
+is the exact state a small palette exists to avoid. The per-game half has had a
+"declares no token no game uses" guard since `colour-tokens-per-scheme`; the
+palette had none, because before this change it did not exist.
+
+Adding it (`palette-source.test.ts`, spanning all three ways a colour reaches a
+board — a game importing it, a meaning defined over it, or a set gathering it up)
+immediately found **three more that had shipped dead in the first commit**:
+`YELLOW_BOLD`, `PURPLE_BOLD`, `PINK_BOLD`. The palette is 26 named colours now
+rather than 30, and every one has a consumer. Orange has no wash; yellow, purple
+and pink have no bold. That asymmetry is the honest shape — a uniform three steps
+per hue was tidiness, and tidiness is what the ~190 tokens were made of.
+
 ## Risks
 
 - **A 57-game appearance change.** Mitigated by D6's ordering (the palette is

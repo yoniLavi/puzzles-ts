@@ -49,6 +49,11 @@
  * wash cannot supply — a wash of blue is a fill, not a digit. That is the case on
  * record for the third step; anything further needs its own.
  *
+ * **A colour carries only the steps something asks for**, which is why orange has
+ * no wash and yellow, purple and pink have no bold. An intensity nobody
+ * references is a colour decision nobody can see, and it will be wrong by the
+ * time somebody looks — `palette-source.test.ts` fails on one.
+ *
  * ## Authored in OKLCH, on purpose
  *
  * {@link DESIGN} is the palette. It is stated as lightness/chroma/hue because
@@ -118,12 +123,13 @@ type Steps = { base: Step; wash?: Step; bold?: Step };
  * all of it, so a future edit that trades one set away is a failing test rather
  * than a discovery.
  *
- * One pair is **tied rather than optimised**: blue's and orange's wash and bold
- * steps carry the same lightness *and* the same chroma in both schemes, because
- * Crossing paints across-runs in one and down-runs in the other and either being
- * stronger makes one direction look like the important one. Blue's chroma is
- * therefore held down to what orange can reach — the constraint runs that way
- * because orange's gamut is the narrower of the two at both lightnesses.
+ * One pair is **tied rather than optimised**: blue's and orange's **bold** steps
+ * carry the same lightness *and* the same chroma in both schemes, because
+ * Crossing colours across-runs in one and down-runs in the other — on the board
+ * *and* in the clue list, which is one colour per direction rather than two — and
+ * either being stronger makes one direction look like the important one. Blue's
+ * chroma is held down to what orange can reach, the constraint running that way
+ * because orange's gamut is the narrower of the two at that lightness.
  *
  * ## Three bounds the dark column is held inside, and why
  *
@@ -159,13 +165,17 @@ const DESIGN: Record<string, { h: number; light: Steps; dark: Steps }> = {
   },
   ORANGE: {
     h: 62,
-    light: { base: [0.72, 0.156], wash: [0.81, 0.07], bold: [0.42, 0.091] },
-    dark: { base: [0.69, 0.149], wash: [0.38, 0.075], bold: [0.84, 0.076] },
+    // No wash step: nothing needs one. Crossing was its only consumer and now
+    // inks its down-runs with the same value the clue list uses, which is the
+    // bold step. An intensity nobody references is a colour decision nobody can
+    // see, and it would be wrong by the time somebody looked.
+    light: { base: [0.72, 0.156], bold: [0.42, 0.091] },
+    dark: { base: [0.69, 0.149], bold: [0.84, 0.076] },
   },
   YELLOW: {
     h: 100,
-    light: { base: [0.86, 0.168], wash: [0.91, 0.07], bold: [0.42, 0.082] },
-    dark: { base: [0.8, 0.156], wash: [0.48, 0.08], bold: [0.91, 0.16] },
+    light: { base: [0.86, 0.168], wash: [0.91, 0.07] },
+    dark: { base: [0.8, 0.156], wash: [0.48, 0.08] },
   },
   GREEN: {
     h: 148,
@@ -184,13 +194,13 @@ const DESIGN: Record<string, { h: number; light: Steps; dark: Steps }> = {
   },
   PURPLE: {
     h: 308,
-    light: { base: [0.53, 0.22], wash: [0.9, 0.06], bold: [0.42, 0.2] },
-    dark: { base: [0.6, 0.22], wash: [0.46, 0.07], bold: [0.84, 0.098] },
+    light: { base: [0.53, 0.22], wash: [0.9, 0.06] },
+    dark: { base: [0.6, 0.22], wash: [0.46, 0.07] },
   },
   PINK: {
     h: 350,
-    light: { base: [0.72, 0.198], wash: [0.84, 0.07], bold: [0.42, 0.165] },
-    dark: { base: [0.75, 0.171], wash: [0.4, 0.12], bold: [0.84, 0.099] },
+    light: { base: [0.72, 0.198], wash: [0.84, 0.07] },
+    dark: { base: [0.75, 0.171], wash: [0.4, 0.12] },
   },
   GREY: {
     h: 0,
@@ -229,16 +239,12 @@ export const RED_BOLD: Colour = of("RED", "bold");
 /** Orange. */
 export const ORANGE: Colour = of("ORANGE", "base");
 /** @see ORANGE */
-export const ORANGE_WASH: Colour = of("ORANGE", "wash");
-/** @see ORANGE */
 export const ORANGE_BOLD: Colour = of("ORANGE", "bold");
 
 /** Yellow. */
 export const YELLOW: Colour = of("YELLOW", "base");
 /** @see YELLOW */
 export const YELLOW_WASH: Colour = of("YELLOW", "wash");
-/** @see YELLOW */
-export const YELLOW_BOLD: Colour = of("YELLOW", "bold");
 
 /** Green. */
 export const GREEN: Colour = of("GREEN", "base");
@@ -265,15 +271,11 @@ export const BLUE_BOLD: Colour = of("BLUE", "bold");
 export const PURPLE: Colour = of("PURPLE", "base");
 /** @see PURPLE */
 export const PURPLE_WASH: Colour = of("PURPLE", "wash");
-/** @see PURPLE */
-export const PURPLE_BOLD: Colour = of("PURPLE", "bold");
 
 /** Pink. */
 export const PINK: Colour = of("PINK", "base");
 /** @see PINK */
 export const PINK_WASH: Colour = of("PINK", "wash");
-/** @see PINK */
-export const PINK_BOLD: Colour = of("PINK", "bold");
 
 /** Grey — the achromatic member, and the tenth member of {@link TEN}. */
 export const GREY: Colour = of("GREY", "base");
