@@ -37,17 +37,23 @@ The result is [`audit.md`](audit.md), archived with this change.
 ## 3. Act on the findings
 
 - [x] 3.1 Land the small, uncontentious fixes, each with a test — ABCD no-op
-      entry suppression, Boats fleet-display wrapping.
+      entry suppression, Boats fleet-display wrapping, and the Seismic size bound
+      split per mode so Tectonic 10×10 is reachable from Custom (see `audit.md`
+      §3a: one bound was serving two different limits).
 - [x] 3.2 Taste calls to the owner in one batch. **One remained**: Slide's two
       open graphics complaints, and it carries a design of its own, so it went
       to `refine-slide-appearance` rather than to a question — the owner already
       answered the third part (the target green) on 2026-07-30.
 - [x] 3.3 File a follow-up change for each item too large to land here, with the
       author's own words quoted in its `## Why`:
-      `bound-abcd-generable-sizes`, `reach-ten-by-ten-seismic`,
-      `add-sokoban-level-packs`, `refine-slide-appearance`.
+      `bound-abcd-generable-sizes`, `add-sokoban-level-packs`,
+      `refine-slide-appearance`. A fourth, `reach-ten-by-ten-seismic`, was drafted
+      and **withdrawn before implementation** on the owner's question — it is two
+      independent projects, buys one board size, and rests on a feasibility
+      question nobody has answered. Reasoning and the one experiment that would
+      settle it are in `audit.md` §3a.
 - [x] 3.4 Where a verdict must outlive `puzzles/`, add it to the game's
-      capability spec (`abcd`, `boats`).
+      capability spec (`abcd`, `boats`, `seismic`).
 
 ## 4. The help pages stop describing the implementation
 

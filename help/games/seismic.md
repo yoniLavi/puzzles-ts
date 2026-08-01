@@ -27,7 +27,7 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 
 <dl>
 	<dt>Width, Height</dt>
-	<dd>Size of the grid in squares. Boards larger than 64 squares are refused: filling regions so that each holds exactly the numbers 1 to its size gets rapidly less likely as the grid grows, and past that point a board can take minutes to appear, or never appear at all.</dd>
+	<dd>Size of the grid in squares. The limit depends on the mode: Tectonic goes up to 100 squares, Seismic up to 64. Seismic's keep-apart rule gets harder to satisfy the larger the board, so past that size a puzzle may never be found at all. Large boards can take several seconds to generate, which is why the ready-made types in the ‘Type’ menu stop at 8×8.</dd>
 	<dt>Difficulty</dt>
 	<dd>Determine the difficulty of the generated puzzle. Higher difficulties require more complex reasoning.</dd>
 	<dt>Game mode</dt>

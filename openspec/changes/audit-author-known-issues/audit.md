@@ -37,7 +37,7 @@ carry **no** admitted per-game defects. Upstream's prose states design facts
 | **mathrax** | "I haven't properly tested the Recursive difficulty level. It's possible that it works exactly the same as Hard mode." | **Fixed before, and the real fault was worse.** `add-mathrax-ts-port` found upstream's `Recursive` boards are *ambiguous* — 30 of 30 sampled had more than one solution — because both strip loops test `mathrax_solve` for bare truthiness and its "ambiguous" verdict is truthy. The port strips only while the board stays **uniquely** solvable. Below Recursive no recursion runs and the two tests coincide, so Easy/Normal/Tricky stay byte-identical; the divergence is confined to the tier that was ill-posed. Recorded in `mathrax/generator.ts`; asserted by `mathrax-differential.test.ts` ("records upstream's Recursive tier as ambiguous"). |
 | **rome** | "This puzzle is fully implemented and playable." | — nothing stated |
 | **salad** | (a) the pseudo-Latin machinery "is currently fairly messy, and doesn't allow for more complex solver techniques"; (b) "The Number Ball generator currently doesn't create puzzles that make good use of the concept, in my opinion." | **Declined**, both, recorded in `add-salad-ts-port` design §"the author's own notes". (a) is a `latin.ts` framework project (a repeats-aware cube), not a port; it would change every Salad board and throw away the byte-match oracle. The messiness is confined to the hole↔candidate translation, documented at the head of `salad/solver.ts`. (b) is the same trade for a taste judgement its own author hedges. |
-| **seismic** | "playable on lower sizes, but has a near-zero chance of generating sizes higher than 7x7. The generator step that creates randomly filled regions needs to be completely replaced with a different approach." | **Half fixed before, half promoted.** `replace-seismic-region-generator` took 7×7 from 24.9 s to 108 ms with the 28-fixture byte-match intact, and raised the bound. 10×10 — the size the `.c` names as standard for Hakyuu — is still unreachable in both modes (`MAX_CELLS = 64`), for a structural reason measured across nine region-size distributions. Remainder → **`reach-ten-by-ten-seismic`**. |
+| **seismic** | "playable on lower sizes, but has a near-zero chance of generating sizes higher than 7x7. The generator step that creates randomly filled regions needs to be completely replaced with a different approach." | **Fixed before**, plus one more size **fixed here**; the Seismic-mode 10×10 remainder **declined** — see §3a. `replace-seismic-region-generator` replaced the generator as asked and took Seismic 7×7 Hard from 24.9 s to 108 ms with the 28-fixture byte-match intact. This change makes **Tectonic 10×10** — the size the `.c` names as standard for Hakyuu — reachable from the Custom dialog, which had been barred only by a bound the other mode needed. |
 | **spokes** | "It would be interesting if the game had more varied layouts similar to Puzzle Picnic, where the grids aren't fully filled with hubs." | **Declined.** An explicit wish rather than a fault ("it would be interesting"); it is a new generator and a new grid model for a game that plays correctly. |
 | **sticks** | "There are currently no difficulty settings." | **Declined** — as clusters. |
 | **subsets** | "There are currently no difficulty options or alternate grid sizes." | **Declined.** 4×4 over four letters is the *only* configuration where the sixteen possible sets exactly fill the sixteen cells — the bijection the puzzle is built on — so "alternate grid sizes" is a different puzzle. Upstream's `configure` slot is `false` for the same reason (`add-subsets-ts-port` D8). Now stated in the help page instead of read as an omission. |
@@ -62,10 +62,81 @@ carry **no** admitted per-game defects. Upstream's prose states design facts
 | **crossing** | "TODO actually scan area for longest row" (`maxrow` hard-coded to 9) | **Fixed before** — recorded and handled in `crossing/state.ts`. |
 | **rome** | "TODO loose pixels for corners" | **Fixed before, by construction.** The port paints the whole board `COL_BORDER` and insets each cell's own background, so region borders are the *gaps* rather than drawn segments and there are no corner seams to leave stray pixels in (`rome/render.ts` head comment). |
 | **salad** | "TODO: Add difficulty levels" | **Fixed before, upstream.** Salad ships a Difficulty parameter; the TODO predates it. |
-| **seismic** | "This is a dumb way of generating a region layout" | **Half fixed before / promoted** — same item as the Status entry above. |
+| **seismic** | "This is a dumb way of generating a region layout" | **Fixed before** — the generator was replaced; same item as the Status entry above, with the 10×10 remainder declined in §3a. |
 | **seismic** | `int FIXME;` in the draw state | Not an issue — an unused placeholder field, absent from the port. |
 | **subsets** | "TODO: When other sizes are supported, read n instead of returning a constant" | **Declined** — same as the Status entry; other sizes are a different puzzle. |
 | **subsets** | "// TODO repair this" — a commented-out mirror-image elimination in the solver | **Declined, and recorded in code.** The block is not compiled in the C, so the shipped solver has never had it; `subsets/solver.ts` says so at the site rather than silently omitting it. Adding it strengthens the solver and changes every board. |
+
+## 3a. Seismic 10×10 — half of it shipped here, half declined (owner decisions, 2026-08-01)
+
+A change (`reach-ten-by-ten-seismic`) was drafted for the remainder of Seismic's
+Status entry and **withdrawn before implementation** when the owner asked whether
+there was a way forward worth another session on it. Answering that properly
+turned up a **premise error worth recording**, because it had survived into the
+change's own proposal: 10×10 was described as needing a better generator in both
+modes, and in one mode it only needed a bound removed.
+
+**Measured on the shipped code**, six generations per mode across both
+difficulties: **Tectonic 10×10 works** — 41 ms, 4.4 s and 7.2 s per difficulty —
+while **Seismic 10×10 fails every time**, each attempt running ~16 s before
+exhausting its retry budget. But *neither* was reachable, because `MAX_CELLS = 64`
+refused 100 cells in both modes. So the honest state was not "slow"; it was
+"barred", and Tectonic was barred by a limit that only Seismic needed.
+
+`replace-seismic-region-generator`'s F7 had unified the bound and dropped the
+10×10 preset together, giving one reason for both: an 18-second wait must not come
+out of the Type menu. That reason is sound **for presets** and does not reach the
+Custom dialog, where the player has typed the size they want. With the owner
+confirming that a long Custom wait is acceptable and that a slow preset is not,
+this change **splits the bound per mode** (Seismic 64, Tectonic 100) and leaves
+presets at 8×8 — now asserted, not merely conventional, so a slow preset cannot
+drift back in.
+
+**The general shape**: when one bound serves two mechanisms, retiring the stricter
+one silently takes the looser one with it. F7's unification was right about the
+tail and wrong about the scope, and nothing caught it because "10×10 is not
+offered" was true either way.
+
+### The Seismic-mode half, declined
+
+The rest of the entry — Seismic mode at 10×10 — stays declined, and the reasoning
+is worth keeping because the item reads like an obvious open task and will invite
+reopening.
+
+**It is two independent projects, not one.** F4 is the *fill* — placing `1..k`
+into each region under the keep-apart rule. F7 found that Tectonic 10×10, which
+*does* fill, still takes 4.9–6.2 s median and **18.3 s worst of nine seeds**,
+because clue-stripping runs `O(cells)` solver calls at `O(cells²)`. So a perfect
+fill still leaves 10×10 unshippable until the stripping stage is separately
+rebuilt.
+
+**The prior question is unanswered, and it decides everything.** The measurements
+conflate "the search cannot find a fill" with "no fill exists". F4 has evidence of
+both: small-region tables fail in ~20 ms because the search *proves* UNSAT, while
+large-region tables fail in ~20 s because it merely struggles. At the shipped
+distribution 10×10 is 0/100, and nobody knows which of the two that is. If those
+partitions are unsatisfiable, then no amount of better search — backjumping,
+restarts, value ordering — can ever help, and the only lever left is mean region
+size, i.e. **changing what a Seismic board looks like at every size**, which is a
+taste decision rather than an engineering one.
+
+**And the ceiling is one board size.** The best distribution measured (34/100, at
+mean region 4.45 against upstream's realised 2.62) still collapses at 12×12. The
+demand-to-capacity ratio sits near 80% at *every* board size, because the
+keep-apart distance scales with the number's value rather than with the grid, so
+nothing eases off with scale.
+
+**The spec states this as a rule, not as a fact about 10×10.** The `seismic`
+requirement now says Seismic's bound is one of *possibility* rather than of
+patience, and that raising it requires a multi-seed tail measurement — so the
+decline is preserved as the reason, not just as a number.
+
+**If it is ever reopened, do this one experiment first, and only this one.** Take
+~20 of the 0/100 partitions at the shipped distribution and put them to a real
+CP/SAT solver. **SAT** ⇒ the fill search is the bottleneck and the standard CSP
+upgrades are worth costing. **UNSAT** ⇒ 10×10 is impossible at upstream's look and
+the only question left is a product one — is a coarser-region Seismic wanted at
+every size? That is a half-day spike, and its likely answer makes the rest moot.
 
 ## 3. Upstream Tatham — games this fork finished
 
@@ -88,7 +159,8 @@ each file's header.
   quietly recorded the only live defect either source had (`Certain custom fleets
   don't fit in the UI`). Reading the more candid source alone is not enough.
 - **"Declined" was the right answer far more often than "outstanding".** Of the
-  ~30 points swept, two were live defects, three were promoted, and the rest were
+  ~30 points swept, two were live defects, three were promoted, one was declined
+  after a dedicated change had already attacked it (§3a), and the rest were
   either already resolved by a port or are requests to make a solver stronger —
   which playbook §4 rule 3 refuses on principle, because a weaker solver *is* the
   difficulty curve upstream shipped.

@@ -151,17 +151,20 @@ export function decodeParams(s: string): SeismicParams {
 }
 
 /**
- * The largest board the generator produces *reliably*, in cells.
+ * The largest board each mode's generator will be asked for, in cells.
  *
  * **Re-derived by measurement after `replace-seismic-region-generator`** (it was
  * `49` while the port still used upstream's fill-then-merge stages, which never
  * produced anything above ~50 cells at all).
  *
- * The bound is set by the **worst case, not the median**, which is the whole
- * lesson here. Every size up to 100 cells is *reachable* — an exhaustive sweep
- * of all 392 accepted `(w, h, mode, difficulty)` combinations had zero failures.
- * But reachable is not the same as usable: repeating the slow sizes over nine
- * seeds each showed medians that look fine hiding tails that do not.
+ * Two different questions decide these two numbers, and conflating them is the
+ * mistake this comment exists to prevent.
+ *
+ * **Tectonic's bound answers "how long is too long?"** Every Tectonic size up to
+ * 100 cells is *reachable* — an exhaustive sweep of the accepted `(w, h,
+ * difficulty)` combinations had zero failures. But reachable is not the same as
+ * pleasant: repeating the slow sizes over nine seeds each showed medians that
+ * look fine hiding tails that do not.
  *
  * | Tectonic    | median      | worst of 9 seeds |
  * |-------------|-------------|------------------|
@@ -170,44 +173,53 @@ export function decodeParams(s: string): SeismicParams {
  * | 9×9  (81)   | 1.1–1.5 s   | 16.2 s           |
  * | 10×10 (100) | 4.9–6.2 s   | 18.3 s           |
  *
- * 64 is the largest area whose *worst* observed run stays near two seconds.
- * Above it the tail runs to 15–18 s — which is the very defect this change
- * existed to remove (upstream's 7×7 took 12–28 s), so admitting those sizes
- * would have reintroduced it at a different size and called it a feature.
- * Seismic behaves the same way: its exhaustive sweep passed at up to 72 cells,
- * but with single-seed timings already reaching 5.5 s and no tail measurement to
- * stand behind, so it shares the bound rather than claiming 8 more cells.
+ * The **owner's answer, 2026-08-01: a long wait in the Custom dialog is fine.**
+ * So Tectonic's bound is the reachability limit, 100 cells, and 10×10 — the size
+ * upstream's own TODO names ("10x10 is a common size for Hakyuu puzzles") — is
+ * available there. `PRESETS` still stops at 8×8, because a preset is handed out
+ * to anyone opening the Type menu whereas a Custom size is one the player typed:
+ * a wait you chose is a different thing from a wait sprung on you.
  *
- * **This retracts an earlier claim.** `replace-seismic-region-generator` first
- * shipped a per-mode bound (Seismic 72 / Tectonic 100) and a 10×10 Tectonic
- * preset, on the strength of single-seed samples that happened to come out at
- * 22 ms and 4.7 s. The tail measurement above showed 10×10 is *consistently*
- * slow — 2.6 s at best — so the preset was withdrawn and the bound unified. The
- * per-mode split went with it: two modes with the same limit did not justify the
- * machinery.
+ * **Seismic's bound answers a different question — "is it possible at all?" — and
+ * no wait fixes it.** 10×10 Seismic does not generate: measured on the shipped
+ * code, six attempts across both difficulties each ran ~16 s and then threw
+ * `RetryLimitExceeded`. Nine region-size distributions were measured against it
+ * and the best managed 34 fills per 100 partitions, only by pushing mean region
+ * size to 4.45 against upstream's 2.62 — visibly changing the puzzle at every
+ * size. Small-region distributions are *provably* infeasible there: mean size
+ * 2.26 puts 44 `1`s on a 10×10 against a hard ceiling of 50 (no two `1`s
+ * orthogonally adjacent). Reaching it needs a different fill algorithm, not a
+ * tuned constant, and the audit archived with `audit-author-known-issues` §3a
+ * records the one experiment that would say whether that is even worth costing.
+ *
+ * Seismic therefore stays at **64**, the largest area whose worst observed run
+ * stays near two seconds. Its exhaustive sweep passed at up to 72 cells, but on
+ * single-seed timings already reaching 5.5 s and with no tail measurement to
+ * stand behind — and 72 cells buys 9×8, which nobody asked for. Do not raise it
+ * without repeating the slow sizes over several seeds; a median-based bound is
+ * exactly the error `replace-seismic-region-generator` shipped and retracted.
  *
  * Rejecting sizes rather than letting them run is playbook §4's prescribed
  * handling: refuse in `validateParams`, where the Custom dialog can show a
  * reason, instead of letting the player press "New game" and wait. The trade-off
- * it carries: a hand-authored `10x10:⟨desc⟩` game ID is refused, since this
- * engine validates params the same way for a `:desc` id as for a `#seed` one.
- *
- * **10×10 is therefore not offered in either mode**, which is worth stating
- * plainly because it is the size upstream's TODO names ("10x10 is a common size
- * for Hakyuu puzzles"). In *Seismic* it is not merely slow but unreachable:
- * nine region-size distributions were measured against it and the best managed
- * 34 fills per 100 partitions, only by pushing mean region size to 4.45 against
- * upstream's 2.62. Small-region distributions are *provably* infeasible there —
- * mean size 2.26 puts 44 `1`s on a 10×10 against a hard ceiling of 50 (no two
- * `1`s orthogonally adjacent). Reaching 10×10 needs a different fill algorithm
- * and a faster clue-stripping stage, not a tuned constant.
+ * it carries: a hand-authored Seismic `10x10:⟨desc⟩` game ID is refused, since
+ * this engine validates params the same way for a `:desc` id as for a `#seed`
+ * one.
  */
-export const MAX_CELLS = 64;
+export const MAX_CELLS_SEISMIC = 64;
+
+/** @see MAX_CELLS_SEISMIC — Tectonic's limit is reachability, not the fill. */
+export const MAX_CELLS_TECTONIC = 100;
+
+export function maxCells(mode: number): number {
+  return mode === MODE_TECTONIC ? MAX_CELLS_TECTONIC : MAX_CELLS_SEISMIC;
+}
 
 export function validateParams(p: SeismicParams, _full: boolean): string | null {
   if (p.w < 4 || p.h < 4) return "Width and height must be at least 4";
-  if (p.w * p.h > MAX_CELLS)
-    return `Width times height must be at most ${MAX_CELLS} (the generator cannot reliably build a larger board)`;
+  const max = maxCells(p.mode);
+  if (p.w * p.h > max)
+    return `Width times height must be at most ${max} in ${MODE_NAMES[p.mode]} mode (the generator cannot reliably build a larger board)`;
   if (p.diff >= DIFFCOUNT) return "Unknown difficulty rating";
   return null;
 }
