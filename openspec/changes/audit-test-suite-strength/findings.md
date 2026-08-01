@@ -202,8 +202,19 @@ the tests themselves:
   on it. That is the correct place for it to be caught, and the test file now
   says so, having verified it rather than asserting it.
 
-Still without a local test, in descending order of size: `divvy.ts` (231 lines,
-4 importers), `grid-core.ts` (11 importers), `grid-geometry.ts`, the three
-`grid-tilings-*.ts`, `deduction-record.ts`, `registry.ts`, `pencil-indicator.ts`.
+`divvy.ts` (231 lines, reached by Solo's jigsaw blocks, Palisade's regions and
+Separate's partition) followed, with 14 tests stating the contract its three
+callers rely on — every cell in exactly one region, every region exactly `k`
+cells and 4-connected — plus a check that the output actually varies with the
+seed, since a degenerate implementation that always cut the board into rows would
+satisfy every structural assertion. Also measured rather than assumed: its
+**retry loop never iterates** for any shape tested (0 retries over every case and
+25 sweep seeds), so a mutant planted after the first attempt survives *correctly*
+and the test file says so. Distinguishing "not covered" from "not reachable" is
+the whole of triage class (b).
+
+Still without a local test, in descending order of reach: `grid-core.ts` (11
+importers), `grid-geometry.ts`, the three `grid-tilings-*.ts`,
+`deduction-record.ts`, `registry.ts`, `pencil-indicator.ts`.
 
 ---
