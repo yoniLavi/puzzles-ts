@@ -10,6 +10,7 @@
  * machinery), started empty from a board's clues; it never touches game state.
  * Return codes: −1 impossible, 0 ambiguous/unfinished, 1 solved.
  */
+import { runDeductionFixpoint } from "../../engine/deduction-fixpoint.ts";
 import {
   COLUMN,
   DIFF_TRICKY,
@@ -512,15 +513,10 @@ export class MagnetsSolver {
    * Used by the generator's `layDominoes` while placing dominoes, before the
    * clue counts exist. */
   solveUnnumbered(): number {
-    while (true) {
-      let ret = this.force();
-      if (ret > 0) continue;
-      if (ret < 0) return -1;
-      ret = this.neither();
-      if (ret > 0) continue;
-      if (ret < 0) return -1;
-      break;
-    }
+    const { impossible } = runDeductionFixpoint({
+      rungs: [() => this.force(), () => this.neither()],
+    });
+    if (impossible) return -1;
     for (let i = 0; i < this.wh; i++) {
       if (!(this.flags[i] & GS_SET)) return 0;
     }
@@ -533,45 +529,26 @@ export class MagnetsSolver {
     this.clearflags();
     if (this.startflags() < 0) return -1;
 
-    // Ordered technique rungs; any firing restarts the loop (upstream's
-    // `continue`). The DIFF_TRICKY gate adds the last four.
-    while (true) {
-      let ret = this.force();
-      if (ret > 0) continue;
-      if (ret < 0) return -1;
-
-      ret = this.neither();
-      if (ret > 0) continue;
-      if (ret < 0) return -1;
-
-      ret = this.rowcols(this.checkfull);
-      if (ret < 0) return -1;
-      if (ret > 0) continue;
-
-      ret = this.rowcols(this.oddlength);
-      if (ret < 0) return -1;
-      if (ret > 0) continue;
-
-      if (diff < DIFF_TRICKY) break;
-
-      ret = this.rowcols(this.advancedfull);
-      if (ret < 0) return -1;
-      if (ret > 0) continue;
-
-      ret = this.rowcols(this.nonneutral);
-      if (ret < 0) return -1;
-      if (ret > 0) continue;
-
-      ret = this.rowcols(this.countdominoesNeutral);
-      if (ret < 0) return -1;
-      if (ret > 0) continue;
-
-      ret = this.rowcols(this.countdominoesNonneutral);
-      if (ret < 0) return -1;
-      if (ret > 0) continue;
-
-      break;
-    }
+    // The shared ordered-rung ladder (`engine/deduction-fixpoint.ts`): try the
+    // techniques easiest-first and restart from the top the moment one fires.
+    // Upstream's `if (diff < DIFF_TRICKY) break;` sat in the MIDDLE of the
+    // ladder; it is exactly the runner's `maxRung`, so the difficulty cap is
+    // now expressed as a cap rather than as an early exit you have to read
+    // against the rung order to understand.
+    const { impossible } = runDeductionFixpoint({
+      rungs: [
+        () => this.force(),
+        () => this.neither(),
+        () => this.rowcols(this.checkfull),
+        () => this.rowcols(this.oddlength),
+        () => this.rowcols(this.advancedfull),
+        () => this.rowcols(this.nonneutral),
+        () => this.rowcols(this.countdominoesNeutral),
+        () => this.rowcols(this.countdominoesNonneutral),
+      ],
+      maxRung: diff < DIFF_TRICKY ? 3 : 7,
+    });
+    if (impossible) return -1;
     return this.checkCompletion();
   }
 }

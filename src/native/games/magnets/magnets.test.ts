@@ -185,3 +185,60 @@ describe("magnets moves + findMistakes", () => {
     }
   });
 });
+
+describe("the solver is monotone in its difficulty cap", () => {
+  // A solver that accepts a difficulty cap must be MONOTONE in it: a board it
+  // solves with the ladder capped at `d` must also solve at every cap above `d`.
+  //
+  // This is not a theoretical property. Boats shipped with a solver that solved
+  // boards at a LOWER cap which it failed at a higher one — its second-tier
+  // disjoint-set check can report a contradiction a board does not have — and
+  // that silently broke Check & Save on Easy boards, because "solvable at Easy"
+  // and "solvable at Tricky" were both true statements about different code
+  // paths and nothing compared them. (Boats' non-monotonicity is now a recorded
+  // property of that game with an explicit workaround: solve at each tier and
+  // take the first that succeeds. It is the exception, not the pattern.)
+  //
+  // It is also part of what replaces the retired byte-match oracle: a statement
+  // about what a difficulty tier MEANS, which the byte-match never checked.
+  const solverFor = (p: MagnetsParams, desc: string) => {
+    const s = newState(p, desc);
+    return new MagnetsSolver(
+      s.w,
+      s.h,
+      s.common.dominoes,
+      s.common.rowcount,
+      s.common.colcount,
+    );
+  };
+
+  it("a board solvable at a cap stays solvable at every higher cap", () => {
+    for (const [w, h, diff] of [
+      [6, 5, DIFF_EASY],
+      [6, 5, DIFF_TRICKY],
+      [8, 7, DIFF_TRICKY],
+    ] as const) {
+      for (let seed = 0; seed < 6; seed++) {
+        const p = P(w, h, diff);
+        const { desc } = newMagnetsDesc(p, randomNew(`mono-${w}x${h}-${diff}-${seed}`));
+
+        // The lowest cap that solves it, then every cap above.
+        let lowest = -1;
+        for (let cap = 0; cap < DIFF_COUNT; cap++) {
+          if (solverFor(p, desc).solve(cap) === 1) {
+            lowest = cap;
+            break;
+          }
+        }
+        expect(lowest).toBeGreaterThanOrEqual(0);
+
+        for (let cap = lowest; cap < DIFF_COUNT; cap++) {
+          expect(
+            solverFor(p, desc).solve(cap),
+            `${w}x${h} diff=${diff} seed=${seed}: solves at cap ${lowest} but not at ${cap}`,
+          ).toBe(1);
+        }
+      }
+    }
+  });
+});
