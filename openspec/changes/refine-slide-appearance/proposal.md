@@ -53,6 +53,6 @@ build.
 ## Impact
 
 - Affected specs: `slide` (a presentation requirement).
-- Affected code: `src/native/games/slide/render.ts`, possibly `palette-games.ts`
+- Affected code: `src/games/slide/render.ts`, possibly `palette-games.ts`
   and `src/puzzle/augmentation.ts`.
 - Display only — no board, description or solver behaviour changes.

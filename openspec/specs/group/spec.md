@@ -10,7 +10,7 @@ detection.
 ## Requirements
 ### Requirement: Group game implements the Game interface
 
-The engine SHALL provide `src/native/games/group/` implementing the `Game`
+The engine SHALL provide `src/games/group/` implementing the `Game`
 interface for Group — a Latin-square puzzle whose completed grid must be a valid
 group Cayley table (Latin **and** associative) — registered so the puzzle is
 served by the TypeScript engine.
@@ -66,7 +66,7 @@ out-of-range numbers and unknown characters.
 
 ### Requirement: Group ports the graded group-axiom solver over the shared Latin solver
 
-Group SHALL solve using the shared `src/native/engine/latin.ts` engine, supplying
+Group SHALL solve using the shared `src/engine/latin.ts` engine, supplying
 only its group-specific deductions and validator: at Normal, an associativity
 forward-deduction ((ab)c = a(bc)) together with filling the identity's row and
 column once the identity is known; at Hard, ruling out identity candidates from

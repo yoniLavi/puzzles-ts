@@ -21,7 +21,7 @@
 >   behavioural: "every generated board is uniquely solvable at exactly its
 >   stated difficulty" as a property test. `scripts/new-game-port.sh` scaffolds
 >   that instead of a differential stub.
-> - **Registration is two edits now**, not three: `src/native/games/index.ts`
+> - **Registration is two edits now**, not three: `src/games/index.ts`
 >   and `src/puzzle/catalog-data.ts` (the committed catalog).
 >   `catalog-registry.test.ts` holds them together. There is no
 >   `ts-ported-ids.ts` and no CMake `TS_PORTED` flag.
@@ -47,7 +47,7 @@ Authoritative specs: [`ts-migration`](../../openspec/specs/ts-migration/spec.md)
 `Midend`) · [`repo-layout`](../../openspec/specs/repo-layout/spec.md) (where
 things live, in-process test tiers). Strategic narrative:
 [`AGENTS.md`](../../AGENTS.md). **Exemplar to read end-to-end before starting:**
-[`src/native/games/galaxies/`](../../src/native/games/galaxies/) (idiomatic,
+[`src/games/galaxies/`](../../src/games/galaxies/) (idiomatic,
 six-file split, ~3000 lines vs ~4500 in C).
 
 ## Definition of done (the checklist this guide expands)
@@ -208,11 +208,11 @@ match), and cover them with a behavioural test instead.
 ## 2. Scaffold and file layout
 
 **Start with the scaffolder:** `scripts/new-game-port.sh <puzzleId>` stamps out
-`src/native/games/<puzzleId>/` with compiling typed `Game<…>` stubs in the file
+`src/games/<puzzleId>/` with compiling typed `Game<…>` stubs in the file
 shape below (throwing where logic goes) and an empty `__fixtures__/`, then prints
 the manual-edit checklist it deliberately won't do for you (the C trace harness,
 the two registration edits, the icon PNGs). Fill the stubs against the C reference;
-read [`galaxies/`](../../src/native/games/galaxies/) end-to-end as the exemplar.
+read [`galaxies/`](../../src/games/galaxies/) end-to-end as the exemplar.
 
 The file shape that has held across ports (Galaxies is the reference; small games
 may collapse files):
@@ -228,29 +228,29 @@ may collapse files):
 ### 2.1 Shared engine helpers — reach for these, don't re-roll
 
 Leaf libs (dsf, sorted structures) are pulled in **idiomatically and lazily**: use
-the shared [`src/native/engine/`](../../src/native/engine/) helpers
-([`dsf.ts`](../../src/native/engine/dsf.ts) — `Dsf` (union-by-size) plus
+the shared [`src/engine/`](../../src/engine/) helpers
+([`dsf.ts`](../../src/engine/dsf.ts) — `Dsf` (union-by-size) plus
 `FlipDsf`, the **parity/flip** union-find (`dsf_new_flip`; each class tracks a
 same/opposite-sense bit) that Dominosa's forcing-chain deduction needs,
-[`findloop.ts`](../../src/native/engine/findloop.ts) — Tarjan loop/bridge
+[`findloop.ts`](../../src/engine/findloop.ts) — Tarjan loop/bridge
 finding for live loop-error highlighting (Slant; Bridges/Dominosa/Loopy/Tracks
 when ported),
-[`laydomino.ts`](../../src/native/engine/laydomino.ts) — `dominoLayout(w, h, rs)`,
+[`laydomino.ts`](../../src/engine/laydomino.ts) — `dominoLayout(w, h, rs)`,
 a random 2×1 domino tiling of a grid (RNG-faithful: the candidate-list shuffle +
 per-BFS-node neighbour shuffle reproduce C's draws, so a generator built on it is
 byte-match portable). Ported for Magnets; Dominosa reuses it when ported (so
 `puzzles/laydomino.c` stays until then, like `random.c`),
-[`sorted-multiset.ts`](../../src/native/engine/sorted-multiset.ts),
-[`colour-mkhighlight.ts`](../../src/native/engine/colour-mkhighlight.ts),
-[`pointer.ts`](../../src/native/engine/pointer.ts),
-[`params.ts`](../../src/native/engine/params.ts),
-[`wires.ts`](../../src/native/engine/wires.ts) — the shared **Net/Netslide
+[`sorted-multiset.ts`](../../src/engine/sorted-multiset.ts),
+[`colour-mkhighlight.ts`](../../src/engine/colour-mkhighlight.ts),
+[`pointer.ts`](../../src/engine/pointer.ts),
+[`params.ts`](../../src/engine/params.ts),
+[`wires.ts`](../../src/engine/wires.ts) — the shared **Net/Netslide
 model** (direction algebra `R/U/L/D`/`A`/`C`/`F`/`ROT`, the hex wire desc codec
 with `v`/`h` barriers, the spanning-tree grower over `sorted-multiset`, barrier
 placement, and the `computeActive` power flood). Wire bits `0x0F` only — each
 game owns the high bits (`0x10` collides: Netslide `FLASHING`, Net `LOCKED`).
 Extracted from Netslide when Net became the second consumer),
-[`grid.ts`](../../src/native/engine/grid.ts) — the shared **planar-grid geometry**
+[`grid.ts`](../../src/engine/grid.ts) — the shared **planar-grid geometry**
 leaf (upstream `grid.c`): `Grid`/`GridFace`/`GridEdge`/`GridDot` with reference
 incidence (an edge holds its two dots + two faces, a null face = the infinite
 exterior; faces/dots carry clockwise edge/face rings) and the shared
@@ -298,7 +298,7 @@ wrong (hat's `starting_hats` uses `PROB_P` for its `TT_T` entry): they are what
 the C draws against. This generalises past `grid.ts` to **any** port whose
 generator must match a seed,
 Landed with Pearl,
-[`loopgen.ts`](../../src/native/engine/loopgen.ts) — `generateLoop(g, board, rng, bias?)`,
+[`loopgen.ts`](../../src/engine/loopgen.ts) — `generateLoop(g, board, rng, bias?)`,
 the RNG-faithful random-loop generator over a `Grid` (upstream `loopgen.c`). It is
 **byte-match critical** (drives Pearl's desc): reproduce the exact draw order —
 per-face `randomBits(31)`, the seed-face `randomUpto`, per-iteration `randomUpto(2)`
@@ -313,7 +313,7 @@ consumer of a game-local helper appears, promote it to `engine/`.**
 **A `tree234` is almost always just a sorted set — reach for `SortedMultiset`.**
 Upstream uses `tree234` wherever it wants an ordered collection, but the games
 overwhelmingly use only four of its operations, and
-[`sorted-multiset.ts`](../../src/native/engine/sorted-multiset.ts) already has
+[`sorted-multiset.ts`](../../src/engine/sorted-multiset.ts) already has
 all four under upstream's own semantics: `add234` → `add`, `del234` → `delete`
 (a no-op when absent, so C's `find234`-then-`del234` collapses to a bare
 `delete`), `delpos234` → `removeAt`, `count234` → `size`. Netslide's generator
@@ -345,10 +345,10 @@ thrown away. A 32-bit FNV-1a hash bucketed to an exact byte comparison keeps
 **3.4× faster** — from ~2.4× the C's wall clock to ~0.7× it. This is the safest
 possible place to optimise, and the reason is §4.3: a byte-match differential proves
 the substitution changed no behaviour, so the only question left is speed. Exemplar:
-[`slide/solver.ts`](../../src/native/games/slide/solver.ts) (`hashOf`/`sameBoard`).
+[`slide/solver.ts`](../../src/games/slide/solver.ts) (`hashOf`/`sameBoard`).
 
 **Shared `GameDrawing` primitives live in
-[`draw.ts`](../../src/native/engine/draw.ts)** — `drawRecessedBorder` (the
+[`draw.ts`](../../src/engine/draw.ts)** — `drawRecessedBorder` (the
 two-pentagon playfield bevel), `drawRectOutline` (upstream `draw_rect_outline`),
 and `drawRectCorners` (upstream `misc.c draw_rect_corners`, the four corner
 brackets that mark a keyboard cursor). The last was promoted from **seven**
@@ -360,7 +360,7 @@ tests stayed green through the refactor — which is the check that an extractio
 of drawing code needs.
 
 **Symmetric black-square placement is shared:**
-[`symmetric-blacks.ts`](../../src/native/engine/symmetric-blacks.ts) —
+[`symmetric-blacks.ts`](../../src/engine/symmetric-blacks.ts) —
 `placeSymmetricBlacks` (upstream `set_blacks`, which `sticks.c` copied
 verbatim from `lightup.c`), plus the `SYMM_*` enum and the Custom-dialog
 `SYMMETRY_CHOICES` labels. It is byte-match critical (region sizing,
@@ -371,7 +371,7 @@ Light Up and Sticks are the consumers — the extraction was proven byte-safe
 by Light Up's differential staying green through the refactor.
 
 The bipartite **`matching`** (Hopcroft–Karp, RNG-faithful) lives in
-[`latin.ts`](../../src/native/engine/latin.ts) alongside `latinGenerate`, and
+[`latin.ts`](../../src/engine/latin.ts) alongside `latinGenerate`, and
 is reusable outside the Latin family: Tents drives it both ways. Its `rs` is
 **optional** — pass it to randomise among matchings (generation, byte-match
 sensitive) or omit it to run deterministically (an existence/cardinality check,
@@ -385,22 +385,22 @@ in its completion check (does a perfect tree↔tent matching exist?).
 In `interpretMove`/`decodeParams`, reach for these instead of re-rolling the idiom
 (every game grew its own copy until they were consolidated):
 
-- [`stripModifiers(button)`](../../src/native/engine/pointer.ts) for
+- [`stripModifiers(button)`](../../src/engine/pointer.ts) for
   `button & ~MOD_MASK` (and `MOD_CTRL`/`MOD_SHFT`/`MOD_NUM_KEYPAD` for the bits
   themselves) — don't redeclare `const MOD_MASK = 0x7800`.
-- [`gridCursorMove(button, x, y, w, h, wrap?)`](../../src/native/engine/pointer.ts)
+- [`gridCursorMove(button, x, y, w, h, wrap?)`](../../src/engine/pointer.ts)
   for the bounded (or toroidal) cursor clamp. It returns `null` on a non-cursor
   button **and** on a clamped-edge no-op, so `?? { x, y }` reproduces the "always
   returns a position" shape while per-game policy (which field holds the cursor,
   "first arrow reveals it", `UI_UPDATE` vs `null`) stays local. Pair with
-  [`isCursorMove(button)`](../../src/native/engine/pointer.ts) for the
+  [`isCursorMove(button)`](../../src/engine/pointer.ts) for the
   `CURSOR_UP..CURSOR_RIGHT` range check. A non-trivial traversal (half-grid cursor,
   corner-skipping, lock modes) keeps its own logic.
-- [`parseDimensions(s, start?)`](../../src/native/engine/params.ts) for a leading
+- [`parseDimensions(s, start?)`](../../src/engine/params.ts) for a leading
   `WxH`-or-square dimension prefix (`next` continues a trailing suffix). It restores
   the square fallback that `s.indexOf("x")` silently mis-sliced on a bare `"4"`. Not
   for non-`WxH` formats (e.g. Blackbox's `w<W>h<H>m…M…`).
-- [`runDeductionFixpoint({ rungs, maxRung, budget })`](../../src/native/engine/deduction-fixpoint.ts)
+- [`runDeductionFixpoint({ rungs, maxRung, budget })`](../../src/engine/deduction-fixpoint.ts)
   for a logic game's solver/hint loop. A game's generator and explained hint are two
   projections of **one deduction engine** — the same ordered technique rungs run to a
   fixpoint (restart-on-first-firing), recorder off to generate/grade, recorder on to
@@ -430,15 +430,15 @@ flat reads (Keen's `boxlist`/`whichbox`/`sq` all hold `s = x·w + y`, read as
 with a clear comment is the lower-risk faithful choice — re-deriving them into
 `cubeGet` is error-prone and would diverge a byte-match differential (same lesson as
 the `gg_best_clue` transposition below). Exemplars:
-[`towers/solver.ts`](../../src/native/games/towers/solver.ts) (clue heuristics),
-[`unequal/solver.ts`](../../src/native/games/unequal/solver.ts) (two modes — link
+[`towers/solver.ts`](../../src/games/towers/solver.ts) (clue heuristics),
+[`unequal/solver.ts`](../../src/games/unequal/solver.ts) (two modes — link
 elimination vs adjacency elimination — dispatched off `ctx.mode`; the optional
 per-recursion `ctxNew` is omitted because the ctx is immutable, exactly as
 upstream's structurally-identical `clone_ctx`),
-[`keen/solver.ts`](../../src/native/games/keen/solver.ts) (per-cage arithmetic
+[`keen/solver.ts`](../../src/games/keen/solver.ts) (per-cage arithmetic
 deductions; the EASY/NORMAL/HARD `iscratch` accumulation variants + the "revert to
 easier after one cross-box hard hit" early return, all in the transposed cube space),
-[`group/solver.ts`](../../src/native/games/group/solver.ts) (associativity
+[`group/solver.ts`](../../src/games/group/solver.ts) (associativity
 forward-deduction + identity-hidden elimination; the 5th consumer, reusing latin.ts
 with **zero** changes — Group is "two `usersolvers` + a `valid`" and nothing else).
 **A clue that constrains a cell without placing a digit needs the `seed` hook.**
@@ -460,7 +460,7 @@ the solver leaves them at 0. The acceptance test is therefore upstream's
 never "the grid is full" or the difficulty `latinSolver` reports. Read a cell's
 solution as `grid[i] <= nums ? grid[i] : 0`, and expect a test that asserts a
 complete square to fail for a reason that has nothing wrong with it. Exemplar:
-[`salad/solver.ts`](../../src/native/games/salad/solver.ts).
+[`salad/solver.ts`](../../src/games/salad/solver.ts).
 
 Group's port surfaced one reusable byte-parity trap: **a `usersolver`'s
 contradiction `return -1` may sit inside `#ifdef STANDALONE_SOLVER`, so the
@@ -484,13 +484,13 @@ against the cube's `(x*o+y)*o+n` layout — keep the raw flat read, don't "fix" 
 `cubeGet`, or the greedy choice (and the desc) diverges; (b) the numeric vs
 inequality clue codes are shuffled in **two separate** `shuffle` calls, in that
 order — reproduce both. Exemplar:
-[`unequal/generator.ts`](../../src/native/games/unequal/generator.ts). (3) **Keen
+[`unequal/generator.ts`](../../src/games/unequal/generator.ts). (3) **Keen
 *partitions* structurally**, no `cubeOut` needed: `latinGenerate` the solution, place
 dominoes at prob 3/4 then fold remaining singletons into a neighbour under `MAXBLK`,
 choose a balanced mix of cage ops (good vs `<<BAD_SHIFT` candidate buckets), then
 solver-gate on *exactly* the target difficulty (§4.4 — the published cage clues
 depend on the TS solver's verdict matching C). Exemplar:
-[`keen/generator.ts`](../../src/native/games/keen/generator.ts).
+[`keen/generator.ts`](../../src/games/keen/generator.ts).
 
 **`dsf_new_min` does NOT change what `dsf_canonify` returns — check before you
 design around it.** It allocates a *separate* `min[]` array that only
@@ -512,11 +512,11 @@ value* rather than as an identity to compare.
 **A cage/region game over the shared `Dsf` needs a precomputed minimal-element
 map.** Games that store a per-cage clue at its minimal cell (Keen) or list cages in
 minimal-cell order rely on `dsf_minimal`'s identity, not just connectivity. The shared
-[`engine/dsf.ts`](../../src/native/engine/dsf.ts) `Dsf` uses union-by-size and does
+[`engine/dsf.ts`](../../src/engine/dsf.ts) `Dsf` uses union-by-size and does
 **not** track a minimal element. Don't add a min-dsf variant to the leaf: precompute
 `minimal[i] = smallest j with canonify(j) === canonify(i)` once after all merges (a
 single ascending pass — `buildMinimal` in
-[`keen/state.ts`](../../src/native/games/keen/state.ts)). Correct because generation
+[`keen/state.ts`](../../src/games/keen/state.ts)). Correct because generation
 and `parse_block_structure` never read a minimal mid-merge. The minimal element is
 membership-determined, so it is byte-identical regardless of which root union-by-size
 picks — a generator that only uses the dsf for membership + minimal + size is
@@ -526,7 +526,7 @@ the Filling §4.4 case, which reads `canonify(i)` as an element).
 ### 2.3 Pointer coordinates can be fractional
 
 Most ports convert a pixel to a cell index via
-[`fromCoord`](../../src/native/engine/geometry.ts) (a `Math.floor`), so this never
+[`fromCoord`](../../src/engine/geometry.ts) (a `Math.floor`), so this never
 bites. But a game that stores *pixel-space* coordinates in its state — Untangle
 keeps rational vertex positions — must **round pointer input to integers at the
 boundary** (`devicePixelRatio` scaling delivers sub-pixel coords where upstream's
@@ -534,7 +534,7 @@ GUI frontend hands `interpret_move` integers). Untangle's exact-integer crossing
 test threw a `BigInt` `RangeError` on the first in-window fractional drop; the fix
 rounds in `placeDraggedPoint` and re-checks the integer invariant in `executeMove`
 (the single drag/solve/replay/load chokepoint) so a bypass fails loudly. Exemplar:
-[`untangle/index.ts`](../../src/native/games/untangle/index.ts).
+[`untangle/index.ts`](../../src/games/untangle/index.ts).
 
 ---
 
@@ -567,7 +567,7 @@ The narrow fix is to capture the endpoints *before* the splice. The real fix is 
 stop transcribing the in-place surgery at all — build the new array out of the pieces
 you mean (`[...before, ...detour, ...after]`) and the whole class of bug cannot be
 written. Inertia now does the latter; see the tour in
-[`inertia/solver.ts`](../../src/native/games/inertia/solver.ts) (`spliceDetour`), and
+[`inertia/solver.ts`](../../src/games/inertia/solver.ts) (`spliceDetour`), and
 §4.3 for why the byte-match that caught this was then deliberately given up.
 
 **The "shared frozen matrix" pattern cannot actually use `Object.freeze`.** A game
@@ -584,8 +584,8 @@ don't switch to a plain `Array` to get one; just don't write to it.
 hot-path-expensive and idiomatically wrong here). When the key bits run out, move the
 overflow into an **`OverlaySidecar`** checked in the cache-miss branch (Galaxies'
 `wrongEdges`), don't widen to `BigInt`. Exemplars:
-[`galaxies/render.ts`](../../src/native/games/galaxies/render.ts),
-[`range/render.ts`](../../src/native/games/range/render.ts).
+[`galaxies/render.ts`](../../src/games/galaxies/render.ts),
+[`range/render.ts`](../../src/games/range/render.ts).
 
 **When the candidate set alone exceeds ~26 bits, don't pack the digit *and* the
 pencil bitmap into one `Int32` — keep two parallel cache arrays.** Keen packs
@@ -596,7 +596,7 @@ per-cell *pair* — `tiles = digit | hl<<8` and a separate `pencil` array holdin
 `state.pencil[i]` verbatim (the `1<<n` mark for `n` up to 31 still fits an `Int32`,
 sign bit and all, and compares fine) — plus the usual mistake `OverlaySidecar` in the
 diff key. Exemplar:
-[`solo/render.ts`](../../src/native/games/solo/render.ts) (`SoloDrawState.tiles` +
+[`solo/render.ts`](../../src/games/solo/render.ts) (`SoloDrawState.tiles` +
 `.pencil` + `.wrong`).
 
 **Every overlay that doesn't live in the tile value MUST be in the diff key — or it
@@ -608,7 +608,7 @@ coincidentally changed that frame — and Check-&-Save (or a hint) runs a frame
 **never shows**. Towers shipped exactly this bug: the mistake overlay (`ds.wrong`)
 was passed to `drawTile` but left out of the diff condition, so Check-&-Save
 highlighted nothing. **Never hand-write the two-array dance** — for *any* overlay.
-`src/native/engine/overlay-sidecar.ts` (`OverlaySidecar`) owns repack/stale/commit;
+`src/engine/overlay-sidecar.ts` (`OverlaySidecar`) owns repack/stale/commit;
 give each overlay its own instance on the draw state, then per frame: pack it once,
 `ds.<overlay>.stale(i)` as a clause of the cache-miss test, `ds.<overlay>.packed[i]`
 (or `.at(i)`) handed to the cell painter, `ds.<overlay>.commit(i)` after drawing.
@@ -621,7 +621,7 @@ Three pack entry points, by the shape of what you have:
 | An overlay with its own topology | `clear()` + `add(i, bits)` | `galaxies/render.ts` `ds.wrongEdges` — one wrong wall is a *shared* edge, so it lights a different bit in each of the two tiles it separates |
 
 The **hint** overlay is guarded cross-game by
-`src/native/engine/hint-overlay.test.ts` (warm the drawstate, display a hint,
+`src/engine/hint-overlay.test.ts` (warm the drawstate, display a hint,
 assert the same drawstate emits paint ops) — every game in
 `testing/hint-games.ts` is covered automatically. The **mistake** overlay still
 needs a per-game paint-twice test (a mistaken board can't be built generically):
@@ -654,7 +654,7 @@ the *generator* never produces (only a nine-cell region can hold a 9, and no
 generated Seismic board has one), hand-build the board through the game's own
 codec for the regression test rather than hunting a fixture — that also proves
 the input is genuinely reachable in play. Exemplar:
-[`seismic/render.ts`](../../src/native/games/seismic/render.ts) +
+[`seismic/render.ts`](../../src/games/seismic/render.ts) +
 `seismic.test.ts` ("draws every pencil mark, including a 9").
 
 **A clue-ring tile that erases its own area can rub out a line the *cell* drew
@@ -688,7 +688,7 @@ that "helpfully" strokes the boundaries will double-draw, and the *inset* is the
 thing to assert in a tier-2.5 test (compare a square whose neighbour shares its
 region against one whose doesn't, and expect a wider rect), not a line op that
 does not exist. Exemplar:
-[`rome/render.ts`](../../src/native/games/rome/render.ts) + `rome-render.test.ts`
+[`rome/render.ts`](../../src/games/rome/render.ts) + `rome-render.test.ts`
 ("insets a square's fill on each side that meets a different region").
 
 **Rendering doctrine (hard-won — see the Flip three-iteration story in
@@ -702,7 +702,7 @@ carries an `#ifdef NARROW_BORDERS` variant (Slant: `BORDER = CLUE_RADIUS + 1`
 instead of a full tile) must port the *narrow* variant — parity is with what the
 browser actually showed, not the desktop default. Grep the game's `.c` for
 `#ifdef` before writing `computeSize`. Exemplar:
-[`slant/render.ts`](../../src/native/games/slant/render.ts).
+[`slant/render.ts`](../../src/games/slant/render.ts).
 
 **Drag-preview games: put move application in a separate module, not `index.ts`.**
 Upstream `game_redraw` for a drag game (Signpost, and Untangle earlier) reflects
@@ -712,7 +712,7 @@ those live in `index.ts`, `render` ↔ `index` is a cycle. Split them into a sma
 `moves.ts` (`executeMove` + `dragReleaseMove`) that both import. Blitter drag
 sprite (save the background under the moving arrow, restore next frame) — a second
 exemplar after Pegs — lives in `render.ts`. Exemplar:
-[`signpost/moves.ts`](../../src/native/games/signpost/moves.ts).
+[`signpost/moves.ts`](../../src/games/signpost/moves.ts).
 
 **And such a game needs `changedState` to cancel a dangling drag — upstream
 asserts here.** A drag preview names a *piece* on the board (Slide's
@@ -725,7 +725,7 @@ reaches that hook, so the gesture is unharmed — and make the preview fall back
 the plain board rather than throwing, so a future path here degrades instead of
 crashing. **Tell:** a `redraw` that calls the game's own move helper on `ui` state
 and can't handle "no". Exemplar:
-[`slide/index.ts`](../../src/native/games/slide/index.ts) (`changedState`).
+[`slide/index.ts`](../../src/games/slide/index.ts) (`changedState`).
 
 **A C *cursor* blitter usually shouldn't become a TS blitter.** Upstream often
 saves/restores the pixels under the keyboard cursor with a blitter so it can draw
@@ -736,7 +736,7 @@ the cell repaint — the old cell repaints when the cursor leaves (its key chang
 so no save/restore is needed and the recording double sees real ops instead of
 blitter no-ops. Reserve actual blitters for sprites that cross cell boundaries
 mid-drag (the Pegs/Signpost case above). Exemplar:
-[`subsets/render.ts`](../../src/native/games/subsets/render.ts) (upstream's
+[`subsets/render.ts`](../../src/games/subsets/render.ts) (upstream's
 `draw_rect_corners` blitter cursor as a `cursor-slot` field of the cell key).
 
 **The exception: a game whose cell repaint deliberately doesn't clear the whole
@@ -748,7 +748,7 @@ it inside exactly those corners. There the blitter is right, and it costs
 nothing testable: the recording `GameDrawing` no-ops only `blitterSave`/`Load`,
 so the cursor's own `drawLine` ops are still asserted. Check what your cell
 repaint actually clears before applying the default. Exemplar:
-[`spokes/render.ts`](../../src/native/games/spokes/render.ts) (the corner
+[`spokes/render.ts`](../../src/games/spokes/render.ts) (the corner
 protocol is spelled out in its module header).
 
 ### 3.3 Palette
@@ -757,7 +757,7 @@ protocol is spelled out in its module header).
 reference into the collection's colour table, or a call to a shared function from
 it. Three layers, three import paths, and which one you reach for is the decision:
 
-- [`engine/palette.ts`](../../src/native/engine/palette.ts) — **the meanings**,
+- [`engine/palette.ts`](../../src/engine/palette.ts) — **the meanings**,
   and your default. `ERROR`, `HINT_ACTION`, `HINT_FILL`, `HINT_EVIDENCE`,
   `CURSOR`, `HELD`, `DRAG_ADD`/`DRAG_REMOVE`, `UNDECIDED`, `GRID_MID`,
   `GRID_DARK`, `PENCIL_BODY`, `INK`, `PAPER`, plus the background-derived
@@ -765,11 +765,11 @@ it. Three layers, three import paths, and which one you reach for is the decisio
   `lineNoColour`, `clueDoneColour`, `wallColour`, `correctRegionColour`. Each is a
   **reference** to a named colour, so restyling red restyles every meaning built
   on red.
-- [`engine/colours.ts`](../../src/native/engine/colours.ts) — **the palette
+- [`engine/colours.ts`](../../src/engine/colours.ts) — **the palette
   itself**: twelve names (`RED` … `PINK`, `GREY`, `BROWN`, `BLACK`, `WHITE`), most
   at three intensities (`BLUE`, `BLUE_WASH`, `BLUE_BOLD`), plus the sets `TEN`,
   `TEN_NAMES`, `EIGHT_FILLS`, `FOUR_FILLS`.
-- [`engine/palette-games.ts`](../../src/native/engine/palette-games.ts) — colours
+- [`engine/palette-games.ts`](../../src/engine/palette-games.ts) — colours
   your game defines **relative to its own board**, prefixed with its id
   (`slantGrid`, `undeadGhost`). Functions, not values.
 
@@ -844,10 +844,10 @@ it is fighting a decision. Four such entries were retired when the palette was
 authored; check yours is not the fifth.
 
 **What enforces all of this**:
-[`palette-source.test.ts`](../../src/native/engine/palette-source.test.ts) reads
+[`palette-source.test.ts`](../../src/engine/palette-source.test.ts) reads
 your game's source and fails on a colour literal, on channel-indexing the
 background, on importing the colour combinators, and on importing another game's
-token. [`colours.test.ts`](../../src/native/engine/colours.test.ts) measures the
+token. [`colours.test.ts`](../../src/engine/colours.test.ts) measures the
 palette — every set that has to stay distinguishable, in both schemes, against the
 number upstream's hand-written set scored — and `palette.test.ts` checks that no
 meaning has quietly become a colour of its own. If you are adding a three-number
@@ -862,10 +862,10 @@ under dark mode). A TS port whose palette reindexes the colours silently mis-tar
 those overrides. Keep the `colours()` array index-for-index with the upstream `enum`
 (Unruly: `0 BACKGROUND, 1 GRID, 2 EMPTY, 3 COL_0…5, 6 COL_1…8, 9 CURSOR,
 10 ERROR`). Exemplar:
-[`unruly/render.ts`](../../src/native/games/unruly/render.ts).
+[`unruly/render.ts`](../../src/games/unruly/render.ts).
 
 **Highlight/lowlight from a fixed base, not the background.** The existing
-[`mkhighlight(bg)`](../../src/native/engine/colour-mkhighlight.ts) derives its trio
+[`mkhighlight(bg)`](../../src/engine/colour-mkhighlight.ts) derives its trio
 from the *frontend background* and never extrapolates the base. A game that calls
 upstream `game_mkhighlight_specific` on a **fixed** base colour (Unruly's near-white
 `COL_0` = 0.95 grey, dark `COL_1` = 0.2 grey) needs **`mkhighlightSpecific(base)`**
@@ -879,10 +879,10 @@ grey, with only a dot marking "white"), give each determined state its own fill 
 the player reads the board at a glance — Range now paints a known-white cell (a clue
 or a white mark) pure white via a dedicated `COL_WHITEBG`, leaving only undecided
 cells grey. Derive the white from
-[`colour-mkhighlight.ts`](../../src/native/engine/colour-mkhighlight.ts): it shifts
+[`colour-mkhighlight.ts`](../../src/engine/colour-mkhighlight.ts): it shifts
 `COL_BACKGROUND` off pure white precisely so a pure-white cell stays
 distinguishable. Exemplar:
-[`range/render.ts`](../../src/native/games/range/render.ts).
+[`range/render.ts`](../../src/games/range/render.ts).
 
 **A "highlight" upstream draws as pure white may be invisible in this app — check
 both schemes.** Spokes fills a hub whose clue is satisfied with pure white
@@ -898,14 +898,14 @@ the real background. When a game's own colour equals or nearly equals
 in byte-parity scope). Pair the cue with a `GamePref` when it is a solving aid
 rather than game state — Bridges' `auto-mark-complete` and Spokes' `mark-satisfied`
 are the same control. Exemplars:
-[`spokes/render.ts`](../../src/native/games/spokes/render.ts) (`COL_SATISFIED`),
-[`bridges/render.ts`](../../src/native/games/bridges/render.ts).
+[`spokes/render.ts`](../../src/games/spokes/render.ts) (`COL_SATISFIED`),
+[`bridges/render.ts`](../../src/games/bridges/render.ts).
 
 **Shade a completed-and-correct region with the *shared* colour, don't invent
 one.** When a game highlights a region/area the player has correctly finished
 (the local-completion feedback Galaxies and Rectangles give — *not* a
 global-solution check), fill it with
-[`correctRegionColour(background)`](../../src/native/engine/palette.ts)
+[`correctRegionColour(background)`](../../src/engine/palette.ts)
 (a neutral grey, `0.75 × background`, upstream Rectangles' `COL_CORRECT`
 convention), placed at a `COL_CORRECT` palette index. Reach for the shared
 constant rather than a per-game hue (a green invented for Separate/Palisade was
@@ -915,8 +915,8 @@ wall-bounded component (right size + correct content + no interior/dangling wall
 OR an `F_CORRECT` tile-flag bit into the packed cache key (§3.2 — it must be in the
 diff key so it paints and clears as regions complete/break), and prioritise it
 below flash/hint fills. Exemplars:
-[`separate/render.ts`](../../src/native/games/separate/render.ts),
-[`palisade/render.ts`](../../src/native/games/palisade/render.ts).
+[`separate/render.ts`](../../src/games/separate/render.ts),
+[`palisade/render.ts`](../../src/games/palisade/render.ts).
 
 **Don't "fix" a palette for dark mode — the app already owns it.** Upstream
 games routinely derive a colour as `background × 0.9`, which on a *dark*
@@ -933,7 +933,7 @@ a dark background: a luminance test there is dead code, and a second adaptation
 inside the game fights the layer that owns the concern. Derive exactly as
 upstream does and record *why there is no divergence*. (This overturned a
 written design decision on `add-loopy-ts-port`; see its `design.md` F3.)
-Exemplar: [`loopy/render.ts`](../../src/native/games/loopy/render.ts).
+Exemplar: [`loopy/render.ts`](../../src/games/loopy/render.ts).
 
 **A param-dependent capability the static `Game` flag can't express: widen the
 return, don't add a hook.** Upstream has `game_can_format_as_text_now(params)`;
@@ -1016,12 +1016,12 @@ fields spreads that then appends. **Conventions that keep it correct:**
   name the same field, so the round trip is the identity whether "Width" drives
   `w2` or `h2`. A game passing a field map therefore asserts the mapping directly,
   where the fact lives — see the `drives w2/h2 from the shared Width/Height dialog
-  items` test in [`unruly.test.ts`](../../src/native/games/unruly/unruly.test.ts).
+  items` test in [`unruly.test.ts`](../../src/games/unruly/unruly.test.ts).
   The general lesson: *a test whose only observer is the thing under test cannot
   establish ground truth.*
-Exemplars: [`pattern/index.ts`](../../src/native/games/pattern/index.ts) (pure w/h),
-[`towers/index.ts`](../../src/native/games/towers/index.ts) (size + difficulty),
-[`solo/index.ts`](../../src/native/games/solo/index.ts) (the jigsaw fold).
+Exemplars: [`pattern/index.ts`](../../src/games/pattern/index.ts) (pure w/h),
+[`towers/index.ts`](../../src/games/towers/index.ts) (size + difficulty),
+[`solo/index.ts`](../../src/games/solo/index.ts) (the jigsaw fold).
 **Gotcha (cost a dev-verify cycle):** the type-menu *label* reads `currentParams`,
 which derives from the `params#seed` random-seed the midend emits — that seed must be
 `encodeParams(_, true)` (full, incl. difficulty), or a custom difficulty shows as the
@@ -1039,8 +1039,8 @@ defaults ON). The midend builds the app's existing preferences dialog from these
 persists per-puzzle in IndexedDB, and re-applies a player's choices after each
 `newUi`; the app shell needs **no change**. A `choices` value is the **zero-based
 index** (the form emits `Number.parseInt`), a `boolean` value a real boolean.
-Exemplar: [`untangle/index.ts`](../../src/native/games/untangle/index.ts) (`prefs`)
-+ [`untangle/state.ts`](../../src/native/games/untangle/state.ts) for the ui fields.
+Exemplar: [`untangle/index.ts`](../../src/games/untangle/index.ts) (`prefs`)
++ [`untangle/state.ts`](../../src/games/untangle/state.ts) for the ui fields.
 **Gotcha (cost a dev-verify cycle):** a pref that changes only rendering moves none
 of the keys a game's `redraw` early-out watches (positions/bg/cursor), so the midend
 drops the drawstate on `setPreferences` to force a full repaint — your `redraw` needs
@@ -1071,8 +1071,8 @@ clues to the unique solution and return every player cell that contradicts it (`
 when the board isn't uniquely deducible). Render the flagged cells with a distinct
 overlay (a packed cache bit + an inset error outline; remember §3.2 — the overlay
 must be in the diff key). Exemplar:
-[`unruly/solver.ts`](../../src/native/games/unruly/solver.ts) `findMistakes` +
-[`unruly/render.ts`](../../src/native/games/unruly/render.ts). The hook + refusal
+[`unruly/solver.ts`](../../src/games/unruly/solver.ts) `findMistakes` +
+[`unruly/render.ts`](../../src/games/unruly/render.ts). The hook + refusal
 coupling are detailed in [hint-authoring.md](./hint-authoring.md); a permutation
 puzzle with no notion of a wrong-but-legal state correctly omits it.
 
@@ -1088,9 +1088,9 @@ is a real solution boundary it is legitimate partial progress — only a wall th
 solution forbids (e.g. one boxing a 7-clue into a 1×1) is flagged. Recolour the
 flagged walls with a `COL_MISTAKE` index and fold the wrong-edge bits into the
 per-tile cache word (§3.2) so they paint and clear like any overlay. Exemplars:
-[`rect/index.ts`](../../src/native/games/rect/index.ts) `findMistakes` +
-[`rect/render.ts`](../../src/native/games/rect/render.ts),
-[`tracks/index.ts`](../../src/native/games/tracks/index.ts).
+[`rect/index.ts`](../../src/games/rect/index.ts) `findMistakes` +
+[`rect/render.ts`](../../src/games/rect/render.ts),
+[`tracks/index.ts`](../../src/games/tracks/index.ts).
 
 **When the C already draws live rule errors, ship *both* layers — they are not
 alternatives.** Boats colours a broken row count, a diagonal boat collision, an
@@ -1104,7 +1104,7 @@ free, immediate, and what the C build showed) *and* base `findMistakes` on the
 re-solve. Render them so both read: Boats recolours a wrong **ship** red and
 additionally insets a red outline, which is what makes a wrong **water** square
 — which has no ship to recolour — visible at all. Exemplar:
-[`boats/render.ts`](../../src/native/games/boats/render.ts).
+[`boats/render.ts`](../../src/games/boats/render.ts).
 
 **For a *self-validating* game, `findMistakes` is the rule checker — not a
 re-solve.** Some games' rule violations are *intrinsic to the current grid*: the
@@ -1121,9 +1121,9 @@ flags for the overlay (Bricks passes the drag-preview grid *or* the `mistakes`
 param through the same `bricksValidate(grid, …, errors)` and draws whichever is
 present; upstream shows live errors only mid-drag, so a committed frame carries
 none until Check & Save asks). Exemplars:
-[`bricks/solver.ts`](../../src/native/games/bricks/solver.ts) `findMistakes` +
-[`bricks/render.ts`](../../src/native/games/bricks/render.ts),
-[`subsets/index.ts`](../../src/native/games/subsets/index.ts). Contrast Galaxies,
+[`bricks/solver.ts`](../../src/games/bricks/solver.ts) `findMistakes` +
+[`bricks/render.ts`](../../src/games/bricks/render.ts),
+[`subsets/index.ts`](../../src/games/subsets/index.ts). Contrast Galaxies,
 whose mistakes are only meaningful against a re-solve.
 
 ### 3.6 `solve()` and the generator's `aux`
@@ -1150,7 +1150,7 @@ bookkeeping, not behaviour, and a port that keeps it is inconsistent with every
 other game in the app. This is safe to fix even on a byte-match port: the desc
 differential exercises only `newDesc`/solver/codec, never `executeMove`. Assert
 both halves through a real `Midend` (status `"solved-with-help"`, `flashLength`
-0). Exemplar: [`subsets/index.ts`](../../src/native/games/subsets/index.ts)
+0). Exemplar: [`subsets/index.ts`](../../src/games/subsets/index.ts)
 (`executeMove`'s solve arm, with the divergence comment).
 
 ### 3.7 Pencil-mark games: ship the full note-taking UX (Towers exemplar)
@@ -1158,7 +1158,7 @@ both halves through a real `Midend` (status `"solved-with-help"`, `flashLength`
 Any game with candidate pencil marks — Towers, and Solo / Keen / Unequal / Undead
 when ported — should carry all four of the following. They are deliberate, default-on
 divergences that make note-taking usable with mouse/touch, not just the keyboard.
-Exemplar: [`towers/{state,index,render}.ts`](../../src/native/games/towers/index.ts).
+Exemplar: [`towers/{state,index,render}.ts`](../../src/games/towers/index.ts).
 
 - **Mark-all button — `canMarkAll: true`.** The game already handles upstream's
   `M`/`m` key in `interpretMove` (fill every empty cell with all candidates); the
@@ -1249,7 +1249,7 @@ keypad (correct for games upstream gave none, like Flip). On touch this panel is
 the five digit games (`solo`/`keen`/`towers`/`unequal`/`filling`) and Undead.
 
 - **Digit games use the shared helper.** `digitKeys(n)` in
-  [`engine/key-labels.ts`](../../src/native/engine/key-labels.ts) builds buttons
+  [`engine/key-labels.ts`](../../src/engine/key-labels.ts) builds buttons
   `'1'..'9'` then `'a','b',…` past nine, plus a clear key `{ button: 8, label:
   "Clear" }` (the `"Clear"` label is load-bearing — it's what the `puzzle-keys` icon
   map turns into the clear icon). Size `n` from params: Solo `c*r`, Keen/Towers `w`,
@@ -1291,7 +1291,7 @@ the modified ones** (`stripModifiers(button)` then look the character up) whenev
 game binds no other meaning to those digits — a deliberate divergence that costs
 nothing and restores the input. Grep a game's `.c` for `MOD_NUM_KEYPAD` before porting
 its input, and say what you did in `design.md`. Exemplar:
-[`inertia/index.ts`](../../src/native/games/inertia/index.ts) (`DIGIT_DIRECTIONS`).
+[`inertia/index.ts`](../../src/games/inertia/index.ts) (`DIGIT_DIRECTIONS`).
 
 **The same trap, one layer up: a whole *feature* can hang off a key this frontend
 never sends.** Slide's Solve doesn't fill the board in — it installs a shortest
@@ -1303,7 +1303,7 @@ the identical dead binding so it never shows up as a parity difference either. W
 a game's `interpret_move` compares `button` against a **character literal**, check
 `puzzleKeyMap` before porting it; the fix is to accept the buttons the frontend
 does deliver (keeping the literal too costs nothing). Exemplar:
-[`slide/index.ts`](../../src/native/games/slide/index.ts) (`isStepKey`), and
+[`slide/index.ts`](../../src/games/slide/index.ts) (`isStepKey`), and
 Inertia does the same for its route-following with `CURSOR_SELECT`/`SELECT2`.
 
 ### 3.8b Touch: the midend strips `MOD_STYLUS` for you (and a guard proves it)
@@ -1325,7 +1325,7 @@ hand, a touch press cycles a cell through its three states). You therefore need 
 
 Two things follow for a port. Don't reintroduce the bit by hand — if you catch
 yourself writing `button & 0x0800`, you want the flag instead. And know that
-[`engine/touch-input.test.ts`](../../src/native/engine/touch-input.test.ts) sweeps
+[`engine/touch-input.test.ts`](../../src/engine/touch-input.test.ts) sweeps
 **every registered game** asserting a touch press does what the same mouse press does,
 so your port is covered the day you register it. If it fails, your `interpretMove` is
 looking at a raw button somewhere.
@@ -1341,7 +1341,7 @@ decide, then drag" is *exactly* a press that stays put — so the gesture dies p
 when the player stops to aim, and only on touch. Inertia's swipe (hold the ball, drag
 out the direction, let go) hit this. The fix is one line: if the game has no use for a
 secondary button, **fold right onto left** at the top of `interpretMove`
-(`asPrimary()` in [`inertia/index.ts`](../../src/native/games/inertia/index.ts)), so
+(`asPrimary()` in [`inertia/index.ts`](../../src/games/inertia/index.ts)), so
 the gesture works whichever the long-press detector decides it saw. A game that *does*
 use the right button has to think harder — most likely by keeping the drag on the
 button the press arrived with.
@@ -1387,10 +1387,10 @@ continues its own drag correctly — reason about that rather than folding right
 onto left when the right button carries meaning. The renderer previews the drag
 by recolouring `drag` cells to `dragType` in the cache key (put it in the diff
 key — §3.2). Use the shared
-[`isMouseDown`/`isMouseDrag`/`isMouseRelease`](../../src/native/engine/pointer.ts)
+[`isMouseDown`/`isMouseDrag`/`isMouseRelease`](../../src/engine/pointer.ts)
 (upstream `IS_MOUSE_*`, extracted with Clusters — 27 ports had each rewritten the
 three-constant `===` chain). Exemplar:
-[`clusters/index.ts`](../../src/native/games/clusters/index.ts). **Sticks
+[`clusters/index.ts`](../../src/games/clusters/index.ts). **Sticks
 landed and the promotion was evaluated and declined** (its `design.md` F7):
 Sticks' drag machine is materially different — the press picks no paint value
 (the orientation comes from the *drag axis*, a `DRAG_DELTA` bounding-box
@@ -1455,7 +1455,7 @@ The seam is generic (only Dominosa implements it today), mirroring `canMarkAll`:
   (the harness gained the option) and assert `COL_REFERENCE` rects appear only with a
   selection. Normative: the reference-aid requirement in
   [`ts-engine`](../../openspec/specs/ts-engine/spec.md); exemplar
-  [`dominosa/`](../../src/native/games/dominosa/).
+  [`dominosa/`](../../src/games/dominosa/).
 
 **When the inventory is already drawn on the board, make it an *input* surface
 rather than a side panel.** Crossing draws its clue list under the grid because
@@ -1514,10 +1514,10 @@ mine layout is a mutable holder shared by reference across every cloned state, f
 on the first click and surviving undo (so you can't re-roll the board) — the sole deliberate
 `executeMove` impurity, and it must be commented *at the mutation site* (it's a memoisation
 of a deterministic function of the desc RNG + click, so replay reproduces it byte-for-byte).
-Exemplar: [`mines/index.ts`](../../src/native/games/mines/index.ts) (`openSquare` +
+Exemplar: [`mines/index.ts`](../../src/games/mines/index.ts) (`openSquare` +
 `supersededDesc`) with the shared box in
-[`mines/state.ts`](../../src/native/games/mines/state.ts) (`MineLayout`); the fake game in
-[`desc-supersede.test.ts`](../../src/native/engine/desc-supersede.test.ts) is Mines' shape
+[`mines/state.ts`](../../src/games/mines/state.ts) (`MineLayout`); the fake game in
+[`desc-supersede.test.ts`](../../src/engine/desc-supersede.test.ts) is Mines' shape
 in miniature.
 
 ### 3.11 A timed game, and Ui state a save-replay can't rebuild (Mines)
@@ -1581,7 +1581,7 @@ Because the drag continues off the *button class* (`isMouseDrag`/`isMouseRelease
 `RIGHT_BUTTON` (§3.8c) starts and finishes its own water drag correctly — the
 right answer for a game that genuinely uses the secondary button, where folding
 right onto left would be wrong. Exemplar:
-[`boats/index.ts`](../../src/native/games/boats/index.ts).
+[`boats/index.ts`](../../src/games/boats/index.ts).
 
 ### 3.13 A non-square board: bespoke geometry + an inverse coordinate map (Bricks)
 
@@ -1611,8 +1611,8 @@ a `F_BOUND` sentinel (`applyBounds`), and each row is drawn offset rightward by
 An SVG dump (`toSvg(result.recording.ops, size)` from a `renderScenario`, §2.5)
 rasterised with `rsvg-convert` is the fastest way to confirm the shear is right
 before touching the browser — a wrong offset shows instantly as a staircase.
-Exemplar: [`bricks/render.ts`](../../src/native/games/bricks/render.ts) +
-[`bricks/index.ts`](../../src/native/games/bricks/index.ts).
+Exemplar: [`bricks/render.ts`](../../src/games/bricks/render.ts) +
+[`bricks/index.ts`](../../src/games/bricks/index.ts).
 
 **The rule generalises past geometry: any rule the input and the display *both*
 need is one function, called by both.** Coordinates are only the obvious case.
@@ -1657,10 +1657,10 @@ Two more Ascent-surfaced patterns worth reaching for:
   (applyPath)` after the fragment, then the completion check — a fixpoint, not a
   single pass. Port the loop; it is subtle (a fully-drawn segment between two known
   numbers fills the cells between them). Exemplars:
-  [`ascent/state.ts`](../../src/native/games/ascent/state.ts) (movement table +
-  `isNear`/`ascentGridSize`), [`ascent/ui.ts`](../../src/native/games/ascent/ui.ts)
-  (the entry methods), [`ascent/moves.ts`](../../src/native/games/ascent/moves.ts)
-  (the post-pass), [`ascent/solver.ts`](../../src/native/games/ascent/solver.ts)
+  [`ascent/state.ts`](../../src/games/ascent/state.ts) (movement table +
+  `isNear`/`ascentGridSize`), [`ascent/ui.ts`](../../src/games/ascent/ui.ts)
+  (the entry methods), [`ascent/moves.ts`](../../src/games/ascent/moves.ts)
+  (the post-pass), [`ascent/solver.ts`](../../src/games/ascent/solver.ts)
   (a solver-state flag that *persists across solves* on a reused scratch — a
   byte-match-critical quirk; see the change's design F1).
 
@@ -1800,9 +1800,9 @@ generate, and a retry budget sized from the *measured* worst legitimate case
 budget to be generous, since nothing hopeless reaches it. Sweep a grid of shapes
 rather than a single dimension — the ceiling tracked cell count, not width or
 height, which neither a `w` bound nor an `h` bound would have expressed. Exemplar:
-[`seismic/state.ts`](../../src/native/games/seismic/state.ts) (`MAX_CELLS`, with
+[`seismic/state.ts`](../../src/games/seismic/state.ts) (`MAX_CELLS`, with
 the measurement table in its doc comment) +
-[`seismic/generator.ts`](../../src/native/games/seismic/generator.ts).
+[`seismic/generator.ts`](../../src/games/seismic/generator.ts).
 
 **Check what a shared runner's bookkeeping actually decides before adopting
 it.** Two handoffs asserted Loopy's four deduction rungs "fit
@@ -1833,12 +1833,12 @@ game's `.c`, §4.1 — so finding none on a `grep` is expected, not a gap.)
 ### 4.1 The two lifecycles — get them right or leave a no-signal vestige
 
 - **Gated, committed, durable:** the frozen-snapshot test
-  `src/native/games/<game>/<game>-differential.test.ts` vs a `__fixtures__/*.json`
+  `src/games/<game>/<game>-differential.test.ts` vs a `__fixtures__/*.json`
   recorded from C. This is the form that *survives* the port. When its shape is the
   **byte-for-byte desc match** (a faithful generator over the bit-identical RNG —
   samegame/unruly/flood/guess), don't re-roll the `describe`/`for`/`it`/`expect`
   loop: call
-  [`describeDescDifferential`](../../src/native/engine/testing/differential.ts) with
+  [`describeDescDifferential`](../../src/engine/testing/differential.ts) with
   your fixtures, a `params` mapper, your `newDesc`, an optional `label`, and an
   optional `extra` for a follow-on check (e.g. `validateDesc`). Solver-agreement
   (decode a C board, run the TS solver, assert the recorded difficulty — galaxies;
@@ -1860,7 +1860,7 @@ game's `.c`, §4.1 — so finding none on a `grep` is expected, not a gap.)
 Exemplar end-to-end (while the C still exists):
 `puzzles/auxiliary/unruly-trace.c` (deleted with the C; read it with
 `git show 2912e57~1:puzzles/auxiliary/unruly-trace.c`) →
-[`unruly-differential.test.ts`](../../src/native/games/unruly/unruly-differential.test.ts).
+[`unruly-differential.test.ts`](../../src/games/unruly/unruly-differential.test.ts).
 
 ### 4.2 The C trace harness + the build-pure-C gotcha
 
@@ -1880,7 +1880,7 @@ persists, so pass the flag explicitly):
 ```
 cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
 (cd build/native && make <game>-trace)
-build/native/auxiliary/<game>-trace > src/native/games/<game>/__fixtures__/<game>-c-reference.json
+build/native/auxiliary/<game>-trace > src/games/<game>/__fixtures__/<game>-c-reference.json
 ```
 
 **Record the C's own wall-clock per fixture while you are there.** One
@@ -1948,7 +1948,7 @@ scope doctrine (§4 intro) applied one level in: fidelity where there is a fact 
 matter, "write it well" where there isn't. Exemplar:
 `puzzles/auxiliary/inertia-trace.c`
 (`git show e6206b0~1:puzzles/auxiliary/inertia-trace.c`) →
-[`inertia-differential.test.ts`](../../src/native/games/inertia/inertia-differential.test.ts).
+[`inertia-differential.test.ts`](../../src/games/inertia/inertia-differential.test.ts).
 
 **An encoder that never flushes its trailing run is a *format*, not a bug —
 don't "complete" it.** Boats' run-length grid encoder emits a run only when it
@@ -1976,7 +1976,7 @@ The check that makes this safe is to write the test's decoder **strictly to the
 C's reading rules** and round-trip random patterns through it, so the encoder is
 validated against upstream's grammar rather than against itself — encoder-vs-own-
 decoder would have passed happily. Exemplar:
-[`seismic/state.ts`](../../src/native/games/seismic/state.ts) (`encodeWalls`).
+[`seismic/state.ts`](../../src/games/seismic/state.ts) (`encodeWalls`).
 
 **A `qsort`/`.sort()` that feeds only *rendering* does not threaten byte-match.**
 Only sorts (and RNG draws) on the path that produces the desc matter. Signpost's
@@ -2014,7 +2014,7 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
   pick loop 1:1 with C so the correspondence is auditable. Lesson: when a byte-match
   diverges on one variant only, suspect that a generator helper is doing *more* (or
   less) than its name implies — diff it against C line-by-line before trusting the
-  name. Exemplar: [`solo/generator.ts`](../../src/native/games/solo/generator.ts)
+  name. Exemplar: [`solo/generator.ts`](../../src/games/solo/generator.ts)
   `mergeSomeCages`.
 - **A generator that tests its solver's verdict for bare *truthiness* may be
   silently shipping non-unique puzzles — check what the verdict enum contains.**
@@ -2049,7 +2049,7 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
   board in 31–45% of attempts, and 10 of 12 4×4 "Hard" boards also solve at
   Tricky. General tell: when a generator hands its solver a *reused* board, ask
   what state that board is in on entry — the answer is part of the algorithm.
-  Exemplar: [`spokes/generator.ts`](../../src/native/games/spokes/generator.ts)
+  Exemplar: [`spokes/generator.ts`](../../src/games/spokes/generator.ts)
   (`spokesGenerate`).
 
   **How it was resolved, and the reusable move — keep the oracle *and* ship the
@@ -2090,7 +2090,7 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
     needs ~1.2M attempts). One shared bound would either strangle the oracle or
     make a real divergence hang.
 
-  Exemplar: [`seismic/generator.ts`](../../src/native/games/seismic/generator.ts)
+  Exemplar: [`seismic/generator.ts`](../../src/games/seismic/generator.ts)
   (`SeismicGenerateOptions.upstreamRegionGrower`).
 - **Bound a generator by its TAIL, not its median — one seed per size is not a
   measurement.** Seismic's new bound was first set from single-seed timings per
@@ -2145,7 +2145,7 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
   guarded semantics ("obviously what was meant") changes solver verdicts and
   diverges the desc. When a C early-out looks load-bearing, check which
   `#ifdef` it lives under before porting it. Exemplar:
-  [`slant/solver.ts`](../../src/native/games/slant/solver.ts) `fillSquare`.
+  [`slant/solver.ts`](../../src/games/slant/solver.ts) `fillSquare`.
 - **A solver may not be *monotone in its difficulty cap* — check before wiring
   Solve and `findMistakes` to the maximum.** The reflex (every port to date) is
   `solve(board, MAX_DIFF)`: more techniques can only help. Boats disproves it.
@@ -2169,7 +2169,7 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
     (rule 3). Repairing the check would change every intermediate verdict, hence
     every desc, hence the byte-match oracle, to fix something generation never
     got wrong. Ask each cap in ascending order and take the first that solves
-    (`solveAtAnyTier` in [`boats/solver.ts`](../../src/native/games/boats/solver.ts)):
+    (`solveAtAnyTier` in [`boats/solver.ts`](../../src/games/boats/solver.ts)):
     four solves on a once-per-click path, solver left byte-exact.
   - **The tell**, worth one cheap check on any tiered solver: generate boards at
     the *lowest* tier and solve them at the *highest*. If that ever fails, you
@@ -2177,7 +2177,7 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
     difficulty" will never see it. (Boats' differential was 34/34 green
     throughout.)
 - **Some deductions branch on the canonical-DSF-root *identity*, so the shared
-  [`Dsf`](../../src/native/engine/dsf.ts) must match `dsf.c`'s root choice** (tie →
+  [`Dsf`](../../src/engine/dsf.ts) must match `dsf.c`'s root choice** (tie →
   the *second* `merge` arg; the larger class otherwise). The shared `Dsf` was aligned
   to `dsf.c` for exactly this (Filling's i-quirk picks a different square to skip if
   the root differs). A game that only uses the dsf for connectivity won't notice; one
@@ -2200,7 +2200,7 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
   the board is a byte-match hazard the moment a later full-byte comparison
   (`==`/`memcmp`/encode) reads that byte — grep the generator for reads of the whole
   cell, not just its masked fields. Exemplar:
-  [`clusters/solver.ts`](../../src/native/games/clusters/solver.ts) (the `F_ERROR`
+  [`clusters/solver.ts`](../../src/games/clusters/solver.ts) (the `F_ERROR`
   contamination note). **Debugging method that found it in ~4 iterations** (§4.7 in
   miniature): a throwaway C harness dumping each generation attempt's grid localised
   the divergence to one attempt (100 matched, then one differed); a solver-only
@@ -2218,7 +2218,7 @@ swap that permutes the *remaining* adjacency list during the DFS — and that sw
 **mutates the adjacency lists in place**, so later draws see the permuted list;
 mirror the mutation, don't copy-then-shuffle. Write the algorithm idiomatically
 (typed arrays, no `void *scratch`) but keep the draw sequence identical. Exemplar:
-[`singles/generator.ts`](../../src/native/games/singles/generator.ts) (`matching` +
+[`singles/generator.ts`](../../src/games/singles/generator.ts) (`matching` +
 `latinGenerate`). No standalone bridged seam — an ordinary module dependency, ported
 lazily like dsf/tree234.
 
@@ -2274,7 +2274,7 @@ per-path constraints, so it and everything reading it are order-invariant; an
 recorded). The TS test decodes the same descs and asserts its solver reaches the
 identical verdicts. State the byte-match infeasibility (and why) in the port's
 `design.md`. Exemplar:
-[`undead-differential.test.ts`](../../src/native/games/undead/undead-differential.test.ts)
+[`undead-differential.test.ts`](../../src/games/undead/undead-differential.test.ts)
 + design D1. (The C side of that pair is cited in some earlier revisions as
 `puzzles/auxiliary/undead-trace.c`; **no such file was ever committed** — the
 verdicts were recorded by an ad-hoc harness that did not land. The TS test and
@@ -2303,14 +2303,14 @@ visual/integration smoke only. Tiers are codified in
 - **Tier 1** — pure logic (`Game` impl, solver, generator, codecs), `node` env.
 - **Tier 2** — render ops against a recording `GameDrawing` double, `node`.
 - **Tier 2.5** — render scenarios + snapshots via
-  [`src/native/engine/testing/`](../../src/native/engine/testing/)
+  [`src/engine/testing/`](../../src/engine/testing/)
   (`renderScenario(...)` drives a real `Midend` to a target frame; assert targeted
   ops **plus** `toMatchSnapshot`). **New render code SHOULD ship one.**
 - **Tier 3** — components + persistence (`happy-dom`, `fake-indexeddb`).
 
 **A shared engine module needs a test *of its own*, even when the differentials
 already protect it** (`audit-test-suite-strength`). Extracting logic from a game
-into `src/native/engine/` moves the code but not its tests: the game's frozen
+into `src/engine/` moves the code but not its tests: the game's frozen
 differential still catches a defect in it, so nothing goes red and the module
 quietly ends up with no local assertions. That is adequate *protection* and poor
 *feedback* — the failure arrives as a differing description string after a full
@@ -2322,7 +2322,7 @@ directories, dying only under the full suite; and `wires.ts` (413 lines, nine
 importers) had no test file at all. **So: when you extract, write the extracted
 module's tests in the same change**, stating the rules its doc comment claims
 rather than pinning values. Exemplar:
-[`wires.test.ts`](../../src/native/engine/wires.test.ts).
+[`wires.test.ts`](../../src/engine/wires.test.ts).
 
 **Keep a test's cost proportional to what it catches** (`right-size-the-test-gate`).
 The gate is paid on every commit, and five files were once 66% of it. Three
@@ -2330,7 +2330,7 @@ treatments, in order of how little they lose:
 1. **Short-circuit a deterministic search.** A "scan seeds until a board shows
    technique X" loop finds the same pair every time — record it and start there.
    This loses *nothing* (see `FIRST_FOUND_AT` in
-   [`boats-hint.test.ts`](../../src/native/games/boats/boats-hint.test.ts): 63 s →
+   [`boats-hint.test.ts`](../../src/games/boats/boats-hint.test.ts): 63 s →
    6.4 s), and a stale pin must fall back to the full scan, never fail.
 2. **Turn a seed count down** with `seedBudget(gate, full)` — but only for a
    property whose violation would be *systematic*, and say how many assertions
@@ -2427,8 +2427,8 @@ load ~32). The work is correct; only the clock moved. Rules:
   [`scripts/reap-orphaned-workers.sh`](../../scripts/reap-orphaned-workers.sh)). Bound
   non-termination **in the code**, where it can actually be caught: an operation budget
   that throws a labelled error in milliseconds
-  ([`engine/step-budget.ts`](../../src/native/engine/step-budget.ts) for solver/hint
-  fixpoints; [`engine/retry-limit.ts`](../../src/native/engine/retry-limit.ts) for
+  ([`engine/step-budget.ts`](../../src/engine/step-budget.ts) for solver/hint
+  fixpoints; [`engine/retry-limit.ts`](../../src/engine/retry-limit.ts) for
   generate-until-success retries). Make it opt-in/gated so it never touches a hot path
   (generation) where a false trip would itself be a real bug.
 
@@ -2468,7 +2468,7 @@ Two stages (owner-confirmed default since Galaxies):
 
 1. **Register for smoke-testing** as soon as the automated suite is green — add the
    game to [`catalog-data.ts`](../../src/puzzle/catalog-data.ts) and import it
-   in [`games/index.ts`](../../src/native/games/index.ts) so `registerGame(...)` runs.
+   in [`games/index.ts`](../../src/games/index.ts) so `registerGame(...)` runs.
    The empty-registry path is the C/WASM fallback; a registered game serves its TS
    impl. The owner smoke-tests the TS path in `npm run dev`.
 2. **Delete the `.c` only on owner acceptance** — *(historical: this meant adding
@@ -2564,7 +2564,7 @@ ships a property test saying so (`magnets.test.ts` is the pattern). Boats is the
 known exception, recorded with its workaround: solve at each tier, take the first
 that succeeds.
 
-**Shared game mechanics live in `src/native/engine/`.** `border-grid.ts` is the
+**Shared game mechanics live in `src/engine/`.** `border-grid.ts` is the
 worked example: Palisade and Separate both mark the edges *between* cells with a
 tri-state, and that mechanic — the bit vocabulary, the closest-edge hit test, the
 half-cell cursor, `initBorders`/`buildDsf` — is now one module instead of two
@@ -2579,7 +2579,7 @@ clone as two identical re-export blocks. Import shared things from where they
 live.
 
 **Module layering is enforced** by `src/module-layering.test.ts`: no game
-imports another game (shared behaviour goes in `src/native/engine/`), the engine
+imports another game (shared behaviour goes in `src/engine/`), the engine
 does not import games (except `engine/testing/hint-games.ts`, the hint
 enrollment file), neither imports the app shell, and `preflight.ts` stays inside
 its Baseline 2023 gate. The same file ratchets runtime import cycles at zero.

@@ -5,7 +5,7 @@ TBD - created by archiving change add-clusters-ts-port. Update Purpose after arc
 ## Requirements
 ### Requirement: Clusters game implements the Game interface
 
-The engine SHALL provide `src/native/games/clusters/` implementing the `Game`
+The engine SHALL provide `src/games/clusters/` implementing the `Game`
 interface for Clusters, registered so the puzzle is served by the TypeScript
 engine.
 

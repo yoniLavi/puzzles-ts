@@ -47,7 +47,11 @@ out.push("");
 if (jscpd) {
   const ts = jscpd.statistics?.formats?.typescript?.total;
   const dup = (jscpd.duplicates ?? []).filter((d) => d.format === "typescript");
-  const gameOf = (p) => (p.startsWith("src/native/games/") ? p.split("/")[3] : null);
+  // Indexed off the match, not off a hardcoded depth: `retire-native-directory`
+  // hoisted this tree from src/native/games/<id> to src/games/<id>, and a
+  // literal `split("/")[3]` would have gone on returning a *filename* as the
+  // game id, silently mis-scoring cross-game duplication rather than failing.
+  const gameOf = (p) => /^src\/games\/([^/]+)\//.exec(p)?.[1] ?? null;
   const crossGame = dup.filter((d) => {
     const a = gameOf(d.firstFile.name);
     const b = gameOf(d.secondFile.name);

@@ -7,7 +7,7 @@
  * touches `db` (type-only imports are erased and don't count), so the
  * global and the maxKey shim below are in place when `db.ts` evaluates:
  *
- *   import { resetDb } from "../test-setup/indexeddb.ts"; // first
+ *   import { resetDb } from "./indexeddb.ts"; // first
  *   import { savedGames } from "../store/saved-games.ts"; // db.ts here
  *
  * `fake-indexeddb/auto` sets the global as a side effect on import.

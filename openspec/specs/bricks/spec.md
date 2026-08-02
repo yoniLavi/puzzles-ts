@@ -5,7 +5,7 @@ TBD - created by archiving change add-bricks-ts-port. Update Purpose after archi
 ## Requirements
 ### Requirement: Bricks game implements the Game interface
 
-The engine SHALL provide `src/native/games/bricks/` implementing the `Game`
+The engine SHALL provide `src/games/bricks/` implementing the `Game`
 interface for Bricks (Tawamurenga), registered so the puzzle is served by the
 TypeScript engine.
 

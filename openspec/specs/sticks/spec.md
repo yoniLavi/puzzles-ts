@@ -5,7 +5,7 @@ TBD - created by archiving change add-sticks-ts-port. Update Purpose after archi
 ## Requirements
 ### Requirement: Sticks game implements the Game interface
 
-The engine SHALL provide `src/native/games/sticks/` implementing the `Game`
+The engine SHALL provide `src/games/sticks/` implementing the `Game`
 interface for Sticks (Tatebo-Yokobo), registered so the puzzle is served by the
 TypeScript engine.
 

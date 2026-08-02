@@ -27,11 +27,11 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { it } from "vitest";
-import { getTsGame } from "../src/native/engine/registry.ts";
+import { getTsGame } from "../src/engine/registry.ts";
+import type { Colour } from "../src/engine/types.ts";
 import { puzzleIds } from "../src/puzzle/catalog.ts";
-import type { Colour } from "../src/puzzle/types.ts";
 import { colourToOKLCH, isGrayChroma, type OKLCH } from "../src/utils/color.ts";
-import "../src/native/games/index.ts";
+import "../src/games/index.ts";
 
 const OUT = "/tmp/colour-collide.md";
 
@@ -51,13 +51,13 @@ function indexNames(id: string): Map<number, string> {
   const names = new Map<number, string>();
   let files: string[];
   try {
-    files = readdirSync(join("src/native/games", id));
+    files = readdirSync(join("src/games", id));
   } catch {
     return names;
   }
   for (const f of files) {
     if (!f.endsWith(".ts") || f.endsWith(".test.ts")) continue;
-    const src = readFileSync(join("src/native/games", id, f), "utf8");
+    const src = readFileSync(join("src/games", id, f), "utf8");
     for (const m of src.matchAll(/^(?:export )?const (COL_[A-Z0-9_]+) = (\d+);/gm))
       if (!names.has(Number(m[2]))) names.set(Number(m[2]), m[1]);
   }

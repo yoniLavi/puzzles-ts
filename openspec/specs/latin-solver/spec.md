@@ -6,7 +6,7 @@ TBD - created by archiving change add-towers-ts-port. Update Purpose after archi
 ### Requirement: Shared generic Latin-square solver
 
 The engine SHALL provide a generic Latin-square solver in
-`src/native/engine/latin.ts`, the idiomatic-TS port of upstream `latin.c`'s
+`src/engine/latin.ts`, the idiomatic-TS port of upstream `latin.c`'s
 solver framework, for reuse by every Latin-square game (Towers first; Solo,
 Unequal, Keen, Group later). It SHALL expose a `latinSolver(grid, o, maxdiff,
 diffSimple, diffSet0, diffSet1, diffForcing, diffRecursive, usersolvers, valid,
@@ -41,7 +41,7 @@ indexed `(x·o + y)·o + (n−1)`, faithful to upstream `cubepos`.
 
 ### Requirement: Shared Latin-square generator
 
-The engine SHALL provide, in `src/native/engine/latin.ts`, the RNG-faithful
+The engine SHALL provide, in `src/engine/latin.ts`, the RNG-faithful
 Latin-square generator promoted from the Singles port: `matching` (randomised
 bipartite matching), `latinGenerate(o, rng)`, and `latinGenerateRect(w, h, rng)`.
 Their random draws SHALL remain bit-identical to upstream `matching.c` /

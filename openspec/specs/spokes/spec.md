@@ -91,7 +91,7 @@ propose it.
 
 ### Requirement: Spokes game implements the Game interface
 
-The engine SHALL provide `src/native/games/spokes/` implementing the `Game`
+The engine SHALL provide `src/games/spokes/` implementing the `Game`
 interface for Spokes, registered so the puzzle is served by the TypeScript engine.
 
 Parameters SHALL be a width, a height, and a difficulty (Easy, Tricky or Hard).

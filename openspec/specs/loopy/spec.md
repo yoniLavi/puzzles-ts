@@ -5,7 +5,7 @@ TBD - created by archiving change add-loopy-ts-port. Update Purpose after archiv
 ## Requirements
 ### Requirement: Loopy game implements the Game interface
 
-The engine SHALL provide `src/native/games/loopy/` implementing the `Game`
+The engine SHALL provide `src/games/loopy/` implementing the `Game`
 interface for Loopy, registered so the puzzle is served by the TypeScript
 engine.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Kill vitest worker processes this repo leaked, before starting a new run.
 #
-# WHY THIS EXISTS. Every generator/solver/hint-planner under src/native/ is
+# WHY THIS EXISTS. Every generator/solver/hint-planner under src/ is
 # purely synchronous, so a worker mid-computation owns its thread outright:
 # `testTimeout` is a setTimeout on that blocked loop and cannot fire, and the
 # pool's shutdown is IPC-driven so the worker never reads "exit" either. Kill

@@ -1,13 +1,6 @@
 import { computed, type Signal, signal } from "@lit-labs/signals";
 import * as Sentry from "@sentry/browser";
 import { proxy, releaseProxy, transfer, wrap } from "comlink";
-import {
-  installWorkerErrorReceivers,
-  uninstallWorkerErrorReceivers,
-} from "../utils/errors.ts";
-import { nextAnimationFrame } from "../utils/timing.ts";
-import { puzzleAugmentations } from "./augmentation.ts";
-import { puzzleDataMap } from "./catalog.ts";
 import type {
   ChangeNotification,
   Colour,
@@ -21,7 +14,14 @@ import type {
   PuzzleStaticAttributes,
   ReferenceModel,
   Size,
-} from "./types.ts";
+} from "../engine/types.ts";
+import {
+  installWorkerErrorReceivers,
+  uninstallWorkerErrorReceivers,
+} from "../utils/errors.ts";
+import { nextAnimationFrame } from "../utils/timing.ts";
+import { puzzleAugmentations } from "./augmentation.ts";
+import { puzzleDataMap } from "./catalog.ts";
 import type { RemoteWorkerPuzzle, RemoteWorkerPuzzleFactory } from "./worker.ts";
 
 const sentryWebWorkerIntegration = import.meta.env.VITE_SENTRY_DSN

@@ -57,7 +57,7 @@ bijection is the puzzle; other sizes are a different game (`audit-author-known-i
 ## Impact
 
 - Affected specs: `subsets`.
-- Affected code: `src/native/games/subsets/{solver,generator,state,index}.ts`.
+- Affected code: `src/games/subsets/{solver,generator,state,index}.ts`.
 - **Every Subsets board changes.** Existing IDs carrying a description still load.
 - The repaired rule is the risk: an unsound elimination produces puzzles with no
   solution, which is the one failure mode worse than a weak solver.

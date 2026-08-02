@@ -7,7 +7,7 @@
 # Usage:
 #   scripts/new-game-port.sh <gameId>
 #
-# It creates src/native/games/<gameId>/ with typed Game<…> source stubs, an
+# It creates src/games/<gameId>/ with typed Game<…> source stubs, an
 # empty __fixtures__/, a starter <gameId>.test.ts (a save round-trip + a
 # renderScenario render smoke, both `it.skip` so a fresh scaffold stays green),
 # and a commented <gameId>-differential.test.ts stub. It then PRINTS (does not
@@ -29,7 +29,7 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-DIR="${REPO_ROOT}/src/native/games/${GAME}"
+DIR="${REPO_ROOT}/src/games/${GAME}"
 
 if [ -e "${DIR}" ]; then
   echo "refusing to overwrite existing ${DIR}" >&2
@@ -257,7 +257,7 @@ EOF
 # exists. Uncomment the body once __fixtures__/${GAME}-c-reference.json exists.
 # NOTE: since `retire-c-engine` there is no C build, so a NEW game has no
 # upstream oracle to differ against — the frozen fixtures under
-# src/native/games/*/__fixtures__/ belong to games ported while the C existed.
+# src/games/*/__fixtures__/ belong to games ported while the C existed.
 # A greenfield game's assurance is behavioural: "every generated board is
 # uniquely solvable at exactly its stated difficulty" as a property test. This
 # scaffold therefore emits that, not a differential stub.
@@ -290,7 +290,7 @@ echo "Now do the parts that need judgement (the script will not):"
 echo "  1. Fill the stubs. (There is no C reference to read: retire-c-engine"
 echo "     deleted the engine. If upstream ever had one, it is in git history.)"
 echo "  2. Register the game (do these two together — the gate checks they agree):"
-echo "       - add 'import \"./${GAME}/index.ts\";' to src/native/games/index.ts"
+echo "       - add 'import \"./${GAME}/index.ts\";' to src/games/index.ts"
 echo "       - add its catalog entry to src/puzzle/catalog-data.ts"
 echo "  3. Fill in ${GAME}-generation.test.ts: say what replaces the byte-match"
 echo "     oracle for this game, and assert it."

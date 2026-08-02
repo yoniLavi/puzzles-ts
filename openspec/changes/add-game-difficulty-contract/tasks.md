@@ -3,7 +3,7 @@
 ## 1. The contract
 
 - [ ] 1.1 Add `DifficultyContract<Params>` and `DifficultyVerdict` to
-      `src/native/engine/difficulty.ts`, and the optional `difficulty?:` hook to
+      `src/engine/difficulty.ts`, and the optional `difficulty?:` hook to
       `Game` in `engine/game.ts`. Optional, like `hint`/`findMistakes` before it,
       so the 31 untiered games need no edit.
 - [ ] 1.2 Add `solvableAtExactlyTier(game, params, desc)` — solves at the

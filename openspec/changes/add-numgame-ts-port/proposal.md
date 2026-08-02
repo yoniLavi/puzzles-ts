@@ -49,7 +49,7 @@ it.
 
 ## What Changes
 
-- **A new `src/native/games/numgame/` game**, invented rather than transcribed:
+- **A new `src/games/numgame/` game**, invented rather than transcribed:
   a Countdown-style puzzle where the player is given a set of source numbers and
   a target and must combine them with `+ − × ÷` to reach it.
 - **The BFS solver ported from `numgame.c`** as the reusable core — the one part
@@ -81,7 +81,7 @@ be differential-checked against the C utility.
 ## Impact
 
 - Affected specs: new `numgame` capability.
-- Affected code: new `src/native/games/numgame/`, catalog + icon additions,
+- Affected code: new `src/games/numgame/`, catalog + icon additions,
   registration.
 - This is a **build**, not a port — size and risk are dominated by the invented
   UI/UX and the difficulty model, not by the (small, well-understood) solver.

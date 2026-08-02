@@ -5,7 +5,7 @@ TBD - created by archiving change add-pearl-ts-port. Update Purpose after archiv
 ## Requirements
 ### Requirement: Shared planar-grid data structure and deterministic square tiling
 
-The engine SHALL provide `src/native/engine/grid.ts` exposing a general
+The engine SHALL provide `src/engine/grid.ts` exposing a general
 planar-grid data structure — `Grid` with arrays of `GridFace`, `GridEdge` and
 `GridDot`, a bounding box, and a `tileSize` — with full reference incidence: each
 edge references its two dots and its two faces (a null face reference denotes the
@@ -38,7 +38,7 @@ reproduces upstream's sequential-allocation pointer order.
 
 ### Requirement: RNG-faithful random loop generation
 
-The engine SHALL provide `src/native/engine/loopgen.ts` exposing
+The engine SHALL provide `src/engine/loopgen.ts` exposing
 `generateLoop(grid, board, rng, bias?)` which colours every face of `grid`
 inside (white) or outside (black) so that the white/black boundary is a single
 closed loop, writing the colouring into `board`. It SHALL reproduce the upstream

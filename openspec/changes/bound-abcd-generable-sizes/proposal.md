@@ -60,5 +60,5 @@ does not move it.
 ## Impact
 
 - Affected specs: `abcd` (a new parameter-validation requirement).
-- Affected code: `src/native/games/abcd/{state,generator}.ts` plus tests.
+- Affected code: `src/games/abcd/{state,generator}.ts` plus tests.
 - No change to any board that generates today.

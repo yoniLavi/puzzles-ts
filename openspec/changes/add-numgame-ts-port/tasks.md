@@ -19,7 +19,7 @@ answer to "should this game exist at all" may end the change here.
 ## 1. Port the solver (the one existing asset)
 
 - [ ] 1.1 Transcribe `numgame.c`'s breadth-first exhaustive solver into
-      `src/native/games/numgame/solver.ts`: from a multiset of numbers, produce
+      `src/games/numgame/solver.ts`: from a multiset of numbers, produce
       every reachable value and the count of distinct ways to make each.
 - [ ] 1.2 Differential-check the solver's *arithmetic* against the C utility:
       for a set of number sets, the reachable-value map matches

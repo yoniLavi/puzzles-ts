@@ -41,7 +41,7 @@ committing to the full game (see Impact).
 
 ## What Changes
 
-- **A new `src/native/games/path/` game** — Numberlink: link each pair of like
+- **A new `src/games/path/` game** — Numberlink: link each pair of like
   numbers with a path so that paths never cross and (in the standard ruleset)
   every cell is used.
 - **A Numberlink solver, written fresh.** This is the crux and has no upstream
@@ -72,7 +72,7 @@ uniqueness; generated boards are uniquely solvable) rather than differential.
 ## Impact
 
 - Affected specs: new `path` capability.
-- Affected code: new `src/native/games/path/`, catalog + icon additions,
+- Affected code: new `src/games/path/`, catalog + icon additions,
   registration.
 - **Largest greenfield effort of the seven** — dominated by the from-scratch
   solver and the generator quality work, both of which upstream left undone.

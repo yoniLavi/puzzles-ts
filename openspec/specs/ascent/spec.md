@@ -5,7 +5,7 @@ TBD - created by archiving change add-ascent-ts-port. Update Purpose after archi
 ## Requirements
 ### Requirement: Ascent game implements the Game interface
 
-The engine SHALL provide `src/native/games/ascent/` implementing the `Game`
+The engine SHALL provide `src/games/ascent/` implementing the `Game`
 interface for Ascent (Hidoku), registered so the puzzle is served by the
 TypeScript engine.
 

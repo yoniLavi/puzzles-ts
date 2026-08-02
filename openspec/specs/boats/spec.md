@@ -5,7 +5,7 @@ TBD - created by archiving change add-boats-ts-port. Update Purpose after archiv
 ## Requirements
 ### Requirement: Boats game implements the Game interface
 
-The engine SHALL provide `src/native/games/boats/` implementing the `Game`
+The engine SHALL provide `src/games/boats/` implementing the `Game`
 interface for Boats (Battleships), registered so the puzzle is served by the
 TypeScript engine.
 

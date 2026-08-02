@@ -5,7 +5,7 @@ TBD - created by archiving change add-crossing-ts-port. Update Purpose after arc
 ## Requirements
 ### Requirement: Crossing game implements the Game interface
 
-The engine SHALL provide `src/native/games/crossing/` implementing the `Game`
+The engine SHALL provide `src/games/crossing/` implementing the `Game`
 interface for Crossing (Nansuke / Number Skeleton), registered so the puzzle is
 served by the TypeScript engine.
 

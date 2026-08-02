@@ -1,4 +1,4 @@
-import type { ConfigValues, PuzzleId } from "./types.ts";
+import type { ConfigValues, PuzzleId } from "../engine/types.ts";
 
 /**
  * Additional puzzle-specific metadata and functionality

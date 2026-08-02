@@ -5,7 +5,7 @@ TBD - created by archiving change add-salad-ts-port. Update Purpose after archiv
 ## Requirements
 ### Requirement: Salad game implements the Game interface
 
-The engine SHALL provide `src/native/games/salad/` implementing the `Game`
+The engine SHALL provide `src/games/salad/` implementing the `Game`
 interface for Salad, registered so the puzzle is served by the TypeScript engine.
 
 Salad SHALL support both of its game modes: **ABC End View** (letters, with clues on

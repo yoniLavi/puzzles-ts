@@ -55,7 +55,7 @@ justification" directive rather than on a defect history.
   `<puzzle-view>` etc. are the app's public DOM vocabulary and do **not**
   change).
 - **`scripts/feedback-probe.mjs` learns about subdirectories.** It currently does
-  `readdirSync("src/native/engine")` — flat, one level — to derive both the
+  `readdirSync("src/engine")` — flat, one level — to derive both the
   barrel set and each module's own tests. See `design.md` D2: this is the
   riskiest part of the change and the only part that can fail *quietly*.
 

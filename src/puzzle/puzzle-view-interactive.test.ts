@@ -14,8 +14,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // fake IndexedDB so happy-dom doesn't reject on the missing API.
 import "../test-setup/indexeddb.ts";
 import "./puzzle-view-interactive.ts";
+import { PuzzleButton } from "../engine/types.ts";
 import type { PuzzleViewInteractive } from "./puzzle-view-interactive.ts";
-import { PuzzleButton } from "./types.ts";
 
 function makeView(): PuzzleViewInteractive {
   return document.createElement("puzzle-view-interactive") as PuzzleViewInteractive;

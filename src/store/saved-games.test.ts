@@ -6,8 +6,8 @@
 
 import { Signal } from "@lit-labs/signals";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { PuzzleId } from "../engine/types.ts";
 import type { Puzzle } from "../puzzle/puzzle.ts";
-import type { PuzzleId } from "../puzzle/types.ts";
 import { resetDb } from "../test-setup/indexeddb.ts";
 import { savedGames } from "./saved-games.ts";
 

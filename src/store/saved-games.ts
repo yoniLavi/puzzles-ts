@@ -1,5 +1,5 @@
+import type { PuzzleId } from "../engine/types.ts";
 import type { Puzzle } from "../puzzle/puzzle.ts";
-import type { PuzzleId } from "../puzzle/types.ts";
 import { equalSet } from "../utils/equal.ts";
 import { liveQuerySignal } from "../utils/signals.ts";
 import {

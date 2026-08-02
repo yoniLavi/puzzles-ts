@@ -43,7 +43,7 @@
 
 export const MODULES = [
   {
-    module: "src/native/engine/latin.ts",
+    module: "src/engine/latin.ts",
     cases: [
       {
         why: "a placed digit is no longer ruled out of the rest of its column",
@@ -133,7 +133,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/native/engine/grid.ts",
+    module: "src/engine/grid.ts",
     cases: [
       {
         why: "the cairo tiling is unreachable through the dispatch",
@@ -169,7 +169,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/native/engine/midend.ts",
+    module: "src/engine/midend.ts",
     cases: [
       {
         why: "an undecodable params string in a game ID is accepted silently",
@@ -279,7 +279,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/native/engine/save.ts",
+    module: "src/engine/save.ts",
     cases: [
       {
         why: "a save whose undo position is not a number is accepted",
@@ -310,7 +310,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/native/engine/dsf.ts",
+    module: "src/engine/dsf.ts",
     cases: [
       {
         why: "merge picks the smaller class as the root, breaking root identity",
@@ -342,7 +342,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/native/engine/border-grid.ts",
+    module: "src/engine/border-grid.ts",
     cases: [
       {
         why: "the y axis is not bounds-checked, so a click above the grid wraps",
@@ -391,7 +391,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/native/engine/deduction-fixpoint.ts",
+    module: "src/engine/deduction-fixpoint.ts",
     cases: [
       {
         why: "the grade regresses when a hard rung unlocks an easier one",
@@ -437,7 +437,7 @@ export const MODULES = [
   // do not, the instrument is wrong before any conclusion drawn from it is.
 
   {
-    module: "src/native/engine/wires.ts",
+    module: "src/engine/wires.ts",
     cases: [
       {
         why: "rotation by n quarter-turns drops the wrap, losing arms off the top",
@@ -463,7 +463,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/native/engine/divvy.ts",
+    module: "src/engine/divvy.ts",
     cases: [
       {
         why: "a region may be grown past its target size",
@@ -481,7 +481,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/native/engine/symmetric-blacks.ts",
+    module: "src/engine/symmetric-blacks.ts",
     cases: [
       {
         why: "4-fold rotation places only the 2-fold image, breaking the symmetry",
@@ -498,7 +498,7 @@ export const MODULES = [
   // claim about them in a minute.
 
   {
-    module: "src/native/engine/params.ts",
+    module: "src/engine/params.ts",
     cases: [
       {
         why: "a bare square params form (`7`) parses its height as 0 instead of 7",
@@ -536,7 +536,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/native/engine/colour-mkhighlight.ts",
+    module: "src/engine/colour-mkhighlight.ts",
     cases: [
       {
         why: "a near-white background is not shifted, so its highlight bevel vanishes",
@@ -575,7 +575,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/native/engine/findloop.ts",
+    module: "src/engine/findloop.ts",
     cases: [
       {
         why: "a back-edge to an ancestor is not recorded, so no loop is ever found",
@@ -612,7 +612,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/native/engine/grid-core.ts",
+    module: "src/engine/grid-core.ts",
     cases: [
       {
         why: "two faces sharing a dot pair get two edges instead of one shared edge",

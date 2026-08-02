@@ -47,7 +47,7 @@ and hex-encode the result. `validateDesc` SHALL reject a desc of wrong length or
 one whose de-obfuscated header mismatches `w`/`h` or whose ball coordinates fall
 outside the arena. `newState` SHALL recover the ball layout by hex-decoding and
 de-obfuscating the desc. The shared codec SHALL live at
-`src/native/engine/obfuscate.ts`.
+`src/engine/obfuscate.ts`.
 
 #### Scenario: A description round-trips through obfuscation
 

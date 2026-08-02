@@ -250,7 +250,7 @@ place a new case on the right side of the line:
   test pinning a particular matching would break on any deliberate generator
   change while proving nothing new.
 
-Conversely, when you extract logic into `src/native/engine/`, **write the tests
+Conversely, when you extract logic into `src/engine/`, **write the tests
 in the same change**. Extraction moves the code but not its tests: the game's
 differential still catches defects, nothing turns red, and the module quietly
 arrives with no local assertions. `wires.ts` (413 lines, nine importers) had none

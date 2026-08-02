@@ -7,6 +7,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { currentColorScheme } from "../color-scheme.ts";
+import type { FontInfo, Size } from "../engine/types.ts";
 import {
   colourToOKLCH,
   cssColorToOKLCH,
@@ -22,7 +23,6 @@ import { puzzleAugmentations } from "./augmentation.ts";
 import { computeAvailableCanvasSize } from "./canvas-sizing.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
-import type { FontInfo, Size } from "./types.ts";
 
 /**
  * The `<puzzle-view>` component renders a puzzle using the drawing API.
