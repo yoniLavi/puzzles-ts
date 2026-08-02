@@ -199,6 +199,31 @@ observing the failure, and reverting — before the check is considered done. A
 layering rule that has never fired may not work, and its entire value lies in
 firing years later, when nobody remembers writing it.
 
+**The check SHALL also guard its own reach.** Every rule above reports
+*offenders*, and the resolution step that turns an import specifier into a path
+returns nothing when it fails — so a checker that resolves nothing finds no
+offenders anywhere and passes while inspecting precisely nothing. The check
+SHALL therefore assert what it actually inspected: that every relative source
+specifier in the tree resolves, and that the number resolved is far above zero.
+
+This is not hypothetical. The bulk import-rewrite in this change corrupted the
+layering test itself, narrowing its resolver so that no `../…` specifier
+resolved at all — and all of its rules passed. Measured afterwards: with the
+resolver blinded, **six of the seven tests in the file still pass**, and the
+seventh is this guard.
+
+It is the third instance of one shape, so it is stated here as a general rule
+rather than a patch: `grid.test.ts` asserted `d.edges.length === d.order` where
+`d.edges` was allocated `new Array(d.order)`, and `touch-input.test.ts` guarded
+its per-game sweep by counting the *catalog* while the sweep itself skipped on
+the *registry*. **An instrument that answers "how many violations?" must also
+answer "how many things did I look at?"** — otherwise "none found" and "nothing
+checked" are the same result.
+
+A count asserted this way SHALL be a floor set well below the true value, not a
+ratchet: its job is to separate "working" from "resolving nothing", and a tight
+number would wobble on every legitimate deletion.
+
 The check SHOULD be an in-repo test in the style of the existing cross-cutting
 invariant tests (`catalog-registry.test.ts`, `asset-integrity.test.ts`) rather
 than a new dependency, unless the rules outgrow what a test expresses clearly.
@@ -224,6 +249,22 @@ than a new dependency, unless the rules outgrow what a test expresses clearly.
 - **THEN** the layering check fails
 - **AND** it fails without the rule having been updated to know about that
   directory
+
+#### Scenario: The checker is broken rather than the code
+
+- **WHEN** the layering check's import resolution stops working — because a
+  refactor edited it, or the tree moved under it
+- **THEN** the check fails, naming the specifiers it could not resolve
+- **AND** it does NOT report zero violations, which is what a checker that
+  inspected nothing would otherwise report
+
+#### Scenario: A cross-cutting invariant test states its own coverage
+
+- **WHEN** a test asserts that a set of violations is empty across the tree
+- **THEN** it also asserts how many items it examined to reach that conclusion
+- **AND** the count is a floor set well below the true value, so it distinguishes
+  "nothing was wrong" from "nothing was checked" without ratcheting on a number
+  that legitimate deletions change
 
 ### Requirement: A scaffolding script stamps out a new game-port skeleton
 
