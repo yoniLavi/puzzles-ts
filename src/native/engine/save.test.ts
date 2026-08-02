@@ -44,6 +44,83 @@ describe("save codec", () => {
       /not a recognised TS save envelope/,
     );
   });
+
+  // Every field guard, one corruption at a time.
+  //
+  // Added by `audit-test-suite-strength`: the mutation run found **30 of
+  // save.ts's 85 mutants surviving**, the worst rate of the seven engine modules
+  // audited, and all of them in `isSaveEnvelope`. The cause is visible above —
+  // `{"hello":1}` fails on the *first* check (`v.v === 1`) and short-circuits, so
+  // the other nine were executed only by the happy path and never asserted to
+  // reject anything. Each could be replaced by `true` with the suite still green.
+  //
+  // That matters beyond the score: this guard is what stands between a corrupt
+  // or truncated save and a game state rebuilt from nonsense.
+  describe("rejects an envelope with any one field wrong", () => {
+    const valid: SaveEnvelope = {
+      v: 1,
+      puzzleId: "__fake__",
+      params: "t3",
+      desc: "g3-7",
+      privDesc: "g3-0",
+      moves: ["inc"],
+      pos: 1,
+      timerElapsed: 0,
+      usedSolve: false,
+      ui: "u",
+    };
+
+    it("accepts the valid envelope these cases are derived from", () => {
+      // Otherwise every case below could pass for the wrong reason.
+      expect(decodeSave(encodeSave(valid))).toEqual(valid);
+    });
+
+    const cases: [name: string, corrupt: Record<string, unknown>][] = [
+      ["v is a different version", { v: 2 }],
+      ["v is a string", { v: "1" }],
+      ["v is missing", { v: undefined }],
+      ["puzzleId is not a string", { puzzleId: 7 }],
+      ["puzzleId is missing", { puzzleId: undefined }],
+      ["params is not a string", { params: 3 }],
+      ["desc is not a string", { desc: null }],
+      ["privDesc is present but not a string", { privDesc: 12 }],
+      ["moves is not an array", { moves: "inc" }],
+      ["moves is missing", { moves: undefined }],
+      ["pos is not a number", { pos: "1" }],
+      ["timerElapsed is not a number", { timerElapsed: null }],
+      ["usedSolve is not a boolean", { usedSolve: "false" }],
+      ["ui is present but not a string", { ui: 0 }],
+    ];
+
+    for (const [name, corrupt] of cases) {
+      it(name, () => {
+        const env = { ...valid, ...corrupt };
+        for (const [k, v] of Object.entries(corrupt)) {
+          if (v === undefined) delete (env as Record<string, unknown>)[k];
+        }
+        expect(() => decodeSave(encodeBytes(JSON.stringify(env)))).toThrow(
+          /not a recognised TS save envelope/,
+        );
+      });
+    }
+
+    it("accepts the two optional fields being absent", () => {
+      // `privDesc` and `ui` are additive: a save written before desc
+      // supersession existed omits them, and most games still do. Their guards
+      // must reject a wrong *type* without rejecting absence.
+      const { privDesc: _p, ui: _u, ...without } = valid;
+      expect(decodeSave(encodeSave(without as SaveEnvelope))).toEqual(without);
+    });
+
+    it("rejects JSON that is not an object at all", () => {
+      for (const text of ["null", "42", '"a string"', "[1,2,3]", "true"]) {
+        expect(
+          () => decodeSave(encodeBytes(text)),
+          `${text} should not decode as an envelope`,
+        ).toThrow(/not a recognised TS save envelope/);
+      }
+    });
+  });
 });
 
 function encodeBytes(s: string): Uint8Array {
