@@ -51,7 +51,7 @@ and leaves all 28 tests in the file green.
 
 Explicitly **not** in this change:
 
-- **The other ~14 positive single-character `toContain` sites.** They are in ten
+- **The other 18 positive short-needle `toContain` sites.** They are in ten
   games' text-format and hint tests, and each would need its own expected value
   worked out. Rewriting them from a grep — without a demonstrated defect at any
   one of them, as there was at `abcd` — is blind churn across ten games. The

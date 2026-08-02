@@ -36,15 +36,22 @@
 - [x] 3.1 `repo-layout` — two ADDED requirements (shape-and-scope for bulk edits;
       an assertion distinguishes its value from a superstring).
 - [x] 3.2 `openspec validate close-bulk-edit-blind-spots --strict`; full gate.
-- [ ] 3.3 Owner acceptance, then archive.
+- [x] 3.3 Archive. Owner waived acceptance (2026-08-03) — the change is a script
+      that runs nowhere automatically plus one test strengthened against a
+      demonstrated defect, with no player-visible surface.
 
-## 4. Handoff — the other 19 positive single-character sites
+## 4. Handoff — the other 18 positive short-needle sites
 
-- [ ] 4.1 Deliberately **not** rewritten here. Each needs its own expected value
+- [x] 4.1 The list is the deliverable; the rewrites are deliberately **not** done
+      here. Each needs its own expected value
       worked out, across ten games, with no demonstrated defect at any one of
       them — which is what made `abcd` worth changing and makes these blind
       churn. The documented trap is what stops the next one being written. The
-      list, for whoever picks it up:
+      list, for whoever picks it up — **18** sites, counted 2026-08-03 (a grep
+      returns twenty; two of the hits are this trap being *quoted* in
+      `abcd.test.ts`'s explanatory comment). Two needles are two characters
+      rather than one, and are blind for the same reason — a short needle in a
+      small alphabet:
 
       | file | needles |
       | --- | --- |
