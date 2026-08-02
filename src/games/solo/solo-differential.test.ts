@@ -9,11 +9,10 @@
  * recorded — the solver-gated minimiser depends on that exact agreement
  * (playbook §4.4), so it is the real proof the solver is faithful.
  *
- * Regenerate the frozen fixture while `puzzles/solo.c` still exists:
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make solo-trace)
- *   build/native/auxiliary/solo-trace \
- *     > src/native/games/solo/__fixtures__/solo-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/solo-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";

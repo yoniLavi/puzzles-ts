@@ -7,10 +7,10 @@
  * difficulty the C solver recorded. Faithful generation + a faithful solver
  * verdict — the strongest available bar (playbook §4.3/§4.4).
  *
- * Regenerate the fixture from `puzzles/auxiliary/keen-trace.c` (pure-C):
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make keen-trace)
- *   build/native/auxiliary/keen-trace > __fixtures__/keen-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/keen-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 
 import { describe, expect, it } from "vitest";

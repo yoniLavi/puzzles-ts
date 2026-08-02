@@ -15,9 +15,10 @@
  * accepted on the explicit basis that Loopy would be their first acceptance
  * test. Hence the matrix is skewed to **breadth**: all 18 grid types appear.
  *
- * Regenerate the fixture with:
- *   scripts/build-native.sh loopy-trace && build/native/auxiliary/loopy-trace \
- *     > src/native/games/loopy/__fixtures__/loopy-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/loopy-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  *
  * **What this cannot cover**, and where to look instead: the C *aborts* on a
  * degenerate Penrose patch and *hangs* on an unfavourable one, so no fixture

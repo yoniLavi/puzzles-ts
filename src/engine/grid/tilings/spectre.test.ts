@@ -315,7 +315,8 @@ describe('the random_new("dummy") replay fallback', () => {
   });
 
   it("matches the C bit-for-bit once the fallback has fired", () => {
-    // Reference: `build/native/auxiliary/grid-trace spectres 26 26 0003047Y`.
+    // Recorded from `grid-trace spectres 26 26 0003047Y` while the C build
+    // still existed; frozen since `retire-c-engine`.
     // Recorded as counts, a bounding box, the ends of the dot list and a digest
     // of the whole incidence dump — the same comparison the differential makes,
     // without carrying a second megabyte of fixture for one test.

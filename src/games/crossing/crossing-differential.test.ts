@@ -10,12 +10,10 @@
  * test), the digit fill, the run collection order, the solver's every deduction
  * and the codec together (design D7).
  *
- * Regenerate the fixture while puzzles/unreleased/crossing.c still exists:
- *   rm -rf build/native
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make crossing-trace)
- *   build/native/auxiliary/crossing-trace \
- *     > src/native/games/crossing/__fixtures__/crossing-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/crossing-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

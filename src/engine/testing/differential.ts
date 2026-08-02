@@ -13,6 +13,28 @@
  * need it (galaxies; unruly's 2nd assertion) rather than being forced through
  * a callback-heavy "universal" helper. See the change `improve-port-tooling`
  * design notes.
+ *
+ * ## THE FIXTURES ARE FROZEN, AND CANNOT BE REGENERATED
+ *
+ * Every `__fixtures__/<game>-c-reference.json` in this repository was captured
+ * by a per-game `<game>-trace` harness, built against upstream's C by the
+ * Emscripten/CMake toolchain. `retire-c-engine` (2026-08-01) deleted all of it —
+ * the C sources, the harnesses, the CMake tree, the `USE_TS_*` flags and the
+ * `build/` output — so **there is no way to re-run any of it**, and each of
+ * these test files used to carry a `cmake … && make <game>-trace` recipe that
+ * had quietly become a set of commands nobody could execute.
+ *
+ * That is by decision, not by accident. With no C build there is no asking
+ * *"what would upstream have produced?"* about a new question, so a deliberate
+ * divergence **retires or re-founds** its fixture rather than re-recording it —
+ * and where a divergence is real, `AGENTS.md`'s released byte-parity doctrine
+ * says changing every board is the point. What a fixture still does, and why
+ * they are all kept, is act as the net under refactoring: a change that alters a
+ * solver's verdict alters which boards exist, which is exactly what these catch.
+ *
+ * If a question ever genuinely needs the old machinery, it is in git history —
+ * `git log --all -- 'puzzles/**'` reaches the sources and the harnesses, and the
+ * per-port commits bracket each one.
  */
 import { describe, expect, it } from "vitest";
 import { type RandomState, randomNew } from "../random/index.ts";

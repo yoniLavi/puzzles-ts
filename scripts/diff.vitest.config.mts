@@ -5,18 +5,18 @@
 //   npm run diff                                                   # run them all
 //   npx vitest run -c scripts/diff.vitest.config.mts -t collide    # one of them
 //
-// This used to also collect the per-game live differential checks
-// (`scripts/diff-*.test.ts`), which generated boards from the C build and the
-// TS port for the same seed. Those went game by game as each port landed, and
-// the C build itself went with `retire-c-engine`; the *frozen-fixture*
-// differentials in src/games/<game>/ are what survive, and they run in
-// the gate. The glob is kept because it costs nothing and reads as the history.
+// This used to also collect `scripts/diff-*.test.ts`, the per-game *live*
+// differentials that generated boards from the C build and the TS port for the
+// same seed. Those went game by game as each port landed, and the C build itself
+// went with `retire-c-engine`; the frozen-fixture differentials in
+// src/games/<game>/ are what survive, and they run in the gate. The glob went
+// with them: a config entry that matches nothing is not where history goes, and
+// it costs the next reader a trip to the filesystem to discover it is inert.
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
     include: [
-      "scripts/diff-*.test.ts",
       "scripts/colour-inventory.test.ts",
       "scripts/colour-dark-check.test.ts",
       "scripts/colour-collide.test.ts",

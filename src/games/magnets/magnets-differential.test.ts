@@ -10,12 +10,10 @@
  * difficulty (solves at diff; for a Tricky board, fails at Easy) — the
  * generator is solver-gated, so the TS solver must reach C's verdict.
  *
- * Regenerate the frozen fixture while puzzles/magnets.c still exists (it is
- * deleted at acceptance):
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make magnets-trace)
- *   build/native/auxiliary/magnets-trace \
- *     > src/native/games/magnets/__fixtures__/magnets-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/magnets-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { expect } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";

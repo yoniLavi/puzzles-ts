@@ -12,11 +12,10 @@
  *
  * The fixtures span both game modes, both difficulties, every upstream preset,
  * and a size sweep either side of the `order < 8` "empty grid" quality rule.
- * Regenerate them while `puzzles/unreleased/salad.c` still exists:
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make salad-trace)
- *   build/native/auxiliary/salad-trace \
- *     > src/native/games/salad/__fixtures__/salad-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/salad-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

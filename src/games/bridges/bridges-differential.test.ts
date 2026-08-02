@@ -10,11 +10,10 @@
  *     and (for a Medium/Hard board with enough islands) does NOT solve it one
  *     level down — the same "too easy" gate the generator applied.
  *
- * Regenerate the fixture (while bridges.c still exists) with:
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make bridges-trace)
- *   build/native/auxiliary/bridges-trace \
- *     > src/native/games/bridges/__fixtures__/bridges-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/bridges-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { describe, expect, it } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

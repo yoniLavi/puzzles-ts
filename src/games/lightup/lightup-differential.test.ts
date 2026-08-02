@@ -5,12 +5,10 @@
  * (clue acceptance and stripping are decided by solver verdicts), so this
  * also pins the solver's exact deductive power at every difficulty.
  *
- * Fixture recorded by puzzles/auxiliary/lightup-trace.c while
- * puzzles/lightup.c still existed (both deleted at port acceptance):
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make lightup-trace)
- *   build/native/auxiliary/lightup-trace \
- *     > src/native/games/lightup/__fixtures__/lightup-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/lightup-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  *
  * Generation at Tricky/Hard runs the discount-set/recursive solver in a
  * retry loop — legitimately seconds of fixed work per fixture. The work is

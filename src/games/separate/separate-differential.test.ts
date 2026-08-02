@@ -7,12 +7,10 @@
  * solver fully solves it, so byte-match also demands the TS solver reach C's
  * exact verdict. The follow-on assertion re-solves each C board to confirm it.
  *
- * Regenerate the frozen fixture while `puzzles/unfinished/separate.c` still
- * exists (deleted at acceptance):
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make separate-trace)
- *   build/native/auxiliary/separate-trace \
- *     > src/native/games/separate/__fixtures__/separate-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/separate-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

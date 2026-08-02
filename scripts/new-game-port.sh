@@ -11,9 +11,11 @@
 # empty __fixtures__/, a starter <gameId>.test.ts (a save round-trip + a
 # renderScenario render smoke, both `it.skip` so a fresh scaffold stays green),
 # and a commented <gameId>-differential.test.ts stub. It then PRINTS (does not
-# perform) the manual-edit checklist that needs judgement — the C trace
-# harness, the two registration edits, and the icon PNGs. Read the Galaxies
-# port as the exemplar.
+# perform) the manual-edit checklist that needs judgement — the two
+# registration edits and the icon PNGs. (It used to name a C trace harness too;
+# there is no C to trace since `retire-c-engine`, and a new port's differential,
+# if it has one, is founded on its own behaviour.) Read the Galaxies port as the
+# exemplar.
 
 set -euo pipefail
 

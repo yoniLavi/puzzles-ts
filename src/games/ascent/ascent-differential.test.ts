@@ -12,12 +12,10 @@
  * run-length codec — all at once. The `extra` check round-trips each C desc
  * through `validateDesc` + `newState` + `encodeGridDesc` (codec inverse).
  *
- * Regenerate the fixture while `puzzles/unreleased/ascent.c` still exists:
- *   rm -rf build/native
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make ascent-trace)
- *   build/native/auxiliary/ascent-trace \
- *     > src/native/games/ascent/__fixtures__/ascent-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/ascent-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

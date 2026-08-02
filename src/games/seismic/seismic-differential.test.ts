@@ -26,12 +26,10 @@
  * along with an assertion that this flag still *changes* the output, so the
  * oracle cannot decay into re-testing the shipped path.
  *
- * Regenerate while `puzzles/unreleased/seismic.c` still exists (it is deleted at
- * owner acceptance; the fixture stays as this test's frozen baseline):
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make seismic-trace)
- *   build/native/auxiliary/seismic-trace \
- *     > src/native/games/seismic/__fixtures__/seismic-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/seismic-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { describeDescDifferential } from "../../engine/testing/differential.ts";
 import cReference from "./__fixtures__/seismic-c-reference.json" with { type: "json" };

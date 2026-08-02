@@ -20,11 +20,10 @@
  * is solved by the deductive ladder to *the* unique solution, and the ladder
  * never solves a board the brute-force oracle finds non-unique.
  *
- * Regenerate while `puzzles/undead.c` still exists (deleted at acceptance):
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make undead-trace)
- *   build/native/auxiliary/undead-trace \
- *     > src/native/games/undead/__fixtures__/undead-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/undead-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { describe, expect, it } from "vitest";
 import cReference from "./__fixtures__/undead-c-reference.json" with { type: "json" };
