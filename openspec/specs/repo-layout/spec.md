@@ -853,10 +853,14 @@ from the rate rather than chased.
 
 Two definitions are load-bearing and SHALL be derived rather than assumed:
 
-- **A module's own tests** are every engine test file that *imports* it — not one
-  file named after it. Both directions of that mistake have been made here:
-  `grid-core.ts` is tested by `grid-trim.test.ts`, and `midend.test.ts` alone is
-  not the midend's tests either (eight engine files drive a `Midend`).
+- **A module's own tests** are every engine test file that *imports* it, **or
+  imports a barrel re-exporting it** — not one file named after it. That single
+  question has been answered wrongly three times, each producing a different
+  false picture: matched on filename; taken as the one file named after the
+  module, when eight engine files drive a `Midend`; and taken as direct imports
+  only, when `grid.ts`'s own doc comment says *"import from this module, not from
+  the parts"* and `grid.test.ts` is therefore `grid-core.ts`'s real test
+  surface.
 - **A differential is not a local test**, even an engine-local one, because its
   guarantee is a frozen fixture noticing that the boards moved.
 
@@ -890,4 +894,17 @@ differential does fail on the defect the local tests deliberately let through.
   "the tests capable of catching this" ranked `grid.ts` second-worst when its own
   tests catch every planted defect, and `midend.ts` mid-table when it was the
   worst. That ranking reached a proposal and a spec before it was measured.
+
+#### Scenario: An assertion's two sides derive from the same value
+
+- **WHEN** a test compares a quantity against the thing that produced it —
+  `x.length` against the value `x` was sized from, a getter against its own
+  field, a total against the sum it was computed from
+- **THEN** it is a decoration, not an assertion, and is replaced by the
+  independent statement the code under test has to get right
+- **BECAUSE** `grid.test.ts`'s `expect(d.edges.length).toBe(d.order)` ran across
+  all eighteen tilings and could not fail — `d.edges` is allocated
+  `new Array(d.order)` — so halving every dot's degree in the grid builder passed
+  all 151 tests in the file. The replacement counts the degree independently,
+  from the edges that name the dot as an endpoint.
 
