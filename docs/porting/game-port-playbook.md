@@ -1858,7 +1858,8 @@ game's `.c`, §4.1 — so finding none on a `grep` is expected, not a gap.)
   you rebuild the C oracle.
 
 Exemplar end-to-end (while the C still exists):
-[`unruly-trace.c`](../../puzzles/auxiliary/unruly-trace.c) →
+`puzzles/auxiliary/unruly-trace.c` (deleted with the C; read it with
+`git show 2912e57~1:puzzles/auxiliary/unruly-trace.c`) →
 [`unruly-differential.test.ts`](../../src/native/games/unruly/unruly-differential.test.ts).
 
 ### 4.2 The C trace harness + the build-pure-C gotcha
@@ -1867,7 +1868,8 @@ The C trace harness lives in `puzzles/auxiliary/<game>-trace.c`, `#include`s
 `../<game>.c` to reach its `static` generator/solver (the `STANDALONE_SOLVER`
 trick), and prints the desc (+ recorded solver difficulty) as JSON; add one
 `cliprogram(<game>-trace <game>-trace.c)` line to
-[`puzzles/auxiliary/CMakeLists.txt`](../../puzzles/auxiliary/CMakeLists.txt).
+`puzzles/auxiliary/CMakeLists.txt`
+(`git show d5eebb6~1:puzzles/auxiliary/CMakeLists.txt`).
 
 **Gotcha — build the harness pure-C.** `scripts/build-native.sh` configures with the
 umbrella `USE_TS_LEAVES`/`USE_TS_RANDOM` default **ON**, which swaps `random.c` out
@@ -1944,7 +1946,8 @@ you get a regression bar that a byte-match could never give you, since a byte-ma
 equally satisfied by faithfully reproducing a *bad* answer. This is the byte-parity
 scope doctrine (§4 intro) applied one level in: fidelity where there is a fact of the
 matter, "write it well" where there isn't. Exemplar:
-[`inertia-trace.c`](../../puzzles/auxiliary/inertia-trace.c) →
+`puzzles/auxiliary/inertia-trace.c`
+(`git show e6206b0~1:puzzles/auxiliary/inertia-trace.c`) →
 [`inertia-differential.test.ts`](../../src/native/games/inertia/inertia-differential.test.ts).
 
 **An encoder that never flushes its trailing run is a *format*, not a bug —
@@ -2270,9 +2273,12 @@ per-path constraints, so it and everything reading it are order-invariant; an
 *order-dependent* quantity like "passes to fixpoint" is deliberately **not**
 recorded). The TS test decodes the same descs and asserts its solver reaches the
 identical verdicts. State the byte-match infeasibility (and why) in the port's
-`design.md`. Exemplar: [`undead-trace.c`](../../puzzles/auxiliary/undead-trace.c)
-→ [`undead-differential.test.ts`](../../src/native/games/undead/undead-differential.test.ts),
-design D1.
+`design.md`. Exemplar:
+[`undead-differential.test.ts`](../../src/native/games/undead/undead-differential.test.ts)
++ design D1. (The C side of that pair is cited in some earlier revisions as
+`puzzles/auxiliary/undead-trace.c`; **no such file was ever committed** — the
+verdicts were recorded by an ad-hoc harness that did not land. The TS test and
+its fixture are the whole of what survives, and they are enough to follow.)
 
 > Aside (Undead, parity not differential): upstream may compute state it never
 > *renders* — Undead fills `cell_errors` on every move but no draw call reads
@@ -2283,6 +2289,12 @@ design D1.
 ---
 
 ## 5. Tests
+
+> **Writing tests is here; *assessing* them is
+> [`docs/test-strength.md`](../test-strength.md)** — how to find out whether a
+> test would catch anything (the five-minute mutation probe), why a module can be
+> fully protected and still give you no feedback, and the harness traps that make
+> an assessment lie.
 
 **Behavioural tests by tier** — reach for the lowest that fits; Playwright is
 visual/integration smoke only. Tiers are codified in
