@@ -221,7 +221,11 @@ exactly superstrings. The same applies to a short needle in a small alphabet:
 
 Note the asymmetry, because it decides which sites are worth changing:
 **`not.toContain("x")` is *strengthened* by this, not weakened** — it fails on
-`"./"` too. Only the positive form is blind, and this repo has ~15 of those.
+`"./"` too. Only the positive form is blind, and this repo has **18** of those
+left, across ten games — enumerated in
+`openspec/changes/archive/2026-08-02-close-bulk-edit-blind-spots/tasks.md` §4.
+(Grep for them with care: two of the twenty hits are this trap being *described*
+in `abcd.test.ts`'s comment, not used.)
 
 For a text format, assert the **whole rendering** — `toMatchInlineSnapshot()`
 fills itself in on first run, so there is nothing to transcribe by hand, and the
