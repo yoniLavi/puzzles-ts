@@ -28,6 +28,26 @@ const stem = (p) => base(p).replace(/\.ts$/, "");
 const isOwnTest = (src, test) =>
   test !== undefined && base(test).replace(/\.test\.ts$/, "") === stem(src);
 
+/**
+ * ⚠️ **The `first-killer-was-own-test` column below does NOT mean what its
+ * original name ("killed-by-own-tests") claimed, and this script kept the wrong
+ * name long enough for it to reach a proposal and a spec delta.**
+ *
+ * Stryker **bails the test run on the first failure**, so `killedBy` holds
+ * exactly one test — every one of this report's 1,437 killed mutants does. The
+ * column therefore measures *which covering test happened to run first*, which
+ * vitest decides roughly alphabetically. `grid.ts` scored 1/40 because
+ * `grid-aperiodic-differential.test.ts`, `grid-desc.test.ts` and
+ * `grid-incentre.test.ts` all sort ahead of `grid.test.ts`; its own tests
+ * actually catch every defect planted in it.
+ *
+ * To ask "would this module's own tests notice?", use **`npm run probe`**
+ * (`scripts/feedback-probe.mjs`), which plants a defect and runs only those
+ * tests. Full correction: `2026-08-02-strengthen-engine-test-feedback/findings.md` §1.
+ *
+ * The column is kept, renamed, because it is still a true statement about the
+ * *run* — and because deleting it would hide how the mistake was made.
+ */
 const rows = [];
 const survivors = [];
 for (const [src, entry] of Object.entries(report.files ?? {})) {
@@ -75,7 +95,7 @@ console.log(
   pad("module", 24) +
     STATUSES.map((s) => pad(s.toLowerCase().slice(0, 9), 11)).join("") +
     pad("total", 7) +
-    "killed-by-own-tests",
+    "first-killer-was-own-test ⚠",
 );
 for (const r of rows.sort((a, b) => a.src.localeCompare(b.src))) {
   const k = r.counts.Killed ?? 0;
