@@ -15,6 +15,7 @@
  * particular values a refactor would have to chase.
  */
 import { describe, expect, it } from "vitest";
+import { randomNew } from "../random/index.ts";
 import {
   addBorderBarriers,
   anticlockwise,
@@ -25,6 +26,7 @@ import {
   dirX,
   dirY,
   encodeWireDesc,
+  growSpanningTree,
   L,
   offset,
   opposite,
@@ -221,6 +223,111 @@ describe("the description codec", () => {
       expect(barriers[y * w + (w - 1)] & R).toBeTruthy();
     }
     expect(barriers[1 * w + 1]).toBe(0); // the interior is untouched
+  });
+});
+
+/**
+ * `growSpanningTree` builds the *solved* grid every Net/Netslide board is
+ * scrambled from, and had no local test of any kind: its rules were pinned only
+ * by two games' frozen descs, which move for any reason at all. What follows
+ * asserts the three properties its doc comment claims — spanning, acyclic, no
+ * full crosses — plus the boundary rule, as structure rather than as values, so
+ * a deliberate change to the RNG draw order (which is the differential's
+ * business) leaves them alone while a broken rule fails here by name.
+ */
+describe("growSpanningTree", () => {
+  const grow = (w: number, h: number, wrapping: boolean, seed: string) => {
+    const tiles = new Uint8Array(w * h);
+    growSpanningTree(tiles, w, h, wrapping, w >> 1, h >> 1, randomNew(seed));
+    return tiles;
+  };
+
+  const shapes = [
+    [5, 5, false],
+    [5, 5, true],
+    [4, 7, false],
+    [7, 4, true],
+    [3, 3, false],
+    [2, 2, true],
+  ] as const;
+
+  it.each(shapes)("wires %ix%i (wrapping=%s) as a spanning tree", (w, h, wrapping) => {
+    for (const seed of ["a", "b", "c"]) {
+      const tiles = grow(w, h, wrapping, `${seed}-${w}x${h}`);
+
+      // Every arm is matched by its neighbour's facing arm. Without this the
+      // counts below would be meaningless — half an edge is not an edge.
+      let arms = 0;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const t = tiles[y * w + x];
+          expect(wireCount(t)).toBeLessThan(4); // a full cross reads the same in every orientation
+          for (const d of DIRECTIONS) {
+            if (!(t & d)) continue;
+            arms++;
+            const { x: nx, y: ny } = offset(x, y, d, w, h);
+            expect(tiles[ny * w + nx] & opposite(d)).toBeTruthy();
+          }
+        }
+      }
+
+      // Spanning + exactly n−1 edges ⇒ acyclic. Neither alone would do: a
+      // forest is acyclic without spanning, and a grid with one extra edge
+      // spans without being a tree.
+      expect(arms % 2).toBe(0);
+      expect(arms / 2).toBe(w * h - 1);
+
+      const seen = new Uint8Array(w * h);
+      const queue = [(h >> 1) * w + (w >> 1)];
+      seen[queue[0]] = 1;
+      for (let i = 0; i < queue.length; i++) {
+        const x = queue[i] % w;
+        const y = (queue[i] / w) | 0;
+        for (const d of DIRECTIONS) {
+          if (!(tiles[queue[i]] & d)) continue;
+          const n = offset(x, y, d, w, h);
+          const idx = n.y * w + n.x;
+          if (!seen[idx]) {
+            seen[idx] = 1;
+            queue.push(idx);
+          }
+        }
+      }
+      expect(queue.length).toBe(w * h);
+    }
+  });
+
+  it("fences a non-wrapping grid: no tile on a rim wires off the edge", () => {
+    // Upstream skips those frontier directions rather than relying on barriers
+    // to hide them, so a wire that leaves the board is a generation bug, not a
+    // display one. All four rims, because the guard is four separate lines.
+    for (const seed of ["a", "b", "c", "d"]) {
+      const [w, h] = [6, 5];
+      const tiles = grow(w, h, false, `fence-${seed}`);
+      for (let x = 0; x < w; x++) {
+        expect(tiles[0 * w + x] & U).toBe(0);
+        expect(tiles[(h - 1) * w + x] & D).toBe(0);
+      }
+      for (let y = 0; y < h; y++) {
+        expect(tiles[y * w + 0] & L).toBe(0);
+        expect(tiles[y * w + (w - 1)] & R).toBe(0);
+      }
+    }
+  });
+
+  it("lets a wrapping grid wire across the seam", () => {
+    // The complement of the test above: with `wrapping`, the rim guard is
+    // skipped, and over enough seeds the seam is used. Asserted as "some seed
+    // wraps" rather than "this seed does", so it states the rule without
+    // pinning a draw order the differential owns.
+    const [w, h] = [4, 4];
+    const wrapped = ["a", "b", "c", "d", "e", "f"].some((seed) => {
+      const tiles = grow(w, h, true, `wrap-${seed}`);
+      for (let x = 0; x < w; x++) if (tiles[0 * w + x] & U) return true;
+      for (let y = 0; y < h; y++) if (tiles[y * w + 0] & L) return true;
+      return false;
+    });
+    expect(wrapped).toBe(true);
   });
 });
 

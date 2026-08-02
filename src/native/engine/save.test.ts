@@ -4,9 +4,9 @@ import { fakeGame, LEFT_BUTTON } from "./fake-game.ts";
 import { Midend } from "./midend.ts";
 import { decodeSave, encodeSave, type SaveEnvelope } from "./save.ts";
 
-function driven() {
+function driven(game: typeof fakeGame = fakeGame) {
   const notes: ChangeNotification[] = [];
-  const m = new Midend(fakeGame);
+  const m = new Midend(game);
   m.setCallbacks(
     (n) => notes.push(n),
     () => {},
@@ -15,7 +15,13 @@ function driven() {
     [...notes].reverse().find((n) => n.type === "game-state-change") as
       | Extract<ChangeNotification, { type: "game-state-change" }>
       | undefined;
-  return { m, state };
+  const statusBar = () =>
+    (
+      [...notes].reverse().find((n) => n.type === "status-bar-change") as
+        | Extract<ChangeNotification, { type: "status-bar-change" }>
+        | undefined
+    )?.statusBarText;
+  return { m, state, statusBar };
 }
 
 describe("save codec", () => {
@@ -161,6 +167,88 @@ describe("Midend save/restore round-trip", () => {
     const b = driven();
     expect(b.m.loadGame(a.m.saveGame())).toBeUndefined();
     expect(b.state()?.status).toBe("solved-with-help");
+  });
+
+  // `loadGame` has four ways to say no, each returning a sentence the player
+  // reads in a dialog, and only the puzzle-id one was covered. They are not
+  // interchangeable: the difference between "this file is not a save" and "this
+  // save is for Galaxies" is the difference between a corrupt file and the
+  // wrong one, and only one of those is worth the player retrying.
+  //
+  // The load must also be *refused*, not half-applied — a game rebuilt from a
+  // save that was rejected halfway is the worst of both.
+  it.each([
+    [
+      "data that is not JSON at all",
+      () => Uint8Array.from([0x53, 0x41, 0x56, 0x45, 0x00, 0xff]),
+      /Could not read save: .*pre-pivot C-format/,
+    ],
+    [
+      "JSON that is not a save envelope",
+      () => encodeBytes(JSON.stringify({ hello: 1 })),
+      /Could not read save: .*not a recognised TS save envelope/,
+    ],
+    [
+      "an envelope whose params no longer decode",
+      () =>
+        encodeSave({
+          v: 1,
+          puzzleId: "__fake__",
+          params: "not-params",
+          desc: "g3-1",
+          moves: [],
+          pos: 0,
+          timerElapsed: 0,
+          usedSolve: false,
+        }),
+      /Invalid saved parameters: .*bad params/,
+    ],
+  ])("refuses %s, leaving the running game intact", (_what, bytes, expected) => {
+    const a = driven();
+    a.m.newGame();
+    a.m.processInput(0, 0, LEFT_BUTTON);
+    const before = a.m.formatAsText();
+
+    expect(a.m.loadGame(bytes())).toMatch(expected);
+    expect(a.m.formatAsText()).toBe(before);
+    expect(a.state()).toMatchObject({ currentMove: 1, canUndo: true });
+  });
+
+  it("clamps a save's undo position to the history its move log rebuilds", () => {
+    // `pos` and `moves` are independent fields of a file that may have been
+    // hand-edited, truncated, or written by a future version. Trusting `pos`
+    // puts the midend on a history index that does not exist, where `undo`
+    // walks backwards through `undefined` states.
+    const env: SaveEnvelope = {
+      v: 1,
+      puzzleId: "__fake__",
+      params: "t9",
+      desc: "g9-1",
+      moves: ["inc", "inc"],
+      pos: 99, // two moves replayed, so the real maximum is 2
+      timerElapsed: 0,
+      usedSolve: false,
+    };
+    const b = driven();
+    expect(b.m.loadGame(encodeSave(env))).toBeUndefined();
+    expect(b.state()).toMatchObject({ currentMove: 2, totalMoves: 2, canRedo: false });
+    expect(b.m.formatAsText()).toBe("count=2");
+  });
+
+  it("round-trips the elapsed clock of a timed game", () => {
+    // `timerElapsed` is the only field of a Mines save that no move can
+    // reconstruct: replaying the log rebuilds the board exactly and the clock
+    // not at all, so a save that drops it silently gives the player their time
+    // back.
+    const timed = { ...fakeGame, isTimed: true };
+    const a = driven(timed);
+    a.m.newGame();
+    a.m.timer(83);
+
+    const b = driven(timed);
+    expect(b.m.loadGame(a.m.saveGame())).toBeUndefined();
+    expect(decodeSave(a.m.saveGame()).timerElapsed).toBe(83);
+    expect(b.statusBar()).toMatch(/^\[1:23\]/);
   });
 
   it("refuses a save belonging to a different puzzle", () => {

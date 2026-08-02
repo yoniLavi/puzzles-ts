@@ -1,5 +1,24 @@
 # strengthen-engine-test-feedback
 
+> ## ⚠️ The table below is an artefact. Read [`findings.md`](findings.md) §1.
+>
+> Everything in this proposal that rests on the **"killed by its own test file"**
+> column is wrong, because **Stryker bails the test run on the first failure** —
+> so the column names the first covering test to fail, not the tests capable of
+> catching the defect. Every one of that report's 1,437 killed mutants has
+> exactly one `killedBy` entry, and vitest orders files roughly alphabetically.
+>
+> Measured properly (`npm run probe`, planting a defect and running only the
+> module's own tests): **`grid.ts` catches 6 of 6** — the "3%" module needed
+> nothing at all — and the genuinely worst was **`midend.ts`**, which the column
+> rated a comfortable mid-table 39%. `latin.ts` was a real gap, but for a reason
+> the number did not carry.
+>
+> The text is kept as written, banner and all, because *the correction is the
+> change's main result* and a rewritten premise would hide how far a plausible
+> number travelled — into a proposal, a task list and a spec delta — before
+> anyone planted a defect and looked.
+
 ## Why
 
 **The goal is a fast suite that gives enough confidence to keep refactoring. The

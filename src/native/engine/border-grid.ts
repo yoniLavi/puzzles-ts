@@ -138,8 +138,12 @@ export function pointerEdge(
   if (outOfBounds(gx, gy, w, h)) return null;
 
   // Find the edge of cell (gx,gy) closest to the click: eliminate the far half
-  // on each axis, then the axis the click is further from. Exactly one bit must
-  // survive, or the click was on a corner/centre and means nothing.
+  // on each axis, then the axis the click is further from. Exactly one bit
+  // *always* survives — the three masks are not independent. The first leaves
+  // one of {L,R}, the second one of {U,D}, and the third clears exactly one of
+  // those two surviving pairs. So every click inside a cell resolves to an
+  // edge, including one exactly on a corner or a centre (which the tie-break
+  // test pins), and the `dir === 4` exit below is defensive, not a rejection.
   let possible = BORDER_MASK;
   let px = (px0 - margin(ts)) % ts;
   let py = (py0 - margin(ts)) % ts;
@@ -151,7 +155,7 @@ export function pointerEdge(
 
   let dir = 0;
   for (; dir < 4 && BORDER(dir) !== possible; dir++);
-  if (dir === 4) return null; // not exactly one edge
+  if (dir === 4) return null; // defensive: see above, unreachable
 
   ui.x = clamp(2 * gx + 1 + DX[dir], 1, 2 * w - 1);
   ui.y = clamp(2 * gy + 1 + DY[dir], 1, 2 * h - 1);

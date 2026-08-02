@@ -19,6 +19,9 @@ import {
   selectEdge,
 } from "./border-grid.ts";
 import {
+  CURSOR_DOWN,
+  CURSOR_LEFT,
+  CURSOR_RIGHT,
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
@@ -211,11 +214,22 @@ describe("interpretBorderGridInput", () => {
     ).toBeNull();
   });
 
-  it("keeps the cursor inside the grid", () => {
+  // Both axes, and both ends of each. The first version of this test drove
+  // only CURSOR_UP, so the `ui.x` clamp — the same line, on the other axis —
+  // was never asserted and could be deleted with the suite green.
+  it.each([
+    ["up", CURSOR_UP, "y", 1],
+    ["down", CURSOR_DOWN, "y", 5],
+    ["left", CURSOR_LEFT, "x", 1],
+    ["right", CURSOR_RIGHT, "x", 5],
+  ] as const)("keeps the cursor inside the grid walking %s", (_name, key, axis, limit) => {
+    // Half-cell coordinates on a 3×3 board run 1..2*3-1 = 1..5.
     const s = grid(3, 3);
-    const u = ui(1, 1, true);
+    const u = ui(3, 3, true);
     for (let i = 0; i < 10; i++)
-      interpretBorderGridInput(s, u, { x: 0, y: 0 }, CURSOR_UP, TS);
-    expect(u.y).toBe(1); // clamped at the top, never negative
+      interpretBorderGridInput(s, u, { x: 0, y: 0 }, key, TS);
+    expect(u[axis]).toBe(limit);
+    // The other axis did not drift while this one was clamped.
+    expect(u[axis === "x" ? "y" : "x"]).toBe(3);
   });
 });
