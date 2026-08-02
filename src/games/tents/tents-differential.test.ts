@@ -9,12 +9,10 @@
  * generator is solver-gated, so the TS solver must reach C's verdict on every
  * board (§4.4).
  *
- * Regenerate the frozen fixture while puzzles/tents.c still exists (it is
- * deleted at acceptance):
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make tents-trace)
- *   build/native/auxiliary/tents-trace \
- *     > src/native/games/tents/__fixtures__/tents-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/tents-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

@@ -15,16 +15,10 @@
  * description validates, and that the TS solver grades the board at exactly
  * the tier the C solver did.
  *
- * The fixture is a frozen snapshot — both `puzzles/unreleased/rome.c` and
- * `puzzles/auxiliary/rome-trace.c` are deleted in the same change that flips
- * the TS port to TS_PORTED (per-game C-deletion doctrine). To regenerate
- * before that deletion:
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   make -C build/native rome-trace
- *   ./build/native/auxiliary/rome-trace \
- *     > src/native/games/rome/__fixtures__/rome-c-reference.json
- * (`-DUSE_TS_RANDOM=0` restores the C `random.c`, which the umbrella default
- * drops.) After deletion, recover the harness from git history.
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/rome-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

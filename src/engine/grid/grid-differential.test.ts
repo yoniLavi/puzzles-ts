@@ -1,8 +1,9 @@
 /**
  * Differential check for the periodic tilings in `grid.ts` against the C
  * reference (`puzzles/grid.c`), via the frozen snapshot in
- * `__fixtures__/grid-c-reference.json` (regenerate with
- * `build/native/auxiliary/grid-trace --all`).
+ * `__fixtures__/grid-c-reference.json`, captured by
+ * `puzzles/auxiliary/grid-trace --all` before `retire-c-engine` deleted the C
+ * and the build that ran it. It is frozen; see `engine/testing/differential.ts`.
  *
  * This is a **byte-match** differential, and an unusually strong one: dot
  * indices are assigned in first-encounter order driven by each generator's own

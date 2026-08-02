@@ -12,16 +12,10 @@
  * differential. Every C desc must also pass `validateDesc` and recover a
  * legal solution.
  *
- * The fixture is a frozen snapshot — both `puzzles/guess.c` and
- * `puzzles/auxiliary/guess-trace.c` are deleted in the same change that
- * registers the TS port (per-game C-deletion doctrine). To regenerate
- * (e.g. to broaden the snapshot) before that deletion:
- *   cmake -B build/native -S puzzles -DUSE_TS_LEAVES=0 -DUSE_TS_RANDOM=0
- *   make -C build/native guess-trace
- *   ./build/native/auxiliary/guess-trace \
- *     > src/native/games/guess/__fixtures__/guess-c-reference.json
- * (the flags restore the C `random.c`, which the umbrella default drops).
- * After deletion, recover the harness from git history.
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/guess-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { describe, expect, it } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

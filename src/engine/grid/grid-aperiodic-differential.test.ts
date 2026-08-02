@@ -1,8 +1,10 @@
 /**
  * Differential check for the **aperiodic** tilings in `grid.ts` (Penrose P2/P3,
  * hats, spectres) against the C reference, via the frozen snapshot in
- * `__fixtures__/grid-aperiodic-c-reference.json` (regenerate with
- * `build/native/auxiliary/grid-trace --aperiodic`).
+ * `__fixtures__/grid-aperiodic-c-reference.json`, captured by
+ * `puzzles/auxiliary/grid-trace --aperiodic` before `retire-c-engine` deleted
+ * the C and the build that ran it. It is frozen; see
+ * `engine/testing/differential.ts`.
  *
  * ## Why this is a separate file from `grid-differential.test.ts`
  *

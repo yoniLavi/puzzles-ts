@@ -8,12 +8,10 @@
  * one assertion validates the fill order, the deductive solver's every verdict,
  * and the codec together (design D6).
  *
- * Regenerate the fixture while puzzles/unreleased/abcd.c still exists:
- *   rm -rf build/native
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make abcd-trace)
- *   build/native/auxiliary/abcd-trace \
- *     > src/native/games/abcd/__fixtures__/abcd-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/abcd-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

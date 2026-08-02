@@ -12,16 +12,10 @@
  * the trailing move limit (proving the TS solver makes the same choices
  * as C). See the change's design D-RISK.
  *
- * The fixture is a frozen snapshot — both `puzzles/flood.c` and
- * `puzzles/auxiliary/flood-trace.c` are deleted in the same change that
- * registers the TS port (per-game C-deletion doctrine). To regenerate
- * (e.g. to broaden the snapshot) before that deletion:
- *   cmake -B build/native -S puzzles -DUSE_TS_LEAVES=0
- *   make -C build/native flood-trace
- *   ./build/native/auxiliary/flood-trace \
- *     > src/native/games/flood/__fixtures__/flood-c-reference.json
- * (`-DUSE_TS_LEAVES=0` restores the C `random.c`, which the umbrella
- * default drops.) After deletion, recover the harness from git history.
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/flood-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { describeDescDifferential } from "../../engine/testing/differential.ts";
 import cReference from "./__fixtures__/flood-c-reference.json" with { type: "json" };

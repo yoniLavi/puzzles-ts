@@ -12,12 +12,10 @@
  *  2. **Planar + tangled**: the decoded board has every vertex degree ≤ 4
  *     and starts with at least one crossing.
  *
- * Regenerate the fixture while `puzzles/untangle.c` still exists (it is
- * deleted at owner acceptance):
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make untangle-trace)
- *   build/native/auxiliary/untangle-trace \
- *     > src/native/games/untangle/__fixtures__/untangle-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/untangle-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 
 import { describe, expect, it } from "vitest";

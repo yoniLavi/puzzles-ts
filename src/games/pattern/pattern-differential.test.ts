@@ -6,11 +6,10 @@
  * bit-identical, so the value grids (computed in single precision via
  * `Math.fround`) and the resulting clue descs must agree exactly.
  *
- * Regenerate the fixture (while pattern.c still exists) with:
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make pattern-trace)
- *   build/native/auxiliary/pattern-trace \
- *     > src/native/games/pattern/__fixtures__/pattern-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/pattern-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { describeDescDifferential } from "../../engine/testing/differential.ts";
 import cReference from "./__fixtures__/pattern-c-reference.json" with { type: "json" };

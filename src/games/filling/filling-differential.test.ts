@@ -9,11 +9,10 @@
  *   2. the TS solver uniquely solves the C-recorded board to a valid full
  *      Fillomino solution (every region's size equals its number).
  *
- * Regenerate the fixture while puzzles/filling.c still exists:
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make filling-trace)
- *   build/native/auxiliary/filling-trace \
- *     > src/native/games/filling/__fixtures__/filling-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/filling-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

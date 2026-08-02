@@ -6,12 +6,10 @@
  * double-increment livelock guard, the never-updated `prevret`, or the set /
  * candidate scan order) — check those first.
  *
- * Regenerate the fixture while puzzles/mines.c still exists (deleted at
- * acceptance):
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make mines-trace)
- *   build/native/auxiliary/mines-trace \
- *     > src/native/games/mines/__fixtures__/mines-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/mines-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";

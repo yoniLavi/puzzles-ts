@@ -1,16 +1,21 @@
 /**
- * The single Comlink-exposed surface a worker-side puzzle presents to
- * the app. Both the C/WASM-backed `WorkerPuzzle` and the
- * TS-midend-backed `TsWorkerPuzzle` `implements` this, so the
- * dispatch seam in `worker.ts` constructs either without an
- * `as unknown as` cast and any drift in either class is a build-time
- * type error (strictly safer than the prior cast). The app's
- * `RemoteWorkerPuzzle` is `Remote<PuzzleEngineSurface>`, the same
- * shape it had before this interface was extracted.
+ * The single Comlink-exposed surface a worker-side puzzle presents to the app.
+ *
+ * It was extracted when there were two implementations — the C/WASM-backed
+ * `WorkerPuzzle` and the TS-midend-backed `TsWorkerPuzzle` — so that the
+ * dispatch seam in `worker.ts` could construct either without an
+ * `as unknown as` cast. `retire-c-engine` deleted the first, and
+ * **`TsWorkerPuzzle` is now the only implementer.**
+ *
+ * It stays anyway, for a reason independent of that origin: the app types the
+ * worker as `Remote<PuzzleEngineSurface>`. Collapsing it to
+ * `Remote<TsWorkerPuzzle>` would drag the concrete class's whole surface across
+ * the worker boundary, so every internal method would read as part of the
+ * contract. A narrowed, hand-stated boundary type is worth having with one
+ * implementer. `worker.ts` records the same decision at the construction site.
  *
  * Where the two implementations historically used slightly different
- * byte-buffer generics, the looser compatible type is used here so
- * both conform structurally without behavioural change.
+ * byte-buffer generics, the looser compatible type is kept here.
  */
 
 import type {
@@ -56,7 +61,7 @@ export interface PuzzleEngineSurface {
   findMistakes(): number;
 
   /** The active game's reference-aid model (inventory checklist with found
-   * status), or null when the game has no reference aid (all C/WASM games). */
+   * status), or null when the game has no reference aid. */
   getReference(): ReferenceModel | null;
   /** Spotlight a reference item on the board (or clear it with null). A
    * `UI_UPDATE`-shaped change: repaints but adds no move/history/save. No-op
@@ -88,8 +93,7 @@ export interface PuzzleEngineSurface {
   /**
    * Per-index dark-mode decisions carried by the palette itself, in the same
    * vocabulary as `augmentation.ts`'s `paletteOverrides` (`false` = "do not
-   * adapt this index"). Empty when the palette states nothing of its own — the
-   * C/WASM engine never does.
+   * adapt this index"). Empty when the palette states nothing of its own.
    */
   darkPalette(defaultBackground: Colour): Record<number, Colour>;
   size(maxSize: Size, isUserSize: boolean, devicePixelRatio: number): Size;

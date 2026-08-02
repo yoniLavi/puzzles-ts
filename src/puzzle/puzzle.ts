@@ -42,9 +42,13 @@ if (sentryWebWorkerIntegration) {
 const AUTO_HINT_STEP_MS = 1000;
 
 /**
- * Public API to the remote WASM puzzle module running in a worker.
- * Exposes reactive properties for puzzle state.
- * Exposes async methods for calling WASM Frontend APIs.
+ * Public API to the puzzle engine running in a worker.
+ *
+ * Exposes reactive properties for puzzle state, and async methods that proxy
+ * (over Comlink) to the worker-side `PuzzleEngineSurface`. That surface used to
+ * be a WASM `Frontend` reached through Embind; since `retire-c-engine` it is the
+ * native TypeScript midend, and nothing on this side changed when it swapped —
+ * which was the point of stating the boundary as an interface.
  */
 export class Puzzle {
   public static async create(puzzleId: string): Promise<Puzzle> {

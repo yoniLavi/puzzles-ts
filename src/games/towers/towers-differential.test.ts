@@ -10,11 +10,10 @@
  *  2. The TS solver grades the C-generated board at the C-recorded difficulty
  *     (and does not solve it one level below).
  *
- * Regenerate the fixture (while towers.c still exists):
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make towers-trace)
- *   build/native/auxiliary/towers-trace \
- *     > src/native/games/towers/__fixtures__/towers-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/towers-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { describe, expect, it } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

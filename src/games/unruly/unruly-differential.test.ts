@@ -10,10 +10,10 @@
  *  2. The TS solver solves the C-generated board at the C-recorded
  *     difficulty (no harder, and it completes).
  *
- * Regenerate the fixture (when unruly.c still exists) with:
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make unruly-trace)
- *   build/native/auxiliary/unruly-trace > <this dir>/__fixtures__/unruly-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/unruly-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { describe, expect, it } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

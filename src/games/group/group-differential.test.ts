@@ -9,11 +9,10 @@
  * the solver's every deduction, the group data table and the codec together —
  * the strongest available bar (playbook §4.3/§4.4, design D8).
  *
- * Regenerate the fixture from `puzzles/auxiliary/group-trace.c` (pure-C):
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make group-trace)
- *   build/native/auxiliary/group-trace \
- *     > src/native/games/group/__fixtures__/group-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/group-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 
 import { describe, expect, it } from "vitest";

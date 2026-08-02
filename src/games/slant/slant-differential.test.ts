@@ -11,10 +11,10 @@
  *  3. The TS solver solves the C-generated board uniquely at the recorded
  *     difficulty, and a Hard board is NOT solvable one level down.
  *
- * Regenerate the fixture (while slant.c still exists) with:
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make slant-trace)
- *   build/native/auxiliary/slant-trace > <this dir>/__fixtures__/slant-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/slant-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";

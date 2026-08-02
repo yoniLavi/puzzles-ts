@@ -13,8 +13,10 @@
  * unrecoverable. Production still gets the unchanged "import populates the
  * registry" behaviour from the module-load call at the bottom.
  *
- * Until a game is registered the registry is empty and production is the
- * unchanged all-WASM path (see `ts-engine` spec).
+ * A game absent from here cannot be played at all: `retire-c-engine` removed
+ * the C/WASM fallback an empty registry used to mean, and
+ * `catalog-registry.test.ts` now asserts the registry and the catalog are the
+ * same set of games in both directions.
  */
 
 import { registerGame } from "../engine/registry.ts";

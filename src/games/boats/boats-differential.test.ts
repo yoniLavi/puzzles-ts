@@ -15,12 +15,10 @@
  * `Dsf` root choice that `checkDsf` reads as an element, and the codec, all at
  * once (design D6, playbook §4.4).
  *
- * Regenerate the fixture while puzzles/unreleased/boats.c still exists:
- *   rm -rf build/native
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make boats-trace)
- *   build/native/auxiliary/boats-trace \
- *     > src/native/games/boats/__fixtures__/boats-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/boats-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

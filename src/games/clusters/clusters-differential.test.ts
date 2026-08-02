@@ -9,16 +9,10 @@
  * for the same seed — which validates the generator, the solver AND the
  * run-length codec all at once (playbook §4 intro).
  *
- * The fixture is a frozen snapshot — both `puzzles/unreleased/clusters.c` and
- * `puzzles/auxiliary/clusters-trace.c` are deleted in the same change that
- * flips the TS port to TS_PORTED (per-game C-deletion doctrine). To
- * regenerate before that deletion:
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   make -C build/native clusters-trace
- *   ./build/native/auxiliary/clusters-trace \
- *     > src/native/games/clusters/__fixtures__/clusters-c-reference.json
- * (`-DUSE_TS_RANDOM=0` restores the C `random.c`, which the umbrella default
- * drops.) After deletion, recover the harness from git history.
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/clusters-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

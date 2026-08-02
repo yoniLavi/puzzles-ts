@@ -7,10 +7,10 @@
  * difficulty the C solver recorded. Faithful generation + a faithful solver
  * verdict — the strongest available bar (playbook §4.3/§4.4).
  *
- * Regenerate the fixture from `puzzles/auxiliary/unequal-trace.c` (pure-C):
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make unequal-trace)
- *   build/native/auxiliary/unequal-trace > __fixtures__/unequal-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/unequal-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 
 import { describe, expect, it } from "vitest";

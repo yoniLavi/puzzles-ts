@@ -15,10 +15,11 @@
  *   1. the point is strictly inside its face, and
  *   2. the circle it admits is as large as the C's, to within a tolerance.
  *
- * The C side comes from `__fixtures__/grid-incentre-c-reference.json`
- * (regenerate with `build/native/auxiliary/grid-trace --incentres`) — a
- * separate fixture from the incidence differential's `grid-c-reference.json`,
- * which stays a byte-match check and must not be perturbed by this one.
+ * The C side comes from `__fixtures__/grid-incentre-c-reference.json`, frozen,
+ * captured by `puzzles/auxiliary/grid-trace --incentres` before
+ * `retire-c-engine` deleted the C and the build that ran it. It is a separate
+ * fixture from the incidence differential's `grid-c-reference.json`, which
+ * stays a byte-match check and must not be perturbed by this one.
  *
  * The point-in-polygon and distance-to-boundary routines below are written
  * **independently of the implementation's own**, so a bug shared between them

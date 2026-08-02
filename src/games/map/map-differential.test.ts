@@ -8,11 +8,10 @@
  *   1. `newMapDesc(p, randomNew(seed))` reproduces the C desc AND aux exactly;
  *   2. the TS solver grades the decoded board at the C-recorded difficulty.
  *
- * Regenerate the frozen fixture while puzzles/map.c still exists:
- *   cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0
- *   (cd build/native && make map-trace)
- *   build/native/auxiliary/map-trace \
- *     > src/native/games/map/__fixtures__/map-c-reference.json
+ * The fixture is **frozen and cannot be regenerated**. It was captured by
+ * `puzzles/auxiliary/map-trace.c` against upstream's C, under an
+ * Emscripten/CMake build that `retire-c-engine` deleted along with the
+ * sources and the harness — see `engine/testing/differential.ts`.
  */
 
 import { describe, expect, it } from "vitest";
