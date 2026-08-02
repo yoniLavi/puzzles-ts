@@ -12,7 +12,7 @@ import { Midend } from "./midend.ts";
 import type { ChangeNotification, Colour } from "./types.ts";
 
 /** Recording fake `GameDrawing` for engine-level redraw assertions —
- * mirrors `src/native/games/flip/flip.test.ts`'s helper. */
+ * mirrors `src/games/flip/flip.test.ts`'s helper. */
 function recordingDrawing() {
   const ops: Array<{
     op: string;

@@ -14,7 +14,7 @@
  * differences, by an independent parse of the `puzzle()` calls.
  *
  * Adding a game means adding it here AND registering it in
- * `src/native/games/index.ts`; `catalog-data.test.ts` and
+ * `src/games/index.ts`; `catalog-data.test.ts` and
  * `ts-ported-ids.test.ts` hold the two lists to each other.
  */
 

@@ -35,7 +35,7 @@ function allPresetParams(game: AnyGame): unknown[] {
 /**
  * Replicate the worker adapter's `decodeCustomParams` config base: a generic
  * `width`/`height` from `w`/`h` params, then the game's own `describeParams`
- * spread over it (`src/native/engine/worker-adapter.ts`).
+ * spread over it (`src/puzzle/worker-adapter.ts`).
  */
 function configFor(game: AnyGame, p: unknown): ConfigValues {
   const rec = p as Record<string, unknown>;

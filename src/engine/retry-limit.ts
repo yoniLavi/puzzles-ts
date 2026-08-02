@@ -1,7 +1,7 @@
 /**
  * Bounded "generate until it works" retries.
  *
- * WHY EVERY SUCH LOOP NEEDS A BOUND. Generators under `src/native/` are purely
+ * WHY EVERY SUCH LOOP NEEDS A BOUND. Generators under `src/games/` are purely
  * synchronous, so a retry loop that never succeeds owns its thread outright:
  * `testTimeout` is a `setTimeout` on the blocked loop and cannot fire, and
  * vitest's pool shutdown is IPC-driven, so the worker never reads "exit"
