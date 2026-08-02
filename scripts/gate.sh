@@ -4,10 +4,11 @@
 #
 # Order and semantics:
 #   1. Fast fail-fast prefix — `tsc -b --noEmit`, then biome (lint + format +
-#      import order). A type, lint, or formatting error fails here in seconds
-#      without spending the heavy branches. The biome scope is per-commit
-#      (staged files, when the hook sets GATE_BIOME_STAGED=1) or whole-tree
-#      (CI / manual `npm run gate`) — see the branch below.
+#      import order), then the probe-anchor check (~0.2s). A type, lint,
+#      formatting or rotted-anchor error fails here in seconds without spending
+#      the heavy branches. The biome scope is per-commit (staged files, when the
+#      hook sets GATE_BIOME_STAGED=1) or whole-tree (CI / manual `npm run gate`)
+#      — see the branch below.
 #   2. Heavy checks — `vitest run` and `vite build`. They share no inputs or
 #      outputs, so on a machine with spare cores they run concurrently and the
 #      gate wall-clock is ~max(vitest, build) instead of their sum (~40s off the
@@ -72,6 +73,24 @@ if [ "${GATE_BIOME_STAGED:-}" = "1" ]; then
 else
   npx biome ci .
 fi
+
+# The local-feedback corpus still APPLIES — not its result. ~0.2s, no tests run.
+#
+# `scripts/feedback-probe-cases.mjs` anchors each case on a verbatim excerpt of
+# engine source, which is what lets a case name a real defect instead of a
+# mutation operator. It is also the corpus's one fragility: refactor a probed
+# line and the anchor stops matching. The harness then measures a SMALLER corpus
+# and reports success — a silent cap that reads as health — and since the full
+# run is ~20 minutes and deliberately opt-in, nothing else would ever notice.
+#
+# What is gated is only "every anchor applies". The probe's rate is NEVER gated
+# or ratcheted: a gated feedback number invites tests written against the number
+# rather than against behaviour, which is exactly what the repo-layout
+# requirement it serves forbids. A survivor is a finding to read.
+#
+# If this fails, re-anchor the case on surrounding text — and take the prompt to
+# decide whether it still states the defect it claims to.
+node scripts/feedback-probe.mjs --verify
 
 # `nice` (weak on macOS but free insurance) is applied to BOTH heavy branches,
 # so the gate yields to whatever else the developer is running rather than

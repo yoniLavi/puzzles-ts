@@ -266,4 +266,13 @@ function main() {
   }
 }
 
-main();
+// A failing anchor is an ordinary, expected outcome — a refactor moved a probed
+// line — and this check runs in the commit gate, so it reports like a gate
+// failure rather than like a crash. A node stack trace here would bury the one
+// line the developer needs (which case, and what to do about it).
+try {
+  main();
+} catch (e) {
+  console.error(`\n✗ feedback-probe: ${e instanceof Error ? e.message : e}`);
+  process.exit(1);
+}
