@@ -91,6 +91,49 @@ describe("Dsf", () => {
     expect(d.equivalent(4, 5)).toBe(false);
   });
 
+  // The tests above merge only equal-sized classes, so they never take the
+  // `classSize[ra] > classSize[rb]` branch, and the brute-force property test
+  // below compares class *membership* rather than roots or sizes. Both halves
+  // of the union-by-size rule were therefore unasserted — and the root choice
+  // is not an implementation detail here: `merge`'s doc comment records that
+  // upstream algorithms branch on the canonical root's *identity* (Filling's
+  // `learn_critical_square` walks a region from its canonical cell), so it is
+  // required for differential parity, not just for connectivity.
+  it("makes the larger class the root, whichever argument it arrived as", () => {
+    for (const [big, small] of [
+      [0, 2],
+      [2, 0],
+    ] as const) {
+      const d = new Dsf(4);
+      d.merge(0, 1); // {0,1}: a tie, so the second argument's root (1) wins
+      expect(d.canonify(0)).toBe(1);
+      d.merge(big, small); // {0,1} (size 2) against {2} (size 1)
+      expect(d.canonify(2)).toBe(1);
+      expect(d.size(2)).toBe(3);
+    }
+  });
+
+  it("breaks a size tie toward the second argument's root, as upstream does", () => {
+    const d = new Dsf(4);
+    d.merge(0, 1); // root 1
+    d.merge(2, 3); // root 3
+    d.merge(1, 3); // two classes of 2: the tie goes to the second argument
+    expect(d.canonify(0)).toBe(3);
+    expect(d.size(0)).toBe(4);
+  });
+
+  it("accumulates the class size on both sides of the union-by-size branch", () => {
+    // Grow a class one element at a time so every merge takes the
+    // *larger-is-root* branch, the one the tests above never reach.
+    const d = new Dsf(6);
+    d.merge(0, 1);
+    for (let i = 2; i < 6; i++) {
+      d.merge(d.canonify(0), i); // larger class first
+      expect(d.size(0)).toBe(i + 1);
+    }
+    expect(d.size(5)).toBe(6);
+  });
+
   it("reinit restores n singletons", () => {
     const d = new Dsf(5);
     d.merge(0, 1);

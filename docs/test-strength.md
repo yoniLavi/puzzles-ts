@@ -15,7 +15,8 @@ give feedback where the code lives") and
 cost is proportional to what it protects"). This is the followable *how*.
 
 Provenance: everything below was measured, most of it in
-`2026-08-02-audit-test-suite-strength` (2,168 mutants, 398 minutes) and
+`2026-08-02-audit-test-suite-strength` (2,168 mutants, 398 minutes),
+`2026-08-02-strengthen-engine-test-feedback` (the local-feedback probe) and
 `2026-08-01-right-size-the-test-gate`.
 
 ---
@@ -26,23 +27,42 @@ Provenance: everything below was measured, most of it in
 | --- | --- | --- |
 | **coverage** | is this line executed? | line coverage — and it is the least interesting |
 | **strength** | would a wrong answer here be *noticed*? | mutation: change the line, see if anything fails |
-| **feedback** | noticed **by what**, and how soon? | which test file killed it |
+| **feedback** | noticed **by what**, and how soon? | break the line, run *only* the module's own tests |
 
-The collection is strong on the first two and weak on the third. Measured over
-the seven highest-leverage engine modules:
+The collection is strong on the first two, and the third is the one worth
+measuring deliberately — because this repository's test-run economy tells you to
+run the files you touched and let the commit hook be the single full run. Applied
+to a module whose local tests cannot see its defects, that advice returns green
+on a broken module during exactly the refactoring the tests exist to make safe.
 
-| module | survivors | killed by its **own** test file |
+Measured with `npm run probe` (§2a), over 72 hand-chosen real defects — and the
+whole exercise cost **+49 tests for +4.9 s of gate CPU**, with wall clock
+unchanged:
+
+| module | before | after |
 | --- | --- | --- |
-| `grid.ts` | **0** / 40 | **1 / 40 (3%)** |
-| `latin.ts` | 117 / 944 | **9 / 593 (2%)** |
-| `midend.ts` | 122 / 741 | 208 / 531 (39%) |
-| `border-grid.ts` | 51 / 259 | 150 / 168 (89%) |
+| `latin.ts` | 5/15 (33%) | 14/14 (100%) |
+| `midend.ts` | 7/20 (35%) | 20/20 (100%) |
+| `wires.ts` | 2/4 (50%) | 4/4 (100%) |
+| `dsf.ts` | 3/5 (60%) | 5/5 (100%) |
+| `border-grid.ts` | 5/7 (71%) | 6/6 (100%) |
+| `grid.ts`, `save.ts`, `deduction-fixpoint.ts`, `divvy.ts`, `symmetric-blacks.ts` | 100% | 100% |
 
-`grid.ts` has **zero** surviving mutants and is killed by its own tests once in
-forty. It is fully protected and almost silent. That combination is the dangerous
-one here, because this repository's test-run economy tells you to run the files
-you touched and let the commit hook be the single full run — advice that returns
-green on a broken module when local kills are 2%.
+> ### The number this table replaced was an artefact — read §7 first
+>
+> The audit reported a **"killed by its own test file"** column from Stryker's
+> `killedBy`, and it ranked `grid.ts` at 3% and `latin.ts` at 2%. Both were
+> wrong, in opposite directions. **Stryker bails the test run on the first
+> failure**: all 1,437 killed mutants in that report have exactly *one* entry in
+> `killedBy`, so the column records which covering test happened to run **first**.
+> Vitest orders files roughly alphabetically, so `grid.ts` scored 1/40 because
+> `grid-aperiodic-differential.test.ts`, `grid-desc.test.ts` and
+> `grid-incentre.test.ts` all sort ahead of `grid.test.ts`.
+>
+> Measured properly, `grid.ts` catches **6 of 6** — deleting its `case "cairo":`
+> arm fails nine of its own tests in 1.5 s — and the genuinely worst module was
+> `midend.ts`, which the artefact had rated *mid-table* at 39%. **The correction
+> reversed the work order the change was scoped around.**
 
 **So "well covered" is not the finish line. Ask where the failure would appear,
 and how long after the mistake.**
@@ -84,6 +104,41 @@ n=$(grep -c "$ANCHOR" "$FILE")
 [ "$n" -eq 1 ] || { echo "EDIT NOT APPLIED ($n matches) — not a result"; exit 1; }
 ```
 
+## 2a. `npm run probe` — the cheap probe, kept
+
+The §2 loop, as a committed corpus rather than a thing you retype. Runner:
+[`scripts/feedback-probe.mjs`](../scripts/feedback-probe.mjs); cases:
+[`scripts/feedback-probe-cases.mjs`](../scripts/feedback-probe-cases.mjs).
+
+```sh
+npm run probe -- --verify        # every anchor still applies, ~0.2 s
+npm run probe                    # all 72 cases, ~15 min
+npm run probe -- latin midend    # substring-filtered
+```
+
+Each case is a **real defect with a sentence naming it** — not "conditional
+flipped" but *"a placed digit is no longer ruled out of its column"* — applied to
+the source, with only the module's own tests run against it. Four things it does
+that the ad-hoc version does not:
+
+- **Aborts if an anchor is missing or non-unique**, before running anything. This
+  fired on the very first run (a `catch` arm duplicated in `midend.ts`) and twice
+  more; each would otherwise have been a clean `SURVIVED` measuring nothing.
+- **Derives "own tests" mechanically** — every engine test file that *imports* the
+  module, minus the differentials. Hand-naming one file is the §7 unit mistake in
+  both directions: `grid-core.ts` is tested by `grid-trim.test.ts`, and
+  `midend.test.ts` alone is not the midend's tests either (save/load lives in
+  `save.test.ts`, prefs in `midend-prefs.test.ts` — eight files in all).
+- **Excludes `*-differential.test.ts` even when engine-local**, so a module cannot
+  score full marks on assertions it does not make.
+- **Carries `equivalent: true` cases with their argument**, excluded from the rate
+  rather than counted against it — and flags one that starts being *caught*,
+  which means the argument has expired under a code change.
+
+It is a diagnostic, **never a gate and never ratcheted**, the same standing as
+`npm run metrics` and `npm run mutation`. Adding a case is welcome; adding one
+because a module scores badly is score-chasing.
+
 ---
 
 ## 3. Writing a test that discriminates
@@ -102,6 +157,23 @@ found in this session's own new test files, each of which passed immediately:
 
 So: **flip the line the test is for, watch it go red, put it back.** Seconds of
 work, and the only thing separating an assertion from a decoration.
+
+### "The test passed" is not evidence the test *file* is well-formed
+
+Writing a "feed `decodeSave` some garbage" case put a literal **NUL byte** into
+`save.test.ts`. tsc compiled it, biome formatted it, the test went green, and
+`vite build` built. The only signal was `git diff --stat` printing
+`Bin 6264 -> 9595 bytes` — **git treats a file containing NUL as binary and stops
+diffing it**, so the change silently became unreviewable, which is far worse than
+the byte that caused it.
+
+`src/asset-integrity.test.ts` now forbids raw C0 controls in any `.ts` file under
+`src/`. Write deliberate garbage as escapes or a byte array
+(`Uint8Array.from([0x53, 0x41, 0x00, 0xff])`), never as a literal. And note the
+shape of the check itself: **it cannot contain a literal instance of what it
+forbids**, so it is a codepoint comparison rather than a character class — the
+regex form fails its own file, and escaping it trips
+`noControlCharactersInRegex`.
 
 ### Short-circuits hide whole guards
 
@@ -123,13 +195,23 @@ Some guarantees genuinely belong to a game's frozen differential rather than a
 local test: an RNG draw order, a region sizing that decides *which boards exist*.
 Restating those locally is impossible to do better and pointless to do worse.
 
-**But the boundary must be checked, not asserted.** In `symmetric-blacks.ts`,
-dropping the guard on `if (!rotate) rw += wodd` changes the 4-fold region size on
-an odd-width board — so it changes which boards exist without breaking any
-symmetry, and it survives every local test *by design*. Light Up's and Sticks'
-differentials fail on it. That was confirmed by running them against the
-mutation; the test file records the boundary so a later reader can place a new
-case on the right side of it.
+**But the boundary must be checked, not asserted.** Two worked examples, both
+verified by running the differential against the mutation rather than reasoning
+about it, and both recorded in the module's own test file so a later reader can
+place a new case on the right side of the line:
+
+- `symmetric-blacks.ts` — dropping the guard on `if (!rotate) rw += wodd` changes
+  the 4-fold region size on an odd-width board, so it changes which boards exist
+  without breaking any symmetry, and it survives every local test *by design*.
+  Light Up's and Sticks' differentials fail on it.
+- `latin.ts` — disabling `matching`'s DFS adjacency swap (`if (rs && …)` →
+  `false`) changes the RNG draw order and therefore every generated board. All 21
+  tests in `latin.test.ts` stay green; **34 assertions** fail across
+  `towers-differential.test.ts` and `singles-differential.test.ts`. A matching's
+  *cardinality* is order-independent, which is exactly why the local tests are
+  blind to it and right to be — they assert maximality against brute force, and a
+  test pinning a particular matching would break on any deliberate generator
+  change while proving nothing new.
 
 Conversely, when you extract logic into `src/native/engine/`, **write the tests
 in the same change**. Extraction moves the code but not its tests: the game's
@@ -156,6 +238,22 @@ survives *correctly*. That is class two, and the test file says so.
 Before calling anything dead, check it against `tighten-type-checking`'s finding:
 that change proved **all 53** of its "unreachable" branches were in fact live and
 the analysis wrong.
+
+**Chasing an equivalent mutant is worse than leaving it**, because the test you
+write to kill it asserts a mechanism rather than a claim. Two from the probe
+corpus, each argued rather than assumed:
+
+- `latin.ts`'s `row`/`col` ledgers are read in exactly one place — a guard that
+  *skips* an `elim` sweep over a line whose digit is already placed. Run anyway,
+  that sweep finds one candidate, sees the cell already filled, and returns 0. The
+  ledger is a scan-skipping optimisation with no behaviour of its own.
+- `border-grid.ts`'s `if (dir === 4) return null` is unreachable: the three masks
+  are not independent, so exactly one edge bit always survives.
+
+**And working out *why* a mutant is equivalent is worth doing even when nothing
+changes** — the second one had a comment claiming it rejected corner and centre
+clicks, which the module's own tie-break-at-a-tile-centre test already
+contradicted. The comment is now right.
 
 ---
 
@@ -188,6 +286,38 @@ Mutation cost is *derived* from suite cost, twice over — so
 `right-size-the-test-gate` cutting the suite by 53% CPU cut an identical dry run
 from 19m11s to 7m34s.
 
+### Timeouts are non-termination, not contention — and you can tell without re-running
+
+346 of the 2,168 mutants (16%) timed out, 227 of them in `latin.ts`. Stryker
+scores a timeout as *killed*, so the result is unaffected, but whether they are
+genuine infinite loops or artefacts of a loaded box decides whether a large share
+of 398 minutes was wasted. The report already answers it:
+
+| module | timeout rate | loops per 100 lines | covering set |
+| --- | --- | --- | --- |
+| `dsf.ts` | **46%** | 3.1 | tiny |
+| `latin.ts` | 24% | **7.5** | the latin games |
+| `deduction-fixpoint.ts` | 21% | 1.4 | five consumers |
+| `border-grid.ts` | 14% | 1.5 | two games |
+| `midend.ts` | 6% | 0.8 | ~the whole suite |
+| `save.ts` | **0%** | **0** | small |
+| `grid.ts` | **0%** | **0** | grid tests |
+
+Two things fall out, and they point the same way. **The two modules with no loop
+at all had exactly zero timeouts across 125 mutants** — a type guard and a switch
+cannot fail to terminate however loaded the box is. And the rate runs *inversely*
+to covering-set size: `midend.ts`, whose covering set is essentially the whole
+suite and which therefore takes longest per mutant, times out least. Contention
+predicts the opposite. The mutator mix agrees — `UpdateOperator` (an `i++` turned
+`i--`) and `BlockStatement` (an emptied loop body) are a third of `latin.ts`'s
+timeouts and are *definitionally* non-terminating inside a hand-rolled `while`.
+
+So the budget was spent on genuine infinite loops, which is the correct thing for
+a mutation run to spend it on, and **a re-run should be budgeted at the same
+~400 minutes rather than hoped to be faster on a quiet machine.** The lever that
+would actually move it is `timeoutMS`, and lowering it costs information (a slow
+survivor misreported as killed) rather than correctness.
+
 **Reading the report:** `mutation-shape.mjs` (in the archived audit) turns
 `metrics/mutation/report.json` into the per-module table and, more usefully,
 **survivor clusters by `(module, mutator)`**. 331 survivors walked in file order
@@ -200,8 +330,8 @@ be largely equivalent.
 ## 7. The rule that caught the most: check the instrument against something external
 
 **An instrument's unit of measurement is part of its correctness**, and you
-cannot verify it by re-reading your own reasoning. Six instances in one session,
-every one caught only by checking against something *outside* the tool:
+cannot verify it by re-reading your own reasoning. Eight instances across two
+changes, every one caught only by checking against something *outside* the tool:
 
 | instrument | wrong because | caught by |
 | --- | --- | --- |
@@ -211,13 +341,23 @@ every one caught only by checking against something *outside* the tool:
 | "modules with no test" | matched on **filename** | asking which tests *import* the module |
 | mutation report table | no column for `Ignored` | reading Stryker's published schema |
 | distilled report | flattened `location.start.line` | output below the fold I hadn't checked |
+| **"killed by its own test file"** | Stryker **bails on first failure**, so it names the first covering test, not the capable ones | every killed mutant having exactly *one* `killedBy` — then deleting a `case` arm and watching `grid.test.ts` fail alone |
+| **"the module's own test file"** | one file named after the module is not its tests | eight engine files import `midend.ts`; naming one reports a filing convention as a feedback hole |
 
-Two habits fall out. **Give a table a total and assert the columns sum to it** —
-then a status cannot vanish by omission. And **validate a parser against the real
+Three habits fall out. **Give a table a total and assert the columns sum to it** —
+then a status cannot vanish by omission. **Validate a parser against the real
 schema, not against a fixture you wrote from your own understanding of it** —
-that validates the understanding, not the parser.
+that validates the understanding, not the parser. And **before believing a
+derived metric, read what the tool documents it to mean**: `killedBy` is a field
+about Stryker's execution, and only a reading that assumed it meant "the tests
+capable of killing this" turned it into a ranking of modules.
 
 The most expensive of these was a caveat that was *too strong*: "836 static
 mutants went unevaluated", written into three files, when 831 of them had been
 tested and the real gap was five. An overstated caveat misleads exactly as much
 as a missing one.
+
+The most *consequential* was the last pair: they ranked `grid.ts` second-worst
+when it was perfect and `midend.ts` mid-table when it was worst, and a follow-up
+change was scoped and its spec written around that order before anyone measured
+it. **A number that survives into a proposal has still not been checked.**

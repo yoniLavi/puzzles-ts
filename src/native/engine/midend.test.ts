@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { ChangeNotification } from "../../puzzle/types.ts";
+import type { ChangeNotification, Colour } from "../../puzzle/types.ts";
+import { token } from "./colour-token.ts";
 import {
   type FakeDrawState,
   fakeGame,
@@ -259,6 +260,33 @@ describe("Midend status + solve", () => {
     expect(h.m.solve()).toBeUndefined();
     expect(h.state()?.status).toBe("solved-with-help");
   });
+
+  // The refusals a player can actually read. `canSolve`/`canHint` are the flags
+  // the app hides the buttons behind, but the midend must still answer
+  // correctly when something calls through anyway — a keyboard shortcut, a
+  // stale UI, a scripted replay — and answering `undefined` means "done", which
+  // would leave the board untouched and the player told it worked.
+  it.each([
+    [
+      "solving",
+      { ...fakeGame, canSolve: false },
+      (m: Midend<never, never, never, never, never>) => m.solve(),
+      "This game does not support solving",
+    ],
+    [
+      "hints",
+      { ...fakeGame, hint: undefined },
+      (m: Midend<never, never, never, never, never>) => m.hint(),
+      "This game does not support hints",
+    ],
+  ])("refuses %s on a game that does not implement it", (_what, game, call, message) => {
+    const h = harness(game as typeof fakeGame);
+    h.m.newGame();
+    const before = h.m.formatAsText();
+    expect(call(h.m as never)).toBe(message);
+    expect(h.m.formatAsText()).toBe(before);
+    expect(h.state()?.status).toBe("ongoing");
+  });
 });
 
 describe("Midend params + presets", () => {
@@ -287,10 +315,23 @@ describe("Midend params + presets", () => {
     expect(h.m.formatAsText()).toBe("count=1");
   });
 
-  it("newGameFromId rejects a malformed id", () => {
-    const m = new Midend(fakeGame);
-    expect(m.newGameFromId("nope")).toMatch(/Invalid game ID/);
-    expect(m.newGameFromId("t2:bad!")).toBe("bad desc");
+  // A game ID is user input — it arrives in a URL, a shared link, or a typed
+  // box — and the midend has a separate refusal for each way it can be wrong.
+  // Only the first two were tested; the params-decode and params-validate arms
+  // are the ones a *plausible* bad link hits (right shape, impossible values),
+  // and each returns a string the player reads.
+  it.each([
+    ["nope", /Invalid game ID/, "no separator at all"],
+    ["t2:bad!", /bad desc/, "a description the game rejects"],
+    ["zzz:g3-1", /Invalid parameters/, "params the game cannot decode"],
+    ["t0:g0-1", /target must be positive/, "params that decode but do not validate"],
+  ])("newGameFromId(%s) refuses %s", (id, expected) => {
+    const h = harness();
+    h.m.newGame();
+    const before = h.m.getParams();
+    expect(h.m.newGameFromId(id)).toMatch(expected);
+    // A refusal leaves the game it refused to replace untouched.
+    expect(h.m.getParams()).toBe(before);
   });
 
   it("random-seed id carries FULL params (difficulty), game id does not", () => {
@@ -323,6 +364,46 @@ describe("Midend params + presets", () => {
   });
 });
 
+// The three methods only the worker adapter calls, and which no test called at
+// all. Each is one line, which is exactly why they are easy to leave untested
+// and easy to break in a refactor of the thing they delegate to.
+describe("Midend palette + teardown (adapter-facing)", () => {
+  const withPalette = {
+    ...fakeGame,
+    colours: (bg: Colour) => [bg, token([0, 0, 0], [1, 1, 1]), [0.5, 0.5, 0.5]],
+  } as unknown as typeof fakeGame;
+
+  it("getColourPalette passes the frontend's background through to the game", () => {
+    // The background is an *input*: a game derives washes from it (the dark
+    // scheme relies on that, passing pure white so `background × 0.9` still
+    // works), so swallowing it would silently flatten every derived colour.
+    const m = new Midend(withPalette);
+    expect(m.getColourPalette([0.2, 0.4, 0.6])[0]).toEqual([0.2, 0.4, 0.6]);
+    expect(m.getColourPalette([1, 1, 1])[0]).toEqual([1, 1, 1]);
+  });
+
+  it("darkPalette reports only the indices whose token authored a dark value", () => {
+    // A token's `dark` is a non-index property, which structured clone drops on
+    // the way to the frontend — so it is read off here and sent as plain data.
+    // An *absent* index is meaningful: it means "adapt this by calculation",
+    // which is what lets the scheme be authored token by token.
+    const dark = new Midend(withPalette).darkPalette([1, 1, 1]);
+    expect(dark).toEqual({ 1: [1, 1, 1] });
+    expect(Object.hasOwn(dark, "0")).toBe(false);
+    expect(Object.hasOwn(dark, "2")).toBe(false);
+  });
+
+  it("delete drops the callbacks so a torn-down midend emits nothing", () => {
+    const h = harness();
+    h.m.newGame();
+    const emitted = h.notes.length;
+    h.m.delete();
+    h.m.processInput(0, 0, LEFT_BUTTON);
+    h.m.undo();
+    expect(h.notes.length).toBe(emitted);
+  });
+});
+
 describe("Midend.requestKeys forwards Game.requestKeys", () => {
   it("returns [] for a game with no requestKeys hook", () => {
     const m = new Midend(fakeGame);
@@ -344,6 +425,18 @@ describe("Midend.requestKeys forwards Game.requestKeys", () => {
 });
 
 describe("Midend timer", () => {
+  /** Mines is the real `isTimed` game; this is the same contract in miniature. */
+  const timedGame = { ...fakeGame, isTimed: true } as typeof fakeGame;
+  const clock = (h: ReturnType<typeof harness>) =>
+    /^\[(\d+):(\d\d)\]/.exec(
+      (
+        h.last("status-bar-change") as Extract<
+          ChangeNotification,
+          { type: "status-bar-change" }
+        >
+      ).statusBarText,
+    );
+
   it("an untimed game never activates the timer and timer() is inert", () => {
     const h = harness();
     h.m.newGame();
@@ -351,6 +444,32 @@ describe("Midend timer", () => {
     expect(h.timerActive()).toBe(false);
     // No status-bar churn from the inert tick beyond the newGame ones.
     expect(h.m.formatAsText()).toBe("count=0");
+  });
+
+  // The other half of the same predicate. `syncTimer` wants the clock running
+  // when *either* the game is timed or an animation is in flight, and the fake
+  // game does not animate — so with only the test above, the timed disjunct
+  // could be deleted and nothing would notice, on the one hook Mines' whole
+  // scoring rests on.
+  it("a timed game runs its clock while play is ongoing and stops when solved", () => {
+    const h = harness(timedGame);
+    h.m.newGame();
+    expect(h.timerActive()).toBe(true);
+
+    h.m.timer(65);
+    expect(clock(h)?.slice(1)).toEqual(["1", "05"]);
+
+    for (let i = 0; i < 3; i++) h.m.processInput(0, 0, LEFT_BUTTON); // reach the target
+    expect(h.state()?.status).toBe("solved");
+    expect(h.timerActive()).toBe(false);
+  });
+
+  it("a new game resets the clock", () => {
+    const h = harness(timedGame);
+    h.m.newGame();
+    h.m.timer(42);
+    h.m.newGame();
+    expect(clock(h)?.slice(1)).toEqual(["0", "00"]);
   });
 });
 
@@ -372,6 +491,22 @@ describe("Midend.size is purely informational (regression: ResizeObserver flicke
     m.newGame();
     return m;
   }
+
+  it("preferredSize is the game's own size at its preferred tile size", () => {
+    // The adapter asks for this before any layout exists, so it is the board's
+    // natural size — `computeSize(params, preferredTileSize)` and nothing else.
+    // Untested until now, and unlike `size()` it has no slot to be corrected
+    // against: whatever it answers is what the canvas is first made.
+    expect(midend().preferredSize()).toEqual({ w: 3 * 10, h: 10 });
+
+    const bigTiles = new Midend({ ...fakeGame, preferredTileSize: 24 });
+    bigTiles.setCallbacks(
+      () => {},
+      () => {},
+    );
+    bigTiles.newGame();
+    expect(bigTiles.preferredSize()).toEqual({ w: 3 * 24, h: 24 });
+  });
 
   it("expands past the preferred tile size to fill the slot (user size)", () => {
     const m = midend();

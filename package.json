@@ -22,7 +22,8 @@
     "test:shuffle": "vitest run --passWithNoTests --sequence.shuffle.files=true",
     "prepare": "husky",
     "metrics": "sh scripts/metrics.sh",
-    "mutation": "stryker run scripts/stryker.config.mjs"
+    "mutation": "stryker run scripts/stryker.config.mjs",
+    "probe": "node scripts/feedback-probe.mjs"
   },
   "dependencies": {
     "@awesome.me/webawesome": "^3.5.0",

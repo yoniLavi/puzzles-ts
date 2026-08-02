@@ -1,7 +1,8 @@
 /*
  * Static asset-integrity tests.
  *
- * Two failure modes these guard against:
+ * Three failure modes these guard against, sharing one shape: each is invisible
+ * to every other instrument in the gate, so it has to be asserted statically.
  *
  * 1. `new URL(<path>, import.meta.url)` references whose path no longer
  *    resolves to a real file/directory after the source file moves. Vite
@@ -12,6 +13,10 @@
  * 2. A puzzle present in the catalog without its corresponding generated
  *    icon PNGs in src/assets/icons/. Same masking risk, same fix: assert
  *    statically.
+ *
+ * 3. A raw control character in a `.ts` file. A NUL makes git call the file
+ *    binary and stop diffing it, so the change becomes unreviewable — and tsc,
+ *    biome and vitest all pass it happily.
  *
  * Implementation note: uses Vite's `import.meta.glob` (typed via
  * src/vite-env.d.ts) so the test stays inside the browser-shaped type
@@ -115,6 +120,52 @@ describe("new URL(..., import.meta.url) references resolve", () => {
         `${source}:${line}: file does not exist for ${rawPath} → ${resolvedPath}`,
       ).toBe(true);
     }
+  });
+});
+
+describe("no source file contains a control character git would call binary", () => {
+  // Found the hard way while writing a test that fed `decodeSave` some
+  // deliberate garbage: a literal NUL landed inside a string in the source.
+  // **Every existing instrument passed it** — tsc compiled it, biome formatted
+  // it, the test itself went green — and the only signal was `git diff --stat`
+  // reporting `Bin 6264 -> 9595 bytes`, because git treats a file containing NUL
+  // as binary and stops showing its diff. A file whose changes cannot be
+  // reviewed is a much bigger problem than the byte that caused it.
+  //
+  // NUL is the one git actually keys on; the other C0 controls are here because
+  // they are equally invisible in an editor and equally never intended. TAB (09),
+  // LF (0a) and CR (0d) are excluded — biome owns whitespace.
+  //
+  // Written as a codepoint scan rather than a character class, because **a check
+  // cannot contain a literal instance of what it forbids**: the regex form fails
+  // its own file unless escaped, and biome's `noControlCharactersInRegex` then
+  // objects to the escapes. Comparing numbers sidesteps both, with no
+  // suppression to explain away later.
+  const isForbidden = (c: number) =>
+    c <= 0x08 || c === 0x0b || c === 0x0c || (c >= 0x0e && c <= 0x1f);
+
+  it("finds source to scan (sanity)", () => {
+    expect(Object.keys(sourceModules).length).toBeGreaterThan(100);
+  });
+
+  // One sweep rather than an `it.each` per file: there are ~680 of them, and a
+  // per-file case would treble the suite's test count to say "no" 680 times.
+  it("scans every .ts file under src/", () => {
+    const offenders: string[] = [];
+    for (const [path, text] of Object.entries(sourceModules)) {
+      for (let i = 0; i < text.length; i++) {
+        const c = text.charCodeAt(i);
+        if (!isForbidden(c)) continue;
+        offenders.push(
+          `src/${path.slice(2)}: U+${c.toString(16).padStart(4, "0")} at offset ${i}`,
+        );
+        break;
+      }
+    }
+    expect(
+      offenders,
+      `${offenders.join("\n")}\nWrite it as an escape (\\x00) or a byte array instead.`,
+    ).toEqual([]);
   });
 });
 
