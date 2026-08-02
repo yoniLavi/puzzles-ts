@@ -15,10 +15,10 @@
  * diff parallel per-clue arrays.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { BLUE, GREEN, RED } from "../../engine/colours.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { BLUE, GREEN, RED } from "../../engine/colour/colours.ts";
+import { CURSOR, clueDoneColour, ERROR, INK } from "../../engine/colour/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { CURSOR, clueDoneColour, ERROR, INK } from "../../engine/palette.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {
   COLUMN,

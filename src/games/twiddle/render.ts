@@ -6,16 +6,16 @@
  * `twiddle.c`'s `game_redraw` / `draw_tile` / `rotate` / `highlight_colour`.
  */
 
-import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
-import type { GameDrawing } from "../../engine/game.ts";
-import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
-import { INK } from "../../engine/palette.ts";
+import { INK } from "../../engine/colour/palette.ts";
 import {
   twiddleCursorHigh,
   twiddleCursorLow,
   twiddleGentleHighlight,
   twiddleGentleLowlight,
-} from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette-games.ts";
+import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
+import type { GameDrawing } from "../../engine/game.ts";
+import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
 import type { TwiddleParams, TwiddleState, TwiddleUi } from "./state.ts";
 

@@ -241,7 +241,7 @@ per-BFS-node neighbour shuffle reproduce C's draws, so a generator built on it i
 byte-match portable). Ported for Magnets; Dominosa reuses it when ported (so
 `puzzles/laydomino.c` stays until then, like `random.c`),
 [`sorted-multiset.ts`](../../src/engine/sorted-multiset.ts),
-[`colour-mkhighlight.ts`](../../src/engine/colour-mkhighlight.ts),
+[`colour-mkhighlight.ts`](../../src/engine/colour/colour-mkhighlight.ts),
 [`pointer.ts`](../../src/engine/pointer.ts),
 [`params.ts`](../../src/engine/params.ts),
 [`wires.ts`](../../src/engine/wires.ts) — the shared **Net/Netslide
@@ -250,13 +250,13 @@ with `v`/`h` barriers, the spanning-tree grower over `sorted-multiset`, barrier
 placement, and the `computeActive` power flood). Wire bits `0x0F` only — each
 game owns the high bits (`0x10` collides: Netslide `FLASHING`, Net `LOCKED`).
 Extracted from Netslide when Net became the second consumer),
-[`grid.ts`](../../src/engine/grid.ts) — the shared **planar-grid geometry**
+[`grid/index.ts`](../../src/engine/grid/index.ts) — the shared **planar-grid geometry**
 leaf (upstream `grid.c`): `Grid`/`GridFace`/`GridEdge`/`GridDot` with reference
 incidence (an edge holds its two dots + two faces, a null face = the infinite
 exterior; faces/dots carry clockwise edge/face rings) and the shared
 `makeConsistent` incidence builder. Split into `grid-core.ts` (structures +
 `makeConsistent`), `grid-tilings*.ts` (generators) and `grid-geometry.ts` (the
-float helpers) — **import the `grid.ts` barrel, not the parts**. Landed
+float helpers) — **import the `grid/index.ts` barrel, not the parts**. Landed
 square-only with Pearl; `extend-grid-tilings` added **all 14 periodic tilings**
 plus `gridComputeSize`, `gridValidateParams`, `gridNearestEdge` and
 `gridFindIncentre` for Loopy; `add-aperiodic-tilings` completed the set at
@@ -295,7 +295,7 @@ when `n === 1` is the obvious optimisation and it desynchronises the stream,
 yielding a different — entirely valid, entirely plausible-looking — tiling with
 nothing asserting. The same rule forbids "fixing" weight constants that look
 wrong (hat's `starting_hats` uses `PROB_P` for its `TT_T` entry): they are what
-the C draws against. This generalises past `grid.ts` to **any** port whose
+the C draws against. This generalises past `grid/index.ts` to **any** port whose
 generator must match a seed,
 Landed with Pearl,
 [`loopgen.ts`](../../src/engine/loopgen.ts) — `generateLoop(g, board, rng, bias?)`,
@@ -757,7 +757,7 @@ protocol is spelled out in its module header).
 reference into the collection's colour table, or a call to a shared function from
 it. Three layers, three import paths, and which one you reach for is the decision:
 
-- [`engine/palette.ts`](../../src/engine/palette.ts) — **the meanings**,
+- [`engine/palette.ts`](../../src/engine/colour/palette.ts) — **the meanings**,
   and your default. `ERROR`, `HINT_ACTION`, `HINT_FILL`, `HINT_EVIDENCE`,
   `CURSOR`, `HELD`, `DRAG_ADD`/`DRAG_REMOVE`, `UNDECIDED`, `GRID_MID`,
   `GRID_DARK`, `PENCIL_BODY`, `INK`, `PAPER`, plus the background-derived
@@ -765,11 +765,11 @@ it. Three layers, three import paths, and which one you reach for is the decisio
   `lineNoColour`, `clueDoneColour`, `wallColour`, `correctRegionColour`. Each is a
   **reference** to a named colour, so restyling red restyles every meaning built
   on red.
-- [`engine/colours.ts`](../../src/engine/colours.ts) — **the palette
+- [`engine/colours.ts`](../../src/engine/colour/colours.ts) — **the palette
   itself**: twelve names (`RED` … `PINK`, `GREY`, `BROWN`, `BLACK`, `WHITE`), most
   at three intensities (`BLUE`, `BLUE_WASH`, `BLUE_BOLD`), plus the sets `TEN`,
   `TEN_NAMES`, `EIGHT_FILLS`, `FOUR_FILLS`.
-- [`engine/palette-games.ts`](../../src/engine/palette-games.ts) — colours
+- [`engine/palette-games.ts`](../../src/engine/colour/palette-games.ts) — colours
   your game defines **relative to its own board**, prefixed with its id
   (`slantGrid`, `undeadGhost`). Functions, not values.
 
@@ -806,7 +806,7 @@ collection got to 190.
 `mkhighlightSpecific(UNRULY_BLACK)`. Do not open-code `bg[0] * 0.9` in your game:
 it is the same colour decision written as arithmetic, and it puts the decision
 somewhere a scheme cannot reach. The derived form matters more than it looks —
-`puzzle-view.ts` hands a game **pure white** as its background in dark mode, so a
+`puzzle/components/view.ts` hands a game **pure white** as its background in dark mode, so a
 colour that must stay legible *against the board* has to be a function of the
 background, not a fixed pale value (the Spokes `COL_DONE` note below is this
 rule's failure mode). The converse also holds: a colour that is *absolute* should
@@ -844,10 +844,10 @@ it is fighting a decision. Four such entries were retired when the palette was
 authored; check yours is not the fifth.
 
 **What enforces all of this**:
-[`palette-source.test.ts`](../../src/engine/palette-source.test.ts) reads
+[`palette-source.test.ts`](../../src/engine/colour/palette-source.test.ts) reads
 your game's source and fails on a colour literal, on channel-indexing the
 background, on importing the colour combinators, and on importing another game's
-token. [`colours.test.ts`](../../src/engine/colours.test.ts) measures the
+token. [`colours.test.ts`](../../src/engine/colour/colours.test.ts) measures the
 palette — every set that has to stay distinguishable, in both schemes, against the
 number upstream's hand-written set scored — and `palette.test.ts` checks that no
 meaning has quietly become a colour of its own. If you are adding a three-number
@@ -865,7 +865,7 @@ those overrides. Keep the `colours()` array index-for-index with the upstream `e
 [`unruly/render.ts`](../../src/games/unruly/render.ts).
 
 **Highlight/lowlight from a fixed base, not the background.** The existing
-[`mkhighlight(bg)`](../../src/engine/colour-mkhighlight.ts) derives its trio
+[`mkhighlight(bg)`](../../src/engine/colour/colour-mkhighlight.ts) derives its trio
 from the *frontend background* and never extrapolates the base. A game that calls
 upstream `game_mkhighlight_specific` on a **fixed** base colour (Unruly's near-white
 `COL_0` = 0.95 grey, dark `COL_1` = 0.2 grey) needs **`mkhighlightSpecific(base)`**
@@ -879,7 +879,7 @@ grey, with only a dot marking "white"), give each determined state its own fill 
 the player reads the board at a glance — Range now paints a known-white cell (a clue
 or a white mark) pure white via a dedicated `COL_WHITEBG`, leaving only undecided
 cells grey. Derive the white from
-[`colour-mkhighlight.ts`](../../src/engine/colour-mkhighlight.ts): it shifts
+[`colour-mkhighlight.ts`](../../src/engine/colour/colour-mkhighlight.ts): it shifts
 `COL_BACKGROUND` off pure white precisely so a pure-white cell stays
 distinguishable. Exemplar:
 [`range/render.ts`](../../src/games/range/render.ts).
@@ -888,7 +888,7 @@ distinguishable. Exemplar:
 both schemes.** Spokes fills a hub whose clue is satisfied with pure white
 (`COL_DONE`), which upstream's own frontends show against a grey background. Here
 it reads as nothing in light mode and as *literally the background* in dark mode,
-because `puzzle-view.ts` deliberately hands the game **pure white** as its
+because `puzzle/components/view.ts` deliberately hands the game **pure white** as its
 background there (so that puzzles' `background × 0.9` derivations still work) and
 then adapts the returned palette itself. A cue that has to be seen must be a clear
 step **away** from the background — `defaultBackground × 0.85` is enough, and greys
@@ -905,7 +905,7 @@ are the same control. Exemplars:
 one.** When a game highlights a region/area the player has correctly finished
 (the local-completion feedback Galaxies and Rectangles give — *not* a
 global-solution check), fill it with
-[`correctRegionColour(background)`](../../src/engine/palette.ts)
+[`correctRegionColour(background)`](../../src/engine/colour/palette.ts)
 (a neutral grey, `0.75 × background`, upstream Rectangles' `COL_CORRECT`
 convention), placed at a `COL_CORRECT` palette index. Reach for the shared
 constant rather than a per-game hue (a green invented for Separate/Palisade was
@@ -924,7 +924,7 @@ background is darker than the background and so vanishes; several upstream files
 even concede the problem in a comment (`loopy.c`: *"Except if the background is
 pretty dark already; then it ought to be a bit lighter. Oy vey."*). It is very
 tempting to make the derivation luminance-aware in the port. **Don't.**
-[`puzzle-view.ts`](../../src/puzzle/puzzle-view.ts) passes **pure white** as
+[`puzzle/components/view.ts`](../../src/puzzle/components/view.ts) passes **pure white** as
 `defaultBackground` in dark mode — precisely *because* puzzles multiply the
 background down — and then adapts the whole returned palette in OKLCH, with
 per-puzzle `darkMode.paletteOverrides` from
@@ -1276,7 +1276,7 @@ project a shipped bug — read them before writing a game's input, not after.
 
 ### 3.8a `MOD_NUM_KEYPAD` never arrives — bind the bare digits too
 
-**This web frontend does not set `MOD_NUM_KEYPAD`.** `puzzle-view-interactive.ts`'s
+**This web frontend does not set `MOD_NUM_KEYPAD`.** `puzzle/components/view-interactive.ts`'s
 `puzzleKeyMap` handles the arrow/select/delete keys and then falls through to "any
 single character → its char code", so a number-pad `7` reaches `interpretMove` as the
 plain character `'7'`, never as `MOD_NUM_KEYPAD | '7'`. A port that faithfully
@@ -1308,7 +1308,7 @@ Inertia does the same for its route-following with `CURSOR_SELECT`/`SELECT2`.
 
 ### 3.8b Touch: the midend strips `MOD_STYLUS` for you (and a guard proves it)
 
-`puzzle-view-interactive.ts` ORs **`MOD_STYLUS` (0x0800)** into the button for every
+`puzzle/components/view-interactive.ts` ORs **`MOD_STYLUS` (0x0800)** into the button for every
 press, drag and release whose `pointerType` is `touch` or `pen`. Upstream's `midend.c`
 hands that bit straight to `interpret_move` and expects each game to strip it
 (`net.c` does; `inertia.c` doesn't). **Nine of this collection's first thirty-two
@@ -2577,6 +2577,19 @@ move, so two save formats stay uncoupled. And note the trap — the first cut
 re-exported the vocabulary through each game's `state.ts`, which recreated the
 clone as two identical re-export blocks. Import shared things from where they
 live.
+
+**And it lands *flat* in `src/engine/`, unless it joins one of the two families.**
+The engine is deliberately a flat namespace of independent helpers — `shuffle`,
+`retry-limit`, `step-budget`, `border-grid` — because a grouping that has to be
+argued for gets re-litigated at every addition, and files then land wherever the
+last argument ended. Exactly two subdirectories exist, and both earn it by the
+same property: **their members have no readership apart from each other.**
+`engine/grid/` (the builders, geometry, descriptions, trimming and the aperiodic
+`tilings/` — import the `grid/index.ts` barrel, not the parts) and
+`engine/colour/` (`colours.ts` the palette, `palette.ts` the meanings,
+`palette-games.ts` the board-relative per-game colours). The test for a third:
+*would a reader looking for this file know to look there without being told?* If
+the answer needs the rationale explained, leave it flat.
 
 **Module layering is enforced** by `src/module-layering.test.ts`: no game
 imports another game (shared behaviour goes in `src/engine/`), the engine

@@ -13,16 +13,16 @@
  * (dark-mode `paletteOverrides` in augmentation.ts target indices 0/3/4).
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { BLACK, WHITE } from "../../engine/colours.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { BLACK, WHITE } from "../../engine/colour/colours.ts";
 import {
   DRAG_ADD,
   DRAG_REMOVE,
   ERROR,
   GRID_DARK,
   PAPER,
-} from "../../engine/palette.ts";
+} from "../../engine/colour/palette.ts";
+import type { GameDrawing } from "../../engine/game.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import { interpretUiDrag } from "./moves.ts";
 import {

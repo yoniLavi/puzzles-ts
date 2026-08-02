@@ -10,7 +10,7 @@
  * reference; it is not a control-flow transliteration.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import type { GamePref } from "../../engine/game.ts";
 import {
   fromCoord as fromCoordE,

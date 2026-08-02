@@ -22,10 +22,7 @@
  * erased reliably.
  */
 
-import { BLUE, PURPLE } from "../../engine/colours.ts";
-import { drawRectCorners } from "../../engine/draw.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { BLUE, PURPLE } from "../../engine/colour/colours.ts";
 import {
   ERROR,
   GRID_DARK,
@@ -34,8 +31,11 @@ import {
   HINT_EVIDENCE,
   INK,
   PAPER,
-} from "../../engine/palette.ts";
-import { spokesSatisfied } from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette.ts";
+import { spokesSatisfied } from "../../engine/colour/palette-games.ts";
+import { drawRectCorners } from "../../engine/draw.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
 import type { SpokesHint } from "./index.ts";
 import { SpokesScratch, spokesFindIsolated, spokesSolverRecount } from "./solver.ts";

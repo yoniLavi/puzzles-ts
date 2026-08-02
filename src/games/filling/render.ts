@@ -11,7 +11,6 @@
  * no `mkhighlightSpecific` is needed).
  */
 
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import {
   ERROR_WASH,
   HINT_EVIDENCE,
@@ -19,8 +18,9 @@ import {
   highlightWash,
   INK,
   playerEntryColour,
-} from "../../engine/palette.ts";
-import { fillingCorrect, fillingCursor } from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette.ts";
+import { fillingCorrect, fillingCursor } from "../../engine/colour/palette-games.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { FillingHint } from "./index.ts";
 import {

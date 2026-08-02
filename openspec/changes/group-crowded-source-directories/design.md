@@ -97,3 +97,99 @@ check is that the existing evidence is bit-identical:
   the pre-move rate. The rate is the only thing that would notice D2's silent
   failure, so this run is not optional for this change even though a full probe
   is ~15 minutes.
+
+---
+
+## Findings from implementation
+
+Recorded here rather than folded into D1–D5, so the design reads as it was
+decided and the surprises read as surprises.
+
+### F1. The probe's recursion is a correctness fix, not only a move-proofing one
+
+D2 framed the recursive walk as *surviving* the move. It does more than that:
+`random/`, `combi/`, `tilings/` and `testing/` were **already** nested, so the
+flat walk had been excluding their test files all along. Measured before and
+after, recursion adds exactly two edges, and both are right —
+`tilings/spectre.test.ts` is a local test of `grid` and `grid-core`, and
+`testing/render-scenario.test.ts` one of `border-grid`. The rate could not fall
+as a result (adding tests only adds catches), and it did not: **90/90 both
+sides**, all fourteen modules at 100%.
+
+The floor is 50 against 55 found, and it is checked in `--verify` rather than
+only in the full run — so it is in the commit gate, which is where a refactor
+that nests a module will actually be standing. Proved to fire before being
+trusted: forcing the walk flat gives `discovered only 46 engine test files,
+floor is 50`, exit 1.
+
+### F2. Matching import *position* is necessary and not sufficient
+
+`retire-native-directory`'s lesson was that a rewriter must match specifiers in
+import position, not "any quoted dotted string". Correct, and not enough — a
+file names its siblings in three ways that are not import statements, and they
+fail in three different directions:
+
+| construct | failure | what caught it |
+| --- | --- | --- |
+| `import.meta.glob("../games/**/*.ts")` | **silent** — an unmatched glob is `{}`, so assertions pass over nothing | the file's own `expect(sources.length).toBeGreaterThan(100)` |
+| `new URL("../assets/…", import.meta.url)` | loud | `asset-integrity.test.ts` |
+| depth-keyed arithmetic — `path.replace("../games/", "")` | silent, and *plausible* — leaves `../abcd/render.ts`, so the game id becomes `".."` | 28 downstream assertion failures, only after the glob was fixed |
+
+The third is the one to remember, because no string sweep can see it: the string
+it depends on is a *prefix length*, not a path. The fix is not to update the
+prefix but to remove the assumption — cut the key at `/games/` and **throw** when
+the match fails, which is right at any depth.
+
+### F3. Resolve-and-re-derive needs a "did this actually move?" guard
+
+The rewriter here maps each specifier to a repo path, through the move table, and
+back to a relative path. That is exact where prefix arithmetic is guesswork: it
+expresses `grid.ts` → `grid/index.ts`, and it correctly leaves `tilings/`'s
+`"../grid-core.ts"` untouched because importer and target moved together.
+
+But it also *normalises* specifiers that nothing invalidated — and normalising is
+a rewrite the prefix approach would never have attempted. It did so twice:
+
+- **Re-deriving a path** turned `import "../test-setup/icons.ts";` into
+  `"./icons.ts"` inside that file's own doc comment, where the line is
+  deliberately written from a **consumer's** perspective. Verify-by-shape caught
+  this one, because a doc-comment line is not an import line.
+- **Adding an extension.** The resolver tries `spec`, `spec.ts`, `spec/index.ts`,
+  so the seven files this repo had left extensionless (`"./store/settings"`,
+  `"./command-link"`, `"./icons"`, `"./types"`) came back with `.ts` appended.
+  Shape-checking cannot see this: they *are* import lines. What found them was
+  asking a different question of the finished diff — **which modified files do
+  not mention a moved path at all?** Seven, and all seven were reverted.
+
+One line fixes both (touch a specifier only when the target moved or the importer
+did). The second check is the reusable half: verify-by-shape proves *what kind of
+line* changed, and only a scope check proves *which files had any business
+changing*.
+
+### F4. Taking the baseline is what found the broken instrument
+
+D5 nominates `npm run diff` as the check most likely to notice a lost colour
+module. Running it *before* moving anything showed it had been failing `ENOENT`
+since **2026-08-01**: `colour-inventory.test.ts` wrote into
+`openspec/changes/consolidate-colour-palette/`, and `openspec archive` renames
+that directory. An advisory run reports rather than gates, so nothing said so.
+
+Output now lands in `metrics/colour-inventory.md`. The regenerated file is
+byte-identical to the archived copy, which is simultaneously the pre-move
+baseline and evidence the colour tree had not drifted in between.
+
+Generalised into `repo-layout`: **a tool must not write into a change directory**
+— `openspec archive` gives that path an expiry date built into the workflow.
+
+### F5. Small corrections to the scaffold's counts and lists
+
+- There is no `colour-token.test.ts`; the colour family has **four** test files,
+  not five.
+- `stryker.config.mjs` holds **one** grid path and `feedback-probe-cases.mjs`
+  two, not the 7 and 14 the proposal estimated.
+- `tilings/` needed no repointing at all — it moved *with* the family.
+- `contexts.ts` stays at `src/puzzle/` root: four files outside `components/`
+  consume the context token, so it is runtime vocabulary, not a component.
+- `border-grid.ts` stays flat. It is a different mechanic (the tri-state edges
+  Palisade and Separate share), and grouping it under `grid/` would say something
+  about it that is not true of how it is used — D1's own test, applied.

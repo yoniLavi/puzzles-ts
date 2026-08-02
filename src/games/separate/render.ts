@@ -21,9 +21,17 @@ import {
   DY,
   outOfBounds,
 } from "../../engine/border-grid.ts";
-import { correctRegionColour, mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import {
+  correctRegionColour,
+  mkhighlight,
+} from "../../engine/colour/colour-mkhighlight.ts";
+import {
+  ERROR,
+  INK,
+  lineMaybeColour,
+  lineNoColour,
+} from "../../engine/colour/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { ERROR, INK, lineMaybeColour, lineNoColour } from "../../engine/palette.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type {
   SeparateMistake,

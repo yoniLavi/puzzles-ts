@@ -20,7 +20,18 @@ import {
   RED,
   RED_BOLD,
   TEAL,
-} from "../../engine/colours.ts";
+} from "../../engine/colour/colours.ts";
+import {
+  ERROR,
+  ERROR_WASH,
+  GRID_MID,
+  INK,
+  PAPER,
+} from "../../engine/colour/palette.ts";
+import {
+  minesLowlight,
+  minesUnclearedFace,
+} from "../../engine/colour/palette-games.ts";
 import { fromCoord } from "../../engine/geometry.ts";
 import {
   type Game,
@@ -31,8 +42,6 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { ERROR, ERROR_WASH, GRID_MID, INK, PAPER } from "../../engine/palette.ts";
-import { minesLowlight, minesUnclearedFace } from "../../engine/palette-games.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,

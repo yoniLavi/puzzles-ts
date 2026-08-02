@@ -14,7 +14,7 @@
  * never need to erase generics (no `any`).
  */
 
-import { darkValue } from "./colour-token.ts";
+import { darkValue } from "./colour/colour-token.ts";
 import {
   type ActiveHint,
   type Game,

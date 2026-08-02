@@ -7,9 +7,9 @@
  * NARROW_BORDERS (the web build): `BORDER = 0`.
  */
 
-import { FOUR_FILLS } from "../../engine/colours.ts";
+import { FOUR_FILLS } from "../../engine/colour/colours.ts";
+import { ERROR, ERROR_TEXT, INK } from "../../engine/colour/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { ERROR, ERROR_TEXT, INK } from "../../engine/palette.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,

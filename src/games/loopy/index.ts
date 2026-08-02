@@ -25,8 +25,8 @@ import type {
   SolveResult,
   UiUpdate,
 } from "../../engine/game.ts";
-import type { GridDot, GridEdge } from "../../engine/grid.ts";
-import { gridNearestEdge } from "../../engine/grid.ts";
+import type { GridDot, GridEdge } from "../../engine/grid/index.ts";
+import { gridNearestEdge } from "../../engine/grid/index.ts";
 import {
   LEFT_BUTTON,
   MIDDLE_BUTTON,

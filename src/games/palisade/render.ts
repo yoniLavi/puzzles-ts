@@ -20,8 +20,10 @@ import {
   DY,
   outOfBounds,
 } from "../../engine/border-grid.ts";
-import { correctRegionColour, mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import {
+  correctRegionColour,
+  mkhighlight,
+} from "../../engine/colour/colour-mkhighlight.ts";
 import {
   ERROR,
   HINT_ACTION,
@@ -29,7 +31,8 @@ import {
   INK,
   lineMaybeColour,
   lineNoColour,
-} from "../../engine/palette.ts";
+} from "../../engine/colour/palette.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {
   bitcount,

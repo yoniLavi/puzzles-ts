@@ -9,10 +9,8 @@
  * Check & Save (`findMistakes`) get an inset error outline.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { GREY, ORANGE } from "../../engine/colours.ts";
-import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { GREY, ORANGE } from "../../engine/colour/colours.ts";
 import {
   CURSOR,
   ERROR,
@@ -22,7 +20,9 @@ import {
   HINT_WHITEREF,
   INK,
   PAPER,
-} from "../../engine/palette.ts";
+} from "../../engine/colour/palette.ts";
+import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { SinglesHint } from "./index.ts";
 import {

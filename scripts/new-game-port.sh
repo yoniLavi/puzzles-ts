@@ -119,7 +119,7 @@ cat > "${DIR}/index.ts" <<EOF
 
 import type { Colour, GameStatus, Size } from "../../../puzzle/types.ts";
 import type { Game } from "../../engine/game.ts";
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { RandomState } from "../../random/index.ts";

@@ -30,7 +30,7 @@
  * this; `dlines.test.ts` asserts it mechanically across all 18 tilings instead,
  * and was written **before** the solver that depends on it.
  */
-import type { Grid, GridDot, GridFace } from "../../engine/grid.ts";
+import type { Grid, GridDot, GridFace } from "../../engine/grid/index.ts";
 
 /** Number of dline slots a grid needs. */
 export function dlineCount(g: Grid): number {

@@ -12,6 +12,8 @@
  * not a control-flow transliteration.
  */
 
+import { CURSOR, HINT_ACTION, PAPER } from "../../engine/colour/palette.ts";
+import { flipGrid, flipWrongFace } from "../../engine/colour/palette-games.ts";
 import {
   dimensionParamConfig,
   fromCoord as fromCoordE,
@@ -22,8 +24,6 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { CURSOR, HINT_ACTION, PAPER } from "../../engine/palette.ts";
-import { flipGrid, flipWrongFace } from "../../engine/palette-games.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,

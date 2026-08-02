@@ -1,8 +1,8 @@
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { TEN, TEN_NAMES } from "../../engine/colours.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { TEN, TEN_NAMES } from "../../engine/colour/colours.ts";
+import { INK } from "../../engine/colour/palette.ts";
 import { drawRecessedBorder as drawBevel, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { INK } from "../../engine/palette.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import { fill } from "./solver.ts";
 import {

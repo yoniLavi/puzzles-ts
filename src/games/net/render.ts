@@ -12,10 +12,10 @@
  * edge has somewhere to draw its outline.
  */
 
-import { BLUE, RED, TEAL } from "../../engine/colours.ts";
+import { BLUE, RED, TEAL } from "../../engine/colour/colours.ts";
+import { ERROR, INK } from "../../engine/colour/palette.ts";
+import { netBorder, netLocked } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { ERROR, INK } from "../../engine/palette.ts";
-import { netBorder, netLocked } from "../../engine/palette-games.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
 import {
   anticlockwise,

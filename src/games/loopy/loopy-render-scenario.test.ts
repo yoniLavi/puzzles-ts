@@ -17,7 +17,7 @@
  * invalidates.
  */
 import { describe, expect, it } from "vitest";
-import { gridFindIncentre } from "../../engine/grid.ts";
+import { gridFindIncentre } from "../../engine/grid/index.ts";
 import { Midend } from "../../engine/midend.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";

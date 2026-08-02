@@ -24,8 +24,6 @@
  * cell still repaints when flagged (playbook §3.2).
  */
 
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import {
   ERROR,
   HINT_EVIDENCE,
@@ -35,8 +33,10 @@ import {
   PENCIL_BODY,
   pencilColour,
   playerEntryColour,
-} from "../../engine/palette.ts";
-import { soloKiller, soloXDiagonals } from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette.ts";
+import { soloKiller, soloXDiagonals } from "../../engine/colour/palette-games.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {

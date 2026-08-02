@@ -10,16 +10,16 @@
  * its own, so the first-draw branch fills the background explicitly.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { GREEN, RED } from "../../engine/colours.ts";
-import { drawRectOutline } from "../../engine/draw.ts";
-import type { GameDrawing } from "../../engine/game.ts";
-import { ERROR, INK } from "../../engine/palette.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { GREEN, RED } from "../../engine/colour/colours.ts";
+import { ERROR, INK } from "../../engine/colour/palette.ts";
 import {
   blackboxCover,
   blackboxGrid,
   blackboxLock,
-} from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette-games.ts";
+import { drawRectOutline } from "../../engine/draw.ts";
+import type { GameDrawing } from "../../engine/game.ts";
 import type { Colour, Point, Rect, Size } from "../../engine/types.ts";
 import {
   BALL_CORRECT,

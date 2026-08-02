@@ -13,8 +13,6 @@
  * overlay tracked in a sidecar so Check & Save repaints an already-drawn cell.
  */
 
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import {
   ERROR,
   HINT_EVIDENCE,
@@ -24,7 +22,9 @@ import {
   PENCIL_BODY,
   pencilColour,
   playerEntryColour,
-} from "../../engine/palette.ts";
+} from "../../engine/colour/palette.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {

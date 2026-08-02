@@ -6,8 +6,12 @@
  * over it: a clue per face, a line state per edge, and an error flag per edge.
  */
 import { Dsf } from "../../engine/dsf.ts";
-import type { Grid, GridType } from "../../engine/grid.ts";
-import { GridTrimmedAwayError, gridNew, gridValidateDesc } from "../../engine/grid.ts";
+import type { Grid, GridType } from "../../engine/grid/index.ts";
+import {
+  GridTrimmedAwayError,
+  gridNew,
+  gridValidateDesc,
+} from "../../engine/grid/index.ts";
 import { gridTypeOf, type LoopyParams } from "./params.ts";
 
 /**

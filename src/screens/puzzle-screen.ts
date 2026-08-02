@@ -4,8 +4,8 @@ import { query } from "lit/decorators/query.js";
 import { customElement, property, state } from "lit/decorators.js";
 import { showAlert } from "../dialogs/alert-dialog.ts";
 import { type PuzzleData, puzzleDataMap } from "../puzzle/catalog.ts";
+import type { PuzzleEvent } from "../puzzle/components/context.ts";
 import type { Puzzle } from "../puzzle/puzzle.ts";
-import type { PuzzleEvent } from "../puzzle/puzzle-context.ts";
 import { checkAndSave, quickLoadPuzzle } from "../puzzle/quick-save-actions.ts";
 import { helpUrl, homePageUrl } from "../routing.ts";
 import { savedGames } from "../store/saved-games.ts";
@@ -26,13 +26,13 @@ import "@awesome.me/webawesome/dist/components/radio-group/radio-group.js";
 import "@awesome.me/webawesome/dist/components/skeleton/skeleton.js";
 import "../components/dynamic-content.ts";
 import "../components/reference-panel.ts";
-import "../puzzle/puzzle-context.ts";
-import "../puzzle/puzzle-history.ts";
-import "../puzzle/puzzle-keys.ts";
-import "../puzzle/puzzle-type-menu.ts";
-import "../puzzle/other-puzzles-menu.ts";
-import "../puzzle/puzzle-view-interactive.ts";
-import "../puzzle/puzzle-end-notification.ts";
+import "../puzzle/components/context.ts";
+import "../puzzle/components/history.ts";
+import "../puzzle/components/keys.ts";
+import "../puzzle/components/type-menu.ts";
+import "../puzzle/components/other-puzzles-menu.ts";
+import "../puzzle/components/view-interactive.ts";
+import "../puzzle/components/end-notification.ts";
 
 // How often to show the warning for unfinished puzzles, in milliseconds.
 // (Maybe make this a setting: hourly, daily, weekly, never. Then default to 1 hour.)

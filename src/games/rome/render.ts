@@ -27,19 +27,19 @@
  * work, then adapts the returned palette itself (playbook §3.3).
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { BLUE, BLUE_BOLD } from "../../engine/colours.ts";
-import { drawRectOutline } from "../../engine/draw.ts";
-import type { GameDrawing } from "../../engine/game.ts";
-import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { BLUE, BLUE_BOLD } from "../../engine/colour/colours.ts";
 import {
   ERROR,
   ERROR_WASH,
   INK,
   pencilColour,
   playerEntryColour,
-} from "../../engine/palette.ts";
-import { romeGoalBackground } from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette.ts";
+import { romeGoalBackground } from "../../engine/colour/palette-games.ts";
+import { drawRectOutline } from "../../engine/draw.ts";
+import type { GameDrawing } from "../../engine/game.ts";
+import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { RomeMistake } from "./index.ts";
 import {

@@ -20,7 +20,7 @@
  * the index tie-break is essentially never reached.
  */
 
-import type { Grid, GridFace } from "./grid.ts";
+import type { Grid, GridFace } from "./grid/index.ts";
 import { type RandomState, randomBits, randomUpto } from "./random/index.ts";
 import { shuffle } from "./shuffle.ts";
 import { SortedMultiset } from "./sorted-multiset.ts";

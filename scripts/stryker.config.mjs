@@ -67,7 +67,7 @@ export default {
     "src/engine/deduction-fixpoint.ts",
     "src/engine/border-grid.ts",
     "src/engine/dsf.ts",
-    "src/engine/grid.ts",
+    "src/engine/grid/index.ts",
   ],
 
   ignoreStatic: true,

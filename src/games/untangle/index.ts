@@ -29,8 +29,9 @@
  *    of the per-game preferences hook this change adds.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { BLUE, BLUE_WASH, GREY, ORANGE, WHITE } from "../../engine/colours.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { BLUE, BLUE_WASH, GREY, ORANGE, WHITE } from "../../engine/colour/colours.ts";
+import { ERROR, INK, PAPER } from "../../engine/colour/palette.ts";
 import {
   type Game,
   parseConfigInt,
@@ -38,7 +39,6 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { ERROR, INK, PAPER } from "../../engine/palette.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,

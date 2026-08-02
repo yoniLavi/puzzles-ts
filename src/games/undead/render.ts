@@ -16,8 +16,6 @@
  * separate Check & Save mistake overlay.
  */
 
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import {
   clueDoneColour,
   ERROR,
@@ -27,12 +25,14 @@ import {
   INK,
   PAPER,
   PENCIL_BODY,
-} from "../../engine/palette.ts";
+} from "../../engine/colour/palette.ts";
 import {
   undeadGhost,
   undeadVampire,
   undeadZombie,
-} from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette-games.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {

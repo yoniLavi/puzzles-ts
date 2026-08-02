@@ -13,7 +13,7 @@
  * Written before the solver, deliberately (design D3a).
  */
 import { describe, expect, it } from "vitest";
-import { ALL_GRID_TYPES, type Grid, type GridType } from "../../engine/grid.ts";
+import { ALL_GRID_TYPES, type Grid, type GridType } from "../../engine/grid/index.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import {
   dlineCount,
