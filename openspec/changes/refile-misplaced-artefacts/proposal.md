@@ -6,7 +6,7 @@ Two directories hold committed non-code artefacts that their stated role does no
 cover, and in both cases the mismatch attaches the **wrong obligation** to the
 contents.
 
-### `docs/tilings/` — upstream's diagrams, in the directory that must be kept current
+### `docs/tilings/` — upstream's diagrams, which the code already routes around
 
 `docs/` has one spec'd purpose: *"Developer-facing prose guides (the how-to of
 porting and feature work, distinct from the /help in-app user docs) SHALL live
@@ -30,11 +30,19 @@ split is by authorship** — `help/upstream/` is verbatim upstream material with
 README pointing at the licence; everything else under `help/` is ours. The same
 rule, applied a second time, answers this cleanly.
 
-One more thing the survey turned up: the diagrams are referenced from **exactly
-one place in the entire repository** — a bullet in `AGENTS.md`. Neither `hat.ts`
-nor `spectre.ts` points at the construction diagrams that explain the tables they
-implement, so the material is effectively unreachable from the code it documents.
-Relocating it without fixing that would be moving an orphan.
+**And then checking who points at them settled it the other way: delete, don't
+move.** `hat.ts`'s own header already says *"Read Simon Tatham's write-up before
+this file — the algorithm is genuinely unobvious and the diagrams do not fit in a
+comment"* — and links the **live upstream URL**
+(`chiark.greenend.org.uk/~sgtatham/quasiblog/aperiodic-tilings/`), not the local
+copy. So the pointer a reader needs already exists, already works, and goes to
+the maintained source. The 564 KB in `docs/tilings/` is the thing nothing points
+at: its only reference in the entire repository is one bullet in `AGENTS.md`.
+
+Keeping a second, unreferenced copy of a document the code links to elsewhere is
+not preservation; it is a fork of someone else's page that no one will ever
+notice diverging. It is recoverable from git history and from upstream's own
+repository if a future session ever wants it offline.
 
 ### `metrics/` — a finished round's snapshots, reading as current measurement
 
@@ -63,14 +71,11 @@ into the archive with the work that consumed it.
 
 ## What Changes
 
-- **`docs/tilings/` → `docs/upstream/tilings/`**, mirroring the `help/upstream/`
-  authorship convention so one rule covers both: *a directory named `upstream/`
-  holds someone else's words, verbatim, and is not ours to keep current.* Its
-  README (which already states the provenance and the licence) moves with it.
-- **Link the diagrams from the code they document** — a pointer comment in
-  `src/engine/tilings/hat.ts` and `spectre.ts`. Without this the relocation moves
-  an orphan; with it, a reader of the kitemap tables can find the picture of what
-  they mean.
+- **Delete `docs/tilings/`** — 564 KB, 25 SVGs and two HTML pages, referenced
+  from one bullet in `AGENTS.md` and from nowhere in the code, duplicating a page
+  `hat.ts` already links by URL. Confirm `spectre.ts` carries the same pointer
+  `hat.ts` does, and add it if not: **the link is what is load-bearing, not the
+  copy.**
 - **Move the three dated metrics snapshots** under the archived changes that
   produced them, keeping each `summary.md` with its own raw output.
 - **Keep `metrics/` for live instruments only** — currently just
@@ -84,26 +89,26 @@ into the archive with the work that consumed it.
 
 Explicitly **not** in this change:
 
-- **Editing a word of the upstream diagrams.** Moving someone else's material is
-  not a licence to revise it — the same rule that governed the help sources.
 - **Deleting any measurement.** The snapshots are moved, not dropped: they are
   the baseline a future round would diff against and cannot be regenerated.
-- **Serving the diagrams.** They are developer reference, not an in-app help
-  page. `docs/upstream/`, not `help/upstream/`, precisely because everything the
-  app serves is a build input and these are not.
+- **Deleting the *link* to upstream's write-up.** What `hat.ts` needs is the
+  explanation; the local copy is not the explanation, it is a second copy of it.
+- **Anything under `licences/`.** MIT's notice condition attaches to the ported
+  code and is not discharged by the port being finished. They are also live build
+  inputs — the About dialog `?raw`-imports both.
 
 ## Impact
 
 - **Affected specs**: `repo-layout` — "Developer guides live under docs/ and link
-  to specs" gains the authorship boundary (and what `docs/` is *not*); the root
-  entry-point-directory list loses `metrics/`. `build-pipeline` — a round's
-  snapshot is committed under the change that produced it.
+  to specs" gains the rule that `docs/` holds this project's guides only, and
+  that a reference is carried as a link to its maintained source rather than a
+  copy; the root entry-point-directory list loses `metrics/`. `build-pipeline` —
+  a round's snapshot is committed under the change that produced it.
 - **Affected code**: no runtime code. `scripts/metrics.sh`,
   `scripts/stryker.config.mjs`, `scripts/diff.vitest.config.mts`,
-  `package.json`'s `diff` script, two comment pointers in `engine/tilings/`,
+  `package.json`'s `diff` script, one comment pointer in `engine/tilings/`,
   `AGENTS.md`, `docs/test-strength.md`, `docs/porting/game-port-playbook.md`.
 - **Risk**: very low, with one thing worth naming — nothing here is imported by
   the app, so a broken path surfaces only when someone next runs the script.
   `npm run diff` and `npm run metrics` are therefore **run once** after the move
-  rather than assumed, and the two HTML pages are opened to confirm their
-  relative `<img>` references to the SVGs survived the move.
+  rather than assumed.

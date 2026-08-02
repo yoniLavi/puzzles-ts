@@ -1,5 +1,51 @@
 # repo-layout Specification Delta — retire-native-directory
 
+## ADDED Requirements
+
+### Requirement: A change that moves or deletes a path updates the unarchived changes that name it
+
+A change that relocates, renames or deletes a path SHALL sweep the **pending**
+changes under `openspec/changes/` — those not yet archived — and correct every
+reference the move invalidates, as part of its own definition of done.
+
+The asymmetry with the other two places a path can go stale is the whole point,
+and it runs the opposite way to intuition:
+
+- An **archived** change is history. Its paths were true when written, and
+  rewriting them falsifies the record; they are deliberately left alone.
+- A **spec** is read for its rule. A stale path in one is a wrong pointer that a
+  reader will notice is wrong, because the surrounding sentence is about a
+  requirement rather than about a file.
+- A **pending** change's `tasks.md` is *a list of steps someone is going to
+  execute*. "Edit `src/native/games/sticks/solver.ts`" will be attempted
+  verbatim, by a session that has no reason to doubt it and every reason to trust
+  a checklist written by the project. The failure is not a confusing document; it
+  is work done against a tree that no longer exists.
+
+This is load-bearing here rather than theoretical: measured 2026-08-02, **twelve
+unarchived changes** name paths the source-tree reorganisation moves, and several
+of them (`add-path-ts-port`, `add-numgame-ts-port`, the four difficulty-tier
+changes) are queued to be implemented after it.
+
+Re-validation SHALL follow the sweep: a pending change edited this way is
+re-checked with `openspec validate <id> --strict`, since a spec delta may quote a
+path inside a requirement it must still parse.
+
+#### Scenario: A path is moved while work is queued against it
+
+- **WHEN** a change moves, renames or deletes a path
+- **THEN** every unarchived change under `openspec/changes/` naming that path is
+  corrected in the same change
+- **AND** each corrected change re-validates strictly
+- **AND** archived changes are left as written, being a record of what was true
+
+#### Scenario: The sweep is scoped to what the move actually invalidated
+
+- **WHEN** the sweep is performed
+- **THEN** it corrects references to the moved paths and nothing else
+- **AND** a pending change's reasoning, scope and tasks are otherwise untouched —
+  a path fix is not an occasion to revise someone else's plan
+
 ## MODIFIED Requirements
 
 ### Requirement: Source tree under `src/` groups files by UI role

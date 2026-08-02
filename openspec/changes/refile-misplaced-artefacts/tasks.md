@@ -3,26 +3,23 @@
 Independent of the other two reorg changes; can land before, between or after —
 with one ordering note in 1.2 if `retire-native-directory` has not landed yet.
 
-## 1. `docs/tilings/` → `docs/upstream/tilings/`
+## 1. Delete `docs/tilings/`
 
-- [ ] 1.1 `git mv docs/tilings docs/upstream/tilings`, README included. **Do not
-      edit a word of the diagrams or the pages** — they are upstream's, and the
-      whole point of the move is that the directory no longer tells the next
-      session to keep them current.
-- [ ] 1.2 Add `docs/upstream/README.md` stating the rule this move establishes:
-      a directory named `upstream/` holds verbatim third-party material, points
-      at `licences/sgt-puzzles-LICENCE`, and is read-only. Mirror the wording of
-      `help/upstream/README.md` so the two read as one convention.
-- [ ] 1.3 Fix the orphan: add a pointer comment in `src/engine/tilings/hat.ts`
-      and `spectre.ts` to the diagrams that explain their kitemap/metamap tables.
-      Today the material is reachable from exactly one bullet in `AGENTS.md` and
-      from nowhere in the code. (Path note: `src/native/engine/tilings/` if
-      `retire-native-directory` has not landed.)
-- [ ] 1.4 Open `hats.html` and `hatmaps.html` in a browser and confirm every
-      `<img>` still resolves. They reference the 25 SVGs relatively; a move that
-      breaks them fails silently, because nothing in the gate opens an HTML file
-      that is not a build input.
-- [ ] 1.5 Update the `docs/tilings/` bullet in `AGENTS.md`.
+- [ ] 1.1 **Before deleting, confirm the link that replaces it.** `hat.ts`'s
+      header already points at upstream's live write-up
+      (`chiark.greenend.org.uk/~sgtatham/quasiblog/aperiodic-tilings/`) and tells
+      the reader to read it first. Check `spectre.ts` and `penrose.ts` carry an
+      equivalent pointer and add one where they do not — the link is the
+      load-bearing part, the local copy is a second copy of it.
+- [ ] 1.2 Skim the two HTML pages against the TS for anything the write-up does
+      *not* cover and the code does not explain — a table's provenance, a
+      convention in the kitemap encoding. If such a thing exists, it belongs as a
+      comment in `hat-tables.ts` / `spectre-tables.ts`, which is where a reader
+      of the generated data would look. Expected to be empty; do the pass anyway,
+      because "the URL covers it" is the assumption the deletion rests on.
+- [ ] 1.3 `git rm -r docs/tilings`. Recoverable from git history and from
+      upstream's repository if ever wanted.
+- [ ] 1.4 Remove the `docs/tilings/` bullet from `AGENTS.md`.
 
 ## 2. Relocate the finished round's metrics snapshots
 
@@ -67,7 +64,8 @@ with one ordering note in 1.2 if `retire-native-directory` has not landed yet.
 ## 5. Specs and close-out
 
 - [ ] 5.1 `repo-layout` — MODIFIED "Developer guides live under docs/ and link to
-      specs": the authorship boundary, and what `docs/` is *not*.
+      specs": `docs/` holds this project's guides, and a third-party reference is
+      carried as a link to its maintained source rather than a copy.
 - [ ] 5.2 `build-pipeline` — MODIFIED "Refactoring metrics are measured on demand
       and ratcheted in the gate": a round's snapshot is committed under the
       change that produced it; `metrics/` holds only live instruments.
@@ -75,5 +73,12 @@ with one ordering note in 1.2 if `retire-native-directory` has not landed yet.
       (Sequencing note: if `retire-native-directory` is still unarchived, add
       this to its "Repo root holds product-level config only" delta instead of
       writing a competing one.)
-- [ ] 5.4 `openspec validate refile-misplaced-artefacts --strict`.
-- [ ] 5.5 Archive.
+- [ ] 5.4 **Sweep the pending changes under `openspec/changes/`** (not
+      `archive/`) for paths this change invalidates — `docs/tilings/`,
+      `metrics/<date>/`, `scripts/colour-*.test.ts`,
+      `scripts/diff.vitest.config.mts`. A stale path in an unstarted change is a
+      step someone will execute verbatim, which is worse than a stale path in a
+      spec or an archive.
+- [ ] 5.5 `openspec validate refile-misplaced-artefacts --strict`, and
+      re-validate every pending change touched by 5.4.
+- [ ] 5.6 Archive.

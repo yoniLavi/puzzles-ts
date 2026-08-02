@@ -88,7 +88,21 @@ phases 2 and 3 are mechanical and verified by shape.
       git diff openspec/specs | grep '^[-+]' | grep -v '^[-+][-+]' \
         | grep -v 'src/native/\(engine\|games\)/'   # must print nothing
       ```
-- [ ] 3.6 `openspec validate retire-native-directory --strict`.
+- [ ] 3.6 **Sweep the twelve *pending* changes under `openspec/changes/`** (not
+      `archive/`) for paths this change invalidates: `src/native/*`,
+      `src/puzzle/types.ts`, `worker-adapter.ts`, `src/native/{combi,random}/`.
+      Measured 2026-08-02, twelve non-archived changes name them —
+      `add-{path,numgame}-ts-port`, `add-game-difficulty-contract`,
+      `add-latin-repeats-support`, `add-{clusters,sticks,subsets}-difficulty-tiers`,
+      `bound-abcd-generable-sizes`, `refine-slide-appearance` and the sibling
+      reorg changes.
+      **A stale path in a pending change is worse than one in a spec or an
+      archive: it is instructions someone is going to follow.** An archived
+      change is history and a spec is read for its rule, but `tasks.md` in an
+      unstarted change is a list of steps to execute, and the step "edit
+      `src/native/games/sticks/solver.ts`" will be attempted verbatim.
+- [ ] 3.7 `openspec validate retire-native-directory --strict`, and re-validate
+      every pending change touched by 3.6.
 
 ## 4. Close out
 
