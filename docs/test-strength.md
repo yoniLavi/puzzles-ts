@@ -35,7 +35,7 @@ run the files you touched and let the commit hook be the single full run. Applie
 to a module whose local tests cannot see its defects, that advice returns green
 on a broken module during exactly the refactoring the tests exist to make safe.
 
-Measured with `npm run probe` (§2a), over 72 hand-chosen real defects — and the
+Measured with `npm run probe` (§2a), over 93 hand-chosen real defects — and the
 whole exercise cost **+49 tests for +4.9 s of gate CPU**, with wall clock
 unchanged:
 
@@ -46,6 +46,10 @@ unchanged:
 | `wires.ts` | 2/4 (50%) | 4/4 (100%) |
 | `dsf.ts` | 3/5 (60%) | 5/5 (100%) |
 | `border-grid.ts` | 5/7 (71%) | 6/6 (100%) |
+| `params.ts` (90 importers) | 3/6 (50%) | 6/6 (100%) |
+| `grid-core.ts` | 2/4 (50%) | 4/4 (100%) |
+| `colour-mkhighlight.ts` (37) | 4/5 (80%) | 4/4 (100%) |
+| `findloop.ts` | 5/6 (83%) | 6/6 (100%) |
 | `grid.ts`, `save.ts`, `deduction-fixpoint.ts`, `divvy.ts`, `symmetric-blacks.ts` | 100% | 100% |
 
 > ### The number this table replaced was an artefact — read §7 first
@@ -112,7 +116,7 @@ The §2 loop, as a committed corpus rather than a thing you retype. Runner:
 
 ```sh
 npm run probe -- --verify        # every anchor still applies, ~0.2 s
-npm run probe                    # all 72 cases, ~15 min
+npm run probe                    # all 93 cases, ~20 min
 npm run probe -- latin midend    # substring-filtered
 ```
 
@@ -125,10 +129,12 @@ that the ad-hoc version does not:
   fired on the very first run (a `catch` arm duplicated in `midend.ts`) and twice
   more; each would otherwise have been a clean `SURVIVED` measuring nothing.
 - **Derives "own tests" mechanically** — every engine test file that *imports* the
-  module, minus the differentials. Hand-naming one file is the §7 unit mistake in
-  both directions: `grid-core.ts` is tested by `grid-trim.test.ts`, and
-  `midend.test.ts` alone is not the midend's tests either (save/load lives in
-  `save.test.ts`, prefs in `midend-prefs.test.ts` — eight files in all).
+  module (**or a barrel re-exporting it**), minus the differentials. This one
+  question has now been answered wrongly three times, each producing a different
+  false picture: matched on filename (§7); taken as the single file named after
+  the module, when eight drive a `Midend`; and taken as direct imports only, when
+  `grid.ts`'s own doc comment says *"import from this module, not from the
+  parts"* and `grid.test.ts` is therefore `grid-core.ts`'s real test surface.
 - **Excludes `*-differential.test.ts` even when engine-local**, so a module cannot
   score full marks on assertions it does not make.
 - **Carries `equivalent: true` cases with their argument**, excluded from the rate
@@ -157,6 +163,27 @@ found in this session's own new test files, each of which passed immediately:
 
 So: **flip the line the test is for, watch it go red, put it back.** Seconds of
 work, and the only thing separating an assertion from a decoration.
+
+### An assertion whose two sides derive from the same value is a decoration
+
+`grid.test.ts` asserted `expect(d.edges.length).toBe(d.order)` across all
+eighteen tilings. It **cannot fail**: `d.edges` is allocated as
+`new Array(d.order)`, so its length *is* `d.order` by construction. Halving every
+dot's degree in the builder passed all 151 tests in the file.
+
+The non-vacuous form is the one the code under test has to get right — here, a
+dot's degree counted independently, as the number of edges naming it as an
+endpoint. **Grep for the shape**: `x.length` compared against the thing that
+sized `x`, a getter compared against the field it returns, a derived total
+compared against the sum it was computed from. All of them read like strong
+structural invariants and assert nothing.
+
+A related trap sits one step further on: the first replacement asserted *no*
+null faces and failed 28 tilings, because a boundary dot's face ring is legally
+broken once by the infinite exterior. **When a real invariant turns out to have
+an exception, bound the exception** ("at most one null, and only on the
+boundary") rather than dropping the assertion — the bound is what catches the
+anticlockwise walk giving up early.
 
 ### "The test passed" is not evidence the test *file* is well-formed
 

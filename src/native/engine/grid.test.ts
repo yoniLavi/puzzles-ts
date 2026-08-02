@@ -179,12 +179,39 @@ describe.each(PERIODIC_GRID_TYPES)("%s tiling", (type) => {
       expect(e.dot1).not.toBe(e.dot2);
     }
 
+    // `d.order` is what sizes `d.edges` and `d.faces`, so comparing their
+    // lengths to it is vacuous — it was, until a planted defect that halved
+    // every dot's degree passed all 151 tests in this file. The non-vacuous
+    // statement is the one the *builder* has to get right: a dot's degree is
+    // the number of edges that actually name it as an endpoint.
+    const degree = new Map<(typeof g.dots)[number], number>();
+    for (const e of g.edges) {
+      degree.set(e.dot1, (degree.get(e.dot1) ?? 0) + 1);
+      degree.set(e.dot2, (degree.get(e.dot2) ?? 0) + 1);
+    }
     for (const d of g.dots) {
+      expect(d.order).toBe(degree.get(d));
       expect(d.edges.length).toBe(d.order);
       expect(d.faces.length).toBe(d.order);
       expect(d.order).toBeGreaterThan(0);
+      // Every *edge* slot is filled — the clockwise walk, plus the
+      // anticlockwise one that finishes a boundary dot whose ring the exterior
+      // cut short. A hole here is a `null` two layers away in a game's dline
+      // indexing, never a throw.
       for (const e of d.edges) {
+        expect(e).not.toBeNull();
         expect(e.dot1 === d || e.dot2 === d).toBe(true);
+      }
+      // Faces are different, and the difference is the point: an interior dot
+      // is ringed by exactly `order` faces, while a boundary dot's ring is
+      // broken once by the infinite exterior, which is stored as a single
+      // `null`. So "at most one null, and only on the boundary" — a second one
+      // would mean the anticlockwise walk gave up early.
+      const nulls = d.faces.filter((f) => f === null).length;
+      expect(nulls).toBeLessThanOrEqual(1);
+      if (nulls === 1) expect(d.edges.some((e) => !e.face2)).toBe(true);
+      for (const f of d.faces) {
+        if (f !== null) expect(f.dots).toContain(d);
       }
     }
   });

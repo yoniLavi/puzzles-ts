@@ -490,4 +490,150 @@ export const MODULES = [
       },
     ],
   },
+
+  // --- second wave ---------------------------------------------------------
+  // Chosen by blast radius rather than by size: `params.ts` has 90 importers
+  // and `colour-mkhighlight.ts` 37, so a defect in either reaches most of the
+  // collection at once — and both are small enough that a reader can check any
+  // claim about them in a minute.
+
+  {
+    module: "src/native/engine/params.ts",
+    cases: [
+      {
+        why: "a bare square params form (`7`) parses its height as 0 instead of 7",
+        find: "  return { w, h: w, next: wParse.next };",
+        replace: "  return { w, h: 0, next: wParse.next };",
+      },
+      {
+        why: "the dimension parser consumes the `x` separator as part of the height",
+        find: "    const hParse = parseLeadingInt(s, wParse.next + 1);",
+        replace: "    const hParse = parseLeadingInt(s, wParse.next);",
+      },
+      {
+        why: "`next` stops at the dimensions' start, so every trailing suffix is re-parsed",
+        find: '  return {\n    value: Number.parseInt(s.slice(start, i) || "0", 10),\n    next: i,\n  };',
+        replace:
+          '  return {\n    value: Number.parseInt(s.slice(start, i) || "0", 10),\n    next: start,\n  };',
+      },
+      {
+        why: "a non-numeric custom-params field yields NaN, which slips past every bound check",
+        find: "export function atof(s: string): number {\n  const value = Number.parseFloat(s);\n  return Number.isNaN(value) ? 0 : value;",
+        replace:
+          "export function atof(s: string): number {\n  const value = Number.parseFloat(s);\n  return value;",
+      },
+      {
+        why: "a float param is encoded with full double precision, so it re-reads as a different number",
+        find: "  return stripTrailingZeros(value.toFixed(Math.max(0, 5 - exponent)));",
+        replace: "  return String(value);",
+      },
+      {
+        why: "%g never switches to exponential notation, so a tiny value encodes as 0.000000",
+        find: "  if (exponent < -4 || exponent >= 6) {",
+        replace: "  if (false) {",
+      },
+    ],
+  },
+
+  {
+    module: "src/native/engine/colour-mkhighlight.ts",
+    cases: [
+      {
+        why: "a near-white background is not shifted, so its highlight bevel vanishes",
+        find: "  const dw = colourDistance(out, white);\n  if (dw < K) {",
+        replace: "  const dw = colourDistance(out, white);\n  if (false) {",
+      },
+      {
+        why: "a near-black background is not shifted, so its lowlight bevel vanishes",
+        find: "  const db = colourDistance(out, black);\n  if (db < K) {",
+        replace: "  const db = colourDistance(out, black);\n  if (false) {",
+      },
+      {
+        why: "the exact-white epsilon is dropped, so K/dw overflows and shifts the background past white",
+        find: "    if (dw < EPS) out = colourMix(white, black, K / Math.sqrt(3));\n    else out = colourMix(white, out, K / dw);",
+        replace: "    out = colourMix(white, out, K / dw);",
+      },
+      {
+        // EQUIVALENT, and measured rather than argued. `mkhighlightBackground`
+        // shifts the background until it is *exactly* K from the extreme, so
+        // `K / dw` is exactly 1 and `colourMix(bg, white, 1)` already yields
+        // pure white — the `dw < K` arm only exists to absorb float drift.
+        // Swept 9,261 backgrounds over the whole RGB cube at 1/20 steps: the
+        // adjusted background was within K of white or black **zero** times.
+        // Class (b) — unreachable in practice, so record it and keep the code.
+        why: "the highlight's saturate-to-white arm (an unreachable float-drift guard)",
+        equivalent: true,
+        find: "  const highlight: Colour = dw < K ? [1, 1, 1] : colourMix(bg, white, K / dw);",
+        replace: "  const highlight: Colour = colourMix(bg, white, K / dw);",
+      },
+      {
+        why: "the completed-region shade equals the background, so a correct region reads as unfilled",
+        find: "  return [background[0] * 0.75, background[1] * 0.75, background[2] * 0.75];",
+        replace: "  return [background[0], background[1], background[2]];",
+      },
+    ],
+  },
+
+  {
+    module: "src/native/engine/findloop.ts",
+    cases: [
+      {
+        why: "a back-edge to an ancestor is not recorded, so no loop is ever found",
+        find: "          shallowestReachable[u] = Math.min(shallowestReachable[u], depth[w]);\n          anyLoop = true;",
+        replace: "          void depth[w];",
+      },
+      {
+        why: "reachability is not folded into the parent, so every edge above a loop reads as a bridge",
+        find: "        shallowestReachable[parent[u]] = Math.min(\n          shallowestReachable[parent[u]],\n          shallowestReachable[u],\n        );",
+        replace: "        void shallowestReachable[u];",
+      },
+      {
+        why: "subtree sizes stop accumulating, so a bridge reports 1 vertex on its far side",
+        find: "        subtreeSize[parent[u]] += subtreeSize[u];",
+        replace: "        subtreeSize[parent[u]] += 0;",
+      },
+      {
+        why: "isBridge is only checked one way round, so half the queries answer null",
+        find: "      const backward = isBridgeOneWay(w, u);",
+        replace: "      const backward = null;",
+      },
+      {
+        why: "isBridge reports the two sides swapped",
+        find: "        return { uVertices: backward.vVertices, vVertices: backward.uVertices };",
+        replace:
+          "        return { uVertices: backward.uVertices, vVertices: backward.vVertices };",
+      },
+      {
+        why: "the edge back to the parent is followed, so every tree edge looks like a loop",
+        find: "        if (w === parent[u]) continue;",
+        replace: "        if (false) continue;",
+      },
+    ],
+  },
+
+  {
+    module: "src/native/engine/grid-core.ts",
+    cases: [
+      {
+        why: "two faces sharing a dot pair get two edges instead of one shared edge",
+        find: "      const found = edgeByDots.get(key);",
+        replace: "      const found = undefined;",
+      },
+      {
+        why: "the edge dedup key collides, so unrelated dot pairs share an edge",
+        find: "      const key = lo * numDots + hi;",
+        replace: "      const key = lo + hi;",
+      },
+      {
+        why: "a dot's degree is counted from one endpoint only, halving its edge list",
+        find: "    e.dot1.order++;\n    e.dot2.order++;",
+        replace: "    e.dot1.order++;",
+      },
+      {
+        why: "the anticlockwise walk is dropped, so a boundary dot's face list stays half-empty",
+        find: "    // clockwise search",
+        replace: "    if (d.order > 0) continue;\n    // clockwise search",
+      },
+    ],
+  },
 ];

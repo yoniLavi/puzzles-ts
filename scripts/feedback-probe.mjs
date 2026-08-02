@@ -91,13 +91,29 @@ const ENGINE = "src/native/engine";
  */
 function ownTests(modulePath) {
   const wanted = resolve(modulePath);
+  // A barrel counts as the module. `grid.ts` re-exports `grid-core.ts` and says
+  // in its own doc comment "import from this module, not from the parts", so
+  // `grid.test.ts` *is* `grid-core.ts`'s local test — following direct imports
+  // only reported a feedback hole that was really an import convention. One
+  // level is enough for this tree; deepen it if a barrel ever re-exports a
+  // barrel.
+  const viaBarrel = new Set([wanted]);
+  for (const f of readdirSync(ENGINE)) {
+    if (!f.endsWith(".ts") || f.endsWith(".test.ts")) continue;
+    const barrel = `${ENGINE}/${f}`;
+    const src = readFileSync(barrel, "utf8");
+    for (const m of src.matchAll(/export\s+(?:\*|\{[^}]*\})\s*from\s+"(\.[^"]+)"/g)) {
+      if (resolve(dirname(barrel), m[1]) === wanted) viaBarrel.add(resolve(barrel));
+    }
+  }
+
   return readdirSync(ENGINE)
     .filter((f) => f.endsWith(".test.ts") && !f.endsWith("-differential.test.ts"))
     .map((f) => `${ENGINE}/${f}`)
     .filter((testFile) => {
       const src = readFileSync(testFile, "utf8");
       for (const m of src.matchAll(/from\s+"(\.[^"]+)"/g)) {
-        if (resolve(dirname(testFile), m[1]) === wanted) return true;
+        if (viaBarrel.has(resolve(dirname(testFile), m[1]))) return true;
       }
       return false;
     });
@@ -234,7 +250,9 @@ function main() {
   const equivalent = total - scored;
   console.log(
     `\n${scored - findings.length}/${scored} caught locally` +
-      (equivalent ? `, ${equivalent} cases excluded as equivalent.` : "."),
+      (equivalent
+        ? `, ${equivalent} case${equivalent === 1 ? "" : "s"} excluded as equivalent.`
+        : "."),
   );
   if (findings.length) {
     console.log(`\n## survived the module's own tests (${findings.length})`);
