@@ -411,12 +411,28 @@ describe("abcd textFormat", () => {
     const withA = abcdGame.executeMove(st, { type: "enter", x: 0, y: 0, letter: 0 });
     const text = abcdGame.textFormat?.(withA);
     expect(text).toBeDefined();
-    // The border letters and the entered 'A' are present; empty cells are '.'.
-    expect(text).toContain("A");
-    expect(text).toContain(".");
-    // The grid is outlined with '-' / '|'.
-    expect(text).toContain("-");
-    expect(text).toContain("|");
+    // Asserted as the WHOLE rendering, not as `toContain("A")` /
+    // `toContain(".")` / `toContain("-")` / `toContain("|")`, which is what this
+    // used to be and which could not fail on the defect it was written for.
+    // `toContain` of a single character is satisfied by any *superstring* of it,
+    // so rendering every empty cell as "./" instead of "." — the exact
+    // corruption `retire-native-directory`'s bulk rewriter produced here — left
+    // all 28 tests in this file green (re-verified 2026-08-03). One character is
+    // never a distinguishing assertion; see `docs/test-strength.md` §7.
+    expect(text).toMatchInlineSnapshot(`
+      "      A 2 2 0 0 2 
+            B 0 2 1 2 1 
+            C 2 0 2 2 1 
+      A B C D 1 1 2 1 1 
+             +---------+
+      1 2 2 0|A . . . .|
+      2 0 2 1|. . . . .|
+      1 2 1 1|. . . . .|
+      0 1 2 2|. . . . .|
+      2 1 0 2|. . . . .|
+             +---------+
+      "
+    `);
   });
 
   it("returns undefined when a clue could be two digits (w ≥ 19)", () => {

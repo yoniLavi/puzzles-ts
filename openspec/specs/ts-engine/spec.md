@@ -366,7 +366,7 @@ the bg + one-time setup via the game's first-paint branch.
 
 ### Requirement: The engine provides a shared colour-mkhighlight helper
 
-The engine SHALL provide `mkhighlightBackground(bg: Colour): Colour` in `src/engine/colour-mkhighlight.ts`, implementing the `misc.c` `game_mkhighlight_specific` background-adjustment logic with the near-white epsilon fix. Every white/black-tile game SHALL be able to import and use this instead of re-deriving it locally.
+The engine SHALL provide `mkhighlightBackground(bg: Colour): Colour` in `src/engine/colour/colour-mkhighlight.ts`, implementing the `misc.c` `game_mkhighlight_specific` background-adjustment logic with the near-white epsilon fix. Every white/black-tile game SHALL be able to import and use this instead of re-deriving it locally.
 
 #### Scenario: A game imports the shared mkhighlightBackground
 
@@ -499,7 +499,7 @@ The engine SHALL provide button code constants (`LEFT_BUTTON`, `RIGHT_BUTTON`, `
 
 ### Requirement: The engine provides a full mkhighlight palette helper
 
-The engine SHALL provide `mkhighlight(bg: Colour): { background: Colour; highlight: Colour; lowlight: Colour }` in `src/engine/colour-mkhighlight.ts`, implementing the full `misc.c` `game_mkhighlight` derivation: the background is adjusted via `mkhighlightBackground`, then the highlight is shifted from the adjusted background toward white by K = sqrt(3)/6 and the lowlight toward black by K. Per upstream, when the background is within K of white the highlight SHALL saturate to pure white, and when within K of black the lowlight SHALL saturate to pure black. Games needing the standard bg/highlight/lowlight trio SHALL destructure this helper instead of re-deriving the colours locally.
+The engine SHALL provide `mkhighlight(bg: Colour): { background: Colour; highlight: Colour; lowlight: Colour }` in `src/engine/colour/colour-mkhighlight.ts`, implementing the full `misc.c` `game_mkhighlight` derivation: the background is adjusted via `mkhighlightBackground`, then the highlight is shifted from the adjusted background toward white by K = sqrt(3)/6 and the lowlight toward black by K. Per upstream, when the background is within K of white the highlight SHALL saturate to pure white, and when within K of black the lowlight SHALL saturate to pure black. Games needing the standard bg/highlight/lowlight trio SHALL destructure this helper instead of re-deriving the colours locally.
 
 #### Scenario: A game derives its palette from the shared helper
 

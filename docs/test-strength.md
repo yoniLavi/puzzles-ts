@@ -204,6 +204,31 @@ an exception, bound the exception** ("at most one null, and only on the
 boundary") rather than dropping the assertion — the bound is what catches the
 anticlockwise walk giving up early.
 
+### `toContain` of one character cannot distinguish it from a superstring
+
+`abcd.test.ts` checked its ASCII board renderer with four assertions —
+`toContain("A")`, `toContain(".")`, `toContain("-")`, `toContain("|")`. When
+`retire-native-directory`'s bulk rewriter turned the empty-cell character from
+`"."` into `"./"`, **every cell in the board rendered wrong and all 28 tests in
+the file stayed green**, because a string containing `"./"` contains `"."`.
+Re-verified 2026-08-03 by planting the same edit.
+
+The trap is not "`toContain` is weak"; it is that a one-character needle admits
+every string that merely *contains* that character, and the corruptions that
+actually happen — a stray suffix, a doubled glyph, a wrong-width pad — are
+exactly superstrings. The same applies to a short needle in a small alphabet:
+`toContain("1")` is satisfied by `"11"` and by `"21"`.
+
+Note the asymmetry, because it decides which sites are worth changing:
+**`not.toContain("x")` is *strengthened* by this, not weakened** — it fails on
+`"./"` too. Only the positive form is blind, and this repo has ~15 of those.
+
+For a text format, assert the **whole rendering** — `toMatchInlineSnapshot()`
+fills itself in on first run, so there is nothing to transcribe by hand, and the
+diff on failure shows the board. Pair it with the tier-2.5 rule: keep at least
+one targeted assertion beside a snapshot so a careless `vitest -u` cannot erase
+the guarantee.
+
 ### "The test passed" is not evidence the test *file* is well-formed
 
 Writing a "feed `decodeSave` some garbage" case put a literal **NUL byte** into
