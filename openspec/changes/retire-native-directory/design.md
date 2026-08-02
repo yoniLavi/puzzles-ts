@@ -159,8 +159,11 @@ rather than by *when*:
   components sharing a folder with the runtime. Different reason, different risk
   (it must teach `scripts/feedback-probe.mjs` about nested modules and re-anchor
   the probe corpus), and it must land *after* this one so files move once.
-- **`tidy-measurement-artefacts`** — *one-off measurement output was committed at
-  the root and never relocated when its round ended*.
+- **`refile-misplaced-artefacts`** — *a committed non-code artefact sits in a
+  directory whose stated role does not cover it, and inherits the wrong
+  obligation as a result*: a finished round's metrics snapshots at the root,
+  reading as current measurement; and upstream's tiling diagrams filed in
+  `docs/`, where the standing instruction is to keep the contents current.
 
 The three are deliberately ordered so that no file is touched by two of them.
 
