@@ -10,9 +10,9 @@ Full triage in [`findings.md`](findings.md); this file records what was done.
       engine modules: `midend.ts`, `save.ts`, `latin.ts`,
       `deduction-fixpoint.ts`, `border-grid.ts`, `dsf.ts`, `grid.ts`.
       **2,168 mutants.**
-- [ ] 1.3 Run detached under `nice`. Not in the pre-commit gate, not in CI.
-      **In flight at the time of this commit**: dry run succeeded in 19m11s
-      (4,466 tests, serially); the mutant phase is at 401/2,163.
+- [x] 1.3 Run detached under `nice`. Not in the pre-commit gate, not in CI.
+      **Completed in 398 minutes** over 2,168 mutants (four attempts; the
+      reasons are findings §6).
       Two settings had to be discovered rather than guessed, and both are
       consequences of the same fact — **Stryker's vitest runner forces
       `pool: "threads"`, `maxThreads: 1`, `maxWorkers: 1`**, so the suite runs
@@ -28,9 +28,12 @@ Full triage in [`findings.md`](findings.md); this file records what was done.
 
 ## 2. Triage survivors
 
-- [ ] 2.1 **Partly done — the run is still in flight** (see 1.3). The survivors
-      the sanity check and the cheap instruments produced are already classified
-      and acted on; the systematic list follows when the run lands.
+- [x] 2.1 Triaged in findings §4c. **(a)** `save.ts`'s nine unasserted field
+      guards → 18 cases written, all ten mutations verified failing. **(b)** 48
+      `NoCoverage` mutants recorded, checked against `tighten-type-checking`'s
+      finding first — reachable but unexercised, so the action is a test, not a
+      deletion. **(c)** ~250 equivalent-ish survivors taken by *cluster*, not
+      individually, which is what stops this becoming score-chasing.
       **(a) missing assertion →** `deduction-fixpoint.test.ts` gained two:
       the grade must not regress when a hard rung unlocks an easier one, and
       `baseGrade` is a floor rather than a default. The mutant that previously
@@ -44,8 +47,11 @@ Full triage in [`findings.md`](findings.md); this file records what was done.
 
 ## 3. Report the shape, not the number
 
-- [ ] 3.1 **Where survivors cluster goes in findings.md §4** (pending the run), and the transferable
-      result is in §3: the guarantee for the shared engine is real but lives
+- [x] 3.1 **Where the killing power lives is findings §4b, and it is §3's
+      finding measured rather than inferred**: `latin.ts` is killed by its own
+      test file 9 times out of 593, `grid.ts` 1 out of 40. Neither is
+      under-protected (`grid.ts` has zero survivors); both have almost no local
+      feedback. The transferable form is in §3: the guarantee for the shared engine is real but lives
       *several layers away from the code it protects*. An engine module's own
       test file can be green while the module is wrong, with only a game's
       frozen differential noticing. That is adequate as coverage and poor as
@@ -79,12 +85,15 @@ Full triage in [`findings.md`](findings.md); this file records what was done.
       taking hours must not be attached to one taking minutes.
 - [x] 4.2 **No ratchet on the mutation score**, and none added. The score is not
       recorded as a target anywhere; `thresholds.break` is `null`.
-- [ ] 4.3 Follow-up scaffolding — pending the survivor list, which is what
-      would name the specific games worth mutating.
+- [x] 4.3 Follow-up scaffolded as `strengthen-engine-test-feedback` — it takes
+      the remaining survivor clusters, the 48 uncovered statements and the
+      timeout question. It deliberately does **not** propose mutating the 57
+      games: this run showed cost scales with the covering set, and a game's
+      solver is fixture-pinned already.
 
 ## 5. Close out
 
-- [ ] 5.1 Findings recorded as [`findings.md`](findings.md), with the two
+- [x] 5.1 Findings recorded as [`findings.md`](findings.md), with the two
       analysis scripts (`snapshot-pairing.mjs`, `mutation-shape.mjs`) beside it
       — the triage is the artefact, since a diff cannot show that a survivor was
       *considered*.
