@@ -7,7 +7,8 @@ TBD - created by archiving change remove-docker-emcc-build. Update Purpose after
 
 The repository SHALL provide a GitHub Actions workflow that, on every push to
 `main`, runs the same gate as the husky pre-commit hook (`npm run gate`:
-`tsc -b --noEmit` → `biome ci` → `vitest run` → `vite build`).
+`tsc -b --noEmit` → `biome ci` → probe-anchor check → `vitest run` →
+`vite build`).
 
 The gate SHALL require **no generated assets**. This reverses the previous
 requirement, which stated there was "no valid asset-free CI tier (a no-asset job
@@ -43,13 +44,32 @@ hooks never installed could land breakage on `main` undetected).
 
 ### Requirement: The pre-commit gate minimises wall-clock without dropping checks
 
-The pre-commit gate SHALL run all four checks (`tsc -b --noEmit`, biome,
-`vitest run`, `vite build`) and block a commit on any failure, while being
-orchestrated to reduce wall-clock: the fast checks (`tsc` then biome) run
-first as a fail-fast prefix, and the two heavy, mutually-independent checks
-(`vitest run` and `vite build`, which share no inputs or outputs) SHALL run
-**concurrently**, making the gate's wall-clock ~max(vitest, build) rather than
-their sum.
+The pre-commit gate SHALL run all five checks (`tsc -b --noEmit`, biome,
+`npm run probe -- --verify`, `vitest run`, `vite build`) and block a commit on
+any failure, while being orchestrated to reduce wall-clock: the fast checks
+(`tsc`, then biome, then the probe-anchor check) run first as a fail-fast
+prefix, and the two heavy, mutually-independent checks (`vitest run` and
+`vite build`, which share no inputs or outputs) SHALL run **concurrently**,
+making the gate's wall-clock ~max(vitest, build) rather than their sum.
+
+The probe-anchor check (`scripts/feedback-probe.mjs --verify`, **0.02–0.03 s**
+user CPU measured over three runs — `npm run probe -- --verify` is ~0.2 s, which
+is npm's own overhead, so the gate invokes node directly) verifies
+that every case in the local-feedback corpus still **applies** — its anchor is
+present and unique in the module it names. It runs no tests and asserts nothing
+about the corpus's *result*.
+
+That distinction is the whole of it, and it is load-bearing in both directions:
+
+- The corpus is built from verbatim excerpts of engine source, so a refactor of
+  a probed line silently stops the case matching. The harness then measures a
+  smaller corpus and **reports success**, which reads exactly like health. The
+  full run is ~20 minutes and deliberately outside the gate, so nothing else
+  would notice.
+- The probe's **rate** SHALL NOT be gated or ratcheted. A gated feedback number
+  invites tests written against the number rather than against behaviour, which
+  the `repo-layout` requirement it serves explicitly forbids. A survivor is a
+  finding to read; only a case that no longer applies is a failure.
 
 The gate's biome step SHALL check formatting and import order as well as lint
 rules (the read-only form of `biome check`), so a file that is lint-clean but
@@ -128,6 +148,16 @@ by an environment toggle the hook sets, not by a second copy of the gate.
 - **THEN** the full suite is shown to remain green and deterministic under the
   new setting (repeated runs, including under file-order shuffle)
 - **AND** if it does not, the setting is reverted rather than shipped
+
+#### Scenario: A refactor moves a line the probe corpus anchors on
+
+- **WHEN** a commit changes an engine line that a probe case quotes as its anchor
+- **THEN** the gate fails in ~0.2 s naming the case, and the case is re-anchored
+  (or retired) as part of that commit
+- **BECAUSE** an anchor that no longer applies makes the harness measure a
+  smaller corpus and report success — the failure mode this project keeps
+  naming, where a silent cap reads as health. Re-anchoring is also the moment a
+  human decides whether the case still states the defect it claims to.
 
 ### Requirement: The asset build produces the catalog and manual without a WASM toolchain
 

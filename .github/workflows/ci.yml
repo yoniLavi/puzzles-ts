@@ -2,10 +2,10 @@
 #
 # Trunk-based (no PRs), so the gate runs post-push on `main`: it runs the SAME
 # gate as the husky pre-commit hook (`npm run gate`: tsc -b --noEmit → biome ci
-# → vitest run → vite build), so a `--no-verify` commit or a fresh clone whose
-# hooks never installed can no longer land breakage on `main` undetected. (If
-# contributors arrive later and PRs become useful, add a `pull_request:` trigger
-# here.)
+# → probe-anchor check → vitest run → vite build), so a `--no-verify` commit or
+# a fresh clone whose hooks never installed can no longer land breakage on
+# `main` undetected. (If contributors arrive later and PRs become useful, add a
+# `pull_request:` trigger here.)
 #
 # The gate needs NO generated assets. This workflow used to say the opposite —
 # "no cheap no-WASM tier", because `src/puzzle/{catalog,types,worker}.ts`
