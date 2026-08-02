@@ -145,6 +145,16 @@ It is a diagnostic, **never a gate and never ratcheted**, the same standing as
 `npm run metrics` and `npm run mutation`. Adding a case is welcome; adding one
 because a module scores badly is score-chasing.
 
+**One half of it *is* gated, and only that half.** `--verify` runs in the
+commit gate's fail-fast prefix (0.02 s), checking that every anchor still
+**applies** — never what the probe would find. The corpus quotes engine source
+verbatim, so a refactor of a probed line stops the case matching, and the
+harness then measures a smaller corpus and *reports success*: a silent cap that
+reads as health, on a diagnostic nobody runs for twenty minutes at a time. The
+rate itself stays ungated, because a gated feedback number invites tests written
+against the number. When it fails, re-anchor on surrounding text — and take the
+prompt to decide whether the case still states the defect it claims to.
+
 ---
 
 ## 3. Writing a test that discriminates
