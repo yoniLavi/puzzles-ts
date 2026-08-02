@@ -43,7 +43,7 @@ The engine SHALL provide a registered `pegs` game implementing `Game<PegsParams,
 
 ### Requirement: Pegs derives its palette via the shared mkhighlight helper
 
-The Pegs `colours()` method SHALL derive its background, highlight, and lowlight colours from the shared `mkhighlight` helper in `src/engine/colour-mkhighlight.ts`, with no local copy of the derivation.
+The Pegs `colours()` method SHALL derive its background, highlight, and lowlight colours from the shared `mkhighlight` helper in `src/engine/colour/colour-mkhighlight.ts`, with no local copy of the derivation.
 
 #### Scenario: Pegs colours on a near-white host
 

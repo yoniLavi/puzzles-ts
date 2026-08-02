@@ -119,7 +119,7 @@ instrument that would notice has been fixed.
 
 ## 5. Specs and close-out
 
-- [ ] 5.1 `repo-layout` — MODIFIED "Source tree under `src/` groups files by UI
+- [x] 5.1 `repo-layout` — MODIFIED "Source tree under `src/` groups files by UI
       role" (the two engine subdirectories, the `src/puzzle/` split; written
       against the post-`retire-native-directory` text) and MODIFIED "A shared
       module's tests give feedback where the code lives" (the derivation is
@@ -130,7 +130,7 @@ instrument that would notice has been fixed.
       `src/engine/colour-mkhighlight.ts`). Path corrections only — no guarantee
       changes — but a spec naming a file that does not exist is exactly the
       false signal this repo treats as a defect.
-- [ ] 5.2 Update `docs/porting/game-port-playbook.md` and
+- [x] 5.2 Update `docs/porting/game-port-playbook.md` and
       `docs/porting/hint-authoring.md` where they point at moved files.
       Swept: `hint-authoring.md` names no moved path (its "grid"/"colour"
       mentions are all about the concepts). The live pointers are in
@@ -144,7 +144,7 @@ instrument that would notice has been fixed.
       record. The playbook also gained a short paragraph stating the flat-unless-
       it-is-one-of-the-two-families rule, since it is the followable form of what
       the spec now requires.
-- [ ] 5.3 **Sweep the pending changes under `openspec/changes/`** (not
+- [x] 5.3 **Sweep the pending changes under `openspec/changes/`** (not
       `archive/`) for paths this change invalidates — `engine/grid*.ts`,
       `engine/colour*.ts`, `engine/palette*.ts`, `src/puzzle/puzzle-*.ts`. A
       stale path in an unstarted change is a step someone will execute verbatim,
@@ -154,7 +154,7 @@ instrument that would notice has been fixed.
       pending change names a `src/puzzle/puzzle-*.ts`.
 - [x] 5.4 `openspec validate group-crowded-source-directories --strict`, and
       re-validate every pending change touched by 5.3. All three valid.
-- [ ] 5.5 Owner acceptance, then archive.
+- [x] 5.5 Owner acceptance, then archive. **Accepted 2026-08-03.**
 
 ## 6. Found while implementing, not scoped here
 
@@ -167,7 +167,9 @@ instrument that would notice has been fixed.
       (`palette-source.test.ts` had one too and is fixed above, since the file
       moved anyway. `metrics-summary.mjs`'s mention is *deliberately* historical
       — it explains why the path arithmetic changed — and is left alone.)
-- [ ] 6.2 **Handoff: the 30 per-game differential "regenerate" headers.** Each
+- [x] 6.2 **Handoff TAKEN UP** as `retire-c-era-leftovers` (2026-08-03, `08a2734`),
+      which widened it on the owner's direction to every C-era leftover, not
+      just these headers. The 30 per-game differential "regenerate" headers.** Each
       reads *"Regenerate the frozen fixture while `puzzles/<game>.c` still
       exists:"* followed by `cmake -B build/native -S puzzles
       -DUSE_TS_RANDOM=0`, a `make <game>-trace`, and an output path under

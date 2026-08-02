@@ -5,7 +5,7 @@ TBD - created by archiving change add-pearl-ts-port. Update Purpose after archiv
 ## Requirements
 ### Requirement: Shared planar-grid data structure and deterministic square tiling
 
-The engine SHALL provide `src/engine/grid.ts` exposing a general
+The engine SHALL provide `src/engine/grid/index.ts` exposing a general
 planar-grid data structure — `Grid` with arrays of `GridFace`, `GridEdge` and
 `GridDot`, a bounding box, and a `tileSize` — with full reference incidence: each
 edge references its two dots and its two faces (a null face reference denotes the
@@ -21,6 +21,13 @@ assigning each edge its one or two faces), the per-face edge lists, the per-dot
 edge and face rings (walked clockwise then anticlockwise past the exterior face),
 and the bounding box. All ordering tie-breaks SHALL be by array index, which
 reproduces upstream's sequential-allocation pointer order.
+
+That module is a **barrel**, and its own doc comment tells callers to import from
+it rather than from the parts (`grid-core.ts`, `grid-desc.ts`, `grid-geometry.ts`,
+`grid-trim.ts`, the `grid-tilings*` family and `tilings/`), which live beside it
+under `src/engine/grid/`. The barrel status is load-bearing beyond convenience:
+`scripts/feedback-probe.mjs` counts a test importing the barrel as a local test
+of every part it re-exports.
 
 #### Scenario: A square grid has the expected incidence
 

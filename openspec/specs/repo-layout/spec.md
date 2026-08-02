@@ -171,10 +171,25 @@ subdirectory, because they are entry points or cross-cutting:
 - Ambient-type files such as `vite-env.d.ts`.
 
 Existing subdirectories with non-UI scope SHALL keep their shape:
-`src/assets/` (generated), `src/css/` (styles), `src/puzzle/` (the
-main-thread puzzle runtime: the `Puzzle` object, the Comlink worker host,
-the canvas `Drawing`, and the worker adapter), `src/store/` (Dexie
+`src/assets/` (generated), `src/css/` (styles), `src/store/` (Dexie
 schema), `src/utils/` (general-purpose helpers).
+
+`src/puzzle/` SHALL separate its two roles into the directory root and one
+subdirectory:
+
+- `src/puzzle/` — the main-thread puzzle runtime: the `Puzzle` object, the
+  Comlink worker host, the canvas `Drawing`, the engine surface, the worker
+  adapter, and the committed catalog.
+- `src/puzzle/components/` — the puzzle-specific Lit components (the view, the
+  interactive view, the key bar, the history bar, the type menu, the config
+  dialog, the context provider, the other-puzzles menu, the end notification).
+
+The component **filenames** SHALL NOT repeat the directory (`components/view.ts`,
+not `components/puzzle-view.ts`), and the **custom element names** SHALL NOT
+change: `<puzzle-view>`, `<puzzle-keys>` and the rest are the app's DOM
+vocabulary, used from `templates/*.html.hbs` and from every component's
+templates. Renaming a file is a refactor; renaming a custom element changes the
+app's markup contract.
 
 The puzzle logic — everything that runs in the worker — SHALL live in two
 sibling directories at `src/` root:
@@ -189,6 +204,20 @@ sibling directories at `src/` root:
 - `src/games/<puzzleId>/` — one folder per game (the `Game`
   implementation and its behavioural `*.test.ts`), named by catalog
   `puzzleId`.
+
+Within `src/engine/`, a **family of modules that are meaningless apart from each
+other** SHALL be grouped into a subdirectory; unrelated helpers SHALL stay flat.
+The families are `grid/` (the grid builders, geometry, descriptions, trimming and
+the aperiodic `tilings/`, with `grid/index.ts` the barrel its own doc comment
+tells callers to import from) and `colour/` (the twelve-colour palette, the
+role-to-colour meanings, and the board-relative per-game colours — the three
+layers `consolidate-colour-palette` designed).
+
+A subdirectory SHALL NOT be created for a grouping that has to be argued for. The
+test is whether a reader looking for a file would know to look there without
+being told; where the answer requires the rationale to be explained, the file
+stays flat. A taxonomy nobody can predict is re-litigated at every addition, and
+files then land wherever the last argument ended.
 
 `src/native/` SHALL NOT exist. It was named for the distinction between
 *native TypeScript* and *the C compiled to WASM*; `retire-c-engine`
@@ -219,8 +248,17 @@ layout element and are not an acceptance gate.
 - **WHEN** a contributor adds a new top-level screen, dialog, or leaf
   component
 - **THEN** the file is placed under `src/screens/`, `src/dialogs/`, or
-  `src/components/` respectively
-- **AND** the file is NOT added loose at `src/` root
+  `src/components/` respectively — or `src/puzzle/components/` when it is
+  puzzle-specific
+- **AND** the file is NOT added loose at `src/` root, and NOT loose at
+  `src/puzzle/` root alongside the runtime
+
+#### Scenario: A puzzle component moves without changing the markup
+
+- **WHEN** a puzzle component's file is renamed or relocated
+- **THEN** its `@customElement` tag name is unchanged
+- **AND** `templates/*.html.hbs` and every template using `<puzzle-…>` are
+  untouched
 
 #### Scenario: Page-entry script URLs in HTML templates still resolve
 
@@ -244,6 +282,14 @@ layout element and are not an acceptance gate.
 - **AND** the game lives under `src/games/<puzzleId>/` with its
   behavioural tests colocated
 - **AND** neither is added loose at `src/` root
+
+#### Scenario: A new engine helper is not given a speculative subdirectory
+
+- **WHEN** a contributor adds an engine helper that does not belong to `grid/`
+  or `colour/`
+- **THEN** it lands flat in `src/engine/`
+- **AND** a new subdirectory is created only for a family whose members have no
+  readership apart from each other
 
 #### Scenario: A shared library is not given its own top-level directory
 
@@ -461,12 +507,24 @@ SHALL use this helper instead of re-implementing the loop. The solver-agreement
 differential shape (decode a C board, run the TS solver, assert the recorded
 difficulty) is game-specific and is NOT modelled by this helper.
 
+The C-reference fixtures are **frozen and cannot be regenerated**: the sources,
+the per-game `*-trace` harnesses and the Emscripten/CMake build that ran them all
+went with `retire-c-engine`. That fact SHALL be stated once, in the shared helper,
+rather than repeated per game — and a differential test file SHALL NOT carry a
+regeneration recipe, because no such recipe can be executed.
+
 #### Scenario: A game's byte-match differential uses the helper
 
 - **WHEN** a game's gated differential asserts its `newDesc` reproduces the C desc
   byte-for-byte across a fixture set
 - **THEN** it calls `describeDescDifferential` with its fixtures, params mapper, and
   `newDesc`, rather than re-declaring the `describe`/`for`/`it`/`expect` loop
+
+#### Scenario: A fixture's provenance is recorded but its recipe is not
+
+- **WHEN** a differential test file documents where its fixture came from
+- **THEN** it names the harness that captured it, as history
+- **AND** it does NOT carry the commands, because none of them can be run
 
 ### Requirement: The test suite is deterministic under parallel load
 
@@ -931,11 +989,21 @@ Two definitions are load-bearing and SHALL be derived rather than assumed:
   question has been answered wrongly three times, each producing a different
   false picture: matched on filename; taken as the one file named after the
   module, when eight engine files drive a `Midend`; and taken as direct imports
-  only, when `grid.ts`'s own doc comment says *"import from this module, not from
-  the parts"* and `grid.test.ts` is therefore `grid-core.ts`'s real test
+  only, when `grid/index.ts`'s own doc comment says *"import from this module,
+  not from the parts"* and `grid.test.ts` is therefore `grid-core.ts`'s real test
   surface.
 - **A differential is not a local test**, even an engine-local one, because its
   guarantee is a frozen fixture noticing that the boards moved.
+
+The derivation SHALL walk `src/engine/` **recursively**, and SHALL fail rather
+than proceed when it discovers fewer engine test files than a committed floor.
+The walk was one level deep while the engine was flat; grouping `grid/` and
+`colour/` into subdirectories would otherwise have shrunk the derived
+own-test set silently, and the failure direction is the dangerous one — fewer
+tests run against each planted defect means more cases report SURVIVED, which
+reads as "the tests got worse" rather than "the instrument stopped looking".
+The anchor check does not cover this: it validates that each case's quoted source
+line still exists, which a pure file move leaves true.
 
 Where a module's guarantee genuinely belongs to a differential — an RNG draw
 order, a region sizing that decides which boards exist — that division of labour
@@ -956,6 +1024,14 @@ differential does fail on the defect the local tests deliberately let through.
   on a defect planted in it
 - **THEN** that is a feedback defect to fix, not a coverage success to report
 - **BECAUSE** the failure it produces is a green targeted run on a broken module
+
+#### Scenario: The instrument stops finding tests
+
+- **WHEN** a refactor nests engine modules deeper than the probe's directory walk
+  reaches
+- **THEN** the probe fails on the discovered-test-file floor
+- **AND** it does NOT report a lower rate, which would be indistinguishable from
+  the tests having genuinely got worse
 
 #### Scenario: A feedback metric is derived from a tool's internals
 
@@ -1010,6 +1086,29 @@ Re-validation SHALL follow the sweep: a pending change edited this way is
 re-checked with `openspec validate <id> --strict`, since a spec delta may quote a
 path inside a requirement it must still parse.
 
+Within the source tree, the sweep SHALL cover **every construct that names a
+file**, not only import statements. A bulk rewriter that matches import
+specifiers is structurally blind to three others, and they fail in different
+directions:
+
+- `import.meta.glob("../games/**/*.ts")` — **silent**. An unmatched glob yields
+  `{}`, so the file's assertions pass over nothing rather than failing.
+- `new URL("../assets/…", import.meta.url)` — loud, because
+  `asset-integrity.test.ts` asserts every one resolves.
+- Path arithmetic keyed to depth — `p.split("/")[3]`, or stripping a fixed
+  `"../games/"` prefix — which no string sweep can see at all, because the
+  string it depends on does not appear in the file.
+
+Such a derivation SHALL state its assumption and fail when it does not hold,
+rather than degrade: cutting a glob key at `/games/` and throwing when the match
+fails is correct at any depth, where stripping a fixed prefix silently leaves
+`../abcd/render.ts` and turns the game id into `".."`.
+
+A tool SHALL NOT write its output into an `openspec/changes/<id>/` directory.
+`openspec archive` renames that directory the day the change ships, so the path
+has an expiry date built into the workflow. Durable generated artefacts belong
+under `metrics/`.
+
 #### Scenario: A path is moved while work is queued against it
 
 - **WHEN** a change moves, renames or deletes a path
@@ -1024,4 +1123,105 @@ path inside a requirement it must still parse.
 - **THEN** it corrects references to the moved paths and nothing else
 - **AND** a pending change's reasoning, scope and tasks are otherwise untouched —
   a path fix is not an occasion to revise someone else's plan
+
+#### Scenario: A moved file names a sibling by something other than an import
+
+- **WHEN** a file that uses `import.meta.glob`, `new URL(…, import.meta.url)` or
+  a depth-keyed path derivation is relocated
+- **THEN** each of those is repointed in the same change as the imports
+- **BECAUSE** `palette-source.test.ts` moved into `engine/colour/` with its
+  glob still reading `"../games/**/*.ts"`, which matched nothing — and "a game
+  contains no colour value" is what three assertions then reported. Its own
+  `expect(sources).toBeGreaterThan(100)` guard is what failed instead, which is
+  the whole reason a sweep-style test must count what it looked at.
+
+#### Scenario: A generated artefact outlives the change that asked for it
+
+- **WHEN** a script writes a reviewable artefact
+- **THEN** it writes under `metrics/`, not into a change directory
+- **BECAUSE** `colour-inventory.test.ts` wrote to
+  `openspec/changes/consolidate-colour-palette/inventory.md`; archiving that
+  change renamed the directory, and `npm run diff` — the advisory check nominated
+  to notice a lost colour module — failed `ENOENT` from that day, silently,
+  because an advisory run reports rather than gates
+
+### Requirement: A comment stating a procedure is executable, or is marked as history
+
+A comment that tells a reader **to do something** SHALL be executable as written,
+or SHALL say plainly that it is a record of something that can no longer be done.
+A comment that merely records **where something came from**, or **why something is
+absent**, is not a procedure and is kept as-is.
+
+The distinction is the actionable one, and applying "delete every mention of the
+retired C engine" instead would lose real information in both directions:
+
+- **Provenance is kept.** `random/index.ts`'s *"TypeScript port of
+  `puzzles/random.c`"*, `sha1.ts`'s byte-equivalence claim, and `drawing.ts`'s
+  *"copied from upstream's emcclib.js"* name the upstream source a behaviour was
+  derived from. Upstream still exists, the derivation is still true, and in the
+  last case the comment is the only account of an otherwise arbitrary pixel rule.
+  With no C build left to interrogate, a comment recording where a behaviour came
+  from is the **only** remaining answer.
+- **Absence guards are kept.** The notes recording that `wasmIntegration()` was
+  removed from Sentry, that the About dialog's `dependencies.json` fetch is gone,
+  and that the Brewfile no longer provisions a wasm toolchain exist to stop the
+  machinery being re-added. `retire-c-engine`'s own review recorded that *deleting
+  the mechanism is the easy half; the guards are what convey the false picture.*
+- **Dead instructions go.** A command block naming a binary, a source tree, a
+  build flag or an output directory that no longer exists.
+- **False present-tense statements go.** "Production is the unchanged all-WASM
+  path"; "Public API to the remote WASM puzzle module".
+
+A partially-repointed procedure SHALL NOT be produced. Where several lines of a
+procedure are dead, correcting only the one a path sweep can see is **worse than
+leaving it visibly stale**, because it produces something that looks maintained
+and fails on its first line.
+
+A file marked "generated — do not edit by hand" SHALL name a generator that
+exists. Where the generator has been removed, the file becomes ordinary committed
+source and its header SHALL say so, since the alternative leaves a contributor no
+legal way to change it at all.
+
+#### Scenario: A change removes the machinery a comment describes
+
+- **WHEN** a toolchain, build or harness is deleted
+- **THEN** every comment instructing a reader to invoke it is rewritten as
+  history or removed
+- **AND** comments recording provenance, or explaining why the machinery is
+  absent, are kept
+
+#### Scenario: A dead recipe is repointed rather than retired
+
+- **WHEN** a path sweep would update one path inside a procedure whose other
+  steps are also dead
+- **THEN** the whole procedure is retired instead
+- **BECAUSE** thirty-seven differential headers named an output under
+  `src/native/games/`, which a later change moved; rewriting just that segment
+  would have left a `cmake -B build/native -S puzzles -DUSE_TS_RANDOM=0` recipe
+  looking maintained, against a source tree, a build system and a flag that no
+  longer exist
+
+#### Scenario: A generated file outlives its generator
+
+- **WHEN** a file's generator is deleted
+- **THEN** the file's header stops claiming it is generated and stops forbidding
+  hand edits
+- **AND** any invariant the generator used to assert on its output is confirmed
+  to be asserted somewhere that still runs
+- **BECAUSE** `spectre-tables.ts` read "GENERATED FILE — do not edit by hand"
+  over a three-line recipe of which every line was dead, including a
+  `scripts/gen-spectre-tables.mjs` that no longer exists — a file nothing could
+  regenerate and nobody was permitted to edit. Its three structural invariants
+  turned out to be asserted directly by `spectre.test.ts`, so a hand edit that
+  breaks one still fails the suite; had they not been, that would have been the
+  real finding.
+
+#### Scenario: A comment-only sweep is verified by count, not by green
+
+- **WHEN** a change edits comments across many test files
+- **THEN** the test and assertion counts are compared before and after, not
+  merely observed to be green
+- **BECAUSE** a comment edit that swallowed a `describe` leaves a passing suite
+  with fewer tests in it — the same silent-shrink shape the probe's
+  discovered-test-file floor guards against
 

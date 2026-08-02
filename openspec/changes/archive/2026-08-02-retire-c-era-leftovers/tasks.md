@@ -64,7 +64,7 @@ tree is otherwise untouched and a failure is unambiguous.
       governs the differential shape.
 - [x] 5.2 Sweep the pending changes for anything this invalidates, and
       `openspec validate retire-c-era-leftovers --strict`.
-- [ ] 5.3 Full gate, then owner acceptance, then archive.
+- [x] 5.3 Full gate, then owner acceptance, then archive. **Accepted 2026-08-03.**
 
 ## 6. Found while implementing
 
