@@ -103,7 +103,7 @@ function invertLightness([l, c, h]: OKLCH, bgl: number): OKLCH {
  * spreads them and puts them in the right order.
  *
  * This is now the FALLBACK, for colors that are a game's own. A color that comes
- * from a shared role in `native/engine/palette.ts` carries an authored value per
+ * from a shared role in `engine/colour/palette.ts` carries an authored value per
  * scheme and never reaches here — see `hand-author-dark-palette`.
  */
 function adjustChromatic([l, c, h]: OKLCH, bgl: number): OKLCH {
