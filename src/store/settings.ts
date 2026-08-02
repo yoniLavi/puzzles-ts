@@ -1,7 +1,7 @@
 import { computed } from "@lit-labs/signals";
 import { SignalMap } from "signal-utils/map";
 import { effect } from "signal-utils/subtle/microtask-effect";
-import type { ConfigValues, PuzzleId } from "../puzzle/types.ts";
+import type { ConfigValues, PuzzleId } from "../engine/types.ts";
 import {
   type CommonSettings,
   db,

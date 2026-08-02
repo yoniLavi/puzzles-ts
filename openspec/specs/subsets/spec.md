@@ -5,7 +5,7 @@ TBD - created by archiving change add-subsets-ts-port. Update Purpose after arch
 ## Requirements
 ### Requirement: Subsets game implements the Game interface
 
-The engine SHALL provide `src/native/games/subsets/` implementing the `Game`
+The engine SHALL provide `src/games/subsets/` implementing the `Game`
 interface for Subsets, registered so the puzzle is served by the TypeScript
 engine.
 

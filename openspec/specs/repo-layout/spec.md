@@ -177,10 +177,10 @@ runtime + Comlink worker), `src/store/` (Dexie schema), `src/utils/`
 
 `src/native/` SHALL hold the native-TS engine and the ported games:
 
-- `src/native/engine/` — the TS midend, the `Game` interface, the
+- `src/engine/` — the TS midend, the `Game` interface, the
   per-game registry, and the clean save codec, with behavioural
   `*.test.ts` colocated.
-- `src/native/games/<game>/` — one folder per ported game (the `Game`
+- `src/games/<game>/` — one folder per ported game (the `Game`
   implementation and its behavioural `*.test.ts`), named by catalog
   `puzzleId`.
 - `src/native/<module>/` — one folder per ported shared/leaf module
@@ -190,7 +190,7 @@ runtime + Comlink worker), `src/store/` (Dexie schema), `src/utils/`
   e.g. `random`), and behavioural `*.test.ts` named descriptively
   (e.g. `random.test.ts`, not `index.test.ts`). Internal dependencies
   that are not yet their own module MAY live inside the same folder
-  (e.g. `src/native/random/sha1.ts`) and SHALL be lifted to their own
+  (e.g. `src/engine/random/sha1.ts`) and SHALL be lifted to their own
   `src/native/<dep>/` folder if/when they become a public seam.
 
 A ported module under `src/native/` SHALL NOT be required to carry a
@@ -227,8 +227,8 @@ are not a mandated layout element and are not an acceptance gate.
 
 - **WHEN** the engine layer is added and, later, a game is ported
 - **THEN** the midend, `Game` interface, registry, and save codec live
-  under `src/native/engine/`
-- **AND** the ported game lives under `src/native/games/<puzzleId>/`
+  under `src/engine/`
+- **AND** the ported game lives under `src/games/<puzzleId>/`
   with its behavioural tests colocated
 - **AND** neither is added loose at `src/native/` root
 
@@ -394,17 +394,17 @@ adding an explained `hint()` to a ported game).
 ### Requirement: A scaffolding script stamps out a new game-port skeleton
 
 The repository SHALL provide `scripts/new-game-port.sh <gameId>` that creates the
-mechanical skeleton of a new game: `src/native/games/<gameId>/` containing typed
+mechanical skeleton of a new game: `src/games/<gameId>/` containing typed
 `Game<…>` stub modules (the `index`/`state`/`solver`/`generator`/`render`
 file shape the game-port playbook prescribes), an empty `__fixtures__/`
 placeholder, AND starter test scaffolding — a `<gameId>.test.ts` (a
 serialise/deserialise round-trip skeleton plus a `renderScenario` smoke skeleton
-importing from `src/native/engine/testing/`) and a `<gameId>-generation.test.ts`
+importing from `src/engine/testing/`) and a `<gameId>-generation.test.ts`
 stub for the generation invariants that stand in for the retired byte-match
 oracle. The script SHALL refuse to overwrite an existing game directory.
 
 It SHALL print — but SHALL NOT itself perform — the manual-edit checklist that
-requires judgement: registering the game in `src/native/games/index.ts`, adding
+requires judgement: registering the game in `src/games/index.ts`, adding
 its catalog entry to `src/puzzle/catalog-data.ts`, stating what the generation
 test asserts, and adding the two committed icon PNGs.
 `docs/porting/game-port-playbook.md` SHALL reference the script as the
@@ -418,7 +418,7 @@ fixtures belong to games ported while that build existed and are unaffected.
 #### Scenario: Scaffolding a new game
 
 - **WHEN** a contributor runs `scripts/new-game-port.sh singles`
-- **THEN** `src/native/games/singles/` is created with the typed stub modules, an
+- **THEN** `src/games/singles/` is created with the typed stub modules, an
   empty `__fixtures__/`, a starter `singles.test.ts`, and a
   `singles-generation.test.ts` stub
 - **AND** the emitted files type-check and lint clean
@@ -435,7 +435,7 @@ fixtures belong to games ported while that build existed and are unaffected.
 ### Requirement: A shared helper carries the byte-for-byte differential shape
 
 The engine testing utilities SHALL provide `describeDescDifferential` in
-`src/native/engine/testing/differential.ts`: given a fixture list, a `params`
+`src/engine/testing/differential.ts`: given a fixture list, a `params`
 mapper, and a game's `newDesc`, it asserts for each fixture that
 `newDesc(params(fixture), randomNew(fixture.seed)).desc` equals the fixture's
 recorded C desc (the strongest differential bar — valid only for a faithful
@@ -527,8 +527,9 @@ non-termination (bound it in code per the clause above).
 ### Requirement: Test worker processes do not outlive their runner
 
 A `vitest` run SHALL NOT leave worker processes running after it ends. Because
-every generator/solver/hint-planner under `src/native/` is synchronous, a
-worker mid-computation cannot be interrupted by `testTimeout` or by the pool's
+every generator/solver/hint-planner under `src/engine/` and `src/games/` is
+synchronous, a worker mid-computation cannot be interrupted by `testTimeout` or
+by the pool's
 IPC shutdown, so a run that is killed while a worker computes (Ctrl-C, a
 CI/bash-timeout SIGTERM) reparents that worker to init (PID 1) where it spins on
 a CPU core indefinitely, and repeated interrupts accumulate such orphans. Two
@@ -686,8 +687,8 @@ The source tree's layering SHALL be enforced by an automated check that fails
 CI on violation:
 
 - **No game imports another game.** Each of the 57 games under
-  `src/native/games/<puzzleId>/` is independent; shared behaviour belongs in
-  `src/native/engine/`.
+  `src/games/<puzzleId>/` is independent; shared behaviour belongs in
+  `src/engine/`.
 - **`engine/` does not import `games/`**, with one named exception:
   `engine/testing/hint-games.ts`, the test-only enrollment file each hinting port
   adds itself to. The exception SHALL be listed explicitly with its reason, not
@@ -715,7 +716,7 @@ than a new dependency, unless the rules outgrow what a test expresses clearly.
 
 - **WHEN** a change adds an import from one game directory into another
 - **THEN** the layering check fails in CI
-- **AND** the shared code is moved to `src/native/engine/` instead
+- **AND** the shared code is moved to `src/engine/` instead
 
 #### Scenario: A new hinting port enrolls itself
 
@@ -833,7 +834,7 @@ may justify itself as a no-op.
 
 ### Requirement: A shared module's tests give feedback where the code lives
 
-A module in `src/native/engine/` SHALL be able to fail its **own** tests when its
+A module in `src/engine/` SHALL be able to fail its **own** tests when its
 behaviour changes, and not rely solely on a consumer's tests or a game's frozen
 differential to notice.
 
@@ -871,7 +872,7 @@ differential does fail on the defect the local tests deliberately let through.
 
 #### Scenario: Logic is extracted into the engine
 
-- **WHEN** logic moves from a game into `src/native/engine/`
+- **WHEN** logic moves from a game into `src/engine/`
 - **THEN** its tests are written in the same change
 - **BECAUSE** extraction moves the code but not its tests: the game's
   differential still catches defects, so nothing turns red and the module

@@ -1,0 +1,354 @@
+/**
+ * Worker-side adapter: presents an `EngineCore` (a `Midend`) through the
+ * Comlink surface the app's `Puzzle` consumes. The worker factory routes here
+ * for every game in the registry — which, since `retire-c-engine`, is every
+ * game there is; a `puzzleId` the registry does not know is simply unplayable,
+ * and `catalog-registry.test.ts` guards that in both directions.
+ *
+ * It lives on the **app** side of the seam, not inside the engine, because an
+ * adapter belongs with the thing being adapted *to*: it is the only module that
+ * knows both the engine's `EngineCore` and the app's `Drawing` /
+ * `PuzzleEngineSurface`. Keeping it under the engine was what made the engine
+ * import the shell (`retire-native-directory` D3).
+ *
+ * The drawing / colour / UI-feedback contract the keystone left
+ * minimal was resolved by the first port (`add-flip-ts-port`): the
+ * full `GameDrawing` API, `colours(defaultBackground)`, and the
+ * `UI_UPDATE` input result. The on-screen keys surface is modelled too
+ * (`requestKeys` forwards `Game.requestKeys` via the midend —
+ * `add-ts-onscreen-keys`). The custom-params AND preferences surfaces
+ * are both modelled: each forwards to the midend, which builds the app's
+ * config dialog from the game's declarative `paramConfig` / `prefs` and
+ * parses the submitted values back. A game that declares neither yields
+ * an empty-but-valid config (an empty custom dialog is correct for a
+ * preset-only game like Flip, not a stub masking a defect).
+ */
+
+import { transfer } from "comlink";
+import type { EngineCore } from "../engine/midend.ts";
+import { getTsGame } from "../engine/registry.ts";
+import type {
+  ChangeNotification,
+  Colour,
+  ConfigDescription,
+  ConfigValues,
+  FontInfo,
+  KeyLabel,
+  Point,
+  PresetMenuEntry,
+  PuzzleStaticAttributes,
+  ReferenceModel,
+  Size,
+} from "../engine/types.ts";
+import { Drawing } from "./drawing.ts";
+import type { PuzzleEngineSurface } from "./engine-surface.ts";
+
+export class TsWorkerPuzzle implements PuzzleEngineSurface {
+  private readonly engine: EngineCore;
+  private drawing?: Drawing;
+  /** The canvas `Drawing` throws if asked to paint before a palette is
+   * installed. The midend now repaints on every transition (incl. the
+   * initial one), which can fire before `setDrawingPalette`; gate
+   * `redraw()` until the palette is ready (the app always sets it as
+   * part of canvas setup, mirroring the C path). */
+  private paletteReady = false;
+  private timerActive = false;
+  private lastTimeMs = 0;
+  private notifyTimerStateRemote?: (isActive: boolean) => void;
+
+  constructor(
+    public readonly puzzleId: string,
+    engine: EngineCore,
+  ) {
+    this.engine = engine;
+  }
+
+  // --- callbacks / lifecycle --------------------------------------
+
+  setCallbacks(
+    notifyChange: (message: ChangeNotification) => void,
+    notifyTimerState: (isActive: boolean) => void,
+  ): void {
+    this.notifyTimerStateRemote = notifyTimerState;
+    this.engine.setCallbacks(
+      notifyChange,
+      (active) => {
+        if (active) this.activateTimer();
+        else this.deactivateTimer();
+      },
+      // Repaint into the canvas this adapter owns (the engine has no
+      // Drawing; this is the C frontend's draw-after-input role).
+      () => this.redraw(),
+    );
+  }
+
+  getStaticProperties(): PuzzleStaticAttributes {
+    return this.engine.getStaticProperties();
+  }
+
+  newGame(): void {
+    this.engine.newGame();
+  }
+  newGameFromId(id: string): string | undefined {
+    return this.engine.newGameFromId(id);
+  }
+  restartGame(): void {
+    this.engine.restartGame();
+  }
+  undo(): void {
+    this.engine.undo();
+  }
+  redo(): void {
+    this.engine.redo();
+  }
+  solve(): string | undefined {
+    return this.engine.solve();
+  }
+  hint(): string | undefined {
+    return this.engine.hint();
+  }
+  executeHint(hideAfter = false): string | undefined {
+    return this.engine.executeHint(hideAfter);
+  }
+  currentAnimationMs(): number {
+    return this.engine.currentAnimationMs();
+  }
+  findMistakes(): number {
+    return this.engine.findMistakes();
+  }
+  getReference(): ReferenceModel | null {
+    return this.engine.getReference();
+  }
+  selectReference(key: string | null): void {
+    this.engine.selectReference(key);
+  }
+
+  // --- input ------------------------------------------------------
+
+  processKey(key: number): boolean {
+    return this.engine.processInput(0, 0, key);
+  }
+  processMouse({ x, y }: Point, button: number): boolean {
+    return this.engine.processInput(x, y, button);
+  }
+  requestKeys(): KeyLabel[] {
+    return this.engine.requestKeys();
+  }
+
+  // --- params / presets -------------------------------------------
+
+  getParams(): string {
+    return this.engine.getParams();
+  }
+  setParams(params: string): string | undefined {
+    return this.engine.setParams(params);
+  }
+  getPresets(): PresetMenuEntry[] {
+    return this.engine.getPresets();
+  }
+
+  // Custom-params / preferences UI surface: see file header. The engine
+  // builds the config from the game's declarative `paramConfig` and
+  // reads/writes the values off a params copy; the app's
+  // `puzzle-custom-params-form` drives these unchanged.
+  getCustomParamsConfig(): ConfigDescription {
+    return this.engine.getCustomParamsConfig();
+  }
+  getCustomParams(): ConfigValues {
+    return this.engine.getCustomParams();
+  }
+  setCustomParams(values: ConfigValues): string | undefined {
+    return this.engine.setCustomParams(values);
+  }
+  decodeCustomParams(params: string): ConfigValues | string {
+    const game = getTsGame(this.puzzleId);
+    if (!game) {
+      return {};
+    }
+    try {
+      const p = game.decodeParams(params);
+      if (!p) {
+        return {};
+      }
+      // A generic width/height base from `w`/`h` params (most games), then
+      // the game's own type-summary mapping spread over it. A game whose
+      // params aren't `w`/`h` (e.g. Mosaic) supplies width/height from its
+      // own `describeParams`, replacing the empty base.
+      const rec = p as Record<string, unknown>;
+      const base: ConfigValues = {};
+      if ("w" in rec && rec["w"] !== undefined) {
+        base["width"] = String(rec["w"]);
+      }
+      if ("h" in rec && rec["h"] !== undefined) {
+        base["height"] = String(rec["h"]);
+      }
+      return { ...base, ...game.describeParams?.(p) };
+    } catch (e) {
+      return String(e);
+    }
+  }
+  encodeCustomParams(values: ConfigValues): string {
+    return this.engine.encodeCustomParams(values);
+  }
+  // Preferences ARE modelled on the TS path: the engine builds the
+  // config from the game's declarative `prefs` and reads/writes the
+  // values off the ui. The app's `puzzle-preferences-form` and
+  // per-puzzle IndexedDB persistence drive these unchanged; a game with
+  // no `prefs` yields an empty config (no regression for current ports).
+  getPreferencesConfig(): ConfigDescription {
+    return this.engine.getPreferencesConfig();
+  }
+  getPreferences(): ConfigValues {
+    return this.engine.getPreferences();
+  }
+  setPreferences(values: ConfigValues): string | undefined {
+    return this.engine.setPreferences(values);
+  }
+  // The binary save/load prefs surface is an internal C/WASM
+  // serialisation the app does not use for persistence (it persists
+  // `ConfigValues` per puzzle via get/setPreferences). No-op here.
+  savePreferences(): Uint8Array<ArrayBuffer> {
+    const data = new Uint8Array(0);
+    return transfer(data, [data.buffer]);
+  }
+  loadPreferences(_data: Uint8Array): string | undefined {
+    return undefined;
+  }
+
+  // --- rendering --------------------------------------------------
+
+  getColourPalette(defaultBackground: Colour): Colour[] {
+    return this.engine.getColourPalette(defaultBackground);
+  }
+
+  darkPalette(defaultBackground: Colour): Record<number, Colour> {
+    return this.engine.darkPalette(defaultBackground);
+  }
+  size(maxSize: Size, isUserSize: boolean, devicePixelRatio: number): Size {
+    return this.engine.size(maxSize, isUserSize, devicePixelRatio);
+  }
+  preferredSize(): Size {
+    return this.engine.preferredSize();
+  }
+  formatAsText(): string | undefined {
+    return this.engine.formatAsText();
+  }
+
+  // --- save / load ------------------------------------------------
+
+  loadGame(data: Uint8Array): string | undefined {
+    return this.engine.loadGame(data);
+  }
+  saveGame(): Uint8Array<ArrayBuffer> {
+    const data = this.engine.saveGame();
+    return transfer(data, [data.buffer]);
+  }
+
+  // --- drawing ----------------------------------------------------
+
+  attachCanvas(canvas: OffscreenCanvas, fontInfo: FontInfo): void {
+    this.drawing = new Drawing(canvas, fontInfo);
+  }
+  deleteDrawing(): void {
+    this.drawing = undefined;
+  }
+  detachCanvas(): void {
+    this.drawing?.resize(1, 1, 1);
+  }
+  resizeDrawing({ w, h }: Size, dpr: number): void {
+    if (!this.drawing) throw new Error("resizeDrawing: no canvas attached");
+    // `Drawing.resize` sets `canvas.width`/`height`, which under
+    // `{alpha:false}` resets the backing store to opaque black. The
+    // engine's per-tile cache (what the game's `redraw` consults to
+    // skip unchanged cells) is now stale — every cached entry's
+    // pixels are gone. Tell the engine, so it drops the drawstate
+    // and the next `redraw` paints from scratch via the game's
+    // `!ds.started` branch.
+    this.drawing.resize(w, h, dpr);
+    this.engine.canvasCleared();
+  }
+  setDrawingPalette(colors: string[]): void {
+    if (!this.drawing) throw new Error("setDrawingPalette: no canvas attached");
+    const firstInstall = !this.paletteReady && colors.length > 0;
+    if (colors.length > 0) this.paletteReady = true;
+    // `setPalette` returns true only when an already-installed
+    // palette was replaced (light/dark toggle). In that case the
+    // per-tile cache any game holds was keyed against the old
+    // palette and is stale — drop the drawstate, arm first-draw and
+    // repaint, matching `puzzles/webapp.cpp`'s
+    // `setDrawingPalette → forceRedraw()`.
+    if (this.drawing.setPalette(colors)) {
+      this.forceRedraw();
+      return;
+    }
+    // **The first install must also repaint, and this is the whole reason
+    // this branch exists.** `redraw()` below silently drops every repaint
+    // requested before the palette arrives — and the midend requests one on
+    // the *initial* game transition, which is a race the game usually loses
+    // when generation is fast. Nothing else re-issues that repaint, so the
+    // board stayed blank until some unrelated event (opening a menu,
+    // resizing) happened to force one.
+    //
+    // Symptom this fixes: deep-linking to a non-default type
+    // (`/loopy?type=5x4t9dh`, `/pearl?type=12x8dt`) left the canvas empty
+    // indefinitely, while the *same* params chosen from the Type menu painted
+    // immediately — because by then the palette was long installed. It
+    // affected every TS-ported game (reproduced on Pearl, shipped since
+    // 2026-07) and no C/WASM game, which is what pinned it to this adapter.
+    if (firstInstall) this.forceRedraw();
+  }
+  setDrawingFontInfo(fontInfo: FontInfo): void {
+    if (!this.drawing) throw new Error("setDrawingFontInfo: no canvas attached");
+    // Same reasoning: a font change invalidates any per-tile cache;
+    // C path calls `forceRedraw()` here too.
+    if (this.drawing.setFontInfo(fontInfo)) this.forceRedraw();
+  }
+  async getImage(options?: ImageEncodeOptions): Promise<Blob> {
+    if (!this.drawing) throw new Error("getImage: no canvas attached");
+    return this.drawing.getImage(options);
+  }
+  redraw(): void {
+    if (this.drawing && this.paletteReady) this.engine.redraw(this.drawing);
+  }
+
+  /** Internal-only mirror of `WorkerPuzzle.frontend.forceRedraw()`
+   * — the canvas-invalidating paths (palette/font replacement) want
+   * a full repaint with the per-game drawstate dropped, not just a
+   * plain `engine.redraw` that would honour the now-stale cache. Not
+   * on `PuzzleEngineSurface`: the app's own redraw path goes through
+   * `redraw()` plus `Midend.size`-driven first-draw, same as the C
+   * path. */
+  private forceRedraw(): void {
+    if (this.drawing && this.paletteReady) this.engine.forceRedraw(this.drawing);
+  }
+
+  // --- timer ------------------------------------------------------
+
+  private onAnimationFrame = (timestampMs: number): void => {
+    if (this.timerActive) {
+      this.engine.timer((timestampMs - this.lastTimeMs) / 1000);
+      this.lastTimeMs = timestampMs;
+      self.requestAnimationFrame(this.onAnimationFrame);
+    }
+  };
+
+  private activateTimer(): void {
+    if (!this.timerActive) {
+      this.timerActive = true;
+      this.lastTimeMs = self.performance.now();
+      this.notifyTimerStateRemote?.(true);
+      self.requestAnimationFrame(this.onAnimationFrame);
+    }
+  }
+  private deactivateTimer(): void {
+    if (this.timerActive) {
+      this.timerActive = false;
+      this.notifyTimerStateRemote?.(false);
+    }
+  }
+
+  delete(): void {
+    this.engine.delete();
+    this.deleteDrawing();
+  }
+}

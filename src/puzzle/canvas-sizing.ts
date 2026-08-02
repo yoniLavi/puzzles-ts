@@ -1,4 +1,4 @@
-import type { Size } from "./types.ts";
+import type { Size } from "../engine/types.ts";
 
 export interface AvailableCanvasSizeInputs {
   /** Host box (`<puzzle-view>` getBoundingClientRect). */

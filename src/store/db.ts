@@ -5,7 +5,7 @@ import type {
   EncodedParams,
   GameStatus,
   PuzzleId,
-} from "../puzzle/types.ts";
+} from "../engine/types.ts";
 
 // Settings shared by all puzzles
 export interface CommonSettings {

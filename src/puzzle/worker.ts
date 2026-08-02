@@ -9,10 +9,10 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 }
 
 import { expose, proxy, type Remote } from "comlink";
-import { createTsEngine } from "../native/engine/index.ts";
-import { TsWorkerPuzzle } from "../native/engine/worker-adapter.ts";
+import { createTsEngine } from "../engine/index.ts";
+import { TsWorkerPuzzle } from "./worker-adapter.ts";
 // Side-effect import: registers every native-TS game port.
-import "../native/games/index.ts";
+import "../games/index.ts";
 import { installErrorHandlersInWorker } from "../utils/errors-worker.ts";
 import type { PuzzleEngineSurface } from "./engine-surface.ts";
 

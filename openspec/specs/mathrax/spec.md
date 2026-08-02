@@ -5,7 +5,7 @@ TBD - created by archiving change add-mathrax-ts-port. Update Purpose after arch
 ## Requirements
 ### Requirement: Mathrax game implements the Game interface
 
-The engine SHALL provide `src/native/games/mathrax/` implementing the `Game`
+The engine SHALL provide `src/games/mathrax/` implementing the `Game`
 interface for Mathrax, registered so the puzzle is served by the TypeScript engine.
 
 Parameters SHALL be a grid size, a difficulty (Easy, Normal, Tricky or Recursive),

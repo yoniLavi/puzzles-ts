@@ -5,7 +5,7 @@ TBD - created by archiving change port-combi-to-typescript. Update Purpose after
 ## Requirements
 ### Requirement: TypeScript combi module reproduces C output byte-for-byte
 
-The TypeScript implementation in `src/native/combi/index.ts` SHALL produce, for every `(r, n)` pair in the characterization corpus, the same lex-ordered enumeration of `r`-element subsets of `{0, 1, …, n-1}` that `puzzles/combi.c` produces — element-for-element identical.
+The TypeScript implementation in `src/engine/combi/index.ts` SHALL produce, for every `(r, n)` pair in the characterization corpus, the same lex-ordered enumeration of `r`-element subsets of `{0, 1, …, n-1}` that `puzzles/combi.c` produces — element-for-element identical.
 
 The implementation SHALL expose, at minimum, the public surface used by the sole upstream consumer (`puzzles/lightup.c`): construction from `(r, n)`, advance-to-next, and read access to the current `r`-tuple. The C surface (`new_combi`, `reset_combi`, `next_combi`, `free_combi`) MAY be exposed under idiomatic TS names — concrete shape is captured in `design.md`.
 
@@ -15,7 +15,7 @@ The TS implementation SHALL enforce the C preconditions `r <= n` and `n >= 1` by
 
 #### Scenario: Corpus replay passes element-for-element
 
-- **WHEN** the Vitest replay loads each fixture in `src/native/combi/__fixtures__/corpus.json` and walks the TS iterator until exhausted
+- **WHEN** the Vitest replay loads each fixture in `src/engine/combi/__fixtures__/corpus.json` and walks the TS iterator until exhausted
 - **THEN** the sequence of `r`-tuples produced by the TS impl deep-equals the recorded `enumeration` for that fixture
 - **AND** the call that follows the final enumerated tuple returns the documented falsy sentinel
 
@@ -41,7 +41,7 @@ The TS implementation SHALL enforce the C preconditions `r <= n` and `n >= 1` by
 
 ### Requirement: Characterization corpus is committed to the repository
 
-The repository SHALL contain a JSON corpus under `src/native/combi/__fixtures__/`
+The repository SHALL contain a JSON corpus under `src/engine/combi/__fixtures__/`
 capturing input `(r, n)` pairs and their recorded enumerations from the native C
 implementation. The corpus SHALL cover the degenerate cases (`r == 0`, `r == n`),
 a small canonical case suitable for hand-inspection, at least one case large
@@ -57,7 +57,7 @@ is the record of what upstream produced, and a change to the TS module that
 alters its enumeration is a behavioural change to be argued for, not a reason to
 re-record.
 
-The module the corpus guards is live — `src/native/combi/index.ts`, imported by
+The module the corpus guards is live — `src/engine/combi/index.ts`, imported by
 Light Up's solver — so this requirement continues to do real work.
 
 #### Scenario: Corpus covers the named edge cases

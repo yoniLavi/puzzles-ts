@@ -5,7 +5,7 @@ TBD - created by archiving change add-slide-ts-port. Update Purpose after archiv
 ## Requirements
 ### Requirement: Slide game implements the Game interface
 
-The engine SHALL provide `src/native/games/slide/` implementing the `Game`
+The engine SHALL provide `src/games/slide/` implementing the `Game`
 interface for Slide (Klotski), registered so the puzzle is served by the
 TypeScript engine.
 

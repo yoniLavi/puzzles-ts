@@ -1,18 +1,18 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import type { Game, PresetMenu } from "../native/engine/game.ts";
-import { getTsGame } from "../native/engine/registry.ts";
+import type { Game, PresetMenu } from "../engine/game.ts";
+import { getTsGame } from "../engine/registry.ts";
 // Register every TS-ported game so the registry is populated and we can
 // drive each game's `describeParams` through the matching `describeConfig`
 // augmentation template. `beforeAll` re-runs it because under
 // `isolate: false` a sibling file may have reset the shared registry after
 // this module's import-time registration ran.
-import { registerAllGames } from "../native/games/index.ts";
+import { registerAllGames } from "../games/index.ts";
 import { puzzleIds } from "./catalog.ts";
 
 beforeAll(registerAllGames);
 
+import type { ConfigValues, PuzzleId } from "../engine/types.ts";
 import { puzzleAugmentations } from "./augmentation.ts";
-import type { ConfigValues, PuzzleId } from "./types.ts";
 
 type AnyGame = Game<unknown, unknown, unknown, unknown, unknown>;
 

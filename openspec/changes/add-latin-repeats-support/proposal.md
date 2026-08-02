@@ -71,7 +71,7 @@ and there is none today.
 
 - Affected specs: `latin-solver` (the cube gains a repeatable symbol), `salad`
   (solver strength, tier grading, differential basis).
-- Affected code: `src/native/engine/latin.ts`, `src/native/games/salad/`.
+- Affected code: `src/engine/latin.ts`, `src/games/salad/`.
 - **Every Salad board changes.** Existing IDs carrying a description still load.
 - Risk: `latin.ts` is shared by the whole Latin family (Solo, Keen, Towers,
   Unequal, Undead, Mathrax, ABCD). The repeatable symbol must be *opt-in* and

@@ -5,7 +5,7 @@ TBD - created by archiving change add-rome-ts-port. Update Purpose after archive
 ## Requirements
 ### Requirement: Rome game implements the Game interface
 
-The engine SHALL provide `src/native/games/rome/` implementing the `Game`
+The engine SHALL provide `src/games/rome/` implementing the `Game`
 interface for Rome (Nikoli's *Roma*), registered so the puzzle is served by the
 TypeScript engine.
 

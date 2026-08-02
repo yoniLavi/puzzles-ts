@@ -24,11 +24,11 @@
  */
 import { writeFileSync } from "node:fs";
 import { it } from "vitest";
-import { darkValue } from "../src/native/engine/colour-token.ts";
-import { getTsGame } from "../src/native/engine/registry.ts";
+import { darkValue } from "../src/engine/colour-token.ts";
+import { getTsGame } from "../src/engine/registry.ts";
+import type { Colour, PuzzleId } from "../src/engine/types.ts";
 import { puzzleAugmentations } from "../src/puzzle/augmentation.ts";
 import { puzzleIds } from "../src/puzzle/catalog.ts";
-import type { Colour, PuzzleId } from "../src/puzzle/types.ts";
 import {
   colourToOKLCH,
   darkModeColor,
@@ -37,7 +37,7 @@ import {
   oklchToColour,
 } from "../src/utils/color.ts";
 import { clamp } from "../src/utils/math.ts";
-import "../src/native/games/index.ts";
+import "../src/games/index.ts";
 
 const OUT = "/tmp/colour-dark-check.md";
 

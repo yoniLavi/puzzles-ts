@@ -7,8 +7,8 @@
 // orchestration directly against a stub worker — the logic lives entirely in
 // Puzzle, no midend/worker needed.
 import { describe, expect, it, vi } from "vitest";
+import type { PuzzleStaticAttributes } from "../engine/types.ts";
 import { Puzzle } from "./puzzle.ts";
-import type { PuzzleStaticAttributes } from "./types.ts";
 import type { RemoteWorkerPuzzle } from "./worker.ts";
 
 const ATTRS: PuzzleStaticAttributes = {

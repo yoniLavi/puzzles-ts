@@ -1,5 +1,5 @@
-import type { GameDrawing } from "../native/engine/game.ts";
-import type { DrawTextOptions, FontInfo, Point, Rect, Size } from "./types.ts";
+import type { GameDrawing } from "../engine/game.ts";
+import type { DrawTextOptions, FontInfo, Point, Rect, Size } from "../engine/types.ts";
 
 // Type definitions
 

@@ -56,7 +56,7 @@ effect of the released oracle, not an accident of the sequencing.
 ## Impact
 
 - Affected specs: `sticks`.
-- Affected code: `src/native/games/sticks/{solver,generator,state,index}.ts`.
+- Affected code: `src/games/sticks/{solver,generator,state,index}.ts`.
 - **Every Sticks board changes** once the solver gains a rung.
 - Sequencing: do this **after** `add-clusters-difficulty-tiers`, which establishes
   the params/presets/ID/differential pattern on a game where no deduction has to

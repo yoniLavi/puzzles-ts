@@ -185,7 +185,7 @@ working tree** at any point after retirement.
   Their relocation SHALL change no URL and no word of their content.
 - The upstream MIT notices SHALL live in `licences/`, byte-identical to what
   each upstream project ships. What they cover after the migration is the whole
-  of `src/native/` and the served help sources, so they are not a subdirectory's
+  of `src/engine/` and `src/games/` and the served help sources, so they are not a subdirectory's
   concern.
 
 A C source kept as a **reading reference** for scaffolded future work SHALL live

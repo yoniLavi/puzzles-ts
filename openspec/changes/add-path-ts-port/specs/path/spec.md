@@ -4,7 +4,7 @@
 
 ### Requirement: Path provides a Numberlink solver that proves uniqueness
 
-The engine SHALL provide `src/native/games/path/solver.ts` implementing a
+The engine SHALL provide `src/games/path/solver.ts` implementing a
 Numberlink solver that, given a board of numbered endpoint pairs, determines
 whether the board is solvable and whether its solution is **unique**. Upstream
 never wrote this solver, and unique-solution generation is impossible without

@@ -10,7 +10,7 @@ generated tables.
 **Why these live here.** They were written by Simon Tatham as
 `puzzles/auxiliary/doc/`, documenting `hat.c` / `spectre.c` and the generators
 that produced their tables. That C is gone — the tilings are native TypeScript
-in [`src/native/engine/tilings/`](../../src/native/engine/tilings/), landed by
+in [`src/engine/tilings/`](../../src/engine/tilings/), landed by
 `add-aperiodic-tilings` and used by Loopy's Hats and Spectres grids. The
 diagrams outlived the code they were written for, because what they explain is
 the *construction*, which the port reproduces exactly. `retire-c-engine` moved

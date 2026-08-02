@@ -366,7 +366,7 @@ the bg + one-time setup via the game's first-paint branch.
 
 ### Requirement: The engine provides a shared colour-mkhighlight helper
 
-The engine SHALL provide `mkhighlightBackground(bg: Colour): Colour` in `src/native/engine/colour-mkhighlight.ts`, implementing the `misc.c` `game_mkhighlight_specific` background-adjustment logic with the near-white epsilon fix. Every white/black-tile game SHALL be able to import and use this instead of re-deriving it locally.
+The engine SHALL provide `mkhighlightBackground(bg: Colour): Colour` in `src/engine/colour-mkhighlight.ts`, implementing the `misc.c` `game_mkhighlight_specific` background-adjustment logic with the near-white epsilon fix. Every white/black-tile game SHALL be able to import and use this instead of re-deriving it locally.
 
 #### Scenario: A game imports the shared mkhighlightBackground
 
@@ -376,12 +376,12 @@ The engine SHALL provide `mkhighlightBackground(bg: Colour): Colour` in `src/nat
 
 ### Requirement: The engine provides a shared disjoint-set forest (dsf)
 
-The engine SHALL provide the `Dsf` class in `src/native/engine/dsf.ts`, promoted from the Galaxies local implementation. The class SHALL support `constructor(n)`, `reinit()`, `canonify(i)`, `merge(a, b)`, `size(i)` (the number of elements in `i`'s class), and `equivalent(a, b)` (whether `a` and `b` share a class) with path compression and union-by-size. Games that need union-find SHALL import from this shared location.
+The engine SHALL provide the `Dsf` class in `src/engine/dsf.ts`, promoted from the Galaxies local implementation. The class SHALL support `constructor(n)`, `reinit()`, `canonify(i)`, `merge(a, b)`, `size(i)` (the number of elements in `i`'s class), and `equivalent(a, b)` (whether `a` and `b` share a class) with path compression and union-by-size. Games that need union-find SHALL import from this shared location.
 
 #### Scenario: A game imports the shared Dsf
 
 - **WHEN** a game needs disjoint-set operations
-- **THEN** it imports `Dsf` from `src/native/engine/dsf.ts`
+- **THEN** it imports `Dsf` from `src/engine/dsf.ts`
 - **AND** no game directory contains a local `dsf.ts`
 
 #### Scenario: Size and equivalence reflect merges
@@ -489,7 +489,7 @@ local heuristic when it is absent.
 
 ### Requirement: The engine provides shared pointer button constants
 
-The engine SHALL provide button code constants (`LEFT_BUTTON`, `RIGHT_BUTTON`, `RIGHT_DRAG`, `RIGHT_RELEASE`, cursor keys, etc.) in `src/native/engine/pointer.ts`, matching the values in `src/puzzle/types.ts` `PuzzleButton`. These SHALL be plain `const` values (not an enum) so advisory diff scripts can import them under Node's strip-only TS loader.
+The engine SHALL provide button code constants (`LEFT_BUTTON`, `RIGHT_BUTTON`, `RIGHT_DRAG`, `RIGHT_RELEASE`, cursor keys, etc.) in `src/engine/pointer.ts`, matching the values in the engine's own `types.ts` `PuzzleButton`. These SHALL be plain `const` values (not an enum) so advisory diff scripts can import them under Node's strip-only TS loader.
 
 #### Scenario: A game imports shared button constants
 
@@ -499,7 +499,7 @@ The engine SHALL provide button code constants (`LEFT_BUTTON`, `RIGHT_BUTTON`, `
 
 ### Requirement: The engine provides a full mkhighlight palette helper
 
-The engine SHALL provide `mkhighlight(bg: Colour): { background: Colour; highlight: Colour; lowlight: Colour }` in `src/native/engine/colour-mkhighlight.ts`, implementing the full `misc.c` `game_mkhighlight` derivation: the background is adjusted via `mkhighlightBackground`, then the highlight is shifted from the adjusted background toward white by K = sqrt(3)/6 and the lowlight toward black by K. Per upstream, when the background is within K of white the highlight SHALL saturate to pure white, and when within K of black the lowlight SHALL saturate to pure black. Games needing the standard bg/highlight/lowlight trio SHALL destructure this helper instead of re-deriving the colours locally.
+The engine SHALL provide `mkhighlight(bg: Colour): { background: Colour; highlight: Colour; lowlight: Colour }` in `src/engine/colour-mkhighlight.ts`, implementing the full `misc.c` `game_mkhighlight` derivation: the background is adjusted via `mkhighlightBackground`, then the highlight is shifted from the adjusted background toward white by K = sqrt(3)/6 and the lowlight toward black by K. Per upstream, when the background is within K of white the highlight SHALL saturate to pure white, and when within K of black the lowlight SHALL saturate to pure black. Games needing the standard bg/highlight/lowlight trio SHALL destructure this helper instead of re-deriving the colours locally.
 
 #### Scenario: A game derives its palette from the shared helper
 
@@ -514,7 +514,7 @@ The engine SHALL provide `mkhighlight(bg: Colour): { background: Colour; highlig
 
 ### Requirement: The engine provides a shared leading-integer param parser
 
-The engine SHALL provide `parseLeadingInt(s: string, start: number): { value: number; next: number }` in `src/native/engine/params.ts`, returning the integer formed by the maximal digit run starting at `start` (0 when the run is empty) and the index of the first non-digit character. Games whose `decodeParams` walks an upstream-format param string SHALL import this instead of declaring a local copy.
+The engine SHALL provide `parseLeadingInt(s: string, start: number): { value: number; next: number }` in `src/engine/params.ts`, returning the integer formed by the maximal digit run starting at `start` (0 when the run is empty) and the index of the first non-digit character. Games whose `decodeParams` walks an upstream-format param string SHALL import this instead of declaring a local copy.
 
 #### Scenario: A game decodes a WxH param string
 
@@ -600,7 +600,7 @@ unported C/WASM game, `canFindMistakes` SHALL be false and
 
 The engine SHALL provide `coord(pos: number, tileSize: number, border: number):
 number` and `fromCoord(pixel: number, tileSize: number, border: number): number`
-in `src/native/engine/geometry.ts`, implementing the upstream `COORD` /
+in `src/engine/geometry.ts`, implementing the upstream `COORD` /
 `FROMCOORD` mapping with the caller supplying the per-game border (most games
 use `Math.floor(tileSize / 2)`). `fromCoord` SHALL use `Math.floor((pixel −
 border) / tileSize)` directly — correct for pixels in the border region without
@@ -624,7 +624,7 @@ Grid games SHALL import these instead of re-deriving the mapping locally.
 ### Requirement: The engine provides a shared cursor button-to-delta helper
 
 The engine SHALL provide `cursorDelta(button: number): { dx: number; dy: number }
-| null` in `src/native/engine/pointer.ts`, returning the unit grid delta for the
+| null` in `src/engine/pointer.ts`, returning the unit grid delta for the
 four cursor-direction buttons (`CURSOR_UP` → `{0,−1}`, `CURSOR_DOWN` → `{0,+1}`,
 `CURSOR_LEFT` → `{−1,0}`, `CURSOR_RIGHT` → `{+1,0}`) and `null` for any other
 button, plus an `isCursorMove(button: number): boolean` predicate (true iff the
@@ -713,7 +713,7 @@ hook as a no-op).
 ### Requirement: The engine provides a shared recessed-border drawing helper
 
 The engine SHALL provide `drawRecessedBorder(dr, bounds, inset, highlight,
-lowlight)` in `src/native/engine/draw.ts`, where `bounds` is the playfield's
+lowlight)` in `src/engine/draw.ts`, where `bounds` is the playfield's
 outer pixel box (`{ left, top, right, bottom }`, edges inclusive), `inset` is the
 bevel depth (the tile size), and `highlight`/`lowlight` are the two palette
 colours. It SHALL draw the upstream two-pentagon recessed bevel — a top-right
@@ -736,7 +736,7 @@ remain at the call site.
 ### Requirement: The engine provides a shared rectangle-outline drawing helper
 
 The engine SHALL provide `drawRectOutline(dr, x, y, w, h, colour)` in
-`src/native/engine/draw.ts`, drawing a 1px-thick rectangle border via four lines
+`src/engine/draw.ts`, drawing a 1px-thick rectangle border via four lines
 using the upstream-faithful **inclusive** convention (corners `(x,y)` to
 `(x+w−1, y+h−1)`), matching upstream `draw_rect_outline`. Games drawing a
 rectangle outline (cursor markers, cell borders) SHALL call this helper instead
@@ -752,7 +752,7 @@ of carrying a private copy or inlining the four `drawLine` calls.
 ### Requirement: The engine provides a shared permutation-parity helper
 
 The engine SHALL provide `permParity(perm: Int32Array, n: number): number` in
-`src/native/engine/shuffle.ts`, returning the parity (0 or 1) of the number of
+`src/engine/shuffle.ts`, returning the parity (0 or 1) of the number of
 inversions in the first `n` entries of `perm` — the idiomatic shared form of the
 generator parity check used by sliding-tile puzzles. Per-game parity *correction*
 (which entries to swap, and under what condition) SHALL remain local to each
@@ -842,7 +842,7 @@ single plan-computation chokepoint.
 
 The engine SHALL provide the keyboard modifier-mask constants `MOD_MASK`
 (`0x7800`), `MOD_NUM_KEYPAD` (`0x4000`), `MOD_SHFT` (`0x2000`), and `MOD_CTRL`
-(`0x1000`) in `src/native/engine/pointer.ts`, matching upstream's `puzzles.h`
+(`0x1000`) in `src/engine/pointer.ts`, matching upstream's `puzzles.h`
 modifier bits, plus a `stripModifiers(button: number): number` helper returning
 `button & ~MOD_MASK`. These SHALL be plain `const` values (not an enum) for the
 same strip-only-TS-loader reason as the button constants. Games that mask
@@ -861,7 +861,7 @@ the magic numbers locally.
 ### Requirement: The engine provides a shared dimension param parser
 
 The engine SHALL provide `parseDimensions(s: string, start?: number): { w:
-number; h: number; next: number }` in `src/native/engine/params.ts`, built on
+number; h: number; next: number }` in `src/engine/params.ts`, built on
 `parseLeadingInt`: it reads a width, then an optional `"x"` followed by a height,
 falling back to a **square** (`h = w`) when no `"x"` is present; `next` is the
 index of the first character after the consumed dimensions. Games whose
@@ -1262,7 +1262,7 @@ A Latin-square-family game's hint SHALL narrate a forced single placement by the
 This applies to every game riding the shared `latin.ts` solver (Towers, Unequal,
 Keen, and future Solo / Undead). The generic `elim` records naked and hidden singles
 under one `single` reason; the hint re-derives which it is and narrates accordingly.
-The shared classifier (`src/native/engine/latin-hint.ts`) distinguishes three kinds,
+The shared classifier (`src/engine/latin-hint.ts`) distinguishes three kinds,
 considering only *empty* cells as competitors for a digit:
 
 1. a **naked single** — the cell's own candidates are exactly `{n}` — narrated "every
@@ -1300,7 +1300,7 @@ of cells so the player can see that no other cell in the line takes the digit.
 
 ### Requirement: A shared candidate-elimination hint-plan abstraction
 
-The engine SHALL provide a shared module (`src/native/engine/candidate-hint.ts`) that
+The engine SHALL provide a shared module (`src/engine/candidate-hint.ts`) that
 implements the reusable parts of the candidate-elimination hint *plan* — shared by every
 pencil-notes game whose hint sets and strikes candidate notes and places a value when a
 cell's notes collapse to one (Towers, Unequal, Keen, Solo, and any future such game).
@@ -1330,7 +1330,7 @@ Narration, the per-game reason union, and the `buildSteps` walk (with its game-s
 strike-split and continuation tracking) SHALL remain in the game — the shared module owns
 the reusable mechanics, the game owns meaning and control flow.
 
-The placement-classifier in `src/native/engine/latin-hint.ts` (which re-derives whether a
+The placement-classifier in `src/engine/latin-hint.ts` (which re-derives whether a
 recorded generic `single` placement is a naked single, a hidden single, or a forced
 single — see the "Latin-family hints distinguish naked, hidden and forced singles"
 requirement) SHALL generalise to an arbitrary **region list**, so a game reasoning over
@@ -1396,7 +1396,7 @@ keypad it showed on the C/WASM path. A game without the hook SHALL show no keypa
 
 ### Requirement: A shared cell-region helper for candidate-elimination games
 
-The shared candidate-elimination module (`src/native/engine/candidate-hint.ts`) SHALL
+The shared candidate-elimination module (`src/engine/candidate-hint.ts`) SHALL
 provide a single representation of "the uniqueness regions a cell belongs to" that all
 three consumers — the placement classifier, the basic-strike opening, and a placement's
 duplicate cull — share, so they cannot disagree about a cell's regions.
@@ -1429,7 +1429,7 @@ frames are unchanged.
 
 ### Requirement: A shared candidate-elimination hint entry
 
-The shared candidate-elimination module (`src/native/engine/candidate-hint.ts`) SHALL
+The shared candidate-elimination module (`src/engine/candidate-hint.ts`) SHALL
 provide a `candidateHint` entry that owns the `Game.hint` control flow common to every
 candidate-elimination game: refuse on a completed board, refuse (with the standard
 message) when the game's `findMistakes` reports any mistake, read the `autoPencil`
@@ -1464,7 +1464,7 @@ timing keeps its own. Delegation SHALL be behaviour-preserving.
 
 ### Requirement: A shared narrator for generic Latin deduction reasons
 
-When adopted, the shared Latin-hint module (`src/native/engine/latin-hint.ts`) SHALL
+When adopted, the shared Latin-hint module (`src/engine/latin-hint.ts`) SHALL
 provide a `narrateLatinReason(reason, ns)` that renders the *generic* Latin deduction
 reasons whose narration is identical across the **row/column** Latin games (`single`,
 `hiddenSingle`, `forcedSingle`, `dup`, `set`, `forcing`). A row/column game (Keen, Unequal)
@@ -1501,7 +1501,7 @@ obvious ones" reads and auto-plays as one setup journey (and stand alone when th
 already noted), and SHALL fire at most once per plan. An empty cleanup (nothing obvious to
 remove) SHALL emit no step. The struck marks SHALL be applied to the plan's working notes so
 the rest of the walk sees the cleaned board. The shared engine helper `emitObviousCleanStep`
-(`src/native/engine/candidate-hint.ts`) SHALL own this emission so every such game produces
+(`src/engine/candidate-hint.ts`) SHALL own this emission so every such game produces
 it identically.
 
 Consequently the plan SHALL NOT separately re-teach those obvious row/column/region
@@ -1575,7 +1575,7 @@ menu label, not the form) and of the preferences surface.
 ### Requirement: A shared deduction-fixpoint scaffold
 
 The engine SHALL provide a reusable deduction-fixpoint runner (in
-`src/native/engine/`) that a logic game's solver and its explained hint share, so
+`src/engine/`) that a logic game's solver and its explained hint share, so
 the ordered-rung loop, the difficulty cap, the optional recorder threading, and
 the non-termination step-budget are written **once** rather than hand-rolled per
 game. The runner SHALL take an ordered list of technique rungs (each reporting
@@ -1637,7 +1637,7 @@ non-deductive hint on boards that require guessing.
 
 ### Requirement: The engine provides a shared loop-finding helper
 
-The engine SHALL provide `src/native/engine/findloop.ts`, an idiomatic TS
+The engine SHALL provide `src/engine/findloop.ts`, an idiomatic TS
 port of upstream `findloop.c` (Tarjan's bridge-finding algorithm, the
 non-recursive linked-list variant): `findLoops(nvertices, neighbours)`
 takes a neighbour callback `(vertex: number) => Iterable<number>` over an
@@ -1843,7 +1843,7 @@ a coarse grid never hit).
 ### Requirement: Sliding-permutation games share one slide planner
 
 The engine SHALL provide a shared toroidal slide planner
-(`src/native/engine/slide-planner.ts`) that every sliding-permutation game's
+(`src/engine/slide-planner.ts`) that every sliding-permutation game's
 `hint` uses, rather than each game carrying its own copy of the search.
 
 The planner SHALL own the parts that are hard and game-independent: a heuristic

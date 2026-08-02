@@ -3,10 +3,10 @@ import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, eventOptions, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
+import type { KeyLabel } from "../engine/types.ts";
 import { cssWATweaks } from "../utils/css.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
-import type { KeyLabel } from "./types.ts";
 
 // Components
 import "@awesome.me/webawesome/dist/components/button/button.js";

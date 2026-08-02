@@ -61,13 +61,13 @@ export default {
   // games' own solvers are out of scope — mutating them would mostly rediscover
   // that generation is fixture-pinned, which §2 of the findings sampled directly.
   mutate: [
-    "src/native/engine/midend.ts",
-    "src/native/engine/save.ts",
-    "src/native/engine/latin.ts",
-    "src/native/engine/deduction-fixpoint.ts",
-    "src/native/engine/border-grid.ts",
-    "src/native/engine/dsf.ts",
-    "src/native/engine/grid.ts",
+    "src/engine/midend.ts",
+    "src/engine/save.ts",
+    "src/engine/latin.ts",
+    "src/engine/deduction-fixpoint.ts",
+    "src/engine/border-grid.ts",
+    "src/engine/dsf.ts",
+    "src/engine/grid.ts",
   ],
 
   ignoreStatic: true,

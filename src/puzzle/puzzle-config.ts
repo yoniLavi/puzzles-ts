@@ -6,11 +6,11 @@ import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { query } from "lit/decorators/query.js";
 import { customElement, property, queryAll, state } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
+import type { ConfigDescription, ConfigItem, ConfigValues } from "../engine/types.ts";
 import { cssWATweaks } from "../utils/css.ts";
 import { equalSet } from "../utils/equal.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
-import type { ConfigDescription, ConfigItem, ConfigValues } from "./types.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";

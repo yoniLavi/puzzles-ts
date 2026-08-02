@@ -5,15 +5,15 @@ TBD - created by archiving change port-random-to-typescript. Update Purpose afte
 ## Requirements
 ### Requirement: TypeScript random module reproduces C output byte-for-byte
 
-The TypeScript implementation in `src/native/random/index.ts` SHALL produce byte-identical output to `puzzles/random.c` for every call in the characterization corpus. Bit-identical reproducibility is a product requirement: existing game IDs and shared seeds must keep working when the TS implementation is live.
+The TypeScript implementation in `src/engine/random/index.ts` SHALL produce byte-identical output to `puzzles/random.c` for every call in the characterization corpus. Bit-identical reproducibility is a product requirement: existing game IDs and shared seeds must keep working when the TS implementation is live.
 
 The implementation SHALL expose, at minimum, the public surface used by upstream puzzles: `random_new(seed)`, `random_bits(state, bits)`, `random_upto(state, limit)`, `random_copy(state)`, `random_free(state)`, `random_state_encode(state)`, `random_state_decode(encoded)`.
 
-The TS module SHALL bundle its own SHA-1 internally (currently at `src/native/random/sha1.ts`); the C `SHA_*` functions remain in `puzzles/misc.c` for their non-random callers and are out of scope for this requirement.
+The TS module SHALL bundle its own SHA-1 internally (currently at `src/engine/random/sha1.ts`); the C `SHA_*` functions remain in `puzzles/misc.c` for their non-random callers and are out of scope for this requirement.
 
 #### Scenario: Corpus replay passes byte-for-byte
 
-- **WHEN** the Vitest replay loads each fixture in `src/native/random/__fixtures__/` and replays the recorded call sequence against `src/native/random/index.ts`
+- **WHEN** the Vitest replay loads each fixture in `src/engine/random/__fixtures__/` and replays the recorded call sequence against `src/engine/random/index.ts`
 - **THEN** every returned value matches the C-recorded value byte-for-byte
 - **AND** every `random_state_encode` output matches the C-recorded hex string character-for-character
 
@@ -34,7 +34,7 @@ The TS module SHALL bundle its own SHA-1 internally (currently at `src/native/ra
 
 ### Requirement: Characterization corpus is committed to the repository
 
-The repository SHALL contain a JSON corpus under `src/native/random/__fixtures__/` (or equivalent) capturing input seeds, call scripts, and recorded outputs from the native C implementation. The corpus SHALL cover varied bit counts (including 32), varied `random_upto` limits (including non-powers-of-two), the SHA-rollover path, `random_copy` independence, and `random_state_encode`/`decode` round-trips.
+The repository SHALL contain a JSON corpus under `src/engine/random/__fixtures__/` (or equivalent) capturing input seeds, call scripts, and recorded outputs from the native C implementation. The corpus SHALL cover varied bit counts (including 32), varied `random_upto` limits (including non-powers-of-two), the SHA-rollover path, `random_copy` independence, and `random_state_encode`/`decode` round-trips.
 
 #### Scenario: Corpus covers the named edge cases
 

@@ -21,14 +21,14 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { it } from "vitest";
-import { mkhighlight } from "../src/native/engine/colour-mkhighlight.ts";
-import * as colours from "../src/native/engine/colours.ts";
-import * as roles from "../src/native/engine/palette.ts";
-import * as gameTokens from "../src/native/engine/palette-games.ts";
-import { getTsGame } from "../src/native/engine/registry.ts";
+import { mkhighlight } from "../src/engine/colour-mkhighlight.ts";
+import * as colours from "../src/engine/colours.ts";
+import * as roles from "../src/engine/palette.ts";
+import * as gameTokens from "../src/engine/palette-games.ts";
+import { getTsGame } from "../src/engine/registry.ts";
+import type { Colour } from "../src/engine/types.ts";
 import { puzzleIds } from "../src/puzzle/catalog.ts";
-import type { Colour } from "../src/puzzle/types.ts";
-import "../src/native/games/index.ts";
+import "../src/games/index.ts";
 
 /** The same light host background `palette.test.ts` uses. */
 const BG: Colour = [0.827, 0.827, 0.827];
@@ -115,7 +115,7 @@ function sharedByValue(): Map<string, string> {
  * wrong name in the inventory is worse than none.
  */
 function indexNames(id: string): Map<number, string> {
-  const dir = join("src/native/games", id);
+  const dir = join("src/games", id);
   const names = new Map<number, string>();
   let files: string[];
   try {

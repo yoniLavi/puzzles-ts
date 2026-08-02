@@ -62,10 +62,10 @@ import { MODULES } from "./feedback-probe-cases.mjs";
  * scores it — the test run did not come back clean. */
 const RUN_TIMEOUT_MS = 120_000;
 
-const ENGINE = "src/native/engine";
+const ENGINE = "src/engine";
 
 /**
- * A module's **own tests**: every test file in `src/native/engine/` that
+ * A module's **own tests**: every test file in `src/engine/` that
  * imports it — derived, never hand-listed.
  *
  * The unit matters, and getting it wrong is this project's most-repeated

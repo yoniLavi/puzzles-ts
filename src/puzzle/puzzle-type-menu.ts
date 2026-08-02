@@ -5,11 +5,11 @@ import { SignalWatcher } from "@lit-labs/signals";
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
+import type { PresetMenuEntry } from "../engine/types.ts";
 import { cssWATweaks } from "../utils/css.ts";
 import { puzzleContext } from "./contexts.ts";
 import type { Puzzle } from "./puzzle.ts";
 import type { PuzzleCustomParamsDialog } from "./puzzle-config.ts";
-import type { PresetMenuEntry } from "./types.ts";
 
 // Register components
 import "@awesome.me/webawesome/dist/components/button/button.js";

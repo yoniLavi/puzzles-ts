@@ -25,7 +25,7 @@ import type {
   PuzzleStaticAttributes,
   ReferenceModel,
   Size,
-} from "./types.ts";
+} from "../engine/types.ts";
 
 export interface PuzzleEngineSurface {
   readonly puzzleId: string;

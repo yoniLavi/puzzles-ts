@@ -59,7 +59,7 @@ wants more.
 ## Impact
 
 - Affected specs: `clusters`.
-- Affected code: `src/native/games/clusters/{state,generator,index}.ts`, presets,
+- Affected code: `src/games/clusters/{state,generator,index}.ts`, presets,
   `paramConfig`, differential.
 - Every Tricky board changes if the and-not-at-0 gate moves the RNG stream;
   Easy boards are new. Existing game IDs carrying a description still load.

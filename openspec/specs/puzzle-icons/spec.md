@@ -55,7 +55,7 @@ for this work.
 
 The preferred procedure SHALL be:
 
-1. Add the new puzzle — register it in `src/native/games/index.ts` and add its
+1. Add the new puzzle — register it in `src/games/index.ts` and add its
    catalog entry to `src/puzzle/catalog-data.ts` — then run `npm run dev`.
    (This step used to require building the puzzle's C into wasm; there is no
    such build any more.)

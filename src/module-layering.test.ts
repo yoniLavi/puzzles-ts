@@ -96,7 +96,7 @@ function resolve(from: string, spec: string): string | null {
   return null;
 }
 
-const gameOf = (p: string) => /^src\/native\/games\/([^/]+)\//.exec(p)?.[1] ?? null;
+const gameOf = (p: string) => /^src\/games\/([^/]+)\//.exec(p)?.[1] ?? null;
 
 describe("module layering", () => {
   it("no game imports another game", () => {
@@ -110,7 +110,7 @@ describe("module layering", () => {
         if (to && to !== from) offenders.push(`${path} → ${target}`);
       }
     }
-    // Shared behaviour belongs in src/native/engine/, never in a sibling game.
+    // Shared behaviour belongs in src/engine/, never in a sibling game.
     expect(offenders).toEqual([]);
   });
 
@@ -118,29 +118,45 @@ describe("module layering", () => {
     // engine/testing/hint-games.ts is the enrollment file every hinting port
     // adds itself to once. Named explicitly rather than exempting the whole
     // engine/testing/ directory, so a second violation cannot hide behind it.
-    const ALLOWED = "src/native/engine/testing/hint-games.ts";
+    const ALLOWED = "src/engine/testing/hint-games.ts";
     const offenders: string[] = [];
     for (const [path, text] of modules) {
-      if (!path.startsWith("src/native/engine/") || path === ALLOWED) continue;
+      if (!path.startsWith("src/engine/") || path === ALLOWED) continue;
       for (const { spec } of imports(text)) {
         const target = resolve(path, spec);
-        if (target?.startsWith("src/native/games/"))
-          offenders.push(`${path} → ${target}`);
+        if (target?.startsWith("src/games/")) offenders.push(`${path} → ${target}`);
       }
     }
     expect(offenders).toEqual([]);
   });
 
-  it("the engine and games do not import the app shell", () => {
+  it("the engine and games import nothing above them", () => {
     // The puzzle engine runs in a worker; a Lit component or dialog reached
     // from a solver would break that and bloat the worker bundle.
-    const SHELL = ["src/screens/", "src/dialogs/", "src/components/"];
+    //
+    // Stated as an invariant rather than a blocklist. It used to name three
+    // directories — screens/, dialogs/, components/ — and it was green for
+    // months while 182 files imported `src/puzzle/types.ts`, because
+    // `src/puzzle/` was not on the list. A blocklist can only catch the
+    // violations its author thought of, and a directory added next year is
+    // permitted by default, silently. This one has the opposite default:
+    // everything outside the engine's own two directories is a violation, so
+    // there is nothing to keep up to date. (`retire-native-directory` D4.)
+    //
+    // Unlike the rules above this one covers **test files too**. It can afford
+    // to: after the same change moved the engine's type vocabulary down and the
+    // Comlink adapter up, the violation count including tests is zero, so it
+    // lands as a ratchet rather than a wish. The rules above cannot — an engine
+    // test legitimately imports the games barrel to populate the registry.
+    const OWN = ["src/engine/", "src/games/"];
     const offenders: string[] = [];
-    for (const [path, text] of modules) {
-      if (!path.startsWith("src/native/")) continue;
+    for (const [path, text] of Object.entries(sources).map(
+      ([p, t]) => [p.replace(/^\.\//, "src/"), t] as const,
+    )) {
+      if (!OWN.some((o) => path.startsWith(o))) continue;
       for (const { spec } of imports(text)) {
         const target = resolve(path, spec);
-        if (target && SHELL.some((s) => target.startsWith(s))) {
+        if (target && !OWN.some((o) => target.startsWith(o))) {
           offenders.push(`${path} → ${target}`);
         }
       }

@@ -18,10 +18,10 @@ Authoritative spec: the Hint System requirements in
 [`palisade`](../../openspec/specs/palisade/spec.md) + the "Hint quality bar
 (exemplar: Palisade)" section of [`AGENTS.md`](../../AGENTS.md). **Exemplars to
 read:** Palisade (grouped multi-leg deductions),
-[`src/native/games/range/`](../../src/native/games/range/) (`solver.ts` recording →
+[`src/games/range/`](../../src/games/range/) (`solver.ts` recording →
 `index.ts` `hint`/`hintKeepTrack` → `render.ts` highlight),
-[`src/native/games/towers/`](../../src/native/games/towers/) (candidate-elimination,
-§9), and [`src/native/games/inertia/`](../../src/native/games/inertia/) (the
+[`src/games/towers/`](../../src/games/towers/) (candidate-elimination,
+§9), and [`src/games/inertia/`](../../src/games/inertia/) (the
 **non-deductive** exemplar, §6: verified-claim narration, a stable marked subgoal,
 and a recompute-stable plan).
 
@@ -128,7 +128,7 @@ hint are two projections of one deduction engine: the same ordered technique run
 to a fixpoint, recorder off to generate/grade, recorder on to narrate. The loop itself
 — restart-on-first-firing, the `maxRung` grading cap, the recorder-gated step budget
 (§7.2) — is written **once** in
-[`engine/deduction-fixpoint.ts`](../../src/native/engine/deduction-fixpoint.ts)
+[`engine/deduction-fixpoint.ts`](../../src/engine/deduction-fixpoint.ts)
 (`runDeductionFixpoint`); the *techniques* stay per-game. New logic ports should build
 their solver/hint over that runner rather than hand-rolling the loop. Converged call
 sites: `engine/latin.ts` (`latinSolverTop`), `filling/solver.ts` (`FillingSolver.run`),
@@ -257,7 +257,7 @@ the houses can co-exist in one string — its necessity premise ("Clue c reaches
 count only if every remaining edge is a wall") can carry an imperative tail ("draw
 them all"), because the forced-ness is already explicit in the premise.
 
-**Guarded cross-game** (`src/native/engine/hint-quality.test.ts`): every deductive
+**Guarded cross-game** (`src/engine/hint-quality.test.ts`): every deductive
 game's steps must match the shared necessity vocabulary; mechanical populate/cleanup
 openers are recognised, and an owner-endorsed phrasing that carries necessity in its
 own words (Filling's "fits exactly into") is a *declared idiom* in that file — add to
@@ -321,7 +321,7 @@ touch a shaded square…"*) rather than collapsing to *"these squares"*; when th
 that is *empty* when acted on (Filling's target, Range's forced mark) there is no value
 to name — anchor it on a concrete neighbour (*"The shaded region of N has only this one
 empty square to grow into"*). Exemplar: every branch of `narrate` in
-[`singles/index.ts`](../../src/native/games/singles/index.ts) names a value.
+[`singles/index.ts`](../../src/games/singles/index.ts) names a value.
 
 The same lesson, learned the hard way on the multi-link deductions:
 
@@ -417,7 +417,7 @@ Towers, owner-flagged 2026-06-22):
   recurs string after string). A **placement** step keeps the positive necessity voice
   (*"it can only be ${n}"*, *"height ${n} can only sit here"*). The struck height is
   free to interpolate — the step already knows its marks (`marks[0].n`). Exemplar:
-  `narrate` in [`towers/index.ts`](../../src/native/games/towers/index.ts).
+  `narrate` in [`towers/index.ts`](../../src/games/towers/index.ts).
 - **Never imply a placement the rule doesn't establish.** Towers' line-full rule strikes
   the *shortest* heights from the cell nearest the clue — but a first cut said the cell
   *"must hold the tallest remaining one"*, which reads as a forced placement. It isn't
@@ -517,7 +517,7 @@ same way: spend the player's attention only on what advances understanding or th
 
 The `Game` hooks and the `Midend` lifecycle are in
 [`ts-engine`](../../openspec/specs/ts-engine/spec.md); the implementation is
-[`src/native/engine/midend.ts`](../../src/native/engine/midend.ts). A game implements:
+[`src/engine/midend.ts`](../../src/engine/midend.ts). A game implements:
 
 - **`hint(state, aux?, ui?): HintResult`** — return `{ ok: false, error }` to refuse
   (board solved, or has mistakes — a hint off a contradictory board misleads), else
@@ -550,7 +550,7 @@ The `Game` hooks and the `Midend` lifecycle are in
 
 Every recording pass ends up writing the same five lines, and five games arrived at
 them independently before it was extracted (`add-boats-hint`, design D7). Use
-[`deduceHintPlan`](../../src/native/engine/hint-plan.ts) rather than a sixth copy:
+[`deduceHintPlan`](../../src/engine/hint-plan.ts) rather than a sixth copy:
 
 ```ts
 const { status, plan } = deduceHintPlan<Board, Firing, Status>({
@@ -603,8 +603,8 @@ the player has placed. Two consequences worth copying:
 *optional* `record(cell, value, reason)` callback through them (built only on the hint
 path) plus a `deduceHintPlan(...)` that runs the deduction from the player's current
 marks and returns the ordered forced moves, each tagged with the rule + premise.
-Exemplar: [`range/solver.ts`](../../src/native/games/range/solver.ts) +
-[`range/index.ts`](../../src/native/games/range/index.ts).
+Exemplar: [`range/solver.ts`](../../src/games/range/solver.ts) +
+[`range/index.ts`](../../src/games/range/index.ts).
 
 **Through an op-queue + cascade (Singles).** A solver shaped like Singles' (`singles.c`)
 **queues** ops and a separate processor **applies** them while **cascading** new ops (a
@@ -616,7 +616,7 @@ own reason at the apply site (`adjBlack` → the new black; `sameLine` → the n
 Put the recorder + a group counter on the existing `SolverState` so it threads
 everywhere for free, and **gate every reason allocation on it** (`if (ss.records)`) so
 the generator's hot solve path is byte-for-byte unchanged — verify with the C
-differential. Exemplar: [`singles/solver.ts`](../../src/native/games/singles/solver.ts).
+differential. Exemplar: [`singles/solver.ts`](../../src/games/singles/solver.ts).
 
 **A Latin candidate cube *is* a notes representation; record off it.** A Latin-style
 solver carries `cube[cubepos(x,y,n)]` ("can `n` still go here?"); thread a recorder
@@ -672,7 +672,7 @@ Render the hint in `redraw` from the displayed `HintStep` (the midend hands it i
 base conventions: the forced cell in `COL_HINT`, equivalent moves in the **same** colour,
 the hint bits folded into the per-tile `Int32Array` cache (§3.2 of the
 [port playbook](./game-port-playbook.md)). Exemplar:
-[`range/render.ts`](../../src/native/games/range/render.ts).
+[`range/render.ts`](../../src/games/range/render.ts).
 
 ### 5.1 A hint *highlights* where to act — it never performs the move
 
@@ -734,13 +734,13 @@ Range shades a clue's **line of sight**, the **run it must reach along**, or the
 **non-black cells a cut would isolate** — `COL_HINT_CELL` (a light blue), with the action
 cell still the lone `COL_HINT` blue. Make the words and the picture agree: if the narration
 says "the shaded run", a run must actually be shaded. Exemplar: `buildHighlights` in
-[`range/index.ts`](../../src/native/games/range/index.ts).
+[`range/index.ts`](../../src/games/range/index.ts).
 
 **Compute each step's area against the board as that step fires, not the original.** The
 plan is computed once, but a frozen area goes stale: a `reach` run the player has since
 filled white wouldn't be shaded. Range threads the solver's working grid through each
 recorded move (`HintMove.grid` in
-[`range/solver.ts`](../../src/native/games/range/solver.ts) — a `dup.slice()` at record
+[`range/solver.ts`](../../src/games/range/solver.ts) — a `dup.slice()` at record
 time, this move and all prior deductions applied) and builds the highlight from *that*
 snapshot, so the shaded run grows as the player follows. (The snapshot has the move
 applied, so filter the target out of its own area.)
@@ -749,7 +749,7 @@ applied, so filter the target out of its own area.)
 board marks or words (a step with neither is invisible). The stronger per-game form —
 this deduction's evidence area is non-empty — is still worth a per-game test: the
 "visible evidence" test in
-[`range-hint.test.ts`](../../src/native/games/range/range-hint.test.ts) caught a
+[`range-hint.test.ts`](../../src/games/range/range-hint.test.ts) caught a
 `connect` step whose cut-vertex neighbours were all still *undecided* (a known-white
 filter left the area empty): the connectivity rule treats every non-black cell as
 white, so shade non-black neighbours, not only marked-white ones.
@@ -842,8 +842,8 @@ different cell that gets sealed off). The fix: a third highlight role with its o
 `COL_HINT_CELL` matching pair and the `COL_HINT` target. Carry the roles as separate lists
 on the hint type and apply them with a clear precedence in `redraw` (target > strand >
 evidence); test the roles are **disjoint**. Exemplar: `SinglesHint` + `strandOf`/`narrate`
-in [`singles/index.ts`](../../src/native/games/singles/index.ts), the `DS_HINT_STRAND`
-branch in [`singles/render.ts`](../../src/native/games/singles/render.ts).
+in [`singles/index.ts`](../../src/games/singles/index.ts), the `DS_HINT_STRAND`
+branch in [`singles/render.ts`](../../src/games/singles/render.ts).
 
 This generalises into a **stable per-game colour legend**: when a hint narration names more
 than one distinct *kind* of board element (a filled cell as premise *and* the forced cell as
@@ -935,9 +935,9 @@ cell evidence?**
 - **Filling** shades *even though its evidence cells are filled* — because the premise is a
   **number**, and a digit draws *on top of* a light background. So Filling shades the region
   (`COL_HINT_CELL`) and the digits stay readable (`buildHighlight` + `narrate` in
-  [`filling/index.ts`](../../src/native/games/filling/index.ts), the `HINT_*` bits +
+  [`filling/index.ts`](../../src/games/filling/index.ts), the `HINT_*` bits +
   no-digit target branch in
-  [`filling/render.ts`](../../src/native/games/filling/render.ts)).
+  [`filling/render.ts`](../../src/games/filling/render.ts)).
 
 So "is the premise filled?" is the wrong question; "would the area fill hide the premise?" is
 the right one — a *colour* premise yes (ring), a *number* premise no (shade). **Light Up** is
@@ -949,9 +949,9 @@ two.** Rather than splitting the payload into `area` + `rings` (Range's shape, r
 when the split is known at build time), Singles carries one flat `evidence: Pt[]` and
 the renderer branches per cell:
 **black/circle ⇒ ring `COL_HINT`, else ⇒ shade `COL_HINT_CELL`**. Exemplars: the
-`DS_HINT_EVID` branch in [`singles/render.ts`](../../src/native/games/singles/render.ts);
-`buildHighlights` in [`unruly/index.ts`](../../src/native/games/unruly/index.ts) + the
-`FF_HINT_*` bits in [`unruly/render.ts`](../../src/native/games/unruly/render.ts).
+`DS_HINT_EVID` branch in [`singles/render.ts`](../../src/games/singles/render.ts);
+`buildHighlights` in [`unruly/index.ts`](../../src/games/unruly/index.ts) + the
+`FF_HINT_*` bits in [`unruly/render.ts`](../../src/games/unruly/render.ts).
 
 ### 5.5 Group one firing into one multi-square step
 
@@ -961,8 +961,8 @@ of them and highlight them all as targets. Filling's region-growth deduction is 
 — a region that can't reach its size pins *every* empty square on its completion at once, so
 the hint points at the whole group ("The shaded region of 5 fits exactly into these
 squares.") instead of dribbling them out one per request. Pattern (exemplar: `nextRegionGroup`
-in [`filling/solver.ts`](../../src/native/games/filling/solver.ts), `deduceHintPlan` +
-`hintKeepTrack` in [`filling/index.ts`](../../src/native/games/filling/index.ts)):
+in [`filling/solver.ts`](../../src/games/filling/solver.ts), `deduceHintPlan` +
+`hintKeepTrack` in [`filling/index.ts`](../../src/games/filling/index.ts)):
 
 - **Find the whole forced set per firing.** The empty cells a region *can't complete without*
   (each fails the capacity flood when blocked) are all simultaneously forced — return them as
@@ -984,7 +984,7 @@ A clean seam for the `continuesPrevious`-legs form: when the solver fills a whol
 shared helper (Unruly's `fillRow`), thread the recorder through it so its first cell opens a
 journey (`continuesPrevious: false`) and the rest continue it (`true`); per-cell techniques emit
 independent steps. See `fillRow` +
-[`unruly/solver.ts`](../../src/native/games/unruly/solver.ts) `deduceHintPlan`.
+[`unruly/solver.ts`](../../src/games/unruly/solver.ts) `deduceHintPlan`.
 
 ### 5.5a A multi-leg journey completes **leg by leg** — `hintKeepTrack` judges the displayed leg
 
@@ -1067,8 +1067,8 @@ gluing) wasn't worth it here. Two things this shape buys:
 - **No new move type needed if you group by contiguity** — but Pattern added a `fillCells`
   (arbitrary-cell-set) move anyway so a firing's white cells can group even when non-contiguous and
   `hintKeepTrack` can shrink in place (the Filling model, §5.5). Exemplars:
-  [`pattern/solver.ts`](../../src/native/games/pattern/solver.ts) (the packing + analysis),
-  [`pattern/index.ts`](../../src/native/games/pattern/index.ts) (`hint`/`hintKeepTrack`/`narrate`).
+  [`pattern/solver.ts`](../../src/games/pattern/solver.ts) (the packing + analysis),
+  [`pattern/index.ts`](../../src/games/pattern/index.ts) (`hint`/`hintKeepTrack`/`narrate`).
 
 *Narration gotcha (§2.7 + §2.1 interaction):* the zero-slack extreme wants a *premise* verb, and a
 `\bis\b` conclusion-guard regex catches it — "run … **is** pinned" trips a test aimed at the
@@ -1118,8 +1118,8 @@ truer and clearer. A reason lifted off a flag inherits the flag’s exact meanin
 For the recursive (lookahead) rung, the honest v1 is a proof-by-contradiction step: hypothesis on the
 target, contradiction ringed from the sub-solve's final INVALID `errors` — narrated, never an
 un-narrated "only one fits". Showing the whole what-if walk (Clusters §5.6b′) is the enrichment.
-Exemplars: [`bricks/solver.ts`](../../src/native/games/bricks/solver.ts) (`nextForcedMove` +
-`classify*Trial`), [`bricks/index.ts`](../../src/native/games/bricks/index.ts) (`narrate`/`hint`).
+Exemplars: [`bricks/solver.ts`](../../src/games/bricks/solver.ts) (`nextForcedMove` +
+`classify*Trial`), [`bricks/index.ts`](../../src/games/bricks/index.ts) (`narrate`/`hint`).
 This is the shape for any game whose live-error/`findMistakes` validator already marks *which* rule
 each cell breaks (§3.5 of the port playbook) — the same pass is a ready-made reason source.
 
@@ -1154,13 +1154,13 @@ Two mechanics worth carrying to the next connectivity game:
   `seedFrom` replays the player's marks through the same `fillSquare` that syncs connectivity/exits/
   equivalence, so the recorded plan continues from their position (the Range `dup.slice()` idea, but
   the seed has to walk the union-find, not just copy a grid). `deduceHintPlan` then returns the
-  firings not yet on the board. Exemplar: [`slant/solver.ts`](../../src/native/games/slant/solver.ts).
+  firings not yet on the board. Exemplar: [`slant/solver.ts`](../../src/games/slant/solver.ts).
 - **Connectivity-chain evidence must add the points' *incident squares*, not just the diagonal
   component.** A dead-end firing traps a point boxed in by *clue/exit* constraints, which may carry
   **zero placed diagonals** — so the diagonal-only component comes back empty and the visible-evidence
   invariant fails. Shade the component **∪** the two ruled-out corners' incident squares, so the
   trapped points are always located even before any diagonal touches them
-  (`componentSquares` + `incidentSquares` in [`slant/index.ts`](../../src/native/games/slant/index.ts)).
+  (`componentSquares` + `incidentSquares` in [`slant/index.ts`](../../src/games/slant/index.ts)).
 - **A clue firing groups as `continuesPrevious` legs**, not a new multi-square move — leg 0 narrates
   the clue, later legs (`The same clue forces this square too — it must slant toward the clue`) carry
   the necessity modal too so the voice guard passes on *every* step, not just openers.
@@ -1201,10 +1201,10 @@ mechanics:
   "ringed" is uttered iff the danger highlight is set (`clusters-hint.test.ts`).
 
 Exemplars: `deduceHintPlan`/`chainToContradiction` in
-[`clusters/solver.ts`](../../src/native/games/clusters/solver.ts) (a parallel
+[`clusters/solver.ts`](../../src/games/clusters/solver.ts) (a parallel
 recorder — §9.4's shape — re-deriving each firing's reason via a
 neighbourhood-only error check), `narrate` in
-[`clusters/index.ts`](../../src/native/games/clusters/index.ts).
+[`clusters/index.ts`](../../src/games/clusters/index.ts).
 
 ### 5.6c A game with a barrier/annotation affordance can teach rule-outs as board marks (Dominosa)
 
@@ -1254,7 +1254,7 @@ Return a small base `animLength` for a single-cell change (0 for bulk `solve`/no
 it's > 0 the midend stretches a hint-executed move to the uniform `HINT_ANIM_S`, so each
 auto-hint step plays as a visible fill with no frozen gap. Exemplar: Unruly's `animLength` + the
 grow branch in `drawTile`
-([`unruly/render.ts`](../../src/native/games/unruly/render.ts)).
+([`unruly/render.ts`](../../src/games/unruly/render.ts)).
 
 ### 5.8 In an animated game, a mark on a *tile* moves and a mark on a *cell* does not
 
@@ -1294,7 +1294,7 @@ are positional has both waiting for it:
 Test it at a **mid-animation frame**, which the tier-2/2.5 harness reaches directly: call
 `redraw` with `(prev = pre-move state, current = post-move state, animTime = ANIM_TIME / 2)` and
 assert the *drawn coordinates* of each mark (seed:
-[`netslide-hint.test.ts`](../../src/native/games/netslide/netslide-hint.test.ts), "the hint marks
+[`netslide-hint.test.ts`](../../src/games/netslide/netslide-hint.test.ts), "the hint marks
 while the hinted slide animates"). A snapshot alone will not catch this — the still frames either
 side of the animation are correct, which is exactly why it survived to a player.
 
@@ -1312,7 +1312,7 @@ stop, and a greedy grab can lose the game outright — narrate it, and see §6.1
 
 **Untangle's pattern** — the floor, not the ceiling. By owner approval such a game ships an empty
 `explanation`: the visual highlight plus the existing move animation *are* the whole hint.
-Exemplar: [`untangle/hint.ts`](../../src/native/games/untangle/hint.ts):
+Exemplar: [`untangle/hint.ts`](../../src/games/untangle/hint.ts):
 
 - **Objective, not deduction.** Pick the move that most improves a cheap scalar objective
   (Untangle: edge-crossing *pairs* from `findCrossings`). A greedy loop on a *working copy* —
@@ -1361,7 +1361,7 @@ for a spacious reveal.
 
 An empty `explanation` is the *floor*, not the ceiling. Untangle has nothing to narrate because
 no move has a consequence worth teaching; most movement games are not like that. **Inertia**
-([`inertia/hint.ts`](../../src/native/games/inertia/hint.ts)) is the exemplar of the richer
+([`inertia/hint.ts`](../../src/games/inertia/hint.ts)) is the exemplar of the richer
 shape: no move is *forced* by logic, but every move has a concrete consequence, and the thing
 beginners get wrong — *you don't choose where you stop* — is exactly what a hint can say out
 loud. Its narration is organised as **verified claims**, one branch per claim it can actually
@@ -1425,11 +1425,11 @@ board, every step was legal — and the sentence was still a lie.
 ### 6.5 Sliding-permutation games: the shared planner, and the two things that will bite
 
 Fifteen, Sixteen and Netslide are one family — a toroidal grid, a move slides a whole line — and the
-search is shared: [`engine/slide-planner.ts`](../../src/native/engine/slide-planner.ts)
+search is shared: [`engine/slide-planner.ts`](../../src/engine/slide-planner.ts)
 (`add-netslide-hint`). It owns the bucket-queue A\*, the exact bidirectional search, the
 no-progress gate and the partial-plan return. A game supplies its board, its finished board, its
 legal moves, **a `heuristic(board)`**, and when to run the exact search. Exemplar:
-[`netslide/hint.ts`](../../src/native/games/netslide/hint.ts).
+[`netslide/hint.ts`](../../src/games/netslide/hint.ts).
 
 Two lessons, both of which cost a full debugging cycle and both of which generalise past this
 family:
@@ -1567,18 +1567,18 @@ a real bug here, both invisible to "the plan solves the board" tests that only r
   hides this until the player deviates.
 
 This is enforced for **every** hint-bearing game by
-[`hint-resume.test.ts`](../../src/native/engine/hint-resume.test.ts): it walks a fresh board to
+[`hint-resume.test.ts`](../../src/engine/hint-resume.test.ts): it walks a fresh board to
 solved one *freshly-recomputed* hint at a time (apply only `steps[0]`, recompute, repeat),
 asserting a hint never gives up before solved.
 
 **Enrollment is one line, and it covers every cross-game guard at once.** The guards all
 iterate the shared list in
-[`testing/hint-games.ts`](../../src/native/engine/testing/hint-games.ts) — add the new
+[`testing/hint-games.ts`](../../src/engine/testing/hint-games.ts) — add the new
 game there **as part of the port** and it is covered by `hint-resume.test.ts` (resume,
 purity, no-op-free plans, Latin naked-single honesty),
-[`hint-overlay.test.ts`](../../src/native/engine/hint-overlay.test.ts) (the overlay
+[`hint-overlay.test.ts`](../../src/engine/hint-overlay.test.ts) (the overlay
 reaches the render cache — the paint-twice class, playbook §3.2), and
-[`hint-quality.test.ts`](../../src/native/engine/hint-quality.test.ts) (§2.1 voice,
+[`hint-quality.test.ts`](../../src/engine/hint-quality.test.ts) (§2.1 voice,
 §2.5 length, §5.2 show-something). A per-game "plan solves from empty" test is *not* a
 substitute.
 
@@ -1588,7 +1588,7 @@ The resume test catches a hint that *gives up* or whose move-walk *loops* (its `
 fires with a per-seed diagnostic). What it can't catch cheaply is a hang **inside one `hint()`
 call** — a "repeat until no progress" fixpoint where a rule reports progress without changing the
 board never returns, so no move is produced and the only backstop is a wall-clock timeout (slow,
-opaque, load-sensitive). Tick a [`stepBudget`](../../src/native/engine/step-budget.ts) once per
+opaque, load-sensitive). Tick a [`stepBudget`](../../src/engine/step-budget.ts) once per
 fixpoint iteration so a non-terminating loop throws a labelled error in milliseconds. Make it
 **opt-in on the hint path** — gate it on the recorder/hint signal the function already carries
 (`rec`, `ss.records`, `ctx.record`), so the generator runs the same fixpoint *unguarded and
@@ -1601,7 +1601,7 @@ Search-based hints (Fifteen/Sixteen A*-style, Flood's BFS) are bounded by their 
 need no budget.
 
 If your solver/hint is an ordered rung ladder (restart-on-first-firing), don't hand-roll this loop:
-run it through [`runDeductionFixpoint`](../../src/native/engine/deduction-fixpoint.ts) (§1A "one
+run it through [`runDeductionFixpoint`](../../src/engine/deduction-fixpoint.ts) (§1A "one
 narratable engine"), which ticks the budget for you and takes it only on the recording path — pass
 `budget: stepBudget(...)` on the hint call, omit it on the generator call. It also owns the `maxRung`
 grading cap and the restart discipline that keeps one firing = one group.
@@ -1629,7 +1629,7 @@ auto-pencil flip (the side-effect form).
 ## 8. Verifying a hint in-process (no eyeballing)
 
 Use the tier-2.5 render-scenario harness
-([`render-scenario.ts`](../../src/native/engine/testing/render-scenario.ts)):
+([`render-scenario.ts`](../../src/engine/testing/render-scenario.ts)):
 `renderScenario({ game, id, moves?, showHint?, hintUntil? })` drives a real `Midend` to the hint frame
 (walk a multi-step plan with `hintUntil`), then assert targeted ops (`COL_HINT` present, clues still
 drawn) **plus** `toMatchSnapshot`. Seed: `palisade-render-scenario.test.ts` reaches the `equivalentEdges`
@@ -1659,10 +1659,10 @@ eliminations, and Solo / Keen / Undead when ported) teaches in **pencil-notes** 
 sets and strikes notes, and a placement is the moment a cell's notes collapse to one. The general narration rules (§2.6 strike-vs-place voice, §2.7 degenerate
 extremes), the engine mechanics (§3 recording off the cube, `hintKeepTrack` pre-move state), and the
 stale-plan guard (§7.3) all apply here; this section is the pencil-note-*specific* machinery. Exemplar:
-[`towers/{solver,index,render}.ts`](../../src/native/games/towers/index.ts) +
-[`engine/latin.ts`](../../src/native/engine/latin.ts).
+[`towers/{solver,index,render}.ts`](../../src/games/towers/index.ts) +
+[`engine/latin.ts`](../../src/engine/latin.ts).
 
-> **The reusable mechanics live in [`engine/candidate-hint.ts`](../../src/native/engine/candidate-hint.ts)** (`extract-candidate-hint-plan`, after four exemplars). Import them rather than copying: the pure plan helpers (`nakedSingle`, `anyEmptyLacksNotes`, `firstUnreflectedPlaceIndex`, `nextStrike` — whole-firing, dup-excluded — `nextPlace`, `joinNums`) and the generic `keepCandidateHintTrack` / `refreshCandidateHintStep` over the shared `CandidateMove` / `CandidateHighlights`. The §9.3a "re-derive the why" classifier is `classifyPlacementInRegions` in [`latin-hint.ts`](../../src/native/engine/latin-hint.ts) — pass the regions your game reasons over (`[row, col]`, or Solo's `[row, col, block, diag0, diag1]`). A game wires `hintKeepTrack`/`refreshHintStep` as one-line wrappers passing `state.pencil`/`state.grid` + the grid order; the helpers below are the implementation, not snippets to paste.
+> **The reusable mechanics live in [`engine/candidate-hint.ts`](../../src/engine/candidate-hint.ts)** (`extract-candidate-hint-plan`, after four exemplars). Import them rather than copying: the pure plan helpers (`nakedSingle`, `anyEmptyLacksNotes`, `firstUnreflectedPlaceIndex`, `nextStrike` — whole-firing, dup-excluded — `nextPlace`, `joinNums`) and the generic `keepCandidateHintTrack` / `refreshCandidateHintStep` over the shared `CandidateMove` / `CandidateHighlights`. The §9.3a "re-derive the why" classifier is `classifyPlacementInRegions` in [`latin-hint.ts`](../../src/engine/latin-hint.ts) — pass the regions your game reasons over (`[row, col]`, or Solo's `[row, col, block, diag0, diag1]`). A game wires `hintKeepTrack`/`refreshHintStep` as one-line wrappers passing `state.pencil`/`state.grid` + the grid order; the helpers below are the implementation, not snippets to paste.
 >
 > **A cell's *uniqueness regions* are one definition per game — `regionsOf` (`extract-cell-region-helpers`).** Three sites used to recompute "which cells share a uniqueness constraint with `(x, y)`, and which still note value `n`?" — the §9.3a classifier, the §9.2 basic-region opening, and the placement dup-cull. Write a single per-game `regionsOf(state, x, y)` returning the cell's tagged uniqueness regions (a `ClassifyRegion` is `{ cells }` + whatever tag you name it by) and feed all three from it, so they can never disagree. Row/column games (Towers/Unequal/Keen) import the shared `rowColRegions(x, y, w)` from `latin-hint.ts`; Solo writes its own (`[row, col, block, diag0, diag1]`). Then the basic-region opening is the bulk `emitObviousCleanStep(steps, grid, pencil, w, regionsOf, text)` (§9.2 — `obviousCandidateMarks` under the hood), and the placement cull is `regionDuplicateMarks(grid, pencil, x, y, n, w, regionsOf(state, x, y))` — all in `candidate-hint.ts`, all de-dup a cell reachable via two regions. (`findRegionDuplicate` — first-filled-cell-with-a-live-dup — remains as a primitive but is no longer the opening.) **A Keen cage is *not* a uniqueness region** — it is an arithmetic constraint a digit may legally repeat under (design D3); `regionsOf` returns row+col only, and the cage logic stays its own deduction.
 >
@@ -1719,7 +1719,7 @@ stale-plan guard (§7.3) all apply here; this section is the pencil-note-*specif
   when notes already exist, silently regressing that case. The bulk clean **replaces** the old per-given
   `findRegionDuplicate` opening loop (one taught firing per given) — same eliminations, one step instead of
   N; later placements keep notes clean via `emitPlacement`, so the loop is fully subsumed. Exemplar: the
-  one-shot `emitObviousCleanStep` call in [`unequal/index.ts`](../../src/native/games/unequal/index.ts).
+  one-shot `emitObviousCleanStep` call in [`unequal/index.ts`](../../src/games/unequal/index.ts).
   *Gotcha:* the clean step is a multi-cell **and** multi-digit setup step, not a deductive strike — exempt
   it (by its narration) from any per-firing test asserting "a strike's marks share one cell or one digit"
   or "every step uses the necessity voice."
@@ -1758,7 +1758,7 @@ alone), so the player can *see* that no other cell in the line takes the digit.
 recorded `single`.** The naked-single *step* already re-derives (it scans the working
 notes for a one-candidate cell), so do the same for the recorded placements
 `nextPlace` surfaces. The shared classifier
-[`engine/latin-hint.ts`](../../src/native/engine/latin-hint.ts) `classifyPlacement`
+[`engine/latin-hint.ts`](../../src/engine/latin-hint.ts) `classifyPlacement`
 returns one of three kinds: **naked** (the cell's notes are exactly `{n}`), **hidden**
 (no other *empty* cell of the row — or the column — still has `n`; only empty cells
 compete, a filled one doesn't block), or **forced** (neither — the notes lag behind a
@@ -1801,7 +1801,7 @@ the rest of its row/column" steps. The fixes, all owner-driven and worth copying
   window extends to the first *unreflected* placement (one whose cell isn't yet on the working grid) — a
   facing place you've already applied no longer blocks the clue strikes recorded after it. Exemplar:
   `buildSteps` / `firstUnreflectedPlaceIndex` in
-  [`towers/index.ts`](../../src/native/games/towers/index.ts).
+  [`towers/index.ts`](../../src/games/towers/index.ts).
 - **Surface a *whole-line forcing* as one ordered placement journey, before populate; pencil in notes
   lazily.** A clue at an extreme value can force a whole line (or a single cell) outright, needing *no* notes
   — Towers' clue equal to the grid width pins the line to `1, 2, …, w` from the clue; a clue of `1` pins the
@@ -1813,7 +1813,7 @@ the rest of its row/column" steps. The fixes, all owner-driven and worth copying
   something to cross out (a naked single still out-ranks everything — an unpopulated board has none, so the
   ordering is moot there). Detect off `state.clues`, not the recording solver, so the generate/solve path
   stays byte-identical. Exemplar: `nextExtremeClueLine` + the lazy `ensurePopulated` in
-  [`towers/index.ts`](../../src/native/games/towers/index.ts); guard: `towers-hint.test.ts` "populates before
+  [`towers/index.ts`](../../src/games/towers/index.ts); guard: `towers-hint.test.ts` "populates before
   the first elimination".
 - **One firing, multiple struck heights → one step per height, narrated per height.** A clue firing can
   rule out *different* heights in different cells at once (Towers' lower-bound rule strikes both 4 and 5 along
@@ -1821,7 +1821,7 @@ the rest of its row/column" steps. The fixes, all owner-driven and worth copying
   5…") but the cell would show 4 *and* 5 crossed out — a visible contradiction the owner flagged. Group a
   firing's marks **by struck height**; emit one step per height (narrated with *that* height), and flag the
   further heights `continuesPrevious` so the firing still reads/auto-plays as one journey.
-  `nextClueStrike`/`buildSteps` in [`towers/index.ts`](../../src/native/games/towers/index.ts); guard:
+  `nextClueStrike`/`buildSteps` in [`towers/index.ts`](../../src/games/towers/index.ts); guard:
   `towers-hint.test.ts` "a strike step never mixes heights".
 
   - **A region/cage firing that spans many cells → split by *cell*, one leg each.** When the firing's premise
@@ -1835,7 +1835,7 @@ the rest of its row/column" steps. The fixes, all owner-driven and worth copying
     contrast Towers' per-height split, forced because *its* premise says "a tower of height 5"). So the
     split axis is dictated by the *narration*: split by whatever the premise names singular (Towers: height;
     Keen: cell). Exemplar: `emitStrikeJourney` + `nextStrike` in
-    [`keen/index.ts`](../../src/native/games/keen/index.ts); guard: `keen-hint.test.ts` "a cage-strike step's
+    [`keen/index.ts`](../../src/games/keen/index.ts); guard: `keen-hint.test.ts` "a cage-strike step's
     marks all lie in one cell".
 
 ### 9.4 A *non-Latin* candidate-elimination game — own recorder, same shape (Undead)
@@ -1850,7 +1850,7 @@ naked-single-first plan walk with **lazy populate** (§9.3), and `refreshHintSte
 specific:
 
 - **Write a parallel recorder, don't bolt one onto the grader.** `recordUndeadDeductions(common, placed)`
-  in [`undead/solver.ts`](../../src/native/games/undead/solver.ts) is *separate code* from
+  in [`undead/solver.ts`](../../src/games/undead/solver.ts) is *separate code* from
   `gradeUndead`/`solveDeductive`/`findUndeadSolution`, reusing the shared building blocks (the odometer,
   `checkSolution`, `arcCountFixpoint`). Because the generate/solve/`findMistakes` paths never call it, the
   C differential stays byte-identical *by construction* — no recorder flag to thread, no risk of the hot
@@ -1950,9 +1950,9 @@ array must both persist across fixpoint iterations (refilling the provenance mis
 evidence — a bug the D2 audit caught as an impossible `ownOnly` count); a firing decides a cell's
 letters as one journey with per-slot legs; and the tally-set tint plus the `HINT_SPOT` bit live in the
 game's overlay arrays and must each join their cache-miss test (playbook §3.2). Exemplars:
-[`subsets/solver.ts`](../../src/native/games/subsets/solver.ts) (`candidateCells`, `deduceHintPlan`),
-[`subsets/index.ts`](../../src/native/games/subsets/index.ts) (`legNarration`/`buildHighlights`,
-`tallyHit`), [`subsets/render.ts`](../../src/native/games/subsets/render.ts) (the spotlight + tally
+[`subsets/solver.ts`](../../src/games/subsets/solver.ts) (`candidateCells`, `deduceHintPlan`),
+[`subsets/index.ts`](../../src/games/subsets/index.ts) (`legNarration`/`buildHighlights`,
+`tallyHit`), [`subsets/render.ts`](../../src/games/subsets/render.ts) (the spotlight + tally
 tint).
 
 ### 9.5 A *bespoke-solver* candidate-elimination game — thread the recorder, don't re-run (Solo)
@@ -2127,9 +2127,9 @@ Also of note: Salad's "placed grid" for the soundness boundary is `grid` **plus*
 ball is a real entry that Check & Save flags when wrong, so the working cube may assume it, exactly as
 it assumes a written symbol. Pencil notes still never seed it.
 
-Exemplars: [`salad/hint.ts`](../../src/native/games/salad/hint.ts) (the walk, the reason union, the
-narration), [`salad/solver.ts`](../../src/native/games/salad/solver.ts) (`recordSaladDeductions`, the
-gated border recorder), [`salad/render.ts`](../../src/native/games/salad/render.ts) (the ghosted entry
+Exemplars: [`salad/hint.ts`](../../src/games/salad/hint.ts) (the walk, the reason union, the
+narration), [`salad/solver.ts`](../../src/games/salad/solver.ts) (`recordSaladDeductions`, the
+gated border recorder), [`salad/render.ts`](../../src/games/salad/render.ts) (the ghosted entry
 per move shape, §5.1a); guards: `salad-hint.test.ts`, the hint frames in `salad-render.test.ts`, and
 `salad` in `hint-resume.test.ts` / `hint-overlay.test.ts` / `hint-quality.test.ts`.
 

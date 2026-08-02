@@ -18,7 +18,7 @@ met, the change may end at §1.
 
 ## 1. The solver (the blocker upstream never resolved)
 
-- [ ] 1.1 `src/native/games/path/solver.ts`: given a board (numbered endpoints),
+- [ ] 1.1 `src/games/path/solver.ts`: given a board (numbered endpoints),
       determine solvability and whether the solution is unique. Uniqueness is the
       required output — a mere "a solution exists" is not enough to gate a
       generator.

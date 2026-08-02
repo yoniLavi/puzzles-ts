@@ -5,7 +5,7 @@ TBD - created by archiving change add-seismic-ts-port. Update Purpose after arch
 ## Requirements
 ### Requirement: Seismic game implements the Game interface
 
-The engine SHALL provide `src/native/games/seismic/` implementing the `Game`
+The engine SHALL provide `src/games/seismic/` implementing the `Game`
 interface for Seismic (Hakyuu / Ripple Effect), registered so the puzzle is
 served by the TypeScript engine.
 

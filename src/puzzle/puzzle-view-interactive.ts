@@ -1,6 +1,7 @@
 import { css, html } from "lit";
 import { customElement, eventOptions, property } from "lit/decorators.js";
 import { when } from "lit/directives/when.js";
+import { type Point, PuzzleButton } from "../engine/types.ts";
 import { audioClick } from "../utils/audio.ts";
 import {
   DOMMouseButton,
@@ -11,7 +12,6 @@ import {
 import { clamp } from "../utils/math.ts";
 import { detectSecondaryButton } from "../utils/touch.ts";
 import { PuzzleView } from "./puzzle-view.ts";
-import { type Point, PuzzleButton } from "./types.ts";
 
 /**
  * Whether the user currently has a non-empty text selection on the page

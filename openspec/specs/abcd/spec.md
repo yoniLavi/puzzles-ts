@@ -5,7 +5,7 @@ TBD - created by archiving change add-abcd-ts-port. Update Purpose after archive
 ## Requirements
 ### Requirement: ABCD game implements the Game interface
 
-The engine SHALL provide `src/native/games/abcd/` implementing the `Game`
+The engine SHALL provide `src/games/abcd/` implementing the `Game`
 interface for ABCD, registered so the puzzle is served by the TypeScript engine.
 
 Parameters SHALL be a width, a height, a letter count, a "disallow diagonal

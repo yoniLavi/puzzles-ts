@@ -65,8 +65,8 @@ Everything below is for building or contributing.
 ## How the migration worked
 
 - **`src/`** is the whole thing: the TypeScript web app, the engine
-  (`src/native/engine/` — midend, `Game` interface, drawing and colour
-  contracts) and all 57 games (`src/native/games/<id>/`).
+  (`src/engine/` — midend, `Game` interface, drawing and colour
+  contracts) and all 57 games (`src/games/<id>/`).
 
 - **It went top-down.** A TS midend and a clean `Game` interface first, then
   games in order of user-facing value (simplest first to establish the pattern,
@@ -96,12 +96,11 @@ templates under [templates/](templates/). `src/` is organised by role:
 * `src/dialogs/` — modal / popover overlays.
 * `src/components/` — reusable leaf Lit components.
 * `src/puzzle/` — the puzzle runtime + the Comlink worker boundary.
-* `src/native/` — the puzzle engine and every game. `src/native/engine/`
-  holds the `Game` interface, the `Midend`, the game registry, the
-  drawing/colour contracts and the in-process test harness.
-  `src/native/games/<id>/` holds each game — all 57 of them.
-  `src/native/random/` is the bit-identical RNG port, kept so shared game
+* `src/engine/` — the `Game` interface, the `Midend`, the game registry,
+  the drawing/colour contracts and the in-process test harness.
+  `src/engine/random/` is the bit-identical RNG port, kept so shared game
   IDs reproduce across builds.
+* `src/games/<id>/` — each game, all 57 of them.
 * `src/store/` — Dexie (IndexedDB) schema for settings and saved games.
 * Page entries, `main.ts`, the old-browser `preflight.ts` gate, the
   `sw.ts` service worker, and cross-cutting modules at `src/` root.

@@ -73,9 +73,25 @@ separately means editing each twice.
 
 3. **Fold the two leaf seams into the engine.** `src/native/random/` →
    `src/engine/random/` (255 importers), `src/native/combi/` →
-   `src/engine/combi/` (one). Both keep their frozen C corpora — those still
-   assert bit-identical output, which is what keeps shared game IDs
-   reproducible.
+   `src/engine/combi/` (one).
+
+   `random` keeps its frozen C corpus — it still asserts bit-identical output,
+   which is what keeps shared game IDs reproducible, and no property can derive
+   what bit sequence a seed yields. **`combi`'s is retired**, and the asymmetry
+   is the point: its corpus records the subsets of a set, which is what the
+   definition requires rather than an upstream quirk, so replaying it
+   demonstrated only that C and TypeScript both implement combinations. Its
+   test file already carried every closed-form property exhaustively over
+   `n ≤ 8` — count `C(n, r)`, strict lex order, all distinct — which strictly
+   dominates a replay of five recorded pairs.
+
+   (Scoped in during implementation. The `combi` delta had argued the case
+   while this bullet still read "both keep their corpora"; the delta was right,
+   and this is the correction. Retiring it turned up the thing that makes the
+   rule *"is every fact this fixture asserted derivable?"* rather than *"is this
+   fixture's subject derivable?"*: the corpus block was the only place `reset()`
+   was ever driven, and the `combi` spec requires that scenario. It is now an
+   explicit test.)
 
 Spec work, in the same change:
 

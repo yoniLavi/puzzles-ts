@@ -9,7 +9,7 @@
 // (`scripts/diff-*.test.ts`), which generated boards from the C build and the
 // TS port for the same seed. Those went game by game as each port landed, and
 // the C build itself went with `retire-c-engine`; the *frozen-fixture*
-// differentials in src/native/games/<game>/ are what survive, and they run in
+// differentials in src/games/<game>/ are what survive, and they run in
 // the gate. The glob is kept because it costs nothing and reads as the history.
 import { defineConfig } from "vitest/config";
 

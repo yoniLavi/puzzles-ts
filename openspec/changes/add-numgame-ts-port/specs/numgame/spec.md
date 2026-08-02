@@ -4,7 +4,7 @@
 
 ### Requirement: Numgame is designed as a game over the ported solver
 
-The engine SHALL provide `src/native/games/numgame/` implementing the `Game`
+The engine SHALL provide `src/games/numgame/` implementing the `Game`
 interface for a Countdown-style number puzzle: the player is given a multiset of
 source numbers and a target, and combines numbers with addition, subtraction,
 multiplication and division to reach the target. Because upstream ships only a

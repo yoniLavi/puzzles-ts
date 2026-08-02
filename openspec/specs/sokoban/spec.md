@@ -5,7 +5,7 @@ TBD - created by archiving change add-sokoban-ts-port. Update Purpose after arch
 ## Requirements
 ### Requirement: Sokoban game implements the Game interface
 
-The engine SHALL provide `src/native/games/sokoban/` implementing the `Game`
+The engine SHALL provide `src/games/sokoban/` implementing the `Game`
 interface for Sokoban, registered so the puzzle is served by the TypeScript engine.
 
 Sokoban SHALL support rectangular boards parameterised by width and height (both at

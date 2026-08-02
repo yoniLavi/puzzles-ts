@@ -23,7 +23,7 @@ below the layered copyright lines and apply to every layer.
 Upstream notices SHALL live in `licences/`, one file per upstream project, each
 byte-identical to what that project ships, with a README recording what each one
 covers. They SHALL NOT live inside a subdirectory of the source tree they once
-accompanied: after the migration what they cover is the whole of `src/native/`
+accompanied: after the migration what they cover is the whole of `src/engine/` and `src/games/`
 and the served help sources, and `puzzles/` — the tree that held them — no longer
 exists.
 
