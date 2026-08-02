@@ -17,10 +17,10 @@
  * `computeSize` subtracts 1 to meet the outer grid line.
  */
 
-import { BLUE, GREEN } from "../../engine/colours.ts";
+import { BLUE, GREEN } from "../../engine/colour/colours.ts";
+import { ERROR, INK, PAPER } from "../../engine/colour/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import { ERROR, INK, PAPER } from "../../engine/palette.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import { findLiveErrors } from "./solver.ts";
 import {

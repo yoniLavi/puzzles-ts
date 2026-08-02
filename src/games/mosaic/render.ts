@@ -13,9 +13,9 @@ import {
   TEAL_BOLD,
   TEAL_WASH,
   WHITE,
-} from "../../engine/colours.ts";
+} from "../../engine/colour/colours.ts";
+import { ERROR } from "../../engine/colour/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { ERROR } from "../../engine/palette.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {
   type MosaicMistake,

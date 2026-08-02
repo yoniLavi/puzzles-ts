@@ -12,14 +12,14 @@
  * build does.
  */
 
-import { BLUE, RED, TEAL } from "../../engine/colours.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { HINT_ACTION, INK } from "../../engine/palette.ts";
+import { BLUE, RED, TEAL } from "../../engine/colour/colours.ts";
+import { HINT_ACTION, INK } from "../../engine/colour/palette.ts";
 import {
   netslideBorder,
   netslideFlashing,
   netslideLowlight,
-} from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette-games.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
 import type { NetslideHint } from "./hint.ts";
 import {

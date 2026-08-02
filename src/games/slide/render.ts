@@ -32,11 +32,17 @@
  * `maybeRect` calls below stay 1:1 with the C and auditable against it.
  */
 
-import { mkhighlight, mkhighlightSpecific } from "../../engine/colour-mkhighlight.ts";
+import {
+  mkhighlight,
+  mkhighlightSpecific,
+} from "../../engine/colour/colour-mkhighlight.ts";
+import {
+  slideMainBlockBase,
+  slideTargetBase,
+} from "../../engine/colour/palette-games.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord as gridCoord } from "../../engine/geometry.ts";
-import { slideMainBlockBase, slideTargetBase } from "../../engine/palette-games.ts";
 import type { Colour, Point, Rect, Size } from "../../engine/types.ts";
 import { movePiece } from "./moves.ts";
 import {

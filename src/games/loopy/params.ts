@@ -10,7 +10,7 @@
  */
 
 import type { ParamConfigItem, PresetMenu } from "../../engine/game.ts";
-import { type GridType, gridValidateParams } from "../../engine/grid.ts";
+import { type GridType, gridValidateParams } from "../../engine/grid/index.ts";
 import { dimensionParamConfig, parseLeadingInt } from "../../engine/params.ts";
 
 /**

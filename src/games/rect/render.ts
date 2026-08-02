@@ -14,7 +14,6 @@
  * `COL_MISTAKE`.
  */
 
-import type { GameDrawing } from "../../engine/game.ts";
 import {
   CURSOR,
   correctRegionColour,
@@ -22,8 +21,9 @@ import {
   DRAG_REMOVE,
   ERROR,
   INK,
-} from "../../engine/palette.ts";
-import { rectGrid } from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette.ts";
+import { rectGrid } from "../../engine/colour/palette-games.ts";
+import type { GameDrawing } from "../../engine/game.ts";
 import type { Colour, Rect, Size } from "../../engine/types.ts";
 import { gridDrawRect } from "./moves.ts";
 import type {

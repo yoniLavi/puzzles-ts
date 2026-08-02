@@ -13,7 +13,7 @@
 
 ## 2. Implement
 
-- [ ] 2.1 Colours through `engine/colours.ts` / `palette.ts`; no new literals in
+- [ ] 2.1 Colours through `engine/colour/colours.ts` / `colour/palette.ts`; no new literals in
       `render.ts`.
 - [ ] 2.2 `paletteSwaps` in `augmentation.ts` kept coherent.
 

@@ -1,8 +1,8 @@
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { TEN } from "../../engine/colours.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { TEN } from "../../engine/colour/colours.ts";
+import { INK, PAPER } from "../../engine/colour/palette.ts";
 import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { INK, PAPER } from "../../engine/palette.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { SamegameState, SamegameUi } from "./state.ts";
 

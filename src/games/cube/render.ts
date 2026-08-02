@@ -9,9 +9,9 @@
  * background rect drawn here on every frame is the game's own fill.
  */
 
-import { BLUE } from "../../engine/colours.ts";
+import { BLUE } from "../../engine/colour/colours.ts";
+import { INK } from "../../engine/colour/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { INK } from "../../engine/palette.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
 import { type Bbox, enumGridSquares, findBbox } from "./grid.ts";
 import { SOLIDS, transformPoly } from "./solids.ts";

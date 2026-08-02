@@ -6,7 +6,7 @@
  * (the loop colouring drives Pearl's desc).
  */
 import { describe, expect, it } from "vitest";
-import { gridNewSquare } from "./grid.ts";
+import { gridNewSquare } from "./grid/index.ts";
 import { FACE_BLACK, FACE_WHITE, generateLoop } from "./loopgen.ts";
 import { randomNew } from "./random/index.ts";
 

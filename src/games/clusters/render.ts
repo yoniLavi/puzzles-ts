@@ -14,9 +14,7 @@
  * `tilesize / 2` — and `computeSize` subtracts 1 to meet the outer grid line.
  */
 
-import { BLUE, ORANGE, PINK_WASH } from "../../engine/colours.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { BLUE, ORANGE, PINK_WASH } from "../../engine/colour/colours.ts";
 import {
   CURSOR,
   ERROR,
@@ -24,7 +22,9 @@ import {
   HINT_EVIDENCE,
   INK,
   PAPER,
-} from "../../engine/palette.ts";
+} from "../../engine/colour/palette.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { ClustersHintHighlights } from "./index.ts";
 import { findErrors } from "./solver.ts";

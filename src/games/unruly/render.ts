@@ -9,9 +9,8 @@
  * app's dark-mode `paletteOverrides` (keyed by index) apply unchanged.
  */
 
-import { mkhighlightSpecific } from "../../engine/colour-mkhighlight.ts";
-import { ORANGE } from "../../engine/colours.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { mkhighlightSpecific } from "../../engine/colour/colour-mkhighlight.ts";
+import { ORANGE } from "../../engine/colour/colours.ts";
 import {
   CURSOR,
   ERROR,
@@ -19,8 +18,9 @@ import {
   HINT_ACTION,
   HINT_EVIDENCE,
   UNDECIDED,
-} from "../../engine/palette.ts";
-import { UNRULY_BLACK, UNRULY_WHITE } from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette.ts";
+import { UNRULY_BLACK, UNRULY_WHITE } from "../../engine/colour/palette-games.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import { EMPTY, ONE, ZERO } from "./constants.ts";
 import type { UnrulyHint } from "./index.ts";

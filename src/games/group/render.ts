@@ -15,8 +15,6 @@
  * trivial and looks right.
  */
 
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import {
   ERROR,
   HINT_EVIDENCE,
@@ -25,8 +23,10 @@ import {
   INK,
   pencilColour,
   playerEntryColour,
-} from "../../engine/palette.ts";
-import { groupDiagonal } from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette.ts";
+import { groupDiagonal } from "../../engine/colour/palette-games.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { Colour, DrawTextOptions, Size } from "../../engine/types.ts";
 import type { GroupMove } from "./state.ts";
 import {

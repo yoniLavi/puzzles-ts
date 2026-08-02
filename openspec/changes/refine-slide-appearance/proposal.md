@@ -44,7 +44,7 @@ build.
 - **Bring the solver's next-piece highlight down** from pure white to a mark that
   reads as "next" rather than as a light source.
 - **Both schemes, per the palette rules.** Colours come from
-  `engine/colours.ts` / `palette.ts`, and "brightest" is scheme-relative — a
+  `engine/colour/colours.ts` / `colour/palette.ts`, and "brightest" is scheme-relative — a
   change that reads as contrast in light mode must not read as a bright patch in
   dark (`hand-author-dark-palette` F1, and the Light Up regression the dark check
   caught). Slide's dark handling currently runs through `paletteSwaps` in

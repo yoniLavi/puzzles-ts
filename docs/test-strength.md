@@ -133,13 +133,22 @@ that the ad-hoc version does not:
   question has now been answered wrongly three times, each producing a different
   false picture: matched on filename (§7); taken as the single file named after
   the module, when eight drive a `Midend`; and taken as direct imports only, when
-  `grid.ts`'s own doc comment says *"import from this module, not from the
+  `grid/index.ts`'s own doc comment says *"import from this module, not from the
   parts"* and `grid.test.ts` is therefore `grid-core.ts`'s real test surface.
 - **Excludes `*-differential.test.ts` even when engine-local**, so a module cannot
   score full marks on assertions it does not make.
 - **Carries `equivalent: true` cases with their argument**, excluded from the rate
   rather than counted against it — and flags one that starts being *caught*,
   which means the argument has expired under a code change.
+- **Walks `src/engine/` recursively, and refuses to run below a committed floor
+  on the number of test files it finds.** The walk was one level deep while the
+  engine was flat; `group-crowded-source-directories` grouped `grid/` and
+  `colour/` into subdirectories, and a walk that had not followed them would
+  simply have derived fewer own-tests — so more cases would report `SURVIVED` and
+  **the rate would drop**, which reads as *"the tests got worse"* rather than
+  *"the instrument stopped looking"*. The anchor check cannot cover it: anchors
+  quote source **lines**, and a pure file move leaves every one of them valid.
+  The floor lives in `--verify`, so it is in the commit gate.
 
 It is a diagnostic, **never a gate and never ratcheted**, the same standing as
 `npm run metrics` and `npm run mutation`. Adding a case is welcome; adding one

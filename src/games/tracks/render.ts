@@ -10,10 +10,8 @@
  * is index-for-index with the C colour enum.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { BROWN } from "../../engine/colours.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { BROWN } from "../../engine/colour/colours.ts";
 import {
   CURSOR,
   DRAG_ADD,
@@ -22,8 +20,10 @@ import {
   GRID_MID,
   INK,
   PAPER,
-} from "../../engine/palette.ts";
-import { tracksGrid } from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette.ts";
+import { tracksGrid } from "../../engine/colour/palette-games.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { Colour, Point, Rect, Size } from "../../engine/types.ts";
 import { copyAndApplyDrag } from "./moves.ts";
 import {

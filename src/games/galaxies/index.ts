@@ -11,7 +11,13 @@
  * transliteration.
  */
 
-import { mkhighlightBackground } from "../../engine/colour-mkhighlight.ts";
+import { mkhighlightBackground } from "../../engine/colour/colour-mkhighlight.ts";
+import { ERROR, INK, PAPER } from "../../engine/colour/palette.ts";
+import {
+  galaxiesBlackRegion,
+  galaxiesCursor,
+  galaxiesGrid,
+} from "../../engine/colour/palette-games.ts";
 import {
   type Game,
   registerGame,
@@ -19,12 +25,6 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/index.ts";
-import { ERROR, INK, PAPER } from "../../engine/palette.ts";
-import {
-  galaxiesBlackRegion,
-  galaxiesCursor,
-  galaxiesGrid,
-} from "../../engine/palette-games.ts";
 import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,

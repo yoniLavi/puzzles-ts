@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { token } from "./colour-token.ts";
+import { token } from "./colour/colour-token.ts";
 import {
   type FakeDrawState,
   fakeGame,

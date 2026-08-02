@@ -7,9 +7,8 @@
  * palette mirrors the C colour enum index-for-index.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { BLACK, GREY, WHITE } from "../../engine/colours.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { BLACK, GREY, WHITE } from "../../engine/colour/colours.ts";
 import {
   CURSOR,
   ERROR,
@@ -20,7 +19,8 @@ import {
   HINT_WHITEREF,
   INK,
   UNDECIDED,
-} from "../../engine/palette.ts";
+} from "../../engine/colour/palette.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { PatternHint } from "./index.ts";
 import { lineHasError } from "./solver.ts";

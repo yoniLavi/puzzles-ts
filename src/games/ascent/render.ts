@@ -8,11 +8,11 @@
  * (`animLength = 0`); the only motion is the completion flash.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { BLUE, YELLOW_WASH } from "../../engine/colours.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { BLUE, YELLOW_WASH } from "../../engine/colour/colours.ts";
+import { CURSOR, ERROR, INK, playerEntryColour } from "../../engine/colour/palette.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { CURSOR, ERROR, INK, playerEntryColour } from "../../engine/palette.ts";
 import type { Colour, Point } from "../../engine/types.ts";
 import {
   type AscentMistake,

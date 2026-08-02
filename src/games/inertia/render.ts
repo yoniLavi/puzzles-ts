@@ -13,11 +13,17 @@
  * them, rather than all at once when the move lands.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { BLACK, GREEN, PURPLE, TEAL } from "../../engine/colours.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { BLACK, GREEN, PURPLE, TEAL } from "../../engine/colour/colours.ts";
+import {
+  ERROR,
+  HINT_ACTION,
+  INK,
+  PAPER,
+  wallColour,
+} from "../../engine/colour/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { coord as coordE } from "../../engine/geometry.ts";
-import { ERROR, HINT_ACTION, INK, PAPER, wallColour } from "../../engine/palette.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
 import type { InertiaHintHighlights } from "./hint.ts";
 import {

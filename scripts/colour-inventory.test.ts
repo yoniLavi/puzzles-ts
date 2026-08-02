@@ -21,10 +21,10 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { it } from "vitest";
-import { mkhighlight } from "../src/engine/colour-mkhighlight.ts";
-import * as colours from "../src/engine/colours.ts";
-import * as roles from "../src/engine/palette.ts";
-import * as gameTokens from "../src/engine/palette-games.ts";
+import { mkhighlight } from "../src/engine/colour/colour-mkhighlight.ts";
+import * as colours from "../src/engine/colour/colours.ts";
+import * as roles from "../src/engine/colour/palette.ts";
+import * as gameTokens from "../src/engine/colour/palette-games.ts";
 import { getTsGame } from "../src/engine/registry.ts";
 import type { Colour } from "../src/engine/types.ts";
 import { puzzleIds } from "../src/puzzle/catalog.ts";
@@ -37,7 +37,19 @@ const BG: Colour = [0.827, 0.827, 0.827];
  * entry tracks the board. */
 const BG2: Colour = [0.6, 0.7, 0.8];
 
-const OUT = "openspec/changes/consolidate-colour-palette/inventory.md";
+/**
+ * Where the report lands, and why it is not next to the change that asked for it.
+ *
+ * It used to be `openspec/changes/consolidate-colour-palette/inventory.md`.
+ * `openspec archive` **renames the change directory** on the day the change
+ * ships, so that path had an expiry date built into the workflow: from
+ * 2026-08-01 this test failed `ENOENT` on every `npm run diff`, and because the
+ * run is advisory rather than gating, nothing said so for a day. A tool must not
+ * write into a change directory — `metrics/` is where durable generated
+ * artefacts live (`metrics/mutation/report.json` is the precedent), and the
+ * committed copy there is the baseline to diff a colour change against.
+ */
+const OUT = "metrics/colour-inventory.md";
 
 const key = (c: Colour): string => c.map((v) => Math.round(v * 1000) / 1000).join(",");
 

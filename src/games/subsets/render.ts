@@ -23,15 +23,8 @@
  * shows them.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { GREEN, ORANGE, PURPLE } from "../../engine/colours.ts";
-import { drawRectCorners } from "../../engine/draw.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import {
-  HINT_AREA,
-  HINT_TARGET,
-  OverlaySidecar,
-} from "../../engine/overlay-sidecar.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { GREEN, ORANGE, PURPLE } from "../../engine/colour/colours.ts";
 import {
   ERROR,
   GRID_MID,
@@ -39,7 +32,14 @@ import {
   HINT_EVIDENCE,
   INK,
   playerEntryColour,
-} from "../../engine/palette.ts";
+} from "../../engine/colour/palette.ts";
+import { drawRectCorners } from "../../engine/draw.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import {
+  HINT_AREA,
+  HINT_TARGET,
+  OverlaySidecar,
+} from "../../engine/overlay-sidecar.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { SubsetsHintHighlights } from "./index.ts";
 import { candidateCells, candidateSets, subsetsValidate } from "./solver.ts";

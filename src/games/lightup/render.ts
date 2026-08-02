@@ -13,9 +13,7 @@
  * (black) and 3 (light).
  */
 
-import { ORANGE, YELLOW_WASH } from "../../engine/colours.ts";
-import { drawRectOutline } from "../../engine/draw.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { ORANGE, YELLOW_WASH } from "../../engine/colour/colours.ts";
 import {
   ERROR_WASH,
   HINT_ACTION,
@@ -23,8 +21,10 @@ import {
   HINT_EVIDENCE,
   INK,
   PAPER,
-} from "../../engine/palette.ts";
-import { lightupCursor, lightupGrid } from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette.ts";
+import { lightupCursor, lightupGrid } from "../../engine/colour/palette-games.ts";
+import { drawRectOutline } from "../../engine/draw.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { LightupHint, LightupMistake } from "./index.ts";
 import {

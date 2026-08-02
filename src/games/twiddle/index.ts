@@ -11,7 +11,7 @@
  * transliteration.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import type { Game, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";

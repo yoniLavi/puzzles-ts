@@ -133,7 +133,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/engine/grid.ts",
+    module: "src/engine/grid/index.ts",
     cases: [
       {
         why: "the cairo tiling is unreachable through the dispatch",
@@ -536,7 +536,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/engine/colour-mkhighlight.ts",
+    module: "src/engine/colour/colour-mkhighlight.ts",
     cases: [
       {
         why: "a near-white background is not shifted, so its highlight bevel vanishes",
@@ -612,7 +612,7 @@ export const MODULES = [
   },
 
   {
-    module: "src/engine/grid-core.ts",
+    module: "src/engine/grid/grid-core.ts",
     cases: [
       {
         why: "two faces sharing a dot pair get two edges instead of one shared edge",

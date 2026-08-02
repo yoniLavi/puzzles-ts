@@ -1,4 +1,5 @@
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { HINT_ACTION, INK } from "../../engine/colour/palette.ts";
 import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
 import type {
   Game,
@@ -10,7 +11,6 @@ import type {
 } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
 import { workingOn } from "../../engine/hint-vocab.ts";
-import { HINT_ACTION, INK } from "../../engine/palette.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,

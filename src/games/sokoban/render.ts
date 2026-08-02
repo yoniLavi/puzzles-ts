@@ -11,11 +11,11 @@
  * (design D5, playbook §3.2) — the whole board is `w*TILESIZE + 1` wide.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { BROWN, GREEN } from "../../engine/colours.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { BROWN, GREEN } from "../../engine/colour/colours.ts";
+import { INK, PAPER, wallColour } from "../../engine/colour/palette.ts";
+import { sokobanPit } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { INK, PAPER, wallColour } from "../../engine/palette.ts";
-import { sokobanPit } from "../../engine/palette-games.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {
   barrelLabel,

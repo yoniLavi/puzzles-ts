@@ -164,7 +164,7 @@ the migration rules of record are the `ts-migration` capability spec.
 ## License
 
 The web app code (including local modifications/additions to the puzzles
-code) is MIT — see [LICENSE](./LICENSE). The upstream notices in
+code) is MIT — see [LICENSE.md](./LICENSE.md). The upstream notices in
 [licences/](licences) cover the ported games and the upstream help sources
 (`help/upstream/`), also MIT. The built app bundles several open
 source packages; required notices are in the app's *About* dialog (open

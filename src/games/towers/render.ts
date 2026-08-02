@@ -12,8 +12,6 @@
  * (the upstream four-corner cache key).
  */
 
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import {
   clueDoneColour,
   ERROR,
@@ -24,7 +22,9 @@ import {
   PENCIL_BODY,
   pencilColour,
   playerEntryColour,
-} from "../../engine/palette.ts";
+} from "../../engine/colour/palette.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {

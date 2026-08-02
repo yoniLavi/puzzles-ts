@@ -15,10 +15,16 @@
  * every overlay (playbook §3.2). Edge numbers diff a parallel error-flag array.
  */
 
-import { BROWN, GREEN, GREEN_WASH, ORANGE, RED_BOLD } from "../../engine/colours.ts";
+import {
+  BROWN,
+  GREEN,
+  GREEN_WASH,
+  ORANGE,
+  RED_BOLD,
+} from "../../engine/colour/colours.ts";
+import { ERROR, ERROR_TEXT, INK } from "../../engine/colour/palette.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { ERROR, ERROR_TEXT, INK } from "../../engine/palette.ts";
 import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {

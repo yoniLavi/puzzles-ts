@@ -263,3 +263,91 @@ differential does fail on the defect the local tests deliberately let through.
   `new Array(d.order)` — so halving every dot's degree in the grid builder passed
   all 151 tests in the file. The replacement counts the degree independently,
   from the edges that name the dot as an endpoint.
+
+### Requirement: A change that moves or deletes a path updates the unarchived changes that name it
+
+A change that relocates, renames or deletes a path SHALL sweep the **pending**
+changes under `openspec/changes/` — those not yet archived — and correct every
+reference the move invalidates, as part of its own definition of done.
+
+The asymmetry with the other two places a path can go stale is the whole point,
+and it runs the opposite way to intuition:
+
+- An **archived** change is history. Its paths were true when written, and
+  rewriting them falsifies the record; they are deliberately left alone.
+- A **spec** is read for its rule. A stale path in one is a wrong pointer that a
+  reader will notice is wrong, because the surrounding sentence is about a
+  requirement rather than about a file.
+- A **pending** change's `tasks.md` is *a list of steps someone is going to
+  execute*. "Edit `src/native/games/sticks/solver.ts`" will be attempted
+  verbatim, by a session that has no reason to doubt it and every reason to trust
+  a checklist written by the project. The failure is not a confusing document; it
+  is work done against a tree that no longer exists.
+
+This is load-bearing here rather than theoretical: measured 2026-08-02, **twelve
+unarchived changes** name paths the source-tree reorganisation moves, and several
+of them (`add-path-ts-port`, `add-numgame-ts-port`, the four difficulty-tier
+changes) are queued to be implemented after it.
+
+Re-validation SHALL follow the sweep: a pending change edited this way is
+re-checked with `openspec validate <id> --strict`, since a spec delta may quote a
+path inside a requirement it must still parse.
+
+Within the source tree, the sweep SHALL cover **every construct that names a
+file**, not only import statements. A bulk rewriter that matches import
+specifiers is structurally blind to three others, and they fail in different
+directions:
+
+- `import.meta.glob("../games/**/*.ts")` — **silent**. An unmatched glob yields
+  `{}`, so the file's assertions pass over nothing rather than failing.
+- `new URL("../assets/…", import.meta.url)` — loud, because
+  `asset-integrity.test.ts` asserts every one resolves.
+- Path arithmetic keyed to depth — `p.split("/")[3]`, or stripping a fixed
+  `"../games/"` prefix — which no string sweep can see at all, because the
+  string it depends on does not appear in the file.
+
+Such a derivation SHALL state its assumption and fail when it does not hold,
+rather than degrade: cutting a glob key at `/games/` and throwing when the match
+fails is correct at any depth, where stripping a fixed prefix silently leaves
+`../abcd/render.ts` and turns the game id into `".."`.
+
+A tool SHALL NOT write its output into an `openspec/changes/<id>/` directory.
+`openspec archive` renames that directory the day the change ships, so the path
+has an expiry date built into the workflow. Durable generated artefacts belong
+under `metrics/`.
+
+#### Scenario: A path is moved while work is queued against it
+
+- **WHEN** a change moves, renames or deletes a path
+- **THEN** every unarchived change under `openspec/changes/` naming that path is
+  corrected in the same change
+- **AND** each corrected change re-validates strictly
+- **AND** archived changes are left as written, being a record of what was true
+
+#### Scenario: The sweep is scoped to what the move actually invalidated
+
+- **WHEN** the sweep is performed
+- **THEN** it corrects references to the moved paths and nothing else
+- **AND** a pending change's reasoning, scope and tasks are otherwise untouched —
+  a path fix is not an occasion to revise someone else's plan
+
+#### Scenario: A moved file names a sibling by something other than an import
+
+- **WHEN** a file that uses `import.meta.glob`, `new URL(…, import.meta.url)` or
+  a depth-keyed path derivation is relocated
+- **THEN** each of those is repointed in the same change as the imports
+- **BECAUSE** `palette-source.test.ts` moved into `engine/colour/` with its
+  glob still reading `"../games/**/*.ts"`, which matched nothing — and "a game
+  contains no colour value" is what three assertions then reported. Its own
+  `expect(sources).toBeGreaterThan(100)` guard is what failed instead, which is
+  the whole reason a sweep-style test must count what it looked at.
+
+#### Scenario: A generated artefact outlives the change that asked for it
+
+- **WHEN** a script writes a reviewable artefact
+- **THEN** it writes under `metrics/`, not into a change directory
+- **BECAUSE** `colour-inventory.test.ts` wrote to
+  `openspec/changes/consolidate-colour-palette/inventory.md`; archiving that
+  change renamed the directory, and `npm run diff` — the advisory check nominated
+  to notice a lost colour module — failed `ENOENT` from that day, silently,
+  because an advisory run reports rather than gates

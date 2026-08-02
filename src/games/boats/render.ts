@@ -33,11 +33,17 @@
  * (playbook §3.3).
  */
 
-import { BLUE_WASH, GREEN, GREY_BOLD, GREY_WASH } from "../../engine/colours.ts";
+import { BLUE_WASH, GREEN, GREY_BOLD, GREY_WASH } from "../../engine/colour/colours.ts";
+import {
+  ERROR,
+  HINT_ACTION,
+  HINT_EVIDENCE,
+  INK,
+  PAPER,
+} from "../../engine/colour/palette.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import { ERROR, HINT_ACTION, HINT_EVIDENCE, INK, PAPER } from "../../engine/palette.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
 import type { BoatsHint } from "./index.ts";
 import type { BoatsMistake } from "./solver.ts";

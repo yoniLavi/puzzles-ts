@@ -24,7 +24,7 @@
  */
 import { writeFileSync } from "node:fs";
 import { it } from "vitest";
-import { darkValue } from "../src/engine/colour-token.ts";
+import { darkValue } from "../src/engine/colour/colour-token.ts";
 import { getTsGame } from "../src/engine/registry.ts";
 import type { Colour, PuzzleId } from "../src/engine/types.ts";
 import { puzzleAugmentations } from "../src/puzzle/augmentation.ts";

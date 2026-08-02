@@ -20,9 +20,7 @@
  * (playbook §3.2).
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import type { GameDrawing } from "../../engine/game.ts";
-import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import {
   ERROR,
   GRID_MID,
@@ -30,8 +28,10 @@ import {
   PENCIL_BODY,
   pencilColour,
   playerEntryColour,
-} from "../../engine/palette.ts";
-import { abcdBorderLetter } from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette.ts";
+import { abcdBorderLetter } from "../../engine/colour/palette-games.ts";
+import type { GameDrawing } from "../../engine/game.ts";
+import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {

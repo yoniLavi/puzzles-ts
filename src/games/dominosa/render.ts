@@ -11,12 +11,18 @@
  * desktop `¾·TS`.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { GREEN, PURPLE, RED, RED_BOLD } from "../../engine/colours.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { GREEN, PURPLE, RED, RED_BOLD } from "../../engine/colour/colours.ts";
+import {
+  ERROR,
+  HINT_ACTION,
+  HINT_EVIDENCE,
+  INK,
+  PAPER,
+} from "../../engine/colour/palette.ts";
+import { dominosaEdge } from "../../engine/colour/palette-games.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { ERROR, HINT_ACTION, HINT_EVIDENCE, INK, PAPER } from "../../engine/palette.ts";
-import { dominosaEdge } from "../../engine/palette-games.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { DominosaHint } from "./index.ts";
 import {

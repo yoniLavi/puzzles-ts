@@ -5,10 +5,8 @@
  * the generator/solver only, so this uses idiomatic rounding.
  */
 
-import { BLUE_BOLD, GREEN } from "../../engine/colours.ts";
-import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
-import type { GameDrawing } from "../../engine/game.ts";
-import { ERROR, INK } from "../../engine/palette.ts";
+import { BLUE_BOLD, GREEN } from "../../engine/colour/colours.ts";
+import { ERROR, INK } from "../../engine/colour/palette.ts";
 import {
   SIGNPOST_NUMBER_SET_MID,
   SIGNPOST_ON_REGION_FAINT,
@@ -18,7 +16,9 @@ import {
   signpostCursor,
   signpostGrid,
   signpostWashedRegion,
-} from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette-games.ts";
+import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
+import type { GameDrawing } from "../../engine/game.ts";
 import type { Colour, Point } from "../../engine/types.ts";
 import { dragReleaseMove, executeMove } from "./moves.ts";
 import {

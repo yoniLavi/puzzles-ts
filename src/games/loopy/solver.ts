@@ -29,7 +29,7 @@
  * is ported exactly rather than adapted to the shared shape.
  */
 import { Dsf, FlipDsf } from "../../engine/dsf.ts";
-import type { Grid, GridEdge } from "../../engine/grid.ts";
+import type { Grid, GridEdge } from "../../engine/grid/index.ts";
 import {
   dlineIndexFromDot,
   dlineIndexFromFace,

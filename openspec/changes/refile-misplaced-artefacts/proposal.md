@@ -23,7 +23,7 @@ and which every session is told to keep current. One directory, two contradictor
 instructions.
 
 It got there honestly: `retire-c-engine` rescued it from `puzzles/auxiliary/doc/`
-because it documents *live TypeScript* (`engine/tilings/`) rather than deleted C,
+because it documents *live TypeScript* (`engine/grid/tilings/`) rather than deleted C,
 and `docs/` was the least-wrong shelf available at the time. But the repository
 already has the distinction this needs, spelled out for the help system: **the
 split is by authorship** — `help/upstream/` is verbatim upstream material with a
@@ -106,7 +106,7 @@ Explicitly **not** in this change:
   a round's snapshot is committed under the change that produced it.
 - **Affected code**: no runtime code. `scripts/metrics.sh`,
   `scripts/stryker.config.mjs`, `scripts/diff.vitest.config.mts`,
-  `package.json`'s `diff` script, one comment pointer in `engine/tilings/`,
+  `package.json`'s `diff` script, one comment pointer in `engine/grid/tilings/`,
   `AGENTS.md`, `docs/test-strength.md`, `docs/porting/game-port-playbook.md`.
 - **Risk**: very low, with one thing worth naming — nothing here is imported by
   the app, so a broken path surfaces only when someone next runs the script.

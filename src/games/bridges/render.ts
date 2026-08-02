@@ -18,10 +18,10 @@
  * clears.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { ERROR_WASH, HELD, INK } from "../../engine/colour/palette.ts";
+import { bridgesCursor, bridgesGrid } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { ERROR_WASH, HELD, INK } from "../../engine/palette.ts";
-import { bridgesCursor, bridgesGrid } from "../../engine/palette-games.ts";
 import type { Colour } from "../../engine/types.ts";
 import {
   type BridgesMistake,

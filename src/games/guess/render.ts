@@ -6,10 +6,16 @@
  * contract requires (the engine emits no pixels of its own).
  */
 
-import { BLACK, PINK_WASH, TEAL_WASH, TEN, WHITE } from "../../engine/colours.ts";
+import {
+  BLACK,
+  PINK_WASH,
+  TEAL_WASH,
+  TEN,
+  WHITE,
+} from "../../engine/colour/colours.ts";
+import { INK } from "../../engine/colour/palette.ts";
+import { guessBoard, guessEmptySlot } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import { INK } from "../../engine/palette.ts";
-import { guessBoard, guessEmptySlot } from "../../engine/palette-games.ts";
 import type { Colour, Point, Rect, Size } from "../../engine/types.ts";
 import {
   FEEDBACK_CORRECTCOLOUR,

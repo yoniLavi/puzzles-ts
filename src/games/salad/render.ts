@@ -15,15 +15,8 @@
  * every square that contradicts the *unique solution* with an inset red box.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { GREEN_BOLD, GREEN_WASH } from "../../engine/colours.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import {
-  HINT_AREA,
-  HINT_TARGET,
-  hintMarkBit,
-  OverlaySidecar,
-} from "../../engine/overlay-sidecar.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { GREEN_BOLD, GREEN_WASH } from "../../engine/colour/colours.ts";
 import {
   ERROR,
   HINT_ACTION,
@@ -33,7 +26,14 @@ import {
   PENCIL_BODY,
   pencilColour,
   playerEntryColour,
-} from "../../engine/palette.ts";
+} from "../../engine/colour/palette.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import {
+  HINT_AREA,
+  HINT_TARGET,
+  hintMarkBit,
+  OverlaySidecar,
+} from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { SaladHint } from "./hint.ts";

@@ -30,16 +30,16 @@
  * it is the arm this fork's build selects (`NARROW_BORDERS`).
  */
 
-import type { GameDrawing } from "../../engine/game.ts";
-import type { Grid } from "../../engine/grid.ts";
-import { gridComputeSize, gridFindIncentre } from "../../engine/grid.ts";
 import {
   ERROR,
   INK,
   lineMaybeColour,
   lineNoColour,
   PAPER,
-} from "../../engine/palette.ts";
+} from "../../engine/colour/palette.ts";
+import type { GameDrawing } from "../../engine/game.ts";
+import type { Grid } from "../../engine/grid/index.ts";
+import { gridComputeSize, gridFindIncentre } from "../../engine/grid/index.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import { gridTypeOf, type LoopyParams } from "./params.ts";
 import {

@@ -8,7 +8,7 @@
  * solver finding a unique solution at the requested difficulty (and failing
  * one tier easier), then greedily minimise the clues.
  */
-import { type Grid, gridNewSquare } from "../../engine/grid.ts";
+import { type Grid, gridNewSquare } from "../../engine/grid/index.ts";
 import {
   FACE_BLACK,
   FACE_WHITE,

@@ -11,16 +11,16 @@
  * full tile — parity is with what the browser actually showed.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import {
   ERROR,
   HINT_ACTION,
   HINT_BLACKREF,
   HINT_EVIDENCE,
   INK,
-} from "../../engine/palette.ts";
-import { slantGrid, slantGrounded } from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette.ts";
+import { slantGrid, slantGrounded } from "../../engine/colour/palette-games.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { SlantHint } from "./index.ts";
 import type {

@@ -8,9 +8,7 @@
  * live, which is upstream behaviour, not the fork's Check & Save.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { drawRectOutline } from "../../engine/draw.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import {
   ERROR,
   HINT_ACTION,
@@ -18,7 +16,9 @@ import {
   HINT_EVIDENCE,
   INK,
   PAPER,
-} from "../../engine/palette.ts";
+} from "../../engine/colour/palette.ts";
+import { drawRectOutline } from "../../engine/draw.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { RangeHint } from "./index.ts";
 import { findErrors } from "./solver.ts";

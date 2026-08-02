@@ -14,8 +14,8 @@
  * control-flow transliteration.
  */
 
-import { mkhighlight } from "../../engine/colour-mkhighlight.ts";
-import { BLUE, BLUE_WASH } from "../../engine/colours.ts";
+import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { BLUE, BLUE_WASH } from "../../engine/colour/colours.ts";
 import {
   coord as coordE,
   fromCoord as fromCoordE,

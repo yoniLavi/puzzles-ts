@@ -26,7 +26,10 @@
  * sticky pencil mode adds a mode-indicator glyph in the top-left margin.
  */
 
-import { mkhighlight, mkhighlightSpecific } from "../../engine/colour-mkhighlight.ts";
+import {
+  mkhighlight,
+  mkhighlightSpecific,
+} from "../../engine/colour/colour-mkhighlight.ts";
 import {
   BLUE,
   BLUE_BOLD,
@@ -34,14 +37,7 @@ import {
   GREEN_WASH,
   ORANGE_BOLD,
   PURPLE_WASH,
-} from "../../engine/colours.ts";
-import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
-import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import {
-  HINT_TARGET,
-  hintMarkBit,
-  OverlaySidecar,
-} from "../../engine/overlay-sidecar.ts";
+} from "../../engine/colour/colours.ts";
 import {
   ERROR,
   GRID_DARK,
@@ -49,8 +45,15 @@ import {
   PAPER,
   PENCIL_BODY,
   pencilColour,
-} from "../../engine/palette.ts";
-import { crossingGhost } from "../../engine/palette-games.ts";
+} from "../../engine/colour/palette.ts";
+import { crossingGhost } from "../../engine/colour/palette-games.ts";
+import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import {
+  HINT_TARGET,
+  hintMarkBit,
+  OverlaySidecar,
+} from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { Colour, DrawTextOptions, Size } from "../../engine/types.ts";
 import type { CrossingMistake } from "./solver.ts";

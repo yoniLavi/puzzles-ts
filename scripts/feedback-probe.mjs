@@ -41,6 +41,11 @@
  * catching it. `--verify` runs that check alone, in well under a second, and is
  * what a reader should run first after touching any of these modules.
  *
+ * **And a walk that finds too few engine test files aborts the run**, for the
+ * same reason pointed the other way: the anchors check that the *code* is still
+ * where a case says it is, and say nothing about whether the right *tests* were
+ * found. Both checks live in `--verify`, so both are in the commit gate.
+ *
  * ## Usage
  *
  *   node scripts/feedback-probe.mjs --verify        # anchors only, ~0.2 s
@@ -55,7 +60,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, dirname, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { MODULES } from "./feedback-probe-cases.mjs";
 
 /** A mutated solver can loop for ever; a timeout counts as caught, as Stryker
@@ -63,6 +68,72 @@ import { MODULES } from "./feedback-probe-cases.mjs";
 const RUN_TIMEOUT_MS = 120_000;
 
 const ENGINE = "src/engine";
+
+/**
+ * The floor on discovered engine test files — see `engineFiles()`.
+ *
+ * Deliberately below the true count (55 when written) so that deleting a test
+ * file is not a chore; far enough above what a **non-recursive** walk would find
+ * (34 once `grid/` and `colour/` are subdirectories) that the failure this
+ * guards cannot slip under it.
+ */
+const TEST_FILE_FLOOR = 50;
+
+/**
+ * Every `.ts` file under `src/engine/`, **recursively**.
+ *
+ * Recursive because the engine is no longer flat: `group-crowded-source-
+ * directories` moved the grid and colour families into subdirectories, and
+ * `random/`, `combi/`, `tilings/` and `testing/` were already nested. A
+ * one-level walk would still run — it would simply stop finding the tests that
+ * live down there, and both things derived from this list (barrels, own tests)
+ * would quietly shrink. See `checkTestFileFloor` for why that is the dangerous
+ * direction.
+ */
+function engineFiles(dir = ENGINE, out = []) {
+  for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
+    a.name < b.name ? -1 : 1,
+  )) {
+    const path = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) engineFiles(path, out);
+    else if (entry.name.endsWith(".ts")) out.push(path);
+  }
+  return out;
+}
+
+/** Engine test files, minus the differentials — the pool `ownTests` filters. */
+const testFilePool = (files) =>
+  files.filter((f) => f.endsWith(".test.ts") && !f.endsWith("-differential.test.ts"));
+
+/**
+ * Fail if the walk found fewer engine test files than the committed floor.
+ *
+ * This is the one check that notices the instrument going blind. Every other
+ * safeguard here fails *loudly* on a real problem; a walk that stops too
+ * shallow fails **quietly and in the wrong direction** — fewer tests run
+ * against each planted defect, so more cases report SURVIVED and the rate
+ * drops, which reads as "the tests got worse". That is a plausible-looking
+ * wrong conclusion, which is exactly what `check-the-instrument` is about.
+ *
+ * The anchor check cannot cover it: anchors quote source *lines*, and a pure
+ * file move leaves every one of them valid. So this runs alongside the anchors,
+ * in `--verify`, and therefore in the commit gate — a refactor that nests
+ * engine modules out of the walk's reach fails at commit time rather than
+ * fifteen minutes into a run whose number nobody would have doubted.
+ */
+function checkTestFileFloor(files) {
+  const found = testFilePool(files).length;
+  if (found < TEST_FILE_FLOOR) {
+    throw new Error(
+      `discovered only ${found} engine test files, floor is ${TEST_FILE_FLOOR}.\n` +
+        `  The walk in engineFiles() is not reaching them all — most likely a\n` +
+        "  refactor nested engine modules deeper than it recurses. Fix the walk;\n" +
+        "  do NOT lower the floor to match. A smaller derived set makes cases\n" +
+        "  SURVIVED and the rate drop, which looks like a real regression.",
+    );
+  }
+  return found;
+}
 
 /**
  * A module's **own tests**: every test file in `src/engine/` that
@@ -89,38 +160,43 @@ const ENGINE = "src/engine";
  * survives the local tests but is caught by a differential is exactly the split
  * the requirement says must be *stated in the test file and verified*.
  */
-function ownTests(modulePath) {
+function ownTests(modulePath, files = engineFiles()) {
   const wanted = resolve(modulePath);
-  // A barrel counts as the module. `grid.ts` re-exports `grid-core.ts` and says
-  // in its own doc comment "import from this module, not from the parts", so
-  // `grid.test.ts` *is* `grid-core.ts`'s local test — following direct imports
-  // only reported a feedback hole that was really an import convention. One
-  // level is enough for this tree; deepen it if a barrel ever re-exports a
-  // barrel.
+  // A barrel counts as the module. `grid/index.ts` re-exports `grid-core.ts`
+  // and says in its own doc comment "import from this module, not from the
+  // parts", so `grid.test.ts` *is* `grid-core.ts`'s local test — following
+  // direct imports only reported a feedback hole that was really an import
+  // convention. One level is enough for this tree; deepen it if a barrel ever
+  // re-exports a barrel.
   const viaBarrel = new Set([wanted]);
-  for (const f of readdirSync(ENGINE)) {
-    if (!f.endsWith(".ts") || f.endsWith(".test.ts")) continue;
-    const barrel = `${ENGINE}/${f}`;
+  for (const barrel of files) {
+    if (barrel.endsWith(".test.ts")) continue;
     const src = readFileSync(barrel, "utf8");
     for (const m of src.matchAll(/export\s+(?:\*|\{[^}]*\})\s*from\s+"(\.[^"]+)"/g)) {
       if (resolve(dirname(barrel), m[1]) === wanted) viaBarrel.add(resolve(barrel));
     }
   }
 
-  return readdirSync(ENGINE)
-    .filter((f) => f.endsWith(".test.ts") && !f.endsWith("-differential.test.ts"))
-    .map((f) => `${ENGINE}/${f}`)
-    .filter((testFile) => {
-      const src = readFileSync(testFile, "utf8");
-      for (const m of src.matchAll(/from\s+"(\.[^"]+)"/g)) {
-        if (viaBarrel.has(resolve(dirname(testFile), m[1]))) return true;
-      }
-      return false;
-    });
+  return testFilePool(files).filter((testFile) => {
+    const src = readFileSync(testFile, "utf8");
+    for (const m of src.matchAll(/from\s+"(\.[^"]+)"/g)) {
+      if (viaBarrel.has(resolve(dirname(testFile), m[1]))) return true;
+    }
+    return false;
+  });
 }
 
-function testsFor(mod) {
-  const tests = mod.tests ?? ownTests(mod.module);
+/**
+ * How a module is labelled in the report.
+ *
+ * The path relative to `src/engine/`, not `basename()`. The engine has
+ * subdirectories now, and `basename("src/engine/grid/index.ts")` is `index.ts` —
+ * a name that says nothing and that a second barrel would collide with outright.
+ */
+const label = (modulePath) => modulePath.replace(`${ENGINE}/`, "");
+
+function testsFor(mod, files) {
+  const tests = mod.tests ?? ownTests(mod.module, files);
   if (!tests.length) {
     throw new Error(
       `${mod.module}: no engine test file imports it — that is itself the finding,\n` +
@@ -181,8 +257,14 @@ function main() {
       applyCase(source, probe, `${mod.module} — ${probe.why}`);
     }
   }
+  // …and check the instrument can still see, which the anchors cannot tell us.
+  const files = engineFiles();
+  const found = checkTestFileFloor(files);
   const total = modules.reduce((n, m) => n + m.cases.length, 0);
-  console.log(`${total} cases across ${modules.length} modules: every anchor applies.`);
+  console.log(
+    `${total} cases across ${modules.length} modules: every anchor applies, ` +
+      `${found} engine test files discovered (floor ${TEST_FILE_FLOOR}).`,
+  );
   if (verifyOnly) return;
 
   const restore = () => {
@@ -199,7 +281,7 @@ function main() {
   try {
     for (const mod of modules) {
       const source = sources.get(mod.module);
-      const tests = testsFor(mod);
+      const tests = testsFor(mod, files);
       process.stdout.write(`\n${mod.module}\n  vs ${tests.join(" ")}\n  `);
       let caught = 0;
       let scored = 0;
@@ -223,7 +305,7 @@ function main() {
         );
       }
       const pct = Math.round((100 * caught) / scored);
-      scores.push({ name: basename(mod.module), caught, total: scored, pct });
+      scores.push({ name: label(mod.module), caught, total: scored, pct });
       process.stdout.write(`  ${caught}/${scored} (${pct}%)\n`);
     }
   } finally {
@@ -235,7 +317,7 @@ function main() {
       `\n## marked equivalent but CAUGHT (${regressions.length}) — re-read the note`,
     );
     for (const { mod, probe } of regressions)
-      console.log(`  ${basename(mod)}: ${probe.why}`);
+      console.log(`  ${label(mod)}: ${probe.why}`);
   }
 
   // Repeated at the end so the table survives a `| tail`, which is how this
@@ -243,7 +325,7 @@ function main() {
   console.log("\n## local-catch rate by module\n");
   for (const s of [...scores].sort((a, b) => a.pct - b.pct)) {
     console.log(
-      `  ${s.name.padEnd(24)} ${String(s.caught).padStart(3)}/${String(s.total).padEnd(3)} ${String(`${s.pct}%`).padStart(5)}`,
+      `  ${s.name.padEnd(26)} ${String(s.caught).padStart(3)}/${String(s.total).padEnd(3)} ${String(`${s.pct}%`).padStart(5)}`,
     );
   }
   const scored = scores.reduce((n, s) => n + s.total, 0);
@@ -256,8 +338,7 @@ function main() {
   );
   if (findings.length) {
     console.log(`\n## survived the module's own tests (${findings.length})`);
-    for (const { mod, probe } of findings)
-      console.log(`  ${basename(mod)}: ${probe.why}`);
+    for (const { mod, probe } of findings) console.log(`  ${label(mod)}: ${probe.why}`);
     console.log(
       "\nEach is either a test worth writing or a guarantee that genuinely belongs\n" +
         "to a differential — and if it is the second, say so in the test file and\n" +
