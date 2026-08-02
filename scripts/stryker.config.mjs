@@ -26,21 +26,26 @@
  *   suite run **serially**: measured at **4,466 tests in 20 min 54 s**, against
  *   ~116 s for vitest's own parallel run. The default cannot complete here.
  *
- * - **`ignoreStatic: true`, which is a deliberate and *reported* gap.** A
+ * - **`ignoreStatic: true`, and it skips far less than its name suggests.** A
  *   "static" mutant lives in code that runs at **module load** — a top-level
- *   table, a constant initialiser — so per-test coverage cannot be attributed to
- *   it and Stryker must re-run the whole suite for each one. Of 2,168 mutants in
- *   these seven modules, **836 (39%) are static, and Stryker estimates them at
- *   97% of the total time**: the observed ETA including them was **~678 hours**,
- *   versus minutes for the rest. So they are skipped — and any report of a run
- *   from this config MUST say so, because a partial run presented as complete is
- *   exactly the "no silent caps" failure this repository has named before.
+ *   table, a constant initialiser — so per-test coverage cannot always be
+ *   attributed to it. Of 2,168 mutants here, 836 are static; with this flag on,
+ *   **831 of them were still evaluated** and only **5** were ignored (the ones
+ *   Stryker could attribute no coverage to at all). What the flag actually
+ *   prevents is Stryker *budgeting a whole-suite run per static mutant*, which
+ *   is what produced an observed ETA of ~678 hours with it off. With it on, the
+ *   same set finished in 398 minutes.
+ *
+ *   Do not restate this as "836 mutants were skipped" — an earlier revision of
+ *   this comment did, and it understated the audit's coverage by two orders of
+ *   magnitude until the completed report contradicted it.
  *
  *   The general form, worth remembering before reaching for mutation testing
- *   anywhere else: its cost per mutant is one test-suite run for module-scope
- *   code and one *covering-test* run for everything else. Whether it is
- *   affordable is decided by how much of the target is module scope, multiplied
- *   by how slow the suite is with parallelism switched off.
+ *   anywhere else: cost per mutant is one *covering-test* run normally, and one
+ *   whole-suite run when coverage cannot be attributed. Affordability is decided
+ *   by how much of the target is module-scope, by how slow the suite is with
+ *   parallelism off, and by how broad the target's covering set is — `midend.ts`
+ *   dominated this run because nearly every test constructs a `Midend`.
  *
  * Findings and the survivor triage:
  * `openspec/changes/archive/*-audit-test-suite-strength/findings.md`.

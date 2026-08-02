@@ -152,13 +152,94 @@ of a static mutant is one whole serial suite run and this suite takes 21 minutes
 serially. It is not that Stryker suits the codebase badly; it is that
 `ignoreStatic` is the difference between 20 minutes and a month.
 
-**So the run reported below sets `ignoreStatic: true`, and the 836 static mutants
-were NOT evaluated.** Stating that is not a formality — a partial run reported as
-complete is the "no silent caps" failure this project has named. What is missed is
-specific and predictable: the module-scope constant tables (`grid.ts`'s tiling
-tables, `latin.ts`'s difficulty constants and similar). Those are data, they are
-read by every consumer of the module, and the differentials do pin them — but this
-audit did not measure that, and says so.
+**`ignoreStatic: true` was set — and it turned out to skip almost nothing, which
+corrects a claim this document made emphatically.** The completed report says:
+
+| | static | dynamic |
+| --- | --- | --- |
+| Killed | 513 | 924 |
+| Survived | 89 | 242 |
+| Timeout | 228 | 118 |
+| Ignored | **5** | 0 |
+
+**831 of the 836 static mutants were evaluated.** Only five were ignored — all
+`ArrowFunction` mutants in `border-grid.ts`, the ones Stryker could attribute no
+per-test coverage to at all. `ignoreStatic` skips a static mutant only when it
+*must* fall back to a whole-suite run; a static mutant that tests genuinely reach
+still runs against them.
+
+So the "836 mutants not evaluated" gap this section originally announced does not
+exist: the real gap is **five**. That was worth catching. An overstated caveat
+misleads exactly as much as a missing one — it would have understated this
+audit's coverage by two orders of magnitude, and it survived being written into
+the config's doc comment, this file and the task list before the completed report
+contradicted it.
+
+The 678-hour figure was real but was Stryker's *plan*, not its outcome: with
+`ignoreStatic` on it stopped budgeting a full suite run for every static mutant
+and the same set finished in 398 minutes.
+
+---
+
+### 4b. The result: where the killing power actually lives
+
+| module | killed | survived | no-cov | timeout | total | **killed by its own test file** |
+| --- | --- | --- | --- | --- | --- | --- |
+| `border-grid.ts` | 168 | 51 | 0 | 35 | 259 | **150/168 (89%)** |
+| `deduction-fixpoint.ts` | 27 | **0** | 0 | 7 | 34 | 19/27 (70%) |
+| `dsf.ts` | 24 | 11 | 0 | 30 | 65 | 14/24 (58%) |
+| `midend.ts` | 531 | 122 | 41 | 47 | 741 | 208/531 (39%) |
+| `save.ts` | 54 | 30 | 1 | 0 | 85 | 8/54 (15%) |
+| `grid.ts` | 40 | **0** | 0 | 0 | 40 | **1/40 (3%)** |
+| `latin.ts` | 593 | 117 | 6 | 227 | 944 | **9/593 (2%)** |
+
+**The last column is the transferable result, and it is §3's finding measured
+across the whole engine rather than inferred from one case.** For `latin.ts` and
+`grid.ts` essentially *all* the killing power is in distant game tests — 9 of 593
+and 1 of 40. Neither is under-protected: `grid.ts` has **zero** survivors and
+`latin.ts` 117 of 944. What they have is almost no *local* feedback, so during
+engine work the repository's own test-run economy points at the files least able
+to tell you anything.
+
+`deduction-fixpoint.ts` is the counter-example and the encouraging one: **0
+survivors**, 70% killed locally — after this change added two assertions to it in
+§3.
+
+### 4c. Triage of the 331 survivors
+
+**(a) missing assertion → written.** `save.ts`, 30 survivors of 85 — the worst
+rate in the run, and all inside `isSaveEnvelope`. The suite's only malformed
+input was `{"hello":1}`, which fails the *first* check and short-circuits, so
+nine field guards were executed by the happy path and never asserted to reject
+anything; each could be `true` with the suite green. Line coverage cannot see
+this, which is the question mutation testing exists to ask. 18 cases added, all
+ten guard mutations re-run by hand and now failing. This is the one that mattered
+most beyond the score: the guard stands between a corrupt save and a game state
+rebuilt from nonsense.
+
+**(b) genuinely unreachable → recorded, not deleted.** 48 `NoCoverage` mutants,
+41 of them in `midend.ts`, over 31 distinct statements: `catch` arms
+(`Invalid parameters`, `Could not read save`, `Invalid saved parameters`), the
+"this game does not support solving/hints" refusals, and adapter-facing methods
+no test calls (`getColourPalette`, `darkPalette`, `preferredSize`, `delete`).
+**Checked against `tighten-type-checking`'s finding first**, which proved all 53
+of its "unreachable" branches live — these are different: they are reachable and
+simply unexercised, so the action is a test, not a deletion.
+
+**(c) equivalent → the rest, and they are not triaged individually.** The
+remaining ~250 survivors cluster hard by mutator, which is how they should be
+read: `ConditionalExpression` 52 in `midend.ts` and 41 in `latin.ts`,
+`BooleanLiteral` 22 in `midend.ts`, `ArithmeticOperator` 19 in `border-grid.ts`.
+That shape — conditionals and boolean literals in orchestration and solver
+plumbing — is where behaviour-preserving mutants concentrate. Walking 250
+individually would be the score-chasing this change forbids; the follow-up takes
+them by cluster.
+
+**Not triaged, and it affects the cost story rather than the result: 346
+timeouts (16%)**, 227 of them in `latin.ts`. Stryker counts a timeout as killed,
+so the outcome is unaffected — but whether these are genuine non-termination or
+contention artefacts decides whether a large part of the 398 minutes was wasted.
+The report records the status, not the cause.
 
 ---
 
