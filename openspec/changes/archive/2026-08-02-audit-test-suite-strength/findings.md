@@ -1,5 +1,26 @@
 # audit-test-suite-strength — findings
 
+> ## ⚠️ Correction, 2026-08-02 — §4b's last column measured the wrong thing
+>
+> The **"killed by its own test file"** column below, and every conclusion drawn
+> from it, is an artefact. **Stryker bails the test run on the first failure**,
+> so `killedBy` names the *first* covering test to fail rather than the tests
+> capable of catching the defect — every one of this run's 1,437 killed mutants
+> has exactly one entry. Vitest orders files roughly alphabetically, so `grid.ts`
+> scored 1/40 because `grid-aperiodic-differential.test.ts`,
+> `grid-desc.test.ts` and `grid-incentre.test.ts` all sort ahead of
+> `grid.test.ts`.
+>
+> Measured properly — plant a defect, run only that module's own tests —
+> **`grid.ts` catches 6 of 6** and needed nothing, while the genuinely weakest
+> module was `midend.ts`, which the column rated a comfortable 39%.
+> `latin.ts` was a real gap, but not for the reason the number gave.
+>
+> This is a **seventh** instance of §0's own rule, met inside the document that
+> states it. Everything else here stands; the follow-up
+> `strengthen-engine-test-feedback` carries the correction, the replacement
+> instrument (`npm run probe`) and the results.
+
 The triage is the artefact: a diff cannot show that a survivor was *considered*.
 Same shape as `tighten-type-checking/findings.md`.
 
