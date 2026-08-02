@@ -66,5 +66,11 @@ instrument that would notice has been fixed.
       recursive and floor-guarded).
 - [ ] 5.2 Update `docs/porting/game-port-playbook.md` and
       `docs/porting/hint-authoring.md` where they point at moved files.
-- [ ] 5.3 `openspec validate group-crowded-source-directories --strict`.
-- [ ] 5.4 Owner acceptance, then archive.
+- [ ] 5.3 **Sweep the pending changes under `openspec/changes/`** (not
+      `archive/`) for paths this change invalidates — `engine/grid*.ts`,
+      `engine/colour*.ts`, `engine/palette*.ts`, `src/puzzle/puzzle-*.ts`. A
+      stale path in an unstarted change is a step someone will execute verbatim,
+      which is worse than a stale path in a spec or an archive.
+- [ ] 5.4 `openspec validate group-crowded-source-directories --strict`, and
+      re-validate every pending change touched by 5.3.
+- [ ] 5.5 Owner acceptance, then archive.
