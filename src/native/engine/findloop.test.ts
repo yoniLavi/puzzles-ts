@@ -70,6 +70,29 @@ describe("findLoops", () => {
     expect(counts).toEqual([2, 3]);
   });
 
+  it("keys the split to the arguments, not to the direction the DFS happened to run", () => {
+    // The tests above `.sort()` the two counts, deliberately ignoring
+    // orientation because the DFS's direction is not the caller's business.
+    // But the *interface* is: `uVertices` is documented as "vertices on `u`'s
+    // side", so the answer must mirror when the arguments swap. Without this,
+    // a caller asking "how much hangs off my end of this bridge?" — Bridges'
+    // island counting, Dominosa's region split — silently gets the other end,
+    // and the sorted assertions cannot see it.
+    // Triangle 0-1-2 with a tail 2-3-4: 2's side is {0,1,2}, 3's is {3,4}.
+    const r = findLoops(
+      5,
+      graph(5, [
+        [0, 1],
+        [1, 2],
+        [2, 0],
+        [2, 3],
+        [3, 4],
+      ]),
+    );
+    expect(r.isBridge(2, 3)).toEqual({ uVertices: 3, vVertices: 2 });
+    expect(r.isBridge(3, 2)).toEqual({ uVertices: 2, vVertices: 3 });
+  });
+
   it("handles two independent cycles plus a connecting bridge", () => {
     // Squares 0-1-2-3 and 4-5-6-7, bridged 3-4.
     const cycleEdges: [number, number][] = [

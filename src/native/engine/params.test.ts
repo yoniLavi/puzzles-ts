@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { ParamConfigItem } from "./game.ts";
-import { dimensionParamConfig, parseDimensions, parseLeadingInt } from "./params.ts";
+import {
+  atof,
+  dimensionParamConfig,
+  formatG,
+  parseDimensions,
+  parseLeadingInt,
+} from "./params.ts";
 
 describe("parseLeadingInt", () => {
   it("parses a WxH param string in two hops", () => {
@@ -42,6 +48,66 @@ describe("parseDimensions", () => {
   it("honours a non-zero start offset", () => {
     // e.g. a game that consumed a leading kind-letter first.
     expect(parseDimensions("c3x3", 1)).toEqual({ w: 3, h: 3, next: 4 });
+  });
+});
+
+describe("atof", () => {
+  // The whole point of this helper is the last case. `Number.parseFloat` yields
+  // `NaN` on garbage, and `NaN < min` and `NaN > max` are *both* false, so a
+  // typo in a custom-params box would slip past every bound check in the game's
+  // `validateParams` and reach the generator. Returning 0 makes it fail the
+  // low bound and produce the game's own message.
+  it.each([
+    ["0.25", 0.25],
+    ["  1.5", 1.5],
+    ["3", 3],
+    ["0.5abc", 0.5], // C stops at the first non-float character
+    ["-0.25", -0.25],
+    ["", 0],
+    ["abc", 0],
+    ["--", 0],
+  ])("atof(%o) === %o", (input, expected) => {
+    expect(atof(input)).toBe(expected);
+  });
+
+  it("never returns NaN, whatever it is fed", () => {
+    for (const s of ["", " ", "x", "e5", ".", "-", "NaN", "Infinity!"]) {
+      expect(Number.isNaN(atof(s))).toBe(false);
+    }
+  });
+});
+
+describe("formatG", () => {
+  // C's `%g`, and emphatically not `String(x)`. A float param encoded with full
+  // double precision reads back through `atof` as a *different* number than the
+  // one that generated the board, so the game ID stops naming the board it came
+  // from. Six significant digits, trailing zeros stripped, exponential below
+  // 1e-4 and at/above 1e6.
+  it.each([
+    [0, "0"],
+    [1, "1"],
+    [0.5, "0.5"],
+    [1 / 3, "0.333333"],
+    [2 / 3, "0.666667"], // rounded, not truncated
+    [1.25, "1.25"],
+    [100000, "100000"],
+    [1000000, "1e+06"], // switches at 1e6
+    [0.0001, "0.0001"],
+    [0.00001, "1e-05"], // switches below 1e-4
+    [1.5e-7, "1.5e-07"],
+    [-1 / 3, "-0.333333"],
+  ])("formatG(%o) === %o", (value, expected) => {
+    expect(formatG(value)).toBe(expected);
+  });
+
+  it("round-trips through atof to within %g's six significant digits", () => {
+    // The property the encoder exists for: what a game writes into an ID is
+    // what reading that ID back gives it.
+    for (const v of [0.5, 0.25, 1 / 3, 0.1, 12.3456, 1e-5, 3.75]) {
+      expect(atof(formatG(v))).toBeCloseTo(v, 5);
+      // And the encoding is stable: re-encoding what we read back is a fixpoint.
+      expect(formatG(atof(formatG(v)))).toBe(formatG(v));
+    }
   });
 });
 
