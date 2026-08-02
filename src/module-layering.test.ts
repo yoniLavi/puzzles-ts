@@ -99,6 +99,46 @@ function resolve(from: string, spec: string): string | null {
 const gameOf = (p: string) => /^src\/games\/([^/]+)\//.exec(p)?.[1] ?? null;
 
 describe("module layering", () => {
+  it("resolves the imports the rules below are counting", () => {
+    // THE GUARD ON THE INSTRUMENT. Every rule in this file reports *offenders*,
+    // and `resolve()` returns null when it cannot find a target — so a resolver
+    // that resolves nothing finds no offenders anywhere, and the whole file goes
+    // green while checking precisely nothing. That is not hypothetical:
+    // `retire-native-directory`'s bulk import-rewrite corrupted this very file,
+    // turning `resolve()`'s `startsWith(".")` guard into `startsWith("./")` so
+    // that no `../…` specifier resolved at all — and every test below passed.
+    //
+    // So count what was actually inspected. Every relative `.ts` specifier in
+    // the tree must resolve: `sources` globs every `.ts` under `src/`, so an
+    // unresolved one means the resolver is broken or the target is missing.
+    // Relative imports of other kinds (`.json` fixtures, `.css`) fall outside
+    // that glob and are not this rule's business.
+    //
+    // The floor is deliberately far below the true count (3228 when written) —
+    // it exists to separate "working" from "resolving nothing", not to ratchet
+    // a number that legitimate deletions would wobble.
+    //
+    // This is the third instance of the shape in recent memory: `grid.test.ts`'s
+    // `expect(d.edges.length).toBe(d.order)` could not fail because `d.edges`
+    // was allocated `new Array(d.order)`, and `touch-input.test.ts` guarded its
+    // sweep by counting the catalog while the sweep itself skipped on the
+    // registry. An instrument that answers "how many violations?" must also
+    // answer "how many things did I look at?".
+    let resolved = 0;
+    const unresolved: string[] = [];
+    for (const [path, text] of Object.entries(sources).map(
+      ([p, t]) => [p.replace(/^\.\//, "src/"), t] as const,
+    )) {
+      for (const { spec } of imports(text)) {
+        if (!spec.startsWith(".") || !spec.endsWith(".ts")) continue;
+        if (resolve(path, spec)) resolved++;
+        else unresolved.push(`${path} → ${spec}`);
+      }
+    }
+    expect(unresolved).toEqual([]);
+    expect(resolved).toBeGreaterThan(2000);
+  });
+
   it("no game imports another game", () => {
     const offenders: string[] = [];
     for (const [path, text] of modules) {

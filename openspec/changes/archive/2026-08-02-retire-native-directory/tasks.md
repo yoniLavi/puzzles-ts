@@ -106,10 +106,10 @@ phases 2 and 3 are mechanical and verified by shape.
 
 ## 4. Close out
 
-- [ ] 4.1 Owner acceptance: `npm run dev`, play two games (one canvas-heavy, one
+- [x] 4.1 Owner acceptance (given 2026-08-02: played through, no issues found): `npm run dev`, play two games (one canvas-heavy, one
       hint-carrying) and confirm nothing regressed. A rename cannot change
       behaviour, but that sentence has been wrong before.
-- [ ] 4.2 Archive with `openspec archive retire-native-directory`.
+- [x] 4.2 Archive with `openspec archive retire-native-directory`.
 
 ## Findings from implementation
 
@@ -171,6 +171,47 @@ proves it pairs each `-`/`+` line and asserts `substitute(minus) === plus` — h
 for `src/native/games/<id>` and silently wrong for `src/games/<id>` — it would
 have gone on returning a *filename*, mis-scoring cross-game duplication rather
 than failing. Now indexed off a match. Grep for `split("/")[n]` after any move.
+
+**Post-acceptance addendum — the corruption's real lesson was a hole in the
+checker, not a missing lint.** Asked whether the gate should gain a rule to
+catch this class, the honest answer came from planting each corruption back and
+running the tests rather than from arguing:
+
+| planted corruption | tests | verdict |
+| --- | --- | --- |
+| `module-layering.test.ts` resolver blinded | 6 | **silent** |
+| `abcd/state.ts` `formatAsText` emits `"./"` | 46 | **silent** |
+| `mines/state.ts` desc-scan compares `"./"` | 35 | **silent** |
+| `params.ts` `formatG` uses `"./"` | 34 | **loud**, 7 failed |
+
+Three of four silent — and the one that fired is the probed module, whose
+`formatG` tests exist because `extend-feedback-probe-corpus` read its doc
+comment's silent-failure warning. That is evidence for the instrument this repo
+already has, not for a new gate step.
+
+A pre-commit rule banning `"./"` literals was considered and **declined**: it
+catches the one mistake made and nothing else, three legitimate sites already
+exist, and it is the "guard measuring a neighbour" trap in a new costume.
+Import corruption is *already* loud — `tsc` is why the 203-file `types.ts`
+rewrite was safe — and the dangerous surface is exactly the non-import string
+literal, which nothing generic can validate.
+
+What was fixed instead is a live bug in a guard: `resolve()` returns `null` on
+failure and every rule counts *offenders*, so a blinded resolver reports zero
+violations and passes. Measured: with it blinded, **six of the seven tests in
+the file still pass**. The new first test asserts every relative `.ts` specifier
+resolves (3228 of them) and that the count clears a floor far below the true
+value. Verified to fire, and codified as two `repo-layout` scenarios, because
+this is the shape's third appearance: **an instrument that answers "how many
+violations?" must also answer "how many things did I look at?"** — otherwise
+"none found" and "nothing checked" are the same result.
+
+Two items deliberately *not* done here, recommended for a later session: a
+`scripts/check-rename-shape.mjs` making the verify-by-shape check reusable (it
+cannot be a gate step — only the author knows the diff was meant to be a pure
+rename), and a `docs/test-strength.md` §7 note that a `toContain` assertion on a
+single character cannot distinguish it from a superstring, which is why abcd's
+46 tests were blind (`expect(text).toContain(".")` is satisfied by `"./"`).
 
 **Not from this change, but noticed and left alone:**
 `openspec/changes/probe-shared-hint-machinery` fails `openspec validate --strict`
