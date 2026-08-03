@@ -136,5 +136,7 @@ answerable.
       (proposal + tasks), whose "do not touch upstream's words" carve-out named
       `help/upstream/`.*
 - [x] 5.4 `openspec validate retire-the-upstream-help-tree --strict`.
-- [ ] 5.5 **Owner acceptance is required before archiving**, because this removes
+- [x] 5.5 **Owner acceptance is required before archiving**, because this removes
       player-visible content. Show the built `/help/` before and after.
+      *Owner accepted 2026-08-03, after seeing the rendered cube page, the new
+      `separate` page and the in-app help drawer.*

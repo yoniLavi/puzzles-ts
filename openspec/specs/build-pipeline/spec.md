@@ -10,7 +10,7 @@ The repository SHALL provide a GitHub Actions workflow that, on every push to
 `tsc -b --noEmit` → `biome ci` → probe-anchor check → `vitest run` →
 `vite build`).
 
-The gate SHALL require **no generated assets**. This reverses the previous
+The gate SHALL require **no generated assets**. This reverses the original
 requirement, which stated there was "no valid asset-free CI tier (a no-asset job
 fails at `tsc -b`)" — true only while `src/puzzle/{catalog,types,worker}.ts`
 imported artifacts produced by the Emscripten build. Since `retire-c-engine` the
@@ -19,11 +19,12 @@ type-checks, tests and builds with nothing generated. The workflow SHALL NOT
 provision a wasm toolchain, and SHALL NOT cache generated assets to make the
 gate viable.
 
-The workflow SHALL nonetheless build the in-app manual (`npm run build:assets`,
-halibut over `puzzles.but`) before the gate. This is not a gate precondition but
-a coverage decision: the manual is the only generated asset left, and building it
-is what exercises `scripts/build-manual.sh` and the vite manual-page rendering
-path, neither of which any test covers.
+**The workflow SHALL provision no native tool at all.** It previously carried an
+apt install of halibut and a `npm run build:assets` step, on the reasoning that
+the manual was the only generated asset left and building it was the only thing
+exercising `scripts/build-manual.sh` and vite's manual-page rendering path. Both
+the script and that rendering path are deleted with the manual, so the coverage
+argument has no subject: the job is `npm ci` and the gate.
 
 The project is trunk-based (no pull-request flow), so the gate runs post-push on
 `main` rather than pre-merge; a `pull_request` trigger MAY be added later if a
@@ -41,6 +42,12 @@ hooks never installed could land breakage on `main` undetected).
 - **WHEN** the workflow runs on a clean checkout
 - **THEN** no wasm toolchain is provisioned and no asset cache is consulted
 - **AND** the typecheck, tests and production build all succeed
+
+#### Scenario: The workflow installs no system package
+
+- **WHEN** the workflow's steps are inspected
+- **THEN** the only setup is `actions/setup-node` and `npm ci`
+- **AND** no `apt-get`, `brew` or other native-tool provisioning step is present
 
 ### Requirement: The pre-commit gate minimises wall-clock without dropping checks
 
@@ -158,38 +165,6 @@ by an environment toggle the hook sets, not by a second copy of the gate.
   smaller corpus and report success — the failure mode this project keeps
   naming, where a silent cap reads as health. Re-anchoring is also the moment a
   human decides whether the case still states the defect it claims to.
-
-### Requirement: The asset build produces the catalog and manual without a WASM toolchain
-
-With no game served by C/WASM, the build SHALL produce the two artefacts the app
-depends on — the game `catalog.json` and the in-app manual HTML — **without the
-Emscripten toolchain**. The catalog SHALL be derived from a **committed
-TypeScript catalog source** holding each game's display metadata (every game is
-TS-served, so the catalog is exactly the set of registered TS games); that
-metadata previously existed only in the CMake `puzzle()` calls being deleted, so
-it moves rather than being re-derived. The manual SHALL continue to be built by
-halibut from `puzzles.but`, detached from any wasm-compilation step.
-
-The build configuration SHALL NOT depend on any generated, gitignored artefact at
-config-load time, so a clean checkout is configurable before anything has been
-generated.
-
-A clean checkout SHALL build the app and serve every game and its help pages
-with no Emscripten toolchain installed.
-
-#### Scenario: A clean checkout builds with no Emscripten
-
-- **WHEN** the app is built from a clean checkout on a machine without the
-  Emscripten toolchain
-- **THEN** the catalog and the manual HTML are produced
-- **AND** the app lists every game and serves its help pages
-- **AND** no wasm artifact is produced or required
-
-#### Scenario: A clean checkout needs no generated artefact to configure
-
-- **WHEN** the build is configured on a checkout where nothing has been generated
-- **THEN** the configuration loads and the build proceeds
-- **AND** the game catalog is read from committed source
 
 ### Requirement: Refactoring metrics are measured on demand and ratcheted in the gate
 
@@ -427,4 +402,44 @@ tool for *locating* cost, because a relative measure is all that needs to be.
   every commit by the smaller fixtures, and that is stated at the call site
 - **BECAUSE** the differentials are the refactoring net: a refactor that changes a
   solver's verdict must still change a desc the gate checks
+
+### Requirement: The app builds from a clean checkout with no toolchain but Node
+
+A clean checkout SHALL build the complete app — every game, every help page, the
+service worker and the PWA assets — with **`npm install` as the entire setup**.
+No native toolchain, no system package, and no generated artefact SHALL be
+required, at config-load time or at build time.
+
+Nothing is generated any more. The game catalog is committed TypeScript source
+(`src/puzzle/catalog-data.ts`), the per-puzzle icons are a committed snapshot,
+and the help pages are committed markdown. With the halibut manual deleted there
+is no asset build at all: `npm run build:assets`, `scripts/build-manual.sh` and
+`Brewfile` are removed, halibut having been the Brewfile's only remaining entry
+and the manual its only consumer.
+
+This is the end of a sequence worth recording, because each step looked like a
+small cleanup and the property only arrived when the last one landed: the
+Emscripten toolchain went with `retire-c-engine`, the CMake tree and the icon
+pipeline before it, the generated `catalog.json` became committed source, and the
+manual was the last generated artefact standing. A build that needs a system
+package is a build that fails differently on every contributor's machine, and
+until now this repository needed one to be complete.
+
+The build configuration SHALL NOT depend on any generated, gitignored artefact at
+config-load time.
+
+#### Scenario: A clean checkout builds with nothing installed but Node
+
+- **WHEN** the app is built from a fresh clone on a machine with no `brew bundle
+  install`, no Emscripten, and no halibut
+- **THEN** `npm install && npm run build` produces the complete app
+- **AND** every game and every help page is present in `dist/`
+- **AND** nothing is missing or degraded relative to a machine that has those
+  tools
+
+#### Scenario: No artefact is generated into the source tree
+
+- **WHEN** the repository is inspected after a build
+- **THEN** `src/assets/` holds only committed files
+- **AND** `.gitignore` carries no rule for a generated directory under `src/`
 

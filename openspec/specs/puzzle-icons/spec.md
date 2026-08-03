@@ -21,6 +21,14 @@ The `-d8` suffix is a legacy from the prior ImageMagick-quantized
 8-bit-indexed pipeline. It is preserved in the filename for path
 stability; new icons MAY be PNG24 without changing the suffix.
 
+**Nothing under `src/assets/` is generated.** The icons were the *committed*
+exception to a directory that also held one generated tree — `src/assets/manual/`,
+the halibut output — and that tree is gone with the manual it built
+(`retire-the-upstream-help-tree`). The distinction the original scenario drew,
+between the committed icons and the one generated neighbour, no longer has a
+second term: `src/assets/` holds committed files only, and `.gitignore` carries
+no rule for any directory under `src/`.
+
 #### Scenario: Catalog completeness is asserted in tests
 
 - **WHEN** `npm run test:run` runs `src/asset-integrity.test.ts`
@@ -42,8 +50,7 @@ stability; new icons MAY be PNG24 without changing the suffix.
 
 - **WHEN** a contributor inspects `.gitignore`
 - **THEN** `src/assets/icons/` is NOT ignored
-- **AND** the only generated-asset directory under `src/assets/` is
-  `src/assets/manual/` (output of `npm run build:assets`)
+- **AND** no directory under `src/` is ignored as generated output
 
 ### Requirement: Adding a new puzzle's icons is a manual screenshot workflow
 
