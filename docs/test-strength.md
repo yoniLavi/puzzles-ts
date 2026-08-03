@@ -35,12 +35,17 @@ run the files you touched and let the commit hook be the single full run. Applie
 to a module whose local tests cannot see its defects, that advice returns green
 on a broken module during exactly the refactoring the tests exist to make safe.
 
-Measured with `npm run probe` (§2a), over 93 hand-chosen real defects — and the
-whole exercise cost **+49 tests for +4.9 s of gate CPU**, with wall clock
-unchanged:
+Measured with `npm run probe` (§2a), over 173 hand-chosen real defects across 18
+modules — the first fourteen for **+49 tests and +4.9 s of gate CPU** with wall
+clock unchanged, the four shared-machinery modules below for **+33 tests and
++1.2 s**:
 
 | module | before | after |
 | --- | --- | --- |
+| `candidate-hint.ts` (13 importers) | 14/30 (47%) | 30/30 (100%) |
+| `slide-planner.ts` | 12/20 (60%) | 18/18 (100%) |
+| `loopgen.ts` | 7/12 (58%) | 10/10 (100%) |
+| `grid-geometry.ts` | 9/18 (50%) | 14/14 (100%) |
 | `latin.ts` | 5/15 (33%) | 14/14 (100%) |
 | `midend.ts` | 7/20 (35%) | 20/20 (100%) |
 | `wires.ts` | 2/4 (50%) | 4/4 (100%) |
@@ -51,6 +56,14 @@ unchanged:
 | `colour-mkhighlight.ts` (37) | 4/5 (80%) | 4/4 (100%) |
 | `findloop.ts` | 5/6 (83%) | 6/6 (100%) |
 | `grid.ts`, `save.ts`, `deduction-fixpoint.ts`, `divvy.ts`, `symmetric-blacks.ts` | 100% | 100% |
+
+The "after" denominators shrink where a case was argued **equivalent** (§5) —
+eight of them now — and, once, where a case was **removed for probing the wrong
+layer**: two `loopgen.ts` cases changed *which* loop a seed produces, which is
+Pearl's differential's guarantee and not a local test's (rule 2 of the corpus).
+Neither shrink is a pass mark. What each one buys is a written argument, and the
+harness re-checks every equivalent on every run: one that starts being *caught*
+means the argument expired under a code change.
 
 > ### The number this table replaced was an artefact — read §7 first
 >
@@ -116,7 +129,7 @@ The §2 loop, as a committed corpus rather than a thing you retype. Runner:
 
 ```sh
 npm run probe -- --verify        # every anchor still applies, ~0.2 s
-npm run probe                    # all 93 cases, ~20 min
+npm run probe                    # all 173 cases, ~30 min
 npm run probe -- latin midend    # substring-filtered
 ```
 
@@ -345,8 +358,10 @@ that change proved **all 53** of its "unreachable" branches were in fact live an
 the analysis wrong.
 
 **Chasing an equivalent mutant is worse than leaving it**, because the test you
-write to kill it asserts a mechanism rather than a claim. Two from the probe
-corpus, each argued rather than assumed:
+write to kill it asserts a mechanism rather than a claim. From the probe corpus,
+each argued rather than assumed, and in three distinct flavours:
+
+*Argued from the code.*
 
 - `latin.ts`'s `row`/`col` ledgers are read in exactly one place — a guard that
   *skips* an `elim` sweep over a line whose digit is already placed. Run anyway,
@@ -354,10 +369,33 @@ corpus, each argued rather than assumed:
   ledger is a scan-skipping optimisation with no behaviour of its own.
 - `border-grid.ts`'s `if (dir === 4) return null` is unreachable: the three masks
   are not independent, so exactly one edge bit always survives.
+- `slide-planner.ts`'s default `isGoal` is consulted at two sites and both read
+  `h === 0 || isGoal(board)`, so with a heuristic that is contractually zero at
+  the goal it is never reached.
+- `grid-geometry.ts`'s three singular-system guards (`disc >= 0`, two
+  `det === 0`) turn a rejected subset into a `NaN` or infinite candidate point,
+  and the point-in-polygon vetting answers false for both — which the module's
+  own doc comment already says. They are an economy, not a correctness measure.
+
+*Argued mathematically.* Ray casting counts crossings of the horizontal line
+through the point, which a closed polygon crosses an even number of times — so
+the crossings to the **left** and to the **right** have the same parity, and
+`grid-geometry.ts`'s choice of direction cannot change an answer.
+
+*Settled by measurement, because the argument would not close.* Two `loopgen.ts`
+cases — admitting a zero-transition colouring, and stopping when either candidate
+list empties rather than both — survive 1,319 (tiling, size, seed) runs across
+all eleven periodic tilings with **byte-identical** colourings. The sweep's own
+sensitivity was checked first: perturbing the random-flip pass moves 1,310 of
+those 1,319 rows. Likewise `slide-planner.ts`'s "take the first meet in a level
+rather than the cheapest" survives 601 scrambles checked against an independent
+breadth-first search without once returning a non-shortest path. These stay in
+the corpus **because** the argument is empirical: a tiling or move set that
+exposed one would show up as an equivalent turning CAUGHT.
 
 **And working out *why* a mutant is equivalent is worth doing even when nothing
-changes** — the second one had a comment claiming it rejected corner and centre
-clicks, which the module's own tie-break-at-a-tile-centre test already
+changes** — `border-grid.ts`'s had a comment claiming it rejected corner and
+centre clicks, which the module's own tie-break-at-a-tile-centre test already
 contradicted. The comment is now right.
 
 ---

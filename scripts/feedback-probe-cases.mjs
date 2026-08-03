@@ -612,6 +612,554 @@ export const MODULES = [
   },
 
   {
+    // The shared machinery behind explained hints, and the largest module in the
+    // engine. Cases are biased toward **the claims a hint utters** rather than
+    // toward branch coverage: a narration whose premise is not actually checked
+    // is the failure `docs/porting/hint-authoring.md` rule 5 names, and it is
+    // invisible to a render snapshot, which records whatever the game emits.
+    module: "src/engine/candidate-hint.ts",
+    cases: [
+      {
+        why: "a hint deduces from a board with known mistakes instead of refusing",
+        find: "  if (findMistakes(state).length > 0) {",
+        replace: "  if (false) {",
+      },
+      {
+        why: "with no ui the plan folds the trivial eliminations away instead of teaching them",
+        find: "  const autoClean = ui?.autoPencil ?? false;",
+        replace: "  const autoClean = ui?.autoPencil ?? true;",
+      },
+      {
+        why: "a two-value list narrates as “1, 2” with no “and”",
+        find: "  if (ns.length === 2) return `${ns[0]} and ${ns[1]}`;",
+        replace: "  if (ns.length === 2) return `${ns[0]}, ${ns[1]}`;",
+      },
+      {
+        why: "a cell with two candidates left is announced as a forced single",
+        find: "    if ((pencil[i] & (pencil[i] - 1)) !== 0) continue; // more than one bit set",
+        replace: "    if (false) continue; // more than one bit set",
+      },
+      {
+        why: "a filled cell's stale notes are announced as the next placement",
+        find: "    if (grid[i] !== 0 || pencil[i] === 0) continue;",
+        replace: "    if (pencil[i] === 0) continue;",
+      },
+      {
+        why: "strikes are taught from past the next placement, so the premise the player's board shows is gone",
+        find: "  const lim = firstUnreflectedPlaceIndex(ops, opts?.placed ?? grid, w);",
+        replace: "  const lim = ops.length;",
+      },
+      {
+        why: "a strike is taught on a cell the player has already filled",
+        find: "    grid[op.y * w + op.x] === 0 &&\n    (pencil[op.y * w + op.x] & bit(op.n)) !== 0 &&",
+        replace: "    (pencil[op.y * w + op.x] & bit(op.n)) !== 0 &&",
+      },
+      {
+        why: "a strike is taught on a candidate the player has already crossed out",
+        find: "    (pencil[op.y * w + op.x] & bit(op.n)) !== 0 &&",
+        replace: "    true &&",
+      },
+      {
+        why: "placement bookkeeping is taught as if it were a deduction technique",
+        find: '    (op.reason as { kind?: string }).kind !== "dup";',
+        replace: "    true;",
+      },
+      {
+        why: "a fully-struck firing ends the search instead of advancing to the next live one",
+        find: "    if (live.length === 0) continue;",
+        replace: "    if (live.length === 0) return null;",
+      },
+      {
+        why: "a placement the player has already made is offered again as the next move",
+        find: '    if (op.kind === "place" && placed[op.y * w + op.x] === 0) return op;',
+        replace: '    if (op.kind === "place") return op;',
+      },
+      {
+        why: "the placed cell itself is offered as a candidate to cross out",
+        find: "      if (j === home || seen.has(j)) continue;",
+        replace: "      if (seen.has(j)) continue;",
+      },
+      {
+        why: "a cell reachable through two of the cell's regions is struck twice",
+        find: "      const j = region.cells[i];\n      if (j === home || seen.has(j)) continue;",
+        replace: "      const j = region.cells[i];\n      if (j === home) continue;",
+      },
+      {
+        why: "the mistaken-board guard goes, so a cell can be emptied of every note and the cleanup oscillates",
+        find: "      removable &= removable - 1;",
+        replace: "      removable &= removable;",
+      },
+      {
+        why: "the cleanup never strikes the top candidate",
+        find: "  const values = enc?.values ?? w;",
+        replace: "  const values = enc?.values ?? w - 1;",
+      },
+      {
+        why: "a press on a fully-cleaned board adds an empty undo entry instead of doing nothing",
+        find: "  if (marks.length === 0) return null;",
+        replace:
+          '  if (marks.length === 0) return { type: "pencilStrike", marks } as unknown as M;',
+      },
+      {
+        why: "the working fill overwrites notes the player narrowed, so the plan teaches strikes on candidates no longer on their board",
+        find: "      for (let i = 0; i < w * w; i++) if (!wGrid[i] && wPen[i] === 0) wPen[i] = all;",
+        replace: "      for (let i = 0; i < w * w; i++) if (!wGrid[i]) wPen[i] = all;",
+      },
+      {
+        why: "an already-noted board still opens with a redundant “pencil everything in” step",
+        find: "  let populated = !anyEmptyLacksNotes(state.grid, state.pencil, w);",
+        replace: "  let populated = false;",
+      },
+      {
+        why: "the populate fill omits the top candidate, so no elimination of it is ever taught",
+        find: "      const all = (1 << (w + 1)) - (1 << 1);",
+        replace: "      const all = (1 << w) - (1 << 1);",
+      },
+      {
+        why: "the cleanup's marks are not applied to the working notes, so the plan re-teaches strikes it already made",
+        find: "  for (const m of obvious) pencil[m.y * w + m.x] &= ~bit(m.n);",
+        replace: "  for (const m of obvious) void m;",
+      },
+      {
+        why: "“fill, then clear the obvious ones” splits into two hints instead of one journey",
+        find: '    prev !== undefined && dialect.read(prev.move)?.type === "pencilAll";',
+        replace: "    false;",
+      },
+      {
+        why: "the builder is told a cleanup step was emitted when there was nothing obvious to clear",
+        find: "  if (obvious.length === 0) return false;",
+        replace: "  if (obvious.length === 0) return true;",
+      },
+      {
+        why: "the populate opener paints a board mark, breaking the one step allowed to paint nothing",
+        find: "    highlights: { area: [], targets: [], marks: [] } as unknown as H,",
+        replace:
+          "    highlights: { area: [{ x: 0, y: 0 }], targets: [], marks: [] } as unknown as H,",
+      },
+      {
+        why: "a toggle that would re-add an absent candidate counts as following the strike",
+        find: '    if (!(pencil[pm.y * w + pm.x] & bit(pm.n))) return "off";',
+        replace: "    if (false) return null as never;",
+      },
+      {
+        why: "striking an unrelated candidate counts as following the strike step",
+        find: '    if (hit < 0) return "off"; // touched a non-target candidate',
+        replace: '    if (false) return "off"; // touched a non-target candidate',
+      },
+      {
+        why: "a shrunk strike keeps highlighting the cell whose candidate the player just crossed out",
+        find: "        targets: remaining.map((k) => ({ x: k.x, y: k.y })),",
+        replace: "        targets: sm.marks.map((k) => ({ x: k.x, y: k.y })),",
+      },
+      {
+        why: "a stored mark on a cell that has since been filled is still displayed",
+        find: "      ({ x, y, n }) => grid[y * w + x] === 0 && (pencil[y * w + x] & bit(n)) !== 0,",
+        replace: "      ({ x, y, n }) => (pencil[y * w + x] & bit(n)) !== 0,",
+      },
+      {
+        why: "the populate step stays displayed after every empty cell already has notes",
+        find: "    return anyEmptyLacksNotes(grid, pencil, w) ? step : null;",
+        replace: "    return step;",
+      },
+      {
+        why: "a game's own move dialect is ignored in favour of the type-keyed default",
+        find: "  return adapter ?? (typeKeyedCandidateMoves as unknown as CandidateMoveAdapter<M>);",
+        replace:
+          "  return typeKeyedCandidateMoves as unknown as CandidateMoveAdapter<M>;",
+      },
+      {
+        why: "the populate opener says “cell” for a game whose board positions are squares",
+        find:
+          "  return `Start by pencilling in every candidate ${noun} in each empty ${cell}, " +
+          "so the eliminations that follow have something to cross out.`;",
+        replace:
+          "  return `Start by pencilling in every candidate ${noun} in each empty cell, " +
+          "so the eliminations that follow have something to cross out.`;",
+      },
+    ],
+  },
+
+  {
+    // The shared search behind Sixteen's and Netslide's hints. The load-bearing
+    // property is not "finds a route" but **plan stability across recomputes** —
+    // a plan is recomputed whenever the player goes their own way, and a first
+    // move that does not provably shorten the distance to the goal is how a hint
+    // ends up walking a board round a loop for ever. Cases are biased there.
+    module: "src/engine/slide-planner.ts",
+    cases: [
+      {
+        why: "distance is measured the long way round, ignoring the wrap",
+        find: "  return Math.min(d, len - d);",
+        replace: "  return d;",
+      },
+      {
+        why: "a row's pieces slide the opposite way to the move's delta",
+        find: "      const from = (((x - delta) % w) + w) % w;",
+        replace: "      const from = (((x + delta) % w) + w) % w;",
+      },
+      {
+        why: "a column's pieces slide the opposite way to the move's delta",
+        find: "      const from = (((y - delta) % h) + h) % h;",
+        replace: "      const from = (((y + delta) % h) + h) % h;",
+      },
+      {
+        why: "cells outside the slid line are not carried over, so the rest of the board is blanked",
+        find: "  dest.set(src);",
+        replace: "  void src;",
+      },
+      {
+        why: "the board key is one bit too narrow, so two different boards can key alike",
+        find: "  while (1 << bits <= maxValue) bits++;",
+        replace: "  while (1 << bits < maxValue) bits++;",
+      },
+      {
+        why: "packed cells overlap in the key, so distinct boards collide and get pruned as visited",
+        find: "      packed |= arr[i] << (k * bits);",
+        replace: "      packed |= arr[i] << k;",
+      },
+      {
+        why: "the backward search's edges are not reversed, so its half of the path runs the wrong way",
+        find: "  return { ...m, delta: -m.delta };",
+        replace: "  return { ...m };",
+      },
+      {
+        why: "sliding the same line twice running is pruned, so any path needing a double slide is missed",
+        find: "    return m.index === prev.index && m.delta === -prev.delta;",
+        replace: "    return m.index === prev.index;",
+      },
+      {
+        // EQUIVALENT, and settled by measurement rather than by argument. The
+        // module's own comment names this as the subtle way to get the search
+        // wrong, so the case is worth carrying — but the two consumers' move
+        // sets do not expose it. Taking the first meet of a level instead of its
+        // cheapest was run against an independent breadth-first search over 601
+        // scrambles of a 4×4 board (3–5 slides deep) and never once returned a
+        // non-shortest path, and against the real planner over ~3,900 scrambles
+        // with no divergence in plan length, goal or flag at all. The reason is
+        // that the search always grows the *smaller* frontier, so the two depths
+        // stay within one of each other and a level's meets are all at the same
+        // other-side depth. That balance is a property of these move sets, not
+        // of the algorithm, which is why the code stays as it is — and why the
+        // harness flagging this case as CAUGHT would mean the argument expired.
+        why: "the first meet in a level is taken rather than the cheapest, so the “shortest” path can be one move too long",
+        equivalent: true,
+        find:
+          "          const other = bwdSeen.get(key);\n" +
+          "          if (other && depth + other.depth < bestTotal) {",
+        replace:
+          "          const other = bwdSeen.get(key);\n" +
+          "          if (other && bestMeet === null) {",
+      },
+      {
+        why: "a board that is already finished is reported as a partial plan",
+        find: "    return { moves: [], reachedGoal: true, usedExactSearch: false };",
+        replace:
+          "    return { moves: [], reachedGoal: false, usedExactSearch: false };",
+      },
+      {
+        // EQUIVALENT. `isGoal` is read at exactly two sites and both spell it
+        // `h === 0 || isGoal(board)`, so the default is only ever consulted on a
+        // board whose heuristic is *non-zero* — and `heuristic` is contractually
+        // "zero at `goal`". A game that supplies no `isGoal` therefore never
+        // reaches the default, and a game that supplies one (Netslide, whose win
+        // condition is weaker than the goal board) is covered by the test above
+        // it. The default stays because it is what makes `isGoal` optional at
+        // all; asserting it would mean asserting a board that cannot occur.
+        why: "the default goal test never fires, so every plan on a game without one is partial",
+        equivalent: true,
+        find: "  const isGoal = p.isGoal ?? ((board: Int32Array) => arrayToKey(board) === goalKey);",
+        replace: "  const isGoal = p.isGoal ?? ((): boolean => false);",
+      },
+      {
+        why: "the exact search runs up front for a game that asked to keep it in reserve",
+        find: '  if (exact?.when === "first") {',
+        replace: '  if (exact?.when === "no-progress") {',
+      },
+      {
+        why: "the queue forgets a newly-cheaper f, so nodes below the current minimum are never popped",
+        find: "    if (node.f < minF) minF = node.f;",
+        replace: "    if (false) minF = node.f;",
+      },
+      {
+        why: "the partial plan is routed to the worst board the search saw rather than the best",
+        find: "    if (curr.h < bestNode.h) bestNode = curr;",
+        replace: "    if (curr.h > bestNode.h) bestNode = curr;",
+      },
+      {
+        why: "the game's veto on the opening move is applied at every depth, not just the first",
+        find: "      if (curr.g === 0 && p.rejectFirstMove?.(move)) continue;",
+        replace: "      if (p.rejectFirstMove?.(move)) continue;",
+      },
+      {
+        why: "the search is greedy best-first rather than A*, so moves already spent stop counting",
+        find: "        f: nextG + nextH,",
+        replace: "        f: nextH,",
+      },
+      {
+        why: "the no-progress gate is inverted, spending the exact search exactly where it is not needed",
+        find: "  const noProgress = bestNode.move === null;",
+        replace: "  const noProgress = bestNode.move !== null;",
+      },
+      {
+        why: "a plan that fell back from the exact search reports the search was never engaged",
+        find:
+          "    usedExactSearch = true;\n" +
+          "    const shortest = bidirectionalPlan(p, exact, arrayToKey);\n" +
+          "    if (shortest && shortest.length > 0) {\n" +
+          "      return { moves: shortest, reachedGoal: true, usedExactSearch };\n" +
+          "    }",
+        replace:
+          "    const shortest = bidirectionalPlan(p, exact, arrayToKey);\n" +
+          "    if (shortest && shortest.length > 0) {\n" +
+          "      return { moves: shortest, reachedGoal: true, usedExactSearch: true };\n" +
+          "    }",
+      },
+      {
+        why: "the forward path is handed back leaf-first, so the plan plays in reverse",
+        find: "    return path.reverse();",
+        replace: "    return path;",
+      },
+      {
+        why: "the bidirectional path's forward half is not reversed before its backward half is appended",
+        find: "    path.reverse();",
+        replace: "    void path;",
+      },
+    ],
+  },
+
+  {
+    // The shared random-loop generator. Per corpus rule 2 the cases stay off the
+    // draw order and off *which* loop comes out — that is Pearl's differential's
+    // guarantee, by design — and aim instead at the two things this module owns
+    // locally: the colouring is a single closed loop, and the bias protocol is
+    // the sequence the doc comment promises.
+    //
+    // Two candidates were written, measured and **removed** for being on the
+    // wrong side of that line: reversing `faceScore`'s sign, and counting
+    // opposite-coloured neighbours in `faceNumNeighbours`. Both survive the local
+    // tests and should: they change which loop a seed yields, not whether it is
+    // one. Carrying them would have manufactured findings the `repo-layout`
+    // requirement says belong elsewhere — and elsewhere does catch them, checked
+    // rather than assumed: under the `faceScore` reversal
+    // `pearl-differential.test.ts` goes from 14 passed / 1 skipped to 7 failed,
+    // one per desc byte-match fixture. `loopgen.test.ts`'s header records the
+    // same split for a reader who arrives from the other direction.
+    module: "src/engine/loopgen.ts",
+    cases: [
+      {
+        why: "the infinite exterior reads as inside, so the boundary is drawn round the wrong side",
+        find: "  return f === null ? FACE_BLACK : board[f.index];",
+        replace: "  return f === null ? FACE_WHITE : board[f.index];",
+      },
+      {
+        why: "a face need not touch its own colour, so a region can start anywhere and the loop breaks into pieces",
+        find: "  if (!foundSame) return false;",
+        replace: "  if (false) return false;",
+      },
+      {
+        // EQUIVALENT, argued and then measured. `transitions` counts state
+        // changes around a *closed* walk, so it is always even and only `0` is
+        // newly admitted — and `0`, given the `foundSame` precondition above it,
+        // means the face is a lone grey hole entirely enclosed by `colour`. The
+        // algorithm appears never to make one: candidacy is refreshed for every
+        // face touching a newly-coloured one, edge *or* corner, so an enclosed
+        // region's last grey face is coloured while its boundary still has two
+        // transitions. "Appears" is doing real work in that sentence, so it was
+        // measured rather than asserted — 1,319 (tiling, size, seed) runs across
+        // all eleven periodic tilings `gridNew` builds without a description,
+        // byte-identical colourings throughout. The sweep's own sensitivity was
+        // checked first: changing the random-flip pass's acceptance moves 1,310
+        // of those 1,319 rows.
+        why: "a colouring with fewer than two transitions is allowed, so a face can be walled off inside the wrong region",
+        equivalent: true,
+        find: "  return transitions === 2;",
+        replace: "  return transitions <= 2;",
+      },
+      {
+        why: "the transition walk stops at two rather than past them, so a four-transition face passes the test",
+        find: "        if (transitions > 2) break;",
+        replace: "        if (transitions >= 2) break;",
+      },
+      {
+        why: "no face is seeded white, so there is no inside and no boundary at all",
+        find: "  board[randomUpto(rng, numFaces)] = FACE_WHITE;",
+        replace: "  board[randomUpto(rng, numFaces)] = FACE_BLACK;",
+      },
+      {
+        // EQUIVALENT on the evidence, and the weaker of the two arguments here:
+        // the observation is simply that the two candidate lists empty on the
+        // same iteration, over the same 1,319-run sweep described above, so
+        // stopping on either is stopping on both. There is no proof offered that
+        // they must — which is precisely why this stays in the corpus rather
+        // than being deleted. A tiling on which one list empties first would
+        // leave faces grey, and the harness reporting this case as CAUGHT is how
+        // that would announce itself. Loopy's generator also throws outright on a
+        // grey face, so the consumer side is guarded independently.
+        why: "colouring stops as soon as either list empties, leaving faces grey",
+        equivalent: true,
+        find: "    if (cLight === 0 && cDark === 0) break; // no more faces we can use",
+        replace:
+          "    if (cLight === 0 || cDark === 0) break; // no more faces we can use",
+      },
+      {
+        why: "a face just coloured stays in the other candidate list and can be coloured again",
+        find: "    lightable.delete(i);\n    darkable.delete(i);",
+        replace: "    lightable.delete(i);",
+      },
+      {
+        why: "colourability is recomputed for the already-coloured neighbours instead of the grey ones",
+        find: "        if (faceColour(board, f) !== FACE_GREY) continue;",
+        replace: "        if (faceColour(board, f) === FACE_GREY) continue;",
+      },
+      {
+        why: "tendrils grow from faces with two opposite neighbours, not one, so a flip can cut the loop",
+        find: "        } else if (faceNumNeighbours(board, face, opp) === 1) {",
+        replace: "        } else if (faceNumNeighbours(board, face, opp) === 2) {",
+      },
+      {
+        why: "a face tried tentatively for the bias is left coloured, so later candidates are scored against a dirty board",
+        find: "        board[fi] = FACE_GREY;\n        bias(board, fi); // let bias know we put it back",
+        replace: "        bias(board, fi); // let bias know we put it back",
+      },
+      {
+        why: "the bias is not told the tentative colour was taken back, so its incremental state drifts",
+        find: "        bias(board, fi); // let bias know we put it back",
+        replace: "        void fi; // let bias know we put it back",
+      },
+      {
+        why: "the bias is never told which face was actually committed",
+        find: "    if (bias) bias(board, i); // notify bias of the change",
+        replace: "    void i; // notify bias of the change",
+      },
+    ],
+  },
+
+  {
+    // The grid module's only floating-point code, and **display/input only** —
+    // `gridNearestEdge` decides which edge a click lands on, `gridFindIncentre`
+    // where a clue digit is drawn. Neither reaches a description, a generator or
+    // a solver, which is the boundary that makes float arithmetic safe here and
+    // the reason none of these cases belongs to a differential.
+    module: "src/engine/grid/grid-geometry.ts",
+    cases: [
+      {
+        why: "perpendicular distance is left as twice the triangle area, so edge length skews which edge a click picks",
+        find: "  return det / Math.sqrt(sq(ax - bx) + sq(ay - by));",
+        replace: "  return det;",
+      },
+      {
+        why: "an edge the click is off the far end of is eligible again",
+        find: "    if (a2 >= e2 + b2) continue;",
+        replace: "    if (false) continue;",
+      },
+      {
+        why: "an edge the click is off the near end of is eligible again",
+        find: "    if (b2 >= e2 + a2) continue;",
+        replace: "    if (false) continue;",
+      },
+      {
+        why: "the half-edge-length cut goes, so a click anywhere off the board still toggles an edge",
+        find: "    if (4 * sq(dist) > e2) continue;",
+        replace: "    if (false) continue;",
+      },
+      {
+        why: "an exact tie goes to the highest-index edge, so a click on a vertex toggles a different one",
+        find: "    if (bestEdge === null || dist < bestDistance) {",
+        replace: "    if (bestEdge === null || dist <= bestDistance) {",
+      },
+      {
+        why: "the incentre is recomputed on every request rather than read from the face",
+        find: "  if (f.hasIncentre) return;",
+        replace: "  if (false) return;",
+      },
+      {
+        why: "the incentre is computed but never marked cached",
+        find: "  f.hasIncentre = true;",
+        replace: "  f.hasIncentre = false;",
+      },
+      {
+        why: "the incentre's x is truncated rather than rounded, moving a clue digit off centre",
+        find: "  f.ix = Math.trunc(xBest + 0.5);",
+        replace: "  f.ix = Math.trunc(xBest);",
+      },
+      {
+        why: "a face with no interior point found silently reports the origin instead of failing",
+        find: "  if (!(bestDist > 0)) {",
+        replace: "  if (false) {",
+      },
+      {
+        why: "the crossing test's y interval is open at both ends, so a vertex on the ray is miscounted",
+        find: "    if ((y >= ys && y < ye) || (y >= ye && y < ys)) {",
+        replace: "    if ((y > ys && y < ye) || (y > ye && y < ys)) {",
+      },
+      {
+        why: "the crossing test's denominator is left negative, flipping the inequality on downward edges",
+        find: "      if (denom < 0) {\n        num = -num;\n        denom = -denom;\n      }",
+        replace:
+          "      if (false) {\n        num = -num;\n        denom = -denom;\n      }",
+      },
+      {
+        // EQUIVALENT, and the argument is the classic one for ray casting: the
+        // horizontal line through the point crosses a closed polygon an even
+        // number of times, so the crossings to the left and the crossings to the
+        // right have the *same parity*. Counting either answers the same
+        // question. The direction is worth naming in the doc comment — it is how
+        // a reader checks the tie handling — but it is not a decision the result
+        // depends on.
+        why: "the ray is cast to the left instead of the right, inverting inside and outside",
+        equivalent: true,
+        find: "      if ((x - xs) * denom >= (y - ys) * num) inside = !inside;",
+        replace: "      if ((x - xs) * denom <= (y - ys) * num) inside = !inside;",
+      },
+      {
+        why: "the distance to the boundary takes the furthest corner rather than the nearest",
+        find: "    if (mindist > dist) mindist = dist;",
+        replace: "    if (mindist < dist) mindist = dist;",
+      },
+      {
+        why: "an edge whose perpendicular foot lies outside the segment still counts, understating the room available",
+        find: "    if (pde > 0 && pde < ede) {",
+        replace: "    if (true) {",
+      },
+      // The next three are EQUIVALENT for one shared reason, which the module's
+      // own doc comment states outright: "a near-singular system yields a wild
+      // candidate point, which the point-in-polygon and minimum-distance vetting
+      // then discards". Removing a guard turns a *rejected* subset into a `NaN`
+      // or infinite candidate, and `pointInFace` answers false for both — every
+      // comparison against `NaN` is false, and an infinite x makes the crossing
+      // test fire on every edge spanning the point's y, which is an even number
+      // of them. So the guards are an economy, not a correctness measure, and
+      // they stay because a wild number propagating is worse to debug than a
+      // subset skipped. Their being *caught* would mean a candidate now survives
+      // vetting, which is the thing worth hearing about.
+      {
+        why: "a quadratic with no real root yields NaN candidate points instead of none",
+        equivalent: true,
+        find: "  if (!(disc >= 0)) return [];",
+        replace: "  if (false) return [];",
+      },
+      {
+        why: "a singular 2x2 system is inverted anyway, so three collinear dots yield an infinite candidate",
+        equivalent: true,
+        find: "  const det = mx[0] * mx[3] - mx[1] * mx[2];\n  if (det === 0) return null;",
+        replace:
+          "  const det = mx[0] * mx[3] - mx[1] * mx[2];\n  if (false) return null;",
+      },
+      {
+        why: "a singular 3x3 system is inverted anyway, so three parallel edges yield an infinite candidate",
+        equivalent: true,
+        find: "  if (det === 0) return null;\n\n  const inv = [",
+        replace: "  if (false) return null;\n\n  const inv = [",
+      },
+      {
+        why: "the 3-subset enumeration never starts at a vertex, so vertex-led candidate points are missed",
+        find: "  for (let i = 0; i + 2 < 2 * order; i++) {",
+        replace: "  for (let i = 0; i + 2 < order; i++) {",
+      },
+    ],
+  },
+
+  {
     module: "src/engine/grid/grid-core.ts",
     cases: [
       {

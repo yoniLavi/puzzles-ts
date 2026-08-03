@@ -68,6 +68,44 @@ const W = 4;
 const H = 4;
 const N = W * H;
 
+/**
+ * Shortest distance from `board` to the solved one, by a plain breadth-first
+ * search over the move set — an independent yardstick for the planner's claims
+ * about plan length, derived without any of its machinery (no heuristic, no
+ * key packing, no canonical-ordering pruning). `cap` bounds the sweep, and the
+ * boards it is used on sit well inside it; `null` means "further than `cap`".
+ */
+function shortestDistance(
+  board: Int32Array,
+  w: number,
+  h: number,
+  cap: number,
+): number | null {
+  const n = w * h;
+  const goal = Array.from(solved(n)).join(",");
+  const label = (b: Int32Array) => Array.from(b).join(",");
+  if (label(board) === goal) return 0;
+  const moves = singleStepMoves(w, h);
+  const seen = new Set([label(board)]);
+  let frontier = [board];
+  for (let depth = 1; depth <= cap; depth++) {
+    const next: Int32Array[] = [];
+    for (const at of frontier) {
+      for (const m of moves) {
+        const to = new Int32Array(n);
+        slidePieces(at, to, w, h, m);
+        const k = label(to);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        if (k === goal) return depth;
+        next.push(to);
+      }
+    }
+    frontier = next;
+  }
+  return null;
+}
+
 function puzzle(
   start: Int32Array,
   extra: Partial<Parameters<typeof planSlides>[0]> = {},
@@ -125,6 +163,75 @@ describe("planSlides", () => {
 
     expect(plan.moves[0]).not.toEqual({ axis: "row", index: 2, delta: -1 });
     expect(apply(start, W, H, plan.moves)).toEqual(solved(N));
+  });
+
+  it("vetoes only the opening move, not the move everywhere it appears", () => {
+    // The veto exists to stop a hint opening by undoing the slide the player
+    // just made. It is not a claim that the move is bad — later in the plan it
+    // may be exactly right, and forbidding it outright turns a two-move route
+    // into a four-move detour round the wrap.
+    const start = apply(solved(N), W, H, [
+      { axis: "row", index: 0, delta: +1 },
+      { axis: "col", index: 1, delta: +1 },
+    ]);
+    const undoRow0: SlideMove = { axis: "row", index: 0, delta: -1 };
+
+    const plan = puzzle(start, {
+      rejectFirstMove: (m) =>
+        m.axis === undoRow0.axis && m.index === undoRow0.index && m.delta === -1,
+    });
+
+    expect(plan.reachedGoal).toBe(true);
+    expect(plan.moves).toHaveLength(2);
+    expect(plan.moves[0]).not.toEqual(undoRow0);
+    expect(plan.moves).toContainEqual(undoRow0);
+  });
+
+  it("counts the moves already spent, so the plan does not wander", () => {
+    // `f = g + h`, not `f = h`. With `g` dropped the search is greedy
+    // best-first: it keeps taking whatever looks locally closest and the plan
+    // balloons — measured at 17 moves on this board, against A*'s 9, for a
+    // position a plain BFS crosses in 5.
+    const start = apply(solved(N), W, H, [
+      { axis: "row", index: 3, delta: +1 },
+      { axis: "col", index: 3, delta: +1 },
+      { axis: "row", index: 3, delta: +1 },
+      { axis: "col", index: 3, delta: +1 },
+      { axis: "row", index: 3, delta: +1 },
+    ]);
+    const shortest = shortestDistance(start, W, H, 6);
+    expect(shortest).toBe(5);
+
+    const plan = puzzle(start);
+
+    expect(plan.reachedGoal).toBe(true);
+    // The heuristic is not admissible (one slide moves a whole line), so the
+    // plan is not required to be optimal — only not to wander. Twice the true
+    // distance is a generous bound that A* clears and greedy does not.
+    expect(plan.moves.length).toBeLessThanOrEqual(2 * (shortest as number));
+  });
+
+  it("does not mistake a board that merely *keys* like the goal for the goal", () => {
+    // Boards are compared by a packed string key, several cells to a character,
+    // and that packing has to be injective or the planner stops on the wrong
+    // board. One bit too few per cell and `[4, 0, 1]` packs identically to
+    // `[0, 1, 1]`: the value 4 overflows its field and reads as a carry into the
+    // next cell. The two are not even the same multiset, so no slide relates
+    // them and this plan cannot reach its goal at all.
+    const start = Int32Array.from([4, 0, 1]);
+    const goal = Int32Array.from([0, 1, 1]);
+    const plan = planSlides({
+      w: 3,
+      h: 1,
+      start,
+      goal,
+      moves: [
+        { axis: "row", index: 0, delta: +1 },
+        { axis: "row", index: 0, delta: -1 },
+      ],
+      heuristic: (b) => (b.every((v, i) => v === goal[i]) ? 0 : 1),
+    });
+    expect(plan.reachedGoal).toBe(false);
   });
 
   it("returns a partial plan when the budget runs out before the goal", () => {
@@ -268,7 +375,66 @@ describe("planSlides", () => {
       expect(plan.moves.length).toBeGreaterThan(0);
       const distance = travel(W, H);
       expect(distance(apply(start, W, H, plan.moves))).toBeLessThan(distance(start));
+      // …and it still reports having been engaged. The flag is the games' only
+      // load-independent proxy for what the search cost, so a run that spent the
+      // budget and came back empty must not read as a run that never happened.
+      expect(plan.usedExactSearch).toBe(true);
     });
+
+    it("may slide the same line several times running", () => {
+      // The canonical-ordering pruning drops a *reversal* of the previous move —
+      // a shortest path never contains one — but must keep a repeat. Here the
+      // board is three slides of row 0 from solved on a seven-wide grid, so the
+      // whole plan is one line slid three times the same way, and pruning
+      // repeats costs the search that route entirely (measured: 7 moves instead
+      // of 3).
+      const w = 7;
+      const h = 2;
+      const start = apply(solved(w * h), w, h, [
+        { axis: "row", index: 0, delta: +1 },
+        { axis: "row", index: 0, delta: +1 },
+        { axis: "row", index: 0, delta: +1 },
+      ]);
+
+      const plan = planSlides({
+        w,
+        h,
+        start,
+        goal: solved(w * h),
+        moves: singleStepMoves(w, h),
+        heuristic: travel(w, h),
+        exactSearch: { when: "first", ...EXACT },
+      });
+
+      expect(plan.usedExactSearch).toBe(true);
+      expect(plan.moves).toEqual([
+        { axis: "row", index: 0, delta: -1 },
+        { axis: "row", index: 0, delta: -1 },
+        { axis: "row", index: 0, delta: -1 },
+      ]);
+    });
+  });
+});
+
+describe("toroidalDist", () => {
+  it("measures the shorter way round the wrap", () => {
+    expect(toroidalDist(0, 3, 4)).toBe(1);
+    expect(toroidalDist(3, 0, 4)).toBe(1);
+    expect(toroidalDist(0, 2, 4)).toBe(2);
+    expect(toroidalDist(1, 3, 5)).toBe(2);
+    expect(toroidalDist(0, 4, 5)).toBe(1);
+  });
+
+  it("is zero at home and never exceeds half the axis", () => {
+    for (let len = 1; len <= 9; len++) {
+      for (let from = 0; from < len; from++) {
+        expect(toroidalDist(from, from, len)).toBe(0);
+        for (let to = 0; to < len; to++) {
+          expect(toroidalDist(from, to, len)).toBeLessThanOrEqual(Math.floor(len / 2));
+          expect(toroidalDist(from, to, len)).toBe(toroidalDist(to, from, len));
+        }
+      }
+    }
   });
 });
 

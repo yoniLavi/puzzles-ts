@@ -126,7 +126,13 @@ export interface SlidePlan {
   reachedGoal: boolean;
   /** Whether the exact bidirectional search was engaged. Exposed so a game's
    * tests can assert the no-progress gate still gates — a load-independent proxy
-   * for the cost, never an elapsed-time assertion. */
+   * for the cost, never an elapsed-time assertion.
+   *
+   * It reports the search having *run*, not the search having *succeeded*: a
+   * `"first"` game whose ends did not meet inside the budget paid for the
+   * attempt, and the plan it ends up with came from the heuristic. Reporting
+   * `false` there would be a cost proxy that under-reports exactly the run that
+   * cost the most. */
   usedExactSearch: boolean;
 }
 
@@ -395,10 +401,16 @@ export function planSlides(p: SlidePuzzle): SlidePlan {
   }
 
   const exact = p.exactSearch;
+  // Tracked rather than re-derived at each return: the two `"first"` exits
+  // disagreed about whether a search that ran and came back empty had happened,
+  // so the flag read `true` on the partial plan and `false` on the very same
+  // fallthrough when the heuristic then reached the goal.
+  let usedExactSearch = false;
   if (exact?.when === "first") {
+    usedExactSearch = true;
     const shortest = bidirectionalPlan(p, exact, arrayToKey);
     if (shortest && shortest.length > 0) {
-      return { moves: shortest, reachedGoal: true, usedExactSearch: true };
+      return { moves: shortest, reachedGoal: true, usedExactSearch };
     }
     // Out of reach inside the budget: fall through to the heuristic, which at
     // least gets the board closer.
@@ -504,7 +516,7 @@ export function planSlides(p: SlidePuzzle): SlidePlan {
   };
 
   if (goalNode) {
-    return { moves: pathTo(goalNode), reachedGoal: true, usedExactSearch: false };
+    return { moves: pathTo(goalNode), reachedGoal: true, usedExactSearch };
   }
 
   // The no-progress gate. `bestNode` is still the start node exactly when no
@@ -514,14 +526,11 @@ export function planSlides(p: SlidePuzzle): SlidePlan {
   // budget for a game that already tried it cheaply and first.
   const noProgress = bestNode.move === null;
   if (noProgress && exact?.when === "no-progress") {
+    usedExactSearch = true;
     const shortest = bidirectionalPlan(p, exact, arrayToKey);
-    if (shortest) return { moves: shortest, reachedGoal: true, usedExactSearch: true };
-    return { moves: [], reachedGoal: false, usedExactSearch: true };
+    if (shortest) return { moves: shortest, reachedGoal: true, usedExactSearch };
+    return { moves: [], reachedGoal: false, usedExactSearch };
   }
 
-  return {
-    moves: pathTo(bestNode),
-    reachedGoal: false,
-    usedExactSearch: exact?.when === "first",
-  };
+  return { moves: pathTo(bestNode), reachedGoal: false, usedExactSearch };
 }

@@ -4,15 +4,22 @@ import {
   anyEmptyLacksNotes,
   type CandidateHighlights,
   type CandidateMove,
+  type CandidateMoveAdapter,
   candidateHint,
+  cleanObviousText,
+  emitObviousCleanStep,
   findRegionDuplicate,
   firstUnreflectedPlaceIndex,
   joinNums,
   keepCandidateHintTrack,
+  lazyPopulate,
+  type Mark,
   nakedSingle,
   nextPlace,
   nextStrike,
   obviousCandidateMarks,
+  populateStep,
+  populateText,
   refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "./candidate-hint.ts";
@@ -128,6 +135,14 @@ describe("nakedSingle", () => {
     const [grid, pencil] = board([0, 0, 0, 0], [bits(1, 2), 0, bits(1, 2), bits(1, 2)]);
     expect(nakedSingle(grid, pencil, 2)).toBeNull();
   });
+
+  it("ignores a filled cell whose stale notes happen to be a single candidate", () => {
+    // Cell (0,0) is filled but its notes were never cleared, and they read as a
+    // lone candidate; announcing it would be a hint telling the player to place
+    // a value in a cell that already has one. The genuine single is (1,0).
+    const [grid, pencil] = board([1, 0, 2, 2], [bits(1), bits(2), 0, 0]);
+    expect(nakedSingle(grid, pencil, 2)).toEqual({ x: 1, y: 0, n: 2 });
+  });
 });
 
 describe("anyEmptyLacksNotes", () => {
@@ -182,6 +197,18 @@ describe("regionDuplicateMarks", () => {
     expect(
       regionDuplicateMarks(grid, pencil, 0, 0, 1, 2, rowColRegions(0, 0, 2)),
     ).toEqual([]);
+  });
+
+  it("never marks the home cell even when it is still empty and notes the value", () => {
+    // The home cell is normally already filled by the caller, which would hide
+    // the guard behind the `grid[j] === 0` liveness test. The contract is the
+    // helper's own, so it is checked on the board that can actually violate it:
+    // (0,0) empty and noting 1, with 1 as the value being placed there.
+    const grid = [0, 0, 0, 0];
+    const pencil = [bits(1), bits(1), 0, 0];
+    expect(
+      regionDuplicateMarks(grid, pencil, 0, 0, 1, 2, rowColRegions(0, 0, 2)),
+    ).toEqual([{ x: 1, y: 0, n: 1 }]);
   });
 });
 
@@ -320,6 +347,29 @@ describe("nextStrike", () => {
     const [grid, pencil] = board([0, 0, 0, 0], [0, 0, 0, 0]);
     expect(nextStrike([op("elim", 0, 0, 1, 0, "set")], grid, pencil, 2)).toBeNull();
   });
+
+  it("stops at the first placement the player's board has not made yet", () => {
+    // The window is what keeps a strike's premise true on the board in front of
+    // the player: every op before the first unreflected placement is valid
+    // against it, and everything after it is only valid once that placement is
+    // made. Here the one *live* elimination sits past that line, so there is
+    // nothing to teach yet — surfacing it would narrate a deduction from a board
+    // state the player has not reached (hint-authoring §9.3).
+    const [grid, pencil] = board([0, 0, 0, 0], [bits(2), 0, bits(1), 0]);
+    const ops = [
+      op("elim", 0, 0, 1, 0, "set"), // dead: (0,0) no longer notes 1
+      op("place", 1, 0, 2, 1), // unreflected — (1,0) is still empty
+      op("elim", 0, 1, 1, 2, "set"), // live, but only *after* that placement
+    ];
+    expect(nextStrike(ops, grid, pencil, 2)).toBeNull();
+  });
+
+  it("ignores an elimination on a cell the player has already filled", () => {
+    // A strike is advice to cross a note out; on a filled cell there is nothing
+    // to cross out, whatever notes were left behind there.
+    const [grid, pencil] = board([0, 3, 0, 0], [bits(1, 2), bits(1, 2), 0, 0]);
+    expect(nextStrike([op("elim", 1, 0, 1, 0, "set")], grid, pencil, 2)).toBeNull();
+  });
 });
 
 describe("nextPlace", () => {
@@ -393,6 +443,9 @@ describe("keepCandidateHintTrack", () => {
     expect(v1).toBe("onTrack");
     expect(s.move).toEqual({ type: "pencilStrike", marks: [{ x: 1, y: 0, n: 2 }] });
     expect(s.highlights?.marks).toEqual([{ x: 1, y: 0, n: 2 }]);
+    // The targets shrink with the marks, or the overlay goes on highlighting the
+    // cell whose candidate the player has just crossed out.
+    expect(s.highlights?.targets).toEqual([{ x: 1, y: 0 }]);
     // Clearing the last mark completes the step.
     expect(
       keepCandidateHintTrack(
@@ -402,6 +455,22 @@ describe("keepCandidateHintTrack", () => {
         2,
       ),
     ).toBe("completed");
+  });
+
+  it("treats a toggle on a candidate the step never named as off-plan", () => {
+    // Striking some unrelated note is not "following the hint partially": the
+    // step must be dropped, and it must not quietly shrink as though the player
+    // had crossed off one of its own marks.
+    const s = step({ type: "pencilStrike", marks: [{ x: 0, y: 0, n: 1 }] });
+    expect(
+      keepCandidateHintTrack(
+        { type: "set", x: 1, y: 0, n: 2, pencil: true },
+        s,
+        pencil,
+        2,
+      ),
+    ).toBe("off");
+    expect(s.move).toEqual({ type: "pencilStrike", marks: [{ x: 0, y: 0, n: 1 }] });
   });
 
   it("treats a toggle that would re-add an absent candidate as off-plan", () => {
@@ -440,6 +509,28 @@ describe("refreshCandidateHintStep", () => {
 
     const allDead = step({ type: "pencilStrike", marks: [{ x: 0, y: 0, n: 1 }] });
     expect(refreshCandidateHintStep(allDead, grid, pencil, 2)).toBeNull();
+  });
+
+  it("drops a mark whose cell has since been filled, notes or no notes", () => {
+    // Filling a cell does not necessarily clear its notes, so liveness is not a
+    // pencil question alone: a strike aimed at a cell the player has settled is
+    // advice with nothing left to act on.
+    const grid = Int8Array.from([2, 0, 0, 0]);
+    const pencil = Int32Array.from([bits(1, 2), bits(1, 2), 0, 0]);
+    const s = step(
+      {
+        type: "pencilStrike",
+        marks: [
+          { x: 0, y: 0, n: 1 }, // dead: (0,0) is filled, whatever it still notes
+          { x: 1, y: 0, n: 2 }, // live
+        ],
+      },
+      { area: [], targets: [], marks: [] },
+    );
+    expect(refreshCandidateHintStep(s, grid, pencil, 2)?.move).toEqual({
+      type: "pencilStrike",
+      marks: [{ x: 1, y: 0, n: 2 }],
+    });
   });
 
   it("resolves a placement step once its cell is filled", () => {
@@ -483,5 +574,253 @@ describe("refreshCandidateHintStep", () => {
         2,
       ),
     ).toBeNull();
+  });
+});
+
+describe("populateStep", () => {
+  it("declares no board marks — the one step allowed to paint nothing", () => {
+    const s = populateStep<CandidateMove, CandidateHighlights>(
+      { type: "pencilAll" },
+      "fill them in",
+    );
+    expect(s.move).toEqual({ type: "pencilAll" });
+    expect(s.highlights).toEqual({ area: [], targets: [], marks: [] });
+  });
+});
+
+describe("lazyPopulate", () => {
+  /** A working board plus the empty step list a builder pushes into. */
+  function setup(grid: number[], pencil: number[], w: number) {
+    const state = { grid, pencil };
+    const wGrid = Int8Array.from(grid);
+    const wPen = Int32Array.from(pencil);
+    const steps: HintStep<CandidateMove, CandidateHighlights>[] = [];
+    const pop = lazyPopulate<CandidateMove, CandidateHighlights>(
+      state,
+      wGrid,
+      wPen,
+      w,
+      steps,
+      "fill them in",
+    );
+    return { pop, steps, wPen };
+  }
+
+  it("emits nothing until asked, then exactly one populate step", () => {
+    const { pop, steps } = setup([0, 0, 0, 0], [0, 0, 0, 0], 2);
+    expect(pop.done()).toBe(false);
+    expect(steps).toEqual([]);
+
+    pop.ensure();
+    expect(pop.done()).toBe(true);
+    expect(steps).toHaveLength(1);
+    expect(steps[0].move).toEqual({ type: "pencilAll" });
+    expect(steps[0].explanation).toBe("fill them in");
+
+    pop.ensure(); // a second call must not re-emit
+    expect(steps).toHaveLength(1);
+  });
+
+  it("fills every candidate of the grid order, top one included", () => {
+    const { pop, wPen } = setup([0, 0, 0, 0, 0, 0, 0, 0, 0], new Array(9).fill(0), 3);
+    pop.ensure();
+    expect(Array.from(wPen)).toEqual(new Array(9).fill(bits(1, 2, 3)));
+  });
+
+  it("is additive: a cell the player has narrowed keeps its notes", () => {
+    // The fill mirrors the `pencilAll` *move*, which never throws away the
+    // player's deductions — and this working copy has to agree with it, or the
+    // plan goes on to teach strikes on candidates that are no longer on their
+    // board (owner-reported on Salad, 2026-07-29).
+    const { pop, wPen } = setup([0, 0, 0, 0], [bits(1), 0, 0, 0], 2);
+    pop.ensure();
+    expect(wPen[0]).toBe(bits(1));
+    expect(wPen[1]).toBe(bits(1, 2));
+  });
+
+  it("reports done() up front on an already-noted board, and emits no step", () => {
+    const { pop, steps } = setup(
+      [0, 1, 0, 0],
+      [bits(1, 2), 0, bits(1, 2), bits(1, 2)],
+      2,
+    );
+    expect(pop.done()).toBe(true);
+    pop.ensure();
+    expect(steps).toEqual([]);
+  });
+});
+
+describe("emitObviousCleanStep", () => {
+  /** 2×2 with 1 placed at (0,0) and every empty cell fully noted: the two cells
+   * sharing (0,0)'s row and column carry an obvious copy of the 1. */
+  const openBoard = () => ({
+    grid: Int8Array.from([1, 0, 0, 0]),
+    pencil: Int32Array.from([0, bits(1, 2), bits(1, 2), bits(1, 2)]),
+    steps: [] as HintStep<CandidateMove, CandidateHighlights>[],
+  });
+
+  it("pushes one strike step and applies its marks to the working notes", () => {
+    const { grid, pencil, steps } = openBoard();
+    expect(
+      emitObviousCleanStep(steps, grid, pencil, 2, rc(2), "clear the easy ones"),
+    ).toBe(true);
+    expect(steps).toHaveLength(1);
+    expect(steps[0].move).toEqual({
+      type: "pencilStrike",
+      marks: [
+        { x: 1, y: 0, n: 1 },
+        { x: 0, y: 1, n: 1 },
+      ],
+    });
+    // Applied, or the plan re-teaches the same strikes further down.
+    expect(pencil[1]).toBe(bits(2));
+    expect(pencil[2]).toBe(bits(2));
+    expect(pencil[3]).toBe(bits(1, 2));
+  });
+
+  it("continues the populate step it directly follows, so setup reads as one journey", () => {
+    const { grid, pencil, steps } = openBoard();
+    steps.push(
+      populateStep<CandidateMove, CandidateHighlights>({ type: "pencilAll" }, "fill"),
+    );
+    emitObviousCleanStep(steps, grid, pencil, 2, rc(2), "clear the easy ones");
+    expect(steps[1].continuesPrevious).toBe(true);
+  });
+
+  it("stands alone when the board was already populated", () => {
+    const { grid, pencil, steps } = openBoard();
+    emitObviousCleanStep(steps, grid, pencil, 2, rc(2), "clear the easy ones");
+    expect(steps[0].continuesPrevious).toBe(false);
+  });
+
+  it("returns false and pushes nothing when there is nothing obvious to clear", () => {
+    const grid = Int8Array.from([1, 0, 0, 2]);
+    const pencil = Int32Array.from([0, bits(2), bits(1), 0]);
+    const steps: HintStep<CandidateMove, CandidateHighlights>[] = [];
+    expect(
+      emitObviousCleanStep(steps, grid, pencil, 2, rc(2), "clear the easy ones"),
+    ).toBe(false);
+    expect(steps).toEqual([]);
+  });
+});
+
+/**
+ * A second move dialect, modelled on the games that do not speak the Latin
+ * family's: a `kind` discriminator (Crossing, Salad) and candidate `n` at bit
+ * `n - 1`. Renaming either is not an option — the save format replays the move
+ * log — so the mechanics take the dialect as a parameter, and these cases are
+ * what hold that parameter to being *read* rather than defaulted away.
+ */
+type DialectMove =
+  | { kind: "note"; x: number; y: number; n: number }
+  | { kind: "fillAll" }
+  | { kind: "strike"; marks: Mark[] }
+  | { kind: "clear" };
+
+const bitFrom1 = (n: number): number => 1 << (n - 1);
+
+const dialect: CandidateMoveAdapter<DialectMove> = {
+  read: (m) => {
+    switch (m.kind) {
+      case "note":
+        return { type: "set", x: m.x, y: m.y, n: m.n, pencil: true };
+      case "fillAll":
+        return { type: "pencilAll" };
+      case "strike":
+        return { type: "pencilStrike", marks: m.marks };
+      default:
+        return null;
+    }
+  },
+  strike: (marks) => ({ kind: "strike", marks }),
+  bit: bitFrom1,
+};
+
+describe("a game's own move dialect", () => {
+  it("is read by keepCandidateHintTrack, encoding and all", () => {
+    // (0,0) notes 1 and 2 at bits 0 and 1. Under the default `1 << n` encoding
+    // candidate 2 would read as absent, so this pins the bit function as well as
+    // the discriminator.
+    const pencil = Int32Array.from([bitFrom1(1) | bitFrom1(2), 0, 0, 0]);
+    const s: HintStep<DialectMove, CandidateHighlights> = {
+      move: {
+        kind: "strike",
+        marks: [
+          { x: 0, y: 0, n: 2 },
+          { x: 0, y: 0, n: 1 },
+        ],
+      },
+      explanation: "",
+      highlights: { area: [], targets: [], marks: [] },
+    };
+    expect(
+      keepCandidateHintTrack({ kind: "note", x: 0, y: 0, n: 2 }, s, pencil, 2, dialect),
+    ).toBe("onTrack");
+    expect(s.move).toEqual({ kind: "strike", marks: [{ x: 0, y: 0, n: 1 }] });
+    expect(
+      keepCandidateHintTrack({ kind: "note", x: 0, y: 0, n: 1 }, s, pencil, 2, dialect),
+    ).toBe("completed");
+  });
+
+  it("is read by refreshCandidateHintStep when it shrinks a stored strike", () => {
+    const grid = Int8Array.from([0, 0, 0, 0]);
+    const pencil = Int32Array.from([bitFrom1(1), bitFrom1(1) | bitFrom1(2), 0, 0]);
+    const s: HintStep<DialectMove, CandidateHighlights> = {
+      move: {
+        kind: "strike",
+        marks: [
+          { x: 0, y: 0, n: 2 }, // dead under this encoding
+          { x: 1, y: 0, n: 2 }, // live
+        ],
+      },
+      explanation: "",
+      highlights: { area: [], targets: [], marks: [] },
+    };
+    expect(refreshCandidateHintStep(s, grid, pencil, 2, dialect)?.move).toEqual({
+      kind: "strike",
+      marks: [{ x: 1, y: 0, n: 2 }],
+    });
+  });
+
+  it("lets emitObviousCleanStep recognise a populate step spelled its way", () => {
+    const grid = Int8Array.from([1, 0, 0, 0]);
+    const both = bitFrom1(1) | bitFrom1(2);
+    const pencil = Int32Array.from([0, both, both, both]);
+    const steps: HintStep<DialectMove, CandidateHighlights>[] = [
+      populateStep<DialectMove, CandidateHighlights>({ kind: "fillAll" }, "fill"),
+    ];
+    emitObviousCleanStep(steps, grid, pencil, 2, rc(2), "clear", {
+      enc: { bit: bitFrom1 },
+      adapter: dialect,
+    });
+    expect(steps[1].continuesPrevious).toBe(true);
+    expect(steps[1].move).toEqual({
+      kind: "strike",
+      marks: [
+        { x: 1, y: 0, n: 1 },
+        { x: 0, y: 1, n: 1 },
+      ],
+    });
+  });
+});
+
+describe("the shared setup narration", () => {
+  it("says what the game calls a board position, in both strings", () => {
+    // The two setup strings and the generic narration arms must agree, or one
+    // game's hints read in two vocabularies (Salad says "square", the Latin
+    // family says "cell").
+    const fill = populateText("letter", "square");
+    expect(fill).toContain("in each empty square");
+    expect(fill).not.toContain("cell");
+
+    const clean = cleanObviousText("letter", "standing", "row or column", "square");
+    expect(clean).toContain("in each square");
+    expect(clean).not.toContain("cell");
+    expect(clean).toContain("already standing in its row or column");
+
+    expect(populateText("number")).toContain("in each empty cell");
+    expect(cleanObviousText("number", "placed", "row, column or block")).toContain(
+      "in each cell",
+    );
   });
 });
