@@ -1,8 +1,15 @@
 #!/usr/bin/env sh
 # The refactoring metrics harness (`npm run metrics`).
 #
-# Records code-health measurements as raw tool output under metrics/<date>/,
-# committed to the repo. Its value is the DIFF BETWEEN ROUNDS, not per-commit
+# Records code-health measurements as raw tool output under metrics/<date>/.
+#
+# COMMIT THE SNAPSHOT UNDER YOUR OPENSPEC CHANGE, not at the repo root. It is
+# evidence for one piece of work: read once, and impossible to refresh
+# afterwards because it measures a tree that no longer exists. Left at the root
+# it reads as a current measurement of the current tree. Top-level metrics/ is
+# for live instruments only — output something still reads.
+#
+# Its value is the DIFF BETWEEN ROUNDS, not per-commit
 # freshness — which is why it is deliberately NOT part of scripts/gate.sh or
 # .husky/pre-commit. A slow whole-tree scan in a gate optimised for wall-clock
 # would buy nothing; see the build-pipeline spec, "Refactoring metrics are

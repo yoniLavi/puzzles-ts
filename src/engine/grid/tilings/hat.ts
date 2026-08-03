@@ -104,7 +104,32 @@ const kiteForwardRight = (k: Kite): Kite => ({
   right: add(add(k.left, k.right), scale(-1, k.centre)),
 });
 
-/** The four moves between adjacent kites. Ordinals index the kitemap. */
+/**
+ * The four moves between adjacent kites. Ordinals index the kitemap.
+ *
+ * The names are upstream's, and they are defined from the viewpoint of someone
+ * standing at the kite's **pointy end** (`centre`, the 60° corner at the hexagon
+ * centre) looking towards its **blunt end** (`outer`, the 120° corner at a
+ * hexagon vertex). That is what picks out which vertex each rewrite above holds
+ * fixed: `Left`/`Right` pivot about `centre`, `ForwardLeft`/`ForwardRight` about
+ * `outer`.
+ *
+ * - `Left` — 60° anticlockwise about the pointy end.
+ * - `Right` — 60° clockwise about the pointy end.
+ * - `ForwardLeft` — forwards and slightly left, to the kite across the
+ *   left-hand one of this kite's two short edges; equivalently 120° clockwise
+ *   about the blunt end.
+ * - `ForwardRight` — the mirror of it, 120° anticlockwise about the blunt end.
+ *
+ * In upstream's numbering of the eight kites of a hat, from kite 5 those four
+ * moves reach kites 4, 6, 2 and 1 respectively — the concrete check to run if
+ * you are ever unsure which is which. On a *reflected* hat they mirror, which
+ * costs nothing here because {@link Kite} names its vertices (see its comment).
+ *
+ * This definition is the one thing in upstream's `auxiliary/doc/hats.html` that
+ * its published write-up (linked at the top of this file) does not restate; the
+ * page was deleted by `refile-misplaced-artefacts` and this is where it went.
+ */
 export enum KiteStep {
   Left = 0,
   Right = 1,

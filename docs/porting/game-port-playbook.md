@@ -1853,7 +1853,7 @@ game's `.c`, §4.1 — so finding none on a `grep` is expected, not a gap.)
   `scripts/diff-<game>.test.ts` in the same commit that deletes the game's `.c`** —
   don't leave a vestige (flip/galaxies/unruly each left one; all three removed in
   `improve-port-tooling`). The infrastructure stays for the *next* in-flight port:
-  one `scripts/diff.vitest.config.mts` + `npm run diff` (`--passWithNoTests`, so it
+  one `scripts/checks/diff.vitest.config.mts` + `npm run diff` (`--passWithNoTests`, so it
   no-ops when no advisory script exists). Recover a deleted script from git history if
   you rebuild the C oracle.
 
@@ -2525,11 +2525,22 @@ If the game gets an explained hint, that is a **separate** change — see
 ## 8. Refactoring metrics (`npm run metrics`)
 
 `npm run metrics` records duplication (jscpd), runtime import cycles (madge,
-calibrated), dead code (knip) and cognitive complexity (biome) into a dated,
-committed `metrics/<date>/` snapshot. It is deliberately **not** in the gate —
-its value is the diff between rounds, and a slow whole-tree scan buys a
-per-commit gate nothing. Run it at the start and end of any refactoring change
-and quote the delta.
+calibrated), dead code (knip) and cognitive complexity (biome) into a dated
+snapshot. It is deliberately **not** in the gate — its value is the diff between
+rounds, and a slow whole-tree scan buys a per-commit gate nothing. Run it at the
+start and end of any refactoring change and quote the delta.
+
+The harness writes to `metrics/<date>/`; **commit the snapshot under your
+change**, not at the root (`refile-misplaced-artefacts`). A snapshot is evidence
+for one piece of work — it is read once, it cannot be refreshed afterwards
+because it measures a tree that no longer exists, and `openspec archive` then
+carries it into the archive with the work it belongs to. Left at the root it
+reads as a current measurement of the current tree, which is exactly what it is
+not. The 2026-08-01 round's three snapshots are the worked example, under
+`openspec/changes/archive/2026-08-01-{establish-refactor-baseline,adopt-shared-deduction-fixpoint,adopt-declarative-config-helpers}/metrics/`;
+every path inside them names `src/native/…`, a tree that no longer exists.
+Top-level `metrics/` is for **live instruments** only — output something still
+reads, currently `mutation/report.json` and `colour-inventory.md`.
 
 Three rules, each learned by getting it wrong (`establish-refactor-baseline`):
 

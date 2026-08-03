@@ -1,9 +1,12 @@
-// On-demand config for the ADVISORY, non-gating checks under scripts/.
+// On-demand config for the ADVISORY, non-gating checks in this directory.
 // Kept separate from vitest.config.ts so the commit/CI gate (which uses the
 // default config, include `src/**`) never runs these — they are slow, or they
-// report rather than assert. Usage:
-//   npm run diff                                                   # run them all
-//   npx vitest run -c scripts/diff.vitest.config.mts -t collide    # one of them
+// report rather than assert. That exclusion is by construction rather than by
+// luck: the gate's include is `src/**/*.test.ts`, and nothing here is under
+// `src/`, which is the whole reason these four files sit in `scripts/checks/`
+// instead of beside the tests they resemble. Usage:
+//   npm run diff                                                          # all
+//   npx vitest run -c scripts/checks/diff.vitest.config.mts -t collide    # one
 //
 // This used to also collect `scripts/diff-*.test.ts`, the per-game *live*
 // differentials that generated boards from the C build and the TS port for the
@@ -17,9 +20,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: [
-      "scripts/colour-inventory.test.ts",
-      "scripts/colour-dark-check.test.ts",
-      "scripts/colour-collide.test.ts",
+      "scripts/checks/colour-inventory.test.ts",
+      "scripts/checks/colour-dark-check.test.ts",
+      "scripts/checks/colour-collide.test.ts",
     ],
     environment: "node",
   },

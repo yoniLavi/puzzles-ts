@@ -75,6 +75,29 @@ export default {
 
   reporters: ["json", "progress-append-only"],
   jsonReporter: { fileName: "metrics/mutation/report.json" },
+  // IN-TREE, AND IT HAS TO BE — do not "fix" this by pointing it at the OS temp
+  // directory. That was tried (`refile-misplaced-artefacts`, 2026-08-02) and it
+  // runs, but the dry run then finds **no tests at all**: the vitest runner
+  // resolves `vitest.related` against the mutated files, and from a sandbox
+  // outside the project root nothing matches, so Stryker exits with "No tests
+  // were executed" after ~13 s. The warning it prints offers `vitest.related:
+  // false` as the escape, and that is a much worse trade than the disk it saves:
+  // with `related` off, every one of the 2,168 mutant runs globs and *loads* all
+  // 252 test files and filters only by test-name regex afterwards, instead of
+  // loading the handful that import the mutated module. On a run already
+  // budgeted at ~400 minutes that risks a multiple, not a margin.
+  //
+  // The disk problem it was meant to solve is real but smaller: each sandbox is
+  // a ~38 MB copy of the repository, `cleanTempDir` removes it only when a run
+  // *finishes*, and an interrupted 400-minute run is the norm rather than the
+  // exception — five had accumulated by 2026-08-02, 192 MB. `npm run mutation`
+  // therefore clears the directory before it starts, so at worst one interrupted
+  // run's copy sits here until the next run, never five.
+  //
+  // That cleanup is not only about disk: Stryker's project reader walks whatever
+  // is in the tree, so with the five copies present it reported "Found 7 of
+  // 15233 file(s) to be mutated" and without them "7 of 2563". A stale sandbox
+  // is a cost paid again on every subsequent run.
   tempDirName: ".stryker-tmp",
   cleanTempDir: true,
   concurrency: 6,
