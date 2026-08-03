@@ -219,19 +219,49 @@ actually happen — a stray suffix, a doubled glyph, a wrong-width pad — are
 exactly superstrings. The same applies to a short needle in a small alphabet:
 `toContain("1")` is satisfied by `"11"` and by `"21"`.
 
-Note the asymmetry, because it decides which sites are worth changing:
-**`not.toContain("x")` is *strengthened* by this, not weakened** — it fails on
-`"./"` too. Only the positive form is blind, and this repo has **18** of those
-left, across ten games — enumerated in
-`openspec/changes/archive/2026-08-02-close-bulk-edit-blind-spots/tasks.md` §4.
-(Grep for them with care: two of the twenty hits are this trap being *described*
-in `abcd.test.ts`'s comment, not used.)
+**Two exemptions, and both narrow the trap to where it actually bites.**
+
+1. **The negative form is *strengthened* by it, not weakened.**
+   `not.toContain("x")` fails on the superstring too, so it needs no attention.
+2. **`toContain` on an *array* is exact-element, not substring.**
+   `expect(["11"]).toContain("1")` **fails**. So a render test collecting
+   `ops.filter(o => o.op === "drawText").map(o => o.text)` and asserting
+   `toContain("1")` is checking that some cell drew exactly `"1"` — precisely
+   the right assertion, and not an instance of this trap at all. Check the
+   receiver's *type* before "fixing" a site; four of eighteen candidates here
+   were arrays (`twiddle-render`, `fifteen-render`).
+
+So: the positive, **string** form. A grep of this repo returns twenty hits, of
+which two are this trap being *described* in `abcd.test.ts`'s comment and four
+are the array form — **fourteen** real ones, and only two of those were worth
+changing. The test is not "is the needle short?" but **"is this the only
+assertion of the rendering?"**:
+
+- `sticks.test.ts` and `fifteen.test.ts` asserted a whole board a character at a
+  time and nothing else. Both are now `toMatchInlineSnapshot`, each **verified to
+  fail** on a planted corruption the old form let through (2026-08-03: sticks'
+  blank cell `"."` → `"./"`, the original abcd edit; fifteen's tiles gaining a
+  stray suffix, where `toContain("1")`, `toContain("3")` and a two-line count all
+  still held).
+- The other twelve sit beside an assertion that pins the thing down — an exact
+  `lines[0]`, a `split("*").length` count, a `toMatch(/[><v^]/)`, a phrase in a
+  hint explanation — or are smoke checks in a test about something else
+  (`flip.test.ts`'s `toContain("+")` is verifying `loadGame`, not the text
+  format). Rewriting those is churn: the enumeration is in
+  `openspec/changes/archive/2026-08-02-close-bulk-edit-blind-spots/tasks.md` §4
+  if a defect ever points at one.
 
 For a text format, assert the **whole rendering** — `toMatchInlineSnapshot()`
 fills itself in on first run, so there is nothing to transcribe by hand, and the
 diff on failure shows the board. Pair it with the tier-2.5 rule: keep at least
 one targeted assertion beside a snapshot so a careless `vitest -u` cannot erase
 the guarantee.
+
+One more thing the per-character form cannot do, found while replacing it:
+**it cannot notice a character that is absent.** `sticks.test.ts` was called
+"renders the four cell glyphs" and asserted three, because the fixture placed
+only a vertical and `-` never appeared on the board. Asserting the whole
+rendering makes the omission visible; the test now places both line types.
 
 ### "The test passed" is not evidence the test *file* is well-formed
 

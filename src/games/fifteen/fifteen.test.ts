@@ -449,9 +449,17 @@ describe("Fifteen capabilities", () => {
 
   it("formats as text with the gap blank", () => {
     const text = textFormat(solvedState(2, 2));
-    // Solved 2×2: 1 2 / 3 _.
+    // The WHOLE rendering, not `toContain("1")` / `toContain("3")` — a
+    // one-character needle is satisfied by every superstring of it ("11", "31"),
+    // and a column-width or gap-padding slip is exactly a superstring. This board
+    // is four cells; there is no reason to assert it a character at a time.
+    expect(text).toMatchInlineSnapshot(`
+      "1 2
+      3  "
+    `);
+    // Beside the snapshot so `vitest -u` cannot quietly erase the guarantee:
+    // two rows, and the gap really is blank rather than a "4".
     expect(text.split("\n").length).toBe(2);
-    expect(text).toContain("1");
-    expect(text).toContain("3");
+    expect(text).not.toContain("4");
   });
 });
