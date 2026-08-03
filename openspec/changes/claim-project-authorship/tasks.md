@@ -46,8 +46,12 @@
       `rehome-upstream-help-sources` (four MIT layers; a Lennard Sprong
       section); this change must not regress them, and the About dialog's
       wording should agree with them.
-- [ ] 3.2 Confirm `help/upstream/` is untouched — it is verbatim upstream
-      material and no part of this change may edit it.
+- [ ] 3.2 Confirm `licences/` is untouched — those notices are verbatim
+      upstream material and no part of this change may edit them. (`help/upstream/`
+      is gone as of `retire-the-upstream-help-tree`: the per-puzzle pages under
+      `help/games/` keep upstream's wording but are this project's to maintain,
+      so the constraint that applies to them is the ordinary "don't rewrite
+      someone's words without cause", not "never touch".)
 
 ## 4. Verify
 

@@ -1,0 +1,6 @@
+# Fifteen
+
+Slide the tiles around the box until they appear in numerical order
+from the top left, with the hole in the bottom right corner.
+
+Click on a tile to slide it towards the hole.

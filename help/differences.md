@@ -12,8 +12,8 @@ Although functional, they're likely to change significantly in future updates.
 * ::experimental|Experimental:: This version allows you to save and return 
   to arbitrary [checkpoints](features#checkpoints) within the undo history.
 
-* The command line options described in the manual are not available on the web. 
-  However, you can provide game parameters or an ID or random seed in the
+* The original desktop collection's command line options are not available on
+  the web. However, you can provide game parameters or an ID or random seed in the
   URL to particular puzzle: add *?type=params* or *?id=id-or-seed*. (From within 
   a game, look in the <command-link command="share:link">share dialog</command-link>
   for copyable links.) 

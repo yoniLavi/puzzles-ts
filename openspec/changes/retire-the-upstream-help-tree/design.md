@@ -107,3 +107,102 @@ is free to add once the first is written.
   special-cases go with it.
 - `npm run build` succeeds **on a clean checkout with no `brew bundle install`**,
   which is the point of the cascade and is not true today.
+
+---
+
+## Findings from implementation
+
+Recorded because three of them overturn something this document or `tasks.md`
+asserted, and one of those is the change's own verification step.
+
+### F1. The prescribed verification was blind — grep for a spelling, not a target
+
+`tasks.md` 3.4 said: *"grep the built output for `help/manual` and require zero
+hits."* That grep **passes on a tree shipping 42 dead links**, because this
+project's own help pages link *relatively* — `help/puzzles.md` writes
+`manual/cube`, `help/index.md` writes `manual/`, `help/features.md` writes
+`manual/common#common`. The literal string `help/manual` appears in none of
+them.
+
+The replacement resolves every internal `href` in `dist/help/` against `dist/`
+and reports the ones that do not exist: 544 links checked, all resolving. It is
+barely more code and cannot be fooled by a spelling.
+
+This is the fifth instance in this repository of **a check aimed at a neighbour
+of the thing it claims to check** — after `grid.test.ts`'s
+`d.edges.length === d.order` (against the array that sized it),
+`touch-input.test.ts`'s catalog count standing in for a registry count, and the
+`import.meta.glob` that silently matched nothing. The tell is the same each
+time: the assertion names a *proxy* (a string, a length, a sibling collection)
+rather than the *property* (does the target resolve?).
+
+### F2. D2's premise — "the words are good" — was false for two of the 43
+
+D2 reasoned that adopting the overviews is *"a licensing-and-ownership move, not
+an editing one"*, and the proposal's out-of-scope list said so explicitly. Two
+fragments, `slide.html` and `sokoban.html`, open a
+`<strong>Status:</strong>` paragraph with *"This is an experimental, unfinished
+puzzle"* — about two games this collection finished, registered, spec'd, tested
+and ships.
+
+That is not a new judgement call: `repo-layout` already forbids it in force
+today (*"They SHALL NOT carry development status, known-issue lists or roadmap
+notes"*), written by `audit-author-known-issues` when it stripped `## Status`
+sections from the thirteen `help/games/` pages. **The rule was enforced by one
+spelling in one directory**, so an inline `<strong>` label one directory over
+survived the sweep that existed to remove it. The coverage test now matches both
+forms.
+
+Each player-relevant fact inside those paragraphs was checked before being
+dropped rather than assumed stale, which changed the answer twice:
+
+- **Slide's slow generation is real** — 1.5 s median, 3.2 s max at the largest
+  preset (8×6, five seeds), because the generator re-solves the board
+  exhaustively after every change it makes. Restated in plain prose without the
+  status framing.
+- **Slide's "keyboard control is not yet supported"** is roughly true (the
+  keyboard only steps an installed Solve route) but is a roadmap note about a
+  missing capability, and the page already says how the game *is* played. Worth
+  surfacing separately: Slide appears to be the only game with no keyboard play,
+  which is an accessibility gap rather than a help-page matter.
+- **Sokoban's "use it with hand-written level descriptions"** names a workflow
+  this app does not present, and whose procedural alternative
+  `add-sokoban-level-packs` examined and declined as a nofix.
+
+### F3. The same cross-reference found a second, larger coverage gap
+
+D4 justified the coverage test from `separate` having no help page. Running the
+catalog against `help/puzzles.md` — the "Included puzzles" page, which says of
+itself *"this table is manually generated for now"* — found it missing **six**:
+crossing, group, seismic, separate, slide and sokoban. Four are upstream
+*unfinished* puzzles this project finished and ships, which is exactly the
+category a reader would not know to look for. Asserted in both directions
+alongside the page coverage.
+
+### F4. Two things the deletion reached that the plan did not list
+
+- **`.github/workflows/ci.yml`** apt-installed halibut and ran
+  `npm run build:assets` before the gate. `build-pipeline` *required* it to
+  (a coverage argument: building the manual was the only thing exercising
+  `scripts/build-manual.sh` and vite's manual-page rendering path), so this
+  needed a spec delta, not just an edit. Both the script and that path are
+  deleted, so the argument has no subject.
+- **`help/_unreleased.html.hbs`** rendered the thirteen third-party pages. After
+  adoption it renders all 57, so the name was false; renamed `_game.html.hbs`,
+  and `_overview.html.hbs` deleted. The two templates differed slightly — the
+  overview one emitted `<h1>{{title}}</h1>` above the body and a
+  `<p>More information:</p>` list, the other takes its `<h1>` from the markdown
+  and uses an `<h2>`. All 57 pages now use the second shape; that is the one
+  intended visual difference beyond the manual link's removal.
+
+### F5. Checked and deliberately left alone
+
+Magnets' page says right-clicking cycles to *"a ?? mark"*, which reads like a
+typo. It is not: a domino spans two cells and `render.ts` draws `"?"` in each,
+so the mark on the domino really is `??`. Left verbatim.
+
+The two genuine cross-references into upstream's manual (`#common`,
+`#common-id`) were repointed at **upstream's live copy** rather than deleted —
+verified reachable with both anchors present. That is a better destination than
+a local fork of it: it stays current, and it is unambiguously theirs, which is
+the distinction the local copy blurred.

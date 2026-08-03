@@ -13,10 +13,9 @@ Simon Tatham's Portable Puzzle Collection — the notice, and the canonical list
 of upstream contributors that [`../LICENSE.md`](../LICENSE.md) and
 [`../CREDITS.md`](../CREDITS.md) point at rather than duplicating.
 
-Covers: every game and engine module ported from upstream C into
-`src/native/`, and the help sources the app serves — upstream's manual
-(`../help/upstream/manual/puzzles.but`) and the per-puzzle overview fragments
-(`../help/upstream/overviews/`).
+Covers: every game and engine module ported from upstream C into `../src/games/`
+and `../src/engine/`, and the per-puzzle help text adopted from upstream's
+overview pages into `../help/games/`.
 
 - Upstream: <https://www.chiark.greenend.org.uk/~sgtatham/puzzles/>
 
@@ -37,6 +36,6 @@ than a guarantee.
 They were, until `rehome-upstream-help-sources` (2026-08-01). `puzzles/` was the
 frozen subtree of upstream's C collection; `retire-c-engine` deleted the C, and
 this change moved the help sources it had been left holding to `help/`. What
-these notices cover is now the whole of `src/native/`, not a subdirectory — so a
-directory named for a source tree that no longer exists was the wrong home for
-them, and a misleading one.
+these notices cover is now the whole of `src/engine/` and `src/games/`, not a
+subdirectory — so a directory named for a source tree that no longer exists was
+the wrong home for them, and a misleading one.
