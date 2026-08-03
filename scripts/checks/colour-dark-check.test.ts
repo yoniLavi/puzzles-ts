@@ -20,24 +20,24 @@
  *
  * Not part of the gate. Run it with:
  *
- *     npx vitest run -c scripts/diff.vitest.config.mts colour-dark-check
+ *     npx vitest run -c scripts/checks/diff.vitest.config.mts colour-dark-check
  */
 import { writeFileSync } from "node:fs";
 import { it } from "vitest";
-import { darkValue } from "../src/engine/colour/colour-token.ts";
-import { getTsGame } from "../src/engine/registry.ts";
-import type { Colour, PuzzleId } from "../src/engine/types.ts";
-import { puzzleAugmentations } from "../src/puzzle/augmentation.ts";
-import { puzzleIds } from "../src/puzzle/catalog.ts";
+import { darkValue } from "../../src/engine/colour/colour-token.ts";
+import { getTsGame } from "../../src/engine/registry.ts";
+import type { Colour, PuzzleId } from "../../src/engine/types.ts";
+import { puzzleAugmentations } from "../../src/puzzle/augmentation.ts";
+import { puzzleIds } from "../../src/puzzle/catalog.ts";
 import {
   colourToOKLCH,
   darkModeColor,
   isGrayChroma,
   type OKLCH,
   oklchToColour,
-} from "../src/utils/color.ts";
-import { clamp } from "../src/utils/math.ts";
-import "../src/games/index.ts";
+} from "../../src/utils/color.ts";
+import { clamp } from "../../src/utils/math.ts";
+import "../../src/games/index.ts";
 
 const OUT = "/tmp/colour-dark-check.md";
 

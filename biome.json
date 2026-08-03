@@ -33,6 +33,6 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/help/upstream", "!**/docs/tilings", "!!!notes", "!metrics"]
+    "includes": ["**", "!**/help/upstream", "!!!notes", "!**/metrics"]
   }
 }

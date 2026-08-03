@@ -75,17 +75,30 @@ into the archive with the work that consumed it.
   from one bullet in `AGENTS.md` and from nowhere in the code, duplicating a page
   `hat.ts` already links by URL. Confirm `spectre.ts` carries the same pointer
   `hat.ts` does, and add it if not: **the link is what is load-bearing, not the
-  copy.**
+  copy.** *(Implemented: all three modules already linked it. But the
+  "expected to be empty" pass over the pages was not empty — the write-up does
+  not define the four kite move directions, and neither did the code. That
+  definition moved onto `KiteStep` before the delete. See tasks §1.2.)*
 - **Move the three dated metrics snapshots** under the archived changes that
   produced them, keeping each `summary.md` with its own raw output.
-- **Keep `metrics/` for live instruments only** — currently just
-  `mutation/report.json`.
+- **Keep `metrics/` for live instruments only** — `mutation/report.json` and
+  `colour-inventory.md`. *(The proposal said "just `mutation/report.json`" and
+  was wrong: `group-crowded-source-directories` had put the colour inventory
+  there four days earlier, to escape a change directory that `openspec archive`
+  renames. Both are live; the spec names both.)*
 - **`scripts/checks/`** — the four advisory `*.test.ts` files and
   `diff.vitest.config.mts` move there. They are the only tests in the repository
   outside `src/`, they are deliberately outside the gate, and nothing about
   `scripts/` (which otherwise means "things you run") says so.
-- **Point Stryker's sandbox outside the project tree** and delete the 192 MB of
-  stale `.stryker-tmp/sandbox-*` copies on disk.
+- ~~**Point Stryker's sandbox outside the project tree**~~ **— tried, and it
+  breaks the tool.** From a sandbox outside the project root, `vitest.related`
+  matches nothing and the dry run finds no tests; the documented escape
+  (`related: false`) would make every one of 2,168 mutant runs load all 252 test
+  files. Reverted, with the experiment recorded in the config header. The 192 MB
+  of stale `.stryker-tmp/sandbox-*` copies **are** deleted, and `npm run mutation`
+  now clears the directory first, which addresses the actual cause — interrupted
+  runs, since `cleanTempDir` only fires on completion. Deleting them also cut
+  Stryker's own file scan from 15,233 files to 2,563.
 
 Explicitly **not** in this change:
 
@@ -102,12 +115,19 @@ Explicitly **not** in this change:
 - **Affected specs**: `repo-layout` — "Developer guides live under docs/ and link
   to specs" gains the rule that `docs/` holds this project's guides only, and
   that a reference is carried as a link to its maintained source rather than a
-  copy; the root entry-point-directory list loses `metrics/`. `build-pipeline` —
-  a round's snapshot is committed under the change that produced it.
+  copy; "Repo root holds product-level config only" **gains** `metrics/` (it was
+  never listed, though the directory existed), bounded to live instruments, plus
+  `scripts/checks/` as the home for out-of-gate tests and a scenario for an
+  ignore rule naming a deleted path. `build-pipeline` — a round's snapshot is
+  committed under the change that produced it, with the tool-writes-vs-author-
+  commits distinction spelled out against `repo-layout`'s neighbouring rule.
 - **Affected code**: no runtime code. `scripts/metrics.sh`,
-  `scripts/stryker.config.mjs`, `scripts/diff.vitest.config.mts`,
-  `package.json`'s `diff` script, one comment pointer in `engine/grid/tilings/`,
-  `AGENTS.md`, `docs/test-strength.md`, `docs/porting/game-port-playbook.md`.
+  `scripts/stryker.config.mjs`, `scripts/checks/*` (the four moved files, whose
+  `../src/…` imports needed re-depthing), `package.json`'s `diff` and `mutation`
+  scripts, `biome.json`, two comment pointers in `engine/grid/tilings/`
+  (`KiteStep`'s definition, `hat-tables.ts`'s dead regeneration recipe), two live
+  pointers in `src/` (`colours.test.ts`, `crossing/render.ts`), `AGENTS.md`,
+  `docs/porting/game-port-playbook.md`.
 - **Risk**: very low, with one thing worth naming — nothing here is imported by
   the app, so a broken path surfaces only when someone next runs the script.
   `npm run diff` and `npm run metrics` are therefore **run once** after the move

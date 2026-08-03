@@ -184,7 +184,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   // The board slot and the list slot hold the same value on purpose — that *is*
   // the change. They stay two indices because they are two surfaces, and a
   // future scheme wanting to separate them again should not have to re-derive
-  // which is which; `scripts/colour-collide.test.ts` reports the pair, and this
+  // which is which; `scripts/checks/colour-collide.test.ts` reports the pair, and this
   // is the note that says it is meant.
   out[COL_ACROSS] = BLUE_BOLD;
   out[COL_ACROSSFIT] = BLUE_BOLD;

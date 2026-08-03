@@ -20,8 +20,8 @@
 ## 3. Verify
 
 - [ ] 3.1 Tier-2.5 render scenarios re-baselined; review the op diff.
-- [ ] 3.2 `scripts/colour-dark-check.test.ts` clean — a new large fill is exactly
-      the shape it catches.
+- [ ] 3.2 `scripts/checks/colour-dark-check.test.ts` clean (`npm run diff`) — a
+      new large fill is exactly the shape it catches.
 - [ ] 3.3 Browser pass in both schemes (Chrome, via the `playwright-cli` skill).
 - [ ] 3.4 Full gate green.
 

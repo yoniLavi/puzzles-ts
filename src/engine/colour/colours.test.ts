@@ -20,7 +20,7 @@ import type { Colour } from "../types.ts";
 import { darkValue } from "./colour-token.ts";
 import * as colours from "./colours.ts";
 
-/** The same OKLCH distance `scripts/colour-dark-check.test.ts` reports, so the
+/** The same OKLCH distance `scripts/checks/colour-dark-check.test.ts` reports, so the
  * numbers here and the numbers in that report mean the same thing: chroma and
  * hue as a plane, so a hue difference at low chroma counts for little — which is
  * how the eye treats it. */
