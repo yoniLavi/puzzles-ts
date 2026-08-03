@@ -13,7 +13,6 @@ import {
   extraPages,
   renderHandlebars,
   renderMarkdown,
-  type Transform,
 } from "./vite-plugins/extra-pages";
 
 type Env = Record<string, string>;
@@ -129,28 +128,14 @@ function securityHeaders(options: {
   return headers;
 }
 
-/**
- * If this is a help page for a known puzzleId, and the icons build produced
- * src/assets/icons/<puzzleId>-base.png, insert that screenshot as a floating <img>
- * just inside the end of the <h1>.
- */
-const insertPuzzleScreenshot: Transform = (data) => {
-  let { html, urlPathname, ...rest } = data;
-  if (typeof html === "string" && typeof urlPathname === "string") {
-    const puzzleId = /([^/]+)(\.html)?$/.exec(urlPathname)?.[1];
-    const imagePath =
-      puzzleId && puzzleIds.includes(puzzleId)
-        ? `src/assets/icons/${puzzleId}-base.png`
-        : null;
-    if (imagePath && fs.existsSync(imagePath)) {
-      html = html.replace(
-        "</h1>",
-        `<img class="screenshot" src="/${imagePath}" alt="Puzzle screenshot"></h1>`,
-      );
-    }
-  }
-  return { html, urlPathname, ...rest };
-};
+// (There was an `insertPuzzleScreenshot` transform here, which floated a
+// thumbnail inside each help page's <h1>. It looked for
+// `src/assets/icons/<puzzleId>-base.png`, and no puzzle has ever had one — the
+// committed snapshot is `-64d8`/`-128d8`, which is what the `?screenshot`
+// capture mode produces and what `asset-integrity.test.ts` asserts. So it never
+// fired, on any page, and neither did the `img.screenshot` rule it fed.
+// Removed rather than repointed: putting a thumbnail on a help page is a
+// product decision, not a path fix.)
 
 // Arbitrary metadata to identify own stack frames.
 // Used as Sentry.thirdPartyErrorFilterIntegration filterKeys
@@ -423,7 +408,6 @@ export default defineConfig(async ({ command, mode }) => {
                 typographer: true,
               }),
               renderHandlebars({ file: "help/_game.html.hbs" }),
-              insertPuzzleScreenshot,
             ],
           },
           {
