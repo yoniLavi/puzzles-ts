@@ -5,8 +5,10 @@ to help it work better in a web browser and on a variety of different
 screen sizes and input devices.
 
 In addition to the features listed below, many (though not all) of the
-[common features](manual/common#common) described in the original manual
-are available in this version.
+[common features][sgt-common] of Simon Tatham's original desktop collection
+are available here too. That manual describes his desktop builds rather than
+this app, so where the two disagree, this help is the one that describes what
+you are using.
 
 ## On-screen keyboard {#virtual-keyboard}
 
@@ -21,7 +23,7 @@ off the virtual keyboard in the
 ## Right mouse button on touch devices {#right-mouse}
 
 Many puzzles need both the left and right mouse buttons. If you're using a touch
-screen, you have a few options when the manual says to "right-click":
+screen, you have a few options when a puzzle's help says to "right-click":
 
 * **Tap multiple times.** In many puzzles, this will cycle through the left-click
   state on first tap, the right-click state on second tap, and back to the 
@@ -62,7 +64,7 @@ If you are using a mouse, puzzles will ignore attempts to click and drag
 with the right mouse button. (This is a browser limitation. Right-click still 
 works, just not right-drag.)
 
-When the manual says to "right-drag" you can instead hold down <kbd>Ctrl</kbd> 
+When a puzzle's help says to "right-drag" you can instead hold down <kbd>Ctrl</kbd> 
 and then click and drag with the left mouse button.
 
 ## Checkpoints {#checkpoints}
@@ -130,7 +132,7 @@ you're playing with others. Choose *::share:: Share…* from the game menu, then
 
 * **Game ID** and **random seed** can be used with other portable puzzle
   collection apps. See 
-  [*Specifying games with the game ID*](manual/common#common-id) in the manual.
+  [*Specifying games with the game ID*][sgt-gameid] in Simon Tatham's manual.
 
   If you have a specific game ID or random seed from another app, load it 
   using <command-link command="enter-gameid">*Enter ID/seed*</command-link> 
@@ -155,3 +157,6 @@ external files. (Exported files do not currently include checkpoints.)
 To delete all saved games for all puzzles, open the
 <command-link command="settings:data">preferences</command-link> and choose
 *Clear data… Delete saved games.*
+
+[sgt-common]: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/doc/common.html#common
+[sgt-gameid]: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/doc/common.html#common-id

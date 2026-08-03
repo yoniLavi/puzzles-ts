@@ -7,22 +7,17 @@
 # `main` undetected. (If contributors arrive later and PRs become useful, add a
 # `pull_request:` trigger here.)
 #
-# The gate needs NO generated assets. This workflow used to say the opposite —
-# "no cheap no-WASM tier", because `src/puzzle/{catalog,types,worker}.ts`
+# Nothing is generated, so this job is `npm ci` and the gate. It used to say the
+# opposite — "no cheap no-WASM tier", because `src/puzzle/{catalog,types,worker}.ts`
 # imported artifacts out of `src/assets/puzzles/` — and it carried an emsdk
 # setup, apt packages, a `build:wasm` step and a cache of the wasm output keyed
 # on `hashFiles('puzzles/**')` to keep all that off the critical path.
 # `retire-c-engine` deleted the C engine: the catalog is committed source
-# (`src/puzzle/catalog-data.ts`) and the types are hand-authored, so a clean
-# checkout type-checks, tests and builds with nothing generated at all. The
-# whole apparatus went, and the run is faster for it.
-#
-# The manual build stays, and is the one thing here that is NOT a gate
-# precondition. `npm run build:assets` (halibut over `help/upstream/manual/puzzles.but`) is
-# the only generated asset left; running it is what exercises
-# `scripts/build-manual.sh` and vite's manual-page rendering path, which no test
-# covers. If it is ever dropped, the gate still passes — the manual pages are
-# simply absent from `dist/help/manual/`.
+# (`src/puzzle/catalog-data.ts`) and the types are hand-authored. An apt install
+# of halibut and a `build:assets` step outlived it by one change, to build the
+# in-app manual; `retire-the-upstream-help-tree` deleted the manual, so the last
+# native tool and the last generated artefact went with it. There is no longer
+# any tool to provision here, on any platform.
 name: CI
 
 on:
@@ -54,18 +49,8 @@ jobs:
           node-version: 24
           cache: npm
 
-      # halibut builds the in-app manual (see the header note). It is the only
-      # native tool this project still needs, and the only one in the Brewfile.
-      - name: Install halibut (in-app manual)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends halibut
-
       - name: Install npm dependencies
         run: npm ci
-
-      - name: Build the in-app manual
-        run: npm run build:assets
 
       - name: Run the gate (typecheck → lint/format → test → prod build)
         run: npm run gate

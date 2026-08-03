@@ -11,6 +11,5 @@
   ],
   "project": ["src/**/*.ts", "vite-plugins/**/*.ts", "scripts/**/*.mjs"],
   "ignoreDependencies": ["jscpd", "madge"],
-  "ignore": ["src/test-setup/icons.ts"],
-  "ignoreBinaries": ["scripts/build-manual.sh"]
+  "ignore": ["src/test-setup/icons.ts"]
 }

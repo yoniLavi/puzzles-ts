@@ -13,13 +13,13 @@ The approach is **top-down and product-value-first**: build a TS midend + clean 
 - **State / reactivity**: `@lit-labs/signals`, `signal-utils`, `@lit/context`
 - **Persistence**: Dexie (IndexedDB)
 - **Workers / IPC**: Comlink wraps the puzzle worker
-- **Asset toolchain**: halibut via Homebrew (`Brewfile`), driven by `scripts/build-manual.sh` — the in-app manual is the only generated asset. (The Emscripten/WASM toolchain was retired with the C engine, `retire-c-engine` 2026-08-01.)
-- **Puzzle engine**: native TypeScript (`src/native/engine/` + `src/native/games/`). There is no C↔JS bridge; the Embind `webapp.cpp` adapter went with the engine.
+- **Asset toolchain**: none. Nothing is generated — the catalog is committed source, the icons are a committed snapshot, and the help pages are committed markdown. (Emscripten went with `retire-c-engine`; halibut and the `Brewfile` went with the in-app manual in `retire-the-upstream-help-tree`.) `npm install` is the whole setup.
+- **Puzzle engine**: native TypeScript (`src/engine/` + `src/games/`). There is no C↔JS bridge; the Embind `webapp.cpp` adapter went with the engine.
 - **Telemetry**: Sentry browser
 - **PWA**: `vite-plugin-pwa` + Workbox
 - **Tooling**: Biome (format + lint), Husky + lint-staged
 
-Vitest runs the TS tests under `src/**/*.test.ts` (see `vitest.config.ts`). The 48 per-game differentials under `src/native/games/*/` compare against **frozen JSON fixtures** recorded while the C build existed; they need no binary and are the regression net for refactoring. There is no live C to diff against any more.
+Vitest runs the TS tests under `src/**/*.test.ts` (see `vitest.config.ts`). The 48 per-game differentials under `src/games/*/` compare against **frozen JSON fixtures** recorded while the C build existed; they need no binary and are the regression net for refactoring. There is no live C to diff against any more.
 
 ## Project Conventions
 
@@ -27,7 +27,7 @@ Vitest runs the TS tests under `src/**/*.test.ts` (see `vitest.config.ts`). The 
 
 - Biome is the source of truth — run `npm run check` (which runs `biome check --write .`). Husky enforces `biome check --write --no-errors-on-unmatched` on staged files.
 - TypeScript: strict mode; no `any` unless justified.
-- There is no C engine (`retire-c-engine`) and no `puzzles/` directory (`rehome-upstream-help-sources`). Upstream's words live in `help/upstream/` (the manual source and the per-puzzle overview pages the app serves, verbatim) and `licences/` (the MIT notices) — not casually churned. See `AGENTS.md` "Upstream policy".
+- There is no C engine (`retire-c-engine`) and no `puzzles/` directory (`rehome-upstream-help-sources`). The MIT notices in `licences/` are upstream's words and stay verbatim. The per-puzzle help pages under `help/games/` keep upstream's wording but are **ours to maintain** (`retire-the-upstream-help-tree`) — a page describing a game this fork changes must be correctable by the change that alters it. See `AGENTS.md` "Upstream policy".
 
 ### Architecture Patterns
 
@@ -62,11 +62,10 @@ Bit-identical RNG (`random.ts`, already ported) is retained so *future* shared g
 
 ### Source-tree map
 
-- `puzzles/` — what is left of the upstream subtree: the manual source, the per-puzzle overview fragments, the MIT licences, and two unbuilt `unfinished/` C files. Nothing is compiled. Don't churn casually — these are upstream's words, served verbatim.
-- `src/` — the TS web app (Lit components, routing, worker, drawing adapter). The TS midend and per-game ports live here, organized by capability.
-- `scripts/` — host-native build entry points (`build-emcc.sh`, `build-native.sh`).
-- `Brewfile` — the one native tool the asset build needs (halibut, for the manual).
-- `public/`, `help/`, `*.html.hbs`, `vite-*.ts` — the PWA + Vite plugins.
+- `src/` — the TS web app (Lit components, routing, worker, drawing adapter). `src/engine/` is the midend, the `Game` interface and the shared contracts; `src/games/<id>/` is one directory per game.
+- `scripts/` — dev and diagnostic entry points (the feedback probe, the metrics harness, the gate orchestrator). No build scripts: there is nothing to build.
+- `licences/` — the upstream MIT notices, verbatim, `?raw`-imported by the About dialog.
+- `public/`, `help/`, `templates/*.html.hbs`, `vite-plugins/*.ts` — the PWA + Vite plugins. Every page the app serves lives under `help/`, in one format.
 - `openspec/` — spec-driven change management (this directory).
 - `AGENTS.md` — durable strategic context + conventions for AI assistants and human contributors. Symlinked as `CLAUDE.md`.
 
@@ -75,12 +74,11 @@ Bit-identical RNG (`random.ts`, already ported) is retained so *future* shared g
 - **Product value first.** Order work so user-facing capability lands early (top-down: midend + game interface, then games simplest→Galaxies→outward). Deliberate divergence from upstream (quick-save, mistake-check, hints, per-game aids) is the goal, not a regression.
 - **Correctness, spot-checked — not byte-identical.** A port is done when it plays correctly, behavioural tests are green, and a dev-time differential spot-check against the C build looks right. No byte-identical characterization-corpus gate. `random.ts` stays bit-identical so future shared game IDs reproduce; old C-format saves / pre-pivot IDs are expendable.
 - **Always-green bar.** No sustained red; `tsc → lint → vitest` pre-commit gate holds.
-- **The C is gone, and it was a reference, not an oracle.** What remains under `puzzles/` is upstream's help material; don't churn it. `puzzles/LICENCE` stays intact per MIT.
+- **The C is gone, and it was a reference, not an oracle.** Nothing of it remains in the working tree; the sibling clone is where to go if a question needs it. The MIT notices in `licences/` stay intact.
 - **No big-bang rewrite.** Top-down and incremental. The `ts-migration` capability spec is the plan of record; deviations need justification.
 
 ## External Dependencies
 
-- **Upstream Simon Tatham** (`../puzzles/` sibling clone): convenience for running upstream's own tools unmodified. *Not* tracked — this project froze the `puzzles/` subtree at a specific upstream version (see `AGENTS.md` "Upstream policy"). The in-tree subtree no longer holds any engine C; the sibling clone is where to go if a question genuinely needs it.
+- **Upstream Simon Tatham** (`../puzzles/` sibling clone): convenience for running upstream's own tools unmodified, and the only remaining copy of the C. *Not* tracked — this project froze its `puzzles/` subtree at a specific upstream version and has since deleted it (see `AGENTS.md` "Upstream policy").
 - **medmunds/puzzles-web** (`../puzzles-web/` sibling clone): pre-fork baseline. Useful in early phases; less useful as the TS layer grows.
-- **halibut** (host-native via Homebrew, see `Brewfile`): builds the in-app manual. Optional — without it the app builds and the manual pages are simply absent. (Emscripten was required until the C side was fully displaced; it no longer is.)
 - **Hosting**: TBD for this fork. The CF Pages setup inherited from puzzles-web is no longer wired here — `wrangler.toml` and the `preview:pages` script were dropped in the `reorganize-repo-tooling` openspec change. Some Cloudflare-flavoured comments and CSP entries (for CF Insights) remain in `vite.config.ts` / `templates/_headers.txt.hbs` as known-format references in case CF Pages is revisited.

@@ -60,8 +60,11 @@ Explicitly **not** in this change:
 - **Any reduction in credit to anyone.** Simon Tatham, Lennard Sprong and Mike
   Edmunds keep every acknowledgement they have, and Mike Edmunds gains an
   explicit "made puzzles-web" line he does not currently have.
-- **The upstream help sources.** `help/upstream/` stays verbatim; this change
-  does not touch a word of it.
+- **The upstream licence notices.** `licences/` stays verbatim; this change does
+  not touch a word of it. (This bullet used to name `help/upstream/`, which
+  `retire-the-upstream-help-tree` deleted — the per-puzzle help pages are now
+  this project's own under `help/games/`, keeping upstream's wording. This change
+  still does not edit them.)
 - **Retitling the puzzles themselves**, or any claim over their design.
 
 ## Open decisions (owner)

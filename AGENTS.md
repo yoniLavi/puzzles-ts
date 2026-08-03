@@ -35,12 +35,13 @@ PWA port of [Simon Tatham's Portable Puzzle Collection][sgt-puzzles]. **As of
   half was deleted the word partitioned the tree into "all of the code" and
   "the app shell".
 - **TypeScript web app** in `/src` using Lit web components and Vite. Targets Baseline 2023 (see `src/preflight.ts`).
-- **`/puzzles` no longer exists** (`rehome-upstream-help-sources`, 2026-08-01).
-  Upstream's *help sources* are `help/upstream/` (`manual/puzzles.but` for the
-  manual, `overviews/` for the per-puzzle pages), the MIT notices are
-  `licences/`, and the two unbuilt `unfinished/` C files live with the changes
-  that read them. **No C, no build system, nothing compiled, anywhere in the
-  tree.**
+- **`/puzzles` no longer exists** (`rehome-upstream-help-sources`, 2026-08-01),
+  and neither does `help/upstream/` (`retire-the-upstream-help-tree`,
+  2026-08-03). Every help page the app serves is this project's own markdown
+  under `help/` — one directory, one format, one page per game in
+  `help/games/`. The MIT notices are `licences/`, and the two unbuilt
+  `unfinished/` C files live with the changes that read them. **No C, no build
+  system, nothing compiled and nothing generated, anywhere in the tree.**
 
 The long-term goal is to replace the C engine with native TypeScript, **top-down and product-value-first**. The authoritative statement of the migration approach is the `ts-migration` capability spec (`openspec/specs/ts-migration/spec.md`); this section is the readable summary. The prior bottom-up, byte-identical-fidelity doctrine was superseded on 2026-05-18 by the `pivot-to-top-down-ts` change and is preserved on branch `legacy/seam-by-seam-fidelity` + tag `pre-ts-pivot` in case of reversal.
 
@@ -212,16 +213,16 @@ history if a question ever genuinely needs it.
 
 ## Build commands
 
-- `npm run build:assets` — runs `scripts/build-manual.sh`: halibut over
-  `help/upstream/manual/puzzles.but` into `src/assets/manual/`. **This is the entire asset
-  build.** It is optional in the sense that the app builds without it — the
-  manual pages simply do not exist and each overview page drops its "manual"
-  link. There is no wasm build: `npm run build:wasm`, `scripts/build-emcc.sh`,
+- **There is no asset build.** `npm run build:assets`, `scripts/build-manual.sh`
+  and `Brewfile` went with the manual (`retire-the-upstream-help-tree`); the
+  wasm build — `npm run build:wasm`, `scripts/build-emcc.sh`,
   `scripts/build-native.sh`, the whole CMake tree and the `USE_TS_LEAVES` /
-  `USE_TS_<MODULE>` / `VITE_USE_TS_*` flag family all went with
-  `retire-c-engine`. If you find a doc still mentioning them, it is stale.
+  `USE_TS_<MODULE>` / `VITE_USE_TS_*` flag family — went with
+  `retire-c-engine`. **`npm install` is the entire setup, on any platform**, and
+  no native tool is needed for anything. If you find a doc still mentioning one,
+  it is stale.
 - `npm run dev` — vite dev server.
-- `npm run build` — production app build (tsc + vite). Needs no generated input: the game catalog is committed source (`src/puzzle/catalog-data.ts`). Run `build:assets` first if you want the in-app manual included.
+- `npm run build` — production app build (tsc + vite). Needs no generated input of any kind: the game catalog is committed source (`src/puzzle/catalog-data.ts`), the icons are a committed snapshot, the help pages are committed markdown.
 - `npm run preview` — preview production build.
 - `npm run check` — biome format + lint with autofix.
 - `npm run test` / `npm run test:run` — vitest.
@@ -233,7 +234,7 @@ history if a question ever genuinely needs it.
   what to run after touching any of the probed modules; a full run is ~15 min.
   See [`docs/test-strength.md`](docs/test-strength.md) §2a.
 
-`src/assets/manual/` is gitignored (regenerate via `build:assets`); it is the only generated directory under `src/assets/`. `src/assets/icons/` is **committed** as a frozen snapshot of per-puzzle thumbnails; adding a new puzzle requires producing two PNGs by hand (see `openspec/specs/puzzle-icons/spec.md`). `src/asset-integrity.test.ts` asserts every catalog `puzzleId` has both its PNGs (64×64 and 128×128), that every `new URL(<path>, import.meta.url)` reference in `src/` resolves, and that no `.ts` file contains a raw C0 control character — a NUL makes git call the file binary and stop diffing it, which tsc, biome, vitest and `vite build` all pass silently. Everything under `build/` is gitignored too.
+Nothing under `src/assets/` is generated — it holds only committed files. `src/assets/icons/` is **committed** as a frozen snapshot of per-puzzle thumbnails; adding a new puzzle requires producing two PNGs by hand (see `openspec/specs/puzzle-icons/spec.md`). `src/asset-integrity.test.ts` asserts every catalog `puzzleId` has both its PNGs (64×64 and 128×128), that every `new URL(<path>, import.meta.url)` reference in `src/` resolves, and that no `.ts` file contains a raw C0 control character — a NUL makes git call the file binary and stop diffing it, which tsc, biome, vitest and `vite build` all pass silently. Everything under `build/` is gitignored too.
 
 ## Code conventions
 
@@ -244,17 +245,18 @@ history if a question ever genuinely needs it.
 - **Persistence**: IndexedDB via Dexie.js (`src/store/db.ts`).
 - **WASM**: runs in a web worker, exposed via Comlink (`src/puzzle/`).
 - **Styling**: Web Awesome design tokens.
-- **`help/upstream/`**: upstream's *help sources* — the manual source and the per-puzzle overview fragments, rendered verbatim. Treat as read-only upstream material; changing the words in a served help page is a content decision, not a refactor. (`/puzzles` is gone — `rehome-upstream-help-sources`.)
+- **`help/`**: every page the app serves, all of it this project's own markdown — site-level pages at the top level, one page per game in `help/games/`. Upstream's *wording* survives in the pages adopted from its overview fragments; what changed is who may fix them, which is a licensing question MIT already answers. A page describing a game this fork changes must be correctable by the change that alters it. (`help/upstream/` is gone — `retire-the-upstream-help-tree`; `/puzzles` before it — `rehome-upstream-help-sources`.)
 
 ## Constraints
 
 DO NOT:
-- Edit upstream's material under `help/upstream/` (the manual source, the overview fragments) or the notices in `licences/` without cause — they are someone else's words that the app serves verbatim.
-- Name a new help source directory after a URL subdirectory the build emits pages into. `help/manual/` is specifically forbidden: the manual is served at `/help/manual/*`, and a real directory there shadows the generated page namespace and fails `vite build` with `EISDIR`. Hence `help/upstream/manual/`.
+- Edit the notices in `licences/` without cause — they are someone else's words, reproduced verbatim to honour MIT.
+- Ship a help page that documents a platform this app is not. That is what got the halibut manual deleted: it told players of this PWA that the collection "deliberately do[es] not ever save information on to the computer", alongside Windows printing and two sections of Unix command-line options.
+- Name a new help source directory after a URL subdirectory the build emits pages into. A real directory shadowing a generated page namespace fails `vite build` outright with `EISDIR`. Every source today renders to the top level (`/help/<name>`), which is why `help/games/` is free to be named for what it holds.
 - Break Baseline 2023 browser compatibility.
 - Use top-level await, dynamic `import()`, or `import.meta` in `src/preflight.ts` — preflight runs on older browsers to gate the rest of the app.
 - Add dependencies without considering bundle size and offline (PWA) support.
-- Commit generated assets in `src/assets/manual/` or `dist/`. (`src/assets/icons/` is the exception — it's a committed snapshot maintained per `openspec/specs/puzzle-icons/spec.md`; add the two required PNGs by hand when a new puzzle joins the catalog.)
+- Commit generated assets in `dist/`. (`src/assets/icons/` is the exception — it's a committed snapshot maintained per `openspec/specs/puzzle-icons/spec.md`; add the two required PNGs by hand when a new puzzle joins the catalog.)
 - Catch unrecoverable errors only to log them — let them propagate so Sentry records them.
 
 DO:
@@ -274,8 +276,8 @@ Three roles to keep distinct:
 - **`../puzzles/`** (sibling clone). The place to go if a question genuinely needs upstream's C — this repo no longer has any. **Not** a place to put our work.
 - **`../puzzles-web/`** (sibling clone). The pre-fork baseline; useful as a diff reference in early phases.
 
-The build output is `dist/` (gitignored), plus the generated
-`src/assets/manual/`. **`/build/` no longer exists**
+The build output is `dist/` (gitignored), and it is the only generated
+directory anywhere in the tree. **`/build/` no longer exists**
 (`prune-dead-toolchain-leftovers`): both its occupants — `/build/wasm/` from the
 Emscripten cmake build and `/build/native/` from the characterization harnesses
 — went with `retire-c-engine`, and the empty partition it left, kept "for
@@ -469,6 +471,20 @@ Recorded here as durable reference, not a changelog (commit history carries the 
 
 **Two review methods worth reusing.** Colours move deliberately here, so there is no no-op diff to check; instead (i) 44 moved snapshot files were reviewed **mechanically** — every changed line in every one is an `rgb`/`fillRgb`/`outlineRgb` value, which proves no op was added, removed or moved, and beats eyeballing 44 files; (ii) the light-and-dark **browser pass found the one regression the suite could not** — Light Up's lit square was plain `YELLOW`, a near-board tint in light mode and a *bright patch* in dark, which is exactly the Slide failure mode `hand-author-dark-palette` F1 identified. It is a large fill, so it is `YELLOW_WASH`. `scripts/checks/colour-dark-check.test.ts` is what surfaced it: its background-relationship count went 2 → 56, and the one entry in the 56 that was a **fill** rather than a mark, a never-invert identity, or pre-existing was the defect.
 
+- **The help tree became one directory in one format, and the manual went** (`retire-the-upstream-help-tree`, 2026-08-03, **owner acceptance pending**). The third post-C source-tree change, and the first that is **player-visible**. `help/upstream/` held two things the app *served*: 143 KB of halibut source building 45 manual pages, and 43 per-puzzle overview fragments. They were kept read-only on the reasoning that upstream's words are not ours to edit — sound for a *reference*, wrong for a page the app serves, which is the sentence `rehome-upstream-help-sources` wrote into the spec and then applied to only part of the material.
+
+  **The manual documented a different program.** Its "Common features" chapter told a player of this PWA that *"the games in this collection deliberately do not ever save information on to the computer they run on: they have no high score tables and no saved preferences"* — in an app with IndexedDB saved games, a quick-save slot and a preferences dialog — alongside Windows printing, Mac OS X menu placement, Load/Save to disk and two sections of Unix command-line options. It is the `audit-author-known-issues` defect at 45× scale, missed because it lived in `puzzles/` and read as reference material rather than product; and it covered only **40 of 57 games**. Deleted rather than corrected: correcting it means owning someone else's first-person prose about a different program. The **cascade is the payoff** — `scripts/build-manual.sh`, `npm run build:assets`, the `Brewfile` (halibut was its last entry), the gitignore rule, the knip binary, the CI apt-install, the vite source entry and the sitemap's two `doc`/`docindex` special-cases all existed only for it. **`npm install` is now the entire setup, on any platform**, and `dist/` is the only generated directory anywhere.
+
+  **The 43 overviews were adopted, not rewritten** — into `help/games/*.md`, ours to maintain. Verified two ways over all 43 at once, because "words unchanged" is only a claim if it is checked: rendered **text** identical (tags stripped, entities and typographer punctuation folded to a common form) and rendered **structure** identical (`<em>`/`<strong>`/`<code>`/`<li>`/`<ul>`/`<a>`/`<p>` counts match per file). git then independently called 37 of the 43 renames.
+
+  **The biggest reusable finding is that the change's own prescribed check was a grep, and the grep was blind.** `tasks.md` said *"grep the built output for `help/manual` and require zero hits"* — which returns **zero while 42 dead links ship**, because this project's own help pages link *relatively*: `help/puzzles.md` writes `manual/cube`, `help/index.md` writes `manual/`, `help/features.md` writes `manual/common#common`. The literal string never appears. Resolving every internal `href` in `dist/help/` against `dist/` instead is barely more code and cannot be fooled by a spelling — 544 links checked, all resolving. **A check aimed at one *spelling* of a reference is aimed at a neighbour of the thing it claims to check**; the repo has now hit this shape five times (`grid.test.ts`'s `d.edges.length === d.order`, `touch-input.test.ts`'s catalog-vs-registry count, the silently-empty `import.meta.glob`, and both halves of this).
+
+  **Two coverage gaps, both from the same cross-reference, neither previously assertable.** 43 + 13 = **56 of 57**: `separate` had no help page in either source, and nothing listed the correspondence. And `help/puzzles.md` — the "Included puzzles" page, which says of itself *"this table is manually generated for now"* — was missing **six**: crossing, group, seismic, separate, slide and sokoban, four of them upstream *unfinished* puzzles this project finished and ships, i.e. exactly the games a reader would not know to look for. `src/help-coverage.test.ts` now asserts both, in both directions, and was **proved to fail in each direction before being trusted**.
+
+  **And a rule enforced by one spelling in one directory is not enforced.** `audit-author-known-issues` stripped `## Status` sections from the thirteen `help/games/` pages and wrote the rule into `repo-layout` — *these pages introduce the puzzle, never the state of its implementation*. Two of the 43 fragments carried the identical defect as an inline `<strong>Status:</strong>` paragraph opening *"This is an experimental, unfinished puzzle"*, about **Slide and Sokoban**, two finished, registered, spec'd, shipped games. Both are gone, and the trap that would have caught them is now in the coverage test — matching the *label* forms only, since several pages legitimately say "the status line" about the game's own status bar. Of the player-relevant facts inside those paragraphs, one survived checking and was restated plainly (Slide's generation really is slow — **1.5 s median, 3.2 s max at 8×6**, measured, because it re-solves the board exhaustively after every change) and the rest did not: Slide's "keyboard control is not yet supported" is a roadmap note, and Sokoban's "use it with hand-written level descriptions" points at a workflow this app does not offer and whose alternative `add-sokoban-level-packs` declined as a nofix.
+
+  **What was checked and deliberately left alone**: Magnets' page says right-click cycles to *"a ?? mark"*, which reads like a typo and is not — a domino is two cells and the renderer draws `"?"` in each, so the mark on the domino really is `??`. The two genuine cross-references into upstream's manual (`#common`, `#common-id`) were repointed at **upstream's live copy**, verified 200 with both anchors present: a better destination than a local fork of it, since it stays current and is unambiguously theirs.
+
 ## Helper extractions: status
 
 The three extractions queued by the post-Galaxies evaluation all **landed 2026-05-26** (`extract-shared-helpers`), and were validated by the Pegs and Sixteen ports on top of them:
@@ -508,12 +524,11 @@ Things this fork has been avoiding but that will trip future games. Not urgent; 
 
 ## Documentation
 
-The in-app help system is assembled from three sources, **all under `help/`** since `rehome-upstream-help-sources`:
-- `help/*.md` — main help pages (this fork's additions/divergences), plus `help/games/` (the per-puzzle pages this project maintains).
-- `help/upstream/overviews/` — upstream per-puzzle overview fragments.
-- `help/upstream/manual/puzzles.but` — upstream manual, built into HTML by halibut via `npm run build:assets`.
+The in-app help system is assembled from two sources, **both under `help/`**, both this project's own markdown:
+- `help/*.md` — site-level pages (this fork's features, differences, install, the puzzle index).
+- `help/games/<puzzleId>.md` — one page per game, all 57, rendered to `/help/<puzzleId>.html`.
 
-The split is by *authorship*: `help/upstream/` is verbatim upstream material (its README says so and points at the licence); everything else under `help/` is ours. The rule the layout encodes is that **a page the app serves is a build input**, whoever wrote it — so none of them may sit in an upstream reference tree.
+There is no split. There used to be one, by *authorship*, and it was the wrong axis: a page the app serves is a build input this project owns, whoever originally wrote the words, and a page describing a game this fork deliberately changes has to be correctable by the change that alters it. `src/help-coverage.test.ts` holds the directory and the catalog to each other in both directions — the invariant exists because its absence hid `separate` having no help page at all.
 
 Update `/help` when adding features that diverge from upstream.
 

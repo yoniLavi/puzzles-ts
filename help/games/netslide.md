@@ -1,0 +1,20 @@
+# Netslide
+
+Slide the grid squares around so that they all join up into a single
+connected network with no loops.
+
+Click on the arrows at the edges of the grid to move a row or column
+left, right, up or down. The square that falls off the end of the
+row comes back on the other end.
+
+One square is the *source*: the black box the power comes from. It
+never moves — the row and the column it sits in cannot be slid, which is why
+no arrows are drawn beside them. So a square sharing the source's row can
+only be shifted by sliding its column, and vice versa, and the network has to
+be built up around the source where it stands.
+
+Squares connected to the source are lit up. Aim to light up
+every square in the grid (not just the endpoint blobs).
+
+Connecting across a red barrier line is forbidden. On harder levels,
+there are fewer barriers, which makes it harder rather than easier!

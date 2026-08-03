@@ -19,11 +19,13 @@ implementation, MIT-licensed, and still actively maintained.
   canonical list (Simon Tatham plus a long roster of contributors).
 
 This repository used to carry a `puzzles/` subtree of upstream's C sources,
-read as a reference while porting. The C is gone (`retire-c-engine`), and the
-help sources it was left holding now live under
-[`help/upstream/`](./help/upstream) — upstream's manual and the per-puzzle
-overview pages, both verbatim. The MIT notice is preserved verbatim in
-[`licences/`](./licences) to honour the obligation.
+read as a reference while porting. The C is gone (`retire-c-engine`). Of the
+help material it was left holding, the per-puzzle overview text was adopted
+into this project's own pages under [`help/games/`](./help/games), keeping
+Simon's words (`retire-the-upstream-help-tree`); the long-form desktop manual
+was deleted rather than served, because it documents his desktop builds and not
+this app. The MIT notice is preserved verbatim in [`licences/`](./licences) to
+honour the obligation.
 
 ## Third-party puzzles: `puzzles-unreleased` by Lennard Sprong (x-sheep)
 

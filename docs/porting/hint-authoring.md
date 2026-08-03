@@ -454,7 +454,7 @@ tile is at row 3, column 3, and the player is looking straight at a square that 
   (even vs odd, `w = 1`), not just a value at its extremes.
 
 If the hint introduces a word (*source*), the **help text must teach it** — check
-`help/upstream/overviews/<game>.html`, which is the per-puzzle overview the app serves. Netslide's said
+`help/games/<game>.md`, which is the per-puzzle help page the app serves. Netslide's said
 "the middle square" (so the vocabulary didn't even match) and never stated the rule the whole
 game turns on: that the source's row and column cannot be slid. A hint and a help page that
 disagree are worse than either alone.

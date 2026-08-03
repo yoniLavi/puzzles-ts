@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:assets": "scripts/build-manual.sh",
     "preview": "vite preview",
     "format": "biome format --write .",
     "lint": "biome lint .",

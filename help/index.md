@@ -11,9 +11,8 @@ Read more about:
 * [Puzzles](puzzles) included in the collection
 * [Differences](differences) from the original portable puzzle collection
 
-There is also a copy of the original collection's [instruction manual](manual/)
-available. It doesn't always exactly match this app's behavior, but it does 
-include a lot more detail on individual puzzles and some common features. 
+Every puzzle has its own help page describing how to play it — reach it from
+the [Puzzles](puzzles) list, or from the game menu while you are playing.
 
 [puzzles-unreleased]: https://github.com/x-sheep/puzzles-unreleased
 [sgt-puzzles]: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/

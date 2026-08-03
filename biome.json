@@ -33,6 +33,6 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/help/upstream", "!!!notes", "!**/metrics"]
+    "includes": ["**", "!!!notes", "!**/metrics"]
   }
 }

@@ -1,0 +1,16 @@
+# Range
+
+Colour some squares black, so as to meet the following conditions:
+
+- No two black squares are orthogonally adjacent.
+- No group of white squares is separated from the rest of the grid by
+  black squares.
+- Each numbered cell can see precisely that many white squares in
+  total by looking in all four orthogonal directions, counting itself.
+  (Black squares block the view. So, for example, a 2 clue must be
+  adjacent to three black squares or grid edges, and in the fourth
+  direction there must be one white square and then a black one beyond
+  it.)
+
+Left-click to colour a square black. Right-click to mark a square
+with a dot, if you know it should not be black.
