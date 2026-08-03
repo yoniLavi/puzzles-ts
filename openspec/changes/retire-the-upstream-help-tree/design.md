@@ -206,3 +206,19 @@ The two genuine cross-references into upstream's manual (`#common`,
 verified reachable with both anchors present. That is a better destination than
 a local fork of it: it stays current, and it is unambiguously theirs, which is
 the distinction the local copy blurred.
+
+### F6. Noticed while verifying, not fixed here: `insertPuzzleScreenshot` is dead
+
+The vite transform that decorates a help page with the puzzle's thumbnail looks
+for `src/assets/icons/<puzzleId>-base.png`. **No such file exists** — the
+committed snapshot is `<puzzleId>-{64d8,128d8}.png`, which is what
+`add-screenshot-icon-capture` produces and what `asset-integrity.test.ts`
+asserts. So the transform has never fired on any page, before or after this
+change, and the `<img class="screenshot">` rule in `help-page.css` is unused
+with it.
+
+Left alone deliberately: it is pre-existing, it is not what this change is
+about, and the choice between *delete it* and *make it work* (point it at
+`-128d8.png`, which exists for all 57) is a small product decision about whether
+help pages should carry a thumbnail — worth asking rather than assuming. Filed
+here so it is not re-discovered from scratch.
