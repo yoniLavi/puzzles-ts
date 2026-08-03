@@ -196,7 +196,37 @@ with no Emscripten toolchain installed.
 The repository SHALL provide an on-demand metrics harness (`npm run metrics`,
 orchestrated by `scripts/metrics.sh`) that records code-health measurements —
 duplication, import cycles, dead code, and cognitive complexity — as raw tool
-output under a dated `metrics/` directory, committed to the repository.
+output, committed to the repository.
+
+A **round's** dated snapshot SHALL be committed under the openspec change that
+produced it, and SHALL travel into the archive with that change. A snapshot is
+evidence for a piece of work, not a standing repository artefact: its value is
+the diff between rounds, that diff is read once by the change that ordered the
+measurement, and it cannot be regenerated afterwards because it measures a tree
+that no longer exists. The same reasoning files an audit's findings under its
+change, and filed `retire-c-engine`'s unbuildable C reference sources under the
+changes that read them.
+
+This does **not** conflict with `repo-layout`'s rule that a *tool* SHALL NOT
+write its output into an `openspec/changes/<id>/` directory. The harness writes
+to the stable path `metrics/<date>/`; the change's author then commits the
+finished snapshot under the change. The distinction is what each rule is
+protecting: a tool's output path must not expire when `openspec archive` renames
+a directory, and a one-off measurement must not be left standing at the root
+where it reads as current. A snapshot is only filed under a change once it is
+final.
+
+A top-level `metrics/` directory SHALL hold only **live instruments** — output
+that something still reads. Currently that is `metrics/mutation/report.json`,
+read by `docs/test-strength.md`, and `metrics/colour-inventory.md`, regenerated
+by `npm run diff`. A finished round's output left at the root reads as current
+measurement of the current tree, which is precisely what it is not.
+
+A snapshot SHALL be accompanied by a note recording that it cannot be
+regenerated, and that note SHALL point at something checkable in the files
+rather than merely assert it. The 2026-08-01 round's three READMEs cite that
+every path inside their own `summary.md` reads `src/native/…`, a tree deleted
+the following day — a reader can confirm the claim without trusting it.
 
 The harness SHALL NOT be part of the pre-commit gate or of CI's blocking checks.
 Its value is the **diff between rounds**, not per-commit freshness, and adding a
@@ -214,34 +244,25 @@ change that does the work to earn the lower value. A threshold SHALL NOT be set
 to an aspiration, because a gate that fails on work in progress is a gate that
 gets disabled.
 
-A function exceeding the complexity ratchet SHALL be suppressed individually
-with a stated reason rather than accommodated by raising the threshold, so that
-the suppression list remains the work queue and the threshold keeps measuring
-something.
+#### Scenario: A refactoring round records its baseline
 
-#### Scenario: A refactoring round is attributed to its intervention
+- **WHEN** a change orders a metrics round
+- **THEN** `npm run metrics` writes the raw tool output and a summary
+- **AND** the snapshot is committed under that change's directory, not at the
+  repository root
 
-- **WHEN** a refactoring change completes and re-runs `npm run metrics`
-- **THEN** a new dated snapshot is committed alongside the previous one
-- **AND** the change can state which measurement moved and by how much, rather
-  than asserting an improvement
+#### Scenario: A finished round's snapshot is not left at the root
 
-#### Scenario: A new function may not be worse than the worst existing one
+- **WHEN** a round's work is archived
+- **THEN** its dated snapshot is archived with it
+- **AND** the top-level `metrics/` directory contains only output that something
+  still reads
 
-- **WHEN** a commit introduces a function whose cognitive complexity exceeds the
-  configured ratchet
-- **THEN** the biome step of the gate fails and the commit is blocked
-- **AND** the author either simplifies the function or adds an individual
-  suppression with a reason — but does not raise the threshold
+#### Scenario: The metrics harness is not in the gate
 
-#### Scenario: A saturating instrument is not trusted as a maximum
-
-- **WHEN** the complexity tool reports an identical extreme score for several
-  unrelated functions
-- **THEN** that value is treated as a saturation bound ("≥ N") and recorded as
-  such, not as a measured maximum
-- **BECAUSE** an instrument that silently saturates will report no regression
-  when the worst function gets worse
+- **WHEN** a commit is made
+- **THEN** the pre-commit gate does not run the metrics harness
+- **AND** the round-over-round diff remains the harness's purpose
 
 ### Requirement: A static-analysis finding is triaged against the type information behind it
 

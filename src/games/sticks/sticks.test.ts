@@ -416,12 +416,28 @@ describe("sticks completion and solve (through a real Midend)", () => {
 describe("sticks text format", () => {
   it("renders the four cell glyphs", () => {
     const state = newState(FIX_PARAMS, FIX.desc);
-    const i = whiteCellSolved(F_VER);
-    state.grid[i] = F_VER;
+    // Place one of each line so all four glyphs are actually on the board. The
+    // test claimed four and rendered three: it set only a vertical, so `-` never
+    // appeared and nothing said so — an assertion per character cannot notice a
+    // character that is missing.
+    state.grid[whiteCellSolved(F_VER)] = F_VER;
+    state.grid[whiteCellSolved(F_HOR)] = F_HOR;
     const text = textFormat(state);
-    expect(text).toContain("#"); // a black cell
-    expect(text).toContain("|"); // the placed vertical
-    expect(text).toContain("."); // still-blank cells
+    // The WHOLE rendering, not `toContain("#")` / `toContain("|")` /
+    // `toContain(".")`. Those three were the only assertion of this board, and a
+    // one-character needle cannot tell its glyph from a superstring of it — the
+    // exact hole that let a bulk rewriter turn abcd's blank cell from "." into
+    // "./" with 28 tests green (`docs/test-strength.md` §7).
+    expect(text).toMatchInlineSnapshot(`
+      "| - . #
+      . . . .
+      . . . .
+      # . . .
+      "
+    `);
+    // Kept beside the snapshot so a careless `vitest -u` cannot erase the
+    // guarantee: exactly the four glyphs, nothing else but the separators.
+    expect(new Set(text.replace(/[\n ]/g, ""))).toEqual(new Set(["#", "|", "-", "."]));
     expect(text.split("\n").filter(Boolean).length).toBe(4);
   });
 });
