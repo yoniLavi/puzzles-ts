@@ -99,10 +99,18 @@ answerable.
       `manual/` directory. *62 pages = 57 games + 5 site pages; no `manual/`.*
 - [x] 4.2 Assert the built sitemap lists no `/help/manual/*` URL. *120 URLs,
       zero manual.*
-- [ ] 4.3 **Build on a clean checkout without `brew bundle install`.** That this
+- [x] 4.3 **Build on a clean checkout without `brew bundle install`.** That this
       now works is the point of the cascade and is not true today.
-- [ ] 4.4 Load `/help/<id>.html` for a game that had a manual chapter (cube) and
+      *Fresh `git clone` + `npm ci` + `npm run build` under `env -i` with a PATH
+      holding only node/npm/npx and `/usr/bin`: `halibut`, `brew`, `emcc` and
+      `cmake` all NOT-PRESENT. 62 help pages, no `manual/`, zero wasm.*
+- [x] 4.4 Load `/help/<id>.html` for a game that had a manual chapter (cube) and
       one that never did (ascent) — both render, neither shows a broken link.
+      *Chrome via `playwright-cli`: cube, ascent, group (links + list + emphasis)
+      and the new `separate` page all render; `/help/puzzles` shows 58 table rows
+      and **0** links matching `manual`; the in-app help drawer (game menu →
+      Help) renders the adopted page too. 0 console errors — the only warning is
+      Lit's standard dev-mode notice.*
 
 ## 5. Specs and close-out
 
