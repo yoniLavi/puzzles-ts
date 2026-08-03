@@ -50,6 +50,18 @@ build.
   caught). Slide's dark handling currently runs through `paletteSwaps` in
   `augmentation.ts`, which any new colour has to keep working.
 
+## Overlaps with `add-slide-keyboard-control`
+
+Both changes edit `src/games/slide/render.ts`, and both make colour decisions
+about the same board — this one moves the contrast ladder, that one adds a
+keyboard cursor and a selected-block mark that must read as distinct from the
+drag preview and its landing shadow.
+
+**Whichever lands second owns the reconcile.** Do not author two independent
+colour decisions for one board: if this change lands first, the keyboard marks
+are chosen against the new ladder; if it lands second, re-check that the cursor
+and selection are still legible after the ladder moves.
+
 ## Impact
 
 - Affected specs: `slide` (a presentation requirement).

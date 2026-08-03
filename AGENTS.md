@@ -204,6 +204,18 @@ authors' known-issue lists are reconciled, so:
    `refine-slide-appearance`.
 4. **Greenfield last**: Path, then Numgame.
 
+**Added 2026-08-03 (owner), not yet slotted into the order above**: two input
+changes, from the observation that `retire-the-upstream-help-tree` deleted a
+*true* sentence when it removed Slide's "keyboard control is not yet supported"
+status note. `add-slide-keyboard-control` closes that specific gap;
+`audit-input-mode-parity` establishes the collection-wide bar the owner stated —
+**maximum parity between mouse, touch and keyboard** — because nothing currently
+does. The precedent for why that is not paranoia: `fix-touch-input-stylus-modifier`
+found **nine of thirty-two** ported games completely deaf to touch, and found
+them via an owner bug report rather than a test. Note
+`add-slide-keyboard-control` and `refine-slide-appearance` both edit
+`slide/render.ts`; whichever lands second owns the reconcile.
+
 One consequence of that order, intended rather than accidental: **after
 `retire-c-engine` a divergence is one-way.** With no C build there is no
 answering "what would upstream have produced?" for a new question and no
