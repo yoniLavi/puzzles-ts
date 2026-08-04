@@ -25,6 +25,6 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dt>Width, Height</dt>
 	<dd>Size of the grid in squares.</dd>
 	<dt>Difficulty</dt>
-	<dd>Determine the difficulty of the generated puzzle. Higher difficulties require more complex reasoning.</dd>
+	<dd>Determine the difficulty of the generated puzzle. Choose Easy or Normal: a Normal puzzle always needs a deduction that the Easy techniques cannot make, so the setting you choose is the difficulty you get.</dd>
 </dl>
 

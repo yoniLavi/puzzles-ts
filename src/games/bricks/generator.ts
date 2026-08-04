@@ -30,6 +30,7 @@ import {
   F_SHADE,
   F_UNSHADE,
   gridSize,
+  MAX_GENERABLE_DIFF,
 } from "./state.ts";
 
 const MINIMUM_SHADED = 0.4;
@@ -119,10 +120,48 @@ function removeNumbers(
   }
 }
 
-export function newBricksDesc(p: BricksParams, rs: RandomState): { desc: string } {
+export interface BricksGenerateOptions {
+  /**
+   * Reproduce upstream's min-difficulty gate verbatim.
+   *
+   * Upstream rejects a candidate only when the *Easy* solver completes it,
+   * whatever tier was requested — so the gate is right for Normal (Easy is the
+   * tier below it) and vacuous for Tricky, which its own documentation conceded:
+   * "Selecting Tricky difficulty may generate a puzzle at Normal difficulty
+   * instead." Measurement says *may* is always: 999 of 999 boards generated at
+   * Tricky are solvable at Normal, as are all four frozen C Tricky fixtures.
+   * {@link newBricksDesc} therefore gates on the tier actually below the one
+   * requested, and Tricky is no longer offered at all — see `validateParams`.
+   *
+   * Because generation is solver-gated at every clue removal, that would change
+   * every Tricky description, costing the byte-match differential that validates
+   * the generator, the solver's exact deductive power and the codec together.
+   * This flag keeps that oracle: `bricks-differential.test.ts` sets it, so the
+   * Tricky fixtures still match the C byte-for-byte. Nothing else should ever
+   * set it — and with it unset, Tricky cannot be generated at all (below).
+   */
+  readonly upstreamLooseGate?: boolean;
+}
+
+export function newBricksDesc(
+  p: BricksParams,
+  rs: RandomState,
+  options: BricksGenerateOptions = {},
+): { desc: string } {
   const { w, h } = gridSize(p);
   const spaces = p.w * p.h; // playable-cell count
   const grid = new Uint16Array(w * h);
+  const loose = options.upstreamLooseGate ?? false;
+
+  // `validateParams` refuses this combination, so reaching it means a caller
+  // bypassed it. Fail immediately rather than let the gate below reject every
+  // candidate for ~100,000 attempts — a synchronous generator that cannot
+  // succeed owns its thread outright (see `engine/retry-limit.ts`).
+  if (!loose && p.diff > MAX_GENERABLE_DIFF) {
+    throw new Error(
+      `bricks: no board requires difficulty ${p.diff}; the generable maximum is ${MAX_GENERABLE_DIFF}`,
+    );
+  }
 
   const attempt = retryLimit("bricks: generation attempts", MAX_ATTEMPTS);
   for (;;) {
@@ -141,11 +180,15 @@ export function newBricksDesc(p: BricksParams, rs: RandomState): { desc: string 
 
     removeNumbers(grid, w, h, p.diff, rs);
 
-    // Enforce the minimum difficulty (upstream quirk — see solver.ts D3).
+    // The tier gate: a board the tier below already solves is not the
+    // difficulty the player asked for. Upstream always probes at `DIFF_EASY`
+    // here regardless of the tier requested; `p.diff - 1` is the divergence,
+    // and the two agree on every tier Bricks still offers.
+    const below = loose ? DIFF_EASY : p.diff - 1;
     if (
       p.diff > DIFF_EASY &&
       spaces > 6 &&
-      solveGame(grid, w, h, DIFF_EASY, true, true) === "complete"
+      solveGame(grid, w, h, below, true, true) === "complete"
     ) {
       continue;
     }

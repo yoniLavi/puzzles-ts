@@ -153,13 +153,31 @@ export function applyBounds(w: number, h: number, grid: Uint16Array): void {
 
 // --- params -----------------------------------------------------------------
 
+/**
+ * The hardest difficulty Bricks can actually generate.
+ *
+ * The tiers are lookahead depth: Easy assumes nothing, Normal assumes a cell
+ * and looks for an Easy-level contradiction, Tricky lets that sub-solve recurse
+ * in turn. **Depth 2 never pays.** Sampling 77 boards *chosen because Normal
+ * cannot solve them* — the only region where Tricky could distinguish itself —
+ * Tricky solved none, and 480 boards from a real stripping walk gave depth-1
+ * and depth-2 identical verdicts throughout; 999 of 999 boards generated at
+ * Tricky, and all four frozen C Tricky fixtures, fall to Normal. Bricks'
+ * constraints (no three in a row, gravity support, clue counts) are local
+ * enough that a contradiction either surfaces immediately or not at all, which
+ * is why more lookahead buys nothing.
+ *
+ * The rung stays in the *solver* — hints and Solve use `DIFF_TRICKY` as "try as
+ * hard as you can", where it costs nothing — but it is not a difficulty the
+ * generator can honour, so it is not offered.
+ */
+export const MAX_GENERABLE_DIFF = DIFF_NORMAL;
+
 const PRESETS: BricksParams[] = [
   { w: 7, h: 6, diff: DIFF_EASY },
   { w: 7, h: 6, diff: DIFF_NORMAL },
-  { w: 7, h: 6, diff: DIFF_TRICKY },
   { w: 10, h: 8, diff: DIFF_EASY },
   { w: 10, h: 8, diff: DIFF_NORMAL },
-  { w: 10, h: 8, diff: DIFF_TRICKY },
 ];
 
 const DIFF_NAMES = ["Easy", "Normal", "Tricky"];
@@ -212,10 +230,21 @@ export function decodeParams(s: string): BricksParams {
   return p;
 }
 
-export function validateParams(p: BricksParams, _full: boolean): string | null {
+export function validateParams(p: BricksParams, full: boolean): string | null {
   if (p.w < 2) return "Width must be at least 2";
   if (p.h < 2) return "Height must be at least 2";
   if (p.diff >= DIFFCOUNT) return "Unknown difficulty rating";
+  // Tricky has no boards. Its rung is lookahead depth 2, which never decides
+  // anything depth 1 has not already decided — see `MAX_GENERABLE_DIFF` in
+  // `generator.ts` for the measurement. Upstream shipped it anyway and admitted
+  // in its own documentation that Tricky "may generate a puzzle at Normal
+  // difficulty instead"; it always does, so offering it is a difficulty setting
+  // that silently gives you a different one (`grade-difficulty-tiers-honestly`).
+  // Refused only for generation: a saved game or a game ID carrying its own
+  // description still loads, because `full` is false there.
+  if (full && p.diff > MAX_GENERABLE_DIFF) {
+    return "Tricky has no puzzles distinct from Normal; use Easy or Normal";
+  }
   return null;
 }
 

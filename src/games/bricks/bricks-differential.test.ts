@@ -4,6 +4,14 @@
  * `puzzles/auxiliary/bricks-trace.c`, the TS `newBricksDesc` over the
  * bit-identical RNG must reproduce the C desc byte-for-byte.
  *
+ * **`upstreamLooseGate` is set here and nowhere else**, and it is what keeps the
+ * four Tricky fixtures meaningful. The shipped generator gates on the tier
+ * actually below the one requested, where upstream always probed at Easy (see
+ * `BricksGenerateOptions.upstreamLooseGate`); it also no longer *offers* Tricky,
+ * because no board requires it — every one of these four Tricky fixtures is
+ * solvable at Normal. The flag runs upstream's original gate so the fixtures
+ * still match the C byte-for-byte, which is the shape `spokes` established.
+ *
  * Because generation gates every clue removal on `solveGame`, one byte-match
  * validates the generator (the conditional fill draws, the removal shuffle),
  * the contradiction solver's exact deductive power, and the run-length codec
@@ -12,6 +20,7 @@
  * confirms a fresh solve of the decoded board reaches completion.
  */
 import { expect } from "vitest";
+import type { RandomState } from "../../engine/random/index.ts";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";
 import cReference from "./__fixtures__/bricks-c-reference.json" with { type: "json" };
 import { newBricksDesc } from "./generator.ts";
@@ -36,7 +45,8 @@ const isSlow = (f: Fixture) => f.w * f.h >= 96;
 const common = {
   label: (f: Fixture) => `${f.w}x${f.h}d${f.diff} seed=${f.seed}`,
   params: (f: Fixture): BricksParams => ({ w: f.w, h: f.h, diff: f.diff }),
-  newDesc: newBricksDesc,
+  newDesc: (p: BricksParams, rng: RandomState) =>
+    newBricksDesc(p, rng, { upstreamLooseGate: true }),
   extra: (f: Fixture, p: BricksParams) => {
     // Codec inverse: validate → decode → re-encode is the identity.
     expect(validateDesc(p, f.desc)).toBeNull();

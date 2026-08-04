@@ -248,6 +248,22 @@ describe("salad generator", () => {
     }
   }
 
+  // The tier gate (grade-difficulty-tiers-honestly). Upstream had none, so
+  // Extreme was mostly Normal: 12 of its 13 frozen Extreme fixtures, and
+  // 71 of 80 freshly generated boards, fell to the Normal solver.
+  for (const preset of PRESETS) {
+    const p = { ...preset, diff: DIFF_HARD };
+    it(`generates an Extreme ${presetLabel(p)} that Normal cannot solve`, () => {
+      const { desc } = newSaladDesc(
+        p,
+        randomNew(`salad-tier-${p.order}-${p.nums}-${p.mode}`),
+      );
+      const s = newState(p, desc);
+      expect(saladSolve(scratchBoard(s), DIFF_HARD)).toBe(true);
+      expect(saladSolve(scratchBoard(s), DIFF_EASY)).toBe(false);
+    });
+  }
+
   it("gives an ABC End View board below 8x8 no grid clues at all", () => {
     const p: SaladParams = {
       order: 6,

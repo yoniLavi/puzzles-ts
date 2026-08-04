@@ -40,6 +40,7 @@
 
 import { latinGenerate } from "../../engine/latin.ts";
 import type { RandomState } from "../../engine/random/index.ts";
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { mathraxSolve, SOLVE_UNIQUE } from "./solver.ts";
 import {
@@ -49,6 +50,7 @@ import {
   CLUE_MUL,
   CLUE_ODD,
   CLUE_SUB,
+  DIFF_EASY,
   diffToLevel,
   encodeDesc,
   type MathraxParams,
@@ -168,32 +170,82 @@ function stripMathClues(
   }
 }
 
-export function newMathraxDesc(p: MathraxParams, rs: RandomState): { desc: string } {
+export interface MathraxGenerateOptions {
+  /**
+   * Reproduce upstream's difficulty gate, which does not exist.
+   *
+   * Upstream strips givens and clues while the board still solves at the target
+   * tier and publishes whatever that leaves; it never asks whether an easier
+   * tier would also have done, so the tier need not bind. Measured over this
+   * game's own frozen C fixtures, 3 of the 23 boards above Easy fall to a lower
+   * tier (at order 3, a Tricky board that Easy solves outright). The player
+   * chose the tier, so {@link newMathraxDesc} rejects such a candidate and
+   * generates another.
+   *
+   * Because generation is solver-gated at every removal, that changes every
+   * description above Easy — which would cost the byte-match differential that
+   * validates `latinGenerate`'s draw order, the tiered solver, the clue cascade
+   * and the codec together. This flag keeps that oracle:
+   * `mathrax-differential.test.ts` sets it, so the fixtures still match the C
+   * byte-for-byte and the only lines the oracle no longer covers are the tier
+   * check below. Nothing else should ever set it.
+   *
+   * Note this is the *second* divergence in this generator; the first (unique
+   * rather than merely truthy removals, see the module header) already costs the
+   * oracle on `Recursive` alone. The two are independent and compose: with this
+   * flag set the loop always returns on its first pass, so the RNG is drawn in
+   * exactly upstream's order.
+   */
+  readonly upstreamLooseGate?: boolean;
+}
+
+export function newMathraxDesc(
+  p: MathraxParams,
+  rs: RandomState,
+  options: MathraxGenerateOptions = {},
+): { desc: string } {
   const o = p.o;
   const co = o - 1;
   // An empty option set means "all" — the same fallback `decodeParams` applies.
-  const options = p.options || OPTIONSMASK;
+  const clueOptions = p.options || OPTIONSMASK;
   const diff = diffToLevel(p.diff);
+  const loose = options.upstreamLooseGate ?? false;
 
-  const square = latinGenerate(o, rs);
-  const grid = new Uint8Array(o * o);
-  for (let i = 0; i < o * o; i++) grid[i] = square[i];
+  // Upstream generates exactly once; the tier gate below can reject, so the
+  // loop needs the house runaway guard (playbook §4.6).
+  const attempt = retryLimit(`mathrax: generation (o${o} d${diff})`);
+  for (;;) {
+    attempt();
 
-  const clues = new Int32Array(co * co);
-  for (let y = 0; y < co; y++) {
-    for (let x = 0; x < co; x++) {
-      clues[y * co + x] = mathraxCandidateClue(
-        grid[y * o + x], // top left
-        grid[(y + 1) * o + x + 1], // bottom right
-        grid[(y + 1) * o + x], // bottom left
-        grid[y * o + x + 1], // top right
-        options,
-      );
+    const square = latinGenerate(o, rs);
+    const grid = new Uint8Array(o * o);
+    for (let i = 0; i < o * o; i++) grid[i] = square[i];
+
+    const clues = new Int32Array(co * co);
+    for (let y = 0; y < co; y++) {
+      for (let x = 0; x < co; x++) {
+        clues[y * co + x] = mathraxCandidateClue(
+          grid[y * o + x], // top left
+          grid[(y + 1) * o + x + 1], // bottom right
+          grid[(y + 1) * o + x], // bottom left
+          grid[y * o + x + 1], // top right
+          clueOptions,
+        );
+      }
     }
+
+    stripGridClues(o, grid, clues, diff, rs);
+    stripMathClues(o, grid, clues, diff, rs);
+
+    // The tier gate (the divergence): a board the tier below already solves
+    // uniquely is not the difficulty the player asked for. `mathraxSolve` fills
+    // the grid it is given, so the probe runs on a copy.
+    if (!loose && diff > DIFF_EASY) {
+      if (mathraxSolve(o, Uint8Array.from(grid), clues, diff - 1) === SOLVE_UNIQUE) {
+        continue;
+      }
+    }
+
+    return { desc: encodeDesc(o, grid, clues) };
   }
-
-  stripGridClues(o, grid, clues, diff, rs);
-  stripMathClues(o, grid, clues, diff, rs);
-
-  return { desc: encodeDesc(o, grid, clues) };
 }
