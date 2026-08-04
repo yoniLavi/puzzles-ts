@@ -57,10 +57,28 @@
  * same standing as `npm run metrics` and `npm run mutation`, and for the same
  * reason: a number that invites maximising invites tests written against the
  * number rather than against the behaviour.
+ *
+ * ## Importing this file does not run it
+ *
+ * It used to. A run **edits files under `src/`** — that is how it works — so a
+ * bare `import()` of this module, to reach `ownTests` or `engineFiles` from a
+ * one-liner, started a fifteen-minute run that rewrote the engine underneath the
+ * importer. The entry-point guard at the foot of the file is what stops that;
+ * importing is now inert, and the helpers are exported so reaching for one is
+ * the obvious thing rather than the dangerous one.
+ *
+ * If a run is killed anyway (`SIGTERM`, or a `SIGINT` mid-`spawnSync`, which the
+ * handler cannot service because `main` is synchronous throughout), it leaves
+ * **exactly one** module holding **exactly one** planted defect. The commit gate
+ * catches that rather than shipping it, though it says so obliquely: the
+ * mutation consumed that case's anchor, so `--verify` reports the anchor as
+ * missing and asks you to re-anchor it. If you see that after killing a run,
+ * `git diff src/engine` names the file and `git checkout` is the whole fix.
  */
 import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { MODULES } from "./feedback-probe-cases.mjs";
 
 /** A mutated solver can loop for ever; a timeout counts as caught, as Stryker
@@ -90,7 +108,7 @@ const TEST_FILE_FLOOR = 50;
  * would quietly shrink. See `checkTestFileFloor` for why that is the dangerous
  * direction.
  */
-function engineFiles(dir = ENGINE, out = []) {
+export function engineFiles(dir = ENGINE, out = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
     a.name < b.name ? -1 : 1,
   )) {
@@ -160,7 +178,7 @@ function checkTestFileFloor(files) {
  * survives the local tests but is caught by a differential is exactly the split
  * the requirement says must be *stated in the test file and verified*.
  */
-function ownTests(modulePath, files = engineFiles()) {
+export function ownTests(modulePath, files = engineFiles()) {
   const wanted = resolve(modulePath);
   // A barrel counts as the module. `grid/index.ts` re-exports `grid-core.ts`
   // and says in its own doc comment "import from this module, not from the
@@ -347,13 +365,25 @@ function main() {
   }
 }
 
-// A failing anchor is an ordinary, expected outcome — a refactor moved a probed
-// line — and this check runs in the commit gate, so it reports like a gate
-// failure rather than like a crash. A node stack trace here would bury the one
-// line the developer needs (which case, and what to do about it).
-try {
-  main();
-} catch (e) {
-  console.error(`\n✗ feedback-probe: ${e instanceof Error ? e.message : e}`);
-  process.exit(1);
+// Run only when invoked as a command, never on import — a run rewrites files
+// under `src/`, so importing this module for one of its helpers used to start
+// one. `import.meta.main` needs Node 24.2; `.nvmrc` pins 24, and the fallback
+// keeps an older runtime from silently taking the *other* branch, which would
+// restore the footgun rather than report it.
+const isEntryPoint =
+  import.meta.main ??
+  (process.argv[1] !== undefined &&
+    import.meta.url === pathToFileURL(process.argv[1]).href);
+
+if (isEntryPoint) {
+  // A failing anchor is an ordinary, expected outcome — a refactor moved a
+  // probed line — and this check runs in the commit gate, so it reports like a
+  // gate failure rather than like a crash. A node stack trace here would bury
+  // the one line the developer needs (which case, and what to do about it).
+  try {
+    main();
+  } catch (e) {
+    console.error(`\n✗ feedback-probe: ${e instanceof Error ? e.message : e}`);
+    process.exit(1);
+  }
 }
