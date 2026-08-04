@@ -32,13 +32,19 @@ import {
   type ClustersMove,
   type ClustersState,
   COLMASK,
+  DIFF_TRICKY,
   F_COLOR_0,
   F_COLOR_1,
   F_SINGLE,
   newState,
 } from "./state.ts";
 
-const P = { w: 7, h: 7 };
+const P = { w: 7, h: 7, diff: DIFF_TRICKY };
+/** The **full** params string, difficulty included. A hand-written id must
+ * carry the tier: `encodeParams(p, false)` omits it, so "7x7" decodes as Easy
+ * and a scenario built from it would generate a different board from the one
+ * a fixed-seed scan over `P` just found. */
+const ID = clustersGame.encodeParams(P, true);
 
 function generate(seed: string): ClustersState {
   const { desc } = clustersGame.newDesc(P, randomNew(seed));
@@ -298,7 +304,7 @@ describe("hintKeepTrack", () => {
 describe("hint through the midend", () => {
   it("shows a step, advances on the followed move, and walks to solved", () => {
     const midend = new Midend(clustersGame);
-    expect(midend.newGameFromId("7x7#mid-walk")).toBeUndefined();
+    expect(midend.newGameFromId(`${ID}#mid-walk`)).toBeUndefined();
     let refusal: string | undefined;
     for (let guard = 0; guard < 100 && !refusal; guard++) {
       refusal = midend.hint();
@@ -317,7 +323,7 @@ describe("hint rendering (tier 2.5)", () => {
   it("a direct hint frame paints the COL_HINT target", () => {
     const result = renderScenario({
       game: clustersGame,
-      id: "7x7#render-hint",
+      id: `${ID}#render-hint`,
       showHint: true,
     });
     expect(result.hint).toBeDefined();
@@ -331,7 +337,7 @@ describe("hint rendering (tier 2.5)", () => {
     // the displayed hint to it (§8's idiom).
     let result: ReturnType<typeof renderScenario> | null = null;
     for (let i = 0; i < 40 && !result; i++) {
-      const id = `7x7#chain-frame-${i}`;
+      const id = `${ID}#chain-frame-${i}`;
       const state = generate(`chain-frame-${i}`);
       const plan = deduceHintPlan(state.grid, P.w, P.h);
       if (!plan.deductions.some((d) => d.reason.kind === "chain")) continue;

@@ -15,6 +15,27 @@ import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
+// --- difficulty -------------------------------------------------------------
+
+/** Solvable by the single-cell proof by contradiction alone. */
+export const DIFF_EASY = 0;
+/** Needs the one-level hypothetical: assume a colour, follow the forced
+ * consequences, and find the contradiction there. */
+export const DIFF_TRICKY = 1;
+export const DIFFCOUNT = 2;
+
+/** Both tiers were already implemented — as `solverTry` and `solverRecurse` —
+ * and neither was offered: the generator gated every board on the deeper rung.
+ * The names follow the collection's two-tier convention (magnets, pearl,
+ * singles and tents all name exactly this pair Easy/Tricky, and in each the
+ * harder tier is likewise "one hypothetical deep"), not upstream's, which has
+ * none here. */
+export const DIFF_NAMES = ["Easy", "Tricky"] as const;
+
+/** Difficulty encode chars for the `d<char>` param suffix, index = tier — the
+ * same `"et"` the other two-tier games use. */
+const DIFF_CHARS = "et";
+
 // --- cell flag bits (upstream) ---------------------------------------------
 
 export const F_COLOR_0 = 0x01; // red
@@ -36,6 +57,8 @@ export type ClustersFill = 0 | typeof F_COLOR_0 | typeof F_COLOR_1;
 export interface ClustersParams {
   w: number;
   h: number;
+  /** {@link DIFF_EASY} or {@link DIFF_TRICKY}. */
+  diff: number;
 }
 
 export interface ClustersState {
@@ -75,10 +98,14 @@ export interface ClustersUi {
 // --- params ----------------------------------------------------------------
 
 const PRESETS: ClustersParams[] = [
-  { w: 7, h: 7 },
-  { w: 8, h: 8 },
-  { w: 9, h: 9 },
-  { w: 10, h: 10 },
+  { w: 7, h: 7, diff: DIFF_EASY },
+  { w: 7, h: 7, diff: DIFF_TRICKY },
+  { w: 8, h: 8, diff: DIFF_EASY },
+  { w: 8, h: 8, diff: DIFF_TRICKY },
+  { w: 9, h: 9, diff: DIFF_EASY },
+  { w: 9, h: 9, diff: DIFF_TRICKY },
+  { w: 10, h: 10, diff: DIFF_EASY },
+  { w: 10, h: 10, diff: DIFF_TRICKY },
 ];
 
 export function defaultParams(): ClustersParams {
@@ -88,25 +115,78 @@ export function defaultParams(): ClustersParams {
 export function presets(): PresetMenu<ClustersParams> {
   return {
     title: "Clusters",
-    submenu: PRESETS.map((p) => ({ title: `${p.w}x${p.h}`, params: { ...p } })),
+    submenu: PRESETS.map((p) => ({
+      title: `${p.w}x${p.h} ${DIFF_NAMES[p.diff]}`,
+      params: { ...p },
+    })),
   };
 }
 
-export function encodeParams(p: ClustersParams, _full: boolean): string {
-  return `${p.w}x${p.h}`;
+export function encodeParams(p: ClustersParams, full: boolean): string {
+  return full ? `${p.w}x${p.h}d${DIFF_CHARS[p.diff] ?? "?"}` : `${p.w}x${p.h}`;
 }
 
 export function decodeParams(s: string): ClustersParams {
   // Lenient, matching upstream `decode_params`: a leading integer is the
-  // width (and default height); an `x<int>` overrides the height.
-  const { w, h } = parseDimensions(s);
-  return { w, h };
+  // width (and default height); an `x<int>` overrides the height; an optional
+  // `d<char>` selects the tier. A game ID from before the tiers existed has no
+  // `d`, so it lands on the default — see `defaultParams`.
+  const { w, h, next } = parseDimensions(s);
+  const p: ClustersParams = { w, h, diff: DIFF_EASY };
+  if (s[next] === "d" && next + 1 < s.length) {
+    // An unrecognised char leaves the tier out of range so `validateParams`
+    // rejects it, rather than silently playing some other difficulty.
+    const idx = DIFF_CHARS.indexOf(s[next + 1]);
+    p.diff = idx === -1 ? DIFFCOUNT : idx;
+  }
+  return p;
 }
 
-export function validateParams(p: ClustersParams, _full: boolean): string | null {
+/**
+ * The smallest board on which a Tricky puzzle exists: **twelve squares, and at
+ * least two wide**.
+ *
+ * Tricky demands a board the single-cell rule cannot finish, and a small grid has
+ * nowhere to hide a deduction that deep. Measured by running the real gate over
+ * every shape from 1×2 to 6×9, ten seeds each, with each seed free to spend the
+ * generator's whole 10,000-attempt budget: **every** shape of twelve squares or
+ * more bound the tier on all ten seeds, and **no** shape below it bound on any —
+ * 2×5 and 3×3 never, 2×6 and 3×4 always.
+ *
+ * Area alone is not the rule, which is why both halves are stated. A 1×N strip
+ * never binds *at any length* — 1×20 failed all five seeds — because a cell in a
+ * one-wide board has at most two neighbours, so the single-cell rule decides it
+ * immediately or not at all, and there is no chain for the lookahead to follow.
+ *
+ * Refusing is the collection's rule for a tier with no boards
+ * (`grade-difficulty-tiers-honestly`): silently handing back an Easy board is the
+ * same defect as a tier that does not bind, and an honest gate with nothing to
+ * find would spin until its retry budget ran out.
+ */
+const MIN_TRICKY_AREA = 12;
+
+export function validateParams(p: ClustersParams, full: boolean): string | null {
   // Upstream order: too-large before too-small.
   if (p.w * p.h >= 10000) return "Puzzle is too large";
   if (p.w * p.h < 2) return "Puzzle is too small";
+  // 1x2 and 2x2 pass upstream's area check and have no puzzle whatever the
+  // difficulty: every colouring of them either leaves a cell touching none of
+  // its own colour (which the generator flips away) or reduces to clues that
+  // prune to nothing. Measured — those two shapes, alone among every shape up to
+  // 4x7, never produced a board in 10,000 attempts; `max(w,h) >= 3` is exactly
+  // their complement. Before the retry bound existed this hung the worker for
+  // ever rather than reporting anything.
+  if (Math.max(p.w, p.h) < 3) return "Width or height must be at least three";
+  if (p.diff >= DIFFCOUNT) return "Unknown difficulty rating";
+  // Generation only: a saved game or a game ID carrying its own description
+  // still loads at any size, because `full` is false there.
+  if (
+    full &&
+    p.diff > DIFF_EASY &&
+    (Math.min(p.w, p.h) < 2 || p.w * p.h < MIN_TRICKY_AREA)
+  ) {
+    return "Tricky needs a board of at least 12 squares, at least two wide";
+  }
   return null;
 }
 

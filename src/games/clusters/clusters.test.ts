@@ -34,6 +34,8 @@ import {
   type ClustersUi,
   COLMASK,
   cloneState,
+  DIFF_EASY,
+  DIFF_TRICKY,
   decodeParams,
   encodeDesc,
   encodeParams,
@@ -96,15 +98,124 @@ function click(
 
 describe("params", () => {
   it("round-trips presets and the bare-width form", () => {
-    expect(encodeParams({ w: 9, h: 7 }, true)).toBe("9x7");
-    expect(decodeParams("9x7")).toEqual({ w: 9, h: 7 });
-    expect(decodeParams("8")).toEqual({ w: 8, h: 8 });
+    expect(encodeParams({ w: 9, h: 7, diff: DIFF_TRICKY }, true)).toBe("9x7dt");
+    expect(encodeParams({ w: 9, h: 7, diff: DIFF_EASY }, true)).toBe("9x7de");
+    // The non-full form is the size alone (the preset-menu label's params).
+    expect(encodeParams({ w: 9, h: 7, diff: DIFF_TRICKY }, false)).toBe("9x7");
+    expect(decodeParams("9x7dt")).toEqual({ w: 9, h: 7, diff: DIFF_TRICKY });
+    expect(decodeParams("8de")).toEqual({ w: 8, h: 8, diff: DIFF_EASY });
+  });
+
+  it("reads a pre-tier game ID as Easy, and rejects an unknown tier letter", () => {
+    // Every ID shared before the difficulty existed carries no `d` at all.
+    expect(decodeParams("9x7")).toEqual({ w: 9, h: 7, diff: DIFF_EASY });
+    expect(decodeParams("8")).toEqual({ w: 8, h: 8, diff: DIFF_EASY });
+    // An unrecognised letter must not silently play some other difficulty.
+    expect(validateParams(decodeParams("9x7dq"), true)).toBe(
+      "Unknown difficulty rating",
+    );
   });
 
   it("rejects too-large then too-small (upstream order)", () => {
-    expect(validateParams({ w: 100, h: 100 }, true)).toBe("Puzzle is too large");
-    expect(validateParams({ w: 1, h: 1 }, true)).toBe("Puzzle is too small");
-    expect(validateParams({ w: 7, h: 7 }, true)).toBeNull();
+    const easy = (w: number, h: number) => ({ w, h, diff: DIFF_EASY });
+    expect(validateParams(easy(100, 100), true)).toBe("Puzzle is too large");
+    expect(validateParams(easy(1, 1), true)).toBe("Puzzle is too small");
+    expect(validateParams(easy(7, 7), true)).toBeNull();
+  });
+
+  it("rejects the two shapes that have no puzzle at any difficulty", () => {
+    // 1x2 and 2x2 pass upstream's area check and generate nothing — which used
+    // to hang the generator outright, there being no retry bound.
+    const easy = (w: number, h: number) => ({ w, h, diff: DIFF_EASY });
+    const tooThin = "Width or height must be at least three";
+    expect(validateParams(easy(1, 2), true)).toBe(tooThin);
+    expect(validateParams(easy(2, 1), true)).toBe(tooThin);
+    expect(validateParams(easy(2, 2), true)).toBe(tooThin);
+    // Their immediate neighbours do have puzzles and must stay playable.
+    expect(validateParams(easy(1, 3), true)).toBeNull();
+    expect(validateParams(easy(2, 3), true)).toBeNull();
+  });
+
+  it("refuses Tricky below the size where it binds — for generation only", () => {
+    const refusal = "Tricky needs a board of at least 12 squares, at least two wide";
+    const tricky = (w: number, h: number) => ({ w, h, diff: DIFF_TRICKY });
+    expect(validateParams(tricky(2, 5), true)).toBe(refusal); // 10 squares
+    expect(validateParams(tricky(3, 3), true)).toBe(refusal); // 9 squares
+    // A one-wide strip never binds however long it is: a cell there has at most
+    // two neighbours, so there is no chain for the lookahead to follow.
+    expect(validateParams(tricky(1, 20), true)).toBe(refusal);
+    // A saved game or a game ID carrying its own description still loads.
+    expect(validateParams(tricky(3, 3), false)).toBeNull();
+    // The measured boundary, in both of its shapes.
+    expect(validateParams(tricky(2, 6), true)).toBeNull();
+    expect(validateParams(tricky(3, 4), true)).toBeNull();
+    // …and a refused size is fine at Easy.
+    expect(validateParams({ w: 3, h: 3, diff: DIFF_EASY }, true)).toBeNull();
+  });
+});
+
+describe("difficulty tiers", () => {
+  // Both rungs already existed in the solver; before this the generator gated
+  // every board on the deeper one, so neither tier was offered. The property
+  // that makes a tier mean something is *exactly* these two assertions.
+  const SIZES = [
+    [7, 7],
+    [9, 9],
+  ] as const;
+
+  it("an Easy board is finished by the single-cell rule alone", () => {
+    for (const [w, h] of SIZES) {
+      const p = { w, h, diff: DIFF_EASY };
+      const { desc } = newClustersDesc(p, randomNew(`clusters-easy-${w}`));
+      expect(solveGame(newState(p, desc).grid, w, h, 0)).toBe(COMPLETE);
+    }
+  });
+
+  it("a Tricky board needs the lookahead: unsolvable at level 0, solved at 1", () => {
+    for (const [w, h] of SIZES) {
+      const p = { w, h, diff: DIFF_TRICKY };
+      const { desc } = newClustersDesc(p, randomNew(`clusters-tricky-${w}`));
+      expect(solveGame(newState(p, desc).grid, w, h, 0)).not.toBe(COMPLETE);
+      expect(solveGame(newState(p, desc).grid, w, h, 1)).toBe(COMPLETE);
+    }
+  });
+
+  it("every preset generates a board at exactly the tier it names", () => {
+    const menu = clustersGame.presets().submenu ?? [];
+    expect(menu.length).toBe(8);
+    for (const entry of menu) {
+      const p = entry.params;
+      if (!p) throw new Error("preset menu entry without params");
+      expect(validateParams(p, true)).toBeNull();
+      expect(entry.title).toContain(p.diff === DIFF_EASY ? "Easy" : "Tricky");
+    }
+  });
+
+  it("the loose gate is the unbinding one the tiers replaced", () => {
+    // What the flag preserves is the *defect*: one gate at the deeper rung,
+    // accepting whatever it completes. So over the same seeds it must (a) ignore
+    // the tier entirely — which is what keeps the frozen fixtures byte-matching
+    // — and (b) hand out boards that need no lookahead, which the honest Tricky
+    // gate never does. Fixed seeds, so neither count can drift.
+    const p = { w: 7, h: 7, diff: DIFF_TRICKY };
+    const seeds = Array.from({ length: 10 }, (_, i) => `clusters-loose-${i}`);
+    const solvesEasily = (desc: string) =>
+      solveGame(newState(p, desc).grid, p.w, p.h, 0) === COMPLETE;
+
+    const loose = seeds.map(
+      (s) => newClustersDesc(p, randomNew(s), { upstreamLooseGate: true }).desc,
+    );
+    const looseAsEasy = seeds.map(
+      (s) =>
+        newClustersDesc({ ...p, diff: DIFF_EASY }, randomNew(s), {
+          upstreamLooseGate: true,
+        }).desc,
+    );
+    expect(looseAsEasy).toEqual(loose);
+
+    const honest = seeds.map((s) => newClustersDesc(p, randomNew(s)).desc);
+    expect(loose.filter(solvesEasily).length).toBeGreaterThan(0);
+    expect(honest.filter(solvesEasily)).toEqual([]);
   });
 });
 
@@ -115,7 +226,7 @@ describe("desc codec", () => {
     grid[0] = F_COLOR_0 | F_SINGLE;
     grid[4] = F_COLOR_1 | F_SINGLE;
     const desc = encodeDesc(grid, 3, 3);
-    const p = { w: 3, h: 3 };
+    const p = { w: 3, h: 3, diff: DIFF_EASY };
     expect(validateDesc(p, desc)).toBeNull();
     const st = newState(p, desc);
     expect(Array.from(st.grid)).toEqual(Array.from(grid));
@@ -130,12 +241,12 @@ describe("desc codec", () => {
     // 30 blanks → 'z'(skip 25) + 'f'('a'+5) for the dot; then 5 trailing
     // blanks → 'f' terminator.
     expect(desc).toBe("zff");
-    const st = newState({ w: 6, h: 6 }, desc);
+    const st = newState({ w: 6, h: 6, diff: DIFF_EASY }, desc);
     expect(st.grid[30]).toBe(F_COLOR_0 | F_SINGLE);
   });
 
   it("rejects too-short / too-long / invalid descs", () => {
-    const p = { w: 3, h: 3 }; // s = 9, positions must sum to 10
+    const p = { w: 3, h: 3, diff: DIFF_EASY }; // s = 9, positions must sum to 10
     expect(validateDesc(p, "j")).toBeNull(); // 'j' = skip 10 = s+1
     expect(validateDesc(p, "i")).toBe("Description too short"); // skip 9
     expect(validateDesc(p, "k")).toBe("Description too long"); // skip 11
@@ -169,8 +280,11 @@ describe("solver classification", () => {
       [9, 9],
       [10, 10],
     ] as const) {
-      const { desc } = newClustersDesc({ w, h }, randomNew(`clusters-solve-${w}`));
-      const grid = newState({ w, h }, desc).grid.slice();
+      const { desc } = newClustersDesc(
+        { w, h, diff: DIFF_TRICKY },
+        randomNew(`clusters-solve-${w}`),
+      );
+      const grid = newState({ w, h, diff: DIFF_TRICKY }, desc).grid.slice();
       expect(solveGame(grid, w, h, 1)).toBe(COMPLETE);
     }
   });
@@ -349,7 +463,9 @@ describe("text format", () => {
 
 describe("render (tier 2.5)", () => {
   it("draws the opening frame with dots and grid, stable snapshot", () => {
-    const result = renderScenario({ game: clustersGame, id: "7x7#clusters-render" });
+    // The tier is spelled out: a bare "7x7" would pin this snapshot to whatever
+    // the default difficulty happens to be, and the board is what is snapshotted.
+    const result = renderScenario({ game: clustersGame, id: "7x7de#clusters-render" });
     const { ops } = result.recording;
     // Some tile rects were drawn.
     expect(ops.some((o) => o.op === "rect")).toBe(true);

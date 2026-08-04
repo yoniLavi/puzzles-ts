@@ -51,6 +51,22 @@ effect of the released oracle, not an accident of the sequencing.
   the new Easy tier is covered by the property that its boards are uniquely
   solvable at level 0. Whether the *Tricky* fixtures survive depends on the
   and-not-at-0 rejection changing the RNG stream — measure, do not assume.
+  **Resolved:** they survive in full, by the `spokes` `upstreamLooseGate` shape —
+  no fixture re-founded, nothing re-recorded (design D7).
+
+Two things the proposal did not anticipate, both found by implementing it
+(details in `design.md`):
+
+- **A rejected Tricky candidate cannot simply be refused.** The retry loop keeps
+  the cells the solver proved and re-randomises only the blanks — so it is a
+  hill-climb, not independent sampling. A *completed* candidate has no blanks, so
+  refusing one would re-derive it unchanged, draw no randomness, and spin for
+  ever. It is perturbed by one cell instead, which both breaks the fixed point and
+  keeps the climb: measured 4–8× cheaper than restarting (D4).
+- **The generation loop had no retry bound at all** — `MAX_ATTEMPTS` was only the
+  `force` cadence. One acceptance test that always leaves progress behind cannot
+  reject for ever; two can. It now takes a `retryLimit` like the collection's
+  other generators (D5).
 
 Explicitly **not** in this change: inventing a third, deeper tier (level 2
 recursion). Two levels exist; ship those honestly first and see whether the game
