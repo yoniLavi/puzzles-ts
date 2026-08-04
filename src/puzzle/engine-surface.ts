@@ -85,8 +85,13 @@ export interface PuzzleEngineSurface {
   getPreferencesConfig(): ConfigDescription;
   getPreferences(): ConfigValues;
   setPreferences(values: ConfigValues): string | undefined;
-  savePreferences(): Uint8Array;
-  loadPreferences(data: Uint8Array): string | undefined;
+  // There was a `savePreferences(): Uint8Array` / `loadPreferences(data)` pair
+  // here, mirroring upstream's `midend_serialise_prefs`. It went with
+  // `retire-the-incentre-c-fixture`: the app persists `ConfigValues` per puzzle
+  // through get/setPreferences, so the binary form had no caller, and the TS
+  // adapter answered it with an empty buffer — a public method that silently
+  // returned nothing rather than refusing. If a preferences import/export
+  // feature ever wants a wire format, it should choose one, not inherit the C's.
 
   redraw(): void;
   getColourPalette(defaultBackground: Colour): Colour[];

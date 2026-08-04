@@ -1,8 +1,29 @@
 # retire-the-incentre-c-fixture
 
-**Scaffolded, not implemented.** Scoped from a survey run at the owner's request
+**Implemented 2026-08-04.** Scoped from a survey run at the owner's request
 after `probe-shared-hint-machinery`, which noticed that `grid-incentre.test.ts`
 reads a frozen C capture while not being named a differential.
+
+**What implementation changed about this proposal, in one place:**
+
+- The cost estimate below (~8.3 M points, "seconds not milliseconds") was
+  **~3.5× too high** — it extrapolated from a test *file's* runtime rather than
+  from lattice work. The real figure is 1,271 ms for every face of all eighteen
+  tilings, so none of `design.md` D2's four mitigations was needed and the sweep
+  runs at full resolution.
+- The yardstick found a defect **on its first run**: the stored point used
+  upstream's `(int)(v + 0.5)`, which is round-to-nearest only for a *positive*
+  coordinate, and grid coordinates are negative over most of a board. Worst
+  shortfall 1.229 units → 0.053 once rounded properly (D5). Owner-approved to
+  land here rather than as a follow-up.
+- The `grid` capability spec **still mandated the peer bar** the change deletes
+  ("within a small tolerance of upstream's"). The scaffold's impact list missed
+  it; it is a MODIFIED delta now.
+- Verifying that the replacement is stronger (task 1.3) found a *second* test
+  passing for the wrong reason — the one named "considers the candidate points
+  held in place by three vertices" does not exercise that arm at all (D6).
+- The owner also asked for a general C-remnant sweep. Its one live find is the
+  dead `savePreferences`/`loadPreferences` chain, deleted here (D7).
 
 ## Why
 
@@ -73,12 +94,20 @@ sentence?") and it does not need redrawing.
 
 ## Impact
 
-- Affected specs: `repo-layout` — one added requirement distinguishing a fixture
-  that records the underivable from one standing in for a yardstick.
-- Affected code: `src/engine/grid/grid-incentre.test.ts`,
+- Affected specs: `repo-layout` (added — the rule distinguishing a fixture that
+  records the underivable from one standing in for a yardstick), `grid`
+  (**modified** — its scenario mandated the peer bar being deleted, and it now
+  fixes the rounding), `ts-engine` (**modified** — the permission for a no-op
+  `savePreferences`/`loadPreferences` is withdrawn).
+- Affected code: `src/engine/grid/grid-incentre.test.ts` (rewritten),
   `src/engine/grid/__fixtures__/grid-incentre-c-reference.json` (deleted),
-  possibly a shared helper if the yardstick is worth hoisting out of
-  `grid-geometry.test.ts`.
-- Risk: the full-resolution sweep is ~8.3 M lattice points across the 1,864
-  faces (measured), which is seconds, not milliseconds. The change must pick a
-  cheaper strategy or gate it; see `design.md` D2.
+  `src/engine/testing/polygon-yardstick.ts` (new — the hoisted yardstick),
+  `src/engine/grid/grid-geometry.{ts,test.ts}` (the rounding fix, its
+  negative-coordinate test, and the renamed enumeration test),
+  `scripts/feedback-probe-cases.mjs` (re-anchored case),
+  `src/puzzle/{engine-surface,worker-adapter,puzzle}.ts` (dead prefs chain),
+  `docs/test-strength.md` (new §4a), `AGENTS.md` (two stale lines).
+- Risk, as scoped: the full-resolution sweep is ~8.3 M lattice points, "seconds
+  not milliseconds". **Wrong** — measured at 1,271 ms for all eighteen tilings,
+  so it runs at full resolution and ungated. Gate cost +2.3 s, under 4% of the
+  suite.

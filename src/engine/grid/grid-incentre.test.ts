@@ -1,65 +1,72 @@
 /**
- * Behavioural check for `gridFindIncentre` — the largest-inscribed-circle
- * centre used to place Loopy's clue digits.
+ * `gridFindIncentre` — the largest-inscribed-circle centre used to place
+ * Loopy's clue digits — swept over **every face of every tiling** and measured
+ * against the best circle the integer lattice actually admits.
  *
- * **Deliberately not a byte-match differential.** The C is ~460 lines of float
- * geometry with exact comparisons at its branch points (`det == 0`,
- * `disc >= 0`, `fabs(eq[0]) < fabs(eq[1])`), so the *last* ULP of a candidate
- * point is not reproducible across compilers, let alone across C and JS — and
- * it does not need to be. The incentre never reaches a grid description, a
- * generator or a solver; it only decides where a digit is drawn, and this
- * project's byte-parity scope is generator/solver/codec, not display (see
- * `extend-grid-tilings` design D3). So we assert the two properties that
- * actually matter:
+ * ## The yardstick is the truth, not a peer
  *
- *   1. the point is strictly inside its face, and
- *   2. the circle it admits is as large as the C's, to within a tolerance.
+ * This file used to compare against `__fixtures__/grid-incentre-c-reference.json`,
+ * a frozen capture of where the C put each digit, asserting only
+ * `|r_TS − r_C| ≤ 1`. That bar is green whenever the two implementations agree
+ * — *including when they are both wrong* — and it was not tightenable, because
+ * its tolerance existed to absorb the peer's error rather than this code's.
+ * `bestByBruteForce` replaces it with the quantity the routine exists to
+ * maximise, computed from the vertex ring alone (`engine/testing/polygon-yardstick.ts`),
+ * so it cannot share a bug with the thing it measures.
  *
- * The C side comes from `__fixtures__/grid-incentre-c-reference.json`, frozen,
- * captured by `puzzles/auxiliary/grid-trace --incentres` before
- * `retire-c-engine` deleted the C and the build that ran it. It is a separate
- * fixture from the incidence differential's `grid-c-reference.json`, which
- * stays a byte-match check and must not be perturbed by this one.
+ * That swap immediately found something the C comparison structurally could
+ * not: the stored point was rounded with the C's `(int)(v + 0.5)`, which is not
+ * round-to-nearest on the negative coordinates a grid mostly has. The C is off
+ * the same way, so every face passed. See `grid-geometry.ts`'s rounding comment.
  *
- * The point-in-polygon and distance-to-boundary routines below are written
- * **independently of the implementation's own**, so a bug shared between them
- * cannot make this test vacuously pass.
+ * ## What the numbers below mean
+ *
+ * `bestByBruteForce` sweeps the same integer lattice the answer is quantised
+ * onto, so it is by construction an upper bound on what any stored incentre can
+ * admit, and the shortfall measures the **search** with no rounding term in it.
+ * Two complementary bounds are asserted per face, because they fail differently:
+ * an absolute one catches a point nudged off the optimum (the rounding defect
+ * above trips it at 1.229), a relative one catches a search that settled
+ * somewhere else entirely — measuring an edge's *infinite line* rather than the
+ * edge understates the room beside a reflex corner and scores 0.64.
+ *
+ * The cases are enumerated from `ALL_GRID_TYPES`, not from a fixture list, so a
+ * newly added tiling joins the sweep by existing rather than by someone
+ * remembering. That is also why the four aperiodic tilings are covered here for
+ * the first time: their descs come from `gridNewDesc` under a fixed seed, which
+ * needs no capture at all — and hats and spectres are the most non-convex faces
+ * the collection has, which is precisely where this routine is hard.
  */
 
 import { describe, expect, it } from "vitest";
-import reference from "./__fixtures__/grid-incentre-c-reference.json" with {
-  type: "json",
-};
+import { randomNew } from "../random/index.ts";
+import {
+  bestByBruteForce,
+  inscribedRadius,
+  insidePolygon,
+  type Ring,
+} from "../testing/polygon-yardstick.ts";
 import { gridFindIncentre } from "./grid-geometry.ts";
 import {
+  ALL_GRID_TYPES,
+  APERIODIC_GRID_TYPES,
   type Grid,
   GridDot,
   GridFace,
   type GridType,
   gridNew,
+  gridNewDesc,
   makeConsistent,
 } from "./index.ts";
-
-/** One `(type, w, h, desc)` grid's per-face incentres, dumped from the C. */
-interface IncentreFixture {
-  type: string;
-  width: number;
-  height: number;
-  desc: string | null;
-  /** `[ix, iy]` per face, in face-index order. */
-  incentres: [number, number][];
-}
-
-const fixtures = reference as unknown as IncentreFixture[];
 
 /**
  * A face's corners as a plain polygon, in its clockwise ring order. Everything
  * below works off this rather than off `GridEdge`, which is the point: the
- * implementation vets candidates using `face.edges` (whose per-edge
- * orientation is arbitrary), so checking against `face.dots` here is a genuinely
- * separate derivation of the same shape.
+ * implementation vets candidates using `face.edges` (whose per-edge orientation
+ * is arbitrary), so checking against `face.dots` here is a genuinely separate
+ * derivation of the same shape.
  */
-function polygon(f: GridFace): [number, number][] {
+function polygon(f: GridFace): Ring {
   return f.dots.map((d) => {
     if (d === null) throw new Error("face with a null dot");
     return [d.x, d.y] as [number, number];
@@ -67,151 +74,183 @@ function polygon(f: GridFace): [number, number][] {
 }
 
 /**
- * Standard even-odd ray cast: count the polygon sides crossing the ray heading
- * in +x from the point. Written from the polygon's vertex ring, with the
- * conventional half-open y-interval so a vertex on the ray is counted once.
+ * Every tiling, at three sizes each — the shapes a tiling produces vary with
+ * how the pattern meets the board edge, so one size per tiling would miss the
+ * partial faces at the fringe.
+ *
+ * The sizes for the fourteen periodic tilings are the ones the retired C
+ * capture used, kept so this sweep covers at least what it covered. The
+ * aperiodic four are new here; Penrose runs at 4x4 because kite/dart at width 3
+ * has no generable patch at any height (`add-loopy-ts-port` D1).
  */
-function insidePolygon(poly: [number, number][], x: number, y: number): boolean {
-  let inside = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i];
-    const [xj, yj] = poly[j];
-    if (yi > y !== yj > y) {
-      const crossX = xi + ((y - yi) / (yj - yi)) * (xj - xi);
-      if (crossX > x) inside = !inside;
+const CASES: [GridType, number, number][] = [
+  ["square", 3, 3],
+  ["square", 5, 5],
+  ["square", 5, 3],
+  ["honeycomb", 3, 3],
+  ["honeycomb", 5, 5],
+  ["honeycomb", 3, 5],
+  ["triangular", 3, 3],
+  ["triangular", 5, 4],
+  ["triangular", 4, 5],
+  ["snubsquare", 3, 3],
+  ["snubsquare", 5, 5],
+  ["snubsquare", 4, 6],
+  ["cairo", 3, 4],
+  ["cairo", 5, 5],
+  ["cairo", 4, 6],
+  ["greathexagonal", 3, 3],
+  ["greathexagonal", 5, 4],
+  ["greathexagonal", 4, 5],
+  ["kagome", 3, 3],
+  ["kagome", 5, 4],
+  ["kagome", 4, 5],
+  ["octagonal", 3, 3],
+  ["octagonal", 5, 5],
+  ["octagonal", 4, 6],
+  ["kites", 3, 3],
+  ["kites", 4, 4],
+  ["kites", 3, 5],
+  ["floret", 1, 2],
+  ["floret", 3, 3],
+  ["floret", 2, 4],
+  ["dodecagonal", 2, 2],
+  ["dodecagonal", 4, 4],
+  ["dodecagonal", 3, 5],
+  ["greatdodecagonal", 2, 2],
+  ["greatdodecagonal", 4, 4],
+  ["greatdodecagonal", 3, 5],
+  ["greatgreatdodecagonal", 2, 2],
+  ["greatgreatdodecagonal", 4, 4],
+  ["greatgreatdodecagonal", 3, 5],
+  ["compassdodecagonal", 2, 2],
+  ["compassdodecagonal", 4, 4],
+  ["compassdodecagonal", 3, 5],
+  ["penrose_p2_kite", 4, 4],
+  ["penrose_p3_thick", 4, 4],
+  ["hats", 3, 3],
+  ["spectres", 3, 3],
+];
+
+/**
+ * Build one case's grid. The aperiodic four need a desc recording the
+ * generator's random choices, and some seeds produce a patch that trims away to
+ * nothing — a documented outcome upstream aborts on, which this port recovers
+ * from by retrying. So retry here too, and fail loudly if no seed works rather
+ * than quietly dropping the tiling from the sweep.
+ */
+function gridFor(type: GridType, w: number, h: number): Grid {
+  if (!(APERIODIC_GRID_TYPES as readonly string[]).includes(type)) {
+    // `triangular` is the one periodic tiling taking a desc: "0" selects the
+    // ear-trimmed algorithm, which is what Loopy plays on.
+    return gridNew(type, w, h, type === "triangular" ? "0" : null);
+  }
+  for (let s = 0; s < 40; s++) {
+    try {
+      return gridNew(type, w, h, gridNewDesc(type, w, h, randomNew(`incentre-${s}`)));
+    } catch {
+      // Degenerate patch for this seed; try the next.
     }
   }
-  return inside;
-}
-
-/** Distance from `(x, y)` to the segment `(ax,ay)`–`(bx,by)`. */
-function distanceToSegment(
-  x: number,
-  y: number,
-  ax: number,
-  ay: number,
-  bx: number,
-  by: number,
-): number {
-  const dx = bx - ax;
-  const dy = by - ay;
-  const len2 = dx * dx + dy * dy;
-  // Clamp the projection parameter to [0,1] so we measure to the segment, not
-  // to its infinite line — the endpoint cases fall out of the clamp.
-  const t =
-    len2 === 0 ? 0 : Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / len2));
-  return Math.hypot(x - (ax + t * dx), y - (ay + t * dy));
+  throw new Error(`no seed in 0..39 produced a generable ${type} ${w}x${h} patch`);
 }
 
 /**
- * The radius of the largest circle centred at `(x, y)` that fits inside the
- * polygon: the distance to the nearest side. This is the quantity the whole
- * routine exists to maximise, and comparing it at the TS point against the C
- * point is the real quality comparison — far more meaningful than comparing
- * coordinates, since two quite different points can admit the same circle
- * (exactly the parallel-edge continuum upstream notes it handles arbitrarily).
+ * The most a stored incentre may fall short of the best the lattice admits.
+ *
+ * Not a fitted number: the search returns a point on the continuous optimum and
+ * the store rounds each axis by at most 0.5, so the displacement is at most
+ * 1/√2 ≈ 0.707 and the radius — being 1-Lipschitz in the point — can lose at
+ * most that much. The measured worst across all 1,816 faces is **0.053**, an
+ * order of magnitude inside the bound, which says the search is finding the
+ * true optimum rather than merely a good candidate.
+ *
+ * A regression that reintroduces the C's `(int)(v + 0.5)` truncation measures
+ * 1.229 and fails this.
  */
-function inscribedRadius(poly: [number, number][], x: number, y: number): number {
-  let best = Number.POSITIVE_INFINITY;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    best = Math.min(
-      best,
-      distanceToSegment(x, y, poly[j][0], poly[j][1], poly[i][0], poly[i][1]),
-    );
-  }
-  return best;
-}
+const MAX_RADIUS_SHORTFALL = 0.71;
 
 /**
- * Grid coordinates run at tile sizes of 18–150 units, so one unit is
- * comfortably sub-pixel at any playable scale — and both sides round their
- * answer to an integer anyway, which alone can move the admitted radius by up
- * to ~0.71 (half a diagonal).
+ * And the relative floor, which fails on a different shape of defect: a search
+ * that settles on a *different* point rather than a nudged one. On a small face
+ * a wrong point can be within a unit absolutely while being visibly off-centre.
+ *
+ * Verified against a real defect rather than guessed at: measuring the room to
+ * an edge's *infinite line* instead of to the edge scores ≈0.64 here and fails
+ * two tilings. Not every enumeration defect reaches this file — restricting the
+ * 3-subset walk to subsets containing an edge changes no tiling's answer at all,
+ * which is why `grid-geometry.test.ts` carries hand-built shapes as well.
  */
-const RADIUS_TOLERANCE = 1;
+const MIN_RADIUS_RATIO = 0.9;
 
 describe("gridFindIncentre", () => {
-  describe("against the C reference", () => {
-    // A tiling whose TS generator has not landed yet must not fail this file;
-    // it is reported and skipped, so the test is green now and strengthens by
-    // itself as the remaining generators land.
-    const skipped: string[] = [];
+  describe("against the best circle the lattice admits", () => {
+    for (const [type, w, h] of CASES) {
+      const label = `${type} ${w}x${h}`;
 
-    for (const f of fixtures) {
-      const label = `${f.type} ${f.width}x${f.height}${f.desc === null ? "" : ` desc=${f.desc}`}`;
+      it(label, () => {
+        const g = gridFor(type, w, h);
 
-      it(label, ({ skip }) => {
-        let g: Grid;
-        try {
-          g = gridNew(f.type as GridType, f.width, f.height, f.desc);
-        } catch (e) {
-          const message = e instanceof Error ? e.message : String(e);
-          skipped.push(`${label}: ${message}`);
-          console.log(
-            `[grid-incentre] SKIPPED ${label} — generator unavailable: ${message}`,
-          );
-          skip();
-          return;
-        }
+        // How many things did I look at? A sweep that iterates zero faces
+        // passes every assertion inside it, so the count is asserted before
+        // any of them. `grid-differential.test.ts` pins the exact face list far
+        // more strongly; this only has to make the loop's emptiness visible.
+        expect(g.faces.length).toBeGreaterThan(0);
 
-        expect(g.faces).toHaveLength(f.incentres.length);
+        let worstShortfall = 0;
+        let worstRatio = 1;
 
-        let worstRadiusDelta = 0;
-        let worstPointDelta = 0;
-
-        for (const [i, face] of g.faces.entries()) {
+        for (const face of g.faces) {
           gridFindIncentre(face);
           const poly = polygon(face);
-          const [cx, cy] = f.incentres[i];
+          const got = inscribedRadius(poly, face.ix, face.iy);
+          const best = bestByBruteForce(poly);
 
-          // (1) strictly inside: the ray cast says in, AND it is not sitting
-          // on the boundary (a point exactly on a side admits no circle).
-          const tsRadius = inscribedRadius(poly, face.ix, face.iy);
+          // (1) strictly inside: the ray cast says in, AND it is not sitting on
+          // the boundary (a point exactly on a side admits no circle).
           expect(
             insidePolygon(poly, face.ix, face.iy),
-            `${label} face ${i}: incentre (${face.ix}, ${face.iy}) is outside its face`,
+            `${label} face ${face.index}: incentre (${face.ix}, ${face.iy}) is outside its face`,
           ).toBe(true);
           expect(
-            tsRadius,
-            `${label} face ${i}: incentre (${face.ix}, ${face.iy}) is on the boundary`,
+            got,
+            `${label} face ${face.index}: incentre (${face.ix}, ${face.iy}) is on the boundary`,
           ).toBeGreaterThan(0);
 
-          // (2) the circle it admits is as big as the C's, within tolerance.
-          const cRadius = inscribedRadius(poly, cx, cy);
+          // (2) the circle it admits is as large as the lattice allows.
           expect(
-            Math.abs(tsRadius - cRadius),
-            `${label} face ${i}: TS incentre (${face.ix}, ${face.iy}) admits r=${tsRadius}, ` +
-              `C incentre (${cx}, ${cy}) admits r=${cRadius}`,
-          ).toBeLessThanOrEqual(RADIUS_TOLERANCE);
+            best - got,
+            `${label} face ${face.index}: incentre (${face.ix}, ${face.iy}) admits ` +
+              `r=${got.toFixed(3)}, but some integer point of the face admits ${best.toFixed(3)}`,
+          ).toBeLessThanOrEqual(MAX_RADIUS_SHORTFALL);
+          expect(
+            got / best,
+            `${label} face ${face.index}: incentre (${face.ix}, ${face.iy}) admits ` +
+              `only ${((got / best) * 100).toFixed(1)}% of the achievable radius`,
+          ).toBeGreaterThan(MIN_RADIUS_RATIO);
 
-          worstRadiusDelta = Math.max(worstRadiusDelta, Math.abs(tsRadius - cRadius));
-          worstPointDelta = Math.max(
-            worstPointDelta,
-            Math.hypot(face.ix - cx, face.iy - cy),
-          );
+          worstShortfall = Math.max(worstShortfall, best - got);
+          worstRatio = Math.min(worstRatio, got / best);
         }
 
-        // Recorded, not asserted: how far the two implementations actually
-        // drift is the useful review signal, and pinning it would be exactly
-        // the float gate D3 says not to build.
-        if (worstPointDelta > 0) {
+        // Recorded, not asserted: how much room the tiling's worst face leaves
+        // on the table is the useful review signal, and pinning it per tiling
+        // would be a float gate on display code.
+        if (worstShortfall > 0.01) {
           console.log(
-            `[grid-incentre] ${label}: worst |Δpoint| = ${worstPointDelta.toFixed(3)}, ` +
-              `worst |Δradius| = ${worstRadiusDelta.toFixed(6)}`,
+            `[grid-incentre] ${label}: worst shortfall ${worstShortfall.toFixed(4)} ` +
+              `(${(worstRatio * 100).toFixed(2)}% of achievable) over ${g.faces.length} faces`,
           );
         }
       });
     }
 
-    it("reports which tilings were skipped", () => {
-      // Not a failure — it is a visible record. A silent skip is how a whole
-      // family of tilings quietly stops being checked.
-      if (skipped.length > 0) {
-        console.log(
-          `[grid-incentre] ${skipped.length} fixture(s) skipped:\n  ${skipped.join("\n  ")}`,
-        );
-      }
-      expect(Array.isArray(skipped)).toBe(true);
+    it("covers every tiling the barrel offers", () => {
+      // The enumeration above is a literal list, so it can fall behind
+      // `ALL_GRID_TYPES`. A tiling added without a case here would otherwise be
+      // silently unswept — the failure mode the retired fixture's skip scaffold
+      // had by construction.
+      expect(new Set(CASES.map(([type]) => type))).toEqual(new Set(ALL_GRID_TYPES));
     });
   });
 
@@ -251,7 +290,7 @@ describe("gridFindIncentre", () => {
      * `makeConsistent` links it up exactly as a real tiling's face is linked;
      * the single face's outer side is the infinite exterior.
      */
-    function singleFaceGrid(ring: [number, number][]): GridFace {
+    function singleFaceGrid(ring: Ring): GridFace {
       const g = gridNew("square", 1, 1); // borrow a Grid instance
       g.dots = ring.map(([x, y], i) => new GridDot(i, x, y));
       const face = new GridFace(0, ring.length, [...g.dots]);
@@ -262,7 +301,7 @@ describe("gridFindIncentre", () => {
     }
 
     /** The vertex centroid — what a naive implementation would use. */
-    function centroid(poly: [number, number][]): [number, number] {
+    function centroid(poly: Ring): [number, number] {
       const n = poly.length;
       return [
         poly.reduce((s, p) => s + p[0], 0) / n,
@@ -272,7 +311,7 @@ describe("gridFindIncentre", () => {
 
     it("places the incentre inside an L-shape, where the centroid falls outside", () => {
       // An L: a 60x20 arm along the top and a 20x60 arm down the left.
-      const ring: [number, number][] = [
+      const ring: Ring = [
         [0, 0],
         [60, 0],
         [60, 20],
@@ -295,7 +334,7 @@ describe("gridFindIncentre", () => {
 
     it("places the incentre inside a chevron, where the centroid falls outside", () => {
       // An arrowhead pointing down: a deep reflex vertex at the top middle.
-      const ring: [number, number][] = [
+      const ring: Ring = [
         [0, 0],
         [50, 60],
         [100, 0],
@@ -320,20 +359,18 @@ describe("gridFindIncentre", () => {
           [20, 20],
           [20, 60],
           [0, 60],
-        ] as [number, number][],
+        ] as Ring,
         [
           [0, 0],
           [50, 60],
           [100, 0],
           [50, 100],
-        ] as [number, number][],
+        ] as Ring,
       ]) {
         const face = singleFaceGrid(ring);
         gridFindIncentre(face);
         const [gx, gy] = centroid(ring);
-        const centroidRadius = insidePolygon(ring, gx, gy)
-          ? inscribedRadius(ring, gx, gy)
-          : 0;
+        const centroidRadius = inscribedRadius(ring, gx, gy);
         expect(inscribedRadius(ring, face.ix, face.iy)).toBeGreaterThan(centroidRadius);
       }
     });
@@ -350,30 +387,16 @@ describe("gridFindIncentre", () => {
     it("finds the classical incentre of every face of a honeycomb", () => {
       // A regular hexagon's incentre is its centre, so every face's incentre
       // must admit a circle of the hexagon's apothem.
-      let g: Grid;
-      try {
-        g = gridNew("honeycomb", 3, 3);
-      } catch {
-        console.log(
-          "[grid-incentre] SKIPPED honeycomb known-answer check — generator unavailable",
-        );
-        return;
-      }
+      const g = gridNew("honeycomb", 3, 3);
       for (const face of g.faces) {
         gridFindIncentre(face);
         const poly = polygon(face);
-        const [cx, cy] = centroidOf(poly);
+        const n = poly.length;
+        const cx = poly.reduce((s, p) => s + p[0], 0) / n;
+        const cy = poly.reduce((s, p) => s + p[1], 0) / n;
         // The incentre of a regular hexagon coincides with its centroid.
         expect(Math.hypot(face.ix - cx, face.iy - cy)).toBeLessThan(1);
       }
     });
-
-    function centroidOf(poly: [number, number][]): [number, number] {
-      const n = poly.length;
-      return [
-        poly.reduce((s, p) => s + p[0], 0) / n,
-        poly.reduce((s, p) => s + p[1], 0) / n,
-      ];
-    }
   });
 });
