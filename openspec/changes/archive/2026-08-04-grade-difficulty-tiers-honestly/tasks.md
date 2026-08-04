@@ -59,7 +59,8 @@
 
 - [x] 5.1 Spec deltas: `bricks`, `mathrax`, `salad`, `ascent`, `ts-migration`.
 - [x] 5.2 Update each game's help page difficulty wording.
-- [ ] 5.3 Full gate green; owner acceptance on the changed difficulty feel.
+- [x] 5.3 Full gate green (6748 tests, `vite build` included); owner-accepted
+      2026-08-04, after a Chrome pass over the four games.
 
 ## 6. Follow-ups recorded, not done here
 
