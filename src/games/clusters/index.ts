@@ -39,7 +39,7 @@ import {
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { Colour, Point, Size } from "../../engine/types.ts";
+import type { Colour, ConfigValues, Point, Size } from "../../engine/types.ts";
 import { newClustersDesc } from "./generator.ts";
 import {
   border,
@@ -69,6 +69,7 @@ import {
   type ClustersUi,
   COLMASK,
   cloneState,
+  DIFF_NAMES,
   decodeParams,
   defaultParams,
   encodeParams,
@@ -259,6 +260,10 @@ function executeMove(state: ClustersState, move: ClustersMove): ClustersState {
 
 function solve(orig: ClustersState): SolveResult<ClustersMove> {
   const grid = orig.grid.slice();
+  // Always the deepest rung: Solve and the hint are "try as hard as you can",
+  // where the tier the board was *generated* at is irrelevant — an Easy board
+  // is solved by the easy rung anyway, and running the lookahead over it costs
+  // only the time it takes to find nothing left to do.
   solveGame(grid, orig.w, orig.h, 1);
   if (clustersStatus(grid, orig.w, orig.h) === INVALID) {
     return { ok: false, error: "Puzzle is invalid." };
@@ -426,7 +431,25 @@ export const clustersGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
-  paramConfig: dimensionParamConfig(),
+
+  describeParams: (p): ConfigValues => ({
+    width: String(p.w),
+    height: String(p.h),
+    difficulty: p.diff,
+  }),
+  paramConfig: [
+    ...dimensionParamConfig<ClustersParams>(),
+    {
+      kw: "difficulty",
+      name: "Difficulty",
+      type: "choices",
+      choices: [...DIFF_NAMES],
+      get: (p) => p.diff,
+      set: (p, v) => {
+        p.diff = v;
+      },
+    },
+  ],
 
   newDesc: (p: ClustersParams, rng: RandomState) => newClustersDesc(p, rng),
   validateDesc,
