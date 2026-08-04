@@ -81,4 +81,4 @@
       still mandated the peer bar — "within a small tolerance of upstream's" —
       so it is MODIFIED, not merely supplemented), `ts-engine` (the prefs
       no-op permission is withdrawn).
-- [ ] 5.5 Full gate green.
+- [x] 5.5 Full gate green — 254 files, 6758 passed, 6 skipped; `vitest` ∥ `vite build` both clean.

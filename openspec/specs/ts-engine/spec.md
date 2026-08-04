@@ -919,9 +919,13 @@ values and re-apply them after each `Ui` recreation, so a player's
 preference survives starting a new game (upstream keeps one `game_ui`
 across new games; this reproduces that effect). Preferences SHALL NOT be
 written into the save file (they are app-level, persisted per puzzle by
-the existing settings store). The binary `savePreferences`/
-`loadPreferences` surface (an internal C/WASM serialisation the app does
-not use for persistence) MAY remain a no-op on the TS path.
+the existing settings store). The engine SHALL NOT carry a binary
+`savePreferences`/`loadPreferences` surface. It existed only to mirror
+upstream's `midend_serialise_prefs` across the C/WASM boundary; the app has
+never used it for persistence, and the TS adapter answered it with an empty
+buffer — a method that silently returned nothing rather than refusing, which is
+worse than its absence. If an import/export feature is ever wanted it SHALL
+choose its own wire format rather than inherit the C's.
 
 #### Scenario: A game declares preferences and the app drives them unchanged
 
