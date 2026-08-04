@@ -30,6 +30,35 @@ The consequence today is that a player who types `10x10` with four letters gets
 `RetryLimitExceeded`, rather than the immediate explained refusal Seismic gives
 for the same class of limit (`MAX_CELLS`, `replace-seismic-region-generator`).
 
+## Precedent: the same problem, measured (`add-clusters-difficulty-tiers`, 2026-08-04)
+
+Clusters hit this exact shape and its numbers support the position above.
+`validateParams` there accepted **1×2 and 2×2**, which have no Clusters puzzle at
+all, and the generator had **no retry bound whatever** — so those two shapes hung
+the worker outright rather than failing. That is the ABCD symptom without even the
+5.4-minute ceiling.
+
+Two results worth carrying:
+
+- **"A guessed constant would either bar boards that work or admit boards that
+  never will" is not a hypothetical.** The Clusters difficulty floor was *guessed*
+  at 25 squares and *measured* at 12; the guess would have barred seven working
+  board shapes. Neither number is derivable from the rules.
+- **The obvious predicate was wrong, not merely mis-tuned.** Area alone does not
+  decide it: a 1×N Clusters strip admits no hard puzzle *at any length*, because a
+  cell there has at most two neighbours. This proposal already suspects as much
+  for ABCD — the sweep shows `n = 3` tolerating 11×11 while `n ≥ 5` dies at 8×8 —
+  so the `(area, letters)` table should be treated as the *minimum* shape of the
+  predicate, and the sweep should be wide enough to reveal a third factor if one
+  exists.
+
+**One residual, recorded here rather than fixed:** a **1×N Clusters board** still
+generates and is playable. It is arguably degenerate — every interior cell needs
+both neighbours to match, and both ends must be dots — but it works, and refusing
+it would remove something that ships today. If this change establishes a rule for
+"configurations a game should decline to offer even though they generate", 1×N
+Clusters is its first candidate; if it does not, the note stays a note.
+
 ## Sequencing (owner decision, 2026-08-01)
 
 **Waits for `retire-c-engine`**, and possibly for a round or two of refactoring

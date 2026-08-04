@@ -6,10 +6,14 @@
       `src/engine/difficulty.ts`, and the optional `difficulty?:` hook to
       `Game` in `engine/game.ts`. Optional, like `hint`/`findMistakes` before it,
       so the 31 untiered games need no edit.
-- [ ] 1.2 Add `solvableAtExactlyTier(game, params, desc)` — solves at the
-      requested tier and at one below, and reports whether the board genuinely
-      needs its tier. **Production** code: this is what
+- [ ] 1.2 Add `solvableAtExactlyTier(game, params, desc)` — reports whether the
+      board genuinely needs its tier. **Production** code: this is what
       `grade-difficulty-tiers-honestly` will apply uniformly.
+- [ ] 1.2a Do **not** specify it as "solve twice". Where a game's tiers are nested
+      rungs of one fixpoint, both answers come from a single pass with the cheap
+      rung first — Clusters, where that ordering made the generator faster than it
+      was before it had tiers (`add-clusters-difficulty-tiers` D3). Take the game's
+      verdict; let the game choose how many passes produce it.
 - [ ] 1.3 Unit-test the helper against a fake game before any real game uses it
       (`engine/fake-game.ts` is the existing double).
 
@@ -33,7 +37,9 @@
 - [ ] 3.2 **Cap-monotonicity**: lowest cap that solves ⇒ every higher cap solves.
 - [ ] 3.3 **Every declared tier is reachable**: generation succeeds at each.
 - [ ] 3.4 **The declared tier list matches the game's own `DIFF_*` constants** —
-      so a game that gains a tier cannot ship a stale list.
+      so a game that gains a tier cannot ship a stale list. **Derive the tiered-game
+      set from the registry, not from that naming convention**: the convention
+      already missed Bridges once, and a guard blind to a game cannot fire on it.
 - [ ] 3.5 **Boats declares `nonMonotone`** and the guard asserts its *workaround*
       instead — solving at each tier in turn and taking the first success always
       succeeds. A skipped game is an untested game wearing a comment.
@@ -57,7 +63,7 @@
       not here — that change already owns "make a tier mean what it says", and
       absorbing behaviour changes into a change that claims to be a no-op is how
       a regression gets misfiled.
-- [ ] 5.3 If nothing fails, say so plainly: "26 tiered games, all monotone in
+- [ ] 5.3 If nothing fails, say so plainly: "28 tiered games, all monotone in
       their cap" is a real and reassuring result, and different from not looking.
 
 ## 6. Close out
