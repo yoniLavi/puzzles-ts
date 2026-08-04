@@ -28,4 +28,6 @@
 - [x] 2.3 Hint (`add-clusters-hint`) re-checked against both tiers.
 - [x] 3.1 Spec delta `clusters`; update `help/games/clusters.md`, which currently
       documents Width and Height only.
-- [ ] 3.2 Full gate green; owner acceptance on how the tiers feel.
+- [x] 3.2 Full gate green (254 files / 6755 tests); owner-accepted 2026-08-04,
+      after a Chrome pass over the preset menu, the Custom dialog, the
+      too-small-for-Tricky refusal and a hint on a Tricky board.
