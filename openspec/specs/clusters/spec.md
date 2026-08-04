@@ -9,10 +9,14 @@ The engine SHALL provide `src/games/clusters/` implementing the `Game`
 interface for Clusters, registered so the puzzle is served by the TypeScript
 engine.
 
-Parameters SHALL be a width and a height. Validation SHALL reject a board whose
-area is at least 10000 ("too large") or less than 2 ("too small"), matching
-upstream. A game ID SHALL encode the width and height (a bare single number read
-as a square board) and round-trip through decode.
+Parameters SHALL be a width, a height and a difficulty. Validation SHALL reject a
+board whose area is at least 10000 ("too large") or less than 2 ("too small"),
+matching upstream, and SHALL additionally reject a board no larger than 2×2 in
+both dimensions, which upstream's area check admits and which has no Clusters
+puzzle at any difficulty. A game ID SHALL encode the width and height (a bare
+single number read as a square board) and, in its full form, the difficulty, and
+SHALL round-trip through decode. The difficulty SHALL be offered by the preset
+menu and by the Custom dialog.
 
 Because Clusters is a unique-solution logic puzzle with a built-in rule checker,
 it SHALL declare a `findMistakes` hook so Check & Save can flag rule-violating
@@ -27,8 +31,14 @@ cells.
 #### Scenario: A game ID round-trips through the parameters
 
 - **WHEN** a parameter set is encoded to a game ID and decoded
-- **THEN** the same width and height are recovered, and a bare single number is
-  read as a square board
+- **THEN** the same width, height and difficulty are recovered, and a bare single
+  number is read as a square board
+
+#### Scenario: A board with no puzzle at all is rejected
+
+- **WHEN** a board of 1×2 or 2×2 is validated
+- **THEN** it is rejected, naming the constraint, rather than accepted and
+  generated for ever
 
 ### Requirement: Clusters descriptions use the upstream run-length dot encoding
 
@@ -59,12 +69,27 @@ Clusters SHALL provide a solver that classifies a board as complete, unfinished
 or invalid and marks the cells that break a rule. The solver SHALL fill forced
 cells by contradiction — tentatively setting each colour in an empty cell and
 taking the other colour when one makes the board invalid — and SHALL apply one
-level of hypothetical lookahead. Clusters SHALL expose no difficulty tiers.
+level of hypothetical lookahead when asked for it. Those two rungs are the two
+difficulty tiers.
 
 The generator SHALL use the solver to keep every board uniquely solvable: it
 SHALL two-colour the grid at random, flip isolated cells until none remains,
 reduce the board to dot clues, prune adjacent equal dots, and retry until the
-solver completes the board. Generation from a given seed SHALL be reproducible.
+solver completes the board at the requested tier and, above the easiest tier, the
+tier below cannot. Generation from a given seed SHALL be reproducible. The retry
+loop SHALL be bounded, so that a parameter set admitting no board fails rather
+than spinning.
+
+Rejecting a candidate the generator has *completed* SHALL perturb the grid before
+retrying. The retry loop deliberately carries deduced cells between attempts and
+re-randomises only blank ones, so a completed grid would otherwise re-derive
+itself, draw no randomness, and never terminate. The perturbation SHOULD be small
+rather than a reset: the loop is a hill-climb, and discarding it costs several
+times the generation time it saves nothing of.
+
+Because generation is solver-gated at every candidate, the byte-for-byte
+differential SHALL retain a way to run the original single gate — solve at the
+deeper rung, accept on completion — used by that differential alone.
 
 #### Scenario: The solver completes a uniquely solvable board
 
@@ -76,6 +101,12 @@ solver completes the board. Generation from a given seed SHALL be reproducible.
 
 - **WHEN** the same seed is used twice for the same parameters
 - **THEN** both runs produce the identical board description
+
+#### Scenario: A parameter set with no board gives up rather than hanging
+
+- **WHEN** generation is asked for a board that cannot exist at the requested
+  tier
+- **THEN** the generator exhausts a finite retry budget and reports failure
 
 ### Requirement: Clusters input, mistakes and completion
 
@@ -137,10 +168,11 @@ would force marked with the colour it would be forced to (in a form visually
 distinct from a placed tile), and the tile where the contradiction lands ringed
 — never an un-narrated "only one option fits" fallback. At each lookahead stall
 the plan SHALL select the candidate firing with the shortest forcing chain
-(deterministically tie-broken), keeping the displayed chain short. Because the
-generator gates every board on the depth-1 solver — whose hypothetical
+(deterministically tie-broken), keeping the displayed chain short. Because no
+tier gates a board on more than the depth-1 solver — whose hypothetical
 propagation is itself deduction-only — every board the shipped generator can
-emit SHALL be solvable by this narratable deduction with no nested speculation.
+emit SHALL be solvable by this narratable deduction with no nested speculation,
+and an Easy board SHALL additionally need no lookahead step at all.
 
 A hint SHALL be refused, with an explanatory banner, when the board is already
 solved, when the board contains a rule violation (as reported by
@@ -169,4 +201,56 @@ from a doomed position.
   rule-violating tile, or whose placed tiles contradict the unique solution
   without yet breaking a local rule
 - **THEN** no move is hinted and an explanatory banner is shown
+
+### Requirement: Clusters offers difficulty tiers over its two deduction levels
+
+Clusters SHALL offer a difficulty parameter with two tiers, corresponding to the
+two deduction levels its solver already implements: the single-cell proof by
+contradiction (**Easy**), and the same reasoning applied one hypothetical level
+deep (**Tricky**).
+
+A board generated at Tricky SHALL require that second level — it SHALL NOT be
+soluble by the single-cell reasoning alone. A board generated at Easy SHALL be
+soluble by it. The acceptance gate MAY run the easier rung first and reject a
+Tricky candidate it completes, which reaches the same verdict for one solver run
+rather than two.
+
+The difficulty SHALL be encoded in the game ID, and an ID that carries no
+difficulty SHALL decode to Easy — the majority tier among the boards Clusters
+generated before the parameter existed, and the tier whose boards a returning
+player is likeliest to recognise. A tier letter the game does not know SHALL be
+rejected by parameter validation rather than silently played as some other tier.
+
+Clusters SHALL refuse to *generate* at Tricky on a board too small to admit one,
+reporting it through parameter validation with `full` set, so that a saved game or
+a game ID carrying its own description still loads at any size.
+
+`solve`, `hint` and `findMistakes` SHALL continue to use the deeper rung whatever
+tier the board was generated at: they are "try as hard as you can", and the rung
+costs nothing on a board that does not need it.
+
+#### Scenario: The harder tier needs the deeper reasoning
+
+- **WHEN** a board generated at the harder tier is solved using only the
+  single-cell contradiction rule
+- **THEN** the solver does not reach a solution
+- **AND** solving the same board with the lookahead completes it
+
+#### Scenario: The easier tier needs only the single-cell rule
+
+- **WHEN** a board generated at the easier tier is solved using only the
+  single-cell contradiction rule
+- **THEN** the solver completes it
+
+#### Scenario: An older game ID still resolves
+
+- **WHEN** a game ID generated before the difficulty parameter existed is opened
+- **THEN** it loads and is playable, and its parameters read as the easier tier
+
+#### Scenario: A board too small for the harder tier refuses it
+
+- **WHEN** a full, generation-capable parameter set requests the harder tier on a
+  board admitting no such puzzle
+- **THEN** parameter validation rejects it, naming the constraint
+- **AND** the same parameters are accepted when a description is supplied instead
 
