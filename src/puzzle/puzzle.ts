@@ -570,14 +570,6 @@ export class Puzzle {
     return this.workerPuzzle.getPreferences();
   }
 
-  public async savePreferences(): Promise<Uint8Array> {
-    return this.workerPuzzle.savePreferences();
-  }
-
-  public async loadPreferences(data: Uint8Array): Promise<string | undefined> {
-    return this.workerPuzzle.loadPreferences(transfer(data, [data.buffer]));
-  }
-
   public async setPreferences(values: ConfigValues): Promise<string | undefined> {
     return this.workerPuzzle.setPreferences(values);
   }

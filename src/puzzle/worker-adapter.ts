@@ -204,16 +204,6 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   setPreferences(values: ConfigValues): string | undefined {
     return this.engine.setPreferences(values);
   }
-  // The binary save/load prefs surface is an internal C/WASM
-  // serialisation the app does not use for persistence (it persists
-  // `ConfigValues` per puzzle via get/setPreferences). No-op here.
-  savePreferences(): Uint8Array<ArrayBuffer> {
-    const data = new Uint8Array(0);
-    return transfer(data, [data.buffer]);
-  }
-  loadPreferences(_data: Uint8Array): string | undefined {
-    return undefined;
-  }
 
   // --- rendering --------------------------------------------------
 

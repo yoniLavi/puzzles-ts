@@ -337,6 +337,39 @@ differential still catches defects, nothing turns red, and the module quietly
 arrives with no local assertions. `wires.ts` (413 lines, nine importers) had none
 at all.
 
+### 4a. A frozen capture used as a *quality bar* is on the wrong side of the line
+
+Everything above is about a fixture recording something **underivable** — which
+board a solver-gated generator produces, an RNG stream, a tiling's incidence in
+emission order. There the recording *is* the specification and no local test can
+replace it.
+
+A capture used instead as a **peer comparison** — "our answer is within a
+tolerance of the other implementation's", for a quantity that has a definition
+you could just compute — is not a differential in that sense, whatever it looks
+like. It is green whenever both implementations are wrong in the same way, and
+its tolerance is not tightenable, because the tolerance is there to absorb *the
+peer's* error rather than yours.
+
+`grid-incentre.test.ts` was the repo's one example and is now the worked one
+(`retire-the-incentre-c-fixture`). It asserted `|r_TS − r_C| ≤ 1` over 1,864
+faces against a frozen C capture. Replacing that with the largest circle the
+integer lattice actually admits — computed from the vertex ring, sharing no line
+with the implementation — found within minutes that the stored point used
+upstream's `(int)(v + 0.5)`, which is round-to-nearest only for a *positive*
+coordinate, while grid coordinates are negative over most of a board. Cost: up
+to **1.229** units of inscribed radius, against **0.053** once rounded properly.
+The C is wrong in the same direction, so every one of those 1,864 faces had
+passed.
+
+**The test to apply:** ask whether the quantity has an independent derivation.
+If it does, compute it and delete the capture — that trades a fixture for a
+*stronger* guarantee, not a weaker one. If it does not, the capture stays. And
+when you delete one, account for every fact it carried, not just the headline:
+this one also supplied the *list of cases swept*, which the replacement re-founds
+on `ALL_GRID_TYPES` so a new tiling joins by existing rather than by someone
+remembering.
+
 ---
 
 ## 5. Distinguish "not covered" from "not reachable"

@@ -1078,9 +1078,9 @@ export const MODULES = [
         replace: "  f.hasIncentre = false;",
       },
       {
-        why: "the incentre's x is truncated rather than rounded, moving a clue digit off centre",
-        find: "  f.ix = Math.trunc(xBest + 0.5);",
-        replace: "  f.ix = Math.trunc(xBest);",
+        why: "the incentre's x is stored with the C's `(int)(v + 0.5)`, which truncates toward zero and so misplaces a clue digit by up to a unit on the negative coordinates a grid mostly has",
+        find: "  f.ix = Math.round(xBest);",
+        replace: "  f.ix = Math.trunc(xBest + 0.5);",
       },
       {
         why: "a face with no interior point found silently reports the origin instead of failing",

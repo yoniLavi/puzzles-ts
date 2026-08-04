@@ -16,16 +16,25 @@
  *
  * - `grid.test.ts` drives `gridNearestEdge` through the barrel — the eligibility
  *   rules, the vertex case and the lowest-index tie-break.
- * - `grid-incentre.test.ts` compares `gridFindIncentre` against a frozen C
- *   capture *by property* (inside the face, and the circle it admits is as large
- *   as the C's), plus caching, non-convex shapes and two known answers.
+ * - `grid-incentre.test.ts` sweeps `gridFindIncentre` over every face of every
+ *   tiling against the best circle the integer lattice admits, plus caching,
+ *   non-convex shapes and two known answers.
  * - here: the cases neither of those reaches — a click that is perpendicularly
  *   near an edge but nowhere near the board, the rounding of the stored point,
  *   a face with no interior at all, and the two shapes that exercise parts of
  *   the candidate enumeration a tiling does not happen to need.
+ *
+ * The polygon yardstick both files measure against lives in
+ * `engine/testing/polygon-yardstick.ts`; its whole value is that it imports
+ * nothing from `grid-geometry.ts`, so read its header before reusing it.
  */
 
 import { describe, expect, it } from "vitest";
+import {
+  bestByBruteForce,
+  inscribedRadius,
+  type Ring,
+} from "../testing/polygon-yardstick.ts";
 import { gridFindIncentre, gridNearestEdge } from "./grid-geometry.ts";
 import { GridDot, GridFace, gridNew, gridNewSquare, makeConsistent } from "./index.ts";
 
@@ -34,7 +43,7 @@ import { GridDot, GridFace, gridNew, gridNewSquare, makeConsistent } from "./ind
  * `makeConsistent` exactly as a real tiling's face is. The single face's outer
  * side is the infinite exterior.
  */
-function singleFaceGrid(ring: [number, number][]): GridFace {
+function singleFaceGrid(ring: Ring): GridFace {
   const g = gridNew("square", 1, 1); // borrow a Grid instance
   g.dots = ring.map(([x, y], i) => new GridDot(i, x, y));
   const face = new GridFace(0, ring.length, [...g.dots]);
@@ -42,69 +51,6 @@ function singleFaceGrid(ring: [number, number][]): GridFace {
   g.edges = [];
   makeConsistent(g);
   return face;
-}
-
-/** Distance from `(x, y)` to the segment `(ax,ay)`–`(bx,by)`, written from the
- * vertex ring rather than from the implementation's edge list. */
-function distanceToSegment(
-  x: number,
-  y: number,
-  ax: number,
-  ay: number,
-  bx: number,
-  by: number,
-): number {
-  const dx = bx - ax;
-  const dy = by - ay;
-  const len2 = dx * dx + dy * dy;
-  const t =
-    len2 === 0 ? 0 : Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / len2));
-  return Math.hypot(x - (ax + t * dx), y - (ay + t * dy));
-}
-
-/** Standard even-odd ray cast, written from the vertex ring. */
-function insidePolygon(poly: [number, number][], x: number, y: number): boolean {
-  let inside = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i];
-    const [xj, yj] = poly[j];
-    if (yi > y !== yj > y) {
-      if (xi + ((y - yi) / (yj - yi)) * (xj - xi) > x) inside = !inside;
-    }
-  }
-  return inside;
-}
-
-/** The radius of the largest circle centred at `(x, y)` that fits inside the
- * polygon — the quantity the incentre exists to maximise. Zero outside it. */
-function inscribedRadius(poly: [number, number][], x: number, y: number): number {
-  if (!insidePolygon(poly, x, y)) return 0;
-  let best = Number.POSITIVE_INFINITY;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    best = Math.min(
-      best,
-      distanceToSegment(x, y, poly[j][0], poly[j][1], poly[i][0], poly[i][1]),
-    );
-  }
-  return best;
-}
-
-/**
- * The best {@link inscribedRadius} over every integer point of the polygon's
- * bounding box — a brute-force yardstick owing nothing to the implementation.
- * Slow by construction and used on a handful of small shapes; the point is that
- * it cannot share a bug with the thing it is measuring.
- */
-function bestByBruteForce(poly: [number, number][]): number {
-  const xs = poly.map((p) => p[0]);
-  const ys = poly.map((p) => p[1]);
-  let best = 0;
-  for (let x = Math.min(...xs); x <= Math.max(...xs); x++) {
-    for (let y = Math.min(...ys); y <= Math.max(...ys); y++) {
-      best = Math.max(best, inscribedRadius(poly, x, y));
-    }
-  }
-  return best;
 }
 
 /**
@@ -115,14 +61,14 @@ function bestByBruteForce(poly: [number, number][]): number {
  * routine — several tilings produce faces where a centroid sits outside the
  * face — so it is checked over arbitrary polygons.
  */
-function awkwardPolygon(n: number): [number, number][] {
+function awkwardPolygon(n: number): Ring {
   let s = (n * 2654435761) % 2147483647;
   const rnd = (): number => {
     s = (s * 1103515245 + 12345) % 2147483648;
     return (s >>> 8) / 8388608;
   };
   const order = 4 + (n % 6);
-  const ring: [number, number][] = [];
+  const ring: Ring = [];
   for (let k = 0; k < order; k++) {
     const r = 20 + Math.floor(rnd() * 100);
     const a = (2 * Math.PI * k) / order;
@@ -151,9 +97,7 @@ describe("gridFindIncentre", () => {
   it("rounds the stored point to the nearest integer rather than truncating", () => {
     // A right isosceles triangle with legs of 10: its inradius is
     // (10 + 10 − √200) / 2 ≈ 2.929, and the incentre sits at (r, r). Truncating
-    // stores (2, 2); rounding stores (3, 3), which is the nearer point and — on
-    // the negative coordinates real tilings produce — the difference between
-    // rounding and `Math.floor` too.
+    // stores (2, 2); rounding stores (3, 3), which is the nearer point.
     const face = singleFaceGrid([
       [0, 0],
       [10, 0],
@@ -161,6 +105,29 @@ describe("gridFindIncentre", () => {
     ]);
     gridFindIncentre(face);
     expect([face.ix, face.iy]).toEqual([3, 3]);
+  });
+
+  it("rounds to nearest on negative coordinates too, where C's `(int)(v + 0.5)` does not", () => {
+    // The same triangle reflected through the origin, so the incentre sits at
+    // ≈(−2.929, −2.929). The nearest integer point is (−3, −3).
+    //
+    // Upstream stores through a double->int assignment, i.e. `(int)(v + 0.5)`,
+    // which truncates toward zero: −2.929 + 0.5 = −2.429, truncated to **−2**.
+    // That is a whole unit off, and it is not an edge case — grid coordinates
+    // are negative over most of a board, so the C form misplaces nearly every
+    // clue digit it stores. `retire-the-incentre-c-fixture` measured the cost at
+    // up to 1.229 units of inscribed radius across the eighteen tilings, against
+    // 0.053 for rounding; `grid-incentre.test.ts` is what holds it there.
+    //
+    // The peer comparison this file's sibling used to run could not see it: the
+    // C is wrong in exactly the same direction, so the two agreed perfectly.
+    const face = singleFaceGrid([
+      [0, 0],
+      [0, -10],
+      [-10, 0],
+    ]);
+    gridFindIncentre(face);
+    expect([face.ix, face.iy]).toEqual([-3, -3]);
   });
 
   it("fails loudly on a face with no interior at all", () => {
@@ -203,16 +170,25 @@ describe("gridFindIncentre", () => {
     }
   });
 
-  it("considers the candidate points held in place by three vertices", () => {
-    // Where the largest circle touches three *vertices* and no edge, only the
-    // arm of the 3-subset enumeration that takes three dots produces it — and
-    // that arm is reached only when the subset's lowest index may be a dot. No
-    // periodic tiling needs it, so nothing else here would notice it going.
+  it("enumerates 3-subsets over the whole combined edge-and-vertex set", () => {
+    // The enumeration indexes edges 0..order-1 and vertices order..2*order-1 and
+    // walks every 3-subset of the two together. Shortening its outer loop drops
+    // the subsets led by the *last* members, and on this shape that is where the
+    // best circle's supporting trio lives: the answer degrades to 0.97 of the
+    // achievable radius, which nothing else here would notice.
     //
-    // Provenance: swept for. Restricting the enumeration to subsets containing
-    // an edge changes the answer on 5 of 400 members of the family above; this
-    // is the shape with the widest margin, frozen so the case is deterministic.
-    const ring: [number, number][] = [
+    // **This test does not pin the all-vertices arm, despite what its previous
+    // name and comment claimed.** Restricting the outer loop to `i < order` is
+    // exactly "the subset must contain an edge" — vertices sort after every edge
+    // — and under it this shape's answer is *bit-identical*, point and radius.
+    // Re-swept while replacing this file's sibling's C comparison
+    // (`retire-the-incentre-c-fixture`): across 400 members of the family above,
+    // removing the all-vertices arm changes the answer on **2**, by at most 1%
+    // of the achievable radius, and on one of the two it makes the answer
+    // slightly *better*. So there is no shape here worth freezing for it, and
+    // the arm is recorded as unpinned rather than left looking covered. The
+    // earlier "5 of 400, widest margin" note measured a different restriction.
+    const ring: Ring = [
       [84, 0],
       [77, 77],
       [0, 96],
