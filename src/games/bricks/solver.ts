@@ -24,10 +24,20 @@
  * "Unreasonable" tier). Generation gates uniqueness on this solver, so its
  * exact deductive power is byte-match surface: keep every quirk verbatim.
  *
- * **Preserved upstream quirk (design D3):** the generator's min-difficulty
- * gate rejects only puzzles the *Easy* solver completes; it does not
- * guarantee the puzzle strictly requires the selected tier, so "Tricky may
- * yield a Normal-difficulty board" is intended, not a defect.
+ * **Divergence (`grade-difficulty-tiers-honestly`, replacing port design D3):**
+ * upstream's min-difficulty gate probes at *Easy* whatever tier was requested,
+ * so it can only ever reject an Easy board. The port used to preserve that as an
+ * intended quirk, on upstream's own admission that "Tricky may yield a
+ * Normal-difficulty board". Measurement retired the quirk: *may* is always —
+ * 999 of 999 boards generated at Tricky solve at Normal, as do all four frozen
+ * C Tricky fixtures, and across 480 boards from a real stripping walk the
+ * depth-1 and depth-2 solvers never once disagreed. So the generator now gates
+ * on the tier genuinely below the one requested, and Tricky is not offered at
+ * all (`MAX_GENERABLE_DIFF` in `state.ts` carries the full measurement).
+ *
+ * `DIFF_TRICKY` survives *here*, in the solver, as "try as hard as you can" for
+ * hints, `solve` and mistake-checking, where the extra depth costs nothing and
+ * asks no question about which puzzles exist.
  */
 import { deduceHintPlan } from "../../engine/hint-plan.ts";
 import {

@@ -42,6 +42,6 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dt>Grid type</dt>
 	<dd>Choose between 'Rectangle', 'Rectangle (no diagonals)', 'Hexagon', 'Honeycomb' and 'Edges' mode.</dd>
 	<dt>Difficulty</dt>
-	<dd>Determine the difficulty of the generated puzzle. Higher difficulties require more complex reasoning.</dd>
+	<dd>Determine the difficulty of the generated puzzle. Higher difficulties require more complex reasoning, and a puzzle always needs the difficulty you chose — it will never be solvable by the techniques of the level below.</dd>
 </dl>
 

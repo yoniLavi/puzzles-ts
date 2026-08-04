@@ -55,6 +55,7 @@ import {
   FE_COUNT,
   FE_ERRORMASK,
   loadGame,
+  type MathraxDiff,
   type MathraxMove,
   type MathraxParams,
   type MathraxState,
@@ -75,6 +76,7 @@ import {
   STATUS_UNFINISHED,
   setClueNum,
   validateDesc,
+  validateParams,
 } from "./state.ts";
 
 interface Fixture {
@@ -368,7 +370,9 @@ describe("mathrax solver", () => {
 
 describe("mathrax generator", () => {
   it("generates a validly-described, uniquely-solvable board for a fresh seed", () => {
-    for (const o of [3, 5, 7]) {
+    // Order 3 is Easy-or-Tricky only — see `validateParams` and the tier tests
+    // below — so the smallest Normal board is order 4.
+    for (const o of [4, 5, 7]) {
       const p: MathraxParams = { o, diff: "normal", options: OPTIONSMASK };
       const { desc } = newMathraxDesc(p, randomNew(`fresh-${o}`));
       expect(validateDesc(p, desc)).toBeNull();
@@ -394,6 +398,44 @@ describe("mathrax generator", () => {
       expect(mathraxSolve(5, Uint8Array.from(st.grid), st.clues, DIFF_TRICKY)).toBe(
         SOLVE_STUCK,
       );
+    }
+  });
+
+  // The tier gate (grade-difficulty-tiers-honestly). Upstream had none, so a
+  // tier need not bind: 3 of the 23 frozen C fixtures above Easy fall lower.
+  describe("difficulty tiers bind", () => {
+    const CASES: [number, MathraxDiff, number, number][] = [
+      [3, "tricky", DIFF_TRICKY, DIFF_NORMAL],
+      [4, "normal", DIFF_NORMAL, DIFF_EASY],
+      [5, "normal", DIFF_NORMAL, DIFF_EASY],
+      [5, "tricky", DIFF_TRICKY, DIFF_NORMAL],
+      [6, "tricky", DIFF_TRICKY, DIFF_NORMAL],
+      [7, "normal", DIFF_NORMAL, DIFF_EASY],
+    ];
+    for (const [o, diff, level, below] of CASES) {
+      it(`${o}x${o} ${diff} needs its own tier, not the one below`, () => {
+        const p: MathraxParams = { o, diff, options: OPTIONSMASK };
+        const { desc } = newMathraxDesc(p, randomNew(`tier-${o}-${diff}`));
+        const st = newState(p, desc);
+        expect(mathraxSolve(o, Uint8Array.from(st.grid), st.clues, level)).toBe(
+          SOLVE_UNIQUE,
+        );
+        expect(mathraxSolve(o, Uint8Array.from(st.grid), st.clues, below)).not.toBe(
+          SOLVE_UNIQUE,
+        );
+      });
+    }
+
+    // Order 3 has only four intersections, and two of its four tiers have
+    // nothing to grade with — measured at 0 binding boards in 3,000 candidates
+    // each. Refusing beats generating a board of the wrong difficulty.
+    for (const diff of ["normal", "recursive"] as const) {
+      it(`refuses to generate 3x3 ${diff}, which has no such board`, () => {
+        const p: MathraxParams = { o: 3, diff, options: OPTIONSMASK };
+        expect(validateParams(p, true)).toMatch(/Size 3/);
+        // Loading an existing description at those params still works.
+        expect(validateParams(p, false)).toBeNull();
+      });
     }
   });
 

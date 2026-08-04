@@ -166,6 +166,16 @@ export function validateParams(p: MathraxParams, full: boolean): string | null {
   if (p.o > 9) return "Size must be no more than 9";
   if (DIFFS.indexOf(p.diff) < 0) return "Unknown difficulty rating";
   if (full && !p.options) return "At least one clue type must be enabled";
+  // A 3x3 grid has only four intersections, and at that size two of the four
+  // tiers have nothing to grade with: measured over 3,000 candidate boards each,
+  // none needed Normal (Easy always sufficed) and none needed Recursive (Tricky
+  // always sufficed). Tricky itself is fine — roughly one board in ten binds.
+  // Refusing to generate beats offering a difficulty that silently yields
+  // another one (`grade-difficulty-tiers-honestly`); a saved game or a game ID
+  // carrying its own description still loads, because `full` is false there.
+  if (full && p.o === 3 && (p.diff === "normal" || p.diff === "recursive")) {
+    return "Size 3 has no Normal or Recursive puzzles; use Easy or Tricky";
+  }
   return null;
 }
 

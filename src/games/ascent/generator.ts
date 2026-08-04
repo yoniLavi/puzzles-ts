@@ -12,6 +12,7 @@
 
 import { matching } from "../../engine/latin.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { ascentSolve, SolverScratch } from "./solver.ts";
 import {
@@ -20,6 +21,7 @@ import {
   type AscentStep,
   ascentGridSize,
   checkCompletion,
+  DIFF_EASY,
   encodeGridDesc,
   isEdgeValid,
   isObstacle,
@@ -302,17 +304,47 @@ function ascentRemoveNumbers(
   return true;
 }
 
+export interface AscentGenerateOptions {
+  /**
+   * Reproduce upstream's difficulty gate, which does not exist.
+   *
+   * Upstream blanks clues (or moves them to edge arrows) while the graded
+   * solver still finishes the board, and publishes whatever that leaves —
+   * it never asks whether an easier tier would also have done. So the tier
+   * frequently does not bind: measured over this game's own frozen C fixtures,
+   * **7 of the 22 boards above Easy fall to a lower tier**, and over 180
+   * freshly generated boards the rate is 56/180, reaching 12 of 20 at
+   * 5×5 Tricky. The player chose the tier, so {@link newAscentDesc} rejects
+   * such a candidate and generates another.
+   *
+   * Because generation is solver-gated at every removal, that changes every
+   * description above Easy — which would cost the byte-match differential that
+   * validates the generator, the four-tier solver, the per-mode grid padding
+   * and the codec together. This flag keeps that oracle:
+   * `ascent-differential.test.ts` sets it, so the fixtures still match the C
+   * byte-for-byte and the only lines the oracle no longer covers are the tier
+   * check below. Nothing else should ever set it.
+   */
+  readonly upstreamLooseGate?: boolean;
+}
+
 /** Generate a fresh puzzle description for `params` (upstream `new_game_desc`). */
 export function newAscentDesc(
   params: AscentParams,
   rng: RandomState,
+  options: AscentGenerateOptions = {},
 ): { desc: string } {
   const { w, h } = ascentGridSize(params);
+  const loose = options.upstreamLooseGate ?? false;
   const sc = new SolverScratch(w, h, params.mode, w * h - 1);
   let grid: Int16Array | null = null;
   let success = false;
 
+  // Upstream loops unboundedly; the tier gate below rejects candidates, so the
+  // loop needs the house runaway guard (playbook §4.6) rather than a promise.
+  const attempt = retryLimit(`ascent: generation (${w}x${h} d${params.diff})`);
   do {
+    attempt();
     sc.end = w * h - 1;
 
     grid = null;
@@ -328,6 +360,25 @@ export function newAscentDesc(
       params.mode === MODE_EDGES
         ? ascentAddEdges(sc, grid, params, rng)
         : ascentRemoveNumbers(sc, grid, params, rng);
+
+    // The tier gate (the divergence): a board the tier below already cracks is
+    // not the difficulty the player asked for.
+    //
+    // **The probe gets its own scratch, and that is load-bearing.**
+    // `SolverScratch.foundEndpoints` deliberately persists across solves (see
+    // `ascentSolve`) and, once true, permanently weakens the solver. Reusing the
+    // generator's `sc` here would therefore ask a *weakened* solver whether the
+    // easier tier copes — under-rejecting, exactly the stale-scratch defect
+    // `spokes` documents ("its verdict is about the leftover position rather
+    // than about the puzzle"). It would also leave the probe's own marks and
+    // `foundEndpoints` behind for the next candidate, making which boards ship
+    // depend on the gate's side effects. A fresh scratch answers the question a
+    // player would ask: can the tier below solve *this board*, from nothing?
+    if (success && !loose && params.diff > DIFF_EASY) {
+      const probe = new SolverScratch(w, h, params.mode, sc.end);
+      ascentSolve(grid, params.diff - 1, probe);
+      if (checkCompletion(probe.grid, w, h, params.mode)) success = false;
+    }
   } while (!success);
 
   return { desc: encodeGridDesc(grid, w * h) };

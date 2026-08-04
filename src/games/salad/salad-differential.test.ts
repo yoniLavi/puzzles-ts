@@ -10,6 +10,15 @@
  * pseudo-Latin hole translation and the ABC End View border rule) and the
  * run-length codec, all at once.
  *
+ * **`upstreamLooseGate` is set here and nowhere else.** The shipped generator
+ * rejects a board that the tier below already solves, which upstream never
+ * checks (see `SaladGenerateOptions.upstreamLooseGate`). That correction changes
+ * every Extreme description, so the byte-match is preserved by running the
+ * fixtures against upstream's original gate — the shape `spokes` established.
+ * The `extra` check below is what the fixtures now say about difficulty: they
+ * record C's own grading, misgrades and all, which is the evidence for the
+ * divergence rather than a bar the shipped generator is held to.
+ *
  * The fixtures span both game modes, both difficulties, every upstream preset,
  * and a size sweep either side of the `order < 8` "empty grid" quality rule.
  * The fixture is **frozen and cannot be regenerated**. It was captured by
@@ -52,7 +61,7 @@ describeDescDifferential<Fixture, SaladParams>({
   label: (f) =>
     `${f.mode === GAMEMODE_LETTERS ? "letters" : "numbers"} ${f.order}x${f.order} n${f.nums} d${f.diff}`,
   params: (f) => ({ order: f.order, nums: f.nums, mode: f.mode, diff: f.diff }),
-  newDesc: newSaladDesc,
+  newDesc: (p, rng) => newSaladDesc(p, rng, { upstreamLooseGate: true }),
   extra: (f, p) => {
     // The C desc must decode cleanly, and the TS solver must reach the same
     // verdict the C solver recorded for it.

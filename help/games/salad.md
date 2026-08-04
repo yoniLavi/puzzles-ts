@@ -37,6 +37,6 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dt>Symbols</dt>
 	<dd>The amount of different symbols that appear in each row.</dd>
 	<dt>Difficulty</dt>
-	<dd>Determine the difficulty of the generated puzzle.</dd>
+	<dd>Determine the difficulty of the generated puzzle. An Extreme puzzle always needs a technique the Normal level does not have, so the setting you choose is the difficulty you get. Extreme Number Ball puzzles are rare, so one can take a few seconds to appear.</dd>
 </dl>
 

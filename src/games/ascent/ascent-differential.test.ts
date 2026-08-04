@@ -12,6 +12,13 @@
  * run-length codec — all at once. The `extra` check round-trips each C desc
  * through `validateDesc` + `newState` + `encodeGridDesc` (codec inverse).
  *
+ * **`upstreamLooseGate` is set here and nowhere else.** The shipped generator
+ * rejects a board that the tier below already solves, which upstream never
+ * checks (see `AscentGenerateOptions.upstreamLooseGate`; 7 of these very
+ * fixtures are misgraded that way). That correction changes every description
+ * above Easy, so the byte-match is preserved by running the fixtures against
+ * upstream's original gate — the shape `spokes` established.
+ *
  * The fixture is **frozen and cannot be regenerated**. It was captured by
  * `puzzles/auxiliary/ascent-trace.c` against upstream's C, under an
  * Emscripten/CMake build that `retire-c-engine` deleted along with the
@@ -56,7 +63,7 @@ describeDescDifferential<Fixture, AscentParams>({
     removeends: f.removeends,
     symmetrical: f.symmetrical,
   }),
-  newDesc: newAscentDesc,
+  newDesc: (p, rng) => newAscentDesc(p, rng, { upstreamLooseGate: true }),
   extra: (f, p) => {
     expect(validateAscentDesc(p, f.desc)).toBeNull();
     const state = newAscentState(p, f.desc);

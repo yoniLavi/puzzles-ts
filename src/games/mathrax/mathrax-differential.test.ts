@@ -14,6 +14,14 @@
  *    `engine/latin.ts` framework), the candidate-clue precedence cascade and the
  *    run-length codec, all at once (playbook §4.3/§4.4).
  *
+ *    **`upstreamLooseGate` is set here and nowhere else.** The shipped
+ *    generator additionally rejects a board the tier below already solves,
+ *    which upstream never checks (see
+ *    `MathraxGenerateOptions.upstreamLooseGate`; 3 of these very fixtures are
+ *    misgraded that way). That correction changes every description above Easy,
+ *    so the byte-match is preserved by running the fixtures against upstream's
+ *    original gate — the shape `spokes` established.
+ *
  * 2. **Solver-verdict agreement on every fixture, including Recursive.** The
  *    port requires a *unique* solution when stripping (see `generator.ts`'s
  *    divergence note), so its Recursive boards are not upstream's and cannot be
@@ -71,7 +79,7 @@ describeDescDifferential<MathraxFixture, MathraxParams>({
   label: (f) => `${encodeParams(paramsOf(f), true)} seed=${f.seed}`,
   fixtures: faithful,
   params: paramsOf,
-  newDesc: newMathraxDesc,
+  newDesc: (p, rng) => newMathraxDesc(p, rng, { upstreamLooseGate: true }),
   // The C description must also survive our own decoder unchanged.
   extra: (f, p) => {
     expect(validateDesc(p, f.desc)).toBeNull();

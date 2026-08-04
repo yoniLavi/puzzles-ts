@@ -72,6 +72,37 @@ describe("ascent generation + solving", () => {
   }
 });
 
+// The tier gate (grade-difficulty-tiers-honestly). Upstream had none, so a
+// tier frequently did not bind: 7 of the 22 frozen C fixtures above Easy, and
+// 56 of 180 freshly generated boards, fell to a lower tier than requested.
+describe("ascent difficulty tiers bind", () => {
+  const TIERED: [string, AscentParams][] = [
+    ["5x5 rect normal", mk(5, 5, 1, MODE_RECT)],
+    ["5x5 rect tricky", mk(5, 5, 2, MODE_RECT)],
+    ["5x5 rect hard", mk(5, 5, 3, MODE_RECT)],
+    ["6x5 orthogonal normal", mk(6, 5, 1, MODE_ORTHOGONAL)],
+    ["6x6 orthogonal hard", mk(6, 6, 3, MODE_ORTHOGONAL)],
+    ["7x7 hexagon normal", mk(7, 7, 1, MODE_HEXAGON)],
+    ["5x5 edges tricky", mk(5, 5, 2, MODE_EDGES, true)],
+  ];
+
+  /** Does the graded solver finish this board with its ladder capped at `cap`? */
+  function solvesAt(p: AscentParams, desc: string, cap: number): boolean {
+    const state = newAscentState(p, desc);
+    const sc = new SolverScratch(state.w, state.h, state.mode, state.last);
+    ascentSolve(state.grid, cap, sc);
+    return checkCompletion(sc.grid, state.w, state.h, state.mode);
+  }
+
+  for (const [name, params] of TIERED) {
+    it(`${name}: needs its own tier, not the one below`, () => {
+      const { desc } = newAscentDesc(params, randomNew(`ascent-tier-${name}`));
+      expect(solvesAt(params, desc, params.diff)).toBe(true);
+      expect(solvesAt(params, desc, params.diff - 1)).toBe(false);
+    });
+  }
+});
+
 describe("ascent generator determinism", () => {
   it("same seed reproduces the same desc", () => {
     const p = mk(6, 5, 1, MODE_RECT);

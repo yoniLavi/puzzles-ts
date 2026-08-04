@@ -42,19 +42,26 @@ effect of the released oracle, not an accident of the sequencing.
 
 ## What Changes
 
-- **Bricks and Mathrax reject a board solvable one tier below the requested one**,
-  so every tier above the easiest means what it says.
-- **Each keeps its differential** by retaining upstream's original acceptance
-  check behind a test-only path, as Spokes does. If that proves impossible for a
-  game, the fixtures are re-founded on "uniquely solvable at exactly its stated
-  difficulty" and the loss is recorded.
-- **Audit the remaining tiered games** — Ascent and Salad show no lower-tier
-  rejection and must be checked rather than assumed; confirm the eight listed
-  above; report anything else found. Fix what the audit turns up, or record why
-  a game legitimately cannot grade (a tier whose deduction set is a superset in
-  name only).
+- **Four games reject a board solvable one tier below the requested one** —
+  Bricks and Mathrax as proposed, **plus Salad and Ascent**, which the survey
+  found to be the two worst offenders in the collection (Salad's Extreme setting
+  gave a Normal board 92% of the time). See `design.md` D1 for the full table.
+- **All four keep their differentials** by retaining upstream's original
+  acceptance check behind a test-only flag, as Spokes does. No fixture was
+  re-founded and none had to be.
+- **Two tiers turned out to be empty, and are refused rather than downgraded** —
+  Bricks' Tricky at every size (its lookahead depth 2 decides nothing depth 1
+  does not), and Mathrax at order 3 for Normal and Recursive. Refusal applies to
+  generation only; existing game IDs still load.
 - **Make it a cross-game requirement** in `ts-migration`, so a future game cannot
-  ship a tier that does not bind.
+  ship a tier that does not bind — including the rule that an unbindable tier is
+  *refused, not silently downgraded*, which four existing games currently
+  violate deliberately and are recorded as known deviations.
+
+The survey's own instrument was wrong first: enumerating tiered games by their
+`DIFF_*` constants missed **Bridges**, which spells its tiers differently. It
+grades honestly, so the defect list is unchanged — but the count is 27, not 26,
+and `add-game-difficulty-contract` inherits the same blind spot (`design.md` D1).
 
 Explicitly **not** in this change: inventing new difficulty tiers for games that
 have none (Clusters, Sticks, Subsets — separate changes), and re-balancing what
@@ -62,11 +69,17 @@ the existing tiers *mean*. This makes the labels true, not the curve different.
 
 ## Impact
 
-- Affected specs: `bricks`, `mathrax`, `ts-migration` (a new cross-game
-  requirement).
-- Affected code: the generator acceptance gate in each game, plus its
-  differential.
-- **Every Bricks and Mathrax board above the easiest tier changes.** Existing
-  game IDs carrying a description still load; a bare `params#seed` produces a
-  different board. Generation cost rises (one extra solver run per candidate,
-  plus rejections) and must be measured by the tail, not the median.
+- Affected specs: `bricks`, `mathrax`, `salad`, `ascent`, `ts-migration` (three
+  new cross-game requirements).
+- Affected code: the generator acceptance gate in each of the four games, plus
+  its differential; `validateParams` in Bricks and Mathrax; four help pages.
+- **Every Salad, Ascent and Mathrax board above the easiest tier changes**, and
+  Bricks loses its Tricky tier. Existing game IDs carrying a description still
+  load; a bare `params#seed` produces a different board. **Bricks' Normal boards
+  are bit-identical to before** — for Normal, "the tier below" already *was* Easy.
+- Generation cost, measured by the tail over 30 boards per configuration: Ascent
+  and Mathrax stay under 130 ms worst case, Bricks is unchanged, and only Salad's
+  Number Ball Extreme is genuinely expensive (1.6 s median, 6.9 s worst) because
+  Extreme boards are genuinely rare there — a median of 486 candidates and a worst
+  of 4,419, which required raising Salad's retry bound so a legal seed cannot
+  exhaust it.

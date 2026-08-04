@@ -24,6 +24,9 @@ import {
   type BricksUi,
   bitsColour,
   COL_MASK,
+  DIFF_EASY,
+  DIFF_NORMAL,
+  DIFF_TRICKY,
   decodeParams,
   encodeDesc,
   encodeParams,
@@ -294,7 +297,7 @@ describe("bricks generator", () => {
   it("produces a uniquely-solvable board for each preset", () => {
     for (const p of [
       { w: 7, h: 6, diff: 0 },
-      { w: 7, h: 6, diff: 2 },
+      { w: 7, h: 6, diff: 1 },
     ] as BricksParams[]) {
       const { desc } = newBricksDesc(p, randomNew(`bricks-unit-${p.diff}`));
       expect(validateDesc(p, desc)).toBeNull();
@@ -302,6 +305,45 @@ describe("bricks generator", () => {
       const grid = st.grid.slice();
       expect(solveGame(grid, st.w, st.h, 2, true, true)).toBe("complete");
     }
+  });
+
+  // The tier gate (grade-difficulty-tiers-honestly). Upstream probed at Easy
+  // whatever tier was asked for, so Normal was gated correctly by accident and
+  // Tricky not at all.
+  describe("difficulty tiers bind", () => {
+    for (const [w, h] of [
+      [7, 6],
+      [10, 8],
+    ]) {
+      it(`${w}x${h} Normal needs Normal, not Easy`, () => {
+        const p: BricksParams = { w, h, diff: DIFF_NORMAL };
+        const { desc } = newBricksDesc(p, randomNew(`bricks-tier-${w}x${h}`));
+        const st = newState(p, desc);
+        expect(solveGame(st.grid.slice(), st.w, st.h, DIFF_NORMAL, true, true)).toBe(
+          "complete",
+        );
+        expect(solveGame(st.grid.slice(), st.w, st.h, DIFF_EASY, true, true)).not.toBe(
+          "complete",
+        );
+      });
+    }
+
+    it("refuses to generate Tricky, for which no board exists", () => {
+      const p: BricksParams = { w: 7, h: 6, diff: DIFF_TRICKY };
+      expect(bricksGame.validateParams(p, true)).toMatch(/Tricky/);
+      // Loading an existing Tricky description still works.
+      expect(bricksGame.validateParams(p, false)).toBeNull();
+      // And the generator refuses immediately rather than spinning its retry
+      // budget on a tier that can never be satisfied.
+      expect(() => newBricksDesc(p, randomNew("bricks-tricky"))).toThrow(
+        /no board requires difficulty/,
+      );
+    });
+
+    it("offers only the difficulties it can generate", () => {
+      const titles = (bricksGame.presets().submenu ?? []).map((e) => e.title);
+      expect(titles).toEqual(["7x6 Easy", "7x6 Normal", "10x8 Easy", "10x8 Normal"]);
+    });
   });
 });
 
