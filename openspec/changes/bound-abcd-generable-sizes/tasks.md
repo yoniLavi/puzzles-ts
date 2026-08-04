@@ -4,6 +4,8 @@
 
 - [ ] 1.1 Sweep acceptance rate over `(w, h, n)` — at least `n` 3–7 against areas
       25–144 — with enough attempts per point to separate "rare" from "never".
+      **Sweep shapes, not just areas**: the Clusters precedent found a predicate
+      that area could not express at all (a 1xN strip, at any length).
 - [ ] 1.2 Decide the cutoff: the rate below which a board is refused, expressed
       as a wait a player would actually accept at ~0.065 ms per attempt.
 
@@ -26,3 +28,6 @@
 
 - [ ] 4.1 Spec delta into `abcd`.
 - [ ] 4.2 Note the limit in `help/games/abcd.md` (as Crossing and Seismic do).
+- [ ] 4.3 Decide the 1xN Clusters residual named in `proposal.md`: either this
+      change establishes a rule for "generates, but should not be offered" and
+      Clusters follows it, or the note is left standing and says so.

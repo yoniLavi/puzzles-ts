@@ -2,11 +2,22 @@
 
 ## Why
 
-**Twenty-six games have difficulty tiers and no two of them can be asked about
+**Twenty-eight games have difficulty tiers and no two of them can be asked about
 them the same way.** Measured 2026-08-01: 26 games carry `DIFF_*` constants, and
 the field naming alone is three-way split — `diff` (13 games), `difficulty` (12),
 `diffLevel` (Singles). There is no way to write a sentence about "every tiered
 game" in code.
+
+**Two corrections to that count, both instructive.** The `DIFF_*` grep missed
+**Bridges**, whose tiers are a plain `difficulty: number` against a
+`DIFFICULTY_NAMES` array (`grade-difficulty-tiers-honestly` D1) — so this
+change's proposed guard *"the declared tier count matches the game's own `DIFF_*`
+constants"* inherits a blind spot that would let exactly that game ship a stale
+list. **Enumerate from the registry and `paramConfig`, not from a naming
+convention.** And **Clusters** gained tiers on 2026-08-04
+(`add-clusters-difficulty-tiers`), which is why the headline says 28: the
+population this contract covers is not fixed, so the enumeration has to be
+derived rather than transcribed.
 
 That gap has already cost twice, in different currencies:
 
@@ -38,9 +49,18 @@ to read and set one on a params object, and how to run the solver capped at one.
   `withTier(params, tier)`, and `solveAtCap(params, desc, cap)` returning a
   discriminated verdict. Optional, like `hint`, `findMistakes` and
   `supersededDesc` before it, so the 31 untiered games are untouched.
-- **Implement it for all 26 tiered games.** Each game's solver already takes a cap
+- **Implement it for all 28 tiered games.** Each game's solver already takes a cap
   (Magnets' `solve(diff)`, and so on), so the adapter is a small closure, not new
   logic.
+- **Do not make `solvableAtExactlyTier` mandate two solver runs.** Clusters is the
+  worked counter-example: its tiers are *nested rungs of one fixpoint* rather than
+  two solvers, so it answers "solvable at `d`?" and "solvable at `d-1`?" from a
+  single pass — run the cheap rung first, and the deeper solve resumes from that
+  same fixpoint for free (`add-clusters-difficulty-tiers` D3). That ordering is
+  not a micro-optimisation there: it made the *whole generator* faster than it was
+  before it had tiers. A helper whose contract is "call the solver twice" would
+  forbid it, so the helper should take the game's verdict and let the game decide
+  how many passes produce it.
 - **Ship the guards the contract makes possible**, as one cross-game test file:
   - **cap-monotonicity** for every tiered game — the Boats defect class, hunted
     across the collection instead of one game at a time;
@@ -80,7 +100,7 @@ name — a second one would widen an exemption that was made narrow on purpose.
 
 - Affected specs: `ts-engine` (the new optional hook), `ts-migration` (the
   cross-game guarantee, replacing the one-game version).
-- Affected code: `engine/game.ts`, a new `engine/difficulty.ts`, 26 game
+- Affected code: `engine/game.ts`, a new `engine/difficulty.ts`, 28 game
   `index.ts` files, and one new cross-game test file.
 - **No behaviour change.** The contract is additive and describes what each game
   already does; no differential may move. A moving fixture means an adapter
