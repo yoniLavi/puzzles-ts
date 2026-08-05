@@ -9,30 +9,40 @@ The engine SHALL provide `src/games/subsets/` implementing the `Game`
 interface for Subsets, registered so the puzzle is served by the TypeScript
 engine.
 
-Parameters SHALL be a width, a height and a universe size `n`. Validation SHALL
-accept only `4×4` with `n = 4`, matching upstream, and there SHALL be a single
-preset for those parameters. A game ID SHALL encode the width, height and universe
-size and round-trip through decode. No Custom-parameters dialog SHALL be offered,
-because only one configuration is legal.
+Parameters SHALL be a width, a height, a universe size `n` and a difficulty
+tier. Validation SHALL accept only `4×4` with `n = 4`, matching upstream, and
+SHALL reject a tier naming no rung rather than silently substituting one. There
+SHALL be one preset per tier. A game ID SHALL encode the width, height,
+universe size and tier and round-trip through decode, and each tier SHALL
+encode to a *distinct* ID. A Custom-parameters dialog SHALL be offered for the
+tier alone — the board shape has exactly one legal value, so it is the tier or
+nothing.
 
 Subsets is a deductive puzzle with a unique solution, so it SHALL declare a
-`findMistakes` hook.
+`findMistakes` hook. It SHALL also declare the `Game.difficulty` contract, so
+its tiers fall under the cross-game cap-monotonicity and tier-reachability
+guards rather than under hand-written per-game ones.
 
 #### Scenario: The preset produces a soluble board
 
-- **WHEN** a new game is generated for the preset
+- **WHEN** a new game is generated for any preset
 - **THEN** a board is produced whose given clues are internally consistent and
-  whose full solution the solver reaches
+  whose full solution the solver reaches at that preset's tier
 
 #### Scenario: A game ID round-trips through the parameters
 
 - **WHEN** a parameter set is encoded to a game ID and decoded
-- **THEN** the same width, height and universe size are recovered
+- **THEN** the same width, height, universe size and tier are recovered
 
 #### Scenario: Unsupported parameters are rejected
 
 - **WHEN** parameters other than `4×4` with `n = 4` are validated
 - **THEN** they are rejected with the upstream "only 4x4 supported" message
+
+#### Scenario: An unrecognised difficulty character is rejected
+
+- **WHEN** a game ID carries a difficulty character naming no tier
+- **THEN** validation rejects it, rather than falling back to another tier
 
 ### Requirement: Subsets descriptions use the per-cell arrow encoding
 
@@ -73,14 +83,37 @@ possible set-values per cell. The solver SHALL apply arrow propagation (a supers
 cell contains its subset neighbour's confirmed letters, and a subset cell cannot
 hold letters its superset lacks), missing-arrow disjointness, single-count and
 single-position placement, and the advanced arrow-subset elimination, in the
-upstream order. The solver SHALL NOT include upstream's disabled advanced-rule
-branch, so that its strength matches the compiled C exactly.
+upstream order.
+
+The solver SHALL take an explicit difficulty cap, with no default: an implicit
+cap is how a caller silently measures a tier it did not mean. At the lowest tier
+the rule set SHALL be upstream's compiled strength exactly — that is, without
+upstream's disabled advanced-rule branch. Above it the solver SHALL additionally
+apply the **mirror half** of the advanced arrow rule: where an arrow forces
+`set(head) ⊂ set(tail)`, a surviving candidate at the head that fits inside no
+surviving candidate at the tail SHALL be eliminated. Upstream wrote this half,
+commented it out under `TODO repair this`, and shipped without it.
+
+That elimination SHALL be sound: it SHALL never remove a set-value that the
+board's own solution places in that cell. An unsound elimination yields a puzzle
+whose advertised unique solution the solver has ruled out, which is worse than a
+weak solver, so soundness SHALL be checked against the generator's known
+assignment rather than against the other cap.
 
 The generator SHALL assign every set-value to the grid by a single shuffle, derive
 all arrow clues from the subset relation, then blank cells in a shuffled order,
-keeping a cell blank only while the solver still reaches a complete solution.
-Generation from a given seed SHALL be reproducible, and the TypeScript generator
-SHALL reproduce the C description byte-for-byte for the same seed.
+keeping a cell blank only while the solver, capped at the requested tier, still
+reaches a complete solution. Above the lowest tier the generator SHALL also
+reject a candidate board that the tier below already solves, and SHALL redraw a
+wholly fresh board rather than perturbing the rejected one — every candidate here
+consumes fresh randomness, so a plain retry cannot re-derive what it rejected.
+
+Generation from a given seed SHALL be reproducible. At the lowest tier the
+TypeScript generator SHALL reproduce the C description **byte-for-byte**, on the
+live default path and not behind a test-only flag: the new rung is added *above*
+upstream's strength rather than in place of it, and the lowest tier has no tier
+below it to be graded against, so neither the rules nor the acceptance test nor
+the RNG draw order changes there.
 
 #### Scenario: The solver classifies a board
 
@@ -90,14 +123,27 @@ SHALL reproduce the C description byte-for-byte for the same seed.
 
 #### Scenario: Generation is reproducible from a seed
 
-- **WHEN** the same seed is used twice for the preset parameters
+- **WHEN** the same seed is used twice for the same parameters
 - **THEN** both runs produce the identical board description
 
 #### Scenario: The TypeScript generator matches the C description
 
-- **WHEN** a board is generated from a seed by both the C reference and the
-  TypeScript port
+- **WHEN** a board is generated from a seed at the lowest tier by both the C
+  reference and the TypeScript port
 - **THEN** the two descriptions are byte-for-byte identical
+
+#### Scenario: A board above the lowest tier needs its tier
+
+- **WHEN** a board generated above the lowest tier is solved with the ladder
+  capped one tier below it
+- **THEN** the solver does not reach a complete solution
+
+#### Scenario: The restored elimination never removes the true answer
+
+- **WHEN** a generated board is re-solved from its description with the ladder at
+  its top
+- **THEN** the solved board matches, cell for cell, the assignment the generator
+  blanked to produce it
 
 ### Requirement: Subsets input, marking, mistakes and completion
 
@@ -138,62 +184,54 @@ animation.
 
 ### Requirement: Subsets provides an explained hint
 
-Subsets SHALL implement the hint hook, computing a full narrated plan from the
-player's current marks (continuing from the position, not restarting from the
-givens) using exactly the deductions of the shipped solver — the hint SHALL
-NOT deduce more than the generator's uniqueness gate vetted.
+Subsets SHALL implement `hint()`, planning from the player's current marks and
+narrating each firing as the deduction that forces it.
 
-Each hint step SHALL decide **one letter slot**, and its narration SHALL be
-structured *attention → deduction → action*: the thing to look at (a
-highlighted neighbour cell across a horseshoe, or a highlighted set in the
-tally), what it forces, and the mark to make — never a bare instruction and
-never a shared "for the same reason". A deduction that decides several letters
-of a cell SHALL be presented as one sub-goal journey whose later letters are
-continuation steps; each continuation step SHALL carry its own per-slot string
-that names its referent explicitly (never a bare pronoun) and signals that it
-continues the same sub-goal. All of the journey's marks SHALL render in the
-same hint colour. The acted-on slot SHALL
-be highlighted, together with the evidence the step's narration names.
-
-The hint SHALL prefer the most teachable deduction available: a horseshoe
-propagation, then a **hidden single** (a set that can still go in only one
-cell), then a candidate collapse (a cell that can hold only one set). A hidden
-single SHALL be shown with the set→placement spotlight (below). A collapse
-step SHALL additionally explain why at least one competitor set is excluded —
-naming that set and the visible rule that blocks it (already placed, a
-horseshoe, or a missing horseshoe) — and highlight the cell that blocks it.
-
-The hint SHALL refuse with an explanatory message on a board whose marks are
-mistaken — whether flagged by the rule validator or contradicting the unique
-solution while locally clean — and on a solved board.
+The recorder SHALL be able to narrate every deduction the solver may use,
+including rules available only above the lowest tier: a board whose tier the
+recorder cannot reach stalls mid-plan with nothing to say. Those rules SHALL be
+reached for **only once the cheaper rules are exhausted**, so a board at the
+lowest tier is planned exactly as a recorder lacking them would plan it. That
+equivalence SHALL be asserted by comparison against a capped recorder, not
+assumed — running a stronger rule unconditionally is sound and still silently
+re-plans easier boards.
 
 #### Scenario: A hint narrates an arrow deduction
 
-- **WHEN** a hint is requested and the next deduction propagates a letter
-  across a horseshoe arrow
-- **THEN** the step targets that letter's slot, highlights the neighbour the
-  arrow connects, and its narration states the containment premise and the
-  forced conclusion for that slot
+- **WHEN** a hint is requested on a board where a horseshoe forces a letter
+- **THEN** the explanation names the arrow relation that forces it, not just the
+  letter to write
 
 #### Scenario: A hidden single is shown with its placement spotlight
 
-- **WHEN** the next deduction is a set that can still legally go in only one
-  cell
-- **THEN** the step spotlights that set's single candidate cell and its tally
-  entry, and narrates that the set can go nowhere else before marking the slot
+- **WHEN** a set has exactly one cell it can still legally occupy
+- **THEN** the hint places it there and spotlights that cell as the only
+  candidate
 
 #### Scenario: A deduction deciding several letters reads as one journey
 
-- **WHEN** a single deduction decides more than one letter of a cell
-- **THEN** the letters are emitted as one journey whose later steps are
-  flagged as continuations — each with its own per-slot narration — and
-  auto-hint plays them as one coherent hint
+- **WHEN** one firing decides more than one letter slot
+- **THEN** the steps are emitted as a single continued journey rather than
+  several separate hints
 
 #### Scenario: A mistaken board is refused honestly
 
-- **WHEN** a hint is requested on a board with a mark that contradicts the
-  unique solution, whether or not a local rule is yet violated
-- **THEN** no plan is shown and the player is told a mark must be wrong
+- **WHEN** a hint is requested on a board contradicting its own clues
+- **THEN** the hint refuses and points at the mistakes instead of deducing from
+  a wrong position
+
+#### Scenario: A board above the lowest tier is fully narratable
+
+- **WHEN** a hint plan is computed from the opening position of a board
+  generated above the lowest tier
+- **THEN** the plan reaches a complete solution, and the same recorder capped
+  one tier lower does not
+
+#### Scenario: The lowest tier's plan is unchanged by the higher rules
+
+- **WHEN** a board at the lowest tier is planned by the full recorder and by one
+  capped below the higher rules
+- **THEN** both produce the same firings, in the same order
 
 ### Requirement: Subsets offers a two-way placement reference aid
 

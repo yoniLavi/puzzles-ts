@@ -76,6 +76,20 @@ unique completion; it SHALL then remove clues in a randomised order, keeping eac
 removal only while the board stays uniquely solvable. Generation from a given seed
 SHALL be reproducible.
 
+Sticks offers **one** difficulty tier, so grading it honestly means that tier is
+what it claims to be. Every generated board SHALL therefore have **exactly one**
+solution, and the shipped deduction SHALL reach it with no guessing anywhere.
+Uniqueness SHALL be established by a witness independent of that solver: the
+solver returning "complete" reports only on the line of play it followed, and is
+not evidence about how many solutions exist. That witness SHALL itself be shown
+capable of reporting more than one solution, or the assertion is vacuous.
+
+The two ported look-behind bounds in the segment-reachability computation
+(`x > 1` / `y > 1`, where the geometry admits `x > 0` / `y > 0`) SHALL be kept.
+They are genuine bugs that make the checker weaker than intended, and they are
+retained because correcting them was **measured** to change no verdict on any
+board at any offered preset — not merely because upstream wrote them that way.
+
 #### Scenario: The solver completes a soluble board
 
 - **WHEN** a generated board is solved from its clues alone
@@ -86,6 +100,17 @@ SHALL be reproducible.
 
 - **WHEN** the same seed is used twice for the same parameters
 - **THEN** both runs produce the identical board description
+
+#### Scenario: A generated board has exactly one solution
+
+- **WHEN** a generated board is enumerated by a search that propagates the shipped
+  deduction and branches on the cells it leaves undecided
+- **THEN** exactly one solution is found
+
+#### Scenario: The uniqueness witness can report more than one
+
+- **WHEN** that same search is run on a board carrying no clues at all
+- **THEN** it reports more than one solution
 
 ### Requirement: Sticks input, mistake-checking and completion
 
