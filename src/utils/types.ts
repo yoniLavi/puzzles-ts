@@ -1,7 +1,7 @@
 /**
  * Return the PropertyDescriptor for property in obj's prototype chain (if any)
  */
-export function getPropertyDescriptor(
+function getPropertyDescriptor(
   obj: unknown,
   property: PropertyKey,
 ): PropertyDescriptor | undefined {
@@ -17,7 +17,7 @@ export function getPropertyDescriptor(
 /**
  * Runtime type guard that obj[key] is readable
  */
-export function hasReadableProperty<T, K extends string>(
+function hasReadableProperty<T, K extends string>(
   obj: T,
   key: K,
 ): obj is T & Readonly<Record<K, unknown>> {
@@ -25,17 +25,6 @@ export function hasReadableProperty<T, K extends string>(
   return descriptor
     ? "value" in descriptor || typeof descriptor?.get === "function"
     : false;
-}
-
-/**
- * Runtime type guard that obj[key] is writable
- */
-export function hasWritableProperty<T, K extends string>(
-  obj: T,
-  key: K,
-): obj is T & Record<K, unknown> {
-  const descriptor = getPropertyDescriptor(obj, key);
-  return descriptor?.writable || typeof descriptor?.set === "function";
 }
 
 /**
@@ -51,23 +40,6 @@ export function assertHasReadableProperty<T, K extends string>(
       typeof message === "function"
         ? message()
         : (message ?? `Object does not have property ${key}`);
-    throw new Error(errorMessage);
-  }
-}
-
-/**
- * Development-only runtime assertion that obj[key] is writable
- */
-export function assertHasWritableProperty<T, K extends string>(
-  obj: T,
-  key: K,
-  message?: string | (() => string),
-): asserts obj is T & Record<K, unknown> {
-  if (import.meta.env.DEV && !hasWritableProperty(obj, key)) {
-    const errorMessage =
-      typeof message === "function"
-        ? message()
-        : (message ?? `Object does not have writable property ${key}`);
     throw new Error(errorMessage);
   }
 }

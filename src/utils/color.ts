@@ -7,7 +7,7 @@ import {
   sRGB as sRGBspace,
 } from "colorjs.io/fn";
 import type { Colour } from "../engine/types.ts";
-import { almostEqual, clamp } from "./math.ts";
+import { clamp } from "./math.ts";
 
 // Register color spaces for parse() function.
 // Must include anything used by our design tokens, plus sRGB just in case.
@@ -16,9 +16,6 @@ ColorSpace.register(sRGBspace);
 
 // A "Colour" (from the C puzzle code) is an [r, g, b] triplet
 // with each component in the range [0, 1] (in sRGB space).
-
-export const equalColour = (c1: Colour, c2: Colour) =>
-  c1.every((component, i) => almostEqual(component, c2[i]));
 
 /**
  * OKLch color space coords:
