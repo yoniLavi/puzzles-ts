@@ -91,10 +91,6 @@ export function randomUpto(state: RandomState, limit: number): number {
   return Math.floor(data / divisor);
 }
 
-export function randomFree(_state: RandomState): void {
-  // No-op in TS — kept for API parity with random.c.
-}
-
 export function randomStateEncode(state: RandomState): string {
   let s = "";
   for (let i = 0; i < SEEDBUF_LEN; i++) {

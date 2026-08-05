@@ -130,7 +130,7 @@ const kiteForwardRight = (k: Kite): Kite => ({
  * its published write-up (linked at the top of this file) does not restate; the
  * page was deleted by `refile-misplaced-artefacts` and this is where it went.
  */
-export enum KiteStep {
+enum KiteStep {
   Left = 0,
   Right = 1,
   ForwardLeft = 2,
@@ -466,7 +466,7 @@ function chooseMpp(
 }
 
 /** `kitemap` entry index for a step out of (kite, hat, meta). Stride 3. */
-export const kitemapIndex = (
+const kitemapIndex = (
   step: KiteStep,
   kite: number,
   hat: number,
@@ -474,7 +474,7 @@ export const kitemapIndex = (
 ): number => step + 4 * (kite + 8 * (hat + 4 * meta));
 
 /** `metamap` entry index for the pair (meta, meta2). Stride 2. */
-export const metamapIndex = (meta: number, meta2: number): number =>
+const metamapIndex = (meta: number, meta2: number): number =>
   meta2 * MT_MAXEXPAND + meta;
 
 /**

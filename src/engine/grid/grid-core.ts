@@ -124,6 +124,12 @@ const SQUARE_TILESIZE = 20;
  * (no randomness, no floating point). Each cell is a four-dot clockwise
  * face at pixel origin `(SQUARE_TILESIZE·x, SQUARE_TILESIZE·y)`; shared
  * corner dots are deduplicated. Mirrors `grid_new_square`.
+ *
+ * @public Reached only through the `grid/index.ts` barrel (which its own doc
+ * comment tells callers to import from), so knip cannot see the re-export
+ * chain and reports this declaration as unused. It is not: `loopgen.test.ts`
+ * and `grid-geometry.test.ts` both call it. The tag is what keeps the knip
+ * report at zero, so a real finding there means something.
  */
 export function gridNewSquare(width: number, height: number): Grid {
   const a = SQUARE_TILESIZE;

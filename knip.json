@@ -7,7 +7,9 @@
     "src/home-page.ts",
     "src/puzzle-page.ts",
     "vite-plugins/*.ts",
-    "scripts/*.mjs"
+    "scripts/*.mjs",
+    "src/engine/index.ts",
+    "src/engine/grid/index.ts"
   ],
   "project": ["src/**/*.ts", "vite-plugins/**/*.ts", "scripts/**/*.mjs"],
   "ignoreDependencies": ["jscpd", "madge"],
@@ -18,5 +20,7 @@
       "!src/asset-integrity.test.ts",
       "!src/module-layering.test.ts"
     ]
-  }
+  },
+  "ignoreExportsUsedInFile": true,
+  "tags": ["-public"]
 }

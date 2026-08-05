@@ -190,7 +190,7 @@ export function coordCmp(a: Coord, b: Coord): number {
  * it is settled — at random, or from a stored desc — the moment a step needs to
  * cross out of it.
  */
-export interface HexCoord {
+interface HexCoord {
   index: number;
   type: Hex;
 }

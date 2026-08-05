@@ -114,6 +114,22 @@ fi
 #
 # Config hints are deliberately NOT suppressed (`--no-config-hints` was what
 # hid the diagnosis). They are quiet when the config is right.
+#
+# THE REPORT IS AT ZERO, AND THAT IS THE POINT. Three further settings got it
+# there without hiding anything real, so a single line of output now means a
+# genuine finding rather than a number to be squinted at:
+#   ignoreExportsUsedInFile  stops reporting an export that its own file uses.
+#     Those are over-exports, not dead code, and de-exporting them piecemeal
+#     splits documented families (border-grid's MAYBE/YES/NO tri-state,
+#     hat-tables' kitemap*/metamap*) across two visibilities to please a tool.
+#   the two barrels as `entry`  engine/index.ts and grid/index.ts ARE entry
+#     points — grid/index.ts's doc comment tells callers to import from it — so
+#     their re-exports are public API, not dead code.
+#   tags: ["-public"]  one export (grid-core.ts gridNewSquare) is reached only
+#     through the barrel and knip cannot follow that re-export chain; the
+#     `@public` tag on it carries the reason. It is the ONLY one in the tree.
+# Re-verify the zero rather than trusting it: plant a file nothing imports and
+# knip must report it. That check is what caught the original blindness.
 echo "  knip…"
 npx knip >"$OUT/knip.txt" 2>&1 || true
 
