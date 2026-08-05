@@ -28,14 +28,28 @@ export const equalColour = (c1: Colour, c2: Colour) =>
  */
 export type OKLCH = [l: number, c: number, h: number];
 
+/**
+ * colorjs.io 0.7 widened its `Coords` to `[number | null, …]` to carry CSS
+ * Color 4 *missing* components — the `none` in `oklch(0.5 none 0)`. CSS
+ * resolves a missing component to 0 wherever it is used as a number, so that
+ * is the coercion here: it keeps the tuple total without inventing a value.
+ * Reachable only through {@link cssColorToOKLCH}, whose input is an arbitrary
+ * CSS string; the two conversions below start from coords we supply.
+ */
+const coords3 = (c: readonly (number | null)[]): [number, number, number] => [
+  c[0] ?? 0,
+  c[1] ?? 0,
+  c[2] ?? 0,
+];
+
 export const colourToOKLCH = (rgb: Colour): OKLCH =>
-  convert({ space: sRGBspace, coords: rgb }, OKLCHspace).coords;
+  coords3(convert({ space: sRGBspace, coords: rgb }, OKLCHspace).coords);
 
 export const oklchToColour = (lch: OKLCH): Colour =>
-  convert({ space: OKLCHspace, coords: lch }, sRGBspace).coords;
+  coords3(convert({ space: OKLCHspace, coords: lch }, sRGBspace).coords);
 
 export const cssColorToOKLCH = (cssColor: string): OKLCH =>
-  convert(parse(cssColor), OKLCHspace).coords;
+  coords3(convert(parse(cssColor), OKLCHspace).coords);
 
 export const oklchToCSSColor = (lch: OKLCH): string =>
   // display() returns the best CSS <color> string this browser can handle.

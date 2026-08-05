@@ -336,12 +336,15 @@ function cellsChangedBy(m: PatternMove, state: PatternState): Map<number, GridVa
     }
     return out;
   }
-  for (let yy = m.y; yy < m.y + m.h; yy++) {
-    for (let xx = m.x; xx < m.x + m.w; xx++) {
+  // Loop-invariant, so read once. `w`/`h` here are the grid's, hence the
+  // renames: the rectangle carries its own.
+  const { x: rx, y: ry, w: rw, h: rh, value, onlyBlank } = m;
+  for (let yy = ry; yy < ry + rh; yy++) {
+    for (let xx = rx; xx < rx + rw; xx++) {
       const i = yy * w + xx;
       if (imm[i]) continue;
-      if (m.onlyBlank && grid[i] !== GRID_UNKNOWN) continue;
-      if (grid[i] !== m.value) out.set(i, m.value);
+      if (onlyBlank && grid[i] !== GRID_UNKNOWN) continue;
+      if (grid[i] !== value) out.set(i, value);
     }
   }
   return out;

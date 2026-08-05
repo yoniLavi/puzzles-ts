@@ -263,12 +263,16 @@ function executeMove(state: BoatsState, move: BoatsMove): BoatsState {
   const next = cloneState(state);
 
   if (move.kind === "fill") {
-    for (let x = move.x0; x <= move.x1; x++) {
-      for (let y = move.y0; y <= move.y1; y++) {
+    // Bounds and both fill values are loop-invariant: read them once rather
+    // than re-reading the move on every cell of the rectangle.
+    const { x0, x1, y0, y1, from, to } = move;
+    const fill = to === "B" ? SHIP_VAGUE : to === "W" ? WATER : EMPTY;
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
         const i = y * w + x;
         if (state.gridClues[i] !== EMPTY) continue; // a given square is fixed
-        if (move.from !== "*" && fillOf(next.grid[i]) !== move.from) continue;
-        next.grid[i] = move.to === "B" ? SHIP_VAGUE : move.to === "W" ? WATER : EMPTY;
+        if (from !== "*" && fillOf(next.grid[i]) !== from) continue;
+        next.grid[i] = fill;
       }
     }
   } else {

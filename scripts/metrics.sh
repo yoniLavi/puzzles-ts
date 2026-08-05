@@ -23,6 +23,10 @@
 #                not a runtime-cycle count on a codebase with verbatimModuleSyntax
 #                — `import type` is erased and forms no runtime edge. Measured
 #                2026-08-01: raw 20, runtime 1. See scripts/metrics-cycles.mjs.
+#                CURRENTLY UNAVAILABLE (2026-08-05): madge cannot run under
+#                TypeScript 7 — see the loud arm in the madge section below. The
+#                last good reading is the 2026-08-01 one above; treat it as the
+#                baseline to re-measure against, not as the current state.
 #   dead code    knip. Expect a small haul; this is a maintained tree, not a
 #                port with #ifdef-orphaned helpers.
 #   complexity   biome's noExcessiveCognitiveComplexity (the same published Sonar
@@ -60,10 +64,28 @@ npx jscpd src \
   >"$OUT/jscpd.txt" 2>&1 || true
 
 # --- import cycles ----------------------------------------------------------
+# madge is BROKEN under TypeScript 7 and this branch is why the failure is not
+# swallowed. `ts-api-utils` (reached via precinct → @typescript-eslint) reads
+# `ts.TypeFlags`, which the Go port does not expose, so madge dies on load with
+# `TypeError: Cannot read properties of undefined`. Its exit code cannot be the
+# discriminator — `--circular` exits 1 when it *finds* cycles too — so the crash
+# is detected by signature. The point of the loud arm: a `|| true` here would
+# leave an empty cycles.txt, which reads exactly like "no cycles found".
 echo "  madge…"
 npx madge --circular --extensions ts --ts-config tsconfig.json src \
   >"$OUT/cycles-raw.txt" 2>&1 || true
-node scripts/metrics-cycles.mjs "$OUT/cycles-raw.txt" >"$OUT/cycles.txt" 2>&1 || true
+if grep -qE 'Cannot read properties of undefined|^TypeError' "$OUT/cycles-raw.txt"; then
+  {
+    echo "cycles: UNAVAILABLE — madge crashed, it did NOT report zero cycles."
+    echo "  Cause: madge reads ts.TypeFlags; TypeScript 7's Go port does not"
+    echo "  expose it (node_modules/ts-api-utils). Recheck when madge and"
+    echo "  ts-api-utils support TS 7, or run this target against TS 5.x."
+    echo "  Until then import cycles are NOT measured — do not read the"
+    echo "  absence of a cycle list as evidence there are none."
+  } | tee "$OUT/cycles.txt"
+else
+  node scripts/metrics-cycles.mjs "$OUT/cycles-raw.txt" >"$OUT/cycles.txt" 2>&1 || true
+fi
 
 # --- dead code --------------------------------------------------------------
 echo "  knip…"
