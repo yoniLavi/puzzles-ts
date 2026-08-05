@@ -9,6 +9,7 @@
  * its "done" grey; cursor keys move a keyboard cursor.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import type { Game, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -216,6 +217,26 @@ function findMistakes(state: MagnetsState): readonly MagnetsMistake[] {
   return out;
 }
 
+/** Magnets' difficulty contract (`engine/difficulty.ts`). `MagnetsSolver.solve`
+ * documents its returns as −1 impossible, 0 ambiguous/unfinished, 1 solved. */
+const difficulty: DifficultyContract<MagnetsParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    const solver = new MagnetsSolver(
+      s.w,
+      s.h,
+      s.common.dominoes,
+      s.common.rowcount,
+      s.common.colcount,
+    );
+    const ret = solver.solve(cap);
+    return ret < 0 ? "impossible" : ret > 0 ? "solved" : "unsolved";
+  },
+};
+
 export const magnetsGame: Game<
   MagnetsParams,
   MagnetsState,
@@ -277,6 +298,7 @@ export const magnetsGame: Game<
 
   solve,
   findMistakes,
+  difficulty,
 
   textFormat,
 

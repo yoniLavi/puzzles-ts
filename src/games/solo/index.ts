@@ -24,6 +24,7 @@ import {
   refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
@@ -96,6 +97,7 @@ import {
   DIFF_INTERSECT,
   DIFF_KINTERSECT,
   DIFF_KMINMAX,
+  DIFF_NAMES,
   DIFF_RECURSIVE,
   DIFF_SET,
   DIFF_SIMPLE,
@@ -866,6 +868,23 @@ function flashLength(
   return winFlash(from, to, FLASH_TIME);
 }
 
+/** Solo's difficulty contract (`engine/difficulty.ts`). `solveSolo` reports the
+ * difficulty reached or `DIFF_IMPOSSIBLE` / `DIFF_AMBIGUOUS`. Its `DIFF_*`
+ * family has eight members and only six are tiers — `DIFF_AMBIGUOUS` and
+ * `DIFF_IMPOSSIBLE` are verdicts — which is the clearest case in the collection
+ * for declaring the tier list rather than counting constants. The killer cap is
+ * left at its default: the tier being varied is the ordinary deduction ladder. */
+const difficulty: DifficultyContract<SoloParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const { diff } = solveSolo(givensOnly(newState(p, desc)), cap, DIFF_KINTERSECT);
+    if (diff === DIFF_IMPOSSIBLE) return "impossible";
+    return diff === DIFF_AMBIGUOUS ? "unsolved" : "solved";
+  },
+};
+
 export const soloGame: Game<
   SoloParams,
   SoloState,
@@ -999,6 +1018,7 @@ export const soloGame: Game<
   status: (s): GameStatus => soloStatus(s),
 
   solve,
+  difficulty,
   hint,
   hintKeepTrack,
   refreshHintStep,

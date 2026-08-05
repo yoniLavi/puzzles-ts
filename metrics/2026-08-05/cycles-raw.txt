@@ -1,0 +1,26 @@
+- Finding files
+Processed 739 files (5.2s) (10 warnings)
+
+✖ Found 20 circular dependencies!
+
+1) engine/candidate-hint.ts > engine/latin-hint.ts
+2) games/ascent/render.ts > games/ascent/ui.ts
+3) games/boats/index.ts > games/boats/render.ts
+4) games/bricks/index.ts > games/bricks/render.ts
+5) games/clusters/index.ts > games/clusters/render.ts
+6) games/dominosa/index.ts > games/dominosa/render.ts
+7) games/filling/index.ts > games/filling/render.ts
+8) games/lightup/index.ts > games/lightup/render.ts
+9) games/map/map-data.ts > games/map/state.ts
+10) games/pattern/index.ts > games/pattern/render.ts
+11) games/range/index.ts > games/range/render.ts
+12) games/rome/index.ts > games/rome/render.ts
+13) games/singles/index.ts > games/singles/render.ts
+14) games/slant/index.ts > games/slant/render.ts
+15) games/spokes/index.ts > games/spokes/render.ts
+16) games/subsets/index.ts > games/subsets/render.ts
+17) games/unruly/solver.ts > games/unruly/state.ts
+18) games/unruly/index.ts > games/unruly/render.ts
+19) components/command-link.ts > screens/screen.ts > components/help-viewer.ts
+20) components/command-link.ts > screens/screen.ts > dialogs/about-dialog.ts
+

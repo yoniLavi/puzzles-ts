@@ -10,6 +10,7 @@
  * tents/non-tents via select/select2 and the literal keys T/N/B.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import type { Game, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -288,6 +289,23 @@ function findMistakes(state: TentsState): readonly TentsMistake[] {
   return out;
 }
 
+/** Tents' difficulty contract (`engine/difficulty.ts`). `tentsSolve` returns
+ * `ret` 1 when both the grid and the tent–tree links come out complete, 0 on an
+ * inconsistency it can prove, and 2 when it simply runs dry. The puzzle grid is
+ * rebuilt from the trees alone, exactly as `solve` does. */
+const difficulty: DifficultyContract<TentsParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    const puzzle = new Int8Array(s.w * s.h);
+    for (let i = 0; i < s.w * s.h; i++) puzzle[i] = s.grid[i] === TREE ? TREE : BLANK;
+    const { ret } = tentsSolve(s.w, s.h, puzzle, s.numbers, cap);
+    return ret === 1 ? "solved" : ret === 0 ? "impossible" : "unsolved";
+  },
+};
+
 export const tentsGame: Game<
   TentsParams,
   TentsState,
@@ -337,6 +355,7 @@ export const tentsGame: Game<
   status,
 
   solve,
+  difficulty,
   findMistakes,
 
   textFormat,

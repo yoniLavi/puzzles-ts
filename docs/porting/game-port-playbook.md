@@ -2175,7 +2175,9 @@ including upstream quirks. Two traps, one debug cycle each on Filling, will recu
     the *lowest* tier and solve them at the *highest*. If that ever fails, you
     have this bug — and a port that only ever tests "solves at its own
     difficulty" will never see it. (Boats' differential was 34/34 green
-    throughout.)
+    throughout.) **You no longer have to write that check**: declare
+    `Game.difficulty` (§5's contract) and the cross-game guard runs it for you,
+    over four boards per tier, for every tiered game at once.
 - **Some deductions branch on the canonical-DSF-root *identity*, so the shared
   [`Dsf`](../../src/engine/dsf.ts) must match `dsf.c`'s root choice** (tie →
   the *second* `merge` arg; the larger class otherwise). The shared `Dsf` was aligned
@@ -2569,11 +2571,41 @@ a tier by accumulated action count, Lightup's rung order is load-bearing for
 generation. **A solver whose loop resembles the shared one is not evidence that
 it is the shared one; the differential is.**
 
-**A difficulty-capped solver must be monotone in its cap** — a board solvable at
-cap `d` must solve at every cap above it — and a converted or newly-tiered game
-ships a property test saying so (`magnets.test.ts` is the pattern). Boats is the
-known exception, recorded with its workaround: solve at each tier, take the first
-that succeeds.
+**A tiered game declares `Game.difficulty`, and that is its whole enrollment.**
+The contract (`engine/difficulty.ts`) is four members — the tier names easiest
+first, `tierOf(params)`, a pure `withTier(params, tier)`, and
+`solveAtCap(params, desc, cap)` returning `"solved"` / `"unsolved"` /
+`"impossible"`. Declaring it enrolls the game in every cross-game difficulty
+guard in `engine/difficulty-contract.test.ts`: **cap-monotonicity** (a board
+solvable at cap `d` solves at every cap above it), every tier generating or being
+refused with a reason, the tier list matching the game's own difficulty
+`paramConfig` choices, and each tier surviving the params codec distinctly. There
+is no list to add yourself to — the guard derives its set from the registry, and
+a tiered game that fails to declare the contract *fails a test*.
+
+Five things to get right, each of which cost a debug cycle here:
+
+- **Build the solver input from the desc, not from a live board.** Every adapter
+  re-derives the clue-only position (`boardFromClues`, `givensOnly`, clearing
+  non-fixed cells), so a player's marks never enter the verdict.
+- **Never reuse a solver scratch.** Ascent's `SolverScratch.foundEndpoints`
+  persists and permanently *weakens* the solver, so a reused one under-rejects
+  and leaves side effects for the next caller.
+- **Seed the givens.** Mathrax's first adapter passed a blank grid claiming the
+  game had none; it has `F_IMMUTABLE` clues, and without them nothing is solvable
+  at any cap. The reachability guard caught it on the first run — which is what
+  that guard is for.
+- **Declare a tier that is not a rung.** Dominosa's "Ambiguous" deliberately
+  produces non-unique boards (`nonUniqueTiers`); Boats' solver genuinely is not
+  monotone (`nonMonotone`). Both *swap* the assertion rather than skipping the
+  game, so the exemption is itself under test.
+- **`tiers` is declared, not counted off `DIFF_*`.** A `DIFF_*` constant is
+  sometimes a rung and sometimes a verdict — Solo has eight and offers six.
+
+For a generator's tier gate, use `solvableAtExactlyTier(solve, tier)` rather than
+re-deriving it: it takes a closure (so a generator can call it without importing
+its own `index.ts`) and asks the *cheap* question first, rejecting a too-easy
+board before paying for the deep solve.
 
 **Shared game mechanics live in `src/engine/`.** `border-grid.ts` is the
 worked example: Palisade and Separate both mark the edges *between* cells with a

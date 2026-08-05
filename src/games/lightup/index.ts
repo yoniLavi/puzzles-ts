@@ -11,6 +11,7 @@
  * unique solution.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import type {
   HintResult,
   HintStep,
@@ -31,7 +32,7 @@ import {
 import { registerGame } from "../../engine/registry.ts";
 import { SYMMETRY_CHOICES } from "../../engine/symmetric-blacks.ts";
 import type { Colour, ConfigValues, Point, Size } from "../../engine/types.ts";
-import { newLightupDesc } from "./generator.ts";
+import { newLightupDesc, puzzleIsGood } from "./generator.ts";
 import {
   colours,
   computeSize,
@@ -445,6 +446,19 @@ function flashLength(
   return 0;
 }
 
+/** Light Up's difficulty contract (`engine/difficulty.ts`). `puzzleIsGood` is
+ * already exactly this predicate — "is this board solvable by a player working
+ * at `difficulty`?" — spelled privately for the generator; the cap reaches the
+ * solver as a *flag set* (`flagsFromDifficulty`) rather than as a number, which
+ * is the shape no cross-game caller could have guessed. */
+const difficulty: DifficultyContract<LightupParams> = {
+  tiers: ["Easy", "Tricky", "Unreasonable"],
+  tierOf: (p) => p.difficulty,
+  withTier: (p, tier) => ({ ...p, difficulty: tier }),
+  solveAtCap: (p, desc, cap) =>
+    puzzleIsGood(newState(p, desc), cap) ? "solved" : "unsolved",
+};
+
 export const lightupGame: Game<
   LightupParams,
   LightupState,
@@ -517,6 +531,7 @@ export const lightupGame: Game<
 
   solve,
   findMistakes,
+  difficulty,
 
   hint,
   hintKeepTrack,

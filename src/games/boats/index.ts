@@ -25,6 +25,7 @@
  * [`render.ts`](./render.ts).
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
   type HintResult,
@@ -78,8 +79,14 @@ import {
   redraw,
   setTileSize,
 } from "./render.ts";
-import { type BoatsMistake, findBoatsMistakes, solveToGrid } from "./solver.ts";
 import {
+  type BoatsMistake,
+  findBoatsMistakes,
+  solveBoats,
+  solveToGrid,
+} from "./solver.ts";
+import {
+  type BoatsBoard,
   type BoatsFill,
   type BoatsFillFrom,
   type BoatsMove,
@@ -601,6 +608,49 @@ function fleetConfigString(p: BoatsParams): string {
   return same ? "" : encodeFleet(p.fleetData, p.fleet);
 }
 
+/**
+ * Boats' difficulty contract (`engine/difficulty.ts`) — **the collection's one
+ * declared non-monotone solver**, and the reason the guard has a workaround
+ * branch at all.
+ *
+ * `checkDsf`, which runs from Normal upward, counts an unfinished run of length
+ * `k` as a completed size-`k` boat, so it can report a contradiction the board
+ * does not have: measured across the twelve presets, 13–17 of every 20 Easy
+ * boards are *stuck at the maximum cap* while solving fine at Easy. The
+ * workaround every consumer applies is `solveAtAnyTier` — ask each cap in turn
+ * and take the first success — and declaring `nonMonotone` here is what points
+ * the cross-game guard at that property instead of at monotonicity. See the
+ * `boats` spec and `solveAtAnyTier`'s own header for the full measurement.
+ *
+ * `solveBoats` reports `{ kind: "solved" | "stuck" | "invalid" }`; a fresh board
+ * is built from the clues alone, exactly as `solveToGrid` does, so the player's
+ * own marks never leak into the verdict.
+ */
+const difficulty: DifficultyContract<BoatsParams> = {
+  tiers: DIFF_NAMES,
+  nonMonotone: true,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    const b: BoatsBoard = {
+      w: p.w,
+      h: p.h,
+      fleet: p.fleet,
+      fleetData: p.fleetData,
+      gridClues: s.gridClues,
+      borderClues: Int32Array.from(s.borderClues),
+      grid: new Int8Array(p.w * p.h),
+    };
+    const result = solveBoats(b, cap);
+    return result.kind === "solved"
+      ? "solved"
+      : result.kind === "invalid"
+        ? "impossible"
+        : "unsolved";
+  },
+};
+
 export const boatsGame: Game<
   BoatsParams,
   BoatsState,
@@ -688,6 +738,7 @@ export const boatsGame: Game<
 
   solve,
   findMistakes: findBoatsMistakes,
+  difficulty,
   hint,
   hintKeepTrack,
   textFormat,

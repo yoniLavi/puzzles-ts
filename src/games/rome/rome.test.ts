@@ -252,19 +252,10 @@ describe("solver", () => {
     }
   });
 
-  it("is monotone in its difficulty cap: an Easy board still solves at the top", () => {
-    // The Boats lesson (playbook §4.4): a tiered solver can be *weaker* at a
-    // higher cap when a technique aborts falsely, which silently breaks Solve
-    // and Check & Save. Rome's extra rules only strike candidates, so this
-    // holds — pinned here because a port that only ever solves at its own tier
-    // would never notice if it stopped.
-    for (let seed = 0; seed < 8; seed++) {
-      const p: RomeParams = { w: 6, h: 6, diff: DIFF_EASY };
-      const { desc } = newRomeDesc(p, randomNew(`rome-monotone-${seed}`));
-      const b = board(p.w, p.h, desc);
-      expect(romeSolve(b, DIFFCOUNT)).toBe(STATUS_COMPLETE);
-    }
-  });
+  // Cap-monotonicity is asserted for Rome — and for every other tiered game —
+  // by `engine/difficulty-contract.test.ts`, through `Game.difficulty`. This
+  // file's own version checked only the top cap, which is weaker than the
+  // property; keeping both is how two tests asserting one property drift apart.
 
   it("reports an over-constrained board invalid rather than looping", () => {
     const st = board(3, 3, `${ALL_WALLS_3},RDaULd`);

@@ -20,7 +20,7 @@ export const DIFF_MAX = 2;
 export const DIFF_ANY = 3;
 
 const DIFF_CHARS = "ek"; // singles_diffchars, indexed by level
-const DIFF_NAMES = ["Easy", "Tricky"];
+export const DIFF_NAMES = ["Easy", "Tricky"];
 
 export function diffToLevel(d: Difficulty): number {
   return d === "tricky" ? DIFF_TRICKY : DIFF_EASY;

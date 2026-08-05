@@ -22,6 +22,7 @@
 
 import { type DeductionRung, runDeductionFixpoint } from "./deduction-fixpoint.ts";
 import type { DeductionRecorder } from "./deduction-record.ts";
+import type { DifficultyVerdict } from "./difficulty.ts";
 import { type RandomState, randomUpto } from "./random/index.ts";
 import { shuffle } from "./shuffle.ts";
 import { type StepBudget, stepBudget } from "./step-budget.ts";
@@ -32,6 +33,24 @@ import { type StepBudget, stepBudget } from "./step-budget.ts";
 export const DIFF_IMPOSSIBLE = 10;
 export const DIFF_AMBIGUOUS = 11;
 export const DIFF_UNFINISHED = 12;
+
+/**
+ * Read a latin-family solver's return as a {@link DifficultyVerdict}.
+ *
+ * Every solver built on this module returns *the difficulty level it reached*,
+ * or one of the three sentinels above — so a plain level, whatever its value,
+ * means the board was solved within the cap it was given (the cap is what
+ * stopped the ladder, so a level above it is unreachable, not reported). Lives
+ * here rather than in each game's difficulty contract because it is a fact
+ * about *this* return convention: `solveGroup`, `solveKeen`, `solveTowers` and
+ * `solveUnequal` each document it in the same words, and four copies of one
+ * mapping is four places for a sentinel to be forgotten.
+ */
+export function latinVerdict(ret: number): DifficultyVerdict {
+  if (ret === DIFF_IMPOSSIBLE) return "impossible";
+  if (ret === DIFF_AMBIGUOUS || ret === DIFF_UNFINISHED) return "unsolved";
+  return "solved";
+}
 
 /** A game-specific deduction. Returns +1 (made progress), 0 (no progress),
  * or −1 (reached a contradiction). */

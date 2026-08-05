@@ -6,6 +6,7 @@
  * cross, and all islands form one connected group.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
   type GamePref,
@@ -538,6 +539,21 @@ function findMistakes(state: BridgesState): readonly BridgesMistake[] {
   return out;
 }
 
+/** Bridges' difficulty contract (`engine/difficulty.ts`). Its tiers are a plain
+ * `difficulty: number` indexing `DIFFICULTY_NAMES` rather than a `DIFF_*`
+ * family — which is exactly how a `DIFF_*` grep once missed this game while
+ * surveying tiered games, and why the cross-game guard derives its enrollment
+ * from the registry instead. `solveFromScratch` clears the board first and
+ * returns 1 for fully solved, 0 otherwise, with no contradiction signal to
+ * report. */
+const difficulty: DifficultyContract<BridgesParams> = {
+  tiers: DIFFICULTY_NAMES,
+  tierOf: (p) => p.difficulty,
+  withTier: (p, tier) => ({ ...p, difficulty: tier }),
+  solveAtCap: (p, desc, cap) =>
+    solveFromScratch(newStateFromDesc(p, desc), cap) === 1 ? "solved" : "unsolved",
+};
+
 export const bridgesGame: Game<
   BridgesParams,
   BridgesState,
@@ -660,6 +676,7 @@ export const bridgesGame: Game<
   },
 
   solve,
+  difficulty,
   findMistakes,
 
   textFormat,

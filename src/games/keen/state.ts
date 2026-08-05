@@ -27,7 +27,7 @@ export const DIFF_COUNT = 5;
 
 // keen_diffchars / keen_diffnames, indexed by level.
 const DIFF_CHARS = "enhxu";
-const DIFF_NAMES = ["Easy", "Normal", "Hard", "Extreme", "Unreasonable"];
+export const DIFF_NAMES = ["Easy", "Normal", "Hard", "Extreme", "Unreasonable"];
 const DIFFS: Difficulty[] = ["easy", "normal", "hard", "extreme", "unreasonable"];
 
 export function diffToLevel(d: Difficulty): number {

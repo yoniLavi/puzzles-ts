@@ -18,6 +18,7 @@ import {
   galaxiesCursor,
   galaxiesGrid,
 } from "../../engine/colour/palette-games.ts";
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
   registerGame,
@@ -714,6 +715,31 @@ function statusbarText(s: GalaxiesState, _ui: GalaxiesUi): string {
 
 // --- the Game object -----------------------------------------------
 
+/** Galaxies' difficulty contract (`engine/difficulty.ts`). `solverState` returns
+ * the *minimum* difficulty at which the board is uniquely solvable, or one of
+ * the `Impossible` / `Ambiguous` / `Unfinished` outcomes — so its `GalaxiesDiff`
+ * enum is two tiers and three verdicts in one type, which is precisely why the
+ * cross-game guard reads `tiers` rather than counting `DIFF_*` members. The
+ * board is cleared to its starting position first, so the player's own edges and
+ * associations never enter the verdict. */
+const difficulty: DifficultyContract<GalaxiesParams> = {
+  tiers: ["Normal", "Unreasonable"],
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier as GalaxiesDiff }),
+  solveAtCap: (p, desc, cap) => {
+    const s = blankGame(p.w, p.h);
+    const err = decodeGame(s, desc);
+    if (err) throw new Error(`Galaxies: ${err}`);
+    s.dots = rebuildDots(s);
+    clearForSolve(s);
+    const ret = solverState(s, cap as GalaxiesDiff);
+    if (ret === GalaxiesDiff.Impossible) return "impossible";
+    return ret === GalaxiesDiff.Ambiguous || ret === GalaxiesDiff.Unfinished
+      ? "unsolved"
+      : "solved";
+  },
+};
+
 export const galaxiesGame: Game<
   GalaxiesParams,
   GalaxiesState,
@@ -815,6 +841,7 @@ export const galaxiesGame: Game<
 
   solve: solveGalaxies,
   findMistakes,
+  difficulty,
   textFormat,
   statusbarText,
 

@@ -10,6 +10,7 @@
  * contradict the unique solution.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
   type HintResult,
@@ -56,6 +57,7 @@ import {
   type CellValue,
   cloneState,
   DIFF_ANY,
+  DIFF_NAMES,
   decodeParams,
   defaultParams,
   diffFromLevel,
@@ -514,6 +516,22 @@ function flashLength(
   return 0;
 }
 
+/** Singles' difficulty contract (`engine/difficulty.ts`). `solveSpecific`
+ * returns > 0 when it solves; `makeState` rebuilds the board from its numbers
+ * alone, so no player mark reaches the verdict. `sneaky` is off — that is a
+ * generator-side pre-pass, not a tier. */
+const difficulty: DifficultyContract<SinglesParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => diffToLevel(p.diff),
+  withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    return solveSpecific(makeState(s.w, s.h, s.nums), cap, false) > 0
+      ? "solved"
+      : "unsolved";
+  },
+};
+
 export const singlesGame: Game<
   SinglesParams,
   SinglesState,
@@ -562,6 +580,7 @@ export const singlesGame: Game<
   status,
 
   solve,
+  difficulty,
   hint,
   hintKeepTrack,
   findMistakes,

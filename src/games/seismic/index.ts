@@ -13,6 +13,7 @@
  * entries — and notes — that contradict the unique solution.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
@@ -338,6 +339,24 @@ function flashLength(
 
 // --- the game --------------------------------------------------------------
 
+/** Seismic's difficulty contract (`engine/difficulty.ts`). `solveGame` returns
+ * the difficulty actually needed, or `SOLVE_FAILED` when the board did not come
+ * out complete and valid — and, as `solveFromGivens` records, a valid grid was
+ * forced the whole way, so there is no separate ambiguity verdict to consult.
+ * Non-fixed cells are cleared first so the player's entries never count. */
+const difficulty: DifficultyContract<SeismicParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const board = cloneState(newState(p, desc));
+    for (let i = 0; i < board.w * board.h; i++) {
+      if (!(board.flags[i] & FM_FIXED)) board.grid[i] = 0;
+    }
+    return solveGame(board, cap) === SOLVE_FAILED ? "unsolved" : "solved";
+  },
+};
+
 export const seismicGame: Game<
   SeismicParams,
   SeismicState,
@@ -402,6 +421,7 @@ export const seismicGame: Game<
   status,
 
   solve,
+  difficulty,
   findMistakes,
   // Tectonic's regions are always five cells, so five is the widest number it
   // can ever want; Seismic allows regions up to nine.

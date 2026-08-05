@@ -14,6 +14,7 @@
  */
 
 import { adaptiveMarkAll, obviousCandidateMarks } from "../../engine/candidate-hint.ts";
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
@@ -58,7 +59,12 @@ import {
   type SaladDrawState,
   setTileSize,
 } from "./render.ts";
-import { type SaladMistake, saladFindMistakes, saladSolution } from "./solver.ts";
+import {
+  type SaladMistake,
+  saladFindMistakes,
+  saladSolution,
+  saladSolve,
+} from "./solver.ts";
 import {
   CIRCLE,
   CROSS,
@@ -83,6 +89,7 @@ import {
   type SaladUi,
   saladNotes,
   saladRegions,
+  scratchBoard,
   symbolRange,
   textFormat,
   validateDesc,
@@ -350,6 +357,19 @@ function solve(orig: SaladState): SolveResult<SaladMove> {
 
 // --- the Game --------------------------------------------------------------
 
+/** Salad's difficulty contract (`engine/difficulty.ts`). `saladSolve` answers a
+ * plain boolean — "did this come out a complete, valid board?" — and
+ * `scratchBoard` seeds it with the clues only. `DIFF_HOLESONLY` (−1) is a
+ * generator quality gate rather than a playable tier, which is one more reason
+ * the tier list is declared and not counted off the `DIFF_*` family. */
+const difficulty: DifficultyContract<SaladParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) =>
+    saladSolve(scratchBoard(newState(p, desc)), cap) ? "solved" : "unsolved",
+};
+
 export const saladGame: Game<
   SaladParams,
   SaladState,
@@ -432,6 +452,7 @@ export const saladGame: Game<
   status: (s): GameStatus => (s.completed ? "solved" : "ongoing"),
 
   solve,
+  difficulty,
   hint,
   hintKeepTrack,
   refreshHintStep,

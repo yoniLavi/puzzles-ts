@@ -14,6 +14,7 @@
  */
 
 import { adaptiveMarkAllMove } from "../../engine/candidate-hint.ts";
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
@@ -57,7 +58,12 @@ import {
   redraw,
   setTileSize,
 } from "./render.ts";
-import { mathraxSolve, SOLVE_AMBIGUOUS, SOLVE_UNIQUE } from "./solver.ts";
+import {
+  mathraxSolve,
+  SOLVE_AMBIGUOUS,
+  SOLVE_IMPOSSIBLE,
+  SOLVE_UNIQUE,
+} from "./solver.ts";
 import {
   cloneState,
   DIFF_NAMES,
@@ -376,6 +382,32 @@ const CLUE_OPTIONS: ReadonlyArray<{ kw: string; name: string; bit: number }> = [
   { kw: "even-odd-clues", name: "Even/odd clues", bit: OPTION_ODD },
 ];
 
+/** Mathrax's difficulty contract (`engine/difficulty.ts`). `mathraxSolve` has
+ * its own four-way return (`SOLVE_IMPOSSIBLE` / `SOLVE_STUCK` / `SOLVE_UNIQUE` /
+ * `SOLVE_AMBIGUOUS`) rather than the latin-family sentinels its solver is built
+ * on, so it is read here and not by `latinVerdict`.
+ *
+ * **The grid must be seeded from the `F_IMMUTABLE` givens.** Mathrax boards do
+ * carry given digits, and the first version of this adapter passed a blank grid
+ * — which makes every board unsolvable at every cap. The cross-game guard
+ * caught it on its first run, which is exactly the "an adapter that lies makes a
+ * guard pass vacuously" risk the contract's design named. `solveFromGivens` does
+ * the same seeding for `solve` and `findMistakes`. */
+const difficulty: DifficultyContract<MathraxParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => diffToLevel(p.diff),
+  withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    const o = s.params.o;
+    const grid = new Uint8Array(o * o);
+    for (let i = 0; i < o * o; i++) if (s.flags[i] & F_IMMUTABLE) grid[i] = s.grid[i];
+    const ret = mathraxSolve(o, grid, s.clues, cap);
+    if (ret === SOLVE_UNIQUE) return "solved";
+    return ret === SOLVE_IMPOSSIBLE ? "impossible" : "unsolved";
+  },
+};
+
 export const mathraxGame: Game<
   MathraxParams,
   MathraxState,
@@ -448,6 +480,7 @@ export const mathraxGame: Game<
   status: (s): GameStatus => status(s),
 
   solve,
+  difficulty,
   findMistakes,
   requestKeys: (p): KeyLabel[] => digitKeys(p.o),
 

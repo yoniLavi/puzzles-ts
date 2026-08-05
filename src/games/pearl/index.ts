@@ -11,6 +11,7 @@
  * `engine/grid.ts` + `engine/loopgen.ts` leaves (square tiling only).
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import type { Game, GamePref, SolveResult, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -357,6 +358,19 @@ const prefs: GamePref<PearlUi>[] = [
   },
 ];
 
+/** Pearl's difficulty contract (`engine/difficulty.ts`). `pearlSolve` documents
+ * its return as 0 inconsistent, 1 unique, 2 ambiguous. */
+const difficulty: DifficultyContract<PearlParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.difficulty,
+  withTier: (p, tier) => ({ ...p, difficulty: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    const ret = pearlSolve(p.w, p.h, s.clues, new Uint8Array(p.w * p.h), cap, false);
+    return ret === 1 ? "solved" : ret === 0 ? "impossible" : "unsolved";
+  },
+};
+
 export const pearlGame: Game<
   PearlParams,
   PearlState,
@@ -415,6 +429,7 @@ export const pearlGame: Game<
   status,
 
   solve,
+  difficulty,
   findMistakes,
 
   textFormat,

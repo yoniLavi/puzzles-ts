@@ -23,10 +23,19 @@ succeeds — rather than skipping the game. A skipped game is an untested game
 wearing a comment, and the exemption must itself be under test so that fixing the
 underlying defect is visible.
 
-The same cross-game guard SHALL also assert that every declared tier is
-reachable (generation at it succeeds) and that a game's declared tier list
-matches its own difficulty constants, so a game that gains a tier cannot ship a
-stale declaration.
+The same cross-game guard SHALL also assert that every declared tier either
+generates or is refused with a reason, and that a game's declared tier list
+matches the difficulty choices its custom-params form offers, so a game that
+gains a tier cannot ship a stale declaration.
+
+The guard SHALL sample **enough boards per tier to catch the defect it names**,
+and that sample size SHALL be established by removing a known exemption and
+confirming the guard fires — not chosen by judgement. The first version of this
+guard sampled one board per tier and did **not** catch Boats with its
+`nonMonotone` declaration removed, because Boats' first seed happens to be
+monotone while 7 of 8 are not. A guard that has never been shown to fail is not
+known to work, and sampling is where a cross-game guard silently becomes
+decorative.
 
 This property is part of what replaces the retired byte-match oracle: it is a
 statement about what a difficulty tier *means* that the byte-match never checked.
@@ -45,6 +54,14 @@ statement about what a difficulty tier *means* that the byte-match never checked
 - **THEN** the guard asserts that solving at each tier in turn and taking the
   first success always succeeds
 - **AND** the game is never silently skipped
+
+#### Scenario: A tier does not promise a unique solution
+
+- **WHEN** a game's contract declares a tier in `nonUniqueTiers`
+- **THEN** the guard asserts a board generated there is genuinely **not**
+  uniquely solvable, which is what that tier promises
+- **AND** the tier is never skipped, so a change that made it start producing
+  unique boards fails rather than passing quietly
 
 #### Scenario: A solver is converted to the shared deduction runner
 

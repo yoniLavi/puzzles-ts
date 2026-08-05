@@ -21,7 +21,7 @@ export const DIFF_UNREASONABLE = 3;
 export const DIFF_COUNT = 4;
 
 const DIFF_CHARS = "ehxu"; // towers_diffchars, indexed by level
-const DIFF_NAMES = ["Easy", "Hard", "Extreme", "Unreasonable"];
+export const DIFF_NAMES = ["Easy", "Hard", "Extreme", "Unreasonable"];
 
 export function diffToLevel(d: Difficulty): number {
   switch (d) {

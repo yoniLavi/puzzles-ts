@@ -240,10 +240,6 @@ describe("salad generator", () => {
         expect(validateDesc(p, desc)).toBeNull();
         const s = newState(p, desc);
         expect(saladSolve(scratchBoard(s), diff)).toBe(true);
-        // Generate low, solve high: Salad's Extreme rung only *adds* sound
-        // techniques, so its solver is monotone in the difficulty cap — the
-        // property Boats' solver turned out to lack (playbook §4.4).
-        expect(saladSolve(scratchBoard(s), DIFF_HARD)).toBe(true);
       });
     }
   }

@@ -12,6 +12,7 @@
  * forced cell would break.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
   type HintResult,
@@ -411,6 +412,23 @@ function flashLength(
   return 0;
 }
 
+/** Clusters' difficulty contract (`engine/difficulty.ts`). `solveGame` returns
+ * `COMPLETE` / `UNFINISHED` / `INVALID`; its two tiers are nested rungs of one
+ * fixpoint (`maxdiff` 0 is `solverTry` alone, ≥ 1 adds `solverRecurse`), which
+ * is why `solvableAtExactlyTier` asks the cheap rung first — the deeper solve
+ * resumes from that same fixpoint (`add-clusters-difficulty-tiers` D3). */
+const difficulty: DifficultyContract<ClustersParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    const grid = s.grid.slice();
+    const ret = solveGame(grid, s.w, s.h, cap);
+    return ret === COMPLETE ? "solved" : ret === INVALID ? "impossible" : "unsolved";
+  },
+};
+
 export const clustersGame: Game<
   ClustersParams,
   ClustersState,
@@ -461,6 +479,7 @@ export const clustersGame: Game<
   status,
 
   solve,
+  difficulty,
   hint,
   hintKeepTrack,
   findMistakes,

@@ -1,0 +1,26 @@
+raw cycles reported by madge: 20
+erased at build time (>=1 type-only edge): 20
+RUNTIME cycles: 0
+
+
+--- erased (type-only somewhere in the loop) ---
+  engine/candidate-hint.ts > engine/latin-hint.ts  [type-only, type-only]
+  games/ascent/render.ts > games/ascent/ui.ts  [value, type-only]
+  games/boats/index.ts > games/boats/render.ts  [value, type-only]
+  games/bricks/index.ts > games/bricks/render.ts  [value, type-only]
+  games/clusters/index.ts > games/clusters/render.ts  [value, type-only]
+  games/dominosa/index.ts > games/dominosa/render.ts  [value, type-only]
+  games/filling/index.ts > games/filling/render.ts  [value, type-only]
+  games/lightup/index.ts > games/lightup/render.ts  [value, type-only]
+  games/map/map-data.ts > games/map/state.ts  [type-only, type-only]
+  games/pattern/index.ts > games/pattern/render.ts  [value, type-only]
+  games/range/index.ts > games/range/render.ts  [value, type-only]
+  games/rome/index.ts > games/rome/render.ts  [value, type-only]
+  games/singles/index.ts > games/singles/render.ts  [value, type-only]
+  games/slant/index.ts > games/slant/render.ts  [value, type-only]
+  games/spokes/index.ts > games/spokes/render.ts  [value, type-only]
+  games/subsets/index.ts > games/subsets/render.ts  [value, type-only]
+  games/unruly/solver.ts > games/unruly/state.ts  [type-only, value]
+  games/unruly/index.ts > games/unruly/render.ts  [value, type-only]
+  components/command-link.ts > screens/screen.ts > components/help-viewer.ts  [type-only, dynamic, value]
+  components/command-link.ts > screens/screen.ts > dialogs/about-dialog.ts  [type-only, dynamic, value]

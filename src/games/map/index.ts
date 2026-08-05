@@ -11,6 +11,7 @@
  * suppression — no state-string undo).
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import type { Game, SolveResult, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
@@ -42,7 +43,7 @@ import {
   regionFromUiCursor,
   setTileSize,
 } from "./render.ts";
-import { gradeMap, mapSolver, SOLVER_UNIQUE } from "./solver.ts";
+import { gradeMap, mapSolver, SOLVER_IMPOSSIBLE, SOLVER_UNIQUE } from "./solver.ts";
 import {
   cloneState,
   DIFF_NAMES,
@@ -337,6 +338,22 @@ function flashLength(
 
 // --- register --------------------------------------------------------
 
+/** Map's difficulty contract (`engine/difficulty.ts`). `mapSolver` reports
+ * `SOLVER_IMPOSSIBLE` / `SOLVER_UNIQUE` / `SOLVER_STUCK`; the colouring it works
+ * from is `clueColouring`, the givens alone, so the player's own colours never
+ * enter the verdict. */
+const difficulty: DifficultyContract<MapParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    const ret = mapSolver(s.map.graph, p.n, s.map.ngraph, clueColouring(s), cap);
+    if (ret === SOLVER_UNIQUE) return "solved";
+    return ret === SOLVER_IMPOSSIBLE ? "impossible" : "unsolved";
+  },
+};
+
 export const mapGame: Game<
   MapParams,
   MapState,
@@ -396,6 +413,7 @@ export const mapGame: Game<
   status,
 
   solve,
+  difficulty,
   findMistakes,
 
   prefs: [

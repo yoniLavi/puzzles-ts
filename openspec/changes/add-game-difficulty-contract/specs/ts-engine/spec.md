@@ -21,6 +21,26 @@ The contract SHALL describe what the game already does and SHALL NOT change any
 board it generates: adopting it is a no-op, and a differential fixture that moves
 means an adapter misreports its game's solver.
 
+The tier list SHALL be **declared**, not derived from the game's `DIFF_*`
+constants, and SHALL match the difficulty choices the game's custom-params form
+offers. A `DIFF_*` constant is not reliably a tier: Solo declares eight and
+offers six (two are solver verdicts), Galaxies' names list has five entries and
+two tiers, Singles has a `DIFF_MAX` *and* a `DIFF_ANY`, and Salad has a
+`DIFF_HOLESONLY` at −1.
+
+A tier that the game's solver understands but that the generator refuses at every
+size SHALL still be declared, because a saved game or a description-carrying game
+ID may request it and `solveAtCap` must be able to answer. Its refusal SHALL come
+from `validateParams` with a human-readable reason, never from silent failure.
+
+A tier that deliberately does **not** promise a uniquely-solvable board SHALL
+declare itself, so that the cross-game guard asserts what that tier actually
+promises rather than the opposite. Dominosa is the case, and it was found by the
+guards rather than anticipated: the last entry in its difficulty menu is
+"Ambiguous", and its generator branches on it to skip the uniqueness search
+entirely — so a tier is not always a rung of the deduction ladder, it can instead
+be a relaxation of what the puzzle promises.
+
 Because generation is already uniform through `Game.newDesc(params, rng)`, the
 contract SHALL NOT add a separate "generate at tier" entry point —
 `newDesc(withTier(p, t), rng)` is that, and a second spelling of an existing
@@ -30,8 +50,19 @@ capability is how a contract sprawls.
 
 - **WHEN** a game with difficulty tiers declares `difficulty`
 - **THEN** every cross-game difficulty guard covers it without further enrollment
-- **AND** its declared tier list is checked against the game's own difficulty
-  constants, so a game that gains a tier cannot ship a stale list
+- **AND** its declared tier list is checked against the difficulty choices its
+  custom-params form offers, so a game that gains a tier cannot ship a stale list
+- **AND** a game that offers such a choice without declaring the contract fails
+  the guard, so enrollment is conscription rather than invitation
+
+#### Scenario: A tier is declared but generates at no size
+
+- **WHEN** a tier exists in the solver's ladder but the generator refuses it
+  everywhere
+- **THEN** the tier stays declared, so a saved game or game ID can still name it
+- **AND** `validateParams` refuses it with a human-readable reason, which the
+  guard requires — a tier that fails to generate and says nothing about why is a
+  silent downgrade wearing a menu entry
 
 #### Scenario: An adapter misreports its solver
 

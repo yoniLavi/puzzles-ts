@@ -8,6 +8,7 @@
  * right-click cycles the other way; number keys place directly.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
@@ -30,8 +31,8 @@ import {
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
-import { type Cell, EMPTY, ONE, ZERO } from "./constants.ts";
-import { newDesc } from "./generator.ts";
+import { type Cell, DIFF_NAMES, EMPTY, ONE, ZERO } from "./constants.ts";
+import { newDesc, solvableAt } from "./generator.ts";
 import {
   colours,
   computeSize,
@@ -334,6 +335,22 @@ function animLength(
   return changed === 1 ? PLACE_ANIM_TIME : 0;
 }
 
+/** Unruly's difficulty contract (`engine/difficulty.ts`). Its `solveGame`
+ * returns the *highest rung that fired*, not a verdict, so solvability is read
+ * the way the generator reads it — run the ladder, then check the counts came
+ * out balanced. `solvableAt` is that predicate, shared with the generator rather
+ * than re-derived here. */
+const difficulty: DifficultyContract<UnrulyParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    const view = { w2: s.w2, h2: s.h2, unique: s.unique, grid: s.grid };
+    return solvableAt(view, s.grid, cap) ? "solved" : "unsolved";
+  },
+};
+
 export const unrulyGame: Game<
   UnrulyParams,
   UnrulyState,
@@ -392,6 +409,8 @@ export const unrulyGame: Game<
   interpretMove,
   executeMove,
   status,
+
+  difficulty,
 
   solve(orig) {
     const grid = solveToString(orig);

@@ -12,6 +12,7 @@
  * Check & Save (`findMistakes`) hard-blocks on any current violation.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
   type HintResult,
@@ -443,6 +444,33 @@ function flashLength(
   return 0;
 }
 
+/** Bricks' difficulty contract (`engine/difficulty.ts`). `solveGame` returns a
+ * `BricksStatus` — `"complete"` exactly when the deduction alone solves the
+ * board — and the `clear` argument blanks the grid first, so the verdict is
+ * about the puzzle rather than about any marks already on it.
+ *
+ * **Tricky is declared but not generable.** `validateParams` refuses it for
+ * generation (`MAX_GENERABLE_DIFF`): its rung is lookahead depth 2, which never
+ * decides anything depth 1 has not (`grade-difficulty-tiers-honestly`). The tier
+ * stays in this list because a saved game or a desc-carrying game ID may still
+ * request it, and `solveAtCap` must be able to answer for it.
+ */
+const difficulty: DifficultyContract<BricksParams> = {
+  tiers: ["Easy", "Normal", "Tricky"],
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    const grid = s.grid.slice();
+    const ret = solveGame(grid, s.w, s.h, cap, true, true);
+    return ret === "complete"
+      ? "solved"
+      : ret === "invalid"
+        ? "impossible"
+        : "unsolved";
+  },
+};
+
 export const bricksGame: Game<
   BricksParams,
   BricksState,
@@ -493,6 +521,7 @@ export const bricksGame: Game<
   status,
 
   solve,
+  difficulty,
   hint,
   hintKeepTrack,
   findMistakes,

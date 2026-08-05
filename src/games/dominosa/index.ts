@@ -9,6 +9,7 @@
  * value highlights.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import type {
   Game,
   HintResult,
@@ -56,6 +57,7 @@ import {
 import {
   cloneState,
   DCOUNT,
+  DIFF_AMBIGUOUS,
   DIFF_NAMES,
   DIFFCOUNT,
   DINDEX,
@@ -649,6 +651,29 @@ function selectReference(ui: DominosaUi, key: string | null): boolean {
   return true;
 }
 
+/** Dominosa's difficulty contract (`engine/difficulty.ts`). `solveNumbers`
+ * documents its `result` as 0 impossible, 1 unique solution, 2 ambiguous or
+ * solver-too-weak — so 2 is `"unsolved"`: at this cap the board is not
+ * deducible, which is the question being asked.
+ *
+ * **Its last tier is not a deduction rung.** "Ambiguous" is a genuine entry in
+ * Dominosa's difficulty menu, and the generator branches on it to skip the
+ * uniqueness search altogether — a board generated there is *meant* to have
+ * several solutions, so no cap solves it and that is correct. Declaring it in
+ * `nonUniqueTiers` points the cross-game guard at what the tier actually
+ * promises. */
+const difficulty: DifficultyContract<DominosaParams> = {
+  tiers: DIFF_NAMES,
+  nonUniqueTiers: [DIFF_AMBIGUOUS],
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    const { result } = solveNumbers(p.n, s.numbers, cap);
+    return result === 1 ? "solved" : result === 0 ? "impossible" : "unsolved";
+  },
+};
+
 export const dominosaGame: Game<
   DominosaParams,
   DominosaState,
@@ -705,6 +730,7 @@ export const dominosaGame: Game<
   status,
 
   solve,
+  difficulty,
   findMistakes,
   reference,
   selectReference,

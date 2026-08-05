@@ -13,6 +13,7 @@
  * live checks cannot give — see {@link findMistakes}.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
   type SolveResult,
@@ -83,6 +84,7 @@ import {
   type RomeUi,
   readDesc,
   STATUS_COMPLETE,
+  STATUS_INVALID,
   status,
   validateParams,
 } from "./state.ts";
@@ -398,6 +400,21 @@ function flashLength(
 
 // --- the game ---------------------------------------------------------------
 
+/** Rome's difficulty contract (`engine/difficulty.ts`). `romeSolve` returns a
+ * `STATUS_*`; `boardFromClues` is the game's own "the position the puzzle
+ * started from" helper, so the verdict is about the puzzle and not about what
+ * the player has entered. */
+const difficulty: DifficultyContract<RomeParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const ret = romeSolve(boardFromClues(newState(p, desc)), cap);
+    if (ret === STATUS_COMPLETE) return "solved";
+    return ret === STATUS_INVALID ? "impossible" : "unsolved";
+  },
+};
+
 export const romeGame: Game<
   RomeParams,
   RomeState,
@@ -448,6 +465,7 @@ export const romeGame: Game<
   status,
 
   solve,
+  difficulty,
   findMistakes,
 
   // Upstream's two highlight preferences, with its own keywords and defaults.

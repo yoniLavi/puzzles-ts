@@ -18,6 +18,7 @@
  * plus input handling.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import type {
   Game,
   GameDrawing,
@@ -42,6 +43,7 @@ import {
   decodeParams,
   defaultParams,
   encodeParams,
+  LOOPY_DIFFS,
   type LoopyParams,
   paramConfig,
   presets,
@@ -296,6 +298,24 @@ function solve(orig: LoopyState, _curr: LoopyState): SolveResult<LoopyMove> {
   return { ok: true, move: { kind: "solve", ops } };
 }
 
+/** Loopy's difficulty contract (`engine/difficulty.ts`). Its generator gates
+ * every clue removal on `"solved"` specifically: an `"ambiguous"` verdict means
+ * the solver only got there by trying a loop closure, which is not a deduction
+ * a player could be expected to make. `solveGame` is used directly rather than
+ * `gameHasUniqueSoln`, which throws on a contradiction because the generator
+ * only ever asks it about boards derived from a real loop — a probe has no such
+ * guarantee, and a contradiction is a verdict here, not a porting bug. */
+const difficulty: DifficultyContract<LoopyParams> = {
+  tiers: LOOPY_DIFFS.map((d) => d.title),
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const ss = solveGame(newState(p, desc), cap);
+    if (ss.status === "mistake") return "impossible";
+    return ss.status === "solved" ? "solved" : "unsolved";
+  },
+};
+
 export const loopyGame: Game<
   LoopyParams,
   LoopyState,
@@ -342,6 +362,7 @@ export const loopyGame: Game<
   // The midend upgrades this to "solved-with-help" itself when Solve was used.
   status: (s) => (s.solved ? "solved" : "ongoing"),
   solve,
+  difficulty,
   textFormat,
   prefs,
 

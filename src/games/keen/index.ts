@@ -24,6 +24,7 @@ import {
   refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
@@ -36,6 +37,7 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
+import { latinVerdict } from "../../engine/latin.ts";
 import {
   hiddenSingleLine,
   narrateLatinReason,
@@ -100,6 +102,7 @@ import {
   checkErrors,
   cloneState,
   DIFF_EXTREME,
+  DIFF_NAMES,
   DIFF_UNREASONABLE,
   decodeParams,
   defaultParams,
@@ -658,6 +661,21 @@ function flashLength(
   return winFlash(from, to, FLASH_TIME);
 }
 
+/** Keen's difficulty contract (`engine/difficulty.ts`). `solveKeen` follows the
+ * shared latin-family return convention — the difficulty reached, or one of
+ * `latin.ts`'s sentinels — so `latinVerdict` reads it. Keen has no givens: the
+ * solution comes from the cage clues alone. */
+const difficulty: DifficultyContract<KeenParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => diffToLevel(p.diff),
+  withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    const w = s.params.w;
+    return latinVerdict(solveKeen(w, s.clues, new Uint8Array(w * w), cap));
+  },
+};
+
 export const keenGame: Game<
   KeenParams,
   KeenState,
@@ -727,6 +745,7 @@ export const keenGame: Game<
   status: (s): GameStatus => status(s),
 
   solve,
+  difficulty,
   hint,
   hintKeepTrack,
   refreshHintStep,

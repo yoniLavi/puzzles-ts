@@ -12,6 +12,7 @@
  * cells that contradict the unique solution.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
   type HintResult,
@@ -67,12 +68,20 @@ import {
 import {
   findUndeadSolution,
   type HintOp,
+  RUNG_ARC,
+  RUNG_COUNTING,
+  RUNG_FORCING,
+  type Rung,
   recordUndeadDeductions,
+  solveDeductive,
   type UndeadReason,
 } from "./solver.ts";
 import {
   cloneState,
   clueIndex,
+  DIFF_EASY,
+  DIFF_NAMES,
+  DIFF_NORMAL,
   decodeParams,
   defaultParams,
   diffFromLevel,
@@ -869,6 +878,34 @@ function flashLength(from: UndeadState, to: UndeadState): number {
   return 0;
 }
 
+/** Undead's difficulty contract (`engine/difficulty.ts`).
+ *
+ * **Its cap is a technique rung, not a difficulty number** — this fork replaced
+ * upstream's "how much brute force does it need?" grading with a deductive
+ * ladder (arc-consistency → exact counting → depth-1 forcing) so that every
+ * shipped tier is pure-deduction solvable (`hint-authoring.md` §1A). So the tier
+ * maps to a `Rung` and the question `solveAtCap` asks is the generator's own:
+ * does the ladder, capped there, narrow every cell to a singleton?
+ *
+ * The generator additionally requires the *exact* rung for the tier (and, for
+ * Easy, a pass-count bound). That is a tier-acceptance rule, not solvability,
+ * and it belongs to the generator — `solvableAtExactlyTier` is the shared
+ * expression of the same idea. */
+const difficulty: DifficultyContract<UndeadParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => diffToLevel(p.diff),
+  withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
+  solveAtCap: (p, desc, cap) => {
+    const common = newState(p, desc).common;
+    const maxRung: Rung =
+      cap === DIFF_EASY ? RUNG_ARC : cap === DIFF_NORMAL ? RUNG_COUNTING : RUNG_FORCING;
+    const start = new Uint8Array(common.numTotal).fill(MON_NONE);
+    const grade = solveDeductive(common, start, maxRung);
+    if (grade.inconsistent) return "impossible";
+    return grade.solved ? "solved" : "unsolved";
+  },
+};
+
 export const undeadGame: Game<
   UndeadParams,
   UndeadState,
@@ -921,6 +958,7 @@ export const undeadGame: Game<
   status: (s): GameStatus => status(s),
 
   solve,
+  difficulty,
   hint,
   hintKeepTrack,
   refreshHintStep,

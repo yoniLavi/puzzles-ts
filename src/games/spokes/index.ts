@@ -18,6 +18,7 @@
  * answer.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
@@ -72,6 +73,7 @@ import {
   crossingSpoke,
   DIFF_NAMES,
   DIFFCOUNT,
+  DIFFS,
   decodeParams,
   defaultParams,
   diffFromLevel,
@@ -470,6 +472,22 @@ function canonicalEdge(
 
 // --- the game ---------------------------------------------------------------
 
+/** Spokes' difficulty contract (`engine/difficulty.ts`). `spokesSolve` returns
+ * `"valid"` (fully and uniquely solved — what the generator gates on),
+ * `"incomplete"` or `"invalid"`; the board is cleared of the player's marks
+ * first, exactly as `solveFromClues` does. */
+const difficulty: DifficultyContract<SpokesParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => diffToLevel(p.diff),
+  withTier: (p, tier) => ({ ...p, diff: DIFFS[tier] }),
+  solveAtCap: (p, desc, cap) => {
+    const board = cloneBoard(newState(p, desc));
+    clearBoard(board);
+    const ret = spokesSolve(board, null, cap);
+    return ret === "valid" ? "solved" : ret === "invalid" ? "impossible" : "unsolved";
+  },
+};
+
 export const spokesGame: Game<
   SpokesParams,
   SpokesState,
@@ -537,6 +555,7 @@ export const spokesGame: Game<
   status: (s): GameStatus => (s.completed ? "solved" : "ongoing"),
 
   solve,
+  difficulty,
   hint,
   hintKeepTrack,
   findMistakes,

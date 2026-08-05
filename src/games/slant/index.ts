@@ -8,6 +8,7 @@
  * backspace place directly at the keyboard cursor.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type {
   Game,
@@ -39,7 +40,15 @@ import {
   redraw,
   type SlantDrawState,
 } from "./render.ts";
-import { deduceHintPlan, type SlantFiring, solveFromClues } from "./solver.ts";
+import {
+  deduceHintPlan,
+  type SlantFiring,
+  SOLVE_IMPOSSIBLE,
+  SOLVE_UNIQUE,
+  SolverScratch,
+  slantSolve,
+  solveFromClues,
+} from "./solver.ts";
 import {
   DIFF_NAMES,
   decodeParams,
@@ -446,6 +455,23 @@ function hintKeepTrack(
     : "off";
 }
 
+/** Slant's difficulty contract (`engine/difficulty.ts`). `slantSolve` returns
+ * `SOLVE_UNIQUE` / `SOLVE_IMPOSSIBLE` / `SOLVE_NOT_CONVERGED`, and takes a fresh
+ * `SolverScratch` per call — its dsf and equivalence classes carry state across
+ * a solve. */
+const difficulty: DifficultyContract<SlantParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    const soln = new Int8Array(s.w * s.h);
+    const ret = slantSolve(s.w, s.h, s.clues, soln, new SolverScratch(s.w, s.h), cap);
+    if (ret === SOLVE_UNIQUE) return "solved";
+    return ret === SOLVE_IMPOSSIBLE ? "impossible" : "unsolved";
+  },
+};
+
 export const slantGame: Game<
   SlantParams,
   SlantState,
@@ -494,6 +520,7 @@ export const slantGame: Game<
   status,
 
   solve,
+  difficulty,
   findMistakes,
   hint,
   hintKeepTrack,

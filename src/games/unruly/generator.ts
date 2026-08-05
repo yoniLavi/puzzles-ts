@@ -56,7 +56,7 @@ function fillGame(view: GridView, scratch: Scratch, rng: RandomState): boolean {
 
 /** Does the solver at `diff` reach a complete (counts-balanced) solution
  * from `grid`? */
-function solvableAt(view: GridView, grid: Uint8Array, diff: number): boolean {
+export function solvableAt(view: GridView, grid: Uint8Array, diff: number): boolean {
   const work: GridView = { ...view, grid: Uint8Array.from(grid) };
   const scratch = newScratch(work);
   solveGame(work, scratch, diff);

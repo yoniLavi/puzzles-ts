@@ -25,6 +25,7 @@ import {
   refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
   type HintResult,
@@ -36,7 +37,7 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { clearKey } from "../../engine/key-labels.ts";
-import { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE } from "../../engine/latin.ts";
+import { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE, latinVerdict } from "../../engine/latin.ts";
 import {
   hiddenSingleLine,
   type LatinVocab,
@@ -853,6 +854,19 @@ function describeParams(p: GroupParams): ConfigValues {
   return { "grid-size": String(p.w), difficulty: p.diff, "show-identity": p.id };
 }
 
+/** Group's difficulty contract (`engine/difficulty.ts`). `solveGroup` follows
+ * the shared latin-family return convention — the difficulty reached, or one of
+ * `latin.ts`'s sentinels — so `latinVerdict` reads it. */
+const difficulty: DifficultyContract<GroupParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    return latinVerdict(solveGroup(s.grid.slice(), s.w, cap));
+  },
+};
+
 export const groupGame: Game<
   GroupParams,
   GroupState,
@@ -917,6 +931,7 @@ export const groupGame: Game<
   status,
 
   solve,
+  difficulty,
   hint,
   hintKeepTrack,
   refreshHintStep,

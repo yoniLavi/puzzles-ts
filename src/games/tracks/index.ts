@@ -10,6 +10,7 @@
  * (borders); select2 does the no-track variant.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import type { Game, SolveResult, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -326,6 +327,19 @@ function findMistakes(state: TracksState): readonly TracksMistake[] {
   return out;
 }
 
+/** Tracks' difficulty contract (`engine/difficulty.ts`). `tracksSolve` returns
+ * `{ ret, maxDiff }` with `ret` −1 impossible, 0 non-converged, 1 uniquely
+ * solved; `stateToBoard` on the initial state gives the clue-only board. */
+const difficulty: DifficultyContract<TracksParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const { ret } = tracksSolve(stateToBoard(newState(p, desc)), cap);
+    return ret === 1 ? "solved" : ret < 0 ? "impossible" : "unsolved";
+  },
+};
+
 export const tracksGame: Game<
   TracksParams,
   TracksState,
@@ -384,6 +398,7 @@ export const tracksGame: Game<
   status,
 
   solve,
+  difficulty,
   findMistakes,
 
   textFormat,

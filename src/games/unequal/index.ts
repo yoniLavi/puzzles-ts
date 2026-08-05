@@ -24,6 +24,7 @@ import {
   refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
@@ -36,6 +37,7 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { clearKey } from "../../engine/key-labels.ts";
+import { latinVerdict } from "../../engine/latin.ts";
 import {
   hiddenSingleLine,
   narrateLatinReason,
@@ -101,6 +103,7 @@ import {
   checkComplete,
   cloneState,
   DIFF_EXTREME,
+  DIFF_NAMES,
   DIFF_RECURSIVE,
   decodeParams,
   defaultParams,
@@ -780,6 +783,22 @@ function unequalKeys(order: number): KeyLabel[] {
   return keys;
 }
 
+/** Unequal's difficulty contract (`engine/difficulty.ts`). `solveUnequal`
+ * follows the shared latin-family return convention — the difficulty reached, or
+ * one of `latin.ts`'s sentinels — so `latinVerdict` reads it. Seeded from the
+ * immutable givens; `mode` and the clue flags come from the desc. */
+const difficulty: DifficultyContract<UnequalParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => diffToLevel(p.diff),
+  withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    return latinVerdict(
+      solveUnequal(s.order, s.mode, s.clueFlags, Uint8Array.from(s.immutable), cap),
+    );
+  },
+};
+
 export const unequalGame: Game<
   UnequalParams,
   UnequalState,
@@ -850,6 +869,7 @@ export const unequalGame: Game<
   status: (s): GameStatus => status(s),
 
   solve,
+  difficulty,
   hint,
   hintKeepTrack,
   refreshHintStep,

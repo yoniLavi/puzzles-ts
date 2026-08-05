@@ -31,7 +31,7 @@ export const DIFFCOUNT = 3;
 
 // undead_diffchars / undead_diffnames, indexed by level.
 const DIFF_CHARS = "ent";
-const DIFF_NAMES = ["Easy", "Normal", "Tricky"];
+export const DIFF_NAMES = ["Easy", "Normal", "Tricky"];
 const DIFFS: Difficulty[] = ["easy", "normal", "tricky"];
 
 export function diffToLevel(d: Difficulty): number {

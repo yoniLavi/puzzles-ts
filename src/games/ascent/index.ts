@@ -3,6 +3,7 @@
  * interface. Port of `puzzles/unreleased/ascent.c` (© 2015 Lennard Sprong).
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import type {
   Game,
   GamePref,
@@ -276,6 +277,24 @@ const paramConfig: ParamConfigItem<AscentParams>[] = [
   },
 ];
 
+/** Ascent's difficulty contract (`engine/difficulty.ts`). `ascentSolve` reports
+ * nothing itself — it deduces into `sc.grid` and the caller asks
+ * `checkCompletion`, exactly as the generator's tier gate does — so there is no
+ * "impossible" verdict to map. **The scratch is fresh per call**: its
+ * `foundEndpoints` deliberately persists and permanently weakens the solver, and
+ * reusing one is the defect `grade-difficulty-tiers-honestly` hit here first. */
+const difficulty: DifficultyContract<AscentParams> = {
+  tiers: ASCENT_DIFFNAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newAscentState(p, desc);
+    const sc = new SolverScratch(s.w, s.h, s.mode, s.last);
+    ascentSolve(s.grid, cap, sc);
+    return checkCompletion(sc.grid, s.w, s.h, s.mode) ? "solved" : "unsolved";
+  },
+};
+
 const prefs: GamePref<AscentUi>[] = [
   {
     kw: "numpad",
@@ -430,6 +449,7 @@ export const ascentGame: Game<
     return solve(orig);
   },
   findMistakes,
+  difficulty,
   textFormat,
 
   status(s: AscentState): GameStatus {

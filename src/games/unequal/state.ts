@@ -25,7 +25,7 @@ export const DIFF_COUNT = 5;
 
 // unequal_diffchars / unequal_diffnames, indexed by level.
 const DIFF_CHARS = "tekxr";
-const DIFF_NAMES = ["Trivial", "Easy", "Tricky", "Extreme", "Recursive"];
+export const DIFF_NAMES = ["Trivial", "Easy", "Tricky", "Extreme", "Recursive"];
 const DIFFS: Difficulty[] = ["trivial", "easy", "tricky", "extreme", "recursive"];
 
 export function diffToLevel(d: Difficulty): number {

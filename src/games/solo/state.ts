@@ -36,7 +36,7 @@ export const DIFF_AMBIGUOUS = 6;
 export const DIFF_IMPOSSIBLE = 7;
 export const DIFFCOUNT = 6; // number of selectable difficulties
 
-const DIFF_NAMES = [
+export const DIFF_NAMES = [
   "Trivial",
   "Basic",
   "Intermediate",

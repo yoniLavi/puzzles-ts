@@ -17,6 +17,7 @@
  * not a stub.
  */
 
+import type { DifficultyContract } from "./difficulty.ts";
 import type { RandomState } from "./random/index.ts";
 import type {
   Colour,
@@ -467,6 +468,19 @@ export interface Game<
    * it opts in). Independent of the type-summary `describeParams` hook,
    * which renders the menu label rather than the form. */
   paramConfig?: ParamConfigItem<Params>[];
+
+  /** What this game's difficulty tiers are, how to read and set one on a
+   * params object, and how to run its solver capped at one. Declared by a game
+   * with difficulty tiers; absent for the twenty-nine games without them,
+   * exactly as a game without a solver omits `solve`.
+   *
+   * It exists so that a property *about* tiers can be asserted for every tiered
+   * game at once rather than one game at a time — most of all
+   * cap-monotonicity, which Boats shipped without and which silently broke
+   * Check & Save on every Easy board. See `difficulty.ts` for the contract and
+   * `difficulty-contract.test.ts` for the guards a game is enrolled in the
+   * moment it declares this. */
+  difficulty?: DifficultyContract<Params>;
 
   /** RGB palette (each component 0..1), index 0 is conventionally the
    * background. Receives the frontend default background so a game can

@@ -23,6 +23,7 @@ import {
   refreshCandidateHintStep,
   regionDuplicateMarks,
 } from "../../engine/candidate-hint.ts";
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
@@ -35,6 +36,7 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
+import { latinVerdict } from "../../engine/latin.ts";
 import {
   hiddenSingleLine,
   rowColRegions,
@@ -101,6 +103,7 @@ import {
   clueIndex,
   cluePos,
   DIFF_EXTREME,
+  DIFF_NAMES,
   DIFF_UNREASONABLE,
   decodeParams,
   defaultParams,
@@ -873,6 +876,20 @@ function flashLength(
   return winFlash(from, to, FLASH_TIME);
 }
 
+/** Towers' difficulty contract (`engine/difficulty.ts`). `solveTowers` follows
+ * the shared latin-family return convention — the difficulty reached, or one of
+ * `latin.ts`'s sentinels — so `latinVerdict` reads it. The solver is seeded from
+ * the immutable givens, never the player's grid. */
+const difficulty: DifficultyContract<TowersParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => diffToLevel(p.diff),
+  withTier: (p, tier) => ({ ...p, diff: diffFromLevel(tier) }),
+  solveAtCap: (p, desc, cap) => {
+    const s = newState(p, desc);
+    return latinVerdict(solveTowers(s.w, s.clues, Uint8Array.from(s.immutable), cap));
+  },
+};
+
 export const towersGame: Game<
   TowersParams,
   TowersState,
@@ -933,6 +950,7 @@ export const towersGame: Game<
   status: (s): GameStatus => status(s),
 
   solve,
+  difficulty,
   hint,
   hintKeepTrack,
   refreshHintStep,

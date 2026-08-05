@@ -1,5 +1,16 @@
 # add-sticks-difficulty-tiers
 
+> **`solvableAtExactlyTier` now exists** (`add-game-difficulty-contract`,
+> 2026-08-05). The acceptance rule this change needs — *solvable at its tier and
+> not at the tier below* — is `engine/difficulty.ts`'s
+> `solvableAtExactlyTier(solve, tier)`. It takes a `(cap) => DifficultyVerdict`
+> closure, so a generator calls it without importing its own `index.ts`, and it
+> asks the **cheap** question first so a too-easy candidate is rejected before
+> the deep solve is paid for. Apply it rather than re-deriving the rule; declare
+> `Game.difficulty` too, which enrolls the game in the cross-game
+> cap-monotonicity / tier-reachability guards automatically.
+
+
 ## Why
 
 Sticks' author states the gap — *"There are currently no difficulty settings"* —
