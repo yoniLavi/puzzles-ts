@@ -23,10 +23,8 @@
 #                not a runtime-cycle count on a codebase with verbatimModuleSyntax
 #                — `import type` is erased and forms no runtime edge. Measured
 #                2026-08-01: raw 20, runtime 1. See scripts/metrics-cycles.mjs.
-#                CURRENTLY UNAVAILABLE (2026-08-05): madge cannot run under
-#                TypeScript 7 — see the loud arm in the madge section below. The
-#                last good reading is the 2026-08-01 one above; treat it as the
-#                baseline to re-measure against, not as the current state.
+#                Working, and pinned to that by TypeScript's major version —
+#                see the loud arm in the madge section below before upgrading.
 #   dead code    knip. Expect a small haul; this is a maintained tree, not a
 #                port with #ifdef-orphaned helpers.
 #   complexity   biome's noExcessiveCognitiveComplexity (the same published Sonar
@@ -64,13 +62,21 @@ npx jscpd src \
   >"$OUT/jscpd.txt" 2>&1 || true
 
 # --- import cycles ----------------------------------------------------------
-# madge is BROKEN under TypeScript 7 and this branch is why the failure is not
-# swallowed. `ts-api-utils` (reached via precinct → @typescript-eslint) reads
-# `ts.TypeFlags`, which the Go port does not expose, so madge dies on load with
-# `TypeError: Cannot read properties of undefined`. Its exit code cannot be the
-# discriminator — `--circular` exits 1 when it *finds* cycles too — so the crash
-# is detected by signature. The point of the loud arm: a `|| true` here would
-# leave an empty cycles.txt, which reads exactly like "no cycles found".
+# madge works today and DIES on TypeScript 7; this branch is the tripwire.
+# Measured 2026-08-05: under typescript@7.0.2 madge dies on load with
+# `TypeError: Cannot read properties of undefined (reading 'Intrinsic')`,
+# because `ts-api-utils` (reached via precinct → @typescript-eslint) reads
+# `ts.TypeFlags` and TS 7's package resolves `require("typescript")` to a bare
+# version file — the classic compiler API moved to `./unstable/*` and is not
+# stable until 7.1. Ten packages in this tree consume that API; all cap at <7.
+# That is why `typescript` stays on 5.x even though the compiler in the gate is
+# now tsgo: the two coexist deliberately — tsgo does the checking (and serves
+# the language server via .lsp.json), while `typescript` is kept purely as the
+# programmatic API those ten packages import. Do not "tidy" it away.
+# Its exit code cannot be the discriminator — `--circular` exits 1 when it
+# *finds* cycles too — so the crash is detected by signature. The point of the
+# loud arm: a plain `|| true` leaves an empty cycles.txt, which reads exactly
+# like "no cycles found".
 echo "  madge…"
 npx madge --circular --extensions ts --ts-config tsconfig.json src \
   >"$OUT/cycles-raw.txt" 2>&1 || true
@@ -88,8 +94,28 @@ else
 fi
 
 # --- dead code --------------------------------------------------------------
+# knip.json cannot carry comments, so the non-obvious half of its config is
+# recorded here. Until 2026-08-05 knip reported NOTHING — not even a file with
+# no importer at all — and read as "the tree is clean". Cause: knip resolves
+# `import.meta.glob` as a module reference, and three globs anchored at src/
+# root (two in asset-integrity.test.ts, one in module-layering.test.ts) match
+# every .ts file under src/. Those globs use `query: "?raw"`/`"?url"` — they
+# read file TEXT, never a module's exports — so they are not dependency edges,
+# but knip counts them anyway, making every file "referenced" and unused-file
+# detection structurally impossible.
+#
+# The fix needs BOTH halves, which do different jobs:
+#   knip.json `vitest.entry` negations  — knip's vitest plugin re-adds every
+#     *.test.ts as an entry, overriding a top-level `entry` negation. Excluding
+#     the two files THERE is what removes their globs from the reference graph.
+#   knip.json `ignore`                  — suppresses *reporting* only. Without
+#     it the two files then report as unused themselves.
+# Neither alone works; that is why they look redundant and are not.
+#
+# Config hints are deliberately NOT suppressed (`--no-config-hints` was what
+# hid the diagnosis). They are quiet when the config is right.
 echo "  knip…"
-npx knip --no-config-hints >"$OUT/knip.txt" 2>&1 || true
+npx knip >"$OUT/knip.txt" 2>&1 || true
 
 # --- cognitive complexity ---------------------------------------------------
 # Threshold 15 here is the MEASURING threshold (biome's default), deliberately

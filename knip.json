@@ -1,15 +1,22 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "src/main.ts",
     "src/preflight.ts",
-    "src/sw.ts",
     "src/color-scheme-init.ts",
+    "src/home-page.ts",
+    "src/puzzle-page.ts",
     "vite-plugins/*.ts",
-    "scripts/*.mjs",
-    "**/*.test.ts"
+    "scripts/*.mjs"
   ],
   "project": ["src/**/*.ts", "vite-plugins/**/*.ts", "scripts/**/*.mjs"],
   "ignoreDependencies": ["jscpd", "madge"],
-  "ignore": ["src/test-setup/icons.ts"]
+  "ignore": ["src/asset-integrity.test.ts", "src/module-layering.test.ts"],
+  "vitest": {
+    "entry": [
+      "**/*.test.ts",
+      "!src/asset-integrity.test.ts",
+      "!src/module-layering.test.ts"
+    ]
+  }
 }

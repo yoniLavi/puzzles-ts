@@ -55,7 +55,12 @@ set -e
 sh "$(dirname -- "$0")/reap-orphaned-workers.sh" || true
 
 # --- 1. Fast fail-fast prefix. ---
-npx tsc -b --noEmit
+# `tsgo` (@typescript/native-preview), not `tsc`: the Go-native compiler checks
+# this tree in ~2.5s against ~13s for tsc 5.9, and the same binary serves the
+# editor/agent language server via `.lsp.json`, so the gate and the LSP agree on
+# what a type error is. `typescript` (5.x) is still installed — see the madge
+# section of metrics.sh for the ten packages that need its programmatic API.
+npx tsgo -b --noEmit
 
 # Biome checks lint rules AND formatting AND import order in one read-only pass
 # (the `check`/`ci` form — not `lint`, which misses formatting; not
