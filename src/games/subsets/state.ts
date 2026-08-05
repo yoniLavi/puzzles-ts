@@ -17,6 +17,25 @@
 import type { PresetMenu } from "../../engine/game.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
+// --- difficulty --------------------------------------------------------------
+
+/** Upstream's shipped deductive strength, exactly: the tail half of
+ * `applyArrowsAdvanced` and the four rules below it. */
+export const DIFF_EASY = 0;
+/** Adds the *head* half of `applyArrowsAdvanced` — the mirror elimination
+ * upstream wrote, commented out under `// TODO repair this`, and never
+ * compiled. */
+export const DIFF_TRICKY = 1;
+export const DIFFCOUNT = 2;
+
+/** The collection's two-tier convention (clusters, magnets, pearl, singles and
+ * tents all name exactly this pair), not upstream's, which offers no
+ * difficulty at all here. */
+export const DIFF_NAMES = ["Easy", "Tricky"] as const;
+
+/** Difficulty encode chars for the `d<char>` param suffix, index = tier. */
+const DIFF_CHARS = "et";
+
 // --- letters, arrows, cell geometry (upstream values) ------------------------
 
 export const ALL_BITS = (n: number): number => (1 << n) - 1;
@@ -58,6 +77,8 @@ export interface SubsetsParams {
   h: number;
   /** Universe size: the grid holds all `2^n` sets over `n` letters. */
   n: number;
+  /** {@link DIFF_EASY} or {@link DIFF_TRICKY}. */
+  diff: number;
 }
 
 export interface SubsetsState {
@@ -113,20 +134,33 @@ export type SubsetsMistake =
 
 // --- params -----------------------------------------------------------------
 
+/**
+ * Easy is the default, and the argument is unusually clean here: Easy *is*
+ * upstream's shipped solver strength, so it is the board today's players
+ * already get and the tier the differential fixtures record. The phrase
+ * `add-clusters-difficulty-tiers` had to argue around — "the tier that
+ * reproduces today's boards may not exist" — does exist for Subsets, because
+ * the new rung was added *above* the shipped one rather than beside it.
+ */
 export function defaultParams(): SubsetsParams {
-  return { w: 4, h: 4, n: 4 };
+  return { w: 4, h: 4, n: 4, diff: DIFF_EASY };
 }
 
 export function presets(): PresetMenu<SubsetsParams> {
-  // The sole upstream preset.
+  // Upstream offers a single preset (the sole legal board shape); the tier is
+  // the only axis this game has to vary, so it is the whole menu.
   return {
     title: "Subsets",
-    submenu: [{ title: "4x4 Size 4", params: defaultParams() }],
+    submenu: DIFF_NAMES.map((name, diff) => ({
+      title: `4x4 Size 4 ${name}`,
+      params: { w: 4, h: 4, n: 4, diff },
+    })),
   };
 }
 
-export function encodeParams(p: SubsetsParams, _full: boolean): string {
-  return `${p.w}x${p.h}n${p.n}`;
+export function encodeParams(p: SubsetsParams, full: boolean): string {
+  const base = `${p.w}x${p.h}n${p.n}`;
+  return full ? `${base}d${DIFF_CHARS[p.diff] ?? "?"}` : base;
 }
 
 /** atoi at `s[pos]`: parse a leading run of digits, 0 when there are none. */
@@ -152,6 +186,14 @@ export function decodeParams(s: string): SubsetsParams {
   if (s[pos] === "n") {
     r = eatNum(s, pos + 1);
     p.n = r.value;
+    pos = r.next;
+  }
+  // An ID with no `d` keeps the default tier (see `defaultParams`); an
+  // unrecognised char lands out of range so `validateParams` rejects it rather
+  // than silently playing some other difficulty.
+  if (s[pos] === "d" && pos + 1 < s.length) {
+    const idx = DIFF_CHARS.indexOf(s[pos + 1]);
+    p.diff = idx === -1 ? DIFFCOUNT : idx;
   }
   return p;
 }
@@ -159,6 +201,7 @@ export function decodeParams(s: string): SubsetsParams {
 export function validateParams(p: SubsetsParams, _full: boolean): string | null {
   if (p.w !== 4 || p.h !== 4 || p.n !== 4)
     return "Currently only 4x4 puzzles are supported";
+  if (p.diff < 0 || p.diff >= DIFFCOUNT) return "Unknown difficulty rating";
   return null;
 }
 

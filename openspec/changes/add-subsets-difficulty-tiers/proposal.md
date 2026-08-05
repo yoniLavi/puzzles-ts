@@ -97,9 +97,17 @@ change an existing board, only what the next generation produces.
 - **Params, presets, Custom dialog, game ID.** Subsets currently ships *no*
   `paramConfig` at all (upstream's configure slot is `false`), so the Custom
   dialog gains its first entry for this game.
-- **Re-found the assurance**: the desc byte-match cannot survive a stronger
-  solver. Replace with uniquely-solvable-at-exactly-its-tier, and keep the C
-  fixtures as solver-verdict checks where they still hold.
+- ~~**Re-found the assurance**: the desc byte-match cannot survive a stronger
+  solver.~~ **Wrong — corrected during implementation.** It survives *intact*,
+  with no `upstreamLooseGate` flag: the new rung is added **above** upstream's
+  strength rather than in place of it, and the lowest tier has no tier below it
+  to be graded against, so at `DIFF_EASY` the rule set, the acceptance test and
+  the RNG draw order are all unchanged and all twelve C fixtures still reproduce
+  byte-for-byte — on the live default path. The generalisation is in design D3:
+  *a tier added at the top of the ladder keeps the oracle for free; a tier that
+  redefines the existing gate does not.* Tricky additionally carries
+  uniquely-solvable-at-exactly-its-tier, as an addition rather than a
+  replacement.
 
 Explicitly **not** in this change: alternate grid sizes. The 4×4/four-letter
 bijection is the puzzle; other sizes are a different game (`audit-author-known-issues`).

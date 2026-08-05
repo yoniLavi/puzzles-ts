@@ -11,11 +11,16 @@
  * Input targets one letter slot of a cell: left-click / Enter cycles it
  * unknown → present → absent, right-click / Space cycles the other way, and
  * middle-click / Backspace resets it to unknown; a keyboard cursor walks the
- * slots, skipping the gaps between cell blocks. Upstream locks the game to
- * one configuration (4×4, four letters), so there is one preset and no
- * custom-params dialog.
+ * slots, skipping the gaps between cell blocks.
+ *
+ * Upstream locks the board to one configuration (4×4, four letters — the only
+ * size where the sixteen possible sets exactly fill the sixteen cells), so the
+ * only thing there is to choose is how deep the deductions go:
+ * `add-subsets-difficulty-tiers` gives the game two tiers, one preset each, and
+ * a Custom dialog offering the tier alone.
  */
 
+import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
   type HintResult,
@@ -58,12 +63,14 @@ import {
   type SubsetsDeduction,
   type SubsetsDeductionSet,
   solveCopy,
+  subsetsSolveGame,
   subsetsValidate,
 } from "./solver.ts";
 import {
   CELL_HEIGHT,
   CELL_WIDTH,
   cloneState,
+  DIFF_NAMES,
   decodeParams,
   defaultParams,
   encodeParams,
@@ -578,6 +585,24 @@ function flashLength(
   return 0;
 }
 
+/** The cross-game difficulty contract (`add-game-difficulty-contract`): declaring
+ * it enrolls Subsets in the shared cap-monotonicity and tier-reachability
+ * guards. `solveAtCap` rebuilds the board from its desc — never from a live
+ * state — because `subsetsSolveGame` resets and mutates what it is given. */
+const difficulty: DifficultyContract<SubsetsParams> = {
+  tiers: DIFF_NAMES,
+  tierOf: (p) => p.diff,
+  withTier: (p, tier) => ({ ...p, diff: tier }),
+  solveAtCap: (p, desc, cap) => {
+    const result = subsetsSolveGame(newState(p, desc), cap);
+    return result === "complete"
+      ? "solved"
+      : result === "invalid"
+        ? "impossible"
+        : "unsolved";
+  },
+};
+
 export const subsetsGame: Game<
   SubsetsParams,
   SubsetsState,
@@ -604,8 +629,22 @@ export const subsetsGame: Game<
   decodeParams,
   validateParams,
 
-  // No paramConfig: upstream's configure slot is false — 4x4 n=4 is the
-  // only legal configuration, so there is nothing to configure (design D8).
+  // Upstream's configure slot is `false` — 4×4 over four letters is the only
+  // legal board (the sixteen sets exactly fill the sixteen cells), so the port
+  // shipped with no Custom dialog at all (design D8). The tier is the one axis
+  // this game *can* vary, so it is the whole dialog.
+  paramConfig: [
+    {
+      kw: "difficulty",
+      name: "Difficulty",
+      type: "choices",
+      choices: [...DIFF_NAMES],
+      get: (p) => p.diff,
+      set: (p, v) => {
+        p.diff = v;
+      },
+    },
+  ],
 
   newDesc: (p: SubsetsParams, rng: RandomState) => newSubsetsDesc(p, rng),
   validateDesc,
@@ -617,6 +656,7 @@ export const subsetsGame: Game<
   status,
 
   solve,
+  difficulty,
   hint,
   hintKeepTrack,
   findMistakes,

@@ -12,18 +12,31 @@
  * the generator, the solver's exact strength, and the codec together.
  */
 
+import { type CappedSolve, solvableAtExactlyTier } from "../../engine/difficulty.ts";
 import type { RandomState } from "../../engine/random/index.ts";
+import { retryLimit } from "../../engine/retry-limit.ts";
 import { shuffle } from "../../engine/shuffle.ts";
 import { subsetsSolveGame } from "./solver.ts";
 import {
   ADJTHAN,
   blankState,
   cloneState,
+  DIFF_EASY,
   encodeDesc,
   type SubsetsParams,
+  type SubsetsState,
 } from "./state.ts";
 
-export function newSubsetsDesc(p: SubsetsParams, rng: RandomState): { desc: string } {
+/**
+ * One candidate board at `p.diff`: upstream's generation exactly, with the
+ * solver capped at the requested tier.
+ *
+ * **The Easy tier is upstream byte-for-byte.** `DIFF_EASY` is upstream's
+ * shipped solver strength, the RNG draw order is untouched, and tier 0 needs
+ * no "and not easier" gate — so the differential fixtures still bind (design
+ * D3). Only Tricky is new.
+ */
+export function generateCandidate(p: SubsetsParams, rng: RandomState): SubsetsState {
   const state = blankState(p);
   const { w, h, n } = p;
   const n2 = 1 << n;
@@ -65,8 +78,37 @@ export function newSubsetsDesc(p: SubsetsParams, rng: RandomState): { desc: stri
   for (const i of spaces) {
     state.immutable[i] = 0;
     const solved = cloneState(state);
-    if (subsetsSolveGame(solved) !== "complete") state.immutable[i] = 1;
+    if (subsetsSolveGame(solved, p.diff) !== "complete") state.immutable[i] = 1;
   }
 
-  return { desc: encodeDesc(state) };
+  return state;
+}
+
+/**
+ * Generate a board at exactly `p.diff`.
+ *
+ * Unlike Clusters', this generator has **no state carried between attempts**:
+ * every candidate redraws both shuffles, so the whole board is fresh
+ * randomness and a plain retry cannot re-derive the board it just rejected
+ * (the hazard `add-clusters-difficulty-tiers` hit — see the proposal). That is
+ * why the tier gate is a bare loop rather than a perturbation.
+ *
+ * Easy takes the first candidate: tier 0 has no tier below to be too easy for,
+ * so its acceptance rule is upstream's unchanged and its descs are unchanged
+ * with it.
+ */
+export function newSubsetsDesc(p: SubsetsParams, rng: RandomState): { desc: string } {
+  const attempt = retryLimit("subsets generation");
+  for (;;) {
+    attempt();
+    const state = generateCandidate(p, rng);
+    if (p.diff === DIFF_EASY) return { desc: encodeDesc(state) };
+
+    // `solvableAtExactlyTier` asks the *cheap* question first — "does the tier
+    // below already finish it?" — so a too-easy candidate is rejected without
+    // ever paying for the deeper solve.
+    const solve: CappedSolve = (cap) =>
+      subsetsSolveGame(cloneState(state), cap) === "complete" ? "solved" : "unsolved";
+    if (solvableAtExactlyTier(solve, p.diff)) return { desc: encodeDesc(state) };
+  }
 }

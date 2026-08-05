@@ -115,7 +115,7 @@ export function colours(defaultBackground: Colour): Colour[] {
 
 // --- geometry ---------------------------------------------------------------
 
-export function computeSize(p: SubsetsParams, ts: number): Size {
+export function computeSize(p: Pick<SubsetsParams, "w" | "h">, ts: number): Size {
   return {
     w: p.w * (CELL_WIDTH + 1) * ts,
     // The extra (ch+1)-tile band below the grid holds the set tally.
@@ -253,7 +253,7 @@ export function redraw(
   }
 
   if (firstDraw) {
-    const size = computeSize({ w, h, n }, ts);
+    const size = computeSize({ w, h }, ts);
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_OUTERBG);
     dr.drawUpdate({ x: 0, y: 0, w: size.w, h: size.h });
     // Grey backing behind each cell block; the slot squares drawn one pixel

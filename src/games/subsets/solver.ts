@@ -4,13 +4,18 @@
  *
  * The solver is a candidate-elimination fixpoint over a **cube**
  * `cube[cell][value]`: for each cell and each of the `2^n` possible
- * set-values, whether that value is still a candidate. Its exact deductive
- * strength is byte-match surface: the generator keeps a cell blank only
- * while this solver still reaches a complete solution (generator.ts), so
- * the precise set of deductions — no more, no less — decides which cells
- * stay givens and therefore every generated desc. Port rules and loop
- * order verbatim; do not strengthen or weaken (design D2 of
- * add-subsets-ts-port).
+ * set-values, whether that value is still a candidate.
+ *
+ * **Deductive strength is the difficulty axis, and it is capped explicitly.**
+ * The generator keeps a cell blank only while this solver still reaches a
+ * complete solution, so the precise set of deductions decides which cells stay
+ * givens and therefore every generated desc. `DIFF_EASY` is upstream's compiled
+ * strength exactly — rules and loop order verbatim, neither strengthened nor
+ * weakened, which is what keeps the twelve C fixtures reproducing byte-for-byte
+ * (subsets-differential.test.ts). `DIFF_TRICKY` adds one rule *on top*:
+ * `add-subsets-difficulty-tiers` restored the half of `applyArrowsAdvanced`
+ * that upstream wrote, commented out and never compiled. Adding above rather
+ * than editing in place is why that change kept the oracle intact.
  */
 import { deduceHintPlan as accumulateHintPlan } from "../../engine/hint-plan.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
@@ -18,6 +23,7 @@ import {
   ADJTHAN,
   ALL_BITS,
   cloneState,
+  DIFF_TRICKY,
   type SubsetsMistake,
   type SubsetsState,
 } from "./state.ts";
@@ -225,18 +231,29 @@ function bitsFromCube(state: SubsetsState, cube: Uint8Array): number {
 }
 
 /**
- * For an arrow `i1 -> i2`, drop a superset candidate at `i1` with no
- * strictly-smaller subset candidate at `i2` (upstream
+ * For an arrow `i1 -> i2` (meaning set(i2) ⊂ set(i1)), eliminate candidates
+ * that no partner on the other end can satisfy (upstream
  * `subsets_solve_apply_arrows_advanced`).
  *
- * Upstream's second half — "remove options that don't fit the larger set",
- * the mirror-image elimination on the subset cell — is commented out in the
- * C ("TODO repair this") and therefore NOT compiled. It is deliberately not
- * ported: the generator's blanking gate runs on this solver's exact
- * strength, so restoring that block would change every generated board
- * (design D2). Do not "fix" this.
+ * Both halves rest on the arrow forcing a **proper** subset — which the arrow
+ * rule alone does not say (`subsetsValidate` accepts equality) but the
+ * separate "each set is placed at most once" rule does, since two cells cannot
+ * hold the same value. That is why each half looks for a *strictly* smaller /
+ * larger partner.
+ *
+ * - **Tail half** (every tier): drop a superset candidate at `i1` that has no
+ *   strictly-smaller live candidate at `i2`.
+ * - **Head half** (`strong` only): the mirror — drop a subset candidate at
+ *   `i2` that has no strictly-larger live candidate at `i1`. Upstream wrote
+ *   this, commented it out under `// TODO repair this`, and shipped without
+ *   it; `add-subsets-difficulty-tiers` restored it as the Tricky rung. See
+ *   that change's `design.md` D1 for what was actually wrong with it.
  */
-function applyArrowsAdvanced(state: SubsetsState, cube: Uint8Array): number {
+function applyArrowsAdvanced(
+  state: SubsetsState,
+  cube: Uint8Array,
+  strong: boolean,
+): number {
   const { w, h } = state;
   const n2 = 1 << state.n;
   let ret = 0;
@@ -256,6 +273,21 @@ function applyArrowsAdvanced(state: SubsetsState, cube: Uint8Array): number {
           }
           if (!found) {
             cube[i1 * n2 + sup] = 0;
+            ret++;
+          }
+        }
+
+        if (!strong) continue;
+
+        for (let sub = 0; sub < n2; sub++) {
+          if (!cube[i2 * n2 + sub]) continue;
+          let found = false;
+          for (let sup = sub + 1; sup < n2 && !found; sup++) {
+            if ((sup & sub) !== sub || !cube[i1 * n2 + sup]) continue;
+            found = true;
+          }
+          if (!found) {
+            cube[i2 * n2 + sub] = 0;
             ret++;
           }
         }
@@ -320,8 +352,14 @@ function disjoint(state: SubsetsState, cube: Uint8Array): number {
  * `state` in place: every non-given cell is reset, then the rules run in
  * upstream's fixed order, restarting on the first that makes progress.
  * Callers pass a clone when they need the original preserved.
+ *
+ * `maxdiff` caps the deduction ladder: {@link DIFF_EASY} is upstream's shipped
+ * strength exactly, {@link DIFF_TRICKY} adds the head half of
+ * {@link applyArrowsAdvanced}. The rungs nest — Tricky runs every Easy rule —
+ * so a board solvable at Easy is solvable at Tricky. Required, not defaulted:
+ * an implicit cap is how a caller silently measures the wrong tier.
  */
-export function subsetsSolveGame(state: SubsetsState): SubsetsStatus {
+export function subsetsSolveGame(state: SubsetsState, maxdiff: number): SubsetsStatus {
   const s = state.w * state.h;
   const n2 = 1 << state.n;
   const counts = new Int32Array(s);
@@ -344,7 +382,7 @@ export function subsetsSolveGame(state: SubsetsState): SubsetsStatus {
     if (disjoint(state, cube)) continue;
     if (bitsFromCube(state, cube)) continue;
     if (solveSinglePosition(state, counts, cube)) continue;
-    if (applyArrowsAdvanced(state, cube)) continue;
+    if (applyArrowsAdvanced(state, cube, maxdiff >= DIFF_TRICKY)) continue;
 
     return ret;
   }
@@ -378,14 +416,19 @@ export function findMistakes(state: SubsetsState): readonly SubsetsMistake[] {
   return mistakes;
 }
 
-/** Solve a copy of `state`, returning the solved copy and its status —
- * the shared entry for `solve()` and tests. */
-export function solveCopy(state: SubsetsState): {
+/** Solve a copy of `state`, returning the solved copy and its status — the
+ * shared entry for `solve()` and tests. Defaults to the top of the ladder,
+ * which is right for the Solve button whatever tier the board was generated
+ * at: an Easy board solves at Tricky too (the rungs nest). */
+export function solveCopy(
+  state: SubsetsState,
+  maxdiff: number = DIFF_TRICKY,
+): {
   solved: SubsetsState;
   result: SubsetsStatus;
 } {
   const solved = cloneState(state);
-  return { solved, result: subsetsSolveGame(solved) };
+  return { solved, result: subsetsSolveGame(solved, maxdiff) };
 }
 
 // --- hint recorder (add-subsets-hint) ---------------------------------------
@@ -608,12 +651,17 @@ function recDisjoint(
   return ret;
 }
 
-/** `applyArrowsAdvanced`, recording the arrow neighbour as evidence. The dead
- * second half stays unported (design D2 of the port) — do not restore it. */
+/**
+ * `applyArrowsAdvanced`, recording the arrow neighbour as evidence. `strong`
+ * adds the head half exactly as the solve path does — and, exactly as there,
+ * the recorder reaches for it only once the cheaper vocabulary is exhausted
+ * (see {@link deduceHintPlan}).
+ */
 function recApplyArrowsAdvanced(
   state: SubsetsState,
   cube: Uint8Array,
   elim: (ElimEvidence | undefined)[],
+  strong: boolean,
 ): number {
   const { w, h } = state;
   const n2 = 1 << state.n;
@@ -638,6 +686,22 @@ function recApplyArrowsAdvanced(
             ret++;
           }
         }
+
+        if (!strong) continue;
+
+        for (let sub = 0; sub < n2; sub++) {
+          if (!cube[i2 * n2 + sub]) continue;
+          let found = false;
+          for (let sup = sub + 1; sup < n2 && !found; sup++) {
+            if ((sup & sub) !== sub || !cube[i1 * n2 + sup]) continue;
+            found = true;
+          }
+          if (!found) {
+            cube[i2 * n2 + sub] = 0;
+            elim[i2 * n2 + sub] ??= { kind: "neighbour", cell: i1 };
+            ret++;
+          }
+        }
       }
     }
   }
@@ -654,13 +718,14 @@ function shrinkCube(
   cube: Uint8Array,
   counts: Int32Array,
   elim: (ElimEvidence | undefined)[],
+  strong: boolean,
 ): void {
   syncCube(state, cube);
   recCubeSingleCount(state, counts, cube, elim);
   for (;;) {
     let changed = 0;
     changed += recDisjoint(state, cube, elim);
-    changed += recApplyArrowsAdvanced(state, cube, elim);
+    changed += recApplyArrowsAdvanced(state, cube, elim, strong);
     if (!changed) break;
   }
 }
@@ -978,8 +1043,17 @@ function nextHiddenSingle(
  * (a set with one spot left — the crisp, spotlight-shaped counting) → the
  * cube collapse (a cell with one set left) → a last-place cube placement.
  * Stops at `complete`/`invalid`, or `unfinished` when no rule fires.
+ *
+ * `maxdiff` mirrors {@link subsetsSolveGame}'s cap and defaults to the top of
+ * the ladder, which is what production wants: the Tricky rung is a *fallback*,
+ * so a board that never exhausts the cheaper vocabulary never reaches it and an
+ * Easy plan is unaffected by the default. Passing `DIFF_EASY` is how a test
+ * asserts that rather than assuming it.
  */
-export function deduceHintPlan(orig: SubsetsState): SubsetsHintPlan {
+export function deduceHintPlan(
+  orig: SubsetsState,
+  maxdiff: number = DIFF_TRICKY,
+): SubsetsHintPlan {
   const work = cloneState(orig);
   const s = work.w * work.h;
   const n2 = 1 << work.n;
@@ -1006,8 +1080,23 @@ export function deduceHintPlan(orig: SubsetsState): SubsetsHintPlan {
     // `cube` and `elim` both persist across iterations (the cube shrinks
     // monotonically, so an elimination's reason is stable) — refilling `elim`
     // would lose the provenance of candidates removed in an earlier iteration.
-    shrinkCube(state, cube, counts, elim);
+    shrinkCube(state, cube, counts, elim, false);
+    const easy =
+      nextCollapseFiring(state, cube, elim) ?? nextSinglePosition(state, counts, cube);
+    if (easy) return easy;
 
+    // Rung 4 (`DIFF_TRICKY`): only once every cheaper rung is exhausted, add
+    // the head half of the advanced arrow rule and try the cube again. Reaching
+    // for it *last* is what keeps an Easy board's plan identical to the one it
+    // had before the tier existed — the rung is unreachable there, because the
+    // cheaper vocabulary never runs out on a board vetted as solvable without
+    // it. (This is the shape the Clusters hint uses for its lookahead rung; the
+    // first cut of this change ran the head half unconditionally instead, which
+    // is *sound* but silently re-planned Easy boards — a render snapshot caught
+    // it.) Both `next*Firing` calls above returned null without mutating, so
+    // re-running them here repeats no work and drops no firing.
+    if (maxdiff < DIFF_TRICKY) return null;
+    shrinkCube(state, cube, counts, elim, true);
     return (
       nextCollapseFiring(state, cube, elim) ?? nextSinglePosition(state, counts, cube)
     );

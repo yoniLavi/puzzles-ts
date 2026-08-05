@@ -37,9 +37,15 @@ import {
   subsetsValidate,
   whyCantPlace,
 } from "./solver.ts";
-import { cloneState, newState, type SubsetsMove, type SubsetsState } from "./state.ts";
+import {
+  cloneState,
+  DIFF_EASY,
+  newState,
+  type SubsetsMove,
+  type SubsetsState,
+} from "./state.ts";
 
-const P = { w: 4, h: 4, n: 4 };
+const P = { w: 4, h: 4, n: 4, diff: DIFF_EASY };
 
 function gen(seed: string): SubsetsState {
   const { desc } = newSubsetsDesc(P, randomNew(seed));

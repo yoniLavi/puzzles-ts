@@ -23,9 +23,10 @@ import {
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { seedBudget } from "../../engine/testing/slow.ts";
 import type { ChangeNotification, GameStatus } from "../../engine/types.ts";
 import cReference from "./__fixtures__/subsets-c-reference.json" with { type: "json" };
-import { newSubsetsDesc } from "./generator.ts";
+import { generateCandidate, newSubsetsDesc } from "./generator.ts";
 import { subsetsGame } from "./index.ts";
 import {
   COL_ERROR,
@@ -36,6 +37,7 @@ import {
   setTileSize,
 } from "./render.ts";
 import {
+  deduceHintPlan,
   findMistakes,
   solveCopy,
   subsetsSolveGame,
@@ -44,7 +46,11 @@ import {
 import {
   ALL_BITS,
   cloneState,
+  DIFF_EASY,
+  DIFF_NAMES,
+  DIFF_TRICKY,
   decodeParams,
+  defaultParams,
   encodeDesc,
   encodeParams,
   newState,
@@ -56,7 +62,7 @@ import {
   validateParams,
 } from "./state.ts";
 
-const PARAMS = { w: 4, h: 4, n: 4 };
+const PARAMS = { w: 4, h: 4, n: 4, diff: DIFF_EASY };
 const FIX = cReference.fixtures[0];
 const FIX_ID = `4x4n4:${FIX.desc}`;
 
@@ -133,21 +139,41 @@ function harness() {
 
 describe("subsets params", () => {
   it("encode/decode round-trips", () => {
-    expect(encodeParams(PARAMS, true)).toBe("4x4n4");
-    expect(decodeParams("4x4n4")).toEqual(PARAMS);
+    expect(encodeParams(PARAMS, true)).toBe("4x4n4de");
+    expect(decodeParams("4x4n4de")).toEqual(PARAMS);
+    const tricky = { ...PARAMS, diff: DIFF_TRICKY };
+    expect(encodeParams(tricky, true)).toBe("4x4n4dt");
+    expect(decodeParams("4x4n4dt")).toEqual(tricky);
+  });
+
+  it("the short form drops the tier; every tier gets its own full ID", () => {
+    // The non-vacuous half of the contract's tier guard, asserted locally too:
+    // a tier that does not survive the codec to a distinct ID is a tier the
+    // player cannot link to.
+    expect(encodeParams(PARAMS, false)).toBe("4x4n4");
+    const ids = new Set(
+      DIFF_NAMES.map((_, diff) => encodeParams({ ...PARAMS, diff }, true)),
+    );
+    expect(ids.size).toBe(DIFF_NAMES.length);
+  });
+
+  it("rejects an unrecognised difficulty char rather than silently downgrading", () => {
+    expect(validateParams(decodeParams("4x4n4dz"), true)).toBe(
+      "Unknown difficulty rating",
+    );
   });
 
   it("decode is lenient (bare width, missing n)", () => {
-    expect(decodeParams("4")).toEqual({ w: 4, h: 4, n: 4 });
-    expect(decodeParams("5x6")).toEqual({ w: 5, h: 6, n: 4 });
+    expect(decodeParams("4")).toEqual({ w: 4, h: 4, n: 4, diff: DIFF_EASY });
+    expect(decodeParams("5x6")).toEqual({ w: 5, h: 6, n: 4, diff: DIFF_EASY });
   });
 
   it("accepts only 4x4 n=4, with the upstream message", () => {
     expect(validateParams(PARAMS, true)).toBeNull();
     for (const bad of [
-      { w: 5, h: 4, n: 4 },
-      { w: 4, h: 5, n: 4 },
-      { w: 4, h: 4, n: 3 },
+      { w: 5, h: 4, n: 4, diff: DIFF_EASY },
+      { w: 4, h: 5, n: 4, diff: DIFF_EASY },
+      { w: 4, h: 4, n: 3, diff: DIFF_EASY },
     ]) {
       expect(validateParams(bad, true)).toBe(
         "Currently only 4x4 puzzles are supported",
@@ -211,13 +237,13 @@ describe("subsets solver", () => {
     // All sixteen cells given, value 0 twice, value 15 missing.
     const tokens = Array.from({ length: 16 }, (_, i) => (i === 15 ? "0" : String(i)));
     const state = newState(PARAMS, tokens.join(","));
-    expect(subsetsSolveGame(state)).toBe("invalid");
+    expect(subsetsSolveGame(state, DIFF_EASY)).toBe("invalid");
   });
 
   it("reports unfinished for an underdetermined board", () => {
     // No givens, no arrows: nothing forces any placement.
     const state = newState(PARAMS, Array.from({ length: 16 }, () => "_").join(","));
-    expect(subsetsSolveGame(state)).toBe("unfinished");
+    expect(subsetsSolveGame(state, DIFF_TRICKY)).toBe("unfinished");
   });
 
   it("validate classifies a partially-played board as unfinished", () => {
@@ -233,6 +259,91 @@ describe("subsets generator (tier 1)", () => {
     const { result } = solveCopy(newState(PARAMS, desc));
     expect(result).toBe("complete");
     expect(newSubsetsDesc(PARAMS, randomNew("tier1-seed")).desc).toBe(desc);
+  });
+});
+
+// --- difficulty tiers (add-subsets-difficulty-tiers) ------------------------
+//
+// The cross-game contract guards (`engine/difficulty-contract.test.ts`) already
+// hold cap-monotonicity and tier-reachability for this game; what is left here
+// is what only Subsets can assert — that the restored head half of
+// `applyArrowsAdvanced` is *sound*, and that the tier gate actually binds.
+
+const TRICKY = { ...PARAMS, diff: DIFF_TRICKY };
+
+describe("subsets difficulty tiers", () => {
+  it("a Tricky board needs the restored rung: it does not solve at Easy", () => {
+    const boards = seedBudget(6, 24);
+    for (let s = 0; s < boards; s++) {
+      const { desc } = newSubsetsDesc(TRICKY, randomNew(`tricky-${s}`));
+      expect(validateDesc(TRICKY, desc)).toBeNull();
+      expect(subsetsSolveGame(newState(TRICKY, desc), DIFF_TRICKY)).toBe("complete");
+      expect(subsetsSolveGame(newState(TRICKY, desc), DIFF_EASY)).not.toBe("complete");
+    }
+  });
+
+  it("the restored rung is sound: it never eliminates the true solution", () => {
+    // The one property that matters, and the one the C's `// TODO repair this`
+    // put in doubt. An *unsound* elimination is worse than a weak solver: it
+    // yields boards whose advertised unique solution the solver has ruled out.
+    // `generateCandidate` hands back the full assignment it blanked (the desc
+    // hides it, `known` does not), so this compares the capped solve against
+    // the board's own truth rather than against the other cap.
+    const boards = seedBudget(40, 200);
+    for (let s = 0; s < boards; s++) {
+      const truth = generateCandidate(TRICKY, randomNew(`sound-${s}`));
+      const solved = newState(TRICKY, encodeDesc(truth));
+      expect(subsetsSolveGame(solved, DIFF_TRICKY)).toBe("complete");
+      expect([...solved.known]).toEqual([...truth.known]);
+    }
+  });
+
+  it("Easy generation is untouched: it draws upstream's rules, in order", () => {
+    // The differential fixtures are the real statement of this (12 C-recorded
+    // descs, reproduced byte-for-byte on the live default path). This is the
+    // local restatement: the tier that reproduces today's boards exists, and it
+    // is the default.
+    expect(defaultParams().diff).toBe(DIFF_EASY);
+    const { desc } = newSubsetsDesc(PARAMS, randomNew("tier1-seed"));
+    expect(newSubsetsDesc(defaultParams(), randomNew("tier1-seed")).desc).toBe(desc);
+  });
+
+  it("the hint plan reaches the end of a Tricky board", () => {
+    // A hint that cannot narrate a deduction the solver uses fails the bar: the
+    // recorder has to carry the restored rung too, or a Tricky board's plan
+    // stops partway with nothing to say.
+    const boards = seedBudget(4, 20);
+    for (let s = 0; s < boards; s++) {
+      const { desc } = newSubsetsDesc(TRICKY, randomNew(`hintable-${s}`));
+      expect(deduceHintPlan(newState(TRICKY, desc)).status).toBe("complete");
+      // And the rung is load-bearing, not decorative: capped below it the same
+      // recorder stalls. Without this the Easy-plan test below would be
+      // comparing two things that could never have differed.
+      expect(deduceHintPlan(newState(TRICKY, desc), DIFF_EASY).status).toBe(
+        "unfinished",
+      );
+    }
+  });
+
+  it("an Easy board's hint plan does not reach for the Tricky rung", () => {
+    // The rung is a *fallback*, engaged only once the cheaper vocabulary runs
+    // out — which on an Easy board it never does. So an Easy plan is exactly
+    // the plan this game shipped before it had tiers.
+    //
+    // Asserted, not assumed: the same board is planned by the production
+    // recorder (which *can* reach the rung) and by one capped below it, and the
+    // two plans must be identical firing for firing. An earlier cut ran the
+    // rung unconditionally, which is sound but silently re-planned Easy boards;
+    // this is the check that would have caught it without a render snapshot.
+    const boards = seedBudget(4, 20);
+    for (let s = 0; s < boards; s++) {
+      const { desc } = newSubsetsDesc(PARAMS, randomNew(`easyplan-${s}`));
+      const full = deduceHintPlan(newState(PARAMS, desc));
+      const capped = deduceHintPlan(newState(PARAMS, desc), DIFF_EASY);
+      expect(full.status).toBe("complete");
+      expect(full.deductions.length).toBeGreaterThan(0);
+      expect(capped).toEqual(full);
+    }
   });
 });
 
