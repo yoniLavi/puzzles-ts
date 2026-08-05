@@ -1,5 +1,26 @@
 # add-sticks-difficulty-tiers
 
+> **WITHDRAWN at the gating spike, 2026-08-05 — no tier is possible here.**
+> The spike this proposal called for was run, and it found what it was written
+> to look for. **Every board the shipped solver declines is genuinely
+> ambiguous**: of 300 candidate fills drawn as the generator draws them, 22 are
+> solved, 278 have more than one solution, and **0 are uniquely solvable but
+> unsolved**. A harder tier would be made of boards from that empty row.
+>
+> Both candidate rungs were built and measured. The one-level hypothetical
+> (Clusters' Tricky rung) is real but reachable on ~1 board in 12 and costs
+> **8–15 s per board at 10×10** — an order of magnitude worse than the
+> collection's slowest generator, for a tier the generator can rarely fill,
+> which is exactly what task 0.3 said should end the change. Correcting the
+> `x > 1` / `y > 1` reachability bugs changes **no verdict on any board** at
+> either preset, which also settles task 2.2: keep the quirks, they are inert.
+>
+> What ships instead is one test asserting that every generated board has
+> exactly one solution and that the shipped deduction finds it — the property
+> "graded honestly" reduces to for a one-tier game, previously unasserted.
+> Evidence and method in `design.md`; **read S1 before reopening this**, in
+> particular why the first two measurements were meaningless.
+
 > **`solvableAtExactlyTier` now exists** (`add-game-difficulty-contract`,
 > 2026-08-05). The acceptance rule this change needs — *solvable at its tier and
 > not at the tier below* — is `engine/difficulty.ts`'s

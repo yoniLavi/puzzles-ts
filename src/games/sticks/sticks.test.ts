@@ -18,17 +18,22 @@ import {
   RIGHT_BUTTON,
   RIGHT_RELEASE,
 } from "../../engine/pointer.ts";
+import { randomNew } from "../../engine/random/index.ts";
 import { SYMM_NONE, SYMM_ROT2 } from "../../engine/symmetric-blacks.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { seedBudget } from "../../engine/testing/slow.ts";
 import type { ChangeNotification, GameStatus } from "../../engine/types.ts";
 import cReference from "./__fixtures__/sticks-c-reference.json" with { type: "json" };
+import { newSticksDesc } from "./generator.ts";
 import { sticksGame } from "./index.ts";
 import { COL_ERROR, COL_LINE, newDrawState, redraw, setTileSize } from "./render.ts";
 import {
   findLiveErrors,
   findMistakes,
+  newScratch,
   sticksSolveGame,
+  sticksTry,
   sticksValidate,
 } from "./solver.ts";
 import {
@@ -181,6 +186,68 @@ describe("sticks params", () => {
   });
 });
 
+/**
+ * An independent uniqueness oracle: propagate with the shipped deduction, then
+ * branch on the first undecided cell. Counts solutions, stopping at `cap`.
+ *
+ * Test-only, and deliberately *not* built out of the shipped solver's verdict:
+ * "the solver reached a complete board" says the solver found *a* solution by
+ * forced steps, which is a different claim from "the board has only one". The
+ * distinction is not academic — it is exactly the one that made
+ * `add-sticks-difficulty-tiers`' first two measurements meaningless, because
+ * most boards the solver declines are ambiguous rather than hard, and counting
+ * declines as "too hard" measures how often boards are ambiguous while claiming
+ * to measure deductive power.
+ */
+function countSolutions(
+  grid0: Uint8Array,
+  numbers: Int16Array,
+  w: number,
+  h: number,
+  cap = 2,
+): number {
+  let found = 0;
+  const rec = (g: Uint8Array): void => {
+    if (found >= cap) return;
+    const work = g.slice();
+    const ret = sticksSolveGameFrom(work, numbers, w, h);
+    if (ret === "invalid") return;
+    if (ret === "complete") {
+      found++;
+      return;
+    }
+    const i = work.indexOf(0);
+    if (i < 0) return;
+    for (const o of [F_HOR, F_VER]) {
+      const next = work.slice();
+      next[i] = o;
+      rec(next);
+      if (found >= cap) return;
+    }
+  };
+  const start = grid0.slice();
+  for (let i = 0; i < w * h; i++) if (!(start[i] & F_BLOCK)) start[i] = 0;
+  rec(start);
+  return found;
+}
+
+/** `sticksSolveGame` without its opening wipe of the white cells — the branch
+ * search must keep the orientations it has assumed. */
+function sticksSolveGameFrom(
+  grid: Uint8Array,
+  numbers: Int16Array,
+  w: number,
+  h: number,
+): "complete" | "unfinished" | "invalid" {
+  const scratch = newScratch(w * h);
+  let ret = sticksValidate(grid, numbers, w, h, scratch);
+  while (ret === "unfinished") {
+    if (!sticksTry(grid, numbers, w, h, scratch)) break;
+    ret = sticksValidate(grid, numbers, w, h, scratch);
+  }
+  return ret;
+}
+
 describe("sticks solver", () => {
   it("deduces the fixture board to its unique complete solution", () => {
     const solution = fixtureSolution();
@@ -203,6 +270,39 @@ describe("sticks solver", () => {
     const grid = new Uint8Array(4);
     const numbers = new Int16Array(4).fill(-1);
     expect(sticksSolveGame(grid, numbers, 2, 2)).toBe("unfinished");
+  });
+
+  it("every generated board has exactly one solution, and deduction finds it", () => {
+    // Sticks has one implicit difficulty tier, so "graded honestly" reduces to
+    // this: the board is uniquely solvable, and the shipped deduction — with no
+    // guessing anywhere — reaches that solution. `sticksSolveGame` answering
+    // "complete" gives the second half but NOT the first, because a solver can
+    // only report on the line of play it followed. `countSolutions` is the
+    // independent witness.
+    //
+    // This guard is what `add-sticks-difficulty-tiers` produced. That change
+    // asked whether a second tier was possible; the answer was no, and the
+    // reason is the property asserted here — the shipped solver already decides
+    // every uniquely-solvable board this generator makes, so there is no
+    // headroom for a harder rung to work in (that change's `design.md` S1).
+    // The oracle must be able to say "more than one", or asserting 1 proves
+    // nothing. A 2x2 board with no clues at all has many solutions.
+    expect(countSolutions(new Uint8Array(4), new Int16Array(4).fill(-1), 2, 2)).toBe(2);
+
+    for (const p of [
+      { w: 7, h: 7, blackpc: 20, symm: SYMM_ROT2 },
+      { w: 10, h: 10, blackpc: 20, symm: SYMM_ROT2 },
+    ]) {
+      const boards = seedBudget(2, 8);
+      for (let s = 0; s < boards; s++) {
+        const { desc } = newSticksDesc(p, randomNew(`unique-${p.w}-${s}`));
+        const state = newState(p, desc);
+        expect(sticksSolveGame(state.grid.slice(), state.numbers, p.w, p.h)).toBe(
+          "complete",
+        );
+        expect(countSolutions(state.grid, state.numbers, p.w, p.h)).toBe(1);
+      }
+    }
   });
 
   it("findLiveErrors flags an over-connected black clue", () => {
