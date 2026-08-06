@@ -57,13 +57,26 @@ export const isGrayChroma = (c: number) => c < 0.01;
 /**
  * Compresses lightness l [0, 1] to fit within [floor, 1 - headroom],
  * with optional boost to expand lightness difference at the low end.
+ *
+ * `l` is clamped to its stated domain first, and that clamp is load-bearing
+ * rather than defensive tidiness: `boost` is fractional, and a *negative* base
+ * raised to a fractional power is `NaN`. The out-of-domain input is real and
+ * arrives from the ordinary path — `colourToOKLCH([1, 1, 1])` returns
+ * `1.0000000000000002` (float drift in the OKLab round trip), so
+ * {@link invertLightness}'s `1 - l` is a hair below zero for anything pure
+ * white. Without the clamp the whole conversion yields `oklch(NaN% 0 0)`, which
+ * a canvas rejects **silently** — `ctx.fillStyle` keeps its previous value, so
+ * the shape is still painted, in the wrong colour, with nothing logged. That
+ * cost 57 palette entries across 42 games their dark-mode value (every game
+ * whose palette holds a pure white, which after `game_mkhighlight` is most of
+ * the ones with a 3D bevel: Slide lost the lowlight half of every bevel).
  */
 const compressLightness = (
   l: number,
   options?: { floor?: number; headroom?: number; boost?: number },
 ) => {
   const { floor = 0, headroom = 0, boost = 1 } = options ?? {};
-  const compressedL = floor + l ** boost * (1 - floor - headroom);
+  const compressedL = floor + clamp(0, l, 1) ** boost * (1 - floor - headroom);
   return clamp(0, compressedL, 1);
 };
 

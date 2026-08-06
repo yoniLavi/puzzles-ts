@@ -11,7 +11,7 @@
  * it (Slide's target zone was the reported symptom).
  */
 import { describe, expect, it } from "vitest";
-import { darkModeColor, type OKLCH } from "./color.ts";
+import { colourToOKLCH, darkModeColor, type OKLCH, oklchToCSSColor } from "./color.ts";
 
 /** The lightness a dark-mode board background sits at. */
 const BGL = 0.2;
@@ -97,5 +97,39 @@ describe("dark-mode adaptation preserves the relationship to the background", ()
     // as L=1 and must come back as the board colour itself.
     expect(darkL([1, 0, 0])).toBeCloseTo(BGL, 5);
     void LIGHT_BG;
+  });
+
+  it("adapts a pure white that came through the sRGB conversion", () => {
+    // The case above hand-writes `[1, 0, 0]`, and a hand-written 1 is not the
+    // number production supplies: a palette entry is an RGB triple, and
+    // `colourToOKLCH([1, 1, 1])` returns 1.0000000000000002 — float drift in
+    // the OKLab round trip. `1 - l` is then a hair *below* zero, and the
+    // fractional `boost` power of a negative base is NaN, which serialises to
+    // `oklch(NaN% 0 0)` and is then rejected by the canvas SILENTLY (the
+    // previous fillStyle stays, so the shape paints in the wrong colour with
+    // nothing logged). 57 palette entries across 42 games were resolving that
+    // way. Driving the conversion rather than a literal is the whole point of
+    // this test — the assertion above is identical and cannot fail.
+    const white = colourToOKLCH([1, 1, 1]);
+    expect(white[0]).toBeGreaterThan(1); // the drift is real; if it stops being
+    // real this test still holds, but the one above stops being redundant.
+    expect(darkL(white)).toBeCloseTo(BGL, 5);
+    expect(String(oklchToCSSColor(dark(white)))).not.toContain("NaN");
+  });
+
+  it("yields a resolvable CSS colour for every reachable lightness", () => {
+    // The general form: no input a palette can hold may produce a colour string
+    // a canvas will refuse. Sweeping the sRGB extremes and their neighbourhood
+    // is cheap and covers the drift band on both sides of both endpoints.
+    for (const v of [0, 1e-12, 0.001, 0.5, 0.999, 1 - 1e-12, 1]) {
+      for (const rgb of [
+        [v, v, v],
+        [v, 0, 0],
+        [1, 1, v],
+      ] as const) {
+        const css = String(oklchToCSSColor(dark(colourToOKLCH([...rgb]))));
+        expect(css, `rgb ${rgb.join(",")}`).not.toContain("NaN");
+      }
+    }
   });
 });
