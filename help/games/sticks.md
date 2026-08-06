@@ -6,6 +6,13 @@ You are given a grid with several black cells. Fill every blank cell with a line
 2. A line can't overlap more than one number.
 3. Numbers in black cells indicate the amount of lines connected to the cell.
 
+A line is connected to a black cell when it *runs into* it: a horizontal line
+in the cell to its left or right, or a vertical line in the cell above or
+below. A line lying alongside a black cell — a vertical line beside it, or a
+horizontal line above it — does not connect to it, and can never come to.
+That is why a black cell can run out of usable sides long before its number is
+met.
+
 This puzzle type was invented by [Nikoli](https://www.nikoli.co.jp/), and is known as *Tatebo-Yokobo*.
 
 More information: https://www.janko.at/Raetsel/Tateboo-Yokoboo/index.htm

@@ -83,6 +83,19 @@ export interface SticksMistake {
   index: number;
 }
 
+/**
+ * Highlight data for a hint step: the forced square (`target`), the orientation
+ * it is forced to (`to` — drawn as a `COL_HINT` bar, the game's own line shape
+ * in the hint colour; a plain tint could not express an orientation, which is
+ * the whole of the move), and the cells the argument reasons over (`evidence` —
+ * white squares washed, black clues ringed).
+ */
+export interface SticksHint {
+  target: number;
+  to: Exclude<SticksLine, "none">;
+  evidence: number[];
+}
+
 // --- params -----------------------------------------------------------------
 
 const PRESETS: SticksParams[] = [

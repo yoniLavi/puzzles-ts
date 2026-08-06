@@ -24,10 +24,24 @@ contradiction is detected, not re-derived when the step is narrated.
 The explanation SHALL state its conclusion in the necessity voice of a
 deductive game, and SHALL refer to a clue by the number the player can see.
 
-The hint SHALL highlight where to act and the evidence its reasoning rests on,
-and SHALL NOT draw the line as though it were already placed. Where the
-explanation names a run or a span, that run or span SHALL be the one the
-deduction actually walked.
+Where one clue and one rule rule out **several** squares at once, they SHALL be
+one journey rather than several hints, each of its later legs saying that it
+continues the same argument while keeping its own square's specifics.
+
+The hint SHALL show where to act in the game's own vocabulary — the forced
+square carrying a line of the forced orientation, in the hint colour, since a
+uniform highlight could not say *which* orientation, and that is the whole of
+the move. It SHALL NOT draw the line in the colour of a placed line. It SHALL
+also show the evidence its reasoning rests on, marked so that the evidence does
+not hide what makes it evidence. Where the explanation states a count — a run's
+length, the room a line has left, the lines or open sides a black clue has —
+the marked squares SHALL number what the explanation says, so the player can
+count the picture against the words. Where the explanation names a run or a
+span, that run or span SHALL be the one the deduction actually walked.
+
+No two roles on the board SHALL share a colour: the hint takes the collection's
+hint colour, and the keyboard cursor — which upstream drew in that same colour —
+SHALL take one the board has not otherwise spent.
 
 Requesting a hint on a board contradicting its own clues SHALL refuse and
 surface the mistakes, rather than deducing from a wrong position.
@@ -47,6 +61,19 @@ be unchanged, and the frozen description fixtures SHALL NOT move.
 - **WHEN** a hint is requested from a board the player reached by their own
   correct moves
 - **THEN** the plan makes progress and continues to lead to the solved board
+
+#### Scenario: One clue ruling out several squares is one hint
+
+- **WHEN** a single clue and rule force more than one square on the same board
+- **THEN** those squares arrive as one continuing journey, each leg naming the
+  square it decides and the orientation that square must take
+
+#### Scenario: The forced orientation is visible, not merely described
+
+- **WHEN** a hint step is displayed
+- **THEN** the forced square shows a line of the forced orientation in the hint
+  colour, and no square shows a line in the placed-line colour that the player
+  did not place
 
 #### Scenario: A hint never repeats a move already made
 

@@ -17,9 +17,15 @@
  * `computeSize` subtracts 1 to meet the outer grid line.
  */
 
-import { BLUE, GREEN } from "../../engine/colour/colours.ts";
-import { ERROR, INK, PAPER } from "../../engine/colour/palette.ts";
-import type { GameDrawing } from "../../engine/game.ts";
+import { GREEN, PURPLE } from "../../engine/colour/colours.ts";
+import {
+  ERROR,
+  HINT_ACTION,
+  HINT_EVIDENCE,
+  INK,
+  PAPER,
+} from "../../engine/colour/palette.ts";
+import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import { findLiveErrors } from "./solver.ts";
@@ -27,7 +33,9 @@ import {
   F_BLOCK,
   F_HOR,
   F_VER,
+  type SticksHint,
   type SticksMistake,
+  type SticksMove,
   type SticksParams,
   type SticksState,
   type SticksUi,
@@ -45,6 +53,9 @@ export const COL_LINE = 2;
 export const COL_NUMBER = 3;
 export const COL_ERROR = 4;
 export const COL_CURSOR = 5;
+// Fork additions beyond upstream's COL_* enum: the explained hint.
+export const COL_HINT = 6; // the forced square's line, in the game's own bar shape
+export const COL_HINT_CELL = 7; // the deduction's evidence — shade or ring
 
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
@@ -53,7 +64,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_LINE] = GREEN;
   out[COL_NUMBER] = PAPER;
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = BLUE;
+  // Purple, because Sticks has spent the usual two: its lines are green and the
+  // hint's forced square is blue (upstream's cursor was that same blue, which
+  // `add-sticks-hint` could not leave standing — a cursor and a hint bar in one
+  // square would have been one hue for two roles).
+  out[COL_CURSOR] = PURPLE;
+  out[COL_HINT] = HINT_ACTION;
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
 }
 
@@ -72,6 +89,11 @@ export function computeSize(p: SticksParams, ts: number): Size {
 const F_ERR = 1 << 8;
 const F_CUR = 1 << 9;
 const F_FLASH = 1 << 10;
+// The hint overlay is part of the diff key, or an otherwise-unchanged frame
+// never repaints when a hint is shown or dismissed (playbook §3.2).
+const F_HINT_HOR = 1 << 11;
+const F_HINT_VER = 1 << 12;
+const F_HINT_EVID = 1 << 13;
 
 export interface SticksDrawState {
   started: boolean;
@@ -95,25 +117,38 @@ export function setTileSize(ds: SticksDrawState, ts: number): void {
 
 // --- cell drawing -----------------------------------------------------------
 
+interface TileVisual {
+  tile: number;
+  clue: number;
+  error: boolean;
+  cursor: boolean;
+  mistake: boolean;
+  /** The hint's forced orientation for this square (`F_HOR`/`F_VER`/0). */
+  hintLine: number;
+  /** This square is part of the displayed hint's evidence. */
+  evidence: boolean;
+}
+
 function drawTile(
   dr: GameDrawing,
   ts: number,
   x: number,
   y: number,
-  tile: number,
-  clue: number,
-  error: boolean,
-  cursor: boolean,
-  mistake: boolean,
+  v: TileVisual,
 ): void {
+  const { tile, clue, error, cursor, mistake, hintLine, evidence } = v;
   const b = border(ts);
   const px = x * ts + b;
   const py = y * ts + b;
+  const black = (tile & F_BLOCK) !== 0;
 
   dr.drawRect({ x: px, y: py, w: ts, h: ts }, COL_GRID);
+  // Evidence on a white square is a wash the clue digit and any line draw over;
+  // on a black square it would hide the very blackness the argument is about, so
+  // that case rings instead (hint-authoring §5.4).
   dr.drawRect(
     { x: px, y: py, w: ts - 1, h: ts - 1 },
-    tile & F_BLOCK ? COL_GRID : COL_BACKGROUND,
+    black ? COL_GRID : evidence ? COL_HINT_CELL : COL_BACKGROUND,
   );
 
   if (tile & F_HOR) {
@@ -127,6 +162,32 @@ function drawTile(
       { x: px + Math.floor((ts * 2) / 5), y: py, w: Math.floor(ts / 5), h: ts - 1 },
       COL_LINE,
     );
+  }
+
+  // The forced line, in the game's own bar shape and the hint colour — a tint
+  // could not say *which* orientation, which is the whole of the move (§5.1a).
+  // Drawn, never placed: the player still makes the move.
+  if (hintLine & F_HOR) {
+    dr.drawRect(
+      { x: px, y: py + Math.floor((ts * 2) / 5), w: ts - 1, h: Math.floor(ts / 5) },
+      COL_HINT,
+    );
+  }
+  if (hintLine & F_VER) {
+    dr.drawRect(
+      { x: px + Math.floor((ts * 2) / 5), y: py, w: Math.floor(ts / 5), h: ts - 1 },
+      COL_HINT,
+    );
+  }
+
+  if (evidence && black) {
+    const t = Math.floor(ts / 10);
+    const m = Math.floor(ts / 12);
+    const inner = ts - 1 - 2 * m;
+    dr.drawRect({ x: px + m, y: py + m, w: inner, h: t }, COL_HINT_CELL);
+    dr.drawRect({ x: px + m, y: py + m, w: t, h: inner }, COL_HINT_CELL);
+    dr.drawRect({ x: px + m, y: py + ts - 1 - m - t, w: inner, h: t }, COL_HINT_CELL);
+    dr.drawRect({ x: px + ts - 1 - m - t, y: py + m, w: t, h: inner }, COL_HINT_CELL);
   }
 
   if (clue !== -1) {
@@ -184,7 +245,7 @@ export function redraw(
   ui: SticksUi,
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<SticksMove, SticksHint>,
   mistakes?: readonly SticksMistake[],
 ): void {
   if (!ds) return;
@@ -219,6 +280,12 @@ export function redraw(
   ds.mistakes.clear();
   for (const m of mistakes ?? []) ds.mistakes.add(m.index, 1);
 
+  // The displayed hint step's forced square and the cells its argument rests on.
+  const hl = hint?.highlights;
+  const hintTarget = hl?.target ?? -1;
+  const hintBits = hl ? (hl.to === "hor" ? F_HOR : F_VER) : 0;
+  const hintEvidence = hl ? new Set(hl.evidence) : null;
+
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
@@ -232,24 +299,27 @@ export function redraw(
       // A previewed (uncommitted) cell suppresses its error highlight — the
       // committed grid is what the error check ran on.
       const error = preview === undefined && (errorSet?.has(i) ?? false);
+      const hintLine = i === hintTarget ? hintBits : 0;
+      const evidence = hintEvidence?.has(i) ?? false;
 
       const packed =
         (tile & 0x7) |
         (error ? F_ERR : 0) |
         (cursor ? F_CUR : 0) |
-        (flash ? F_FLASH : 0);
+        (flash ? F_FLASH : 0) |
+        (hintLine & F_HOR ? F_HINT_HOR : 0) |
+        (hintLine & F_VER ? F_HINT_VER : 0) |
+        (evidence ? F_HINT_EVID : 0);
       if (ds.cache[i] !== packed || ds.mistakes.stale(i)) {
-        drawTile(
-          dr,
-          ts,
-          x,
-          y,
+        drawTile(dr, ts, x, y, {
           tile,
-          numbers[i],
+          clue: numbers[i],
           error,
           cursor,
-          ds.mistakes.packed[i] !== 0,
-        );
+          mistake: ds.mistakes.packed[i] !== 0,
+          hintLine,
+          evidence,
+        });
         ds.cache[i] = packed;
         ds.mistakes.commit(i);
       }

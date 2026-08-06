@@ -754,6 +754,25 @@ this deduction's evidence area is non-empty — is still worth a per-game test: 
 filter left the area empty): the connectivity rule treats every non-black cell as
 white, so shade non-black neighbours, not only marked-white ones.
 
+**Filtering the target out of the evidence is a *per-technique* call, not a house rule
+(Sticks).** Bricks and most games drop the acted-on cell from the evidence list, so the
+one solid target colour is never diluted — and copying that everywhere is what emptied a
+Sticks `unreachable` step: the span its sentence counts ("room for only 1 square") *was*
+the target square, so the frame showed a lone blue bar and nothing else. Ask per technique
+whether the acted-on square is genuinely part of the area being reasoned over. A run whose
+*length* is the argument contains it (shade the whole run, bar on the square being
+decided — the player sees the run that would form); a clue's already-counted neighbours do
+not (the one being ruled out is not one of them). Same list, opposite answers, and the
+same per-game non-empty assertion catches it.
+
+**The strongest form of "the words and the picture agree" is a count you can assert.**
+Where a sentence states a number — a run's length, the room left, the sides a clue has —
+make the evidence list have exactly that many entries and assert it
+(`segment.length === size`, `span.length === max`, `lines.length === value + 1`). It is a
+sharper guard than "non-empty", it is checked by the *player* every time they look at the
+board, and it fails loudly if a later edit shades a convenient approximation instead of
+the deduction's own walk.
+
 #### 5.2a When half the evidence lives **off the board** — highlight that surface too (Crossing)
 
 A game whose deduction reasons over a **clue list, palette or tray** rather than only over cells
@@ -893,6 +912,7 @@ game:
 | Netslide | the tile being placed, `COL_HINT` fill (its wires still drawn on top, so the player sees *which* piece); the border arrow to press, `COL_HINT` | its destination outlined `COL_HINT` — **solid** when the finished board really does want that tile's wires there, **dashed** when the plan is only passing through. A movement game names one element type (the tile), so the §5.3 legend does not otherwise bite; the solid/dashed split is the non-colour cue distinguishing *arrived* from *setting up* |
 | Crossing | the squares to write into, solid **green** `COL_HINT` (green, not the collection's blue — see the note below); a struck note keeps its normal `COL_PENCIL` digit + strikethrough on a *non*-target background, so the candidate being ruled out stays legible | the run(s) reasoned over → pale-green `COL_HINT_CELL` shade (its entered digits draw on top, the Filling case of §5.4); **and the still-fitting listed numbers → the same two shades as a patch behind their text in the clue panel**, because half the premise lives off the board (§5.2a) |
 | Spokes | the forced spoke, in `COL_HINT` — **a line** ("draw this") when the move draws a line, **a rim dot** ("rule this out") when the move places a mark: the same two shapes the game draws for a real line and a real mark, in the hint colour (§5.1a) | the hubs whose clue/lines/connectivity are the argument → `COL_HINT_CELL` ring. A saturated hub forces several spokes as one multi-leg journey, all shown in the one colour (rule 2) |
+| Sticks | the forced square drawn as a `COL_HINT` **bar in the forced orientation** — the game's own line shape, because the move *is* an orientation and a uniform tint cannot express one (§5.1a). Green `COL_LINE` stays the placed line, so the hint is never mistaken for the move | the run / span / clue-sides the argument counts → one `evidence` list, cue split by the square's own state (§5.4): a **white** square is washed `COL_HINT_CELL` (the digit and any line draw over it), a **black clue** is *ringed* the same colour (a wash would hide the blackness the argument is about). The list's length equals the number the sentence states |
 
 **If the game has already spent the hint hue, the *hint* moves — and takes the board with it
 (Crossing).** `COL_HINT` blue is the collection's default, not a mandate, and it is the wrong
@@ -907,6 +927,16 @@ Dismissing the hint brings the wash straight back. Rule of thumb: check the new 
 against the game's *existing* legend in OKLCH before assuming the default, and when two washes
 would coexist, decide which one owns the board while it is up rather than trying to make both
 legible at once.
+
+**But when the thing holding the hue is the *cursor*, the cursor moves (Sticks).** Crossing's blue
+carried *information about the puzzle*, which is why the hint had to yield. Sticks' clash was with
+`COL_CURSOR`, which upstream drew in plain `BLUE` — and a cursor is a UI affordance that is
+**already per-game** (the palette's `CURSOR` comment sanctions the reach: *"A game whose board has
+spent green reaches past this for a named colour and says why at the assignment"*), whereas hint
+blue is learned across twenty-eight games. So check *which* role is the cross-game one before
+deciding who yields. The collection's answer when green and blue are both spent is **purple**, twice
+already (`spokes/render.ts`, `subsets/render.ts`) — copy the precedent rather than inventing a third
+answer, and say why at the assignment.
 
 Two reusable lessons from the rollout: (1) **teal = "a cited black square", violet = "a
 cited white square"** is a cross-game reading worth preserving — reuse those hues for a
@@ -1114,6 +1144,38 @@ convergence sweep, never as an error. Two habits that would have caught it:
 has no room for, so "the fleet would need a boat it doesn’t have" was a mis-description of the very
 thing the classifier had just read; "it would complete a boat the fleet has no room for" is both
 truer and clearer. A reason lifted off a flag inherits the flag’s exact meaning — go read it.
+
+**A contradiction that does not *propagate* is exempt from §1B.1's forcing warning (Sticks).**
+§1B.1 says a contradiction surviving to a forcing rung must combine several constraints, so
+single-level forcing is a chain and not one glance-able step. Check whether that is true of *your*
+oracle before assuming it: Sticks' `sticksTry` places one tentative orientation and calls
+`sticksValidate` **once** — it never runs the fixpoint from the hypothesis — so every firing is
+"put a line here and one named clue breaks immediately", which is exactly one inferential step.
+The distinction is worth stating because the two look identical in the solver (`try one value,
+ask the oracle, take the other on INVALID`) and land on opposite sides of the bar. The test is
+whether the rejected trial *propagates* before the oracle is asked, not whether the technique is
+described as "forcing".
+
+**The wipe-vs-resume trap has a second instance, and a cheaper answer than Boats'.** Boats had to
+promote what `solverInitial` wiped into ordinary techniques. Sticks' `sticksSolveGame` also opens
+by clearing every white square, and the change's design assumed the same surgery — factor the wipe
+out, have both callers share the fixpoint. **It was unnecessary.** `deduceHintPlan` *is* that
+fixpoint, so the hint runs the game's per-firing function (`sticksTry`'s recording twin) directly
+and the wiping wrapper is simply never called. Look at what the wipe wraps before moving it: if the
+wrapper is only a loop, the shared runner already replaces it, and the generator's solver stays
+byte-identical **by construction** instead of by a differential you have to re-run to trust.
+
+**"One firing = one move" is a claim about the deduction, and an early-returning solver cannot tell
+you whether it is true (Sticks).** `sticksTry` returns at its first success, which reads as "one
+contradiction decides one square", and the design recorded that as settled. A seed scan said
+otherwise: **21% of firings decide more than one square** (mean 1.2, max 5), because a black clue
+that has run out of lines rules out *every* neighbour that could point into it at once. So the
+recording twin keeps scanning past its first hit and returns every square the same `(rule, clue)`
+forces. Two things to check before grouping them: that they are forced on the board **as handed
+in** (compute them all against one board — a set that only appears after applying the first is a
+chain, and chains stay separate steps), and whether the legs' *numbers* differ. Sticks' do — two
+squares can pen the same clue into different amounts of room — which is what chose Slant's
+per-leg-sentence journey (§5.6b) over Filling's one-sentence multi-square step (§5.5).
 
 For the recursive (lookahead) rung, the honest v1 is a proof-by-contradiction step: hypothesis on the
 target, contradiction ringed from the sub-solve's final INVALID `errors` — narrated, never an

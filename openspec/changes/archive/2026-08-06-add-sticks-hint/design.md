@@ -73,17 +73,28 @@ no-wipe variant (`sticksSolveGameFrom`, still in `sticks.test.ts` supporting
 the uniqueness oracle) before its branch search worked at all, because the wipe
 discarded the very orientations it had just assumed.
 
-So: factor the wipe out of `sticksSolveGame`, leaving a fixpoint that runs from
-whatever board it is given, and have both the generator (wipe, then run) and
-the recorder (run from the player's marks) call it. Two consequences to check:
+### D2 resolved: the wipe never had to move at all
 
-- The generator's call must stay byte-identical — the wipe moves, it does not
-  disappear. The differential fixtures are the check.
-- Unlike Singles (§7.1), Sticks should need **no cascade priming**: its
-  technique rescans every blank cell every iteration rather than propagating
-  from cells it changed, so a mid-game board is handled by the same scan. Worth
-  confirming with a resumed-from-marks test rather than assuming — that is
-  exactly the assumption Singles shipped a bug on.
+**Implemented differently, and more cheaply, than the plan above.** The wipe is
+in `sticksSolveGame`; the *fixpoint* it wraps is already reusable, and
+`deduceHintPlan` supplies a loop of exactly that shape. So the recorder is a
+**parallel** function beside the generator's solver — `nextSticksFiring` /
+`deduceSticksPlan` — and `sticksSolveGame` was not touched. This is Bricks'
+shape (§5.6a′) rather than Slant's threaded recorder, and it is strictly better
+here: the generator's byte-identity is true *by construction* rather than by
+proof, and the only surface the two paths share is `sticksValidate`'s new
+optional `violations` out-param, whose every allocation is behind that check.
+
+Both consequences the plan named still hold and are still checked:
+
+- The differential fixtures are unmoved — all 13 byte-match.
+- Unlike Singles (§7.1), Sticks needs **no cascade priming**: its technique
+  rescans every blank square on every call rather than propagating from squares
+  it changed. *Confirmed, not assumed* — `sticks-hint.test.ts` "resumes from a
+  position the player reached by their own moves" plays three plan squares back
+  out of order and asks for a fresh hint, and the cross-game
+  `hint-resume.test.ts` walks a whole board one freshly-recomputed hint at a
+  time.
 
 ## D3: What the highlight draws — open question, decide before implementing
 
@@ -109,6 +120,38 @@ and Spokes rely on.
 **Recommendation: the blue stroke.** But confirm against a rendered frame
 before committing, and record the call here either way.
 
+### D3 settled: the blue bar
+
+**Shipped as the blue bar**, confirmed against rendered frames (`toSvg` on the
+tier-2.5 records for all three shapes of argument) and by owner acceptance.
+The frames settle it beyond the argument above: a `COL_HINT` bar in the same
+geometry the game draws a real line reads immediately as *"this square is
+vertical"*, and nothing else could have said which orientation. `COL_LINE`
+green and `COL_HINT` blue are never confusable — `sticks-hint.test.ts` asserts
+the hint bar is non-square (its long axis **is** the message) and that a hinted
+fresh board draws no `COL_LINE` bar at all, so the hint can never be caught
+pre-placing the move (§5.1).
+
+## D3a: the cursor had already spent the hint's colour (not foreseen)
+
+Upstream's `COL_CURSOR` is plain `BLUE`, and `HINT_ACTION` **is** `BLUE`. A
+keyboard cursor and a hint bar can sit on the same square, so that is one hue
+for two roles (§5.3), and it had to be resolved before the hint could ship.
+
+The hint did not move. Blue is a *cross-game* learned meaning — the same colour
+means "the hint acts here" in twenty-eight games — whereas a cursor is already
+per-game, and the palette's own doc comment sanctions the reach: *"A game whose
+board has spent green reaches past this for a named colour and says why at the
+assignment."* Sticks has spent green on its lines. The collection has answered
+this exact question twice already, both times with **purple** (Spokes, and
+Subsets, whose comment reads *"Purple, because Subsets has spent the usual two:
+the hint's decided slot is blue and the player's own entries are green"*), so
+Sticks copies the precedent rather than inventing a third answer.
+
+This is a player-visible divergence from upstream, caused by this change and
+justified by it: the alternative was a cursor indistinguishable in hue from the
+hint.
+
 ## D4: The evidence area (§5.2)
 
 The narration says "the run through the 3", so a run must be shaded, or the
@@ -123,6 +166,33 @@ words and the picture disagree. Per kind:
 - `overConnected` / `starved` — mark the black clue and its four sides,
   distinguishing the sides that already carry a line from those that can never
   take one.
+
+### D4 resolved, plus the one thing it got backwards
+
+Shipped as designed — each kind's evidence is the list the validator built *at
+the point of detection*, so `maxSizeHorizontal`/`Vertical` gained an optional
+`span` out-param and the shaded run is the walk's own bounds, never an
+approximation. Two refinements the plan did not have:
+
+- **The evidence list keeps the acted-on square for the three length arguments
+  and drops it for the two black-clue ones.** Excluding it everywhere is the
+  obvious first cut (it is what Bricks does) and it is wrong here: the run a
+  length argument *measures* contains the square being decided — "would run the
+  2's line to 3 squares" shades all three, with the blue bar on the one to act
+  on — whereas the lines a black clue already counts do not include the one
+  being ruled out. The first cut left an `unreachable` step whose entire span
+  **was** the target, so the frame showed no evidence at all: §5.2's Range
+  `connect` case, caught by the per-game "every step shows evidence" assertion
+  the guide recommends and not by any cross-game guard.
+- **A black clue is ringed, not washed** (§5.4): the fill would hide the very
+  blackness the argument is about. White squares are washed, and the clue digit
+  and any placed line draw over the wash — so one `evidence` list, and the
+  renderer branches on the square's own state.
+
+Each list is also *countable against its sentence*, which is the strongest form
+of "the words and the picture agree": `segment.length === size`,
+`span.length === max`, `lines.length === value + 1`,
+`open.length === value - 1`. All four are asserted.
 
 **Note the two ported reachability quirks.** `maxSizeHorizontal` /
 `maxSizeVertical` bound their look-behind at `x > 1` / `y > 1` where the
@@ -144,6 +214,32 @@ Do not conclude that from the code alone. §8's second gotcha is that grouping
 must be validated on a **generated** board, not a crafted one. If a single
 clue's contradiction genuinely forces several cells at once, they should be one
 journey; the way to find out is to scan seeds.
+
+### D5 resolved: the expectation was wrong, and measuring is what showed it
+
+**Grouping was needed.** Reading `sticksTry` says one firing decides one square,
+and that reading is what the design above recorded — but it describes the
+*solver's control flow*, not the deduction. Scanning 20 generated 7×7 boards
+(810 firings) found that **21% decide more than one square** (mean 1.2, max 5),
+and that the black-clue rules cluster hardest (mean 1.5 squares each): a black 0
+rules out *every* neighbour that could point into it, and telling the player
+that four separate times is four hints for one insight.
+
+The squares in a group are forced on the board **as handed in** — the probe
+computed them all against one board — so they are simultaneous, not a chain, and
+rule 2 applies rather than §3's "a genuine chain stays separate steps".
+
+So `nextSticksFiring` keeps scanning past its first success and returns every
+square the same `(rule, clue)` forces, and `hint()` emits them as one journey
+with `continuesPrevious` on the later legs. Each leg keeps **its own** sentence
+and **its own** evidence (Slant's leg convention, §5.6b) rather than one shared
+multi-square step (Filling's, §5.5): a leg's numbers really do differ — two
+squares can each pen the same clue in to *different* amounts of room — so one
+sentence for the group would have had to be vaguer than each leg can be.
+
+The transferable half: **"one firing = one move" is a claim about the deduction,
+and a solver that returns early cannot tell you whether it is true.** D5 was
+right to demand a seed scan and wrong about what the scan would say.
 
 ## D6: No `refreshHintStep`
 

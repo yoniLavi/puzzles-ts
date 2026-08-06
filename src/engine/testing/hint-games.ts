@@ -32,6 +32,7 @@ import { sixteenGame } from "../../games/sixteen/index.ts";
 import { slantGame } from "../../games/slant/index.ts";
 import { soloGame } from "../../games/solo/index.ts";
 import { spokesGame } from "../../games/spokes/index.ts";
+import { sticksGame } from "../../games/sticks/index.ts";
 import { subsetsGame } from "../../games/subsets/index.ts";
 import { towersGame } from "../../games/towers/index.ts";
 import { undeadGame } from "../../games/undead/index.ts";
@@ -67,6 +68,7 @@ export const HINT_GAMES: [string, AnyGame][] = [
   ["slant", slantGame],
   ["solo", soloGame],
   ["spokes", spokesGame],
+  ["sticks", sticksGame],
   ["subsets", subsetsGame],
   ["towers", towersGame],
   ["undead", undeadGame],

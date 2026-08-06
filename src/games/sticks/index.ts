@@ -17,6 +17,9 @@
 
 import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   type SolveResult,
   UI_UPDATE,
   type UiUpdate,
@@ -57,7 +60,14 @@ import {
   type SticksDrawState,
   setTileSize,
 } from "./render.ts";
-import { findMistakes, sticksSolveGame, sticksValidate } from "./solver.ts";
+import {
+  deduceSticksPlan,
+  findMistakes,
+  type SticksFiring,
+  type SticksReason,
+  sticksSolveGame,
+  sticksValidate,
+} from "./solver.ts";
 import {
   cloneState,
   decodeParams,
@@ -68,6 +78,7 @@ import {
   F_VER,
   newState,
   presets,
+  type SticksHint,
   type SticksLine,
   type SticksMistake,
   type SticksMove,
@@ -344,6 +355,165 @@ function solve(orig: SticksState): SolveResult<SticksMove> {
   return { ok: true, move: { kind: "solve", grid: lines } };
 }
 
+// --- hint (a second projection of the one contradiction technique) ----------
+
+/**
+ * The cells a reason reasons over. Each list is exactly what its sentence
+ * claims, so the player can count the picture against the words (§5.2).
+ *
+ * The forced square is deliberately **kept** in the three length arguments and
+ * left out of the two black-clue ones, because that is where it honestly
+ * belongs: the run a length argument measures does contain the square being
+ * decided ("would run the 2's line to 3 squares" shades all three, with the
+ * blue bar on the one to act on), while the lines a black clue already counts
+ * do not include the one being ruled out. Dropping it everywhere — the obvious
+ * first cut — left an `unreachable` step whose whole evidence *was* the target
+ * with nothing at all on the board (§5.2's Range `connect` case).
+ */
+function evidenceOf(reason: SticksReason, target: number): number[] {
+  switch (reason.kind) {
+    case "tooLong":
+      return reason.segment;
+    case "unreachable":
+      return reason.span;
+    case "twoClues":
+      return [...reason.segment, ...reason.clues];
+    case "overConnected":
+      return [reason.clue, ...reason.lines.filter((c) => c !== target)];
+    case "starved":
+      return [reason.clue, ...reason.open];
+  }
+}
+
+const ORIENT = { hor: "horizontal", ver: "vertical" } as const;
+
+/**
+ * Narrate *why* the square can only take one orientation: the clue that the
+ * other orientation would break, and how it would break it.
+ *
+ * `continues` is a later leg of the same firing — the same clue and the same
+ * rule ruling out a further square — so it says so and drops the premise the
+ * opening leg has already taught, while keeping its own numbers and the
+ * necessity modal (§5.6b, Slant's leg convention).
+ */
+function narrate(firing: SticksFiring, state: SticksState, continues: boolean): string {
+  const { reason, to } = firing;
+  const bad = ORIENT[to === "hor" ? "ver" : "hor"];
+  // A square shows a number only when it carries a clue of its own; otherwise
+  // there is no value to name it by and the clue in the sentence locates it.
+  const clue = state.numbers[firing.index];
+  const here = clue === -1 ? "this square" : `this ${clue}`;
+  const tail = `So ${here} must be ${ORIENT[to]}.`;
+
+  switch (reason.kind) {
+    case "tooLong":
+      return continues
+        ? `The ${reason.value} rules this square out too — a ${bad} line here would run its line to ${reason.size} squares. ${tail}`
+        : `A ${bad} line here would run the ${reason.value}'s line to ${reason.size} squares, longer than its number allows. ${tail}`;
+
+    case "unreachable": {
+      // Leads with the clue, not with the ruled-out move: the signal a player
+      // has to learn to look for here is a number running out of room, which
+      // they will not spot from the square being acted on (§2.2).
+      const room = `${reason.max} square${reason.max === 1 ? "" : "s"}`;
+      return continues
+        ? `The ${reason.value} rules this square out too — a ${bad} line here would leave it room for only ${room}. ${tail}`
+        : `The ${reason.value} still needs a longer line, and a ${bad} line here would leave it room for only ${room}. ${tail}`;
+    }
+
+    case "twoClues": {
+      if (continues)
+        return `The same pair rules this square out too — a ${bad} line here would join them into one line. ${tail}`;
+      const vals = reason.clues.map((c) => state.numbers[c]);
+      const joined =
+        vals.length !== 2
+          ? `put ${vals.length} numbers on one line`
+          : vals[0] === vals[1]
+            ? `join two ${vals[0]}s into one line`
+            : `join the ${vals[0]} and the ${vals[1]} into one line`;
+      return `A ${bad} line here would ${joined}, and a line may carry only one number. ${tail}`;
+    }
+
+    case "overConnected":
+      // No "as well" on the continuation: at a black 0 nothing runs into it
+      // yet, so the word would be false exactly where the rule is starkest
+      // (§2.7 — re-read every clue narration at its degenerate value).
+      if (continues)
+        return `The black ${reason.value} rules this square out too — a ${bad} line here would run into it. ${tail}`;
+      return reason.value === 0
+        ? `The black 0 takes no lines at all, and a ${bad} line here would run straight into it. ${tail}`
+        : `The black ${reason.value} already has ${reason.value} line${reason.value === 1 ? "" : "s"} running into it, and a ${bad} line here would make another. ${tail}`;
+
+    case "starved":
+      if (continues)
+        return `The black ${reason.value} rules this square out too — a ${bad} line here would close off another of its open sides. ${tail}`;
+      return reason.value === 1
+        ? `The black 1 has just one side left that a line could reach it from, and a ${bad} line here would close it off. ${tail}`
+        : `The black ${reason.value} needs a line on each of its ${reason.value} remaining open sides, and a ${bad} line here would close one off. ${tail}`;
+  }
+}
+
+function hint(state: SticksState): HintResult<SticksMove, SticksHint> {
+  if (state.completed) return { ok: false, error: "This board is already solved." };
+  // A wrong line makes every deduction from here worthless, so refuse and let
+  // the midend light the offenders through findMistakes (§4).
+  if (findMistakes(state).length > 0) {
+    return {
+      ok: false,
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+  }
+
+  const plan = deduceSticksPlan(state);
+  if (plan.length === 0) {
+    return { ok: false, error: "No next move can be deduced from this position." };
+  }
+
+  const steps: HintStep<SticksMove, SticksHint>[] = [];
+  for (const group of plan) {
+    // One firing = one journey: a clue that rules out several squares at once
+    // is one insight, so its later squares continue the step rather than
+    // queueing up as separate hints (quality-bar rule 2).
+    group.forEach((f, leg) => {
+      steps.push({
+        move: { kind: "set", changes: [{ index: f.index, line: f.to }] },
+        explanation: narrate(f, state, leg > 0),
+        highlights: {
+          target: f.index,
+          to: f.to,
+          evidence: evidenceOf(f.reason, f.index),
+        },
+        continuesPrevious: leg > 0,
+      });
+    });
+  }
+  return { ok: true, steps };
+}
+
+/**
+ * A move completes the step when it sets the hinted square to the hinted
+ * orientation. Steps are single-square (a journey's legs arrive one at a time),
+ * so there is no partial-subset `"onTrack"` case; a drag that sweeps the target
+ * still completes it, and any move that leaves the target alone is off-plan.
+ *
+ * No `refreshHintStep` (§7.3): Sticks has no pencil notes and no preference
+ * that edits the board, so a kept step cannot be silently resolved by a side
+ * effect — only by the player making its own move, which the midend sees.
+ */
+function hintKeepTrack(
+  m: SticksMove,
+  step: HintStep<SticksMove, SticksHint>,
+  _state: SticksState,
+): HintTrackVerdict {
+  const hl = step.highlights;
+  if (!hl || m.kind !== "set") return "off";
+  for (const c of m.changes) {
+    if (c.index === hl.target) return c.line === hl.to ? "completed" : "off";
+  }
+  return "off";
+}
+
 function flashLength(
   from: SticksState,
   to: SticksState,
@@ -416,6 +586,8 @@ export const sticksGame: Game<
 
   solve,
   findMistakes,
+  hint,
+  hintKeepTrack,
   textFormat,
 
   colours: (defaultBackground: Colour): Colour[] => colours(defaultBackground),
