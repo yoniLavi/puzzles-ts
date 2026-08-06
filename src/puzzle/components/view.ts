@@ -11,17 +11,16 @@ import type { FontInfo, Size } from "../../engine/types.ts";
 import {
   colourToOKLCH,
   cssColorToOKLCH,
-  darkModeColor,
   isGrayChroma,
   oklchToColour,
   oklchToCSSColor,
   tintGrays,
 } from "../../utils/color.ts";
-import { clamp } from "../../utils/math.ts";
 import { throttle } from "../../utils/timing.ts";
 import { puzzleAugmentations } from "../augmentation.ts";
 import { computeAvailableCanvasSize } from "../canvas-sizing.ts";
 import { puzzleContext } from "../contexts.ts";
+import { darkModePalette } from "../dark-palette.ts";
 import type { Puzzle } from "../puzzle.ts";
 
 /**
@@ -445,49 +444,11 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     const paletteRGB = await this.puzzle.getColourPalette(defaultBackgroundColour);
     let palette = paletteRGB.map(colourToOKLCH);
 
-    // Apply dark mode adjustments and overrides.
-    //
-    // Three ways an index can get its dark-mode colour, most specific first:
-    //
-    // 1. a per-puzzle entry in `augmentation.ts` — a fixed OKLCH colour, a
-    //    lightness nudge, or `false` for "leave the light value alone";
-    // 2. the **authored** dark value of the token the game used, which the
-    //    engine reports per index in sRGB (`darkPalette`) because the token's
-    //    scheme values cannot cross the worker boundary attached to the colour;
-    // 3. otherwise, calculation — `darkModeColor`, which is what every colour
-    //    did before the token table existed and what every token that has not
-    //    been given a dark value still does.
-    //
-    // A per-puzzle entry wins over an authored one because it is the more
-    // specific statement: a game that wants its black *lifted* rather than
-    // preserved (Light Up's wall) says so there. A lightness nudge is the one
-    // that composes — it scales whichever colour the first two steps produced.
+    // Apply dark mode adjustments and overrides — see `dark-palette.ts` for the
+    // rule and for why it is a module rather than a block here.
     if (isDarkMode) {
       const authored = await this.puzzle.darkPalette(defaultBackgroundColour);
-      palette = palette.map(([l, c, h], i) => {
-        const override = darkMode?.paletteOverrides?.[i];
-        if (Array.isArray(override)) {
-          [l, c, h] = override;
-        } else if (override !== false) {
-          const authoredDark = authored[i];
-          [l, c, h] = authoredDark
-            ? colourToOKLCH(authoredDark)
-            : darkModeColor([l, c, h], bgl);
-          if (typeof override === "number") {
-            l *= override;
-            if (l < 0) {
-              l = bgl - l;
-            }
-            l = clamp(0, l, 1);
-          }
-        }
-        return [l, c, h];
-      });
-      if (darkMode?.paletteSwaps) {
-        for (const [a, b] of darkMode.paletteSwaps) {
-          [palette[a], palette[b]] = [palette[b], palette[a]];
-        }
-      }
+      palette = darkModePalette(palette, darkMode, authored, bgl);
     }
 
     // Shift palette grays to the original background hue

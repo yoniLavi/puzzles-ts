@@ -24,13 +24,18 @@ import type { Colour } from "../../engine/types.ts";
 import { slideGame } from "./index.ts";
 import {
   COL_BACKGROUND,
+  COL_BLOCK,
   COL_DRAGGING,
   COL_HIGHLIGHT,
   COL_LOWLIGHT,
   COL_MAIN,
   COL_MAIN_DRAGGING,
-  COL_MAIN_HIGHLIGHT,
+  COL_ROUTE,
+  COL_ROUTE_SHADOW,
   COL_TARGET,
+  COL_WALL,
+  COL_WALL_HIGHLIGHT,
+  COL_WALL_LOWLIGHT,
   PREFERRED_TILE_SIZE as TS,
 } from "./render.ts";
 import {
@@ -84,6 +89,35 @@ const DESC = (() => {
 })();
 const ID = `6x5u:${DESC}`;
 
+/**
+ * The same board with a two-square **exit gate** at (4,1)-(4,2) — the squares
+ * only the key block may cross. It sits partly on the exit area, which is the
+ * normal arrangement and the case the gate marking has to survive: the two
+ * markings overlap, so one of them cannot be a fill.
+ */
+const GATE_CELLS = [
+  [3, 1],
+  [3, 2],
+] as const;
+const GATE_ID = (() => {
+  const board = new Uint8Array(WH).fill(EMPTY);
+  for (let x = 0; x < W; x++) {
+    board[x] = WALL;
+    board[(H - 1) * W + x] = WALL;
+  }
+  for (let y = 0; y < H; y++) {
+    board[y * W] = WALL;
+    board[y * W + (W - 1)] = WALL;
+  }
+  board[idx(1, 1)] = MAINANCHOR;
+  board[idx(2, 1)] = 1;
+  board[idx(1, 2)] = W - 1;
+  board[idx(2, 2)] = 1;
+  const ff = new Uint8Array(WH);
+  for (const [x, y] of GATE_CELLS) ff[idx(x, y)] = 1;
+  return `6x5u:${encodeDesc(WH, board, ff, 2, 1, 2)}`;
+})();
+
 const NUDGE: SlideMove = { kind: "move", from: idx(3, 1), to: idx(4, 1) };
 const WIN: SlideMove = { kind: "move", from: idx(1, 1), to: idx(2, 1) };
 
@@ -102,6 +136,15 @@ function capture(me: SlideMidend): readonly DrawOp[] {
   me.redraw(rec);
   return rec.ops;
 }
+
+/**
+ * How light a palette entry is, as the ordinary sRGB-weighted sum. Deliberately
+ * not OKLCH: `utils/color.ts` is in the app layer, and `module-layering.test.ts`
+ * holds games (tests included) to importing nothing outside the engine and their
+ * own directory. The assertions below need an *ordering* and a floor on the gaps,
+ * which this ranks the same way a perceptual measure would.
+ */
+const lightness = (c: Colour): number => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 
 /** The middle of cell `(gx, gy)` in pixels, at the preferred tile size. */
 const at = (gx: number, gy: number): [number, number] => [
@@ -171,18 +214,59 @@ describe("slide opening frame", () => {
     // ...and a square outside it is not tinted.
     expect(rectsInTile(ops, 1, 3).some((o) => o.colour === COL_TARGET)).toBe(false);
 
-    // The main block is blue; the ordinary block beside it is not.
+    // The main block is blue; the ordinary block beside it is its own grey.
     expect(pieceFillColour(ops, 1, 1)).toBe(COL_MAIN);
     expect(pieceFillColour(ops, 2, 2)).toBe(COL_MAIN);
-    expect(pieceFillColour(ops, 3, 1)).toBe(COL_BACKGROUND);
+    expect(pieceFillColour(ops, 3, 1)).toBe(COL_BLOCK);
 
     // Walls are bevelled, and their mitred corners are drawn as polygons.
     expect(
       rectsInTile(ops, 0, 0).some(
-        (o) => o.colour === COL_HIGHLIGHT || o.colour === COL_LOWLIGHT,
+        (o) => o.colour === COL_WALL_HIGHLIGHT || o.colour === COL_WALL_LOWLIGHT,
       ),
     ).toBe(true);
     expect(ops.some((o) => o.op === "polygon")).toBe(true);
+  });
+
+  it("gives the floor, the wall and an ordinary block three different fills", () => {
+    // The point of the whole change, and the one assertion that would have
+    // failed against upstream: `game_colours` derived all three from a single
+    // `game_mkhighlight` trio, so a board could only be read off its bevels.
+    const ops = capture(newBoard());
+    const floor = ops[0]; // the opening background fill
+    expect(floor).toMatchObject({ op: "rect", colour: COL_BACKGROUND });
+
+    // The *last* full-tile rect, not the first: `draw_tile` lays the floor down
+    // under every square before the wall goes on top of it.
+    const fullTile = rectsInTile(ops, 0, 0).filter((o) => o.w === TS && o.h === TS);
+    const wall = fullTile.at(-1);
+    expect(fullTile[0]?.colour).toBe(COL_BACKGROUND);
+    expect(wall?.colour).toBe(COL_WALL);
+    const block = pieceFillColour(ops, 3, 1);
+
+    const distinct = new Set([COL_BACKGROUND, wall?.colour, block, COL_MAIN]);
+    expect(distinct.size).toBe(4);
+  });
+
+  it("keeps the four fills apart by lightness, not merely by index", () => {
+    // An index check alone would pass on four names for one colour, which is
+    // the state this change found the game in. Assert the *ladder*: each
+    // material is a visible step from the next, and the exit stays the palest
+    // thing on the board. Thresholds are deliberately loose — this pins the
+    // ordering and a minimum separation, not the constants.
+    const l = (i: number) => lightness(PALETTE[i]);
+
+    expect(l(COL_TARGET)).toBeGreaterThan(l(COL_BACKGROUND));
+    expect(l(COL_BACKGROUND)).toBeGreaterThan(l(COL_BLOCK));
+    expect(l(COL_BLOCK)).toBeGreaterThan(l(COL_WALL));
+
+    for (const [a, b] of [
+      [COL_TARGET, COL_BACKGROUND],
+      [COL_BACKGROUND, COL_BLOCK],
+      [COL_BLOCK, COL_WALL],
+    ] as const) {
+      expect(l(a) - l(b), `${a} vs ${b}`).toBeGreaterThan(0.05);
+    }
   });
 
   it("matches its snapshot", () => {
@@ -236,6 +320,65 @@ describe("slide drag frame", () => {
   });
 });
 
+// --- the exit gate -----------------------------------------------------
+
+describe("slide exit gate", () => {
+  function gateBoard(): SlideMidend {
+    const me: SlideMidend = new Midend(slideGame);
+    expect(me.newGameFromId(GATE_ID)).toBeUndefined();
+    return me;
+  }
+
+  it("outlines the gate region, and only where it faces out of it", () => {
+    const ops = capture(gateBoard());
+    const marks = (gx: number, gy: number) =>
+      rectsInTile(ops, gx, gy).filter((o) => o.colour === COL_WALL);
+
+    // Both gate squares are marked...
+    for (const [gx, gy] of GATE_CELLS) {
+      expect(marks(gx, gy).length, `gate mark at (${gx},${gy})`).toBeGreaterThan(0);
+    }
+    // ...and a floor square next to the gate is not.
+    expect(marks(4, 1)).toHaveLength(0);
+
+    // The shared edge between the two gate squares carries no mark: this is an
+    // outline around the *region*, not a box drawn per square. Only horizontal
+    // marks can lie on a horizontal edge — a vertical side's dashes start at the
+    // top of their square and would otherwise be mistaken for a top edge.
+    const horizontal = (gx: number, gy: number) =>
+      marks(gx, gy).filter((o) => o.w > o.h);
+    expect(horizontal(3, 1).some((o) => o.y + o.h >= 2 * TS - 1)).toBe(false);
+    expect(horizontal(3, 2).some((o) => o.y <= 2 * TS + 1)).toBe(false);
+
+    // The edges that face out of the region do carry one: (3,1)'s top, against
+    // the wall above it, and its left and right sides.
+    expect(horizontal(3, 1).some((o) => o.y <= TS + 1)).toBe(true);
+    expect(marks(3, 1).some((o) => o.h > o.w && o.x <= 3 * TS + 1)).toBe(true);
+    expect(marks(3, 1).some((o) => o.h > o.w && o.x >= 4 * TS - TS / 4)).toBe(true);
+  });
+
+  it("marks the gate without covering the exit area underneath it", () => {
+    // The gate usually lies on the exit, so the marking has to be a boundary
+    // rather than a fill. Upstream's "cattle grid" ruled the whole square with
+    // bars in both directions; the test is that the tint still gets drawn and
+    // the marking is a small fraction of the square.
+    const ops = capture(gateBoard());
+    const gate = rectsInTile(ops, 3, 1);
+    expect(gate.some((o) => o.colour === COL_TARGET && o.w === TS && o.h === TS)).toBe(
+      true,
+    );
+
+    const marked = gate
+      .filter((o) => o.colour === COL_WALL)
+      .reduce((sum, o) => sum + o.w * o.h, 0);
+    expect(marked).toBeLessThan(TS * TS * 0.25);
+  });
+
+  it("matches its snapshot", () => {
+    expect(capture(gateBoard())).toMatchSnapshot();
+  });
+});
+
 // --- a Solve route on display ------------------------------------------
 
 describe("slide solve-route frame", () => {
@@ -259,17 +402,38 @@ describe("slide solve-route frame", () => {
     const tx = to % W;
     const ty = Math.floor(to / W);
 
-    // The block the route wants moved is drawn in its highlight colour rather
-    // than its usual fill.
-    expect(pieceFillColour(plain, fx, fy)).toBe(COL_BACKGROUND);
-    expect(pieceFillColour(ops, fx, fy)).toBe(COL_HIGHLIGHT);
+    // The block the route wants moved **keeps its own fill** and wears the
+    // accent where its bevel would be. Upstream replaced the fill with the
+    // block's own highlight — pure white on a light host, which is what its
+    // author called excessive.
+    expect(pieceFillColour(plain, fx, fy)).toBe(COL_BLOCK);
+    expect(pieceFillColour(ops, fx, fy)).toBe(COL_BLOCK);
+    expect(rectsInTile(ops, fx, fy).some((o) => o.colour === COL_ROUTE)).toBe(true);
 
-    // Its destination — bare floor before — now carries a lowlight shadow of
-    // the block, so you can see where it is going.
+    // Its destination — bare floor before — now carries the piece's outline in
+    // the same accent one step weaker, so the two read as one instruction.
     expect(rectsInTile(plain, tx, ty).length).toBeLessThan(
       rectsInTile(ops, tx, ty).length,
     );
-    expect(rectsInTile(ops, tx, ty).some((o) => o.colour === COL_LOWLIGHT)).toBe(true);
+    expect(rectsInTile(ops, tx, ty).some((o) => o.colour === COL_ROUTE_SHADOW)).toBe(
+      true,
+    );
+  });
+
+  it("marks the next piece without making it the brightest thing on the board", () => {
+    // The other half of the author's complaint, and the one a colour-index
+    // assertion cannot state: the cue has to be an ordering cue, not a light
+    // source. Nothing the route draws may out-light the exit, which is what
+    // names the goal.
+    const { me } = withRoute();
+    const ops = capture(me);
+    const brightest = Math.max(
+      ...ops
+        .filter((o) => o.op === "rect" && o.w > 2 && o.h > 2)
+        .map((o) => lightness(PALETTE[(o as RectOp).colour])),
+    );
+    expect(brightest).toBeCloseTo(lightness(PALETTE[COL_TARGET]), 5);
+    expect(lightness(PALETTE[COL_ROUTE])).toBeLessThan(lightness(PALETTE[COL_TARGET]));
   });
 
   it("moves the highlight on as the route advances", () => {
@@ -281,9 +445,9 @@ describe("slide solve-route frame", () => {
     capture(me); // the frame that paints the route's first highlight
     const stateNow = (): SlideState => (me as unknown as { state: SlideState }).state;
 
-    // Walk the first step. The route now wants the *main* block moved, so its
-    // fill takes the highlight — the main block's own highlight, since
-    // `draw_tile` derives one from whichever base the block uses.
+    // Walk the first step. The route now wants the *main* block moved, so the
+    // accent band moves onto it — and its blue fill is untouched, which is what
+    // stops the cue from being read as "this block has changed".
     const first = stateNow().soln?.[0];
     if (!first) throw new Error("solve installed no route");
     me.playMoves([{ kind: "move", ...first }]);
@@ -293,13 +457,15 @@ describe("slide solve-route frame", () => {
     expect(next.from).toBe(idx(1, 1)); // the main block
 
     // This frame is *warm*, so the main block's tiles appear in it only because
-    // the highlight change is part of the per-tile cache key.
+    // the accent band is part of the per-tile cache key.
     const ops = capture(me);
-    expect(pieceFillColour(ops, 1, 1)).toBe(COL_MAIN_HIGHLIGHT);
-    // And the block that just moved is drawn ordinarily at its new home.
-    expect(pieceFillColour(ops, first.to % W, Math.floor(first.to / W))).toBe(
-      COL_BACKGROUND,
-    );
+    expect(pieceFillColour(ops, 1, 1)).toBe(COL_MAIN);
+    expect(rectsInTile(ops, 1, 1).some((o) => o.colour === COL_ROUTE)).toBe(true);
+    // ...and it has left the block that just moved, which is drawn ordinarily
+    // at its new home.
+    const [tox, toy] = [first.to % W, Math.floor(first.to / W)];
+    expect(pieceFillColour(ops, tox, toy)).toBe(COL_BLOCK);
+    expect(rectsInTile(ops, tox, toy).some((o) => o.colour === COL_ROUTE)).toBe(false);
   });
 
   it("matches its snapshot", () => {

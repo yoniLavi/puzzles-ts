@@ -8,20 +8,32 @@
  *  - while dragging, the picked-up block is drawn *following the pointer*, lit
  *    up (`FG_DRAGGING`), by simulating the release move and drawing the result;
  *  - the target area is tinted green wherever the main block would land;
- *  - forcefield squares carry a "cattle grid" so it reads that nothing but the
- *    main block may cross them;
- *  - when a Solve route is installed, the next block to move is highlighted
- *    (`FG_SOLVEPIECE`) and a lowlight *shadow* of it is drawn where it should
- *    end up (`FG_SHADOW`);
+ *  - the exit gate is outlined, so it reads that nothing but the main block may
+ *    cross it;
+ *  - when a Solve route is installed, the next block to move wears an accent
+ *    band (`FG_SOLVEPIECE`) and the *outline* of it is drawn where it should end
+ *    up (`FG_SHADOW`);
  *  - completing the puzzle plays a three-interval flash.
  *
- * The palette keeps the C enum's index order exactly, because
- * `src/puzzle/augmentation.ts` gives slide dark-mode `paletteSwaps` keyed by
- * **colour index** (`[[1,2],[4,5],[7,8],[10,11]]` — each base colour's
- * highlight/lowlight pair). Reindexing would silently mis-target those
- * (playbook §3.3). The order is also load-bearing inside `drawTile`, which
- * derives a highlight/lowlight from a base as `cc+1`/`cc+2` — the C's comment
- * "Do not break this, or draw_tile() will get confused."
+ * ## The board's four materials
+ *
+ * `refine-slide-appearance` gave the floor, the wall, an ordinary block and the
+ * key block **four different fills**, where upstream derived all of them from a
+ * single `game_mkhighlight` trio and told them apart by their bevels alone. The
+ * ladder and the reasoning behind it live with the colours, in
+ * `engine/colour/palette-games.ts` under {@link slideWallBase}; what belongs
+ * here is the mechanical consequence, which is that `drawTile` now selects a
+ * *base index per material* and derives the bevel from it exactly as before.
+ *
+ * The palette keeps the C enum's index order exactly, and appends past it,
+ * because `src/puzzle/augmentation.ts` gives slide dark-mode `paletteSwaps`
+ * keyed by **colour index** (each base colour's highlight/lowlight pair, which
+ * is why every material's trio is three *consecutive* indices and why a new
+ * material adds a swap pair there as well as a colour here). Reindexing would
+ * silently mis-target those (playbook §3.3). The order is also load-bearing
+ * inside `drawTile`, which derives a highlight/lowlight from a base as
+ * `cc+1`/`cc+2` — the C's comment "Do not break this, or draw_tile() will get
+ * confused."
  *
  * `draw_piecepart` is the one place this port stays a close transcription
  * rather than a rewrite. Its own author wrote "there's a lot of very fiddly
@@ -36,9 +48,13 @@ import {
   mkhighlight,
   mkhighlightSpecific,
 } from "../../engine/colour/colour-mkhighlight.ts";
+import { ORANGE } from "../../engine/colour/colours.ts";
 import {
+  slideBlockBase,
   slideMainBlockBase,
+  slideRouteShadow,
   slideTargetBase,
+  slideWallBase,
 } from "../../engine/colour/palette-games.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GameDrawing } from "../../engine/game.ts";
@@ -71,7 +87,18 @@ export const COL_MAIN_DRAGGING_LOWLIGHT = 11;
 export const COL_TARGET = 12;
 export const COL_TARGET_HIGHLIGHT = 13;
 export const COL_TARGET_LOWLIGHT = 14;
-export const NCOLOURS = 15;
+// Appended past upstream's enum (`ts-engine`: "A game's palette index order is
+// stable"). Each trio stays base/highlight/lowlight-consecutive because
+// `drawTile` derives `cc+1`/`cc+2`, and each adds a `paletteSwaps` pair.
+export const COL_WALL = 15;
+export const COL_WALL_HIGHLIGHT = 16;
+export const COL_WALL_LOWLIGHT = 17;
+export const COL_BLOCK = 18;
+export const COL_BLOCK_HIGHLIGHT = 19;
+export const COL_BLOCK_LOWLIGHT = 20;
+export const COL_ROUTE = 21;
+export const COL_ROUTE_SHADOW = 22;
+export const NCOLOURS = 23;
 
 /** Upstream `raise_colour`: two parts `src` to one part `limit`. */
 function raise(src: Colour, limit: Colour): Colour {
@@ -86,17 +113,33 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out = new Array<Colour>(NCOLOURS);
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
 
+  // The floor: the board itself. A surface earns no contrast, and empty floor
+  // is what a player is hunting for, so it reads as space.
   out[COL_BACKGROUND] = background;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
 
-  // A dragged block is lit up a bit.
-  out[COL_DRAGGING] = raise(background, highlight);
-  out[COL_DRAGGING_HIGHLIGHT] = raise(highlight, highlight);
-  out[COL_DRAGGING_LOWLIGHT] = raise(lowlight, highlight);
+  // An ordinary block: an object resting on that floor. Upstream drew it in the
+  // floor's own colour, which is why the board had to be read off its bevels.
+  const block = mkhighlightSpecific(slideBlockBase(background));
+  out[COL_BLOCK] = block.base;
+  out[COL_BLOCK_HIGHLIGHT] = block.highlight;
+  out[COL_BLOCK_LOWLIGHT] = block.lowlight;
 
-  // The main block is tinted blue.
-  const main = mkhighlightSpecific(slideMainBlockBase(background, highlight));
+  // ...and lit up a bit while it is being dragged.
+  out[COL_DRAGGING] = raise(block.base, block.highlight);
+  out[COL_DRAGGING_HIGHLIGHT] = raise(block.highlight, block.highlight);
+  out[COL_DRAGGING_LOWLIGHT] = raise(block.lowlight, block.highlight);
+
+  // The wall: the heaviest thing on the board, because it is the one thing that
+  // never moves.
+  const wall = mkhighlightSpecific(slideWallBase(background));
+  out[COL_WALL] = wall.base;
+  out[COL_WALL_HIGHLIGHT] = wall.highlight;
+  out[COL_WALL_LOWLIGHT] = wall.lowlight;
+
+  // The key block is tinted blue — the help page says so to the player.
+  const main = mkhighlightSpecific(slideMainBlockBase(background));
   out[COL_MAIN] = main.base;
   out[COL_MAIN_HIGHLIGHT] = main.highlight;
   out[COL_MAIN_LOWLIGHT] = main.lowlight;
@@ -104,11 +147,17 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_MAIN_DRAGGING_HIGHLIGHT] = raise(main.highlight, main.highlight);
   out[COL_MAIN_DRAGGING_LOWLIGHT] = raise(main.lowlight, main.highlight);
 
-  // The target area on the floor is tinted green.
+  // The exit area on the floor is tinted green — likewise named to the player,
+  // and left pale on purpose: it stays the most prominent thing on the board.
   const target = mkhighlightSpecific(slideTargetBase(background, highlight));
   out[COL_TARGET] = target.base;
   out[COL_TARGET_HIGHLIGHT] = target.highlight;
   out[COL_TARGET_LOWLIGHT] = target.lowlight;
+
+  // The Solve route: one accent at two weights, so "move this" and "to there"
+  // read as one instruction.
+  out[COL_ROUTE] = ORANGE;
+  out[COL_ROUTE_SHADOW] = slideRouteShadow(background);
 
   return out;
 }
@@ -147,6 +196,18 @@ const FG_SOLVEPIECE = 0x00000400;
 const FG_MAINPIECESH = 11;
 /** Shift of the solve-shadow's border/corner flags. */
 const FG_SHADOWSH = 19;
+/**
+ * Which of this square's four sides face *out* of the exit gate — the four bits
+ * left over above the shadow's flags (27..30; bit 31 is the sign of the
+ * `Int32Array` the diff key lives in). The gate is drawn as an outline around
+ * the whole gate region rather than a per-square fill, so a square has to know
+ * about its neighbours, and every overlay has to sit inside the one packed word
+ * or it silently fails to repaint (playbook §3.2).
+ */
+const GATE_LBORDER = 0x08000000;
+const GATE_TBORDER = 0x10000000;
+const GATE_RBORDER = 0x20000000;
+const GATE_BBORDER = 0x40000000;
 
 const PIECE_LBORDER = 0x01;
 const PIECE_TBORDER = 0x02;
@@ -461,6 +522,59 @@ function drawPiecepart(
   mr(4, 4, val & (PIECE_BRCORNER | PIECE_BBORDER | PIECE_RBORDER) ? SKIP : cc);
 }
 
+/**
+ * **The exit gate** — the squares only the key block may cross (upstream's
+ * "forcefield"; the help page calls it the exit gate, which is what it is).
+ *
+ * A dashed outline around the gate *region*, drawn in the wall's colour: a gate
+ * is a gap in the wall, and the one boundary on this board that is crossed
+ * rather than obeyed. Dashes are the whole message — a solid line reads as a
+ * wall, and this one is permeable.
+ *
+ * It replaces upstream's "cattle grid", which its author called *"disgusting"*
+ * and asked to have replaced with "something completely different". It was not
+ * in fact a cattle grid: a cattle grid is parallel bars, and `draw_tile` drew a
+ * full lattice, six thick lowlight bars per square in both directions, over the
+ * whole cell. Two things follow from marking the boundary instead of filling the
+ * cell. It stays legible as tiles get small, where a texture turns to mud. And
+ * it can lie **on top of** the exit's green — the gate is usually inside the
+ * exit area — without either marking obscuring the other, which a second fill
+ * could not do.
+ */
+function drawGate(
+  dr: GameDrawing,
+  ts: number,
+  tx: number,
+  ty: number,
+  val: number,
+): void {
+  const thickness = Math.max(2, Math.floor(ts / 16));
+  // Four dashes per side, on-off-on-… — enough to read as dashed at the smallest
+  // tile the board is ever laid out at, and phase-aligned to the square so a
+  // run of gate squares makes one continuous dashed line.
+  const dashes = 4;
+  const period = ts / dashes;
+  const dash = Math.max(2, Math.round(period * 0.55));
+
+  const side = (horizontal: boolean, x0: number, y0: number): void => {
+    for (let i = 0; i < dashes; i++) {
+      const at = Math.round(i * period);
+      const len = Math.min(dash, ts - at);
+      dr.drawRect(
+        horizontal
+          ? { x: x0 + at, y: y0, w: len, h: thickness }
+          : { x: x0, y: y0 + at, w: thickness, h: len },
+        COL_WALL,
+      );
+    }
+  };
+
+  if (val & GATE_TBORDER) side(true, tx, ty);
+  if (val & GATE_BBORDER) side(true, tx, ty + ts - thickness);
+  if (val & GATE_LBORDER) side(false, tx, ty);
+  if (val & GATE_RBORDER) side(false, tx + ts - thickness, ty);
+}
+
 /** Upstream `draw_tile`. */
 function drawTile(
   dr: GameDrawing,
@@ -481,23 +595,31 @@ function drawTile(
   else if (val & FLASH_HIGH) cc = ch;
 
   dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, cc);
-  if (val & BG_FORCEFIELD) {
-    // A cattle grid, to say that nothing but the main block slides over this.
-    const hw = highlightWidth(ts);
-    const n = 3 * Math.floor(ts / (3 * hw));
-    for (let i = 1; i < n; i += 3) {
-      dr.drawRect({ x: tx, y: ty + Math.floor((ts * i) / n), w: ts, h: hw }, cl);
-      dr.drawRect({ x: tx + Math.floor((ts * i) / n), y: ty, w: hw, h: ts }, cl);
-    }
-  }
+  if (val & BG_FORCEFIELD) drawGate(dr, ts, tx, ty, val);
 
-  // Midground: a shadow of the block, for displaying a Solve route.
+  // Midground: where the Solve route wants the next piece to end up, drawn as
+  // the piece's own outline with **nothing inside it** — `SKIP` as the body
+  // colour leaves `drawPiecepart` painting only the bevel bands, which trace
+  // the shape exactly. A filled ghost reads as another piece, whatever colour
+  // it is; an empty one reads as a space shaped like the piece, which is what a
+  // destination is. Upstream filled it with the *lowlight*, and its own author
+  // recorded the consequence: "the shadow blends in too well with the piece
+  // lowlights".
   if (val & FG_SHADOW)
-    drawPiecepart(dr, ts, tx, ty, (val >> FG_SHADOWSH) & PIECE_MASK, cl, cl, cl);
+    drawPiecepart(
+      dr,
+      ts,
+      tx,
+      ty,
+      (val >> FG_SHADOWSH) & PIECE_MASK,
+      COL_ROUTE_SHADOW,
+      SKIP,
+      COL_ROUTE_SHADOW,
+    );
 
   // Foreground: a section of a block, or of the wall.
   if (val & FG_WALL) {
-    cc = COL_BACKGROUND;
+    cc = COL_WALL;
     ch = cc + 1;
     cl = cc + 2;
     if (val & FLASH_LOW) cc = cl;
@@ -506,12 +628,21 @@ function drawTile(
     drawWallpart(dr, ts, tx, ty, (val >> FG_MAINPIECESH) & PIECE_MASK, cl, cc, ch);
   } else if (val & (FG_MAIN | FG_NORMAL)) {
     if (val & FG_DRAGGING) cc = val & FG_MAIN ? COL_MAIN_DRAGGING : COL_DRAGGING;
-    else cc = val & FG_MAIN ? COL_MAIN : COL_BACKGROUND;
+    else cc = val & FG_MAIN ? COL_MAIN : COL_BLOCK;
     ch = cc + 1;
     cl = cc + 2;
 
     if (val & FLASH_LOW) cc = cl;
-    else if (val & (FLASH_HIGH | FG_SOLVEPIECE)) cc = ch;
+    else if (val & FLASH_HIGH) cc = ch;
+
+    // The Solve route's next piece keeps its own fill and wears the accent as a
+    // band where its bevel would be. Upstream painted the whole piece in its own
+    // *highlight* — pure white on a light host — which its author called
+    // excessive: a light source, where what is wanted is an ordering cue.
+    if (val & FG_SOLVEPIECE) {
+      ch = COL_ROUTE;
+      cl = COL_ROUTE;
+    }
 
     drawPiecepart(dr, ts, tx, ty, (val >> FG_MAINPIECESH) & PIECE_MASK, cl, cc, ch);
   }
@@ -635,7 +766,15 @@ export function redraw(
       while (j >= 0 && j < wh && isDist(board[j])) j -= board[j];
       let val = j === mainanchor ? BG_TARGET : BG_NORMAL;
 
-      if (state.forcefield[i]) val |= BG_FORCEFIELD;
+      if (state.forcefield[i]) {
+        // The gate is outlined as a region, so each square carries the sides
+        // that face out of it — including the board edge, which is an outside.
+        val |= BG_FORCEFIELD;
+        if (x === 0 || !state.forcefield[i - 1]) val |= GATE_LBORDER;
+        if (y === 0 || !state.forcefield[i - w]) val |= GATE_TBORDER;
+        if (x === w - 1 || !state.forcefield[i + 1]) val |= GATE_RBORDER;
+        if (y === h - 1 || !state.forcefield[i + w]) val |= GATE_BBORDER;
+      }
 
       if (flashTime > 0) {
         const flashtype = Math.floor(flashTime / FLASH_INTERVAL) & 1;

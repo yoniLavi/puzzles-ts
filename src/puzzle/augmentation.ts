@@ -444,6 +444,8 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
         [4, 5], // 3D dragging
         [7, 8], // main block 3D
         [10, 11], // main block 3D dragging
+        [16, 17], // wall 3D
+        [19, 20], // ordinary block 3D
       ],
     },
   },

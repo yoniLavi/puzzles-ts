@@ -29,14 +29,13 @@ import { getTsGame } from "../../src/engine/registry.ts";
 import type { Colour, PuzzleId } from "../../src/engine/types.ts";
 import { puzzleAugmentations } from "../../src/puzzle/augmentation.ts";
 import { puzzleIds } from "../../src/puzzle/catalog.ts";
+import { darkModePalette } from "../../src/puzzle/dark-palette.ts";
 import {
   colourToOKLCH,
-  darkModeColor,
   isGrayChroma,
   type OKLCH,
   oklchToColour,
 } from "../../src/utils/color.ts";
-import { clamp } from "../../src/utils/math.ts";
 import "../../src/games/index.ts";
 
 const OUT = "/tmp/colour-dark-check.md";
@@ -52,33 +51,29 @@ const DARK_BG_L = 0.2;
 const lightInput = oklchToColour([LIGHT_BG_L, 0, 0]);
 const darkInput = oklchToColour([1, 0, 0]);
 
-/** `puzzle-view.ts`'s dark-mode pass, reproduced. Keep in step with it. */
+/** `puzzle-view.ts`'s dark-mode pass — the real one, since
+ * `refine-slide-appearance` extracted it. This file used to carry a second copy
+ * under the instruction "Keep in step with it", which is how a rule ends up with
+ * no owner. */
 function darkPalette(id: string, palette: Colour[]): OKLCH[] {
-  const aug = puzzleAugmentations[id as PuzzleId] ?? {};
-  const perPuzzle = aug.darkMode?.paletteOverrides;
-  const out = palette.map((c, i) => {
-    let [l, ch, h] = colourToOKLCH(c);
-    const override = perPuzzle?.[i];
-    if (Array.isArray(override)) {
-      [l, ch, h] = override;
-    } else if (override !== false) {
-      const authored = darkValue(c);
-      [l, ch, h] = authored
-        ? colourToOKLCH(authored)
-        : darkModeColor([l, ch, h], DARK_BG_L);
-      if (typeof override === "number") {
-        l *= override;
-        if (l < 0) l = DARK_BG_L - l;
-        l = clamp(0, l, 1);
-      }
-    }
-    return [l, ch, h] as OKLCH;
+  const authored: Record<number, Colour> = {};
+  palette.forEach((c, i) => {
+    const d = c && darkValue(c);
+    if (d) authored[i] = [...d];
   });
-  for (const [a, b] of aug.darkMode?.paletteSwaps ?? []) {
-    [out[a], out[b]] = [out[b], out[a]];
-  }
-  return out;
+  return darkModePalette(
+    palette.map((c) => colourToOKLCH(c)),
+    puzzleAugmentations[id as PuzzleId]?.darkMode,
+    authored,
+    DARK_BG_L,
+  );
 }
+
+/** The indices a game exchanges between schemes. An entry here does **not**
+ * denote the same role in both, so a light-vs-dark comparison of one such index
+ * is comparing a highlight with a lowlight — see the note in the report. */
+const swapped = (id: string): Set<number> =>
+  new Set((puzzleAugmentations[id as PuzzleId]?.darkMode?.paletteSwaps ?? []).flat());
 
 /** OKLCH distance, chroma/hue as a plane so a hue difference at low chroma counts
  * for little — which is how the eye treats it. */
@@ -137,16 +132,25 @@ it("measures dark mode", () => {
     "A colour within 0.15 lightness of the board in light mode should stay close",
     "to it in dark mode, and one far from it should stay far. Listed: every entry",
     "whose distance-from-background moves by more than 0.25.\n",
+    "A row marked **swap** is one of a `paletteSwaps` pair, and for those this",
+    "measurement does not mean what it means elsewhere: the two indices exchange",
+    "**roles** between schemes, so the light and dark values compared here belong",
+    "to a bevel's highlight and its lowlight. What such a pair owes the player is",
+    "that the highlight stays lighter than the surface it sits on and the lowlight",
+    "darker — which is a relationship to that surface, not to the board, and is",
+    "asserted directly in `src/puzzle/dark-palette.test.ts`.\n",
   );
-  lines.push("| game | # | ΔL light | ΔL dark | authored? |");
-  lines.push("| --- | --- | --- | --- | --- |");
+  lines.push("| game | # | ΔL light | ΔL dark | authored? | swap? |");
+  lines.push("| --- | --- | --- | --- | --- | --- |");
   let violations = 0;
+  let swapRows = 0;
   for (const id of [...puzzleIds].sort()) {
     const game = getTsGame(id);
     if (!game) continue;
     const lightPal = game.colours(lightInput);
     const light = lightPal.map((c) => (c ? colourToOKLCH(c) : null));
     const dark = darkPalette(id, game.colours(darkInput));
+    const swaps = swapped(id);
     const bgIndex = puzzleAugmentations[id as PuzzleId]?.paletteBgIndex ?? 0;
     const lbg = light[bgIndex]?.[0] ?? LIGHT_BG_L;
     const dbg = dark[bgIndex]?.[0] ?? DARK_BG_L;
@@ -156,14 +160,22 @@ it("measures dark mode", () => {
       const dd = Math.abs(dark[i][0] - dbg);
       if (Math.abs(dl - dd) > 0.25) {
         violations += 1;
+        if (swaps.has(i)) swapRows += 1;
         lines.push(
           `| ${id} | ${i} | ${dl.toFixed(3)} | ${dd.toFixed(3)} |` +
-            ` ${darkValue(lightPal[i]) ? "yes" : "no"} |`,
+            ` ${darkValue(lightPal[i]) ? "yes" : "no"} |` +
+            ` ${swaps.has(i) ? "**swap**" : ""} |`,
         );
       }
     });
   }
-  lines.push(`\n**${violations} colours** move their relationship to the board.\n`);
+  lines.push(
+    `\n**${violations} colours** move their relationship to the board` +
+      ` (${swapRows} of them across a role swap, which this measurement cannot read).\n`,
+  );
   writeFileSync(OUT, `${lines.join("\n")}\n`);
-  console.log(`wrote ${OUT}: ${violations} background-relationship violations`);
+  console.log(
+    `wrote ${OUT}: ${violations} background-relationship violations` +
+      ` (${swapRows} across a role swap)`,
+  );
 });

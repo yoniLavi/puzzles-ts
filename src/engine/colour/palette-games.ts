@@ -37,7 +37,7 @@
 
 import type { Colour } from "../types.ts";
 import { divide, fraction, mix, scale, token } from "./colour-token.ts";
-import { BLUE_BOLD, EIGHT_FILLS } from "./colours.ts";
+import { BLUE_BOLD, EIGHT_FILLS, ORANGE } from "./colours.ts";
 import { INK } from "./palette.ts";
 
 // --- signpost ----------------------------------------------------------
@@ -292,29 +292,101 @@ export const slantGrounded = (background: Colour): Colour => scale(background, 0
 // --- slide --------------------------------------------------------------
 
 /**
- * Slide's two tinted block families, each given as the *base* its bevel trio is
- * built from.
+ * **Slide's four board materials**, each given as the *base* its bevel trio is
+ * built from, and each a function of the host background.
  *
- * Both are the board with **one channel taken to the board's own highlight** —
- * blue for the block you have to get out, green for the floor square it has to
- * reach. Deriving them from the board rather than authoring two colours is what
- * makes them read as *tinted floor* instead of as objects sitting on it, and
- * `hand-author-dark-palette` F1 turned on exactly this property: under the old
- * dark-mode formula the target zone stopped being a tint and became a bright
- * patch.
+ * Deriving them from the board rather than authoring four colours is what makes
+ * them read as *the same board, in different materials* rather than as four
+ * objects placed on it, and `hand-author-dark-palette` F1 turned on exactly this
+ * property: under the old dark-mode formula the target zone stopped being a tint
+ * and became a bright patch. It also means the ladder below survives the scheme
+ * flip without a single authored dark value — one inversion rule maps all four,
+ * so their *ordering* is preserved by construction.
+ *
+ * ## The ladder, and why it exists at all
+ *
+ * Upstream derives the floor, the walls **and** the ordinary blocks from one
+ * `game_mkhighlight` trio, so all three are literally the same fill and are told
+ * apart only by their bevels. Its own author recorded the result: *"All the
+ * colours are a bit wishy-washy. Some dark colours would surely not be
+ * excessive? Probably darken the tiles, the walls and the main block, and leave
+ * the target marker pale."* Measured on the light scheme before this change, the
+ * whole board — floor, wall, block, key block and exit — sat inside a **0.10
+ * OKLCH lightness band**, and three of those five were the identical value.
+ *
+ * Note the instruction is a *pair*. Raising the contrast of everything else is
+ * what lets the exit's green stop carrying the board on its own, which is why
+ * the target below is unchanged: the owner's decision to keep it (2026-07-30)
+ * stands, and it becomes *more* prominent here by everything around it stepping
+ * back rather than by it stepping forward.
+ *
+ * Ordered by what each material **is**:
+ *
+ * - the **exit** is the palest thing on the board, because it names the goal;
+ * - the **floor** is the board itself — a surface earns no contrast, and empty
+ *   floor is the thing a player is hunting for, so it reads as space;
+ * - an **ordinary block** is an object resting on that floor;
+ * - the **key block** is the object that matters, and carries hue as well as
+ *   weight;
+ * - the **wall** is the heaviest, because it is the one thing that never moves.
+ *
+ * Only the two the help page **names to the player** carry a hue — *"move the
+ * blue key block to the green exit area"* — and the other two stay neutral so
+ * they cannot compete with them.
  */
-export const slideMainBlockBase = (background: Colour, highlight: Colour): Colour => [
-  background[0],
-  background[1],
-  highlight[2],
+export const slideWallBase = (background: Colour): Colour => scale(background, 0.58);
+
+/** @see slideWallBase — an ordinary block: clearly an object on the floor, and
+ * clearly lighter than the wall it may be pushed against. */
+export const slideBlockBase = (background: Colour): Colour => scale(background, 0.79);
+
+/**
+ * @see slideWallBase — the key block: the board with its red and green taken
+ * **down**, which is the exact dual of the exit below.
+ *
+ * It used to be the board with blue taken *up* to the board's own highlight, a
+ * tint 0.012 of a lightness from the floor it sat on. Reading the two
+ * derivations against each other is the point: the block you have to move is a
+ * *weight* on the board, and the square it has to reach is a *light* on it.
+ *
+ * The arithmetic lands on exactly `palette.ts`'s `pencilColour`, arrived at
+ * independently — which is some evidence it is the natural way to get a blue that
+ * tracks the board, and is why `metrics/colour-inventory.md` attributes this entry
+ * to that function (it matches by value). It is deliberately **not** that role:
+ * a pencil mark is a note *subordinate* to a placed digit, and a key block is the
+ * one thing on the board that is not subordinate to anything.
+ */
+export const slideMainBlockBase = (background: Colour): Colour => [
+  background[0] * 0.5,
+  background[1] * 0.5,
+  background[2],
 ];
 
-/** @see slideMainBlockBase */
+/** @see slideWallBase — the exit area: the board with its green channel taken to
+ * the board's own highlight. Deliberately unchanged. */
 export const slideTargetBase = (background: Colour, highlight: Colour): Colour => [
   background[0],
   highlight[1],
   background[2],
 ];
+
+/**
+ * **The Solve route's next piece**, and the ghost of where it should end up.
+ *
+ * A solve route is a two-part statement — *move this, to there* — which is the
+ * shape the shared hint vocabulary exists for; Slide cannot use it. `HINT_ACTION`
+ * is blue and `HINT_BLACKREF` is green, and this board has already spent both on
+ * things the help page names to the player. So the route takes the collection's
+ * remaining strong accent, and spends it once: the piece and its destination are
+ * the same hue at two weights, so they read as one instruction rather than two
+ * marks.
+ *
+ * The destination is a *mix with the board* rather than a third named colour,
+ * because a ghost has to sit on whatever it is drawn over — floor or exit green
+ * — and still read as a hole in the arrangement rather than as another piece.
+ */
+export const slideRouteShadow = (background: Colour): Colour =>
+  mix(background, ORANGE, 0.65);
 
 // --- sokoban ------------------------------------------------------------
 
