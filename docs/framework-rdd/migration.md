@@ -32,15 +32,22 @@ incremental and abortable.
 
 ## Order of adoption
 
-1. **The adapter + one exemplar per family, opt-in.** Re-express one Latin
-   game (Towers), one edge game (Palisade), one planner game (Sixteen), one
+1. **The framework core co-developed with a greenfield pilot (Path), the way
+   the TS midend was co-developed with Flip.** A greenfield game is the
+   cheapest honest pressure on the contract: no frozen IDs, no fixtures, no
+   narration strings to preserve — the validation is "is this clearly nicer
+   than what the playbook would have produced?", answered on a real game.
+   Numgame is the second data point. Given the dozens-of-new-games ambition
+   (see the README), greenfield-first is also simply the value stream.
+2. **The conformance suite over the registry**, replacing the hand-enrolment
+   lists for framework games; non-framework games keep today's guards.
+3. **Re-expression exemplars, one per family, opt-in** — one Latin game
+   (Towers), one edge game (Palisade), one planner game (Sixteen), one
    bespoke-hatch game (Loopy — which exists to prove the hatch, not the
-   fit). A game adopts only when the re-expression is *nicer* — the standing
-   "noticeably cleaner is sufficient, contortion is disqualifying" rule
-   decides, per game.
-2. **The conformance suite over the adapter**, replacing the hand-enrolment
-   lists for adopted games; unadopted games keep today's guards.
-3. **New games framework-first** (Path, Numgame are the natural firsts).
+   fit). These validate the *migration* invariants (byte-stable IDs, frozen
+   narrations) that greenfield games cannot. A game adopts only when the
+   re-expression is *nicer* — the standing "noticeably cleaner is
+   sufficient, contortion is disqualifying" rule decides, per game.
 4. **The long tail by opportunity**: when a session touches a game for any
    other reason, it weighs re-expression then — never as a big-bang sweep.
    Some games plausibly never adopt (Untangle, Cube); that is a supported

@@ -19,8 +19,20 @@ directory designs it as one.
 
 ## What the framework is for
 
-**Implementing and maintaining most types of puzzle game with as little
-per-game machinery as the game's own logic permits — and no less.** The
+**The owner's stated ambition (2026-08-07) is dozens to hundreds of new
+games: a free, ad-free, offline reimplementation of every ad-ridden
+micropayment puzzle game on the app stores.** Path and Numgame are the first
+two greenfield games, not the last. That number is the framework's whole
+economic argument: at N=2 its fixed cost dominates and incremental helper
+extraction wins; at N=dozens the per-game marginal cost dominates, and every
+declaration that turns a hand-built concern into a derived one compounds.
+The fork's deliberate divergences — explained hints, mistake checking,
+honest difficulty, endless procedural generation, offline PWA — are exactly
+the differentiators against the games being reimplemented, and the framework
+is what makes them per-game freebies instead of per-game projects.
+
+So, concretely: **implementing and maintaining most types of puzzle game with
+as little per-game machinery as the game's own logic permits — and no less.** The
 "no less" is load-bearing: the framework never contorts a game to fit a
 contract (that rule already cost one withdrawn architecture; see the
 scene-graph postmortem, `openspec/postmortems/2026-05-21-scene-graph-withdrawal.md`).
