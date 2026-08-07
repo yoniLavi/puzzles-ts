@@ -1482,7 +1482,7 @@ name "row, column and block" and its `hiddenSingle` names a block/diagonal regio
 **Towers** (it narrates the whole family in "height" vocabulary with a single value, not an
 `ns` list) are conformingly left local. The requirement is satisfied either by the shared
 narrator (for the games where the arms are verbatim-identical) **or** by a recorded decision
-in `docs/porting/hint-authoring.md` that a given game's arms were left per-game because the
+in `docs/games/hints.md` that a given game's arms were left per-game because the
 override surface made a shared narrator less readable — both are conforming outcomes.
 
 #### Scenario: A delegated generic arm narrates identically

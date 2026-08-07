@@ -375,9 +375,15 @@ truth for *what* is required, so a guide can only ever go stale (a broken
 link or an outdated exemplar pointer, caught by review), never silently
 contradict a requirement.
 
-The initial guides are `docs/porting/game-port-playbook.md` (the ordered
-game-port procedure) and `docs/porting/hint-authoring.md` (the procedure for
-adding an explained `hint()` to a ported game).
+The guides are the `docs/games/` set, organised by concern: `README.md` (the
+map, the game lifecycle and the definition of done), `mechanics.md`,
+`input.md`, `rendering.md`, `solver-and-generator.md`, `hints.md`,
+`testing.md` and `engine-catalog.md`, plus the repo-wide
+`docs/test-strength.md`. Guide sections SHALL be citable by **named heading**
+(`<file> § "Heading"`), and headings that are cited from code or specs SHALL
+be kept short, distinctive and grep-stable; positional section numbers SHALL
+NOT be used as citation targets, because they shift on insertion and silently
+strand every citation.
 
 **`docs/` holds this project's own guides.** Everything under it carries the
 standing obligation stated in `AGENTS.md` — *"treat these as a live wiki… every
@@ -433,12 +439,18 @@ the app serves is a build input and lives under `help/`.
 - **AND** anything the linked source does not cover is moved into the code as a
   comment where a reader of that code would look
 
+#### Scenario: A guide section is cited from code
+
+- **WHEN** a source comment or spec cites a guide section
+- **THEN** the citation names the guide file and the section's heading text
+- **AND** renaming that heading repoints every citation in the same change
+
 ### Requirement: A scaffolding script stamps out a new game-port skeleton
 
 The repository SHALL provide `scripts/new-game-port.sh <gameId>` that creates the
 mechanical skeleton of a new game: `src/games/<gameId>/` containing typed
 `Game<…>` stub modules (the `index`/`state`/`solver`/`generator`/`render`
-file shape the game-port playbook prescribes), an empty `__fixtures__/`
+file shape the game guides prescribe), an empty `__fixtures__/`
 placeholder, AND starter test scaffolding — a `<gameId>.test.ts` (a
 serialise/deserialise round-trip skeleton plus a `renderScenario` smoke skeleton
 importing from `src/engine/testing/`) and a `<gameId>-generation.test.ts`
@@ -449,8 +461,8 @@ It SHALL print — but SHALL NOT itself perform — the manual-edit checklist th
 requires judgement: registering the game in `src/games/index.ts`, adding
 its catalog entry to `src/puzzle/catalog-data.ts`, stating what the generation
 test asserts, and adding the two committed icon PNGs.
-`docs/porting/game-port-playbook.md` SHALL reference the script as the
-copy-from-exemplar entry point.
+`docs/games/README.md` SHALL reference the script as the copy-from-exemplar
+entry point.
 
 The scaffold SHALL NOT emit a C-differential stub or instruct a contributor to
 write a `<gameId>-trace.c` harness: `retire-c-engine` deleted the C build, so a
@@ -1329,4 +1341,31 @@ narrows the guarantee while appearing to widen it.
 - **THEN** every check that rode along with it — case enumeration, element counts,
   skip reporting — is either re-founded on the code or explicitly recorded as
   dropped with its reason
+
+### Requirement: Design-fiction docs are labelled and quarantined
+
+Design-fiction documents SHALL be labelled and quarantined: documents that
+describe a designed-but-unimplemented architecture (readme-driven
+development artefacts) SHALL live under a directory whose name marks them as
+vision material (`docs/framework-rdd/`), and every file in it SHALL open with a
+status banner stating that it describes a system that does not exist yet and
+naming the change or session that authored it. A design-fiction doc SHALL NOT be
+cited from code, specs, or the current-architecture guides as if it described
+shipped behaviour; the current-architecture guides MAY link to it explicitly as
+future direction. When part of the fiction ships, the shipped part moves into
+the real guides/specs in the shipping change, and the fiction is updated or
+retired rather than left claiming the present tense.
+
+#### Scenario: A reader opens a vision doc
+
+- **WHEN** any file under `docs/framework-rdd/` is opened
+- **THEN** its first visible block states it is design fiction, not a
+  description of the current system
+
+#### Scenario: Fiction ships
+
+- **WHEN** a change implements a mechanism the fiction describes
+- **THEN** that change moves the now-true material into the real guides or
+  specs and updates the fiction so no file claims unshipped behaviour in the
+  present tense
 

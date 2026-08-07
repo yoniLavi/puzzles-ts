@@ -339,7 +339,7 @@ through `Midend.getStaticProperties`.
 
 | Affordance | Hook | Guide |
 | --- | --- | --- |
-| Explained hints | `hint` (+ plan hooks) | [hints](./hints.md) — **every game ships one** |
+| Explained hints | `hint` (+ plan hooks) | [hints](./hints.md) — **every game is expected to ship one** (coverage incomplete; see that guide's opening) |
 | Mistake checking | `findMistakes` | computing: [solver & generator](./solver-and-generator.md); rendering: [rendering](./rendering.md) § "Overlay sidecars" |
 | Quick-save / Check & Save | free once `findMistakes` exists | shell-owned |
 | Pencil marks | `canMarkAll` + moves + prefs | below |

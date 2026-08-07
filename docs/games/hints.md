@@ -1,8 +1,12 @@
 # Hints
 
-**How to give a game a full explained hint.** Every game in this collection
-carries a `hint()`; explained hints are a **core deliberate-divergence product
-value** of this fork, not a nicety. Upstream's `'h'` returns one next move with
+**How to give a game a full explained hint.** Every game is expected to carry
+a `hint()` — explained hints are a **core deliberate-divergence product
+value** of this fork, not a nicety — but coverage is not yet complete: the
+games still lacking one are exactly the registered games absent from
+[`engine/testing/hint-games.ts`](../../src/engine/testing/hint-games.ts)
+(13 as of 2026-08-07; each is a queued `add-<game>-hint` change waiting to be
+opened). Upstream's `'h'` returns one next move with
 no explanation; that is below the bar. Adding a hint to a game is its **own
 openspec change** (`add-<game>-hint`), acceptance-gated like a port.
 

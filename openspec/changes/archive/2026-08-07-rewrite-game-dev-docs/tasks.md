@@ -49,4 +49,4 @@
 ## 5. Close out
 
 - [x] 5.1 Full gate via a normal commit (no bypass).
-- [ ] 5.2 Owner acceptance of the docs; archive on top.
+- [x] 5.2 Owner acceptance of the docs; archive on top.
