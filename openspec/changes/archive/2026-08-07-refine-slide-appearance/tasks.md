@@ -55,4 +55,6 @@
 
 - [x] 4.1 Spec delta into `slide`, plus one into `ts-engine` for the swap
       invariant (which is the engine's rule, not Slide's).
-- [ ] 4.2 Owner acceptance on the appearance before archiving.
+- [x] 4.2 Owner acceptance on the appearance before archiving. **Accepted
+      2026-08-07**, including the D1 judgement flagged for overruling (the wall
+      as the lightest large area under a dark scheme) — it stands.
