@@ -1,0 +1,54 @@
+# Tasks
+
+## 1. Recorded solver
+
+- [ ] 1.1 Thread an optional recorder through the four deduction rules (and
+      the recursion's decisive branch for D5); recorder-off path
+      byte-unchanged — frozen differential stays green untouched.
+- [ ] 1.2 Step budget on the recording path; tier-1 tests that each rule's
+      firings record with the right evidence payload.
+
+## 2. Plan assembly and narration
+
+- [ ] 2.1 Firing → journey per design D2: mark step first, committed legs
+      flagged `continuesPrevious`; one firing, one journey.
+- [ ] 2.2 Narration per rule in its own vocabulary (design D3), dots named
+      by visible properties; wording asserted byte-exactly.
+- [ ] 2.3 Read at least two full plans aloud from real boards (one Normal,
+      one Unreasonable) before polishing; record findings in design.md.
+- [ ] 2.4 Unreasonable handling per design D5; decision recorded.
+
+## 3. Engine wiring
+
+- [ ] 3.1 `hint()` + `hintKeepTrack` + `refreshHintStep` (absorption
+      semantics, design D4); `uiUpdateClearsHint` reviewed against the drag
+      preview (does a mark-drag-in-progress fight the hint display?).
+- [ ] 3.2 Refusal → mark-aware `findMistakes` + banner (design D6); test at
+      the midend level.
+
+## 4. Rendering
+
+- [ ] 4.1 Hint highlights per the colour legend (action = the mark/assoc
+      target; evidence = the symmetric partner / blocked region as an
+      area); equivalent moves share a colour.
+- [ ] 4.2 Hint overlay in the cache planes (reuse the marks plane + hint
+      sidecar); tier-2.5 scenarios reaching a firing of each rule via
+      fixed-seed scan, targeted op assertions + snapshots.
+
+## 5. Enrolment and guards
+
+- [ ] 5.1 Enrol in `testing/hint-games.ts` (auto-enrols overlay + resume
+      guards); hint-quality suite additions.
+- [ ] 5.2 Auto-hint pacing sanity (animation floor respected on the
+      committed legs).
+
+## 6. Docs, spec, close-out
+
+- [ ] 6.1 `help/games/galaxies.md`: the hint teaches in marks; update
+      `docs/games/hints.md` with the entity-candidate pattern this
+      establishes (live-wiki obligation).
+- [ ] 6.2 Framework-substrate notes (what the recorder/journey shapes
+      wanted that the shared machinery lacks) recorded for
+      `docs/framework-rdd/`.
+- [ ] 6.3 `openspec validate add-galaxies-hint --strict`; owner acceptance;
+      archive.
