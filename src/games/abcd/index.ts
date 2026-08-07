@@ -237,7 +237,7 @@ function interpretMove(
 
   // Adaptive mark-all (M), the collection-wide shared behaviour: fill on the
   // first press (any empty cell with *zero* notes), then subsequent presses only
-  // *strike* the obvious eliminations — never re-fill/reset (playbook §3.7).
+  // *strike* the obvious eliminations — never re-fill/reset (docs/games/mechanics.md § "Pencil marks: the full note-taking UX").
   if (button === KEY_M || button === KEY_m) {
     let needsFill = false;
     for (let y = 0; y < p.h && !needsFill; y++) {

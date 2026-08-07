@@ -5,7 +5,7 @@
  *
  * Split out of `index.ts` so `render.ts` (which reflects the in-progress
  * drag) and `index.ts` can both import the drag helpers without a cycle
- * (playbook §3.2).
+ * (docs/games/rendering.md § "The tile cache and the diff key").
  */
 import { Dsf } from "../../engine/dsf.ts";
 import { pearlSolve } from "./solver.ts";

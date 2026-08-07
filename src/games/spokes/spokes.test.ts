@@ -583,7 +583,7 @@ describe("spokes rendering", () => {
   });
 
   it("shows the mistake overlay on a hub that was already painted", () => {
-    // Regression guard (playbook §3.2): the overlay isn't part of a hub's
+    // Regression guard (docs/games/rendering.md § "Overlay sidecars"): the overlay isn't part of a hub's
     // packed tile value, so it has to sit in the cache's diff key. Check &
     // Save runs a frame *after* the move that drew the hub, so a cold-frame
     // test would pass even with the overlay missing from the key.

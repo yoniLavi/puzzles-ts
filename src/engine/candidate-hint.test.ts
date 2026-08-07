@@ -354,7 +354,7 @@ describe("nextStrike", () => {
     // against it, and everything after it is only valid once that placement is
     // made. Here the one *live* elimination sits past that line, so there is
     // nothing to teach yet — surfacing it would narrate a deduction from a board
-    // state the player has not reached (hint-authoring §9.3).
+    // state the player has not reached (docs/games/hints.md § "Solve the way a human does").
     const [grid, pencil] = board([0, 0, 0, 0], [bits(2), 0, bits(1), 0]);
     const ops = [
       op("elim", 0, 0, 1, 0, "set"), // dead: (0,0) no longer notes 1

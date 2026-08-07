@@ -1,6 +1,6 @@
 /**
  * Gated C-vs-TS differential for Salad: the **byte-for-byte desc match**
- * (playbook §4.3/§4.4).
+ * (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"/§4.4).
  *
  * Salad's generator is solver-gated at every clue removal — a clue stays only
  * while the puzzle still solves by pure deduction at the target difficulty — so
@@ -49,7 +49,7 @@ interface Fixture {
   /** Lowest difficulty at which the C solver finishes the board. */
   solverDiff: number;
   /** The C's own generation wall-clock, carried for reference (never asserted
-   * — a wall-clock assertion measures the box, not the code; playbook §5.2). */
+   * — a wall-clock assertion measures the box, not the code; docs/games/testing.md § "Seed-deterministic, never clock-gated"). */
   genMs: number;
 }
 

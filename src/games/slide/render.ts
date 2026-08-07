@@ -30,7 +30,7 @@
  * keyed by **colour index** (each base colour's highlight/lowlight pair, which
  * is why every material's trio is three *consecutive* indices and why a new
  * material adds a swap pair there as well as a colour here). Reindexing would
- * silently mis-target those (playbook §3.3). The order is also load-bearing
+ * silently mis-target those (docs/games/rendering.md § "The palette: three layers, meaning first"). The order is also load-bearing
  * inside `drawTile`, which derives a highlight/lowlight from a base as
  * `cc+1`/`cc+2` — the C's comment "Do not break this, or draw_tile() will get
  * confused."
@@ -40,7 +40,7 @@
  * logic here and all I could really think to do was give it my best shot and
  * then test it and correct all the typos" — a 5×5 subdivision of the tile with
  * up to five cases per section. Verbatim transcription is the low-risk way to
- * reproduce a shape like that (playbook §4, "porting ease"), so the 29
+ * reproduce a shape like that (docs/games/solver-and-generator.md § "Divergence and what it costs", "porting ease"), so the 29
  * `maybeRect` calls below stay 1:1 with the C and auditable against it.
  */
 
@@ -165,7 +165,7 @@ export function colours(defaultBackground: Colour): Colour[] {
 // --- geometry ---------------------------------------------------------
 
 export const PREFERRED_TILE_SIZE = 32;
-/** The web build defines `NARROW_BORDERS` (playbook §3.2), so the board is
+/** The web build defines `NARROW_BORDERS` (docs/games/rendering.md § "Sizing"), so the board is
  * exactly `w*TILESIZE` by `h*TILESIZE` with no border at all. */
 export const BORDER = 0;
 
@@ -202,7 +202,7 @@ const FG_SHADOWSH = 19;
  * `Int32Array` the diff key lives in). The gate is drawn as an outline around
  * the whole gate region rather than a per-square fill, so a square has to know
  * about its neighbours, and every overlay has to sit inside the one packed word
- * or it silently fails to repaint (playbook §3.2).
+ * or it silently fails to repaint (docs/games/rendering.md § "Overlay sidecars").
  */
 const GATE_LBORDER = 0x08000000;
 const GATE_TBORDER = 0x10000000;
@@ -231,7 +231,7 @@ export interface SlideDrawState {
   h: number;
   /** Last-drawn packed value per cell; `-1` forces a repaint. Every overlay
    * (drag, solve highlight, shadow, flash) is part of this one word, so they
-   * all sit in the diff key by construction (playbook §3.2). */
+   * all sit in the diff key by construction (docs/games/rendering.md § "The tile cache and the diff key"). */
   grid: Int32Array;
 }
 
@@ -694,7 +694,7 @@ export function redraw(
   const ts = ds.tilesize;
 
   if (!ds.started) {
-    // The engine paints no pixels of its own (playbook §3.2 doctrine).
+    // The engine paints no pixels of its own (docs/games/rendering.md § "The rendering doctrine" doctrine).
     const size = computeSize({ w, h }, ts);
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
     ds.started = true;

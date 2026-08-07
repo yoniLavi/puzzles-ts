@@ -6,7 +6,7 @@
  *
  * Two per-tile `Int32Array`s (`flags` + `flagsDrag`) mirror upstream's
  * committed-vs-drag-preview drawstate; the `findMistakes` overlay rides an
- * `OverlaySidecar` so it is part of the diff key (playbook §3.2). The palette
+ * `OverlaySidecar` so it is part of the diff key (docs/games/rendering.md § "Overlay sidecars"). The palette
  * is index-for-index with the C colour enum.
  */
 

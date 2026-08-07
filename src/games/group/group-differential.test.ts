@@ -7,7 +7,7 @@
  * board at the same minimal difficulty the C solver recorded. Because the
  * generator is solver-gated, that single byte-match validates the generator,
  * the solver's every deduction, the group data table and the codec together —
- * the strongest available bar (playbook §4.3/§4.4, design D8).
+ * the strongest available bar (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"/§4.4, design D8).
  *
  * The fixture is **frozen and cannot be regenerated**. It was captured by
  * `puzzles/auxiliary/group-trace.c` against upstream's C, under an

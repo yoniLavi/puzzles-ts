@@ -375,7 +375,7 @@ export function lineHasError(state: PatternState, line: number): boolean {
 // because"; it is the always-explained completion that keeps the plan complete
 // on every board the generator published (which is line-solvable by
 // construction). All three are *parallel* recorders in the Undead sense
-// (hint-authoring §9.4): they never touch the generator's `solvePuzzle`/
+// (docs/games/hints.md § "A non-Latin candidate game (Undead)"): they never touch the generator's `solvePuzzle`/
 // `isSoluble` path, so the byte-match generator differential is unaffected *by
 // construction*, with no gating flag.
 
@@ -654,7 +654,7 @@ function intersectionFiring(
  * built on a working copy (each step applied before the
  * next is computed), so every step's narration and highlight reflect the board
  * as that step fires — and a fresh recompute resumes from any mid-game
- * position (hint-authoring §7.1).
+ * position (docs/games/hints.md § "A hint must resume from any position").
  */
 export function deduceHintPlan(state: PatternState): PatternHintMove[] {
   const { w, h, clues } = state.common;

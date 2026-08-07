@@ -435,7 +435,7 @@ const CLEAN_OBVIOUS_TEXT = cleanObviousText("number", "standing", "row or column
 
 /** Join a value list for narration: `[3]`→"3", `[1,2]`→"1 and 2",
  * `[1,2,3]`→"1, 2 and 3". */
-/** Narrate *why* a firing is forced (hint-authoring §2): indication → reasoning →
+/** Narrate *why* a firing is forced (docs/games/hints.md § "Writing the narration"): indication → reasoning →
  * necessity-voice conclusion. `ns` is the struck value list (a placement passes
  * its single height); `o` is the grid order. Two-mode aware; phrasing reads
  * correctly at the value extremes (§2.7 — the differ-by-1 clue says "one away from

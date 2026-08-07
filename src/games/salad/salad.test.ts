@@ -655,7 +655,7 @@ describe("salad presentation hooks", () => {
 
 describe("salad mistake overlay", () => {
   it("highlights a mistake even when the square was already drawn", () => {
-    // Regression guard (playbook §3.2): the overlay isn't part of a cell's tile
+    // Regression guard (docs/games/rendering.md § "Overlay sidecars"): the overlay isn't part of a cell's tile
     // value, so it must be in the cache-miss test — otherwise a Check & Save a
     // frame after the move repaints nothing and nothing turns red.
     const me = play(NUMBERS_ID);
@@ -674,7 +674,7 @@ describe("salad mistake overlay", () => {
     const after = new RecordingDrawing(palette);
     me.redraw(after);
     // The overlay is drawn as stroked lines, so it records as `line` ops
-    // (playbook §5.1 — a stroked box is not a `rect`).
+    // (docs/games/testing.md § "Render-op vocabulary" — a stroked box is not a `rect`).
     expect(after.ops.some((op) => op.op === "line" && op.colour === COL_MISTAKE)).toBe(
       true,
     );

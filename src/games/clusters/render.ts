@@ -97,7 +97,7 @@ export function computeSize(p: ClustersParams, ts: number): Size {
 const F_ERR = 1 << 8;
 const F_CUR = 1 << 9;
 
-// Hint-overlay bits, packed per cell into the OverlaySidecar (playbook §3.2:
+// Hint-overlay bits, packed per cell into the OverlaySidecar (docs/games/rendering.md § "Overlay sidecars":
 // the sidecar is part of the diff key, so a newly displayed or dropped hint
 // repaints on an otherwise-unchanged frame).
 const HB_TARGET = 1; // the forced cell — COL_HINT fill

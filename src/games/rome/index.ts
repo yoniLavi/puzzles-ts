@@ -125,7 +125,7 @@ function newUi(_state: RomeState): RomeUi {
 
 /** Direct arrow entry by character code. Upstream keys off the bare
  * characters, having already stripped `MOD_NUM_KEYPAD` — which this frontend
- * never sets anyway (playbook §3.8a), so the number-row digits work too. */
+ * never sets anyway (docs/games/input.md § "The numeric keypad never arrives"), so the number-row digits work too. */
 const DIGIT_DIRS: Readonly<Record<number, RomeDir>> = {
   56: FM_UP, // '8'
   50: FM_DOWN, // '2'
@@ -212,7 +212,7 @@ function interpretMove(
               ? FM_LEFT
               : FM_RIGHT;
       // Placing the arrow that is already there is a no-op, not a history
-      // entry (upstream suppresses it locally here — playbook §1).
+      // entry (upstream suppresses it locally here — docs/games/README.md § "Before you start").
       if (here & dir) return UI_UPDATE;
       return { kind: pencil ? "pencil" : "place", x, y, dir };
     }
@@ -338,7 +338,7 @@ function solve(orig: RomeState): SolveResult<RomeMove> {
 }
 
 /**
- * Two layers, because either alone would bless a wrong board (playbook §3.5).
+ * Two layers, because either alone would bless a wrong board (docs/games/solver-and-generator.md § "The solvable-game contract").
  *
  * The **rule violations** — an off-grid arrow, an arrow duplicated inside a
  * region, an arrow on a loop — are what upstream already paints as you play,

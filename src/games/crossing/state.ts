@@ -95,7 +95,7 @@ export function decodeParams(s: string): CrossingParams {
  * squares or fewer** generated 3/3 (worst case 0.9 s at 16×14), every
  * configuration of 240 or more failed at least once, and nothing at 280+ ever
  * generated (18×16, 20×14, 24×12, 18×18 — all 0/3 within a 10,000-attempt
- * budget). So this is the playbook §4 "impossible ⇒ reject in `validateParams`"
+ * budget). So this is the docs/games/solver-and-generator.md § "Unlucky, impossible, and load-bearing validation" "impossible ⇒ reject in `validateParams`"
  * case rather than the "unlucky ⇒ retry" one, and 225 is the measured boundary
  * rather than a guess. It also bounds the clue list, which is what makes the
  * author's "no reliable way to always fit the list on screen" tractable here.
@@ -658,7 +658,7 @@ export type CrossingMove =
   /** Clear a list of notes atomically — the hint's rule-out move. A `pencil`
    * toggle is *one* candidate and is not idempotent (re-applying it would put
    * the note back), so one deduction ruling out several candidates needs a move
-   * that only ever removes (hint-authoring §9.2). Players produce it only by
+   * that only ever removes (docs/games/hints.md § "Persist, populate, and the moves"). Players produce it only by
    * following a hint; typing produces `pencil` toggles as before. */
   | { kind: "pencilStrike"; marks: readonly { x: number; y: number; n: number }[] }
   /** Write listed number `number` into run `run` — the whole clue at once,

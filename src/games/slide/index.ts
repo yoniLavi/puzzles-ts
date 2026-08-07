@@ -14,7 +14,7 @@
  *  - **No `findMistakes`.** Slide has no wrong-but-legal state — *every*
  *    reachable position is legal, you are simply nearer to or further from the
  *    exit — so there is nothing to flag, exactly as for the permutation games
- *    (playbook §3.5). Check & Save correctly degrades to a plain quick-save.
+ *    (docs/games/solver-and-generator.md § "The solvable-game contract"). Check & Save correctly degrades to a plain quick-save.
  *  - **No guess-free-generation obligation.** That policy binds logic puzzles;
  *    Slide is a movement puzzle whose "solver" is a shortest-path search, with
  *    no difficulty tiers at all (`maxmoves` bounds solution *length*).
@@ -186,14 +186,14 @@ function interpretMove(
  * Install the shortest route from here to the exit, for the player to walk one
  * step at a time with Space/Enter. Slide's Solve deliberately does **not** fill
  * the board in — the route *is* the feature, and Inertia's Solve works the same
- * way (playbook §3.8d) — so it sets `cheated` but leaves the position alone.
+ * way (docs/games/input.md § "The board keeps the keyboard after a control") — so it sets `cheated` but leaves the position alone.
  *
  * One divergence: upstream solves `state`, the *initial* board, though its own
  * comment says "from the current position" and its `execute_move` goes to
  * trouble adjusting the route's first move for a partly-nudged block, which
  * only makes sense from the current one. As written, any Solve after any move
  * yields a route whose first step is illegal, so pressing Space does nothing at
- * all — a genuine player-visible defect (playbook §4 rule 3), and one no desc
+ * all — a genuine player-visible defect (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 3), and one no desc
  * differential can see. We solve `curr`.
  */
 function solve(_orig: SlideState, curr: SlideState): SolveResult<SlideMove> {

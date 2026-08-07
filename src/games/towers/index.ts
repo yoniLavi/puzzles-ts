@@ -466,7 +466,7 @@ const CLEAN_OBVIOUS_TEXT = cleanObviousText("height", "standing", "row or column
 
 /** Narrate *why* a firing is forced, per the technique that fired — leading
  * with the spotted indication, then the reasoning, then a necessity-voice
- * conclusion (hint-authoring §2). `n` is the placed height for a placement;
+ * conclusion (docs/games/hints.md § "Writing the narration"). `n` is the placed height for a placement;
  * `continues` (a journey continuation leg) gets a terser line that doesn't
  * restate the premise the journey's first leg already gave. */
 function narrate(reason: HintReason, n: number, continues = false): string {

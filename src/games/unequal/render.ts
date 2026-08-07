@@ -87,7 +87,7 @@ export function colours(defaultBackground: Colour): Colour[] {
 }
 
 /** Highlight payload an Unequal hint step carries (built in `index.ts`). The
- * element-type legend (hint-authoring §5.3): the driving clue's cells shaded
+ * element-type legend (docs/games/hints.md § "The element-type colour legend"): the driving clue's cells shaded
  * `COL_HINT_CELL`, the acted-on cell(s) `COL_HINT`, the ruled-out candidate(s)
  * shown struck. */
 export interface UnequalHint {
@@ -134,7 +134,7 @@ export interface UnequalDrawState {
   /** `order²` hint-overlay sidecar (fork addition): bit 0 = target cell, bit 1 =
    * evidence, bits 2.. = struck-candidate mask (`hintMarkBit(n)`). Owns the
    * repack/stale/commit dance that keeps the overlay in the cache diff key
-   * (playbook §3.2). */
+   * (docs/games/rendering.md § "The tile cache and the diff key"). */
   hint: OverlaySidecar;
   /** `order²` mistake-overlay sidecar (fork addition) — same dance, so that a
    * Check & Save repaints the red highlight on an already-drawn cell. */
@@ -370,7 +370,7 @@ function drawCell(
   const oy = coord(y, ts);
   const hon = ui.hshow && x === ui.hx && y === ui.hy;
 
-  // Hint overlay (hint-authoring §5.3): target cell (COL_HINT) > evidence cell
+  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): target cell (COL_HINT) > evidence cell
   // (COL_HINT_CELL) > cursor highlight > flash > background. `struck` is the set
   // of candidates this firing rules out, drawn crossed through among the marks.
   const hintTarget = (hint & 1) !== 0;
@@ -445,7 +445,7 @@ function drawCell(
 /** Pencil-mark grid (upstream `draw_hints`, stolen from solo). A candidate in
  * `struck` (bit `1 << n`) is a hint-ruled-out mark, drawn in its normal pencil
  * colour with a same-colour strikethrough — high-contrast, reads as a real note,
- * and the line is the "ruled out" cue (hint-authoring §5.3). */
+ * and the line is the "ruled out" cue (docs/games/hints.md § "The element-type colour legend"). */
 function drawHints(
   dr: GameDrawing,
   ts: number,

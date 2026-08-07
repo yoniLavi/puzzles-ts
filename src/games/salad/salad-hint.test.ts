@@ -120,7 +120,7 @@ describe("salad hint — the three signature techniques", () => {
   });
 
   it("never emits a step it cannot name a technique for", () => {
-    // The standing bar: no "just because" fallback (hint-authoring §1A). Every
+    // The standing bar: no "just because" fallback (docs/games/solver-and-generator.md § "Guess-free generation"). Every
     // narration must match one of the arms the game knows how to say.
     const KNOWN =
       /(sees [A-C1-9] first|empty squares?, so every other|so every other square in it must be empty|empty-square mark is the only one left|no (letter|number) can still go here|cannot be one of the empty ones|cross out their empty-square marks|ruled out in this square|can go in only this square|together, only|There's already|fixed set of|Following a chain|Start by pencilling|Now clear the easy ones)/;

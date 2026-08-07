@@ -4,10 +4,10 @@
  * Solo's generator is RNG-driven over the bit-identical `random.ts` with no
  * `qsort`/order-dependent step in any of the four variants' paths (design D5),
  * so a faithful port reproduces the C desc **byte-for-byte** for the same seed —
- * the strongest bar (playbook §4.3). On top of that we decode each C-published
+ * the strongest bar (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"). On top of that we decode each C-published
  * board and assert the TS solver reaches the *same* (diff, kdiff) the C solver
  * recorded — the solver-gated minimiser depends on that exact agreement
- * (playbook §4.4), so it is the real proof the solver is faithful.
+ * (docs/games/solver-and-generator.md § "Solver-gated generation"), so it is the real proof the solver is faithful.
  *
  * The fixture is **frozen and cannot be regenerated**. It was captured by
  * `puzzles/auxiliary/solo-trace.c` against upstream's C, under an

@@ -9,7 +9,7 @@
  * layouts consistent with the cage's arithmetic clue + the current candidate
  * cube and prune the cube accordingly.
  *
- * Index conventions are kept verbatim from C (playbook §2.2 — re-deriving the
+ * Index conventions are kept verbatim from C (docs/games/solver-and-generator.md § "The Latin family" — re-deriving the
  * transpositions is error-prone and would diverge the differential): the cage
  * `boxlist`/`whichbox`/`sq` all live in the **transposed** cell space
  * `s = x·w + y`, so a candidate read is `solver.cube[s·w + n−1]` (which equals

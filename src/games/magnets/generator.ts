@@ -1,7 +1,7 @@
 /**
  * Magnets generator — faithful port of `new_game_desc` and its helpers
  * (`gen_game`, `lay_dominoes`, `check_difficulty`) in `magnets.c`. Byte-match
- * critical (playbook §4.3–4.4): every RNG draw reproduces C in order — the
+ * critical (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"–4.4): every RNG draw reproduces C in order — the
  * `dominoLayout` list/BFS shuffles, the `layDominoes` scratch shuffle (once
  * per failed attempt), and — only when `stripclues` — the clue-strip shuffle —
  * and the solver's verdict on each intermediate board must match C.

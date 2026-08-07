@@ -5,7 +5,7 @@
  * Geometry note: the web C build defines `NARROW_BORDERS`
  * (cmake/platforms/webapp.cmake), so the border gutter is `3·ts/4 + 1`, not a
  * full tile — parity is with what the browser actually showed, not with the
- * desktop default (playbook §3.2).
+ * desktop default (docs/games/rendering.md § "The tile cache and the diff key").
  *
  * The gutter holds the slide arrows. They are drawn on a full-tile footprint
  * and so overhang the narrow gutter slightly; that is exactly what the C web
@@ -70,7 +70,7 @@ export const COL_TEXT = 8;
 /** The hint's colours, appended *past* upstream's enum so the palette above stays
  * index-for-index with it. Safe to append here because Netslide declares no
  * dark-mode `paletteOverrides` — nothing addresses a palette slot by number
- * (playbook §3.3). */
+ * (docs/games/rendering.md § "The palette: three layers, meaning first"). */
 export const COL_HINT = 9;
 
 export function colours(defaultBackground: Colour): Colour[] {
@@ -100,7 +100,7 @@ export function colours(defaultBackground: Colour): Colour[] {
  * flag, which is the whole point: the diff key is that word, so a hint requested
  * on a board that did not otherwise change still repaints. Keeping the overlay
  * *out* of the diff key is a real bug that has shipped in this codebase before
- * (playbook §3.2) — the hint simply never appears until something else moves.
+ * (docs/games/rendering.md § "The tile cache and the diff key") — the hint simply never appears until something else moves.
  */
 
 /** The tile the hint is placing. */
@@ -128,7 +128,7 @@ export interface NetslideDrawState {
   /** Last-drawn value per tile (wires | ACTIVE | FLASHING | the HINT_* bits), or
    * −1 for "dirty, repaint unconditionally" (upstream's `0xFF` sentinel). Every
    * overlay the renderer can apply lives in this word, so the diff key covers
-   * them all by construction (playbook §3.2). */
+   * them all by construction (docs/games/rendering.md § "The tile cache and the diff key"). */
   visible: Int32Array;
   /** Last-drawn cursor arrow, so a cursor move repaints exactly two arrows. */
   curX: number;

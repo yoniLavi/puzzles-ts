@@ -1,5 +1,5 @@
 /**
- * Inertia differential — the frozen C-reference check (playbook §4.1, gated).
+ * Inertia differential — the frozen C-reference check (docs/games/testing.md § "Fixture lifecycle", gated).
  *
  * The fixtures in `__fixtures__/inertia-c-reference.json` were recorded from the
  * C build by `puzzles/auxiliary/inertia-trace.c`. The two halves of the game get
@@ -7,7 +7,7 @@
  *
  * 1. **The desc is byte-matched.** The generator's only RNG draws are `shuffle`
  *    calls and `random.ts` is bit-identical to `random.c`, so a faithful
- *    generator reproduces the C board exactly for the same seed (playbook §4.3).
+ *    generator reproduces the C board exactly for the same seed (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
  *    That is a real, cheap check on the generator *and* on the gem-candidate
  *    search it gates on, so it stays.
  *
@@ -16,7 +16,7 @@
  *    how it caught a bug. But a route is a *travelling-salesman tour*: there is
  *    no right answer to match, only better and worse answers, and byte-matching
  *    one pins the port to C's in-place `memmove` splicing (see the tour history
- *    in `solver.ts`). The byte-parity scope doctrine (playbook §4) puts the
+ *    in `solver.ts`). The byte-parity scope doctrine (docs/games/solver-and-generator.md § "Divergence and what it costs") puts the
  *    generator/solver/codec under fidelity and everything else under "write it
  *    well", and an approximate optimiser is squarely the latter.
  *

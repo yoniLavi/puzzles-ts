@@ -2,7 +2,7 @@
  * Inertia's hint.
  *
  * Inertia is a movement game, so its hint belongs to the **non-deductive
- * family** (hint-authoring §6): no move is *forced* by logic, and a narration
+ * family** (docs/games/hints.md § "Non-deductive (heuristic) hints"): no move is *forced* by logic, and a narration
  * claiming otherwise would be a fabrication. But it has far more to say than
  * Untangle's wordless suggestion, because every move here has a concrete
  * consequence the player can be taught — and the one beginners get wrong is
@@ -45,7 +45,7 @@ import {
 export interface InertiaHintHighlights {
   /** The gem the current leg is going for, as a square index. Inertia's gems
    * are anonymous — there is no "tile 8" to name one by — so the narration says
-   * "the marked gem" and the board carries the reference (hint-authoring §2.3).
+   * "the marked gem" and the board carries the reference (docs/games/hints.md § "Name a square by its value").
    */
   readonly goal: number;
   /** The direction to play, drawn as an arrow on the ball. */
@@ -75,7 +75,7 @@ const DIR_NAMES = [
  *
  * The two are told apart because saying "every other way runs you onto a mine"
  * about a ball hemmed in by walls would be a lie of the kind
- * hint-authoring §2.7 asks you to catch by reading a narration at its
+ * docs/games/hints.md § "Sanity-read at the degenerate extremes" asks you to catch by reading a narration at its
  * degenerate extremes.
  */
 function onlyMove(s: InertiaState, dir: number): "mines" | "walls" | null {
@@ -136,7 +136,7 @@ function stopClause(path: SlidePath): string {
  * place but up to eight, because the ball arrives still moving and cannot turn,
  * so *which way you come at it* decides where you fetch up. Claiming more —
  * that the grab is a trap, or that this move is the only one — would not be
- * honest (hint-authoring §2.4).
+ * honest (docs/games/hints.md § "The premise must single out the conclusion").
  */
 function narrate(
   before: InertiaState,

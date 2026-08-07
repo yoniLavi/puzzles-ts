@@ -5,7 +5,7 @@
  * generator, the solver and the codec against the C. What it cannot reach is
  * everything downstream of `newDesc`: input mapping, `executeMove`'s shape
  * resolution and completion check, the mistake overlay, and the frame the
- * player actually sees. That is what this file is for (playbook §5, "a
+ * player actually sees. That is what this file is for (docs/games/testing.md § "The test tiers", "a
  * byte-match differential does NOT exercise the interactive completion path").
  */
 
@@ -558,7 +558,7 @@ describe("boats solve", () => {
 
     expect(midend.solve()).toBeUndefined();
     // Solve must actually finish the game and mark it solved-with-help
-    // (playbook §3.6), not merely fill some squares in.
+    // (docs/games/solver-and-generator.md § "Solve and the generator's aux"), not merely fill some squares in.
     expect(stateOf(midend).completed).toBe(true);
     expect(stateOf(midend).cheated).toBe(true);
   });
@@ -746,7 +746,7 @@ describe("boats rendering", () => {
     // Walk the flash in half-frame steps and count the boats drawn on each.
     // The guarantee that matters is that it *alternates* — upstream draws no
     // boat on the "off" half — not which half comes first, so assert both
-    // phases occur rather than pinning one to a timestamp (playbook §5.2:
+    // phases occur rather than pinning one to a timestamp (docs/games/testing.md § "Seed-deterministic, never clock-gated":
     // assert a load-independent property, not a clock reading).
     const palette = boatsGame.colours([1, 1, 1]);
     const counts: number[] = [];
@@ -763,7 +763,7 @@ describe("boats rendering", () => {
     expect(counts.some((n) => n > 0)).toBe(true);
   });
   it("highlights a mistake on a board that was already drawn", () => {
-    // The paint-twice test (playbook §3.2): a cold frame proves nothing,
+    // The paint-twice test (docs/games/rendering.md § "Prove the overlay repaints"): a cold frame proves nothing,
     // because every cell misses the cache on frame 1 anyway.
     const p = params({ w: 8, h: 8, fleet: 4, fleetData: defaultFleet(4) });
     const { desc } = newBoatsDesc(p, randomNew("boats-render-mistake"));

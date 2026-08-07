@@ -118,7 +118,7 @@ function keyDigit(button: number): number | null | undefined {
 
 /** Would writing listed number `l` into run `r` change anything? It fits, so
  * every filled cell already agrees — only an empty cell makes it a real move
- * (playbook §1: suppress no-ops locally rather than comparing states). */
+ * (docs/games/README.md § "Before you start": suppress no-ops locally rather than comparing states). */
 function placementChanges(state: CrossingState, r: number, l: number): boolean {
   void l;
   return state.puzzle.runs[r].cells.some((i) => state.grid[i] === 0);
@@ -274,7 +274,7 @@ function interpretMove(
   if (digit !== undefined) {
     ui.heldNumber = null;
     const i = ui.cy * w + ui.cx;
-    // Suppress no-op moves locally rather than comparing states (playbook §1).
+    // Suppress no-op moves locally rather than comparing states (docs/games/README.md § "Before you start").
     if (walls[i]) return null;
     if (ui.cpencil && state.grid[i] !== 0) return null; // notes can't touch a filled cell
     if (!ui.cpencil && state.grid[i] === (digit ?? 0)) return null;
@@ -319,7 +319,7 @@ function executeMove(state: CrossingState, move: CrossingMove): CrossingState {
       if (!walls[i]) next.grid[i] = move.grid[i];
     }
     next.completed = validateBoard(next.puzzle, next.grid).status === "valid";
-    // Solved with help: the win flash must not fire (playbook §3.6).
+    // Solved with help: the win flash must not fire (docs/games/solver-and-generator.md § "Solve and the generator's aux").
     next.cheated = true;
     return next;
   }
@@ -491,7 +491,7 @@ function hint(state: CrossingState): HintResult<CrossingMove, CrossingHint> {
 
 /**
  * Classify a player move against the displayed step. `state` is the **pre-move**
- * board (hint-authoring §5.5a).
+ * board (docs/games/hints.md § "A journey completes leg by leg").
  *
  * The whole-run step is the one shape the shared helper cannot read, and it
  * needs care: a player who types the number in digit by digit — which

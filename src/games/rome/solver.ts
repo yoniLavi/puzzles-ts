@@ -193,7 +193,7 @@ export function validateGame(
  * directed *towards* `i`, so that path reads `j → … → i` and closing it with
  * `i → j` makes a directed cycle through `i`. Following arrows from `i`
  * therefore returns to `i`, which is itself a `FE_LOOPSTART`. The explicit
- * bound is a runaway guard for a port bug, not a real exit (playbook §5.2:
+ * bound is a runaway guard for a port bug, not a real exit (docs/games/testing.md § "Seed-deterministic, never clock-gated":
  * bound non-termination where it can actually be caught).
  */
 function markLoops(board: RomeBoard): void {

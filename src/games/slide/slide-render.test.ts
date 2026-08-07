@@ -10,7 +10,7 @@
  *
  * The drag and Solve frames are captured on a **warm** draw state (a frame has
  * already been painted), because that is the case where an overlay left out of
- * the cache diff key silently fails to repaint (playbook §3.2). Slide packs
+ * the cache diff key silently fails to repaint (docs/games/rendering.md § "Overlay sidecars"). Slide packs
  * every overlay into the one per-tile word, so this is structurally safe — but
  * a cold frame would not prove it.
  */
@@ -188,7 +188,7 @@ describe("slide opening frame", () => {
     const ops = capture(newBoard());
 
     // The engine paints no pixels of its own, so the game fills its own
-    // background on the first frame (playbook §3.2 doctrine).
+    // background on the first frame (docs/games/rendering.md § "The rendering doctrine" doctrine).
     expect(ops[0]).toMatchObject({
       op: "rect",
       x: 0,

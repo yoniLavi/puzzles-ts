@@ -17,14 +17,14 @@
  * The web build compiles `NARROW_BORDERS` (`cmake/platforms/webapp.cmake`), so
  * `BORDER` is `GRIDEXTRA * 2` — **not** the desktop `tilesize / 2` — and
  * `computeSize` subtracts `GRIDEXTRA * 2` back off because the outer grid
- * outline is drawn inside the border area (playbook §3.2).
+ * outline is drawn inside the border area (docs/games/rendering.md § "The tile cache and the diff key").
  *
  * ## Colours
  *
  * The palette is upstream's, index for index, derived from the host
  * background with no luminance adjustment: `puzzle-view.ts` hands the game
  * pure white in dark mode precisely so `background × 0.95` derivations still
- * work, then adapts the returned palette itself (playbook §3.3).
+ * work, then adapts the returned palette itself (docs/games/rendering.md § "The palette: three layers, meaning first").
  */
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";

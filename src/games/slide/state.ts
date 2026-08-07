@@ -20,7 +20,7 @@
  * `DIST(w-1), DIST(1)`. Forcefields (squares only the main block may cross)
  * cannot live in this encoding — the main block would erase them as it passed
  * — so they are a separate, never-changing array, shared by reference across
- * every state (the playbook §3.1 shared-frozen pattern; a runtime
+ * every state (the docs/games/mechanics.md § "Idiomatic state, not a C transliteration" shared-frozen pattern; a runtime
  * `Object.freeze` throws on a populated typed array, so `readonly` is the
  * whole guarantee).
  *
@@ -121,7 +121,7 @@ export function decodeParams(s: string): SlideParams {
  * grow explosively with the number of empty squares the main block needs in
  * order to travel.
  *
- * Measured over 5–7 seeds per size, in a plain `node` process (playbook §5.2 —
+ * Measured over 5–7 seeds per size, in a plain `node` process (docs/games/testing.md § "Seed-deterministic, never clock-gated" —
  * never judge a generator's cost from inside vitest), after the visited-set
  * optimisation in `solver.ts`:
  *
@@ -169,7 +169,7 @@ export function validateParams(p: SlideParams, _full: boolean): string | null {
 
 export function describeParams(p: SlideParams): Record<string, string> {
   // The keys `src/puzzle/augmentation.ts` substitutes into slide's
-  // `"{width}x{height}, {solution-length-limit}"` template (playbook §3.4).
+  // `"{width}x{height}, {solution-length-limit}"` template (docs/games/mechanics.md § "Params").
   return {
     width: String(p.w),
     height: String(p.h),
@@ -266,7 +266,7 @@ export function cancelDrag(ui: SlideUi): void {
  * Note that a `"solve"` move does **not** fill the board in — Slide's Solve
  * installs a route the player walks with the step key, exactly as Inertia's
  * does. That is a real game feature, not the missing-bookkeeping case
- * playbook §3.6 is about.
+ * docs/games/solver-and-generator.md § "Solve and the generator's aux" is about.
  */
 export type SlideMove =
   | { kind: "move"; from: number; to: number }
@@ -513,7 +513,7 @@ export function newState(p: SlideParams, desc: string): SlideState {
  * different blocks (or a block and empty space) meet.
  *
  * Two display-only corrections to the C, both invisible outside this function
- * (playbook §3.2 — a display bug with unambiguous intent is one you may just
+ * (docs/games/rendering.md § "Display state in a narrow type" — a display bug with unambiguous intent is one you may just
  * fix; the desc differential never touches this path):
  *
  *  - The C decides "is this the main block?" with `data[t] == MAINANCHOR`,

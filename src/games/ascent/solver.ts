@@ -481,7 +481,7 @@ export function ascentSolve(puzzle: Int16Array, diff: number, sc: SolverScratch)
    * true it stays true, so `solverUpdatePath`'s "mark all middles" step and
    * `solverRemoveEndpoints` stop firing on every board after the first. That
    * quirk weakens the solver and is baked into which boards the generator
-   * ships, so reproducing it is byte-match critical (playbook §4 rule 3). */
+   * ships, so reproducing it is byte-match critical (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 3). */
   solverRemoveBlocks(sc);
 
   while (true) {

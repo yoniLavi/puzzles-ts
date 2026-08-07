@@ -84,7 +84,7 @@ describe("magnets render scenarios", () => {
       showMistakes: true,
     });
     // The mistake overlay (inset red outline) appears on a frame *after* the
-    // move that placed the cell (playbook §3.2 — overlay must be in the diff
+    // move that placed the cell (docs/games/rendering.md § "Overlay sidecars" — overlay must be in the diff
     // key). Both ends of the wrong magnet are flagged.
     expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_MISTAKE)).toBe(
       true,

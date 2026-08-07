@@ -200,7 +200,7 @@ export type GenericLatinReason =
  * for six arms; **Solo** names a different region set per arm ("row, column
  * **and** block", plus block/diagonal region names in `hiddenSingle`). Both stay
  * on their own `narrate` — one vocabulary can't express a per-arm difference,
- * and forcing it would read worse than the duplication (hint-authoring §9.2's
+ * and forcing it would read worse than the duplication (docs/games/hints.md § "Persist, populate, and the moves"'s
  * standing rule).
  */
 export interface LatinVocab {

@@ -151,10 +151,10 @@ export interface CrossingMistake {
 }
 
 /**
- * Check & Save's mistake check (playbook §3.5): re-solve the puzzle from the
+ * Check & Save's mistake check (docs/games/solver-and-generator.md § "The solvable-game contract"): re-solve the puzzle from the
  * walls and numbers alone, then flag every player marking the unique solution
  * contradicts — a wrong entered digit, and (per the cross-game
- * notes-are-first-class convention, playbook §3.7) an empty cell whose
+ * notes-are-first-class convention, docs/games/mechanics.md § "Pencil marks: the full note-taking UX") an empty cell whose
  * *non-empty* notes exclude the solution's digit. Notes carrying merely extra
  * candidates are ordinary mid-solve state and are not flagged.
  *

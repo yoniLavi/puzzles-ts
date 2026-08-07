@@ -173,7 +173,7 @@ export function executeAscentMove(state: AscentState, move: AscentMove): AscentS
       }
       /* Deliberate divergence from upstream, which never sets `cheated` in
        * its 'S' arm (so the win flash would fire on a solver fill). Setting
-       * it here matches the collection convention (playbook §3.6). */
+       * it here matches the collection convention (docs/games/solver-and-generator.md § "Solve and the generator's aux"). */
       ret.cheated = true;
       break;
     }

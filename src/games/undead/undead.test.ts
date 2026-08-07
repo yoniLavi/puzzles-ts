@@ -2,7 +2,7 @@
  * Behavioural tests for the Undead port (tier 1 + a tier-2.5 render smoke).
  *
  * Generation is seeded for determinism, so the heavy generate/solve blocks do
- * fixed work and need no clock gate (playbook §5.2). End-to-end consistency is checked by
+ * fixed work and need no clock gate (docs/games/testing.md § "Seed-deterministic, never clock-gated"). End-to-end consistency is checked by
  * decoding a generated desc and confirming its unique solution equals the
  * generator's recorded `aux` solution — exercising codec + solver + generator
  * together.

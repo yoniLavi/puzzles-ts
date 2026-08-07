@@ -1,0 +1,110 @@
+# The game definition — what you declare, what you get
+
+> **⚠️ STATUS: design fiction** — describes a system that does not exist.
+> Authored by `rewrite-game-dev-docs` (2026-08-07). Current truth:
+> [`docs/games/`](../games/README.md). See the [vision README](./README.md).
+
+A framework game is one directory exporting one **definition** — a manifest of
+declarations, each of which buys a set of derived behaviour. This document
+walks the declarations in the order the scaffolder presents them, and states
+for each: what you write, what falls out, and where the escape hatch is.
+
+The running example is **Towers re-expressed** (chosen because it exercises
+the Latin substrate, candidate hints, difficulty tiers and pencil UX at once).
+Today: ~2,600 lines across seven files. Re-expressed: ~1,100, of which the
+techniques and narrations — the parts that are *Towers* — are ~700.
+
+## Params and presets
+
+**You declare:** the params record, its field configs (reusing today's
+declarative `paramConfig` shapes), presets, and validation predicates.
+
+**You get:** the Custom dialog, the type-menu summary, param codecs (the
+`WxH`-style prefix forms via the shared parser; `%g` float round-tripping),
+and — if your techniques carry tiers — the whole difficulty contract:
+tier list, read/set on params, capped solving, and enrolment in the
+cap-monotonicity and tiers-bind guards. There is no hand-written
+`DifficultyContract`; it is a projection of the technique ladder
+([`deduction.md`](./deduction.md)).
+
+**Escape hatch:** a bespoke codec for params whose grammar the shared parser
+cannot express (Blackbox's `w<W>h<H>m…M…`), with the obligation that encode
+and decode are property-tested inverses — a test the framework generates.
+
+## The board model
+
+**You declare:** topology (square / hex / one of the eighteen `grid/` tilings
+/ a bespoke coordinate pair), what a cell holds (a finite domain, a candidate
+set, a numeric range), and which entities exist (cells, edges, vertices —
+Palisade-family games are edge games; Slant is a vertex game).
+
+**You get:** state allocation and structural cloning (immutability by
+construction — no game writes `cloneState` again), the desc codec for the
+common run-length grammars, coordinate maps used identically by input and
+paint (the "one function, both callers" rule made structural), cursor
+movement including the half-grid and edge-cursor variants, and bounds/geometry
+for `computeSize`.
+
+**Escape hatch:** a bespoke desc codec (obligation: round-trip property test,
+generated) and bespoke geometry (obligation: the single shared coordinate
+pair, which the conformance suite exercises from both callers). **Existing
+games keep their byte-stable codecs permanently** — a shared game ID is a
+promise to players ([`migration.md`](./migration.md)).
+
+## Moves and gestures
+
+**You declare:** the move union (typed, discriminated — as today) and a
+**gesture table**: pointer gesture → move constructor (click cycles, drag
+paints accretively, right-click marks, press-picks-transformation, …), drawn
+from a named library of the gesture shapes the collection has already needed.
+
+**You get:** `interpretMove` assembled from the table; **keyboard and touch
+equivalents derived by default** — every gesture names its keyboard binding
+and its touch rendering (or inherits the library default), which turns the
+input-parity bar (owner, 2026-08-03) from an audit obligation into the
+resting state. The four frontend traps (stylus stripping, hold-as-right-
+button, bare-digit binding, focus return) are handled once, in the library.
+Move application (`executeMove`) stays a pure per-game function; local no-op
+suppression stays local, as today.
+
+**Escape hatch:** raw `interpretMove` for genuinely bespoke interaction
+(Untangle's drag physics, Cube's rolling), with the obligation that every
+player-reachable action is still reachable from all three input modes or the
+gap is declared (and surfaces in the conformance report, not in silence).
+
+## Solving, hinting, generating
+
+**You declare:** the technique ladder (or a planner, or a bespoke loop with
+its obligations). **You get:** solve, grade, generate, hint, refuse — see
+[`deduction.md`](./deduction.md), which is the heart of the framework.
+
+## Presentation
+
+**You declare:** `tileKey`, `paintTile`, overlays, decorations, animation
+lengths, palette meanings. **You get:** the cache loop, the diff key with
+every overlay in it by construction, sidecars, flash, sprite scheduling — see
+[`presentation.md`](./presentation.md).
+
+## Affordances
+
+Declared capabilities, each buying its whole UX:
+
+- **Pencil marks**: declaring a candidate-set cell domain buys the full
+  note-taking contract — mark-all with the resets-notes rule, sticky mode,
+  the mode indicator, auto-cleanup prefs, and the hint interplay
+  (populate/cleanup steps, `refreshHintStep` for side-effect staleness).
+- **Mistakes**: derived or invariant-based ([`deduction.md`](./deduction.md));
+  buys Check & Save, the refusal banner, and the overlay.
+- **Reference aid**: declare the inventory model; buys the panel, the
+  spotlight `UI_UPDATE` wiring, and the hint-suppression dismissal rule.
+- **Prefs / timed play / save-surviving Ui / first-click boards
+  (`supersededDesc`)**: unchanged from today's declarative hooks, which are
+  already the right shape.
+
+## What is left of `index.ts`
+
+Glue shrinks to the definition export plus whatever escape hatches the game
+took. The definition is data-plus-functions, so the conformance suite,
+the scaffolder, and any future tooling can *introspect* it — no build step,
+no generated files (repo doctrine), just a richer runtime object than
+today's `Game`.

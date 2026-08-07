@@ -37,7 +37,7 @@ const START = -1;
 
 /** Backstop against a faithful-but-broken port spinning forever. Generation
  * normally succeeds within a handful of attempts, and the threshold relaxes
- * every 50 rejections, so this is unreachable in practice (playbook §4.6). */
+ * every 50 rejections, so this is unreachable in practice (docs/games/testing.md § "Quirks are load-bearing — capped, not cleaned"). */
 const MAX_ATTEMPTS = 100_000;
 
 /** How many rejections before we accept a less evenly-spread board. */

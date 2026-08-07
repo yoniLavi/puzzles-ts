@@ -14,11 +14,11 @@
  * Step 3 is **solver-gated**, so the published description depends on the
  * solver's verdict on every intermediate board — which is exactly why a single
  * byte-match assertion validates the generator, the solver *and* the codec
- * together (playbook §4.3/§4.4).
+ * together (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"/§4.4).
  *
  * ## The one deliberate divergence: removals must keep the board *unique*
  *
- * (Owner-approved; playbook §4 rule 3, "diverge for a genuine player-visible
+ * (Owner-approved; docs/games/solver-and-generator.md § "Divergence and what it costs" rule 3, "diverge for a genuine player-visible
  * defect".) Both strip loops here keep a removal only while the board remains
  * **uniquely** solvable. Upstream instead tests `mathrax_solve`'s verdict for
  * bare truthiness — and that verdict is `2` for *ambiguous*, which is truthy —
@@ -35,7 +35,7 @@
  * The cost is the byte-match oracle on that tier alone. The frozen C
  * descriptions for it stay in the fixture and are checked the weaker,
  * order-independent way instead — the TS solver must reach C's recorded verdict
- * on them (playbook §4.8).
+ * on them (docs/games/testing.md § "Order-independent verdicts").
  */
 
 import { latinGenerate } from "../../engine/latin.ts";
@@ -212,7 +212,7 @@ export function newMathraxDesc(
   const loose = options.upstreamLooseGate ?? false;
 
   // Upstream generates exactly once; the tier gate below can reject, so the
-  // loop needs the house runaway guard (playbook §4.6).
+  // loop needs the house runaway guard (docs/games/testing.md § "Quirks are load-bearing — capped, not cleaned").
   const attempt = retryLimit(`mathrax: generation (o${o} d${diff})`);
   for (;;) {
     attempt();

@@ -11,7 +11,7 @@
  * depend on that side effect — several deductions test for a specific shape,
  * and the fleet inventory only counts boats it can see a `LEFT`…`RIGHT` or
  * `TOP`…`BOTTOM` pair for. Porting `validateFullState` as a pure predicate
- * would silently disable half the solver (playbook §4.4's mutating-validate
+ * would silently disable half the solver (docs/games/solver-and-generator.md § "Solver-gated generation"'s mutating-validate
  * hazard). It is why the solver works on a mutable {@link BoatsBoard} rather
  * than on a `BoatsState`.
  *
@@ -426,7 +426,7 @@ export function validateGridClues(b: BoatsBoard, errs?: Int32Array): number {
  * exactly the partially-drawn boats.
  *
  * **This is why the shared {@link Dsf} must not be swapped for another
- * union-find** (playbook §4.4). The finished-boat tests read
+ * union-find** (docs/games/solver-and-generator.md § "Solver-gated generation"). The finished-boat tests read
  * `grid[dsf.canonify(i)]` as an *element* — upstream's comment is "the
  * canonical index always points to the first square of a boat" — so the
  * deduction branches on which square union-by-size happened to make the root,

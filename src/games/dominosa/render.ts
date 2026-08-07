@@ -3,7 +3,7 @@
  * dominosa.c. Each square packs its full draw state (domino type, clash,
  * highlights, barrier edges, cursor sub-position, flash, and the fork mistake
  * overlay) into one `Int32Array` cache word, so the diff key covers every
- * overlay by construction (playbook §3.2).
+ * overlay by construction (docs/games/rendering.md § "Overlay sidecars").
  *
  * Geometry note: the web C build defines `NARROW_BORDERS`
  * (cmake/platforms/webapp.cmake), so `BORDER = −DOMINO_GUTTER` — a slight

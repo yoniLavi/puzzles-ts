@@ -428,7 +428,7 @@ export function readDesc(
  * consecutive non-walls, which no Rome board can produce: a region holds at
  * most four squares, so a row contributes at most three consecutive
  * horizontal non-walls and the longest reachable run is a handful. Reproduce
- * both sides verbatim rather than "completing" either (playbook §4.3).
+ * both sides verbatim rather than "completing" either (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
  */
 export function encodeDesc(
   w: number,

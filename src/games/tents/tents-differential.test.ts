@@ -4,7 +4,7 @@
  * Byte-for-byte desc match: the generator is a faithful port over the
  * bit-identical `random.ts`, including the bipartite matching's internal RNG
  * draws, so `newDesc(params, randomNew(seed)).desc` reproduces C exactly
- * (playbook §4.3). A follow-on assertion re-solves each C board with the TS
+ * (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"). A follow-on assertion re-solves each C board with the TS
  * solver and asserts it grades at exactly the C-recorded difficulty — the
  * generator is solver-gated, so the TS solver must reach C's verdict on every
  * board (§4.4).

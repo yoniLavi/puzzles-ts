@@ -9,14 +9,14 @@
  * them.
  *
  * That geometry depends only on the region partition, which never changes for
- * the life of a game — so the per-tile cache (`Int32Array`, playbook §3.2) keys
+ * the life of a game — so the per-tile cache (`Int32Array`, docs/games/rendering.md § "The tile cache and the diff key") keys
  * on the cell's *contents* alone: its digit, pencil marks, error flags and the
  * background colour the cursor/flash chose. The Check-&-Save mistake overlay
  * rides in an `OverlaySidecar` so it repaints a cell whose contents are
  * otherwise unchanged.
  *
  * **Two deliberate divergences, both display-only** (byte-parity was never in
- * scope for drawing — playbook §4):
+ * scope for drawing — docs/games/solver-and-generator.md § "Divergence and what it costs"):
  *  - upstream stores the 9-bit pencil bitmask in a `char` before drawing it, so
  *    a pencilled **9** is truncated away and never appears. Fixed here (§3.2's
  *    "a display-only value with the wrong type is a bug you may just fix");
@@ -25,7 +25,7 @@
  *    port caches per tile, like every other port.
  *
  * The canvas also gains a half-tile strip below the board for the pencil-mode
- * indicator (playbook §3.7): the web build compiles `NARROW_BORDERS`, so the
+ * indicator (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"): the web build compiles `NARROW_BORDERS`, so the
  * black board rectangle covers the canvas edge to edge and there is nowhere else
  * to put it. The grid's own geometry is untouched.
  */
@@ -58,7 +58,7 @@ const FLASH_FRAME = 0.1;
 const GRIDEXTRA = 1;
 /** The `NARROW_BORDERS` arm — the web build defines it, so the grid's outer
  * outline is drawn *inside* the border area rather than a half-tile margin
- * (playbook §3.2: check the define, don't port the desktop default). */
+ * (docs/games/rendering.md § "Sizing": check the define, don't port the desktop default). */
 export const BORDER = GRIDEXTRA * 2;
 
 // --- palette (index-for-index with the upstream COL_* enum) ----------------
@@ -117,7 +117,7 @@ export function computeSize(p: SeismicParams, ts: number): Size {
 
 /** Upstream `FROMCOORD` — C integer division, which **truncates** toward zero,
  * so a pointer inside the two-pixel border maps to row/column 0 rather than −1
- * (playbook §3.8e; Sticks and Mathrax needed the same). */
+ * (docs/games/input.md § "The accreting-paint drag"; Sticks and Mathrax needed the same). */
 export function fromCoord(v: number, ts: number): number {
   return Math.trunc((v - BORDER) / ts);
 }
@@ -347,7 +347,7 @@ export function redraw(
   const firstFrame = !ds.started;
 
   if (firstFrame) {
-    // The engine paints no pixels of its own (playbook §3.2): fill the whole
+    // The engine paints no pixels of its own (docs/games/rendering.md § "The rendering doctrine"): fill the whole
     // canvas, then lay down the black rectangle the region walls show through.
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
     dr.drawRect(

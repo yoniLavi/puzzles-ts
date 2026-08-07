@@ -2,7 +2,7 @@
  * Gated C-vs-TS differential for Separate.
  *
  * Separate's generator is a faithful port over the bit-identical `random.ts`, so
- * `newDesc` reproduces the C desc byte-for-byte for a given seed (playbook §4.3).
+ * `newDesc` reproduces the C desc byte-for-byte for a given seed (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
  * The generator is *solver-gated* (§4.4): it keeps a board only when the ported
  * solver fully solves it, so byte-match also demands the TS solver reach C's
  * exact verdict. The follow-on assertion re-solves each C board to confirm it.

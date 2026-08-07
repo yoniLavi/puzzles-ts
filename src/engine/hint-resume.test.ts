@@ -164,7 +164,7 @@ describe("a hint can solve from any mid-game position", () => {
     // every seed). The work per seed is bounded and deterministic; only the
     // wall-clock varies, stretching several-fold under full-suite CPU
     // saturation. That is why nothing here is clock-gated — the assertion is on
-    // the *result*. See playbook §5.2.
+    // the *result*. See docs/games/testing.md § "Seed-deterministic, never clock-gated".
     it(`${name}: following hints one move at a time always reaches solved`, () => {
       for (const seed of SEEDS) {
         // Throws with a per-seed diagnostic on failure.

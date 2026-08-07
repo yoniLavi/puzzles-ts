@@ -60,14 +60,14 @@ can only reach deliberately.
 **Check while implementing:** the step key must still be one this frontend
 actually delivers. Upstream binds the space *character*, which never arrives —
 `puzzleKeyMap` maps Space to `CURSOR_SELECT2` and Enter to `CURSOR_SELECT`
-(playbook §3.8a). That trap is already handled in `isStepKey` and must not be
+(docs/games/input.md § "The numeric keypad never arrives"). That trap is already handled in `isStepKey` and must not be
 undone.
 
 ## D3. Do not fold the new keys through `asPrimary`
 
 `interpretMove` opens by folding `RIGHT_*` onto `LEFT_*` (`asPrimary`), because
 `detectSecondaryButton` delivers a stationary touch as `RIGHT_BUTTON` and that
-would otherwise kill "press, pause to aim, then drag" (playbook §3.8c). That fold
+would otherwise kill "press, pause to aim, then drag" (docs/games/input.md § "A touch hold arrives as the right button"). That fold
 is about *pointer* buttons and must not silently swallow a cursor button: check
 the cursor branch sits where a folded right button cannot reach it, and add a
 test that a keyboard press does the same thing whether or not a touch gesture is

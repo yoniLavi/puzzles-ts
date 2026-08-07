@@ -4,7 +4,7 @@
  * Tier 1: the recording deduction pass (`deduceHintPlan`) — every reason kind
  * fires with a true, checkable premise; the plan solves the board; the plan is
  * recompute-stable; refusals are honest. Deductions are located by a
- * fixed-seed scan over generated boards (hint-authoring §8's idiom) rather
+ * fixed-seed scan over generated boards (docs/games/hints.md § "Verifying a hint in-process"'s idiom) rather
  * than hand-crafted grids: the ≥2-same-neighbours rule makes small valid
  * mid-game boards fiddly to craft, and a property checked on a real firing is
  * the stronger assertion anyway.

@@ -329,7 +329,7 @@ describe("salad Ui-driven frames", () => {
     const s = newState(LETTERS_P, LETTERS_DESC);
     const ui = newUi(s);
     // Two phases of the same flash must paint *differently* — a snapshot alone
-    // cannot tell you an animation is moving (playbook §3.2).
+    // cannot tell you an animation is moving (docs/games/rendering.md § "The tile cache and the diff key").
     const phaseA = paint(s, ui, FLASH_TIME);
     const phaseB = paint(s, ui, FLASH_TIME - 0.1);
     const wave = (r: RecordingDrawing) =>

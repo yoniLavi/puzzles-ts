@@ -7,7 +7,7 @@
  * in ASCII mode), or a 2×2 grid of pencil notes. The count blocks and edge clues
  * recolour red on error and dim when complete / struck. Cells are diffed against
  * a per-monster-cell cache; the Check & Save mistake overlay rides a sidecar in
- * the diff key (playbook §3.2). The fork pencil-mode indicator sits in the
+ * the diff key (docs/games/rendering.md § "The tile cache and the diff key"). The fork pencil-mode indicator sits in the
  * top-right border corner.
  *
  * Note (parity): upstream computes `cell_errors` but never *renders* them (only
@@ -50,7 +50,7 @@ import {
 } from "./state.ts";
 
 /** Highlight payload an Undead hint step carries (built in `index.ts`). See
- * hint-authoring §5.3 for the element-type legend. Coordinates are interior
+ * docs/games/hints.md § "The element-type colour legend" for the element-type legend. Coordinates are interior
  * (1-based) grid cells, matching `redraw`/`findMistakes`. */
 export interface UndeadHint {
   /** The driving sightline's bounce path, shaded `COL_HINT_CELL` (evidence). */
@@ -82,7 +82,7 @@ export const COL_DONE = 9;
 // Fork additions, appended past the upstream enum; Undead has no dark-mode
 // paletteOverrides, so a plain append is safe.
 export const COL_PENCIL_BODY = 10;
-// The explained-hint legend (hint-authoring §5.3).
+// The explained-hint legend (docs/games/hints.md § "The element-type colour legend").
 export const COL_HINT = 11; // the cell(s)/candidate(s) the deduction acts on
 export const COL_HINT_CELL = 12; // the driving sightline's bounce path (evidence)
 
@@ -146,7 +146,7 @@ export interface UndeadDrawState {
   /** `wh` hint-overlay sidecar (fork addition): bit 0 = target cell, bit 1 =
    * evidence area, bits 2.. = struck-monster mask (`monster << 2`). Owns the
    * repack/stale/commit dance that keeps the overlay in the cache diff key
-   * (playbook §3.2). */
+   * (docs/games/rendering.md § "The tile cache and the diff key"). */
   hint: OverlaySidecar;
   /** `wh` mistake-overlay sidecar (Check & Save) — same dance. */
   wrong: OverlaySidecar;

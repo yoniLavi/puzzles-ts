@@ -16,7 +16,7 @@
  * roles, and neither is an ordered multiset — so this is deliberately **not**
  * a `tree234` port and deliberately **not** `SortedMultiset`, which is the
  * right answer for almost every other `tree234` in the collection
- * (playbook §2.1):
+ * (docs/games/engine-catalog.md § "Reach for these, don't re-roll"):
  *
  *  - `sorted` is a set of already-seen boards under the comparator
  *    `memcmp(a->data, b->data, w*h)`. It exists purely to **deduplicate by

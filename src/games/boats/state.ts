@@ -15,7 +15,7 @@
  *
  * **Two grids, two lifetimes.** `gridClues` and `borderClues` never change once
  * a game is created, so every state shares the one instance by reference (the
- * playbook §3.1 shared-immutable pattern) and a move clones only `grid`. The
+ * docs/games/mechanics.md § "Idiomatic state, not a C transliteration" shared-immutable pattern) and a move clones only `grid`. The
  * *solver* needs both mutable — it fills in hidden border numbers and restores
  * them afterwards — so it works on a separate {@link BoatsBoard} scratch, never
  * on a `BoatsState`.
@@ -379,7 +379,7 @@ export function fillOf(cell: number): BoatsFill {
 /**
  * Upstream `boats_validate_move`: would this fill actually change anything?
  * Suppressing a no-op *locally*, rather than by comparing states, is the
- * collection-wide idiom (playbook §1).
+ * collection-wide idiom (docs/games/README.md § "Before you start").
  */
 export function fillChangesAnything(
   s: BoatsState,
@@ -570,7 +570,7 @@ const TEXT_CHARS: Readonly<Record<number, string>> = {
  * (`w <= 10 && h <= 10` — an 11-wide board's counts would not fit the
  * single-character columns). The static `Game.canFormatAsText` flag cannot
  * express a param-dependent format, so this returns `undefined` for the params
- * it cannot render (playbook §3.3).
+ * it cannot render (docs/games/rendering.md § "The palette: three layers, meaning first").
  */
 export function textFormat(s: BoatsState): string | undefined {
   const { w, h } = s.params;

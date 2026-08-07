@@ -12,7 +12,7 @@
  *
  * The per-tile cache packs the square value plus every error / cursor / flash
  * / mistake overlay bit into one `Int32Array` word, so the diff key covers
- * every overlay (playbook §3.2). Edge numbers diff a parallel error-flag array.
+ * every overlay (docs/games/rendering.md § "Overlay sidecars"). Edge numbers diff a parallel error-flag array.
  */
 
 import {

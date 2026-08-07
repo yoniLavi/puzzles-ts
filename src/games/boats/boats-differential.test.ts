@@ -13,7 +13,7 @@
  * published description depends on the solver's verdict on every intermediate
  * board, and matching it validates the generator, all four solver tiers, the
  * `Dsf` root choice that `checkDsf` reads as an element, and the codec, all at
- * once (design D6, playbook §4.4).
+ * once (design D6, docs/games/solver-and-generator.md § "Solver-gated generation").
  *
  * The fixture is **frozen and cannot be regenerated**. It was captured by
  * `puzzles/auxiliary/boats-trace.c` against upstream's C, under an
@@ -37,7 +37,7 @@ interface Fixture {
   seed: string;
   desc: string;
   /** What the C build took, in ms — carried for comparison, never asserted
-   * (a wall-clock assertion measures the box, not the code — playbook §5.2). */
+   * (a wall-clock assertion measures the box, not the code — docs/games/testing.md § "Seed-deterministic, never clock-gated"). */
   genMs: number;
 }
 

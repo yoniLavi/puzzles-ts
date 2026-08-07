@@ -151,7 +151,7 @@ export interface GroupDrawState {
   /** Grid-indexed hint-overlay sidecar (fork addition): bit 0 = target cell,
    * bit 1 = evidence, bits 2.. = struck-candidate mask (`hintMarkBit(n)`). Keyed
    * by grid cell (`y·w + x`) so the overlay follows an element through a display
-   * reorder; owns its own drawn-vs-packed diff (playbook §3.2 / OverlaySidecar). */
+   * reorder; owns its own drawn-vs-packed diff (docs/games/rendering.md § "Overlay sidecars" / OverlaySidecar). */
   hint: OverlaySidecar;
   /** Scratch: the drag-modified display sequence, rebuilt each redraw. */
   sequence: Uint8Array;
@@ -211,7 +211,7 @@ function drawTile(
   const id = ds.id;
   let tile = tileIn;
 
-  // Hint overlay (hint-authoring §5.3): a placement target fills solid COL_HINT;
+  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): a placement target fills solid COL_HINT;
   // an evidence cell shades COL_HINT_CELL; a strike keeps its ordinary background
   // so the crossed-through candidates stay legible (`struck` bit `2 + n`).
   const hintTarget = (hint & 1) !== 0;
@@ -341,7 +341,7 @@ function drawTile(
           const py = pt + Math.trunc((fontsize * (2 * dy + 1)) / 2);
           dr.drawText({ x: px, y: py }, textOpts(fontsize), COL_PENCIL, toChar(i, id));
           // A hint-struck candidate keeps its normal pencil colour with a
-          // same-colour strikethrough as the "ruled out" cue (hint-authoring §5.3).
+          // same-colour strikethrough as the "ruled out" cue (docs/games/hints.md § "The element-type colour legend").
           if (struck & (1 << i)) {
             const r = Math.max(2, Math.trunc(fontsize / 3));
             dr.drawLine({ x: px - r, y: py }, { x: px + r, y: py }, COL_PENCIL, 2);

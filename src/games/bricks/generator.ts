@@ -36,7 +36,7 @@ import {
 const MINIMUM_SHADED = 0.4;
 
 /** Runaway backstop only — upstream loops unbounded; the min-shaded /
- * min-difficulty retries converge quickly (playbook §4.6). */
+ * min-difficulty retries converge quickly (docs/games/testing.md § "Quirks are load-bearing — capped, not cleaned"). */
 const MAX_ATTEMPTS = 100_000;
 
 /** Fill the playable cells bottom-up with shade/unshade under the gravity +

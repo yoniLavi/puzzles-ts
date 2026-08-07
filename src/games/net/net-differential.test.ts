@@ -2,7 +2,7 @@
  * Gated differential: the TS generator reproduces the C generator's desc **and**
  * `aux` byte for byte for the same seed.
  *
- * This is the strongest bar available (playbook §4.3), and it is the guard that
+ * This is the strongest bar available (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"), and it is the guard that
  * `net_solver`, `perturb`, and the generator's phase order are faithful: the
  * generated desc depends on the solver's verdict on every candidate grid and on
  * every RNG draw perturbation makes, so a subtle divergence in either shows up

@@ -2,7 +2,7 @@
  * Rectangles state construction and move execution, plus the edge-drawing
  * primitive and the correctness analysis. Kept separate from `index.ts` so
  * `render.ts` can import `gridDrawRect` for the drag preview without a cycle
- * (playbook §3.2).
+ * (docs/games/rendering.md § "The tile cache and the diff key").
  */
 
 import type { GameStatus } from "../../engine/types.ts";

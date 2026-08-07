@@ -47,7 +47,7 @@ export const itSlow = it.skipIf(!SLOW_TESTS_ENABLED);
  *
  * Use this only where more boards genuinely means more confidence. A test that
  * needs a specific board to exist should find it deterministically, not by
- * scanning further (playbook §5).
+ * scanning further (docs/games/testing.md § "The test tiers").
  */
 export function seedBudget(gate: number, full: number): number {
   return SLOW_TESTS_ENABLED ? full : gate;

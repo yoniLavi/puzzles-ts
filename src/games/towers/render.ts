@@ -51,7 +51,7 @@ export const COL_DONE = 6;
 // #2 school pencil). Appended past the upstream enum; Towers has no dark-mode
 // paletteOverrides, so the extra indices are safe.
 export const COL_PENCIL_BODY = 7;
-// Fork additions: the explained-hint legend (see hint-authoring §5.3).
+// Fork additions: the explained-hint legend (see docs/games/hints.md § "The element-type colour legend").
 export const COL_HINT = 8; // the cell(s)/candidate(s) the deduction acts on
 export const COL_HINT_CELL = 9; // the driving clue's line of sight (evidence)
 
@@ -121,7 +121,7 @@ export interface TowersDrawState {
    * bit 1 = evidence area, bits 2.. = struck-candidate mask
    * (`hintMarkBit(height)`). Owns the repack/stale/commit dance that keeps
    * a hint change repainting affected cells even when their tile value is
-   * otherwise unchanged (playbook §3.2). */
+   * otherwise unchanged (docs/games/rendering.md § "The tile cache and the diff key"). */
   hint: OverlaySidecar;
   /** `(w+2)²` mistake-overlay sidecar (fork addition). Neither overlay changes
    * a cell's tile value, so both must be in the diff key — this one is where
@@ -369,7 +369,7 @@ function drawTile(
 
 /** Highlight payload a Towers hint step carries (built in `index.ts`). Defined
  * here so `redraw` can consume it without a circular import. See
- * hint-authoring §5.3 for the element-type legend. */
+ * docs/games/hints.md § "The element-type colour legend" for the element-type legend. */
 export interface TowersHint {
   /** The driving clue's line of sight, shaded `COL_HINT_CELL`. */
   area: { x: number; y: number }[];

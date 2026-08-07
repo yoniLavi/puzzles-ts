@@ -13,7 +13,7 @@
  * Generation at Tricky/Hard runs the discount-set/recursive solver in a
  * retry loop — legitimately seconds of fixed work per fixture. The work is
  * seed-deterministic, so the verdict never depends on load and the block is not
- * clock-gated (playbook §5.2).
+ * clock-gated (docs/games/testing.md § "Seed-deterministic, never clock-gated").
  */
 import { expect } from "vitest";
 import { describeDescDifferential } from "../../engine/testing/differential.ts";

@@ -60,7 +60,7 @@
       game" → gesture-level; ADDED keyboard reachability.
 - [ ] 5.2 Per-game specs: any game whose requirement says "mouse only" is either
       corrected or has its exemption reason written in.
-- [ ] 5.3 `docs/porting/game-port-playbook.md` §3.8: fold whatever the sweep
+- [ ] 5.3 `docs/games/input.md § "The on-screen keypad": fold whatever the sweep
       teaches back into the traps list — it is a live wiki, and this change is
       exactly the kind of thing that should update it.
 - [ ] 5.4 Help pages: where a game's controls differ by mode, `help/games/<id>.md`

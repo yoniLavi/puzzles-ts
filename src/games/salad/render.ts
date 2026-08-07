@@ -8,7 +8,7 @@
  * border, a **ball** (two concentric circles) or a **cross**, and then either
  * the entered symbol or the solo.c-style grid of pencil marks.
  *
- * Two error layers coexist, and they are not alternatives (playbook §3.5):
+ * Two error layers coexist, and they are not alternatives (docs/games/solver-and-generator.md § "The solvable-game contract"):
  * upstream's **live** rule check (a symbol repeated in a line, too many holes
  * in a line, a border clue the visible squares already contradict) reds the
  * offending glyph as you play, while the fork's **Check & Save** overlay marks
@@ -78,7 +78,7 @@ export const COL_E_HOLE = 16;
 export const COL_MISTAKE = 17;
 /** Fork addition: the yellow body of the pencil-mode indicator glyph. */
 export const COL_PENCIL_BODY = 18;
-// Fork additions: the explained-hint legend (hint-authoring §5.3).
+// Fork additions: the explained-hint legend (docs/games/hints.md § "The element-type colour legend").
 /** The square(s) / candidate(s) / entry the deduction acts on. */
 export const COL_HINT = 19;
 /** The deduction's evidence — a clue's line of sight, or a whole line. */
@@ -170,7 +170,7 @@ export interface SaladDrawState {
   borderfs: Int32Array;
   borderDrawn: Int32Array;
   /** Check & Save overlay — kept in a sidecar so it is part of the cache-miss
-   * test (playbook §3.2); it changes nothing in a cell's tile value. */
+   * test (docs/games/rendering.md § "The tile cache and the diff key"); it changes nothing in a cell's tile value. */
   wrong: OverlaySidecar;
   /** Explained-hint overlay, same rule: target/area flags, struck candidates and
    * the ghosted entry, none of which touch a square's tile value. */
@@ -527,7 +527,7 @@ export function redraw(
 
   // The hint overlay: the shared target/area/marks pack, plus the ghosted entry
   // the step asks for. Both live in `ds.hint`, so both are part of the
-  // cache-miss test below (playbook §3.2).
+  // cache-miss test below (docs/games/rendering.md § "The tile cache and the diff key").
   const hl = hint?.highlights;
   ds.hint.pack(
     hl,
@@ -546,7 +546,7 @@ export function redraw(
     for (let x = 0; x < o; x++) {
       const i = y * o + x;
       // Packed key: flags (5) | symbol (4) | marks (nums+1 ≤ 10) | flash (2).
-      // Every overlay is in here or in `ds.wrong` (playbook §3.2), so nothing
+      // Every overlay is in here or in `ds.wrong` (docs/games/rendering.md § "Overlay sidecars"), so nothing
       // can change on screen without the cell missing the cache.
       const key = flags[i] | (s.grid[i] << 5) | (s.marks[i] << 9) | ((flash + 1) << 19);
       if (ds.drawn[i] === key && !ds.wrong.stale(i) && !ds.hint.stale(i)) continue;

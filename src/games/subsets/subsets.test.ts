@@ -497,7 +497,7 @@ describe("subsets solve (through a real Midend)", () => {
     // The board is fully decided and the game completes — a deliberate
     // divergence from upstream, whose 'S' move skips the completion check
     // and leaves the game "ongoing" for ever (collection convention wins;
-    // playbook §3.6).
+    // docs/games/solver-and-generator.md § "Solve and the generator's aux").
     const text = m.formatAsText();
     expect(text).toBeDefined();
     expect(text).not.toContain("?");

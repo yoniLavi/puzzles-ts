@@ -216,7 +216,7 @@ export function solveGame(
 // --- hint plan (add-clusters-hint) -----------------------------------------
 //
 // A *parallel recorder* over the same contradiction deduction (the Undead /
-// Pattern shape, hint-authoring §9.4/§5.6a): separate code reusing this
+// Pattern shape, docs/games/hints.md § "A non-Latin candidate game (Undead)"/§5.6a): separate code reusing this
 // module's primitives, so the generator's `solveGame`/`clustersValidate` path
 // above stays byte-identical by construction — no recorder flag threads
 // through it. Where the generator only needs *that* a colouring is refuted,

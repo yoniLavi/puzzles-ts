@@ -300,7 +300,7 @@ const colourName = (fill: ClustersFill): string =>
   fill === F_COLOR_0 ? "red" : "blue";
 
 /** Narrate the proof by contradiction: premise → the rule the refuted colour
- * breaks → conclusion in the necessity voice (hint-authoring §2.1, D4). */
+ * breaks → conclusion in the necessity voice (docs/games/hints.md § "Necessity for deductions, imperative for moves", D4). */
 function narrate(d: ClustersDeduction): string {
   const f = colourName(d.fill);
   const t = colourName(d.refuted);

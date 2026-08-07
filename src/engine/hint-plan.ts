@@ -1,7 +1,7 @@
 /**
  * The shared plan-accumulation loop every recording deduction pass runs.
  *
- * A hint that is "a second projection of the solver" (hint-authoring §5.6a)
+ * A hint that is "a second projection of the solver" (docs/games/hints.md § "Re-derive the named technique")
  * always ends up writing the same five lines: from a working copy of the
  * player's board, while the board is still unfinished, ask for the *single*
  * next forced firing, stop when there is none, apply it, record it. Spokes,
@@ -44,7 +44,7 @@ export interface HintPlanSpec<Board, Firing, Status> {
   apply?(board: Board, firing: Firing): void;
   /** Hard cap on plan length — a UX bound, not a correctness one. */
   planCap?: number;
-  /** Non-termination guard, ticked once per iteration (hint-authoring §7.2). */
+  /** Non-termination guard, ticked once per iteration (docs/games/hints.md § "The step budget"). */
   budget?: StepBudget;
 }
 

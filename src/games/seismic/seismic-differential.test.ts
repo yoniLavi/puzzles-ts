@@ -9,7 +9,7 @@
  * matching description proves the TS solver reaches C's verdict on every
  * intermediate board, that the region-merge draws the same RNG values in the
  * same order, and that the two-part run-length codec agrees. One assertion,
- * generator + solver + codec (playbook §4.4).
+ * generator + solver + codec (docs/games/solver-and-generator.md § "Solver-gated generation").
  *
  * The fixtures span all twelve of upstream's presets, both modes, both
  * difficulties and a non-square size sweep. They stop at 7×7 because upstream's
@@ -46,7 +46,7 @@ interface Fixture {
   /** Milliseconds the C build took for this board — recorded so the port's own
    * cost can be compared against upstream's rather than guessed at. Not
    * asserted on: a wall-clock assertion would measure the box, not the code
-   * (playbook §5.2). */
+   * (docs/games/testing.md § "Seed-deterministic, never clock-gated"). */
   genMs: number;
 }
 

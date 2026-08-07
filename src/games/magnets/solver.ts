@@ -1,6 +1,6 @@
 /**
  * Magnets solver — faithful port of `solve_state` and its deduction helpers in
- * `magnets.c`. Byte-match critical (playbook §4.4): the generator gates
+ * `magnets.c`. Byte-match critical (docs/games/solver-and-generator.md § "Solver-gated generation"): the generator gates
  * difficulty on this solver's verdict, so it must reach C's exact
  * solved/ambiguous/impossible outcome on every intermediate board — including
  * the upstream quirks (notably the un-reset `ndom` accumulator in
@@ -418,7 +418,7 @@ export class MagnetsSolver {
     // NB: `ndom` is deliberately NOT reset between the two colour iterations —
     // an upstream quirk this solver reproduces verbatim, since a stronger or
     // weaker solver would change which clues the generator strips and so
-    // diverge the byte-matched desc (playbook §4.4).
+    // diverge the byte-matched desc (docs/games/solver-and-generator.md § "Solver-gated generation").
     let ndom = 0;
     let which = POSITIVE;
     for (let w = 0; w < 2; w++, which = opposite(which)) {

@@ -194,7 +194,7 @@ function interpretMove(
 
     // Pixel → tile. (No stylus branch: the midend strips MOD_STYLUS for us, so a
     // touch tap rotates left and a long-press right — deliberate divergence,
-    // playbook §3.8b. Lock stays on the middle button / `s`.)
+    // docs/games/input.md § "Touch is stripped for you". Lock stays on the middle button / `s`.)
     const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
     const lt = lineThick(ts);
     const px = Math.floor(p.x) - WINDOW_OFFSET - lt;

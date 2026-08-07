@@ -1,6 +1,6 @@
 /**
  * Crossing's recording deduction pass — the hint's half of the "one engine, two
- * projections" rule (hint-authoring §1A).
+ * projections" rule (docs/games/solver-and-generator.md § "Guess-free generation").
  *
  * It sits **beside** the untouched {@link solveCrossing} rather than threading a
  * recorder through it (the `add-boats-hint` / Pattern §5.6a shape): the

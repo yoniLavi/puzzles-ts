@@ -9,7 +9,7 @@
  * (centre dots + inter-cell grid lines). A per-cell packed `Int32Array`
  * cache mirrors upstream's `lflags`; the `findMistakes` wrong-edge overlay
  * rides its own bit field in that word so it is part of the diff key
- * (playbook §3.2). The palette is index-for-index with the C colour enum
+ * (docs/games/rendering.md § "The tile cache and the diff key"). The palette is index-for-index with the C colour enum
  * (dark-mode `paletteOverrides` in augmentation.ts target indices 0/3/4).
  */
 

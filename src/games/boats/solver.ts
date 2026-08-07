@@ -13,7 +13,7 @@
  * and there is no "Unreasonable" guessing tier to exempt. Don't add a knob.
  *
  * **The loop is ported directly rather than onto the shared
- * `runDeductionFixpoint`** (playbook §4, "check what a shared runner's
+ * `runDeductionFixpoint`** (docs/games/solver-and-generator.md § "Where the fixpoint does not fit", "check what a shared runner's
  * bookkeeping actually decides"). Three pieces of this loop's bookkeeping feed
  * back into which puzzles exist, and none of them fits the shared runner:
  *
@@ -106,7 +106,7 @@ export function placeWater(b: BoatsBoard, x: number, y: number): number {
  * **Divergence (deliberate, and free):** upstream `assert`s that the square is
  * in bounds where this port returns 0. A release build compiles that assert
  * out and then indexes out of bounds, so the C has no defined behaviour there
- * — playbook §4 rule 1, "divergence is free where C has no defined behaviour".
+ * — docs/games/solver-and-generator.md § "Divergence and what it costs" rule 1, "divergence is free where C has no defined behaviour".
  * It is not reachable from a generated board (`centersTrivial` is the only
  * caller that could pass an off-board square, and only for a centre clue on an
  * edge row whose boat cannot be perpendicular), but a hand-written game ID can
@@ -872,7 +872,7 @@ function centersAttempt(b: BoatsBoard, tmpGrid: Int8Array): number {
  * `CORRUPT`, which ends the solve on the next validation) or reveal a hidden
  * border number (of which there are at most `w + h`), so the real bound is
  * `w·h + w + h`. The factor of two leaves room without letting a genuine
- * divergence hang the browser — playbook §5.2, "bound non-termination in the
+ * divergence hang the browser — docs/games/testing.md § "Seed-deterministic, never clock-gated", "bound non-termination in the
  * code, where it can actually be caught".
  */
 function iterationBudget(b: BoatsBoard): number {
@@ -1001,7 +1001,7 @@ export function solveBoats(b: BoatsBoard, maxDiff: number): BoatsSolveResult {
  * identical in the C via a throwaway `boats-dbg` harness, so this is upstream's
  * behaviour and not a porting divergence.
  *
- * **The repair is here rather than in `checkDsf`** (playbook §4 rule 3). A false
+ * **The repair is here rather than in `checkDsf`** (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 3). A false
  * *abort* only ever makes the solver weaker, never wrong, and the generator
  * re-verifies every board with the same solver — so generated puzzles are
  * correct and uniquely solvable as they stand, and "fixing" the solver would
@@ -1010,7 +1010,7 @@ export function solveBoats(b: BoatsBoard, maxDiff: number): BoatsSolveResult {
  * Solve and Check & Save on the Easy presets, where both were silently broken:
  * `findMistakes` returning `[]` makes Check & Save degrade to a plain save and
  * happily store a wrong board, which is exactly the failure the hook exists to
- * prevent (playbook §3.5).
+ * prevent (docs/games/solver-and-generator.md § "The solvable-game contract").
  */
 export function solveAtAnyTier(b: BoatsBoard): BoatsSolveResult {
   let sawInvalid = false;
@@ -1067,7 +1067,7 @@ export interface BoatsMistake {
 
 /**
  * Re-solve the puzzle from its clues to the unique solution and report every
- * square the player has decided differently — the playbook §3.5 Check & Save
+ * square the player has decided differently — the docs/games/solver-and-generator.md § "The solvable-game contract" Check & Save
  * basis. Returns `[]` when the board is not uniquely deducible, so a puzzle the
  * solver cannot finish never accuses the player.
  *

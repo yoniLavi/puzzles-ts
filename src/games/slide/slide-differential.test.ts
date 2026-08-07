@@ -8,7 +8,7 @@
  * exhaustive BFS solver's verdict on every intermediate board, and the single
  * byte-for-byte desc assertion validates the solver, the disjoint-set merge
  * bookkeeping, the run-length codec and the one `shuffle` draw together
- * (playbook §4.4) — nothing weaker would come close.
+ * (docs/games/solver-and-generator.md § "Solver-gated generation") — nothing weaker would come close.
  *
  * The second assertion re-derives the minimum solution length from the C's own
  * published board with the TS solver, so the solver is also checked against a
@@ -36,7 +36,7 @@ interface Fixture {
   desc: string;
   minMoves: number;
   /** The C's own generation wall-clock. Carried, never asserted on: a
-   * wall-clock assertion measures the box, not the code (playbook §5.2). It is
+   * wall-clock assertion measures the box, not the code (docs/games/testing.md § "Seed-deterministic, never clock-gated"). It is
    * here because Slide's generation cost has a huge seed-dependent tail, and
    * this is what distinguishes "upstream's algorithm is slow" from "the port
    * regressed". */

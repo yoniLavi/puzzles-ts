@@ -17,7 +17,7 @@
  * flag set (cursor / pencil-cursor / adjacency-error / flash phase), a single
  * per-tile `Int32Array` cache suffices — with the (fork) Check-&-Save mistake
  * overlay tracked in a sidecar so a mistaken-but-unchanged cell still repaints
- * (playbook §3.2).
+ * (docs/games/rendering.md § "The tile cache and the diff key").
  */
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";

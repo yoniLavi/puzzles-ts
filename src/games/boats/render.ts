@@ -22,7 +22,7 @@
  *    placement no solution permits, which is exactly the board a live-only
  *    check would let Check & Save bless.
  *
- * The per-tile cache is an `Int32Array` (playbook §3.2) holding the drawn
+ * The per-tile cache is an `Int32Array` (docs/games/rendering.md § "The tile cache and the diff key") holding the drawn
  * segment plus the live error/cursor flags plus the flash phase; the Check &
  * Save overlay rides in an `OverlaySidecar`, so it repaints a cell whose
  * contents are otherwise unchanged (the frame after the move that drew it).
@@ -30,7 +30,7 @@
  * Palette indices are **index-for-index with the upstream `COL_*` enum**,
  * because `augmentation.ts` darkens index 4 (the water) in dark mode via
  * `paletteOverrides: { 4: 0.6 }` and a reindexed palette would mis-target it
- * (playbook §3.3).
+ * (docs/games/rendering.md § "The palette: three layers, meaning first").
  */
 
 import { BLUE_WASH, GREEN, GREY_BOLD, GREY_WASH } from "../../engine/colour/colours.ts";
@@ -104,7 +104,7 @@ export const COL_COLLISION_TEXT = 14;
  * specifically because `augmentation.ts` darkens this game's palette by index
  * (`paletteOverrides: { 4: 0.6 }` for the water), so only indices at or below 14
  * are spoken for — a *reindexed* palette would mis-target that override
- * (playbook §3.3).
+ * (docs/games/rendering.md § "The palette: three layers, meaning first").
  */
 export const COL_HINT = 15;
 export const COL_HINT_CELL = 16;
@@ -134,7 +134,7 @@ export function colours(defaultBackground: Colour): Colour[] {
 // --- geometry --------------------------------------------------------------
 
 /** The web build compiles `NARROW_BORDERS`, so there is no outer margin
- * (playbook §3.2: check the define, don't port the desktop default). */
+ * (docs/games/rendering.md § "Sizing": check the define, don't port the desktop default). */
 export const BORDER = 0;
 
 /** Vertical gap between the number row and the fleet display. */
@@ -242,7 +242,7 @@ export interface BoatsDrawState {
   border: Int32Array;
   /** Last-drawn count of completed boats per size. */
   fleetCount: Int32Array;
-  /** The Check & Save mistake overlay (playbook §3.2 — it must be in the diff
+  /** The Check & Save mistake overlay (docs/games/rendering.md § "Overlay sidecars" — it must be in the diff
    * key or it never repaints). */
   wrong: OverlaySidecar;
 }
@@ -430,7 +430,7 @@ function drawFleet(
 // --- the frame -------------------------------------------------------------
 
 // Hint bits, folded into the per-tile cache key so the overlay both paints and
-// clears (playbook §3.2 — a hint bit outside the key is a hint that never
+// clears (docs/games/rendering.md § "The tile cache and the diff key" — a hint bit outside the key is a hint that never
 // repaints a warm frame).
 const HINT_SHIP = 1 << 9; // a square the step asks for a boat segment on
 const HINT_WATER = 1 << 10; // …or for water
@@ -504,7 +504,7 @@ export function redraw(
   const flash = flashTime > 0 ? ((flashTime / FLASH_FRAME) | 0) % 2 === 1 : false;
 
   if (full) {
-    // The engine paints no pixels of its own (playbook §3.2).
+    // The engine paints no pixels of its own (docs/games/rendering.md § "The rendering doctrine").
     const size = computeSize(p, ts);
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
     dr.drawUpdate({ x: 0, y: 0, w: size.w, h: size.h });
@@ -633,7 +633,7 @@ export function redraw(
       dr.drawUpdate({ x: tx, y: ty, w: ts + 1, h: ts + 1 });
       // Shade an *undecided* evidence square, ring a decided one: a light-blue
       // fill over water or a segment would paint over the very thing that makes
-      // the square evidence (hint-authoring §5.4).
+      // the square evidence (docs/games/hints.md § "Shade vs ring").
       const shadeEvidence = hintBit & HINT_EVID && ship === EMPTY;
       dr.drawRect(
         { x: tx, y: ty, w: ts, h: ts },

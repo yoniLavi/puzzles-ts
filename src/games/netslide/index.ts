@@ -103,7 +103,7 @@ function executeMove(s: NetslideState, m: NetslideMove): NetslideState {
       // Upstream leaves the previous move's line here, so Solve animates a
       // phantom slide of the finished grid. Clearing it is a small deliberate
       // improvement (the byte-parity bar covers the generator, not the
-      // display — playbook §4 intro): Solve simply shows the answer.
+      // display — docs/games/solver-and-generator.md § "Divergence and what it costs"): Solve simply shows the answer.
       lastMoveRow: -1,
       lastMoveCol: -1,
       lastMoveDir: 0,

@@ -480,7 +480,7 @@ describe("Galaxies findMistakes", () => {
   });
 
   it("recolours a flagged wall on a board that was already drawn", () => {
-    // Paint twice (playbook §3.2): a Check & Save changes no tile value, so
+    // Paint twice (docs/games/rendering.md § "Prove the overlay repaints"): a Check & Save changes no tile value, so
     // this frame only repaints if the wall overlay is part of the cache-miss
     // test. A cold-frame test cannot see that — every cell misses on frame 1
     // regardless — which is how a missing-from-the-diff-key overlay ships.

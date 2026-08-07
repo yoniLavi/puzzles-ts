@@ -5,7 +5,7 @@
  *
  * The per-cell cache word packs exactly upstream's `visible[]` — the four edge
  * values (0/1/2/3) and four corner values (2 bits each) around the cell, plus
- * the `F_CORRECT` and `F_CURSOR` bits — into an `Int32Array` (playbook §3.2). Four
+ * the `F_CORRECT` and `F_CURSOR` bits — into an `Int32Array` (docs/games/rendering.md § "The tile cache and the diff key"). Four
  * extra bits carry the `findMistakes` wrong-edge overlay so it repaints and
  * clears through the same cache. The drag preview is drawn into a scratch copy
  * of the edges before the corner pass, so it too lives entirely in the word.

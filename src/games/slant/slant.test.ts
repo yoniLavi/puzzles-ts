@@ -394,7 +394,7 @@ describe("slant rendering", () => {
   });
 
   it("repaints a mistake overlay onto an unchanged tile (second paint)", () => {
-    // The playbook §3.2 regression: paint, then flag a mistake, then redraw
+    // The docs/games/rendering.md § "The tile cache and the diff key" regression: paint, then flag a mistake, then redraw
     // with no tile change — the red styling must appear on the second paint.
     const p = { w: FIXTURE.w, h: FIXTURE.h, diff: FIXTURE.diff };
     let s = newState(p, FIXTURE.desc);

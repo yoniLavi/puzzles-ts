@@ -1,7 +1,7 @@
 #!/bin/bash
 # Scaffold a new native-TS game port: stamp out the mechanical skeleton
 # (the index/state/solver/generator/render file shape from
-# docs/porting/game-port-playbook.md) so a port starts from a compiling
+# docs/games/README.md § "File anatomy") so a port starts from a compiling
 # stub instead of a blank directory.
 #
 # Usage:
@@ -89,7 +89,7 @@ export function solve${P}(_s: ${P}State): never {
 EOF
 
 cat > "${DIR}/generator.ts" <<EOF
-import type { RandomState } from "../../random/index.ts";
+import type { RandomState } from "../../engine/random/index.ts";
 import type { ${P}Params } from "./state.ts";
 
 /** TODO: port the upstream generator (uniqueness/difficulty loop). */
@@ -116,15 +116,15 @@ EOF
 cat > "${DIR}/index.ts" <<EOF
 /**
  * ${GAME} — native TS port. Implements the engine Game interface.
- * Read docs/porting/game-port-playbook.md and the Galaxies port first.
+ * Read the docs/games/ guides (start at docs/games/README.md) and the Galaxies port first.
  */
 
-import type { Colour, GameStatus, Size } from "../../../puzzle/types.ts";
+import type { Colour, GameStatus, Size } from "../../engine/types.ts";
 import type { Game } from "../../engine/game.ts";
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import { registerGame } from "../../engine/registry.ts";
-import type { RandomState } from "../../random/index.ts";
+import type { RandomState } from "../../engine/random/index.ts";
 import { new${P}Desc } from "./generator.ts";
 import { redraw${P} } from "./render.ts";
 import type {
@@ -217,7 +217,7 @@ cat > "${DIR}/${GAME}.test.ts" <<EOF
  * the (throwing) stubs, so the gate stays green on a fresh scaffold. As you
  * fill in the port, drop \`.skip\`, set a real game id, and flesh out the
  * assertions. Read the galaxies/flip tests as exemplars; the test tiers are in
- * docs/porting/game-port-playbook.md §4.
+ * docs/games/testing.md § "The test tiers" and § "What a new game ships".
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";
@@ -246,7 +246,7 @@ describe("${GAME} render smoke", () => {
     const { recording } = renderScenario({ game: ${GAME}Game, id: SCAFFOLD_ID });
     // TODO: assert the ops that matter (a tile rect, the grid lines, …) and add
     // \`expect(recording.ops).toMatchSnapshot()\` once the frame is stable
-    // (tier 2.5 — see the playbook).
+    // (tier 2.5 — docs/games/testing.md § "Render scenarios").
     expect(recording.ops.length).toBeGreaterThan(0);
   });
 });

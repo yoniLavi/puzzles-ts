@@ -1,7 +1,7 @@
 /**
  * Slant solver — faithful port of `slant_solve` in slant.c.
  *
- * Byte-match discipline (playbook §4.4): the generator removes clues while
+ * Byte-match discipline (docs/games/solver-and-generator.md § "Solver-gated generation"): the generator removes clues while
  * this solver still reports a unique solution, so the published clue set —
  * and hence the desc — is decided entirely by this solver's verdict on every
  * intermediate board. Every deduction, its sweep order, and its exact

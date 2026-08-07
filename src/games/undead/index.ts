@@ -508,7 +508,7 @@ function pathCells(
 }
 
 /** Narrate *why* a firing is forced — leading with the spotted indication, then
- * the reasoning, then a necessity-voice conclusion (hint-authoring §2). `bits`
+ * the reasoning, then a necessity-voice conclusion (docs/games/hints.md § "Writing the narration"). `bits`
  * is the struck candidate mask (an elimination) or the single placed monster (a
  * placement); `continues` gets a terser continuation-leg line. */
 function narrate(
@@ -883,7 +883,7 @@ function flashLength(from: UndeadState, to: UndeadState): number {
  * **Its cap is a technique rung, not a difficulty number** — this fork replaced
  * upstream's "how much brute force does it need?" grading with a deductive
  * ladder (arc-consistency → exact counting → depth-1 forcing) so that every
- * shipped tier is pure-deduction solvable (`hint-authoring.md` §1A). So the tier
+ * shipped tier is pure-deduction solvable (`docs/games/solver-and-generator.md § "Guess-free generation"). So the tier
  * maps to a `Rung` and the question `solveAtCap` asks is the generator's own:
  * does the ladder, capped there, narrow every cell to a singleton?
  *

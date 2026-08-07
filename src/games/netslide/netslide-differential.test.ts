@@ -2,7 +2,7 @@
  * Gated differential: the TS generator reproduces the C generator's desc
  * **byte for byte** for the same seed.
  *
- * This is the strongest bar available (playbook §4.3), and it is valid here
+ * This is the strongest bar available (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"), and it is valid here
  * because the desc is a pure function of (params, seed): `random.ts` is
  * bit-identical to `random.c`, every RNG draw is a `randomUpto`, and the one
  * ordered structure the generator indexes into — the sorted set of candidate

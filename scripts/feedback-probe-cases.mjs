@@ -615,7 +615,7 @@ export const MODULES = [
     // The shared machinery behind explained hints, and the largest module in the
     // engine. Cases are biased toward **the claims a hint utters** rather than
     // toward branch coverage: a narration whose premise is not actually checked
-    // is the failure `docs/porting/hint-authoring.md` rule 5 names, and it is
+    // is the failure `docs/games/hints.md` § "The quality bar" rule 5 names, and it is
     // invisible to a render snapshot, which records whatever the game emits.
     module: "src/engine/candidate-hint.ts",
     cases: [

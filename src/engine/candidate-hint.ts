@@ -14,11 +14,11 @@
  * `refreshCandidateHintStep`. What stays per-game is the `buildSteps` *walk*
  * itself (its step order, strike-split policy and journey continuation differ per
  * game — a shared driver was evaluated and deliberately not built, see
- * `docs/porting/hint-authoring.md` §9) together with the recording solver, the
+ * `docs/games/hints.md § "Candidate-elimination games") together with the recording solver, the
  * narration and the reason union. The rule of thumb: this module owns the
  * reusable *mechanics*, the game owns the *walk and the meaning*.
  *
- * See `docs/porting/hint-authoring.md` §9 for the candidate-elimination pattern
+ * See `docs/games/hints.md § "Candidate-elimination games" for the candidate-elimination pattern
  * this module supports.
  */
 
@@ -60,7 +60,7 @@ export interface Mark {
  * (holes live in a separate marker array) nor ever singled (which hole symbol
  * sits where is undecidable, and immaterial). The collapse lives entirely in
  * Salad's own step emission — where it *is* the game's sync deduction. Recorded
- * as a non-migration in `docs/porting/hint-authoring.md` §9.7 rather than built
+ * as a non-migration in `docs/games/hints.md § "Non-uniform value sets (Salad)" rather than built
  * speculatively.
  */
 export interface NoteEncoding {
@@ -148,7 +148,7 @@ export function joinNums(ns: number[]): string {
 /** A naked single in the working notes: the first empty cell whose pencil set has
  * exactly one candidate. On a mistake-free board that lone candidate is the
  * solution, so placing it is sound — and it is the move a human makes next, so the
- * hint surfaces it ahead of any further elimination (hint-authoring §9.3).
+ * hint surfaces it ahead of any further elimination (docs/games/hints.md § "Solve the way a human does").
  * `grid`: 0 = empty; `pencil`: bit `1 << d` = candidate `d`; `w` = grid order. */
 export function nakedSingle(
   grid: ArrayLike<number>,
@@ -181,7 +181,7 @@ export function anyEmptyLacksNotes(
 /** Index of the first recorded placement whose cell is *not yet* decided on the
  * working board: every op before it is valid against that board (placements
  * before it are already reflected), so a strike there can be surfaced now with a
- * premise the player's board supports (hint-authoring §9.3, the
+ * premise the player's board supports (docs/games/hints.md § "Solve the way a human does", the
  * "facing-place buries clue deductions" gotcha).
  *
  * `placed` is "which cells the solver's placements are already reflected in".
@@ -303,7 +303,7 @@ export function regionDuplicateMarks(
  * still appears as a live pencil mark in one of its uniqueness regions. Generalises
  * the per-game `basicLatinStrike` (row+col) / `basicRegionStrike`
  * (row+col+block+diag) to a single scan over `regionsOf` — the basic-region opening
- * a given or auto-pencil-off placement leaves behind (hint-authoring §9.2). Returns
+ * a given or auto-pencil-off placement leaves behind (docs/games/hints.md § "Persist, populate, and the moves"). Returns
  * one firing (one placed value and every stray copy of it), or `null`.
  * `regionsOf(x, y)` returns the uniqueness regions of the cell at `(x, y)`. */
 export function findRegionDuplicate(

@@ -247,8 +247,9 @@ export interface Game<
    * shipped completely deaf to touch, because comparing the raw button is the
    * obvious thing to write and it silently fails only on a device the test
    * suite never uses. Inverting the default makes the dangerous case the one
-   * you have to ask for. Pattern is the only game that asks (it cycles a cell's
-   * state on touch, having no right button to cycle with).
+   * you have to ask for. Two games ask: Pattern (it cycles a cell's state on
+   * touch, having no right button to cycle with) and Loopy (its stylus mode
+   * cycles line states through a dedicated 3-cycle).
    */
   readonly wantsStylusModifier?: boolean;
 

@@ -10,11 +10,11 @@
  * A cell's pixels depend only on its own digit, pencil marks and flags, so one
  * packed `Int32Array` per-tile cache suffices; the (fork) Check-&-Save mistake
  * overlay rides in an `OverlaySidecar` so it repaints a cell that is otherwise
- * unchanged (playbook §3.2).
+ * unchanged (docs/games/rendering.md § "The tile cache and the diff key").
  *
  * **One deliberate geometric divergence**: upstream's web build has `BORDER 1`,
  * leaving nowhere to show the pencil-mode indicator every pencil-mark game ships
- * (playbook §3.7). The canvas therefore gains a half-tile strip *below* the
+ * (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"). The canvas therefore gains a half-tile strip *below* the
  * board for it. The grid's own geometry is untouched, so pointer mapping and
  * `computeSize`'s width are exactly upstream's.
  */
@@ -56,7 +56,7 @@ export const FLASH_TIME = 0.7;
 const FLASH_FRAME = 0.1;
 
 /** Upstream's `NARROW_BORDERS` arm — the web build compiles with it defined, so
- * the board's border is one pixel, not half a tile (playbook §3.2). */
+ * the board's border is one pixel, not half a tile (docs/games/rendering.md § "The tile cache and the diff key"). */
 export const BORDER = 1;
 
 // --- palette (index-for-index with the upstream COL_* enum) ----------------
@@ -108,7 +108,7 @@ export function computeSize(p: { o: number }, ts: number): Size {
 
 /** Upstream `FROMCOORD` — C integer division, which **truncates** toward zero,
  * so a pointer inside the one-pixel border maps to row/column 0 rather than −1
- * (the same idiom Sticks needed; playbook §3.8e). */
+ * (the same idiom Sticks needed; docs/games/input.md § "The accreting-paint drag"). */
 export function fromCoord(v: number, ts: number): number {
   return Math.trunc((v - BORDER) / ts);
 }
@@ -379,7 +379,7 @@ export function redraw(
   const firstFrame = !ds.started;
 
   if (!ds.started) {
-    // The engine paints no pixels of its own (playbook §3.2) — the game fills
+    // The engine paints no pixels of its own (docs/games/rendering.md § "The rendering doctrine") — the game fills
     // its whole canvas, then the black rectangle the cell outlines sit on.
     dr.drawRect({ x: 0, y: 0, w: size.w, h: size.h }, COL_BACKGROUND);
     dr.drawRect({ x: BORDER, y: BORDER - 1, w: o * ts + 1, h: o * ts + 1 }, COL_BORDER);

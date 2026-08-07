@@ -2,7 +2,7 @@
  * Behavioural tests for the Sticks port (add-sticks-ts-port §8.2): the desc
  * codec, the contradiction solver, the drag/click/keyboard input machine,
  * `findMistakes`, completion through `executeMove` (the mark=true path the
- * differential never exercises — playbook §5), the midend lifecycle + save
+ * differential never exercises — docs/games/testing.md § "The test tiers"), the midend lifecycle + save
  * round-trip, and tier-2.5 render scenarios with snapshots.
  */
 import { describe, expect, it } from "vitest";
@@ -565,7 +565,7 @@ describe("sticks rendering (tier 2.5)", () => {
   });
 
   it("repaints the mistake overlay on an already-drawn frame", () => {
-    // The paint-twice guard (playbook §3.2): a cold frame proves nothing, so
+    // The paint-twice guard (docs/games/rendering.md § "Prove the overlay repaints"): a cold frame proves nothing, so
     // warm the drawstate, then redraw the SAME drawstate with mistakes.
     const i = whiteCellSolved(F_VER);
     const result = renderScenario({

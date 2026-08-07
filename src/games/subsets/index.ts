@@ -261,7 +261,7 @@ function executeMove(state: SubsetsState, move: SubsetsMove): SubsetsState {
       next.known[i] = move.known[i];
       next.mask[i] = move.mask[i];
     }
-    // Deliberate divergence (owner 2026-07-21, playbook §3.6): upstream's
+    // Deliberate divergence (owner 2026-07-21, docs/games/solver-and-generator.md § "Solve and the generator's aux"): upstream's
     // 'S' branch returns before the completion check and never sets
     // `cheated`, leaving a solved-by-solver board "ongoing" for ever. Every
     // other port follows the collection convention — the solve move

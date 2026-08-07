@@ -848,7 +848,7 @@ describe("mathrax rendering", () => {
   });
 
   it("repaints the mistake overlay on a cell that was already drawn", () => {
-    // Regression guard for playbook §3.2: the overlay isn't part of the packed
+    // Regression guard for docs/games/rendering.md § "Overlay sidecars": the overlay isn't part of the packed
     // tile value, so it must also be compared in the cache-miss test — Check &
     // Save runs a frame *after* the move that drew the cell.
     const m = new Midend(mathraxGame);

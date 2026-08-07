@@ -4,7 +4,7 @@
  * These live in their own module because `render.ts` needs them: upstream's
  * `game_redraw` reflects an in-progress drag by *simulating the release move*
  * and drawing the resulting board, so the renderer calls `movePiece`. If that
- * lived in `index.ts` the two would form an import cycle (playbook §3.2, the
+ * lived in `index.ts` the two would form an import cycle (docs/games/rendering.md § "The tile cache and the diff key", the
  * Signpost precedent).
  */
 

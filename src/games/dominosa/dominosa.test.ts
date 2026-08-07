@@ -1,6 +1,6 @@
 /**
  * Tier-1 behavioural tests for the dominosa port + a tier-2.5 render smoke.
- * Heavy generation/solve is seed-fixed, never clock-gated (playbook §5.2).
+ * Heavy generation/solve is seed-fixed, never clock-gated (docs/games/testing.md § "Seed-deterministic, never clock-gated").
  */
 import { describe, expect, it } from "vitest";
 import { LEFT_BUTTON } from "../../engine/pointer.ts";

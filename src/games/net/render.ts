@@ -7,7 +7,7 @@
  * The per-tile cache word packs every visible feature of a tile (barriers,
  * corners, cursor, the four wires at two bits each, the endpoint, neighbour
  * wires reaching onto our edges, the rotating flag, the locked flag) so the
- * diff key is that single `Int32` (playbook §3.2). The frame is drawn over a
+ * diff key is that single `Int32` (docs/games/rendering.md § "The tile cache and the diff key"). The frame is drawn over a
  * `(w+2)×(h+2)` grid — one ring wider than the board — so a barrier on the outer
  * edge has somewhere to draw its outline.
  */

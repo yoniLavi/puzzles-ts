@@ -21,7 +21,7 @@
  * highlight byte (cursor/flash/error/cage-sum) plus the immutable block/cage
  * structure, so a per-cell cache of `(digit|hl, pencil)` suffices — with the
  * (fork) Check-&-Save mistake overlay tracked in a sidecar so an already-drawn
- * cell still repaints when flagged (playbook §3.2).
+ * cell still repaints when flagged (docs/games/rendering.md § "Overlay sidecars").
  */
 
 import {
@@ -88,7 +88,7 @@ export function colours(defaultBackground: Colour): Colour[] {
 }
 
 /** Highlight payload a Solo hint step carries (built in `index.ts`). The
- * element-type legend (hint-authoring §5.3): the driving region's cells shaded
+ * element-type legend (docs/games/hints.md § "The element-type colour legend"): the driving region's cells shaded
  * `COL_HINT_CELL`, the acted-on cell(s) `COL_HINT`, the ruled-out candidate(s)
  * shown struck. */
 export interface SoloHint {
@@ -140,7 +140,7 @@ export interface SoloDrawState {
   /** `cr²` hint-overlay sidecar (fork addition): bit 0 = target cell, bit 1 =
    * evidence cell, bits 2.. = struck-candidate mask (`hintMarkBit(n)`). Owns
    * the repack/stale/commit dance that keeps the overlay in the cache diff key
-   * (playbook §3.2 — Solo keeps parallel cache arrays since digit+pencil
+   * (docs/games/rendering.md § "The tile cache and the diff key" — Solo keeps parallel cache arrays since digit+pencil
    * already exceed 32 bits, so the hint is a sidecar, not a tile bit). */
   hint: OverlaySidecar;
   /** `cr²` mistake-overlay sidecar (fork addition) — same dance, so Check & Save
@@ -196,7 +196,7 @@ function drawNumber(
   const cell = y * cr + x;
   const colKiller = hl & HL_KSUM ? COL_ERROR : COL_KILLER;
 
-  // Hint overlay (hint-authoring §5.3): target cell (COL_HINT) > evidence cell
+  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): target cell (COL_HINT) > evidence cell
   // (COL_HINT_CELL) > cursor/flash highlight > X-diagonal > background. `struck`
   // is the set of candidates this firing rules out, crossed through among marks.
   const hintTarget = (hint & 1) !== 0;
@@ -530,7 +530,7 @@ function drawPencilMarks(
       digitChar(i + 1),
     );
     // A hint-ruled-out candidate keeps its normal pencil colour with a
-    // same-colour strikethrough — the "ruled out" cue (hint-authoring §5.3).
+    // same-colour strikethrough — the "ruled out" cue (docs/games/hints.md § "The element-type colour legend").
     if (struck & (1 << (i + 1))) {
       const r = Math.max(2, (fontsize / 3) | 0);
       dr.drawLine({ x: gx - r, y: gy }, { x: gx + r, y: gy }, COL_PENCIL, 2);

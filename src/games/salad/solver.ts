@@ -1,6 +1,6 @@
 /**
  * Salad's solver — a consumer of the shared Latin framework
- * ([`engine/latin.ts`](../../engine/latin.ts)), per playbook §2.2.
+ * ([`engine/latin.ts`](../../engine/latin.ts)), per docs/games/solver-and-generator.md § "The Latin family".
  *
  * **The pseudo-Latin-square trick.** Salad wants "each of `nums` symbols once
  * per line, the rest of the line empty", which is not a Latin square. Upstream
@@ -350,7 +350,7 @@ function seedGridClues(solver: LatinSolver, b: SaladBoard): void {
 /** Seed the cube from a board's *confirmed markers* — the hint path's analogue
  * of {@link seedGridClues}. A cross or ball is a real entry (Check & Save flags a
  * wrong one), so it is a fact the working cube may assume; the player's *pencil
- * notes* never are (hint-authoring §9.1's soundness boundary). Symbols need no
+ * notes* never are (docs/games/hints.md § "The recorder and the soundness boundary"'s soundness boundary). Symbols need no
  * seeding here because they sit in `b.grid`, which `LatinSolver.alloc` places. */
 function seedMarkers(solver: LatinSolver, b: SaladBoard): void {
   const o = b.order;
@@ -481,7 +481,7 @@ export interface SaladMistake {
 
 /**
  * Re-solve from the fixed clues alone and flag every player marking the unique
- * solution contradicts (playbook §3.5): a wrong symbol, a cross on a square
+ * solution contradicts (docs/games/solver-and-generator.md § "The solvable-game contract"): a wrong symbol, a cross on a square
  * that holds one, a circle on a square that must stay empty, and — notes being
  * first-class markings (§3.7) — an empty square whose non-empty notes have
  * crossed out its solution value. Returns `[]` when the board is not uniquely
@@ -493,7 +493,7 @@ export function saladFindMistakes(s: SaladState): SaladMistake[] {
   const board = scratchBoard(s);
   // Solve at the top tier: Salad's Extreme rung only *adds* sound generic
   // techniques to Normal's, so a Normal board still solves here (pinned by the
-  // "generate low, solve high" test — playbook §4.4's monotonicity check).
+  // "generate low, solve high" test — docs/games/solver-and-generator.md § "Solver-gated generation"'s monotonicity check).
   if (!saladSolve(board, DIFF_HARD)) return [];
 
   const out: SaladMistake[] = [];

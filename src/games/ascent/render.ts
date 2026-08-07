@@ -1,10 +1,10 @@
 /**
  * Ascent rendering — imperative `redraw` (upstream `game_redraw`).
  *
- * Display geometry is not byte-parity scope (playbook §3.3): the goal is
+ * Display geometry is not byte-parity scope (docs/games/rendering.md § "The palette: three layers, meaning first"): the goal is
  * to match the look with clean code. The per-tile diff cache mirrors
  * upstream's `ds` arrays, with the keyboard cursor folded into the cell
- * repaint instead of a blitter (playbook §3.2). Moves are instant
+ * repaint instead of a blitter (docs/games/rendering.md § "Overlay sidecars"). Moves are instant
  * (`animLength = 0`); the only motion is the completion flash.
  */
 

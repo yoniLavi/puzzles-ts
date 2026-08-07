@@ -1,5 +1,5 @@
 /**
- * The render sidecar for a per-cell overlay — playbook §3.2's "every overlay
+ * The render sidecar for a per-cell overlay — docs/games/rendering.md § "Overlay sidecars"'s "every overlay
  * that doesn't live in the tile value MUST be in the diff key" rule, as a type
  * instead of a per-game discipline.
  *

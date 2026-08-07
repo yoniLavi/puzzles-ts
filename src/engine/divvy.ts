@@ -3,7 +3,7 @@
  * idiomatic port of `divvy.c` (`divvy_rectangle`). Shared engine leaf: consumed
  * by Solo's jigsaw sub-block division, Palisade's region generation, and
  * Separate's `k`-omino partition (promoted here from `solo/` on the third
- * consumer per playbook §2.1).
+ * consumer per docs/games/engine-catalog.md § "Reach for these, don't re-roll").
  *
  * RNG-faithful to upstream over the bit-identical `random.ts`: the draw order
  * (the `order` shuffle, the per-iteration `random_upto` omino pick, the BFS over
@@ -14,7 +14,7 @@
  * The returned `Dsf` is consumed only for membership/connectivity (Solo's
  * `blocksFromDsf` numbers regions by ascending first-appearance), so the shared
  * union-by-size `Dsf` is byte-match-safe here regardless of its root choice — the
- * partition, not the root identity, is what feeds the desc (playbook §2.2).
+ * partition, not the root identity, is what feeds the desc (docs/games/solver-and-generator.md § "The Latin family").
  */
 
 import { Dsf } from "./dsf.ts";
@@ -220,7 +220,7 @@ const MAX_DIVVY_ATTEMPTS = 10000;
 /**
  * Partition a `w × h` rectangle into size-`k` connected ominoes. Retries failed
  * attempts (faithful to `divvy_rectangle`'s `do { } while (!ret)`), capped so a
- * divergence fails loudly instead of hanging (playbook §4.6).
+ * divergence fails loudly instead of hanging (docs/games/testing.md § "Quirks are load-bearing — capped, not cleaned").
  */
 export function divvyRectangle(w: number, h: number, k: number, rng: RandomState): Dsf {
   for (let attempt = 0; attempt < MAX_DIVVY_ATTEMPTS; attempt++) {

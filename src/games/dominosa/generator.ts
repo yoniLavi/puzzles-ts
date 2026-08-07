@@ -5,7 +5,7 @@
  * The strategy is brute force: lay a random domino tiling (`dominoLayout`),
  * assign numbers by one of three strategies keyed on difficulty, run the solver,
  * and keep the board only if it is uniquely solvable at *exactly* the target
- * difficulty. RNG-faithful throughout (playbook §4.3–4.4): every `shuffle` and
+ * difficulty. RNG-faithful throughout (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"–4.4): every `shuffle` and
  * `randomUpto` draw is reproduced in order over the bit-identical `random.ts`,
  * so `newDesc` matches C's desc byte-for-byte for a given seed.
  */

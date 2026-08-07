@@ -99,7 +99,7 @@ const FIRST_FOUND_AT: Partial<
 
 /** Scan fixed seeds for the first board whose plan contains `kind`, and return
  * that firing together with the state it fired from — the idiom for reaching a
- * specific deduction without hand-crafting a desc (hint-authoring §8). */
+ * specific deduction without hand-crafting a desc (docs/games/hints.md § "Verifying a hint in-process"). */
 function findFiring(
   kind: BoatsFiring["technique"]["kind"],
   presets: readonly number[] = [0, 1, 4, 7, 8, 9, 11],
@@ -210,7 +210,7 @@ describe("boats hint — convergence", () => {
     // Every third turn, ignore the hint and play a correct square of the
     // player's own choosing instead, so the board keeps arriving at positions
     // no plan proposed. A recording solver written to run from empty is not
-    // automatically resumable (hint-authoring §7.1) — this is what catches it.
+    // automatically resumable (docs/games/hints.md § "A hint must resume from any position") — this is what catches it.
     let state = board(4, "resume-own-play");
     const truth = solveToGrid(state.params, state.gridClues, state.borderClues);
     expect(truth.ok).toBe(true);
@@ -318,7 +318,7 @@ describe("boats hint — narration", () => {
   it("never narrates the never-touch water as a deduction of its own", () => {
     // Owner decision 2026-07-28: the water a placement drags along is shown as
     // part of the same step, not explained again — a rule of the game belongs in
-    // the help (hint-authoring §2.9).
+    // the help (docs/games/hints.md § "Rules belong in the help").
     const { state } = findFiring("lineForced");
     const r = hintOf(state);
     expect(r.ok).toBe(true);

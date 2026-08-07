@@ -34,7 +34,7 @@
  * at. This is upstream's own documented fault, and its author asked for exactly
  * this fix (`unreleased/docs/seismic.md`: "The generator step that creates
  * randomly filled regions needs to be completely replaced with a different
- * approach"), which makes it a playbook §4 rule-3 divergence — a real defect the
+ * approach"), which makes it a docs/games/solver-and-generator.md § "Divergence and what it costs" rule 3 divergence — a real defect the
  * author identified, not a difficulty curve they chose.
  *
  * Inverting the two stages removes the failure entirely: the region sizes are
@@ -49,7 +49,7 @@
  * differential test sets**. All 28 frozen fixtures still match the C
  * byte-for-byte, so the solver, the clue-stripping loop and the codec keep the
  * oracle that validates them; only the new partition-and-fill sits outside it,
- * and it carries property tests instead (playbook §4.4).
+ * and it carries property tests instead (docs/games/solver-and-generator.md § "Solver-gated generation").
  */
 
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
@@ -70,7 +70,7 @@ import {
 
 /**
  * The runaway guard on the retry loop for the **shipped** generator
- * (playbook §4.6).
+ * (docs/games/testing.md § "Quirks are load-bearing — capped, not cleaned").
  *
  * An attempt is now cheap and almost always productive: the partition cannot
  * fail and the fill essentially never backtracks, so an attempt is discarded
@@ -276,7 +276,7 @@ export function maxRegionSize(mode: number): number {
  * when it runs out of free neighbours, and the leftover pockets are small. The
  * realised mean lands at ~2.9 against upstream's 2.62, with the same shape and
  * the same size-6 ceiling. Deliberately **not** matched exactly: there is no
- * oracle for region layout (it is display-adjacent taste, playbook §4), the C's
+ * oracle for region layout (it is display-adjacent taste — docs/games/solver-and-generator.md § "Divergence and what it costs"), the C's
  * distribution is an artefact of a broken algorithm rather than a design, and
  * its 28% singletons are the least interesting cells on the board — a size-1
  * region is forced to `1`, so it is a free given.

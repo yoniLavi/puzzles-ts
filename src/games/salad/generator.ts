@@ -8,7 +8,7 @@
  * deduction at the target difficulty. Because every removal is gated on the
  * solver's verdict, the published description depends on the solver's answer to
  * every intermediate board — which is exactly what makes the byte-match
- * differential (playbook §4.4) validate generator, solver and codec at once.
+ * differential (docs/games/solver-and-generator.md § "Solver-gated generation") validate generator, solver and codec at once.
  *
  * Two upstream quality rules are reproduced verbatim:
  *

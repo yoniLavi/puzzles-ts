@@ -47,7 +47,7 @@ export interface AbcdMark {
 
 /**
  * The *obvious* pencil-mark eliminations, given the placed letters — the ABCD
- * analogue of the Latin family's row/column duplicate strikes (playbook §3.7's
+ * analogue of the Latin family's row/column duplicate strikes (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"'s
  * adaptive mark-all). A pencilled candidate `c` in an empty cell is obviously
  * impossible, and so struck, when either:
  *   - a cell orthogonally (or, under `diag`, diagonally) adjacent already holds

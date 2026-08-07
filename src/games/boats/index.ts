@@ -319,7 +319,7 @@ function status(s: BoatsState): GameStatus {
  * What a Boats hint step marks on the board. `targets` are the squares to
  * decide — drawn in `COL_HINT` in the shape of the action each one is (a boat
  * mark for a segment, a water mark for water), because a single colour standing
- * for two different actions reads as one action (hint-authoring §5.1a).
+ * for two different actions reads as one action (docs/games/hints.md § "Echo the move's shape in the hint colour").
  * `evidence` is the area the deduction reasons over, shaded `COL_HINT_CELL`.
  */
 export interface BoatsHint {
@@ -347,7 +347,7 @@ function lineIntro(line: BoatsLine): string {
 }
 
 /** The consequence clause of a refutation — the rule the rejected trial broke,
- * read off the validator's own rejection (hint-authoring §5.6a′). */
+ * read off the validator's own rejection (docs/games/hints.md § "Read the reason off the validator"). */
 function breachClause(breach: BoatsBreach): string {
   switch (breach.kind) {
     case "collision":
@@ -369,7 +369,7 @@ function breachClause(breach: BoatsBreach): string {
 
 /**
  * Narrate *why* the firing is forced: indication → reasoning → conclusion in
- * the necessity voice (hint-authoring §2). The never-touch water a placement
+ * the necessity voice (docs/games/hints.md § "Writing the narration"). The never-touch water a placement
  * drags along is deliberately **not** narrated — it is a rule of the game, shown
  * by the highlight rather than restated every step (§2.9, owner decision
  * 2026-07-28).
@@ -501,7 +501,7 @@ function legMoves(f: BoatsFiring, w: number, squares: BoatsSquare[]): BoatsMove[
  * One firing is **one journey**: a deduction that forces several squares is a
  * single hint whose continuation legs are flagged `continuesPrevious`, so the
  * midend keeps it displayed across the legs and auto-play walks them as one
- * (hint-authoring §5.5). The narration rides on the opening leg; the rest carry
+ * (docs/games/hints.md § "Group one firing into one step"). The narration rides on the opening leg; the rest carry
  * the same highlight so the picture never shrinks mid-journey.
  */
 function stepsFor(f: BoatsFiring, w: number): HintStep<BoatsMove, BoatsHint>[] {
@@ -525,7 +525,7 @@ function hint(state: BoatsState): HintResult<BoatsMove, BoatsHint> {
 
   // A re-solve, so this also catches the placement that breaks no rule *yet*
   // but appears in no solution — deducing onward from a doomed board would
-  // produce confident nonsense (hint-authoring §4).
+  // produce confident nonsense (docs/games/hints.md § "Refusal couples to the mistake overlay").
   if (findBoatsMistakes(state).length > 0)
     return {
       ok: false,

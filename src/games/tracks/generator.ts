@@ -3,7 +3,7 @@
  * `add_clues` from `tracks.c`. The clue-laying is solver-gated (it keeps a
  * clue only while the board stays soluble at exactly the target difficulty),
  * so over the bit-identical `random.ts` this reproduces the C desc
- * byte-for-byte for the same seed (playbook §4.3–4.4).
+ * byte-for-byte for the same seed (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"–4.4).
  */
 
 import type { RandomState } from "../../engine/random/index.ts";

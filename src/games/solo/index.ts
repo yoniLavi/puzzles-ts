@@ -551,7 +551,7 @@ function soloPlacementReason(
   return { kind: "forcedSingle", n };
 }
 
-/** Narrate *why* a firing is forced (hint-authoring §2): indication → reasoning →
+/** Narrate *why* a firing is forced (docs/games/hints.md § "Writing the narration"): indication → reasoning →
  * necessity-voice conclusion. `ns` is the struck value list (a placement passes
  * its single digit). */
 function narrate(reason: SoloReason, ns: number[]): string {
@@ -621,7 +621,7 @@ function placementArea(
  * is one multi-cell step (it crosses a single digit from several cells); every
  * other firing (cage pruning, a region subset) is split by cell — one leg each
  * narrating "this cell" — so a multi-digit strike never shows a single value
- * crossed in the wrong place (hint-authoring §9.3). */
+ * crossed in the wrong place (docs/games/hints.md § "Solve the way a human does"). */
 function emitStrikeJourney(
   steps: HintStep<SoloMove, SoloHint>[],
   wPen: Int32Array,

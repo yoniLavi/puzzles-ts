@@ -11,7 +11,7 @@
  *
  * The per-tile cache packs the cell value plus every overlay (set / error /
  * cursor / not-flags / flash / mistake) into one `Int32Array` word, so the
- * diff key covers every overlay (playbook §3.2); the four-border clue colours
+ * diff key covers every overlay (docs/games/rendering.md § "Overlay sidecars"); the four-border clue colours
  * diff parallel per-clue arrays.
  */
 

@@ -47,6 +47,6 @@
 - [ ] 4.2 `help/games/slide.md`: describe the keyboard controls. It currently
       says only "Use the mouse to drag the blocks around".
 - [ ] 4.3 If the playbook gained anything (a keyboard-for-a-drag-game pattern),
-      write it into `docs/porting/game-port-playbook.md` §3.8 in the same change.
+      write it into `docs/games/input.md § "The on-screen keypad" in the same change.
 - [ ] 4.4 `openspec validate add-slide-keyboard-control --strict`.
 - [ ] 4.5 Owner acceptance before archiving — it is player-visible.

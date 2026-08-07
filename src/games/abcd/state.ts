@@ -384,7 +384,7 @@ export function status(s: AbcdState): "solved" | "ongoing" {
  * `+`/`*` corner cue for the no-diagonal-touch mode. Returns `undefined` when a
  * clue could be two digits (`w ≥ 19` or `h ≥ 19`) — the width the single-char
  * format can't hold — which is upstream's `game_can_format_as_text_now`
- * expressed through the widened `Game.textFormat` return (playbook §3.3).
+ * expressed through the widened `Game.textFormat` return (docs/games/rendering.md § "The palette: three layers, meaning first").
  */
 export function textFormat(state: AbcdState): string | undefined {
   const { w, h, n } = state.params;

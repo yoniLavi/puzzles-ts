@@ -434,7 +434,7 @@ describe("slide generator", () => {
     // the last, so a board that only becomes soluble once the final singleton
     // goes hits `assert(!"We shouldn't get here")` — which is every 5x4 and 6x4
     // board. Running the missing final check gives an answer where the C had
-    // none (playbook §4 rule 1); the boards it yields are trivially easy, which
+    // none (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 1); the boards it yields are trivially easy, which
     // is inherent to a 3x2 interior holding a 2x2 main block.
     for (const [w, h] of [
       [5, 4],
@@ -646,7 +646,7 @@ describe("slide input", () => {
   it("treats a touch long-press as a primary drag", () => {
     // `detectSecondaryButton` delivers a finger that stays put for 350ms as
     // RIGHT_BUTTON, which is exactly "press, pause to aim, then drag" — the
-    // gesture Slide is entirely built from (playbook §3.8c).
+    // gesture Slide is entirely built from (docs/games/input.md § "A touch hold arrives as the right button").
     const { s, ui } = scenario();
     expect(
       slideGame.interpretMove(s, ui, null, at(3, 1), RIGHT_BUTTON | MOD_STYLUS),
@@ -817,7 +817,7 @@ describe("slide capabilities", () => {
   it("ships no findMistakes: every reachable position is legal", () => {
     // Slide has no notion of a wrong-but-legal board — you are simply nearer to
     // or further from the exit — so Check & Save correctly degrades to a plain
-    // quick-save, exactly as for the permutation games (playbook §3.5).
+    // quick-save, exactly as for the permutation games (docs/games/solver-and-generator.md § "The solvable-game contract").
     expect(slideGame.findMistakes).toBeUndefined();
     expect(new Midend(slideGame).getStaticProperties().canFindMistakes).toBe(false);
   });

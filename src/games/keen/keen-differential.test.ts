@@ -5,7 +5,7 @@
  * flag), assert the TS generator reproduces the C desc byte-for-byte over the
  * bit-identical RNG, and that the TS solver grades the board at the same minimal
  * difficulty the C solver recorded. Faithful generation + a faithful solver
- * verdict — the strongest available bar (playbook §4.3/§4.4).
+ * verdict — the strongest available bar (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"/§4.4).
  *
  * The fixture is **frozen and cannot be regenerated**. It was captured by
  * `puzzles/auxiliary/keen-trace.c` against upstream's C, under an

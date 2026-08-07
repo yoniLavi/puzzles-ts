@@ -1,7 +1,7 @@
 /**
  * Filling (Fillomino) hint tests. Tier 1 (the grouped deduction, the hint
  * plan, keep-track, refusals) + tier 2.5 (a render scenario of a hint frame).
- * See docs/porting/hint-authoring.md.
+ * See docs/games/hints.md.
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";

@@ -100,10 +100,10 @@ export const COL_CURSOR = 7;
 export const COL_SATISFIED = 8;
 /** The forced spoke(s) of the displayed hint — drawn like a line, at hint
  * colour, so the player sees *which* spoke to act on without the move being
- * performed for them (playbook §5.1). Every leg of one firing shares it. */
+ * performed for them (docs/games/testing.md § "Render-op vocabulary"). Every leg of one firing shares it. */
 export const COL_HINT = 9;
 /** A ring around each evidence hub the hint reasons over (a light blue, the
- * cross-game "shade the evidence" colour — playbook §5.2). */
+ * cross-game "shade the evidence" colour — docs/games/testing.md § "Seed-deterministic, never clock-gated"). */
 export const COL_HINT_CELL = 10;
 
 /** How far {@link COL_SATISFIED} steps away from the background. Large enough
@@ -115,7 +115,7 @@ export const COL_HINT_CELL = 10;
  * hard-codes the rest. Deliberately *not* luminance-adjusted for dark mode:
  * `puzzle-view.ts` passes pure white as the background there and adapts the
  * whole returned palette itself, so a second adaptation here would fight the
- * layer that owns the concern (playbook §3.3).
+ * layer that owns the concern (docs/games/rendering.md § "The palette: three layers, meaning first").
  */
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
@@ -165,13 +165,13 @@ export interface SpokesDrawState {
   corners: Int8Array;
   /** Check-&-Save mistake overlay: bit `d` set ⇒ spoke `d` of this cell is
    * flagged. Its own sidecar so it repaints a cell nothing else changed
-   * (playbook §3.2). */
+   * (docs/games/rendering.md § "The tile cache and the diff key"). */
   wrong: OverlaySidecar;
   /** Hint overlay, per cell: bits `0..7` ⇒ spoke `d` is a hint *line*
    * (`COL_HINT`, "draw this"), {@link HINT_RING} ⇒ ring this hub as evidence
    * (`COL_HINT_CELL`), bits `9..16` (see {@link hintMarkBit}) ⇒ spoke `d` is a
    * hint *mark* (a `COL_HINT` rim dot, "rule this out"). Its own sidecar for the
-   * same reason as {@link wrong} (playbook §3.2). */
+   * same reason as {@link wrong} (docs/games/rendering.md § "The tile cache and the diff key"). */
   hint: OverlaySidecar;
   /** Blitter holding the pixels under the keyboard cursor, and where. */
   cursorBlitter: unknown;
@@ -295,7 +295,7 @@ export function redraw(
   }
 
   if (!ds.started) {
-    // The engine paints no pixels of its own (playbook §3.2).
+    // The engine paints no pixels of its own (docs/games/rendering.md § "The rendering doctrine").
     dr.drawRect({ x: 0, y: 0, w: w * ts, h: h * ts }, COL_BACKGROUND);
     dr.drawUpdate({ x: 0, y: 0, w: w * ts, h: h * ts });
     ds.started = true;
@@ -429,7 +429,7 @@ export function redraw(
 
       // Hint spokes: draw each forced spoke like a line in COL_HINT, but only
       // where it is still EMPTY — a leg the player has followed is now a real
-      // black line and must not be re-tinted (playbook §5.1). Diagonals are
+      // black line and must not be re-tinted (docs/games/testing.md § "Render-op vocabulary"). Diagonals are
       // completed across the corner by the diagonal pass, same as real lines.
       for (let d = 0; d < 8; d++) {
         if (!(hintBits & (1 << d))) continue;

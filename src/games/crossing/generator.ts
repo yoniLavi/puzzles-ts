@@ -20,7 +20,7 @@
  * `randomUpto(9)` draws per attempt, so the description is a pure function of
  * the seed and reproduces the C byte-for-byte — and because step 4 gates on the
  * solver, that one byte-match validates the generator, the solver *and* the
- * codec together (playbook §4.3/§4.4).
+ * codec together (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"/§4.4).
  */
 
 import { Dsf } from "../../engine/dsf.ts";
@@ -96,7 +96,7 @@ function checkPool(w: number, h: number, cells: Uint8Array): boolean {
  *
  * Only class membership and size are read, both independent of which element
  * the union-find picks as root, so the shared `Dsf` is byte-match safe here
- * (playbook §2.2).
+ * (docs/games/solver-and-generator.md § "The Latin family").
  */
 function checkDsf(w: number, h: number, cells: Uint8Array): boolean {
   const dsf = new Dsf(w * h);
@@ -186,7 +186,7 @@ export interface CrossingGenOptions {
    * player can even type any digit into it and still win.
    *
    * The shipped game rejects such boards; this option exists **only** so the
-   * byte-match differential can reproduce upstream exactly (playbook §4.4 —
+   * byte-match differential can reproduce upstream exactly (docs/games/solver-and-generator.md § "Solver-gated generation" —
    * keep the oracle *and* ship the fix). Measured cost of the fix: 4% of 5×5
    * boards, 7% of 7×7, 17-18% of 9×9 and 12×12 are rejected, i.e. a few percent
    * more attempts on a generator that makes a 9×9 board in well under a

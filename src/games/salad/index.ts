@@ -147,7 +147,7 @@ function interpretMove(
     if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
       const newpencil = button === RIGHT_BUTTON;
       if (ui.pencilSticky) {
-        // Fork divergence (playbook §3.7): right-click toggles a *persistent*
+        // Fork divergence (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"): right-click toggles a *persistent*
         // pencil mode instead of pencil-selecting one square, and a left-click
         // only moves the highlight. A filled square can show no pencil mark, so
         // the toggle never drags the highlight onto one.

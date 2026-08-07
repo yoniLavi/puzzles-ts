@@ -2,7 +2,7 @@
  * Gated byte-match differential: the TS generator reproduces the C generator's
  * `desc` **and** `aux` byte for byte for the same seed and params.
  *
- * This is the strongest bar available (playbook §4.3) and the guard that the
+ * This is the strongest bar available (docs/games/testing.md § "Byte-match: fidelity where there is a right answer") and the guard that the
  * generator's RNG draw order *and* the souped-up `rect_solver` (the only
  * data-dependent branch of the generation loop, via the uniqueness gate) are
  * faithful: the produced desc depends on the solver's verdict on every

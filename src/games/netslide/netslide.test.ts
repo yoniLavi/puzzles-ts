@@ -442,7 +442,7 @@ describe("netslide play", () => {
 /* ----------------------------------------------------------------------
  * Solve + save, through a real Midend (that is where the aux threading and the
  * save codec live — a direct call to `game.solve` would pass while the shipped
- * Solve was a no-op; playbook §3.6).
+ * Solve was a no-op; docs/games/solver-and-generator.md § "Solve and the generator's aux").
  */
 
 /** Drive a midend and keep its notifications, so the status bar is observable. */

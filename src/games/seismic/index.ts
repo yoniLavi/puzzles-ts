@@ -88,7 +88,7 @@ import {
 /** A player marking that contradicts the unique solution:
  * - `"cell"` — a placed number that is wrong;
  * - `"note"` — an empty cell whose non-empty pencil notes have crossed out the
- *   cell's solution number (playbook §3.7: notes are first-class markings). */
+ *   cell's solution number (docs/games/mechanics.md § "Pencil marks: the full note-taking UX": notes are first-class markings). */
 export interface SeismicMistake {
   kind: "cell" | "note";
   x: number;
@@ -129,7 +129,7 @@ function interpretMove(
     const i = gy * w + gx;
 
     if (button === LEFT_BUTTON) {
-      // Sticky pencil mode (fork, playbook §3.7): a left-click only moves the
+      // Sticky pencil mode (fork, docs/games/mechanics.md § "Pencil marks: the full note-taking UX"): a left-click only moves the
       // highlight and keeps the current mode; upstream (sticky off) reverts to
       // real entry.
       if (
@@ -220,7 +220,7 @@ function interpretMove(
   // 'M' / 'm': fill every empty cell's notes with its region's candidates.
   //
   // Deliberately *fill-only*, not the adaptive fill-then-clean variant the
-  // square Latin games use (playbook §3.7). The shared
+  // square Latin games use (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"). The shared
   // `adaptiveMarkAllMove`/`obviousCandidateMarks` helper is written for a square
   // board — it walks `w * w` cells and caps candidates at `w` — whereas Seismic's
   // grid is rectangular and its candidate range is per *region*. Widening a

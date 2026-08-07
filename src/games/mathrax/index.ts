@@ -98,7 +98,7 @@ import {
 /** A player marking that contradicts the unique solution:
  * - `"cell"` — a filled-in digit that is wrong;
  * - `"note"` — an empty cell whose non-empty pencil notes have crossed out the
- *   cell's solution digit (playbook §3.7). */
+ *   cell's solution digit (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"). */
 export interface MathraxMistake {
   kind: "cell" | "note";
   x: number;
@@ -238,7 +238,7 @@ function interpretMove(
 
   // 'M' / 'm': fill every empty cell's notes, then — on an already-noted board —
   // strike the candidates already placed in that cell's row or column
-  // (playbook §3.7's adaptive mark-all). Mathrax's uniqueness regions are
+  // (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"'s adaptive mark-all). Mathrax's uniqueness regions are
   // exactly the row and the column; a clue is *not* a uniqueness region.
   if (button === 77 || button === 109) {
     return adaptiveMarkAllMove<MathraxMove>(state.grid, state.marks, o, (x, y) =>

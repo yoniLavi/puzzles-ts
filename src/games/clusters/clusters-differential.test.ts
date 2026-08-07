@@ -7,7 +7,7 @@
  * complete) and its codec is an exact inverse, so the strongest meaningful
  * bar is that the TS `newDesc` reproduces the C engine's desc byte-for-byte
  * for the same seed — which validates the generator, the solver AND the
- * run-length codec all at once (playbook §4 intro).
+ * run-length codec all at once (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
  *
  * **`upstreamLooseGate` is set here and nowhere else.** The shipped generator
  * grades its two tiers honestly — Tricky rejects a board the single-cell rule

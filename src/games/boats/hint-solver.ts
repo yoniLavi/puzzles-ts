@@ -2,7 +2,7 @@
  * Boats — the recording deduction pass behind the explained hint.
  *
  * The hint is a **second projection of the same deduction engine as the
- * solver** (hint-authoring §5.6a): `solveBoats` runs the techniques to a
+ * solver** (docs/games/hints.md § "Re-derive the named technique"): `solveBoats` runs the techniques to a
  * fixpoint and reports a difficulty; this module runs the *same* techniques one
  * **firing** at a time and reports what each one forced, why, and from what
  * evidence. Every deduction Boats knows is a named, teachable Battleships
@@ -21,7 +21,7 @@
  *  - **It resumes from the player's board.** `solveBoats` opens with
  *    `solverInitial`, which *wipes the grid* and re-derives it from the given
  *    clues — fine for a solver, useless for a hint, which must start from what
- *    the player has actually placed (hint-authoring §7.1). So the clue
+ *    the player has actually placed (docs/games/hints.md § "A hint must resume from any position"). So the clue
  *    derivations upstream folds into that wipe become an ordinary narratable
  *    technique here ({@link BoatsTechnique} `givenClue`), and the never-touch
  *    water that `placeShip` applies as a side effect becomes `neverTouch` — the
@@ -114,7 +114,7 @@ export interface BoatsLine {
 }
 
 /** Why the board rejected a Hard tier's trial — read straight off the
- * validators' own error arrays (hint-authoring §5.6a′). */
+ * validators' own error arrays (docs/games/hints.md § "Read the reason off the validator"). */
 export type BoatsBreach =
   /** Two boats would touch, if only at a corner. */
   | { kind: "collision" }
@@ -129,7 +129,7 @@ export type BoatsBreach =
   /**
    * The board is left with no legal way to finish, without one rule naming
    * itself the culprit. Honest catch-all rather than a fabricated cause
-   * (hint-authoring §5.6).
+   * (docs/games/hints.md § "Honest non-local evidence").
    */
   | { kind: "unfinishable" };
 
@@ -198,7 +198,7 @@ export interface BoatsFiring {
    * not yet. The step's move is built against it (a `fill` move is a rectangle
    * that sets every still-empty cell in its span, so "which cells in this span
    * are already decided?" must be asked of the right board), and it is the
-   * board the narration and the shaded area describe (hint-authoring §5.2).
+   * board the narration and the shaded area describe (docs/games/hints.md § "Show the evidence as an area").
    */
   grid: Int8Array;
 }
@@ -890,7 +890,7 @@ function recoverHiddenNumbers(ctx: Ctx): void {
 /**
  * Classify *why* a trial board is contradictory by re-running the validation
  * family with its own error arrays and reading the flags back — the Bricks
- * pattern (hint-authoring §5.6a′). A fixed priority picks the clearest reason
+ * pattern (docs/games/hints.md § "Read the reason off the validator"). A fixed priority picks the clearest reason
  * when several fire at once.
  *
  * **Total by construction, and that is the whole difficulty.** `validateFullState`
@@ -1033,7 +1033,7 @@ function findRefuted(ctx: Ctx): BoatsFiring | null {
 
           const found = classifyBreach(ctx, trial);
 
-          // Honesty about locality (hint-authoring §5.6): a refutation can
+          // Honesty about locality (docs/games/hints.md § "Honest non-local evidence"): a refutation can
           // break three rows away, and ringing a distant cause as though it
           // were adjacent misleads.
           const local = found.cells.some(
@@ -1093,7 +1093,7 @@ function findRefuted(ctx: Ctx): BoatsFiring | null {
 // --- the firing order -------------------------------------------------------
 
 /**
- * The next firing, **goal-first** (hint-authoring §2.10): within each tier the
+ * The next firing, **goal-first** (docs/games/hints.md § "Hint the move that advances the goal"): within each tier the
  * placements — the moves that build the fleet — run before the rule-outs, and a
  * cheaper tier always runs before a dearer one, so an Easy board is taught the
  * Easy technique that suffices rather than a Hard refutation that reaches the

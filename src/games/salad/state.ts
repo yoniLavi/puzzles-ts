@@ -240,7 +240,7 @@ export type SaladMove =
   /** Upstream `P x,y,c` — a pencil mark. `"circle"` is upstream's oddity: it
    * toggles the *real* circle marker without emptying the square. */
   | { type: "pencil"; x: number; y: number; value: SaladEntry }
-  /** Fork addition, for the hint (hint-authoring §9.2): clear a list of pencil
+  /** Fork addition, for the hint (docs/games/hints.md § "Persist, populate, and the moves"): clear a list of pencil
    * marks atomically. The per-square `pencil` move is a *toggle*, so a
    * re-applied strike would put the mark back; this one only ever removes, which
    * makes one deduction forcing several strikes a single idempotent,

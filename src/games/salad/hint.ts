@@ -1,6 +1,6 @@
 /**
  * Salad's explained hint — a **candidate-elimination** plan
- * ([hint-authoring §9](../../../../docs/porting/hint-authoring.md)).
+ * (docs/games/hints.md § "Candidate-elimination games").
  *
  * Salad is the first candidate game whose value set is not uniform: its
  * `order − nums` hole symbols are interchangeable, so in the *cube* they are
@@ -107,7 +107,7 @@ export type SaladReason =
   | { kind: "set" }
   | { kind: "forcing" };
 
-/** What a Salad hint step draws (hint-authoring §5.3's element legend):
+/** What a Salad hint step draws (docs/games/hints.md § "The element-type colour legend"'s element legend):
  * `area` is the deduction's evidence, `targets` the squares it acts on, `marks`
  * the notes it strikes, `clues` the border clues it reasons from, and `ghost`
  * the entry it is asking for, previewed in `COL_HINT` (§5.1a — Salad has three
@@ -144,7 +144,7 @@ function count(k: number, one: string, many = `${one}s`): string {
 // --- narration -------------------------------------------------------------
 
 /**
- * Narrate *why* a step is forced (hint-authoring §2): lead with the indication,
+ * Narrate *why* a step is forced (docs/games/hints.md § "Writing the narration"): lead with the indication,
  * give the reasoning, conclude in the necessity voice. `ns` is the value list the
  * step acts on — the placed symbol for a placement, the struck candidates for a
  * strike.
@@ -227,7 +227,7 @@ export function narrate(
 }
 
 /** The evidence to shade (`area`) and the border clues to light (`clues`) for a
- * reason — hint-authoring §5.2: show the premise as an area, not one cell. A
+ * reason — docs/games/hints.md § "Show the evidence as an area": show the premise as an area, not one cell. A
  * border deduction shades exactly the run of squares its argument is about, read
  * off the shared {@link borderScanFor} rather than re-derived. */
 function reasonEvidence(
@@ -659,7 +659,7 @@ function buildSteps(
 
     // 3a. …then bulk-clear the candidates a placed symbol already rules out, in
     //     one step, so the walk teaches real deductions rather than N trivial
-    //     row/column culls (hint-authoring §9.2).
+    //     row/column culls (docs/games/hints.md § "Persist, populate, and the moves").
     if (!cleaned) {
       cleaned = true;
       if (
@@ -735,7 +735,7 @@ function buildSteps(
 
 /**
  * Split one firing's live eliminations into journey legs. The axis follows what
- * the narration names singular (hint-authoring §9.3): the far border arm names
+ * the narration names singular (docs/games/hints.md § "Solve the way a human does"): the far border arm names
  * the clue's *symbol* and rules it out along a run, so it is one multi-square
  * leg; everything else names *this square*, so it splits by square.
  */

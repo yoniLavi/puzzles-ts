@@ -15,7 +15,7 @@
  * `w·h`-sized scratch arrays by the canonical element and always re-reads them
  * through `canonify`, and every clue is per-cell. So union-by-size's root choice
  * is unobservable here and the shared `Dsf` is byte-match faithful as-is
- * (playbook §2.2). Don't "restore fidelity" by adding a min-dsf variant.
+ * (docs/games/solver-and-generator.md § "The Latin family"). Don't "restore fidelity" by adding a min-dsf variant.
  *
  * The `Dsf` never changes after `newState`, so every state shares the one
  * instance by reference (the §3.1 shared-immutable pattern); a move clones only
@@ -199,7 +199,7 @@ export function decodeParams(s: string): SeismicParams {
  * without repeating the slow sizes over several seeds; a median-based bound is
  * exactly the error `replace-seismic-region-generator` shipped and retracted.
  *
- * Rejecting sizes rather than letting them run is playbook §4's prescribed
+ * Rejecting sizes rather than letting them run is docs/games/solver-and-generator.md § "Unlucky, impossible, and load-bearing validation"'s prescribed
  * handling: refuse in `validateParams`, where the Custom dialog can show a
  * reason, instead of letting the player press "New game" and wait. The trade-off
  * it carries: a hand-authored Seismic `10x10:⟨desc⟩` game ID is refused, since
@@ -309,7 +309,7 @@ export interface SeismicUi {
   ckey: boolean;
   /** Whether entry goes to pencil marks rather than the cell. */
   cpencil: boolean;
-  /** Fork divergence (playbook §3.7): right-click toggles a *persistent* pencil
+  /** Fork divergence (docs/games/mechanics.md § "Pencil marks: the full note-taking UX"): right-click toggles a *persistent* pencil
    * mode rather than a one-shot pencil selection. */
   pencilSticky: boolean;
 }
@@ -348,7 +348,7 @@ const INVALID_CLUESIZE = 3;
  * run, which at `erun === 26` produces `'z'` — a character its decoder reads as
  * "26 gaps and **no** following wall", losing a wall — and past 26 produces
  * characters outside `'a'..'z'` that the decoder rejects outright. Gap runs of
- * 26+ therefore have no defined behaviour upstream (playbook §4 rule 1), so this
+ * 26+ therefore have no defined behaviour upstream (docs/games/solver-and-generator.md § "Divergence and what it costs" rule 1), so this
  * chunks them into `'z'` units (26 gaps, no wall — exactly what the reader
  * already means by `'z'`) and lets the residue, or the following wall run, carry
  * the wall. Output is character-for-character identical to the C for every run

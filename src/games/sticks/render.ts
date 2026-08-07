@@ -8,7 +8,7 @@
  * its constraint is currently violated), and a blue frame under the keyboard
  * cursor. The in-flight drag previews its accreted cells; on a fresh win the
  * lines blink off on alternate 0.1 s flash frames. `findMistakes` cells get
- * an inset red frame via an `OverlaySidecar` (playbook §3.2 — the overlay is
+ * an inset red frame via an `OverlaySidecar` (docs/games/rendering.md § "Overlay sidecars" — the overlay is
  * part of the diff key so Check & Save repaints an otherwise-unchanged
  * frame).
  *
@@ -90,7 +90,7 @@ const F_ERR = 1 << 8;
 const F_CUR = 1 << 9;
 const F_FLASH = 1 << 10;
 // The hint overlay is part of the diff key, or an otherwise-unchanged frame
-// never repaints when a hint is shown or dismissed (playbook §3.2).
+// never repaints when a hint is shown or dismissed (docs/games/rendering.md § "Overlay sidecars").
 const F_HINT_HOR = 1 << 11;
 const F_HINT_VER = 1 << 12;
 const F_HINT_EVID = 1 << 13;
@@ -145,7 +145,7 @@ function drawTile(
   dr.drawRect({ x: px, y: py, w: ts, h: ts }, COL_GRID);
   // Evidence on a white square is a wash the clue digit and any line draw over;
   // on a black square it would hide the very blackness the argument is about, so
-  // that case rings instead (hint-authoring §5.4).
+  // that case rings instead (docs/games/hints.md § "Shade vs ring").
   dr.drawRect(
     { x: px, y: py, w: ts - 1, h: ts - 1 },
     black ? COL_GRID : evidence ? COL_HINT_CELL : COL_BACKGROUND,

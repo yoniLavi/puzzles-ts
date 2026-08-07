@@ -9,7 +9,7 @@
  * analysis, the `findloop` parity deduction and the flip-DSF forcing chains —
  * so the verdict (0 impossible / 1 unique / 2 ambiguous) matches C on every
  * board. The generator is solver-gated, so a faithful verdict is what makes the
- * byte-match differential hold (playbook §4.4).
+ * byte-match differential hold (docs/games/solver-and-generator.md § "Solver-gated generation").
  *
  * The three `.sort()`s here (`squaresByNumber`, the two forcing-chain
  * comparators) use total or tie-order-irrelevant orderings that feed

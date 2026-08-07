@@ -2,7 +2,7 @@
  * Symmetric black-square placement — upstream `set_blacks`, which
  * `sticks.c` copied verbatim from `lightup.c` (its own comment says so).
  * Promoted to a shared engine helper when Sticks became the second
- * consumer (playbook §2.1); Light Up and Sticks both call it from their
+ * consumer (docs/games/engine-catalog.md § "Reach for these, don't re-roll"); Light Up and Sticks both call it from their
  * generators.
  *
  * Byte-match critical: the symmetry-reduced region sizing, the

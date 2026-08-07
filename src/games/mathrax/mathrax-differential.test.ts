@@ -12,7 +12,7 @@
  *    therefore validates `latinGenerate`'s RNG draw order, the two `shuffle`s,
  *    every deduction the tiered solver makes (including the shared
  *    `engine/latin.ts` framework), the candidate-clue precedence cascade and the
- *    run-length codec, all at once (playbook §4.3/§4.4).
+ *    run-length codec, all at once (docs/games/testing.md § "Byte-match: fidelity where there is a right answer"/§4.4).
  *
  *    **`upstreamLooseGate` is set here and nowhere else.** The shipped
  *    generator additionally rejects a board the tier below already solves,
@@ -26,7 +26,7 @@
  *    port requires a *unique* solution when stripping (see `generator.ts`'s
  *    divergence note), so its Recursive boards are not upstream's and cannot be
  *    byte-matched. The frozen C descriptions for that tier are still checked the
- *    order-independent way (playbook §4.8): the TS solver must reach C's
+ *    order-independent way (docs/games/testing.md § "Order-independent verdicts"): the TS solver must reach C's
  *    recorded verdict on each — which for those three is `2`, *ambiguous*, the
  *    very defect the divergence fixes.
  */

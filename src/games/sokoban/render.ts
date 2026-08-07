@@ -8,7 +8,7 @@
  * own background in the first-draw branch (playbook rendering doctrine).
  *
  * Border geometry: the web build defines `NARROW_BORDERS`, so `BORDER = 0`
- * (design D5, playbook §3.2) — the whole board is `w*TILESIZE + 1` wide.
+ * (design D5, docs/games/rendering.md § "The tile cache and the diff key") — the whole board is `w*TILESIZE + 1` wide.
  */
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";

@@ -519,7 +519,7 @@ function groupVocab(id: boolean): LatinVocab {
   return { noun: "element", value: (n) => toChar(n, id) };
 }
 
-/** Narrate *why* a firing is forced (hint-authoring §2): indication → reasoning →
+/** Narrate *why* a firing is forced (docs/games/hints.md § "Writing the narration"): indication → reasoning →
  * necessity-voice conclusion, every cell named by the element letter it shows.
  * `ns` is the value list the step acts on (a placement passes its single value; a
  * strike its struck values). The six generic Latin arms are delegated to

@@ -455,7 +455,7 @@ describe("lightup rendering", () => {
   });
 
   it("Check & Save highlights a mistake even when the cell was already drawn", () => {
-    // Regression guard (playbook §3.2): the mistake overlay must be in the
+    // Regression guard (docs/games/rendering.md § "Overlay sidecars"): the mistake overlay must be in the
     // per-tile diff key, or a findMistakes() after the move's own paint
     // repaints nothing.
     const me = new Midend(lightupGame);

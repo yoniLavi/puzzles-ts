@@ -16,7 +16,7 @@
  * **Two bitmask conventions live in this port, deliberately.** The *solver's*
  * candidate masks (`solver.ts`) keep upstream's `BIT(d) = 1 << (d−1)` verbatim,
  * because they decide the solver's verdict and so the generated description
- * (playbook §4.4). The *player's* pencil marks here use the Latin-family
+ * (docs/games/solver-and-generator.md § "Solver-gated generation"). The *player's* pencil marks here use the Latin-family
  * convention `1 << n` (bits `1..o`), which is what `engine/candidate-hint.ts`
  * (mark-all, and a future explained hint) reads. Marks never reach the desc or a
  * save — the save codec replays moves — so the divergence is free.
@@ -414,7 +414,7 @@ export function bitOf(d: number): number {
  * Kept as `~0` rather than masked to `(1 << o) − 1`: it composes identically
  * under `&`, and the `simple` early return below hands it straight back, where
  * narrowing it would be a *different* value and could change a solver verdict —
- * which, on a solver-gated generator, changes the description (playbook §4.4). */
+ * which, on a solver-gated generator, changes the description (docs/games/solver-and-generator.md § "Solver-gated generation"). */
 const ALL_DIGITS = ~0;
 
 /**
@@ -478,7 +478,7 @@ export function mathraxOptions(clue: number, mark: number, simple: boolean): num
  *
  * Upstream's `is_solver` parameter (read the cell's marks instead of "any digit"
  * for a blank cell) is never passed `true` by the shipped game, so only that
- * branch is ported (playbook §4.4: port the shipped behaviour).
+ * branch is ported (docs/games/solver-and-generator.md § "Solver-gated generation": port the shipped behaviour).
  */
 export function mathraxValidate(
   o: number,

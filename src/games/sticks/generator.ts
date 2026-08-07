@@ -20,7 +20,7 @@ import { sticksMakeDsf, sticksSolveGame } from "./solver.ts";
 import { encodeDesc, F_BLOCK, F_HOR, F_VER, type SticksParams } from "./state.ts";
 
 /** Runaway backstop only — upstream loops unbounded, and the fill retry
- * converges quickly in practice (playbook §4.6). */
+ * converges quickly in practice (docs/games/testing.md § "Quirks are load-bearing — capped, not cleaned"). */
 const MAX_FILL_ATTEMPTS = 100_000;
 
 export function newSticksDesc(p: SticksParams, rng: RandomState): { desc: string } {
@@ -59,7 +59,7 @@ export function newSticksDesc(p: SticksParams, rng: RandomState): { desc: string
     sticksMakeDsf(grid, null, w, h, dsf, null);
 
     // dsf_minimal ≡ the smallest index in a class; the shared Dsf doesn't
-    // track it, so precompute after all merges (playbook §2.2). Byte-safe:
+    // track it, so precompute after all merges (docs/games/solver-and-generator.md § "The Latin family"). Byte-safe:
     // membership-determined, independent of the root choice.
     minimal.fill(-1);
     for (let i = 0; i < s; i++) {

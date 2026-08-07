@@ -5,7 +5,7 @@
  *
  * Input is selection-based: left-click / left-drag (or the keyboard cursor
  * with multi-select) build a selection, then a digit key fills every selected
- * non-clue cell. Read docs/porting/game-port-playbook.md and the Galaxies
+ * non-clue cell. Read the docs/games/ guides and the Galaxies
  * port first.
  */
 

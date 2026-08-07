@@ -12,7 +12,7 @@
  * is computed in double then rounded to float (JS has no native single
  * divide), so a double-rounding ULP difference *could* in principle flip a
  * cell on a knife-edge value; the gated differential test is what proves the
- * match holds on real boards (see design D4 / playbook §4.3).
+ * match holds on real boards (see design D4 / docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
  */
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { isSoluble } from "./solver.ts";

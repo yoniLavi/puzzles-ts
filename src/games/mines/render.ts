@@ -3,12 +3,12 @@
  *
  * Palette index-for-index with the C `enum` (design/task 6.1). Geometry uses
  * the **web build's** `NARROW_BORDERS` variant (`BORDER = max(ts*3/20, 1)`,
- * playbook §3.2) since that is what the browser actually showed.
+ * docs/games/rendering.md § "The tile cache and the diff key") since that is what the browser actually showed.
  *
  * The two ui-derived overlays — the mouse-down highlight radius and the "too
  * many flags" wrong-number tint — are folded into each tile's cache value `v`
  * (exactly as the C does), so they live *in* the diff key and repaint/clear on
- * their own frames (design D8, playbook §3.2). The paint-twice test in
+ * their own frames (design D8, docs/games/rendering.md § "Prove the overlay repaints"). The paint-twice test in
  * `mines.test.ts` guards that.
  */
 

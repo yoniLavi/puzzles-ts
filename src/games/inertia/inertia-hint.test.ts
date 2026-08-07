@@ -204,7 +204,7 @@ describe("inertia hint narration", () => {
 
   it("says walls, not mines, when walls are what block every other way", () => {
     // A ball in a one-square-wide corridor is not being clever, and telling it
-    // "every other way runs you onto a mine" would be a lie (hint-authoring §2.7).
+    // "every other way runs you onto a mine" would be a lie (docs/games/hints.md § "Sanity-read at the degenerate extremes").
     const step = firstStep(stateOf(["wwww", "wwgw", "wwSw", "wwww"]));
     expect(step.explanation).toContain("Slide north");
     expect(step.explanation).toContain("walls block every other direction");
@@ -228,7 +228,7 @@ describe("inertia hint narration", () => {
     // The overclaim guard. The route may decline a grab it *could* take — a gem
     // is not one place but eight, because the ball arrives still moving and
     // cannot turn — so "no slide from here reaches it" is a claim, and has to be
-    // checked rather than assumed (hint-authoring §2.4).
+    // checked rather than assumed (docs/games/hints.md § "The premise must single out the conclusion").
     for (const seed of ["g-a", "g-b", "g-c", "g-d", "g-e", "g-f"]) {
       const params = { w: 10, h: 8 };
       const { desc } = newInertiaDesc(params, randomNew(seed));

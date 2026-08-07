@@ -4,7 +4,7 @@
  * clues by re-running this solver and keeping only removals that stay soluble
  * at exactly the target difficulty), the desc is decided by this solver's
  * *verdict* on every intermediate board, so the port reproduces C's deductions
- * — and their order — verbatim (playbook §4.4). Reused by `solve()` and
+ * — and their order — verbatim (docs/games/solver-and-generator.md § "Solver-gated generation"). Reused by `solve()` and
  * `findMistakes`.
  */
 import { Dsf } from "../../engine/dsf.ts";

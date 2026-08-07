@@ -2,7 +2,7 @@
  * Inertia's renderer.
  *
  * The board is a plain per-tile cache (cell value OR'd with the flash bits, in
- * an `Int32Array` — playbook §3.2). The ball is a *sprite*: it is drawn over
+ * an `Int32Array` — docs/games/rendering.md § "The tile cache and the diff key"). The ball is a *sprite*: it is drawn over
  * whatever tile it happens to be over, so the tile beneath it is saved into a
  * blitter first and restored at the top of the next frame. That also means the
  * route arrow, which is drawn on the ball, can never go stale — it is repainted
@@ -59,7 +59,7 @@ export const COL_HINT = 9;
  * with a route installed sees both in turn. */
 export const COL_AIM = 10;
 /** Appended: the ring round the gem a hint is going for. The hint's two roles
- * get two colours, each with a cue of its own (hint-authoring §5.3) — the
+ * get two colours, each with a cue of its own (docs/games/hints.md § "The element-type colour legend") — the
  * direction is a yellow *arrow* (`COL_HINT`, the route arrow's own shape and
  * colour: both mean "the solver says go this way"), and the subgoal gem is a
  * violet *ring*. The app's dark-mode `paletteOverrides` for inertia touch only
@@ -91,7 +91,7 @@ export function colours(defaultBackground: Colour): Colour[] {
 export const PREFERRED_TILE_SIZE = 32;
 
 /** The web build compiles with `NARROW_BORDERS` (see `webapp.cmake`), so the
- * border is one pixel, not a whole tile — playbook §3.2. */
+ * border is one pixel, not a whole tile — docs/games/rendering.md § "The tile cache and the diff key". */
 export const BORDER = 1;
 
 const coord = (pos: number, ts: number): number => coordE(pos, ts, BORDER);
@@ -110,7 +110,7 @@ const FLASH_WIN = 0x200;
 /** Likewise the hint's ring. Unlike the arrow — which rides the ball sprite and
  * so is repainted every frame — the ring is drawn *on a tile*, so it has to be
  * part of that tile's diff key or it would never be painted, and never erased
- * (playbook §3.2). */
+ * (docs/games/rendering.md § "The tile cache and the diff key"). */
 const HINT_GOAL = 0x400;
 
 const UNDRAWN = -1;

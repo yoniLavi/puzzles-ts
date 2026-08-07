@@ -226,7 +226,7 @@ export function cloneState(s: NetslideState): NetslideState {
  * as "each cell of the new line reads from the old line, `dir` places along,
  * modulo its length" — provably the same permutation, and immune to the
  * read-back-what-the-shuffle-vacated class of bug that in-place C array
- * surgery invites (playbook §3.1).
+ * surgery invites (docs/games/mechanics.md § "Idiomatic state, not a C transliteration").
  */
 
 export function slideRow(w: number, tiles: Uint8Array, dir: number, row: number): void {

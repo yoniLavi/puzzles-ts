@@ -1,5 +1,5 @@
 /**
- * Behavioural tests for the Mines port. Tiers per the playbook §5:
+ * Behavioural tests for the Mines port. Tiers per the docs/games/testing.md § "The test tiers":
  * tier-1 logic (params/desc/solver/generator/game), tier-1 midend integration
  * (supersede, save/load, timer), tier-2.5 render scenarios + snapshots.
  */

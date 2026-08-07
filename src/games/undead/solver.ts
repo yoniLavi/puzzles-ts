@@ -295,7 +295,7 @@ export function gradeUndead(
 //
 // Upstream Undead grades difficulty by *how much brute force* a board needs,
 // which conflicts with this fork's guess-free generation policy
-// (`docs/porting/hint-authoring.md` §1A: every shipped tier of a logic puzzle
+// (`docs/games/solver-and-generator.md § "Guess-free generation": every shipped tier of a logic puzzle
 // must be solvable by pure deduction). This ladder adds the two deductive rungs
 // upstream never built — **exact counting** and **depth-1 forcing** — between
 // arc-consistency (`solveIterative`) and the brute-force oracle, so Easy/Normal/
@@ -622,10 +622,10 @@ export function isUniquelySolvable(common: UndeadCommon): boolean {
 // the true solution still allows, so its firings are sound to teach. It is *not*
 // recursion-capable: a board the ladder can't crack without guessing yields a
 // short plan, and the deductive-ladder generation policy guarantees the shipped
-// tiers never need that (`hint-authoring.md` §1A; the `strengthen-undead-deduction`
+// tiers never need that (`docs/games/solver-and-generator.md § "Guess-free generation"; the `strengthen-undead-deduction`
 // re-grade measured a zero recursion residual).
 
-/** Why a candidate was eliminated, or a cell forced (`hint-authoring.md` §9):
+/** Why a candidate was eliminated, or a cell forced (`docs/games/hints.md § "Candidate-elimination games"):
  * - `sightline` — one path's two count clues admit no legal beam arrangement
  *   leaving this cell the eliminated monster (the core mirror-sighting deduction);
  * - `total` — a monster type's full count is already placed, so it is struck from

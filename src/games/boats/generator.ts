@@ -19,14 +19,14 @@
  * So the published description depends on the solver's verdict on every board
  * along the way, and the differential's one byte-match assertion validates the
  * generator, all four solver tiers, the dsf root choice and the codec together
- * (playbook §4.4).
+ * (docs/games/solver-and-generator.md § "Solver-gated generation").
  *
  * **RNG draws must be reproduced in order, including the wasted ones.** The
  * fleet placement shuffles the run list and draws a position *per boat*, and
  * the clue-removal passes shuffle a full-grid permutation twice — the second
  * `shuffle` permutes the array the first one already permuted, rather than a
  * fresh identity, so it cannot be replaced with one shuffle of a fresh array
- * (playbook §4.3).
+ * (docs/games/testing.md § "Byte-match: fidelity where there is a right answer").
  */
 
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";

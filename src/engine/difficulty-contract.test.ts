@@ -208,7 +208,7 @@ describe.each(tiered)("$id difficulty contract", ({ id, game, contract, choices 
       // reachable tier, find the lowest cap that solves it, and require every
       // higher cap to solve it too.
       //
-      // Seed-deterministic and bounded, never clock-gated (playbook §5.2).
+      // Seed-deterministic and bounded, never clock-gated (docs/games/testing.md § "Seed-deterministic, never clock-gated").
       //
       // **Four boards per tier, and the number was measured rather than guessed.**
       // The first version generated one, and it was proved insufficient the only

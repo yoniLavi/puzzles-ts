@@ -19,7 +19,7 @@
  * plumbing (display concern, outside byte-parity scope).
  *
  * `findMistakes` duplicates get an inset red frame via an `OverlaySidecar`
- * (playbook §3.2); violated edges are already red live, exactly as the C
+ * (docs/games/rendering.md § "The tile cache and the diff key"); violated edges are already red live, exactly as the C
  * shows them.
  */
 

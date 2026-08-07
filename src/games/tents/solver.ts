@@ -2,7 +2,7 @@
  * Tents solver — faithful port of `tents_solve` in `tents.c`. Returns the
  * upstream verdict: 0 impossible (no consistent solution), 1 unique (fully
  * determined), 2 ambiguous / non-converged. The generator gates on this exact
- * verdict, so the deductive power must match C on every board (playbook §4.4).
+ * verdict, so the deductive power must match C on every board (docs/games/solver-and-generator.md § "Solver-gated generation").
  *
  * `diff` is the difficulty ceiling: `< 0` runs only the tent↔tree link
  * deduction; `EASY` adds the non-tent marks, tree single-candidate, and the

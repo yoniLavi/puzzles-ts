@@ -384,7 +384,7 @@ const POPULATE_TEXT = populateText("number");
 const CLEAN_OBVIOUS_TEXT = cleanObviousText("number", "standing", "row or column");
 
 /** The cage's arithmetic goal as a verb phrase, read off its packed clue — the
- * indication a cage deduction leads with (hint-authoring §2.2). Reads across the
+ * indication a cage deduction leads with (docs/games/hints.md § "Lead with the indication"). Reads across the
  * whole operation set: `sum to 15`, `multiply to 72`, `differ by 3`,
  * `have a ratio of 2`. */
 function cageGoal(op: number, value: number): string {
@@ -402,7 +402,7 @@ function cageGoal(op: number, value: number): string {
   }
 }
 
-/** Narrate *why* a firing is forced (hint-authoring §2): indication → reasoning →
+/** Narrate *why* a firing is forced (docs/games/hints.md § "Writing the narration"): indication → reasoning →
  * necessity-voice conclusion. `ns` is the struck value list (a placement passes
  * its single digit); `w` is the grid order. Cage deductions name the cage by its
  * clue; the generic Latin techniques carry no clean local area (the struck notes

@@ -4,7 +4,7 @@
  * Tier 1 (pure logic): params/desc codec, generator solvability + uniqueness,
  * solver, completion, selection moves, findMistakes. Tier 2.5: a render
  * scenario with targeted op assertions + a snapshot. See
- * docs/porting/game-port-playbook.md §4.
+ * docs/games/testing.md § "The test tiers".
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";

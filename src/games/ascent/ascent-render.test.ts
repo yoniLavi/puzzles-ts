@@ -1,5 +1,5 @@
 /**
- * Tier-2.5 render-scenario tests for Ascent (playbook §3.2, add-render-snapshot-harness).
+ * Tier-2.5 render-scenario tests for Ascent (docs/games/rendering.md § "The tile cache and the diff key", add-render-snapshot-harness).
  *
  * Reaches a fresh board for the Rectangle, Hexagon and Edges modes through a
  * real `Midend`, asserts the ops that matter (background fill, square borders,

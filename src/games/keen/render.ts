@@ -74,7 +74,7 @@ export function colours(defaultBackground: Colour): Colour[] {
 }
 
 /** Highlight payload a Keen hint step carries (built in `index.ts`). The
- * element-type legend (hint-authoring §5.3): the driving cage's cells shaded
+ * element-type legend (docs/games/hints.md § "The element-type colour legend"): the driving cage's cells shaded
  * `COL_HINT_CELL`, the acted-on cell(s) `COL_HINT`, the ruled-out candidate(s)
  * shown struck. */
 export interface KeenHint {
@@ -129,7 +129,7 @@ export interface KeenDrawState {
   /** `w²` hint-overlay sidecar (fork addition): bit 0 = target cell, bit 1 =
    * evidence, bits 2.. = struck-candidate mask (`hintMarkBit(n)`). Owns the
    * repack/stale/commit dance that keeps the overlay in the cache diff key
-   * (playbook §3.2). */
+   * (docs/games/rendering.md § "The tile cache and the diff key"). */
   hint: OverlaySidecar;
   /** `w²` mistake-overlay sidecar (fork addition) — same dance, so Check & Save
    * repaints a cell whose tile value is otherwise unchanged. */
@@ -176,7 +176,7 @@ function drawTile(
   const cell = y * w + x;
   const drawClue = minimal[cell] === cell;
 
-  // Hint overlay (hint-authoring §5.3): target cell (COL_HINT) > evidence cell
+  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): target cell (COL_HINT) > evidence cell
   // (COL_HINT_CELL) > cursor/flash highlight > background. `struck` is the set of
   // candidates this firing rules out, drawn crossed through among the marks.
   const hintTarget = (hint & 1) !== 0;
@@ -337,7 +337,7 @@ function drawTile(
             String(i),
           );
           // A hint-ruled-out candidate keeps its normal pencil colour with a
-          // same-colour strikethrough — the "ruled out" cue (hint-authoring §5.3).
+          // same-colour strikethrough — the "ruled out" cue (docs/games/hints.md § "The element-type colour legend").
           if (struck & (1 << i)) {
             const r = Math.max(2, (fontsize / 3) | 0);
             dr.drawLine({ x: cx - r, y: cy }, { x: cx + r, y: cy }, COL_PENCIL, 2);

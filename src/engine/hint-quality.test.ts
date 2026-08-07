@@ -1,7 +1,7 @@
 /**
  * Cross-game guarantees on hint narration *form* (never content).
  *
- * `hint-authoring.md` §2 is a list of narration rules that were, until
+ * `docs/games/hints.md § "Writing the narration" is a list of narration rules that were, until
  * this file, enforced per-game or by review alone — and narration
  * quality is the broadest hint-defect class in the history (8 games; see
  * `unify-hint-framework` §0.2). Three of its rules are pure form, so
@@ -71,7 +71,7 @@ const DEDUCTIVE = new Set([
 const IDIOMS: Record<string, RegExp> = {
   // Filling's grouped region step: "The shaded region of N fits exactly
   // into these squares." — the exactness *is* the forcing claim
-  // (hint-authoring §5.5; owner-endorsed with the Filling hint).
+  // (docs/games/hints.md § "Group one firing into one step"; owner-endorsed with the Filling hint).
   filling: /fits exactly into/,
 };
 

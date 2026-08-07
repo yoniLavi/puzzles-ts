@@ -65,7 +65,7 @@ const FLASH_LENGTH = 0.3;
  * The eight directions bound to the bare number-pad digits. This web frontend
  * never sets `MOD_NUM_KEYPAD`, so a faithful transcription of upstream's
  * `MOD_NUM_KEYPAD | '7'` bindings would leave the diagonals unreachable by
- * keyboard (playbook §3.8a). Accept the bare digits `1`–`9` (except `5`), plus
+ * keyboard (docs/games/input.md § "The numeric keypad never arrives"). Accept the bare digits `1`–`9` (except `5`), plus
  * the cursor keys for the four orthogonal moves — a deliberate divergence that
  * costs nothing and restores the input the C build's keypad also failed to reach.
  */

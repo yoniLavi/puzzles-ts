@@ -2,7 +2,7 @@
  * Tracks move application, the flip predicates, and the drag/diff helpers.
  * Kept out of `index.ts` so both `index.ts` (interpretMove) and `render.ts`
  * (which reflects an in-progress drag) can import them without a cycle
- * (playbook §3.2).
+ * (docs/games/rendering.md § "The tile cache and the diff key").
  */
 import {
   type Board,

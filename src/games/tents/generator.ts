@@ -1,6 +1,6 @@
 /**
  * Tents generator — faithful port of `new_game_desc` in tents.c. Byte-match
- * critical (design D1 / playbook §4.3–4.4): every RNG draw must reproduce C
+ * critical (design D1 / docs/games/testing.md § "Byte-match: fidelity where there is a right answer"–4.4): every RNG draw must reproduce C
  * exactly — the `random_upto` tent-placement permutation and the bipartite
  * `matching`'s own internal draws (RNG-faithful in `engine/latin.ts`) — and
  * the solver's verdict must match C on every candidate board (the difficulty

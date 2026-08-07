@@ -36,7 +36,7 @@ export type SticksStatus = "complete" | "unfinished" | "invalid";
 /**
  * *Why* a board is invalid, recorded at the point {@link sticksValidate}
  * detects it — one variant per branch the validator can fail on, which is the
- * whole of its vocabulary (hint-authoring §5.6a′: the classifier must be
+ * whole of its vocabulary (docs/games/hints.md § "Read the reason off the validator": the classifier must be
  * total, and it is total here because it is written *inside* the oracle rather
  * than re-derived from its verdict).
  *
@@ -477,7 +477,7 @@ function classifyTrial(
   }
   // Unreachable: the caller only classifies a board `sticksValidate` has
   // already called invalid, and every one of its `error = true` branches
-  // records a reason (hint-authoring §5.6a′ — the classifier is total because
+  // records a reason (docs/games/hints.md § "Read the reason off the validator" — the classifier is total because
   // it lives inside the oracle).
   throw new Error("sticks hint: invalid board produced no reason");
 }
@@ -524,7 +524,7 @@ function reasonKey(r: SticksReason): string {
  * **this** board, in cell order, or `null` when the deduction is exhausted.
  *
  * Deliberately a **parallel** function rather than a recorder threaded through
- * `sticksTry` (hint-authoring §5.6a′): the generator's deduction is then
+ * `sticksTry` (docs/games/hints.md § "Read the reason off the validator"): the generator's deduction is then
  * untouched by construction, so the frozen differential cannot drift. It runs
  * from whatever board it is handed — unlike {@link sticksSolveGame}, which
  * wipes every white cell first and so can never be a hint's engine — and
@@ -608,7 +608,7 @@ export function findLiveErrors(state: SticksState): number[] {
 
 /**
  * Re-solve from the fixed clues and flag every white cell whose placed line
- * contradicts the unique solution (playbook §3.5). A *missing* line is
+ * contradicts the unique solution (docs/games/solver-and-generator.md § "The solvable-game contract"). A *missing* line is
  * merely incomplete, never a mistake. Returns `[]` when the clues do not
  * deduce a complete board (defensive — generated boards always do).
  */

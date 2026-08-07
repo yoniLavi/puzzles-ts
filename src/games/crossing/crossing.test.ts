@@ -336,7 +336,7 @@ describe("crossing generator", () => {
     // The byte-match differential runs with `upstreamIsolatedCells`, so this
     // guards the thing that would otherwise rot silently: that the flag really
     // does change the generated board, and the oracle is therefore still
-    // checking upstream's algorithm rather than the shipped one (playbook §4.4).
+    // checking upstream's algorithm rather than the shipped one (docs/games/solver-and-generator.md § "Solver-gated generation").
     const seed = "iso-seed-14"; // found by scan: upstream yields an isolated cell here
     const upstream = newCrossingDesc(P5, randomNew(seed), {
       upstreamIsolatedCells: true,
@@ -1035,7 +1035,7 @@ describe("crossing moves and completion", () => {
     expect(m.newGameFromId(FIX_ID)).toBeUndefined();
     expect(m.solve()).toBeUndefined();
     expect(status()).toBe("solved-with-help");
-    // `cheated` is set, so the celebration flash must not fire (playbook §3.6).
+    // `cheated` is set, so the celebration flash must not fire (docs/games/solver-and-generator.md § "Solve and the generator's aux").
     const start = newState(P5, FIX.desc);
     const solveResult = crossingGame.solve?.(start, start);
     expect(solveResult?.ok).toBe(true);
@@ -1163,7 +1163,7 @@ describe("crossing rendering", () => {
   });
 
   it("highlights a mistake even on a cell that was already drawn", () => {
-    // The paint-twice test (playbook §3.2): the overlay must sit in the diff
+    // The paint-twice test (docs/games/rendering.md § "Prove the overlay repaints"): the overlay must sit in the diff
     // key, or Check & Save — which runs a frame *after* the move that drew the
     // cell — would silently highlight nothing.
     const state = newState(P5, FIX.desc);
