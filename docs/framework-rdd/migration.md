@@ -48,10 +48,32 @@ incremental and abortable.
    narrations) that greenfield games cannot. A game adopts only when the
    re-expression is *nicer* — the standing "noticeably cleaner is
    sufficient, contortion is disqualifying" rule decides, per game.
-4. **The long tail by opportunity**: when a session touches a game for any
-   other reason, it weighs re-expression then — never as a big-bang sweep.
-   Some games plausibly never adopt (Untangle, Cube); that is a supported
-   end state, not a failure.
+4. **Then the full sweep, in family batches (owner decision, 2026-08-07):
+   every game is re-expressed.** In an AI-driven repo the corpus is the
+   documentation — future sessions learn the architecture from the games
+   they open, so a mixed tree manufactures divergence at exactly the scale
+   the many-games ambition implies. The sweep waits until the exemplars
+   have hardened the contract (a premature sweep multiplies every contract
+   change by 57), then proceeds family by family, mechanical by that point.
+   A handful of games (Untangle, Cube) adopt the *definition* while keeping
+   bespoke input/render hatches — the hatches are part of the framework,
+   and even those games gain conformance enrolment.
+
+   Two rules make 57 re-expressions tractable without diluting the
+   acceptance doctrine:
+
+   - **Two-lane acceptance.** A re-expression whose entire guard set passes
+     **unchanged** — frozen differentials byte-clean, narration strings
+     byte-clean, render snapshots untouched — is machine-provably invisible
+     and gets batched spot acceptance; one that re-baselines even a single
+     snapshot takes the full owner-acceptance gate. The scarce resource is
+     owner time, not AI labour, and this spends it only where behaviour
+     could have moved.
+   - **A capability-manifest diff per game.** The characteristic sweep risk
+     is silent capability loss (the repo's known silent-shrink shape at
+     scale): each re-expression asserts the game declares the same
+     capability set before and after — hints, mistakes, prefs, keypad,
+     reference aid, difficulty tiers — checked by the suite, not by eye.
 
 ## Invariants that must not move
 
