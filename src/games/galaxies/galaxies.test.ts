@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/index.ts";
+import { RIGHT_BUTTON, RIGHT_DRAG, RIGHT_RELEASE } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { PuzzleButton } from "../../engine/types.ts";
 import { newGameDesc } from "./generator.ts";
-import { GalaxiesDiff, type GalaxiesParams, galaxiesGame } from "./index.ts";
-import { COL_EDGE, COL_MISTAKE } from "./render.ts";
+import {
+  GalaxiesDiff,
+  type GalaxiesMove,
+  type GalaxiesParams,
+  galaxiesGame,
+} from "./index.ts";
+import { COL_CURSOR, COL_EDGE, COL_MISTAKE } from "./render.ts";
 import { clearForSolve, solverState } from "./solver.ts";
 import {
   addAssoc,
@@ -516,5 +522,186 @@ describe("Galaxies findMistakes", () => {
     expect(cleared.ops.some((o) => o.op === "drawRect" && o.colour === COL_EDGE)).toBe(
       true,
     );
+  });
+});
+
+describe("Galaxies drag preview (discrete snapped target)", () => {
+  // The 2026-08-08 owner-reported smear: the old pixel-following drag
+  // arrows were drawn outside the per-tile cache and only one tile was
+  // ever invalidated, so every tile the drag crossed kept a stale
+  // arrow, and ink landed outside the board where nothing repaints.
+  // The preview is now discrete — snapped target + 180° partner,
+  // folded into the tile cache — so these tests pin: paint at the
+  // target pair only, in the cursor colour, erased by the tiles' own
+  // repaints, never outside the board, no full-board updates.
+  const p: GalaxiesParams = { w: 3, h: 3, diff: GalaxiesDiff.Normal };
+  const p43: GalaxiesParams = { w: 4, h: 3, diff: GalaxiesDiff.Normal };
+  const TILE = 32;
+  const BORDER = TILE;
+
+  /**
+   * 4×3 board with dots at doubled (3,3) and (7,1). Two dots matter: a
+   * single-dot board with no edges is *already* one locally-valid
+   * symmetric region, so `okToAddAssocWithOpposite` rightly refuses
+   * every association on it and no preview can ever show.
+   */
+  function twoDotBoard() {
+    const s = galaxiesGame.newState(p43, "gj");
+    const ui = galaxiesGame.newUi(s);
+    const ds = newDrawState(s);
+    return { s, ui, ds };
+  }
+
+  /** Tile rect in pixels for tile-column c, tile-row r. */
+  function tileRect(c: number, r: number) {
+    return { x: c * TILE + BORDER, y: r * TILE + BORDER };
+  }
+
+  it("paints the snapped target and its mirror in the cursor colour, erases both when the target moves, and leaves nothing after the drag", () => {
+    const { s, ui, ds } = twoDotBoard();
+    const cold = recordingDrawing();
+    galaxiesRedraw(cold.dr, ds, null, s, 1, ui, 0, 0);
+
+    // Drag from the centre dot; target the left-middle tile (1,3).
+    // Its 180° partner about the dot is the right-middle tile (5,3).
+    ui.dragging = true;
+    ui.dotx = 3;
+    ui.doty = 3;
+    ui.srcx = 3;
+    ui.srcy = 3;
+    ui.targetX = 1;
+    ui.targetY = 3;
+    const drag1 = recordingDrawing();
+    galaxiesRedraw(drag1.dr, ds, null, s, 1, ui, 0, 0);
+    const clips1 = drag1.ops.filter((o) => o.op === "clip");
+    expect(clips1.map((o) => ({ x: o.x, y: o.y }))).toEqual(
+      expect.arrayContaining([tileRect(0, 1), tileRect(2, 1)]),
+    );
+    expect(clips1).toHaveLength(2);
+    // Preview lines (arrows + target outline) are cursor-coloured —
+    // never the committed arrow's ink.
+    const lines1 = drag1.ops.filter((o) => o.op === "drawLine");
+    expect(lines1.length).toBeGreaterThan(0);
+    expect(lines1.every((o) => o.colour === COL_CURSOR)).toBe(true);
+
+    // Move the target: the old pair must repaint clean (that repaint
+    // IS the erase), the new pair paints.
+    ui.targetX = 1;
+    ui.targetY = 1;
+    const drag2 = recordingDrawing();
+    galaxiesRedraw(drag2.dr, ds, null, s, 1, ui, 0, 0);
+    const clips2 = drag2.ops.filter((o) => o.op === "clip");
+    expect(clips2.map((o) => ({ x: o.x, y: o.y }))).toEqual(
+      expect.arrayContaining([
+        tileRect(0, 1),
+        tileRect(2, 1),
+        tileRect(0, 0),
+        tileRect(2, 2),
+      ]),
+    );
+    expect(clips2).toHaveLength(4);
+
+    // Drag ends: the preview pair repaints clean; nothing else.
+    ui.dragging = false;
+    const done = recordingDrawing();
+    galaxiesRedraw(done.dr, ds, null, s, 1, ui, 0, 0);
+    expect(done.ops.filter((o) => o.op === "clip")).toHaveLength(2);
+    expect(done.ops.some((o) => o.op === "drawLine" && o.colour === COL_CURSOR)).toBe(
+      false,
+    );
+    const idle = recordingDrawing();
+    galaxiesRedraw(idle.dr, ds, null, s, 1, ui, 0, 0);
+    expect(idle.ops.filter((o) => o.op === "clip")).toHaveLength(0);
+
+    // Across every drag frame: all paint stays inside the board (the
+    // outside-the-board trail could never be erased), and no frame
+    // repaints the whole window (the old shape drawUpdate-ed the full
+    // canvas on every pointer move).
+    const boardLo = BORDER;
+    const boardHiX = BORDER + 4 * TILE;
+    const boardHiY = BORDER + 3 * TILE;
+    for (const frame of [drag1, drag2, done]) {
+      for (const o of frame.ops) {
+        if (o.op === "clip" || o.op === "drawUpdate") {
+          expect(o.x).toBeGreaterThanOrEqual(boardLo);
+          expect(o.y).toBeGreaterThanOrEqual(boardLo);
+          expect((o.x ?? 0) + (o.w ?? 0)).toBeLessThanOrEqual(boardHiX);
+          expect((o.y ?? 0) + (o.h ?? 0)).toBeLessThanOrEqual(boardHiY);
+        }
+      }
+    }
+  });
+
+  it("shows no preview on an uncommittable target (mirror off the board)", () => {
+    // Dot on the top-left tile's centre: every other tile's mirror
+    // about it is off-grid, so nothing can commit anywhere.
+    const s = galaxiesGame.newState(p, "a");
+    const ui = galaxiesGame.newUi(s);
+    const ds = newDrawState(s);
+    const cold = recordingDrawing();
+    galaxiesRedraw(cold.dr, ds, null, s, 1, ui, 0, 0);
+
+    ui.dragging = true;
+    ui.dotx = 1;
+    ui.doty = 1;
+    ui.srcx = 1;
+    ui.srcy = 1;
+    ui.targetX = 3;
+    ui.targetY = 1;
+    const drag = recordingDrawing();
+    galaxiesRedraw(drag.dr, ds, null, s, 1, ui, 0, 0);
+    expect(drag.ops.filter((o) => o.op === "clip")).toHaveLength(0);
+    expect(drag.ops.some((o) => o.colour === COL_CURSOR)).toBe(false);
+  });
+
+  it("release commits exactly the previewed pair, not the release pixel", () => {
+    const { s, ui } = twoDotBoard();
+    // Press on the dot (pixel centre of doubled (3,3) at tile 32 is 80).
+    expect(
+      galaxiesGame.interpretMove(s, ui, null, { x: 80, y: 80 }, RIGHT_BUTTON),
+    ).toBe(UI_UPDATE);
+    expect(ui.dragging).toBe(true);
+    // Drag onto the left-middle tile.
+    expect(galaxiesGame.interpretMove(s, ui, null, { x: 48, y: 80 }, RIGHT_DRAG)).toBe(
+      UI_UPDATE,
+    );
+    expect([ui.targetX, ui.targetY]).toEqual([1, 3]);
+    // A pointer move within the same tile has nothing to repaint.
+    expect(
+      galaxiesGame.interpretMove(s, ui, null, { x: 51, y: 83 }, RIGHT_DRAG),
+    ).toBeNull();
+    // Release far away (touch lift-jitter): the previewed tile wins.
+    const move = galaxiesGame.interpretMove(
+      s,
+      ui,
+      null,
+      { x: 300, y: 300 },
+      RIGHT_RELEASE,
+    );
+    expect(move).toEqual({
+      ops: [{ kind: "assoc", x: 1, y: 3, ax: 3, ay: 3 }],
+      solving: false,
+    });
+    const after = galaxiesGame.executeMove(s, move as GalaxiesMove);
+    expect(after.flags[idx(after, 1, 3)] & F_TILE_ASSOC).toBeTruthy();
+    expect(after.flags[idx(after, 5, 3)] & F_TILE_ASSOC).toBeTruthy();
+  });
+
+  it("release where nothing can commit produces no history entry", () => {
+    // Corner dot: dragging to any tile is uncommittable (mirror
+    // off-grid). The old shape emitted an assoc op that executeMove
+    // no-opped — an undo entry that changed nothing.
+    const s = galaxiesGame.newState(p, "a");
+    const ui = galaxiesGame.newUi(s);
+    expect(
+      galaxiesGame.interpretMove(s, ui, null, { x: 48, y: 48 }, RIGHT_BUTTON),
+    ).toBe(UI_UPDATE);
+    expect(galaxiesGame.interpretMove(s, ui, null, { x: 80, y: 48 }, RIGHT_DRAG)).toBe(
+      UI_UPDATE,
+    );
+    expect(
+      galaxiesGame.interpretMove(s, ui, null, { x: 80, y: 48 }, RIGHT_RELEASE),
+    ).toBe(UI_UPDATE);
+    expect(ui.dragging).toBe(false);
   });
 });

@@ -8,6 +8,7 @@
  */
 import { drawRectOutline, type GameDrawing } from "../../engine/index.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { okToAddAssocWithOpposite } from "./moves.ts";
 import {
   checkComplete,
   F_DOT,
@@ -17,6 +18,7 @@ import {
   type GalaxiesState,
   idx,
   SpaceType,
+  spaceOppositeDot,
   spaceTypeAt,
   tileOpposite,
 } from "./state.ts";
@@ -50,6 +52,12 @@ export interface GalaxiesDrawState {
   /** Per-tile arrow dx/dy cache; part of the cache-miss comparison. */
   dx: Int16Array;
   dy: Int16Array;
+  /** Per-tile drag-preview cache (0 = none, 1 = mirror-partner ghost,
+   * 2 = drop target); part of the cache-miss comparison, so a tile the
+   * preview leaves repaints clean. A sidecar rather than a key bit
+   * because the Int32 key is full (bits 0-11, 12-29 dots, 30 mistake) —
+   * same reasoning as `wrongEdges`. */
+  preview: Int8Array;
   /** Per-tile wrong-wall mask (DRAW_EDGE_L/R/U/D bits) for the mistake
    * overlay — a sidecar rather than a cache-key bit because there are no
    * free bits left in the Int32 key for four more edge flags. Part of
@@ -74,6 +82,7 @@ export function newDrawState(s: GalaxiesState): GalaxiesDrawState {
     cache,
     dx: new Int16Array(n),
     dy: new Int16Array(n),
+    preview: new Int8Array(n),
     wrongEdges: new OverlaySidecar(n),
   };
 }
@@ -153,6 +162,7 @@ function drawSquare(
   ddx: number,
   ddy: number,
   wrongEdges: number,
+  preview: number,
 ): void {
   const lx = x * tileSize + border;
   const ly = y * tileSize + border;
@@ -176,7 +186,11 @@ function drawSquare(
   dr.drawRect({ x: lx, y: ly, w: 1, h: tileSize }, gridCol);
   dr.drawRect({ x: lx, y: ly, w: tileSize, h: 1 }, gridCol);
 
-  // Arrow or cursor
+  // Arrow or cursor. A drag-preview arrow always renders in the
+  // cursor colour: a preview must not look like a committed arrow
+  // (docs/games/rendering.md § "A press preview must not look like a
+  // commit"), and both preview tiles share one colour because release
+  // commits them together — they share a fate.
   if (flags & DRAW_ARROW) {
     drawArrow(
       dr,
@@ -185,7 +199,7 @@ function drawSquare(
       ddx,
       ddy,
       tileSize,
-      flags & DRAW_CURSOR ? COL_CURSOR : COL_ARROW,
+      preview || flags & DRAW_CURSOR ? COL_CURSOR : COL_ARROW,
     );
   } else if (flags & DRAW_CURSOR) {
     const cx = lx + (tileSize >> 1) - cursorSize;
@@ -281,6 +295,21 @@ function drawSquare(
     }
   }
 
+  // The drop target itself gets an outline on top of its preview
+  // arrow — "showing the target too": the mirror partner's ghost says
+  // what comes along, the outline says where the pointer will commit.
+  if (preview === 2) {
+    const inset = Math.max(edgeThickness + 1, (tileSize / 8) | 0);
+    drawRectOutline(
+      dr,
+      lx + inset,
+      ly + inset,
+      tileSize - 2 * inset,
+      tileSize - 2 * inset,
+      COL_CURSOR,
+    );
+  }
+
   // Mistake highlight: an inset red outline marking a wrong
   // association, drawn last so it sits above the region fill / arrow.
   if (flags & DRAW_MISTAKE) {
@@ -303,45 +332,25 @@ function drawSquare(
   dr.drawUpdate({ x: lx, y: ly, w: tileSize, h: tileSize });
 }
 
-// --- main redraw ----------------------------------------------------
-
-export function redraw(
-  dr: GameDrawing,
-  ds: GalaxiesDrawState | null,
-  _prev: GalaxiesState | null,
-  s: GalaxiesState,
-  _dir: number,
-  ui: {
-    dragging: boolean;
-    dx: number;
-    dy: number;
-    dotx: number;
-    doty: number;
-    srcx: number;
-    srcy: number;
-    curX: number;
-    curY: number;
-    curVisible: boolean;
-  },
-  _animTime: number,
-  flashTime: number,
-  _hint?: unknown,
-  mistakes?: readonly { kind: "tile" | "edge"; x: number; y: number }[],
-): void {
-  if (ds === null) return;
-  const w = ds.w;
-  const h = ds.h;
-  const tile = ds.tileSize;
-
-  // Split the mistake overlay into wrong-association tiles (folded into
-  // the cache key as DRAW_MISTAKE) and wrong walls (packed into the
-  // `wrongEdges` sidecar). Empty when the engine supplies no overlay;
-  // both feed the cache-miss check so cells repaint clean once cleared.
-  //
-  // A wall lives on a half-grid coordinate *between* two tiles, so it lights
-  // one bit in each of them: a vertical wall (even x, odd y) is the right-hand
-  // tile's L edge and the left-hand tile's R edge, and vice versa for a
-  // horizontal wall. Tiles off the board's rim simply drop out.
+/**
+ * Split the engine's mistake overlay into wrong-association tiles
+ * (returned as a set of tile indices, folded into the cache key as
+ * DRAW_MISTAKE) and wrong walls (packed into the `wrongEdges`
+ * sidecar). Clears and repacks the sidecar every call, so an empty
+ * overlay erases a previous one.
+ *
+ * A wall lives on a half-grid coordinate *between* two tiles, so it
+ * lights one bit in each of them: a vertical wall (even x, odd y) is
+ * the right-hand tile's L edge and the left-hand tile's R edge, and
+ * vice versa for a horizontal wall. Tiles off the board's rim simply
+ * drop out.
+ */
+function splitMistakeOverlay(
+  ds: GalaxiesDrawState,
+  w: number,
+  h: number,
+  mistakes: readonly { kind: "tile" | "edge"; x: number; y: number }[] | undefined,
+): Set<number> {
   const mistakeTiles = new Set<number>();
   ds.wrongEdges.clear();
   const addWall = (tx: number, ty: number, bit: number) => {
@@ -364,6 +373,42 @@ export function redraw(
       if (tx >= 0 && tx < w && ty >= 0 && ty < h) mistakeTiles.add(ty * w + tx);
     }
   }
+  return mistakeTiles;
+}
+
+// --- main redraw ----------------------------------------------------
+
+export function redraw(
+  dr: GameDrawing,
+  ds: GalaxiesDrawState | null,
+  _prev: GalaxiesState | null,
+  s: GalaxiesState,
+  _dir: number,
+  ui: {
+    dragging: boolean;
+    targetX: number;
+    targetY: number;
+    dotx: number;
+    doty: number;
+    srcx: number;
+    srcy: number;
+    curX: number;
+    curY: number;
+    curVisible: boolean;
+  },
+  _animTime: number,
+  flashTime: number,
+  _hint?: unknown,
+  mistakes?: readonly { kind: "tile" | "edge"; x: number; y: number }[],
+): void {
+  if (ds === null) return;
+  const w = ds.w;
+  const h = ds.h;
+  const tile = ds.tileSize;
+
+  // Both halves of the mistake overlay feed the cache-miss check, so
+  // cells repaint clean once the overlay clears.
+  const mistakeTiles = splitMistakeOverlay(ds, w, h, mistakes);
   const border = tile;
   const drawWidth = w * tile + 2 * border;
   const drawHeight = h * tile + 2 * border;
@@ -393,6 +438,31 @@ export function redraw(
   }
 
   const cols = checkComplete(s, true).colours;
+
+  // The in-progress drag's snapped preview: the drop target and its
+  // 180° partner about the drag dot — exactly the pair a release
+  // commits — or nothing when a release would not commit there (the
+  // Inertia aim idiom: an uncommittable target shows no arrow, and
+  // that absence is the feedback). Legality is evaluated against the
+  // *current* state every redraw, so a mid-drag undo cannot leave the
+  // preview promising a move the release would refuse.
+  let pvX = -1;
+  let pvY = -1;
+  let pvOppX = -1;
+  let pvOppY = -1;
+  if (
+    ui.dragging &&
+    cols &&
+    okToAddAssocWithOpposite(s, ui.targetX, ui.targetY, ui.dotx, ui.doty, cols)
+  ) {
+    pvX = ui.targetX;
+    pvY = ui.targetY;
+    const opp = spaceOppositeDot(s, pvX, pvY, ui.dotx, ui.doty);
+    if (opp) {
+      pvOppX = opp.x;
+      pvOppY = opp.y;
+    }
+  }
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -481,22 +551,39 @@ export function redraw(
       // Wrong-association highlight (bit 30 of the key).
       if (mistakeTiles.has(y * w + x)) flags |= DRAW_MISTAKE;
 
+      // Drag preview: the snapped target (2) and its mirror partner
+      // (1) show the association a release would commit, overriding
+      // any committed arrow's direction for the duration.
+      const tx2 = 2 * x + 1;
+      const ty2 = 2 * y + 1;
+      let preview = 0;
+      if (tx2 === pvX && ty2 === pvY) preview = 2;
+      else if (tx2 === pvOppX && ty2 === pvOppY) preview = 1;
+      if (preview) {
+        flags |= DRAW_ARROW;
+        ddx = ui.dotx - tx2;
+        ddy = ui.doty - ty2;
+      }
+
       // Cache key: flags (bits 0-11, 30) | dots (bits 12-29), within 31
-      // bits — fits a positive Int32. ddx/ddy and the wrong-wall mask
-      // live in their sidecar arrays and form part of the cache-miss check.
+      // bits — fits a positive Int32. ddx/ddy, the preview plane and the
+      // wrong-wall mask live in their sidecar arrays and form part of
+      // the cache-miss check.
       const key = flags | dots;
       const cacheI = y * w + x;
       if (
         ds.cache[cacheI] !== key ||
         ds.dx[cacheI] !== ddx ||
         ds.dy[cacheI] !== ddy ||
+        ds.preview[cacheI] !== preview ||
         ds.wrongEdges.stale(cacheI)
       ) {
         const wrongEdges = ds.wrongEdges.packed[cacheI];
-        drawSquare(dr, x, y, tile, border, flags, dots, ddx, ddy, wrongEdges);
+        drawSquare(dr, x, y, tile, border, flags, dots, ddx, ddy, wrongEdges, preview);
         ds.cache[cacheI] = key;
         ds.dx[cacheI] = ddx;
         ds.dy[cacheI] = ddy;
+        ds.preview[cacheI] = preview;
         ds.wrongEdges.commit(cacheI);
       }
     }
@@ -524,38 +611,13 @@ export function redraw(
     }
   }
 
-  // Drag arrow on top of the regular tiles.
-  if (ui.dragging) {
-    const ax = ui.dx;
-    const ay = ui.dy;
-    const oppx = 2 * (((ui.dotx * tile) >> 1) + border) - ax;
-    const oppy = 2 * (((ui.doty * tile) >> 1) + border) - ay;
-    drawArrow(
-      dr,
-      ax,
-      ay,
-      ((ui.dotx * tile) >> 1) + border - ax,
-      ((ui.doty * tile) >> 1) + border - ay,
-      tile,
-      COL_ARROW,
-    );
-    drawArrow(
-      dr,
-      oppx,
-      oppy,
-      ((ui.dotx * tile) >> 1) + border - oppx,
-      ((ui.doty * tile) >> 1) + border - oppy,
-      tile,
-      COL_ARROW,
-    );
-    // The drag overlay isn't part of the per-tile cache; invalidate
-    // the cells under it so the next non-drag redraw repaints them.
-    const ts = tile;
-    const aTileX = Math.floor((ax - border) / ts) | 0;
-    const aTileY = Math.floor((ay - border) / ts) | 0;
-    if (aTileX >= 0 && aTileX < w && aTileY >= 0 && aTileY < h) {
-      ds.cache[aTileY * w + aTileX] = -1;
-    }
-    dr.drawUpdate({ x: 0, y: 0, w: drawWidth, h: drawHeight });
-  }
+  // The drag preview needs nothing here: it is folded into the
+  // per-tile cache above (arrow + target outline in the preview
+  // sidecar), so every pixel it paints is clipped to a tile and is
+  // erased by that tile's own repaint when the target moves or the
+  // drag ends. The previous shape — two unclipped pixel-following
+  // arrows plus a single-tile invalidation — left stale arrows on
+  // every tile the drag crossed and unerasable ink outside the board
+  // (the border only repaints on first-draw); owner-reported
+  // 2026-08-08.
 }

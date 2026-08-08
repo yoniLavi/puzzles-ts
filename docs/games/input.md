@@ -252,6 +252,19 @@ and a slide-follow drag (Sixteen, Slide) each keep their own lifecycle; their
 sprites, cancelling a dangling drag in `changedState`) are in
 [`rendering.md`](./rendering.md).
 
+The **aim drag** picks one discrete target, not a set: `Ui` stores the
+snapped aim (an octant, a tile), each drag event recomputes it and returns
+`null` when it is unchanged (nothing to repaint), an aim where release
+would do nothing draws no preview — the absence *is* the feedback — and
+release commits **what was previewed**, not the raw release pixel (they
+differ exactly on touch lift-jitter, and the player saw the preview).
+Exemplars: [`inertia/index.ts`](../../src/games/inertia/index.ts) (the
+swipe: octant aim off the ball, walls preview nothing);
+[`galaxies/index.ts`](../../src/games/galaxies/index.ts) (the association
+drag: snapped drop tile, preview shows the target *and* its 180° partner
+because release commits both, legality shared with `executeMove` through
+`moves.ts` so preview and commit cannot drift).
+
 ## Round fractional pointer coordinates
 
 **A game that stores pixel-space coordinates in its state must round pointer

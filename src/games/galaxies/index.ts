@@ -40,6 +40,11 @@ import type { RandomState } from "../../engine/random/index.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
 import { newGameDesc } from "./generator.ts";
 import {
+  addAssocWithOpposite,
+  okToAddAssocWithOpposite,
+  removeAssocWithOpposite,
+} from "./moves.ts";
+import {
   COL_ARROW,
   COL_BACKGROUND,
   COL_BLACKBG,
@@ -75,9 +80,7 @@ import {
   rebuildDots,
   removeAssoc,
   SpaceType,
-  spaceOppositeDot,
   spaceTypeAt,
-  tileOpposite,
   tilesFromEdge,
 } from "./state.ts";
 
@@ -115,9 +118,16 @@ export type GalaxiesMistake =
 
 export interface GalaxiesUi {
   dragging: boolean;
-  /** Pixel coords of the drag pointer (for the dragged-arrow render). */
-  dx: number;
-  dy: number;
+  /**
+   * Snapped drop target of the in-progress drag, in grid coords: the
+   * tile a release would commit (pointer path), or the cursor cell
+   * (keyboard path). Raw — it may be off-grid or otherwise
+   * uncommittable; the preview shows that by drawing nothing, and a
+   * release there removes or cancels instead of committing (the
+   * Inertia aim idiom: absence of the preview *is* the feedback).
+   */
+  targetX: number;
+  targetY: number;
   /** Grid coords of the dot we're dragging from. */
   dotx: number;
   doty: number;
@@ -223,43 +233,15 @@ function scoord(c: number, tileSize: number, border: number): number {
   return (c * tileSize) / 2 + border;
 }
 
+/** Snap one pixel axis to the tile-centre grid coordinate under it —
+ * the drop target a release commits to. Mirrors upstream's
+ * `2*FROMCOORD(x + TILE_SIZE) - 1`; always yields an odd (tile)
+ * coordinate, possibly off-grid when the pointer leaves the board. */
+function snapToTile(p: number, tileSize: number, border: number): number {
+  return 2 * Math.floor((p - border + tileSize) / tileSize) - 1;
+}
+
 // --- move logic -----------------------------------------------------
-
-/** Mirrors `add_assoc_with_opposite` + the `ok_to_add` precheck.
- * Adds (tile, dot) and (opp, dot) atomically; no-ops if illegal. */
-function addAssocWithOpposite(
-  s: GalaxiesState,
-  tx: number,
-  ty: number,
-  dx: number,
-  dy: number,
-): void {
-  const opp = spaceOppositeDot(s, tx, ty, dx, dy);
-  if (!opp) return;
-  if (spaceTypeAt(tx, ty) !== SpaceType.Tile) return;
-  const oi = idx(s, opp.x, opp.y);
-  if (s.flags[idx(s, tx, ty)] & F_DOT) return;
-  if (s.flags[oi] & F_DOT) return;
-  const cols = checkComplete(s, true).colours;
-  if (!cols) return;
-  if (cols[((ty - 1) >> 1) * s.w + ((tx - 1) >> 1)]) return;
-  if (cols[((opp.y - 1) >> 1) * s.w + ((opp.x - 1) >> 1)]) return;
-  // Mirror upstream: drop the OLD opposite associations first.
-  removeAssocWithOpposite(s, tx, ty);
-  addAssoc(s, tx, ty, dx, dy);
-  removeAssocWithOpposite(s, opp.x, opp.y);
-  addAssoc(s, opp.x, opp.y, dx, dy);
-}
-
-function removeAssocWithOpposite(s: GalaxiesState, tx: number, ty: number): void {
-  const ti = idx(s, tx, ty);
-  if (!(s.flags[ti] & F_TILE_ASSOC)) return;
-  const opp = tileOpposite(s, tx, ty);
-  removeAssoc(s, tx, ty);
-  if (opp && (opp.x !== tx || opp.y !== ty)) {
-    removeAssoc(s, opp.x, opp.y);
-  }
-}
 
 function applyOp(s: GalaxiesState, op: GalaxiesOp, solving: boolean): void {
   if (op.kind === "edge") {
@@ -346,8 +328,13 @@ function interpretMove(
   const x = p.x;
   const y = p.y;
 
-  // --- LEFT_BUTTON: edge toggle (or, on touch, start drag from a
-  // nearby dot/associated-tile if there isn't a sensible edge nearby).
+  // --- LEFT_BUTTON: edge toggle. That is all it does: association
+  // drags live on the right button, which touch reaches via the
+  // long-press promotion (docs/games/input.md § "A touch hold arrives
+  // as the right button"). LEFT_DRAG / LEFT_RELEASE are deliberately
+  // unwired. (Upstream's STYLUS_BASED builds let LEFT start an arrow
+  // drag; this port did not adopt that, and an earlier comment here
+  // wrongly described it as present.)
   if (button === LEFT_BUTTON) {
     const e = coordRoundToEdge(x, y, tile, border);
     ui.curVisible = false;
@@ -390,8 +377,8 @@ function interpretMove(
     }
     if (dotX < 0) {
       // Pick the nearest tile and grab its existing arrow (if any).
-      const tx = 2 * Math.floor((x - border + tile) / tile) - 1;
-      const ty = 2 * Math.floor((y - border + tile) / tile) - 1;
+      const tx = snapToTile(x, tile, border);
+      const ty = snapToTile(y, tile, border);
       if (tx >= 0 && tx < s.sx && ty >= 0 && ty < s.sy) {
         const ti = idx(s, tx, ty);
         if (s.flags[ti] & F_TILE_ASSOC) {
@@ -404,23 +391,30 @@ function interpretMove(
     }
     if (dotX < 0) return null;
     ui.dragging = true;
-    ui.dx = x;
-    ui.dy = y;
+    ui.targetX = snapToTile(x, tile, border);
+    ui.targetY = snapToTile(y, tile, border);
     ui.dotx = dotX;
     ui.doty = dotY;
     return UI_UPDATE;
   }
 
   if (button === RIGHT_DRAG && ui.dragging) {
-    ui.dx = x;
-    ui.dy = y;
+    const tx = snapToTile(x, tile, border);
+    const ty = snapToTile(y, tile, border);
+    // The preview is discrete (per-tile), so a pointer move inside the
+    // same tile has nothing to repaint — the Inertia aim idiom.
+    if (tx === ui.targetX && ty === ui.targetY) return null;
+    ui.targetX = tx;
+    ui.targetY = ty;
     return UI_UPDATE;
   }
 
   if (button === RIGHT_RELEASE && ui.dragging) {
-    const px = 2 * Math.floor((x - border + tile) / tile) - 1;
-    const py = 2 * Math.floor((y - border + tile) / tile) - 1;
-    return dropDrag(s, ui, px, py);
+    // Commit the tile the preview showed, not the raw release pixel:
+    // the two only differ when the pointer jumps between the last drag
+    // event and the release (touch lift-jitter), and what the player
+    // saw is what the release should do.
+    return dropDrag(s, ui, ui.targetX, ui.targetY);
   }
 
   const cursorMove = cursorDelta(button);
@@ -436,8 +430,8 @@ function interpretMove(
     ui.curY = ny;
     ui.curVisible = true;
     if (ui.dragging) {
-      ui.dx = scoord(ui.curX, tile, border);
-      ui.dy = scoord(ui.curY, tile, border);
+      ui.targetX = ui.curX;
+      ui.targetY = ui.curY;
     }
     return changed ? UI_UPDATE : null;
   }
@@ -455,8 +449,8 @@ function interpretMove(
     const ci = idx(s, cx, cy);
     if (s.flags[ci] & F_DOT) {
       ui.dragging = true;
-      ui.dx = scoord(cx, tile, border);
-      ui.dy = scoord(cy, tile, border);
+      ui.targetX = cx;
+      ui.targetY = cy;
       ui.dotx = cx;
       ui.doty = cy;
       ui.srcx = cx;
@@ -465,8 +459,8 @@ function interpretMove(
     }
     if (s.flags[ci] & F_TILE_ASSOC) {
       ui.dragging = true;
-      ui.dx = scoord(cx, tile, border);
-      ui.dy = scoord(cy, tile, border);
+      ui.targetX = cx;
+      ui.targetY = cy;
       ui.dotx = s.dotx[ci];
       ui.doty = s.doty[ci];
       ui.srcx = cx;
@@ -496,13 +490,13 @@ function dropDrag(
   ) {
     ops.push({ kind: "unassoc", x: ui.srcx, y: ui.srcy });
   }
-  if (inUi(s, px, py)) {
-    // ok_to_add_assoc_with_opposite via addAssocWithOpposite path will
-    // simply no-op if illegal; here we conservatively still emit the
-    // assoc — executeMove guards it.
-    if (spaceTypeAt(px, py) === SpaceType.Tile && !(s.flags[idx(s, px, py)] & F_DOT)) {
-      ops.push({ kind: "assoc", x: px, y: py, ax: ui.dotx, ay: ui.doty });
-    }
+  // Emit the assoc only where executeMove would actually commit it —
+  // the same predicate the drag preview draws from, so the preview,
+  // the release, and the state change cannot disagree. (The earlier
+  // shape emitted an assoc that applyOp would no-op, which cost the
+  // player an undo entry that changed nothing.)
+  if (okToAddAssocWithOpposite(s, px, py, ui.dotx, ui.doty)) {
+    ops.push({ kind: "assoc", x: px, y: py, ax: ui.dotx, ay: ui.doty });
   }
   if (ops.length === 0) return UI_UPDATE;
   return { ops, solving: false };
@@ -818,8 +812,8 @@ export const galaxiesGame: Game<
   newUi(_state): GalaxiesUi {
     return {
       dragging: false,
-      dx: 0,
-      dy: 0,
+      targetX: -1,
+      targetY: -1,
       dotx: 0,
       doty: 0,
       srcx: 0,

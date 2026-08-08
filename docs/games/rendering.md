@@ -125,6 +125,25 @@ and make the preview fall back to the plain board rather than throwing.
 can't handle "no". Exemplar:
 [`slide/index.ts`](../../src/games/slide/index.ts) (`changedState`).
 
+### A pointer-following overlay must erase everything it painted
+
+**An overlay drawn outside the per-tile cache owns its own cleanup, in
+full — and partial invalidation is the smear bug.** Galaxies' original
+drag arrow was drawn at raw pixel positions after the tile loop and
+invalidated only the single tile under the pointer: every other tile the
+arrow spanned kept a stale frame, the mirror arrow's tiles were never
+invalidated at all, and ink that landed outside the board could *never*
+be erased (the border repaints only on first-draw). The result read as
+"continuous rendering" but was accumulated garbage — owner-reported with
+a screenshot, 2026-08-08. Before drawing anything pointer-positioned
+outside the cache, ask what erases it, tile by tile, including off-board
+pixels; the safe default is to **snap the preview into cells** so the
+cache's own repaint is the eraser (see the aim-style drag in
+[input](./input.md) § "Other drag shapes"). Exemplar:
+[`galaxies/render.ts`](../../src/games/galaxies/render.ts) (the
+`preview` sidecar plane; the closing comment of `redraw` records the
+trap).
+
 ### A cursor is usually a cache key, not a blitter
 
 **A C *cursor* blitter usually shouldn't become a TS blitter.** Upstream
