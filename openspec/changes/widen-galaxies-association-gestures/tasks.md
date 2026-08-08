@@ -50,6 +50,24 @@
       dots, absent with the preference off, erased on drag end.
 - [x] 4.4 Mutation-check each new guard actually fires.
 
+## 4b. Owner acceptance: the offer was too lenient (2026-08-08)
+
+- [x] 4b.1 `reachableFromDot` in `moves.ts` — a mirror-pair flood fill
+      from the dot's own tiles, blocked only by other dots' own tiles.
+      Upstream's precheck is local, so it accepted arrows no galaxy
+      could contain; the owner hit one two cells from its dot with every
+      route cut off.
+- [x] 4b.2 Soundness property test over generated boards: every
+      association the unique solution contains must still be offered
+      (>500 checked, and the count is asserted so the sweep cannot
+      silently examine nothing). Mutation-checked in both directions —
+      too lenient and too strict.
+- [x] 4b.3 Reduced repro as a unit test (a 5x1 strip with an edge dot
+      cutting the centre dot off from both ends).
+- [x] 4b.4 Measured the effect: 4.28 → 1.51 dots offered per cell on a
+      fresh 10x10. Recorded on the preference, because it changes what
+      that preference can honestly claim to hide.
+
 ## 5. Verification and close-out
 
 - [x] 5.1 Live Chromium, light and dark, mouse and emulated touch.

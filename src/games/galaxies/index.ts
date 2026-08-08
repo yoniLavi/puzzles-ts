@@ -1052,12 +1052,17 @@ export const galaxiesGame: Game<
   solve: solveGalaxies,
   findMistakes,
 
-  /** The rings, not the gesture. Dragging *from* a cell tells a player
-   * nothing they could not learn by dragging to it and seeing whether it
-   * took, so it is always available; being shown, before committing, which
-   * dots have a legal 180° image of this cell is a deduction done for them,
-   * so it is theirs to switch off. Default on — the ring is also what
-   * explains the gesture the first time someone stumbles into it. */
+  /** The rings, not the gesture — and not the information either.
+   *
+   * Once the preview is *honest* (it offers only pairs some galaxy could
+   * actually contain — `reachableFromDot`), the set of dots a cell may join
+   * is discoverable by waving the pointer around and watching where the
+   * preview appears: on a fresh 10x10 it averages 1.5 dots per cell, so for
+   * many cells it is the answer. This preference cannot take that back; it
+   * decides only whether you read it at a glance or by probing. Hiding it
+   * properly would mean making the preview lenient again, which is the
+   * defect this all started from. Default on, since it is also what explains
+   * the gesture the first time someone stumbles into it. */
   prefs: [
     {
       kw: "galaxies-show-drag-candidates",

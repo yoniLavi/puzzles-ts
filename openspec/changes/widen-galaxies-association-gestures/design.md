@@ -76,6 +76,35 @@ dot.
   Int32 cache key has no free bits, and a sidecar is what
   `rendering.md` § "Overlay sidecars" prescribes for exactly this.
 
+- **D8 — The offer is bounded by the rules of a galaxy, and stops there**
+  (added on owner acceptance, 2026-08-08). Upstream's
+  `ok_to_add_assoc_with_opposite` is a *local* test — in-grid, dot-free,
+  mirror likewise — so it accepts arrows no galaxy centred on that dot
+  could ever contain. The owner hit one: a cell two steps from its dot
+  whose direct route ran through a tile another dot sits on, and whose
+  every detour was cut off by the mirror requirement. Now
+  `reachableFromDot` floods outward from the dot's own tiles **in mirror
+  pairs**, blocked by other dots' own tiles. Three boundaries make this
+  defensible:
+  - *Why it is sound*: a real galaxy is connected, symmetric, and holds
+    exactly one dot, so the fill reaches every cell the solution assigns —
+    asserted over generated boards, which is the test that lets the
+    predicate be tightened at all.
+  - *Why it stops here*: block on anything a **deduction** establishes and
+    the offer converges on the unique solution. That is not an aid, it is
+    an answer. Only facts forced by the dot layout count.
+  - *Why it ignores the player*: respecting their walls and arrows would
+    be consistent but would let one mistake veto a correct arrow elsewhere
+    with nothing on screen to explain it.
+
+  Two consequences worth stating. The offer narrows a lot — 4.28 → 1.51
+  dots per cell on a fresh 10×10 — so for many cells there is now exactly
+  one, which means **the candidate preference (D6) no longer hides the
+  information, only the convenience of seeing it**: an honest preview
+  reveals the same set to anyone willing to wave the pointer around. And
+  it costs 0.45 ms per call on 15×15 Unreasonable (46 dots), measured, so
+  the obvious memoisation was not written.
+
 ## Verification
 
 Tier-1: the left click/drag disambiguation in both directions

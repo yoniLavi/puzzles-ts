@@ -62,6 +62,20 @@ the far side of the board.
 - **THEN** an association drag begins from the press point and the
   release commits it, toggling no edge
 
+#### Scenario: Only an association some galaxy could contain is offered
+
+- **WHEN** the player aims a drag at a (cell, dot) pair
+- **THEN** it is offered only if the cell is reachable from the dot by a
+  connected, 180°-symmetric region that avoids every other dot's own
+  tiles — the rules of a galaxy, applied to the offer
+- **AND** the check SHALL depend on the dot layout alone, not on the
+  player's own walls or arrows, so that it can never refuse an
+  association the puzzle's solution contains and one mistake cannot
+  silently veto a correct arrow elsewhere
+- **AND** it SHALL go no further than those rules: running the deduction
+  chain would narrow the offer towards the unique solution, which is not
+  an aid but an answer
+
 #### Scenario: A drag from a cell finds its dot
 
 - **WHEN** the player drags from a tile that has no dot and no arrow

@@ -18,7 +18,7 @@ import {
   type GalaxiesParams,
   galaxiesGame,
 } from "./index.ts";
-import { legalDotsFor } from "./moves.ts";
+import { legalDotsFor, okToAddAssocWithOpposite, reachableFromDot } from "./moves.ts";
 import { COL_CURSOR, COL_DRAG, COL_EDGE, COL_MISTAKE } from "./render.ts";
 import { clearForSolve, solverState } from "./solver.ts";
 import {
@@ -1013,5 +1013,77 @@ describe("Galaxies candidate rings", () => {
     galaxiesRedraw(drag.dr, ds, null, s, 1, ui, 0, 0);
     expect(rings(drag)).toHaveLength(0);
     expect(drag.ops.filter((o) => o.op === "clip")).toHaveLength(0);
+  });
+});
+
+describe("Galaxies association legality is sound", () => {
+  // Tightening the predicate is only safe if it can never refuse an arrow
+  // the puzzle's own solution contains. That is the property; everything
+  // else about `reachableFromDot` is a judgement call, but this is not.
+  it("never rejects an association the unique solution contains", () => {
+    const params: GalaxiesParams[] = [
+      { w: 7, h: 7, diff: GalaxiesDiff.Normal },
+      { w: 7, h: 7, diff: GalaxiesDiff.Unreasonable },
+      { w: 10, h: 10, diff: GalaxiesDiff.Normal },
+    ];
+    let checked = 0;
+    for (const p of params) {
+      for (let seed = 0; seed < 4; seed++) {
+        const rs = randomNew(`legality-${p.w}x${p.h}-${p.diff}-${seed}`);
+        const { desc } = galaxiesGame.newDesc(p, rs);
+        const board = galaxiesGame.newState(p, desc);
+
+        const sol = cloneState(board);
+        clearForSolve(sol);
+        sol.dots = rebuildDots(sol);
+        solverState(sol, GalaxiesDiff.Unreasonable);
+
+        for (let y = 1; y < board.sy - 1; y += 2) {
+          for (let x = 1; x < board.sx - 1; x += 2) {
+            const si = idx(sol, x, y);
+            if (!(sol.flags[si] & F_TILE_ASSOC)) continue;
+            const dx = sol.dotx[si];
+            const dy = sol.doty[si];
+            // A tile carrying its own dot is never associated by a drag.
+            if (x === dx && y === dy) continue;
+            expect(
+              okToAddAssocWithOpposite(board, x, y, dx, dy),
+              `solution associates (${x},${y}) with dot (${dx},${dy}) on ${p.w}x${p.h} "${desc}", but the drag would refuse it`,
+            ).toBe(true);
+            checked++;
+          }
+        }
+      }
+    }
+    // Guard the guard: a sweep that silently examined nothing would pass.
+    expect(checked).toBeGreaterThan(500);
+  });
+
+  it("refuses a cell no galaxy centred on that dot could reach", () => {
+    // The owner's 2026-08-08 report, reduced. A 5×1 strip: dots at the
+    // centre tile (5,1) and on the edge between (1,1) and (3,1), i.e. at
+    // (2,1). The edge dot owns both tiles it separates, so the centre dot's
+    // galaxy cannot pass leftward through (3,1) — and by symmetry that also
+    // denies it (7,1), the tile on the *open* side. Upstream's local
+    // precheck accepts both: each is in-grid, dot-free, and has an in-grid
+    // dot-free mirror.
+    const p: GalaxiesParams = { w: 5, h: 1, diff: GalaxiesDiff.Normal };
+    const s = blankGame(p.w, p.h);
+    s.flags[idx(s, 5, 1)] |= 1 /* F_DOT */;
+    s.flags[idx(s, 2, 1)] |= 1 /* F_DOT */;
+    s.dots = rebuildDots(s);
+
+    const reach = reachableFromDot(s, 5, 1);
+    expect(reach[idx(s, 5, 1)]).toBe(1); // its own tile
+    expect(reach[idx(s, 3, 1)]).toBe(0); // owned by the edge dot
+    expect(reach[idx(s, 7, 1)]).toBe(0); // its mirror, so also out
+    expect(reach[idx(s, 9, 1)]).toBe(0); // beyond the cut
+
+    expect(okToAddAssocWithOpposite(s, 7, 1, 5, 1)).toBe(false);
+    expect(legalDotsFor(s, 7, 1)).toEqual([]);
+    // The edge dot's own pair is still offered — the tightening removes
+    // only what was impossible.
+    expect(legalDotsFor(s, 9, 1)).toEqual([]);
+    expect(reachableFromDot(s, 2, 1)[idx(s, 1, 1)]).toBe(1);
   });
 });
