@@ -23,10 +23,15 @@ drag dot — exactly the pair a release would commit — each showing an
 arrow toward the dot in a transient colour distinct from committed
 arrows, with the drop target itself additionally outlined. A target
 where a release would not commit SHALL show no preview. Every pixel
-the preview paints SHALL be clipped to a tile and erased by that
-tile's own repaint when the target moves or the drag ends: no paint
-outside the board, no stale preview frames, and no full-board update
-per pointer move.
+**any** transient overlay paints — the drag preview and the keyboard
+cursor alike — SHALL be clipped to a tile and erased by that tile's own
+repaint when it moves on: no paint outside the board, no stale frames,
+and no full-board update per pointer move.
+
+Both transient affordances SHALL use **authored** colours rather than
+colours derived from the board, and SHALL differ from each other: a
+colour derived from the board is by construction not prominent against
+it, in either scheme, and the two say different things.
 
 #### Scenario: Galaxies renders and animates through the engine
 
@@ -48,6 +53,12 @@ per pointer move.
   colour, tiles the preview vacates repaint clean, and after the
   release no preview paint remains anywhere — including outside the
   board, where nothing repaints
+
+#### Scenario: The keyboard cursor cleans up after itself too
+
+- **WHEN** the player walks the cursor across vertices and edges
+- **THEN** each cell it leaves repaints clean, and hiding the cursor
+  leaves no mark anywhere on the board
 
 #### Scenario: An uncommittable target previews nothing
 

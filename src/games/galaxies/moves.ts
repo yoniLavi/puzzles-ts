@@ -85,3 +85,21 @@ export function removeAssocWithOpposite(
     removeAssoc(s, opp.x, opp.y);
   }
 }
+
+/**
+ * Every dot the tile `(tx, ty)` could legally be associated with — the
+ * candidate set the drag rings show, and the set a cell→dot drag snaps
+ * within. It is `okToAddAssocWithOpposite` swept over the dots, for the same
+ * reason this module exists at all: the ring must mark exactly what a release
+ * would accept, so ring, snap and commit cannot drift.
+ */
+export function legalDotsFor(
+  s: GalaxiesState,
+  tx: number,
+  ty: number,
+): { x: number; y: number }[] {
+  if (!inUi(s, tx, ty) || spaceTypeAt(tx, ty) !== SpaceType.Tile) return [];
+  const cols = checkComplete(s, true).colours;
+  if (!cols) return [];
+  return s.dots.filter((d) => okToAddAssocWithOpposite(s, tx, ty, d.x, d.y, cols));
+}

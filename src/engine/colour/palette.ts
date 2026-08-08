@@ -119,7 +119,16 @@ export const HELD: Colour = GREEN;
 /** **You are dragging this on** / **off** — the two states of a drag that lays
  * or erases something continuously (Pearl's lines, Tracks' track, Rectangles'
  * rectangles). The pair is one meaning: laying is the colour, erasing is the
- * same colour as a wash, so the board underneath still reads through it. */
+ * same colour as a wash, so the board underneath still reads through it.
+ *
+ * `DRAG_ADD` also dresses the *aim* drag's preview — the arrows Galaxies shows
+ * on the pair a release would associate. The meaning is the same ("let go and
+ * this is laid"); only the drag model differs. It must be an **authored**
+ * colour and not a board-relative tint, because a transient affordance the
+ * player is steering by has to be prominent in *both* schemes, and a tint of
+ * the board is by construction prominent in neither — Galaxies' preview
+ * inherited its keyboard cursor's warm board tint, and shipped as a 1 px
+ * `#ffaaaa` line on a `#d5d5d5` board. */
 export const DRAG_ADD: Colour = BLUE;
 
 /** @see DRAG_ADD */

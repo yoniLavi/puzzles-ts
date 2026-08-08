@@ -141,8 +141,45 @@ pixels; the safe default is to **snap the preview into cells** so the
 cache's own repaint is the eraser (see the aim-style drag in
 [input](./input.md) § "Other drag shapes"). Exemplar:
 [`galaxies/render.ts`](../../src/games/galaxies/render.ts) (the
-`preview` sidecar plane; the closing comment of `redraw` records the
-trap).
+`overlay` sidecar; the closing comment of `redraw` records the trap).
+
+**The same file had a second one, and its colour was hiding it.** Galaxies'
+half-grid keyboard cursor — the mark on a vertex or an edge, as opposed to the
+tile-centre cursor that was already a key bit — was drawn after the tile loop
+with a bare `drawRect` and left a mark at *every* vertex and edge it visited.
+Nobody had reported it in the two years the port has existed, because the
+cursor was painted in a near-invisible tint of the board; fixing the colour is
+what exposed it. Two things generalise. **Sweep for the whole class when you
+find one instance** — grep the file for paint outside the cell loop, not just
+the overlay you were sent to fix. And **"I can't see it" and "it is broken"
+are frequently the same report**: a low-contrast affordance is also an
+unreviewed one, so its rendering bugs accumulate undisturbed.
+
+**Folding a half-grid overlay in is the same trick the dots already use.** A
+mark on a vertex or an edge straddles up to four tiles, which sounds like it
+needs a blitter and does not: give each tile a bit per subcell position of its
+own 3×3 block and let each paint its clipped share, exactly as a game already
+does for dots that sit on tile corners. Galaxies packs the drag preview plane,
+the cursor position and the drag's candidate rings into one `OverlaySidecar`
+word for this reason.
+
+### A transient affordance needs an authored colour
+
+**A colour derived from the board cannot be prominent against the board — in
+either scheme.** Galaxies' cursor was `[min(r × 1.4, 1), g × 0.8, b × 0.8]` of
+the background, a faithful port of upstream's idiom, which on this app's
+`#d5d5d5` board is `#ffaaaa`: a pale pink, one pixel wide. And because it is
+*computed* rather than authored, dark mode adapts it by calculation, so it
+comes out a faint tint there too — the failure mode `hand-author-dark-palette`
+recorded for Light Up, arrived at from the other direction. The drag preview
+had inherited it, and the owner reported both as unreadable in both schemes.
+
+Reach into [`colour/palette.ts`](../../src/engine/colour/palette.ts) for a
+*meaning* instead — `CURSOR` for the keyboard cursor (green, because most
+boards are greys and blacks and whites), `DRAG_ADD` for "let go and this is
+laid". Those are authored per scheme. Keep board-relative derivation for what
+it is good at: fills, grids and shades that are *supposed* to sit close to the
+board.
 
 ### A cursor is usually a cache key, not a blitter
 

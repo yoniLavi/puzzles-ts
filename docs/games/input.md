@@ -130,6 +130,14 @@ Two resolutions, by whether the game uses the secondary button:
   and finish its own right-button drag correctly — the right answer for a game
   like Boats where the secondary button carries meaning and folding would be
   wrong. See § "Drag models".
+- **Best of all → put the gesture on the left button too, so the promotion
+  never has to happen.** The first two resolutions make the promoted press
+  survive; this one means a touch player never triggers it. Galaxies' whole
+  association gesture was right-button-only, so on a phone the game's one
+  cell↔dot notation was reachable only by holding still for 350 ms and *then*
+  dragging. It is now a plain drag, with the right button unchanged for anyone
+  who has the habit. The price is that the left button then has two meanings —
+  see § "A button with two meanings resolves on the release".
 
 **Tell:** a drag lifecycle that matches `LEFT_DRAG` specifically where
 `isMouseDrag` is meant — it strands the touch player whose press was promoted.
@@ -264,6 +272,56 @@ swipe: octant aim off the ball, walls preview nothing);
 drag: snapped drop tile, preview shows the target *and* its 180° partner
 because release commits both, legality shared with `executeMove` through
 `moves.ts` so preview and commit cannot drift).
+
+Either end of an aim drag can be the one that moves. Galaxies' pair is
+(tile, dot), and a press picks whichever end the player put their pointer
+on: press a dot and the tile follows the pointer, press a plain cell and
+the *dot* does, snapping to the nearest one a release could legally take.
+Downstream — the legality predicate, the preview, the commit — is written
+in terms of the pair and needs no knowledge of which end moved, so the
+second direction costs one `Ui` boolean and two carve-outs (the
+"dragged back to where it started is a null move" test must not fire when
+the target *is* the source, and there is no arrow to lift off a source
+that never had one).
+
+## A button with two meanings resolves on the release
+
+**A press that could be either a click or a drag must not act on the press.**
+Galaxies' left button toggles a wall *and* starts an association drag: the
+press only records where it landed, travel beyond a few pixels turns it into a
+drag sourced from the press point, and a release that never travelled is the
+click. Upstream ducked this by putting the drag on the right button — which is
+the button this frontend serves worst (see the trap above), so the ducking
+costs more here than the disambiguation does.
+
+Two things make it work, and neither is obvious:
+
+- **Measure the release against the press, not a `dragStarted` flag.**
+  `view-interactive.ts`'s `cancelPointerTracking` synthesises a drag *and* a
+  release at `(-100, -100)` when the pointer leaves the canvas mid-press, so a
+  press that never became a drag *will* arrive at a release far from where it
+  started. A distance test rejects it for free; a flag needs the case spelled
+  out.
+- **Claim the press anyway** — see the next section, which is where this cost
+  a session.
+
+## A press you do not act on must still be consumed
+
+**Returning `null` from a press is not "nothing to repaint" — it is "I don't
+want this gesture", and it costs you every drag event that would have
+followed.** `view-interactive.ts` installs `pointerTracking` only
+`if (consumed)`, and `Midend.processInput` reports exactly `interpretMove`'s
+`null` as unconsumed. A game whose press defers its decision to the release
+therefore has to return `UI_UPDATE` from the press even when nothing on screen
+changes.
+
+**Tell:** a drag lifecycle that looks right and is never entered — the release
+arrives at the *press* coordinates (the frontend never tracked the pointer, so
+no move ever updated them), which then reads as a click and does the click's
+thing. Galaxies shipped its left-drag this way for the length of one debugging
+session: the press toggled a wall, every drag frame was silently dropped, and
+the served module was verifiably the new one, so all the obvious suspects —
+stale worker, service worker, HTTP cache — checked out fine.
 
 ## Round fractional pointer coordinates
 

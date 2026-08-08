@@ -228,9 +228,11 @@ export const galaxiesBlackRegion = (background: Colour): Colour =>
 /** Galaxies' grid: a fifth off the board. */
 export const galaxiesGrid = (background: Colour): Colour => scale(background, 0.8);
 
-/** Galaxies' cursor — the same warm tint of the board Bridges uses, arrived at
- * independently in both ports from the same upstream idiom. */
-export const galaxiesCursor = (background: Colour): Colour => bridgesCursor(background);
+// Galaxies' cursor was `bridgesCursor(background)` — the same warm tint of the
+// board, arrived at independently in both ports from the same upstream idiom.
+// It is now the collection's default `CURSOR`: a tint of the board is a colour
+// that cannot be prominent, and Galaxies painted its *drag preview* in it too.
+// See the assignment in `games/galaxies/index.ts` and `DRAG_ADD`'s doc comment.
 
 // --- group --------------------------------------------------------------
 

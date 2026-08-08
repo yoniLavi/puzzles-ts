@@ -76,13 +76,14 @@ export function drawRectOutline(
   w: number,
   h: number,
   colour: number,
+  thickness = 1,
 ): void {
   const r = x + w - 1;
   const b = y + h - 1;
-  dr.drawLine({ x, y }, { x: r, y }, colour, 1);
-  dr.drawLine({ x: r, y }, { x: r, y: b }, colour, 1);
-  dr.drawLine({ x: r, y: b }, { x, y: b }, colour, 1);
-  dr.drawLine({ x, y: b }, { x, y }, colour, 1);
+  dr.drawLine({ x, y }, { x: r, y }, colour, thickness);
+  dr.drawLine({ x: r, y }, { x: r, y: b }, colour, thickness);
+  dr.drawLine({ x: r, y: b }, { x, y: b }, colour, thickness);
+  dr.drawLine({ x, y: b }, { x, y }, colour, thickness);
 }
 
 /**

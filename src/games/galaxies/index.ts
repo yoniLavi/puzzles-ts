@@ -12,10 +12,9 @@
  */
 
 import { mkhighlightBackground } from "../../engine/colour/colour-mkhighlight.ts";
-import { ERROR, INK, PAPER } from "../../engine/colour/palette.ts";
+import { CURSOR, DRAG_ADD, ERROR, INK, PAPER } from "../../engine/colour/palette.ts";
 import {
   galaxiesBlackRegion,
-  galaxiesCursor,
   galaxiesGrid,
 } from "../../engine/colour/palette-games.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
@@ -31,16 +30,18 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   cursorDelta,
+  isMouseDrag,
+  isMouseRelease,
   LEFT_BUTTON,
+  LEFT_RELEASE,
   RIGHT_BUTTON,
-  RIGHT_DRAG,
-  RIGHT_RELEASE,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
 import { newGameDesc } from "./generator.ts";
 import {
   addAssocWithOpposite,
+  legalDotsFor,
   okToAddAssocWithOpposite,
   removeAssocWithOpposite,
 } from "./moves.ts";
@@ -50,6 +51,7 @@ import {
   COL_BLACKBG,
   COL_BLACKDOT,
   COL_CURSOR,
+  COL_DRAG,
   COL_EDGE,
   COL_GRID,
   COL_MISTAKE,
@@ -128,12 +130,37 @@ export interface GalaxiesUi {
    */
   targetX: number;
   targetY: number;
-  /** Grid coords of the dot we're dragging from. */
+  /**
+   * Which end of the (tile, dot) pair the pointer is steering.
+   *
+   * `false` — the classic drag: the dot is fixed and `targetX/targetY`
+   * follows the pointer. `true` — the reverse drag, started from a plain
+   * cell: `targetX/targetY` stay pinned to that cell and `dotx/doty` is what
+   * the pointer picks. Everything downstream of these four fields
+   * (`okToAddAssocWithOpposite`, the preview, `dropDrag`, `executeMove`)
+   * reads a (tile, dot) pair and needs no knowledge of which end moved.
+   */
+  dragToDot: boolean;
+  /** Grid coords of the dot we're dragging from — or, in `dragToDot` mode,
+   * the dot the pointer has currently picked (`-1` when none is in reach,
+   * which the preview shows by drawing nothing). */
   dotx: number;
   doty: number;
   /** Grid coords of the drag's source square. */
   srcx: number;
   srcy: number;
+  /** Show a ring on every dot this cell could legally join during a
+   * `dragToDot` drag. A solving aid — "which dots have a legal 180° image of
+   * this cell" is a deduction — so it is a preference, unlike the gesture
+   * itself. See `prefs` below. */
+  showDragCandidates: boolean;
+  /** The pixel a left press landed on, and whether one is still open.
+   * Left carries both meanings — a click toggles an edge, a drag associates —
+   * so the press is held until the release or the first travel past
+   * `DRAG_SLOP_PX` says which it was. */
+  pressX: number;
+  pressY: number;
+  pressPending: boolean;
   /** Keyboard cursor grid coords. */
   curX: number;
   curY: number;
@@ -314,6 +341,165 @@ function executeMove(s: GalaxiesState, move: GalaxiesMove): GalaxiesState {
   return next;
 }
 
+// --- the association drag -------------------------------------------
+
+/** How far a press may travel and still count as a click. Small enough that a
+ * deliberate drag is recognised at once, large enough that a finger's wobble
+ * on a tap does not silently become one. */
+const DRAG_SLOP_PX = 5;
+
+function travelled(ui: GalaxiesUi, x: number, y: number): boolean {
+  const dx = x - ui.pressX;
+  const dy = y - ui.pressY;
+  return dx * dx + dy * dy > DRAG_SLOP_PX * DRAG_SLOP_PX;
+}
+
+/** The dot under `(x, y)`, if the pointer is inside one's catchment. Mirrors
+ * upstream's 3x3 search around the rounded subcell coordinate. */
+function dotUnder(
+  s: GalaxiesState,
+  x: number,
+  y: number,
+  tile: number,
+  border: number,
+): { x: number; y: number } | null {
+  const g = gridRoundDouble(x, y, tile, border);
+  for (let dy1 = g.y - 1; dy1 <= g.y + 1; dy1++) {
+    for (let dx1 = g.x - 1; dx1 <= g.x + 1; dx1++) {
+      if (dx1 < 0 || dy1 < 0 || dx1 >= s.sx || dy1 >= s.sy) continue;
+      if (
+        x >= scoord(dx1 - 1, tile, border) &&
+        x < scoord(dx1 + 1, tile, border) &&
+        y >= scoord(dy1 - 1, tile, border) &&
+        y < scoord(dy1 + 1, tile, border) &&
+        s.flags[idx(s, dx1, dy1)] & F_DOT
+      ) {
+        return { x: dx1, y: dy1 };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Start an association drag from the press point, if anything there can start
+ * one. Three sources, in priority order:
+ *
+ *  1. a **dot** under the pointer — carry an arrow out to a cell;
+ *  2. a tile with an **existing arrow** — pick that arrow up and move it;
+ *  3. any other in-grid, dot-free **tile** — the reverse drag: hold the cell
+ *     still and go looking for the dot that owns it.
+ *
+ * (3) is why 2 keeps its meaning rather than becoming "re-point this cell":
+ * moving an arrow would otherwise have no gesture at all, and re-pointing a
+ * cell is still reachable by dragging from the dot you want.
+ */
+function beginDrag(
+  s: GalaxiesState,
+  ui: GalaxiesUi,
+  x: number,
+  y: number,
+  tile: number,
+  border: number,
+  allowReverse: boolean,
+): boolean {
+  const dot = dotUnder(s, x, y, tile, border);
+  if (dot) {
+    ui.dragging = true;
+    ui.dragToDot = false;
+    ui.srcx = dot.x;
+    ui.srcy = dot.y;
+    ui.dotx = dot.x;
+    ui.doty = dot.y;
+    ui.targetX = snapToTile(x, tile, border);
+    ui.targetY = snapToTile(y, tile, border);
+    return true;
+  }
+
+  const tx = snapToTile(x, tile, border);
+  const ty = snapToTile(y, tile, border);
+  if (!inUi(s, tx, ty) || spaceTypeAt(tx, ty) !== SpaceType.Tile) return false;
+  const ti = idx(s, tx, ty);
+  if (s.flags[ti] & F_DOT) return false;
+
+  if (s.flags[ti] & F_TILE_ASSOC) {
+    ui.dragging = true;
+    ui.dragToDot = false;
+    ui.srcx = tx;
+    ui.srcy = ty;
+    ui.dotx = s.dotx[ti];
+    ui.doty = s.doty[ti];
+    ui.targetX = tx;
+    ui.targetY = ty;
+    return true;
+  }
+
+  if (!allowReverse) return false;
+  ui.dragging = true;
+  ui.dragToDot = true;
+  ui.srcx = tx;
+  ui.srcy = ty;
+  ui.targetX = tx;
+  ui.targetY = ty;
+  ui.dotx = -1;
+  ui.doty = -1;
+  aimAtDot(s, ui, x, y, tile, border);
+  return true;
+}
+
+/** Pick the nearest dot this cell could legally join, within one tile of the
+ * pointer. Beyond that nothing is picked (`dotx = -1`) — the preview then
+ * draws nothing, which is how a reverse drag is cancelled. Nearest-legal-dot-
+ * anywhere was rejected: it commits across the board and leaves no way to let
+ * go harmlessly. Returns true when the pick changed. */
+function aimAtDot(
+  s: GalaxiesState,
+  ui: GalaxiesUi,
+  x: number,
+  y: number,
+  tile: number,
+  border: number,
+): boolean {
+  const reach = tile * tile;
+  let bestX = -1;
+  let bestY = -1;
+  let best = Number.POSITIVE_INFINITY;
+  for (const d of legalDotsFor(s, ui.targetX, ui.targetY)) {
+    const dx = scoord(d.x, tile, border) - x;
+    const dy = scoord(d.y, tile, border) - y;
+    const dist = dx * dx + dy * dy;
+    if (dist <= reach && dist < best) {
+      best = dist;
+      bestX = d.x;
+      bestY = d.y;
+    }
+  }
+  if (bestX === ui.dotx && bestY === ui.doty) return false;
+  ui.dotx = bestX;
+  ui.doty = bestY;
+  return true;
+}
+
+/** Move the drag's free end to follow the pointer. Returns true when
+ * something the preview shows actually changed — a pointer move that stays
+ * on the same snapped target repaints nothing (the Inertia aim idiom). */
+function aimDrag(
+  s: GalaxiesState,
+  ui: GalaxiesUi,
+  x: number,
+  y: number,
+  tile: number,
+  border: number,
+): boolean {
+  if (ui.dragToDot) return aimAtDot(s, ui, x, y, tile, border);
+  const tx = snapToTile(x, tile, border);
+  const ty = snapToTile(y, tile, border);
+  if (tx === ui.targetX && ty === ui.targetY) return false;
+  ui.targetX = tx;
+  ui.targetY = ty;
+  return true;
+}
+
 // --- interpretMove --------------------------------------------------
 
 function interpretMove(
@@ -328,93 +514,81 @@ function interpretMove(
   const x = p.x;
   const y = p.y;
 
-  // --- LEFT_BUTTON: edge toggle. That is all it does: association
-  // drags live on the right button, which touch reaches via the
-  // long-press promotion (docs/games/input.md § "A touch hold arrives
-  // as the right button"). LEFT_DRAG / LEFT_RELEASE are deliberately
-  // unwired. (Upstream's STYLUS_BASED builds let LEFT start an arrow
-  // drag; this port did not adopt that, and an earlier comment here
-  // wrongly described it as present.)
-  if (button === LEFT_BUTTON) {
-    const e = coordRoundToEdge(x, y, tile, border);
+  // --- Pointer: one association drag, reachable from either button.
+  //
+  // Left carries two meanings — a click toggles an edge, a drag associates —
+  // so a left press is *held* until the release or the first travel past
+  // DRAG_SLOP_PX says which it was. That costs the edge toggle its
+  // fire-on-press immediacy, and it is the only reason upstream put the drag
+  // on the right button (its own interpret_move header specifies
+  // "left-drag from dot"; the code has never matched it). Worth paying:
+  // right-drag reaches touch only through the 350 ms long-press promotion,
+  // which docs/games/input.md § "A touch hold arrives as the right button"
+  // records as fatal to exactly this gesture. Right-button drags keep
+  // working unchanged.
+  if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
     ui.curVisible = false;
+    ui.pressX = x;
+    ui.pressY = y;
+    ui.pressPending = true;
+    // The right button has no click meaning, so where the press point names
+    // an unambiguous source — a dot, or a tile whose arrow is being picked
+    // up — it can commit to the drag at once and let the arrow lift visibly
+    // under the finger, as it always has. The left button must wait: its
+    // click toggles an edge. Neither starts a *reverse* drag on the press,
+    // so a plain right-click on an empty cell stays the no-op it has always
+    // been rather than quietly associating it with the nearest dot.
+    if (button === RIGHT_BUTTON && beginDrag(s, ui, x, y, tile, border, false)) {
+      ui.pressPending = false;
+    }
+    // UI_UPDATE even when nothing visible changed, and *especially* then.
+    // `view-interactive.ts` installs pointer tracking only for a press the
+    // game consumed, and `Midend.processInput` reports `null` as unconsumed —
+    // so returning `null` here does not mean "nothing to repaint", it means
+    // "I don't want this gesture", and not one drag event is delivered
+    // afterwards. A press whose meaning is decided later must still claim it.
+    return UI_UPDATE;
+  }
+
+  // The drag continues off the button *class*, not the press button, so a
+  // touch long-press promoted to RIGHT_BUTTON finishes its own drag
+  // (input.md § "A touch hold arrives as the right button").
+  if (isMouseDrag(button)) {
+    if (ui.pressPending && travelled(ui, x, y)) {
+      ui.pressPending = false;
+      // Start from where the press landed, not from here: the source is
+      // whatever the player put their pointer on, and by now it has moved
+      // off it. Reverse drags are allowed from here on — the travel is what
+      // distinguishes them from a click.
+      if (!beginDrag(s, ui, ui.pressX, ui.pressY, tile, border, true)) return null;
+      aimDrag(s, ui, x, y, tile, border);
+      return UI_UPDATE;
+    }
+    if (!ui.dragging) return null;
+    return aimDrag(s, ui, x, y, tile, border) ? UI_UPDATE : null;
+  }
+
+  if (isMouseRelease(button)) {
+    const pending = ui.pressPending;
+    ui.pressPending = false;
+    if (ui.dragging) {
+      // Commit the pair the preview showed, not the raw release pixel: the
+      // two differ only when the pointer jumps between the last drag event
+      // and the release (touch lift-jitter), and what the player saw is
+      // what the release should do.
+      return dropDrag(s, ui, ui.targetX, ui.targetY);
+    }
+    // A press that never became a drag is a click — but only if it ended
+    // where it started. `view-interactive.ts`'s cancelPointerTracking
+    // synthesises a release at (-100, -100) when the pointer leaves the
+    // canvas mid-press, and that must not toggle an edge on the far side of
+    // the board. Measuring against the press pixel covers it without a
+    // special case.
+    if (button !== LEFT_RELEASE || !pending || travelled(ui, x, y)) return null;
+    const e = coordRoundToEdge(ui.pressX, ui.pressY, tile, border);
     if (!inUi(s, e.x, e.y)) return null;
     if (!edgePlacementLegal(s, e.x, e.y)) return null;
-    return {
-      ops: [{ kind: "edge", x: e.x, y: e.y }],
-      solving: false,
-    };
-  }
-
-  if (button === RIGHT_BUTTON) {
-    ui.curVisible = false;
-    // Nearest grid vertex/edge/tile coordinate (using 2*FROMCOORD+0.5
-    // rounding to land on integer subcell coordinates).
-    const g = gridRoundDouble(x, y, tile, border);
-    let dotX = -1;
-    let dotY = -1;
-    // Search a 3x3 ring around the rounded coord for a dot.
-    for (let dy1 = g.y - 1; dy1 <= g.y + 1 && dotX < 0; dy1++) {
-      for (let dx1 = g.x - 1; dx1 <= g.x + 1 && dotX < 0; dx1++) {
-        if (dx1 < 0 || dy1 < 0 || dx1 >= s.sx || dy1 >= s.sy) continue;
-        const sx1 = scoord(dx1 - 1, tile, border);
-        const sx2 = scoord(dx1 + 1, tile, border);
-        const sy1 = scoord(dy1 - 1, tile, border);
-        const sy2 = scoord(dy1 + 1, tile, border);
-        if (
-          x >= sx1 &&
-          x < sx2 &&
-          y >= sy1 &&
-          y < sy2 &&
-          s.flags[idx(s, dx1, dy1)] & F_DOT
-        ) {
-          dotX = dx1;
-          dotY = dy1;
-          ui.srcx = dx1;
-          ui.srcy = dy1;
-        }
-      }
-    }
-    if (dotX < 0) {
-      // Pick the nearest tile and grab its existing arrow (if any).
-      const tx = snapToTile(x, tile, border);
-      const ty = snapToTile(y, tile, border);
-      if (tx >= 0 && tx < s.sx && ty >= 0 && ty < s.sy) {
-        const ti = idx(s, tx, ty);
-        if (s.flags[ti] & F_TILE_ASSOC) {
-          dotX = s.dotx[ti];
-          dotY = s.doty[ti];
-          ui.srcx = tx;
-          ui.srcy = ty;
-        }
-      }
-    }
-    if (dotX < 0) return null;
-    ui.dragging = true;
-    ui.targetX = snapToTile(x, tile, border);
-    ui.targetY = snapToTile(y, tile, border);
-    ui.dotx = dotX;
-    ui.doty = dotY;
-    return UI_UPDATE;
-  }
-
-  if (button === RIGHT_DRAG && ui.dragging) {
-    const tx = snapToTile(x, tile, border);
-    const ty = snapToTile(y, tile, border);
-    // The preview is discrete (per-tile), so a pointer move inside the
-    // same tile has nothing to repaint — the Inertia aim idiom.
-    if (tx === ui.targetX && ty === ui.targetY) return null;
-    ui.targetX = tx;
-    ui.targetY = ty;
-    return UI_UPDATE;
-  }
-
-  if (button === RIGHT_RELEASE && ui.dragging) {
-    // Commit the tile the preview showed, not the raw release pixel:
-    // the two only differ when the pointer jumps between the last drag
-    // event and the release (touch lift-jitter), and what the player
-    // saw is what the release should do.
-    return dropDrag(s, ui, ui.targetX, ui.targetY);
+    return { ops: [{ kind: "edge", x: e.x, y: e.y }], solving: false };
   }
 
   const cursorMove = cursorDelta(button);
@@ -429,7 +603,17 @@ function interpretMove(
     ui.curX = nx;
     ui.curY = ny;
     ui.curVisible = true;
-    if (ui.dragging) {
+    if (ui.dragging && ui.dragToDot) {
+      // The cursor is picking the *dot*: take it when it lands on a legal
+      // one, drop the pick when it moves off (the preview then shows
+      // nothing, exactly as with the pointer out of reach).
+      const onDot =
+        inUi(s, nx, ny) &&
+        s.flags[idx(s, nx, ny)] & F_DOT &&
+        okToAddAssocWithOpposite(s, ui.targetX, ui.targetY, nx, ny);
+      ui.dotx = onDot ? nx : -1;
+      ui.doty = onDot ? ny : -1;
+    } else if (ui.dragging) {
       ui.targetX = ui.curX;
       ui.targetY = ui.curY;
     }
@@ -444,7 +628,11 @@ function interpretMove(
     const cx = ui.curX;
     const cy = ui.curY;
     if (ui.dragging) {
-      return dropDrag(s, ui, cx, cy);
+      // In a cell→dot drag the cursor is picking the *dot*, so the tile to
+      // commit is the pinned target, not wherever the cursor now sits.
+      return ui.dragToDot
+        ? dropDrag(s, ui, ui.targetX, ui.targetY)
+        : dropDrag(s, ui, cx, cy);
     }
     const ci = idx(s, cx, cy);
     if (s.flags[ci] & F_DOT) {
@@ -470,6 +658,20 @@ function interpretMove(
     if (spaceTypeAt(cx, cy) === SpaceType.Edge && edgePlacementLegal(s, cx, cy)) {
       return { ops: [{ kind: "edge", x: cx, y: cy }], solving: false };
     }
+    // A plain tile: start the reverse drag, so the keyboard reaches the
+    // cell→dot gesture the pointer has (the input-parity bar). The cursor
+    // keys then pick the dot and a second select commits.
+    if (spaceTypeAt(cx, cy) === SpaceType.Tile && inUi(s, cx, cy)) {
+      ui.dragging = true;
+      ui.dragToDot = true;
+      ui.srcx = cx;
+      ui.srcy = cy;
+      ui.targetX = cx;
+      ui.targetY = cy;
+      ui.dotx = -1;
+      ui.doty = -1;
+      return UI_UPDATE;
+    }
   }
 
   return null;
@@ -481,10 +683,19 @@ function dropDrag(
   px: number,
   py: number,
 ): GalaxiesMove | null | UiUpdate {
+  const toDot = ui.dragToDot;
   ui.dragging = false;
-  if (px === ui.srcx && py === ui.srcy) return UI_UPDATE;
+  ui.dragToDot = false;
+  // Two tests below belong to the classic drag only. In reverse mode the
+  // target *is* the source cell, so "dragged back where it started" would
+  // fire on every commit; and the source is by construction unassociated,
+  // so there is no arrow there to lift.
+  if (!toDot) {
+    if (px === ui.srcx && py === ui.srcy) return UI_UPDATE;
+  }
   const ops: GalaxiesOp[] = [];
   if (
+    !toDot &&
     (ui.srcx !== ui.dotx || ui.srcy !== ui.doty) &&
     s.flags[idx(s, ui.srcx, ui.srcy)] & F_TILE_ASSOC
   ) {
@@ -812,12 +1023,17 @@ export const galaxiesGame: Game<
   newUi(_state): GalaxiesUi {
     return {
       dragging: false,
+      dragToDot: false,
       targetX: -1,
       targetY: -1,
       dotx: 0,
       doty: 0,
       srcx: 0,
       srcy: 0,
+      showDragCandidates: true,
+      pressX: 0,
+      pressY: 0,
+      pressPending: false,
       curX: 1,
       curY: 1,
       curVisible: false,
@@ -835,6 +1051,25 @@ export const galaxiesGame: Game<
 
   solve: solveGalaxies,
   findMistakes,
+
+  /** The rings, not the gesture. Dragging *from* a cell tells a player
+   * nothing they could not learn by dragging to it and seeing whether it
+   * took, so it is always available; being shown, before committing, which
+   * dots have a legal 180° image of this cell is a deduction done for them,
+   * so it is theirs to switch off. Default on — the ring is also what
+   * explains the gesture the first time someone stumbles into it. */
+  prefs: [
+    {
+      kw: "galaxies-show-drag-candidates",
+      name: "While dragging from a cell, ring the dots it could belong to",
+      type: "boolean",
+      get: (ui) => ui.showDragCandidates,
+      set: (ui, v) => {
+        ui.showDragCandidates = v;
+      },
+    },
+  ],
+
   difficulty,
   textFormat,
   statusbarText,
@@ -857,7 +1092,17 @@ export const galaxiesGame: Game<
     ret[COL_GRID] = galaxiesGrid(bg);
     ret[COL_EDGE] = INK;
     ret[COL_ARROW] = INK;
-    ret[COL_CURSOR] = galaxiesCursor(bg);
+    // Both transient affordances are *authored* colours rather than
+    // board-relative tints. Upstream tinted both (a warm shift of the board,
+    // `#ffaaaa` on a `#d5d5d5` board), which is a colour that cannot be
+    // prominent by construction — and being computed, dark mode adapts it by
+    // calculation, so it is a faint tint of the board in *both* schemes. The
+    // owner reported the drag preview as unreadable in each (2026-08-08); the
+    // cursor is the same colour with the same problem. Galaxies' board spends
+    // greys, black, white and red, so the collection's default cursor green is
+    // free (`CURSOR`'s doc comment), and blue is free for the drag.
+    ret[COL_CURSOR] = CURSOR;
+    ret[COL_DRAG] = DRAG_ADD;
     // Mistake highlight: a strong red that reads on both white and black
     // region fills and the page background.
     ret[COL_MISTAKE] = ERROR;

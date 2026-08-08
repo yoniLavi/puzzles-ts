@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/index.ts";
-import { RIGHT_BUTTON, RIGHT_DRAG, RIGHT_RELEASE } from "../../engine/pointer.ts";
+import {
+  CURSOR_SELECT,
+  LEFT_BUTTON,
+  LEFT_DRAG,
+  LEFT_RELEASE,
+  RIGHT_BUTTON,
+  RIGHT_DRAG,
+  RIGHT_RELEASE,
+} from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { PuzzleButton } from "../../engine/types.ts";
 import { newGameDesc } from "./generator.ts";
@@ -10,7 +18,8 @@ import {
   type GalaxiesParams,
   galaxiesGame,
 } from "./index.ts";
-import { COL_CURSOR, COL_EDGE, COL_MISTAKE } from "./render.ts";
+import { legalDotsFor } from "./moves.ts";
+import { COL_CURSOR, COL_DRAG, COL_EDGE, COL_MISTAKE } from "./render.ts";
 import { clearForSolve, solverState } from "./solver.ts";
 import {
   addAssoc,
@@ -20,6 +29,7 @@ import {
   decodeGame,
   F_EDGE_SET,
   F_TILE_ASSOC,
+  type GalaxiesState,
   idx,
   rebuildDots,
   SpaceType,
@@ -184,6 +194,7 @@ function recordingDrawing() {
     y?: number;
     w?: number;
     h?: number;
+    thickness?: number;
   }> = [];
   const dr = {
     startDraw: () => ops.push({ op: "startDraw" }),
@@ -195,11 +206,13 @@ function recordingDrawing() {
     unclip: () => ops.push({ op: "unclip" }),
     drawRect: (r: { x: number; y: number; w: number; h: number }, c: number) =>
       ops.push({ op: "drawRect", colour: c, x: r.x, y: r.y, w: r.w, h: r.h }),
-    drawLine: (_a: unknown, _b: unknown, c: number) =>
-      ops.push({ op: "drawLine", colour: c }),
+    drawLine: (_a: unknown, _b: unknown, c: number, thickness: number) =>
+      ops.push({ op: "drawLine", colour: c, thickness }),
     drawPolygon: (_p: unknown, f: number) => ops.push({ op: "drawPolygon", colour: f }),
-    drawCircle: (_p: unknown, _r: number, f: number) =>
-      ops.push({ op: "drawCircle", colour: f }),
+    drawCircle: (_p: unknown, _r: number, f: number, outline: number) =>
+      // A ring is a stroke with no fill (f < 0); the palette index that
+      // matters is then the outline's.
+      ops.push({ op: "drawCircle", colour: f >= 0 ? f : outline }),
     drawText: (_p: unknown, _o: unknown, c: number) =>
       ops.push({ op: "drawText", colour: c }),
     blitterNew: () => ({}),
@@ -532,8 +545,14 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
   // arrow, and ink landed outside the board where nothing repaints.
   // The preview is now discrete — snapped target + 180° partner,
   // folded into the tile cache — so these tests pin: paint at the
-  // target pair only, in the cursor colour, erased by the tiles' own
+  // target pair only, in the drag colour, erased by the tiles' own
   // repaints, never outside the board, no full-board updates.
+  //
+  // COL_DRAG, not COL_CURSOR: the preview shipped in the keyboard
+  // cursor's board-relative tint and the owner could not see it in
+  // either scheme (2026-08-08). Asserting the *drag* colour is what
+  // keeps a transient affordance out of a colour that, being a tint of
+  // the board, cannot be prominent.
   const p: GalaxiesParams = { w: 3, h: 3, diff: GalaxiesDiff.Normal };
   const p43: GalaxiesParams = { w: 4, h: 3, diff: GalaxiesDiff.Normal };
   const TILE = 32;
@@ -557,7 +576,7 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
     return { x: c * TILE + BORDER, y: r * TILE + BORDER };
   }
 
-  it("paints the snapped target and its mirror in the cursor colour, erases both when the target moves, and leaves nothing after the drag", () => {
+  it("paints the snapped target and its mirror in the drag colour, erases both when the target moves, and leaves nothing after the drag", () => {
     const { s, ui, ds } = twoDotBoard();
     const cold = recordingDrawing();
     galaxiesRedraw(cold.dr, ds, null, s, 1, ui, 0, 0);
@@ -578,11 +597,15 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
       expect.arrayContaining([tileRect(0, 1), tileRect(2, 1)]),
     );
     expect(clips1).toHaveLength(2);
-    // Preview lines (arrows + target outline) are cursor-coloured —
-    // never the committed arrow's ink.
+    // Preview lines (arrows + target outline) are drag-coloured —
+    // never the committed arrow's ink, and never the cursor's tint.
     const lines1 = drag1.ops.filter((o) => o.op === "drawLine");
     expect(lines1.length).toBeGreaterThan(0);
-    expect(lines1.every((o) => o.colour === COL_CURSOR)).toBe(true);
+    expect(lines1.every((o) => o.colour === COL_DRAG)).toBe(true);
+    expect(lines1.some((o) => o.colour === COL_CURSOR)).toBe(false);
+    // ...and heavier than one, so the preview cannot be mistaken for a
+    // committed arrow even before the colour registers.
+    expect(lines1.every((o) => (o.thickness ?? 1) > 1)).toBe(true);
 
     // Move the target: the old pair must repaint clean (that repaint
     // IS the erase), the new pair paints.
@@ -606,7 +629,7 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
     const done = recordingDrawing();
     galaxiesRedraw(done.dr, ds, null, s, 1, ui, 0, 0);
     expect(done.ops.filter((o) => o.op === "clip")).toHaveLength(2);
-    expect(done.ops.some((o) => o.op === "drawLine" && o.colour === COL_CURSOR)).toBe(
+    expect(done.ops.some((o) => o.op === "drawLine" && o.colour === COL_DRAG)).toBe(
       false,
     );
     const idle = recordingDrawing();
@@ -651,7 +674,55 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
     const drag = recordingDrawing();
     galaxiesRedraw(drag.dr, ds, null, s, 1, ui, 0, 0);
     expect(drag.ops.filter((o) => o.op === "clip")).toHaveLength(0);
-    expect(drag.ops.some((o) => o.colour === COL_CURSOR)).toBe(false);
+    expect(drag.ops.some((o) => o.colour === COL_DRAG)).toBe(false);
+  });
+
+  it("erases the half-grid cursor when it moves on, and leaves none behind", () => {
+    // The vertex/edge cursor used to be painted after the tile loop with a
+    // bare drawRect + drawUpdate — outside the per-tile cache, so nothing
+    // ever erased it and every vertex and edge the cursor visited kept a
+    // mark. It went unnoticed for as long as its colour was an invisible
+    // tint of the board; it is COL_CURSOR now, and this is the guard.
+    const { s, ui, ds } = twoDotBoard();
+    const cold = recordingDrawing();
+    galaxiesRedraw(cold.dr, ds, null, s, 1, ui, 0, 0);
+
+    const cursorRects = (f: ReturnType<typeof recordingDrawing>) =>
+      f.ops.filter((o) => o.op === "drawRect" && o.colour === COL_CURSOR);
+
+    // A vertical edge at doubled (2,1): the two tiles it separates each
+    // paint their clipped half.
+    ui.curVisible = true;
+    ui.curX = 2;
+    ui.curY = 1;
+    const at1 = recordingDrawing();
+    galaxiesRedraw(at1.dr, ds, null, s, 1, ui, 0, 0);
+    expect(cursorRects(at1).length).toBeGreaterThan(0);
+    expect(at1.ops.filter((o) => o.op === "clip")).toHaveLength(2);
+
+    // Move two subcells right, onto the next vertical edge. The vacated
+    // tiles must repaint — and that repaint must contain no cursor.
+    ui.curX = 6;
+    const at2 = recordingDrawing();
+    galaxiesRedraw(at2.dr, ds, null, s, 1, ui, 0, 0);
+    const vacated = [tileRect(0, 0), tileRect(1, 0)];
+    const clipped2 = at2.ops.filter((o) => o.op === "clip");
+    expect(clipped2.map((o) => ({ x: o.x, y: o.y }))).toEqual(
+      expect.arrayContaining(vacated),
+    );
+    // Exactly the two tiles the cursor now touches carry a mark — if the
+    // vacated pair still showed one, this would be four.
+    expect(cursorRects(at2)).toHaveLength(2);
+
+    // Hide the cursor: the last pair repaints clean and nothing remains.
+    ui.curVisible = false;
+    const gone = recordingDrawing();
+    galaxiesRedraw(gone.dr, ds, null, s, 1, ui, 0, 0);
+    expect(gone.ops.filter((o) => o.op === "clip")).toHaveLength(2);
+    expect(cursorRects(gone)).toHaveLength(0);
+    const idle = recordingDrawing();
+    galaxiesRedraw(idle.dr, ds, null, s, 1, ui, 0, 0);
+    expect(idle.ops).toHaveLength(0);
   });
 
   it("release commits exactly the previewed pair, not the release pixel", () => {
@@ -703,5 +774,244 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
       galaxiesGame.interpretMove(s, ui, null, { x: 80, y: 48 }, RIGHT_RELEASE),
     ).toBe(UI_UPDATE);
     expect(ui.dragging).toBe(false);
+  });
+});
+
+describe("Galaxies association gestures (left button, and cell→dot)", () => {
+  // Two widenings of one gesture, from owner acceptance 2026-08-08: the
+  // association drag was reachable only from the right button (which touch
+  // reaches only through a 350 ms long-press) and only *from* a dot.
+  const p43: GalaxiesParams = { w: 4, h: 3, diff: GalaxiesDiff.Normal };
+
+  /** 4×3 board, dots at doubled (3,3) and (7,1). Tile (c,r)'s centre pixel
+   * is (48 + 32c, 48 + 32r), so the (3,3) dot sits at (80, 80). */
+  function board() {
+    const s = galaxiesGame.newState(p43, "gj");
+    const ui = galaxiesGame.newUi(s);
+    return { s, ui };
+  }
+  const move = (
+    s: GalaxiesState,
+    ui: ReturnType<typeof galaxiesGame.newUi>,
+    x: number,
+    y: number,
+    button: number,
+  ) => galaxiesGame.interpretMove(s, ui, null, { x, y }, button);
+
+  it("a left click still toggles an edge — on release, not on press", () => {
+    const { s, ui } = board();
+    // Press near the wall between tiles (0,1) and (1,1): doubled (2,3).
+    // The press is *claimed* (UI_UPDATE) though nothing has been decided:
+    // `view-interactive.ts` tracks the pointer only for a press the game
+    // consumed, and a `null` here would mean no drag event ever arrives.
+    expect(move(s, ui, 64, 80, LEFT_BUTTON)).toBe(UI_UPDATE);
+    // Nothing is committed yet — the press has not yet said which gesture
+    // it is. (Upstream toggled here; it could, having no left drag.)
+    const done = move(s, ui, 66, 81, LEFT_RELEASE);
+    expect(done).toEqual({
+      ops: [{ kind: "edge", x: 2, y: 3 }],
+      solving: false,
+    });
+    const after = galaxiesGame.executeMove(s, done as GalaxiesMove);
+    expect(after.flags[idx(after, 2, 3)] & F_EDGE_SET).toBeTruthy();
+  });
+
+  it("a left drag from a dot associates, and toggles no edge", () => {
+    const { s, ui } = board();
+    expect(move(s, ui, 80, 80, LEFT_BUTTON)).toBe(UI_UPDATE);
+    expect(ui.dragging).toBe(false); // claimed, but still ambiguous
+    // Travel past the slop: now it is a drag, sourced from the press point.
+    expect(move(s, ui, 48, 80, LEFT_DRAG)).toBe(UI_UPDATE);
+    expect(ui.dragging).toBe(true);
+    expect([ui.dotx, ui.doty]).toEqual([3, 3]);
+    expect([ui.targetX, ui.targetY]).toEqual([1, 3]);
+    const done = move(s, ui, 48, 80, LEFT_RELEASE);
+    expect(done).toEqual({
+      ops: [{ kind: "assoc", x: 1, y: 3, ax: 3, ay: 3 }],
+      solving: false,
+    });
+  });
+
+  it("a press that ends far away commits nothing (the cancelled-pointer path)", () => {
+    // view-interactive.ts's cancelPointerTracking synthesises a drag and a
+    // release at (-100, -100) when the pointer leaves the canvas mid-press.
+    // Measuring the release against the press pixel is what stops that
+    // toggling an edge on the far side of the board — and the drag it also
+    // synthesises must land nothing either, whichever gesture the press
+    // turned out to have started.
+    for (const [px, py] of [
+      [64, 80], // inside a dot's catchment: a classic drag, dragged off-board
+      [48, 48], // a plain cell: a reverse drag with no dot ever in reach
+      [65, 113], // near an edge: the press that meant to be a click
+    ]) {
+      const { s, ui } = board();
+      expect(move(s, ui, px, py, LEFT_BUTTON)).toBe(UI_UPDATE);
+      const dragged = move(s, ui, -100, -100, LEFT_DRAG);
+      const released = move(s, ui, -100, -100, LEFT_RELEASE);
+      for (const r of [dragged, released]) {
+        expect(r === null || r === UI_UPDATE).toBe(true);
+      }
+    }
+  });
+
+  it("a drag from a plain cell picks the dot, and commits the pair", () => {
+    const { s, ui } = board();
+    // Tile (0,1) = doubled (1,3). Its only legal dot is (3,3): the 180°
+    // image about (7,1) would be (13,-1), off the board.
+    expect(legalDotsFor(s, 1, 3)).toEqual([{ x: 3, y: 3 }]);
+    expect(move(s, ui, 48, 80, LEFT_BUTTON)).toBe(UI_UPDATE);
+    expect(move(s, ui, 60, 80, LEFT_DRAG)).toBe(UI_UPDATE);
+    expect(ui.dragToDot).toBe(true);
+    expect([ui.srcx, ui.srcy]).toEqual([1, 3]);
+    expect([ui.targetX, ui.targetY]).toEqual([1, 3]);
+    expect([ui.dotx, ui.doty]).toEqual([3, 3]);
+    // The cell is both source and target here, so the classic drag's
+    // "dragged back where it started is a null move" test must not fire.
+    const done = move(s, ui, 72, 80, LEFT_RELEASE);
+    expect(done).toEqual({
+      ops: [{ kind: "assoc", x: 1, y: 3, ax: 3, ay: 3 }],
+      solving: false,
+    });
+    const after = galaxiesGame.executeMove(s, done as GalaxiesMove);
+    expect(after.flags[idx(after, 1, 3)] & F_TILE_ASSOC).toBeTruthy();
+    expect(after.flags[idx(after, 5, 3)] & F_TILE_ASSOC).toBeTruthy();
+  });
+
+  it("an out-of-reach pointer picks no dot, and the release commits nothing", () => {
+    const { s, ui } = board();
+    expect(move(s, ui, 48, 112, LEFT_BUTTON)).toBe(UI_UPDATE);
+    // Tile (0,2) = doubled (1,5); drag away from every legal dot.
+    expect(move(s, ui, 20, 112, LEFT_DRAG)).toBe(UI_UPDATE);
+    expect(ui.dragToDot).toBe(true);
+    expect(ui.dotx).toBe(-1);
+    expect(move(s, ui, 20, 112, LEFT_RELEASE)).toBe(UI_UPDATE);
+  });
+
+  it("a right click on an empty cell stays a no-op", () => {
+    // The reverse drag is a *drag*. Starting one on the press would make a
+    // bare right-click quietly associate the cell with the nearest dot.
+    const { s, ui } = board();
+    expect(move(s, ui, 48, 80, RIGHT_BUTTON)).toBe(UI_UPDATE);
+    expect(ui.dragging).toBe(false);
+    expect(move(s, ui, 48, 80, RIGHT_RELEASE)).toBeNull();
+  });
+
+  it("a right press on a dot still lifts the arrow immediately", () => {
+    const { s, ui } = board();
+    expect(move(s, ui, 80, 80, RIGHT_BUTTON)).toBe(UI_UPDATE);
+    expect(ui.dragging).toBe(true);
+    expect(ui.dragToDot).toBe(false);
+  });
+
+  it("the keyboard reaches the cell→dot gesture too", () => {
+    const { s, ui } = board();
+    ui.curVisible = true;
+    ui.curX = 1;
+    ui.curY = 3; // tile (0,1)
+    expect(move(s, ui, 0, 0, CURSOR_SELECT)).toBe(UI_UPDATE);
+    expect(ui.dragToDot).toBe(true);
+    expect(ui.dotx).toBe(-1); // nothing picked until the cursor lands on one
+    // Walk the cursor onto the dot at (3,3).
+    move(s, ui, 0, 0, PuzzleButton.CURSOR_RIGHT);
+    move(s, ui, 0, 0, PuzzleButton.CURSOR_RIGHT);
+    expect([ui.curX, ui.curY]).toEqual([3, 3]);
+    expect([ui.dotx, ui.doty]).toEqual([3, 3]);
+    expect(move(s, ui, 0, 0, CURSOR_SELECT)).toEqual({
+      ops: [{ kind: "assoc", x: 1, y: 3, ax: 3, ay: 3 }],
+      solving: false,
+    });
+  });
+});
+
+describe("Galaxies candidate rings", () => {
+  const p43: GalaxiesParams = { w: 4, h: 3, diff: GalaxiesDiff.Normal };
+
+  function board() {
+    const s = galaxiesGame.newState(p43, "gj");
+    const ui = galaxiesGame.newUi(s);
+    const ds = newDrawState(s);
+    const cold = recordingDrawing();
+    galaxiesRedraw(cold.dr, ds, null, s, 1, ui, 0, 0);
+    return { s, ui, ds };
+  }
+  const rings = (f: ReturnType<typeof recordingDrawing>) =>
+    f.ops.filter((o) => o.op === "drawCircle" && o.colour === COL_DRAG);
+
+  /** Put `ui` into a cell→dot drag on tile (0,1) = doubled (1,3), whose only
+   * legal dot is (3,3) — the 180° image about (7,1) is off the board. */
+  function reverseDragOnTile01(ui: ReturnType<typeof galaxiesGame.newUi>) {
+    ui.dragging = true;
+    ui.dragToDot = true;
+    ui.srcx = 1;
+    ui.srcy = 3;
+    ui.targetX = 1;
+    ui.targetY = 3;
+    ui.dotx = 3;
+    ui.doty = 3;
+  }
+
+  it("rings the legal dots while a cell→dot drag is live, and only those", () => {
+    const { s, ui, ds } = board();
+    reverseDragOnTile01(ui);
+    const drag = recordingDrawing();
+    galaxiesRedraw(drag.dr, ds, null, s, 1, ui, 0, 0);
+    expect(rings(drag).length).toBeGreaterThan(0);
+    // Three tiles repaint and no more: the pinned target (0,1), its 180°
+    // partner (2,1) — the preview pair — and (1,1), which holds the one
+    // legal dot. The board's other dot, (7,1), is on tile (3,0), which is
+    // untouched: an illegal candidate is not ringed.
+    const clipped = drag.ops.filter((o) => o.op === "clip");
+    expect(clipped.map((o) => ({ x: o.x, y: o.y }))).toEqual([
+      { x: 32, y: 64 },
+      { x: 64, y: 64 },
+      { x: 96, y: 64 },
+    ]);
+  });
+
+  it("draws no rings when the preference is off — but the drag still works", () => {
+    const { s, ui, ds } = board();
+    reverseDragOnTile01(ui);
+    ui.showDragCandidates = false;
+    const drag = recordingDrawing();
+    galaxiesRedraw(drag.dr, ds, null, s, 1, ui, 0, 0);
+    expect(rings(drag)).toHaveLength(0);
+    // The preview of the pair a release would commit is *not* the aid, and
+    // is still drawn: the preference gates the rings alone.
+    expect(drag.ops.some((o) => o.op === "drawLine" && o.colour === COL_DRAG)).toBe(
+      true,
+    );
+  });
+
+  it("erases the rings when the drag ends", () => {
+    const { s, ui, ds } = board();
+    reverseDragOnTile01(ui);
+    galaxiesRedraw(recordingDrawing().dr, ds, null, s, 1, ui, 0, 0);
+    ui.dragging = false;
+    ui.dragToDot = false;
+    const done = recordingDrawing();
+    galaxiesRedraw(done.dr, ds, null, s, 1, ui, 0, 0);
+    expect(rings(done)).toHaveLength(0);
+    const idle = recordingDrawing();
+    galaxiesRedraw(idle.dr, ds, null, s, 1, ui, 0, 0);
+    expect(idle.ops).toHaveLength(0);
+  });
+
+  it("rings nothing for a cell with no legal dot", () => {
+    const { s, ui, ds } = board();
+    // Tile (3,2) = doubled (7,5): about (3,3) its image is (-1,1), about
+    // (7,1) it is (7,-3). Both off the board.
+    expect(legalDotsFor(s, 7, 5)).toHaveLength(0);
+    ui.dragging = true;
+    ui.dragToDot = true;
+    ui.srcx = 7;
+    ui.srcy = 5;
+    ui.targetX = 7;
+    ui.targetY = 5;
+    ui.dotx = -1;
+    ui.doty = -1;
+    const drag = recordingDrawing();
+    galaxiesRedraw(drag.dr, ds, null, s, 1, ui, 0, 0);
+    expect(rings(drag)).toHaveLength(0);
+    expect(drag.ops.filter((o) => o.op === "clip")).toHaveLength(0);
   });
 });

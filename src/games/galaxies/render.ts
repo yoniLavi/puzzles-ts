@@ -8,7 +8,7 @@
  */
 import { drawRectOutline, type GameDrawing } from "../../engine/index.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
-import { okToAddAssocWithOpposite } from "./moves.ts";
+import { legalDotsFor, okToAddAssocWithOpposite } from "./moves.ts";
 import {
   checkComplete,
   F_DOT,
@@ -35,7 +35,13 @@ export const COL_EDGE = 6;
 export const COL_ARROW = 7;
 export const COL_CURSOR = 8;
 export const COL_MISTAKE = 9;
-export const NCOLOURS = 10;
+/** The in-progress association drag's preview — its own colour, not the
+ * cursor's. The two are different meanings ("where the keyboard is" vs "let go
+ * and this is laid"), they are on screen together during a keyboard drag, and
+ * the cursor's is a board-relative *tint*, which a transient affordance the
+ * player is steering by must never be: see `DRAG_ADD`'s doc comment. */
+export const COL_DRAG = 10;
+export const NCOLOURS = 11;
 
 // --- DrawState ------------------------------------------------------
 
@@ -52,12 +58,19 @@ export interface GalaxiesDrawState {
   /** Per-tile arrow dx/dy cache; part of the cache-miss comparison. */
   dx: Int16Array;
   dy: Int16Array;
-  /** Per-tile drag-preview cache (0 = none, 1 = mirror-partner ghost,
-   * 2 = drop target); part of the cache-miss comparison, so a tile the
-   * preview leaves repaints clean. A sidecar rather than a key bit
-   * because the Int32 key is full (bits 0-11, 12-29 dots, 30 mistake) —
-   * same reasoning as `wrongEdges`. */
-  preview: Int8Array;
+  /** Everything the *transient* UI paints on a tile, in one sidecar word:
+   * the drag preview plane (bits 0-1, {@link PREVIEW_GHOST} /
+   * {@link PREVIEW_TARGET}) and the half-grid keyboard cursor's subcell
+   * position (bits 2-10, {@link cursorBit}). A sidecar rather than key bits
+   * because the Int32 key is full (bits 0-11 flags, 12-29 dots, 30 mistake) —
+   * same reasoning as `wrongEdges`.
+   *
+   * Both are here for the same reason: an overlay drawn *outside* the tile
+   * cache has nothing to erase it. The drag arrows shipped that way and
+   * smeared across every tile they crossed; the half-grid cursor shipped that
+   * way too and left a mark at every vertex and edge it visited, unnoticed
+   * only because its colour was a near-invisible tint of the board. */
+  overlay: OverlaySidecar;
   /** Per-tile wrong-wall mask (DRAW_EDGE_L/R/U/D bits) for the mistake
    * overlay — a sidecar rather than a cache-key bit because there are no
    * free bits left in the Int32 key for four more edge flags. Part of
@@ -82,7 +95,7 @@ export function newDrawState(s: GalaxiesState): GalaxiesDrawState {
     cache,
     dx: new Int16Array(n),
     dy: new Int16Array(n),
-    preview: new Int8Array(n),
+    overlay: new OverlaySidecar(n),
     wrongEdges: new OverlaySidecar(n),
   };
 }
@@ -120,6 +133,31 @@ const DOT_SHIFT_M = 2;
 const DOT_WHITE = 1;
 const DOT_BLACK = 2;
 
+// --- the transient-UI overlay sidecar (`ds.overlay`) ---------------
+
+/** Bits 0-1: this tile is the drag preview's 180° partner (the ghost)… */
+const PREVIEW_GHOST = 1;
+/** …or the drop target itself (arrow plus an outline). */
+const PREVIEW_TARGET = 2;
+const PREVIEW_MASK = 3;
+/** Bits 2-10: the half-grid keyboard cursor sits at this tile's subcell
+ * position `(dy0 * 3 + dx0)`. A vertex cursor is on a tile corner, so up to
+ * four tiles carry a bit for the same cursor and each paints its clipped
+ * quarter — the same shape the dot bits use. */
+const cursorBit = (dx0: number, dy0: number): number => 1 << (2 + dy0 * 3 + dx0);
+/** Bits 11-28: a cell→dot drag's candidate dots, two bits per subcell
+ * position — {@link CAND_LEGAL} for a dot this cell could join,
+ * {@link CAND_SNAPPED} for the one the pointer has picked. Same 9-position
+ * shape as the dot bits, so a dot on a tile corner is ringed (and erased) by
+ * each of the four tiles that clip it. */
+const CAND_SHIFT = 11;
+const CAND_LEGAL = 1;
+const CAND_SNAPPED = 2;
+const candBits = (dx0: number, dy0: number, v: number): number =>
+  v << (CAND_SHIFT + 2 * (dy0 * 3 + dx0));
+const candAt = (overlay: number, dx0: number, dy0: number): number =>
+  (overlay >>> (CAND_SHIFT + 2 * (dy0 * 3 + dx0))) & 3;
+
 // --- rendering helpers ---------------------------------------------
 
 function drawArrow(
@@ -130,6 +168,7 @@ function drawArrow(
   ddy: number,
   tileSize: number,
   col: number,
+  thickness = 1,
 ): void {
   const sq = ddx * ddx + ddy * ddy;
   if (sq === 0) return;
@@ -146,9 +185,9 @@ function drawArrow(
   const ady = Math.round(((ydy - xdy) * tileSize) / 8);
   const adx2 = Math.round(((-ydx - xdx) * tileSize) / 8);
   const ady2 = Math.round(((-ydy - xdy) * tileSize) / 8);
-  dr.drawLine({ x: e1x, y: e1y }, { x: e2x, y: e2y }, col, 1);
-  dr.drawLine({ x: e1x, y: e1y }, { x: e1x + adx, y: e1y + ady }, col, 1);
-  dr.drawLine({ x: e1x, y: e1y }, { x: e1x + adx2, y: e1y + ady2 }, col, 1);
+  dr.drawLine({ x: e1x, y: e1y }, { x: e2x, y: e2y }, col, thickness);
+  dr.drawLine({ x: e1x, y: e1y }, { x: e1x + adx, y: e1y + ady }, col, thickness);
+  dr.drawLine({ x: e1x, y: e1y }, { x: e1x + adx2, y: e1y + ady2 }, col, thickness);
 }
 
 function drawSquare(
@@ -162,13 +201,15 @@ function drawSquare(
   ddx: number,
   ddy: number,
   wrongEdges: number,
-  preview: number,
+  overlay: number,
 ): void {
+  const preview = overlay & PREVIEW_MASK;
   const lx = x * tileSize + border;
   const ly = y * tileSize + border;
   const edgeThickness = Math.max(tileSize >> 4, 2);
   const cursorSize = (tileSize / 4) | 0;
   const dotSize = (tileSize / 4) | 0;
+  const previewThickness = Math.max(2, tileSize >> 4);
 
   dr.clip({ x: lx, y: ly, w: tileSize, h: tileSize });
 
@@ -186,11 +227,11 @@ function drawSquare(
   dr.drawRect({ x: lx, y: ly, w: 1, h: tileSize }, gridCol);
   dr.drawRect({ x: lx, y: ly, w: tileSize, h: 1 }, gridCol);
 
-  // Arrow or cursor. A drag-preview arrow always renders in the
-  // cursor colour: a preview must not look like a committed arrow
-  // (docs/games/rendering.md § "A press preview must not look like a
-  // commit"), and both preview tiles share one colour because release
-  // commits them together — they share a fate.
+  // Arrow or cursor. A drag-preview arrow renders in COL_DRAG and
+  // thicker than a committed one: a preview must not look like a
+  // committed arrow (docs/games/rendering.md § "A press preview must
+  // not look like a commit"), and both preview tiles share one colour
+  // because release commits them together — they share a fate.
   if (flags & DRAW_ARROW) {
     drawArrow(
       dr,
@@ -199,7 +240,8 @@ function drawSquare(
       ddx,
       ddy,
       tileSize,
-      preview || flags & DRAW_CURSOR ? COL_CURSOR : COL_ARROW,
+      preview ? COL_DRAG : flags & DRAW_CURSOR ? COL_CURSOR : COL_ARROW,
+      preview ? previewThickness : 1,
     );
   } else if (flags & DRAW_CURSOR) {
     const cx = lx + (tileSize >> 1) - cursorSize;
@@ -295,6 +337,55 @@ function drawSquare(
     }
   }
 
+  // Candidate rings for a cell→dot drag: a ring outside each dot this cell
+  // could legally join, heavier on the one the pointer has picked. Drawn
+  // after the dots so it frames rather than underlies them.
+  if (overlay >>> CAND_SHIFT) {
+    for (let dy0 = 0; dy0 < 3; dy0++) {
+      for (let dx0 = 0; dx0 < 3; dx0++) {
+        const v = candAt(overlay, dx0, dy0);
+        if (!v) continue;
+        // `drawCircle` strokes one pixel wide and takes no thickness, so the
+        // picked dot is emphasised with concentric rings rather than a
+        // heavier one.
+        const rings = v === CAND_SNAPPED ? previewThickness : 1;
+        const centre = {
+          x: lx + ((dx0 * tileSize) >> 1),
+          y: ly + ((dy0 * tileSize) >> 1),
+        };
+        for (let r = 0; r < rings; r++) {
+          dr.drawCircle(centre, dotSize + 2 + r, -1, COL_DRAG);
+        }
+      }
+    }
+  }
+
+  // The half-grid keyboard cursor (on a vertex or an edge, never a tile —
+  // a tile cursor is the DRAW_CURSOR outline above). Drawn here, clipped to
+  // and cached by this tile, so moving the cursor off it repaints it clean:
+  // the block that used to draw this after the tile loop had nothing to
+  // erase it and left a mark at every cell the cursor visited.
+  if (overlay & ~PREVIEW_MASK) {
+    for (let dy0 = 0; dy0 < 3; dy0++) {
+      for (let dx0 = 0; dx0 < 3; dx0++) {
+        if (!(overlay & cursorBit(dx0, dy0))) continue;
+        // An edge cursor is a bar along its edge, a vertex cursor a small
+        // square; the long axis is the odd (half-way) coordinate.
+        const hw = dx0 % 2 ? cursorSize : (cursorSize / 3) | 0;
+        const hh = dy0 % 2 ? cursorSize : (cursorSize / 3) | 0;
+        dr.drawRect(
+          {
+            x: lx + ((dx0 * tileSize) >> 1) - hw,
+            y: ly + ((dy0 * tileSize) >> 1) - hh,
+            w: 2 * hw + 1,
+            h: 2 * hh + 1,
+          },
+          COL_CURSOR,
+        );
+      }
+    }
+  }
+
   // The drop target itself gets an outline on top of its preview
   // arrow — "showing the target too": the mirror partner's ghost says
   // what comes along, the outline says where the pointer will commit.
@@ -306,7 +397,8 @@ function drawSquare(
       ly + inset,
       tileSize - 2 * inset,
       tileSize - 2 * inset,
-      COL_CURSOR,
+      COL_DRAG,
+      previewThickness,
     );
   }
 
@@ -386,12 +478,14 @@ export function redraw(
   _dir: number,
   ui: {
     dragging: boolean;
+    dragToDot: boolean;
     targetX: number;
     targetY: number;
     dotx: number;
     doty: number;
     srcx: number;
     srcy: number;
+    showDragCandidates: boolean;
     curX: number;
     curY: number;
     curVisible: boolean;
@@ -463,6 +557,21 @@ export function redraw(
       pvOppY = opp.y;
     }
   }
+
+  // A vertex or edge cursor lies on a tile boundary, so up to four tiles
+  // paint their clipped share of it — each through its own 3x3 subcell
+  // block, exactly as the dots do.
+  const halfGridCursor =
+    ui.curVisible && spaceTypeAt(ui.curX, ui.curY) !== SpaceType.Tile;
+  ds.overlay.clear();
+
+  // The candidate rings of a cell→dot drag. Recomputed from the current
+  // state every frame — like the preview's own legality — so a mid-drag undo
+  // cannot leave a ring promising a dot the release would refuse.
+  const candidates =
+    ui.dragging && ui.dragToDot && ui.showDragCandidates
+      ? legalDotsFor(s, ui.targetX, ui.targetY)
+      : [];
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -551,73 +660,78 @@ export function redraw(
       // Wrong-association highlight (bit 30 of the key).
       if (mistakeTiles.has(y * w + x)) flags |= DRAW_MISTAKE;
 
-      // Drag preview: the snapped target (2) and its mirror partner
-      // (1) show the association a release would commit, overriding
-      // any committed arrow's direction for the duration.
+      // Drag preview: the snapped target and its mirror partner show the
+      // association a release would commit, overriding any committed
+      // arrow's direction for the duration.
       const tx2 = 2 * x + 1;
       const ty2 = 2 * y + 1;
+      const cacheI = y * w + x;
       let preview = 0;
-      if (tx2 === pvX && ty2 === pvY) preview = 2;
-      else if (tx2 === pvOppX && ty2 === pvOppY) preview = 1;
+      if (tx2 === pvX && ty2 === pvY) preview = PREVIEW_TARGET;
+      else if (tx2 === pvOppX && ty2 === pvOppY) preview = PREVIEW_GHOST;
       if (preview) {
         flags |= DRAW_ARROW;
         ddx = ui.dotx - tx2;
         ddy = ui.doty - ty2;
       }
+      ds.overlay.add(cacheI, preview);
+
+      // The half-grid keyboard cursor, if it is on one of this tile's nine
+      // subcell positions. A tile-centre cursor is DRAW_CURSOR in the key
+      // above; a vertex or edge cursor rides the overlay sidecar so the tile
+      // that painted it is the tile that erases it.
+      if (halfGridCursor) {
+        const cdx = ui.curX - 2 * x;
+        const cdy = ui.curY - 2 * y;
+        if (cdx >= 0 && cdx <= 2 && cdy >= 0 && cdy <= 2) {
+          ds.overlay.add(cacheI, cursorBit(cdx, cdy));
+        }
+      }
+
+      // Candidate rings, on each of the (up to four) tiles that clip the dot.
+      for (const d of candidates) {
+        const ddx0 = d.x - 2 * x;
+        const ddy0 = d.y - 2 * y;
+        if (ddx0 < 0 || ddx0 > 2 || ddy0 < 0 || ddy0 > 2) continue;
+        const snapped = d.x === ui.dotx && d.y === ui.doty;
+        ds.overlay.add(
+          cacheI,
+          candBits(ddx0, ddy0, snapped ? CAND_SNAPPED : CAND_LEGAL),
+        );
+      }
 
       // Cache key: flags (bits 0-11, 30) | dots (bits 12-29), within 31
-      // bits — fits a positive Int32. ddx/ddy, the preview plane and the
-      // wrong-wall mask live in their sidecar arrays and form part of
-      // the cache-miss check.
+      // bits — fits a positive Int32. ddx/ddy, the transient-UI overlay
+      // and the wrong-wall mask live in their sidecar arrays and form part
+      // of the cache-miss check.
       const key = flags | dots;
-      const cacheI = y * w + x;
       if (
         ds.cache[cacheI] !== key ||
         ds.dx[cacheI] !== ddx ||
         ds.dy[cacheI] !== ddy ||
-        ds.preview[cacheI] !== preview ||
+        ds.overlay.stale(cacheI) ||
         ds.wrongEdges.stale(cacheI)
       ) {
         const wrongEdges = ds.wrongEdges.packed[cacheI];
-        drawSquare(dr, x, y, tile, border, flags, dots, ddx, ddy, wrongEdges, preview);
+        const overlay = ds.overlay.packed[cacheI];
+        drawSquare(dr, x, y, tile, border, flags, dots, ddx, ddy, wrongEdges, overlay);
         ds.cache[cacheI] = key;
         ds.dx[cacheI] = ddx;
         ds.dy[cacheI] = ddy;
-        ds.preview[cacheI] = preview;
+        ds.overlay.commit(cacheI);
         ds.wrongEdges.commit(cacheI);
       }
     }
   }
 
-  // Cursor on non-tile cell (vertex/edge) drawn on top.
-  if (ui.curVisible) {
-    const t = spaceTypeAt(ui.curX, ui.curY);
-    if (t !== SpaceType.Tile) {
-      const curSize = (tile / 4) | 0;
-      const cx = ((ui.curX * tile) >> 1) + border;
-      const cy = ((ui.curY * tile) >> 1) + border;
-      const dx0 = ui.curX % 2 ? curSize : (curSize / 3) | 0;
-      const dy0 = ui.curY % 2 ? curSize : (curSize / 3) | 0;
-      dr.drawRect(
-        { x: cx - dx0, y: cy - dy0, w: dx0 * 2 + 1, h: dy0 * 2 + 1 },
-        COL_CURSOR,
-      );
-      dr.drawUpdate({
-        x: cx - curSize,
-        y: cy - curSize,
-        w: curSize * 2 + 1,
-        h: curSize * 2 + 1,
-      });
-    }
-  }
-
-  // The drag preview needs nothing here: it is folded into the
-  // per-tile cache above (arrow + target outline in the preview
-  // sidecar), so every pixel it paints is clipped to a tile and is
-  // erased by that tile's own repaint when the target moves or the
-  // drag ends. The previous shape — two unclipped pixel-following
-  // arrows plus a single-tile invalidation — left stale arrows on
-  // every tile the drag crossed and unerasable ink outside the board
-  // (the border only repaints on first-draw); owner-reported
-  // 2026-08-08.
+  // Nothing is painted after the tile loop, deliberately. Both transient
+  // overlays — the drag preview and the half-grid cursor — are folded into
+  // the per-tile cache above via `ds.overlay`, so every pixel they paint is
+  // clipped to a tile and erased by that tile's own repaint when the target
+  // or the cursor moves on. Each shipped the other way and each smeared: the
+  // drag as two unclipped pixel-following arrows that left stale ink on every
+  // tile crossed *and outside the board*, where nothing repaints at all
+  // (owner-reported 2026-08-08); the cursor as a bare drawRect that left a
+  // mark at every vertex and edge it visited, unnoticed only because it was
+  // painted in a near-invisible tint of the board.
 }
