@@ -87,4 +87,5 @@
       as the only way to place an arrow. A player-visible input change
       that leaves the help page describing the old gesture is the
       `audit-author-known-issues` defect in miniature.
-- [ ] 5.3 `openspec validate --strict`; owner acceptance; archive.
+- [x] 5.3 `openspec validate --strict`; owner acceptance (2026-08-11,
+      after the reachability tightening); archive.

@@ -76,6 +76,17 @@ SHALL redraw without adding a history entry. The game SHALL report
 associations under the required symmetry; the status SHALL be
 upgraded to `solved-with-help` if the solver was used to get there.
 
+The association drag SHALL be reachable from **either** mouse button
+and from the keyboard, and SHALL run in **either direction** — from a
+dot out to a cell, or from a cell back to the dot that owns it.
+Because the left button carries both meanings, a left press SHALL be
+resolved by what follows it: a release close to the press toggles an
+edge, and travel beyond a small slop starts an association drag from
+the press point instead. A press that ends far from where it began
+SHALL commit nothing at all — that is the shape the frontend's
+pointer-cancellation synthesises, and it must not toggle an edge on
+the far side of the board.
+
 #### Scenario: Solving and completion
 
 - **WHEN** the player completes the partition matching every dot's
@@ -101,6 +112,55 @@ upgraded to `solved-with-help` if the solver was used to get there.
   board, or an uncommittable tile) removes the dragged arrow if one
   existed and otherwise adds **no** history entry
 
+#### Scenario: The left button distinguishes a click from a drag
+
+- **WHEN** the player presses the left button and releases it without
+  moving
+- **THEN** the nearest legal edge toggles, exactly as a left click
+  always has
+- **AND WHEN** the player presses and then moves beyond the slop
+- **THEN** an association drag begins from the press point and the
+  release commits it, toggling no edge
+
+#### Scenario: Only an association some galaxy could contain is offered
+
+- **WHEN** the player aims a drag at a (cell, dot) pair
+- **THEN** it is offered only if the cell is reachable from the dot by a
+  connected, 180°-symmetric region that avoids every other dot's own
+  tiles — the rules of a galaxy, applied to the offer
+- **AND** the check SHALL depend on the dot layout alone, not on the
+  player's own walls or arrows, so that it can never refuse an
+  association the puzzle's solution contains and one mistake cannot
+  silently veto a correct arrow elsewhere
+- **AND** it SHALL go no further than those rules: running the deduction
+  chain would narrow the offer towards the unique solution, which is not
+  an aid but an answer
+
+#### Scenario: A drag from a cell finds its dot
+
+- **WHEN** the player drags from a tile that has no dot and no arrow
+- **THEN** the tile stays put and the pointer picks the dot: it snaps
+  to the nearest dot within reach that a release could legally
+  associate this tile with, and none when there is no such dot in
+  reach
+- **AND** the release commits that tile and its 180° partner to the
+  picked dot as one move, or nothing at all if no dot was picked
+- **AND** a press on a tile that already carries an arrow keeps its
+  existing meaning — the arrow is picked up and carried elsewhere
+
+#### Scenario: A bare right click on an empty cell does nothing
+
+- **WHEN** the player right-clicks an empty tile without dragging
+- **THEN** nothing is committed — the cell→dot gesture is a drag, and
+  a click must not silently associate a cell with whichever dot
+  happens to be nearest
+
+#### Scenario: The keyboard reaches both drag directions
+
+- **WHEN** the player selects a plain tile with the cursor
+- **THEN** a cell→dot drag begins, the cursor keys pick the dot by
+  landing on it, and a second select commits the pair
+
 ### Requirement: Galaxies rendering, animation, and text format
 
 Galaxies SHALL render the subcell grid, region fills coloured by the
@@ -124,15 +184,19 @@ drag dot — exactly the pair a release would commit — each showing an
 arrow toward the dot in a transient colour distinct from committed
 arrows, with the drop target itself additionally outlined. A target
 where a release would not commit SHALL show no preview. Every pixel
-**any** transient overlay paints — the drag preview and the keyboard
-cursor alike — SHALL be clipped to a tile and erased by that tile's own
-repaint when it moves on: no paint outside the board, no stale frames,
-and no full-board update per pointer move.
+any transient overlay paints — the drag preview and the keyboard
+cursor alike — SHALL be clipped to a tile and erased by that tile's
+own repaint when it moves on: no paint outside the board, no stale
+frames, and no full-board update per pointer move.
 
 Both transient affordances SHALL use **authored** colours rather than
-colours derived from the board, and SHALL differ from each other: a
-colour derived from the board is by construction not prominent against
-it, in either scheme, and the two say different things.
+colours derived from the board, because a colour derived from the
+board is by construction not prominent against it, in either scheme.
+
+While a cell→dot drag is in progress, every dot the cell could
+legally join SHALL be ringed and the picked one emphasised — subject
+to a preference, because it is a solving aid. The **gesture** SHALL
+NOT be gated by that preference.
 
 #### Scenario: Galaxies renders and animates through the engine
 
@@ -167,6 +231,16 @@ it, in either scheme, and the two say different things.
   not commit (a dot tile, a tile whose 180° partner is off the board,
   or a tile inside a locally-valid region)
 - **THEN** no preview is drawn — the absence is the feedback
+
+#### Scenario: Candidate dots are ringed, and can be switched off
+
+- **WHEN** a cell→dot drag is in progress
+- **THEN** exactly the dots a release could legally commit to are
+  ringed, the picked one more heavily, and the rings are erased when
+  the drag ends
+- **AND WHEN** the candidate preference is off
+- **THEN** no rings are drawn, and the drag and its commit preview
+  are unaffected
 
 ### Requirement: Galaxies has a dev-time differential spot-check
 
