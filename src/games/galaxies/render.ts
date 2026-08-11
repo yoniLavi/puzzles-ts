@@ -530,11 +530,22 @@ function drawSquare(
           y: ly + ((dy0 * tileSize) >> 1),
         };
         const col = v === HINT_DOT_ACTION ? COL_HINT : COL_HINT_CELL;
-        // `drawCircle` strokes one pixel wide, so weight comes from
-        // concentric rings — the same trick the drag's snapped dot uses.
-        const rings = v === HINT_DOT_ACTION ? previewThickness : 1;
-        for (let r = 0; r < rings; r++) {
-          dr.drawCircle(centre, dotSize + 2 + r, -1, col);
+        // A **filled halo**, then the dot painted back on top of it. Rings
+        // came first and were nearly invisible against the loud cell marks
+        // (owner-reported): `drawCircle` strokes one pixel wide, so a ring is
+        // a hairline however many you stack. Filling the dot itself was the
+        // other option and would cost the narration its noun — a hint that
+        // says "the white dot" must leave the dot visibly white.
+        const halo = Math.max(2, tileSize >> 4);
+        dr.drawCircle(centre, dotSize + halo, col, col);
+        const val = (dots >>> (DOT_SHIFT_C + DOT_SHIFT_M * (dy0 * 3 + dx0))) & 3;
+        if (val) {
+          dr.drawCircle(
+            centre,
+            dotSize,
+            val === DOT_WHITE ? COL_WHITEDOT : COL_BLACKDOT,
+            COL_BLACKDOT,
+          );
         }
       }
     }

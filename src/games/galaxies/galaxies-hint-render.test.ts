@@ -9,33 +9,49 @@
  * unset edge), and the two ring roles have to stay one apiece.
  */
 import { describe, expect, it } from "vitest";
+import { randomNew } from "../../engine/random/index.ts";
 import type { DrawOp } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import type { GalaxiesHint } from "./hint.ts";
-import { galaxiesGame } from "./index.ts";
+import { type GalaxiesMove, galaxiesGame } from "./index.ts";
 import { COL_HINT, COL_HINT_CELL } from "./render.ts";
+import { GalaxiesDiff } from "./solver.ts";
 
 /**
  * Drive a board to the first hint step matching `want`, and capture it.
  *
- * `hintUntil` only ever walks the plan a single `hint()` returned, so a
- * deduction that comes later than the plan cap is unreachable from one board;
- * the scan over seeds is what finds a board that offers it early. Fixed-seed,
- * so it resolves to the same frame every run.
+ * The walk runs on the plain `Game` API and the matching position is then
+ * *replayed* into a scenario as `moves`, rather than using `hintUntil`:
+ * `hintUntil` can only walk the steps of a single plan, and the deductions
+ * that argue over an area come later in a board's life than any one plan
+ * reaches. Fixed-seed throughout, so it resolves to the same frame every run.
  */
-function hintFrame(want: (hl: GalaxiesHint) => boolean, ids = BOARDS) {
-  for (const id of ids) {
-    const result = renderScenario({
-      game: galaxiesGame,
-      id,
-      showHint: true,
-      hintUntil: (step) => {
-        const hl = step.highlights as GalaxiesHint | undefined;
-        return hl !== undefined && want(hl);
-      },
-    });
-    const hl = result.hint?.highlights as GalaxiesHint | undefined;
-    if (hl && want(hl)) return { ...result, hl };
+function hintFrame(want: (hl: GalaxiesHint) => boolean, boards = BOARDS) {
+  for (const { params, seed } of boards) {
+    const { desc } = galaxiesGame.newDesc(params, randomNew(seed));
+    const id = `${galaxiesGame.encodeParams(params, true)}:${desc}`;
+    let state = galaxiesGame.newState(params, desc);
+    const moves: GalaxiesMove[] = [];
+    for (let i = 0; i < 400 && galaxiesGame.status(state) === "ongoing"; i++) {
+      const res = galaxiesGame.hint?.(state);
+      if (!res?.ok) break;
+      const step = res.steps[0];
+      if (want(step.highlights as GalaxiesHint)) {
+        const result = renderScenario({
+          game: galaxiesGame,
+          id,
+          moves,
+          showHint: true,
+        });
+        const hl = result.hint?.highlights as GalaxiesHint | undefined;
+        // The replayed midend recomputes at that position, so its first step
+        // is the one the walk stopped on.
+        expect(hl && want(hl), `${id}: replay did not reproduce the frame`).toBe(true);
+        return { ...result, hl: hl as GalaxiesHint };
+      }
+      moves.push(step.move);
+      state = galaxiesGame.executeMove(state, step.move);
+    }
   }
   throw new Error("no board in the scan reached the wanted step");
 }
@@ -45,15 +61,18 @@ const rects = (ops: DrawOp[], colour: number) =>
 const circles = (ops: DrawOp[], outline: number) =>
   ops.filter((o) => o.op === "circle" && o.outline === outline);
 
-const BOARDS = Array.from({ length: 12 }, (_, i) => `7x7dn#hint-render-${i}`);
+const BOARDS = Array.from({ length: 8 }, (_, i) => ({
+  params: { w: 7, h: 7, diff: GalaxiesDiff.Normal },
+  seed: `hint-render-${i}`,
+}));
 
 describe("a displayed hint reaches the canvas", () => {
   it("an association fills the deduced cell, outlines its partner, rings the dot", () => {
-    // A dot standing *on* the filled cells is deliberately not ringed (the
-    // ring would be invisible), so hunt a frame whose dot is elsewhere — the
-    // reach deduction always has one.
+    // A `focus` is what marks a deduction about *one* cell, whose dot is
+    // therefore somewhere else and gets a ring; a dot's-own-cells step has no
+    // focus and no ring (the next test).
     const { recording, hl } = hintFrame(
-      (h) => h.targets.length > 1 && h.area.length > 0,
+      (h) => h.focus !== null && h.targets.length > 1,
     );
     expect(hl.targetDot).toBeDefined();
     expect(hl.focus).toBeDefined();
@@ -78,9 +97,11 @@ describe("a displayed hint reaches the canvas", () => {
   });
 
   it("never rings a dot standing on a cell it has filled", () => {
-    // The purple-on-purple case: the ring's own colour on its own colour.
+    // The purple-on-purple case: the ring's own colour on its own colour. A
+    // dot's-own-cells step is the one that hits it — no focus, because every
+    // cell it claims is equally the point, and the dot is standing on them.
     const { recording, hl } = hintFrame(
-      (h) => h.targets.length > 0 && h.area.length === 0,
+      (h) => h.focus === null && h.targets.length > 0,
     );
     expect(hl.targetDot).toBeDefined();
     expect(circles(recording.ops, COL_HINT)).toHaveLength(0);
@@ -120,6 +141,16 @@ describe("a displayed hint reaches the canvas", () => {
 
   it("the opening hint frame is stable", () => {
     const { recording } = hintFrame((h) => h.targets.length > 0);
+    expect(recording.ops).toMatchSnapshot();
+  });
+
+  it("a frame carrying every mark at once is stable", () => {
+    // The opener above is a dot's-own-cells step, which has no evidence, no
+    // partner and no ring — so on its own it pinned none of the marks the two
+    // acceptance rounds reworked. This frame carries all of them.
+    const { recording } = hintFrame(
+      (h) => h.focus !== null && h.targets.length > 1 && h.area.length > 0,
+    );
     expect(recording.ops).toMatchSnapshot();
   });
 });

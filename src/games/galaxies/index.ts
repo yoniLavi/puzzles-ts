@@ -902,7 +902,18 @@ function hint(s: GalaxiesState): HintResult<GalaxiesMove, GalaxiesHint> {
   }
   const steps = galaxiesHintSteps(s);
   if (steps.length === 0) {
-    return { ok: false, error: "No further move can be deduced from this position." };
+    // On an Unreasonable board this is the expected end of the road, not a
+    // failure: what remains needs a cell tried and followed until something
+    // breaks, and a hint that reported the survivor of a search would be
+    // teaching nothing (owner, 2026-08-11). Say what the position is and what
+    // the player's options are.
+    return {
+      ok: false,
+      error:
+        "Nothing further follows by deduction here. This board's difficulty " +
+        "allows positions that need trial and error: save a checkpoint, try " +
+        "one, and undo if it breaks.",
+    };
   }
   return { ok: true, steps };
 }

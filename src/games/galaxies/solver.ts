@@ -14,7 +14,6 @@ import {
   addAssoc,
   adjacencies,
   checkComplete,
-  cloneState,
   F_DOT,
   F_DOT_BLACK,
   F_EDGE_SET,
@@ -81,56 +80,27 @@ export type GalaxiesFiring =
   | { kind: "onlyReach"; tile: Pos; opp: Pos | null; dot: Pos; region: Pos[] }
   /** A detached piece of a galaxy has one square left to grow through. */
   | { kind: "exclave"; tile: Pos; opp: Pos | null; dot: Pos; component: Pos[] }
-  /** Unreasonable: every other dot is refuted by contradiction (hint-only,
-   * built in `hint.ts` — the C's recursion decides a whole board at once). */
-  | {
-      kind: "elimination";
-      tile: Pos;
-      opp: Pos | null;
-      dot: Pos;
-      refuted: { dot: Pos; because: GalaxiesContradiction | null }[];
-    };
-
-/** Why a board is inconsistent — recorded at the point the rule gives up, so
- * the Unreasonable rung can say what its hypothesis actually broke. */
-export type GalaxiesContradiction =
-  /** Two galaxies would both have to contain this cell. */
-  | { kind: "claimed"; x: number; y: number }
-  /** This cell's mirror image falls outside the board. */
-  | { kind: "offBoard"; x: number; y: number }
-  /** This cell is walled in on all four sides. */
-  | { kind: "sealed"; x: number; y: number }
-  /** No galaxy can reach this cell at all. */
-  | { kind: "unreachable"; x: number; y: number }
-  /** This piece of a galaxy is sealed off from its own dot. */
-  | { kind: "cutOff"; x: number; y: number };
+  /** Only one dot could own this cell at all — symmetry and connectivity to
+   * the dots, the same test the drag's candidate rings run (hint-only, built
+   * in `hint.ts`). */
+  | { kind: "soleOwner"; tile: Pos; opp: Pos | null; dot: Pos };
 
 /**
  * The optional sink the rules record into.
  *
  * `stopAtFirstFiring` is what makes the hint's projection *stepwise*: a rule
  * normally sweeps the whole board and accumulates, which is right for solving
- * and wrong for narrating (one firing = one hint). The refutation pass in
- * `hint.ts` wants the fast accumulating sweep *and* the contradiction site, so
- * it passes a recorder with the flag off.
+ * and wrong for narrating (one firing = one hint).
  */
 export interface SolverRecorder {
   /** Return from a rule as soon as one firing is recorded. */
   stopAtFirstFiring: boolean;
   /** The firing this pass recorded, if any. */
   firing: GalaxiesFiring | null;
-  /** Where the board first proved inconsistent, if it did. */
-  contradiction: GalaxiesContradiction | null;
 }
 
 export function newRecorder(stopAtFirstFiring: boolean): SolverRecorder {
-  return { stopAtFirstFiring, firing: null, contradiction: null };
-}
-
-/** Record the *first* contradiction only: later rules re-report the same
- * inconsistency as it propagates, and the first one is where it was found. */
-function note(rec: SolverRecorder | undefined, c: GalaxiesContradiction): void {
-  if (rec && !rec.contradiction) rec.contradiction = c;
+  return { stopAtFirstFiring, firing: null };
 }
 
 /** True when this rule should return now — it has a firing and the caller
@@ -154,27 +124,17 @@ function solverAddAssoc(
   ty: number,
   dx: number,
   dy: number,
-  rec?: SolverRecorder,
 ): number {
   const ti = idx(s, tx, ty);
   if (s.flags[ti] & F_TILE_ASSOC) {
-    if (s.dotx[ti] !== dx || s.doty[ti] !== dy) {
-      note(rec, { kind: "claimed", x: tx, y: ty });
-      return IMPOSSIBLE;
-    }
+    if (s.dotx[ti] !== dx || s.doty[ti] !== dy) return IMPOSSIBLE;
     return NOTHING;
   }
   const opp = spaceOppositeDot(s, tx, ty, dx, dy);
-  if (!opp) {
-    note(rec, { kind: "offBoard", x: tx, y: ty });
-    return IMPOSSIBLE;
-  }
+  if (!opp) return IMPOSSIBLE;
   const oi = idx(s, opp.x, opp.y);
   if (s.flags[oi] & F_TILE_ASSOC) {
-    if (s.dotx[oi] !== dx || s.doty[oi] !== dy) {
-      note(rec, { kind: "claimed", x: opp.x, y: opp.y });
-      return IMPOSSIBLE;
-    }
+    if (s.dotx[oi] !== dx || s.doty[oi] !== dy) return IMPOSSIBLE;
   }
   addAssoc(s, tx, ty, dx, dy);
   addAssoc(s, opp.x, opp.y, dx, dy);
@@ -211,7 +171,7 @@ function solverObviousDot(
   }
   const fresh = own.filter((t) => !(s.flags[idx(s, t.x, t.y)] & F_TILE_ASSOC));
   for (const t of own) {
-    const r = solverAddAssoc(s, t.x, t.y, dx, dy, rec);
+    const r = solverAddAssoc(s, t.x, t.y, dx, dy);
     if (r === IMPOSSIBLE) return IMPOSSIBLE;
     if (r === PROGRESS) didsth = PROGRESS;
   }
@@ -304,18 +264,12 @@ function solverLinesOpposite(
         const ti = idx(s, t.x, t.y);
         if (!(s.flags[ti] & F_TILE_ASSOC)) continue;
         const opp = tileOpposite(s, t.x, t.y);
-        if (!opp) {
-          note(rec, { kind: "offBoard", x: t.x, y: t.y });
-          return IMPOSSIBLE;
-        }
+        if (!opp) return IMPOSSIBLE;
         const ddx = t.x - x;
         const ddy = t.y - y;
         const ox = opp.x + ddx;
         const oy = opp.y + ddy;
-        if (!inGrid(s, ox, oy)) {
-          note(rec, { kind: "offBoard", x: opp.x, y: opp.y });
-          return IMPOSSIBLE;
-        }
+        if (!inGrid(s, ox, oy)) return IMPOSSIBLE;
         const oei = idx(s, ox, oy);
         if (!(s.flags[oei] & F_EDGE_SET)) {
           s.flags[oei] |= F_EDGE_SET;
@@ -380,10 +334,7 @@ function solverSpacesOneposs(s: GalaxiesState, rec?: SolverRecorder): number {
         }
       }
       if (abort) continue;
-      if (eset === 4) {
-        note(rec, { kind: "sealed", x, y });
-        return IMPOSSIBLE;
-      }
+      if (eset === 4) return IMPOSSIBLE;
       if (dx === -1) continue;
       if (rec) {
         rec.firing = {
@@ -394,7 +345,7 @@ function solverSpacesOneposs(s: GalaxiesState, rec?: SolverRecorder): number {
           openings,
         };
       }
-      const r = solverAddAssoc(s, x, y, dx, dy, rec);
+      const r = solverAddAssoc(s, x, y, dx, dy);
       if (r === IMPOSSIBLE) return IMPOSSIBLE;
       if (r === PROGRESS) {
         didsth = PROGRESS;
@@ -574,10 +525,7 @@ function solverExpandDots(s: GalaxiesState, rec?: SolverRecorder): number {
     for (let x = 1; x < s.sx - 1; x += 2) {
       const ti = idx(s, x, y);
       if (s.flags[ti] & F_TILE_ASSOC) continue;
-      if (!(ctx.reach[ti] & M_REACHABLE)) {
-        note(rec, { kind: "unreachable", x, y });
-        return IMPOSSIBLE;
-      }
+      if (!(ctx.reach[ti] & M_REACHABLE)) return IMPOSSIBLE;
       if (ctx.reach[ti] & M_MULTIPLE) continue;
       const dx = ctx.reachDotX[ti];
       const dy = ctx.reachDotY[ti];
@@ -592,7 +540,7 @@ function solverExpandDots(s: GalaxiesState, rec?: SolverRecorder): number {
           region: reachOfDot(s, dx, dy),
         };
       }
-      const r = solverAddAssoc(s, x, y, dx, dy, rec);
+      const r = solverAddAssoc(s, x, y, dx, dy);
       if (r === IMPOSSIBLE) return IMPOSSIBLE;
       if (r === PROGRESS) {
         didsth = PROGRESS;
@@ -700,10 +648,7 @@ function solverExtendExclaves(s: GalaxiesState, rec?: SolverRecorder): number {
       const dy = s.doty[i];
       // Skip if this component contains its own dot.
       if (i === dsf.canonify((dy | 1) * s.sx + (dx | 1))) continue;
-      if (iscratch[i] === 0) {
-        note(rec, { kind: "cutOff", x, y });
-        return IMPOSSIBLE;
-      }
+      if (iscratch[i] === 0) return IMPOSSIBLE;
       if (iscratch[i] !== 1) continue;
       const libIdx = iscratch[i - 1];
       const lx = libIdx % s.sx;
@@ -719,7 +664,7 @@ function solverExtendExclaves(s: GalaxiesState, rec?: SolverRecorder): number {
           component: membersOf(s, dsf, i),
         };
       }
-      const r = solverAddAssoc(s, lx, ly, dx, dy, rec);
+      const r = solverAddAssoc(s, lx, ly, dx, dy);
       if (r === IMPOSSIBLE) return IMPOSSIBLE;
       if (r === PROGRESS) {
         didsth = PROGRESS;
@@ -924,70 +869,54 @@ export function solverState(s: GalaxiesState, maxDiff: GalaxiesDiff): GalaxiesDi
 // --- the hint's two entry points into these rules --------------------
 
 /**
- * Advance `s` by **one** deduction and return what fired, or `null` when no
- * rule applies (the board is finished, stuck, or inconsistent).
+ * One rule of the deduction chain, as the hint consumes it: run it against the
+ * board and return the single firing it records, or `null`.
  *
- * The rungs run in the solver's own order, so the hint teaches the techniques
- * in the order the game itself finds them easiest.
+ * The *order* these are tried in is a narration decision, not a solver one —
+ * every rule is run to a fixpoint either way, so ordering changes which
+ * explanation the player is offered first and nothing about what is
+ * deducible. The ladder therefore lives in `hint.ts`.
  */
-export function nextFiring(s: GalaxiesState): GalaxiesFiring | null {
-  const rec = newRecorder(true);
-  const separateOnly: LineRules = { separate: true, mirror: false };
-  const mirrorOnly: LineRules = { separate: false, mirror: true };
-  const rungs: ((s: GalaxiesState, rec: SolverRecorder) => number)[] = [
-    solverObvious,
-    (b, r) => solverLinesOpposite(b, r, separateOnly),
-    solverSpacesOneposs,
-    solverExpandDots,
-    solverExtendExclaves,
-    // Last, deliberately. Mirroring a wall is Galaxies' signature technique
-    // and stays in the plan — but as the *routine* source of walls it buried
-    // everything else (58% of a 7x7 plan's steps, measured), while the walls
-    // it drew early are the same ones "these two cells are in different
-    // galaxies" narrates later, in the game's plainest terms. Demoted, it
-    // fires only where it is genuinely the deduction that unsticks the board.
-    (b, r) => solverLinesOpposite(b, r, mirrorOnly),
-  ];
-  for (const rung of rungs) {
-    if (rung(s, rec) === IMPOSSIBLE) return null;
-    if (rec.firing) return rec.firing;
-  }
-  return null;
+export interface GalaxiesRung {
+  readonly name: string;
+  fire(s: GalaxiesState): GalaxiesFiring | null;
 }
 
-/**
- * Would assuming `tile` belongs to `dot` break the board? Runs the ordinary
- * deduction chain — no recursion, so nothing here is a guess about a guess —
- * on a private copy, and reports *what* broke.
- *
- * This is the Unreasonable rung's primitive: a cell whose every other dot is
- * refuted this way must belong to the one that survives.
- */
-export function refuteAssoc(
-  s: GalaxiesState,
-  tx: number,
-  ty: number,
-  dx: number,
-  dy: number,
-): { refuted: boolean; because: GalaxiesContradiction | null } {
-  const t = cloneState(s);
-  // The accumulating sweep, not the stepwise one: this pass wants the whole
-  // fixpoint at full speed and only the contradiction out of it.
-  const rec = newRecorder(false);
-  const seed = solverAddAssoc(t, tx, ty, dx, dy, rec);
-  if (seed === IMPOSSIBLE) return { refuted: true, because: rec.contradiction };
-  const ret = solverStateInner(t, GalaxiesDiff.Normal, 0, rec);
-  return ret === GalaxiesDiff.Impossible
-    ? { refuted: true, because: rec.contradiction }
-    : { refuted: false, because: null };
+function rungOf(
+  name: string,
+  run: (s: GalaxiesState, rec: SolverRecorder) => number,
+): GalaxiesRung {
+  return {
+    name,
+    fire(s) {
+      const rec = newRecorder(true);
+      if (run(s, rec) === IMPOSSIBLE) return null;
+      return rec.firing;
+    },
+  };
 }
 
-/** Every dot `(tx, ty)` could still belong to as far as symmetry alone can
- * tell — the candidate set the Unreasonable rung tries to whittle to one.
- * Mirrors the C recursion's own `dot_for_tile` filter. */
-export function candidateDots(s: GalaxiesState, tx: number, ty: number): Pos[] {
-  return s.dots.filter((d) => dotForTile(s, tx, ty, d.x, d.y));
-}
+const SEPARATE_ONLY: LineRules = { separate: true, mirror: false };
+const MIRROR_ONLY: LineRules = { separate: false, mirror: true };
+
+/** The rules, named. `hint.ts` picks the order. */
+export const RUNGS = {
+  dotOwnCells: rungOf("dotOwnCells", solverObvious),
+  separate: rungOf("separate", (b, r) => solverLinesOpposite(b, r, SEPARATE_ONLY)),
+  enclosed: rungOf("enclosed", solverSpacesOneposs),
+  reach: rungOf("reach", solverExpandDots),
+  exclave: rungOf("exclave", solverExtendExclaves),
+  mirrorWall: rungOf("mirrorWall", (b, r) => solverLinesOpposite(b, r, MIRROR_ONLY)),
+};
+
+// A `refuteAssoc` lived here — hypothesise a dot for a cell, run the whole
+// deduction fixpoint from it, and take the survivor when every alternative
+// breaks the board. It powered a hint rung on the Unreasonable tier and was
+// removed on owner acceptance (2026-08-11): a contradiction you only reach by
+// propagating is *guessing*, and a hint that says "I tried them all and this
+// one didn't break" teaches no technique a player can learn. An Unreasonable
+// board that needs it now gets an honest refusal instead. Recoverable from
+// git history if a narratable form is ever found.
 
 /** Mirrors C's `clear_game(state, false)`: erase non-dot flags in the
  * interior (keep dots and border edges). Used to set up a starting

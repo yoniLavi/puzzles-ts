@@ -17,15 +17,8 @@ import { deduceHintPlan } from "../../engine/hint-plan.ts";
 import type { HintStep } from "../../engine/index.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import type { GalaxiesMove } from "./index.ts";
-import { okToAddAssocWithOpposite } from "./moves.ts";
-import {
-  candidateDots,
-  type GalaxiesContradiction,
-  type GalaxiesFiring,
-  nextFiring,
-  type Pos,
-  refuteAssoc,
-} from "./solver.ts";
+import { okToAddAssocWithOpposite, reachableFromDot } from "./moves.ts";
+import { type GalaxiesFiring, type Pos, RUNGS } from "./solver.ts";
 import {
   addAssoc,
   checkComplete,
@@ -85,10 +78,27 @@ export interface GalaxiesHint {
   refDots: Pos[];
 }
 
-/** How many firings one `hint()` call plans ahead. A UX bound, not a
+/**
+ * How many *showable* steps one `hint()` call plans ahead. A UX bound, not a
  * correctness one: the player sees one step at a time and every request
- * recomputes, so a longer plan buys nothing and costs a slower press. */
+ * recomputes, so a longer plan buys nothing and costs a slower press.
+ *
+ * Showable, not firings — the distinction was a shipped bug (owner-reported).
+ * A dot sitting inside its own cell forces that cell, but the game refuses to
+ * draw an arrow there, so the firing re-derives on every recompute and can
+ * never be shown. Counting firings let those eat the entire budget on a 15x15
+ * (twenty of them in a row, measured on the reported board) and the hint
+ * reported "No further move can be deduced" on a board with plenty left.
+ */
 const PLAN_CAP = 20;
+
+/**
+ * Hard bound on firings per call, so a board whose deduction runs a long way
+ * before yielding anything showable still terminates promptly. Generous: a
+ * 15x15 has 225 cells, and every firing decides at least one cell or wall, so
+ * an honest plan cannot approach this.
+ */
+const FIRING_CAP = 600;
 
 const EMPTY: Omit<GalaxiesHint, "targets"> = {
   focus: null,
@@ -99,59 +109,97 @@ const EMPTY: Omit<GalaxiesHint, "targets"> = {
   refDots: [],
 };
 
-// --- the Unreasonable rung -------------------------------------------
-
 /**
- * The deduction upstream reaches by recursion, in the one shape a hint can
- * narrate: a cell every dot but one is *refuted* for.
+ * The deduction a player makes with the drag itself: **only one dot could ever
+ * own this cell.**
  *
- * Upstream's `solver_recurse` tries a cell's dots and keeps the branch that
- * solves the whole board — a verdict about the board, not about the cell, and
- * so nothing a player could be told. Refutation is the same power aimed one
- * cell at a time: if joining any other dot breaks the board outright, the
- * survivor is forced, and *that* is a sentence.
+ * A cell's owner must be a dot whose 180° image of the cell is on the board,
+ * dot-free, and reachable from it through cells no other dot already stands
+ * on — which is exactly the predicate behind the rings a cell→dot drag shows.
+ * When exactly one dot passes, the cell is forced, and the player can check it
+ * by dragging: one ring means one answer.
  *
- * Sound by construction (it only ever concludes from contradictions the
- * ordinary rules find), and deliberately not recursive — no guess about a
- * guess. It runs only when every direct rule is exhausted.
+ * It is not in the C solver, and deliberately hint-only: it decides nothing
+ * about which boards exist (the generator never calls it), and it is sound on
+ * its own terms — every condition it tests is necessary for ownership. Its
+ * value over the reach rung below is that it argues from the *dots*, which is
+ * the thing the sentence is about and the thing the player can point at
+ * (owner-suggested at acceptance). Where both apply this one wins, because it
+ * is the shorter story.
  */
-function eliminationFiring(s: GalaxiesState): GalaxiesFiring | null {
+function soleOwnerFiring(s: GalaxiesState): GalaxiesFiring | null {
+  const cols = checkComplete(s, true).colours;
+  if (!cols) return null;
+  // One flood per dot, not one per (cell, dot) pair — the whole rung is then
+  // about as cheap as a single reach computation.
+  const reach = s.dots.map((d) => reachableFromDot(s, d.x, d.y));
   for (let y = 1; y < s.sy - 1; y += 2) {
     for (let x = 1; x < s.sx - 1; x += 2) {
-      if (s.flags[idx(s, x, y)] & F_TILE_ASSOC) continue;
-      const cands = candidateDots(s, x, y);
-      // One candidate is already `solverExpandDots`' business, and it is
-      // strictly stronger there; zero means the board is broken.
-      if (cands.length < 2) continue;
-
-      const refuted: { dot: Pos; because: GalaxiesContradiction | null }[] = [];
-      let survivor: Pos | null = null;
-      let ambiguous = false;
-      for (const d of cands) {
-        const r = refuteAssoc(s, x, y, d.x, d.y);
-        if (r.refuted) {
-          refuted.push({ dot: d, because: r.because });
-        } else if (survivor) {
-          ambiguous = true;
+      const i = idx(s, x, y);
+      if (s.flags[i] & F_TILE_ASSOC) continue;
+      let only: Pos | null = null;
+      let several = false;
+      for (let n = 0; n < s.dots.length; n++) {
+        const d = s.dots[n];
+        if (!okToAddAssocWithOpposite(s, x, y, d.x, d.y, cols, reach[n])) continue;
+        if (only) {
+          several = true;
           break;
-        } else {
-          survivor = d;
         }
+        only = d;
       }
-      if (ambiguous || !survivor || refuted.length === 0) continue;
-
-      const opp = spaceOppositeDot(s, x, y, survivor.x, survivor.y);
-      addAssoc(s, x, y, survivor.x, survivor.y);
+      if (several || !only) continue;
+      const opp = spaceOppositeDot(s, x, y, only.x, only.y);
+      addAssoc(s, x, y, only.x, only.y);
       if (opp && (opp.x !== x || opp.y !== y)) {
-        addAssoc(s, opp.x, opp.y, survivor.x, survivor.y);
+        addAssoc(s, opp.x, opp.y, only.x, only.y);
       }
-      return { kind: "elimination", tile: { x, y }, opp, dot: survivor, refuted };
+      return { kind: "soleOwner", tile: { x, y }, opp, dot: only };
     }
   }
   return null;
 }
 
 // --- the plan ---------------------------------------------------------
+
+/**
+ * The ladder, in the order the *player* is best served by, which is not the
+ * order the solver happens to use (`docs/games/hints.md` § "Notation and goal
+ * are different move sets (Galaxies)"). Every rule is run to a fixpoint
+ * regardless, so this decides which explanation is offered first and nothing
+ * about what can be deduced.
+ */
+function nextPlanFiring(b: GalaxiesState): GalaxiesFiring | null {
+  const ladder: ((s: GalaxiesState) => GalaxiesFiring | null)[] = [
+    RUNGS.dotOwnCells.fire,
+    // Walls first among equals: they are what finishes the board.
+    RUNGS.separate.fire,
+    RUNGS.enclosed.fire,
+    // Before the reach argument, because it is the same conclusion with a
+    // shorter proof — and one the player can confirm with a drag.
+    soleOwnerFiring,
+    RUNGS.reach.fire,
+    RUNGS.exclave.fire,
+    // Last, deliberately. Mirroring a wall is Galaxies' signature technique
+    // and stays in the plan — but as the *routine* source of walls it buried
+    // everything else (58% of a 7x7 plan's steps, measured), while the walls
+    // it drew early are the same ones "these two cells are in different
+    // galaxies" narrates later, in the game's plainest terms. Demoted, it
+    // fires only where it is genuinely the deduction that unsticks the board.
+    RUNGS.mirrorWall.fire,
+    // And nothing after it. Where every direct rule is spent, the board can
+    // still be settled by hypothesising a cell's dot and propagating until
+    // something breaks — that rung existed and was removed on owner
+    // acceptance: it is guessing, and "I tried them all and this one survived"
+    // is not a technique anyone can learn. The hint refuses instead, and the
+    // player has the save slot and the solver.
+  ];
+  for (const rung of ladder) {
+    const firing = rung(b);
+    if (firing) return firing;
+  }
+  return null;
+}
 
 /** A firing plus whether the player's board would actually take it. A
  * deduction inside a region the player has already closed correctly is sound
@@ -192,6 +240,7 @@ function planned(s: GalaxiesState, firing: GalaxiesFiring): Planned {
 /** Deduce as far as the plan cap allows, from the player's own board. */
 export function galaxiesHintPlan(state: GalaxiesState): Planned[] {
   const board = cloneState(state);
+  let showable = 0;
   return deduceHintPlan<GalaxiesState, Planned, "solved" | "unfinished">({
     board,
     status: (b) => (checkComplete(b, false).complete ? "solved" : "unfinished"),
@@ -199,10 +248,14 @@ export function galaxiesHintPlan(state: GalaxiesState): Planned[] {
     // The rungs mutate as they detect, so there is no `apply` — re-applying a
     // firing that has already been made would be wrong, not just redundant.
     next: (b) => {
-      const firing = nextFiring(b) ?? eliminationFiring(b);
-      return firing ? planned(b, firing) : null;
+      if (showable >= PLAN_CAP) return null;
+      const firing = nextPlanFiring(b);
+      if (!firing) return null;
+      const p = planned(b, firing);
+      if (p.showable) showable++;
+      return p;
     },
-    planCap: PLAN_CAP,
+    planCap: FIRING_CAP,
     budget: stepBudget("galaxies hint"),
   }).plan;
 }
@@ -217,27 +270,6 @@ function atBoardEdge(s: GalaxiesState, wall: Pos): boolean {
 
 function dotWord(s: GalaxiesState, dot: Pos): string {
   return s.flags[idx(s, dot.x, dot.y)] & F_DOT_BLACK ? "black dot" : "white dot";
-}
-
-/** What the hypothesis broke, as a clause that follows "one of them would". */
-function breakage(c: GalaxiesContradiction | null): string {
-  switch (c?.kind) {
-    case "claimed":
-      return "leave the shaded cell claimed by two galaxies at once";
-    case "offBoard":
-      return "push the shaded cell's mirror image off the board";
-    case "sealed":
-      return "wall the shaded cell in on every side";
-    case "unreachable":
-      return "leave the shaded cell with no galaxy able to reach it";
-    case "cutOff":
-      // Singular, like the others: the highlight is one cell — the one the
-      // rule was standing on when it gave up — and "cells" sent the eye
-      // hunting for a shaded group that is not there.
-      return "cut the shaded cell off from its own dot";
-    default:
-      return "leave the rest of the board with no consistent answer";
-  }
 }
 
 export function narrate(s: GalaxiesState, firing: GalaxiesFiring): string {
@@ -281,12 +313,18 @@ export function narrate(s: GalaxiesState, firing: GalaxiesFiring): string {
         firing.openings.length === 4 ? "" : " — its other sides are walled";
       return `${lead} into the shaded galaxy${walled}, and a galaxy is one connected region, so this cell must belong to the ringed ${dotWord(s, firing.dot)}.`;
     }
+    case "soleOwner":
+      // The claim *is* this rung's own condition, so it is checkable by the
+      // player with the gesture they already have: drag from the cell and
+      // count the rings.
+      return `Only one dot could ever own this cell — for any other, the cell across the dot from it would be off the board or on top of another dot. So it must belong to the ringed ${dotWord(s, firing.dot)}.`;
     case "onlyReach":
-      return `The shading is everywhere the ringed ${dotWord(s, firing.dot)}'s galaxy can still stretch to. No other galaxy can reach this cell at all, so it must belong to the ringed dot.`;
+      // "shows how far", not "is everywhere": the acted-on cell is painted in
+      // the action colour rather than shaded, so the shading is the reach
+      // minus one square and an absolute claim would be a shade off true.
+      return `The shading shows how far the ringed ${dotWord(s, firing.dot)}'s galaxy can still stretch. No other galaxy can reach this cell at all, so it must belong to the ringed dot.`;
     case "exclave":
       return `The shaded cells belong to the ringed ${dotWord(s, firing.dot)} but are cut off from it, and this is the only cell they can still grow through — so it must belong to the ringed dot too.`;
-    case "elimination":
-      return `Nothing here follows in a single step, so every dot this cell might join has to be tried. All but one break the board — one of them would ${breakage(firing.refuted[0]?.because ?? null)} — so this cell must belong to the ringed ${dotWord(s, firing.dot)}.`;
   }
 }
 
@@ -298,6 +336,21 @@ export function narrate(s: GalaxiesState, firing: GalaxiesFiring): string {
 function pair(tile: Pos, opp: Pos | null): Pos[] {
   if (!opp || (opp.x === tile.x && opp.y === tile.y)) return [tile];
   return [tile, opp];
+}
+
+/**
+ * Only the cell being acted on is kept out of its own evidence area — the
+ * partner stays shaded.
+ *
+ * Dropping both was wrong twice over: it made a claim false (the partner *is*
+ * inside the reach the sentence describes, so a shaded area that skipped it
+ * did not show "everywhere the galaxy can stretch"), and it left the partner
+ * outlined on bare board, which reads as loudly as the solid fill it is
+ * supposed to defer to. Shaded underneath, the outline is plainly the
+ * quieter mark. Owner-reported.
+ */
+function evidenceFor(cells: Pos[], focus: Pos): Pos[] {
+  return without(cells, [focus]);
 }
 
 function without(cells: Pos[], drop: Pos[]): Pos[] {
@@ -337,8 +390,17 @@ export function highlightsOf(firing: GalaxiesFiring): GalaxiesHint {
         targetDot: firing.dot,
         // The ways out are the whole premise, so the shaded count is exactly
         // the number the sentence claims.
-        area: without(firing.openings, targets),
+        area: evidenceFor(firing.openings, firing.tile),
       };
+    }
+    case "soleOwner": {
+      // No shaded area, and none is missing: this argument is about the dots,
+      // not about a region, and the one dot that survives it is ringed. The
+      // ruled-out dots are deliberately *not* marked — symmetry alone leaves
+      // up to eleven of them on a 15x15 (measured), and eleven crossed-out
+      // dots teach nothing.
+      const targets = pair(firing.tile, firing.opp);
+      return { ...EMPTY, targets, focus: firing.tile, targetDot: firing.dot };
     }
     case "onlyReach": {
       const targets = pair(firing.tile, firing.opp);
@@ -347,7 +409,7 @@ export function highlightsOf(firing: GalaxiesFiring): GalaxiesHint {
         targets,
         focus: firing.tile,
         targetDot: firing.dot,
-        area: without(firing.region, targets),
+        area: evidenceFor(firing.region, firing.tile),
       };
     }
     case "exclave": {
@@ -357,17 +419,8 @@ export function highlightsOf(firing: GalaxiesFiring): GalaxiesHint {
         targets,
         focus: firing.tile,
         targetDot: firing.dot,
-        area: without(firing.component, targets),
+        area: evidenceFor(firing.component, firing.tile),
       };
-    }
-    case "elimination": {
-      const targets = pair(firing.tile, firing.opp);
-      const at = firing.refuted[0]?.because ?? null;
-      // The shaded cell is where the rejected hypothesis broke — which is what
-      // the narration says it is. Only one ring role is on screen (the
-      // surviving dot), so "the ringed dot" cannot be misread.
-      const area = at ? without([{ x: at.x, y: at.y }], targets) : [];
-      return { ...EMPTY, targets, focus: firing.tile, targetDot: firing.dot, area };
     }
   }
 }

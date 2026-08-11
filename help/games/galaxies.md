@@ -34,19 +34,30 @@ an arrow, or to start and finish a drag.
 
 **Hint** explains the next step rather than simply making it. Most of
 what it says is about the arrows: the square whose dot the deduction
-settles is filled in the hint's colour, the dot is ringed in the same
-colour, and the square opposite the dot — which gets its arrow at the
-same time, as always — is merely outlined, since it comes along rather
-than being what the hint is telling you. Squares the argument reasons *from* — how
-far a galaxy can still stretch, the piece that has been cut off from
-its dot, the partner across a dot — are shaded in a second colour, so
-you can see the reason as well as read it.
+settles is filled in the hint's colour, and the dot itself is ringed in
+the same colour. The square opposite the dot — which gets its arrow at
+the same time, as always — is only outlined, since it comes along rather
+than being what the hint is telling you about. Squares the argument
+reasons *from* — how far a galaxy can still stretch, the piece that has
+been cut off from its dot, the partner across a dot — are shaded in a
+second colour, so you can see the reason as well as read it.
+
+One of the things it looks for is the same thing the drag rings show
+you: when only one dot could possibly own a square — every other dot
+would need the square opposite it to be off the board or on top of
+another dot — that square is settled, and dragging from it will ring
+exactly one dot.
 
 Once two neighbouring squares are settled on different dots, the hint
 asks for the line between them, and it is those lines, not the arrows,
-that finish the puzzle. On the harder difficulty a step may have no
-single-step reason at all; the hint says so plainly, and tells you
-which alternative it ruled out and what went wrong with it.
+that finish the puzzle.
+
+Every hint is a deduction you could have made from what is on the board.
+On an **Unreasonable** board there may come a point where no deduction is
+left and the only way on is to try something and see whether it works —
+that is what the difficulty name means. The hint says so rather than
+guessing for you: save a checkpoint, try it, and undo if it breaks. (Or
+use **Solve**, if you would rather see the answer.)
 
 A hint is refused while anything on the board contradicts the solution.
 The offending squares and lines light up instead, exactly as they do

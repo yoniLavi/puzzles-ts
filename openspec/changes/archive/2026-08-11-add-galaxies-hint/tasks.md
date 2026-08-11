@@ -23,7 +23,11 @@
       one Unreasonable) before polishing; record findings in design.md.
       *(Did it, and it changed the design: rung order, the mirror-wall
       demotion and three wordings — design F2/F3.)*
-- [x] 2.4 Unreasonable handling per design D5; decision recorded (F4).
+- [x] 2.4 Unreasonable handling per design D5. Landed as a refutation rung
+      (F4), then **removed on owner acceptance**: it propagates from its
+      hypothesis, so it is guessing, and a search result is not a technique a
+      hint can teach. The hint refuses there and says what the position is —
+      see "The contradiction rung, removed".
 
 ## 3. Engine wiring
 
@@ -59,5 +63,8 @@
 - [x] 6.2 Framework-substrate note recorded in
       `docs/framework-rdd/deduction.md` § "A game may have two move sets, and
       the projections split across them".
-- [ ] 6.3 `openspec validate add-galaxies-hint --strict`; owner acceptance;
-      archive.
+- [x] 6.3 `openspec validate add-galaxies-hint --strict`; owner acceptance
+      (2026-08-11, after three rounds); archive. Two follow-ups came out of
+      acceptance: `audit-guessing-tier-names` (does any other tier ship a
+      propagating trial under a name that promises otherwise?) and a new
+      section in `document-hint-feature` teaching what "Unreasonable" means.

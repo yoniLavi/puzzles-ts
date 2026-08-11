@@ -844,7 +844,7 @@ to a similar game:
 | Crossing | the squares to write into, solid **green** `COL_HINT` (green, not the collection's blue — see below); a struck note keeps its normal `COL_PENCIL` digit + strikethrough on a *non*-target background | the run(s) reasoned over → pale-green `COL_HINT_CELL` shade; **and the still-fitting listed numbers → the same two shades as a patch behind their text in the clue panel** (§ "Off-board evidence") |
 | Spokes | the forced spoke, in `COL_HINT` — **a line** when the move draws a line, **a rim dot** when the move places a mark (§ "Echo the move's shape in the hint colour") | the hubs whose clue/lines/connectivity are the argument → `COL_HINT_CELL` ring. A saturated hub forces several spokes as one multi-leg journey, all in the one colour |
 | Sticks | the forced square drawn as a `COL_HINT` **bar in the forced orientation**; green `COL_LINE` stays the placed line, so the hint is never mistaken for the move | the run / span / clue-sides the argument counts → one `evidence` list, cue split by the square's own state: a **white** square is washed `COL_HINT_CELL`, a **black clue** is *ringed* the same colour (a wash would hide the blackness the argument is about). The list's length equals the number the sentence states |
-| Galaxies | the **deduced** cell, solid **purple** `COL_HINT` (not blue — see below); the 180° partner the same move claims, a bare `COL_HINT` **outline** (same hue, they share a fate; less weight, only one is what the words are about); the wall it draws, a `COL_HINT` bar drawn *whether or not the wall exists yet*; the dot it points at, a `COL_HINT` ring — **unless the dot stands on a cell just filled**, where a ring in the fill's own colour is invisible and the narration names the dot by position instead | the cells / walls / dots the argument reasons over → `COL_HINT_CELL` teal (a galaxy's reach, a cut-off piece, the partner across a dot, an already-drawn wall). One ring role at a time, so "the ringed dot" is never ambiguous |
+| Galaxies | the **deduced** cell, solid **purple** `COL_HINT` (not blue — see below); the 180° partner the same move claims, a `COL_HINT` **outline over the ordinary evidence shading** (same hue, they share a fate; far less weight, only one is what the words are about); the wall it draws, a `COL_HINT` bar drawn *whether or not the wall exists yet*; the dot it points at, a **filled `COL_HINT` halo with the dot repainted on top** — **unless the dot stands on a cell just filled**, where a mark in the fill's own colour is invisible and the narration names the dot by position instead | the cells / walls / dots the argument reasons over → `COL_HINT_CELL` teal (a galaxy's reach, a cut-off piece, the partner across a dot, an already-drawn wall). One ring role at a time, so "the ringed dot" is never ambiguous |
 
 **If the game has already spent the hint hue, the *hint* moves — and takes the
 board with it (Crossing).** `COL_HINT` blue is the collection's default, not a
@@ -1262,10 +1262,60 @@ copying to any game whose notation and whose goal are different move sets:
   action colour made every "this cell" ambiguous (owner-reported at
   acceptance). They are not equivalent moves in rule 3's sense — one is
   deduced, the other follows by a symmetry the player already knows — so the
-  deduced cell fills solid and the partner takes a bare **outline of the same
+  deduced cell fills solid and the partner takes an **outline of the same
   hue**: same fate, different weight. Dropping the partner's mark entirely was
   the other candidate and is wrong for a different rule: the move decides that
   cell, and a step may not change a square it never marked.
+- **Then leave the demoted mark's *background* alone** — the first cut also
+  filtered the partner out of the evidence area, so an outline sat on bare
+  board and read as loudly as the solid fill it was deferring to (owner
+  reported it a second time). It was false as well as loud: the partner is
+  inside the reach the sentence describes, so a shaded area that skipped it
+  was not "how far the galaxy stretches". Filter **only the acted-on cell**
+  out of its own evidence; a demotion that removes context makes the mark
+  *more* prominent, not less.
+- **A hairline is not a highlight.** `drawCircle` strokes one pixel wide, so
+  the concentric-ring trick for weight (borrowed from the drag preview) was
+  nearly invisible beside a solid cell fill. A **filled halo with the dot
+  repainted on top** carries weight and keeps the dot's own colour, which the
+  narration names ("the ringed *white* dot") — filling the dot itself would
+  have cost the sentence its noun.
+
+- **Cap the plan by what the player can *do*, not by what the deduction
+  does.** Galaxies' plan cap counted *firings*, and a dot sitting inside its
+  own cell forces that cell while the game refuses to draw an arrow there — a
+  firing that re-derives on every recompute and can never be shown. On a 15x15
+  twenty of them in a row spent the whole budget, and the hint told the player
+  "No further move can be deduced" on a board with a hundred moves left
+  (owner-reported; reproduced exactly, stalling at move 25 with *20 firings, 0
+  showable*). Count the steps the plan will actually offer. The general shape:
+  **any bound on a plan must be a bound on its output, because a bound on its
+  input silently becomes a refusal.**
+- **A search is not a technique, so it is not a hint (owner, 2026-08-11).**
+  Galaxies shipped a rung for the top tier that hypothesised a cell's dot, ran
+  the whole deduction fixpoint from it, and concluded from the one alternative
+  that did not break the board. It was sound, it was narrated, it solved every
+  Unreasonable board — and it was **removed**, because "I tried them all and
+  this one survived" teaches nothing a player can carry to the next board. The
+  hint now refuses there, and says so in a way the player can act on ("save a
+  checkpoint, try one, undo if it breaks"). **A refusal that tells the truth
+  beats a step that reveals an answer.** The line is the same one
+  [`solver-and-generator.md`](./solver-and-generator.md) draws for tier names:
+  a contradiction you can *see* at the placement is checking, one you have to
+  *propagate* to is guessing — and the second belongs to the player, not the
+  hint.
+- **A deduction the player can run with an existing affordance is worth its
+  own rung.** Galaxies' cell→dot drag rings every dot a cell could legally
+  join; when exactly one lights up, the cell is forced — a sound deduction the
+  *player already has the gesture for*, and a shorter story than the reach
+  argument that otherwise covers those cases. It is hint-only (the generator
+  never calls it, so no board changes) and it fires on 6.8% of steps. Measure
+  before believing the affordance and the deduction agree, though: the drag's
+  predicate is deliberately more lenient than the solver's reach, so at a
+  *reach* firing a drag would still ring 2–5 dots in 63% of cases — telling
+  the player "only one dot lights up" there would have been false. Adding the
+  rung is what made the claim true wherever it is made: after it, every
+  remaining reach firing has ≥2 rings, measured.
 
 Two smaller ones, both from reading real frames rather than the data:
 

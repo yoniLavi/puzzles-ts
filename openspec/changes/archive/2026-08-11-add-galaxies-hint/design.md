@@ -183,6 +183,128 @@ No format or generation changes; enrolment additions only.
   where they were — the constant is *derived from* the case that was
   already correct rather than chosen.
 
+## Acceptance round 2 (2026-08-11)
+
+Both reports are about *relative* prominence, which is the thing neither a
+unit test nor a snapshot can see.
+
+- **F11 — demoting a mark must not also strip its background.** F8's
+  outlined partner sat on bare board, because the evidence area filtered
+  out *both* cells of the pair; an outline on plain grey competes with a
+  solid fill rather than deferring to it. It was also a false picture:
+  the partner is inside the reach the sentence describes. Only the
+  acted-on cell is filtered from its own area now, so the partner is
+  shaded like the rest of the evidence with the outline on top — and the
+  `onlyReach` sentence, which had said the shading was "everywhere" the
+  galaxy could stretch, now says it "shows how far", which stays true
+  with one cell painted over.
+- **F12 — the dot's mark is a filled halo, not concentric rings.**
+  `drawCircle` strokes one pixel wide, so the ring trick borrowed from
+  the drag preview was a hairline next to a solid cell fill. The halo is
+  drawn filled and the dot repainted over it, which keeps the dot's own
+  black/white — filling the dot itself was the owner's suggestion and
+  would have cost the narration its noun, since it says "the ringed
+  *white* dot".
+
+## Acceptance round 3 (2026-08-11)
+
+- **F13 — the plan cap counted the wrong thing, and it read as a stall.**
+  Owner-reported on a 15x15 Unreasonable board that announced "No further
+  move can be deduced" with most of the board undone. Reproduced on that
+  exact desc: at move 25 the plan was **20 firings, 0 showable** — every
+  one a dot's-own-cell for a dot sitting *inside* its cell, which the
+  game refuses to let the player draw and which therefore re-derives on
+  every recompute. The cap now counts showable steps, with a generous
+  firing backstop. Pinned by a test on the reported desc that also
+  asserts the board really does produce unshowable firings, so it cannot
+  quietly stop exercising the class.
+- **F14 — a new hint-only rung: "only one dot could own this cell".** The
+  owner asked why the reach hint's picture shows the winning galaxy's
+  extent when the sentence is about *other* galaxies not reaching, and
+  suggested showing what a drag from the cell shows — the rings on the
+  dots it could join. Measured before building: at a reach firing a drag
+  would ring **1 dot in 37% of cases, 2–5 in the rest**, so drawing that
+  picture unconditionally would have contradicted the sentence 63% of the
+  time. The honest form is a *separate rung* for exactly the 1-ring case
+  — sound (every condition the drag's predicate tests is necessary for
+  ownership), hint-only, and argued in the affordance the player already
+  has. After it, every remaining reach firing has ≥2 rings, so both
+  sentences are true wherever they are said. It fires on 6.8% of steps;
+  the mix is now separate 56.8%, onlyReach 13.9%, mirrorWall 11.5%,
+  dotTile 9.2%, soleOwner 6.8%, exclave/elimination/enclosed ≈0.7% each.
+- **F15 — the mirror rung's demotion, revisited.** The owner named it as
+  their favourite technique and asked whether hiding it costs anything.
+  It costs no deductive power: every rule runs to a fixpoint regardless,
+  so the ladder decides only which explanation is offered first. At its
+  current place it is 11.5% of steps (it was 58% when it ran first, which
+  is what buried everything else). Left as is, but the ladder now lives
+  in one visible list in `hint.ts` so the order is a one-line change.
+- **Cost note.** Worst hint call on a 15x15 Unreasonable is ~350 ms, and
+  it is almost entirely the `findMistakes` re-solve the refusal check
+  needs, not the plan: dropping the cap from 20 showable steps to 8 moved
+  it by 36 ms. It runs in the puzzle worker, so the UI does not block.
+
+## The contradiction rung, removed (2026-08-11, owner)
+
+F4/F14's Unreasonable rung is **gone**, and with it `refuteAssoc`,
+`candidateDots` and the contradiction-site recording threaded through the
+rules. The owner's call, and the right one: *hints are for learnable
+deductions*. The rung hypothesised a cell's dot, propagated the whole
+fixpoint, and reported the alternative that did not break — sound and
+narrated, but "I tried them all and this one survived" is a search
+result, not a technique anyone can carry to the next board.
+
+Where deduction genuinely runs out, the hint now **refuses and says what
+the position is**: *"Nothing further follows by deduction here. This
+board's difficulty allows positions that need trial and error: save a
+checkpoint, try one, and undo if it breaks."* That is the Unreasonable
+tier working as defined, and the player has the save slot and Solve.
+
+What this cost, honestly: an Unreasonable board is no longer walkable to
+solved by hints alone (all 26 in the earlier sweep were). What it bought:
+every step the hint utters is now a rule the board shows, on both tiers,
+with no per-tier exception to reason about — asserted directly rather
+than argued.
+
+## The tier name, settled (2026-08-11)
+
+The hint solving Unreasonable boards raised the question of whether the
+tier should become "Hard". It should not, and the reasoning is worth
+keeping because it corrects something in the policy doc.
+
+**The rung guesses.** `refuteAssoc` runs the *whole deduction fixpoint*
+from its hypothesis, settling dozens of cells before the contradiction
+appears. The owner's rule — *guessing rather than checking is
+Unreasonable*, with the exception of a contradiction visible from the
+placement itself without thinking a step ahead — puts that squarely on
+the guessing side, as does `hints.md`'s own Sticks test (does the
+rejected trial **propagate** before the oracle is asked?). "Unreasonable"
+stays.
+
+**The policy doc said otherwise and has been fixed.**
+`solver-and-generator.md` called single-level forcing "deduction" in one
+breath and "an immediate contradiction" in the next, and the finer test
+lived only in `hints.md`. It now carries the propagation test, with both
+of Galaxies' rungs as the worked pair: `soleOwner` is checking (true or
+false on sight, any tier), the contradiction rung is guessing
+(Unreasonable-only). **It also flags an unaudited consequence**: the same
+doc describes the Latin family's `Extreme` tiers as this shape, and
+nobody has read `latin.ts` against the test.
+
+**Guarded, not assumed.** Nothing in the rung's code stops it firing on a
+Normal board — it holds only because the direct rungs always finish one.
+Measured at 0 firings across 3,067 steps on 26 Normal boards, and now
+asserted (`galaxies-hint.test.ts`, "only the Unreasonable tier is ever
+asked to guess"), together with its converse: an Unreasonable board *does*
+need the rung, so the tier is not decoration.
+
+**Coverage, for the record:** 26 Unreasonable boards across 7x7/10x10/15x15
+all solved by following hints, every one of them needing the rung at least
+once. That is not a proof the generator cannot emit a board needing nested
+speculation — it grades with `solverRecurse` to depth 5 and this rung goes
+one level deep — but such a board is by definition Unreasonable, so the
+hint declining to narrate it is the policy working, not a defect.
+
 ## Open Questions
 
 - None outstanding; D2 (F1) and D5 (F4) are settled above.

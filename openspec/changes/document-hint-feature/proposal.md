@@ -55,6 +55,15 @@ hint change into a features-page rewrite is scope creep, not diligence.
 - **An honest statement of coverage.** Not every game has a hint, and not every
   game can check for mistakes. The page should say what governs that rather
   than implying a button that is sometimes absent.
+- **What "Unreasonable" means, in the player's words** (added 2026-08-11 on
+  owner request, from `add-galaxies-hint` acceptance). Six games ship a tier
+  under that name and nothing tells a player what it promises: *this board may
+  reach a position where no deduction is left and the only way on is to try
+  something and see*. That is a real contract — every other tier name
+  (Easy/Normal/Tricky/Hard/Extreme) means the opposite, that pure deduction
+  suffices — and it is the difference between a hint that has run out and a
+  hint that is broken. Galaxies' hint now refuses in exactly that position and
+  says so; the help has to have taught the word first.
 - **A coverage guard in `src/help-coverage.test.ts`.** The gap existed because
   nothing could notice it. A feature the app ships a *control* for, with no help
   section, is the checkable form — see design.

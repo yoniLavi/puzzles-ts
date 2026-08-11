@@ -31,11 +31,15 @@ The hint SHALL couple to mistake checking: a request on a board with any
 flagged mistake (tile or wall) refuses with the banner and lights the
 mistakes instead. A stored plan SHALL survive the player working ahead:
 a step whose tile the player has meanwhile associated is refreshed away
-and the plan advances. On a board whose next deduction requires the
-Unreasonable recursion, the hint SHALL narrate honestly what the proof
-tries and where it contradicts — it SHALL NOT fabricate a local reason
-and SHALL NOT decline to hint. Galaxies SHALL be enrolled in the
-cross-game hint guards (`testing/hint-games.ts`).
+and the plan advances. Every step the hint offers SHALL be a deduction the player could make
+from the board in front of them. It SHALL NOT guess: where the remaining
+progress can only be found by hypothesising a cell's dot and propagating
+until something breaks, the hint SHALL refuse, and the refusal SHALL say
+that deduction has run out and what the player can do instead. A Normal
+board SHALL be carried all the way to solved by deduction alone; only an
+Unreasonable board may reach that refusal, which is what the tier means.
+Galaxies SHALL be enrolled in the cross-game hint guards
+(`testing/hint-games.ts`).
 
 #### Scenario: A forced association is taught as one step
 
@@ -66,9 +70,17 @@ cross-game hint guards (`testing/hint-games.ts`).
 - **THEN** the resolved step is dropped without being shown as stale and
   the plan advances (recomputing only if it drains)
 
-#### Scenario: An Unreasonable board is narrated honestly
+#### Scenario: Deduction running out is said plainly, not guessed past
 
-- **WHEN** the next deduction exists only through the recursion rung
-- **THEN** the hint narrates the tried association and the contradiction
-  it reaches, highlighting the tried cell — no fabricated local reason,
-  no refusal
+- **WHEN** the remaining progress can only be found by trying a cell's dot
+  and following it until something breaks
+- **THEN** the hint refuses, saying that nothing further follows by
+  deduction and that the position can be tried from a saved checkpoint —
+  it does not report the survivor of a search as though it were a
+  technique
+
+#### Scenario: A Normal board is always finished by deduction
+
+- **WHEN** hints are followed from a fresh board at the Normal tier
+- **THEN** every step is a deduction whose premise is visible on the board
+  as it stands, and the board reaches solved

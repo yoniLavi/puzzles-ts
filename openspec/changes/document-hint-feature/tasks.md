@@ -44,6 +44,36 @@
 - [ ] 2.6 State the **rule** that governs which puzzles have a hint — a
       deductive puzzle whose reasoning the game can narrate — and **name no
       games** (design D3).
+- [ ] 2.7 **The other refusal: deduction running out.** A hint can also stop
+      because nothing further *follows* — distinct from the mistake refusal in
+      2.4, and the player has no way to tell them apart without being told.
+      Say what to do instead (checkpoint, try it, undo; or Solve). Galaxies is
+      the first game to phrase this refusal deliberately
+      (`add-galaxies-hint`); the wording here should generalise, since any
+      game with an Unreasonable tier can reach it.
+
+## 2a. Say what "Unreasonable" promises
+
+> Owner request, 2026-08-11, out of `add-galaxies-hint` acceptance. The rule
+> the collection actually holds: **if a board requires *guessing* rather than
+> *checking*, its tier is named Unreasonable** — and no other tier name may.
+> Nothing player-facing says this, so the name reads as bravado rather than as
+> the contract it is.
+
+- [ ] 2a.1 A `## Difficulty {#difficulty}` section in `help/features.md`
+      (there is none today) stating the contract in the player's terms: on
+      every other tier, pure deduction is enough to finish; on an
+      **Unreasonable** board you may reach a position where it is not, and the
+      way on is to try something and be ready to take it back.
+- [ ] 2a.2 Tie it to the hint: on such a board the hint will **say** it has run
+      out rather than guess for you, because a guess is not a technique it
+      could teach. Cross-link 2.7.
+- [ ] 2a.3 Name the mechanics that make trial-and-error survivable — the
+      checkpoint slot and undo — and link §Checking / §Checkpoints.
+- [ ] 2a.4 **Do not name the games.** The set is derivable
+      (`difficulty.tiers` per game) and hand-listing it in prose rots; the same
+      rule as 2.6. If a coverage guard can assert "every tier named
+      Unreasonable is described by this section", say so in design instead.
 
 ## 3. Write the checking section
 

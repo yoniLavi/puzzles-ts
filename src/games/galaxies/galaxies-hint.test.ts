@@ -14,7 +14,12 @@
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/index.ts";
 import { randomNew } from "../../engine/random/index.ts";
-import type { GalaxiesHint } from "./hint.ts";
+import {
+  type GalaxiesHint,
+  galaxiesHintPlan,
+  galaxiesHintSteps,
+  narrate,
+} from "./hint.ts";
 import { type GalaxiesMove, galaxiesGame } from "./index.ts";
 import { clearForSolve, GalaxiesDiff, solverState } from "./solver.ts";
 import {
@@ -42,8 +47,17 @@ function hintOf(s: GalaxiesState): Step[] {
   return res.steps as Step[];
 }
 
-/** Walk a board by first-steps until one matches, or the board is solved.
- * A fixed-seed scan, so it lands on the same frame every run. */
+/**
+ * Walk a board step by step until one matches, or deduction runs out. A
+ * fixed-seed scan, so it lands on the same frame every run.
+ *
+ * Deliberately walks `galaxiesHintSteps` rather than `hint()`: the public
+ * entry point re-runs `findMistakes` — a whole solve — on every call, which is
+ * the right thing for a player pressing a button and an order of magnitude of
+ * wasted work for a scan whose boards are mistake-free by construction.
+ * Every returned `(step, state)` pair is still one the player could see, since
+ * the state is the board that step applies to.
+ */
 function firstStepMatching(
   params: typeof NORMAL_7,
   seeds: string[],
@@ -51,13 +65,39 @@ function firstStepMatching(
 ): { step: Step; state: GalaxiesState } | null {
   for (const seed of seeds) {
     let s = board(params, seed);
-    for (let i = 0; i < 400 && galaxiesGame.status(s) === "ongoing"; i++) {
-      const res = galaxiesGame.hint?.(s);
-      if (!res?.ok) break;
-      const step = res.steps[0] as Step;
-      if (match(step, s)) return { step, state: s };
-      s = galaxiesGame.executeMove(s, step.move);
+    for (let batch = 0; batch < 60 && galaxiesGame.status(s) === "ongoing"; batch++) {
+      const steps = galaxiesHintSteps(s);
+      if (steps.length === 0) break;
+      for (const step of steps) {
+        if (match(step, s)) return { step, state: s };
+        s = galaxiesGame.executeMove(s, step.move);
+      }
     }
+  }
+  return null;
+}
+
+/**
+ * The same scan over two board shapes. The rare rungs (a cell with one way
+ * out, a detached piece) fire on well under 1% of steps, so finding them wants
+ * a *bigger* board rather than more seeds of a small one: one 15x15 walk is
+ * ~300 steps where a 7x7 is ~60.
+ *
+ * Both tiers, because *where a rung sits in the ladder* decides which boards
+ * can reach it: mirroring a wall is last, so it fires only once the five
+ * direct rungs are spent, and a Normal board is by definition one where they
+ * never all are. Nothing is exclusive to a tier by rule — only by how far down
+ * the ladder that tier's boards force the hint to go.
+ */
+function anyBoardSays(match: (step: Step, s: GalaxiesState) => boolean) {
+  for (const params of [
+    NORMAL_7,
+    { w: 15, h: 15, diff: GalaxiesDiff.Normal },
+    UNREASONABLE_7,
+    { w: 15, h: 15, diff: GalaxiesDiff.Unreasonable },
+  ]) {
+    const found = firstStepMatching(params, SCAN_SEEDS, match);
+    if (found) return found;
   }
   return null;
 }
@@ -90,6 +130,10 @@ describe("the plan is sound: every step agrees with the unique solution", () => 
         const sol = solution(start);
         let s = start;
         for (let i = 0; i < 400 && galaxiesGame.status(s) === "ongoing"; i++) {
+          // An Unreasonable board may legitimately run out of deduction; what
+          // is under test is that nothing the hint *did* say was wrong.
+          const res = galaxiesGame.hint?.(s);
+          if (!res?.ok && params.diff === GalaxiesDiff.Unreasonable) break;
           const steps = hintOf(s);
           for (const step of steps) {
             const hl = step.highlights;
@@ -111,9 +155,12 @@ describe("the plan is sound: every step agrees with the unique solution", () => 
           }
           s = galaxiesGame.executeMove(s, steps[0].move);
         }
-        expect(galaxiesGame.status(s), `${seed}: hints did not finish the board`).toBe(
-          "solved",
-        );
+        if (params.diff === GalaxiesDiff.Normal) {
+          expect(
+            galaxiesGame.status(s),
+            `${seed}: hints did not finish the board`,
+          ).toBe("solved");
+        }
       }
     });
   }
@@ -146,8 +193,12 @@ describe("each deduction is narrated in its own vocabulary", () => {
       "These two cells point at different dots, so they belong to different galaxies — a wall must run between them.",
     ],
     [
+      "the only dot that could own a cell",
+      "Only one dot could ever own this cell — for any other, the cell across the dot from it would be off the board or on top of another dot. So it must belong to the ringed white dot.",
+    ],
+    [
       "the limit of a galaxy's reach",
-      "The shading is everywhere the ringed white dot's galaxy can still stretch to. No other galaxy can reach this cell at all, so it must belong to the ringed dot.",
+      "The shading shows how far the ringed white dot's galaxy can still stretch. No other galaxy can reach this cell at all, so it must belong to the ringed dot.",
     ],
     [
       "a wall mirrored about the dot",
@@ -157,9 +208,15 @@ describe("each deduction is narrated in its own vocabulary", () => {
       "a wall mirrored off the board's edge",
       "The two shaded cells are partners across the white dot, and one of them is up against the edge of the board — so the other must be walled off on the matching side.",
     ],
+    // Two ways out or three: the common shape of this rung. (One way out is a
+    // fourth wording the scan never reaches — see the branch test below.)
     [
-      "a cell with only one way out",
-      "The only way out of this cell leads into the shaded galaxy — its other sides are walled, and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
+      "a cell hemmed in on some sides",
+      "Every way out of this cell leads into the shaded galaxy — its other sides are walled, and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
+    ],
+    [
+      "a cell with no walls but only one galaxy around it",
+      "Every way out of this cell leads into the shaded galaxy, and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
     ],
     [
       "a detached piece of a galaxy",
@@ -171,33 +228,152 @@ describe("each deduction is narrated in its own vocabulary", () => {
     it(`${what}`, () => {
       const says = (s: Step) =>
         s.explanation.replace("black dot", "white dot") === wording;
-      const found =
-        firstStepMatching(NORMAL_7, SCAN_SEEDS, says) ??
-        firstStepMatching(UNREASONABLE_7, SCAN_SEEDS, says);
-      expect(found, `no board in the scan said it: ${what}`).not.toBeNull();
+      expect(
+        anyBoardSays(says),
+        `no board in the scan said it: ${what}`,
+      ).not.toBeNull();
     });
   }
 
-  it("the Unreasonable rung says what it tried and what broke", () => {
-    const found = firstStepMatching(UNREASONABLE_7, SCAN_SEEDS, (s) =>
-      s.explanation.startsWith("Nothing here"),
-    );
+  it("a cell with a single way out reads in the singular", () => {
+    // The one wording asserted on a *constructed* firing rather than a found
+    // one: 48 board-walks produce this rung 25 times and never with one
+    // opening, because walling three sides of a still-unassociated cell takes
+    // an unusual board. The branch stays — the alternative is saying "Every
+    // way out" about one way out — so its wording is checked here instead of
+    // pretending a scan covers it.
+    const s = board(NORMAL_7, "singular");
+    const dot = s.dots[0];
     expect(
-      found,
-      "no Unreasonable board in the scan needed the elimination rung",
-    ).not.toBeNull();
-    const said = found?.step.explanation ?? "";
-    // Honest on all three counts the spec asks for: it says the alternatives
-    // were tried, names the contradiction one of them reaches, and concludes
-    // in the necessity voice — no fabricated local reason, and no refusal.
-    expect(said).toMatch(/^Nothing here follows in a single step/);
-    expect(said).toMatch(/All but one break the board — one of them would /);
-    expect(said).toMatch(/so this cell must belong to the ringed (white|black) dot\.$/);
+      narrate(s, {
+        kind: "enclosed",
+        tile: { x: 3, y: 3 },
+        opp: null,
+        dot,
+        openings: [{ x: 5, y: 3 }],
+      }).replace("black dot", "white dot"),
+    ).toBe(
+      "The only way out of this cell leads into the shaded galaxy — its other sides are walled, and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
+    );
+  });
+});
+
+describe("the hint never guesses, and says so when that is the end of the road", () => {
+  // The guess-free policy's line, in the sharp form (owner, 2026-08-11): a
+  // contradiction you can *see* from a placement is checking, and belongs
+  // anywhere; one you only reach by *propagating* from a hypothesis is
+  // guessing, and is not a technique a hint can teach at all. Galaxies once
+  // shipped a rung of the second kind on the Unreasonable tier; it was
+  // removed, so the guarantee below is now unconditional rather than
+  // per-tier.
+  it("every step it offers is a rule the board shows, on either tier", () => {
+    // A guessing step would have to say what it *tried*; a deduced one states
+    // a premise. This is a shape check on the vocabulary, cheap and blunt.
+    const speculative =
+      /\btr(y|ied|ies)\b|\bsuppose\b|\bif it were\b|\bbreak the board\b/i;
+    for (const params of [NORMAL_7, UNREASONABLE_7]) {
+      for (const seed of ["gf-a", "gf-b"]) {
+        let s = board(params, seed);
+        for (
+          let batch = 0;
+          batch < 40 && galaxiesGame.status(s) === "ongoing";
+          batch++
+        ) {
+          const res = galaxiesGame.hint?.(s);
+          if (!res?.ok) break;
+          for (const step of res.steps) {
+            expect(
+              speculative.test(step.explanation),
+              `${seed}: a speculative step — "${step.explanation}"`,
+            ).toBe(false);
+            s = galaxiesGame.executeMove(s, step.move);
+          }
+        }
+      }
+    }
+  });
+
+  it("a Normal board is always carried all the way to solved", () => {
+    // The tier's promise: pure deduction suffices, so the hint must never
+    // reach the refusal below on a Normal board.
+    for (const size of [7, 10]) {
+      for (const seed of ["gf-a", "gf-b", "gf-c"]) {
+        const params = { w: size, h: size, diff: GalaxiesDiff.Normal };
+        let s = board(params, `${seed}-${size}`);
+        for (let b = 0; b < 40 && galaxiesGame.status(s) === "ongoing"; b++) {
+          const res = galaxiesGame.hint?.(s);
+          expect(res?.ok, `${seed}/${size}: Normal board stalled`).toBe(true);
+          if (!res?.ok) break;
+          for (const step of res.steps) s = galaxiesGame.executeMove(s, step.move);
+        }
+        expect(galaxiesGame.status(s), `${seed}/${size}: not solved`).toBe("solved");
+      }
+    }
+  });
+
+  it("an Unreasonable board that runs out gets told what to do instead", () => {
+    // Where deduction genuinely ends, the refusal has to be useful: this is
+    // the position the tier exists for, not an error.
+    let refusals = 0;
+    for (const seed of ["gu-a", "gu-b", "gu-c", "gu-d"]) {
+      let s = board(UNREASONABLE_7, seed);
+      for (let b = 0; b < 40 && galaxiesGame.status(s) === "ongoing"; b++) {
+        const res = galaxiesGame.hint?.(s);
+        if (!res?.ok) {
+          refusals++;
+          expect(res?.error).toMatch(/^Nothing further follows by deduction here\./);
+          expect(res?.error).toMatch(/save a checkpoint/);
+          break;
+        }
+        for (const step of res.steps) s = galaxiesGame.executeMove(s, step.move);
+      }
+    }
+    // If this ever came out zero the tier would be indistinguishable from
+    // Normal, which is its own defect (`grade-difficulty-tiers-honestly`).
+    expect(refusals, "no Unreasonable board needed to guess").toBeGreaterThan(0);
+  });
+});
+
+describe("a deduction the player cannot act on never costs the plan a step", () => {
+  // The shipped bug this pins (owner-reported on a 15x15): a dot sitting
+  // *inside* a cell forces that cell, the game refuses to draw an arrow
+  // there, and so the firing re-derives on every recompute and can never be
+  // shown. With the plan capped by firings rather than by showable steps,
+  // twenty of those in a row spent the entire budget and the hint announced
+  // "No further move can be deduced" on a board with a hundred moves left.
+  const REPORTED = "fnizegzhxrhzzzsfcjzlfdprczfzfezqcinjjyvtzybbmdtxpzzcjgfizfjgh";
+  const params = { w: 15, h: 15, diff: GalaxiesDiff.Unreasonable };
+
+  it("the reported board keeps offering hints deep into the solve", () => {
+    let s = galaxiesGame.newState(params, REPORTED);
+    let sawUnshowable = false;
+    let offered = 0;
+    // Batch-replay whole plans rather than recomputing per move: this reaches
+    // the same mid-game depth in a few calls instead of dozens, and the plan
+    // machinery is what is under test, not the walk.
+    for (let batch = 0; batch < 6 && galaxiesGame.status(s) === "ongoing"; batch++) {
+      const plan = galaxiesHintPlan(s);
+      sawUnshowable ||= plan.some((p) => !p.showable);
+      const res = galaxiesGame.hint?.(s);
+      // A refusal *deep* in an Unreasonable board is legitimate — deduction
+      // can genuinely run out there. Refusing at the first ask, on a board
+      // with a hundred moves left, is the bug this pins.
+      if (!res?.ok) break;
+      offered++;
+      for (const step of res.steps) s = galaxiesGame.executeMove(s, step.move);
+    }
+    expect(offered, "the reported board refused straight away").toBeGreaterThan(3);
+    // The guard is only meaningful if this board really does produce firings
+    // the player can never act on — the whole point of the class.
+    expect(
+      sawUnshowable,
+      "no unshowable firing occurred; the test proves nothing",
+    ).toBe(true);
   });
 });
 
 describe("the picture carries the argument", () => {
-  it("every step highlights something, and the target is never also evidence", () => {
+  it("every step highlights something, and the acted-on cell is never also evidence", () => {
     for (const seed of ["pic-a", "pic-b"]) {
       let s = board(NORMAL_7, seed);
       for (let i = 0; i < 400 && galaxiesGame.status(s) === "ongoing"; i++) {
@@ -212,11 +388,23 @@ describe("the picture carries the argument", () => {
             marks,
             `${step.explanation} — marks nothing to act on`,
           ).toBeGreaterThan(0);
-          for (const t of hl.targets) {
+          // Only the cell being acted on is kept out of its own evidence: it
+          // owns the action colour. The *partner* stays shaded — it is inside
+          // the area the sentence describes, and shading it is what keeps its
+          // outline the quieter of the two marks.
+          const f = hl.focus;
+          if (f) {
             expect(
-              hl.area.some((a) => a.x === t.x && a.y === t.y),
-              "a target cell is also shaded as evidence",
+              hl.area.some((a) => a.x === f.x && a.y === f.y),
+              "the acted-on cell is also shaded as evidence",
             ).toBe(false);
+          } else {
+            for (const t of hl.targets) {
+              expect(
+                hl.area.some((a) => a.x === t.x && a.y === t.y),
+                "a target cell is also shaded as evidence",
+              ).toBe(false);
+            }
           }
         }
         s = galaxiesGame.executeMove(s, steps[0].move);
@@ -231,8 +419,9 @@ describe("the picture carries the argument", () => {
     for (const seed of SCAN_SEEDS.slice(0, 4)) {
       let s = board(UNREASONABLE_7, seed);
       for (let i = 0; i < 400 && galaxiesGame.status(s) === "ongoing"; i++) {
-        const steps = hintOf(s);
-        const step = steps[0];
+        const res = galaxiesGame.hint?.(s);
+        if (!res?.ok) break; // deduction ran out — legitimate on this tier
+        const step = res.steps[0] as Step;
         if (shading.test(step.explanation)) {
           expect(
             step.highlights?.area.length ?? 0,

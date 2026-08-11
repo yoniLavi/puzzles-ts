@@ -127,12 +127,35 @@ it's revealing the answer.
   imperative/heuristic by design (hints.md § "Non-deductive (heuristic) hints"), and
   Untangle's `aux`-walk is the sanctioned non-deductive form.
 
-**The deduction/guessing line:** *single-level forcing* — tentatively fix one
-cell's candidate, run pure propagation, eliminate the candidate if it forces
-an immediate contradiction — is **deduction** (it is how the Latin family's
-Extreme tier works). *Nested* speculation (assume A, then within that assume
-B, …) is **recursion** = guessing = Unreasonable-only. The inner fixpoint of a
-forcing pass must itself never force; that nesting ban is the line.
+**The deduction/guessing line** (owner, sharpened 2026-08-11): **if it
+requires *guessing* rather than *checking*, it is Unreasonable.** The test is
+whether the rejected trial has to **propagate** before the contradiction
+appears:
+
+- **Checking** — put a value in and *look*: one clue, one count, one
+  neighbour breaks immediately, without thinking a step ahead. That is plain
+  deduction and belongs at any tier. Sticks' `sticksTry` (one tentative
+  orientation, one validator call, no fixpoint) is the exemplar; so is
+  Galaxies' "only one dot could own this cell", which tests each dot against
+  conditions that are true or false on sight.
+- **Guessing** — put a value in and *run the solver from it*, then take the
+  contradiction it eventually reaches. Galaxies' Unreasonable rung is this
+  shape: `refuteAssoc` runs the whole deduction fixpoint from its hypothesis
+  and can settle dozens of cells before the board breaks. Sound, narratable,
+  and **Unreasonable-only**.
+- *Nested* speculation (assume A, then within that assume B, …) is guessing
+  twice over and stays Unreasonable-only for the same reason.
+
+The two shapes look identical in a solver — `try one value, ask the oracle,
+take the other on INVALID` — and land on opposite sides of the line, so read
+the call, not the technique's name (`hints.md` § "The forcing boundary" has
+the same test from the cognitive-load side).
+
+**Open question this sharpening raises, not yet settled:** the Latin family's
+`Extreme` tiers were described here as single-level forcing and therefore
+deduction. If their forcing *propagates* before the contradiction, they are
+guessing under a name that may not require it, and either the rung or the
+tier name needs to move. Nobody has read `latin.ts` against this test yet.
 
 **Practical consequence before writing a hint:** confirm the generator can't
 emit a board the deductive solver can't crack at the shipped tiers. If it
