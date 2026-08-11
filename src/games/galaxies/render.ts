@@ -184,6 +184,10 @@ const candAt = (overlay: number, dx0: number, dy0: number): number =>
 const HINT_TARGET_CELL = 1 << 0;
 /** Bit 1: a cell the deduction reasons over (`COL_HINT_CELL` wash). */
 const HINT_AREA_CELL = 1 << 1;
+/** Bit 28: a cell the move claims only because it is the 180° partner of the
+ * one being deduced. Outlined in `COL_HINT` rather than filled: same fate,
+ * same hue, but the deduced cell is the one the words are about. */
+const HINT_PARTNER_CELL = 1 << 28;
 /** Bits 2-5: the wall to draw, on this tile's L/R/U/D side (`COL_HINT`). One
  * wall lights a bit in each of the two tiles it separates, exactly as
  * `wrongEdges` does. */
@@ -251,7 +255,14 @@ function packHint(
     }
   };
   for (const a of hl.area) cell(a.x, a.y, HINT_AREA_CELL);
-  for (const t of hl.targets) cell(t.x, t.y, HINT_TARGET_CELL);
+  // With a focus, only that cell fills; the rest of the move's cells are its
+  // partners and are outlined. Without one, the cells are equivalent and all
+  // fill (quality-bar rule 3 — equivalent moves share a colour).
+  const focus = hl.focus;
+  for (const t of hl.targets) {
+    const same = focus !== null && t.x === focus.x && t.y === focus.y;
+    cell(t.x, t.y, focus === null || same ? HINT_TARGET_CELL : HINT_PARTNER_CELL);
+  }
   for (const e of hl.walls) wall(e.x, e.y, HINT_REFWALL_SHIFT);
   for (const e of hl.targetWalls) wall(e.x, e.y, HINT_WALL_SHIFT);
   for (const d of hl.refDots) dot(d.x, d.y, HINT_DOT_REF);
@@ -259,6 +270,16 @@ function packHint(
 }
 
 // --- rendering helpers ---------------------------------------------
+
+/** Clearance between an arrow's point and the dot it points at, as a fraction
+ * of the tile. Not a taste choice: it is the gap a *diagonal* arrow already
+ * had — a dot on a cell's corner is `√2/2` tiles away and the arrow reaches
+ * `1/3`, leaving `√2/2 − 1/4 − 1/3 ≈ 1/8` — and the bug was that the shorter
+ * orthogonal reach (a dot on a cell's *edge*, only `1/2` a tile away) had none
+ * of it and drew straight into the circle. Capping every arrow at this
+ * clearance leaves the diagonals within half a pixel of where they were and
+ * pulls the orthogonal ones clear. */
+const ARROW_DOT_CLEARANCE = 1 / 8;
 
 function drawArrow(
   dr: GameDrawing,
@@ -268,6 +289,7 @@ function drawArrow(
   ddy: number,
   tileSize: number,
   col: number,
+  dotRadius: number,
   thickness = 1,
 ): void {
   const sq = ddx * ddx + ddy * ddy;
@@ -277,8 +299,15 @@ function drawArrow(
   const xdy = ddy / vlen;
   const ydx = -xdy;
   const ydy = xdx;
-  const e1x = cx + Math.round((xdx * tileSize) / 3);
-  const e1y = cy + Math.round((xdy * tileSize) / 3);
+  // `ddx`/`ddy` are half-tile grid steps, so the dot's centre is `vlen / 2`
+  // tiles away. Shorten only the point; the tail stays put, so an arrow near
+  // its dot reads as a short arrow rather than a shrunken one.
+  const reach = Math.min(
+    tileSize / 3,
+    (vlen * tileSize) / 2 - dotRadius - ARROW_DOT_CLEARANCE * tileSize,
+  );
+  const e1x = cx + Math.round(xdx * reach);
+  const e1y = cy + Math.round(xdy * reach);
   const e2x = cx - Math.round((xdx * tileSize) / 3);
   const e2y = cy - Math.round((xdy * tileSize) / 3);
   const adx = Math.round(((ydx - xdx) * tileSize) / 8);
@@ -352,6 +381,7 @@ function drawSquare(
       ddy,
       tileSize,
       preview ? COL_DRAG : flags & DRAW_CURSOR ? COL_CURSOR : COL_ARROW,
+      dotSize,
       preview ? previewThickness : 1,
     );
   } else if (flags & DRAW_CURSOR) {
@@ -534,6 +564,23 @@ function drawSquare(
         );
       }
     }
+  }
+
+  // The hint's partner cell: outlined, not filled. It borrows the drag
+  // preview's outline geometry deliberately — in both cases the mark means
+  // "this cell is part of what is about to be committed" — and differs only in
+  // colour, which is the one thing that has to separate a hint from a drag.
+  if (hint & HINT_PARTNER_CELL) {
+    const inset = Math.max(edgeThickness + 1, (tileSize / 8) | 0);
+    drawRectOutline(
+      dr,
+      lx + inset,
+      ly + inset,
+      tileSize - 2 * inset,
+      tileSize - 2 * inset,
+      COL_HINT,
+      previewThickness,
+    );
   }
 
   // The drop target itself gets an outline on top of its preview

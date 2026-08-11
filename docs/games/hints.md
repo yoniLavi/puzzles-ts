@@ -844,7 +844,7 @@ to a similar game:
 | Crossing | the squares to write into, solid **green** `COL_HINT` (green, not the collection's blue — see below); a struck note keeps its normal `COL_PENCIL` digit + strikethrough on a *non*-target background | the run(s) reasoned over → pale-green `COL_HINT_CELL` shade; **and the still-fitting listed numbers → the same two shades as a patch behind their text in the clue panel** (§ "Off-board evidence") |
 | Spokes | the forced spoke, in `COL_HINT` — **a line** when the move draws a line, **a rim dot** when the move places a mark (§ "Echo the move's shape in the hint colour") | the hubs whose clue/lines/connectivity are the argument → `COL_HINT_CELL` ring. A saturated hub forces several spokes as one multi-leg journey, all in the one colour |
 | Sticks | the forced square drawn as a `COL_HINT` **bar in the forced orientation**; green `COL_LINE` stays the placed line, so the hint is never mistaken for the move | the run / span / clue-sides the argument counts → one `evidence` list, cue split by the square's own state: a **white** square is washed `COL_HINT_CELL`, a **black clue** is *ringed* the same colour (a wash would hide the blackness the argument is about). The list's length equals the number the sentence states |
-| Galaxies | the cells an association claims, solid **purple** `COL_HINT` (not blue — see below); the wall it draws, a `COL_HINT` bar drawn *whether or not the wall exists yet*; the dot it points at, a `COL_HINT` ring — **unless the dot stands on a cell just filled**, where a ring in the fill's own colour is invisible and the narration names the dot by position instead | the cells / walls / dots the argument reasons over → `COL_HINT_CELL` teal (a galaxy's reach, a cut-off piece, the partner across a dot, an already-drawn wall). One ring role at a time, so "the ringed dot" is never ambiguous |
+| Galaxies | the **deduced** cell, solid **purple** `COL_HINT` (not blue — see below); the 180° partner the same move claims, a bare `COL_HINT` **outline** (same hue, they share a fate; less weight, only one is what the words are about); the wall it draws, a `COL_HINT` bar drawn *whether or not the wall exists yet*; the dot it points at, a `COL_HINT` ring — **unless the dot stands on a cell just filled**, where a ring in the fill's own colour is invisible and the narration names the dot by position instead | the cells / walls / dots the argument reasons over → `COL_HINT_CELL` teal (a galaxy's reach, a cut-off piece, the partner across a dot, an already-drawn wall). One ring role at a time, so "the ringed dot" is never ambiguous |
 
 **If the game has already spent the hint hue, the *hint* moves — and takes the
 board with it (Crossing).** `COL_HINT` blue is the collection's default, not a
@@ -1256,6 +1256,16 @@ copying to any game whose notation and whose goal are different move sets:
   cell" while filling two. Compute the claimed set from a **before/after
   comparison**, not from the rules' return codes. This shipped past every
   test and was caught by looking at the board in a browser.
+
+- **A cell the move *comes along to* is not the cell the words are about.**
+  The same move claims a cell and its 180° partner, and painting both the
+  action colour made every "this cell" ambiguous (owner-reported at
+  acceptance). They are not equivalent moves in rule 3's sense — one is
+  deduced, the other follows by a symmetry the player already knows — so the
+  deduced cell fills solid and the partner takes a bare **outline of the same
+  hue**: same fate, different weight. Dropping the partner's mark entirely was
+  the other candidate and is wrong for a different rule: the move decides that
+  cell, and a step may not change a square it never marked.
 
 Two smaller ones, both from reading real frames rather than the data:
 

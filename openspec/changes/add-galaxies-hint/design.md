@@ -159,6 +159,30 @@ No format or generation changes; enrolment additions only.
   on a dot standing inside a filled cell is its own colour on its own
   colour. Both are now assertions.
 
+## Acceptance round 1 (2026-08-11)
+
+- **F8 — the partner cell may not be painted like the subject.** Both
+  cells of the pair filled solid made every "this cell" ambiguous. They
+  are *not* equivalent moves in the quality bar's sense — one is deduced,
+  the other follows by a symmetry the player already knows — so the
+  deduced cell keeps the solid action colour and the partner takes a bare
+  outline of the same hue (`GalaxiesHint.focus`). Removing the partner's
+  mark entirely was considered and rejected: the move decides that cell,
+  and a step must not change a square it never marked.
+- **F9 — `onlyReach`'s narration reworded.** It ended on "that one",
+  which named nothing. It now opens on the shaded reach and ends on "the
+  ringed dot"; `exclave`'s "that galaxy too" got the same treatment.
+- **F10 — an arrow pointing at an adjacent dot drew into it.** Not a
+  hint bug (it predates this change, on every committed arrow) but found
+  during its acceptance. `drawArrow` reached a flat `tileSize / 3`
+  regardless of how far the dot actually was; a dot on a cell's *edge* is
+  only half a tile away, so the point landed inside the circle, while the
+  diagonal case (a dot on a corner, `√2/2` tiles away) had ~`1/8` tile of
+  clearance and looked right. The point is now capped at the dot's edge
+  less that same `1/8`, which leaves the diagonals within half a pixel of
+  where they were — the constant is *derived from* the case that was
+  already correct rather than chosen.
+
 ## Open Questions
 
 - None outstanding; D2 (F1) and D5 (F4) are settled above.

@@ -33,9 +33,11 @@ an arrow, or to start and finish a drag.
 ## Hints
 
 **Hint** explains the next step rather than simply making it. Most of
-what it says is about the arrows: a square is filled in the hint's
-colour when the deduction settles which dot it belongs to, and the dot
-is ringed in the same colour. Squares the argument reasons *from* — how
+what it says is about the arrows: the square whose dot the deduction
+settles is filled in the hint's colour, the dot is ringed in the same
+colour, and the square opposite the dot — which gets its arrow at the
+same time, as always — is merely outlined, since it comes along rather
+than being what the hint is telling you. Squares the argument reasons *from* — how
 far a galaxy can still stretch, the piece that has been cut off from
 its dot, the partner across a dot — are shaded in a second colour, so
 you can see the reason as well as read it.

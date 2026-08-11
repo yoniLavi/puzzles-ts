@@ -54,8 +54,24 @@ import {
  */
 export interface GalaxiesHint {
   /** Cells the move associates — the tile *and* its 180° partner, which the
-   * game commits in the same move, so both are the action. */
+   * game commits in the same move. Both are the action, and the plan tracks
+   * both; {@link focus} is which of them the deduction is actually about. */
   targets: Pos[];
+  /**
+   * The one cell the narration is talking about, when the firing has one.
+   *
+   * A deduction settles a cell and the game brings its 180° partner along —
+   * two cells, one move, but *not* two cells the player has to think about.
+   * Painted identically they made "this cell" ambiguous (owner-reported), and
+   * they are genuinely different roles: one is deduced, the other follows by a
+   * symmetry the player already knows. So the deduced cell takes the solid
+   * action colour and the partner a bare outline of it — same hue, because
+   * they share a fate; different weight, because only one is the point.
+   *
+   * `null` where the cells really are equivalent (a dot's own cells, which are
+   * all forced by the same one-line rule) — there, all of them fill solid.
+   */
+  focus: Pos | null;
   /** Walls the move draws. */
   targetWalls: Pos[];
   /** The dot the association points at, ringed in the action colour. */
@@ -75,6 +91,7 @@ export interface GalaxiesHint {
 const PLAN_CAP = 20;
 
 const EMPTY: Omit<GalaxiesHint, "targets"> = {
+  focus: null,
   targetWalls: [],
   targetDot: null,
   area: [],
@@ -265,9 +282,9 @@ export function narrate(s: GalaxiesState, firing: GalaxiesFiring): string {
       return `${lead} into the shaded galaxy${walled}, and a galaxy is one connected region, so this cell must belong to the ringed ${dotWord(s, firing.dot)}.`;
     }
     case "onlyReach":
-      return `The shaded cells are as far as the ringed ${dotWord(s, firing.dot)}'s galaxy can stretch, and no other galaxy can reach this cell at all — so it must belong to that one.`;
+      return `The shading is everywhere the ringed ${dotWord(s, firing.dot)}'s galaxy can still stretch to. No other galaxy can reach this cell at all, so it must belong to the ringed dot.`;
     case "exclave":
-      return `The shaded cells belong to the ringed ${dotWord(s, firing.dot)} but are cut off from it, and this is the only cell they can still grow through — so it must belong to that galaxy too.`;
+      return `The shaded cells belong to the ringed ${dotWord(s, firing.dot)} but are cut off from it, and this is the only cell they can still grow through — so it must belong to the ringed dot too.`;
     case "elimination":
       return `Nothing here follows in a single step, so every dot this cell might join has to be tried. All but one break the board — one of them would ${breakage(firing.refuted[0]?.because ?? null)} — so this cell must belong to the ringed ${dotWord(s, firing.dot)}.`;
   }
@@ -316,6 +333,7 @@ export function highlightsOf(firing: GalaxiesFiring): GalaxiesHint {
       return {
         ...EMPTY,
         targets,
+        focus: firing.tile,
         targetDot: firing.dot,
         // The ways out are the whole premise, so the shaded count is exactly
         // the number the sentence claims.
@@ -327,6 +345,7 @@ export function highlightsOf(firing: GalaxiesFiring): GalaxiesHint {
       return {
         ...EMPTY,
         targets,
+        focus: firing.tile,
         targetDot: firing.dot,
         area: without(firing.region, targets),
       };
@@ -336,6 +355,7 @@ export function highlightsOf(firing: GalaxiesFiring): GalaxiesHint {
       return {
         ...EMPTY,
         targets,
+        focus: firing.tile,
         targetDot: firing.dot,
         area: without(firing.component, targets),
       };
@@ -347,7 +367,7 @@ export function highlightsOf(firing: GalaxiesFiring): GalaxiesHint {
       // the narration says it is. Only one ring role is on screen (the
       // surviving dot), so "the ringed dot" cannot be misread.
       const area = at ? without([{ x: at.x, y: at.y }], targets) : [];
-      return { ...EMPTY, targets, targetDot: firing.dot, area };
+      return { ...EMPTY, targets, focus: firing.tile, targetDot: firing.dot, area };
     }
   }
 }

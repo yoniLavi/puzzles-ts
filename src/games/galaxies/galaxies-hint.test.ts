@@ -147,7 +147,7 @@ describe("each deduction is narrated in its own vocabulary", () => {
     ],
     [
       "the limit of a galaxy's reach",
-      "The shaded cells are as far as the ringed white dot's galaxy can stretch, and no other galaxy can reach this cell at all — so it must belong to that one.",
+      "The shading is everywhere the ringed white dot's galaxy can still stretch to. No other galaxy can reach this cell at all, so it must belong to the ringed dot.",
     ],
     [
       "a wall mirrored about the dot",
@@ -163,7 +163,7 @@ describe("each deduction is narrated in its own vocabulary", () => {
     ],
     [
       "a detached piece of a galaxy",
-      "The shaded cells belong to the ringed white dot but are cut off from it, and this is the only cell they can still grow through — so it must belong to that galaxy too.",
+      "The shaded cells belong to the ringed white dot but are cut off from it, and this is the only cell they can still grow through — so it must belong to the ringed dot too.",
     ],
   ];
 
