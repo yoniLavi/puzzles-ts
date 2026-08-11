@@ -33,6 +33,7 @@ import {
   idx,
   rebuildDots,
   SpaceType,
+  spaceOppositeDot,
   spaceTypeAt,
   tilesFromEdge,
 } from "./state.ts";
@@ -1057,6 +1058,107 @@ describe("Galaxies association legality is sound", () => {
     }
     // Guard the guard: a sweep that silently examined nothing would pass.
     expect(checked).toBeGreaterThan(500);
+  });
+
+  it("never points an arrow out of a cell another dot owns", () => {
+    // The owner's second report (2026-08-11), as an invariant rather than a
+    // board: a dot on an edge or a vertex owns every tile it touches, so an
+    // arrow in one of those tiles pointing at some *other* dot is impossible.
+    // It also has a visual tell, which is how it was spotted — the arrow is
+    // drawn a third of a tile from the centre and a dot's radius is a
+    // quarter, so an arrow aimed at a dot on its own cell's boundary
+    // overlaps it. Getting the rule right makes the tell unreachable: every
+    // dot close enough for an arrow to touch is a dot that owns the cell.
+    const owners = (s: GalaxiesState, dx: number, dy: number) => {
+      const out = new Set<number>();
+      for (const d of s.dots) {
+        if (d.x === dx && d.y === dy) continue;
+        for (let oy = -1; oy <= 1; oy++) {
+          for (let ox = -1; ox <= 1; ox++) {
+            const tx = d.x + ox;
+            const ty = d.y + oy;
+            if (spaceTypeAt(tx, ty) !== SpaceType.Tile) continue;
+            if (tx > 0 && ty > 0 && tx < s.sx - 1 && ty < s.sy - 1) {
+              out.add(idx(s, tx, ty));
+            }
+          }
+        }
+      }
+      return out;
+    };
+    let accepted = 0;
+    for (const p of [
+      { w: 10, h: 10, diff: GalaxiesDiff.Normal },
+      { w: 7, h: 7, diff: GalaxiesDiff.Unreasonable },
+    ] as GalaxiesParams[]) {
+      for (let seed = 0; seed < 2; seed++) {
+        const { desc } = galaxiesGame.newDesc(p, randomNew(`owned-${p.w}-${seed}`));
+        const s = galaxiesGame.newState(p, desc);
+        for (const d of s.dots) {
+          const owned = owners(s, d.x, d.y);
+          for (let y = 1; y < s.sy - 1; y += 2) {
+            for (let x = 1; x < s.sx - 1; x += 2) {
+              if (!okToAddAssocWithOpposite(s, x, y, d.x, d.y)) continue;
+              accepted++;
+              const opp = spaceOppositeDot(s, x, y, d.x, d.y);
+              expect(owned.has(idx(s, x, y))).toBe(false);
+              expect(opp && owned.has(idx(s, opp.x, opp.y))).toBe(false);
+            }
+          }
+        }
+      }
+    }
+    expect(accepted).toBeGreaterThan(300);
+  });
+
+  it("refuses the distant dot from the owner's 2026-08-11 board", () => {
+    // The 24-dot 10x10 layout read off that screenshot. Dragging from the
+    // bottom-left cell (3,17) offered the distant middle dot (11,11), whose
+    // 180 image of that cell is (19,5) — a tile the edge dot at (18,5) owns,
+    // which is what the arrow was visibly clipping into.
+    const s = blankGame(10, 10);
+    for (const [x, y] of [
+      [5, 1],
+      [10, 1],
+      [15, 1],
+      [19, 2],
+      [2, 5],
+      [6, 5],
+      [18, 5],
+      [9, 6],
+      [17, 7],
+      [18, 9],
+      [6, 10],
+      [11, 11],
+      [14, 12],
+      [1, 13],
+      [4, 13],
+      [17, 13],
+      [5, 15],
+      [10, 15],
+      [13, 17],
+      [19, 17],
+      [5, 18],
+      [11, 18],
+      [17, 19],
+      [1, 19],
+    ]) {
+      s.flags[idx(s, x, y)] |= 1 /* F_DOT */;
+    }
+    s.dots = rebuildDots(s);
+    expect(s.dots).toHaveLength(24);
+
+    expect(okToAddAssocWithOpposite(s, 3, 17, 11, 11)).toBe(false);
+    expect(legalDotsFor(s, 3, 17)).toEqual([
+      { x: 5, y: 15 },
+      { x: 5, y: 18 },
+    ]);
+    // And the same call under the pre-fix predicate, so this test cannot
+    // quietly stop testing anything: reachability is the whole difference.
+    const permissive = new Uint8Array(s.sx * s.sy).fill(1);
+    expect(okToAddAssocWithOpposite(s, 3, 17, 11, 11, undefined, permissive)).toBe(
+      true,
+    );
   });
 
   it("refuses a cell no galaxy centred on that dot could reach", () => {

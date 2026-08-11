@@ -67,6 +67,16 @@
 - [x] 4b.4 Measured the effect: 4.28 → 1.51 dots offered per cell on a
       fresh 10x10. Recorded on the preference, because it changes what
       that preference can honestly claim to hide.
+- [x] 4b.5 A second report (2026-08-11) turned out to be the *same*
+      defect seen on a board carrying pre-fix state — reconstructed from
+      the screenshot and confirmed rejected now, accepted before, so it
+      is pinned as a regression test rather than argued away. Its
+      invariant ("never point an arrow out of a cell another dot owns")
+      is now swept over generated boards in the reporter's own terms,
+      because it is the *visible* symptom: an arrow reaches a third of a
+      tile and a dot's radius is a quarter, so an arrow aimed at a dot
+      on its own cell's boundary overlaps it — and the rule makes that
+      unreachable, since any dot that close owns the cell.
 
 ## 5. Verification and close-out
 
