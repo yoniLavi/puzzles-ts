@@ -102,7 +102,63 @@ hint-side no-fallback bar).
 
 No format or generation changes; enrolment additions only.
 
+## What implementation decided (2026-08-11)
+
+- **F1 — D2's `continuesPrevious` legs are not merely unnecessary, they
+  are forbidden.** The game commits a tile and its 180° partner
+  *atomically* (`addAssocWithOpposite`), so a second leg for the partner
+  is a **no-op move**, which `hint-resume.test.ts` rejects outright. One
+  firing is therefore one step with both cells as targets, and the
+  narration carries the symmetry as the reason they travel together.
+  Galaxies emits no `continuesPrevious` legs at all.
+- **F2 — the plan must teach *two* vocabularies, because the win
+  condition is written in the other one.** `checkComplete` reads walls
+  only; associations never enter it. A plan of associations alone would
+  be sound and would never solve the board. So the wall rung ("these two
+  cells are settled on different dots") is in the plan and is 62% of its
+  steps. Recorded as a cross-game lesson in `docs/games/hints.md`
+  § "Notation and goal are different move sets (Galaxies)".
+- **F3 — rung order was chosen by measurement, and it is a split of one
+  upstream function.** `solver_lines_opposite` does two jobs; in solver
+  order the *mirror-the-wall* half won every race and became **58%** of a
+  7x7 plan — the longest sentence and the hardest technique, as the
+  routine way walls appear. Split into two rungs (a `LineRules`
+  parameter defaulted to "both", so the generator's path is byte
+  identical) with the mirror demoted last, it fires **7%** and only where
+  it unsticks the board. Frequencies over 24 boards (7x7 + 10x10, both
+  tiers, 2315 steps): separate 61.7%, onlyReach 18.8%, dotTile 10.3%,
+  mirrorWall 7.0%, elimination 1.0%, enclosed 3.5%, exclave 0.6%. No
+  board gave up; longest narration 243 chars.
+- **F4 — D5 resolved: refutation, not a what-if walk.** Upstream's
+  recursion decides *the whole board* from one branch, which is a verdict
+  about the board and not a sentence about a cell. The hint instead
+  refutes each candidate dot for one cell with the ordinary (non
+  recursive) chain and concludes from the survivor — sound, one cell at a
+  time, and it names the contradiction it reached (a fresh
+  `GalaxiesContradiction` recorded at each rule's `IMPOSSIBLE`). Cheap
+  enough to run at a stall: 1–2 firings per Unreasonable board, ~100 ms
+  for a whole board's worth of hints. A static what-if walk was not
+  attempted: Galaxies' contradictions come from a full fixpoint, not a
+  depth-1 chain, so there is no short walk to show.
+- **F5 — the hint colour had to move, and the reason generalises.**
+  `HINT_ACTION` and `DRAG_ADD` are both `BLUE`, and Galaxies spends blue
+  on the drag preview (owner-accepted in
+  `widen-galaxies-association-gestures`). They collide on the *same
+  object at the same instant*: both ring a dot, and a cell→dot drag is
+  precisely how a player follows an association hint. The hint took
+  purple; verified in the browser with a drag in flight under a displayed
+  hint, in both schemes.
+- **F6 — `uiUpdateClearsHint` is deliberately not implemented.** The hook
+  exists for games whose hint *suppresses* another surface; Galaxies'
+  suppresses nothing, and a drag in progress is the player following the
+  hint, not leaving it.
+- **F7 — two defects only the browser found.** A firing built from the
+  rules' progress codes listed *half* the cells its own move claimed
+  (`solverAddAssoc` claims the partner, which then reports "nothing to
+  do"), so the hint said "this cell" while filling two; and a ring drawn
+  on a dot standing inside a filled cell is its own colour on its own
+  colour. Both are now assertions.
+
 ## Open Questions
 
-- D2 journey granularity and D5's choice — decided in-session against
-  real boards, recorded here.
+- None outstanding; D2 (F1) and D5 (F4) are settled above.

@@ -6,8 +6,14 @@
  * 2026-05-21; ports stay on imperative `Game.redraw` with the
  * cache-fragility doctrine fixes from `fix-flip-canvas-reshape`.
  */
-import { drawRectOutline, type GameDrawing } from "../../engine/index.ts";
+import {
+  drawRectOutline,
+  type GameDrawing,
+  type HintStep,
+} from "../../engine/index.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import type { GalaxiesHint } from "./hint.ts";
+import type { GalaxiesMove } from "./index.ts";
 import { legalDotsFor, okToAddAssocWithOpposite } from "./moves.ts";
 import {
   checkComplete,
@@ -41,7 +47,14 @@ export const COL_MISTAKE = 9;
  * the cursor's is a board-relative *tint*, which a transient affordance the
  * player is steering by must never be: see `DRAG_ADD`'s doc comment. */
 export const COL_DRAG = 10;
-export const NCOLOURS = 11;
+/** The displayed hint's *action*: the cells an association claims, the wall it
+ * draws, and a ring on the dot it points at. Purple rather than the
+ * collection's hint blue — see the assignment in `index.ts` `colours()`. */
+export const COL_HINT = 11;
+/** The displayed hint's *evidence*: the cells, walls and dots the deduction
+ * reasons over. */
+export const COL_HINT_CELL = 12;
+export const NCOLOURS = 13;
 
 // --- DrawState ------------------------------------------------------
 
@@ -71,6 +84,12 @@ export interface GalaxiesDrawState {
    * way too and left a mark at every vertex and edge it visited, unnoticed
    * only because its colour was a near-invisible tint of the board. */
   overlay: OverlaySidecar;
+  /** Everything the displayed *hint* paints on a tile, in one sidecar word —
+   * see {@link HINT_TARGET_CELL} and friends. A third sidecar rather than more
+   * key bits for the same reason as the other two: the Int32 key is full.
+   * Packed by hand because a hint here has its own topology (walls belong to
+   * two tiles at once, and a dot ring belongs to up to four). */
+  hint: OverlaySidecar;
   /** Per-tile wrong-wall mask (DRAW_EDGE_L/R/U/D bits) for the mistake
    * overlay — a sidecar rather than a cache-key bit because there are no
    * free bits left in the Int32 key for four more edge flags. Part of
@@ -96,6 +115,7 @@ export function newDrawState(s: GalaxiesState): GalaxiesDrawState {
     dx: new Int16Array(n),
     dy: new Int16Array(n),
     overlay: new OverlaySidecar(n),
+    hint: new OverlaySidecar(n),
     wrongEdges: new OverlaySidecar(n),
   };
 }
@@ -158,6 +178,86 @@ const candBits = (dx0: number, dy0: number, v: number): number =>
 const candAt = (overlay: number, dx0: number, dy0: number): number =>
   (overlay >>> (CAND_SHIFT + 2 * (dy0 * 3 + dx0))) & 3;
 
+// --- the hint sidecar (`ds.hint`) ----------------------------------
+
+/** Bit 0: a cell the hint's association claims (solid `COL_HINT`). */
+const HINT_TARGET_CELL = 1 << 0;
+/** Bit 1: a cell the deduction reasons over (`COL_HINT_CELL` wash). */
+const HINT_AREA_CELL = 1 << 1;
+/** Bits 2-5: the wall to draw, on this tile's L/R/U/D side (`COL_HINT`). One
+ * wall lights a bit in each of the two tiles it separates, exactly as
+ * `wrongEdges` does. */
+const HINT_WALL_SHIFT = 2;
+/** Bits 6-9: a wall the deduction cites (`COL_HINT_CELL`). */
+const HINT_REFWALL_SHIFT = 6;
+/** Bits 10-27: a ring on the dot at this tile's subcell position, two bits
+ * each — {@link HINT_DOT_ACTION} for the dot the association points at,
+ * {@link HINT_DOT_REF} for one the argument merely cites. Nine positions, the
+ * same shape the dots and the drag's candidate rings use, so a dot on a tile
+ * corner is ringed (and erased) by each tile that clips it. */
+const HINT_DOT_SHIFT = 10;
+const HINT_DOT_ACTION = 1;
+const HINT_DOT_REF = 2;
+const hintDotBits = (dx0: number, dy0: number, v: number): number =>
+  v << (HINT_DOT_SHIFT + 2 * (dy0 * 3 + dx0));
+const hintDotAt = (hint: number, dx0: number, dy0: number): number =>
+  (hint >>> (HINT_DOT_SHIFT + 2 * (dy0 * 3 + dx0))) & 3;
+
+/**
+ * Pack one frame's hint overlay. A cell is one tile; a wall at half-grid
+ * `(x, y)` lights the facing side of each of the two tiles it separates; a dot
+ * ring is clipped by each tile whose 3x3 subcell block contains it.
+ */
+function packHint(
+  ds: GalaxiesDrawState,
+  w: number,
+  h: number,
+  hl: GalaxiesHint | undefined,
+): void {
+  ds.hint.clear();
+  if (!hl) return;
+  const add = (tx: number, ty: number, bit: number) => {
+    if (tx >= 0 && tx < w && ty >= 0 && ty < h) ds.hint.add(ty * w + tx, bit);
+  };
+  const cell = (x: number, y: number, bit: number) => {
+    add((x - 1) >> 1, (y - 1) >> 1, bit);
+  };
+  const wall = (x: number, y: number, shift: number) => {
+    const vertical = x % 2 === 0;
+    const tx = vertical ? x >> 1 : (x - 1) >> 1;
+    const ty = vertical ? (y - 1) >> 1 : y >> 1;
+    add(tx, ty, (vertical ? DRAW_EDGE_L : DRAW_EDGE_U) << shift);
+    add(
+      vertical ? tx - 1 : tx,
+      vertical ? ty : ty - 1,
+      (vertical ? DRAW_EDGE_R : DRAW_EDGE_D) << shift,
+    );
+  };
+  const dot = (x: number, y: number, v: number) => {
+    for (let ty = (y >> 1) - 1; ty <= y >> 1; ty++) {
+      for (let tx = (x >> 1) - 1; tx <= x >> 1; tx++) {
+        const dx0 = x - 2 * tx;
+        const dy0 = y - 2 * ty;
+        if (dx0 < 0 || dx0 > 2 || dy0 < 0 || dy0 > 2) continue;
+        if (tx < 0 || tx >= w || ty < 0 || ty >= h) continue;
+        // Never ring a dot on a cell the hint has filled: the ring would be
+        // its own colour on its own colour — invisible, and saying nothing the
+        // fill does not already say. It is the "dot sits on these cells" rule
+        // that hits this, and its narration names the dot by position rather
+        // than by a ring for exactly the same reason.
+        if (ds.hint.packed[ty * w + tx] & HINT_TARGET_CELL) continue;
+        add(tx, ty, hintDotBits(dx0, dy0, v));
+      }
+    }
+  };
+  for (const a of hl.area) cell(a.x, a.y, HINT_AREA_CELL);
+  for (const t of hl.targets) cell(t.x, t.y, HINT_TARGET_CELL);
+  for (const e of hl.walls) wall(e.x, e.y, HINT_REFWALL_SHIFT);
+  for (const e of hl.targetWalls) wall(e.x, e.y, HINT_WALL_SHIFT);
+  for (const d of hl.refDots) dot(d.x, d.y, HINT_DOT_REF);
+  if (hl.targetDot) dot(hl.targetDot.x, hl.targetDot.y, HINT_DOT_ACTION);
+}
+
 // --- rendering helpers ---------------------------------------------
 
 function drawArrow(
@@ -202,6 +302,7 @@ function drawSquare(
   ddy: number,
   wrongEdges: number,
   overlay: number,
+  hint: number,
 ): void {
   const preview = overlay & PREVIEW_MASK;
   const lx = x * tileSize + border;
@@ -213,13 +314,23 @@ function drawSquare(
 
   dr.clip({ x: lx, y: ly, w: tileSize, h: tileSize });
 
-  // Background
+  // Background. A displayed hint owns the cell's fill: the cell it acts on is
+  // solid `COL_HINT`, a cell it reasons over is the `COL_HINT_CELL` wash.
+  // Nothing the argument turns on is hidden by either — an arrow, a wall, a
+  // dot and the region's own black grid lines are all drawn on top — and the
+  // fills replace the region colour rather than covering it, because a cell
+  // inside a finished region is never a hint's target (the game refuses to
+  // re-associate one) and is worth seeing as evidence in the hint's colour.
   const bg =
-    flags & DRAW_WHITE
-      ? COL_WHITEBG
-      : flags & DRAW_BLACK
-        ? COL_BLACKBG
-        : COL_BACKGROUND;
+    hint & HINT_TARGET_CELL
+      ? COL_HINT
+      : hint & HINT_AREA_CELL
+        ? COL_HINT_CELL
+        : flags & DRAW_WHITE
+          ? COL_WHITEBG
+          : flags & DRAW_BLACK
+            ? COL_BLACKBG
+            : COL_BACKGROUND;
   dr.drawRect({ x: lx, y: ly, w: tileSize, h: tileSize }, bg);
 
   // Grid lines (top-left only — neighbours will draw their own)
@@ -250,14 +361,27 @@ function drawSquare(
     drawRectOutline(dr, cx, cy, sz, sz, COL_CURSOR);
   }
 
-  // Edges. A wall the player set inside a single solution galaxy is
-  // painted in COL_MISTAKE instead of COL_EDGE (the wrong-wall overlay).
-  if (flags & DRAW_EDGE_L) {
-    const col = wrongEdges & DRAW_EDGE_L ? COL_MISTAKE : COL_EDGE;
-    dr.drawRect({ x: lx, y: ly, w: edgeThickness, h: tileSize }, col);
+  // Edges. Three overlays can recolour a wall, and one of them can conjure a
+  // bar where the board has none: a wall the player set inside a single
+  // solution galaxy is COL_MISTAKE; a wall the displayed hint reasons *from*
+  // is COL_HINT_CELL; and the wall a hint asks the player to *draw* is a
+  // COL_HINT bar drawn whether or not the wall exists yet — that is the whole
+  // suggestion, and it is Palisade's forced-edge treatment in Galaxies'
+  // vocabulary (docs/games/hints.md § "Echo the move's shape in the hint
+  // colour"). `null` means this side draws nothing.
+  const edgeCol = (side: number): number | null => {
+    if (hint & (side << HINT_WALL_SHIFT)) return COL_HINT;
+    if (!(flags & side)) return null;
+    if (wrongEdges & side) return COL_MISTAKE;
+    if (hint & (side << HINT_REFWALL_SHIFT)) return COL_HINT_CELL;
+    return COL_EDGE;
+  };
+  const colL = edgeCol(DRAW_EDGE_L);
+  if (colL !== null) {
+    dr.drawRect({ x: lx, y: ly, w: edgeThickness, h: tileSize }, colL);
   }
-  if (flags & DRAW_EDGE_R) {
-    const col = wrongEdges & DRAW_EDGE_R ? COL_MISTAKE : COL_EDGE;
+  const colR = edgeCol(DRAW_EDGE_R);
+  if (colR !== null) {
     dr.drawRect(
       {
         x: lx + tileSize - edgeThickness + 1,
@@ -265,15 +389,15 @@ function drawSquare(
         w: edgeThickness - 1,
         h: tileSize,
       },
-      col,
+      colR,
     );
   }
-  if (flags & DRAW_EDGE_U) {
-    const col = wrongEdges & DRAW_EDGE_U ? COL_MISTAKE : COL_EDGE;
-    dr.drawRect({ x: lx, y: ly, w: tileSize, h: edgeThickness }, col);
+  const colU = edgeCol(DRAW_EDGE_U);
+  if (colU !== null) {
+    dr.drawRect({ x: lx, y: ly, w: tileSize, h: edgeThickness }, colU);
   }
-  if (flags & DRAW_EDGE_D) {
-    const col = wrongEdges & DRAW_EDGE_D ? COL_MISTAKE : COL_EDGE;
+  const colD = edgeCol(DRAW_EDGE_D);
+  if (colD !== null) {
     dr.drawRect(
       {
         x: lx,
@@ -281,7 +405,7 @@ function drawSquare(
         w: tileSize,
         h: edgeThickness - 1,
       },
-      col,
+      colD,
     );
   }
   if (flags & DRAW_CORNER_UL) {
@@ -355,6 +479,32 @@ function drawSquare(
         };
         for (let r = 0; r < rings; r++) {
           dr.drawCircle(centre, dotSize + 2 + r, -1, COL_DRAG);
+        }
+      }
+    }
+  }
+
+  // The displayed hint's dot rings, in the drag's own ring vocabulary so the
+  // player reads them without being taught a second shape: the dot an
+  // association must point at, and any dot the argument merely cites. The
+  // colours differ from the drag's (see `colours()`), which is what keeps the
+  // two readable when a player drags to follow the hint and the cell's legal
+  // dots are ringed at the same time.
+  if (hint >>> HINT_DOT_SHIFT) {
+    for (let dy0 = 0; dy0 < 3; dy0++) {
+      for (let dx0 = 0; dx0 < 3; dx0++) {
+        const v = hintDotAt(hint, dx0, dy0);
+        if (!v) continue;
+        const centre = {
+          x: lx + ((dx0 * tileSize) >> 1),
+          y: ly + ((dy0 * tileSize) >> 1),
+        };
+        const col = v === HINT_DOT_ACTION ? COL_HINT : COL_HINT_CELL;
+        // `drawCircle` strokes one pixel wide, so weight comes from
+        // concentric rings — the same trick the drag's snapped dot uses.
+        const rings = v === HINT_DOT_ACTION ? previewThickness : 1;
+        for (let r = 0; r < rings; r++) {
+          dr.drawCircle(centre, dotSize + 2 + r, -1, col);
         }
       }
     }
@@ -492,7 +642,7 @@ export function redraw(
   },
   _animTime: number,
   flashTime: number,
-  _hint?: unknown,
+  hint?: HintStep<GalaxiesMove, GalaxiesHint>,
   mistakes?: readonly { kind: "tile" | "edge"; x: number; y: number }[],
 ): void {
   if (ds === null) return;
@@ -503,6 +653,9 @@ export function redraw(
   // Both halves of the mistake overlay feed the cache-miss check, so
   // cells repaint clean once the overlay clears.
   const mistakeTiles = splitMistakeOverlay(ds, w, h, mistakes);
+  // So does the hint's, which is what makes a hint appear on a frame where
+  // nothing else changed (`hint-overlay.test.ts`).
+  packHint(ds, w, h, hint?.highlights);
   const border = tile;
   const drawWidth = w * tile + 2 * border;
   const drawHeight = h * tile + 2 * border;
@@ -710,15 +863,28 @@ export function redraw(
         ds.dx[cacheI] !== ddx ||
         ds.dy[cacheI] !== ddy ||
         ds.overlay.stale(cacheI) ||
+        ds.hint.stale(cacheI) ||
         ds.wrongEdges.stale(cacheI)
       ) {
-        const wrongEdges = ds.wrongEdges.packed[cacheI];
-        const overlay = ds.overlay.packed[cacheI];
-        drawSquare(dr, x, y, tile, border, flags, dots, ddx, ddy, wrongEdges, overlay);
+        drawSquare(
+          dr,
+          x,
+          y,
+          tile,
+          border,
+          flags,
+          dots,
+          ddx,
+          ddy,
+          ds.wrongEdges.packed[cacheI],
+          ds.overlay.packed[cacheI],
+          ds.hint.packed[cacheI],
+        );
         ds.cache[cacheI] = key;
         ds.dx[cacheI] = ddx;
         ds.dy[cacheI] = ddy;
         ds.overlay.commit(cacheI);
+        ds.hint.commit(cacheI);
         ds.wrongEdges.commit(cacheI);
       }
     }

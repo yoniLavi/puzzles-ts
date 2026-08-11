@@ -29,3 +29,23 @@ Either mouse button will do, and on a touchscreen an ordinary finger
 drag works. The keyboard can do all of it too: move the cursor with
 the arrow keys, and press Enter or Space to place a line, to pick up
 an arrow, or to start and finish a drag.
+
+## Hints
+
+**Hint** explains the next step rather than simply making it. Most of
+what it says is about the arrows: a square is filled in the hint's
+colour when the deduction settles which dot it belongs to, and the dot
+is ringed in the same colour. Squares the argument reasons *from* — how
+far a galaxy can still stretch, the piece that has been cut off from
+its dot, the partner across a dot — are shaded in a second colour, so
+you can see the reason as well as read it.
+
+Once two neighbouring squares are settled on different dots, the hint
+asks for the line between them, and it is those lines, not the arrows,
+that finish the puzzle. On the harder difficulty a step may have no
+single-step reason at all; the hint says so plainly, and tells you
+which alternative it ruled out and what went wrong with it.
+
+A hint is refused while anything on the board contradicts the solution.
+The offending squares and lines light up instead, exactly as they do
+for **Check & save**.

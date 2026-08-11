@@ -131,6 +131,33 @@ A substrate is a library, not a cage: a game takes the substrate and adds its
 own techniques above/below/between the shared rungs; ordering is the game's
 single ladder declaration.
 
+## A game may have two move sets, and the projections split across them
+
+*(Substrate note from `add-galaxies-hint`, 2026-08-11.)* The contract above
+assumes the technique's conclusion and the move that records it are the same
+thing. Galaxies is the counter-example: its deductions are about **which dot
+owns a cell**, its win condition reads **walls only**, and the association it
+deduces is consequence-free notation the completion check never sees. A hint
+projection built from the technique alone is sound, teaches well, and never
+finishes a board — the resume guarantee is what catches it.
+
+What a framework would have to carry for this shape:
+
+- **A technique declares which move set records it**, and a game declares how
+  a *notation* move set discharges into a *goal* one. In Galaxies that bridge
+  is itself a technique ("two neighbours settled on different dots ⇒ a wall
+  between them"), which suggests the framework needs nothing new here beyond
+  *knowing* that the plan is not complete until the goal move set is.
+- **The completion driver must judge the goal move set**, not the number of
+  techniques fired. Today's `hint-resume.test.ts` already does exactly this,
+  which is why the gap was visible in minutes rather than at acceptance.
+- **A move that claims more than the cell it is aimed at** (Galaxies commits a
+  cell's 180° partner in the same move) makes the "one firing, several legs"
+  journey shape *illegal* rather than merely unnecessary: the extra leg is a
+  no-op, and the no-op-free-plan guarantee rejects it. A framework emitting
+  journeys automatically would have to ask the move set what a move already
+  covers before splitting a firing into legs.
+
 ## Escape hatches carry obligations
 
 The shared fixpoint's recorded no-gos (Loopy's threshold bookkeeping, Unruly's

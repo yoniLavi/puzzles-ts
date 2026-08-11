@@ -5,8 +5,8 @@ a `hint()` — explained hints are a **core deliberate-divergence product
 value** of this fork, not a nicety — but coverage is not yet complete: the
 games still lacking one are exactly the registered games absent from
 [`engine/testing/hint-games.ts`](../../src/engine/testing/hint-games.ts)
-(13 as of 2026-08-07; each is a queued `add-<game>-hint` change waiting to be
-opened). Upstream's `'h'` returns one next move with
+(12 as of 2026-08-11, Galaxies having landed; each is a queued
+`add-<game>-hint` change waiting to be opened). Upstream's `'h'` returns one next move with
 no explanation; that is below the bar. Adding a hint to a game is its **own
 openspec change** (`add-<game>-hint`), acceptance-gated like a port.
 
@@ -844,6 +844,7 @@ to a similar game:
 | Crossing | the squares to write into, solid **green** `COL_HINT` (green, not the collection's blue — see below); a struck note keeps its normal `COL_PENCIL` digit + strikethrough on a *non*-target background | the run(s) reasoned over → pale-green `COL_HINT_CELL` shade; **and the still-fitting listed numbers → the same two shades as a patch behind their text in the clue panel** (§ "Off-board evidence") |
 | Spokes | the forced spoke, in `COL_HINT` — **a line** when the move draws a line, **a rim dot** when the move places a mark (§ "Echo the move's shape in the hint colour") | the hubs whose clue/lines/connectivity are the argument → `COL_HINT_CELL` ring. A saturated hub forces several spokes as one multi-leg journey, all in the one colour |
 | Sticks | the forced square drawn as a `COL_HINT` **bar in the forced orientation**; green `COL_LINE` stays the placed line, so the hint is never mistaken for the move | the run / span / clue-sides the argument counts → one `evidence` list, cue split by the square's own state: a **white** square is washed `COL_HINT_CELL`, a **black clue** is *ringed* the same colour (a wash would hide the blackness the argument is about). The list's length equals the number the sentence states |
+| Galaxies | the cells an association claims, solid **purple** `COL_HINT` (not blue — see below); the wall it draws, a `COL_HINT` bar drawn *whether or not the wall exists yet*; the dot it points at, a `COL_HINT` ring — **unless the dot stands on a cell just filled**, where a ring in the fill's own colour is invisible and the narration names the dot by position instead | the cells / walls / dots the argument reasons over → `COL_HINT_CELL` teal (a galaxy's reach, a cut-off piece, the partner across a dot, an already-drawn wall). One ring role at a time, so "the ringed dot" is never ambiguous |
 
 **If the game has already spent the hint hue, the *hint* moves — and takes the
 board with it (Crossing).** `COL_HINT` blue is the collection's default, not a
@@ -857,6 +858,15 @@ displayed hint suppresses the run wash entirely**, so only one meaning of
 "washed square" is ever on screen. Rule of thumb: check the new hint colour
 against the game's *existing* legend in OKLCH before assuming the default, and
 when two washes would coexist, decide which one owns the board while it is up.
+
+**A second thing can hold blue: a transient affordance that lands on the same
+objects (Galaxies).** Its drag preview is `DRAG_ADD`, which *is* hint blue, and
+the collision is not incidental — both **ring a dot**, and they are on screen
+together the moment the player drags to follow the hint (a cell→dot drag rings
+every dot the cell may join; the hint rings the one it must). Same shape, same
+object, same instant, so the hint took **purple**. The tell that this is the
+real thing and not a tidy-up: the two roles agree about *what* they point at,
+which is exactly when one shared colour is most confusing rather than least.
 
 **But when the thing holding the hue is the *cursor*, the cursor moves
 (Sticks).** Crossing's blue carried *information about the puzzle*, which is
@@ -1215,6 +1225,47 @@ The recorder + driver shape that made it clean and resume-safe:
 
 The recorder is **gated** (`this.recording`), so `runSolver` — the generator's
 path — is byte-identical and the differential is unaffected by construction.
+
+### Notation and goal are different move sets (Galaxies)
+
+Most games' hints teach in the vocabulary the win condition is written in.
+Galaxies' are not the same thing: `checkComplete` reads **walls only**, while
+the deduction is entirely about **which dot owns which cell** — an association
+arrow, which is consequence-free notation the completion check never sees. A
+plan made of arrows alone would be sound, teachable, and would *never solve the
+board*, which the resume guard catches immediately. Three consequences worth
+copying to any game whose notation and whose goal are different move sets:
+
+- **The plan has to cash the notation in.** Galaxies' walls come from one rung
+  — "these two cells are settled on different dots, so a wall runs between
+  them" — and that rung is 62% of a plan's steps. The arrows are the reasoning;
+  the walls are the answer, and a plan that teaches only the first never
+  finishes.
+- **Rung *order* is a narration decision, and measurement picks it.** Upstream
+  runs its two wall rules as one function; in solver order the *mirror-the-wall*
+  half won every race and became **58%** of the plan, longest sentence and
+  hardest technique both. Split into two rungs with the mirror one demoted to
+  last, it fires 7% of the time — only where it actually unsticks the board —
+  and the walls it used to draw early get narrated later by the plainest
+  sentence the game has. The split is a parameter defaulted to "both", so the
+  generator's solver is byte-identical and the differential proves it.
+- **A rule that claims a cell's partner too will under-report what it did.**
+  `solverAddAssoc` associates the tile *and* its 180° image, so the image
+  returns "nothing to do" when its own turn comes and a firing built from the
+  progress flags lists half the cells its own move claims — a hint saying "this
+  cell" while filling two. Compute the claimed set from a **before/after
+  comparison**, not from the rules' return codes. This shipped past every
+  test and was caught by looking at the board in a browser.
+
+Two smaller ones, both from reading real frames rather than the data:
+
+- **Don't ring what you have just filled.** The action colour on a dot standing
+  inside an action-coloured cell is invisible. That firing's narration names the
+  dot by position instead ("the white dot between them"), and the renderer skips
+  a ring on any cell it has filled — the words and the picture change together.
+- **A cell that *holds* its dot shows no arrow**, so "these two cells point at
+  different dots" sends the player hunting for an arrow that was never drawn.
+  One word ("go with") covers both ways a cell can be settled.
 
 ### Placement animation as hint motion
 

@@ -12,7 +12,15 @@
  */
 
 import { mkhighlightBackground } from "../../engine/colour/colour-mkhighlight.ts";
-import { CURSOR, DRAG_ADD, ERROR, INK, PAPER } from "../../engine/colour/palette.ts";
+import { PURPLE } from "../../engine/colour/colours.ts";
+import {
+  CURSOR,
+  DRAG_ADD,
+  ERROR,
+  HINT_EVIDENCE,
+  INK,
+  PAPER,
+} from "../../engine/colour/palette.ts";
 import {
   galaxiesBlackRegion,
   galaxiesGrid,
@@ -20,6 +28,9 @@ import {
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
+  type HintResult,
+  type HintStep,
+  type HintTrackVerdict,
   registerGame,
   type SolveResult,
   UI_UPDATE,
@@ -40,6 +51,12 @@ import type { RandomState } from "../../engine/random/index.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
 import { newGameDesc } from "./generator.ts";
 import {
+  type GalaxiesHint,
+  galaxiesHintSteps,
+  outstanding,
+  stepSatisfied,
+} from "./hint.ts";
+import {
   addAssocWithOpposite,
   legalDotsFor,
   okToAddAssocWithOpposite,
@@ -54,6 +71,8 @@ import {
   COL_DRAG,
   COL_EDGE,
   COL_GRID,
+  COL_HINT,
+  COL_HINT_CELL,
   COL_MISTAKE,
   COL_WHITEBG,
   COL_WHITEDOT,
@@ -865,6 +884,72 @@ function findMistakes(s: GalaxiesState): readonly GalaxiesMistake[] {
   return mistakes;
 }
 
+// --- the explained hint ---------------------------------------------
+
+/**
+ * The whole remaining deduction, narrated. See `hint.ts` for the rules and
+ * their wording; the refusals live here because they are about the board the
+ * player is looking at, not about the deduction.
+ */
+function hint(s: GalaxiesState): HintResult<GalaxiesMove, GalaxiesHint> {
+  if (s.completed) return { ok: false, error: "This board is already solved." };
+  if (findMistakes(s).length > 0) {
+    return {
+      ok: false,
+      error:
+        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+    };
+  }
+  const steps = galaxiesHintSteps(s);
+  if (steps.length === 0) {
+    return { ok: false, error: "No further move can be deduced from this position." };
+  }
+  return { ok: true, steps };
+}
+
+/**
+ * Did this move do what the step asked?
+ *
+ * Judged by *effect* rather than by matching ops: the same association is
+ * reachable by dragging from the dot, dragging from the cell, or using the
+ * keyboard, and all three are the player following the hint. A step that asks
+ * for several cells (a dot sitting on four of them) completes when the last
+ * one lands, so the earlier ones are `"onTrack"`.
+ */
+function hintKeepTrack(
+  m: GalaxiesMove,
+  step: HintStep<GalaxiesMove, GalaxiesHint>,
+  s: GalaxiesState,
+): HintTrackVerdict {
+  if (m.solving) return "off";
+  const before = outstanding(s, step).length;
+  if (before === 0) return "completed";
+  const after = outstanding(executeMove(s, m), step).length;
+  if (after === 0) return "completed";
+  return after < before ? "onTrack" : "off";
+}
+
+/**
+ * Validate-at-display. The player can reach a step's association by their own
+ * route (or wall off a region so the arrow inside it stops mattering), so a
+ * stored step is re-checked before it is shown again: fully done ⇒ drop it and
+ * advance, partly done ⇒ show only what is left.
+ */
+function refreshHintStep(
+  step: HintStep<GalaxiesMove, GalaxiesHint>,
+  s: GalaxiesState,
+): HintStep<GalaxiesMove, GalaxiesHint> | null {
+  if (stepSatisfied(s, step)) return null;
+  const hl = step.highlights;
+  if (!hl?.targetDot || hl.targets.length < 2) return step;
+  const left = outstanding(s, step);
+  const targets = hl.targets.filter((t) =>
+    left.some((l) => l.x === t.x && l.y === t.y),
+  );
+  if (targets.length === hl.targets.length) return step;
+  return { ...step, highlights: { ...hl, targets } };
+}
+
 // --- text format and statusbar -------------------------------------
 
 function textFormat(s: GalaxiesState): string {
@@ -1051,6 +1136,9 @@ export const galaxiesGame: Game<
 
   solve: solveGalaxies,
   findMistakes,
+  hint,
+  hintKeepTrack,
+  refreshHintStep,
 
   /** The rings, not the gesture — and not the information either.
    *
@@ -1111,6 +1199,19 @@ export const galaxiesGame: Game<
     // Mistake highlight: a strong red that reads on both white and black
     // region fills and the page background.
     ret[COL_MISTAKE] = ERROR;
+    // The hint takes **purple**, not the collection's `HINT_ACTION` blue,
+    // because Galaxies has already spent blue on the drag preview — and the
+    // two would collide in the worst possible way. Both ring a *dot*: a
+    // cell→dot drag rings every dot the cell may join, and the hint rings the
+    // one it must. Same shape, same object, on screen together the moment the
+    // player drags to follow the hint, so a shared hue would make the hint
+    // unreadable exactly when it is being used. Purple is the collection's
+    // answer when blue and green are both taken (`spokes`, `subsets`,
+    // `sticks`), and the drag's blue is the colour owner acceptance settled in
+    // `widen-galaxies-association-gestures`. Evidence keeps the cross-game
+    // `HINT_EVIDENCE` teal, which is a different hue from both.
+    ret[COL_HINT] = PURPLE;
+    ret[COL_HINT_CELL] = HINT_EVIDENCE;
     return ret;
   },
 

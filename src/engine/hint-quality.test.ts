@@ -50,6 +50,7 @@ const DEDUCTIVE = new Set([
   "crossing",
   "dominosa",
   "filling",
+  "galaxies",
   "keen",
   "lightup",
   "palisade",
