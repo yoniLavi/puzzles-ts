@@ -51,5 +51,5 @@
       input.md (the aim-drag shape, Inertia + Galaxies exemplars).
 - [x] 4.4 Withdraw `add-galaxies-association-marks`; retarget
       `add-galaxies-hint` onto committed-association vocabulary.
-- [ ] 4.5 `openspec validate fix-galaxies-drag-preview --strict`; owner
-      acceptance; archive.
+- [x] 4.5 `openspec validate fix-galaxies-drag-preview --strict`; owner
+      acceptance (2026-08-11, after the colour/cursor follow-ups); archive.
