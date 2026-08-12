@@ -127,41 +127,56 @@ it's revealing the answer.
   imperative/heuristic by design (hints.md § "Non-deductive (heuristic) hints"), and
   Untangle's `aux`-walk is the sanctioned non-deductive form.
 
-**The deduction/guessing line** (owner, sharpened 2026-08-11): **if it
-requires *guessing* rather than *checking*, it is Unreasonable.** The test is
-whether the rejected trial has to **propagate** before the contradiction
-appears:
+### Check, Tactic, Search
 
-- **Checking** — put a value in and *look*: one clue, one count, one
-  neighbour breaks immediately, without thinking a step ahead. That is plain
-  deduction and belongs at any tier. Sticks' `sticksTry` (one tentative
-  orientation, one validator call, no fixpoint) is the exemplar; so is
-  Galaxies' "only one dot could own this cell", which tests each dot against
-  conditions that are true or false on sight.
-- **Guessing** — put a value in and *run the solver from it*, then take the
-  contradiction it eventually reaches. Galaxies' Unreasonable rung is this
-  shape: `refuteAssoc` runs the whole deduction fixpoint from its hypothesis
-  and can settle dozens of cells before the board breaks. Sound, narratable,
-  and **Unreasonable-only**.
-- *Nested* speculation (assume A, then within that assume B, …) is guessing
-  twice over and stays Unreasonable-only for the same reason.
+**The line** (owner, 2026-08-12, `audit-guessing-tier-names` design D9): a rung
+is classified by **whether its reasoning is a bounded run of individually
+glanceable steps** — *not* by whether a trial or a search was involved.
 
-The two shapes look identical in a solver — `try one value, ask the oracle,
-take the other on INVALID` — and land on opposite sides of the line, so read
-the call, not the technique's name (`hints.md` § "The forcing boundary" has
-the same test from the cognitive-load side).
+| | shape | tier | hint |
+| --- | --- | --- | --- |
+| **Check** | place a value and *look*: one clue, one count, one neighbour breaks immediately | any | narrate directly |
+| **Tactic** | a **bounded** chain of forced consequences to a named endpoint | Tricky / Hard / Extreme | narrate as a multi-leg walk |
+| **Search** | run the whole solver from a hypothesis, or branch and backtrack | **`Unreasonable`** | refuse |
 
-**Open question this sharpening raises, not yet settled:** the Latin family's
-`Extreme` tiers were described here as single-level forcing and therefore
-deduction. If their forcing *propagates* before the contradiction, they are
-guessing under a name that may not require it, and either the rung or the
-tier name needs to move. Nobody has read `latin.ts` against this test yet.
+- **Check** — Sticks' `sticksTry` (one tentative orientation, one validator
+  call, no fixpoint) is the exemplar; so is Galaxies' "only one dot could own
+  this cell", and Bricks' and Clusters' single-cell rungs.
+- **Tactic** — `latin.ts`'s `forcing` (measured 3–12 implication links, median
+  4–5), Clusters' lookahead (median 2–3 forced cells), Map's forcing-chain BFS.
+  Legitimate at a middle tier; see `hints.md` § "The forcing boundary" for what
+  its narration owes the player.
+- **Search** — Undead's `forcingPass` and Bricks' `solverRecurse` (both run a
+  whole fixpoint / sub-solve from the hypothesis), Dominosa's
+  `deduceForcingChain`, Spokes' `spokesSolverAttempt`, every true recursion tier,
+  and Galaxies' deleted rung — `refuteAssoc` ran the whole deduction fixpoint and
+  could settle dozens of cells. *Nested* speculation (assume A, then within that
+  assume B) is Search twice over.
 
-**Practical consequence before writing a hint:** confirm the generator can't
-emit a board the deductive solver can't crack at the shipped tiers. If it
-can, you have three moves: gate generation to deduction-only, strengthen the
-deductive solver so the hard tier survives guess-free, or move the guessing
-boards under an explicitly-named Unreasonable tier.
+**Two traps this replaces a blunter rule to avoid.**
+
+*The earlier rule was "does the rejected trial propagate?", and it was wrong in
+both directions.* It condemned thirteen rungs across thirteen games — six in
+default preset menus — and half of them are perfectly followable chains. It also
+missed that **a strategy game's hint is a search too**: Fifteen's is A\* over
+slide moves, and nobody objects, because what the player is asked to accept is
+*"this move serves the stated goal"*, not the search. That is a fourth,
+orthogonal contract (**Strategy**: a stable subgoal plus the next move serving
+it, justified by a monotone potential — `hints.md` § "Hold a stable subgoal"),
+and it applies to untiered games: Fifteen, Sixteen, Inertia, Flood, Untangle.
+
+*Check and Search look identical in a solver* — `try one value, ask the oracle,
+take the other on INVALID` — so read what the oracle **does**: one validator call
+is a Check, a fixpoint or a sub-solve is a Search.
+
+**Practical consequence before writing a hint:** confirm the generator can't emit
+a board the deductive solver can't crack at the shipped tiers. If it can, you
+have three moves: gate generation to deduction-only, strengthen the deductive
+solver so the hard tier survives, or move the Search boards under an
+explicitly-named `Unreasonable` tier. **Never delete a tier to satisfy the rule**
+— and check first whether the rung *is* the tier: Map's `Hard` has no other
+distinguishing technique, so emptying it made the preset generate nothing at all
+(10,000 retries, no error).
 
 ### No un-narrated fallback
 

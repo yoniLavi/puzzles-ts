@@ -98,7 +98,10 @@ every *direct*, single-constraint contradiction, so a contradiction that
 *survives* to the forcing rung necessarily comes from **combining several
 constraints** (the hypothesis forces another cell, which then breaks a
 clue/count elsewhere). A forcing deduction is therefore intrinsically a short
-chain. Two compliant options, one non-option:
+chain — measured, never fewer than **three** implication links, because a one-
+or two-link chain *is* a naked pair and set elimination has already eaten it.
+
+Two compliant options, one non-option:
 
 - **Externalize it as a guided "what-if" walk** — tentative marks the player
   watches accumulate ("suppose vampire here → then this cell must be a ghost →
@@ -116,37 +119,39 @@ chain. Two compliant options, one non-option:
   (Existing forcing/`Extreme`-tier hints in the Latin family should be
   reviewed against this when next touched.)
 
-Where a game *ships* a forcing tier under a non-`Unreasonable` name and
-neither compliant option applies cleanly, the collection's current pragmatic
-stance (Spokes' Tricky/Hard contradiction look-ahead, the Latin `Extreme`
-tiers) is: state the hypothesis and the **classified, named** contradiction it
-reaches (over-count / crossing / sealed-off — not a generic "it breaks"), and
-**anchor it to the board** by highlighting *where* it breaks, so the
-conclusion rests on something the player can see rather than a claim to trust.
-That is a stopgap, not the bar — the full answer is the tentative-mark what-if
-walk above, which is a cross-game engine build (a hypothetical-mark render
-state), not a per-game change. Record the stance in the game's `design.md`,
-with a firing-frequency measurement showing how often the forcing rung
-actually fires (Spokes measured it: the *most* common firing on Hard).
+**Which of the three applies is decided by
+[`solver-and-generator.md`](./solver-and-generator.md) § "Check, Tactic,
+Search"** (owner, 2026-08-12, `audit-guessing-tier-names` design D9), and the
+split is *bounded-and-walkable*, not *was a trial involved*:
 
-Two boundary refinements, both measured rather than assumed:
+- a **Check** — one placement, one validator call, no fixpoint (Sticks'
+  `sticksTry`, Bricks' and Clusters' single-cell rungs) — is ordinary deduction
+  and narrates directly, at any tier;
+- a **Tactic** — a bounded chain, measured 3–12 links in the Latin family and
+  2–3 forced cells in Clusters — keeps its middle tier and **is walked**;
+- a **Search** — the hypothesis runs a whole fixpoint or sub-solve (Undead's
+  `forcingPass`, Bricks' `solverRecurse`, Dominosa's chain closure, Spokes'
+  attempt, Galaxies' deleted rung) — is `Unreasonable` and is **not narrated at
+  all**. The hint refuses and says deduction has run out.
 
-- **A contradiction that does not *propagate* is exempt (Sticks).** Sticks'
-  `sticksTry` places one tentative orientation and calls `sticksValidate`
-  **once** — it never runs the fixpoint from the hypothesis — so every firing
-  is "put a line here and one named clue breaks immediately", which is exactly
-  one inferential step. The two shapes look identical in the solver (`try one
-  value, ask the oracle, take the other on INVALID`) and land on opposite
-  sides of the bar. The test is whether the rejected trial *propagates* before
-  the oracle is asked, not whether the technique is described as "forcing".
-- **A forcing deduction that compresses to one short sentence and fires
-  rarely can stay a single-step hint (Undead, owner-accepted 2026-06-27).**
-  Undead's Tricky forcing narration ("If this cell were a vampire, the
-  sightline clues and monster counts could no longer all be met — so cross out
-  the vampire") tops out at a measured 130 chars — shorter than the routine
-  sightline hint (282) that already ships on Easy/Normal — and fires on a
-  minority of boards. Measure the actual chain length and string length before
-  paying for what-if-walk machinery.
+**The walk is the bar, and it is not a cross-game engine build.** This section
+used to call it "the full answer" while offering a *stopgap* — state the
+classified contradiction and anchor it to the board — on the grounds that
+tentative marks needed new engine machinery. Clusters disproved that: it renders
+every forced cell of its hypothetical from per-game overlay bits, no engine
+change involved. The stopgap is retired as a *destination*; where a game has not
+been walked yet, that is a debt with a name (`walk-tactic-hint-chains`), tracked
+by the shrink-only `PENDING_WALK` list in
+[`engine/hint-quality.test.ts`](../../src/engine/hint-quality.test.ts) — which
+holds each game's **exact interim sentence**, so the guard stays live on
+everything else that game says.
+
+**One correction to a measurement this section used to lean on.** It cited
+Undead's forcing narration — 130 chars, fires rarely — as evidence that a short
+compressed sentence can stay a single step. Length was the wrong axis: that rung
+runs the arc + counting **fixpoint** from its hypothesis, so it is a Search, and
+brevity cannot redeem it. It is gone, and Undead's top tier is `Unreasonable`.
+Measure the *shape of the call*, not the length of the sentence.
 
 ## Writing the narration
 
@@ -1300,10 +1305,11 @@ copying to any game whose notation and whose goal are different move sets:
   hint now refuses there, and says so in a way the player can act on ("save a
   checkpoint, try one, undo if it breaks"). **A refusal that tells the truth
   beats a step that reveals an answer.** The line is the same one
-  [`solver-and-generator.md`](./solver-and-generator.md) draws for tier names:
-  a contradiction you can *see* at the placement is checking, one you have to
-  *propagate* to is guessing — and the second belongs to the player, not the
-  hint.
+  [`solver-and-generator.md`](./solver-and-generator.md) § "Check, Tactic,
+  Search" draws for tier names — and what puts this rung on the far side of it
+  is that the chain is **unbounded**: it ran the *whole* fixpoint and could
+  settle dozens of cells, so there is no walk to show the player. A *bounded*
+  chain is a Tactic and stays hintable; this was a Search.
 - **A deduction the player can run with an existing affordance is worth its
   own rung.** Galaxies' cell→dot drag rings every dot a cell could legally
   join; when exactly one lights up, the cell is forced — a sound deduction the

@@ -1,5 +1,18 @@
 # The sweep: every rung in the collection that reaches a conclusion via a trial
 
+> ⚠️ **The verdicts in §4 are superseded.** This file's *sweep* and its
+> *measurements* stand — they are what the change was for, and everything below
+> §3 was gathered before any decision. But §0's test ("does the rejected trial
+> propagate?") and §4's remedy ("enforce it literally") were replaced the same
+> day by **design D9's Check / Tactic / Search taxonomy**, which splits on
+> whether the reasoning is a *bounded run of individually glanceable steps*.
+> Read [`design.md`](./design.md) D9 first; it lists where each rung below
+> actually lands.
+>
+> Kept unedited rather than rewritten because the sequence is the finding: the
+> propagation test condemned thirteen rungs in thirteen games, six of them in
+> default preset menus, and about half of those are perfectly followable chains.
+
 The artefact of task 1, kept the way `audit-author-known-issues` kept its table —
 **the classification is the deliverable even where nothing needs fixing**, and a
 no-change verdict without its argument is re-opened by the next reader.

@@ -217,9 +217,14 @@ unreachable.
 - [ ] 4.3 `openspec validate audit-guessing-tier-names --strict`; owner
       acceptance; archive.
 
-## 5. Follow-up scaffolded from the collection-wide survey
+## 5. Follow-ups from this change
 
-- [ ] 5.1 `unify-difficulty-tier-names` — the seven naming defects
+- [ ] 5.0 **`walk-tactic-hint-chains`** — scaffolded and validated. Seven games
+      ship a Tactic and none walks it; `hint-quality.test.ts`'s shrink-only
+      `PENDING_WALK` list is its progress bar. Clusters is the cheapest first
+      target (shortest chain, data already captured, cells already rendered).
+- [ ] 5.1 `unify-difficulty-tier-names` (**not** scaffolded — needs an owner
+      decision first, see below) — the seven naming defects
       [`naming-survey.md`](./naming-survey.md) §5 found that are **not** about
       guessing: Unruly's top tier called `Normal`; Bridges' singleton `Medium`;
       `Easy` not always the bottom rung (Unequal, Solo, Group put another word

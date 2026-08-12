@@ -104,9 +104,11 @@ as the guessing marker — and what the six renames in 2c preserve.
 
 ## 5. Naming defects this survey found that are **not** about guessing
 
-Scaffolded separately as `unify-difficulty-tier-names` — they are a distinct
-change with a distinct risk (every one is player-visible, and none of them is a
-correctness question):
+**Recorded here for scoping, deliberately not scaffolded** — item 6 below needs
+an owner decision *before* a proposal exists, and a change directory for a
+question nobody has answered is a stale pointer waiting to happen. They are a
+distinct body of work with a distinct risk: every one is player-visible, and
+none of them is a correctness question.
 
 1. **A top tier called `Normal`** — Unruly is `Trivial · Easy · Normal`, so the
    hardest Unruly a player can pick is labelled the way most games label their
