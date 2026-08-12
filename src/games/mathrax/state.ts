@@ -34,7 +34,11 @@ export const DIFF_COUNT = 4;
 
 /** `mathrax_diffchars` / `mathrax_diffnames`, indexed by level. */
 const DIFF_CHARS = "entr";
-export const DIFF_NAMES = ["Easy", "Normal", "Tricky", "Recursive"];
+// `Unreasonable`, not upstream's `Recursive` (`audit-guessing-tier-names`,
+// design D7): it is the tier that may require guessing, and the collection says
+// one word for that. The difficulty *character* is untouched (`r`), so game IDs,
+// saved games and shared links are unaffected — only the menu label moves.
+export const DIFF_NAMES = ["Easy", "Normal", "Tricky", "Unreasonable"];
 const DIFFS: MathraxDiff[] = ["easy", "normal", "tricky", "recursive"];
 
 export function diffToLevel(d: MathraxDiff): number {
@@ -168,13 +172,15 @@ export function validateParams(p: MathraxParams, full: boolean): string | null {
   if (full && !p.options) return "At least one clue type must be enabled";
   // A 3x3 grid has only four intersections, and at that size two of the four
   // tiers have nothing to grade with: measured over 3,000 candidate boards each,
-  // none needed Normal (Easy always sufficed) and none needed Recursive (Tricky
-  // always sufficed). Tricky itself is fine — roughly one board in ten binds.
-  // Refusing to generate beats offering a difficulty that silently yields
+  // none needed Normal (Easy always sufficed) and none needed the top tier
+  // (Tricky always sufficed). Tricky itself is fine — roughly one board in ten
+  // binds. Refusing to generate beats offering a difficulty that silently yields
   // another one (`grade-difficulty-tiers-honestly`); a saved game or a game ID
   // carrying its own description still loads, because `full` is false there.
+  // The message names the tiers the way the menu does, so a player can match it
+  // to what they picked — hence `DIFF_NAMES`, not the internal `diff` word.
   if (full && p.o === 3 && (p.diff === "normal" || p.diff === "recursive")) {
-    return "Size 3 has no Normal or Recursive puzzles; use Easy or Tricky";
+    return `Size 3 has no ${DIFF_NAMES[DIFF_NORMAL]} or ${DIFF_NAMES[DIFF_RECURSIVE]} puzzles; use ${DIFF_NAMES[DIFF_EASY]} or ${DIFF_NAMES[DIFF_TRICKY]}`;
   }
   return null;
 }

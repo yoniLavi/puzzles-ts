@@ -34,15 +34,22 @@ interface GenState {
   nums: Uint8Array; // o²
   flags: Int32Array; // o² (F_ADJ_*)
   hints: Uint8Array; // o³ (candidate cube)
+  /** Upstream's forcing-rung placement (Extreme), for the differential alone —
+   * see `LatinSolver.forcing`. It rides on the generation state rather than
+   * every `solverState` call because every copy of that state must carry it:
+   * a copy that lost the flag would grade with a different ladder mid-assembly,
+   * which is the silent half of the bug it guards against. */
+  upstreamForcingTier: boolean;
 }
 
-function blankGen(o: number, mode: Mode): GenState {
+function blankGen(o: number, mode: Mode, upstreamForcingTier: boolean): GenState {
   return {
     o,
     mode,
     nums: new Uint8Array(o * o),
     flags: new Int32Array(o * o),
     hints: new Uint8Array(o * o * o),
+    upstreamForcingTier,
   };
 }
 
@@ -53,7 +60,16 @@ function blankGen(o: number, mode: Mode): GenState {
  * `-1` impossible · `0` unfinished · `1` solved uniquely · `2` ambiguous.
  */
 function solverState(g: GenState, maxdiff: number): number {
-  const ret = solveUnequal(g.o, g.mode, g.flags, g.nums, maxdiff, g.hints);
+  const ret = solveUnequal(
+    g.o,
+    g.mode,
+    g.flags,
+    g.nums,
+    maxdiff,
+    g.hints,
+    undefined,
+    g.upstreamForcingTier,
+  );
   if (ret === 10) return -1; // DIFF_IMPOSSIBLE
   if (ret === 12) return 0; // DIFF_UNFINISHED
   if (ret === 11) return 2; // DIFF_AMBIGUOUS
@@ -158,6 +174,7 @@ function gameAssemble(
     nums: g.nums.slice(),
     flags: g.flags.slice(),
     hints: g.hints.slice(),
+    upstreamForcingTier: g.upstreamForcingTier,
   };
 
   while (true) {
@@ -178,7 +195,7 @@ function gameStrip(
   const o = g.o;
   const o2 = o * o;
   const lscratch = o2 * 5;
-  const copy = blankGen(o, g.mode);
+  const copy = blankGen(o, g.mode, g.upstreamForcingTier);
 
   for (let i = 0; i < lscratch; i++) {
     if (!ggRemoveClue(g, scratch[i], false)) continue;
@@ -212,6 +229,10 @@ function addAdjacentFlags(g: GenState, latin: Int32Array): void {
 export function newUnequalDesc(
   p: UnequalParams,
   rng: RandomState,
+  /** Upstream's forcing-rung placement, for the differential alone — see
+   * `LatinSolver.forcing`. Generation is solver-gated at every step, so the
+   * move changes every Extreme description; this is how the oracle survives. */
+  upstreamForcingTier = false,
 ): { desc: string; aux: string } {
   const o = p.order;
   const o2 = o * o;
@@ -236,7 +257,7 @@ export function newUnequalDesc(
     shuffleRange(scratch, 0, o2, rng);
     shuffleRange(scratch, o2, lscratch - o2, rng);
 
-    const state = blankGen(o, p.mode);
+    const state = blankGen(o, p.mode, upstreamForcingTier);
     if (p.mode === "adjacent") addAdjacentFlags(state, sq);
 
     gameAssemble(state, scratch, sq, diff);
@@ -249,6 +270,7 @@ export function newUnequalDesc(
         nums: state.nums.slice(),
         flags: state.flags.slice(),
         hints: state.hints.slice(),
+        upstreamForcingTier: state.upstreamForcingTier,
       };
       const nsol = solverState(copy, diff - 1);
       if (nsol > 0) {

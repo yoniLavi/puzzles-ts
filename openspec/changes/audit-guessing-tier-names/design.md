@@ -63,9 +63,49 @@ family uses.
   one — in which case the fix is a bound on the rung, not a verdict on the
   tier.
 
+## Decisions taken on the audit's evidence (2026-08-12)
+
+Full sweep and measurements: [`audit.md`](./audit.md).
+
+- **D2 resolved — chain-following is propagation, and the length split it
+  proposed does not exist.** Across 517 firings in thirteen configurations, a
+  `latin.ts`-shaped forcing chain is **never shorter than 3 implication links**,
+  and the reason is structural rather than statistical: a one- or two-link chain
+  *is* a naked pair, and set elimination — a cheaper rung — has already fired on
+  it. What reaches the forcing rung is by construction only what the cheaper
+  rungs could not. On top of the chain the conclusion needs a **case split** on
+  the origin cell. There is no short-chain sub-case to exempt.
+- **D5 (new) — the rule is enforced literally** (owner, 2026-08-12, taken with
+  the cost table in view). Every propagating rung ends under a tier named
+  `Unreasonable`. Which of the rule's three remedies applies is *determined*, not
+  a per-game preference:
+  - a tier named `Unreasonable` already above ⇒ **the rung moves up to it**
+    (Towers, Keen, Group, Solo, Map, and Unequal/Mathrax once renamed);
+  - the rung's tier is the game's **top** tier ⇒ **that tier is renamed**
+    `Unreasonable` (Salad, Dominosa, Bricks, Undead, Clusters, Spokes);
+  - **never delete a tier.** Gating to nothing is not one of the three remedies,
+    and a tier that vanishes teaches the player nothing.
+  This **overrides D3's preference for gating over renaming** where the rung's
+  tier is the top one: D3 assumed a rename was the expensive option, and it is
+  the *cheap* one when the alternative is a tier ceasing to exist.
+- **D6 (new) — a moved rung needs a viability measurement before it ships.**
+  The `unsolved w/o forcing` column is the share of the tier's boards that go
+  away, and it ranges from 0% (Group 8x8, Mathrax 6x6) to **98%** (Solo 3x3
+  Extreme). A move is not done when the config line changes; it is done when the
+  old tier is shown to still generate in acceptable time.
+- **D7 (new) — `Recursive` is renamed `Unreasonable`** in Unequal and Mathrax
+  (owner, 2026-08-12). The encoded difficulty character is untouched (`r`), so
+  game IDs, saved games and shared links survive; only the menu label moves.
+  It is also a prerequisite for D5's first bullet in those two games — a rung
+  cannot move up to a tier that is not called `Unreasonable`.
+
 ## Open Questions
 
-- Does `latin.ts`'s `forcing` count as checking? (D2 — measure first.)
+- ~~Does `latin.ts`'s `forcing` count as checking?~~ Resolved by D2.
 - Should the guard be a declaration on the `Game` (a rung that trials must say
   so) or a per-game test? A declaration is checkable cross-game; a test is
-  cheaper and does not widen the interface.
+  cheaper and does not widen the interface. **Leaning: neither is new** —
+  promote `galaxies-hint.test.ts`'s speculative-vocabulary check into
+  `src/engine/hint-quality.test.ts`, where every hinting game is already
+  enrolled. It exists, it is cheap, and it currently guards one game out of
+  thirty (audit §4).

@@ -432,8 +432,12 @@ function keenValid(solver: LatinSolver, ctx: KeenCtx): boolean {
  * Solve the `w × w` Keen board (cage partition + clues in `kclues`) into `soln`
  * (0 = blank), up to difficulty `maxdiff`. Returns the difficulty level reached,
  * or a `DIFF_IMPOSSIBLE`/`DIFF_AMBIGUOUS`/`DIFF_UNFINISHED` sentinel. Mirrors the
- * `solver()` driver: Easy→simple, Hard→set₀, Extreme→set₁+forcing,
- * Unreasonable→recursion through the shared `latinSolver`.
+ * `solver()` driver: Easy→simple, Hard→set₀, Extreme→set₁,
+ * Unreasonable→forcing + recursion through the shared `latinSolver`.
+ *
+ * `upstreamForcingTier` puts the forcing rung back on Extreme, where upstream
+ * has it — see `LatinSolver.forcing`'s note for why it moved and why the hatch
+ * exists. `keen-differential.test.ts` sets it; nothing else should.
  */
 export function solveKeen(
   w: number,
@@ -441,6 +445,7 @@ export function solveKeen(
   soln: Uint8Array,
   maxdiff: number,
   recorder?: (rec: DeductionRecord) => void,
+  upstreamForcingTier = false,
 ): number {
   const ctx = buildCtx(w, kclues, maxdiff);
   return latinSolver<KeenCtx>(soln, w, {
@@ -448,7 +453,7 @@ export function solveKeen(
     diffSimple: DIFF_EASY,
     diffSet0: DIFF_HARD,
     diffSet1: DIFF_EXTREME,
-    diffForcing: DIFF_EXTREME,
+    diffForcing: upstreamForcingTier ? DIFF_EXTREME : DIFF_UNREASONABLE,
     diffRecursive: DIFF_UNREASONABLE,
     usersolvers: [solverEasy, solverNormal, solverHard, null, null],
     valid: keenValid,

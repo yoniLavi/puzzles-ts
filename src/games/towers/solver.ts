@@ -356,6 +356,9 @@ export function solveTowers(
   soln: Uint8Array,
   maxdiff: number,
   recorder?: (rec: DeductionRecord) => void,
+  /** Upstream's forcing-rung placement (Extreme), for the differential alone —
+   * see `LatinSolver.forcing`. Nothing else should set it. */
+  upstreamForcingTier = false,
 ): number {
   const ctx: TowersCtx = { w, clues, started: false };
   return latinSolver<TowersCtx>(soln, w, {
@@ -363,7 +366,7 @@ export function solveTowers(
     diffSimple: DIFF_EASY,
     diffSet0: DIFF_HARD,
     diffSet1: DIFF_EXTREME,
-    diffForcing: DIFF_EXTREME,
+    diffForcing: upstreamForcingTier ? DIFF_EXTREME : DIFF_UNREASONABLE,
     diffRecursive: DIFF_UNREASONABLE,
     usersolvers: [solverEasy, solverHard, null, null],
     valid: towersValid,

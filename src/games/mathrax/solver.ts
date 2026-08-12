@@ -131,12 +131,22 @@ const solverTricky = (s: LatinSolver, c: MathraxCtx): number =>
  *
  * The write-back is load-bearing: the generator's two clue-stripping loops keep
  * their own backup of the puzzle and restore it after each trial solve.
+ *
+ * `upstreamForcingTier` puts the forcing rung back on Tricky, where upstream has
+ * it and where {@link diffForcing}'s comment explains it no longer belongs. It
+ * exists for one caller — `mathrax-differential.test.ts` — so the frozen C
+ * byte-match survives a divergence that changes every Tricky description. This
+ * is the same shape as {@link MathraxGenerateOptions.upstreamLooseGate} and, one
+ * game over, Spokes' retained acceptance check: **diverge and keep the oracle**
+ * (docs/games/solver-and-generator.md § "Byte-parity is a tool, not a debt").
+ * Nothing else should ever set it.
  */
 export function mathraxSolve(
   o: number,
   grid: Uint8Array,
   clues: Int32Array,
   maxdiff: number,
+  upstreamForcingTier = false,
 ): number {
   const maxbits = (1 << o) - 1;
   const marks = new Int32Array(o * o);
@@ -147,7 +157,15 @@ export function mathraxSolve(
     diffSimple: DIFF_EASY,
     diffSet0: DIFF_NORMAL,
     diffSet1: DIFF_TRICKY,
-    diffForcing: DIFF_TRICKY,
+    // Forcing chains sit on the top tier, not on Tricky
+    // (`audit-guessing-tier-names`): the rung reaches its conclusion by
+    // *propagating* from a hypothesis — measured never fewer than three
+    // implication links plus a case split — and only a tier named
+    // `Unreasonable` may require that. Tricky keeps set₁ (the single-number
+    // row-vs-column elimination), which is what distinguishes it from Normal.
+    // Upstream has it at Tricky; this is a deliberate divergence, and it costs
+    // nothing measurable — 0 of 60 generated 6x6 Tricky boards needed the rung.
+    diffForcing: upstreamForcingTier ? DIFF_TRICKY : DIFF_RECURSIVE,
     diffRecursive: DIFF_RECURSIVE,
     usersolvers: [solverEasy, solverNormal, solverTricky, null, null],
     // Upstream `mathrax_valid` is a constant `true` — Latin uniqueness plus the

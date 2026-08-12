@@ -43,6 +43,10 @@ const BAD_SHIFT = 4;
 export function newKeenDesc(
   p: KeenParams,
   rng: RandomState,
+  /** Upstream's forcing-rung placement, for the differential alone — see
+   * `LatinSolver.forcing`. Generation is solver-gated at every step, so the
+   * move changes every Extreme description; this is how the oracle survives. */
+  upstreamForcingTier = false,
 ): { desc: string; aux: string } {
   const w = p.w;
   const a = w * w;
@@ -279,11 +283,11 @@ export function newKeenDesc(
     const kclues = { w, dsf, minimal, clues };
     if (diff > 0) {
       const soln = new Uint8Array(a);
-      const ret = solveKeen(w, kclues, soln, diff - 1);
+      const ret = solveKeen(w, kclues, soln, diff - 1, undefined, upstreamForcingTier);
       if (ret <= diff - 1) continue; // too easy
     }
     const soln = new Uint8Array(a);
-    const ret = solveKeen(w, kclues, soln, diff);
+    const ret = solveKeen(w, kclues, soln, diff, undefined, upstreamForcingTier);
     if (ret !== diff) continue; // not exactly this difficulty
 
     // Got a usable puzzle.

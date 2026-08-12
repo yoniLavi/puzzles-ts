@@ -25,8 +25,25 @@ oracle is asked, not whether the technique is called "forcing".
 
 The tier names follow the same line. A tier whose boards can require guessing
 SHALL be named `Unreasonable`; no other tier name may require it. A game whose
-hard tier ships a propagating trial therefore either renames the tier, gates
-its generation to what the name promises, or restructures the rung.
+hard tier ships a propagating trial SHALL resolve it by whichever of these the
+game's ladder determines — and **SHALL NOT delete the tier**:
+
+- where a tier named `Unreasonable` already sits above the rung's tier, **the
+  rung moves up to it**, and the lower tier is re-graded by what remains;
+- where the rung's tier is the game's **top** tier, **that tier is renamed**
+  `Unreasonable`;
+- where emptying the tier would leave it with the same technique set as the tier
+  below — so that no board can be solvable at it and not below, and the tier
+  therefore generates nothing — the game SHALL first **build the missing
+  deductive rung** and re-grade, then move the trial up.
+
+A rung that moves SHALL be shown to leave its old tier still generable, at every
+size the game offers, before the move is called done; a size/tier pair that
+becomes ungenerable SHALL be refused by `validateParams` with a reason rather
+than silently downgraded. A game MAY retain the trial at its upstream tier
+behind a flag set by its differential and by nothing else, so that a frozen
+byte-match oracle survives a divergence that changes every board on the affected
+tier.
 
 This requirement governs deductive (logic) games. Movement/objective games whose
 hint is heuristic or an `aux`-walk carry an intentionally empty or imperative
@@ -55,3 +72,19 @@ explanation and are exempt.
 - **WHEN** a game's generator can emit, at a given tier, a board whose solution
   needs a propagating trial
 - **THEN** that tier is named `Unreasonable`
+
+#### Scenario: Moving a trial rung up leaves the tier below still generable
+
+- **WHEN** a propagating rung is moved off a tier to the game's `Unreasonable`
+  tier
+- **THEN** every size the game offers still generates at the vacated tier, or
+  that size/tier pair is refused by `validateParams` with a reason the player
+  can read — the tier is never left silently unreachable, and never quietly
+  downgraded to another difficulty
+
+#### Scenario: A byte-match oracle survives the divergence
+
+- **WHEN** moving the rung changes every description the affected tier generates
+- **THEN** the game's differential may drive the generator and solver at
+  upstream's rung placement through a flag it alone sets, so the frozen fixtures
+  still match byte-for-byte over everything the move did not change

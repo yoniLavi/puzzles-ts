@@ -35,13 +35,22 @@ const data = cReference as { fixtures: Fixture[] };
 const params = (f: Fixture): TowersParams => ({ w: f.w, diff: diffFromLevel(f.diff) });
 const label = (f: Fixture) => `${f.w}d${f.diff} seed=${f.seed}`;
 
+// Both bars below run with `upstreamForcingTier`, the *only* place it is set.
+// `audit-guessing-tier-names` moved the forcing rung from Extreme to
+// Unreasonable — it propagates from a hypothesis, and only an `Unreasonable`
+// tier may require that — which changes every Extreme description and regrades
+// any board whose solution needs a chain. Running the fixtures against
+// upstream's rung placement keeps the byte-match oracle over everything else:
+// `latinGenerate`'s draw order, the clue read-off, the two removal loops, every
+// cheaper deduction and the codec. See `LatinSolver.forcing`.
+
 // 1. Byte-for-byte desc match — the shared faithful-generator bar.
 describeDescDifferential<Fixture, TowersParams>({
   title: "Towers C-vs-TS differential — desc byte-match (gated)",
   fixtures: data.fixtures,
   label,
   params,
-  newDesc: (p, rng) => newTowersDesc(p, rng),
+  newDesc: (p, rng) => newTowersDesc(p, rng, true),
 });
 
 // 2. Solver agreement — game-specific (decode + grade), inline.
@@ -52,11 +61,13 @@ describe("Towers C-vs-TS differential — solver agreement (gated)", () => {
       const s = newState(p, f.desc);
       // Grades exactly at the recorded difficulty.
       const soln = Uint8Array.from(s.immutable);
-      expect(solveTowers(f.w, s.clues, soln, f.solverDiff)).toBe(f.solverDiff);
+      expect(solveTowers(f.w, s.clues, soln, f.solverDiff, undefined, true)).toBe(
+        f.solverDiff,
+      );
       // Not solvable one level below.
       if (f.solverDiff > 0) {
         const below = Uint8Array.from(s.immutable);
-        const r = solveTowers(f.w, s.clues, below, f.solverDiff - 1);
+        const r = solveTowers(f.w, s.clues, below, f.solverDiff - 1, undefined, true);
         expect(
           r === DIFF_IMPOSSIBLE || r === DIFF_AMBIGUOUS || r > f.solverDiff - 1,
         ).toBe(true);

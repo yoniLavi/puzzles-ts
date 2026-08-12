@@ -339,8 +339,14 @@ describe("mathrax solver", () => {
       // The filled grid really is a legal board.
       const flags = new Uint8Array(p.o * p.o);
       expect(mathraxValidate(p.o, grid, st.clues, flags)).toBe(STATUS_COMPLETE);
-      // And the board's own tier suffices (the generator gated on exactly this).
-      expect(mathraxSolve(p.o, Uint8Array.from(st.grid), st.clues, f.diff)).toBe(
+      // And the board's own tier suffices — *under upstream's rung placement*,
+      // which is what graded these fixtures. `audit-guessing-tier-names` moved
+      // the forcing rung off Tricky and onto the top tier, so a C Tricky board
+      // whose solution needs a forcing chain is now graded above Tricky by the
+      // shipped solver. That regrading is the divergence, not a defect: the
+      // board is unchanged and still uniquely solvable (asserted above), and the
+      // tier it is *called* is the one whose techniques it actually needs.
+      expect(mathraxSolve(p.o, Uint8Array.from(st.grid), st.clues, f.diff, true)).toBe(
         SOLVE_UNIQUE,
       );
     }

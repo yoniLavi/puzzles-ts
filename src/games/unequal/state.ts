@@ -25,7 +25,12 @@ export const DIFF_COUNT = 5;
 
 // unequal_diffchars / unequal_diffnames, indexed by level.
 const DIFF_CHARS = "tekxr";
-export const DIFF_NAMES = ["Trivial", "Easy", "Tricky", "Extreme", "Recursive"];
+// The top tier is `Unreasonable`, not upstream's `Recursive`
+// (`audit-guessing-tier-names`, design D7): it is the tier that may require
+// guessing, and the collection says one word for that. The difficulty
+// *character* is untouched (`r`), so game IDs, saved games and shared links
+// are unaffected — only the menu label moves.
+export const DIFF_NAMES = ["Trivial", "Easy", "Tricky", "Extreme", "Unreasonable"];
 const DIFFS: Difficulty[] = ["trivial", "easy", "tricky", "extreme", "recursive"];
 
 export function diffToLevel(d: Difficulty): number {

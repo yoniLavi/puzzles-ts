@@ -843,7 +843,9 @@ export const unequalGame: Game<
       kw: "difficulty",
       name: "Difficulty",
       type: "choices",
-      choices: ["Trivial", "Easy", "Tricky", "Extreme", "Recursive"],
+      // The one list, not a second spelling of it — a hand-copied tier list is
+      // how a rename ships a menu and a dialog that disagree.
+      choices: [...DIFF_NAMES],
       get: (p) => diffToLevel(p.diff),
       set: (p, v) => {
         p.diff = diffFromLevel(v);

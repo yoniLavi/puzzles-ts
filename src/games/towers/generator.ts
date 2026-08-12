@@ -25,6 +25,10 @@ import {
 export function newTowersDesc(
   p: TowersParams,
   rng: RandomState,
+  /** Upstream's forcing-rung placement, for the differential alone — see
+   * `LatinSolver.forcing`. Generation is solver-gated at every step, so the
+   * move changes every Extreme description; this is how the oracle survives. */
+  upstreamForcingTier = false,
 ): { desc: string; aux: string } {
   const w = p.w;
   const a = w * w;
@@ -68,7 +72,7 @@ export function newTowersDesc(
     if (diff === DIFF_EASY && w <= 5) {
       // Small Easy grids: prefer completely empty ones if solvable from clues.
       soln2.fill(0);
-      const ret = solveTowers(w, clues, soln2, diff);
+      const ret = solveTowers(w, clues, soln2, diff, undefined, upstreamForcingTier);
       if (ret > diff) continue;
     }
 
@@ -80,7 +84,7 @@ export function newTowersDesc(
       const j = order[i];
       soln2.set(grid);
       soln2[j] = 0;
-      const ret = solveTowers(w, clues, soln2, diff);
+      const ret = solveTowers(w, clues, soln2, diff, undefined, upstreamForcingTier);
       if (ret <= diff) grid[j] = 0;
     }
 
@@ -94,14 +98,14 @@ export function newTowersDesc(
         const clue = clues[j];
         soln2.set(grid);
         clues[j] = 0;
-        const ret = solveTowers(w, clues, soln2, diff);
+        const ret = solveTowers(w, clues, soln2, diff, undefined, upstreamForcingTier);
         if (ret > diff) clues[j] = clue;
       }
     }
 
     // Must be solvable at exactly this difficulty, not below.
     soln2.set(grid);
-    const ret = solveTowers(w, clues, soln2, diff);
+    const ret = solveTowers(w, clues, soln2, diff, undefined, upstreamForcingTier);
     if (ret !== diff) continue;
 
     break;

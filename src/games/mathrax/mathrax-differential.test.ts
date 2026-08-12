@@ -79,7 +79,8 @@ describeDescDifferential<MathraxFixture, MathraxParams>({
   label: (f) => `${encodeParams(paramsOf(f), true)} seed=${f.seed}`,
   fixtures: faithful,
   params: paramsOf,
-  newDesc: (p, rng) => newMathraxDesc(p, rng, { upstreamLooseGate: true }),
+  newDesc: (p, rng) =>
+    newMathraxDesc(p, rng, { upstreamLooseGate: true, upstreamForcingTier: true }),
   // The C description must also survive our own decoder unchanged.
   extra: (f, p) => {
     expect(validateDesc(p, f.desc)).toBeNull();

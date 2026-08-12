@@ -123,6 +123,7 @@ function stripGridClues(
   clues: Int32Array,
   diff: number,
   rs: RandomState,
+  upstreamForcing: boolean,
 ): void {
   const o2 = o * o;
   const spaces: number[] = [];
@@ -137,7 +138,8 @@ function stripGridClues(
     backup.set(grid);
     grid[j] = 0;
     // `mathraxSolve` fills `grid` with a solution, hence the restore below.
-    if (mathraxSolve(o, grid, clues, diff) === SOLVE_UNIQUE) backup[j] = 0;
+    if (mathraxSolve(o, grid, clues, diff, upstreamForcing) === SOLVE_UNIQUE)
+      backup[j] = 0;
     grid.set(backup);
   }
 }
@@ -151,6 +153,7 @@ function stripMathClues(
   clues: Int32Array,
   diff: number,
   rs: RandomState,
+  upstreamForcing: boolean,
 ): void {
   const co = o - 1;
   const cs = co * co;
@@ -165,7 +168,8 @@ function stripMathClues(
     if (clue === 0) continue;
 
     clues[j] = 0;
-    if (mathraxSolve(o, grid, clues, diff) !== SOLVE_UNIQUE) clues[j] = clue;
+    if (mathraxSolve(o, grid, clues, diff, upstreamForcing) !== SOLVE_UNIQUE)
+      clues[j] = clue;
     grid.set(backup);
   }
 }
@@ -197,6 +201,22 @@ export interface MathraxGenerateOptions {
    * exactly upstream's order.
    */
   readonly upstreamLooseGate?: boolean;
+
+  /**
+   * Put the forcing rung back on Tricky, where upstream has it.
+   *
+   * `audit-guessing-tier-names` moved it to the top tier: it reaches its
+   * conclusion by *propagating* from a hypothesis, and only a tier named
+   * `Unreasonable` may require that. Generation is solver-gated at every
+   * removal, so the move changes every Tricky description — and this flag is how
+   * the byte-match survives it, exactly as {@link upstreamLooseGate} does for
+   * the tier gate. `mathrax-differential.test.ts` sets it; nothing else should.
+   *
+   * This is the *third* divergence in this generator, and like the other two it
+   * composes: it changes only which rung the solver may reach, never the order
+   * the RNG is drawn in.
+   */
+  readonly upstreamForcingTier?: boolean;
 }
 
 export function newMathraxDesc(
@@ -210,6 +230,7 @@ export function newMathraxDesc(
   const clueOptions = p.options || OPTIONSMASK;
   const diff = diffToLevel(p.diff);
   const loose = options.upstreamLooseGate ?? false;
+  const upstreamForcing = options.upstreamForcingTier ?? false;
 
   // Upstream generates exactly once; the tier gate below can reject, so the
   // loop needs the house runaway guard (docs/games/testing.md § "Quirks are load-bearing — capped, not cleaned").
@@ -234,14 +255,17 @@ export function newMathraxDesc(
       }
     }
 
-    stripGridClues(o, grid, clues, diff, rs);
-    stripMathClues(o, grid, clues, diff, rs);
+    stripGridClues(o, grid, clues, diff, rs, upstreamForcing);
+    stripMathClues(o, grid, clues, diff, rs, upstreamForcing);
 
     // The tier gate (the divergence): a board the tier below already solves
     // uniquely is not the difficulty the player asked for. `mathraxSolve` fills
     // the grid it is given, so the probe runs on a copy.
     if (!loose && diff > DIFF_EASY) {
-      if (mathraxSolve(o, Uint8Array.from(grid), clues, diff - 1) === SOLVE_UNIQUE) {
+      if (
+        mathraxSolve(o, Uint8Array.from(grid), clues, diff - 1, upstreamForcing) ===
+        SOLVE_UNIQUE
+      ) {
         continue;
       }
     }

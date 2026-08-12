@@ -337,8 +337,9 @@ function unequalValid(solver: LatinSolver, ctx: UnequalCtx): boolean {
  * (0 = blank), up to difficulty `maxdiff`. Returns the difficulty level reached,
  * or a `DIFF_IMPOSSIBLE`/`DIFF_AMBIGUOUS`/`DIFF_UNFINISHED` sentinel. Mirrors
  * `unequal.c`'s `solver_state` → `latin_solver_main`: Trivial→simple,
- * Tricky→set₀, Extreme→set₁+forcing, Recursive→recursion. When `cubeOut` is
- * given it receives the final candidate cube (the generator grades clues by it).
+ * Tricky→set₀, Extreme→set₁, Unreasonable→forcing + recursion. When `cubeOut`
+ * is given it receives the final candidate cube (the generator grades clues by
+ * it).
  */
 export function solveUnequal(
   o: number,
@@ -348,6 +349,9 @@ export function solveUnequal(
   maxdiff: number,
   cubeOut?: Uint8Array,
   recorder?: (rec: DeductionRecord) => void,
+  /** Upstream's forcing-rung placement (Extreme), for the differential alone —
+   * see `LatinSolver.forcing`. Nothing else should set it. */
+  upstreamForcingTier = false,
 ): number {
   const ctx = newCtx(o, mode, flags);
   return latinSolver<UnequalCtx>(soln, o, {
@@ -355,7 +359,7 @@ export function solveUnequal(
     diffSimple: DIFF_LATIN,
     diffSet0: DIFF_SET,
     diffSet1: DIFF_EXTREME,
-    diffForcing: DIFF_EXTREME,
+    diffForcing: upstreamForcingTier ? DIFF_EXTREME : DIFF_RECURSIVE,
     diffRecursive: DIFF_RECURSIVE,
     usersolvers: [null, solverEasy, solverSet, null, null],
     valid: unequalValid,

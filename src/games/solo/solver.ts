@@ -161,6 +161,23 @@ export interface Difficulty {
   /** Levels reached by the solver (output). */
   diff: number;
   kdiff: number;
+  /**
+   * Put the forcing-chain rung back on `Extreme`, where upstream has it.
+   *
+   * `audit-guessing-tier-names` moved it to `Unreasonable`: it propagates from
+   * a hypothesis (measured never fewer than three implication links, plus a
+   * case split), and only a tier named `Unreasonable` may require that — see
+   * `LatinSolver.forcing` for the shared reasoning. Set by
+   * `solo-differential.test.ts` and by nothing else, so the frozen byte-match
+   * survives a move that changes every Extreme board.
+   *
+   * It lives on `Difficulty` rather than on `run`'s parameter list because the
+   * recursion hands the *same* struct to its sub-solve; a flag passed
+   * separately would have to be re-threaded there, and the sub-solve silently
+   * grading on a different ladder is exactly the bug that would not show up in
+   * a test.
+   */
+  upstreamForcingTier?: boolean;
 }
 
 // --- mutable killer cages ---------------------------------------------------
@@ -1361,9 +1378,14 @@ class SolverUsage {
         }
       }
 
-      // Forcing chains.
-      if (this.forcing()) {
-        diff = Math.max(diff, DIFF_EXTREME);
+      // Forcing chains — the `Unreasonable` rung (upstream: `Extreme`); see
+      // `Difficulty.upstreamForcingTier`. The tier it *grades* moves with it,
+      // so a board needing a chain is reported as Unreasonable rather than
+      // Extreme, which is the whole point: the name now says what the board
+      // asks of the player.
+      const forcingTier = dlev.upstreamForcingTier ? DIFF_EXTREME : DIFF_RECURSIVE;
+      if (dlev.maxdiff >= forcingTier && this.forcing()) {
+        diff = Math.max(diff, forcingTier);
         continue;
       }
 
@@ -1452,6 +1474,9 @@ export function solveSolo(
   s: SoloState,
   maxdiff = DIFF_RECURSIVE,
   maxkdiff = DIFF_KINTERSECT,
+  /** Upstream's forcing-rung placement (Extreme), for the differential alone —
+   * see {@link Difficulty.upstreamForcingTier}. Nothing else should set it. */
+  upstreamForcingTier = false,
 ): { diff: number; kdiff: number; grid: Int8Array } {
   const grid = s.grid.slice();
   const dlev: Difficulty = {
@@ -1459,6 +1484,7 @@ export function solveSolo(
     maxkdiff,
     diff: DIFF_IMPOSSIBLE,
     kdiff: DIFF_KSINGLE,
+    upstreamForcingTier,
   };
   runSolver(
     s.cr,
