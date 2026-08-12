@@ -638,8 +638,12 @@ export type UndeadReason =
   | { kind: "sightline"; path: number }
   | { kind: "total"; monster: number }
   | { kind: "onlyCells"; monster: number; nCells: number }
-  | { kind: "forcing"; monster: number }
   | { kind: "single" };
+// No `forcing` reason (`audit-guessing-tier-names`, design D4/D8). The rung
+// exists in `deduceUndead` — the generator grades on it — but the *recorder*
+// dropped it, so nothing can produce a record for it and no hint can narrate
+// one. Removing the word rather than the arm alone is what makes that a compile
+// error instead of a convention.
 
 /** One recorded firing op. `kind: "elim"` removes `monster` from `cell`'s
  * candidates; `kind: "place"` forces `cell` to `monster`. `group` ties the ops
@@ -775,39 +779,6 @@ function recordCountingPass(
   return [];
 }
 
-/** Record the first depth-1 forcing elimination; apply it to `cand`. Returns its
- * op, or `[]`. (One elimination per firing — forcing is per cell/candidate.) */
-function recordForcingPass(
-  common: UndeadCommon,
-  cand: Uint8Array,
-  group: number,
-): HintOp[] {
-  const numTotal = common.numTotal;
-  for (let i = 0; i < numTotal; i++) {
-    const g0 = cand[i];
-    if (g0 === MON_GHOST || g0 === MON_VAMPIRE || g0 === MON_ZOMBIE || g0 === 0)
-      continue;
-    for (const b of MON_BITS) {
-      if (!(cand[i] & b)) continue;
-      const trial = cand.slice();
-      trial[i] = b;
-      if (arcCountFixpoint(common, trial) === "inconsistent") {
-        cand[i] &= ~b;
-        return [
-          {
-            kind: "elim",
-            cell: i,
-            monster: b,
-            reason: { kind: "forcing", monster: b },
-            group,
-          },
-        ];
-      }
-    }
-  }
-  return [];
-}
-
 /**
  * Run the deductive ladder over a candidate grid seeded from `placed` (singleton
  * bits for placed/fixed cells, `MON_NONE` for empty), recording every firing in
@@ -841,11 +812,14 @@ export function recordUndeadDeductions(
     return 1;
   };
   runDeductionFixpoint({
-    rungs: [
-      () => record(recordCountingPass),
-      () => record(recordSightlinePass),
-      () => record(recordForcingPass),
-    ],
+    // **No forcing rung** (`audit-guessing-tier-names`, design D4/D8). Rung 3
+    // hypothesises a candidate and runs the arc+counting *fixpoint* from it —
+    // a multi-step search with backtracking, which the collection classes as
+    // non-deductive and permits only on an `Unreasonable` board, never as
+    // something a hint presents as a technique. `deduceUndead` (which the
+    // generator grades on) keeps the rung, so no board changed; the hint simply
+    // stops where the search would have begun and refuses.
+    rungs: [() => record(recordCountingPass), () => record(recordSightlinePass)],
     budget: stepBudget("undead hint recorder"),
     // A contradiction (an emptied candidate cell) stops the ladder — the hint
     // refuses on such a board anyway.

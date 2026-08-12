@@ -69,9 +69,14 @@ describe("undead recording solver", () => {
     // `single` is a planner-derived placement reason, not a recorder one.
     expect(seen.has("sightline")).toBe(true);
     expect(seen.has("total")).toBe(true);
-    expect(seen.has("forcing")).toBe(true);
     // `onlyCells` (counting's dual) is rarer but should appear in this spread.
     expect(seen.has("onlyCells")).toBe(true);
+    // …and `forcing` never, on any tier: `audit-guessing-tier-names` removed
+    // that rung from the recorder, because it hypothesises a candidate and runs
+    // the arc+counting fixpoint from it — a multi-step search, which belongs to
+    // an `Unreasonable` board and never to a hint. The solver keeps the rung
+    // (the generator grades on it), so this is about narration only.
+    expect(seen.has("forcing")).toBe(false);
   });
 
   it("recorded eliminations only narrow toward the true solution (sound)", () => {
@@ -96,11 +101,14 @@ describe("undead recording solver", () => {
 });
 
 describe("undead hint plan", () => {
-  it("a freshly-computed plan solves the board from empty (all tiers)", () => {
+  it("a freshly-computed plan solves the board from empty (the deductive tiers)", () => {
+    // `Unreasonable` is deliberately absent: `audit-guessing-tier-names` took
+    // the forcing rung out of the recorder, and such a board needs it at least
+    // once by construction, so the plan stops short there. That is asserted
+    // separately below — not silently dropped.
     const tiers: UndeadParams[] = [
       { w: 4, h: 4, diff: "easy" },
       { w: 5, h: 5, diff: "normal" },
-      { w: 5, h: 5, diff: "tricky" },
     ];
     for (const p of tiers) {
       for (let i = 0; i < 12; i++) {
@@ -109,6 +117,22 @@ describe("undead hint plan", () => {
         expect(undeadGame.status(solved), `${p.diff}#${i}`).toBe("solved");
       }
     }
+  });
+
+  it("stops short on an Unreasonable board rather than narrating a search", () => {
+    // The other half. A plan that still solved these would mean the rung had
+    // come back; a plan of length zero would mean the hint is useless from the
+    // first move, which the deductive rungs make rare.
+    let hinted = 0;
+    let solvedByPlan = 0;
+    for (let i = 0; i < 12; i++) {
+      const st = gen({ w: 5, h: 5, diff: "tricky" }, `plan-tricky-${i}`);
+      const steps = fullPlan(st);
+      if (steps.length > 0) hinted++;
+      if (undeadGame.status(applyPlan(st, steps)) === "solved") solvedByPlan++;
+    }
+    expect(solvedByPlan).toBe(0);
+    expect(hinted).toBeGreaterThan(0);
   });
 
   it("surfaces a naked single before any elimination, and populates before the first strike", () => {
@@ -284,23 +308,47 @@ describe("undead hintKeepTrack", () => {
 
 describe("undead hint resume (per tier)", () => {
   // hint-resume.test.ts covers the first leaf preset (4x4 easy); this exercises
-  // Normal and Tricky, which need the counting and forcing rungs.
-  for (const diff of ["normal", "tricky"] as const) {
-    it(`5x5 ${diff}: following hints one move at a time reaches solved`, () => {
-      for (const seed of ["a", "b", "c"]) {
-        let s = gen({ w: 5, h: 5, diff }, `resume-${diff}-${seed}`);
-        let moves = 0;
-        for (; moves < 600; moves++) {
-          if (undeadGame.status(s) === "solved") break;
-          const r = undeadGame.hint?.(s);
-          expect(r?.ok, `${diff}/${seed}: gave up at move ${moves}`).toBe(true);
-          if (!r?.ok) break;
-          s = undeadGame.executeMove(s, r.steps[0].move);
-        }
-        expect(undeadGame.status(s), `${diff}/${seed}`).toBe("solved");
+  // Normal, which needs the counting rung.
+  it("5x5 normal: following hints one move at a time reaches solved", () => {
+    for (const seed of ["a", "b", "c"]) {
+      let s = gen({ w: 5, h: 5, diff: "normal" }, `resume-normal-${seed}`);
+      let moves = 0;
+      for (; moves < 600; moves++) {
+        if (undeadGame.status(s) === "solved") break;
+        const r = undeadGame.hint?.(s);
+        expect(r?.ok, `normal/${seed}: gave up at move ${moves}`).toBe(true);
+        if (!r?.ok) break;
+        s = undeadGame.executeMove(s, r.steps[0].move);
       }
-    });
-  }
+      expect(undeadGame.status(s), `normal/${seed}`).toBe("solved");
+    }
+  });
+
+  it("5x5 unreasonable: hints run until deduction stops, then refuse", () => {
+    // The tier's contract after `audit-guessing-tier-names`. It used to be
+    // folded into the loop above, and could not be: such a board needs the
+    // forcing rung, which the hint no longer narrates, so the walk *must* end
+    // on a refusal instead of on "solved". Both bounds are asserted so neither
+    // failure mode passes quietly — a walk that solved would mean the rung came
+    // back; one that gave nothing would mean the hint is dead on arrival.
+    for (const seed of ["a", "b", "c"]) {
+      let s = gen({ w: 5, h: 5, diff: "tricky" }, `resume-tricky-${seed}`);
+      let moves = 0;
+      let refused = false;
+      for (; moves < 600; moves++) {
+        if (undeadGame.status(s) === "solved") break;
+        const r = undeadGame.hint?.(s);
+        if (!r?.ok) {
+          refused = true;
+          break;
+        }
+        s = undeadGame.executeMove(s, r.steps[0].move);
+      }
+      expect(refused, `tricky/${seed}: expected deduction to run out`).toBe(true);
+      expect(moves, `tricky/${seed}: no hint at all`).toBeGreaterThan(0);
+      expect(undeadGame.status(s)).not.toBe("solved");
+    }
+  });
 });
 
 describe("undead hint render (tier 2.5)", () => {

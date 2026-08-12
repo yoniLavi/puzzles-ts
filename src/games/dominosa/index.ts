@@ -388,8 +388,6 @@ function narrateBarrier(
       return "A domino here would split the empty squares into two odd-sized regions, and an odd region can't be filled by dominoes — so this can't be a domino.";
     case "set":
       return `The shaded squares can only hold one small set of dominoes between them, using up the ${dom} — so ${dom} can't sit here as well.`;
-    case "forcingChain":
-      return "Following the forced pairings from here eventually repeats a domino, so this can't be a domino.";
     default:
       return "This can't be a domino.";
   }

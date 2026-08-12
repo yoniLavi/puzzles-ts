@@ -60,6 +60,19 @@ explanation and are exempt.
 - **WHEN** a movement/objective game (no deductive "why") returns a hint
 - **THEN** an empty or imperative explanation is permitted and is not a violation
 
+A game MAY still run the trial to **certify** a position — to establish that no
+value the player has already entered is wrong, which some hints require before
+offering any step at all. Certifying is not narrating: the plan records only the
+deductions it may teach, and stops recording at the first point the trial is
+needed, while the walk that produces the verdict continues.
+
+#### Scenario: A search may certify a position but never teach one
+
+- **WHEN** a game's hint must first establish that the player's board is still
+  consistent with the unique solution, and doing so needs the propagating trial
+- **THEN** the trial may run to produce that verdict, and the plan the player is
+  shown contains only the steps up to the first point the trial was needed
+
 #### Scenario: Deduction running out is refused, not guessed past
 
 - **WHEN** the only remaining progress on a board needs a value assumed and

@@ -47,7 +47,6 @@ import {
   type CellColour,
   COL_MASK,
   colourBits,
-  DIFF_TRICKY,
   F_BOUND,
   F_EMPTY,
   F_SHADE,
@@ -332,7 +331,7 @@ export type BricksReason =
   | { kind: "overcount"; clue: number } // shading the target over-fills this clue
   | { kind: "strandSupport"; above: number } // clearing the target strands this shaded brick
   | { kind: "undercount"; clue: number } // clearing the target makes this clue unreachable
-  | { kind: "chain"; conflict: number[] }; // recursive contradiction cells
+  | { kind: "localBreak"; conflict: number[] }; // direct trial, contradiction unclassified
 
 export interface ForcedMove {
   index: number;
@@ -389,7 +388,7 @@ function classifyShadeTrial(
     const j = ny * w + nx;
     if (errors[j] & FE_ERROR && isClue(grid[j])) return { kind: "overcount", clue: j };
   }
-  return { kind: "chain", conflict: errorCells(errors) };
+  return { kind: "localBreak", conflict: errorCells(errors) };
 }
 
 /** Classify why clearing `target` (already set F_UNSHADE in `grid`) is impossible. */
@@ -417,7 +416,7 @@ function classifyUnshadeTrial(
     const j = ny * w + nx;
     if (errors[j] & FE_ERROR && isClue(grid[j])) return { kind: "undercount", clue: j };
   }
-  return { kind: "chain", conflict: errorCells(errors) };
+  return { kind: "localBreak", conflict: errorCells(errors) };
 }
 
 /**
@@ -452,38 +451,6 @@ export function nextForcedMove(
   return null;
 }
 
-/**
- * The next forced move that only the recursive lookahead finds — the recording
- * twin of {@link solverRecurse}. Assuming a colour and solving the rest at
- * `maxdiff - 1` reaches a contradiction, so the cell is forced the other way;
- * the reason carries the cells where the sub-solve breaks.
- */
-export function nextForcedMoveRecurse(
-  grid: Uint16Array,
-  w: number,
-  h: number,
-  maxdiff: number,
-): ForcedMove | null {
-  const s = w * h;
-  const errors = new Uint16Array(s);
-  for (let i = 0; i < s; i++) {
-    if ((grid[i] & COL_MASK) !== F_EMPTY) continue;
-    for (let d = 0; d <= 1; d++) {
-      const trial = grid.slice();
-      trial[i] = d ? F_SHADE : F_UNSHADE;
-      if (solveGame(trial, w, h, maxdiff - 1, false, false) === "invalid") {
-        bricksValidate(trial, w, h, false, errors);
-        return {
-          index: i,
-          to: d ? "unshade" : "shade",
-          reason: { kind: "chain", conflict: errorCells(errors) },
-        };
-      }
-    }
-  }
-  return null;
-}
-
 /** Runaway/UX cap on plan length — the player rarely follows more than a few
  * before diverging, and a recompute yields the next batch (design D1). */
 export const HINT_PLAN_MAX = 40;
@@ -494,19 +461,29 @@ export const HINT_PLAN_MAX = 40;
  * its reason. Deterministic, so it is recompute-stable. Caller guarantees the
  * board is consistent with the unique solution, so every move is correct.
  */
+// No `maxdiff` parameter any more: it existed only to gate the recursive rung,
+// which the hint no longer runs, and neither caller ever passed one.
 export function deduceBricksPlan(
   grid0: Uint16Array,
   w: number,
   h: number,
-  maxdiff: number = DIFF_TRICKY,
 ): ForcedMove[] {
   return deduceHintPlan<Uint16Array, ForcedMove, BricksStatus>({
     board: grid0.slice(),
     status: (grid) => bricksValidate(grid, w, h, true),
     incomplete: "unfinished",
-    next: (grid) =>
-      nextForcedMove(grid, w, h) ??
-      (maxdiff >= 1 ? nextForcedMoveRecurse(grid, w, h, maxdiff) : null),
+    // **Single-cell refutations only** (`audit-guessing-tier-names`, design
+    // D4/D8). `nextForcedMoveRecurse` assumes a colour and *solves the rest of
+    // the board* from it — a multi-step search with backtracking, which the
+    // collection classes as non-deductive and never lets a hint present as a
+    // technique. Where it would have fired the plan ends and `hint` refuses.
+    //
+    // `solveGame` keeps the rung, so no board changed and the byte-match
+    // differential is untouched. Bricks' *tier* naming is the part still open:
+    // the trial gates its `Normal` tier, which by the rule should not be able to
+    // require it — see the change's task 2c.3, which needs a design pass
+    // because `Tricky` sits declared-but-ungenerable above it.
+    next: (grid) => nextForcedMove(grid, w, h),
     apply: (grid, move) => {
       grid[move.index] = colourBits(move.to);
     },

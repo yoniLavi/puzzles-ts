@@ -102,8 +102,11 @@ const F_CUR = 1 << 9;
 // repaints on an otherwise-unchanged frame).
 const HB_TARGET = 1; // the forced cell — COL_HINT fill
 const HB_DANGER = 1 << 1; // tile that would break — double COL_HINT_DANGER ring
-const HB_CHAIN_0 = 1 << 2; // what-if cell forced red in the hypothetical
-const HB_CHAIN_1 = 1 << 3; // what-if cell forced blue in the hypothetical
+// Bits 2 and 3 were the lookahead's what-if marks, drawn as a small
+// deliberately tile-unlike square in the colour the hypothesis forced. That rung
+// is gone (`audit-guessing-tier-names`; see `ClustersReason`), so they are too —
+// a render path for an overlay no hint can emit is dead weight that reads as a
+// live capability.
 
 export interface ClustersDrawState {
   started: boolean;
@@ -163,35 +166,18 @@ function drawTile(
   const px = x * ts + b;
   const py = y * ts + b;
 
-  // The hint target and a chain's what-if cells are always empty cells, so
-  // their highlight takes the fill (nothing underneath to hide, §5.4).
+  // The hint target is always an empty cell, so its highlight takes the fill
+  // (nothing underneath to hide, §5.4).
   const fill =
     hintBits & HB_TARGET
       ? COL_HINT
-      : hintBits & (HB_CHAIN_0 | HB_CHAIN_1)
-        ? COL_HINT_CELL
-        : tile & F_COLOR_1
-          ? COL_1
-          : tile & F_COLOR_0
-            ? COL_0
-            : COL_BACKGROUND;
+      : tile & F_COLOR_1
+        ? COL_1
+        : tile & F_COLOR_0
+          ? COL_0
+          : COL_BACKGROUND;
   dr.drawRect({ x: px, y: py, w: ts, h: ts }, COL_GRID);
   dr.drawRect({ x: px, y: py, w: ts - 1, h: ts - 1 }, fill);
-
-  // The small mark of the colour a what-if cell would be forced to — a
-  // deliberately tile-unlike size, so it reads as hypothetical, not placed.
-  if (hintBits & (HB_CHAIN_0 | HB_CHAIN_1)) {
-    const m = Math.floor(ts / 3);
-    dr.drawRect(
-      {
-        x: px + Math.floor((ts - m) / 2),
-        y: py + Math.floor((ts - m) / 2),
-        w: m,
-        h: m,
-      },
-      hintBits & HB_CHAIN_0 ? COL_0 : COL_1,
-    );
-  }
 
   if (tile & F_SINGLE) {
     const dot = tile & F_COLOR_1 ? COL_1_DOT : COL_0_DOT;
@@ -284,9 +270,6 @@ export function redraw(
   if (hl) {
     ds.hint.add(hl.target.y * w + hl.target.x, HB_TARGET);
     if (hl.danger) ds.hint.add(hl.danger.y * w + hl.danger.x, HB_DANGER);
-    for (const c of hl.chain) {
-      ds.hint.add(c.y * w + c.x, c.fill === F_COLOR_0 ? HB_CHAIN_0 : HB_CHAIN_1);
-    }
   }
 
   for (let y = 0; y < h; y++) {

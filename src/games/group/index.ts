@@ -732,7 +732,16 @@ function buildSteps(state: GroupState): HintStep<GroupMove, GroupHint>[] {
     // 2. A placement is the solver's immediate next deduction (nothing precedes
     //    it in solver order) — teach it directly, no notes needed (placement-
     //    first: Group's associativity / identity fill lead, not a populate).
-    if (firstUnreflectedPlaceIndex(ops, wGrid, w) === 0) {
+    // `ops.length > 0` is load-bearing, not defensive.
+    // `firstUnreflectedPlaceIndex` returns `ops.length` to mean "no placement
+    // found" — a sentinel that collides with a valid index of `0` exactly when
+    // `ops` is empty, so this read as "a placement leads, at index 0" and then
+    // dereferenced `ops[0]` (undefined) and crashed. An empty `ops` is reachable
+    // whenever deduction runs out under the hint's cap, which
+    // `audit-guessing-tier-names` made common by moving the forcing rung above
+    // it. Found by the cross-game trial guard walking *every tier* rather than
+    // each game's easiest preset.
+    if (ops.length > 0 && firstUnreflectedPlaceIndex(ops, wGrid, w) === 0) {
       emitRecordedPlacement(steps, wGrid, wPen, w, id, ops, ops[0]);
       ops = recordGroupDeductions(wGrid, w, maxdiff);
       continue;

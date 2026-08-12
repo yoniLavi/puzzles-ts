@@ -20,6 +20,12 @@
  *    longest shipped narration is Undead's 281-char sightline teach; the
  *    cap catches the "rulebook bled into the step" class (Netslide,
  *    `d1f37b8`) without constraining anything that shipped.
+ *  - **No step narrates a trial** (`audit-guessing-tier-names`): a
+ *    conclusion reached by propagating from a hypothesis is a search
+ *    result, not a technique. Checked twice — once on each game's first
+ *    preset with the rules above, and once **per tier** in its own block
+ *    at the bottom, because a trial rung is tier-gated and the first
+ *    preset is the one place it can never fire.
  *
  * Form only: no assertion here ever touches *what* a hint says about the
  * board — flattening a good hint to satisfy a guard is the failure mode
@@ -66,6 +72,32 @@ const DEDUCTIVE = new Set([
   "unruly",
 ]);
 
+/**
+ * The vocabulary of a conclusion reached by *propagating* from a hypothesis —
+ * a multi-step search, which the collection classes as non-deductive and never
+ * lets a hint present as a technique (`audit-guessing-tier-names`). Promoted
+ * here from `galaxies-hint.test.ts`, where it guarded one game out of thirty:
+ * a rule enforced in one place is not enforced.
+ *
+ * **It matches the chain, not the hypothesis.** The first cut also caught
+ * "if this cell were …" and immediately failed Clusters on *"If this cell were
+ * blue, at most one neighbour could ever match it"* — which is a sound
+ * single-step refutation, visible at the placement, and exactly what the rule
+ * permits everywhere. A hypothesis framing is not the defect; carrying it
+ * forward through other cells is.
+ *
+ * **What this cannot see, stated rather than implied.** A propagating rung that
+ * describes itself as though it were direct slips through — Undead's removed
+ * arm said *"If this cell were a vampire, the sightline clues and monster counts
+ * could no longer all be met"*, which is wordwise indistinguishable from a
+ * one-glance refutation. So this guard is a backstop, not the guarantee. The
+ * guarantee is structural: `LatinReason`, `UndeadReason`, Solo's and Clusters'
+ * unions no longer *contain* a trial reason, so narrating one is a compile
+ * error rather than a string a test might miss.
+ */
+const SPECULATIVE =
+  /\btr(?:y|ied|ies)\b|\bbreak the board\b|following (?:a|the) chain\b|following the forced\b|\bin turn\b|\bfurther along\b|\beventually\b/i;
+
 /** Owner-endorsed per-game idioms that carry necessity in their own
  * words rather than a modal. Adding here is a deliberate, reviewable
  * act — the list is the legend of endorsed exceptions, not a loophole. */
@@ -108,8 +140,62 @@ describe("hint narration form, cross-game", () => {
               `${at} — no necessity modal (and no declared idiom)`,
             ).toBe(true);
           }
+
+          expect(
+            SPECULATIVE.test(step.explanation),
+            `${at} — narrates a trial rather than a deduction`,
+          ).toBe(false);
         });
       }
+    });
+  }
+});
+
+/**
+ * The same speculative-vocabulary check, **at every tier**.
+ *
+ * It needs its own sweep because the block above samples
+ * `firstLeaf(game.presets())` — each game's *easiest* preset — and a trial rung
+ * is tier-gated, so it never fires there. Proved rather than assumed: planting
+ * "further along" in Bricks' lookahead narration left the block above green,
+ * because Bricks' first preset is Easy and Easy never reaches that arm. The
+ * check was therefore guarding nothing on precisely the tiers it exists for.
+ */
+describe("no hint narrates a trial, at any tier", () => {
+  for (const [name, game] of HINT_GAMES) {
+    const contract = game.difficulty;
+    if (!contract) continue;
+    it(`${name}: every tier`, () => {
+      const base = firstLeaf(game.presets());
+      let checked = 0;
+      for (let tier = 0; tier < contract.tiers.length; tier++) {
+        const params = contract.withTier(base, tier);
+        if (game.validateParams(params, true)) continue; // tier refused at this size
+        for (const seed of SEEDS) {
+          let desc: string;
+          let aux: string | undefined;
+          try {
+            ({ desc, aux } = game.newDesc(
+              params,
+              randomNew(`${name}-${tier}-${seed}`),
+            ));
+          } catch {
+            continue; // ungenerable at this size; difficulty-contract.test.ts owns that
+          }
+          const res = game.hint?.(game.newState(params, desc), aux);
+          if (!res?.ok) continue;
+          checked++;
+          for (const step of res.steps) {
+            expect(
+              SPECULATIVE.test(step.explanation),
+              `${name} tier ${tier} ("${contract.tiers[tier]}")/${seed}: "${step.explanation}" — narrates a trial`,
+            ).toBe(false);
+          }
+        }
+      }
+      // The "how many did I actually look at?" guard: without it, a game whose
+      // every tier failed to generate would pass while asserting nothing.
+      expect(checked, `${name}: no tier produced a hint to check`).toBeGreaterThan(0);
     });
   }
 });

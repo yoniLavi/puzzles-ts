@@ -16,7 +16,6 @@ import {
   deduceBricksPlan,
   findMistakes,
   nextForcedMove,
-  nextForcedMoveRecurse,
   solveGame,
 } from "./solver.ts";
 import {
@@ -123,10 +122,15 @@ describe("bricks hint — Easy-tier reason classification", () => {
   });
 });
 
-describe("bricks hint — recursive tier", () => {
-  it("finds a chain contradiction where no single-cell one exists", () => {
-    // Drive a Tricky fixture to its Easy fixpoint; any cells left need the
-    // recursive rung.
+describe("bricks hint — where the recursive tier used to be", () => {
+  it("stops at the single-cell stall instead of narrating the lookahead", () => {
+    // Replaces "finds a chain contradiction where no single-cell one exists".
+    // `audit-guessing-tier-names` took the recursive rung out of the hint (it
+    // assumes a colour and *solves the rest of the board* from it — a
+    // multi-step search, never a technique a hint may teach) and deleted its
+    // recording twin. `solveGame` keeps the rung, so this asserts exactly the
+    // gap that now exists: where the board stalls for the direct rung, the
+    // plan ends and the deeper solver still finishes it.
     const tricky = fixtures.find((f) => f.diff === 2) as Fixture;
     const st = newState({ w: tricky.w, h: tricky.h, diff: tricky.diff }, tricky.desc);
     const g = st.grid.slice();
@@ -135,8 +139,11 @@ describe("bricks hint — recursive tier", () => {
       nextForcedMove(g, st.w, st.h) === null &&
       bricksValidate(g, st.w, st.h, true) === "unfinished";
     if (!stalled) return; // this fixture happened to be Easy-solvable; skip
-    const m = nextForcedMoveRecurse(g, st.w, st.h, DIFF_TRICKY);
-    expect(m?.reason.kind).toBe("chain");
+    // The hint has nothing more to say here…
+    expect(deduceBricksPlan(g, st.w, st.h)).toHaveLength(0);
+    // …while the solver, which may search, still finishes the board.
+    const deeper = g.slice();
+    expect(solveGame(deeper, st.w, st.h, DIFF_TRICKY, false, true)).toBe("complete");
   });
 });
 

@@ -269,6 +269,14 @@ describe("the hint never guesses, and says so when that is the end of the road",
   it("every step it offers is a rule the board shows, on either tier", () => {
     // A guessing step would have to say what it *tried*; a deduced one states
     // a premise. This is a shape check on the vocabulary, cheap and blunt.
+    //
+    // Kept **stricter than** the cross-game version now in
+    // `engine/hint-quality.test.ts` (`audit-guessing-tier-names` promoted it
+    // there, since a rule enforced in one game is not enforced). This one also
+    // rejects `suppose` / `if it were` outright, which the shared check cannot:
+    // several games narrate a *single-step* refutation that way and are right
+    // to. Galaxies has no such arm, so the tighter net costs it nothing and
+    // pins the game the rule was written from.
     const speculative =
       /\btr(y|ied|ies)\b|\bsuppose\b|\bif it were\b|\bbreak the board\b/i;
     for (const params of [NORMAL_7, UNREASONABLE_7]) {

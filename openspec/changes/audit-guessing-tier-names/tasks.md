@@ -121,12 +121,33 @@ unreachable.
 - [x] 2d.2 Salad's own `{ kind: "forcing" }` gone the same way, by disabling the
       rung in `recordSaladDeductions` (the hint's projection) while `saladSolve`
       keeps it — so no board moved.
-- [ ] 2d.3 **Clusters and Undead still narrate their trial, and Clusters should
-      probably keep doing so** — design D8, an open question for the owner.
-      Removing it from Clusters was tried and reverted: 7 of 52 tests, because
-      the chain *is* its hint, and it is the collection's only implementation of
-      the guided what-if walk `hints.md` calls the full compliant answer.
-      Undead's is the ordinary case and follows whatever D8 settles.
+- [x] 2d.3 **D8 settled by the owner (2026-08-12): consistency wins** — a
+      multi-step search with backtracking is non-deductive everywhere, so no
+      hint narrates one, Clusters included. Done for **Clusters, Undead, Bricks
+      and Dominosa**; each keeps the rung in its *solve* path (the generator
+      grades on it) and loses it from the recorder, so no board moved.
+      - **Clusters** needed a two-way split rather than a deletion. Its `hint`
+        refuses unless the plan verdict is `COMPLETE`, which is what proves no
+        placed tile is wrong — so simply removing the rung made it refuse from
+        *move one*. The walk now runs the lookahead to compute the verdict while
+        recording only the leading single-cell run: **the search may certify a
+        position, never teach one.**
+      - Measured cost, per size, on the tiers that need it: the hint covers
+        **61–74%** of the blanks (median 67–80% per board), never solves one to
+        completion, and on **~3%** refuses immediately. `Easy` is 100%
+        unaffected.
+- [x] 2d.4 The dead machinery went with the narration rather than being left
+      unreachable: Clusters' `chain` reason, `ChainStep`, its two what-if
+      overlay bits and their render path; Bricks' `nextForcedMoveRecurse`;
+      Dominosa's `forcingChain` tag; Undead's `recordForcingPass` and its
+      `forcing` reason. A render path for an overlay no hint can emit reads as a
+      live capability.
+- [x] 2d.5 Bricks' `chain` reason was **also the direct rung's unclassified
+      fallback**, narrated as "following the forced consequences" — a sentence
+      untrue of the case that still reaches it. Renamed `localBreak` and
+      re-narrated as what it is ("would break the board where it is ringed").
+      That is the spec's no-un-narrated-fallback rule, found only because the
+      guard forced a look at every arm.
 
 ### 2e. The differentials — **done for the six moved games**
 
@@ -150,10 +171,26 @@ unreachable.
       tier is never deleted — plus the viability and keep-the-oracle scenarios.
       **Still to fold in:** whatever D8 settles about narrating an externalised
       what-if walk.
-- [ ] 3.2 Promote `galaxies-hint.test.ts`'s speculative-vocabulary check into
-      `src/engine/hint-quality.test.ts`, where all 30 hinting games are enrolled.
-      **Prove it fails** before trusting it — today it fails Bricks, Clusters,
-      Undead and the whole Latin family, which is the point.
+- [x] 3.2 Promoted into `src/engine/hint-quality.test.ts`. **Proving it fails is
+      what made it real**, and it took three corrections:
+      1. The first regex matched the *hypothesis* framing (`if this cell
+         were …`) and instantly failed Clusters on a sound **single-step**
+         refutation. A hypothesis is not the defect; carrying it forward is. Now
+         it matches the chain vocabulary only.
+      2. Planting a violation in Bricks then left it **green** — because the
+         file samples `firstLeaf(presets())`, each game's *easiest* preset,
+         and a trial rung is tier-gated so it can never fire there. It was
+         guarding nothing on exactly the tiers it exists for. A second block now
+         walks **every tier**, with a `checked > 0` guard so a game whose tiers
+         all fail to generate cannot pass vacuously.
+      3. That block found **three real defects** at once: Bricks' and Dominosa's
+         live trial narrations, and a **crash** — Group's hint dereferenced
+         `ops[0]` whenever deduction ran out, because
+         `firstUnreflectedPlaceIndex` returns `ops.length` for "none" and that
+         equals a valid index of `0` on an empty list. A sentinel colliding with
+         a real value at the boundary.
+      Galaxies keeps its own stricter copy (it also rejects `suppose` / `if it
+      were`, which the shared one cannot); the note there says why.
 
 ## 4. Close out
 

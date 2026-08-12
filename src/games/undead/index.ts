@@ -535,10 +535,6 @@ function narrate(
       const name = monsterName(reason.monster);
       return `The only cells that can still hold a ${name} are exactly enough for the ${name}s still to place — so this one can only be a ${name}.`;
     }
-    case "forcing": {
-      const name = monsterName(reason.monster);
-      return `If this cell were a ${name}, the sightline clues and monster counts could no longer all be met — so we must cross out the ${name}.`;
-    }
     case "single":
       return `Only the ${list} is left uncrossed in this cell — so it can only be a ${list}.`;
   }

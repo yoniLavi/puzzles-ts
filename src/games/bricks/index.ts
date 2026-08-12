@@ -339,7 +339,7 @@ function evidenceOf(reason: BricksReason): number[] {
       return [reason.clue];
     case "strandSupport":
       return [reason.above];
-    case "chain":
+    case "localBreak":
       return reason.conflict;
   }
 }
@@ -364,10 +364,16 @@ function narrate(reason: BricksReason, forced: CellColour, state: BricksState): 
       const n = clueVal(reason.clue);
       return `The ${n} still needs more shaded neighbours and this is one of the last cells that can supply one — clearing it would put ${n} out of reach, so it must be shaded.`;
     }
-    case "chain":
+    case "localBreak":
+      // The direct rung's *unclassified* case: one colour placed, one validator
+      // call, the board breaks — but at a cell none of the four named arms
+      // above matched. It used to be narrated as "following the forced
+      // consequences", which described the recursive rung that no longer feeds
+      // this reason and was never true of this one: nothing is followed, the
+      // break is right there and is ringed (`audit-guessing-tier-names`).
       return forced === "unshade"
-        ? "Suppose this cell were shaded: following the forced consequences runs into a contradiction (ringed) — so it must stay clear."
-        : "Suppose this cell were left clear: following the forced consequences runs into a contradiction (ringed) — so it must be shaded.";
+        ? "Shading this cell would break the board where it is ringed — so it must stay clear."
+        : "Clearing this cell would break the board where it is ringed — so it must be shaded.";
   }
 }
 

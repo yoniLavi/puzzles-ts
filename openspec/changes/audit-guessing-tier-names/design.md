@@ -122,20 +122,35 @@ Full sweep and measurements: [`audit.md`](./audit.md).
   no anchor, chain invisible — which asks the player to run it in their head, and
   that is what § "The forcing boundary" forbids. Clusters asks them to read it.
 
-  **Left to the owner** (see the open question below), because it narrows a rule
-  they have already ruled on once. Nothing is blocked on the answer: the Latin
-  family's narration is gone either way, and Clusters' tier is renamed either
-  way.
+  **Settled by the owner, 2026-08-12: consistency wins, and the rule does not
+  bend.** A multi-step search with backtracking is non-deductive wherever it
+  appears, so no hint narrates one — Clusters included, its rendering of the
+  chain notwithstanding. Applied to Clusters, Undead, Bricks and Dominosa.
+
+  **What implementing it turned up, which the argument above had missed.**
+  Clusters' `hint` refuses unless the plan's verdict is `COMPLETE`, because that
+  is what proves no already-placed tile is wrong — so removing the rung outright
+  made it refuse from **move one**, not at the stall. The fix separates the two
+  jobs the rung was doing: the walk still runs the lookahead to reach a verdict,
+  while the recorder stops at the first stall. **A search may certify a
+  position; it may never teach one.** That distinction is the durable part of
+  D8, and it is not what either side of the original argument was about.
+
+  Measured cost on the affected tiers: the hint covers **61–74%** of the blanks
+  (median 67–80% per board), never solves one to completion, and refuses
+  immediately on ~3%. `Easy` tiers are entirely unaffected.
+
+  Two corrections to figures quoted while arguing this, both the same mistake:
+  "loses its hint" was wrong (the deductive rung keeps working), and the "94–96%
+  covered" that replaced it was also wrong — it measured the share of *full-plan
+  steps* that were direct, not how far a plan truncated at the **first** stall
+  actually gets. 61–74% is the honest number.
 
 ## Open Questions
 
 - ~~Does `latin.ts`'s `forcing` count as checking?~~ Resolved by D2.
-- **Does the hint-refusal rule admit an externalised what-if walk?** (D8.) As
-  written it does not, and Clusters is the casualty. Narrowing it to *"a hint
-  SHALL NOT narrate a propagating trial **whose chain the player cannot see on
-  the board**"* keeps every case it was written for — Galaxies' deleted rung, the
-  Latin family's removed sentence, Bricks' unclassified "(ringed)" — and spares
-  the one game that did the work. Owner call.
+- ~~Does the hint-refusal rule admit an externalised what-if walk?~~ **No**
+  (D8, owner, 2026-08-12). The rule holds as written.
 - Should the guard be a declaration on the `Game` (a rung that trials must say
   so) or a per-game test? A declaration is checkable cross-game; a test is
   cheaper and does not widen the interface. **Leaning: neither is new** —

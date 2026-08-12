@@ -37,8 +37,12 @@ export type HintTechnique =
   | "localDuplicate"
   | "localDuplicate2"
   | "parity"
-  | "set"
-  | "forcingChain";
+  | "set";
+// No `"forcingChain"` (`audit-guessing-tier-names`, design D4/D8): `runSolver`
+// still runs that rung — the generator grades on it — but `firstFiring`, the
+// hint's projection, does not, so nothing can produce the tag. Removing the
+// member rather than just the narration arm makes reintroducing the sentence a
+// compile error instead of a matter of convention.
 
 /** One firing captured by the hint recorder — either a forced domino placement
  * or a set of ruled-out placements (barriers), plus the squares it reasons
@@ -884,9 +888,14 @@ export class DominosaSolver {
       // Extreme
       this.resetRec();
       if (this.deduceSet(true)) return barrier("set");
-      this.resetRec();
-      if (this.deduceForcingChain()) return barrier("forcingChain");
 
+      // **No `deduceForcingChain` rung here** (`audit-guessing-tier-names`,
+      // design D4/D8). It follows an implication closure across the board until
+      // a chain repeats a domino — a conclusion reached by propagating rather
+      // than by looking, which the collection classes as non-deductive and
+      // never lets a hint present as a technique. `runSolver` above keeps it,
+      // so the generator and `solve` are untouched and no board changed; the
+      // hint stops where the search would have started and refuses.
       return null;
     } finally {
       this.recording = false;
