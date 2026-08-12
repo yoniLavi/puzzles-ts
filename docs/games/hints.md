@@ -129,10 +129,18 @@ split is *bounded-and-walkable*, not *was a trial involved*:
   and narrates directly, at any tier;
 - a **Tactic** — a bounded chain, measured 3–12 links in the Latin family and
   2–3 forced cells in Clusters — keeps its middle tier and **is walked**;
-- a **Search** — the hypothesis runs a whole fixpoint or sub-solve (Undead's
-  `forcingPass`, Bricks' `solverRecurse`, Dominosa's chain closure, Spokes'
-  attempt, Galaxies' deleted rung) — is `Unreasonable` and is **not narrated at
-  all**. The hint refuses and says deduction has run out.
+- a **Search** — the hypothesis runs a whole *unbounded* fixpoint or sub-solve
+  (Undead's `forcingPass`, Bricks' `solverRecurse`, Dominosa's chain closure,
+  Spokes' top-tier look-ahead, Galaxies' deleted rung) — is `Unreasonable` and is
+  **not narrated at all**. The hint refuses and says deduction has run out.
+
+**A game can ship a Tactic and a Search that are the same function** — Spokes
+calls one look-ahead with a capped sub-solve at Tricky and an uncapped one above
+it — in which case they narrate identically and no wording check can separate
+them. Prove the hint reaches only the permitted one *structurally*: Spokes
+asserts that a plan computed at the top tier equals one computed at Tricky, plus
+a control showing Tricky does add firings the tier below lacks, so the equality
+cannot pass vacuously. See `solver-and-generator.md` § "Check, Tactic, Search".
 
 **The walk is the bar, and it is not a cross-game engine build.** This section
 used to call it "the full answer" while offering a *stopgap* — state the

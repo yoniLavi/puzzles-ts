@@ -49,9 +49,10 @@ import {
   redraw,
 } from "./render.ts";
 import {
+  type BarrierTechnique,
   DominosaSolver,
   type HintFiring,
-  type HintTechnique,
+  type PlaceTechnique,
   solveNumbers,
 } from "./solver.ts";
 import {
@@ -355,7 +356,7 @@ function dominoLabel(a: number, b: number, numbers: Int32Array): string {
 }
 
 function narratePlace(
-  technique: HintTechnique,
+  technique: PlaceTechnique,
   a: number,
   b: number,
   numbers: Int32Array,
@@ -367,7 +368,7 @@ function narratePlace(
 }
 
 function narrateBarrier(
-  technique: HintTechnique,
+  technique: BarrierTechnique,
   a: number,
   b: number,
   numbers: Int32Array,
@@ -388,8 +389,6 @@ function narrateBarrier(
       return "A domino here would split the empty squares into two odd-sized regions, and an odd region can't be filled by dominoes — so this can't be a domino.";
     case "set":
       return `The shaded squares can only hold one small set of dominoes between them, using up the ${dom} — so ${dom} can't sit here as well.`;
-    default:
-      return "This can't be a domino.";
   }
 }
 

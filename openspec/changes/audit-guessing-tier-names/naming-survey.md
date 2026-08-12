@@ -1,5 +1,15 @@
 # Collection-wide tier naming, surveyed
 
+> **The table in §1 is the collection as this survey found it**, before any
+> rename landed, and it is left that way because §2–§4 are computed from it.
+> Six games moved in the end: **unequal** and **mathrax** (`Recursive` →
+> `Unreasonable`), **undead** (`Tricky` →), **dominosa** (`Extreme` →),
+> **spokes** (`Hard` →) and **bricks** (`Easy · Normal · Tricky` →
+> `Easy · Unreasonable`). **Salad and Clusters did not** — §4 proposed both and
+> design D9 reverted them, because their rungs are Tactics. `Unreasonable` is
+> now the last tier in **fifteen** games and still, in every one of them, the
+> last.
+
 Owner-requested (2026-08-12), because the six renames in tasks 2c pick names for
 six top tiers and that should not be done without knowing what the collection's
 conventions actually are.
@@ -95,12 +105,28 @@ as the guessing marker — and what the six renames in 2c preserve.
   difficulty** — it is the tier whose generator skips uniqueness altogether
   (`nonUniqueTiers`), a different promise rather than a harder one. Extreme is
   Dominosa's top *difficulty* tier, so the rule lands on it.
-- **Bricks** and **Spokes** are the two the survey confirms cannot be swept:
+- **Bricks** and **Spokes** are the two the survey confirms cannot be swept.
+  Both got their design pass, and **in each case the sentence below turned out
+  to rest on a premise the pass dissolved** — which is the argument for having
+  made them design passes rather than sweeping them:
   - Bricks is `Easy · Normal · Tricky` with the trial at **Normal** and Tricky
     declared-but-ungenerable. Renaming Normal gives `Easy · Unreasonable ·
-    Tricky` — an ordering no player can read. Its own design pass.
+    Tricky` — an ordering no player can read. **Resolved (D11):** Bricks does
+    not have three tiers. `Tricky` names no boards and never could, so it is not
+    a tier competing for a position — it is a leftover label. Dropped, giving
+    `Easy · Unreasonable`, with the difficulty character still decoding.
   - Spokes is `Easy · Tricky · Hard` with the trial at **both** Tricky and Hard.
-    Two tiers cannot share a name. Its own design pass.
+    Two tiers cannot share a name. **Resolved (D10):** they do not share a rung.
+    The same function is called with a *bounded* sub-solve at Tricky and an
+    *unbounded* one at Hard — a Tactic and a Search — so each takes its own
+    remedy and only the top tier is renamed. The survey read the technique's
+    name where it needed to read the call's argument.
+
+**The reusable half of both:** *"two tiers cannot share a name"* and *"a rename
+would give an unreadable ordering"* are both statements about the **tier list**,
+and both dissolved once the underlying question was asked about the **rungs** and
+about which tiers name any boards. A naming survey is the right instrument for
+finding candidates and the wrong one for settling them.
 
 ## 5. Naming defects this survey found that are **not** about guessing
 

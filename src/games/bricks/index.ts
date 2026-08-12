@@ -72,6 +72,7 @@ import {
   COL_MASK,
   cloneState,
   colourBits,
+  DIFF_NAMES,
   DIFF_TRICKY,
   decodeParams,
   defaultParams,
@@ -455,14 +456,16 @@ function flashLength(
  * board — and the `clear` argument blanks the grid first, so the verdict is
  * about the puzzle rather than about any marks already on it.
  *
- * **Tricky is declared but not generable.** `validateParams` refuses it for
- * generation (`MAX_GENERABLE_DIFF`): its rung is lookahead depth 2, which never
- * decides anything depth 1 has not (`grade-difficulty-tiers-honestly`). The tier
- * stays in this list because a saved game or a desc-carrying game ID may still
- * request it, and `solveAtCap` must be able to answer for it.
+ * **Two tiers, three `DIFF_*` levels** (`audit-guessing-tier-names` D11, and the
+ * case `difficulty.ts`'s own doc comment already anticipated: a `DIFF_*`
+ * constant is not reliably a tier). `tiers` is *the tiers a player can pick*, so
+ * upstream's ungenerable third one is not among them; `solveAtCap` takes a raw
+ * cap and answers for it regardless, which is what a loaded `dt` game needs.
+ * The list comes from `DIFF_NAMES` rather than repeating it — Unequal shipped a
+ * menu and a custom-params dialog that disagreed for exactly that reason.
  */
 const difficulty: DifficultyContract<BricksParams> = {
-  tiers: ["Easy", "Normal", "Tricky"],
+  tiers: DIFF_NAMES,
   tierOf: (p) => p.diff,
   withTier: (p, tier) => ({ ...p, diff: tier }),
   solveAtCap: (p, desc, cap) => {
@@ -509,7 +512,7 @@ export const bricksGame: Game<
       kw: "difficulty",
       name: "Difficulty",
       type: "choices",
-      choices: ["Easy", "Normal", "Tricky"],
+      choices: [...DIFF_NAMES],
       get: (p) => p.diff,
       set: (p, v) => {
         p.diff = v;

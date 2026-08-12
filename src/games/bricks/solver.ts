@@ -18,11 +18,21 @@
  *    far is UNFINISHED.
  *
  * The solver drives these to a fixpoint by single-cell contradiction
- * (`solverTry`, the Easy tier) and, for Normal/Tricky, bounded recursive
- * lookahead (`solverRecurse`). All tiers are pure deduction — every placement
- * is *proved* by contradiction — so bricks is guess-free (there is no
- * "Unreasonable" tier). Generation gates uniqueness on this solver, so its
- * exact deductive power is byte-match surface: keep every quirk verbatim.
+ * (`solverTry`, the Easy tier) and, above it, recursive lookahead
+ * (`solverRecurse`). Every placement is *proved* by contradiction, so nothing
+ * here guesses — but the two rungs ask very different things of a player, and
+ * `audit-guessing-tier-names` (design D9 + D11) split them:
+ *
+ * - `solverTry` places one colour, calls `bricksValidate` **once**, and rolls
+ *   back. One glance; a *Check*, legal at any tier.
+ * - `solverRecurse` places one colour and then **solves the rest of the board**
+ *   from it at `maxdiff - 1`. That is a *Search*, and a search may only ship
+ *   under a tier named `Unreasonable` — which is why upstream's `Normal` is
+ *   called that here, and why {@link nextForcedMove} has no arm for it
+ *   (`nextForcedMoveRecurse` was deleted with the narration).
+ *
+ * Generation gates uniqueness on this solver, so its exact deductive power is
+ * byte-match surface: keep every quirk verbatim.
  *
  * **Divergence (`grade-difficulty-tiers-honestly`, replacing port design D3):**
  * upstream's min-difficulty gate probes at *Easy* whatever tier was requested,

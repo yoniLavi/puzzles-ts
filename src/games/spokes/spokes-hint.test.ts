@@ -31,6 +31,9 @@ import {
   clearBoard,
   cloneBoard,
   cloneState,
+  DIFF_EASY,
+  DIFF_HARD,
+  DIFF_TRICKY,
   DIFFCOUNT,
   getSpoke,
   newState,
@@ -64,7 +67,11 @@ function applyForced(
 
 const EASY: SpokesParams = { w: 4, h: 4, diff: "easy" };
 const TRICKY: SpokesParams = { w: 4, h: 4, diff: "tricky" };
-const HARD: SpokesParams = { w: 4, h: 4, diff: "hard" };
+/** The top tier, `Unreasonable` in the menu and `"hard"` in the params
+ * (`audit-guessing-tier-names` D10). Used below as a *board* selector, never as
+ * a rung selector: its own rung is unreachable from the hint by design, which
+ * the last test in this file proves rather than assumes. */
+const UNREASONABLE: SpokesParams = { w: 4, h: 4, diff: "hard" };
 
 /** The unique solution as a board (the same one `hint`/`findMistakes` use). */
 function solutionOf(state: SpokesState) {
@@ -122,7 +129,7 @@ describe("each rung forces the move the solution agrees with", () => {
     ["twoOnes", EASY],
     ["saturation", EASY],
     ["exhaustion", EASY],
-    ["contradiction", HARD],
+    ["contradiction", UNREASONABLE],
   ];
 
   for (const [kind, preset] of cases) {
@@ -179,7 +186,7 @@ describe("narration states the premise, in the necessity voice", () => {
   });
 
   it("contradiction states the hypothesis and the break it reaches", () => {
-    const found = findFiring(HARD, "contradiction");
+    const found = findFiring(UNREASONABLE, "contradiction");
     expect(found).not.toBeNull();
     if (!found) return;
     const step = hintSteps(found.state)[0];
@@ -206,7 +213,7 @@ describe("hints only rule out a spoke when it helps a hub still needing lines", 
     // as surely as 60 did — at 238 s, this one test was **20% of the entire
     // suite**. `npm run test:slow` still scans all 60 for the rare case.
     for (let seed = 0; seed < seedBudget(8, 60); seed++) {
-      for (const preset of [EASY, TRICKY, HARD]) {
+      for (const preset of [EASY, TRICKY, UNREASONABLE]) {
         const { desc } = newSpokesDesc(
           preset,
           randomNew(`useful-${preset.diff}-${seed}`),
@@ -397,5 +404,40 @@ describe("the hint frame paints the overlay", () => {
     expect(isDiagLine(result.hint?.highlights as SpokesHint | undefined)).toBe(true);
 
     expect(ops).toMatchSnapshot();
+  });
+});
+
+// --- the Unreasonable rung is unreachable from the hint ---------------------
+
+describe("the top tier's look-ahead never reaches a hint", () => {
+  /**
+   * `spokesSolve` runs the contradiction look-ahead twice: at `DIFF_TRICKY` with
+   * a `DIFF_LIMITED` sub-solve (capped at `ACTION_LIMIT`, a bounded chain — a
+   * *Tactic*), and again at the top tier with a `DIFF_EASY` sub-solve that has
+   * no bound at all and was measured settling **35 of 36 hubs** on a 6x6 board.
+   * Only the second is a search, and no hint narrates a search on any tier
+   * (`audit-guessing-tier-names` design D9; the Galaxies precedent).
+   *
+   * The two rungs are the *same function* and their narration is word-for-word
+   * identical, so `hint-quality.test.ts`'s vocabulary check cannot tell them
+   * apart — the guarantee has to be structural. This is it, stated as the
+   * consequence a player would feel: **asking for the top tier's reasoning buys
+   * the plan nothing.** The control below is what stops it passing vacuously.
+   */
+  it("planning at the top tier gives the same plan as planning at Tricky", () => {
+    let sawTricky = false;
+    for (let seed = 0; seed < 12; seed++) {
+      const { desc } = newSpokesDesc(UNREASONABLE, randomNew(`no-search-rung-${seed}`));
+      const base = newState(UNREASONABLE, desc);
+      const kinds = (diff: number) =>
+        deduceSpokesPlan(cloneBoard(base), diff).map((f) => f.kind);
+
+      expect(kinds(DIFF_HARD), `seed ${seed}`).toEqual(kinds(DIFF_TRICKY));
+      if (kinds(DIFF_TRICKY).length > kinds(DIFF_EASY).length) sawTricky = true;
+    }
+    // The control: the Tricky rung really does add firings an Easy plan lacks,
+    // so the equality above is a live fact about the top tier rather than an
+    // artefact of every tier producing the same plan.
+    expect(sawTricky, "no board where the Tricky rung adds a firing").toBe(true);
   });
 });

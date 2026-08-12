@@ -180,7 +180,27 @@ const PRESETS: BricksParams[] = [
   { w: 10, h: 8, diff: DIFF_NORMAL },
 ];
 
-const DIFF_NAMES = ["Easy", "Normal", "Tricky"];
+/**
+ * The tiers a player can pick, and the **only** list of them
+ * (`audit-guessing-tier-names` D11). Both the difficulty contract and the
+ * custom-params dialog read this rather than repeating it — Unequal shipped a
+ * menu and a dialog that disagreed for exactly that reason.
+ *
+ * Two names for three `DIFF_*` levels, deliberately:
+ *
+ * - Upstream's `Normal` is **`Unreasonable`** here. Its rung, `solverRecurse`,
+ *   commits a cell by solving the rest of the board from a hypothesis — a
+ *   search, not a technique a player can follow, and only a tier named
+ *   `Unreasonable` may ship one.
+ * - Upstream's `Tricky` has **no name at all**, because it has no boards. It is
+ *   the same rung one level deeper, and `MAX_GENERABLE_DIFF` records the
+ *   measurement that depth 2 never decides anything depth 1 has not. It was
+ *   already refused at generation by `grade-difficulty-tiers-honestly`; what
+ *   this drops is a dropdown entry that could only ever error. `DIFF_CHARS`
+ *   still spells it, so a game ID or saved game carrying `dt` still loads and
+ *   is still refused *with its reason* by {@link validateParams}.
+ */
+export const DIFF_NAMES = ["Easy", "Unreasonable"];
 
 export function defaultParams(): BricksParams {
   return { ...PRESETS[0] };
@@ -234,16 +254,21 @@ export function validateParams(p: BricksParams, full: boolean): string | null {
   if (p.w < 2) return "Width must be at least 2";
   if (p.h < 2) return "Height must be at least 2";
   if (p.diff >= DIFFCOUNT) return "Unknown difficulty rating";
-  // Tricky has no boards. Its rung is lookahead depth 2, which never decides
-  // anything depth 1 has not already decided — see `MAX_GENERABLE_DIFF` in
-  // `generator.ts` for the measurement. Upstream shipped it anyway and admitted
-  // in its own documentation that Tricky "may generate a puzzle at Normal
-  // difficulty instead"; it always does, so offering it is a difficulty setting
-  // that silently gives you a different one (`grade-difficulty-tiers-honestly`).
-  // Refused only for generation: a saved game or a game ID carrying its own
-  // description still loads, because `full` is false there.
+  // Upstream's third tier has no boards. Its rung is lookahead depth 2, which
+  // never decides anything depth 1 has not already decided — see
+  // `MAX_GENERABLE_DIFF` in `generator.ts` for the measurement. Upstream shipped
+  // it anyway and admitted in its own documentation that Tricky "may generate a
+  // puzzle at Normal difficulty instead"; it always does, so offering it is a
+  // difficulty setting that silently gives you a different one
+  // (`grade-difficulty-tiers-honestly`).
+  //
+  // Since `audit-guessing-tier-names` D11 it has no name either — `DIFF_NAMES`
+  // stops at two — so this is the last place that still knows it exists, and it
+  // has to keep working: `DIFF_CHARS` still spells `t`, so an old game ID or
+  // saved game reaches here. Refused only for generation; loading such a game
+  // works, because `full` is false there.
   if (full && p.diff > MAX_GENERABLE_DIFF) {
-    return "Tricky has no puzzles distinct from Normal; use Easy or Normal";
+    return `Tricky has no puzzles distinct from ${DIFF_NAMES[MAX_GENERABLE_DIFF]}; use ${DIFF_NAMES.join(" or ")}`;
   }
   return null;
 }

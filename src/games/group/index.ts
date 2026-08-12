@@ -737,10 +737,12 @@ function buildSteps(state: GroupState): HintStep<GroupMove, GroupHint>[] {
     // found" — a sentinel that collides with a valid index of `0` exactly when
     // `ops` is empty, so this read as "a placement leads, at index 0" and then
     // dereferenced `ops[0]` (undefined) and crashed. An empty `ops` is reachable
-    // whenever deduction runs out under the hint's cap, which
-    // `audit-guessing-tier-names` made common by moving the forcing rung above
-    // it. Found by the cross-game trial guard walking *every tier* rather than
-    // each game's easiest preset.
+    // whenever deduction runs out under the hint's cap — on an `Unreasonable`
+    // board, whose rungs the cap deliberately withholds, that is ordinary rather
+    // than exotic. Found by the cross-game trial guard walking *every tier*
+    // rather than each game's easiest preset, which is the only reason it was
+    // ever reached: the guard's own tier sweep exists because a tier-gated rung
+    // can never fire on a game's easiest preset.
     if (ops.length > 0 && firstUnreflectedPlaceIndex(ops, wGrid, w) === 0) {
       emitRecordedPlacement(steps, wGrid, wPen, w, id, ops, ops[0]);
       ops = recordGroupDeductions(wGrid, w, maxdiff);

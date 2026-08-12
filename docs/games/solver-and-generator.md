@@ -148,10 +148,40 @@ glanceable steps** — *not* by whether a trial or a search was involved.
   its narration owes the player.
 - **Search** — Undead's `forcingPass` and Bricks' `solverRecurse` (both run a
   whole fixpoint / sub-solve from the hypothesis), Dominosa's
-  `deduceForcingChain`, Spokes' `spokesSolverAttempt`, every true recursion tier,
-  and Galaxies' deleted rung — `refuteAssoc` ran the whole deduction fixpoint and
-  could settle dozens of cells. *Nested* speculation (assume A, then within that
-  assume B) is Search twice over.
+  `deduceForcingChain`, Spokes' **unbounded** look-ahead, every true recursion
+  tier, and Galaxies' deleted rung — `refuteAssoc` ran the whole deduction
+  fixpoint and could settle dozens of cells. *Nested* speculation (assume A,
+  then within that assume B) is Search twice over.
+
+**Classify by the bound a rung *guarantees*, not the depth it typically
+reaches** — and read the **call**, not the function.
+
+Spokes is the worked example, and it is the reason this paragraph exists. It
+calls **one** function, `spokesSolverAttempt`, at two tiers, and the only
+difference is the sub-tier argument: `DIFF_LIMITED` at Tricky, which stops the
+sub-solve at `ACTION_LIMIT`, and `DIFF_EASY` at the top tier, which does not stop
+it at all. Measured over 30 boards per configuration, they are **identical at the
+median** — 2 deductions each — and the tails are not remotely alike: the bounded
+one reaches at most 9, the unbounded one has a p90 of 11 and a **maximum of 35
+hubs on a 36-hub grid**, i.e. it finishes the puzzle from the hypothesis. One is
+a Tactic and one is a Search, and no amount of looking at typical boards would
+have told you which was which.
+
+Three consequences worth carrying:
+
+- **A game's sweep must read each call site, not each rung's name.** The
+  collection-wide sweep in `audit-guessing-tier-names` §2c filed Spokes as one
+  entry shipping "at Tricky *and* Hard" — the function was read, the argument
+  was not, and that mis-filing survived until the tier had to be renamed.
+- **Where a rung is gated on a numeric bound, that constant is load-bearing for
+  a tier's *name*.** Say so where it is defined, or the next reader retunes it
+  as a performance dial and silently turns a middle tier into a search. See
+  `ACTION_LIMIT` in `spokes/solver.ts`.
+- **Two strengths of one rung emit the same words**, so a narration guard cannot
+  separate them — the guarantee that the hint reaches only the permitted one has
+  to be structural. Spokes asserts that planning at the top tier gives the same
+  plan as planning at Tricky, with a control proving the equality is not vacuous
+  (`spokes-hint.test.ts`).
 
 **Two traps this replaces a blunter rule to avoid.**
 
@@ -177,6 +207,30 @@ explicitly-named `Unreasonable` tier. **Never delete a tier to satisfy the rule*
 — and check first whether the rung *is* the tier: Map's `Hard` has no other
 distinguishing technique, so emptying it made the preset generate nothing at all
 (10,000 retries, no error).
+
+**A tier that names no boards is not a tier, and dropping its label is not
+deleting a tier.** Bricks shipped `Easy · Normal · Tricky` where `Tricky` was the
+same rung one level deeper, provably decided nothing, and had been refused at
+generation for a whole change already — so once `Normal` had to become
+`Unreasonable`, the readable ladder was `Easy · Unreasonable` and the third name
+simply went. The three things that make that safe rather than destructive:
+
+1. the encoded difficulty character still **decodes and round-trips**, so no
+   game ID or saved game changes meaning;
+2. `validateParams` still refuses it **with its reason**, so a player who arrives
+   with such an ID is told why;
+3. nothing a player could previously *play* is removed — the entry only ever
+   produced an error.
+
+Two things to do whenever a tier list shrinks:
+
+- **Re-establish the guard you just dropped.** `difficulty-contract.test.ts`
+  iterates the tiers a game *declares*, so an undeclared tier silently loses its
+  cross-game coverage. Put the round-trip assertion in the game's own suite.
+- **Check the list has one definition.** Bricks' difficulty contract and its
+  custom-params dialog each hand-copied it, so the rename would have shipped a
+  menu and a dialog that disagreed — the same defect Unequal had. A tier list is
+  read by the preset menu, the contract and the dialog; it is written once.
 
 ### No un-narrated fallback
 

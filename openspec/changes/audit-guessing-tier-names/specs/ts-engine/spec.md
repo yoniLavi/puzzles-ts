@@ -36,6 +36,20 @@ The test is therefore not whether a trial propagates, nor whether the technique
 is called "forcing", but whether the propagation is bounded and can be laid out
 for the player.
 
+**A rung SHALL be classified by the bound it guarantees, not by the depth it
+typically reaches.** Two rungs may be *the same function* invoked with different
+limits and still fall on opposite sides of this line, and the observed
+distributions may be indistinguishable at the median while differing entirely in
+the tail. Where a game gates a rung on such a bound, that bound SHALL be defined
+once and documented as load-bearing for the tier's name rather than as a
+performance dial.
+
+Where two rungs differ in this way but produce **the same narration** — so that a
+wording check cannot tell them apart — the guarantee that the hint reaches only
+the permitted one SHALL be structural and asserted directly (for instance, that
+planning at the harder tier yields the same plan as planning at the permitted
+one), with a control that prevents the assertion holding vacuously.
+
 Games whose hints are **strategic** rather than deductive — a stable subgoal plus
 the next move serving it, justified by a monotone potential rather than by force
 — are outside this classification entirely and narrate imperatively.
@@ -53,6 +67,23 @@ game's ladder determines — and **SHALL NOT delete the tier**:
   below — so that no board can be solvable at it and not below, and the tier
   therefore generates nothing — the game SHALL first **build the missing
   deductive rung** and re-grade, then move the trial up.
+
+"SHALL NOT delete the tier" is about tiers that **name boards**. Where a rename
+would leave an ordering a player cannot read because a name above it belongs to a
+tier that generates nothing — one already refused at generation on a measurement
+— that name MAY be dropped from the tier list, provided its encoded difficulty
+character still decodes and still round-trips, so that no existing game ID or
+saved game changes meaning, and provided the refusal keeps its reason. Nothing a
+player could previously play is thereby removed.
+
+**A tier list SHALL have one definition per game**, read by the preset menu, the
+difficulty contract and the custom-params dialog alike. A hand-copied second list
+ships a menu and a dialog that disagree the first time a tier is renamed.
+
+**Dropping a name from a declared tier list silently drops whatever cross-game
+guard iterates that list.** A game that shortens its list SHALL re-establish the
+lost guarantee in its own tests — at minimum that the undeclared tier's
+difficulty character still round-trips.
 
 A rung that moves SHALL be shown to leave its old tier still generable, at every
 size the game offers, before the move is called done; a size/tier pair that
@@ -104,6 +135,15 @@ needed, while the walk that produces the verdict continues.
 - **THEN** it is narrated as a multi-leg journey, each leg one inferential step
   shown on the board, rather than as one sentence asserting the conclusion — and
   where the conclusion rests on a case split, the narration states both branches
+
+#### Scenario: Two strengths of one rung are classified separately
+
+- **WHEN** a game applies the same trial function at two tiers, bounding the
+  hypothesis' consequences at one and leaving them unbounded at the other
+- **THEN** the bounded one is a Tactic and the unbounded one a Search, whatever
+  their measured distributions look like on typical boards
+- **AND** the game asserts structurally that its hint reaches only the bounded
+  one, because both produce the same words
 
 #### Scenario: A tier that can require guessing says so in its name
 

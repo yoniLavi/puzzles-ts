@@ -82,7 +82,18 @@ export const DIFFCOUNT = 3;
 export const DIFF_LIMITED = DIFF_EASY - 1;
 
 export const DIFFS: readonly SpokesDiff[] = ["easy", "tricky", "hard"];
-export const DIFF_NAMES: readonly string[] = ["Easy", "Tricky", "Hard"];
+// The top tier is `Unreasonable` where upstream says `Hard`
+// (`audit-guessing-tier-names`, design D9 + D10). Spokes runs *one* look-ahead
+// function under two tiers with two different sub-tier arguments, and they land
+// on opposite sides of the line: Tricky's sub-solve stops at `ACTION_LIMIT`, a
+// bounded chain a player can walk; the top tier's has no bound at all and was
+// measured settling up to 35 hubs on a 36-hub board — the whole solver, run from
+// a hypothesis, which is the shape only an `Unreasonable` tier may ship.
+//
+// The internal key (`"hard"`) and the difficulty character (`h`) are untouched,
+// so game IDs, saved games and shared links survive the rename; only the menu
+// label moves. That is the D7 precedent, from Unequal and Mathrax.
+export const DIFF_NAMES: readonly string[] = ["Easy", "Tricky", "Unreasonable"];
 const DIFF_CHARS = "eth";
 
 export function diffToLevel(d: SpokesDiff): number {

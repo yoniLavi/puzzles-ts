@@ -92,34 +92,63 @@ Names picked from [`naming-survey.md`](./naming-survey.md), not by taste:
 `Unreasonable` is the only tier word in the collection with a stable meaning —
 nine games use it and in every one it is the last tier.
 
-- [x] 2c.1 Salad: `Extreme` → `Unreasonable`; help page updated (it also
-      dropped a sentence that read like the tier was ordinary).
+- [ ] ~~2c.1 Salad~~ — **reverted with D9.** Salad's rung is `latin.ts`'s
+      `forcing`, a Tactic, so the tier is not renamed; it is `Normal · Extreme`
+      again and the help page is back. Salad joins the seven games
+      `walk-tactic-hint-chains` owes a walk.
 - [x] 2c.2 Dominosa: `Extreme` → `Unreasonable` — its top *difficulty* tier;
       `Ambiguous` sits after it but is a different promise (no unique solution),
       not a harder rung.
-- [ ] 2c.3 Bricks: `Normal` → `Unreasonable`?? — **needs its own design pass**:
-      `Tricky` is declared-but-not-generable above it, so the rename has to
-      decide what happens to the declared tier. Do not sweep.
+- [x] 2c.3 Bricks: **done** — `Easy · Unreasonable` (design D11, owner decision).
+      `solverRecurse` solves the rest of the board from a hypothesis, so
+      upstream's `Normal` takes the name; upstream's `Tricky` is the same rung one
+      level deeper, names no boards, and has been refused at generation since
+      `grade-difficulty-tiers-honestly` — so the *label* goes while `DIFF_CHARS`,
+      the decode and the refusal-with-a-reason all stay. Found on the way: the
+      difficulty contract **and** the custom-params dialog each hand-copied the
+      tier list (2a.3's defect, in a game nobody had checked), and dropping a
+      declared name **silently drops the cross-game guard that iterates the
+      list** — the round-trip guarantee moves into `bricks.test.ts`. Help page
+      rewritten; it already said "Choose Easy or Normal", so the code was
+      catching up with it.
 - [x] 2c.4 Undead: `Tricky` → `Unreasonable`. This corrects
       `strengthen-undead-deduction`'s stated conclusion that the ladder needs no
       Unreasonable tier — that change measured the *recursion-only* residual at
       zero, which is sound and holds, but answers a different question from
       whether rung 3 propagates. It does.
-- [x] 2c.5 Clusters: `Tricky` → `Unreasonable`; help page rewritten (it claimed
-      "neither ever needs a guess", which is what this audit falsifies).
-- [ ] 2c.6 Spokes: **needs its own design pass** — *both* `Tricky` and `Hard`
-      propagate, and two tiers cannot both be `Unreasonable`. Do not sweep.
-- [ ] 2c.7 Map: **needs its own design pass**, and it is the one game where the
-      rung cannot simply move. Build the missing deductive rung for `Hard`
-      (`solver-and-generator.md` § "Strengthening a solver instead of shipping
-      guesswork", the Undead worked example), then re-grade, then move the
-      forcing chain to `Unreasonable`. Map's own suite generates `DIFF_NORMAL`
-      boards only, so add Hard/Unreasonable generation coverage in the same
-      change.
-- [ ] 2c.8 Group 12x12 Extreme performance: 4.2 s → 8.5 s median, **63 s max**.
-      Custom-params-only, and the baseline was already marginal, but a
-      minute-long "New Game" is not shippable. Options: bound the size, find a
-      cheaper Extreme rung, or accept with a measured note. Owner call.
+- [ ] ~~2c.5 Clusters~~ — **reverted with D9.** Its lookahead is a Tactic
+      (median 2–3 forced cells, already drawn on the board), so it is
+      `Easy · Tricky` again and the help page is back. What *stands* from 2d.3
+      is that its hint no longer narrates the chain: a Tactic must be **walked**,
+      and `walk-tactic-hint-chains` names Clusters its cheapest first target.
+- [x] 2c.6 Spokes: **done** — `Easy · Tricky · Unreasonable` (design D10). The
+      premise that blocked this was wrong: `spokesSolve` calls the *same*
+      look-ahead twice with different sub-tiers, and only the argument
+      distinguishes them. Tricky bounds the sub-solve at `ACTION_LIMIT`
+      (a Tactic); the top tier does not bound it at all (a Search), so the top
+      tier takes the name and the hint loses that arm. **Measured before
+      deciding** (audit §6): the two are identical at the median (2 deductions)
+      and differ in the tail — max 9 versus **35 hubs on a 36-hub grid**. The
+      rule that generalises: *classify a rung by the bound it guarantees, not by
+      the depth it typically reaches.* Because both rungs emit the **same
+      sentence**, `hint-quality.test.ts` cannot tell them apart, so the guarantee
+      is structural — planning at the top tier yields the same plan as planning
+      at Tricky, with a control so the equality is not vacuous.
+- [ ] ~~2c.7 Map~~ — **dissolved with D9** (design D12). Map's forcing-chain BFS
+      is a Tactic, so nothing moves and nothing is renamed; the whole task
+      existed to satisfy D5's literal reading. The finding survives the task:
+      **a tier can BE its rung** — Map's solver has exactly three gates and the
+      chain is the Hard one, so emptying it makes Hard identical to Normal and
+      the preset generates 0 of 20. The coverage gap (Map's own suite generates
+      `DIFF_NORMAL` only) needs no new test: `difficulty-contract.test.ts`
+      generates every declared tier of every tiered game, and it is what caught
+      this.
+- [ ] ~~2c.8 Group 12x12 Extreme~~ — **dissolved with D9** (design D12). The
+      8.5 s / 63 s figure was caused by the rung move, which is reverted. What
+      remains is the pre-existing 4.2 s median / 15.6 s max at upstream's
+      placement — marginal, custom-params-only, not introduced here. Owner
+      decision, 2026-08-12: **record it measured and move on**, which design D12
+      does.
 
 ### 2d. The narration comes out (design D4, the Galaxies precedent)
 
@@ -212,8 +241,43 @@ unreachable.
 
 ## 4. Close out
 
-- [ ] 4.1 Per-game spec deltas for every tier that moves.
-- [ ] 4.2 Revert the measurement scaffold (`audit.md` §5).
+- [x] 4.1 Per-game spec deltas, for the six games whose tier names actually
+      moved: **unequal**, **mathrax** (D7's `Recursive` → `Unreasonable`),
+      **undead**, **dominosa**, **spokes** and **bricks**. Salad's and Clusters'
+      were withdrawn with the D9 revert — *and writing this task is what found
+      that tasks 2c.1 and 2c.5 were still ticked while the code had been reverted
+      under them.* The tick was written when the work was done and never
+      un-written when it was undone; **a checkbox records an intention, and only
+      the tree records a fact**, so each game's `DIFF_NAMES` was read before its
+      delta was written.
+      - Undead's delta **retracts a requirement this capability already carried**
+        — *"Undead ships no `Unreasonable` tier"*, from
+        `strengthen-undead-deduction`. That change measured the *recursion-only*
+        residual at zero, which is sound and still holds, but it is a different
+        question from whether rung 3 propagates. **A measurement can be correct
+        and still not support the sentence it was used to write.**
+- [x] 4.2 Measurement scaffolds reverted — §3's `LATIN_FORCING_CHAINS` /
+      `LATIN_FORCING_OFF` and §6's `SPOKES_SUBSOLVE_DEPTHS`, with the probes and
+      the ad-hoc vitest config that collected them. One number stayed in the
+      source deliberately: `ACTION_LIMIT`'s doc comment carries both
+      distributions, because that constant is what separates Spokes' Tactic rung
+      from its Search one and a reader retuning it as a performance dial would
+      silently move a tier name.
+- [x] 4.3a Two defects found while writing the deltas, both owned here rather
+      than filed:
+      - **Group's crash-fix comment blamed a cause D9 had reverted** ("made
+        common by moving the forcing rung above it"). The crash is real and the
+        fix stands; the *reason* was rewritten to what is still true — an empty
+        `ops` is ordinary on a board whose rungs the hint's cap withholds.
+      - **Dominosa's barrier narrator kept an un-narrated `default:` arm**
+        ("This can't be a domino.") after the `forcingChain` sentence was
+        deleted — the spec's own no-un-narrated-fallback rule, and 2d.5's finding
+        in a second game. Fixed the durable way rather than by deleting a string:
+        `HintTechnique` is split into `PlaceTechnique` / `BarrierTechnique` and
+        `HintFiring` is a discriminated union on `place`, so each narrator is
+        exhaustive over its own half and an unhandled technique is a **compile
+        error**. The union is what made the fallback possible: a firing's kind
+        and its technique could disagree.
 - [ ] 4.3 `openspec validate audit-guessing-tier-names --strict`; owner
       acceptance; archive.
 

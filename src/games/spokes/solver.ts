@@ -11,16 +11,30 @@
  *   satisfied, mark the rest.
  * - {@link spokesSolverDiagonal} — mark the diagonal that would cross an
  *   existing diagonal line in the same cell corner.
- * - {@link spokesSolverAttempt} (Tricky/Hard) — bounded contradiction
+ * - {@link spokesSolverAttempt} (Tricky and Unreasonable) — contradiction
  *   look-ahead: try a spoke both ways, and if one provably leads to an invalid
  *   board, commit the other.
  *
- * **The look-ahead is not a guessing tier.** It is exhaustive, deterministic
- * contradiction reasoning — it draws no randomness and every commit is forced
- * by a proof that the alternative is impossible, which is exactly how a human
- * argues "this line would isolate that group, so it must be marked". It
- * therefore satisfies the project's guess-free generation policy the way the
- * other collections' recursion tiers do.
+ * **The look-ahead is one function under two tiers, and they are two different
+ * rungs** (`audit-guessing-tier-names`, design D9 + D10). Neither guesses — both
+ * are exhaustive and deterministic, and every commit is forced by a proof that
+ * the alternative is impossible. What separates them is how much reasoning the
+ * *player* has to carry to check that proof, and only the sub-tier argument says
+ * so:
+ *
+ * - **Tricky** passes `DIFF_LIMITED`, an Easy pass that stops at
+ *   `ACTION_LIMIT`. A bounded chain — measured at a median of 2 and a max of 9
+ *   deductions — which a player can walk. A *Tactic*, and legal at a middle
+ *   tier.
+ * - **Unreasonable** passes `DIFF_EASY`, the same pass with no bound. Measured
+ *   at a median of 2 as well, so the two are indistinguishable on a typical
+ *   board — but its p90 is 11 and its max is **35 hubs on a 36-hub grid**, i.e.
+ *   it solves the rest of the puzzle from the hypothesis. That is a *Search*,
+ *   and it is why the tier upstream calls `Hard` is named `Unreasonable` here.
+ *
+ * The lesson worth keeping: **classify a trial rung by the bound it guarantees,
+ * not by the depth it typically reaches.** The medians agree; only the
+ * guarantees differ, and a hint can only promise what is guaranteed.
  *
  * Validity is decided by counting lines/marks per hub, rejecting crossing
  * diagonals, and — over a `Dsf` of the line-connected hubs, plus a per-class
@@ -55,7 +69,16 @@ import {
  * union rather than a magic `0/1/2`. */
 export type SpokesStatus = "invalid" | "incomplete" | "valid";
 
-/** How many deductions the bounded `DIFF_LIMITED` tier is allowed to make. */
+/**
+ * How many deductions the bounded `DIFF_LIMITED` tier is allowed to make.
+ *
+ * This is the single number that separates Spokes' Tactic rung from its Search
+ * one — the two are the same function under different sub-tiers — so it is
+ * load-bearing for the tier names, not a tuning dial. Measured over 30 boards
+ * per configuration: with the cap, a sub-solve makes a median of 2 and at most
+ * 9 deductions; without it, the median is *also* 2 but the p90 is 11 and the max
+ * is 35 hubs on a 36-hub board. See `audit-guessing-tier-names` §6.
+ */
 const ACTION_LIMIT = 4;
 
 /**
@@ -631,6 +654,14 @@ function applyFiring(b: SpokesBoard, f: SpokesFiring): void {
  * order, and leading with connections keeps the plan from dribbling out
  * busywork marks. `s` must already hold `b`'s recounted tallies (`full = false`);
  * `copy` is contradiction scratch, non-null iff `diff >= DIFF_TRICKY`.
+ *
+ * **The `Unreasonable` rung is deliberately absent.** `spokesSolve` runs the
+ * look-ahead a second time at `DIFF_EASY` — the same trial with no bound on the
+ * sub-solve — and that is a search, not a technique, so no hint narrates it on
+ * any tier (`audit-guessing-tier-names` design D9; the Galaxies precedent). The
+ * plan therefore stalls where bounded reasoning stalls and `hint` says so, which
+ * is the honest answer. The *solver* keeps the rung: the generator grades on it,
+ * so no board moves.
  */
 function nextSpokesFiring(
   b: SpokesBoard,
@@ -642,10 +673,7 @@ function nextSpokesFiring(
     findSaturation(b, s) ??
     findTwoOnes(b) ??
     findExhaustion(b, s) ??
-    (diff >= DIFF_TRICKY && copy
-      ? findContradiction(b, copy, s, DIFF_LIMITED)
-      : null) ??
-    (diff >= DIFF_HARD && copy ? findContradiction(b, copy, s, DIFF_EASY) : null)
+    (diff >= DIFF_TRICKY && copy ? findContradiction(b, copy, s, DIFF_LIMITED) : null)
   );
 }
 
@@ -654,10 +682,14 @@ function nextSpokesFiring(
  * the ordered plan (design D1). Pure on its argument: it clones first. The
  * generator and {@link spokesSolve} are untouched, so the byte-match
  * differential is unaffected.
+ *
+ * The default is `DIFF_TRICKY`, not the top tier: the hint reasons as hard as it
+ * is *allowed* to, and the rung above Tricky is a search
+ * ({@link nextSpokesFiring}). Passing `DIFF_HARD` changes nothing.
  */
 export function deduceSpokesPlan(
   board0: SpokesBoard,
-  diff: number = DIFF_HARD,
+  diff: number = DIFF_TRICKY,
 ): SpokesFiring[] {
   const b = cloneBoard(board0);
   const s = new SpokesScratch(b.w * b.h);

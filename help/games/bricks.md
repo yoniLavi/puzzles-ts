@@ -25,6 +25,6 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dt>Width, Height</dt>
 	<dd>Size of the grid in squares.</dd>
 	<dt>Difficulty</dt>
-	<dd>Determine the difficulty of the generated puzzle. Choose Easy or Normal: a Normal puzzle always needs a deduction that the Easy techniques cannot make, so the setting you choose is the difficulty you get.</dd>
+	<dd>Determine the difficulty of the generated puzzle. An Easy puzzle can always be finished a square at a time: pick a square, try a colour, and one of the three rules breaks immediately. An Unreasonable one needs at least one square where seeing the contradiction means working out most of the rest of the board first — so the Hint button will take you as far as plain deduction goes and then stop, rather than asking you to follow reasoning it cannot show you.</dd>
 </dl>
 

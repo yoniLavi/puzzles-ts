@@ -306,11 +306,55 @@ shape — **a rule enforced in one place is not enforced** — and promoting the
 check into `src/engine/hint-quality.test.ts`, where every hinting game is
 enrolled, is what makes the policy self-guarding once the rungs have moved.
 
+## 6. Spokes' two look-ahead rungs, measured (task 2c.6, design D10)
+
+§2c recorded Spokes as one shape-C entry shipping *"at **Tricky** and **Hard**,
+both presets"*, because the sweep read the **function**. It is two rungs:
+`spokesSolve` calls `spokesSolverAttempt` twice, once with `DIFF_LIMITED` (an
+Easy pass that stops at `ACTION_LIMIT = 4`) and once with `DIFF_EASY` (the same
+pass, no cap).
+
+30 boards per configuration, generated with recording **off** and then solved
+once with it **on**, so the population is the player's deduction and not the
+solver-gated generator's thousands of trial solves. *The first cut of this probe
+recorded through generation and had to be thrown away — the same instrument error
+§3 records, made again by the person who wrote §3.*
+
+| configuration | rung | n | min | median | p90 | max | mean |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 4x4 tricky | `DIFF_LIMITED` (cap 4) | 1415 | 0 | 2 | 4 | 7 | 2.0 |
+| 6x6 tricky | `DIFF_LIMITED` (cap 4) | 6352 | 0 | 2 | 5 | 9 | 2.4 |
+| 4x4 top tier | `DIFF_EASY` (uncapped) | 2025 | 0 | 2 | 8 | 15 | 2.9 |
+| 6x6 top tier | `DIFF_EASY` (uncapped) | 6539 | 0 | 2 | **11** | **35** | 4.1 |
+
+**The medians are identical and the guarantees are not.** On a typical board both
+rungs settle two hubs; the capped one can never exceed a handful, while the
+uncapped one reaches **35 hubs on a 36-hub grid** — it finishes the puzzle from
+the hypothesis, which is Galaxies' deleted `refuteAssoc` in another game's
+clothes. Deciding on the observed typical case would have called them the same
+thing.
+
+Two smaller things the numbers say. `min = 0` is common: many trials are refuted
+before any deduction at all, so *both* rungs contain outright Checks — a rung is
+classified by its worst case, not by its best. And the cap overshoots (max 7 and
+9, not 4) because `spokesSolverFull` returns a whole pass's worth of deductions
+and the loop tests `total >= ACTION_LIMIT` at the top; the bound is on *passes*,
+which is still a bound, and it is the bound a walk would follow.
+
 ## 5. The scaffold
 
-`scripts/checks/forcing-chain-measure.test.ts` plus the `LATIN_FORCING_CHAINS` /
-`LATIN_FORCING_OFF` hooks in `src/engine/latin.ts` and
-`src/games/solo/solver.ts` are a **measurement scaffold**, and this section is
-here so the numbers above can be re-derived rather than trusted. They are
-reverted before the change lands; recover them from this change's history with
-`git log -S LATIN_FORCING_CHAINS`.
+Two **measurement scaffolds** produced the numbers above, and this section is
+here so they can be re-derived rather than trusted. Both are reverted before the
+change lands; recover them from this change's history:
+
+- §3's chain lengths — `scripts/checks/forcing-chain-measure.test.ts` plus the
+  `LATIN_FORCING_CHAINS` / `LATIN_FORCING_OFF` hooks in `src/engine/latin.ts` and
+  `src/games/solo/solver.ts`. `git log -S LATIN_FORCING_CHAINS`.
+- §6's look-ahead depths — `scripts/checks/spokes-lookahead-measure.test.ts`
+  plus a `SPOKES_SUBSOLVE_DEPTHS` recorder in `src/games/spokes/solver.ts`.
+  `git log -S SPOKES_SUBSOLVE_DEPTHS`.
+
+One number **did** survive into the source, deliberately: `ACTION_LIMIT`'s doc
+comment in `spokes/solver.ts` now carries both distributions, because that
+constant is what separates the game's Tactic rung from its Search one and a
+future reader retuning it as a performance dial would silently move a tier name.

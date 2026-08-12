@@ -315,7 +315,7 @@ describe("bricks generator", () => {
       [7, 6],
       [10, 8],
     ]) {
-      it(`${w}x${h} Normal needs Normal, not Easy`, () => {
+      it(`${w}x${h} Unreasonable needs its own rung, not Easy`, () => {
         const p: BricksParams = { w, h, diff: DIFF_NORMAL };
         const { desc } = newBricksDesc(p, randomNew(`bricks-tier-${w}x${h}`));
         const st = newState(p, desc);
@@ -342,7 +342,24 @@ describe("bricks generator", () => {
 
     it("offers only the difficulties it can generate", () => {
       const titles = (bricksGame.presets().submenu ?? []).map((e) => e.title);
-      expect(titles).toEqual(["7x6 Easy", "7x6 Normal", "10x8 Easy", "10x8 Normal"]);
+      expect(titles).toEqual([
+        "7x6 Easy",
+        "7x6 Unreasonable",
+        "10x8 Easy",
+        "10x8 Unreasonable",
+      ]);
+    });
+
+    // `audit-guessing-tier-names` D11 dropped upstream's third tier from
+    // `DIFF_NAMES`, so `difficulty-contract.test.ts` — which iterates the
+    // *declared* tiers — no longer covers it. This is where that guarantee
+    // lives now, and it is the whole of what a dropped name must not break: the
+    // difficulty character still round-trips, so no game ID or saved game
+    // changes meaning.
+    it("still round-trips the unnamed third tier through a game ID", () => {
+      const p = decodeParams("10x8dt");
+      expect(p.diff).toBe(DIFF_TRICKY);
+      expect(encodeParams(p, true)).toBe("10x8dt");
     });
   });
 });

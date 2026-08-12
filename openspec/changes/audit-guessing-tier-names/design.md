@@ -190,6 +190,107 @@ Full sweep and measurements: [`audit.md`](./audit.md).
   steps* that were direct, not how far a plan truncated at the **first** stall
   actually gets. 61–74% is the honest number.
 
+## D10 — Spokes: one function, two tiers, two rungs (task 2c.6)
+
+The survey deferred Spokes because *"the trial is at **both** Tricky and Hard,
+and two tiers cannot share a name"*. That premise is wrong, and reading the two
+call sites rather than the function is what shows it. `spokesSolve` calls
+`spokesSolverAttempt` **twice**, with different sub-tiers:
+
+```
+if (copy && diff === DIFF_TRICKY && spokesSolverAttempt(b, copy, s, DIFF_LIMITED)) continue;
+if (diff < DIFF_HARD) break;
+if (copy && spokesSolverAttempt(b, copy, s, DIFF_EASY)) continue;
+```
+
+`DIFF_LIMITED` is `DIFF_EASY - 1`, and the only thing it changes is that the
+sub-solve stops at `ACTION_LIMIT`. So under D9 they are **a Tactic and a
+Search**, and each takes its own remedy: Tricky keeps its name, the top tier is
+renamed `Unreasonable`.
+
+**Measured before deciding** (30 boards per configuration, §6): the two are
+indistinguishable on a typical board — median 2 deductions each — and differ
+entirely in the tail. The capped one reaches at most 9; the uncapped one has a
+p90 of 11 and a **max of 35 hubs on a 36-hub grid**, i.e. it finishes the puzzle
+from the hypothesis. That is Galaxies' `refuteAssoc` in another game's clothes.
+
+**The transferable rule: classify a trial rung by the bound it guarantees, not
+by the depth it typically reaches.** Had this been settled on the median it
+would have called both rungs the same thing, and either name would have been
+wrong for one of them. A hint can only promise what is guaranteed.
+
+Consequences, all applied:
+
+- `DIFF_NAMES` is `Easy · Tricky · Unreasonable`. The internal key `"hard"` and
+  the difficulty character `h` are untouched (the D7 precedent), so game IDs,
+  saved games and shared links survive.
+- The hint's `nextSpokesFiring` loses its `diff >= DIFF_HARD` arm and
+  `deduceSpokesPlan` defaults to `DIFF_TRICKY`. The *solver* keeps the rung, so
+  the generator still grades on it and **no board moves** — the differential is
+  untouched, as it was for Clusters/Undead/Bricks/Dominosa in 2d.3.
+- **The guarantee had to be structural, because the guard cannot see this one.**
+  Both rungs are the same function and emit the *same sentence*
+  (*"Drawing this line would over-fill the ringed hub — so rule it out."*), which
+  is the anchored, classified form the audit praised — so
+  `hint-quality.test.ts`'s vocabulary check passes either way. This is exactly
+  the blind spot that check's own doc comment names. `spokes-hint.test.ts` now
+  asserts that planning at the top tier yields the *same plan* as planning at
+  Tricky, with a control asserting Tricky does add firings Easy lacks, so the
+  equality is a live fact rather than a vacuous one.
+
+## D11 — Bricks: rename the rung's tier, and drop the name that has no boards (task 2c.3)
+
+`solverRecurse` places a colour and then runs `solveGame(…, maxdiff - 1)` — the
+whole solver — so it is a Search, and it ships at **Normal**. The survey deferred
+this one because renaming Normal gives `Easy · Unreasonable · Tricky`, an
+ordering no player can read.
+
+The way out is that **Bricks does not have three tiers**; it has two, and a third
+name left over. `Tricky` is the same rung one level deeper,
+`grade-difficulty-tiers-honestly` measured that depth 2 never decides anything
+depth 1 has not, and it has been *refused at generation* ever since. The
+dropdown entry could only ever produce an error message.
+
+**Owner decision, 2026-08-12, taken with that in view: `Easy · Unreasonable`.**
+
+- `DIFF_NAMES` has two entries, and `difficulty.tiers` and the custom-params
+  `choices` now **read it** instead of hand-copying it — the same defect 2a.3
+  found in Unequal, in a game nobody had checked.
+- `DIFFCOUNT`, `DIFF_CHARS` and `DIFF_TRICKY` are untouched, so `10x8dt` still
+  decodes, still round-trips, and is still refused *with its reason* by
+  `validateParams` (which is now the only place that knows the tier exists).
+- **This does not weaken D5's "never delete a tier".** Nothing that ships boards
+  is removed; what is removed is a *label* for a tier retired by an earlier
+  change on a measurement. The distinction that matters is that a player loses
+  no configuration they could previously play.
+- The guarantee `difficulty-contract.test.ts` used to provide for that tier — it
+  iterates the *declared* tiers — moves into `bricks.test.ts` as an explicit
+  round-trip assertion. **A name dropped from a list silently drops the
+  cross-game guard that iterated the list**, which is the thing to check whenever
+  a declared set shrinks.
+- `help/games/bricks.md` said *"Choose Easy or Normal"* — already a two-tier
+  description — and now says what each tier means for the Hint button, which is
+  the player-visible consequence of the rung being a search.
+
+## D12 — the two remaining 2c items dissolve under D9, and saying so is the deliverable
+
+- **Map (2c.7).** D9 classifies Map's forcing-chain BFS as a **Tactic**, so the
+  rung does not move and Hard is not renamed. The whole of 2c.7 — *build a new
+  deductive rung, re-grade, then move the chain* — was demanded by D5's literal
+  reading and is withdrawn with it. What survives is a finding rather than a
+  task: **a tier can BE its rung** (Map's solver has exactly three gates and the
+  chain is the Hard one, so emptying it makes Hard identical to Normal and the
+  preset generates 0 of 20). The coverage gap the same investigation found —
+  Map's own suite generates `DIFF_NORMAL` boards only — needs no new test:
+  `difficulty-contract.test.ts` generates every declared tier of every tiered
+  game, and it is what caught this in the first place.
+- **Group 12x12 Extreme (2c.8).** The 8.5 s / 63 s figure was caused by the rung
+  move, and the rung move is reverted. What remains is the pre-existing
+  4.2 s median / 15.6 s max at upstream's placement — marginal, custom-params
+  only (Group's presets stop at 8x8 Hard and 12x12 Normal), and **not introduced
+  by this change**. Owner decision, 2026-08-12: record it measured and move on.
+  Recorded here so it is owned rather than forgotten, not deferred silently.
+
 ## Open Questions
 
 - ~~Does `latin.ts`'s `forcing` count as checking?~~ Resolved by D2.

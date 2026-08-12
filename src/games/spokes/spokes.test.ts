@@ -157,15 +157,20 @@ describe("spokes params", () => {
     expect(validateParams({ w: 2, h: 2, diff: "hard" }, true)).toBeNull();
   });
 
+  // The top tier reads `Unreasonable` where upstream says `Hard`
+  // (`audit-guessing-tier-names` D10): its look-ahead runs an *unbounded*
+  // sub-solve from a hypothesis. The `"hard"` key and the `h` difficulty
+  // character are untouched, which the round-trip tests below assert — a game ID
+  // written before the rename still names the same board.
   it("offers the six upstream presets, defaulting to 6x6 Easy", () => {
     const menu = spokesGame.presets();
     expect(menu.submenu?.map((e) => e.title)).toEqual([
       "4x4 Easy",
       "4x4 Tricky",
-      "4x4 Hard",
+      "4x4 Unreasonable",
       "6x6 Easy",
       "6x6 Tricky",
-      "6x6 Hard",
+      "6x6 Unreasonable",
     ]);
     expect(spokesGame.defaultParams()).toEqual({ w: 6, h: 6, diff: "easy" });
   });

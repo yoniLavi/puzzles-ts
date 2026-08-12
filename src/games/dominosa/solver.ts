@@ -28,34 +28,62 @@ import {
   DINDEX,
 } from "./state.ts";
 
-/** The deductive technique a hint firing used. */
-export type HintTechnique =
-  | "onlySpot"
-  | "squareOnly"
+/** A technique that *places* a domino. */
+export type PlaceTechnique = "onlySpot" | "squareOnly";
+
+/**
+ * A technique that *rules out* placements.
+ *
+ * Split from {@link PlaceTechnique} so each narrator can be exhaustive over its
+ * own half: with one union covering both, the barrier narrator needed a
+ * `default:` arm, and that arm was reachable only in principle while reading as
+ * a live un-narrated fallback ("This can't be a domino.") — the thing the hint
+ * spec forbids. Now an unhandled technique is a compile error, which is the same
+ * guarantee `HintTechnique` gets by not containing `"forcingChain"`.
+ */
+export type BarrierTechnique =
   | "squareSingleDomino"
   | "mustOverlap"
   | "localDuplicate"
   | "localDuplicate2"
   | "parity"
   | "set";
+
+/** The deductive technique a hint firing used. */
+export type HintTechnique = PlaceTechnique | BarrierTechnique;
 // No `"forcingChain"` (`audit-guessing-tier-names`, design D4/D8): `runSolver`
 // still runs that rung — the generator grades on it — but `firstFiring`, the
 // hint's projection, does not, so nothing can produce the tag. Removing the
 // member rather than just the narration arm makes reintroducing the sentence a
 // compile error instead of a matter of convention.
 
-/** One firing captured by the hint recorder — either a forced domino placement
+/**
+ * One firing captured by the hint recorder — either a forced domino placement
  * or a set of ruled-out placements (barriers), plus the squares it reasons
- * over (shaded as evidence). Cell references are `y*w+x` indices. */
-export interface HintFiring {
-  technique: HintTechnique;
-  /** For a placement firing, the `[a, b]` (a < b) square pair to lay a domino. */
-  place: [number, number] | null;
-  /** For a barrier firing, the `[a, b]` ruled-out placements to bar. */
-  barriers: Array<[number, number]>;
-  /** Cells the deduction reasons over, to shade as evidence. */
-  evidence: number[];
-}
+ * over (shaded as evidence). Cell references are `y*w+x` indices.
+ *
+ * A **discriminated union on `place`**, so that a firing's kind and its
+ * technique cannot disagree. With one flat shape the narrators had to accept
+ * every technique and fall back on the ones that could not occur, and that
+ * fallback was an unexplained sentence — which is the defect, not the
+ * unreachability (`audit-guessing-tier-names`).
+ */
+export type HintFiring =
+  | {
+      technique: PlaceTechnique;
+      /** The `[a, b]` (a < b) square pair to lay a domino on. */
+      place: [number, number];
+      barriers: readonly never[];
+      /** Cells the deduction reasons over, to shade as evidence. */
+      evidence: number[];
+    }
+  | {
+      technique: BarrierTechnique;
+      place: null;
+      /** The `[a, b]` ruled-out placements to bar. */
+      barriers: Array<[number, number]>;
+      evidence: number[];
+    };
 
 class SolverDomino {
   lo = 0;
@@ -839,13 +867,21 @@ export class DominosaSolver {
 
     this.recording = true;
     try {
-      const place = (technique: HintTechnique): HintFiring => ({
-        technique,
-        place: this.recPlace,
-        barriers: [],
-        evidence: this.recEvidence,
-      });
-      const barrier = (technique: HintTechnique): HintFiring => ({
+      const place = (technique: PlaceTechnique): HintFiring => {
+        // Reached only just after a placement deduction returned true, which is
+        // where `recPlace` is set. Stated as a throw rather than a `?? fallback`
+        // because there is no sensible firing to invent here: a placement
+        // technique with no pair is a recorder bug, and swallowing it would
+        // surface as a hint pointing at nothing.
+        if (!this.recPlace) throw new Error(`${technique} recorded no placement`);
+        return {
+          technique,
+          place: this.recPlace,
+          barriers: [],
+          evidence: this.recEvidence,
+        };
+      };
+      const barrier = (technique: BarrierTechnique): HintFiring => ({
         technique,
         place: null,
         barriers: this.recBarriers.slice(),
