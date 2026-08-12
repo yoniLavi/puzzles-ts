@@ -23,15 +23,26 @@ export const DIFF_EASY = 0;
 export const DIFF_NORMAL = 1;
 export const DIFF_TRICKY = 2;
 export const DIFFCOUNT = 3;
-// No `Unreasonable` tier: the `strengthen-undead-deduction` re-grade measured a
-// zero recursion-only residual — every uniquely-solvable Undead board is cracked
-// by the deductive ladder (arc-consistency + exact counting + depth-1 forcing),
-// so Easy/Normal/Tricky are all guess-free and the recursion-only candidates are
-// exactly the non-unique boards (rejected by the uniqueness oracle anyway).
+// The top tier is `Unreasonable` (`audit-guessing-tier-names`, design D5), and
+// this corrects the reasoning that previously stood here.
+//
+// `strengthen-undead-deduction` measured a **zero recursion-only residual** and
+// concluded "so Easy/Normal/Tricky are all guess-free". That measurement is
+// sound and still holds — but it answers a different question. It is about
+// *recursion*: no board needs a hypothesis nested inside a hypothesis. The rule
+// is about **propagation**: rung 3 (`forcingPass`) hypothesises one candidate
+// and runs the arc-consistency + counting *fixpoint* from it, taking the
+// contradiction that eventually appears. That is a solve-from-hypothesis, the
+// shape Galaxies' removed rung had, and only a tier named `Unreasonable` may
+// require it. Undead has no tier above rung 3, so the tier is renamed rather
+// than the rung moved.
+//
+// Easy and Normal are unaffected: their ladder stops below the forcing rung.
 
-// undead_diffchars / undead_diffnames, indexed by level.
+// undead_diffchars, indexed by level — **unchanged**, so game IDs, saved games
+// and shared links survive the rename; only the label moves.
 const DIFF_CHARS = "ent";
-export const DIFF_NAMES = ["Easy", "Normal", "Tricky"];
+export const DIFF_NAMES = ["Easy", "Normal", "Unreasonable"];
 const DIFFS: Difficulty[] = ["easy", "normal", "tricky"];
 
 export function diffToLevel(d: Difficulty): number {

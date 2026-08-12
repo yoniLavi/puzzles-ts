@@ -99,9 +99,43 @@ Full sweep and measurements: [`audit.md`](./audit.md).
   It is also a prerequisite for D5's first bullet in those two games — a rung
   cannot move up to a tier that is not called `Unreasonable`.
 
+- **D8 (new) — two rules in the same spec disagree about Clusters, and the
+  narration rule is the one that should bend.** The `ts-engine` delta says a hint
+  SHALL NOT narrate a propagating trial *on any tier*, and SHALL refuse instead.
+  `docs/games/hints.md` § "The forcing boundary" says the **compliant** answer to
+  a shipped forcing tier is to *externalise it as a guided what-if walk* —
+  tentative marks the player watches accumulate — and calls that the full answer
+  rather than a stopgap. **Clusters does exactly that**, and is the only game in
+  the collection that does: its hint marks every forced cell with the colour the
+  hypothesis gives it and names which of three rules breaks, and where.
+
+  Applying the refusal rule to it was tried and reverted: it broke 7 of its 52
+  tests, because the chain *is* Clusters' hint, and an `Unreasonable` board needs
+  the lookahead at least once by construction — so the hint would refuse
+  somewhere on every board of its top tier. Deleting the collection's one correct
+  treatment of a propagating rung, in the name of a rule written because the
+  *other* treatments were bad, is the wrong outcome.
+
+  The distinction that actually carries the rule's reason is **not whether the
+  trial propagates but whether the player can see the propagation**. The Latin
+  family said *"would force a contradiction further along"* — no classification,
+  no anchor, chain invisible — which asks the player to run it in their head, and
+  that is what § "The forcing boundary" forbids. Clusters asks them to read it.
+
+  **Left to the owner** (see the open question below), because it narrows a rule
+  they have already ruled on once. Nothing is blocked on the answer: the Latin
+  family's narration is gone either way, and Clusters' tier is renamed either
+  way.
+
 ## Open Questions
 
 - ~~Does `latin.ts`'s `forcing` count as checking?~~ Resolved by D2.
+- **Does the hint-refusal rule admit an externalised what-if walk?** (D8.) As
+  written it does not, and Clusters is the casualty. Narrowing it to *"a hint
+  SHALL NOT narrate a propagating trial **whose chain the player cannot see on
+  the board**"* keeps every case it was written for — Galaxies' deleted rung, the
+  Latin family's removed sentence, Bricks' unclassified "(ringed)" — and spares
+  the one game that did the work. Owner call.
 - Should the guard be a declaration on the `Game` (a rung that trials must say
   so) or a per-game test? A declaration is checkable cross-game; a test is
   cheaper and does not widen the interface. **Leaning: neither is new** —

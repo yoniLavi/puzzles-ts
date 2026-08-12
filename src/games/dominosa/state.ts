@@ -41,7 +41,20 @@ export const DIFF_AMBIGUOUS = 4;
 export const DIFFCOUNT = 5;
 
 /** Names in enum order (upstream `dominosa_diffnames`). */
-export const DIFF_NAMES = ["Trivial", "Basic", "Hard", "Extreme", "Ambiguous"];
+// `Unreasonable` where upstream says `Extreme` (`audit-guessing-tier-names`,
+// design D5): that tier's `deduceForcingChain` rung follows an implication
+// closure across the board until a chain repeats a domino, which is a conclusion
+// reached by propagating rather than by looking, and the collection reserves one
+// word for a tier that may require that.
+//
+// It is Dominosa's top *difficulty* tier even though `Ambiguous` sits after it:
+// `Ambiguous` is not a harder rung but a **different promise** — its generator
+// skips uniqueness altogether (`nonUniqueTiers`), so no cap solves it and none
+// is meant to. The rule is about what a difficulty may require, so it lands on
+// the last real difficulty.
+//
+// The difficulty characters are untouched, so game IDs and saves are unaffected.
+export const DIFF_NAMES = ["Trivial", "Basic", "Hard", "Unreasonable", "Ambiguous"];
 /** Encoding chars in enum order (upstream `dominosa_diffchars`). */
 export const DIFF_CHARS = "tbhea";
 

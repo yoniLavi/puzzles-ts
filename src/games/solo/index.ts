@@ -575,8 +575,6 @@ function narrate(reason: SoloReason, ns: number[]): string {
       return reason.region
         ? `Another group of cells in this ${regionName(reason.region)} already accounts for a fixed set of numbers that includes ${joinNums(ns)}, so we must cross out ${joinNums(ns)} here.`
         : `A locked pattern of cells across these lines already accounts for ${joinNums(ns)}, so we must cross out ${joinNums(ns)} here.`;
-    case "forcing":
-      return `Following a chain of forced candidates, placing ${ns[0]} here would lead to a contradiction — so we must cross out ${joinNums(ns)}.`;
     case "cageSingle":
       return `The rest of this killer cage is filled in, and the one cell left must bring the cage to its total — so it can only be ${ns[0]}.`;
     case "cageIntersect":

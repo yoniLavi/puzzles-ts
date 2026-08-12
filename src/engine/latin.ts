@@ -69,9 +69,14 @@ export type LatinReason =
    * of that row and column. */
   | { kind: "dup"; n: number; px: number; py: number }
   /** A naked-subset ("set") elimination. */
-  | { kind: "set" }
-  /** A forcing-chain elimination. */
-  | { kind: "forcing" };
+  | { kind: "set" };
+// There is deliberately **no `forcing` reason** (`audit-guessing-tier-names`,
+// design D4). The rung still exists — see `LatinSolver.forcing`, which every
+// consumer now runs on its `Unreasonable` tier — but it no longer *records*,
+// because a conclusion reached by propagating from a hypothesis is a search
+// result and no hint may present one as a technique, on any tier. This type is
+// the hint's vocabulary; a word it does not contain is a sentence that cannot
+// be written.
 
 /** The recorded-deduction shape lives in its own module (nothing about it is
  * Latin — see [`deduction-record.ts`](./deduction-record.ts)); re-exported here
@@ -422,16 +427,10 @@ export class LatinSolver {
               }
 
               if (currn === orign && (xt === x || yt === y)) {
-                if (this.recorder) {
-                  this.recorder({
-                    kind: "elim",
-                    x: xt,
-                    y: yt,
-                    n: orign,
-                    reason: { kind: "forcing" },
-                    group: this.group,
-                  });
-                }
+                // Deliberately unrecorded — see `LatinReason`. Every consumer
+                // caps its hint below this rung, so a record here could never
+                // be narrated anyway; not emitting one is what makes that
+                // structural instead of a convention.
                 this.cube[this.cubepos(xt, yt, orign)] = 0;
                 return 1;
               }

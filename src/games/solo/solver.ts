@@ -72,8 +72,11 @@ export type SoloReason =
   /** A naked/hidden subset locks a set of digits to a set of cells in a region
    * (absent for the cross-line single-digit "X-wing" set). */
   | { kind: "set"; region?: SoloRegion }
-  /** A forcing-chain contradiction. */
-  | { kind: "forcing" }
+  // No `forcing` reason (`audit-guessing-tier-names`, design D4): the rung still
+  // exists, on the `Unreasonable` tier, but it no longer records — a conclusion
+  // reached by propagating from a hypothesis is a search result, and no hint may
+  // present one as a technique. Solo's hint caps at `DIFF_EXTREME`, so it could
+  // not reach the rung in any case; removing the word makes that structural.
   /** A *hidden* single — digit `n` fits only one cell of `region`. */
   | { kind: "hiddenSingle"; n: number; region: SoloRegion }
   /** A placement forced by deeper deductions the working notes don't reflect. */
@@ -617,14 +620,7 @@ class SolverUsage {
                     ((onDiag0(yt * cr + xt, cr) && onDiag0(y * cr + x, cr)) ||
                       (onDiag1(yt * cr + xt, cr) && onDiag1(y * cr + x, cr)))))
               ) {
-                this.recorder?.({
-                  kind: "elim",
-                  x: xt,
-                  y: yt,
-                  n: orign,
-                  reason: { kind: "forcing" },
-                  group: this.group,
-                });
+                // Deliberately unrecorded — see the reason union above.
                 this.setCube(xt, yt, orign, 0);
                 return 1;
               }

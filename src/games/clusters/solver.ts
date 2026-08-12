@@ -427,10 +427,24 @@ function shortestChainDeduction(
   };
 }
 
-/** Run the deduction from the player's current grid, recording every forced
- * move in order with the rule its refuted colouring would break — the data a
- * hint narrates. Single-cell firings lead; a stall falls back to the
- * shortest-chain lookahead firing. Operates on a clone. */
+/**
+ * Run the deduction from the player's current grid, recording every forced move
+ * in order with the rule its refuted colouring would break — the data a hint
+ * narrates. Single-cell firings lead; a stall falls back to the shortest-chain
+ * lookahead firing. Operates on a clone.
+ *
+ * **The lookahead firing is deliberately retained here** where the Latin
+ * family's equivalent was removed (`audit-guessing-tier-names`, design D8). It
+ * propagates, so by the letter of the guess-free rule it is the same shape — but
+ * the rule's *reason* is that a player cannot check a chain they must run in
+ * their head, and this hint does not ask them to: it marks every forced cell on
+ * the board with the colour the hypothesis gives it, and names which of the
+ * three rules breaks and where. That is the "guided what-if walk" that
+ * `docs/games/hints.md` § "The forcing boundary" names as the *full* compliant
+ * answer, not a stopgap. What the Latin family said instead — "would force a
+ * contradiction further along", unclassified and unanchored — is what that
+ * section forbids.
+ */
 export function deduceHintPlan(
   grid0: Uint8Array,
   w: number,

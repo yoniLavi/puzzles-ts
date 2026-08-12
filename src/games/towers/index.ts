@@ -495,8 +495,6 @@ function narrate(reason: HintReason, n: number, continues = false): string {
       return `Working through this cell's row and column together, only height ${n} can still go here — so it must be ${n}.`;
     case "set":
       return `Another group of cells already accounts for a fixed set of heights that includes ${n}, so we must cross out the ${n} here.`;
-    case "forcing":
-      return `Following a chain of two-candidate cells, placing height ${n} here would force a contradiction further along the line — so we must cross out the ${n}.`;
   }
 }
 

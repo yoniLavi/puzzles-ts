@@ -104,8 +104,10 @@ export type SaladReason =
   | { kind: "circleXNote" }
   | SingleReason
   | { kind: "dup"; n: number; px: number; py: number }
-  | { kind: "set" }
-  | { kind: "forcing" };
+  | { kind: "set" };
+// No `forcing` (`audit-guessing-tier-names`, design D4): `recordSaladDeductions`
+// disables that rung outright, so the plan ends where it would have fired and
+// `candidateHint` refuses. The solve path keeps it, so no board changes.
 
 /** What a Salad hint step draws (docs/games/hints.md § "The element-type colour legend"'s element legend):
  * `area` is the deduction's evidence, `targets` the squares it acts on, `marks`

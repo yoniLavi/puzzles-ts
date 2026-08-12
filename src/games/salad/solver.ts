@@ -399,7 +399,20 @@ export function recordSaladDeductions(b: SaladBoard, maxdiff: number): SaladDedu
     diffSimple: DIFF_EASY,
     diffSet0: DIFF_HARD,
     diffSet1: DIFF_HARD,
-    diffForcing: DIFF_HARD,
+    // **The hint may not reach the forcing rung, on any tier**
+    // (`audit-guessing-tier-names`, design D4 — the Galaxies precedent). This is
+    // the *recording* solver, the hint's projection of the deduction, and a
+    // conclusion reached by propagating from a hypothesis is a search result
+    // rather than a technique a player can learn. Where it would have fired, the
+    // plan simply ends and `candidateHint` refuses with "No further move can be
+    // deduced from this position" — which is the honest thing to say.
+    //
+    // Salad's *solve* path (`saladSolve`, which the generator gates on) keeps
+    // the rung at `DIFF_HARD`, so no board changes and the byte-match
+    // differential is untouched. The five Latin games reach the same state a
+    // different way: they already cap their hint at `min(tier, DIFF_EXTREME)`,
+    // and moving the rung to `Unreasonable` put it out of that reach.
+    diffForcing: DIFF_IMPOSSIBLE,
     diffRecursive: DIFF_IMPOSSIBLE,
     usersolvers: [saladSolverEasy, null],
     valid: () => true,

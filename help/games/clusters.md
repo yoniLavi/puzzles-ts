@@ -22,11 +22,11 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dd>Size of the grid in squares.</dd>
 	<dt>Difficulty</dt>
 	<dd>
-		<p>Controls how deeply you have to reason. Both settings always have exactly one solution, and neither ever needs a guess.</p>
-		<p><em>Easy</em> puzzles can be finished a square at a time: for each empty square, one of the two colours breaks a rule outright, so the other one is forced.</p>
-		<p><em>Tricky</em> puzzles need at least one step where that is not enough, and you must suppose a colour, follow the squares it forces, and find the contradiction further along. Tricky boards are guaranteed to need this at least once — a board an Easy player could finish is not offered as Tricky.</p>
+		<p>Controls how deeply you have to reason. Both settings always have exactly one solution.</p>
+		<p><em>Easy</em> puzzles can be finished a square at a time: for each empty square, one of the two colours breaks a rule outright, so the other one is forced. You never have to look further than the square you are deciding.</p>
+		<p><em>Unreasonable</em> puzzles need at least one step where that is not enough, and you must suppose a colour, follow the squares it forces, and find the contradiction further along. That is a chain rather than a glance, which is what the name warns of. Unreasonable boards are guaranteed to need it at least once — a board an Easy player could finish is not offered as Unreasonable. The hint draws the whole chain on the board for you when it comes to one.</p>
 	</dd>
 </dl>
 
-Tricky needs a board with room for the deeper reasoning, so it is not offered on very small grids.
+Unreasonable needs a board with room for the deeper reasoning, so it is not offered on very small grids.
 

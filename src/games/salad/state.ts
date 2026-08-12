@@ -29,11 +29,20 @@ import { parseLeadingInt } from "../../engine/params.ts";
 
 /** Upstream `DIFF_EASY`, shown as **Normal**. */
 export const DIFF_EASY = 0;
-/** Upstream `DIFF_HARD`, shown as **Extreme**. */
+/** Upstream `DIFF_HARD`, shown as **Unreasonable**. */
 export const DIFF_HARD = 1;
 export const DIFFCOUNT = 2;
 
-export const DIFF_NAMES: readonly string[] = ["Normal", "Extreme"];
+// The top tier is `Unreasonable`, not upstream's `Extreme`
+// (`audit-guessing-tier-names`, design D5). It is Salad's only tier that can
+// require a forcing chain — a conclusion reached by *propagating* from a
+// hypothesis — and the collection reserves exactly one word for that; it is also
+// the only word in the collection with a stable meaning, being the last tier in
+// all nine games that use it (see the change's `naming-survey.md`). Salad has no
+// tier above this one, so the rung cannot move up and the tier is renamed
+// instead. The difficulty *character* is untouched (`x`), so game IDs, saved
+// games and shared links are unaffected, and no preset offers this tier.
+export const DIFF_NAMES: readonly string[] = ["Normal", "Unreasonable"];
 /** The difficulty letters `encodeParams` writes and `decodeParams` reads. */
 const DIFF_CHARS = "ex";
 

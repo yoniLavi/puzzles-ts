@@ -70,17 +70,25 @@ shape, *diverge and keep the oracle*. The shared reasoning is written once, on
 
 ### 2c. Rename the top tier, where there is nothing above it
 
-- [ ] 2c.1 Salad: `Extreme` → `Unreasonable` (cost of the alternative: 33% of
-      the numbers-mode boards; not a preset, so no preset title moves).
-- [ ] 2c.2 Dominosa: `Extreme` → `Unreasonable` (order 6 Extreme is a preset).
+Names picked from [`naming-survey.md`](./naming-survey.md), not by taste:
+`Unreasonable` is the only tier word in the collection with a stable meaning —
+nine games use it and in every one it is the last tier.
+
+- [x] 2c.1 Salad: `Extreme` → `Unreasonable`; help page updated (it also
+      dropped a sentence that read like the tier was ordinary).
+- [x] 2c.2 Dominosa: `Extreme` → `Unreasonable` — its top *difficulty* tier;
+      `Ambiguous` sits after it but is a different promise (no unique solution),
+      not a harder rung.
 - [ ] 2c.3 Bricks: `Normal` → `Unreasonable`?? — **needs its own design pass**:
       `Tricky` is declared-but-not-generable above it, so the rename has to
       decide what happens to the declared tier. Do not sweep.
-- [ ] 2c.4 Undead: `Tricky` → `Unreasonable`. Note this contradicts
-      `strengthen-undead-deduction`'s conclusion that the ladder needs no
+- [x] 2c.4 Undead: `Tricky` → `Unreasonable`. This corrects
+      `strengthen-undead-deduction`'s stated conclusion that the ladder needs no
       Unreasonable tier — that change measured the *recursion-only* residual at
-      zero, which is a different question from whether rung 3 propagates.
-- [ ] 2c.5 Clusters: `Tricky` → `Unreasonable`.
+      zero, which is sound and holds, but answers a different question from
+      whether rung 3 propagates. It does.
+- [x] 2c.5 Clusters: `Tricky` → `Unreasonable`; help page rewritten (it claimed
+      "neither ever needs a guess", which is what this audit falsifies).
 - [ ] 2c.6 Spokes: **needs its own design pass** — *both* `Tricky` and `Hard`
       propagate, and two tiers cannot both be `Unreasonable`. Do not sweep.
 - [ ] 2c.7 Map: **needs its own design pass**, and it is the one game where the
@@ -104,13 +112,21 @@ with forcing at `Unreasonable` **no hint in Towers, Keen, Group, Unequal or Solo
 can reach the rung on any tier**. Their `case "forcing"` narration arms are now
 unreachable.
 
-- [ ] 2d.1 Delete those unreachable arms (`latin-hint.ts` `narrateLatinReason`,
-      plus Towers' and Solo's copies). **Ordering:** the shared arm is also used
-      by Salad, whose rung has *not* moved yet, so 2c.1 comes first — otherwise
-      removing it breaks a live caller.
-- [ ] 2d.2 The same for every other game whose hint narrates a rung that has
-      moved to `Unreasonable` (Salad's own `{ kind: "forcing" }`, and whatever
-      2c leaves).
+- [x] 2d.1 Done, and one level deeper than planned: rather than deleting the
+      arms alone, `forcing` is gone from `LatinReason` and Solo's reason union
+      and the rung **no longer records at all**. Omitting the word from
+      `GenericLatinReason` makes a sentence narrating a search a *compile* error
+      rather than a convention, and the test that asserted the sentence is now a
+      `@ts-expect-error` which fails to compile if the arm returns.
+- [x] 2d.2 Salad's own `{ kind: "forcing" }` gone the same way, by disabling the
+      rung in `recordSaladDeductions` (the hint's projection) while `saladSolve`
+      keeps it — so no board moved.
+- [ ] 2d.3 **Clusters and Undead still narrate their trial, and Clusters should
+      probably keep doing so** — design D8, an open question for the owner.
+      Removing it from Clusters was tried and reverted: 7 of 52 tests, because
+      the chain *is* its hint, and it is the collection's only implementation of
+      the guided what-if walk `hints.md` calls the full compliant answer.
+      Undead's is the ordinary case and follows whatever D8 settles.
 
 ### 2e. The differentials — **done for the six moved games**
 
@@ -129,10 +145,11 @@ unreachable.
 
 ## 3. Make the rule checkable
 
-- [ ] 3.1 The `ts-engine` delta (already in this change) states the propagation
-      test; amend it to carry D5's *determined* remedy — rung moves up where an
-      `Unreasonable` tier exists, top tier renames where it does not, a tier is
-      never deleted.
+- [x] 3.1 The `ts-engine` delta carries D5's *determined* remedy — rung moves up
+      where an `Unreasonable` tier exists, top tier renames where it does not, a
+      tier is never deleted — plus the viability and keep-the-oracle scenarios.
+      **Still to fold in:** whatever D8 settles about narrating an externalised
+      what-if walk.
 - [ ] 3.2 Promote `galaxies-hint.test.ts`'s speculative-vocabulary check into
       `src/engine/hint-quality.test.ts`, where all 30 hinting games are enrolled.
       **Prove it fails** before trusting it — today it fails Bricks, Clusters,
@@ -144,3 +161,17 @@ unreachable.
 - [ ] 4.2 Revert the measurement scaffold (`audit.md` §5).
 - [ ] 4.3 `openspec validate audit-guessing-tier-names --strict`; owner
       acceptance; archive.
+
+## 5. Follow-up scaffolded from the collection-wide survey
+
+- [ ] 5.1 `unify-difficulty-tier-names` — the seven naming defects
+      [`naming-survey.md`](./naming-survey.md) §5 found that are **not** about
+      guessing: Unruly's top tier called `Normal`; Bridges' singleton `Medium`;
+      `Easy` not always the bottom rung (Unequal, Solo, Group put another word
+      below it); `Normal` spanning bottom (Salad) to top (Unruly); `Tricky` and
+      `Hard` used interchangeably for the same role in 17 and 13 games; and the
+      tiers no preset reaches (three of Group's five, plus five other games').
+      Every one is player-visible and none is a correctness question, so it
+      needs an owner decision on whether consistency is worth the churn before
+      it is scoped — item 6 (`Tricky` vs `Hard`) is the large one and is not
+      obviously a defect at all.
