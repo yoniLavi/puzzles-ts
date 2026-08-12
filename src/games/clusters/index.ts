@@ -285,15 +285,15 @@ function findMistakes(state: ClustersState): readonly ClustersMistake[] {
 /** Highlight roles of a Clusters hint step (the render legend — see the
  * COL_HINT block in render.ts). `target` is the forced cell; `danger` is the
  * tile the refuted colouring would break — the only element the narration
- * calls "ringed" — when that isn't the target itself. Every other premise tile
- * of the three local rules sits orthogonally adjacent to the target or the
- * danger tile, so it is already in view without a highlight of its own.
- *
- * There is no `chain` field: it carried a lookahead firing's what-if walk, and
- * that rung is gone (see `ClustersReason`). */
+ * calls "ringed" — when that isn't the target itself; `chain` is a lookahead
+ * firing's what-if walk, each cell marked with the colour the hypothesis
+ * would force it to. Every other premise tile of the three local rules sits
+ * orthogonally adjacent to the target or the danger tile, so it is already
+ * in view without a highlight of its own. */
 export interface ClustersHintHighlights {
   target: { x: number; y: number };
   danger?: { x: number; y: number };
+  chain: { x: number; y: number; fill: ClustersFill }[];
 }
 
 const colourName = (fill: ClustersFill): string =>
@@ -305,6 +305,22 @@ function narrate(d: ClustersDeduction): string {
   const f = colourName(d.fill);
   const t = colourName(d.refuted);
   const at = d.reason.at;
+
+  if (d.reason.kind === "chain") {
+    // A lookahead firing: one standing hypothesis plus forced single-cell
+    // consequences (never nested), shown statically as the marked cells.
+    const end =
+      at.kind === "dotOvercount"
+        ? "the ringed dot would touch a second tile of its own colour"
+        : at.cell === d.index
+          ? at.kind === "surrounded"
+            ? `this very cell would be sealed off from every ${t} tile`
+            : `this very cell could no longer touch two ${t} tiles`
+          : at.kind === "surrounded"
+            ? "the ringed tile would be sealed off from its own colour"
+            : "the ringed tile could no longer touch two of its own colour";
+    return `Suppose this cell were ${t}: the marked cells would each be forced in turn, until ${end} — impossible. So this cell must be ${f}.`;
+  }
 
   if (at.cell === d.index) {
     if (at.kind === "surrounded") {
@@ -330,6 +346,10 @@ function buildHighlights(d: ClustersDeduction, w: number): ClustersHintHighlight
   return {
     target: pt(d.index),
     danger: at.cell !== d.index ? pt(at.cell) : undefined,
+    chain:
+      d.reason.kind === "chain"
+        ? d.reason.steps.map((s) => ({ ...pt(s.index), fill: s.fill }))
+        : [],
   };
 }
 

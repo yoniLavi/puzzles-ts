@@ -39,20 +39,15 @@ describe("group differential (byte-match + solver agreement)", () => {
   for (const f of FIXTURES) {
     const label = `${f.w}d${f.diff}${f.id ? "" : "i"} (seed ${f.seed})`;
 
-    // Both bars run with `upstreamForcingTier`, the *only* place it is set:
-    // `audit-guessing-tier-names` moved the forcing rung from Extreme to
-    // Unreasonable, which changes every Extreme description, and running the
-    // fixtures against upstream's placement keeps the byte-match over
-    // everything else. See `LatinSolver.forcing`.
     it(`${label}: desc matches C byte-for-byte`, () => {
-      const { desc } = newGameDesc(params(f), randomNew(f.seed), true);
+      const { desc } = newGameDesc(params(f), randomNew(f.seed));
       expect(desc).toBe(f.desc);
       expect(validateDesc(params(f), desc)).toBeNull();
     });
 
     it(`${label}: TS solver grades at the C difficulty`, () => {
       const givens = newState(params(f), f.desc).grid.slice();
-      const ret = solveGroup(givens, f.w, f.solverDiff, undefined, true);
+      const ret = solveGroup(givens, f.w, f.solverDiff);
       expect(ret).toBe(f.solverDiff);
     });
   }

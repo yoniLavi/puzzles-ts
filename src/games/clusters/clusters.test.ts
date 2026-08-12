@@ -35,7 +35,6 @@ import {
   COLMASK,
   cloneState,
   DIFF_EASY,
-  DIFF_NAMES,
   DIFF_TRICKY,
   decodeParams,
   encodeDesc,
@@ -137,11 +136,8 @@ describe("params", () => {
     expect(validateParams(easy(2, 3), true)).toBeNull();
   });
 
-  it("refuses the harder tier below the size where it binds — for generation only", () => {
-    // Built from `DIFF_NAMES`, like the message itself: the assertion is that
-    // the refusal names the tier the player picked, not that it says a
-    // particular word.
-    const refusal = `${DIFF_NAMES[DIFF_TRICKY]} needs a board of at least 12 squares, at least two wide`;
+  it("refuses Tricky below the size where it binds — for generation only", () => {
+    const refusal = "Tricky needs a board of at least 12 squares, at least two wide";
     const tricky = (w: number, h: number) => ({ w, h, diff: DIFF_TRICKY });
     expect(validateParams(tricky(2, 5), true)).toBe(refusal); // 10 squares
     expect(validateParams(tricky(3, 3), true)).toBe(refusal); // 9 squares
@@ -191,7 +187,7 @@ describe("difficulty tiers", () => {
       const p = entry.params;
       if (!p) throw new Error("preset menu entry without params");
       expect(validateParams(p, true)).toBeNull();
-      expect(entry.title).toContain(DIFF_NAMES[p.diff]);
+      expect(entry.title).toContain(p.diff === DIFF_EASY ? "Easy" : "Tricky");
     }
   });
 

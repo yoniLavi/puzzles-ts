@@ -83,22 +83,8 @@ export function decodeParams(s: string): TowersParams {
   return p;
 }
 
-export function validateParams(p: TowersParams, full: boolean): string | null {
+export function validateParams(p: TowersParams, _full: boolean): string | null {
   if (p.w < 3 || p.w > 9) return "Grid size must be between 3 and 9";
-  // 4x4 Extreme has nothing left to grade with. `audit-guessing-tier-names`
-  // moved the forcing rung to Unreasonable, so Extreme is set₁ alone (the
-  // single-number row-vs-column elimination) — and on a 4x4 grid set₁ never
-  // decides anything set₀ has not, so no board is solvable at Extreme *and not*
-  // at Hard, which is what the generator gates on. Measured: 1000 consecutive
-  // attempts fail; 5x5 generates 20/20 at a 30ms median.
-  //
-  // Refusing beats the silent dial-down the generator still does at `w <= 3`
-  // (upstream's, kept): offering a difficulty that quietly hands back another
-  // one is the defect `grade-difficulty-tiers-honestly` exists to stop. Gated on
-  // `full`, so a saved game or a desc-carrying game ID still loads.
-  if (full && p.w <= 4 && diffToLevel(p.diff) === DIFF_EXTREME) {
-    return `${p.w}x${p.w} has no ${DIFF_NAMES[DIFF_EXTREME]} puzzles; use ${DIFF_NAMES[DIFF_HARD]} or ${DIFF_NAMES[DIFF_UNREASONABLE]}`;
-  }
   return null;
 }
 

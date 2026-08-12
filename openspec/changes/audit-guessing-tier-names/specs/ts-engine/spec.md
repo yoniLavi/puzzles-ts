@@ -14,16 +14,33 @@ candidate-elimination), or **rejecting at generation** the boards whose solution
 needs a deduction it cannot narrate (see the `ts-migration` narratable-deduction
 generation policy). This is the Hint-System companion to that generation policy.
 
-**A search is not a technique.** Where a conclusion is reached by assuming a
-value and *propagating* — running the deduction chain from the hypothesis until
-something breaks — the hint SHALL NOT report the survivor as though it were a
-deduction, on any tier. It SHALL refuse instead, and the refusal SHALL say that
-deduction has run out rather than reading as a failure. A contradiction visible
-**at the placement**, with no propagation, is ordinary deduction and may be
-narrated anywhere: the test is whether the rejected trial propagates before the
-oracle is asked, not whether the technique is called "forcing".
+**A search is not a technique, but a chain is — if it is walked.** A deduction
+that reaches its conclusion through a hypothesis SHALL be classified by whether
+the reasoning is a **bounded run of individually glanceable steps**:
 
-The tier names follow the same line. A tier whose boards can require guessing
+- **Check** — a contradiction visible **at the placement**, with no propagation.
+  Ordinary deduction; narratable at any tier.
+- **Tactic** — a **bounded** chain of forced consequences to a named endpoint.
+  Permitted at a non-`Unreasonable` tier, and its hint SHALL narrate it as a
+  **multi-leg journey** — one glanceable inferential step per leg, with the board
+  carrying the accumulated state — rather than compressing it into a single
+  claim the player can only check by redoing the deduction. Where the conclusion
+  rests on more than one branch of a case split, the narration SHALL say so; a
+  final leg that does not follow from its own stated premises is a defect.
+- **Search** — running the whole solver from a hypothesis, or branching and
+  backtracking. The hint SHALL NOT report its survivor as a deduction on any
+  tier; it SHALL refuse, and the refusal SHALL say that deduction has run out
+  rather than reading as a failure.
+
+The test is therefore not whether a trial propagates, nor whether the technique
+is called "forcing", but whether the propagation is bounded and can be laid out
+for the player.
+
+Games whose hints are **strategic** rather than deductive — a stable subgoal plus
+the next move serving it, justified by a monotone potential rather than by force
+— are outside this classification entirely and narrate imperatively.
+
+The tier names follow the same line. A tier whose boards can require **Search**
 SHALL be named `Unreasonable`; no other tier name may require it. A game whose
 hard tier ships a propagating trial SHALL resolve it by whichever of these the
 game's ladder determines — and **SHALL NOT delete the tier**:
@@ -75,10 +92,18 @@ needed, while the walk that produces the verdict continues.
 
 #### Scenario: Deduction running out is refused, not guessed past
 
-- **WHEN** the only remaining progress on a board needs a value assumed and
-  propagated until the board breaks
+- **WHEN** the only remaining progress on a board needs a value assumed and the
+  **whole solver** run from it, or a branch explored and backtracked
 - **THEN** the hint refuses with a message saying deduction has run out, and
   does not present the surviving assumption as a technique
+
+#### Scenario: A bounded chain is walked, not asserted
+
+- **WHEN** a hint's next deduction is a bounded chain of forced consequences
+  reaching a named contradiction
+- **THEN** it is narrated as a multi-leg journey, each leg one inferential step
+  shown on the board, rather than as one sentence asserting the conclusion — and
+  where the conclusion rests on a case split, the narration states both branches
 
 #### Scenario: A tier that can require guessing says so in its name
 

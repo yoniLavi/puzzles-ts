@@ -72,11 +72,8 @@ export type SoloReason =
   /** A naked/hidden subset locks a set of digits to a set of cells in a region
    * (absent for the cross-line single-digit "X-wing" set). */
   | { kind: "set"; region?: SoloRegion }
-  // No `forcing` reason (`audit-guessing-tier-names`, design D4): the rung still
-  // exists, on the `Unreasonable` tier, but it no longer records — a conclusion
-  // reached by propagating from a hypothesis is a search result, and no hint may
-  // present one as a technique. Solo's hint caps at `DIFF_EXTREME`, so it could
-  // not reach the rung in any case; removing the word makes that structural.
+  /** A forcing-chain contradiction. */
+  | { kind: "forcing" }
   /** A *hidden* single — digit `n` fits only one cell of `region`. */
   | { kind: "hiddenSingle"; n: number; region: SoloRegion }
   /** A placement forced by deeper deductions the working notes don't reflect. */
@@ -164,23 +161,6 @@ export interface Difficulty {
   /** Levels reached by the solver (output). */
   diff: number;
   kdiff: number;
-  /**
-   * Put the forcing-chain rung back on `Extreme`, where upstream has it.
-   *
-   * `audit-guessing-tier-names` moved it to `Unreasonable`: it propagates from
-   * a hypothesis (measured never fewer than three implication links, plus a
-   * case split), and only a tier named `Unreasonable` may require that — see
-   * `LatinSolver.forcing` for the shared reasoning. Set by
-   * `solo-differential.test.ts` and by nothing else, so the frozen byte-match
-   * survives a move that changes every Extreme board.
-   *
-   * It lives on `Difficulty` rather than on `run`'s parameter list because the
-   * recursion hands the *same* struct to its sub-solve; a flag passed
-   * separately would have to be re-threaded there, and the sub-solve silently
-   * grading on a different ladder is exactly the bug that would not show up in
-   * a test.
-   */
-  upstreamForcingTier?: boolean;
 }
 
 // --- mutable killer cages ---------------------------------------------------
@@ -620,7 +600,14 @@ class SolverUsage {
                     ((onDiag0(yt * cr + xt, cr) && onDiag0(y * cr + x, cr)) ||
                       (onDiag1(yt * cr + xt, cr) && onDiag1(y * cr + x, cr)))))
               ) {
-                // Deliberately unrecorded — see the reason union above.
+                this.recorder?.({
+                  kind: "elim",
+                  x: xt,
+                  y: yt,
+                  n: orign,
+                  reason: { kind: "forcing" },
+                  group: this.group,
+                });
                 this.setCube(xt, yt, orign, 0);
                 return 1;
               }
@@ -1374,14 +1361,9 @@ class SolverUsage {
         }
       }
 
-      // Forcing chains — the `Unreasonable` rung (upstream: `Extreme`); see
-      // `Difficulty.upstreamForcingTier`. The tier it *grades* moves with it,
-      // so a board needing a chain is reported as Unreasonable rather than
-      // Extreme, which is the whole point: the name now says what the board
-      // asks of the player.
-      const forcingTier = dlev.upstreamForcingTier ? DIFF_EXTREME : DIFF_RECURSIVE;
-      if (dlev.maxdiff >= forcingTier && this.forcing()) {
-        diff = Math.max(diff, forcingTier);
+      // Forcing chains.
+      if (this.forcing()) {
+        diff = Math.max(diff, DIFF_EXTREME);
         continue;
       }
 
@@ -1470,9 +1452,6 @@ export function solveSolo(
   s: SoloState,
   maxdiff = DIFF_RECURSIVE,
   maxkdiff = DIFF_KINTERSECT,
-  /** Upstream's forcing-rung placement (Extreme), for the differential alone —
-   * see {@link Difficulty.upstreamForcingTier}. Nothing else should set it. */
-  upstreamForcingTier = false,
 ): { diff: number; kdiff: number; grid: Int8Array } {
   const grid = s.grid.slice();
   const dlev: Difficulty = {
@@ -1480,7 +1459,6 @@ export function solveSolo(
     maxkdiff,
     diff: DIFF_IMPOSSIBLE,
     kdiff: DIFF_KSINGLE,
-    upstreamForcingTier,
   };
   runSolver(
     s.cr,

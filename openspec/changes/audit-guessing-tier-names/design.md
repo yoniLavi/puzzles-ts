@@ -63,6 +63,50 @@ family uses.
   one — in which case the fix is a bound on the rung, not a verdict on the
   tier.
 
+## D9 — the definition that supersedes D5 and D8 (owner, 2026-08-12)
+
+**The line is not "was a search involved?" — it is "can the reasoning be laid
+out as a bounded run of individually glanceable steps?"**
+
+D5 enforced the propagation test literally and D8 extended it to narration. Both
+were too blunt, and the owner caught it on the right grounds: **Fifteen and
+Sixteen are hinted by search too** — A\* over slide moves — and nobody objects,
+because what the player is asked to accept is not the search but *"this move
+serves the stated goal"*, which they can see. The collection already had two
+hint contracts and D5/D8 collapsed them.
+
+| | shape | tier | hint |
+| --- | --- | --- | --- |
+| **Check** | place, look, one rule breaks | Easy / Normal | narrate directly |
+| **Tactic** | a **bounded** chain of forced consequences to a named endpoint — walkable leg by leg | Tricky / Hard / Extreme | narrate as a multi-leg `continuesPrevious` walk |
+| **Search** | run the whole solver from a hypothesis, or branch and backtrack | **`Unreasonable`** | refuse |
+| **Strategy** | no deduction at all: a stable subgoal + the next move serving it, justified by a monotone potential | untiered | narrate imperatively (`hints.md` § "Hold a stable subgoal") |
+
+**Why this is the right line rather than a convenient one: it retro-predicts the
+Galaxies decision.** `refuteAssoc` ran the entire deduction fixpoint from its
+hypothesis and settled *dozens* of cells — unbounded, unwalkable, Search — and
+deleting it was already owner-accepted before any of this. The same rule spares
+Clusters, whose chain is a median of **2–3** forced cells and is already drawn on
+the board. A definition that agrees with a call made independently, months
+earlier, on a game not under discussion, is doing real work.
+
+**Where the measured rungs land:**
+
+- **Tactic** — the Latin family's `forcing` (median 4–5 links, max 12), Clusters'
+  lookahead (median 2–3 forced cells), Map's forcing-chain BFS.
+- **Search** — Undead's `forcingPass` (full arc+counting fixpoint), Bricks'
+  `solverRecurse` (solves the rest of the board), Dominosa's `deduceForcingChain`
+  (closure over all placements), Spokes' `spokesSolverAttempt` (full sub-solve),
+  and every true recursion tier.
+
+**Consequences, applied.** D5's rung moves are reverted for the Tactic rungs and
+stand for the Search ones; D8's narration removal likewise. **The Tactic bar is
+the walk** (owner, same day): one glanceable leg per step, the board carrying the
+state. The six Latin games and Clusters are below it today and
+`walk-tactic-hint-chains` is the change that fixes them —
+`hint-quality.test.ts` carries their exact sentences in a shrink-only
+`PENDING_WALK` list so the guard stays live on everything else they say.
+
 ## Decisions taken on the audit's evidence (2026-08-12)
 
 Full sweep and measurements: [`audit.md`](./audit.md).

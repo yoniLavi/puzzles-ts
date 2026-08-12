@@ -62,15 +62,8 @@ function label(f: Fixture): string {
 
 describe("solo differential (frozen C reference)", () => {
   for (const f of data.fixtures) {
-    // Both bars run with `upstreamForcingTier`, the *only* place it is set.
-    // `audit-guessing-tier-names` moved the forcing-chain rung from Extreme to
-    // Unreasonable, which changes every Extreme description and regrades any
-    // board whose solution needs a chain. Running the fixtures against
-    // upstream's placement keeps the byte-match over the symmetric clue
-    // removal, the block structure, every cheaper technique, the killer cages
-    // and the codec. See `Difficulty.upstreamForcingTier`.
     it(`${label(f)}: TS desc matches C byte-for-byte`, () => {
-      const { desc } = newSoloDesc(paramsOf(f), randomNew(f.seed), true);
+      const { desc } = newSoloDesc(paramsOf(f), randomNew(f.seed));
       expect(desc).toBe(f.desc);
       expect(validateDesc(paramsOf(f), desc)).toBeNull();
     });
@@ -78,7 +71,7 @@ describe("solo differential (frozen C reference)", () => {
     it(`${label(f)}: TS solver grades the published board as C did`, () => {
       const p = paramsOf(f);
       const s = newState(p, f.desc);
-      const { diff, kdiff } = solveSolo(s, DIFF_RECURSIVE, DIFF_KINTERSECT, true);
+      const { diff, kdiff } = solveSolo(s, DIFF_RECURSIVE, DIFF_KINTERSECT);
       expect(diff).toBe(f.solverDiff);
       expect(kdiff).toBe(f.solverKdiff);
     });

@@ -195,12 +195,9 @@ describe("narrateLatinReason (shared row/column-game narration)", () => {
     expect(narrateLatinReason({ kind: "set" }, [2, 3])).toBe(
       "Another group of cells already accounts for a fixed set of numbers that includes 2 and 3, so we must cross out 2 and 3 here.",
     );
-    // No `forcing` arm: `audit-guessing-tier-names` removed the word from
-    // `GenericLatinReason` so a sentence narrating a search cannot be written.
-    // The guarantee is a compile error, not an assertion — `@ts-expect-error`
-    // *is* the test, and it fails to compile if the arm ever comes back.
-    // @ts-expect-error a search is not a technique; see design D4
-    expect(() => narrateLatinReason({ kind: "forcing" }, [5])).not.toThrow();
+    expect(narrateLatinReason({ kind: "forcing" }, [5])).toBe(
+      "Following a chain of two-candidate cells, placing 5 here would force a contradiction further along — so we must cross out 5.",
+    );
   });
 
   it("ignores extra fields a dup reason may carry (only n is read)", () => {

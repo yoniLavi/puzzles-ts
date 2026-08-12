@@ -47,10 +47,6 @@ function shuffleRange(
 export function newGameDesc(
   p: GroupParams,
   rng: RandomState,
-  /** Upstream's forcing-rung placement, for the differential alone — see
-   * `LatinSolver.forcing`. Generation is solver-gated at every step, so the
-   * move changes every Extreme description; this is how the oracle survives. */
-  upstreamForcingTier = false,
 ): { desc: string; aux: string } {
   const w = p.w;
   const a = w * w;
@@ -125,7 +121,7 @@ export function newGameDesc(
         grid[i * w + perm[j]] = 0;
       }
       scratch.set(grid);
-      if (solveGroup(scratch, w, diff, undefined, upstreamForcingTier) > diff) continue; // didn't work; go again
+      if (solveGroup(scratch, w, diff) > diff) continue; // didn't work; go again
     }
 
     // Remove entries one by one while the puzzle stays solvable at `diff`.
@@ -139,15 +135,13 @@ export function newGameDesc(
     for (const idx of indices) {
       scratch.set(grid);
       scratch[idx] = 0;
-      if (solveGroup(scratch, w, diff, undefined, upstreamForcingTier) <= diff)
-        grid[idx] = 0;
+      if (solveGroup(scratch, w, diff) <= diff) grid[idx] = 0;
     }
 
     // Reject a puzzle that's too easy (solvable one level below target).
     if (diff > 0) {
       scratch.set(grid);
-      if (solveGroup(scratch, w, diff - 1, undefined, upstreamForcingTier) < diff)
-        continue;
+      if (solveGroup(scratch, w, diff - 1) < diff) continue;
     }
 
     break;

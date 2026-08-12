@@ -20,12 +20,14 @@
  *    longest shipped narration is Undead's 281-char sightline teach; the
  *    cap catches the "rulebook bled into the step" class (Netslide,
  *    `d1f37b8`) without constraining anything that shipped.
- *  - **No step narrates a trial** (`audit-guessing-tier-names`): a
- *    conclusion reached by propagating from a hypothesis is a search
- *    result, not a technique. Checked twice — once on each game's first
- *    preset with the rules above, and once **per tier** in its own block
- *    at the bottom, because a trial rung is tier-gated and the first
- *    preset is the one place it can never fire.
+ *  - **No step asks the player to carry a chain it never lays out**
+ *    (`audit-guessing-tier-names`): a bounded chain is a legitimate
+ *    *Tactic* and may be narrated — but as a multi-leg walk, not as a
+ *    claim; an unbounded search may not be narrated at all. Checked
+ *    twice — once on each game's first preset with the rules above, and
+ *    once **per tier** in its own block at the bottom, because such a
+ *    rung is tier-gated and the first preset is the one place it can
+ *    never fire.
  *
  * Form only: no assertion here ever touches *what* a hint says about the
  * board — flattening a good hint to satisfy a guard is the failure mode
@@ -73,30 +75,59 @@ const DEDUCTIVE = new Set([
 ]);
 
 /**
- * The vocabulary of a conclusion reached by *propagating* from a hypothesis —
- * a multi-step search, which the collection classes as non-deductive and never
- * lets a hint present as a technique (`audit-guessing-tier-names`). Promoted
- * here from `galaxies-hint.test.ts`, where it guarded one game out of thirty:
- * a rule enforced in one place is not enforced.
+ * The vocabulary of a conclusion the player is asked to take on trust because
+ * the reasoning behind it was *not laid out* — `audit-guessing-tier-names`'s
+ * Check / Tactic / Search taxonomy, which splits on whether the reasoning is a
+ * **bounded chain the player can be walked through**:
  *
- * **It matches the chain, not the hypothesis.** The first cut also caught
- * "if this cell were …" and immediately failed Clusters on *"If this cell were
- * blue, at most one neighbour could ever match it"* — which is a sound
- * single-step refutation, visible at the placement, and exactly what the rule
- * permits everywhere. A hypothesis framing is not the defect; carrying it
- * forward through other cells is.
+ * - **Check** — place, look, one rule breaks. Narrate directly.
+ * - **Tactic** — a bounded chain of forced consequences to a named endpoint.
+ *   Legitimate at a middle tier, but it must be narrated as a **multi-leg walk**
+ *   (one glanceable leg per step) rather than compressed into a claim.
+ * - **Search** — run the whole solver from a hypothesis, or branch and
+ *   backtrack. `Unreasonable` only, and never narrated at all.
  *
- * **What this cannot see, stated rather than implied.** A propagating rung that
- * describes itself as though it were direct slips through — Undead's removed
- * arm said *"If this cell were a vampire, the sightline clues and monster counts
- * could no longer all be met"*, which is wordwise indistinguishable from a
- * one-glance refutation. So this guard is a backstop, not the guarantee. The
- * guarantee is structural: `LatinReason`, `UndeadReason`, Solo's and Clusters'
- * unions no longer *contain* a trial reason, so narrating one is a compile
- * error rather than a string a test might miss.
+ * Promoted here from `galaxies-hint.test.ts`, where it guarded one game out of
+ * thirty: a rule enforced in one place is not enforced.
+ *
+ * **It matches the compressed chain, not the hypothesis.** The first cut also
+ * caught "if this cell were …" and instantly failed Clusters on *"If this cell
+ * were blue, at most one neighbour could ever match it"* — a sound single-step
+ * refutation, i.e. a Check, and exactly what the rule permits everywhere. A
+ * hypothesis framing is not the defect; asking the reader to carry it forward
+ * unaided is.
+ *
+ * **What this cannot see, stated rather than implied.** A Search that describes
+ * itself as though it were a Check slips through — Undead's removed arm said
+ * *"If this cell were a vampire, the sightline clues and monster counts could no
+ * longer all be met"*, wordwise indistinguishable from a one-glance refutation.
+ * So this is a backstop. The guarantee for the Search rungs is structural:
+ * `UndeadReason` and Dominosa's tag no longer *contain* one, so narrating it is
+ * a compile error rather than a string a test might miss.
  */
 const SPECULATIVE =
   /\btr(?:y|ied|ies)\b|\bbreak the board\b|following (?:a|the) chain\b|following the forced\b|\bin turn\b|\bfurther along\b|\beventually\b/i;
+
+/**
+ * **Interim**: the exact sentences of Tactic-tier rungs that are legitimate
+ * deductions but are not yet narrated as walks.
+ *
+ * These are not exempt from the bar — they are *below* it, and
+ * `walk-tactic-hint-chains` is the change that fixes them. They are listed here,
+ * as **whole sentence shapes rather than game names**, so that the guard stays
+ * live on every *other* narration those same games produce: a new compressed
+ * chain in Towers would still fail. Each entry is deleted as its game is walked;
+ * nothing is ever added.
+ */
+const PENDING_WALK: RegExp[] = [
+  // The shared Latin forcing chain (Keen, Unequal, Group, Salad) and Towers' and
+  // Solo's copies of it.
+  /^Following a chain of (?:two-candidate|forced)/,
+  // Clusters' lookahead: shows every forced cell on the board, but as one step.
+  /^Suppose this cell were (?:red|blue): the marked cells would each be forced in turn/,
+];
+
+const pendingWalk = (s: string): boolean => PENDING_WALK.some((r) => r.test(s));
 
 /** Owner-endorsed per-game idioms that carry necessity in their own
  * words rather than a modal. Adding here is a deliberate, reviewable
@@ -142,8 +173,8 @@ describe("hint narration form, cross-game", () => {
           }
 
           expect(
-            SPECULATIVE.test(step.explanation),
-            `${at} — narrates a trial rather than a deduction`,
+            SPECULATIVE.test(step.explanation) && !pendingWalk(step.explanation),
+            `${at} — asks the player to carry a chain it never lays out`,
           ).toBe(false);
         });
       }
@@ -161,7 +192,7 @@ describe("hint narration form, cross-game", () => {
  * because Bricks' first preset is Easy and Easy never reaches that arm. The
  * check was therefore guarding nothing on precisely the tiers it exists for.
  */
-describe("no hint narrates a trial, at any tier", () => {
+describe("no hint leaves a chain for the player to carry, at any tier", () => {
   for (const [name, game] of HINT_GAMES) {
     const contract = game.difficulty;
     if (!contract) continue;
@@ -187,8 +218,8 @@ describe("no hint narrates a trial, at any tier", () => {
           checked++;
           for (const step of res.steps) {
             expect(
-              SPECULATIVE.test(step.explanation),
-              `${name} tier ${tier} ("${contract.tiers[tier]}")/${seed}: "${step.explanation}" — narrates a trial`,
+              SPECULATIVE.test(step.explanation) && !pendingWalk(step.explanation),
+              `${name} tier ${tier} ("${contract.tiers[tier]}")/${seed}: "${step.explanation}" — asks the player to carry a chain it never lays out`,
             ).toBe(false);
           }
         }

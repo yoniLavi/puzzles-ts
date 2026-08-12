@@ -24,27 +24,13 @@ export const DIFF_EASY = 0;
 export const DIFF_TRICKY = 1;
 export const DIFFCOUNT = 2;
 
-/**
- * Both tiers were already implemented — as `solverTry` and `solverRecurse` —
+/** Both tiers were already implemented — as `solverTry` and `solverRecurse` —
  * and neither was offered: the generator gated every board on the deeper rung.
- *
- * **The harder tier is `Unreasonable`, not the `Tricky` this originally chose**
- * (`audit-guessing-tier-names`, design D5). The old comment here reasoned from
- * the collection's two-tier *convention* — magnets, pearl, singles and tents all
- * name the pair Easy/Tricky — and that was the wrong axis. The rung reaches its
- * conclusion by hypothesising a colour and **propagating** the cells it forces
- * until the board breaks, and the collection reserves exactly one word for a
- * tier that may require that. Clusters has no tier above this one, so the rung
- * cannot move up and the tier is renamed; the shape now matches Galaxies'
- * `Normal · Unreasonable` exactly.
- *
- * Clusters is nonetheless the collection's *best* treatment of such a rung — its
- * hint draws every forced cell on the board and names which of the three rules
- * breaks, so the player reads the chain rather than running it. That earns it
- * nothing under a rule about what the tier may *require*, which is the point:
- * the name describes the board, not the quality of the hint.
- */
-export const DIFF_NAMES = ["Easy", "Unreasonable"] as const;
+ * The names follow the collection's two-tier convention (magnets, pearl,
+ * singles and tents all name exactly this pair Easy/Tricky, and in each the
+ * harder tier is likewise "one hypothetical deep"), not upstream's, which has
+ * none here. */
+export const DIFF_NAMES = ["Easy", "Tricky"] as const;
 
 /** Difficulty encode chars for the `d<char>` param suffix, index = tier — the
  * same `"et"` the other two-tier games use. */
@@ -199,10 +185,7 @@ export function validateParams(p: ClustersParams, full: boolean): string | null 
     p.diff > DIFF_EASY &&
     (Math.min(p.w, p.h) < 2 || p.w * p.h < MIN_TRICKY_AREA)
   ) {
-    // Named from `DIFF_NAMES`, so the message says what the menu says — a
-    // hand-written tier word here is how a rename ships a refusal naming a
-    // difficulty the player cannot find.
-    return `${DIFF_NAMES[DIFF_TRICKY]} needs a board of at least ${MIN_TRICKY_AREA} squares, at least two wide`;
+    return "Tricky needs a board of at least 12 squares, at least two wide";
   }
   return null;
 }

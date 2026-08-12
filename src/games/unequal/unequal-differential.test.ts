@@ -45,14 +45,8 @@ function fixtureParams(f: Fixture): UnequalParams {
 describe("unequal differential (byte-match + solver agreement)", () => {
   for (const f of FIXTURES) {
     const p = fixtureParams(f);
-    // Both bars run with `upstreamForcingTier`, the *only* place it is set.
-    // `audit-guessing-tier-names` moved the forcing rung from Extreme to the
-    // top tier, which changes every Extreme description; running the fixtures
-    // against upstream's placement keeps the byte-match oracle over the clue
-    // assembly, the strip loop, every cheaper deduction and the codec. See
-    // `LatinSolver.forcing`.
     it(`${p.mode} ${f.order} d${f.diff} (seed ${f.seed}): desc matches C byte-for-byte`, () => {
-      const { desc } = newUnequalDesc(p, randomNew(f.seed), true);
+      const { desc } = newUnequalDesc(p, randomNew(f.seed));
       expect(desc).toBe(f.desc);
       expect(validateDesc(p, desc)).toBeNull();
     });
@@ -66,9 +60,6 @@ describe("unequal differential (byte-match + solver agreement)", () => {
         state.clueFlags,
         soln,
         f.solverDiff,
-        undefined,
-        undefined,
-        true,
       );
       expect(ret).toBe(f.solverDiff);
     });

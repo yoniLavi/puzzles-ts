@@ -22,11 +22,29 @@
       counter was measuring the *generator's* trial solves as well as the
       player's deductions (`audit.md` §3).
 
-## 2. Apply the rule literally (owner decision, 2026-08-12 — design D5)
+## 2. Apply the taxonomy (owner, 2026-08-12 — **design D9 supersedes D5/D8**)
 
-Every propagating rung ends under a tier named `Unreasonable`. Order is
-cheapest-first so the pattern is established on a game where the move costs
-nothing measurable.
+> **Read D9 first.** The line is *not* "was a search involved?" but "can the
+> reasoning be laid out as a bounded run of glanceable steps?" — **Check** stays
+> anywhere, **Tactic** keeps its middle tier and is narrated as a walk, only
+> **Search** is `Unreasonable` and unnarratable. The checkboxes below record what
+> was done under the earlier, blunter D5 and then **reverted**; they are kept
+> rather than deleted because the revert is the finding.
+
+**Reverted** (these rungs are Tactic, not Search — bounded, walkable chains):
+Towers, Keen, Group, Unequal, Mathrax and Solo keep `diffForcing` at `Extreme`
+and lose the `upstreamForcingTier` plumbing entirely (with the rung back where
+upstream has it, there is no divergence and so nothing for a flag to preserve);
+Clusters is `Tricky` again and Salad `Extreme`; the Latin/Solo/Clusters/Salad
+narration and Clusters' chain rendering are restored; Towers' 4x4 Extreme
+refusal is withdrawn with the move that caused it.
+
+**Stands** (these rungs are Search — the hypothesis runs a whole solver):
+Undead and Dominosa renamed to `Unreasonable` with their narration removed;
+Bricks' `solverRecurse` narration removed; Unequal's and Mathrax's `Recursive` →
+`Unreasonable` (a genuine recursion tier); and everything found along the way
+that was never about this rule — Group's `ops[0]` crash, Bricks' `localBreak`
+fallback, the hand-copied tier lists, the cross-game guard.
 
 ### 2a. The two renames (design D7) — prerequisite for 2b — **done**
 

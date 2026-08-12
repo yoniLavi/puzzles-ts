@@ -172,31 +172,15 @@ export function hiddenSingleLine(
   return cells;
 }
 
-/**
- * The generic Latin reasons whose narration is shared verbatim by the
- * *row/column* games (Keen, Unequal): a {@link SingleReason} (naked / hidden /
- * forced single) plus the generic `dup` / `set` eliminations from `LatinReason`.
- * The `dup` reason may carry extra fields (`px`/`py`) — only `n` is read here.
- *
- * **`forcing` is deliberately absent** (`audit-guessing-tier-names`, design D4).
- * `LatinReason` still has it, because the solver still has the rung — but no
- * game's hint can reach it any more: the five Latin games cap their plan at
- * `min(tier, DIFF_EXTREME)` and the rung moved to `Unreasonable`, and Salad's
- * recording solver disables it outright. Omitting it here is what makes that a
- * *compile* error rather than a comment, so a future caller cannot quietly
- * reintroduce a sentence narrating a search.
- *
- * The sentence that used to live here was the collection's worst offender
- * against its own bar — *"Following a chain of two-candidate cells, placing 5
- * here would force a contradiction further along"* — a claim with no
- * classification of the contradiction and no anchor to the board, i.e. below
- * even the pragmatic stopgap `docs/games/hints.md` § "The forcing boundary"
- * documents. Six games said it.
- */
+/** The generic Latin reasons whose narration is shared verbatim by the *row/column*
+ * games (Keen, Unequal): a {@link SingleReason} (naked / hidden / forced single)
+ * plus the generic `dup` / `set` / `forcing` eliminations from `LatinReason`. The
+ * `dup` reason may carry extra fields (`px`/`py`) — only `n` is read here. */
 export type GenericLatinReason =
   | SingleReason
   | { kind: "dup"; n: number }
-  | { kind: "set" };
+  | { kind: "set" }
+  | { kind: "forcing" };
 
 /**
  * The value vocabulary a game's cells are spoken in — the *only* thing that used
@@ -276,6 +260,8 @@ export function narrateLatinReason(
     }
     case "set":
       return `Another group of ${cells} already accounts for a fixed set of ${noun}s that includes ${list(ns)}, so we must cross out ${list(ns)} here.`;
+    case "forcing":
+      return `Following a chain of two-candidate ${cells}, placing ${v(ns[0])} here would force a contradiction further along — so we must cross out ${list(ns)}.`;
   }
 }
 

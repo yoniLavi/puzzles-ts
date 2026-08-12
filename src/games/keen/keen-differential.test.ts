@@ -40,15 +40,8 @@ describe("keen differential (byte-match + solver agreement)", () => {
     const p = fixtureParams(f);
     const label = `${f.w}d${f.diff}${f.mult ? "m" : ""} (seed ${f.seed})`;
 
-    // Both bars run with `upstreamForcingTier`, the *only* place it is set.
-    // `audit-guessing-tier-names` moved the forcing rung from Extreme to
-    // Unreasonable, which changes every Extreme description and regrades any
-    // board whose solution needs a forcing chain; running the fixtures against
-    // upstream's rung placement keeps the byte-match oracle over everything
-    // else — the generator's draw order, the cage assembly, every cheaper
-    // deduction and the codec. See `LatinSolver.forcing`.
     it(`${label}: desc matches C byte-for-byte`, () => {
-      const { desc } = newKeenDesc(p, randomNew(f.seed), true);
+      const { desc } = newKeenDesc(p, randomNew(f.seed));
       expect(desc).toBe(f.desc);
       expect(validateDesc(p, desc)).toBeNull();
     });
@@ -56,7 +49,7 @@ describe("keen differential (byte-match + solver agreement)", () => {
     it(`${label}: TS solver grades at the C difficulty`, () => {
       const state = newState(p, f.desc);
       const soln = new Uint8Array(f.w * f.w);
-      const ret = solveKeen(f.w, state.clues, soln, f.solverDiff, undefined, true);
+      const ret = solveKeen(f.w, state.clues, soln, f.solverDiff);
       expect(ret).toBe(f.solverDiff);
     });
   }

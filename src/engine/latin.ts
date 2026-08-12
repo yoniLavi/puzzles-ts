@@ -69,14 +69,9 @@ export type LatinReason =
    * of that row and column. */
   | { kind: "dup"; n: number; px: number; py: number }
   /** A naked-subset ("set") elimination. */
-  | { kind: "set" };
-// There is deliberately **no `forcing` reason** (`audit-guessing-tier-names`,
-// design D4). The rung still exists — see `LatinSolver.forcing`, which every
-// consumer now runs on its `Unreasonable` tier — but it no longer *records*,
-// because a conclusion reached by propagating from a hypothesis is a search
-// result and no hint may present one as a technique, on any tier. This type is
-// the hint's vocabulary; a word it does not contain is a sentence that cannot
-// be written.
+  | { kind: "set" }
+  /** A forcing-chain elimination. */
+  | { kind: "forcing" };
 
 /** The recorded-deduction shape lives in its own module (nothing about it is
  * Latin — see [`deduction-record.ts`](./deduction-record.ts)); re-exported here
@@ -346,29 +341,8 @@ export class LatinSolver {
     return 0;
   }
 
-  /**
-   * Forcing chains (upstream `latin_solver_forcing`): a chain of two-candidate
-   * cells whose ends both line up with a third cell forces a digit out of it.
-   *
-   * **This rung belongs on a tier named `Unreasonable`, and upstream does not
-   * put it there** (`audit-guessing-tier-names`). It reaches its conclusion by
-   * *propagating* from a hypothesis — suppose this cell takes its other value,
-   * then that cell is forced, then that one — and the owner's line is that a
-   * contradiction you only reach by propagating is guessing, not checking. The
-   * length split that might have exempted a short chain does not exist:
-   * measured over 517 firings across thirteen shipped configurations, a
-   * surviving chain is **never shorter than three implication links**, because a
-   * one- or two-link chain is a naked pair and set elimination — a cheaper rung
-   * — has already fired on it. On top of the chain the conclusion needs a case
-   * split on the origin cell.
-   *
-   * So every consumer sets `diffForcing` to its `Unreasonable` tier, and each
-   * keeps an `upstreamForcingTier` escape hatch that puts the rung back where
-   * upstream had it — set by that game's differential and by nothing else, so a
-   * divergence that changes every board on the affected tier still keeps its
-   * byte-match oracle (docs/games/solver-and-generator.md § "Byte-parity is a
-   * tool, not a debt", "often you can diverge and keep the oracle as a test").
-   */
+  /** Forcing chains (upstream `latin_solver_forcing`): a chain of two-candidate
+   * cells whose ends both line up with a third cell forces a digit out of it. */
   forcing(): number {
     const o = this.o;
     const number = this.sGrid; // reused as the BFS "other candidate" map
@@ -427,10 +401,16 @@ export class LatinSolver {
               }
 
               if (currn === orign && (xt === x || yt === y)) {
-                // Deliberately unrecorded — see `LatinReason`. Every consumer
-                // caps its hint below this rung, so a record here could never
-                // be narrated anyway; not emitting one is what makes that
-                // structural instead of a convention.
+                if (this.recorder) {
+                  this.recorder({
+                    kind: "elim",
+                    x: xt,
+                    y: yt,
+                    n: orign,
+                    reason: { kind: "forcing" },
+                    group: this.group,
+                  });
+                }
                 this.cube[this.cubepos(xt, yt, orign)] = 0;
                 return 1;
               }

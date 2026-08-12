@@ -389,10 +389,6 @@ function encodeSolveMove(cr: number, grid: ArrayLike<number>): string {
 export function newSoloDesc(
   p: SoloParams,
   rng: RandomState,
-  /** Upstream's forcing-rung placement (Extreme), for the differential alone —
-   * see `Difficulty.upstreamForcingTier`. Generation is solver-gated at every
-   * removal, so the move changes every Extreme description. */
-  upstreamForcingTier = false,
 ): { desc: string; aux: string } {
   const { c, r } = p;
   const cr = c * r;
@@ -401,13 +397,7 @@ export function newSoloDesc(
   // Cap the difficulty for sizes that can only ever be trivial.
   const maxdiff = (c === 2 && r === 2) || (r === 1 && c < 4) ? DIFF_BLOCK : p.diff;
   const maxkdiff = p.kdiff;
-  const dlev: Difficulty = {
-    maxdiff,
-    maxkdiff,
-    diff: 0,
-    kdiff: 0,
-    upstreamForcingTier,
-  };
+  const dlev: Difficulty = { maxdiff, maxkdiff, diff: 0, kdiff: 0 };
 
   const grid = new Int8Array(area);
   const grid2 = new Int8Array(area);

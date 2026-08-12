@@ -31,9 +31,7 @@
  * The pure play-side checks ({@link clustersStatus}, {@link findErrors}) do
  * NOT mutate, so persisted state and the renderer stay `F_ERROR`-free.
  */
-// The shared `accumulateHintPlan` no longer fits: its walk records every firing
-// `next` returns, and this plan must keep *walking* past the stall (to certify
-// the position) while it stops *recording* there. See `deduceHintPlan`.
+import { deduceHintPlan as accumulateHintPlan } from "../../engine/hint-plan.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import {
   type ClustersFill,
@@ -246,28 +244,15 @@ export interface ClustersContradiction {
   cell: number;
 }
 
-/**
- * Why a move is forced. **One kind, deliberately** — this used to have a second,
- * `chain`, carrying a lookahead hypothetical's forced consequences
- * (`audit-guessing-tier-names`, design D4/D8).
- *
- * That rung hypothesises a colour and *propagates* the cells it forces until the
- * board breaks, which is a multi-step search: the collection classes that as
- * non-deductive and permits it only on an `Unreasonable` board, and a hint may
- * not present a search result as a technique on any tier. The whole
- * `chainToContradiction` / `shortestChainDeduction` machinery went with it
- * rather than being left unreachable — it was hint-only, so nothing else called
- * it, and machinery that claims a capability the hint no longer has is exactly
- * the kind of dead narration this audit exists to remove.
- *
- * **What that costs, measured rather than assumed**: on `Easy` boards, nothing —
- * 100% of plan steps are direct, over 20 boards. On `Unreasonable` boards the
- * hint still explains **94%** (8x8) to **96%** (10x10) of the plan and stops at a
- * median of **1–2** points per board; it is *never* the first step, so the hint
- * is never useless from move one. `solveGame` — which the generator gates on —
- * keeps the rung, so no board changed.
- */
-export type ClustersReason = { kind: "direct"; at: ClustersContradiction };
+/** One forced consequence inside a lookahead hypothetical. */
+export interface ChainStep {
+  index: number;
+  fill: ClustersFill;
+}
+
+export type ClustersReason =
+  | { kind: "direct"; at: ClustersContradiction }
+  | { kind: "chain"; steps: ChainStep[]; at: ClustersContradiction };
 
 /** One forced move: colouring `index` with `refuted` breaks `reason`, so it
  * must be `fill`. No separate evidence list: every premise tile of the three
@@ -362,28 +347,25 @@ function firstDirectDeduction(
   return null;
 }
 
-/**
- * Play out the hypothetical "cell `i` is `refuted`": propagate single-cell
+/** Play out the hypothetical "cell `i` is `refuted`": propagate single-cell
  * forcings one at a time (restarting the scan after each, stopping the moment
- * the board breaks). Returns the forced placement, or null when the
- * hypothetical settles without breaking (not refuted this way). Operates on a
- * scratch copy.
- *
- * **Used to certify the position, never to narrate one** — see
- * {@link ClustersReason}. It records no chain because nothing may read one.
- */
-function refutedByChain(
+ * the board breaks). Returns the forced chain and the final contradiction, or
+ * null when the hypothetical settles without breaking (not refuted this way).
+ * Operates on a scratch copy. */
+function chainToContradiction(
   grid: Uint8Array,
   w: number,
   h: number,
   i: number,
   refuted: ClustersFill,
   budget: { tick(): void },
-): boolean {
+): { steps: ChainStep[]; at: ClustersContradiction } | null {
   const s = w * h;
   const dup = grid.slice();
   dup[i] = refuted;
-  if (contradictionAround(dup, w, h, i)) return true;
+  const steps: ChainStep[] = [];
+  let at = contradictionAround(dup, w, h, i);
+  if (at) return { steps, at };
   for (;;) {
     budget.tick();
     let fired = false;
@@ -395,64 +377,60 @@ function refutedByChain(
         if (contradictionAround(dup, w, h, j)) {
           const fill = opposite(t);
           dup[j] = fill;
-          if (contradictionAround(dup, w, h, j)) return true;
+          steps.push({ index: j, fill });
+          at = contradictionAround(dup, w, h, j);
+          if (at) return { steps, at };
           fired = true;
           break;
         }
         dup[j] = 0;
       }
     }
-    if (!fired) return false;
+    if (!fired) return null;
   }
 }
 
-/** At a single-cell stall, the first lookahead-forced placement in scan order.
- * Carries no reason: it exists to advance the certifying walk, and a hint may
- * not narrate it. Leaves `grid` unchanged. */
-function chainPlacement(
+/** At a single-cell stall, the lookahead firing whose forcing chain is
+ * shortest (earliest in scan order on a tie — deterministic, so a recomputed
+ * plan picks the same firing). Leaves `grid` unchanged. */
+function shortestChainDeduction(
   grid: Uint8Array,
   w: number,
   h: number,
   budget: { tick(): void },
-): { index: number; fill: ClustersFill } | null {
+): ClustersDeduction | null {
   const s = w * h;
+  let best: {
+    index: number;
+    refuted: ClustersFill;
+    chain: { steps: ChainStep[]; at: ClustersContradiction };
+  } | null = null;
   for (let i = 0; i < s; i++) {
     if (grid[i] !== 0) continue;
     for (let d = 0; d <= 1; d++) {
       const refuted: ClustersFill = d ? F_COLOR_1 : F_COLOR_0;
-      if (refutedByChain(grid, w, h, i, refuted, budget)) {
-        return { index: i, fill: opposite(refuted) };
+      const chain = chainToContradiction(grid, w, h, i, refuted, budget);
+      if (chain) {
+        if (!best || chain.steps.length < best.chain.steps.length) {
+          best = { index: i, refuted, chain };
+        }
+        break; // this cell is decided; its other colour needs no trial
       }
     }
   }
-  return null;
+  if (!best) return null;
+  return {
+    index: best.index,
+    fill: opposite(best.refuted),
+    refuted: best.refuted,
+    reason: { kind: "chain", steps: best.chain.steps, at: best.chain.at },
+  };
 }
 
-/**
- * Run the deduction from the player's current grid, recording every forced move
- * in order with the rule its refuted colouring would break — the data a hint
- * narrates. Operates on a clone.
- *
- * **Two jobs, and they part company at the first stall**
- * (`audit-guessing-tier-names`, design D4/D8):
- *
- * - `deductions` records **single-cell firings only**, and stops for good at the
- *   first point where the board needs the lookahead. A multi-step search with
- *   backtracking is non-deductive — permitted on an `Unreasonable` *board*, but
- *   never something a hint may present as a technique. Recording *past* the
- *   stall would be worse than stopping: the following steps assume a deduction
- *   the player was never shown.
- * - `verdict` is computed by walking the whole board, lookahead included,
- *   because it is what **certifies the position** — `COMPLETE` proves no tile
- *   already placed is wrong (the error rules are monotone), and `hint` refuses
- *   outright without it. Using the search to *check* is not using it to *teach*.
- *
- * Measured when the rung was withdrawn from narration: on `Easy` boards nothing
- * changes (100% of plan steps were already direct); on `Unreasonable` boards the
- * plan still explains **94%** (8x8) to **96%** (10x10) of the board and stalls at
- * a median of **1–2** points, never at the first step. `solveGame` — which the
- * generator gates on — is untouched, so no board moved.
- */
+/** Run the deduction from the player's current grid, recording every forced
+ * move in order with the rule its refuted colouring would break — the data a
+ * hint narrates. Single-cell firings lead; a stall falls back to the
+ * shortest-chain lookahead firing. Operates on a clone. */
 export function deduceHintPlan(
   grid0: Uint8Array,
   w: number,
@@ -460,25 +438,20 @@ export function deduceHintPlan(
 ): ClustersHintPlan {
   // Hint-only path, so the budget is unconditional (Palisade precedent).
   const budget = stepBudget("clusters hint");
-  const grid = grid0.slice();
-  const deductions: ClustersDeduction[] = [];
-  let stalled = false;
-
-  for (;;) {
-    budget.tick();
-    const status = clustersStatus(grid, w, h);
-    if (status !== UNFINISHED) return { verdict: status, deductions };
-
-    const direct = firstDirectDeduction(grid, w, h);
-    if (direct) {
-      if (!stalled) deductions.push(direct);
-      grid[direct.index] = direct.fill;
-      continue;
-    }
-
-    const forced = chainPlacement(grid, w, h, budget);
-    if (!forced) return { verdict: UNFINISHED, deductions };
-    stalled = true; // everything past here rests on a search; narrate none of it
-    grid[forced.index] = forced.fill;
-  }
+  const { status, plan } = accumulateHintPlan<
+    Uint8Array,
+    ClustersDeduction,
+    ClustersStatus
+  >({
+    board: grid0.slice(),
+    status: (grid) => clustersStatus(grid, w, h),
+    incomplete: UNFINISHED,
+    next: (grid) =>
+      firstDirectDeduction(grid, w, h) ?? shortestChainDeduction(grid, w, h, budget),
+    apply: (grid, d) => {
+      grid[d.index] = d.fill;
+    },
+    budget,
+  });
+  return { verdict: status, deductions: plan };
 }

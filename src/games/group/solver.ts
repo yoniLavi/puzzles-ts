@@ -395,16 +395,13 @@ export function solveGroup(
   w: number,
   maxdiff: number,
   recorder?: (rec: DeductionRecord) => void,
-  /** Upstream's forcing-rung placement (Extreme), for the differential alone —
-   * see `LatinSolver.forcing`. Nothing else should set it. */
-  upstreamForcingTier = false,
 ): number {
   return latinSolver<GroupCtx>(grid, w, {
     maxdiff,
     diffSimple: DIFF_TRIVIAL,
     diffSet0: DIFF_HARD,
     diffSet1: DIFF_EXTREME,
-    diffForcing: upstreamForcingTier ? DIFF_EXTREME : DIFF_UNREASONABLE,
+    diffForcing: DIFF_EXTREME,
     diffRecursive: DIFF_UNREASONABLE,
     usersolvers: [null, solverNormal, solverHard, null, null],
     valid: groupValid,
