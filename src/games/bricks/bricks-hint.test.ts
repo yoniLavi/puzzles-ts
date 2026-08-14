@@ -185,6 +185,72 @@ describe("bricks hint — the full hint()", () => {
   });
 });
 
+describe("bricks hint — a second mark on the board is named", () => {
+  /** The phrases that tie the acted-on cell to the ringed evidence, one per
+   * reason. Geometric or relational throughout — never a colour name, which
+   * `docs/games/hints.md` § "Two marks on the board, one 'this cell'" forbids
+   * as scheme-relative and invisible to a colour-blind reader. */
+  const TIE =
+    /next to the ringed shaded bricks|ringed cells? below this one|ringed \d+ beside (it|this cell)|above rests only on this cell|the unringed one/;
+
+  it("every step that rings a cell says how that cell relates to the target", () => {
+    // Sweep partial positions, not just the openers: each fixture is replayed
+    // from many random subsets of its own solution, which is what reaches all
+    // five reachable reasons (the openers alone reach three of them).
+    let seed = 12345;
+    const rnd = (n: number): number => {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      return Math.abs(seed) % n;
+    };
+    const kinds = new Set<string>();
+    let checked = 0;
+    let withMark = 0;
+    for (const f of fixtures) {
+      if (f.w * f.h >= 96) continue; // the 12x8 Tricky fixture is test:slow
+      const st = newState({ w: f.w, h: f.h, diff: f.diff }, f.desc);
+      const sol = st.grid.slice();
+      solveGame(sol, st.w, st.h, DIFF_TRICKY, true, true);
+      const empties: number[] = [];
+      for (let i = 0; i < st.w * st.h; i++)
+        if ((st.grid[i] & COL_MASK) === F_EMPTY) empties.push(i);
+      for (let trial = 0; trial < 30; trial++) {
+        const g = st.grid.slice();
+        const pool = empties.slice();
+        for (let j = 0, k = rnd(empties.length); j < k; j++)
+          pool.splice(rnd(pool.length), 1).forEach((c) => {
+            g[c] = sol[c] & COL_MASK;
+          });
+        const r = bricksGame.hint?.({ ...st, grid: g });
+        if (!r?.ok) continue;
+        for (const step of r.steps) {
+          checked++;
+          if (hl(step).evidence.length === 0) continue;
+          withMark++;
+          expect(
+            TIE.test(step.explanation),
+            `${step.explanation} — a cell is ringed but "this cell" is not tied to it`,
+          ).toBe(true);
+        }
+        for (const m of deduceBricksPlan(g, st.w, st.h)) kinds.add(m.reason.kind);
+      }
+    }
+    // Vacuity guards: a sweep that examined nothing, or that reached only the
+    // one reason the openers show, would pass the assertion above while
+    // measuring nothing (`audit-guessing-tier-names` §3.2).
+    expect(checked).toBeGreaterThan(100);
+    expect(withMark).toBeGreaterThan(100);
+    expect([...kinds].sort()).toEqual([
+      "overcount",
+      "strandSupport",
+      "three",
+      "undercount",
+      "unsupported",
+    ]);
+  });
+});
+
 describe("bricks hint — refusals", () => {
   it("refuses a solved board", () => {
     const st = newState(FIX_PARAMS, FIX.desc);

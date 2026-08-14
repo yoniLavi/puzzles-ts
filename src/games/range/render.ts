@@ -84,6 +84,7 @@ const F_MISTAKE = 1 << 19;
 const F_HINT_TARGET = 1 << 20; // this cell is the displayed hint's target
 const F_HINT_REF = 1 << 22; // this cell is a hint area cell (light shade)
 const F_HINT_BLACKREF = 1 << 23; // a black premise cell, outlined in COL_HINT
+const F_HINT_CLUE = 1 << 21; // the clue driving the deduction — digit in COL_HINT
 
 export interface RangeDrawState {
   started: boolean;
@@ -125,6 +126,12 @@ function drawCell(
   cursor: boolean,
   flash: boolean,
   hintKind: HintKind,
+  /** This clue drives the displayed deduction: its digit draws `COL_HINT` so
+   * the narration can say "the highlighted 5" instead of "clue 5", which names
+   * nothing when its own shaded run holds a second 5. Orthogonal to
+   * `hintKind` — the clue is *inside* the shaded area, so it keeps that fill
+   * and changes only its digit (Light Up's recoloured clue). */
+  clueRef = false,
 ): void {
   const b = border(ts);
   const x = b + ts * c;
@@ -191,7 +198,7 @@ function drawCell(
         fontType: "variable",
         size: Math.floor((ts * 3) / 5),
       },
-      error ? COL_ERROR : COL_GRID,
+      error ? COL_ERROR : clueRef ? COL_HINT : COL_GRID,
       String(value),
     );
   }
@@ -242,6 +249,7 @@ export function redraw(
   const hintBlackSet = hl?.blackRefs
     ? new Set(hl.blackRefs.map((m) => idx(m.r, m.c, w)))
     : null;
+  const hintClue = hl?.clue ? idx(hl.clue.r, hl.clue.c, w) : -1;
 
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < w; c++) {
@@ -252,6 +260,7 @@ export function redraw(
       const cursor = ui.cursorShow && r === ui.r && c === ui.c;
       const hintKind: HintKind =
         i === hintTarget ? 1 : hintBlackSet?.has(i) ? 4 : hintAreaSet?.has(i) ? 3 : 0;
+      const clueRef = i === hintClue;
 
       let packed = value + 2;
       if (error) packed |= F_ERROR;
@@ -261,9 +270,21 @@ export function redraw(
       if (hintKind === 1) packed |= F_HINT_TARGET;
       if (hintKind === 3) packed |= F_HINT_REF;
       if (hintKind === 4) packed |= F_HINT_BLACKREF;
+      if (clueRef) packed |= F_HINT_CLUE;
 
       if (ds.cache[i] !== packed) {
-        drawCell(dr, ts, r, c, value, error || mistake, cursor, flash, hintKind);
+        drawCell(
+          dr,
+          ts,
+          r,
+          c,
+          value,
+          error || mistake,
+          cursor,
+          flash,
+          hintKind,
+          clueRef,
+        );
         ds.cache[i] = packed;
       }
     }

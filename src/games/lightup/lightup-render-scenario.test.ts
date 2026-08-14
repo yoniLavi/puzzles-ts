@@ -127,7 +127,14 @@ describe("Light Up hint render scenarios", () => {
       game: lightupGame,
       id: boardId(TRICKY, "lrs-tricky-1"),
       showHint: true,
-      hintUntil: (step) => /rule out every one of them/.test(step.explanation ?? ""),
+      // Reach the frame by its *shape*, not by its wording: `discountUnlit` is
+      // the only firing that crosses a square out while ringing a dark one, so
+      // this predicate survives a rewording of the sentence (which
+      // `disambiguate-hint-deixis` then did).
+      hintUntil: (step) => {
+        const h = hl(step);
+        return h?.kind === "impossible" && h?.dark !== undefined;
+      },
     });
 
     const h = hl(hint);

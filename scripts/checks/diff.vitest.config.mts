@@ -23,6 +23,7 @@ export default defineConfig({
       "scripts/checks/colour-inventory.test.ts",
       "scripts/checks/colour-dark-check.test.ts",
       "scripts/checks/colour-collide.test.ts",
+      "scripts/checks/hint-deixis.test.ts",
     ],
     environment: "node",
   },

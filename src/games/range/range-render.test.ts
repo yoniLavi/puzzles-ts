@@ -148,6 +148,13 @@ describe("render scenario snapshot", () => {
     expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(true);
     // Clues are still drawn.
     expect(ops.some((o) => o.op === "text")).toBe(true);
+    // …and the clue *driving* the deduction draws its digit in COL_HINT, which
+    // is what lets the narration say "the highlighted 5". A clue sits inside
+    // its own shaded line of sight and that run can hold a second clue of the
+    // same value (seen live on 9x6 `range-a`), so the value alone is not a name.
+    const hl = result.hint?.highlights as RangeHint | undefined;
+    expect(hl?.clue).toBeDefined();
+    expect(ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(true);
     expect(result.recording.ops).toMatchSnapshot();
   });
 });

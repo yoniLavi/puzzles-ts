@@ -91,6 +91,61 @@ describe("hint", () => {
     }
   });
 
+  it("ties 'this cell' to the second mark, on every step of every reason", () => {
+    // Every Range step shows a second mark (the test above pins that), so a
+    // bare "this cell" would point at neither it nor the target
+    // (`disambiguate-hint-deixis`). The tie is geometric — never a colour
+    // name, which `docs/games/hints.md` § "Two marks on the board" forbids as
+    // scheme-relative and invisible to a colour-blind reader.
+    const TIE =
+      /right next to the ringed black square|the next one out past the shaded run|along the shaded run as far as this cell|the shaded cells around it/;
+    const kinds = new Set<string>();
+    let checked = 0;
+    for (const seed of ["range-hint-plan", "range-evidence-2", "range-evidence-3"]) {
+      let cur = fromSeed("9x6", seed);
+      for (let round = 0; round < 40; round++) {
+        const res = rangeGame.hint?.(cur);
+        if (!res?.ok) break;
+        // `hint()` builds one step per plan entry, in order, so the reason and
+        // the sentence it produced line up index for index.
+        const plan = deduceHintPlan(cur.grid, cur.w, cur.h);
+        expect(plan.length).toBe(res.steps.length);
+        for (let i = 0; i < res.steps.length; i++) {
+          const step = res.steps[i];
+          kinds.add(plan[i].reason.kind);
+          checked++;
+          expect(
+            TIE.test(step.explanation),
+            `${plan[i].reason.kind}: ${step.explanation} — a second mark is shown but "this cell" is not tied to it`,
+          ).toBe(true);
+          // Words and picture agree in *both* directions: a sentence saying
+          // "the highlighted N" is pointing at a mark, so the mark must exist.
+          // The clue is named this way rather than as "clue N" because a clue
+          // sits inside its own shaded line of sight and that run can hold a
+          // second clue of the same value — seen live on 9x6, two 13s.
+          const hl = step.highlights as RangeHint;
+          if (/the highlighted \d+/i.test(step.explanation)) {
+            expect(hl.clue, `${step.explanation} — no clue is marked`).toBeDefined();
+          } else {
+            expect(hl.clue).toBeUndefined();
+          }
+        }
+        for (const step of res.steps) cur = rangeGame.executeMove(cur, step.move);
+      }
+    }
+    // Vacuity guards: an empty sweep, or one that only ever reached the
+    // adjacency rule (whose sentence was already tied), would pass the
+    // assertion above while measuring nothing.
+    expect(checked).toBeGreaterThan(50);
+    expect([...kinds].sort()).toEqual([
+      "adjacency",
+      "connect",
+      "overrun",
+      "reach",
+      "satisfied",
+    ]);
+  });
+
   it("refuses on a solved board", () => {
     const st = fromSeed("9x6", "range-hint-solved");
     const res0 = rangeGame.hint?.(st);

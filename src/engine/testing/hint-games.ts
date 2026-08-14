@@ -94,6 +94,37 @@ export function declaresNoMarks(highlights: unknown): boolean {
   );
 }
 
+/**
+ * How many **distinct mark roles** a step declares — the count that decides
+ * whether "this cell" points at anything (`disambiguate-hint-deixis`): with one
+ * mark it is unambiguous, with two it names neither unless the narration ties
+ * them.
+ *
+ * A role counts when its field carries board geometry: a non-empty array, a
+ * cell index, or a coordinate object. A field holding a *mode* rather than a
+ * place does not — Bricks' `forced: "shade"` and Lightup's `kind: "light"` say
+ * what the step does, not where. Strings and booleans are therefore skipped,
+ * which is the whole of the rule.
+ *
+ * Declared roles, not rendered ones: cheap enough to sweep every tier of every
+ * game, and it cannot see a role the renderer ignores. `scripts/checks/
+ * hint-deixis.test.ts` is where that limitation is written down.
+ */
+export function markRoles(highlights: unknown): number {
+  if (highlights == null || typeof highlights !== "object") return 0;
+  let roles = 0;
+  for (const v of Object.values(highlights)) {
+    if (Array.isArray(v)) {
+      if (v.length > 0) roles++;
+    } else if (typeof v === "number") {
+      if (Number.isFinite(v) && v >= 0) roles++;
+    } else if (v !== null && typeof v === "object") {
+      roles++;
+    }
+  }
+  return roles;
+}
+
 /** First leaf preset's params — a small, valid board for each game. */
 export function firstLeaf<P>(menu: PresetMenu<P>): P {
   if (menu.params !== undefined) return menu.params;

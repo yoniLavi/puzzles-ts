@@ -155,6 +155,79 @@ describe("narration", () => {
   });
 });
 
+describe("narration — a second mark on the board is named", () => {
+  /** Any bare pointer at the acted-on square. With two marks in view it picks
+   * out neither, which is the defect `disambiguate-hint-deixis` sweeps. */
+  const DEICTIC = /\b(this|that) (square|cell)\b|\bhere\b/;
+  /** What each branch ties it with — relational throughout, never a colour
+   * name (`docs/games/hints.md` § "Two marks on the board, one 'this cell'").
+   * Lightup could not tie positionally: the driving clue is never adjacent to
+   * or in line with the target, so the tie is the reach relation `discountSet`
+   * does guarantee. */
+  const TIE =
+    /except this one|the other squares that could light it are marked|reaches every one of them/;
+
+  it("no step points bare at a square while a second mark is displayed", () => {
+    const kinds = new Set<string>();
+    let checked = 0;
+    let withMark = 0;
+    for (const [params, seed] of [
+      [EASY, "lh-deixis-e"],
+      [EASY, "lh-deixis-e2"],
+      [TRICKY, "lh-deixis-t"],
+      [TRICKY, "lh-deixis-t2"],
+    ] as const) {
+      const state = freshState(params, seed);
+      // `hint()` maps one step per firing, in order, so reason and sentence
+      // line up index for index.
+      const firings = deduceHintPlan(state);
+      const steps = planSteps(state);
+      expect(steps.length).toBe(firings.length);
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        const hl = step.highlights;
+        if (!hl) throw new Error("step without highlights");
+        kinds.add(firings[i].reason.kind);
+        checked++;
+        const secondMark =
+          hl.area.length > 0 || hl.dark !== undefined || hl.clue !== undefined;
+        if (!secondMark) continue;
+        withMark++;
+        if (!DEICTIC.test(step.explanation)) continue;
+        expect(
+          TIE.test(step.explanation),
+          `${firings[i].reason.kind}: ${step.explanation} — a second mark is shown but "this square" is not tied to it`,
+        ).toBe(true);
+      }
+      // Both discount sentences say "one of them must" of the set, so the set
+      // must hold at least two. Asserted rather than assumed: the first cut of
+      // this guard asserted it of the *shaded area* instead and went red,
+      // which is how the ringed dark square turned out to be a set member
+      // itself (it is, in over half of `discountUnlit`'s firings) — the
+      // narration had been excluding a candidate its own deduction counts.
+      for (let i = 0; i < steps.length; i++) {
+        const reason = firings[i].reason;
+        if (reason.kind !== "discountUnlit" && reason.kind !== "discountClue") continue;
+        expect(reason.set.length).toBeGreaterThanOrEqual(2);
+      }
+    }
+    // Vacuity guards: an empty sweep, or one that never reached the two
+    // discount rules (the ones the sweep flagged), would pass while measuring
+    // nothing (`audit-guessing-tier-names` §3.2).
+    expect(checked).toBeGreaterThan(50);
+    expect(withMark).toBeGreaterThan(50);
+    for (const kind of [
+      "forcedLight",
+      "clueSatisfied",
+      "clueSaturated",
+      "discountUnlit",
+      "discountClue",
+    ]) {
+      expect([...kinds]).toContain(kind);
+    }
+  });
+});
+
 describe("refusals", () => {
   it("refuses on a solved board", () => {
     let state = freshState(EASY, "lh-solved");

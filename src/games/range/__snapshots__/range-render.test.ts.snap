@@ -3039,10 +3039,10 @@ exports[`render scenario snapshot > draws the hint target and premise highlight 
   {
     "align": "center",
     "baseline": "mathematical",
-    "colour": 1,
+    "colour": 4,
     "fontType": "variable",
     "op": "text",
-    "rgb": "rgb(0, 0, 0)",
+    "rgb": "rgb(21, 113, 233)",
     "size": 19,
     "text": "11",
     "x": 160,

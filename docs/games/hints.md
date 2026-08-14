@@ -242,9 +242,10 @@ wrong to.
 
 ### Two marks on the board, one "this cell" — tie them, and never by colour
 
-**If a step marks more than one element, a bare "this cell" points at neither**
-(owner-reported, 2026-08-14, on a Clusters frame showing a solid target beside a
-ringed tile). The collection's mark convention is consistent — `COL_HINT` is a
+**If a step marks more than one element *of the same kind*, a bare "this cell"
+points at neither** (owner-reported, 2026-08-14, on a Clusters frame showing a
+solid target beside a ringed tile). The collection's mark convention is
+consistent — `COL_HINT` is a
 solid fill on the cell being decided, everything else is a ring or a wash — and
 the narrations already name the *other* mark ("the **ringed** dot", "the
 **shaded** squares", "the **highlighted** clue"). Only the target is left bare,
@@ -273,10 +274,41 @@ Tie them by something the code guarantees, cheapest first:
   use distinct ones ("ringed" outline vs "shaded" wash).
 
 Guard it per game — *a second mark displayed ⇒ the explanation contains the tie*
-— and prove the guard fails before trusting it. Sweep and remaining games:
-`disambiguate-hint-deixis`. **A grep only finds sentences that mention the second
-mark**; one that is bare while a second mark is displayed-but-unmentioned is the
-same defect and needs the render harness to see.
+— and prove the guard fails before trusting it. Exemplars: `clusters-hint`,
+`bricks-hint`, `range-hint`, `lightup-hint`. Give the guard the vacuity pair the
+bar now expects: a `checked` floor **and** the set of reason kinds the sweep must
+have reached, since a guard that only ever saw the one already-tied branch
+measures nothing.
+
+**Ask first whether the two marks are the same kind of thing** — that is what
+decides whether there is a defect at all, and it is cheap to answer. Palisade
+marks an *edge* against *regions*, Spokes a *spoke* against *hubs*, Sticks a
+*square* against a *clue*: in each the noun in "this edge" / "this line" / "this
+square" already picks the target out, and a qualifier would be noise. Every
+genuine case found by `disambiguate-hint-deixis` marked a **cell against another
+cell**.
+
+**Check the relation before you assert it, by measuring.** Every worked example
+above came out of a sweep, and each sweep changed the sentence that was about to
+be written: Bricks' three-in-a-row runs are 3, 4 *and* 5 long, so *"the two
+ringed bricks"* would have been false; its gravity supports number 1 or 2, so the
+sentence needs a singular arm; Lightup's driving clue is adjacent to its target
+in **0 of 133** firings, so no positional tie exists there at all. The same
+measurement found two defects that were not deixis: Lightup's discount sentence
+never stated the premise its conclusion needs, and attributed the whole candidate
+set to "the shaded squares" when the *ringed* square is a member of it in over
+half of all firings.
+
+**A grep only finds sentences that mention the second mark.** One that is bare
+while a mark is displayed-but-unmentioned is the same defect and invisible to it.
+`scripts/checks/hint-deixis.test.ts` (advisory, `npm run diff`, writes
+`metrics/hint-deixis.md`) reads the frame instead — every hinting game, every
+tier, mark roles counted, explanations tested for a bare deictic. **It is a
+report, not a gate, and deliberately so**: it flags ~230 sentence shapes in 20
+games of which the review found one genuine, because a lexical filter cannot see
+a tie made by value, by line context, by a continuation leg's antecedent, or by
+the marks being different kinds. Read it periodically; do not turn it into a
+gate.
 
 ### Name a square by its value
 

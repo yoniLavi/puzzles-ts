@@ -250,6 +250,13 @@ export interface RangeHint {
   target: { r: number; c: number; value: RangeCellValue };
   area: { r: number; c: number }[];
   blackRefs?: { r: number; c: number }[];
+  /** The clue driving a line-of-sight deduction, its digit recoloured
+   * `COL_HINT`. A clue sits *inside* its own shaded line of sight, and a
+   * board can put two clues of the same value in one such run — seen live on
+   * `9x6` seed `range-a`, where "Clue 5" named either of two shaded 5s. The
+   * value is not a name when the value repeats, so the driving one is marked
+   * (Light Up's recoloured digit, the same element-type legend). */
+  clue?: { r: number; c: number };
 }
 
 const DR = [1, 0, -1, 0];
@@ -328,21 +335,42 @@ function nonBlackNeighbours(
 }
 
 /** Narrate *why* the move is forced, per the deduction rule, referencing
- * the highlighted evidence so the words and the picture agree. */
-function narrate(reason: HintReason, value: RangeCellValue): string {
+ * the highlighted evidence so the words and the picture agree.
+ *
+ * **Every Range step shows a second mark** — a shaded area, or (for
+ * `adjacency`) a ringed black premise — so no branch may leave "this cell"
+ * bare: with two marks in view a bare deictic points at neither
+ * (`disambiguate-hint-deixis`). The tie is the relation the rule itself
+ * guarantees, never a colour name:
+ *
+ * - `satisfied` / `overrun` place the target at `1 + rl[RUN_WHITE][j]` steps
+ *   from the clue — that is, the **first cell past the shaded run** in one of
+ *   the clue's four directions (past the clue itself where the run is empty,
+ *   and the clue is shaded too).
+ * - `reach` walks outward from the clue and `buildHighlights` shades the whole
+ *   path behind the target, so the target is the run's **far end**.
+ * - `connect` shades exactly the target's own non-black neighbours, so they are
+ *   the cells **around it**.
+ *
+ * The three clue rules say *"the highlighted N"* rather than *"clue N"* for the
+ * same reason in the other direction: a clue lies inside its own shaded line of
+ * sight, and that run can hold a second clue of the same value, so the digit is
+ * marked and the sentence points at the mark (see `RangeHint.clue`). */
+function narrate(reason: HintReason): string {
   switch (reason.kind) {
     case "adjacency":
       return "No two black squares may touch. This cell sits right next to the ringed black square, so it must be white.";
     case "satisfied":
-      return `Clue ${reason.n} can already see exactly ${reason.n} white cells (shaded). That count is complete, so the line of sight must stop here — this cell must be black.`;
+      return `The highlighted ${reason.n} can already see exactly ${reason.n} white cells (shaded). That count is complete, so its line of sight must stop at this cell — the next one out past the shaded run — which must be black.`;
     case "overrun":
-      return `Clue ${reason.n} already sees the shaded white cells. Leaving this cell white would let it see more than ${reason.n}, so this cell must be black.`;
+      return `The highlighted ${reason.n} already sees the shaded white cells. Leaving this cell — the next one out past the shaded run — white would let it see more than ${reason.n}, so it must be black.`;
     case "reach":
-      return `Clue ${reason.n} can't yet see ${reason.n} cells. The only way to reach ${reason.n} is to extend its line of sight along the shaded run, so this cell must be white.`;
+      return `The highlighted ${reason.n} can't yet see ${reason.n} cells. The only way to reach ${reason.n} is to extend its line of sight along the shaded run as far as this cell, so this cell must be white.`;
     case "connect":
-      return value === "white"
-        ? "Every white cell must join one connected group. Painting this cell black would cut off the shaded cells from the rest, so it must stay white."
-        : "This cell must be white to keep the white cells connected.";
+      // Both `ruleConnectedness` call sites record WHITE, so there is no
+      // black-target branch to write: a cut vertex of the white region is
+      // forced *white*, never black.
+      return "Every white cell must join one connected group. Painting this cell black would cut the shaded cells around it off from the rest, so it must stay white.";
   }
 }
 
@@ -379,7 +407,11 @@ function buildHighlightsInner(
       return { target, area: [], blackRefs: [reason.from] };
     case "satisfied":
     case "overrun":
-      return { target, area: lineOfSight(grid, w, h, reason.clue.r, reason.clue.c) };
+      return {
+        target,
+        area: lineOfSight(grid, w, h, reason.clue.r, reason.clue.c),
+        clue: reason.clue,
+      };
     case "reach": {
       // Show the clue's whole current line of sight *and* the path it is
       // extending toward this target, so the shaded run the narration
@@ -389,7 +421,7 @@ function buildHighlightsInner(
       const key = (cell: { r: number; c: number }) => idx(cell.r, cell.c, w);
       const byKey = new Map<number, { r: number; c: number }>();
       for (const cell of [...seen, ...path]) byKey.set(key(cell), cell);
-      return { target, area: [...byKey.values()] };
+      return { target, area: [...byKey.values()], clue: reason.clue };
     }
     case "connect":
       return { target, area: nonBlackNeighbours(grid, w, h, target.r, target.c) };
@@ -414,7 +446,7 @@ function hint(state: RangeState): HintResult<RangeMove, RangeHint> {
     const target = { r: m.r, c: m.c, value };
     return {
       move: { sets: [{ r: m.r, c: m.c, value }] },
-      explanation: narrate(m.reason, value),
+      explanation: narrate(m.reason),
       highlights: buildHighlights(m.grid, state.w, state.h, m.reason, target),
     };
   });

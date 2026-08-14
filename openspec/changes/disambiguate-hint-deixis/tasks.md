@@ -27,23 +27,50 @@ because adjacency is guaranteed by the solver, and a sentence that claims a
 relation the code does not enforce is exactly the failure the hint bar exists to
 stop ("every sentence a hint utters is a claim").
 
-- [ ] 2.1 **Bricks.** Establish what the `COL_HINT_CELL` evidence ring actually
-      marks per rule branch (the three-in-a-row run, the unsupported brick, the
-      clue and its neighbours), then tie. `363` already does it — *"The shaded
-      brick **above** rests only on this cell"* — and is the model. The
-      `localBreak` pair (*"would break the board where it is ringed"*) needs the
-      weakest fix: it names where the break is but not where the target is.
-- [ ] 2.2 **Range.** Three marks, not two: target, the shaded run, and a
-      `COL_HINT_BLACKREF` ring. Check whether the target is always the run's
-      endpoint — if it is, *"the end of the shaded run"* ties all three at once.
-- [ ] 2.3 **Lightup.** *"A bulb here would rule out every one of them"* — "here"
-      and "them" in one clause with a ringed square in view. `325` is already
-      correct and stays.
-- [ ] 2.4 A guard per game, each **proved to fail** before it is trusted.
+- [x] 2.1 **Bricks — done.** Each branch's relation established by sweeping
+      **~55k deductions over ~4,800 partial positions** of the fixture boards,
+      because a relation asserted in prose and not enforced in code is the
+      failure the bar exists to stop. `shadeRun` never leaves the target's row
+      and is contiguous through it (runs of 3, 4 *and* 5 occur — "the two ringed
+      bricks" would have been false), so *"This cell sits **next to** the ringed
+      shaded bricks"*; `classify*Trial` finds its clue by walking `BRICKS_STEPS`
+      **from the target**, so *"the ringed 3 **beside** it"*; `below`/`above` are
+      the brick-wall supports one row down/up, and `below` holds 1 or 2 cells —
+      never 0 — so *"the ringed cell**s** below this one **are its only
+      supports**"* with a singular arm. `localBreak` is the one arm with no
+      guaranteed relation (`errorCells` reports wherever the validator flagged
+      the break) and ties on *"the unringed one"* instead — the sweep never
+      reached that arm at all, which is recorded next to it.
+- [x] 2.2 **Range — done.** Not three marks but two: only `adjacency` sets
+      `blackRefs`, and its sentence was already tied. The other four have exact
+      relations: `satisfied`/`overrun` place the target `1 + rl[RUN_WHITE][j]`
+      from the clue — *"the next one out past the shaded run"*; `reach` shades
+      the whole path behind it — *"along the shaded run **as far as this
+      cell**"*; `connect` shades the target's own non-black neighbours — *"the
+      shaded cells **around it**"*. `connect`'s dead black-target branch went
+      with them: both `ruleConnectedness` call sites record WHITE.
+- [x] 2.3 **Lightup — done, and it is the game where the tie could not be
+      positional.** Measured: across 133 discount firings the driving clue was
+      adjacent to the target **0 times** and collinear with it **0 times**, and
+      the ringed dark square collinear **0 times**. What `discountSet`
+      guarantees is the *reach* relation, so that is what the sentence names.
+      Writing it found **two further defects** in the same pair of sentences:
+      the premise *one of them must hold a bulb* was never stated, so the
+      conclusion did not follow from the words; and *"only the shaded squares"*
+      can light the ringed square is **false in over half of `discountUnlit`'s
+      firings**, because `litCells(…, true)` includes the source — the ringed
+      square is itself a set member, and being ringed rather than shaded it was
+      excluded by the wording. `325` stays. `323` was fixed too though the grep
+      could not see it: its corridor is displayed and was unmentioned.
+- [x] 2.4 A guard per game, each **proved to fail** before it is trusted — by
+      restoring the old sentence and watching it go red, then reverting. Each
+      carries the vacuity guards the bar now expects: a `checked` floor *and*
+      the set of reason kinds the sweep must have reached, since a guard that
+      only ever saw the one already-tied branch measures nothing.
 
 ## 3. Do not reach for the colour
 
-- [ ] 3.1 The rule goes in the `ts-engine` hint requirement: where a step
+- [x] 3.1 The rule goes in the `ts-engine` hint requirement: where a step
       displays more than one mark, its narration SHALL identify the acted-on one
       by a relation, a value or a role word — and SHALL NOT identify it by hue.
       Record *why* the obvious fix is refused, or it will be proposed again:
@@ -51,21 +78,56 @@ stop ("every sentence a hint utters is a claim").
       and this collection's own palette work already established that a hue's
       appearance is scheme-relative.
 
-## 4. The check the grep cannot do
+## 4. The check the grep cannot do — built, and it is a report, not a gate
 
-- [ ] 4.1 The sweep found sentences that *mention* a second mark. A sentence
-      that is bare while a second mark is **displayed but unmentioned** is the
-      same defect and invisible to a grep. The instrument is the render harness:
-      drive each hinting game's steps, count the distinct hint-role colours in
-      the frame, and flag a step with more than one and a bare deictic.
-- [ ] 4.2 Carry a vacuity guard (`checked > 0`) and sweep **every tier**, not
-      `firstLeaf(presets())` — `audit-guessing-tier-names` §3.2 found a planted
-      violation staying green for exactly that reason.
+- [x] 4.1 `scripts/checks/hint-deixis.test.ts` (advisory, wired into `npm run
+      diff`, writes `metrics/hint-deixis.md`). It reads the **frame**: every
+      hinting game, every tier, each step's declared mark roles
+      (`markRoles`, promoted to `engine/testing/hint-games.ts` beside
+      `declaresNoMarks`), each explanation tested for a bare deictic. It found
+      `323`, the Lightup sentence the grep could not see.
+- [x] 4.2 Vacuity guards (`3,914 steps examined`, `3,045 showing a second
+      mark`, both floored) and **every tier**, not `firstLeaf(presets())` —
+      `audit-guessing-tier-names` §3.2.
+- [x] 4.3 **Why it is not a gate, which is the finding.** It flags **230
+      sentence shapes in 20 games**; the review found **no genuine defect the
+      grep had missed except `323`**. The false positives are four legitimate
+      ties no lexical rule recognises — by **value** (Singles' *"This 3 shares a
+      line with the ringed white 3"*), by **line context** (Group's *"In this
+      row, c can go in only this cell — every other cell in the row has ruled it
+      out"*), by a **continuation leg's antecedent** (Slant's *"The same clue
+      forces this square too"*), and above all by **the marks being different
+      kinds of thing**: Palisade marks an *edge* against *regions*, Spokes a
+      *spoke* against *hubs*, Sticks a *square* against a *clue*, and in each the
+      noun already picks the target out. **All four genuine cases mark a cell
+      against another cell** — that is the rule a future port should carry, and
+      it is now in `hints.md`. Counting *rendered* hint colours instead would
+      not separate those either (a spoke and a hub are still two hint colours);
+      what rendering would add is the one thing this cannot see, a role declared
+      but never drawn.
 
 ## 5. Close out
 
-- [ ] 5.1 `openspec validate disambiguate-hint-deixis --strict`.
-- [ ] 5.2 Read each changed sentence **against the running app**, on a frame that
-      actually shows both marks. This defect was found by looking, not by a test,
-      and its fix should be confirmed the same way.
+- [x] 5.1 `openspec validate disambiguate-hint-deixis --strict`.
+- [x] 5.2 Every changed sentence read **against the running app**, on frames that
+      actually show both marks — and it earned its place three times, none of
+      which any test would have raised:
+      - **Bricks' ringed support is often a *clue*** (the opener rings a `4`;
+        `validateGravity` masks a clue to no colour, so a clue supports
+        nothing). *"is its only support and is not shaded"* reads as a mark the
+        player could go and place, so it is now *"the only thing it could rest
+        on, and it isn't a shaded brick"*.
+      - **"more than its 0 shaded neighbours"** — a clue of 0 on the opener
+        board, and nonsense on sight. Its own sentence now:
+        `hints.md` § "Sanity-read at the degenerate extremes".
+      - **Range's "Clue 5" named either of two shaded 5s.** A clue lies *inside*
+        its own shaded line of sight and that run can hold a second clue of the
+        same value — the live 9x6 board had two 13s, both shaded. The value is
+        not a name when the value repeats, so this is the case the spec delta
+        means by *"the marks need fixing, not the sentence"*: `RangeHint.clue`
+        marks the driving clue and its digit draws `COL_HINT` (Light Up's
+        recoloured digit, same element-type legend), and the three clue rules
+        say *"the highlighted 5"*. Guarded in both directions — the word only
+        where the mark is — and the snapshot diff is **two lines on one text
+        op**, so nothing else moved.
 - [ ] 5.3 Owner acceptance, then archive.

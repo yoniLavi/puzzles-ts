@@ -44,10 +44,16 @@ Clusters is fixed (see below); this change is the sweep.
 
 ## Impact
 
-- Affected specs: `ts-engine` (the hint-narration requirement gains the rule).
-- Affected code: the `narrate` functions of the games in the table below, and
-  their hint tests. **No solver, generator or highlight geometry changes**, so no
-  board moves and no differential is touched — this is wording plus assertions.
+- Affected specs: `ts-engine` (the hint-narration requirement gains the rule)
+  and `lightup` (a discount narration must count the set the way the deduction
+  does — see the sweep note below).
+- Affected code: the `narrate` functions of the games in the table below, their
+  hint tests, and **one mark**: Range gains `RangeHint.clue`, whose digit draws
+  `COL_HINT`. That is a highlight change the proposal did not plan and the
+  running app demanded — "Clue 5" names nothing on a board whose shaded run
+  holds two 5s, which is precisely the case the rule calls *"the marks need
+  fixing, not the sentence"*. **No solver, generator or codec changes**, so no
+  board moves and no differential is touched.
 
 ## The sweep
 
@@ -73,3 +79,30 @@ while a second mark is *displayed but unmentioned* — the frame would still sho
 two marks. Catching those needs the render harness (count distinct hint-role
 colours in a tier-2.5 frame, flag steps with more than one and a bare deictic),
 which is the honest instrument and is task 4.
+
+## What the frame-based sweep then found (task 4, and it is a negative result)
+
+`scripts/checks/hint-deixis.test.ts` reads the frame instead of the words, over
+every hinting game and **every tier**: 3,914 steps, 3,045 of them showing a
+second mark. It caught the one sentence the grep structurally could not — Light
+Up's *"every square that could light it … is crossed out or already lit"*, which
+**shades that corridor and never says so** — and it flags 230 sentence shapes in
+20 games, of which reading every one found nothing else to change.
+
+**So it ships as a report, not a gate.** The false positives are four legitimate
+ties no lexical rule recognises: by **value** (Singles), by **line context**
+(Group), by a **continuation leg's antecedent** (Slant, Spokes), and above all by
+**the marks being different kinds of thing** — Palisade marks an edge against
+regions, Spokes a spoke against hubs, Sticks a square against a clue, and the
+noun in "this edge" already picks the target out. Every genuine case marks a
+**cell against another cell**, which is the cheap question a future port should
+ask first, and is now the opening sentence of the `hints.md` section.
+
+**Two defects that were not deixis, both found by writing the tie.** Light Up's
+discount narration never stated the premise its conclusion needs (*one of them
+must hold a bulb*), and said *"only the shaded squares"* can light the ringed
+square — when the ringed square is **itself a member of the candidate set in
+over half of those firings** (`litCells(…, true)` includes the source; a dark
+square lights itself), and being ringed rather than shaded it was excluded by
+the wording. The measurement that established each game's relation is what
+surfaced both.
