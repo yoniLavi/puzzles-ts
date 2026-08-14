@@ -1,13 +1,50 @@
 # Tasks
 
+> **⚠️ The shape of this change moved on 2026-08-12 — read
+> [`design.md`](./design.md) D1–D4 before starting.** The proposal assumed the
+> walk was a `continuesPrevious` journey; it cannot be, because a what-if
+> chain's middle legs are cells the player must *not* play and `HintStep.move`
+> is required (D1). The owner's decision (D2) is **one enriched step with an
+> arrow path**, not a multi-leg walk and not a new engine affordance — so the
+> engine contract is untouched and this is per-game narration and rendering.
+> A working prototype and a rendered frame are in
+> [`reference/`](./reference/); they are reverted from the tree, not lost.
+
+## 0. Clusters' hint target was the same colour as a blue tile — **done, ahead of this change** (design D4)
+
+- [x] 0.1 `COL_HINT` was `HINT_ACTION` was `BLUE`, and Clusters' `COL_1` is
+      `BLUE`, so the hint filled the hypothesis cell in the exact colour of a
+      placed blue tile — invisible against its neighbours, and contradicting the
+      sentence outright on a firing that concluded *red*. A live rendering bug
+      on `main`, not a cost of the arrows, so it was fixed rather than carried.
+- [x] 0.2 The collide report was read **before** the fix was chosen, as the
+      method requires, and named the pair exactly.
+- [x] 0.3 `COL_HINT` is `PURPLE` in Clusters. The usual resolution (cross-game
+      role wins, local yields) is unavailable: the local role is a *rule of the
+      game*, one of the two colours the player paints and named to them by the
+      help page. PURPLE is this repo's established substitute when blue is
+      spoken for. Verified: pair gone, no new pair, dark check unchanged,
+      snapshot diff exactly two `rgb` values.
+- [x] 0.4 **Why nothing caught it, now guarded.** The hint tests asserted
+      `op.colour === COL_HINT` — a palette *index*, not a colour — which stays
+      green whatever the index resolves to. `colour-collide.test.ts` is the
+      non-proxy instrument and is advisory, so it reported the pair and failed
+      nothing. Clusters now asserts directly that no hint role resolves to a
+      colour the board already uses, and that the three hint roles differ.
+
 ## 1. Clusters first — it establishes the pattern most cheaply
 
 - [ ] 1.1 Its chain is already captured (`ClustersReason`'s `chain.steps`) and
-      already rendered; only the *delivery* changes, from one step to a
-      `continuesPrevious` journey. Median 2–3 legs.
-- [ ] 1.2 Decide what each leg marks: the existing what-if overlay bits paint
-      every forced cell at once, so a walk wants them revealed leg by leg.
-- [ ] 1.3 Remove its `PENDING_WALK` entry from `hint-quality.test.ts`.
+      already rendered; what is missing is the **order** and the link to the
+      break. Add the arrow path: hypothesis → each forced cell in turn → the
+      ringed contradiction. Prototype in `reference/arrow-prototype.patch`.
+- [ ] 1.2 Narration names the two ends and the *count* between, and lets the
+      arrows carry the middle — reciting the links is the thing the picture
+      exists to replace.
+- [ ] 1.3 Judge the frame with **long jumps in view**: consecutive links are not
+      adjacent (the chain re-scans row-major), so a leg can cross the board.
+      Decide then whether ordinals are needed alongside the arrows.
+- [ ] 1.4 Remove its `PENDING_WALK` entry from `hint-quality.test.ts`.
 
 ## 2. The Latin family — one shared walk, six games
 
@@ -35,6 +72,11 @@
 
 ## 4. Close out
 
-- [ ] 4.1 `ts-engine` spec delta: the Tactic walk bar.
+- [ ] 4.1 `ts-engine` spec delta: the Tactic bar as **D2 revised it** — the chain
+      is *shown* (ordered, anchored at both ends) rather than walked leg by leg,
+      and the engine gains no display-only step. Say plainly that the stricter
+      version was considered and set aside by an owner decision, so a later
+      reader does not read `PENDING_WALK`'s retirement as seven walks that were
+      never written.
 - [ ] 4.2 `PENDING_WALK` is empty; delete the list and its scaffolding comment.
 - [ ] 4.3 `openspec validate --strict`; owner acceptance; archive.

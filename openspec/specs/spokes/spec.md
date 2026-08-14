@@ -94,10 +94,13 @@ propose it.
 The engine SHALL provide `src/games/spokes/` implementing the `Game`
 interface for Spokes, registered so the puzzle is served by the TypeScript engine.
 
-Parameters SHALL be a width, a height, and a difficulty (Easy, Tricky or Hard).
-Validation SHALL require width and height each at least 2, matching upstream, with
-no upper bound. A game ID SHALL encode the width, height and difficulty and
-round-trip through decode.
+Parameters SHALL be a width, a height, and a difficulty (Easy, Tricky or
+`Unreasonable`). The top tier is named `Unreasonable` rather than upstream's
+`Hard` because its look-ahead runs an unbounded sub-solve from a hypothesis; its
+internal key and encoded difficulty character are unchanged, so an existing game
+ID names the same board. Validation SHALL require width and height each at least
+2, matching upstream, with no upper bound. A game ID SHALL encode the width,
+height and difficulty and round-trip through decode.
 
 Spokes SHALL be a uniquely-solvable line-drawing puzzle and SHALL declare a
 `findMistakes` hook, so that Check & Save flags a wrong board rather than saving it
@@ -113,6 +116,8 @@ silently.
 
 - **WHEN** a parameter set is encoded to a game ID and decoded
 - **THEN** the same width, height and difficulty are recovered
+- **AND** the encoded difficulty character for the top tier is the one it had
+  under its former name
 
 ### Requirement: Spokes descriptions use one clue character per cell
 
@@ -142,15 +147,26 @@ one.
 
 Spokes SHALL provide a solver that draws the forced lines and marks for a board, or
 reports the board invalid or incomplete, at a requested difficulty of Easy, Tricky
-or Hard. The solver SHALL apply hub saturation and exhaustion, diagonal-crossing
-marks, and the two-ones rule; the Tricky and Hard tiers SHALL additionally apply
-bounded contradiction look-ahead. The solver SHALL determine board validity by
-connectivity, treating a set of hubs that can draw no further line to the rest of
-the board as invalid and a fully connected, fully satisfied board as solved.
+or `Unreasonable`. The solver SHALL apply hub saturation and exhaustion,
+diagonal-crossing marks, and the two-ones rule; the two harder tiers SHALL
+additionally apply contradiction look-ahead. The solver SHALL determine board
+validity by connectivity, treating a set of hubs that can draw no further line to
+the rest of the board as invalid and a fully connected, fully satisfied board as
+solved.
 
 The contradiction look-ahead SHALL be deterministic and exhaustive, not a guessing
 tier: a value is committed only when the opposite value provably leads to an invalid
-board.
+board. It SHALL nevertheless be applied at **two distinct strengths**, and they are
+two rungs rather than one:
+
+- at **Tricky**, the sub-solve that tests the hypothesis SHALL be bounded by a
+  fixed deduction limit, so the reasoning is a chain a player could follow;
+- at **`Unreasonable`**, the sub-solve SHALL be unbounded, which is what the tier's
+  name reports.
+
+The bound SHALL have a single definition in the solver, and it SHALL be documented
+as load-bearing for the tier names rather than as a performance dial, since
+lifting it would silently make the middle tier a search.
 
 The generator SHALL use the solver to keep every board uniquely soluble: it SHALL
 start from every horizontal and vertical line plus a random diagonal per cell, then
@@ -180,14 +196,14 @@ This deliberately diverges from upstream, whose equivalent check re-solves a scr
 board whose lines still carry the previous candidate's solution, and which therefore
 both rejects boards for reasons unrelated to difficulty and admits boards an easier
 tier can crack. Because generation is solver-gated, the divergence changes every
-Tricky and Hard description, so the byte-for-byte differential against the C SHALL
-retain a way to run upstream's original check, used by that differential alone.
+description on the two harder tiers, so the byte-for-byte differential against the C
+SHALL retain a way to run upstream's original check, used by that differential alone.
 
-#### Scenario: A Hard board genuinely needs the Hard tier
+#### Scenario: An Unreasonable board genuinely needs its own tier
 
-- **WHEN** a board generated at Hard is solved at Tricky
+- **WHEN** a board generated at `Unreasonable` is solved at Tricky
 - **THEN** the solver does not reach a solution
-- **AND** solving the same board at Hard does reach one
+- **AND** solving the same board at `Unreasonable` does reach one
 
 #### Scenario: The differential still compares against upstream's generator
 
@@ -260,4 +276,31 @@ line the solution requires but the player has not yet drawn SHALL NOT be flagged
   to check the board
 - **THEN** that line is reported as a mistake, while lines merely not yet drawn are
   not
+
+### Requirement: Spokes' hint stops at bounded reasoning
+
+The Spokes hint SHALL narrate the contradiction look-ahead only at its **bounded**
+strength. The unbounded rung — the one the `Unreasonable` tier is named for —
+SHALL NOT contribute a firing to a hint plan on any tier, including boards
+generated below that tier. Where deduction and the bounded look-ahead run out, the
+hint SHALL refuse with a message saying no further move can be deduced.
+
+The solver SHALL retain the unbounded rung, so that generation and grading are
+unchanged and every description is byte-identical to what the game shipped before.
+
+**The guarantee SHALL be structural rather than a check on the wording.** Both
+rungs are the same function and produce the *same* narration — an anchored,
+classified sentence naming the hub that would over-fill, the diagonals that would
+cross, or the hubs that would be stranded — so a vocabulary guard cannot tell them
+apart. The game's tests SHALL therefore assert the property directly, with a
+control that prevents it holding vacuously.
+
+#### Scenario: Planning at the top tier buys the plan nothing
+
+- **WHEN** a hint plan is computed for the same board at the top tier and at
+  Tricky
+- **THEN** the two plans are the same sequence of firings
+- **AND** on at least one sampled board the Tricky plan is longer than the Easy
+  one, so the equality is a fact about the top tier rather than about every tier
+  producing the same plan
 

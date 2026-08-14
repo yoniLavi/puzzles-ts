@@ -278,8 +278,8 @@ unreachable.
         exhaustive over its own half and an unhandled technique is a **compile
         error**. The union is what made the fallback possible: a firing's kind
         and its technique could disagree.
-- [ ] 4.3 `openspec validate audit-guessing-tier-names --strict`; owner
-      acceptance; archive.
+- [x] 4.3 `openspec validate --strict` clean; **owner acceptance 2026-08-12**;
+      archived.
 
 ## 5. Follow-ups from this change
 

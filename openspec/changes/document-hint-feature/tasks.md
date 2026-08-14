@@ -8,11 +8,12 @@
 
 ## 1. Settle the two decisions first (they change what gets written)
 
-- [ ] 1.1 **The "checkpoint" collision** (design D2): the quick-save toast says
-      *"Checkpoint saved"* while `features.md` §Checkpoints documents the
-      *multi*-checkpoint history panel. Rename the toast (recommended) or
-      disambiguate in the help. Owner call — it is a shipped user-visible
-      string. Record the call in `design.md` either way.
+- [x] 1.1 **The "checkpoint" collision** (design D2) — **settled by the owner,
+      2026-08-12: rename the toast.** "Checkpoint" then means one thing
+      everywhere. The string is in `src/puzzle/quick-save-actions.ts` and
+      `puzzle-screen.test.ts` already asserts the success path, so the rename
+      has a test to follow it. Do it *with* the prose, so the page and the app
+      land in step.
 - [ ] 1.2 **What the coverage guard derives its feature list from** (design D1):
       anchors alone, the game hooks, or the command map. Recommendation is the
       hooks driving an anchor check. Decide before writing the prose, because

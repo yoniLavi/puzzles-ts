@@ -67,6 +67,14 @@ Two ways out, and this is a genuine trade-off:
 two things is a help page apologising for the UI. But it is a shipped string on
 a path the owner has used, so it is flagged rather than assumed.
 
+**Settled by the owner, 2026-08-12: rename the toast.** "Checkpoint" then means
+one thing everywhere — the multi-checkpoint history panel — and the one-slot
+feature keeps the two names it already has on its button and menu entry
+(**Check & save** / **Quick-save**), which is one fewer than it ships today.
+Task 1.1 is closed; the string lives in `src/puzzle/quick-save-actions.ts`, and
+`puzzle-screen.test.ts` asserts the success path, so the rename has a test to
+follow it.
+
 ## D3: Say what governs a missing button, without listing games
 
 29 games have a hint; 36 declare `findMistakes`; 57 ship. So both controls are

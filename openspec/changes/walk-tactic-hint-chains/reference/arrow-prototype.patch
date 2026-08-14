@@ -1,0 +1,131 @@
+diff --git a/src/games/clusters/index.ts b/src/games/clusters/index.ts
+index ec20aeb..bd8ea7e 100644
+--- a/src/games/clusters/index.ts
++++ b/src/games/clusters/index.ts
+@@ -319,7 +319,14 @@ function narrate(d: ClustersDeduction): string {
+           : at.kind === "surrounded"
+             ? "the ringed tile would be sealed off from its own colour"
+             : "the ringed tile could no longer touch two of its own colour";
+-    return `Suppose this cell were ${t}: the marked cells would each be forced in turn, until ${end} — impossible. So this cell must be ${f}.`;
++    // The chain is *shown*, not recited: the arrows run from this cell through
++    // each forced consequence to the break, so the sentence names only the two
++    // ends and lets the board carry the middle. Reciting the links here would
++    // ask the player to hold them in their head, which is the thing the walk
++    // exists to avoid (`audit-guessing-tier-names` D9).
++    const n = d.reason.steps.length;
++    const forced = n === 1 ? "one more cell is forced" : `${n} more cells are forced`;
++    return `Suppose this cell were ${t}. Follow the arrows: ${forced}, and then ${end} — impossible. So it must be ${f}.`;
+   }
+ 
+   if (at.cell === d.index) {
+diff --git a/src/games/clusters/render.ts b/src/games/clusters/render.ts
+index 8998137..83fd787 100644
+--- a/src/games/clusters/render.ts
++++ b/src/games/clusters/render.ts
+@@ -62,9 +62,15 @@ export const COL_CURSOR = 7;
+ // the colour each would be forced to. No further premise role: every other
+ // tile the narration cites is orthogonally adjacent to the target or the
+ // danger tile, already in view.
++// COL_HINT_PATH draws the arrows linking the hypothesis to each forced
++// consequence and finally to the break. It is the *orange* of the danger ring
++// rather than a fourth hue: the path and the ring are one argument — "start
++// here, and this is where it ends" — and a colour of its own would say they
++// were separate roles.
+ export const COL_HINT = 8;
+ export const COL_HINT_CELL = 9;
+ export const COL_HINT_DANGER = 10;
++export const COL_HINT_PATH = 11;
+ 
+ export function colours(defaultBackground: Colour): Colour[] {
+   const out: Colour[] = [];
+@@ -79,6 +85,7 @@ export function colours(defaultBackground: Colour): Colour[] {
+   out[COL_HINT] = HINT_ACTION;
+   out[COL_HINT_CELL] = HINT_EVIDENCE;
+   out[COL_HINT_DANGER] = ORANGE;
++  out[COL_HINT_PATH] = ORANGE;
+   return out;
+ }
+ 
+@@ -239,6 +246,64 @@ function drawTile(
+   dr.drawUpdate({ x: px, y: py, w: ts, h: ts });
+ }
+ 
++/**
++ * One leg of the what-if path: an arrow from cell `a`'s centre to cell `b`'s.
++ *
++ * Shortened at both ends so it starts and finishes clear of the marks it
++ * connects, and drawn *between* tiles rather than inside one — which is why it
++ * cannot live in {@link drawTile} and gets its own pass after the tile loop.
++ *
++ * Consecutive links are **not** necessarily adjacent: the chain re-scans the
++ * board row-major after each forcing, so a leg can jump across the grid. That
++ * is a true fact about the deduction and the arrow is allowed to say it.
++ */
++function drawChainArrow(
++  dr: GameDrawing,
++  ts: number,
++  b: number,
++  a: { x: number; y: number },
++  z: { x: number; y: number },
++  col: number,
++): void {
++  const cx = (c: { x: number; y: number }) => c.x * ts + b + (ts >> 1);
++  const cy = (c: { x: number; y: number }) => c.y * ts + b + (ts >> 1);
++  const x1 = cx(a);
++  const y1 = cy(a);
++  const x2 = cx(z);
++  const y2 = cy(z);
++  const dx = x2 - x1;
++  const dy = y2 - y1;
++  const len = Math.hypot(dx, dy);
++  if (len < 1) return;
++  const ux = dx / len;
++  const uy = dy / len;
++  // Clear the mark at each end (the what-if square is ts/3 across).
++  const clear = Math.min(ts * 0.34, len / 2 - 1);
++  const sx = Math.round(x1 + ux * clear);
++  const sy = Math.round(y1 + uy * clear);
++  const ex = Math.round(x2 - ux * clear);
++  const ey = Math.round(y2 - uy * clear);
++  const thick = Math.max(2, Math.floor(ts / 14));
++  dr.drawLine({ x: sx, y: sy }, { x: ex, y: ey }, col, thick);
++
++  // Head at the destination: two barbs, sized off the tile so it stays legible
++  // when a leg is only one cell long.
++  const head = Math.max(4, Math.floor(ts / 5));
++  const px = -uy;
++  const py = ux;
++  for (const s of [1, -1]) {
++    dr.drawLine(
++      { x: ex, y: ey },
++      {
++        x: Math.round(ex - ux * head + s * px * head * 0.55),
++        y: Math.round(ey - uy * head + s * py * head * 0.55),
++      },
++      col,
++      thick,
++    );
++  }
++}
++
+ // --- redraw ----------------------------------------------------------------
+ 
+ export function redraw(
+@@ -313,4 +378,17 @@ export function redraw(
+       }
+     }
+   }
++
++  // The what-if path, after the tile loop because its arrows cross tile
++  // boundaries. Redrawn on every frame a chain is displayed rather than
++  // diffed: it is a handful of lines, and a tile repainting under it would
++  // otherwise cut it in half. Dropping the hint clears the sidecar, which
++  // stales every path tile, so the arrows are erased by the repaint.
++  if (hl && hl.chain.length > 0) {
++    const path = [hl.target, ...hl.chain, ...(hl.danger ? [hl.danger] : [])];
++    for (let k = 1; k < path.length; k++) {
++      drawChainArrow(dr, ts, b, path[k - 1], path[k], COL_HINT_PATH);
++    }
++    dr.drawUpdate({ x: 0, y: 0, w: w * ts + 2 * b, h: h * ts + 2 * b });
++  }
+ }

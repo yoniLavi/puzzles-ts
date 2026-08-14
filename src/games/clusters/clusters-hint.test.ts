@@ -320,6 +320,31 @@ describe("hint through the midend", () => {
 });
 
 describe("hint rendering (tier 2.5)", () => {
+  // The palette itself, before any frame. Every other assertion in this block
+  // compares a recorded op's `colour` against a `COL_*` **index**, which is a
+  // proxy: the hint target was painted `COL_HINT` throughout the period when
+  // `COL_HINT` resolved to the very same blue as `COL_1`, the tile colour a
+  // player paints — so the cell the whole deduction starts from was
+  // indistinguishable from a placed tile, and on a firing concluding *red* the
+  // board contradicted the sentence. Nothing failed, because an index is not a
+  // colour. `colour-collide.test.ts` had been reporting the pair all along and
+  // is advisory. This is the non-proxy form.
+  it("every hint role is a colour the board does not already use", () => {
+    const palette = clustersGame.colours([1, 1, 1]);
+    const key = (i: number) => palette[i].join(",");
+    for (const role of [COL_HINT, COL_HINT_CELL, COL_HINT_DANGER]) {
+      for (const tile of [COL_0, COL_1]) {
+        expect(
+          key(role),
+          `hint role ${role} is the same colour as tile ${tile}`,
+        ).not.toBe(key(tile));
+      }
+    }
+    // …and the three hint roles are distinct from one another, so a target, its
+    // evidence and its contradiction never collapse into one mark.
+    expect(new Set([COL_HINT, COL_HINT_CELL, COL_HINT_DANGER].map(key)).size).toBe(3);
+  });
+
   it("a direct hint frame paints the COL_HINT target", () => {
     const result = renderScenario({
       game: clustersGame,

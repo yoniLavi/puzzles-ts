@@ -5,16 +5,19 @@ TBD - created by archiving change add-mathrax-ts-port. Update Purpose after arch
 ## Requirements
 ### Requirement: Mathrax game implements the Game interface
 
-The engine SHALL provide `src/games/mathrax/` implementing the `Game`
+The engine SHALL provide a complete implementation of the `Game<…>` engine
 interface for Mathrax, registered so the puzzle is served by the TypeScript engine.
 
-Parameters SHALL be a grid size, a difficulty (Easy, Normal, Tricky or Recursive),
-and a set of enabled clue types (addition, subtraction, multiplication, division,
-equality, even/odd). Validation SHALL require the size to be at least 3 and at most 9,
-the difficulty to be known, and — when validating for generation — at least one clue
-type enabled. A game ID SHALL encode the size, difficulty and enabled clue types and
-round-trip through decode, where an empty encoded clue-type set means all clue types
-are enabled.
+Parameters SHALL be a grid size, a difficulty (Easy, Normal, Tricky or
+`Unreasonable`), and a set of enabled clue types (addition, subtraction,
+multiplication, division, equality, even/odd). The top tier is named
+`Unreasonable` rather than upstream's `Recursive` because it reaches its answer by
+guessing and verifying; its encoded difficulty character is unchanged, so an
+existing game ID names the same board. Validation SHALL require the size to be at
+least 3 and at most 9, the difficulty to be known, and — when validating for
+generation — at least one clue type enabled. A game ID SHALL encode the size,
+difficulty and enabled clue types and round-trip through decode, where an empty
+encoded clue-type set means all clue types are enabled.
 
 The objective SHALL be to fill the grid with digits from 1 to the grid size so that no
 digit repeats in any row or column and every clue is satisfied.
@@ -23,6 +26,12 @@ digit repeats in any row or column and every clue is satisfied.
 
 - **WHEN** a parameter set is encoded to a game ID and decoded
 - **THEN** the same size, difficulty and enabled clue types are recovered
+
+#### Scenario: The renamed top tier keeps its difficulty character
+
+- **WHEN** params at the top tier are encoded to a game ID
+- **THEN** the difficulty character is the one the tier had under its former
+  name, so an ID written before the rename still names the same board
 
 #### Scenario: Every preset produces a uniquely solvable board
 
@@ -77,13 +86,13 @@ or clue part stops short of covering the grid.
 Mathrax SHALL solve using the shared Latin-square solver framework, contributing its
 own clue deductions: for each cell it SHALL intersect its candidate digits with those
 permitted by each adjacent clue given the opposite cell's candidates, across the Easy,
-Normal, Tricky and Recursive difficulty levels. The generator SHALL produce a full
+Normal, Tricky and `Unreasonable` difficulty levels. The generator SHALL produce a full
 Latin square, derive a candidate clue at every interior intersection, and then remove
 given digits and clues in a randomised order while the puzzle remains **uniquely**
 solvable at the target difficulty. Generation from a given seed SHALL be reproducible.
 
 Uniqueness is required at *every* difficulty, including the guess-and-verify
-`Recursive` tier. This is a deliberate divergence from upstream, which tests its
+`Unreasonable` tier. This is a deliberate divergence from upstream, which tests its
 solver's verdict for bare truthiness and so accepts an *ambiguous* verdict as grounds
 to keep removing — leaving that whole tier with puzzles that have several solutions
 (measured: 30 of 30 sampled boards, and the recorded C descriptions for it are blank
@@ -103,7 +112,7 @@ silently pass anything played on it.
 
 #### Scenario: Even the guess-and-verify tier yields a unique solution
 
-- **WHEN** a board is generated at the `Recursive` difficulty
+- **WHEN** a board is generated at the `Unreasonable` difficulty
 - **THEN** it has exactly one solution, and it cannot be solved without the
   guess-and-verify step
 
@@ -187,21 +196,23 @@ its first pass, so the random-number draw order is unchanged.
 
 ### Requirement: Mathrax offers only the difficulties a size can support
 
-Mathrax SHALL refuse to *generate* a size-3 board at Normal or at Recursive;
+Mathrax SHALL refuse to *generate* a size-3 board at Normal or at the top tier;
 `validateParams` SHALL reject those combinations when asked for a full
 (generation-capable) parameter set, while continuing to accept them otherwise so a
-saved game or a game ID carrying its own description still loads.
+saved game or a game ID carrying its own description still loads. The refusal
+message SHALL name those tiers from the game's tier list rather than spelling them
+in prose, so it cannot survive a rename while the menu moves on.
 
 A 3×3 grid has only four intersections, which is not enough structure to separate
-those tiers from their neighbours: no board needing Normal, and none needing
-Recursive, was found in 3,000 candidates each. Size 3 *Tricky* is unaffected, and
+those tiers from their neighbours: no board needing Normal, and none needing the
+top tier, was found in 3,000 candidates each. Size 3 *Tricky* is unaffected, and
 every tier at size 4 and above is reachable at ordinary cost.
 
 #### Scenario: An unsupported size and tier are refused
 
-- **WHEN** a full parameter set requesting size 3 at Normal or Recursive is
+- **WHEN** a full parameter set requesting size 3 at Normal or the top tier is
   validated
 - **THEN** it is rejected with a message naming the size
+- **AND** the message names those tiers exactly as the difficulty menu does
 - **AND** the same parameters validate successfully when a description is supplied
-  rather than generated
 

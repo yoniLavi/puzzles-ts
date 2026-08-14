@@ -14,11 +14,10 @@
  * `tilesize / 2` — and `computeSize` subtracts 1 to meet the outer grid line.
  */
 
-import { BLUE, ORANGE, PINK_WASH } from "../../engine/colour/colours.ts";
+import { BLUE, ORANGE, PINK_WASH, PURPLE } from "../../engine/colour/colours.ts";
 import {
   CURSOR,
   ERROR,
-  HINT_ACTION,
   HINT_EVIDENCE,
   INK,
   PAPER,
@@ -54,7 +53,7 @@ export const COL_1_DOT = 5; // dot on a blue tile (white)
 export const COL_ERROR = 6;
 export const COL_CURSOR = 7;
 // Hint legend (add-clusters-hint, §5.3/§5.4 of hint-authoring.md): the forced
-// cell fills COL_HINT blue; the tile the refuted colouring would break — the
+// cell fills COL_HINT; the tile the refuted colouring would break — the
 // one element the narration calls "ringed" — gets a double COL_HINT_DANGER
 // ring (an outline, because the tile's own colour *is* part of the premise;
 // doubled so it cannot be confused with the single red live-error frame); a
@@ -62,6 +61,21 @@ export const COL_CURSOR = 7;
 // the colour each would be forced to. No further premise role: every other
 // tile the narration cites is orthogonally adjacent to the target or the
 // danger tile, already in view.
+//
+// **COL_HINT is PURPLE here, not the collection's `HINT_ACTION`**, and this is
+// the one game where that role cannot have its usual colour. `HINT_ACTION` *is*
+// `BLUE`, and blue is one of the two colours a Clusters player paints — so
+// filling the target with it painted the cell the whole deduction starts from
+// in the exact colour of a placed blue tile: invisible against its neighbours,
+// and actively wrong on a firing that concludes *red*, where the board said
+// blue while the sentence said red. `colour-collide.test.ts` had been reporting
+// `COL_1 = COL_HINT` all along; it is advisory, so nothing failed.
+//
+// The cross-game role normally wins a collision and the local one yields
+// (`add-sticks-hint`) — but the local role here is a rule of the game, named to
+// the player by `help/games/clusters.md`, so it cannot move. PURPLE is the
+// substitute this repo already reaches for when blue is spoken for (Sticks',
+// Subsets' cursors).
 export const COL_HINT = 8;
 export const COL_HINT_CELL = 9;
 export const COL_HINT_DANGER = 10;
@@ -76,7 +90,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_1_DOT] = PAPER;
   out[COL_ERROR] = ERROR;
   out[COL_CURSOR] = CURSOR;
-  out[COL_HINT] = HINT_ACTION;
+  out[COL_HINT] = PURPLE;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   out[COL_HINT_DANGER] = ORANGE;
   return out;

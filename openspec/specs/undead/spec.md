@@ -6,15 +6,19 @@ TBD - created by archiving change add-undead-ts-port. Update Purpose after archi
 ### Requirement: Undead game implements the Game interface
 
 The engine SHALL provide a registered `undead` game implementing
-`Game<UndeadParams, UndeadState, UndeadMove, UndeadUi, UndeadDrawState, UndeadMistake>`:
-the "Haunted Mirror Mazes" puzzle on a `w × h` grid where each cell is either a
-fixed diagonal mirror (`\` or `/`) or a monster cell, and the player places one of
-three monsters — Ghost, Vampire, or Zombie — in every monster cell. Params SHALL be
-`w`, `h`, and `diff` (Easy, Normal, or Tricky), encoded `{w}x{h}` without `full` and
-`{w}x{h}d{c}` with `full` (`c` = `e`/`n`/`t`), with the upstream preset list.
-`validateParams` SHALL require `w ≥ 3`, `h ≥ 3`, `w·h ≤ 54`, and a known difficulty.
-The game SHALL report `wantsStatusbar = false`, `isTimed = false`,
-`canSolve = true`, `canFormatAsText = true`, and `canMarkAll = true`.
+`Game<UndeadParams, UndeadState, UndeadMove, UndeadUi, UndeadDrawState,
+UndeadMistake>`: a grid in which every cell is either a fixed diagonal mirror
+(`\` or `/`) or a monster cell, and the player places one of three monsters —
+Ghost, Vampire, or Zombie — in every monster cell. Params SHALL be `w`, `h`, and
+`diff` (Easy, Normal, or `Unreasonable`), encoded `{w}x{h}` without `full` and
+`{w}x{h}d{c}` with `full` (`c` = `e`/`n`/`t`), with the upstream preset list. The
+top tier is named `Unreasonable` rather than upstream's `Tricky` because its
+boards can require the forcing rung, which runs the deduction fixpoint from a
+hypothesis; its difficulty character stays `t`, so an existing game ID names the
+same board. `validateParams` SHALL require `w ≥ 3`, `h ≥ 3`, `w·h ≤ 54`, and a
+known difficulty. The game SHALL report `wantsStatusbar = false`,
+`isTimed = false`, `canSolve = true`, `canFormatAsText = true`, and
+`canMarkAll = true`.
 
 #### Scenario: Params round-trip
 
@@ -76,18 +80,6 @@ any reflection, a **ghost** only on a segment after at least one reflection, and
 
 ### Requirement: Undead solves and generates uniquely-solvable graded boards
 
-The solver SHALL provide a **deductive ladder** — a per-sightline
-candidate-intersection pass (arc-consistency, iterated to a fixpoint), a global
-**exact-count** rung (the monster totals as equality constraints, with Hall-type
-deductions: a fully-placed type struck everywhere, a type whose remaining count
-equals its candidate cells forcing them all, too few candidate cells a
-contradiction), and a depth-1 **forcing** rung (hypothesise one cell's candidate, run
-the arc-consistency + counting fixpoint, eliminate the candidate on contradiction) —
-run to a combined fixpoint **without recursion**, plus a separate whole-grid
-brute-force search used only as the uniqueness **oracle**. Forcing SHALL NOT nest (the
-inner fixpoint never forces); a board solvable only by nested hypothesising is
-"requires recursion".
-
 `newDesc` SHALL generate a grid of random mirrors and monster cells (rejecting grids
 that are too sparse, too dense, or have an over-long sightline), seed unique-solution
 sightlines until a difficulty-dependent fraction of the grid is determined, fill the
@@ -99,12 +91,13 @@ Every board Undead accepts SHALL be solvable by the deductive ladder alone — *
 guessing or recursion** — per the fork's guess-free generation policy. A board that
 requires recursion (nested hypothesising) SHALL be rejected at generation.
 
-Undead ships **no `Unreasonable` tier**: the re-grade measurement (≈6,800 candidate
-boards across all tiers) found a **zero** uniquely-solvable recursion residual — every
-uniquely-solvable Undead board is cracked by the deductive ladder, and the boards the
-ladder cannot solve are exactly the non-unique ones the brute-force oracle already
-rejects. The `Unreasonable` tier remains the policy's sole sanctioned guess-allowed
-exception for *other* games; Undead does not need it.
+Undead's top tier is named **`Unreasonable`**, because the forcing rung that
+defines it hypothesises a candidate and runs the arc-consistency + counting
+fixpoint from it. That is not nested recursion — the re-grade measurement
+(≈6,800 candidate boards across all tiers) found a **zero** uniquely-solvable
+recursion residual, and that finding stands — but it is a search from the
+player's side, and the policy reserves the name for exactly that. The two lower
+tiers remain plain deduction.
 
 #### Scenario: Generated board is unique and on-difficulty
 
@@ -112,20 +105,26 @@ exception for *other* games; Undead does not need it.
 - **THEN** the deductive ladder solves it uniquely with no recursion
 - **AND** the board's grade matches the highest rung the ladder needed (Easy =
   arc-consistency within the pass cap, Normal = arc beyond the cap or counting,
-  Tricky = forcing)
+  `Unreasonable` = forcing)
 - **AND** the brute-force oracle confirms exactly one solution
 
-#### Scenario: Every tier is guess-free
+#### Scenario: Every tier is free of nested recursion
 
-- **WHEN** any board is accepted for any tier (Easy, Normal, Tricky)
+- **WHEN** any board is accepted for any tier (Easy, Normal, `Unreasonable`)
 - **THEN** the deductive ladder (arc-consistency + counting + depth-1 forcing) solves
   it to completion without invoking the brute-force/recursive search
+
+#### Scenario: Renaming the tier moves no board
+
+- **WHEN** a board is generated at the top tier from a given seed
+- **THEN** the description is identical to the one that seed produced before the
+  rename, because the solver retains the forcing rung and only the hint's
+  recorder lost it
 
 #### Scenario: Recursion-only boards are rejected
 
 - **WHEN** a candidate board is solvable only by recursion (nested hypothesising)
-- **THEN** it is rejected at generation (such boards are non-unique; Undead ships no
-  `Unreasonable` tier)
+- **THEN** it is rejected at generation (such boards are non-unique)
 
 #### Scenario: Solve fills the unique solution
 
@@ -218,41 +217,20 @@ a per-cell diff cache.
 
 ### Requirement: Undead explained deduction hint
 
-The `undead` game SHALL implement `hint(state, aux?, ui?)`,
-`hintKeepTrack(move, step, state)`, and `refreshHintStep(step, state)`, producing an
-**explained** plan-carrying hint that meets the fork's hint quality bar (the Hint
-System requirements in the `ts-engine` spec and the Palisade exemplar): each step
-narrates *why* a marking is forced, one deduction firing is emitted as one
-(possibly multi-leg) journey, and equivalent markings share a colour.
-
-Undead is a candidate-elimination (pencil-note) game but **not** a Latin-square game:
-its deductions derive from the mirror-bouncing **sightline clues** and the **monster
-totals** via its own iterative solver, not from the shared Latin candidate cube. The
-hint SHALL recompute its plan from the current board state so it makes progress from
-any mid-game position reachable by the player (the cross-game resume guarantee).
-
-The hint's working candidate state SHALL be seeded from the **placed grid only**
-(fixed cells plus the player's real monster placements); it SHALL NOT treat the
-player's pencil notes as facts, since a note may contradict the solution. Notes are
-used only to decide which already-valid deduction to surface and to render.
-
-The plan builder SHALL, on a mistake-free board, prefer in order: a **naked single**
-(a cell whose surviving candidates are a single monster) as a placement; else a
-**total-exhaustion** strike (a monster type whose full count is already placed,
-struck from every still-undecided cell) as one journey; else a **sightline
-elimination** (a path whose two count clues rule a monster out of one or more of its
-cells), emitted as one journey with one leg per affected cell and the whole sightline
-shaded as the evidence area; else a **forcing** elimination (a candidate that, if
-hypothesised, forces an immediate contradiction); else a forced **placement**. A lazy
-populate (reusing the existing fill-all move) SHALL be emitted only when an
-elimination first needs notes to strike.
-
 The hint SHALL be **purely deductive**: it SHALL NOT reveal the known solution and
-SHALL NOT narrate a guess or backtracking search. Its guarantee of always reaching a
-solved board from any mistake-free position rests on `strengthen-undead-deduction`
-making every shipped non-`Unreasonable` tier solvable by the deductive ladder
-(arc-consistency + counting + depth-1 forcing). Only on a sanctioned `Unreasonable`
-tier (if one is shipped) MAY a hint be non-deductive.
+SHALL NOT narrate a guess or backtracking search. **The forcing rung is such a
+search** — it assumes a candidate and runs the arc-consistency + counting fixpoint
+from it — so the hint's recorder SHALL NOT emit it **on any tier**, while the
+solver retains it so that grading and generation are unchanged.
+
+The consequence SHALL be stated rather than hidden: on an `Unreasonable` board the
+plan stops where deduction stops, and the hint refuses with a message saying so.
+A hint that still solved every `Unreasonable` board would mean the rung had come
+back; the game's tests SHALL assert **both** bounds — that such a plan never
+reaches a solved board, and that it is not empty from the first move — so neither
+failure mode passes quietly. The two lower tiers are unaffected: a freshly
+computed plan still solves them from empty, and following hints one move at a
+time still reaches a solved board.
 
 The hint SHALL refuse with `{ ok: false, error }` when the board is already solved or
 when `findMistakes` reports any contradiction (lighting the mistake overlay through
@@ -280,6 +258,18 @@ per-cell draw-state cache so the overlay repaints and clears correctly.
 `findMistakes` and the quick-save / Check-&-Save coupling are unchanged: an empty
 cell whose non-empty notes exclude the solution monster is already a `note` mistake,
 so a hint refused for mistakes highlights those cells for free.
+
+#### Scenario: The forcing rung never reaches a narration
+
+- **WHEN** hint plans are recorded across every tier and many seeds
+- **THEN** no recorded deduction is a forcing one, on any tier
+
+#### Scenario: An Unreasonable board's hint stops rather than searching
+
+- **WHEN** a player follows hints one move at a time on an `Unreasonable` board
+- **THEN** the hints continue while deduction does, and then refuse with a
+  message saying deduction has run out
+- **AND** the plan neither reaches a solved board nor is empty from the start
 
 #### Scenario: A sightline elimination is taught as one journey
 

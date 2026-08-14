@@ -5,14 +5,21 @@ TBD - created by archiving change add-bricks-ts-port. Update Purpose after archi
 ## Requirements
 ### Requirement: Bricks game implements the Game interface
 
-The engine SHALL provide `src/games/bricks/` implementing the `Game`
-interface for Bricks (Tawamurenga), registered so the puzzle is served by the
-TypeScript engine.
+The engine SHALL provide `src/games/bricks/` implementing the `Game` interface for
+Bricks, registered so the puzzle is served by the TypeScript engine.
 
-Parameters SHALL be a width, a height and a difficulty (Easy, Normal or Tricky).
-Validation SHALL require width at least 2, height at least 2, and a known
-difficulty. A game ID SHALL encode the width, height and difficulty and round-trip
-through decode.
+Parameters SHALL be a width, a height and a difficulty (Easy or `Unreasonable`).
+The harder tier is named `Unreasonable` rather than upstream's `Normal` because
+its rung commits a cell by solving the rest of the board from a hypothesis, and
+only a tier of that name may ship such a rung. Validation SHALL require width at
+least 2, height at least 2, and a known difficulty. A game ID SHALL encode the
+width, height and difficulty and round-trip through decode; the encoded
+difficulty characters are unchanged by the rename, so an existing game ID names
+the same board.
+
+The tier names SHALL have a single definition in the game, read by the preset
+menu, the difficulty contract and the custom-params dialog alike, so that no two
+of them can disagree.
 
 The board SHALL be a hexagon stored as a padded parallelogram: the actual grid
 width SHALL be the parameter width plus the ceiling of half the height minus one,
@@ -31,6 +38,13 @@ tiling engine.
 
 - **WHEN** a parameter set is encoded to a game ID and decoded
 - **THEN** the same width, height and difficulty are recovered
+
+#### Scenario: The menu, the contract and the custom dialog offer the same tiers
+
+- **WHEN** the tier names the preset menu shows, the tiers the difficulty
+  contract declares, and the choices the custom-params difficulty field offers
+  are compared
+- **THEN** they are the same list
 
 ### Requirement: Bricks descriptions use the run-length cell encoding
 
@@ -137,12 +151,17 @@ marked distinctly on the board so the reasoning is visible and not only in prose
 The hint SHALL NOT pre-place the forced colour. Because every Bricks deduction
 forces exactly one cell, each hint step SHALL be a single self-contained journey.
 
-A move that is forced only through the solver's recursive lookahead SHALL be
-presented as one step narrated as a proof by contradiction: the hypothesis (the
-cell taken as shaded or clear) and the contradiction its forced consequences
-reach, with the cell(s) where the board breaks marked — never an un-narrated
-"only one option fits" fallback. At each lookahead stall the deduction SHALL be
-chosen deterministically so the plan stays recompute-stable.
+**The recursive lookahead rung SHALL NOT be narrated at all.** It commits a cell
+by solving the rest of the board from a hypothesis, which is a search, and no hint
+narrates a search on any tier. The recorder SHALL omit it while the solver retains
+it, so grading and generation are unchanged and no description moves; where the
+single-cell rung runs out, the hint SHALL refuse rather than reach for it.
+
+The single-cell rung's own **unclassified** case — one colour placed, one
+validator call, the board breaks at a cell none of the named rules matched — SHALL
+be narrated as what it is: the break is at a marked cell and nothing was followed
+to reach it. It SHALL NOT inherit the recursive rung's wording, which described
+following a chain of forced consequences and was never true of this case.
 
 A hint SHALL be refused, with an explanatory banner, when the board is already
 solved, when the board contains a rule violation (as reported by
@@ -159,12 +178,18 @@ placed cell must be wrong rather than deduce onward from a doomed position.
   unsupported, or a clue's neighbour count) that the opposite colour would
   violate, without pre-placing the forced colour
 
-#### Scenario: A lookahead deduction is narrated as a proof by contradiction
+#### Scenario: The lookahead rung never reaches a narration
 
-- **WHEN** the next forced move follows only from the recursive lookahead rung
-- **THEN** it is presented as one hint step whose narration states the hypothesis
-  and the contradiction its forced consequences reach, with the contradiction
-  cell(s) marked on the board
+- **WHEN** hint plans are recorded across every tier and many seeds
+- **THEN** no step is forced by the recursive lookahead rung, and where only that
+  rung could progress the hint refuses instead
+
+#### Scenario: The unclassified break is narrated as a break, not as a chain
+
+- **WHEN** the single-cell rung forces a move by a contradiction none of the
+  named rules matched
+- **THEN** the narration says the board breaks at the marked cell, and does not
+  claim any chain of consequences was followed
 
 #### Scenario: A hint is refused on a solved, mistaken, or wrong-but-legal board
 
@@ -176,30 +201,47 @@ placed cell must be wrong rather than deduce onward from a doomed position.
 
 ### Requirement: Bricks offers only difficulties that exist
 
-Bricks SHALL offer Easy and Normal, and SHALL refuse to *generate* a board at
-Tricky; `validateParams` SHALL reject that combination when asked for a full
-(generation-capable) parameter set, while continuing to accept it otherwise so a
-saved game or a game ID carrying its own description still loads.
+Bricks SHALL offer Easy and `Unreasonable`, and SHALL NOT offer upstream's third
+tier **as a name at all**: it names no boards, so it appears in neither the preset
+menu, the difficulty contract, nor the custom-params dialog.
 
-Bricks' tiers are lookahead depth — Easy assumes nothing, Normal assumes a cell
-and looks for an Easy-level contradiction, Tricky lets that sub-solve recurse in
-turn — and depth 2 decides nothing depth 1 has not already decided. Upstream
-conceded the symptom in its own documentation ("selecting Tricky difficulty may
-generate a puzzle at Normal difficulty instead") and this port preserved it as an
-intended quirk; measurement retired the quirk, because *may* is always. The
-`DIFF_TRICKY` rung SHALL remain available to the **solver**, where hints, Solve
-and mistake-checking use it as "try as hard as you can" at no cost.
+It SHALL nevertheless remain **decodable**. The difficulty character set is
+unchanged, so a game ID or saved game carrying that tier still parses and still
+round-trips; `validateParams` SHALL reject it when asked for a full
+(generation-capable) parameter set, naming the difficulty and the tiers that do
+exist, while continuing to accept it otherwise so such a game still loads.
 
-#### Scenario: Tricky is not generated
+Bricks' tiers are lookahead depth — Easy assumes nothing, the harder tier assumes
+a cell and looks for an Easy-level contradiction, and upstream's third lets that
+sub-solve recurse in turn — and depth 2 decides nothing depth 1 has not already
+decided. Upstream conceded the symptom in its own documentation ("selecting Tricky
+difficulty may generate a puzzle at Normal difficulty instead") and this port
+preserved it as an intended quirk; measurement retired the quirk, because *may* is
+always. The depth-2 rung SHALL remain available to the **solver**, where hints,
+Solve and mistake-checking use it as "try as hard as you can" at no cost.
 
-- **WHEN** a full parameter set requesting Tricky is validated
-- **THEN** it is rejected with a message naming the difficulty
+Because the tier is no longer declared, the cross-game difficulty contract no
+longer covers it; the game's own suite SHALL assert that its difficulty character
+still round-trips through a game ID, so that dropping the name cannot silently
+change what an existing ID means.
+
+#### Scenario: The undeclared tier is not generated
+
+- **WHEN** a full parameter set requesting the depth-2 tier is validated
+- **THEN** it is rejected with a message naming the difficulty and the tiers that
+  do exist
 - **AND** the same parameters validate successfully when a description is
   supplied rather than generated
 
+#### Scenario: The undeclared tier still round-trips through a game ID
+
+- **WHEN** a game ID carrying the depth-2 difficulty character is decoded and
+  re-encoded
+- **THEN** the same difficulty is recovered and the same game ID is produced
+
 #### Scenario: The generator refuses rather than exhausts its retries
 
-- **WHEN** the generator is called at Tricky anyway
+- **WHEN** the generator is called at that tier anyway
 - **THEN** it fails immediately, rather than rejecting candidates until its retry
   budget is spent
 
@@ -208,15 +250,16 @@ and mistake-checking use it as "try as hard as you can" at no cost.
 A Bricks board generated at a difficulty above the easiest SHALL NOT be soluble at
 the tier below it. The acceptance gate SHALL probe the tier immediately below the
 one requested; upstream probes at Easy whatever tier was requested, which is
-correct for Normal only by coincidence.
+correct for the second tier only by coincidence.
 
 Because generation is solver-gated at every clue removal, the byte-for-byte
 differential SHALL retain a way to run upstream's original gate, used by that
-differential alone.
+differential alone. The rename changes no description: it is a menu label, and the
+solver's rungs are untouched.
 
-#### Scenario: A Normal board genuinely needs the Normal tier
+#### Scenario: An Unreasonable board genuinely needs its own tier
 
-- **WHEN** a board generated at Normal is solved at Easy
+- **WHEN** a board generated at `Unreasonable` is solved at Easy
 - **THEN** the solver does not reach a solution
-- **AND** solving the same board at Normal does
+- **AND** solving the same board at `Unreasonable` does
 
