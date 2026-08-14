@@ -13,7 +13,7 @@ import {
   extraPages,
   renderHandlebars,
   renderMarkdown,
-} from "./vite-plugins/extra-pages";
+} from "./vite-plugins/extra-pages.ts";
 
 type Env = Record<string, string>;
 type Headers = Record<string, string>;
@@ -300,7 +300,7 @@ export default defineConfig(async ({ command, mode }) => {
       license({
         thirdParty: {
           output: {
-            file: path.join(__dirname, "dist", "dependencies-app.json"),
+            file: path.join(import.meta.dirname, "dist", "dependencies-app.json"),
             template(deps) {
               const dependencies = deps.map(
                 ({ name, version, license, licenseText, noticeText }) => {
