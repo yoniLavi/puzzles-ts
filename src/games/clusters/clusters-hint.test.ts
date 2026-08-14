@@ -208,6 +208,21 @@ describe("hint", () => {
       }
       // "ringed" is uttered iff the amber danger ring is on display.
       expect(step.explanation.includes("ringed")).toBe(hl.danger !== undefined);
+
+      // A bare "this cell" points at nothing once a *second* mark is on the
+      // board — owner-reported on a frame showing a solid target and a ringed
+      // tile side by side. Wherever a second mark exists the sentence must tie
+      // the target to it, and the tie is geometric rather than a colour name
+      // (`hints.md`: colour is never the only cue). `beside this cell` / `its
+      // ringed … neighbour` for the adjacent break, `forced in turn from it`
+      // for a chain, whose break is adjacent to the last link instead.
+      const secondMark = hl.danger !== undefined || hl.chain.length > 0;
+      if (secondMark) {
+        expect(
+          /beside this cell|its ringed \w+ neighbour|from it/.test(step.explanation),
+          `${step.explanation} — a second mark is shown but "this cell" is not tied to it`,
+        ).toBe(true);
+      }
       // The conclusion names the forced colour in the necessity voice.
       expect(step.explanation).toContain(
         `must be ${d.fill === F_COLOR_0 ? "red" : "blue"}`,

@@ -300,7 +300,22 @@ const colourName = (fill: ClustersFill): string =>
   fill === F_COLOR_0 ? "red" : "blue";
 
 /** Narrate the proof by contradiction: premise → the rule the refuted colour
- * breaks → conclusion in the necessity voice (docs/games/hints.md § "Necessity for deductions, imperative for moves", D4). */
+ * breaks → conclusion in the necessity voice (docs/games/hints.md § "Necessity for deductions, imperative for moves", D4).
+ *
+ * **Where a second mark is on the board, "this cell" is tied to it by geometry**
+ * (owner-reported, 2026-08-14: with a solid-filled target *and* a ringed tile on
+ * screen, a bare "this cell" points at neither). The fix is deliberately not
+ * *"the cell marked purple"* — `hints.md` forbids colour as the only cue, and a
+ * sentence naming a hue is wrong the moment the scheme flips or the reader is
+ * colour-blind. It is the relation instead: `contradictionAround` only ever
+ * reports the placed cell **or one of its four orthogonal neighbours**, so on
+ * every branch below the ringed tile is literally *this cell's neighbour* and
+ * the sentence can say so. That identifies both squares at once, and is more
+ * informative than the wording it replaces rather than merely longer.
+ *
+ * The two `at.cell === d.index` branches are left alone on purpose: there is no
+ * second mark in those frames, so "this cell" is unambiguous and a
+ * disambiguating phrase would be noise. */
 function narrate(d: ClustersDeduction): string {
   const f = colourName(d.fill);
   const t = colourName(d.refuted);
@@ -319,7 +334,11 @@ function narrate(d: ClustersDeduction): string {
           : at.kind === "surrounded"
             ? "the ringed tile would be sealed off from its own colour"
             : "the ringed tile could no longer touch two of its own colour";
-    return `Suppose this cell were ${t}: the marked cells would each be forced in turn, until ${end} — impossible. So this cell must be ${f}.`;
+    // The chain's break is adjacent to the *last forced cell*, not to the
+    // target, so the neighbour relation above is unavailable here. What ties
+    // the three marks together instead is that the chain runs **from** this
+    // cell — which is also the one fact a reader needs to follow it.
+    return `Suppose this cell were ${t}: the marked cells would each be forced in turn from it, until ${end} — impossible. So this cell must be ${f}.`;
   }
 
   if (at.cell === d.index) {
@@ -332,12 +351,12 @@ function narrate(d: ClustersDeduction): string {
     return `If this cell were ${t}, at most one neighbour could ever match it — and every plain tile must touch two of its colour. So it must be ${f}.`;
   }
   if (at.kind === "dotOvercount") {
-    return `A dot touches exactly one tile of its own colour, and the ringed ${t} dot already touches its one. Another ${t} here would give it a second — so this cell must be ${f}.`;
+    return `A dot touches exactly one tile of its own colour, and the ringed ${t} dot beside this cell already touches its one. A ${t} here would give it a second — so this cell must be ${f}.`;
   }
   if (at.kind === "surrounded") {
-    return `Painting this cell ${t} would seal the ringed ${f} tile off from every other ${f} tile — it could never join a cluster. So this cell must be ${f}.`;
+    return `Painting this cell ${t} would seal its ringed ${f} neighbour off from every other ${f} tile — it could never join a cluster. So this cell must be ${f}.`;
   }
-  return `If this cell were ${t}, the ringed ${f} tile could never touch two ${f} tiles — and every plain tile needs two of its colour. So this cell must be ${f}.`;
+  return `If this cell were ${t}, its ringed ${f} neighbour could never touch two ${f} tiles — and every plain tile needs two of its colour. So this cell must be ${f}.`;
 }
 
 function buildHighlights(d: ClustersDeduction, w: number): ClustersHintHighlights {

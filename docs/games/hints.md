@@ -240,6 +240,44 @@ ones that need care are the multi-element deductions (offset, the corners, the
 sandwich/pair pattern). When in doubt, lead with the indication; it is never
 wrong to.
 
+### Two marks on the board, one "this cell" — tie them, and never by colour
+
+**If a step marks more than one element, a bare "this cell" points at neither**
+(owner-reported, 2026-08-14, on a Clusters frame showing a solid target beside a
+ringed tile). The collection's mark convention is consistent — `COL_HINT` is a
+solid fill on the cell being decided, everything else is a ring or a wash — and
+the narrations already name the *other* mark ("the **ringed** dot", "the
+**shaded** squares", "the **highlighted** clue"). Only the target is left bare,
+so the sentence is one word short and the player has to know the convention
+before it parses. With **one** mark in view, "this cell" is right and a qualifier
+is noise.
+
+**The fix is never the colour.** *"the cell marked purple"* is the obvious
+reading and the one thing ruled out: the palette is scheme-relative by
+construction, so a hue named in prose is false under the other scheme, and it is
+unreadable to a colour-blind player. If two marks differ *only* by hue, the marks
+need fixing, not the sentence.
+
+Tie them by something the code guarantees, cheapest first:
+
+- **A relation.** Clusters' `contradictionAround` only ever reports the placed
+  cell or one of its four orthogonal neighbours, so *"its ringed red
+  **neighbour**"* identifies both squares at once and is shorter than what it
+  replaced. Bricks already had the shape in one branch — *"The shaded brick
+  **above** rests only on this cell"*. **Check the relation holds in code first:**
+  Clusters' chain branch could *not* use it, because that break is adjacent to
+  the last forced cell rather than to the target, so it ties on the chain's
+  origin instead (*"forced in turn **from it**"*).
+- **A value**, where the puzzle has one — see the next section.
+- **A role word tied to the mark's shape**, where the game's other marks already
+  use distinct ones ("ringed" outline vs "shaded" wash).
+
+Guard it per game — *a second mark displayed ⇒ the explanation contains the tie*
+— and prove the guard fails before trusting it. Sweep and remaining games:
+`disambiguate-hint-deixis`. **A grep only finds sentences that mention the second
+mark**; one that is bare while a second mark is displayed-but-unmentioned is the
+same defect and needs the render harness to see.
+
 ### Name a square by its value
 
 **In a number puzzle the square's value is its name and its locator, so use
