@@ -1,23 +1,31 @@
 # ts-engine Specification Delta — walk-tactic-hint-chains
 
-## MODIFIED Requirements
+## ADDED Requirements
 
-### Requirement: A hint step always names a technique — no un-narrated fallback
+<!-- This was a MODIFIED delta on "A hint step always names a technique — no
+un-narrated fallback", reproducing a copy of that requirement which was already
+stale: archiving it would have replaced the live requirement with this file's
+shorter text, deleting the Check / Tactic / Search taxonomy, the tier-naming
+rules and **eleven** scenarios. That is not a hypothetical — the same mistake in
+`disambiguate-hint-deixis`'s delta removed 134 lines of this very requirement at
+archive time on 2026-08-15, and was caught by reading the diff afterwards.
 
-A displayed hint step SHALL always explain *why* its move is forced by a named
-technique; a game's hint SHALL NOT emit a generic, unexplained "fallback" step
-(e.g. "only one arrangement fits") for a deduction its technique set does not
-cover. A game SHALL satisfy this by one of two strategies: **narrating every
-deduction** its generator accepts (promoting any catch-all into an honest, if
-non-local or tedious, technique — as Filling narrates its global
-candidate-elimination), or **rejecting at generation** the boards whose solution
-needs a deduction it cannot narrate (see the `ts-migration` narratable-deduction
-generation policy). This is the Hint-System companion to that generation policy.
+It is an ADDED requirement instead, which is what `OPENSPEC_AGENTS.md`
+prescribes for a delta that *adds a concern* rather than changing an existing
+one: "If you aren't explicitly changing the existing requirement, add a new
+requirement under ADDED instead." The obligations below are unchanged; the one
+scenario dropped from this file ("A logic game's hint never shows an unexplained
+step") was a verbatim copy of a live scenario belonging to the requirement above,
+which this change does not alter. `src/openspec-delta-integrity.test.ts` now
+fails on a MODIFIED delta that drops a live scenario. -->
 
-A deduction reaching its conclusion through a hypothesis is classified by whether
-its reasoning is a **bounded run of individually glanceable steps** — the
-Check / Tactic / Search taxonomy of `audit-guessing-tier-names`. This requirement
-fixes what a **Tactic** owes the player.
+### Requirement: A Tactic is delivered as a walk
+
+A **Tactic** SHALL be delivered as a walk rather than as a claim — a Tactic being
+a bounded chain of forced consequences to a named endpoint, in the Check /
+Tactic / Search taxonomy of the requirement "A hint step always names a
+technique". This requirement fixes what that owes the player; the taxonomy
+itself, and which tiers may carry which rung, are unchanged.
 
 **A Tactic SHALL be walked.** Its hint SHALL emit a multi-leg journey — legs
 after the first flagged `continuesPrevious`, so the whole chain reads and
@@ -41,12 +49,6 @@ auto-plays as one hint — in which:
 A Tactic SHALL NOT be compressed into a single step asserting its conclusion,
 even when that step is accurate: a claim the player can check only by redoing the
 deduction is the failure this requirement exists to prevent.
-
-#### Scenario: A logic game's hint never shows an unexplained step
-
-- **WHEN** a hint plan is computed for any board of a deductive game
-- **THEN** every step names the technique that forces it (its explanation is not a
-  generic "only one arrangement fits" placeholder)
 
 #### Scenario: A Tactic is delivered as a walk
 

@@ -30,3 +30,14 @@ they remain meaningful.
 - **WHEN** the solver deduces a placement that turns on where empty squares can
   and cannot go
 - **THEN** that deduction is expressed over the shared cube's repeatable symbol
+
+#### Scenario: The solver deduces the unique solution without guessing
+
+- **WHEN** a generated board is solved at its difficulty
+- **THEN** the solver reaches the unique completion using only its deductive
+  techniques, never backtracking search
+
+#### Scenario: Generation is reproducible from a seed
+
+- **WHEN** the same seed is used twice for the same parameters
+- **THEN** both runs produce the identical board description

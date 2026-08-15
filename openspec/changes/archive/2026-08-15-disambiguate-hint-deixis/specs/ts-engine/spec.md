@@ -1,5 +1,19 @@
 # ts-engine Specification Delta — disambiguate-hint-deixis
 
+> ⚠️ **This MODIFIED delta was stale, and archiving it deleted 134 lines of the
+> live requirement** — the whole Check / Tactic / Search taxonomy, the
+> tier-naming rules and four scenarios, added by `audit-guessing-tier-names`
+> after this delta was scaffolded. `openspec archive` replaces a requirement
+> with whatever the delta holds, and `validate --strict` passes a partial copy
+> because it has a SHALL and a scenario. The live spec was repaired by hand at
+> archive time (the three new scenarios and the narration paragraphs were merged
+> into the current requirement instead), so **`openspec/specs/ts-engine/spec.md`
+> is authoritative and this file is not**. Do not replay it.
+>
+> `src/openspec-delta-integrity.test.ts` now fails the commit on a MODIFIED
+> delta that drops a scenario the live requirement has. It found two more the
+> first time it ran.
+
 ## MODIFIED Requirements
 
 ### Requirement: A hint step always names a technique — no un-narrated fallback
@@ -73,3 +87,38 @@ explanation and are exempt.
 
 - **WHEN** a movement/objective game (no deductive "why") returns a hint
 - **THEN** an empty or imperative explanation is permitted and is not a violation
+
+## ADDED Requirements
+
+### Requirement: The hint emphases stay distinguishable in both schemes
+
+Hint-role colours SHALL stay distinguishable in **each** scheme, not only in
+light. Every pair among the acted-on colour, the fill behind text it is about,
+the evidence, and the two premise references SHALL stay more than 0.12 apart in
+OKLCH in each scheme, and the acted-on colour SHALL carry more than twice the
+chroma of either wash in each scheme.
+
+This is what the narration rule above rests on. A narration may tie two marks
+together in words only where the marks are themselves distinguishable by
+something other than hue; a solid acted-on colour against a wash qualifies
+because it differs in **weight**, which is the cue left to a reader who cannot
+compare hues. An exemption resting on a number is worth exactly as much as the
+assertion that keeps the number true.
+
+Measuring the light column alone does NOT state this requirement. The two
+schemes are authored separately by construction, so their separations differ:
+the closest pair of the six is the fill-versus-evidence pair in **dark**, at
+0.124, against 0.147 for the same pair in light. A guard that reads only the
+light value stays green through a dark-scheme collapse.
+
+#### Scenario: A scheme's hint colours converge
+
+- **WHEN** a colour edit brings two hint roles within 0.12 in either scheme
+- **THEN** the palette guard fails, naming the pair and the scheme
+
+#### Scenario: The acted-on colour loses its weight
+
+- **WHEN** the acted-on hint colour's chroma falls to twice a wash's or below,
+  in either scheme
+- **THEN** the palette guard fails, because the narration rule's exemption for
+  solid-against-wash marks no longer holds

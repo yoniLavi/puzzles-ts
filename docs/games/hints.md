@@ -259,6 +259,16 @@ construction, so a hue named in prose is false under the other scheme, and it is
 unreadable to a colour-blind player. If two marks differ *only* by hue, the marks
 need fixing, not the sentence.
 
+**A solid against a wash is not a hue-only pair** — it differs in *weight*, which
+is what a reader who cannot compare hues is left with, and it is why Range and
+Light Up may mark a cell against a cell and tie them in prose rather than
+redrawing them. That exemption rests on numbers, so the numbers are asserted:
+`palette.test.ts` § "keeps the three hint emphases distinct, in both schemes"
+holds every hint pair above an OKLCH distance of 0.12 **in each scheme** and
+`HINT_ACTION` above twice the chroma of either wash. It was measuring the light
+column only until `disambiguate-hint-deixis`; the tightest pair of the six turns
+out to be `HINT_FILL`/`HINT_EVIDENCE` in **dark**, at 0.124.
+
 Tie them by something the code guarantees, cheapest first:
 
 - **A relation.** Clusters' `contradictionAround` only ever reports the placed

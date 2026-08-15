@@ -64,6 +64,16 @@ schemes and at the smallest shipped tile size.
 - **THEN** the block moves to that cell and, unless it is the same block moved
   again, the move count increases by one
 
+#### Scenario: Bringing the main block to the target wins
+
+- **WHEN** the main block is slid onto the target position
+- **THEN** the game is reported solved and flashes
+
+#### Scenario: Releasing a block where it started does nothing
+
+- **WHEN** a block is grabbed and released without having moved
+- **THEN** the board and the move count are unchanged
+
 #### Scenario: A keyboard journey and the equivalent drag produce the same move
 
 - **WHEN** a player selects a block with the keyboard, walks it several cells

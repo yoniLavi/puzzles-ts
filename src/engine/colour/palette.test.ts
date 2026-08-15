@@ -99,12 +99,30 @@ describe("the shared colour vocabulary", () => {
     expect(decisions).toContain(4);
   });
 
-  it("keeps the three hint emphases distinct", () => {
+  it("keeps the three hint emphases distinct, in both schemes", () => {
     // These are one meaning at three jobs — the move, the fill behind the digit
     // the move is about, and the evidence the deduction rests on — and seven games
     // put two or three of them on screen at once. Two of the three used to be
     // shades of one blue eight hundredths of a lightness apart; they are a shade
     // and a hue apart now, and this is what says so.
+    //
+    // **Both schemes, because one is not evidence for the other** — the lesson
+    // `hand-author-dark-palette` paid for, and this guard was measuring the
+    // light column only. It matters here rather than academically: the pairs
+    // are *not* equally separated in the two schemes, and the tightest of the
+    // six is `FILL/EVIDENCE` in **dark**, at **0.124** against this bound
+    // (0.147 in light). So the next person to retune `BLUE_WASH` or
+    // `TEAL_WASH`'s dark step learns about it from a red test rather than from
+    // a hint frame where the target and its evidence read as one wash.
+    //
+    // `disambiguate-hint-deixis` is what makes it load-bearing rather than
+    // tidy: that change ties the acted-on element to the evidence *in prose*
+    // wherever both are shown, and the rule it wrote down says a pair which
+    // differs **only** by hue needs the marks fixed, not the sentence. These
+    // pairs earn their exemption by differing in weight as well — `HINT_ACTION`
+    // carries ~2.5× the chroma of `HINT_EVIDENCE` in either scheme — and an
+    // exemption resting on a number is worth exactly as much as the assertion
+    // that keeps the number true.
     const d = (a: Colour, b: Colour): number => {
       const plane = (c: OKLCH): [number, number] =>
         isGrayChroma(c[1])
@@ -119,6 +137,8 @@ describe("the shared colour vocabulary", () => {
       const [bx, by] = plane([bl, ...brest] as OKLCH);
       return Math.hypot(al - bl, ax - bx, ay - by);
     };
+    /** The same pair as the scheme actually paints it. */
+    const inDark = (c: Colour): Colour => darkValue(c) ?? c;
     for (const [x, y] of [
       [roles.HINT_ACTION, roles.HINT_FILL],
       [roles.HINT_FILL, roles.HINT_EVIDENCE],
@@ -127,7 +147,21 @@ describe("the shared colour vocabulary", () => {
       [roles.HINT_ACTION, roles.HINT_BLACKREF],
       [roles.HINT_ACTION, roles.HINT_WHITEREF],
     ] as [Colour, Colour][]) {
-      expect(d(x, y), `${key(x)} vs ${key(y)}`).toBeGreaterThan(0.12);
+      expect(d(x, y), `${key(x)} vs ${key(y)} in light`).toBeGreaterThan(0.12);
+      expect(d(inDark(x), inDark(y)), `${key(x)} vs ${key(y)} in dark`).toBeGreaterThan(
+        0.12,
+      );
+    }
+    // The acted-on colour is the emphatic one in both schemes — the property a
+    // reader who cannot compare hues is left with, and what lets a narration
+    // say "this cell" *at all* once it has tied it to the evidence in words.
+    for (const resolveScheme of [(c: Colour) => c, inDark]) {
+      const action = colourToOKLCH(resolveScheme(roles.HINT_ACTION));
+      for (const wash of [roles.HINT_FILL, roles.HINT_EVIDENCE]) {
+        expect(action[1], `${key(wash)} vs the action colour`).toBeGreaterThan(
+          colourToOKLCH(resolveScheme(wash))[1] * 2,
+        );
+      }
     }
     // ...and the two that are fills stay fills: a digit and its pencil marks are
     // drawn on top of them.

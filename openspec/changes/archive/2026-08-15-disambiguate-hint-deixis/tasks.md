@@ -130,4 +130,50 @@ stop ("every sentence a hint utters is a claim").
         say *"the highlighted 5"*. Guarded in both directions — the word only
         where the mark is — and the snapshot diff is **two lines on one text
         op**, so nothing else moved.
-- [ ] 5.3 Owner acceptance, then archive.
+- [x] 5.3 **Owner-accepted 2026-08-15**, then archived.
+
+## 7. What archiving this change broke, and the guard that came out of it
+
+- [x] 7.1 `openspec archive` replaced the `ts-engine` hint requirement with this
+      change's MODIFIED delta, which had been scaffolded from a copy that
+      predated `audit-guessing-tier-names` — **134 lines gone**: the entire
+      Check / Tactic / Search taxonomy, the tier-naming rules, and four
+      scenarios. `validate --strict` passed it, because a partial copy still has
+      a SHALL and a scenario. Caught by reading `git diff` after the archive,
+      which is not a control. The live spec was repaired by hand (this change's
+      three scenarios and its narration paragraphs merged into the *current*
+      requirement) and the archived delta carries a warning; the spec diff is now
+      **purely additive, 0 deletions**.
+- [x] 7.2 `src/openspec-delta-integrity.test.ts` makes it a commit-gate failure:
+      a MODIFIED delta must retain every `#### Scenario:` the live requirement
+      has. Scenario names are the decidable proxy — prose cannot be diffed, but a
+      dropped scenario is exactly what a stale copy produces. Proved against a
+      known-answer fixture in both directions, since the tree sweep asserts
+      nothing on a day with no active MODIFIED delta.
+- [x] 7.3 **It found two more on its first run, plus a third worse than this
+      one** — none archived yet, so all three were fixable:
+      `add-latin-repeats-support` (2 Salad scenarios),
+      `add-slide-keyboard-control` (2 Slide scenarios), and
+      `walk-tactic-hint-chains`, which modified this same requirement and would
+      have dropped **eleven**. That one is an ADDED requirement now — what
+      `OPENSPEC_AGENTS.md` prescribes for a delta that adds a concern rather than
+      changing one — so it cannot delete anything. **Three of the four active
+      MODIFIED deltas were unsafe**, which retires "usually right" as a defence.
+
+## 6. The exemption this change leaned on, now asserted
+
+- [x] 6.1 The rule says a pair differing **only by hue** needs the marks fixed,
+      and Range and Light Up both mark a solid target against a shaded area — so
+      the question had to be answered rather than assumed. It is not a hue-only
+      pair: `HINT_ACTION` carries ~2.5× the chroma of either wash, and the two
+      are 0.408 apart in light and 0.218 in dark. **Weight, not hue**, which is
+      what survives a reader who cannot compare hues.
+- [x] 6.2 But the guard that keeps it true — `palette.test.ts` § "keeps the three
+      hint emphases distinct" — was measuring the **light column only**, the one
+      thing `hand-author-dark-palette` established you cannot do. Extended to
+      both schemes, and it lands on something real: the tightest of the six pairs
+      is `HINT_FILL`/`HINT_EVIDENCE` in **dark**, at **0.124** against a 0.12
+      bound (0.147 in light). **Proved to fail** by moving `TEAL`'s dark wash
+      from 0.48 to 0.42 — dark goes red at 0.083 while light stays green, which
+      is exactly the class of change the old guard could not see. The chroma
+      relation is asserted alongside it, in both schemes.
