@@ -12,7 +12,6 @@ import { Puzzle } from "./puzzle.ts";
 import type { RemoteWorkerPuzzle } from "./worker.ts";
 
 const ATTRS: PuzzleStaticAttributes = {
-  displayName: "Test",
   canSolve: true,
   canHint: true,
   canFindMistakes: false,

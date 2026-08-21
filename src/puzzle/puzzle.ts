@@ -93,7 +93,6 @@ export class Puzzle {
     private readonly worker: Worker,
     private readonly workerPuzzle: RemoteWorkerPuzzle,
     {
-      displayName,
       canSolve,
       canHint,
       canFindMistakes,
@@ -104,10 +103,16 @@ export class Puzzle {
       wantsStatusbar,
     }: PuzzleStaticAttributes,
   ) {
-    const catalogData = puzzleDataMap[puzzleId];
-    // Prefer catalog name to midend API name
-    // (e.g., catalog "Tracks" vs API "Train Tracks")
-    this.displayName = catalogData?.name ?? displayName;
+    // The catalog is the only place a display name lives. It used to be a
+    // `PuzzleStaticAttributes` field too, preferred-but-overridden here ("catalog
+    // 'Tracks' vs API 'Train Tracks'") — but that was the C midend reporting
+    // upstream's own name; the TS midend answers `game.id`, which is the
+    // lowercase puzzle id and never a name to show anyone. So the fallback could
+    // only ever have made things worse, and the field travelled three layers to
+    // be discarded. `catalog-registry.test.ts` holds the catalog and the registry
+    // equal in both directions, so the `?? puzzleId` below is unreachable for any
+    // puzzle the app can route to.
+    this.displayName = puzzleDataMap[puzzleId]?.name ?? puzzleId;
     this.canSolve = canSolve;
     this.canHint = canHint;
     this.canFindMistakes = canFindMistakes;
@@ -745,7 +750,11 @@ export class Puzzle {
     await nextAnimationFrame();
   }
 
-  public async detachCanvas(): Promise<void> {
+  /** Private: the only caller is `delete()`. `view.ts`'s `destroyCanvas`
+   * deliberately does not call it (it would need the `Puzzle` that was live
+   * during `createCanvas`, which is not necessarily the current one), and no
+   * third caller has appeared since the fork. */
+  private async detachCanvas(): Promise<void> {
     await this.workerPuzzle.detachCanvas();
   }
 

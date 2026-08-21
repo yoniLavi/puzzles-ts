@@ -91,6 +91,23 @@ function optionalGameMembers(): string[] {
 
 const OPTIONAL = optionalGameMembers();
 
+/** The fields of `PuzzleStaticAttributes`, read off its declaration. */
+function staticAttributeFields(): string[] {
+  const [, text] = sources.find(([p]) => p === "src/engine/types.ts") ?? [];
+  if (text === undefined) throw new Error("contract-surface: types.ts not found");
+  const src = ts.createSourceFile("types.ts", text, ts.ScriptTarget.ESNext, true);
+  for (const st of src.statements) {
+    if (!ts.isInterfaceDeclaration(st) || st.name.text !== "PuzzleStaticAttributes")
+      continue;
+    return st.members
+      .filter((m) => m.name !== undefined && ts.isIdentifier(m.name))
+      .map((m) => (m.name as ts.Identifier).text);
+  }
+  throw new Error("contract-surface: no `PuzzleStaticAttributes` in types.ts");
+}
+
+const STATIC_ATTRIBUTES = staticAttributeFields();
+
 // --- who consumes it -------------------------------------------------------
 
 /**
@@ -147,15 +164,31 @@ function relayTarget(access: ts.PropertyAccessExpression): string | undefined {
  * it — hence `src/games/` is excluded. So is `game.ts`, where every name occurs
  * by definition.
  */
-function propertyReads(): { production: Set<string>; test: Set<string> } {
+function propertyReads(): {
+  production: Set<string>;
+  test: Set<string>;
+  app: Set<string>;
+  appScanned: number;
+} {
   const production = new Set<string>();
   const test = new Set<string>();
+  // Shipping reads from *outside* the engine. A `PuzzleStaticAttributes` field
+  // can only be read through a `Puzzle`, which lives in the app shell — the
+  // engine produces the struct and never reads it back. Narrowing to the app is
+  // what makes that sweep say anything the `Game` sweep does not: the two
+  // contracts share field names, so an engine read of `game.canSolve` would
+  // otherwise vouch for `PuzzleStaticAttributes.canSolve`.
+  const app = new Set<string>();
   let scanned = 0;
+  let appScanned = 0;
 
   for (const [path, text] of sources) {
     if (path.startsWith("src/games/") || path === "src/engine/game.ts") continue;
     scanned++;
-    const into = /\.test\.ts$/.test(path) ? test : production;
+    const isTest = /\.test\.ts$/.test(path);
+    const isApp = !isTest && !path.startsWith("src/engine/");
+    if (isApp) appScanned++;
+    const into = isTest ? test : production;
     const src = ts.createSourceFile(path, text, ts.ScriptTarget.ESNext, true);
     const visit = (node: ts.Node): void => {
       if (ts.isPropertyAccessExpression(node)) {
@@ -168,7 +201,10 @@ function propertyReads(): { production: Set<string>; test: Set<string> } {
           ts.isBinaryExpression(node.parent) &&
           node.parent.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
           node.parent.left === node;
-        if (!written && relayTarget(node) !== node.name.text) into.add(node.name.text);
+        if (!written && relayTarget(node) !== node.name.text) {
+          into.add(node.name.text);
+          if (isApp) app.add(node.name.text);
+        }
       }
       ts.forEachChild(node, visit);
     };
@@ -183,7 +219,7 @@ function propertyReads(): { production: Set<string>; test: Set<string> } {
   expect(scanned, "contract-surface inspected implausibly few modules").toBeGreaterThan(
     100,
   );
-  return { production, test };
+  return { production, test, app, appScanned };
 }
 
 const READS = propertyReads();
@@ -301,5 +337,52 @@ describe("the Game contract carries no capability without a consumer", () => {
       ).toBe(false);
       expect(READS.test.has(member), `${member} has no consumer at all`).toBe(true);
     }
+  });
+});
+
+/**
+ * The same question for the sibling contract, because that is where the answer
+ * turned out to be "no" twice.
+ *
+ * `PuzzleStaticAttributes` is what the app learns about a game once, at
+ * construction. Every field is produced by `Midend.getStaticProperties` and
+ * relayed, under the same name, into a `Puzzle` field — a chain that is easy to
+ * extend and whose far end is easy to forget. Of the original nine fields,
+ * `canConfigure` had no reader anywhere (the midend answered it with a literal
+ * `true`) and `displayName` had none that mattered (`Puzzle` overrode it from
+ * the catalog on every path). Both are gone; this is what stops a third.
+ *
+ * Scoped to app-shell reads on purpose. The two contracts share field names —
+ * `canSolve` is a `Game` member too — so an *engine* read of `game.canSolve`
+ * would vouch for an app field nothing touches.
+ *
+ * The limitation, stated as before: this catches the `canConfigure` shape (a
+ * field nothing reads) and not the `displayName` shape (a field something reads
+ * under that name, but whose value never arrives from here — `Puzzle` sourced
+ * its display name from the catalog and the relayed value only ever lost the
+ * `??`). The second shape is a dataflow question, and tsc already answers it —
+ * an unused destructured binding in the `Puzzle` constructor is an error. What
+ * hid `displayName` was that the binding *was* used, in a fallback that could
+ * not fire.
+ */
+describe("PuzzleStaticAttributes carries no field the app does not read", () => {
+  it("inspects every field, and enough app modules to mean it", () => {
+    expect(STATIC_ATTRIBUTES.length).toBeGreaterThan(5);
+    expect(STATIC_ATTRIBUTES).toContain("canHint");
+    expect(
+      READS.appScanned,
+      "scanned implausibly few app-shell modules",
+    ).toBeGreaterThan(20);
+  });
+
+  it("every field is read by the app shell", () => {
+    const unread = STATIC_ATTRIBUTES.filter(
+      (f) => !READS.app.has(f) && !(f in NO_CONSUMER),
+    );
+    expect(
+      unread,
+      "PuzzleStaticAttributes fields the app never reads — the midend computes " +
+        "and ships them for nobody",
+    ).toEqual([]);
   });
 });

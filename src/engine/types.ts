@@ -153,8 +153,18 @@ export enum PuzzleButton {
   MOD_MASK = 0x7800 /* mask for all modifiers */,
 }
 
+/**
+ * What the app learns about a game once, at construction, and never asks again.
+ *
+ * Every field is produced by `Midend.getStaticProperties` and relayed — under
+ * the same name — into a `Puzzle` field, so the chain is easy to extend and its
+ * far end is easy to forget: **two of the original nine fields turned out to
+ * have no reader at all**, `canConfigure` (which the midend answered with a
+ * literal `true`) and `displayName` (which `Puzzle` overrode from the catalog on
+ * every path). `contract-surface.test.ts` sweeps this interface for the same
+ * reason it sweeps `Game`.
+ */
 export interface PuzzleStaticAttributes {
-  displayName: string;
   // A `canConfigure` used to sit here, gating the type menu's "Custom type…"
   // entry — and the midend answered it with a hard-coded `true`, so the gate
   // never closed. Every game declares a `paramConfig`, which

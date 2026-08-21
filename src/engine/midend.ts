@@ -212,12 +212,14 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   private ui!: Ui;
   private drawState: DrawState | null = null;
   private currentTileSize: number;
-  /** Window pixel size for the current params at `currentTileSize`.
-   * Updated by `size()` for informational use (currently exposed only
-   * via tests; the previous engine bg-fill that consumed it was
-   * removed when responsibility moved into each game's
-   * `!ds.started` branch). */
-  private winSize: Size = { w: 0, h: 0 };
+  // A `winSize` used to sit here, caching the window pixel size `size()` had
+  // just computed. Its doc said it was "exposed only via tests" — it was
+  // `private`, and no test ever read it, nor did anything else: `size()`
+  // assigned it and returned it on the next line. Its real consumer, the
+  // engine's own background fill, went when each game took over painting its
+  // background in the `!ds.started` branch (`fix-flip-canvas-reshape`), and the
+  // field outlived it by carrying a sentence about who read it
+  // (`audit-vestigial-contract-surface` follow-up).
   private usedSolve = false;
   /** Last-applied user preference values, keyed by pref `kw`. Retained
    * across new games / loads because the midend recreates `ui` (via
@@ -276,7 +278,6 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
 
   getStaticProperties(): PuzzleStaticAttributes {
     return {
-      displayName: this.game.id,
       canSolve: this.game.canSolve,
       canHint: this.game.hint !== undefined,
       canFindMistakes: this.game.findMistakes !== undefined,
@@ -1168,10 +1169,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * that the cache is stale. */
   size(maxSize: Size): Size {
     const base = this.game.computeSize(this.params, this.preferredTileSize);
-    if (base.w <= 0 || base.h <= 0) {
-      this.winSize = base;
-      return base;
-    }
+    if (base.w <= 0 || base.h <= 0) return base;
     // Largest integer tile size whose board fits maxSize — upstream
     // midend_size's binary search, in its `user_size` form: the board fills
     // the layout slot it is given, and the tile may exceed the game's
@@ -1203,8 +1201,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     }
     // (`drawState` is null only before the first `startFrom`, i.e. before
     // there is a board to size for.)
-    this.winSize = this.game.computeSize(this.params, tile);
-    return this.winSize;
+    return this.game.computeSize(this.params, tile);
   }
 
   /** The canvas was just cleared by `Drawing.resize` (the only path

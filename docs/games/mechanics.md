@@ -33,9 +33,23 @@ dead weight in the interface, no consumer means every implementer wrote code
 that never runs. So don't add an optional member speculatively (the
 `PointerAction` mistake), and don't leave one whose consumer has gone: if a
 capability is worth keeping unread, it needs an entry naming the change that
-owns the decision. Corollary: a member every game implements is not optional —
-`newDrawState` and `redraw` were, and 112 game files paid for it in guards
-against a null the engine could not produce.
+owns the decision.
+
+**When every game implements an optional member, ask what the optionality
+costs — and whose code pays.** It is not automatically a mistake:
+`preferredTileSize`, `setTileSize` and `paramConfig` are declared by all 57 and
+are fine as they are, because their optionality is absorbed by three `?.`/`??`
+in the midend and never appears in a game. `newDrawState` and `redraw` were the
+opposite case: their optionality *leaked into the game-facing signature* as
+`ds: DrawState | null`, so 112 game files carried a guard against a null the
+engine could not produce, and 57 of them a `ds?.tilesize ?? PREFERRED_TILE_SIZE`
+that would have clicked the wrong cell had it ever fired. **The cost that
+decides is the cost borne by game code**, so both are required now.
+
+The same question is worth asking of `PuzzleStaticAttributes`, the sibling
+contract that relays a game's capability flags to the app shell — two of its
+original nine fields turned out to have no reader, and it is swept by the same
+test.
 
 The five type parameters are yours to shape idiomatically; the file layout that
 has held across all 57 games is `index.ts` (the `Game` object + glue),
