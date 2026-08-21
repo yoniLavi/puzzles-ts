@@ -111,7 +111,58 @@ export function decodeParams(s: string): AbcdParams {
   return p;
 }
 
-export function validateParams(p: AbcdParams, _full: boolean): string | null {
+/**
+ * The largest board area that generates in a tolerable time, per letter count
+ * and diagonal mode, for a board whose *shorter* side is at least 6.
+ *
+ * Generation fills the grid at random and keeps the fill only if the solver
+ * finds its edge clues uniquely solvable, so the acceptance rate — not any
+ * bound in the algorithm — decides whether a board exists to be found. It falls
+ * off a cliff: 9x9 n4 accepts 1 attempt in 18,586 (~1.2 s), while 10x10 n4
+ * accepted **none in 454,144** (~30 s of trying). Upstream's author hit the same
+ * wall and left it as a `TODO`, never having produced a 10x10 n4 board.
+ *
+ * The numbers are measured, not derived — see `bound-abcd-generable-sizes`
+ * design D1 for the sweep (139 configurations) and D2 for why the two obvious
+ * closed forms are both WRONG:
+ *
+ *   - **Area alone cannot express it.** 10x10 n4 never generates; 2x50 n4, the
+ *     same area, generates in 195 ms. Which is why the bound below applies only
+ *     when both sides are >= 6, with a single generous area cap for the rest.
+ *   - **Clue density cannot either.** 5x40 n4 and 8x10 n4 have the *same*
+ *     `n(w+h)/wh`, and one is 859 ms while the other never generates at all.
+ *
+ * More letters make a board harder (each one is another count to satisfy), and
+ * `diag` makes it markedly EASIER despite being an extra restriction: a more
+ * constrained board is more deducible, so the solver reaches a unique solution
+ * more often. 9x9 n5 never generates; with `diag` it takes 34 ms.
+ *
+ * Keyed `n * 2 + (diag ? 1 : 0)`; `diag` requires n >= 5 above.
+ */
+const MAX_GENERABLE_AREA = new Map<number, number>([
+  [3 * 2, 130], // 11x11 296 ms, 10x12 965 ms | 12x12 6.0 s, 9x20 never
+  [4 * 2, 82], //  9x9 1.2 s, 8x10 859 ms     | 6x14 2.9 s, 9x10 5.0 s, 10x10 never
+  [5 * 2, 74], //  8x9 2.0 s, 8x8 286 ms      | 7x11 5.0 s, 8x10 never, 9x9 30 s
+  [6 * 2, 68], //  8x8 500 ms                 | 6x12 5.0 s, 8x9 7.5 s, 9x9 never
+  [7 * 2, 68], //  8x8 667 ms                 | 8x9 never
+  [8 * 2, 68], //  8x8 581 ms                 | 8x9 7.5 s
+  [9 * 2, 68], //  8x8 489 ms                 | 8x9 15 s
+  [5 * 2 + 1, 110], // 10x10 735 ms           | 11x11 10 s
+  [6 * 2 + 1, 90], //  9x9 2.0 s              | 10x10 never
+  [7 * 2 + 1, 70], //  8x8 102 ms             | 9x9 5.0 s, 10x10 never
+  [8 * 2 + 1, 70], //  8x8 104 ms             | 9x9 15 s
+  [9 * 2 + 1, 70], //  8x8 77 ms              | 9x9 never
+]);
+
+/** Below this shorter side, a board is bounded by area alone. A short line is
+ * nearly pinned by its own clues, so thin boards stay easy far past the area
+ * where a squarer one dies: 2x50 n4 is 195 ms and 3x30 n4 is 199 ms, where
+ * 10x10 n4 and 9x10 n4 are hopeless. 150 is the largest thin area measured
+ * generable (5x30 n3, 2.5 s); 5x40 n4 at 200 never generates. */
+const THIN_SIDE = 6;
+const MAX_THIN_AREA = 160;
+
+export function validateParams(p: AbcdParams, full: boolean): string | null {
   // A width or height under 2 could break the solver.
   if (p.w < 2) return "Width must be at least 2";
   if (p.h < 2) return "Height must be at least 2";
@@ -122,6 +173,21 @@ export function validateParams(p: AbcdParams, _full: boolean): string | null {
   if (p.n < 5 && p.diag) return "Letters for Diagonal mode must be at least 5";
   // Arbitrary ceiling that avoids clashing with midend hotkeys and fits the keypad.
   if (p.n > 9) return "Letters must be no more than 9";
+  // Generation only. A board that is already described — a shared game ID or a
+  // saved game — is handed over rather than searched for, so none of this
+  // applies to it and an id shared before this bound existed still opens.
+  if (full) {
+    const area = p.w * p.h;
+    const thin = Math.min(p.w, p.h) < THIN_SIDE;
+    const max = thin
+      ? MAX_THIN_AREA
+      : (MAX_GENERABLE_AREA.get(p.n * 2 + (p.diag ? 1 : 0)) ?? 0);
+    if (area > max) {
+      return thin
+        ? `A board this long has no ABCD puzzle to find; keep the area under ${max} squares`
+        : `${p.n} letters have no ABCD puzzle on a board this big; keep the area under ${max} squares, or use fewer letters`;
+    }
+  }
   return null;
 }
 

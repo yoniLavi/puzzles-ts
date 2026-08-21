@@ -85,8 +85,24 @@ describe("Pegs midend integration — lifecycle", () => {
 
   it("newGameFromId rejects invalid params", () => {
     const h = harness();
-    const error = h.m.newGameFromId("3x1cross:PPH");
-    expect(error).toMatch(/greater than three/);
+    // A bound Pegs applies whatever it is asked to do — the board would be
+    // 40,000 cells. Deliberately NOT the "greater than three" bound, which
+    // Pegs gates on `full`: see the next test.
+    const error = h.m.newGameFromId("200x200cross:PPH");
+    expect(error).toMatch(/unreasonably large/);
+  });
+
+  it("newGameFromId accepts a described board below the generable minimum", () => {
+    // Pegs gates its size and board-type bounds on `full`, because they say
+    // what its *generator* can build — a 3x1 cross board is not something
+    // `newDesc` would ever produce. But `PPH` is a complete, legal board (two
+    // pegs, one hole, and a legal jump), so nothing is generated and nothing
+    // is refused. Until `bound-abcd-generable-sizes` fixed the midend, `full`
+    // was a constant `true` and this id was rejected; the assertion here used
+    // to be that rejection.
+    const h = harness();
+    expect(h.m.newGameFromId("3x1cross:PPH")).toBeUndefined();
+    expect(h.m.getParams()).toBe("3x1cross");
   });
 
   it("restartGame after a move resets to move 0", () => {

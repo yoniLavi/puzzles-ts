@@ -32,9 +32,23 @@ import {
   verClue,
 } from "./state.ts";
 
-/** ABCD's even×even grids legitimately need far more attempts than the house
- * default (upstream ships a 6×6 n4 preset whose generation is slow by design). */
-const ABCD_MAX_ATTEMPTS = 5_000_000;
+/**
+ * ABCD's larger grids legitimately need far more attempts than the house
+ * default (upstream ships a 6×6 n4 preset whose generation is slow by design).
+ *
+ * Sized against what `validateParams`' `MAX_GENERABLE_AREA` actually admits:
+ * the slowest admitted configuration measured is 8×9 n5 at 1 acceptance in
+ * 30,788, so 250,000 attempts leaves it a ~0.03% chance of exhausting the
+ * budget — and every other admitted configuration is far safer than that. So a
+ * firing here still means what this module's doc comment says it should: a
+ * divergence, not a board a player legitimately asked for.
+ *
+ * It was 5,000,000, which is 20× more than any admitted configuration needs and
+ * was reachable from the Custom dialog: 10×10 n4 spent ~5.4 minutes of frozen
+ * worker before throwing. The size bound is what fixes that; this is only the
+ * backstop behind it.
+ */
+const ABCD_MAX_ATTEMPTS = 250_000;
 
 export function newAbcdDesc(p: AbcdParams, rng: RandomState): { desc: string } {
   const { w, h, n } = p;

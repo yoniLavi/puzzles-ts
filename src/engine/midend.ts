@@ -309,10 +309,16 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     } catch (e) {
       return `Invalid parameters: ${(e as Error).message}`;
     }
-    const pErr = this.game.validateParams(params, true);
+    // `full` means "these params are about to generate a board". A `#seed` id
+    // regenerates and so is bound by whatever generation cannot do; a `:desc`
+    // id arrives with the board already in hand, so a generation-only bound
+    // must not refuse it — otherwise an id shared before the bound existed
+    // stops loading. Upstream midend.c:1956 passes exactly `desc == NULL`.
+    const generating = id[sep] === "#";
+    const pErr = this.game.validateParams(params, generating);
     if (pErr) return pErr;
 
-    if (id[sep] === "#") {
+    if (generating) {
       const rng = randomNew(rest);
       const { desc, aux } = this.game.newDesc(params, rng);
       this.params = params;

@@ -362,6 +362,42 @@ describe("Midend params + presets", () => {
     expect(id.currentGameId).toMatch(/^t3:/);
     expect(id.currentGameId).not.toContain("X");
   });
+
+  it("validates params with full=false when the id carries its own desc", () => {
+    // `validate_params(params, full)`'s `full` means "these params are about
+    // to GENERATE a board", which is how a game expresses a bound that only
+    // generation has — a size whose generator succeeds too rarely to wait for.
+    // Upstream midend.c:1956 passes exactly `desc == NULL`; ours passed a
+    // literal `true` on both arms, so a generation-only bound also rejected
+    // an already-described board. That silently made the `full` flag dead:
+    // every one of its production call sites passed `true`, so the sixteen
+    // games gating a bound on it were gating on a constant, and a game ID
+    // shared before a bound was introduced stopped loading.
+    const boundedGame: typeof fakeGame = {
+      ...fakeGame,
+      validateParams: (p, full) =>
+        p.target <= 0
+          ? "target must be positive"
+          : full && p.target > 5
+            ? "too big to generate"
+            : null,
+    };
+    const h = harness(boundedGame);
+    h.m.newGame();
+
+    // Generation arms refuse: the seed form regenerates, so it is bounded...
+    expect(h.m.newGameFromId("t9#abc")).toBe("too big to generate");
+    // ...as are the explicit params-setting arms.
+    expect(h.m.setParams("t9")).toBe("too big to generate");
+
+    // But a descriptive id hands over a finished board: nothing is generated,
+    // so the generation-only bound must not apply.
+    expect(h.m.newGameFromId("t9:g9-7")).toBeUndefined();
+    expect(h.m.getParams()).toBe("t9");
+
+    // A bound that is NOT generation-only still refuses on the desc arm.
+    expect(h.m.newGameFromId("t0:g0-1")).toBe("target must be positive");
+  });
 });
 
 // The three methods only the worker adapter calls, and which no test called at

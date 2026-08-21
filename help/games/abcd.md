@@ -27,12 +27,12 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 
 <dl>
 	<dt>Width, Height</dt>
-	<dd>Size of the grid in squares (excluding the size of the numbers on the edge).</dd>
+	<dd>Size of the grid in squares (excluding the size of the numbers on the edge). How large a board can be depends on the number of letters, because each extra letter is another count every row and column has to satisfy: with three letters a board can reach about 130 squares, with four about 80, and from six letters up about 65. Long thin boards go much further — a short row is almost settled by its own numbers — so anything up to about 160 squares is allowed when one side is under 6. Past those limits no puzzle with a single solution is likely to exist at all, so the game says so rather than searching for one.</dd>
 	<dt>Letters</dt>
 	<dd>The amount of different letters that can appear in the puzzle.</dd>
 	<dt>Remove clues</dt>
 	<dd>When enabled, the difficulty is increased by hiding certain number clues.</dd>
 	<dt>Allow diagonal touching</dt>
-	<dd>When disabled, letters cannot be diagonally adjacent (in addition to letters not being orthogonally adjacent).</dd>
+	<dd>When disabled, letters cannot be diagonally adjacent (in addition to letters not being orthogonally adjacent). Counter-intuitively this <em>raises</em> the size limit described above rather than lowering it: the extra restriction gives you more to reason from, so larger boards still work out to a single solution.</dd>
 </dl>
 

@@ -185,9 +185,17 @@ export const MODULES = [
       },
       {
         why: "a game ID whose params fail validation is accepted",
-        find: "    const pErr = this.game.validateParams(params, true);\n    if (pErr) return pErr;",
+        find: "    const pErr = this.game.validateParams(params, generating);\n    if (pErr) return pErr;",
         replace:
-          "    const pErr = this.game.validateParams(params, true);\n    void pErr;",
+          "    const pErr = this.game.validateParams(params, generating);\n    void pErr;",
+      },
+      {
+        // `bound-abcd-generable-sizes` D4: this argument was a literal `true`,
+        // which made `full` dead across sixteen games that gate a bound on it —
+        // a generation-only bound also refused an already-described board.
+        why: "a generation-only param bound also rejects a game ID that carries its desc",
+        find: '    const generating = id[sep] === "#";',
+        replace: "    const generating = true;",
       },
       {
         why: "a corrupt save is loaded instead of refused",
