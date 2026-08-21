@@ -57,7 +57,18 @@
 
 ## 5. Owner acceptance
 
-- [ ] 5.1 Owner acceptance on the size limits and the refusal wording, then
-      archive. Note the visible change: the Custom dialog now refuses large
-      boards immediately instead of freezing, and the limit depends on the
-      letter count and on diagonal mode.
+- [x] 5.1 Owner acceptance on the size limits and the refusal wording, then
+      archive. **Accepted 2026-08-21.** The visible change: the Custom dialog
+      now refuses large boards immediately instead of freezing, and the limit
+      depends on the letter count and on diagonal mode.
+
+## 6. Found while verifying (fixed in `0d097c2`, not part of this change's spec)
+
+- [x] 6.1 An owner bug report during acceptance — ABCD threw on load — surfaced
+      a defect older and wider than this change: `Midend.applyMove` pushed
+      `executeMove`'s return into `history` unchecked, so a save containing a
+      move this build cannot play poisoned the history and made **every later
+      repaint** throw. Fixed in `commitMove` + `loadGame` + the autosave restore
+      path, with `save-round-trip.test.ts` sweeping all 57 games (37 go red
+      without the fix). The gap that let it ship: there was no cross-game
+      save/load coverage at all.
