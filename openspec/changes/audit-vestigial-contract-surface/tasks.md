@@ -54,6 +54,31 @@
 - [ ] 5.2 Anything argued unreachable-but-kept is recorded with its argument,
       in the `feedback-probe` `equivalent: true` style.
 
+## 5b. Two findings handed over from `reject-unrecognised-moves` (2026-08-21)
+
+Both fall squarely in shape 2, and the first is the strongest available evidence
+that this audit will pay — it was found *by accident*, by a test that was aimed
+at something else entirely.
+
+- [ ] 5b.1 **`Game.serialiseMove` / `deserialiseMove` has one implementer in 57
+      games.** Sixteen exported a pair that was **never wired into
+      `sixteenGame`** — production always used the identity codec, and the pair's
+      own test round-tripped it against itself, which passes whether or not
+      anybody calls either half. That dead pair is deleted (`e538764`); what is
+      *not* settled is the hook. Pegs is the only real user, and it uses it well
+      (it is the only game that rejects a foreign move at the save boundary
+      rather than at dispatch — see that change's design D3). So the question is
+      not "delete the hook" but **"why does exactly one game need it?"** Either
+      every move type is JSON-safe and Pegs is the odd one out, or the hook is a
+      boundary-parsing seam the collection should use more deliberately.
+- [ ] 5b.2 **`src/puzzle/puzzle.ts`'s `notifyChange` hand-rolls `assertNever`.**
+      Its `default:` is `// @ts-expect-error: message.type never` over a bare
+      `throw` — the exact pattern, written before the helper existed.
+      `engine/assert-never.ts` now exists, and the `@ts-expect-error` form is
+      strictly weaker: it asserts the narrowing *at that line* but the throw
+      carries no context, so the message names neither the notification nor
+      where it came from. Small, and it is the last hand-rolled copy.
+
 ## 6. Prevent recurrence
 
 - [ ] 6.1 Decide whether any of the four shapes is cheaply and *non-vacuously*
