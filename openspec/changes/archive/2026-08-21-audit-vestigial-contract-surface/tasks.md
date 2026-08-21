@@ -106,4 +106,4 @@
 - [x] 7.2 `docs/games/mechanics.md` (the optional-member rule and its converse,
       the non-null sized `ds`, `paramConfig` now asserted, `needsRightButton`'s
       real status) and `docs/games/rendering.md` (sizing).
-- [ ] 7.3 Owner acceptance, then archive.
+- [x] 7.3 Owner acceptance (2026-08-21), then archive.
