@@ -48,6 +48,23 @@ export interface PuzzleSettings {
   // Default params for new puzzles
   params?: EncodedParams;
 
+  /**
+   * The game ID of the board this puzzle last dealt, so reopening the puzzle
+   * shows that board rather than generating a new one.
+   *
+   * Deliberately here and **not** an autosave row. The home screen badges a
+   * puzzle as having a game in progress by asking
+   * `savedGames.autoSavedPuzzles.has(puzzleId)`, so the autosave table is not
+   * merely storage — it is the definition of "you have something going here". A
+   * board the player has only looked at is not that. `params` one line up
+   * records the *type* a puzzle should open as; this records the *board*, which
+   * is the same kind of fact one level finer.
+   *
+   * Optional, so every record written before it reads as "nothing remembered" —
+   * no schema bump needed.
+   */
+  lastGameId?: string;
+
   // For unfinished puzzles, timestamp when the alert was last shown
   lastUnfinishedAlert?: number;
 }

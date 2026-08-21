@@ -781,6 +781,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     // Ensure there's a game, from (in order of preference)
     // - puzzleGameId (URL hash from router)
     // - the most recent autoSave
+    // - the board this puzzle last dealt
     // - a new game
     let hasGame = false;
 
@@ -804,6 +805,29 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
     if (!hasGame && !this.params && this.autoSaveFilename) {
       // Restore a recent autosave, unless params in url (which might not match)
       hasGame = await savedGames.restoreAutoSavedGame(puzzle, this.autoSaveFilename);
+    }
+
+    if (!hasGame && !this.params) {
+      // No autosave, which means no move was ever made on the board this puzzle
+      // was last showing — so re-deal *that* board rather than a new one. Same
+      // `!this.params` condition as the autosave above: a type asked for in the
+      // URL wins over a remembered board that may not match it.
+      const lastGameId = await settings.getLastGameId(puzzle.puzzleId);
+      if (lastGameId) {
+        const error = await puzzle.newGameFromId(lastGameId);
+        if (error) {
+          // The player never asked for this board, so its loss is not a decision
+          // to put in front of them — unlike the URL case above, which alerts.
+          // Forget it so the next load does not retry, and deal a fresh game.
+          console.warn(
+            `Dropping unusable remembered board for ${puzzle.puzzleId}: ` +
+              `${lastGameId}: ${error}`,
+          );
+          await settings.setLastGameId(puzzle.puzzleId, undefined);
+        } else {
+          hasGame = true;
+        }
+      }
     }
 
     if (!hasGame) {
@@ -833,6 +857,12 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
       if (puzzle.currentGameId !== this.savedGameId) {
         this.savedFilename = undefined;
         this.savedGameId = puzzle.currentGameId;
+        // Remember the board itself, so reopening this puzzle shows it again
+        // rather than dealing a new one. Inside this guard rather than beside
+        // it: the handler fires on every state change, so an unguarded write
+        // would put a DB round-trip behind every move to store a value that did
+        // not change. Not an autosave — see `PuzzleSettings.lastGameId`.
+        await settings.setLastGameId(puzzle.puzzleId, puzzle.currentGameId);
       }
       if (puzzle.totalMoves > 0 && !puzzle.isSolved) {
         // Wait to autosave until the user has made at least one actual move,

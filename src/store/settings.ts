@@ -413,6 +413,28 @@ class Settings {
     });
   }
 
+  /** The board this puzzle last dealt — see `PuzzleSettings.lastGameId` for why
+   * it lives here rather than in the autosave table. */
+  async getLastGameId(puzzleId: PuzzleId): Promise<string | undefined> {
+    const puzzleRecord = await this.getPuzzleSettings(puzzleId);
+    return puzzleRecord?.lastGameId;
+  }
+
+  /** Passing `undefined` clears the key rather than storing it, matching
+   * `setParams` — a remembered board this build can no longer deal is forgotten,
+   * not recorded as absent. */
+  async setLastGameId(puzzleId: PuzzleId, lastGameId?: string): Promise<void> {
+    const { lastGameId: _, ...current } =
+      (await this.getPuzzleSettings(puzzleId)) ?? {};
+    const updated: PuzzleSettings =
+      lastGameId === undefined ? current : { ...current, lastGameId };
+    await db.settings.put({
+      id: puzzleId,
+      type: "puzzle",
+      data: updated,
+    });
+  }
+
   async getLastUnfinishedAlert(puzzleId: PuzzleId): Promise<number | undefined> {
     const puzzleRecord = await this.getPuzzleSettings(puzzleId);
     return puzzleRecord?.lastUnfinishedAlert;
