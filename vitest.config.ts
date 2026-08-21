@@ -84,14 +84,29 @@ export default defineConfig({
     //
     // Safe ONLY because the suite is order-independent under shared module
     // state (the `repo-layout` "deterministic under parallel load"
-    // requirement). The one shared mutable singleton — the game
-    // `registerGame` registry — is populated by an idempotent
-    // `registerAllGames()`; the one file that resets it (`worker-adapter`)
-    // restores it in `afterAll`, and every file that reads the full registry
-    // re-ensures it in `beforeAll`. Verified: full suite green 3× under
-    // file-order shuffle (`sequence.shuffle.files`) with isolation off. If a
-    // future port reintroduces a cross-file leak, re-run with that shuffle to
-    // localise it — do not "fix" it by re-enabling isolation.
+    // requirement). There are **two** shared mutable singletons, not one:
+    //
+    //  - the game `registerGame` registry, populated by an idempotent
+    //    `registerAllGames()`; the one file that resets it (`worker-adapter`)
+    //    restores it in `afterAll`, and every file that reads the full registry
+    //    re-ensures it in `beforeAll`;
+    //  - **vitest's own per-worker module registry, which `vi.mock` writes
+    //    into.** This comment used to claim the registry was the only one. It
+    //    is not, and the omission cost a rejected commit: two files mocked
+    //    `store/saved-games.ts` with different factories, and whenever they
+    //    landed in one worker the loser silently got the winner's spies — four
+    //    assertions failing as "expected to be called once, got 0 times" on a
+    //    tree that had gated clean minutes earlier.
+    //    `src/no-duplicate-module-mocks.test.ts` now holds one mocking file per
+    //    module, which is what makes the claim above true rather than hopeful.
+    //
+    // Verified: full suite green 3× under file-order shuffle
+    // (`sequence.shuffle.files`) with isolation off. Note what that did *not*
+    // catch — two shuffled runs missed the mock collision, because shuffling
+    // file order rarely co-locates a specific pair in one worker. To localise a
+    // suspected cross-file leak, force the suspects into one worker
+    // (`VITEST_MAX_WORKERS=1 vitest run <a> <b>`) rather than reaching for the
+    // shuffle. Do not "fix" it by re-enabling isolation.
     isolate: false,
   },
 });
