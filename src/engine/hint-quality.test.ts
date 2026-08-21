@@ -22,12 +22,13 @@
  *    `d1f37b8`) without constraining anything that shipped.
  *  - **No step asks the player to carry a chain it never lays out**
  *    (`audit-guessing-tier-names`): a bounded chain is a legitimate
- *    *Tactic* and may be narrated — but as a multi-leg walk, not as a
- *    claim; an unbounded search may not be narrated at all. Checked
- *    twice — once on each game's first preset with the rules above, and
- *    once **per tier** in its own block at the bottom, because such a
- *    rung is tier-gated and the first preset is the one place it can
- *    never fire.
+ *    *Tactic* and may be narrated — but with the chain **shown on the
+ *    board**, ordered and anchored at both ends, rather than compressed
+ *    into a claim; an unbounded search may not be narrated at all.
+ *    Checked twice — once on each game's first preset with the rules
+ *    above, and once **per tier** in its own block at the bottom,
+ *    because such a rung is tier-gated and the first preset is the one
+ *    place it can never fire.
  *
  * Form only: no assertion here ever touches *what* a hint says about the
  * board — flattening a good hint to satisfy a guard is the failure mode
@@ -82,8 +83,14 @@ const DEDUCTIVE = new Set([
  *
  * - **Check** — place, look, one rule breaks. Narrate directly.
  * - **Tactic** — a bounded chain of forced consequences to a named endpoint.
- *   Legitimate at a middle tier, but it must be narrated as a **multi-leg walk**
- *   (one glanceable leg per step) rather than compressed into a claim.
+ *   Legitimate at a middle tier, but the chain must be **shown on the board** —
+ *   each link marked in the order it falls, both ends anchored — rather than
+ *   compressed into a claim the player can only check by redoing the deduction.
+ *   The stricter form (a display-only leg per link, so the player advances one
+ *   inference at a time) was designed and set aside by an owner decision:
+ *   holding a *hypothesis* in your head is fine, holding the *chain* is not
+ *   (`walk-tactic-hint-chains` D1–D2). This list was emptied by seven games
+ *   meeting the revised bar, not by seven walks.
  * - **Search** — run the whole solver from a hypothesis, or branch and
  *   backtrack. `Unreasonable` only, and never narrated at all.
  *
@@ -107,25 +114,6 @@ const DEDUCTIVE = new Set([
  */
 const SPECULATIVE =
   /\btr(?:y|ied|ies)\b|\bbreak the board\b|following (?:a|the) chain\b|following the forced\b|\bin turn\b|\bfurther along\b|\beventually\b/i;
-
-/**
- * **Interim**: the exact sentences of Tactic-tier rungs that are legitimate
- * deductions but are not yet narrated as walks.
- *
- * These are not exempt from the bar — they are *below* it, and
- * `walk-tactic-hint-chains` is the change that fixes them. They are listed here,
- * as **whole sentence shapes rather than game names**, so that the guard stays
- * live on every *other* narration those same games produce: a new compressed
- * chain in Towers would still fail. Each entry is deleted as its game is walked;
- * nothing is ever added.
- */
-const PENDING_WALK: RegExp[] = [
-  // The shared Latin forcing chain (Keen, Unequal, Group, Salad) and Towers' and
-  // Solo's copies of it.
-  /^Following a chain of (?:two-candidate|forced)/,
-];
-
-const pendingWalk = (s: string): boolean => PENDING_WALK.some((r) => r.test(s));
 
 /** Owner-endorsed per-game idioms that carry necessity in their own
  * words rather than a modal. Adding here is a deliberate, reviewable
@@ -171,7 +159,7 @@ describe("hint narration form, cross-game", () => {
           }
 
           expect(
-            SPECULATIVE.test(step.explanation) && !pendingWalk(step.explanation),
+            SPECULATIVE.test(step.explanation),
             `${at} — asks the player to carry a chain it never lays out`,
           ).toBe(false);
         });
@@ -216,7 +204,7 @@ describe("no hint leaves a chain for the player to carry, at any tier", () => {
           checked++;
           for (const step of res.steps) {
             expect(
-              SPECULATIVE.test(step.explanation) && !pendingWalk(step.explanation),
+              SPECULATIVE.test(step.explanation),
               `${name} tier ${tier} ("${contract.tiers[tier]}")/${seed}: "${step.explanation}" — asks the player to carry a chain it never lays out`,
             ).toBe(false);
           }

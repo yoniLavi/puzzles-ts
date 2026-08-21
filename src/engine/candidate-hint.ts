@@ -25,6 +25,7 @@
 import type { DeductionRecord } from "./deduction-record.ts";
 import type { HintResult, HintStep, HintTrackVerdict } from "./game.ts";
 import type { ClassifyRegion } from "./latin-hint.ts";
+import type { OrderedCell } from "./overlay-sidecar.ts";
 
 /** A board cell. */
 export interface Cell {
@@ -98,7 +99,10 @@ export type CandidateMove =
  * candidate(s) struck (`marks`). The generic plan functions update `targets` and
  * `marks` as a strike step shrinks; the game's own `Hint` type satisfies this. */
 export interface CandidateHighlights {
-  area: Cell[];
+  /** The evidence to shade. A cell that is a link in an ordered chain also
+   * carries its place in it ({@link OrderedCell}), drawn as an ordinal — the
+   * order is what makes a shaded chain walkable rather than a heap. */
+  area: OrderedCell[];
   targets: Cell[];
   marks: Mark[];
 }

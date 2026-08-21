@@ -61,37 +61,76 @@
       repeats a digit fails. A count, not a "some text was drawn" — the shape a
       snapshot re-baseline cannot erase.
 
-## 2. The Latin family — one shared walk, six games
+## 2. The Latin family — one shared sentence, six games
 
-- [ ] 2.1 `latin.ts` `forcing()`: record the BFS path. The parent pointers exist
-      inside the loop; the measurement scaffold in `audit-guessing-tier-names`
-      showed how to recover depth from them (recover it from git if useful —
-      `git log -S LATIN_FORCING_CHAINS`).
-- [ ] 2.2 Extend the `forcing` reason to carry the chain, and narrate it in
-      `latin-hint.ts` as a journey through `LatinVocab` so Towers' heights,
-      Group's elements and Salad's letters all read correctly.
-- [ ] 2.3 **The case split is load-bearing** — the conclusion needs *both*
-      branches, and a walk that narrates only the chain has a final leg that does
-      not follow from its own premises. State it.
-- [ ] 2.4 Towers and Solo keep their own `narrate`; give them the same legs.
-- [ ] 2.5 Remove each game's `PENDING_WALK` entry as it lands.
+- [x] 2.1 `latin.ts` `forcing()`: record the BFS path. One parent-pointer write
+      per pushed cell, inside the `recorder` guard, so the generator and solve
+      paths are untouched. The array needs no clearing between runs — a parent is
+      never *read* for a cell this BFS did not push.
+- [x] 2.2 The `forcing` reason carries `chain: ForcingLink[]` and the region the
+      conclusion shares with the origin. `narrateForcingChain` in `latin-hint.ts`
+      renders it through `LatinVocab`, so Towers' heights, Group's elements and
+      Salad's letters read correctly from one sentence.
+- [x] 2.3 **The case split is stated**: *"If cell 1 is 5, this cell's row already
+      has it; if 2, cell 3 is driven to 5, in line with this cell. Either way…"*.
+      Both branches, because the conclusion needs both.
+- [x] 2.4 Towers and Solo keep their own `narrate` — for reasons that do not
+      apply to this arm (a value qualified in *some* arms; a different region set
+      per arm) — so they call the shared sentence with their own vocabulary and
+      region name rather than keeping a copy of it. **Solo's own forcing BFS**
+      records its chain too, and names row / column / **block** / **diagonal**.
+- [x] 2.5 `PENDING_WALK` is empty and deleted, along with its `pendingWalk`
+      helper and both call sites.
+- [x] 2.6 Not in the plan, done because the alternative was six copies of the
+      same bit-packing and the same corner-digit draw: the ordinal is a shared
+      mechanism — `OrderedCell.order` → `OverlaySidecar.order` (its own lane;
+      `hintMarkBit` already reaches bit 28 in Group, so there is no bit budget to
+      borrow) → `drawHintOrdinal` → the new `HINT_ORDER` palette role. Clusters
+      was moved onto it too, so the mark means one thing in all seven games.
 
 ## 3. Guards
 
-- [ ] 3.1 The walk must satisfy the *existing* bars, not just this one: every leg
-      terse (`MAX_NARRATION_CHARS`), necessity-voiced, and showing something.
-      `hint-quality.test.ts` already checks all three per step.
-- [ ] 3.2 `hint-resume.test.ts` — a multi-leg journey must survive recompute; a
-      chain re-derived from a changed board must not ping-pong.
-- [ ] 3.3 A tier-2.5 render scenario per game family, walked to a middle leg.
+- [x] 3.1 The narration satisfies the *existing* bars: terse
+      (`MAX_NARRATION_CHARS`), necessity-voiced, showing something — and it no
+      longer trips `SPECULATIVE`, which is what emptying `PENDING_WALK` means.
+- [x] 3.2 `hint-resume.test.ts`, `hint-overlay.test.ts` and
+      `hint-quality.test.ts` all green across the seven games.
+- [x] 3.3 Frames rendered and read at chain lengths 2 / 4 / 6 (Clusters), and for
+      Keen and Solo — the two whose corners were most contested (cage clues and
+      pencil marks). Then generalised into `hint-ordinal.test.ts`, a cross-game
+      guard: an area carrying ordinals carries exactly `1..n`, and the frame
+      paints every one **in the ordinal's own colour**.
+- [x] 3.4 The guard was **proved to fire** — and its first cut was vacuous. It
+      asked whether the text "1" reached the canvas, and passed with Keen's
+      ordinal draw deleted outright, because a Keen cell already prints "1" as a
+      pencil mark. Removing the wiring and watching it stay green is the only way
+      that class is ever caught.
+- [x] 3.5 `ORDERING_GAMES` was measured, not assumed, and the assumption was
+      wrong twice: **Group** never reaches the rung at its `w = 6` preset (0 of 8
+      seeds at every one of its five tiers), and **Solo** needs a bigger board
+      than its first preset (4x4) — at 3x3 it fires 8 of 8. Both recorded in the
+      guard rather than left implicit.
+- [x] 3.6 Advisory instruments compared against a pre-change baseline:
+      `colour-collide` **171 → 171** pairs and `colour-dark-check` **64 → 64**
+      violations, so the new role neither collides nor misbehaves in dark mode.
 
 ## 4. Close out
 
-- [ ] 4.1 `ts-engine` spec delta: the Tactic bar as **D2 revised it** — the chain
+- [x] 4.1 `ts-engine` spec delta: the Tactic bar as **D2 revised it** — the chain
       is *shown* (ordered, anchored at both ends) rather than walked leg by leg,
-      and the engine gains no display-only step. Say plainly that the stricter
-      version was considered and set aside by an owner decision, so a later
-      reader does not read `PENDING_WALK`'s retirement as seven walks that were
-      never written.
-- [ ] 4.2 `PENDING_WALK` is empty; delete the list and its scaffolding comment.
-- [ ] 4.3 `openspec validate --strict`; owner acceptance; archive.
+      and the engine gains no display-only step. It says plainly that the
+      stricter version was designed, costed and set aside by an owner decision,
+      so a later reader does not read `PENDING_WALK`'s retirement as seven walks
+      that were never written.
+      **It is a MODIFIED delta and was re-copied from the live spec at
+      implementation time**, not at scaffold time — the scaffolded version was an
+      ADDED requirement that would have left the live spec asserting a multi-leg
+      journey while the code shipped one step. `openspec-delta-integrity` then
+      caught a renamed scenario (a rename archives as a deletion), so the
+      scenario keeps its name and only its THEN changed.
+- [x] 4.2 `PENDING_WALK` is empty; the list, its helper and its two call sites
+      are deleted, and the two doc comments that stated the stricter bar now
+      state the revised one.
+- [x] 4.3 `openspec validate --strict` passes. `docs/games/hints.md` gained the
+      ordinal section and the fourth deixis tie. Owner acceptance and archive
+      remain.

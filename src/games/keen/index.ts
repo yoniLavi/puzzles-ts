@@ -40,11 +40,13 @@ import {
 import { digitKeys } from "../../engine/key-labels.ts";
 import { latinVerdict } from "../../engine/latin.ts";
 import {
+  forcingChainArea,
   hiddenSingleLine,
   narrateLatinReason,
   rowColRegions,
   singlePlacementReason,
 } from "../../engine/latin-hint.ts";
+import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
   autoPencilPref,
@@ -425,9 +427,13 @@ function narrate(reason: HintReason, ns: number[], _w: number): string {
 
 /** The deduction's evidence cells to shade `COL_HINT_CELL`: a cage deduction
  * names the whole cage (the player sees the block the arithmetic reasons over);
- * the generic Latin techniques have no clean local area. */
-function reasonArea(reason: HintReason): { x: number; y: number }[] {
-  return reason.kind === "cage" || reason.kind === "cageLine" ? reason.cells : [];
+ * a forcing chain names the cells it ran through, **numbered**, so the sentence
+ * can cite them and the player can walk it; the remaining generic Latin
+ * techniques have no clean local area. */
+function reasonArea(reason: HintReason): OrderedCell[] {
+  if (reason.kind === "cage" || reason.kind === "cageLine") return reason.cells;
+  if (reason.kind === "forcing") return forcingChainArea(reason);
+  return [];
 }
 
 /** A placement's evidence cells: a hidden single shades the whole row/column it

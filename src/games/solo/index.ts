@@ -38,7 +38,13 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
-import { classifyPlacementInRegions } from "../../engine/latin-hint.ts";
+import {
+  classifyPlacementInRegions,
+  forcingChainArea,
+  type LatinVocab,
+  narrateForcingChain,
+} from "../../engine/latin-hint.ts";
+import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
   autoPencilPref,
@@ -578,8 +584,11 @@ function narrate(reason: SoloReason, ns: number[]): string {
       return reason.region
         ? `Another group of cells in this ${regionName(reason.region)} already accounts for a fixed set of numbers that includes ${joinNums(ns)}, so we must cross out ${joinNums(ns)} here.`
         : `A locked pattern of cells across these lines already accounts for ${joinNums(ns)}, so we must cross out ${joinNums(ns)} here.`;
+    // The shared chain sentence, with Solo's own region vocabulary — its chain
+    // hops through blocks and diagonals as well as lines, so the region that
+    // ties the conclusion back to the origin is named rather than assumed.
     case "forcing":
-      return `Following a chain of forced candidates, placing ${ns[0]} here would lead to a contradiction — so we must cross out ${joinNums(ns)}.`;
+      return narrateForcingChain(reason, ns[0], SOLO_VOCAB, regionName(reason.shares));
     case "cageSingle":
       return `The rest of this killer cage is filled in, and the one cell left must bring the cage to its total — so it can only be ${ns[0]}.`;
     case "cageIntersect":
@@ -591,8 +600,13 @@ function narrate(reason: SoloReason, ns: number[]): string {
   }
 }
 
+/** Solo's values are plain numbers — the one word the shared chain sentence
+ * needs from it. Solo keeps its own `narrate` because other arms name a
+ * different region set per arm, which this one takes as a parameter. */
+const SOLO_VOCAB: LatinVocab = { noun: "number", value: (n) => String(n) };
+
 /** The deduction's evidence cells to shade `COL_HINT_CELL`. */
-function reasonArea(reason: SoloReason, state: SoloState): { x: number; y: number }[] {
+function reasonArea(reason: SoloReason, state: SoloState): OrderedCell[] {
   switch (reason.kind) {
     case "intersect":
       return regionCells(reason.confined, state);
@@ -603,6 +617,10 @@ function reasonArea(reason: SoloReason, state: SoloState): { x: number; y: numbe
     case "cageMinMax":
     case "cageSums":
       return reason.cells;
+    // A forcing chain names the cells it ran through, **numbered**, so the
+    // narration can cite them and the player can walk it.
+    case "forcing":
+      return forcingChainArea(reason);
     default:
       return [];
   }

@@ -19,6 +19,7 @@ import {
   ERROR,
   HINT_EVIDENCE,
   HINT_FILL,
+  HINT_ORDER,
   highlightWash,
   INK,
   pencilColour,
@@ -26,7 +27,12 @@ import {
 } from "../../engine/colour/palette.ts";
 import { groupDiagonal } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
+import {
+  hintMarkBit,
+  type OrderedCell,
+  OverlaySidecar,
+} from "../../engine/overlay-sidecar.ts";
 import type { Colour, DrawTextOptions, Size } from "../../engine/types.ts";
 import type { GroupMove } from "./state.ts";
 import {
@@ -59,6 +65,8 @@ export const COL_HINT = 8;
 /** Hint overlay: the premise cells shaded as evidence (associativity's three
  * known products, an identity fill's revealing cell). */
 export const COL_HINT_CELL = 9;
+/** Hint overlay: a forcing chain's ordinal, indexing the evidence above. */
+export const COL_HINT_ORDER = 10;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -73,6 +81,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_MISTAKE] = ERROR;
   out[COL_HINT] = HINT_FILL;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
+  out[COL_HINT_ORDER] = HINT_ORDER;
   return out;
 }
 
@@ -82,7 +91,9 @@ export function colours(defaultBackground: Colour): Colour[] {
  * and the struck candidate(s) crossed through among the pencil marks (`marks`).
  * All coordinates are grid `{x = col, y = row}`. */
 export interface GroupHint {
-  area: { x: number; y: number }[];
+  /** A forcing chain's cells additionally carry their place in it, drawn as an
+   * ordinal. */
+  area: OrderedCell[];
   targets: { x: number; y: number }[];
   marks: { x: number; y: number; n: number }[];
 }
@@ -205,6 +216,7 @@ function drawTile(
   error: number,
   mistake: boolean,
   hint: number,
+  hintOrder: number,
 ): void {
   const w = ds.w;
   const ts = ds.tilesize;
@@ -360,6 +372,13 @@ function drawTile(
     dr.drawRect({ x: cx + cw - 2, y: cy, w: 2, h: ch }, COL_MISTAKE);
   }
 
+  // A forcing chain's place in the order it fires, so the narration can cite
+  // the cells by number rather than asking the player to reconstruct the chain
+  // (`walk-tactic-hint-chains`). Inside the clip, so a legend cell's inset
+  // never lets it spill.
+  if (hintOrder > 0)
+    drawHintOrdinal(dr, { x: cx, y: cy }, Math.min(cw, ch), hintOrder, COL_HINT_ORDER);
+
   dr.unclip();
   dr.drawUpdate({ x: cx, y: cy, w: cw, h: ch });
 }
@@ -435,8 +454,8 @@ export function redraw(
     const tile = (sx + 1) | DF_LEGEND;
     if (ds.legend[x] !== tile) {
       ds.legend[x] = tile;
-      drawTile(dr, ds, -1, x, tile, 0, 0, false, 0);
-      drawTile(dr, ds, x, -1, tile, 0, 0, false, 0);
+      drawTile(dr, ds, -1, x, tile, 0, 0, false, 0, 0);
+      drawTile(dr, ds, x, -1, tile, 0, 0, false, 0, 0);
     }
   }
 
@@ -504,7 +523,18 @@ export function redraw(
         ds.pencil[idx] = pencil;
         ds.errors[idx] = error;
         ds.mistakes[idx] = mistake ? 1 : 0;
-        drawTile(dr, ds, x, y, tile, pencil, error, mistake, hintWord);
+        drawTile(
+          dr,
+          ds,
+          x,
+          y,
+          tile,
+          pencil,
+          error,
+          mistake,
+          hintWord,
+          ds.hint.order[gi],
+        );
         ds.hint.commit(gi);
       }
     }

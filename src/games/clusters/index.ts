@@ -24,6 +24,7 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { fromCoord } from "../../engine/geometry.ts";
+import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -296,7 +297,11 @@ function findMistakes(state: ClustersState): readonly ClustersMistake[] {
 export interface ClustersHintHighlights {
   target: { x: number; y: number };
   danger?: { x: number; y: number };
-  chain: { x: number; y: number; fill: ClustersFill }[];
+  /** `order` is the link's 1-based place in the chain, drawn as an ordinal
+   * (`drawHintOrdinal`). Carried explicitly rather than left as the array index:
+   * the order is the fact the narration cites, so it is data the renderer reads,
+   * not a positional convention two files have to agree about. */
+  chain: (OrderedCell & { fill: ClustersFill })[];
 }
 
 const colourName = (fill: ClustersFill): string =>
@@ -389,7 +394,7 @@ function buildHighlights(d: ClustersDeduction, w: number): ClustersHintHighlight
     danger: at.cell !== d.index ? pt(at.cell) : undefined,
     chain:
       d.reason.kind === "chain"
-        ? d.reason.steps.map((s) => ({ ...pt(s.index), fill: s.fill }))
+        ? d.reason.steps.map((s, k) => ({ ...pt(s.index), fill: s.fill, order: k + 1 }))
         : [],
   };
 }

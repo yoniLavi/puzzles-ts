@@ -40,10 +40,29 @@ interface Cell {
   readonly y: number;
 }
 
+/**
+ * An evidence cell that also carries its **place in an ordered chain**, drawn
+ * as a small ordinal in the cell's corner.
+ *
+ * A chain of forced consequences shaded as a plain set is not checkable — the
+ * player sees which cells are involved but not which came first, so a narration
+ * that speaks of one consequence leading to the next names nothing they can
+ * follow (`walk-tactic-hint-chains`). The order is what makes the shading a
+ * *chain* rather than a heap.
+ *
+ * It rides in its own lane rather than in the packed word: `hintMarkBit` already
+ * reaches bit 28 in Group (26 elements), so there is no bit budget left to
+ * borrow, and an ordinal is a small integer rather than a flag.
+ */
+export interface OrderedCell extends Cell {
+  /** 1-based position in the chain. Omitted ⇒ ordinary evidence, no ordinal. */
+  readonly order?: number;
+}
+
 /** The highlight shape `pack` consumes — structurally satisfied by every
  * candidate game's hint type (and by anything with cells and marks). */
 export interface PackableHighlights<Mark extends Cell> {
-  readonly area?: readonly Cell[];
+  readonly area?: readonly OrderedCell[];
   readonly targets?: readonly Cell[];
   readonly marks?: readonly Mark[];
 }
@@ -51,24 +70,36 @@ export interface PackableHighlights<Mark extends Cell> {
 export class OverlaySidecar {
   /** Per-cell packed overlay for the frame being drawn. */
   readonly packed: Int32Array;
+  /** Per-cell chain ordinal for the frame being drawn (0 = none) — see
+   * {@link OrderedCell} for why this is a lane of its own. */
+  readonly order: Int32Array;
   /** What the canvas currently shows per cell (-1 = never drawn, so the
    * first frame always misses). */
   private readonly drawn: Int32Array;
+  private readonly drawnOrder: Int32Array;
 
   constructor(cells: number) {
     this.packed = new Int32Array(cells);
+    this.order = new Int32Array(cells);
     this.drawn = new Int32Array(cells).fill(-1);
+    this.drawnOrder = new Int32Array(cells).fill(-1);
   }
 
   /** Start a frame's overlay from nothing. The pack entry points below call
    * it; a game packing its own topology calls it, then {@link add}. */
   clear(): void {
     this.packed.fill(0);
+    this.order.fill(0);
   }
 
   /** OR `bits` into cell `i`'s overlay word for this frame. */
   add(i: number, bits: number): void {
     this.packed[i] |= bits;
+  }
+
+  /** Give cell `i` its 1-based place in this frame's chain. */
+  setOrder(i: number, k: number): void {
+    this.order[i] = k;
   }
 
   /** Repack this frame's overlay from the displayed step's highlights (or
@@ -82,7 +113,11 @@ export class OverlaySidecar {
   ): void {
     this.clear();
     if (!hl) return;
-    for (const a of hl.area ?? []) this.add(index(a.x, a.y), HINT_AREA);
+    for (const a of hl.area ?? []) {
+      const i = index(a.x, a.y);
+      this.add(i, HINT_AREA);
+      if (a.order !== undefined) this.setOrder(i, a.order);
+    }
     for (const t of hl.targets ?? []) this.add(index(t.x, t.y), HINT_TARGET);
     for (const m of hl.marks ?? []) this.add(index(m.x, m.y), markBits(m));
   }
@@ -104,13 +139,15 @@ export class OverlaySidecar {
   }
 
   /** True when cell `i`'s drawn overlay differs from this frame's — one
-   * clause of the game's cache-miss test. */
+   * clause of the game's cache-miss test. Covers the ordinal lane too, so a
+   * chain that keeps its cells and only reorders them still repaints. */
   stale(i: number): boolean {
-    return this.packed[i] !== this.drawn[i];
+    return this.packed[i] !== this.drawn[i] || this.order[i] !== this.drawnOrder[i];
   }
 
   /** Record that cell `i` now shows this frame's overlay. */
   commit(i: number): void {
     this.drawn[i] = this.packed[i];
+    this.drawnOrder[i] = this.order[i];
   }
 }

@@ -21,6 +21,7 @@ import {
   ERROR,
   HINT_ACTION,
   HINT_EVIDENCE,
+  HINT_ORDER,
   INK,
   PAPER,
   PENCIL_BODY,
@@ -28,6 +29,7 @@ import {
   playerEntryColour,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import {
   HINT_AREA,
   HINT_TARGET,
@@ -83,6 +85,8 @@ export const COL_PENCIL_BODY = 18;
 export const COL_HINT = 19;
 /** The deduction's evidence — a clue's line of sight, or a whole line. */
 export const COL_HINT_CELL = 20;
+/** Hint overlay: a forcing chain's ordinal, indexing the evidence above. */
+export const COL_HINT_ORDER = 21;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
@@ -108,6 +112,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
+  out[COL_HINT_ORDER] = HINT_ORDER;
   return out;
 }
 
@@ -662,6 +667,12 @@ export function redraw(
           );
         }
       }
+
+      // A forcing chain's place in the order it fires, so the narration can
+      // cite the squares by number rather than asking the player to
+      // reconstruct the chain (`walk-tactic-hint-chains`).
+      if (ds.hint.order[i] > 0)
+        drawHintOrdinal(dr, { x: tx, y: ty }, ts, ds.hint.order[i], COL_HINT_ORDER);
 
       if (ds.wrong.at(i)) drawMistakeBox(dr, tx, ty, ts);
       ds.wrong.commit(i);

@@ -247,7 +247,8 @@ describe("rendering smoke", () => {
     const { desc } = newGameDesc(p, rng);
     const state = newState(p, desc);
     const pal = colours([0.9, 0.9, 0.9]);
-    expect(pal).toHaveLength(10); // 8 upstream + COL_HINT / COL_HINT_CELL
+    // 8 upstream + COL_HINT / COL_HINT_CELL / COL_HINT_ORDER
+    expect(pal).toHaveLength(11);
 
     const ds = newDrawState(state);
     setTileSize(ds, 48);

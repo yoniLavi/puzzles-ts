@@ -19,10 +19,12 @@ import {
   CURSOR,
   ERROR,
   HINT_EVIDENCE,
+  HINT_ORDER,
   INK,
   PAPER,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { ClustersHintHighlights } from "./index.ts";
@@ -79,6 +81,7 @@ export const COL_CURSOR = 7;
 export const COL_HINT = 8;
 export const COL_HINT_CELL = 9;
 export const COL_HINT_DANGER = 10;
+export const COL_HINT_ORDER = 11; // a chain cell's ordinal, indexing the evidence
 
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
@@ -93,6 +96,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HINT] = PURPLE;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   out[COL_HINT_DANGER] = ORANGE;
+  out[COL_HINT_ORDER] = HINT_ORDER;
   return out;
 }
 
@@ -118,32 +122,19 @@ const HB_TARGET = 1; // the forced cell — COL_HINT fill
 const HB_DANGER = 1 << 1; // tile that would break — double COL_HINT_DANGER ring
 const HB_CHAIN_0 = 1 << 2; // what-if cell forced red in the hypothetical
 const HB_CHAIN_1 = 1 << 3; // what-if cell forced blue in the hypothetical
-
-/**
- * Bits 4+: a chain cell's **1-based position in the chain** — the one fact the
- * board used to throw away. The player could see five marked cells but not
- * which fell first, so the narration's "each forced in turn" was a claim they
- * could only check by redoing the deduction.
- *
- * **A number, not an arrow, and that is a measurement rather than a taste.**
- * The obvious drawing is a path from the hypothesis through each consequence to
- * the break, and it was prototyped
- * (`openspec/changes/walk-tactic-hint-chains/reference/`). An arrow between
- * consecutive cells says *this one forces that one*, and over 140 firings on
- * 7x7 and 10x10 Tricky boards that is **false in 34% of links**: delete the
- * predecessor from the hypothetical board and the successor is still forced,
- * because what forces it is its own neighbourhood, not the cell before it in
- * discovery order. Half the links (51%) join non-adjacent cells too — the chain
- * re-scans row-major after every forcing — so half the arrows crossed the
- * board. An ordinal claims only the order, which is exactly what is true.
- *
- * Nothing draws the last link either: the contradiction sits on, or
- * orthogonally beside, the final forced cell in **140 of 140** firings, so the
- * ring is already next to the highest number.
- */
-const HB_ORDINAL_SHIFT = 4;
-const ordinalBits = (k: number): number => k << HB_ORDINAL_SHIFT;
-const ordinalOf = (bits: number): number => bits >>> HB_ORDINAL_SHIFT;
+//
+// A chain cell's **1-based position in the chain** is not a bit here: it rides
+// the sidecar's own ordinal lane (`OverlaySidecar.order`). See `drawHintOrdinal`
+// for why the mark is a number and not an arrow, and `OrderedCell` for why the
+// order needs a lane of its own.
+//
+// It is the one fact this board used to throw away — the player could see five
+// marked cells but not which fell first, so the narration's "each forced in
+// turn" was a claim only checkable by redoing the deduction. Clusters is the
+// game that decision was measured on: 34% of its consecutive links are not
+// implications at all. Nothing draws the last link either, because the
+// contradiction sits on, or orthogonally beside, the final forced cell in 140
+// of 140 firings — the ring is already next to the highest number.
 
 export interface ClustersDrawState {
   started: boolean;
@@ -198,6 +189,7 @@ function drawTile(
   error: boolean,
   cursor: boolean,
   hintBits: number,
+  hintOrder: number,
 ): void {
   const b = border(ts);
   const px = x * ts + b;
@@ -276,27 +268,18 @@ function drawTile(
     drawRing(dr, px, py, ts - 1, 1 + 2 * rt, rt, COL_HINT_DANGER);
   }
 
-  // The order this consequence falls in — top-left, so it never sits on the
-  // centred colour mark: the two say different things (*what* the cell would
-  // become, and *when*), and overlapping them would blur that. It is the
-  // danger ring's own orange, on the reasoning D3 gave for the prototype's
-  // path colour — the ordered chain and the place it ends are one argument,
-  // and the digits visibly run out where the ring is.
-  //
-  // Drawn after the ring, and inside it when there is one: the break lands on
-  // the last forced cell often enough that "ringed *and* numbered" is a common
-  // frame, and at the shared inset the ring covered the digit outright.
-  const k = ordinalOf(hintBits);
-  if (k > 0) {
-    const inset = hintBits & HB_DANGER ? 1 + 4 * rt : Math.max(1, Math.floor(ts / 12));
-    const size = Math.max(7, Math.floor(ts / 3));
-    dr.drawText(
-      // `mathematical` centres the glyph vertically on `y`, so the top inset
-      // has to carry half the size or the digit is clipped by the tile edge.
-      { x: px + inset, y: py + inset + Math.floor(size / 2) },
-      { align: "left", baseline: "mathematical", fontType: "variable", size },
-      COL_HINT_DANGER,
-      String(k),
+  // The order this consequence falls in, drawn after the ring and inside it
+  // when there is one: the break lands on the last forced cell often enough
+  // that "ringed *and* numbered" is a common frame, and at the shared inset the
+  // doubled ring covered the digit outright.
+  if (hintOrder > 0) {
+    drawHintOrdinal(
+      dr,
+      { x: px, y: py },
+      ts - 1,
+      hintOrder,
+      COL_HINT_ORDER,
+      hintBits & HB_DANGER ? 1 + 4 * rt : undefined,
     );
   }
 
@@ -347,15 +330,11 @@ export function redraw(
   if (hl) {
     ds.hint.add(hl.target.y * w + hl.target.x, HB_TARGET);
     if (hl.danger) ds.hint.add(hl.danger.y * w + hl.danger.x, HB_DANGER);
-    // `chain` is already in the order the consequences fall, so the ordinal is
-    // the array index — the fact was on the highlight all along and only the
-    // drawing threw it away.
-    hl.chain.forEach((c, k) => {
-      ds.hint.add(
-        c.y * w + c.x,
-        (c.fill === F_COLOR_0 ? HB_CHAIN_0 : HB_CHAIN_1) | ordinalBits(k + 1),
-      );
-    });
+    for (const c of hl.chain) {
+      const i = c.y * w + c.x;
+      ds.hint.add(i, c.fill === F_COLOR_0 ? HB_CHAIN_0 : HB_CHAIN_1);
+      if (c.order !== undefined) ds.hint.setOrder(i, c.order);
+    }
   }
 
   for (let y = 0; y < h; y++) {
@@ -376,7 +355,17 @@ export function redraw(
 
       const packed = (tile & 0x7) | (error ? F_ERR : 0) | (cursor ? F_CUR : 0);
       if (ds.cache[i] !== packed || ds.hint.stale(i)) {
-        drawTile(dr, ts, x, y, tile, error, cursor, ds.hint.packed[i]);
+        drawTile(
+          dr,
+          ts,
+          x,
+          y,
+          tile,
+          error,
+          cursor,
+          ds.hint.packed[i],
+          ds.hint.order[i],
+        );
         ds.cache[i] = packed;
         ds.hint.commit(i);
       }

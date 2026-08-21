@@ -17,6 +17,7 @@ import {
   ERROR,
   HINT_EVIDENCE,
   HINT_FILL,
+  HINT_ORDER,
   highlightWash,
   INK,
   PENCIL_BODY,
@@ -24,7 +25,12 @@ import {
   playerEntryColour,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
+import {
+  hintMarkBit,
+  type OrderedCell,
+  OverlaySidecar,
+} from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {
@@ -54,6 +60,7 @@ export const COL_PENCIL_BODY = 7;
 // Fork additions: the explained-hint legend (see docs/games/hints.md § "The element-type colour legend").
 export const COL_HINT = 8; // the cell(s)/candidate(s) the deduction acts on
 export const COL_HINT_CELL = 9; // the driving clue's line of sight (evidence)
+export const COL_HINT_ORDER = 10; // a forcing chain's ordinal, indexing the above
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -68,6 +75,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_FILL;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
+  out[COL_HINT_ORDER] = HINT_ORDER;
   return out;
 }
 
@@ -160,6 +168,7 @@ function drawTile(
   tile: number,
   wrong: boolean,
   hint: number,
+  hintOrder: number,
 ): void {
   let tx = coord(x, ts);
   let ty = coord(y, ts);
@@ -363,6 +372,14 @@ function drawTile(
       );
     }
   }
+
+  // A forcing chain's place in the order it fires, so the narration can cite
+  // the cells by number rather than asking the player to reconstruct the chain
+  // (`walk-tactic-hint-chains`). `tx`/`ty` are the *drawn* origin, already
+  // offset for a 3D tower's top face, so the ordinal follows the tile it
+  // belongs to rather than floating over the one behind it.
+  if (hintOrder > 0)
+    drawHintOrdinal(dr, { x: tx, y: ty }, ts, hintOrder, COL_HINT_ORDER);
 }
 
 // --- hint overlay ----------------------------------------------------------
@@ -371,8 +388,9 @@ function drawTile(
  * here so `redraw` can consume it without a circular import. See
  * docs/games/hints.md § "The element-type colour legend" for the element-type legend. */
 export interface TowersHint {
-  /** The driving clue's line of sight, shaded `COL_HINT_CELL`. */
-  area: { x: number; y: number }[];
+  /** The driving clue's line of sight, shaded `COL_HINT_CELL`. A forcing
+   * chain's cells additionally carry their place in it, drawn as an ordinal. */
+  area: OrderedCell[];
   /** The cell(s) the deduction acts on, marked `COL_HINT`. */
   targets: { x: number; y: number }[];
   /** The candidate digit(s) ruled out, shown struck in `COL_HINT`. */
@@ -472,6 +490,7 @@ export function redraw(
           tr,
           ds.wrong.at(i),
           ds.hint.packed[i],
+          ds.hint.order[i],
         );
         if (x > 0)
           drawTile(
@@ -484,6 +503,7 @@ export function redraw(
             tl,
             ds.wrong.at(y * W + (x - 1)),
             ds.hint.packed[y * W + (x - 1)],
+            ds.hint.order[y * W + (x - 1)],
           );
         if (y <= w)
           drawTile(
@@ -496,6 +516,7 @@ export function redraw(
             br,
             ds.wrong.at((y + 1) * W + x),
             ds.hint.packed[(y + 1) * W + x],
+            ds.hint.order[(y + 1) * W + x],
           );
         if (x > 0 && y <= w)
           drawTile(
@@ -508,6 +529,7 @@ export function redraw(
             bl,
             ds.wrong.at((y + 1) * W + (x - 1)),
             ds.hint.packed[(y + 1) * W + (x - 1)],
+            ds.hint.order[(y + 1) * W + (x - 1)],
           );
         dr.unclip();
         dr.drawUpdate({ x: coord(x - 1, ts), y: coord(y - 1, ts), w: ts, h: ts });

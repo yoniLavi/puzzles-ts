@@ -40,11 +40,13 @@ import {
 import { clearKey } from "../../engine/key-labels.ts";
 import { latinVerdict } from "../../engine/latin.ts";
 import {
+  forcingChainArea,
   hiddenSingleLine,
   narrateLatinReason,
   rowColRegions,
   singlePlacementReason,
 } from "../../engine/latin-hint.ts";
+import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
   autoPencilPref,
@@ -476,13 +478,17 @@ function narrate(reason: HintReason, ns: number[], o: number): string {
 function reasonArea(
   reason: HintReason,
   target: { x: number; y: number },
-): { x: number; y: number }[] {
+): OrderedCell[] {
   switch (reason.kind) {
     case "greater":
     case "lesser":
     case "adjacent":
     case "adjacentSet":
       return [target, { x: reason.ox, y: reason.oy }];
+    // A forcing chain names the cells it ran through, **numbered**, so the
+    // narration can cite them and the player can walk it.
+    case "forcing":
+      return forcingChainArea(reason);
     default:
       return [];
   }

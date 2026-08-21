@@ -6,7 +6,7 @@ legitimate ties this lexical filter cannot recognise, and the question to ask
 of each is *are the two marks the same kind of thing?*
 
 3914 steps examined, 3045 of them displaying a second mark;
-230 distinct sentence shapes flagged across 20 games.
+233 distinct sentence shapes flagged across 20 games.
 
 | game | sentence shape |
 | --- | --- |
@@ -49,7 +49,8 @@ of each is *are the two marks the same kind of thing?*
 | keen | This cage must multiply to #, and every way to fill it places a # in this column — so the # here must be crossed out. |
 | keen | This cage must sum to #, and every way to fill it places a # in this column — so the # here must be crossed out. |
 | keen | This cage must differ by #, and every way to fill it places a # in this row — so the # here must be crossed out. |
-| keen | Following a chain of two-candidate cells, placing # here would force a contradiction further along — so we must cross out #. |
+| keen | Cell # is # or #, and every numbered cell has just two numbers left, so each forces the next. If cell # is #, this cell's row already has it; if #, cell # is driven to #, in line with this cell. Either way, cross out # here. |
+| keen | Cell # is # or #, and every numbered cell has just two numbers left, so each forces the next. If cell # is #, this cell's column already has it; if #, cell # is driven to #, in line with this cell. Either way, cross out # here. |
 | netslide | Row # never slides, so only a column move can shift this corner: take it to row #, where it belongs. |
 | palisade | …and this edge can't be a wall either. |
 | palisade | Clue # already has all its walls, so this edge can't be one. |
@@ -94,13 +95,13 @@ of each is *are the two marks the same kind of thing?*
 | salad | The clue to the right of this row sees C first, and this is the nearest square to it — so nothing but C can go here, and we must cross out B. |
 | salad | The clue to the left of this row sees C first, and this is the nearest square to it — so nothing but C can go here, and we must cross out A and B. |
 | salad | The clue to the right of this row sees B first, and this is the nearest square to it — so nothing but B can go here, and we must cross out A. |
-| salad | Following a chain of two-candidate squares, placing C here would force a contradiction further along — so we must cross out C. |
+| salad | Square # is C or D, and every numbered square has just two letters left, so each forces the next. If square # is C, this square's column already has it; if D, square # is driven to C, in line with this square. Either way, cross out C here. |
 | salad | The clue to the left of this row sees B first, and this is the nearest square to it — so nothing but B can go here, and we must cross out A and C. |
 | salad | The clue to the right of this row sees C first, and this is the nearest square to it — so nothing but C can go here, and we must cross out A. |
 | salad | In this column, C can go in only this square — every other square in the column has ruled it out — so it must be C. |
 | salad | In this column, B can go in only this square — every other square in the column has ruled it out — so it must be B. |
 | salad | All # letters of this row are already placed, so every other square in it must be empty. |
-| salad | Following a chain of two-candidate squares, placing A here would force a contradiction further along — so we must cross out A. |
+| salad | Square # is A or C, and every numbered square has just two letters left, so each forces the next. If square # is A, this square's column already has it; if C, square # is driven to A, in line with this square. Either way, cross out A here. |
 | singles | This # shares a line with the ringed white #, which already uses that number — so this copy must be shaded. |
 | singles | These #s share a line with the ringed white #, which already uses that number — so they must be shaded. |
 | slant | The same clue forces this square too — it must slant toward the clue. |
@@ -205,7 +206,8 @@ of each is *are the two marks the same kind of thing?*
 | towers | Trying every way clue # can show exactly # towers along this line, none of them puts a tower of height # here — so we must cross out the #. |
 | towers | In this column, height # can go in only this cell — every other cell in the column has ruled it out — so it must be #. |
 | towers | These two clues face each other along this line and add up to one more than the grid, which pins the tallest tower to a single cell — height # can only sit here. |
-| towers | Following a chain of two-candidate cells, placing height # here would force a contradiction further along the line — so we must cross out the #. |
+| towers | Cell # is # or #, and every numbered cell has just two heights left, so each forces the next. If cell # is #, this cell's column already has it; if #, cell # is driven to #, in line with this cell. Either way, cross out # here. |
+| towers | Cell # is # or #, and every numbered cell has just two heights left, so each forces the next. If cell # is #, this cell's row already has it; if #, cell # is driven to #, in line with this cell. Either way, cross out # here. |
 | undead | Trace this sightline: a vampire shows before its first mirror, a ghost only after one, a zombie anywhere along it. No arrangement that shows exactly # from one end and # from the other leaves room for the vampire or zombie in this cell — so we must cross out the vampire or zombie. |
 | undead | Trace this sightline: a vampire shows before its first mirror, a ghost only after one, a zombie anywhere along it. No arrangement that shows exactly # from one end and # from the other leaves room for the ghost or vampire in this cell — so we must cross out the ghost or vampire. |
 | undead | The same sightline rules the ghost or vampire out of this cell too. |
@@ -229,7 +231,8 @@ of each is *are the two marks the same kind of thing?*
 | unequal | The cell across this greater-than sign can be no less than #, so this cell must be larger still — we must cross out # and #. |
 | unequal | Another group of cells already accounts for a fixed set of numbers that includes #, so we must cross out # here. |
 | unequal | The cell across this greater-than sign can be no more than #, so this cell must be smaller still — we must cross out # and #. |
-| unequal | Following a chain of two-candidate cells, placing # here would force a contradiction further along — so we must cross out #. |
+| unequal | Cell # is # or #, and every numbered cell has just two numbers left, so each forces the next. If cell # is #, this cell's column already has it; if #, cell # is driven to #, in line with this cell. Either way, cross out # here. |
+| unequal | Cell # is # or #, and every numbered cell has just two numbers left, so each forces the next. If cell # is #, this cell's row already has it; if #, cell # is driven to #, in line with this cell. Either way, cross out # here. |
 | unruly | Two of these three cells are already black; a third black would make three in a row, which isn't allowed — so this cell must be white. |
 | unruly | Two of these three cells are already white; a third white would make three in a row, which isn't allowed — so this cell must be black. |
 | unruly | This column already holds all of its black cells, so every remaining cell in it must be white. |
@@ -246,13 +249,13 @@ of each is *are the two marks the same kind of thing?*
 - subsets: 56
 - salad: 27
 - sticks: 25
-- keen: 17
+- keen: 18
 - pattern: 16
 - undead: 15
+- unequal: 10
 - unruly: 10
 - spokes: 9
-- unequal: 9
-- towers: 8
+- towers: 9
 - boats: 7
 - palisade: 7
 - dominosa: 6

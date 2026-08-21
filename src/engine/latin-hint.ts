@@ -16,6 +16,13 @@
  */
 
 import type { NoteEncoding } from "./candidate-hint.ts";
+import type { ForcingLink } from "./latin.ts";
+import type { OrderedCell } from "./overlay-sidecar.ts";
+
+/** Re-exported so a game declaring its own reason union reaches the chain shape
+ * from the hint module it already imports (as `latin.ts` does for
+ * `DeductionRecord`). */
+export type { ForcingLink };
 
 /** A forced single placement, classified against the working board:
  * - `naked` — the cell's own candidates are exactly `{n}`;
@@ -180,7 +187,7 @@ export type GenericLatinReason =
   | SingleReason
   | { kind: "dup"; n: number }
   | { kind: "set" }
-  | { kind: "forcing" };
+  | { kind: "forcing"; chain: readonly ForcingLink[]; shares: "row" | "col" };
 
 /**
  * The value vocabulary a game's cells are spoken in — the *only* thing that used
@@ -261,8 +268,90 @@ export function narrateLatinReason(
     case "set":
       return `Another group of ${cells} already accounts for a fixed set of ${noun}s that includes ${list(ns)}, so we must cross out ${list(ns)} here.`;
     case "forcing":
-      return `Following a chain of two-candidate ${cells}, placing ${v(ns[0])} here would force a contradiction further along — so we must cross out ${list(ns)}.`;
+      return narrateForcingChain(
+        reason,
+        ns[0],
+        vocab,
+        reason.shares === "row" ? "row" : "column",
+      );
   }
+}
+
+/** Sentence-initial form of a vocabulary's cell word. */
+const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+
+/**
+ * A forcing chain's cells as **ordered** evidence, so the board shows which
+ * consequence fell when and the narration can cite them by number
+ * (`walk-tactic-hint-chains`). Shaded like any other evidence area; the ordinal
+ * is what makes the shading a chain rather than a heap.
+ *
+ * Shared by every game whose forcing reason comes from `latin.ts`, so the
+ * numbering can never disagree with the sentence between games.
+ */
+export function forcingChainArea(reason: {
+  chain: readonly ForcingLink[];
+}): OrderedCell[] {
+  return reason.chain.map((c, i) => ({ x: c.x, y: c.y, order: i + 1 }));
+}
+
+/**
+ * Narrate a forcing chain as the argument it actually is
+ * (`walk-tactic-hint-chains`). It replaces *"Following a chain of two-candidate
+ * cells, placing 5 here would force a contradiction further along"*, which named
+ * no contradiction, pointed at no cell and showed no chain — a claim the player
+ * could only check by redoing the deduction.
+ *
+ * **The case split is the load-bearing part.** A forcing chain does not refute a
+ * hypothesis; it concludes from *both* branches of one, and a walk that narrates
+ * only the chain has a final leg that does not follow from its own premises (the
+ * Palisade lesson, `docs/games/hints.md` § "Writing the narration"):
+ *
+ * - the origin (chain cell 1) has exactly two candidates, the struck value and
+ *   one other;
+ * - **if it is the struck value**, the conclusion cell loses that value by plain
+ *   uniqueness — the two share the line `reason.shares` names;
+ * - **if it is the other**, each link forces the next (every chain cell has just
+ *   two candidates left, so losing one leaves one), until the last link is
+ *   driven *to* the struck value — and it too lines up with the conclusion cell,
+ *   because it is a row/column neighbour of it by construction.
+ *
+ * The links between are numbered on the board rather than recited here; reciting
+ * them would put the chain back in the reader's head, which is the thing the
+ * marks exist to prevent. What the sentence must supply is the **rule** that
+ * propagates it, since that is the technique the player is being taught and it
+ * is nowhere on the board.
+ *
+ * **Exported, because Towers and Solo keep their own `narrate`.** They decline
+ * {@link narrateLatinReason} for a reason that does not apply to this arm — they
+ * need a value qualified in *some* arms and bare in others, and a different
+ * region set per arm — and neither is at issue here: "two heights left" already
+ * contextualises the bare numbers, and `region` is a parameter. A chain sentence
+ * that drifted between six games would be six chances to say something the
+ * board does not show.
+ *
+ * `region` is what the conclusion shares with the origin — a row or column
+ * everywhere except Solo, which also reasons over blocks and diagonals.
+ *
+ * **The deixis tie is the numbering itself.** Two cell-marks on screen normally
+ * make a bare "this cell" ambiguous (`disambiguate-hint-deixis`), and this frame
+ * shows several — but every chain cell is *numbered* and the conclusion is not,
+ * so "cell 1"/"cell 5" and "this cell" pick out different things by the presence
+ * or absence of a label rather than by a colour. See `docs/games/hints.md` §
+ * "The fix is never the colour".
+ */
+export function narrateForcingChain(
+  reason: { chain: readonly ForcingLink[] },
+  struck: number,
+  vocab: LatinVocab,
+  region: string,
+): string {
+  const v = vocab.value;
+  const cell = vocab.cell ?? "cell";
+  const last = reason.chain.length;
+  const other = v(reason.chain[0].n);
+  const s = v(struck);
+  return `${cap(cell)} 1 is ${s} or ${other}, and every numbered ${cell} has just two ${vocab.noun}s left, so each forces the next. If ${cell} 1 is ${s}, this ${cell}'s ${region} already has it; if ${other}, ${cell} ${last} is driven to ${s}, in line with this ${cell}. Either way, cross out ${s} here.`;
 }
 
 /** {@link joinNums} over already-rendered values: `["A","B"]` → "A and B". */

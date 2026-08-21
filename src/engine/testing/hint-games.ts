@@ -3,10 +3,11 @@
  *
  * One list, many guards: `hint-resume.test.ts` (plan convergence, purity,
  * no-op-free plans), `hint-overlay.test.ts` (overlay reaches the render
- * cache) and `hint-quality.test.ts` (narration form) all iterate this
- * list, so a newly ported game with a `hint()` enrolls in *all* of them
- * by adding one line here — and the guards' coverage cannot silently
- * drift apart.
+ * cache), `hint-quality.test.ts` (narration form) and
+ * `hint-ordinal.test.ts` (an ordered chain reaches the canvas with its
+ * order on it) all iterate this list, so a newly ported game with a
+ * `hint()` enrolls in *all* of them by adding one line here — and the
+ * guards' coverage cannot silently drift apart.
  *
  * Dev/test-only; never imported by production code.
  */

@@ -17,6 +17,7 @@ import {
   ERROR,
   HINT_EVIDENCE,
   HINT_FILL,
+  HINT_ORDER,
   highlightWash,
   INK,
   PENCIL_BODY,
@@ -24,7 +25,12 @@ import {
   playerEntryColour,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { hintMarkBit, OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
+import {
+  hintMarkBit,
+  type OrderedCell,
+  OverlaySidecar,
+} from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {
@@ -57,6 +63,7 @@ export const COL_PENCIL = 5;
 export const COL_PENCIL_BODY = 6; // the yellow body of the pencil-mode indicator
 export const COL_HINT = 7; // the cell(s)/candidate(s) the deduction acts on
 export const COL_HINT_CELL = 8; // the driving cage's cells (evidence shade)
+export const COL_HINT_ORDER = 9; // a forcing chain's ordinal, indexing the above
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -70,6 +77,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_FILL;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
+  out[COL_HINT_ORDER] = HINT_ORDER;
   return out;
 }
 
@@ -78,8 +86,9 @@ export function colours(defaultBackground: Colour): Colour[] {
  * `COL_HINT_CELL`, the acted-on cell(s) `COL_HINT`, the ruled-out candidate(s)
  * shown struck. */
 export interface KeenHint {
-  /** The driving cage's cells (evidence), shaded `COL_HINT_CELL`. */
-  area: { x: number; y: number }[];
+  /** The driving cage's cells (evidence), shaded `COL_HINT_CELL`. A forcing
+   * chain's cells additionally carry their place in it, drawn as an ordinal. */
+  area: OrderedCell[];
   /** The cell(s) the deduction acts on, marked `COL_HINT`. */
   targets: { x: number; y: number }[];
   /** The candidate number(s) ruled out, shown struck among the pencil marks. */
@@ -168,6 +177,7 @@ function drawTile(
   onlyOneOp: boolean,
   wrong: boolean,
   hint: number,
+  hintOrder: number,
 ): void {
   const ts = ds.tilesize;
   const w = state.params.w;
@@ -382,6 +392,13 @@ function drawTile(
     }
   }
 
+  // A forcing chain's place in the order it fires, so the narration can cite
+  // the cells by number instead of asking the player to reconstruct the chain
+  // (`walk-tactic-hint-chains`). Drawn inside the clip, so it can never spill
+  // into a neighbouring cage.
+  if (hintOrder > 0)
+    drawHintOrdinal(dr, { x: tx, y: ty }, ts - 2 * ge, hintOrder, COL_HINT_ORDER);
+
   dr.unclip();
   dr.drawUpdate({ x: cx, y: cy, w: cw, h: ch });
 }
@@ -471,6 +488,7 @@ export function redraw(
           state.params.multiplicationOnly,
           ds.wrong.at(i),
           ds.hint.packed[i],
+          ds.hint.order[i],
         );
         ds.tiles[i] = tile;
         ds.hint.commit(i);

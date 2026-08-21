@@ -52,6 +52,7 @@ import {
   PURPLE,
   RED,
   RED_WASH,
+  TEAL_BOLD,
   TEAL_WASH,
   YELLOW,
 } from "./colours.ts";
@@ -196,6 +197,19 @@ export const HINT_FILL: Colour = BLUE_WASH;
  * a shade change.
  */
 export const HINT_EVIDENCE: Colour = TEAL_WASH;
+
+/**
+ * The **position an evidence cell takes in an ordered chain** — the small
+ * ordinal `drawHintOrdinal` puts in its corner (`walk-tactic-hint-chains`).
+ *
+ * The bold end of {@link HINT_EVIDENCE}'s own hue, and that is the whole
+ * argument: the number is not a fourth hint role, it is an *index into the
+ * evidence*, so it takes the evidence's colour at the strength a digit needs to
+ * read against the wash it sits on. A hue of its own would claim the ordered
+ * cells were a different kind of premise from the unordered ones, which is
+ * exactly what they are not.
+ */
+export const HINT_ORDER: Colour = TEAL_BOLD;
 
 /** A hint premise that refers to a **black/filled** reference cell, where the
  * hint needs to point at two kinds of evidence at once (Range, Light Up). */

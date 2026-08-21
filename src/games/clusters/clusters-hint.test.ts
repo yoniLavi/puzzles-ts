@@ -20,7 +20,14 @@ import { Midend } from "../../engine/midend.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { type ClustersHintHighlights, clustersGame } from "./index.ts";
-import { COL_0, COL_1, COL_HINT, COL_HINT_CELL, COL_HINT_DANGER } from "./render.ts";
+import {
+  COL_0,
+  COL_1,
+  COL_HINT,
+  COL_HINT_CELL,
+  COL_HINT_DANGER,
+  COL_HINT_ORDER,
+} from "./render.ts";
 import {
   type ClustersDeduction,
   COMPLETE,
@@ -347,7 +354,8 @@ describe("hint rendering (tier 2.5)", () => {
   it("every hint role is a colour the board does not already use", () => {
     const palette = clustersGame.colours([1, 1, 1]);
     const key = (i: number) => palette[i].join(",");
-    for (const role of [COL_HINT, COL_HINT_CELL, COL_HINT_DANGER]) {
+    const roles = [COL_HINT, COL_HINT_CELL, COL_HINT_DANGER, COL_HINT_ORDER];
+    for (const role of roles) {
       for (const tile of [COL_0, COL_1]) {
         expect(
           key(role),
@@ -355,9 +363,11 @@ describe("hint rendering (tier 2.5)", () => {
         ).not.toBe(key(tile));
       }
     }
-    // …and the three hint roles are distinct from one another, so a target, its
-    // evidence and its contradiction never collapse into one mark.
-    expect(new Set([COL_HINT, COL_HINT_CELL, COL_HINT_DANGER].map(key)).size).toBe(3);
+    // …and the hint roles are distinct from one another, so a target, its
+    // evidence, its ordering and its contradiction never collapse into one
+    // mark. The ordinal is drawn *on* an evidence cell, so `COL_HINT_ORDER`
+    // being distinct from `COL_HINT_CELL` is what keeps it readable at all.
+    expect(new Set(roles.map(key)).size).toBe(roles.length);
   });
 
   it("a direct hint frame paints the COL_HINT target", () => {
@@ -413,7 +423,7 @@ describe("hint rendering (tier 2.5)", () => {
     // that numbers only its first cell, numbers from 0, or repeats a digit
     // fails — the count is the guard that a snapshot re-baseline cannot erase.
     const digits = ops
-      .flatMap((o) => (o.op === "text" && o.colour === COL_HINT_DANGER ? [o.text] : []))
+      .flatMap((o) => (o.op === "text" && o.colour === COL_HINT_ORDER ? [o.text] : []))
       .sort();
     expect(digits).toEqual(
       Array.from({ length: hl.chain.length }, (_, i) => String(i + 1)).sort(),

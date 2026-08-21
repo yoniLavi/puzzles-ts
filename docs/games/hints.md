@@ -285,6 +285,15 @@ Tie them by something the code guarantees, cheapest first:
 - **A value**, where the puzzle has one — see the next section.
 - **A role word tied to the mark's shape**, where the game's other marks already
   use distinct ones ("ringed" outline vs "shaded" wash).
+- **A number on the other marks.** Where the second mark is a *chain* the hint
+  numbers (`walk-tactic-hint-chains`), the sentence names those cells by their
+  ordinal and keeps "this cell" for the one that carries no number — so the
+  reader picks the target out by the absence of a label, not by a hue. It is the
+  strongest tie of the four when it is available, because it identifies *every*
+  mark on screen rather than just relating two of them. Note what makes it work,
+  since it is the general rule underneath all of these: **a numbered mark and an
+  unnumbered one are not the same kind of thing.** The six Latin forcing chains
+  rely on this and carry no other tie.
 
 Guard it per game — *a second mark displayed ⇒ the explanation contains the tie*
 — and prove the guard fails before trusting it. Exemplars: `clusters-hint`,
@@ -1262,7 +1271,10 @@ ring**. Four transferable mechanics:
   engine change: `HintStep.move` is required, auto-play applies every leg's
   move for real, and the no-op-plan guard forbids dummy moves — hypothetical
   marks can never be journey legs. Static display via highlights is the
-  compliant shape; don't rediscover this.
+  compliant shape; don't rediscover this. (`walk-tactic-hint-chains` re-derived
+  it, costed the engine widening that would open it, and the owner declined:
+  holding a *hypothesis* in mind is fine, holding the *chain* is not — so the
+  chain is numbered instead, see the next section.)
 - **Pick the shortest chain, not the first.** At a stall, evaluate every
   candidate firing's propagation and take the shortest (tie-break scan order —
   deterministic ⇒ recompute-stable). First-in-scan-order chains averaged 6–7
@@ -1284,6 +1296,53 @@ Exemplars: `deduceHintPlan`/`chainToContradiction` in
 [`clusters/solver.ts`](../../src/games/clusters/solver.ts) (a parallel
 recorder re-deriving each firing's reason via a neighbourhood-only error
 check), `narrate` in [`clusters/index.ts`](../../src/games/clusters/index.ts).
+
+### Number the chain — the order is the fact the marks used to lose
+
+A statically-displayed chain is a **set** of marks, and a set is not a chain. The
+narration inevitably says "each forces the next" or "by the time you reach the
+end", and with nothing on the board saying which came first the player can only
+check that by redoing the deduction — which is the compressed-claim failure
+[§ "The forcing boundary"](#the-forcing-boundary) forbids, wearing a different
+costume. Eight games shipped exactly this
+(`walk-tactic-hint-chains`).
+
+**Declare each link's position and let the shared mechanism draw it.** A link
+carries `order` (`OrderedCell`, `engine/overlay-sidecar.ts`), the sidecar keeps
+it in an ordinal lane of its own — `hintMarkBit` already reaches bit 28 in Group,
+so there is no bit budget to borrow, and an ordinal is a small integer rather
+than a flag — and `drawHintOrdinal` (`engine/hint-ordinal.ts`) puts it in the
+tile's bottom-right corner in `HINT_ORDER`. Three things to know:
+
+- **Declare it as data, not as an array index.** The renderer reads `c.order`; a
+  positional convention two files have to agree about is one refactor from
+  silently renumbering the chain.
+- **Bottom-right is the only corner free in every game that draws one.** Keen and
+  Solo put a cage clue top-left, and the candidate games pack an empty cell's
+  pencil marks from the top-left too — and a chain cell has exactly two
+  candidates *by definition of the technique*, so its marks are always in the top
+  row. One corner across the collection beats a per-game best fit: the mark can
+  then be learned once.
+- **Wire it in your renderer.** The mechanism is shared but the wiring is not —
+  your tile painter has to take `ds.hint.order[i]` and pass it on. Forgetting
+  gives you a shaded chain, a sentence citing "cell 3", and no numbers at all.
+  `hint-ordinal.test.ts` guards this for every enrolled game.
+
+**An ordinal, never an arrow.** The obvious drawing is a path through the chain,
+and it was prototyped and rejected on measurement: an arrow claims *this link
+forces that one*, which is false in **34%** of Clusters' links (delete the
+predecessor and the successor is still forced — what forces it is its own
+neighbourhood, not the cell before it in discovery order), and half its links are
+not adjacent, so the arrows crossed the board. A *true* implication chain like the
+Latin family's is not thereby entitled to arrows either: one mark should mean one
+thing collection-wide, so every game draws the weakest claim every chain can
+make. See `walk-tactic-hint-chains` design D5 for the numbers.
+
+The numbering also **ties the deixis** — see § "Two marks on the board, one 'this
+cell'". Exemplars: `forcingChainArea`/`narrateForcingChain` in
+[`engine/latin-hint.ts`](../../src/engine/latin-hint.ts) (one sentence, six
+games, `LatinVocab` for heights/elements/letters), and Clusters'
+`buildHighlights`.
 
 ### Rule-outs as board marks
 

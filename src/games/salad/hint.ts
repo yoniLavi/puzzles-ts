@@ -49,6 +49,8 @@ import {
 import type { DeductionRecord } from "../../engine/deduction-record.ts";
 import type { HintResult, HintStep, HintTrackVerdict } from "../../engine/game.ts";
 import {
+  type ForcingLink,
+  forcingChainArea,
   hiddenSingleLine,
   joinWith,
   type LatinVocab,
@@ -57,6 +59,7 @@ import {
   type SingleReason,
   singlePlacementReason,
 } from "../../engine/latin-hint.ts";
+import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { stepBudget } from "../../engine/step-budget.ts";
 import {
   type BorderReason,
@@ -105,7 +108,10 @@ export type SaladReason =
   | SingleReason
   | { kind: "dup"; n: number; px: number; py: number }
   | { kind: "set" }
-  | { kind: "forcing" };
+  /** The shared solver's forcing chain, with the chain it followed — the same
+   * shape `latin.ts` records, so the numbered squares and the case-split
+   * narration come for free. */
+  | { kind: "forcing"; chain: ForcingLink[]; shares: "row" | "col" };
 
 /** What a Salad hint step draws (docs/games/hints.md § "The element-type colour legend"'s element legend):
  * `area` is the deduction's evidence, `targets` the squares it acts on, `marks`
@@ -233,7 +239,7 @@ export function narrate(
 function reasonEvidence(
   reason: SaladReason,
   o: number,
-): { area: Cell[]; clues: number[] } {
+): { area: OrderedCell[]; clues: number[] } {
   const cellAt = (i: number): Cell => ({ x: i % o, y: (i / o) | 0 });
   switch (reason.kind) {
     case "borderNear": {
@@ -264,6 +270,10 @@ function reasonEvidence(
       return { area: hiddenSingleLine(reason.line, reason.index, o), clues: [] };
     case "hiddenSingle":
       return { area: hiddenSingleLine(reason.line, reason.index, o), clues: [] };
+    // A forcing chain names the squares it ran through, **numbered**, so the
+    // narration can cite them and the player can walk it.
+    case "forcing":
+      return { area: forcingChainArea(reason), clues: [] };
     default:
       return { area: [], clues: [] };
   }

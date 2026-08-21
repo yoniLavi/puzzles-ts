@@ -40,6 +40,7 @@ import {
 import { clearKey } from "../../engine/key-labels.ts";
 import { DIFF_AMBIGUOUS, DIFF_IMPOSSIBLE, latinVerdict } from "../../engine/latin.ts";
 import {
+  forcingChainArea,
   hiddenSingleLine,
   type LatinVocab,
   narrateLatinReason,
@@ -47,6 +48,7 @@ import {
   type SingleReason,
   singlePlacementReason,
 } from "../../engine/latin-hint.ts";
+import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -569,7 +571,7 @@ function narrate(reason: NarratableReason, ns: number[], id: boolean): string {
  * three known products; an identity fill's / identity elimination's revealing
  * cell; a hidden single's whole line. The generic culls have no clean local area
  * (the struck notes carry the premise). */
-function reasonArea(reason: NarratableReason, w: number): { x: number; y: number }[] {
+function reasonArea(reason: NarratableReason, w: number): OrderedCell[] {
   switch (reason.kind) {
     case "associativity":
       return [reason.abCell, reason.bcCell, reason.thirdCell];
@@ -579,6 +581,10 @@ function reasonArea(reason: NarratableReason, w: number): { x: number; y: number
       return [{ x: reason.wx, y: reason.wy }];
     case "hiddenSingle":
       return hiddenSingleLine(reason.line, reason.index, w);
+    // A forcing chain names the cells it ran through, **numbered**, so the
+    // narration can cite them and the player can walk it.
+    case "forcing":
+      return forcingChainArea(reason);
     default:
       return [];
   }

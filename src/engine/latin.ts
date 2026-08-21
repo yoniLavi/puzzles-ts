@@ -70,8 +70,24 @@ export type LatinReason =
   | { kind: "dup"; n: number; px: number; py: number }
   /** A naked-subset ("set") elimination. */
   | { kind: "set" }
-  /** A forcing-chain elimination. */
-  | { kind: "forcing" };
+  /** A forcing-chain elimination, with the chain it actually followed. */
+  | { kind: "forcing"; chain: ForcingLink[]; shares: "row" | "col" };
+
+/** One cell of a forcing chain, and the value the chain gives it.
+ *
+ * `chain[0]` is the **origin**: a two-candidate cell, carrying the candidate it
+ * takes when it is *not* the one being eliminated. Every later link is a
+ * two-candidate cell in line with its predecessor that therefore loses the
+ * predecessor's value and must take its other one; the last link's `n` is the
+ * eliminated value itself, which is what closes the argument.
+ *
+ * There is always at least one hop: the origin's `n` is its *other* candidate,
+ * so it can never already be the eliminated value. */
+export interface ForcingLink {
+  x: number;
+  y: number;
+  n: number;
+}
 
 /** The recorded-deduction shape lives in its own module (nothing about it is
  * Latin — see [`deduction-record.ts`](./deduction-record.ts)); re-exported here
@@ -100,6 +116,11 @@ export class LatinSolver {
   private readonly sSet: Uint8Array;
   private readonly sNeighbours: Int32Array;
   private readonly sBfsqueue: Int32Array;
+  /** BFS parent pointers for {@link forcing}, so a firing can report the chain
+   * it followed rather than only its conclusion. Written on the hint path only
+   * (guarded by `recorder`), and never *read* for a cell this BFS did not push
+   * — so it needs no clearing between runs. */
+  private readonly sParent: Int32Array;
 
   /** Hint-only deduction recorder; left unset on the generator/solve path so
    * those run with no recording overhead and byte-for-byte unchanged. */
@@ -122,6 +143,7 @@ export class LatinSolver {
     this.sSet = new Uint8Array(o);
     this.sNeighbours = new Int32Array(3 * o);
     this.sBfsqueue = new Int32Array(o * o);
+    this.sParent = new Int32Array(o * o);
   }
 
   cubepos(x: number, y: number, n: number): number {
@@ -342,12 +364,20 @@ export class LatinSolver {
   }
 
   /** Forcing chains (upstream `latin_solver_forcing`): a chain of two-candidate
-   * cells whose ends both line up with a third cell forces a digit out of it. */
+   * cells whose ends both line up with a third cell forces a digit out of it.
+   *
+   * The BFS knows the chain it walked; on the hint path it now **reports** it
+   * ({@link ForcingLink}), because a narration that says "a contradiction
+   * further along" names no cell the player can look at and can only be checked
+   * by redoing the deduction (`walk-tactic-hint-chains`). The path costs one
+   * parent-pointer write per pushed cell, inside the `recorder` guard, so the
+   * generator and solve paths are untouched. */
   forcing(): number {
     const o = this.o;
     const number = this.sGrid; // reused as the BFS "other candidate" map
     const neighbours = this.sNeighbours;
     const bfsqueue = this.sBfsqueue;
+    const parent = this.sParent;
 
     for (let y = 0; y < o; y++) {
       for (let x = 0; x < o; x++) {
@@ -369,6 +399,7 @@ export class LatinSolver {
           let tail = 0;
           bfsqueue[tail++] = y * o + x;
           number[y * o + x] = t - n;
+          parent[y * o + x] = -1;
 
           while (head < tail) {
             let xx = bfsqueue[head++];
@@ -398,16 +429,35 @@ export class LatinSolver {
               if (cc === 2) {
                 bfsqueue[tail++] = yt * o + xt;
                 number[yt * o + xt] = tt - currn;
+                parent[yt * o + xt] = yy * o + xx;
               }
 
               if (currn === orign && (xt === x || yt === y)) {
                 if (this.recorder) {
+                  // Walk the parents back from the cell the chain drove to
+                  // `orign` — not from `(xt, yt)`, which is the *conclusion*
+                  // and may not even be on the chain.
+                  const path: number[] = [];
+                  for (let c = yy * o + xx; c !== -1; c = parent[c]) path.push(c);
+                  path.reverse();
                   this.recorder({
                     kind: "elim",
                     x: xt,
                     y: yt,
                     n: orign,
-                    reason: { kind: "forcing" },
+                    reason: {
+                      kind: "forcing",
+                      chain: path.map((c) => ({
+                        x: c % o,
+                        y: (c / o) | 0,
+                        n: number[c],
+                      })),
+                      // Which line ties the conclusion to the *origin* — the
+                      // other half of the case split. The conclusion's tie to
+                      // the chain's far end is structural (it is a BFS
+                      // neighbour of it), so only this one needs recording.
+                      shares: xt === x ? "col" : "row",
+                    },
                     group: this.group,
                   });
                 }

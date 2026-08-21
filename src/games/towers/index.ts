@@ -39,10 +39,14 @@ import {
 import { digitKeys } from "../../engine/key-labels.ts";
 import { latinVerdict } from "../../engine/latin.ts";
 import {
+  forcingChainArea,
   hiddenSingleLine,
+  type LatinVocab,
+  narrateForcingChain,
   rowColRegions,
   singlePlacementReason,
 } from "../../engine/latin-hint.ts";
+import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
   autoPencilPref,
@@ -498,16 +502,29 @@ function narrate(reason: HintReason, n: number, continues = false): string {
       return `Working through this cell's row and column together, only height ${n} can still go here — so it must be ${n}.`;
     case "set":
       return `Another group of cells already accounts for a fixed set of heights that includes ${n}, so we must cross out the ${n} here.`;
+    // The shared chain sentence, in Towers' own vocabulary. Towers keeps its
+    // own `narrate` because other arms need the value qualified ("height 5"),
+    // which this one does not — "two heights left" contextualises the bare
+    // numbers, and the numbered cells carry the chain.
     case "forcing":
-      return `Following a chain of two-candidate cells, placing height ${n} here would force a contradiction further along the line — so we must cross out the ${n}.`;
+      return narrateForcingChain(
+        reason,
+        n,
+        TOWERS_VOCAB,
+        reason.shares === "row" ? "row" : "column",
+      );
   }
 }
+
+/** Towers speaks of heights, not numbers — the one word the shared chain
+ * sentence needs from it. */
+const TOWERS_VOCAB: LatinVocab = { noun: "height", value: (h) => String(h) };
 
 /** The deduction's evidence area to shade: a Towers clue technique shows the
  * driving clue cell(s) *and* the whole line of sight they reason along, so the
  * player can see exactly which clue the hint is about; the generic Latin
  * techniques have no clean local area (the struck notes carry the premise). */
-function reasonArea(reason: HintReason, w: number): { x: number; y: number }[] {
+function reasonArea(reason: HintReason, w: number): OrderedCell[] {
   switch (reason.kind) {
     case "facing":
       // A facing pair names two clues at opposite ends of the same line.
@@ -524,6 +541,10 @@ function reasonArea(reason: HintReason, w: number): { x: number; y: number }[] {
       return [cluePos(reason.clue, w), ...lineCells(reason.clue, w)];
     case "hiddenSingle":
       return hiddenSingleLine(reason.line, reason.index, w);
+    // A forcing chain names the cells it ran through, **numbered**, so the
+    // narration can cite them and the player can walk it.
+    case "forcing":
+      return forcingChainArea(reason);
     default:
       return [];
   }

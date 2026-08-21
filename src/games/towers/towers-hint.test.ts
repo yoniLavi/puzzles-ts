@@ -160,8 +160,20 @@ describe("towers hint", () => {
     // mark sat on a *different* clue's line ("the 5 from the next column got
     // pulled in"). A standalone clue-strike step shades its clue's line as the
     // evidence `area`; every struck mark must lie within it.
+    //
+    // **`area` has two meanings, and the guard has to tell them apart.** For a
+    // clue technique it is a *containing region* — the line the strike happens
+    // inside. For a forcing chain (`walk-tactic-hint-chains`) it is an ordered
+    // *chain*, and the cell being struck is deliberately **not** on it: the
+    // chain drives some other cell to the value, and the conclusion loses it by
+    // lining up with that cell. The guard used to separate the two by
+    // `area.length === 0`, which was a proxy — it worked only because the
+    // forcing arm shaded nothing at all, and it silently stopped meaning
+    // anything the moment that changed. Selecting on the ordinal tests the
+    // distinction directly: a numbered area *is* the chain.
     const diffs: Difficulty[] = ["easy", "hard", "extreme"];
     let checked = 0;
+    let chainsChecked = 0;
     for (const diff of diffs) {
       for (let s = 0; s < 8; s++) {
         const { st } = gen(5, diff, `bleed-${diff}-${s}`);
@@ -169,16 +181,30 @@ describe("towers hint", () => {
         if (!res?.ok) continue;
         for (const step of res.steps as AnyStep[]) {
           if (step.move.type !== "pencilStrike") continue;
-          const area: { x: number; y: number }[] = step.highlights?.area ?? [];
+          const area: { x: number; y: number; order?: number }[] =
+            step.highlights?.area ?? [];
           if (area.length === 0) continue; // dup continuation: no clue line
+          const isChain = area.some((a) => a.order !== undefined);
           for (const m of step.move.marks as { x: number; y: number }[]) {
-            expect(area.some((a) => a.x === m.x && a.y === m.y)).toBe(true);
-            checked++;
+            if (isChain) {
+              // The other half of the invariant, asserted rather than skipped:
+              // a conclusion sitting *on* its own chain would mean the chain
+              // had already decided the cell it claims to be deducing.
+              expect(area.some((a) => a.x === m.x && a.y === m.y)).toBe(false);
+              chainsChecked++;
+            } else {
+              expect(area.some((a) => a.x === m.x && a.y === m.y)).toBe(true);
+              checked++;
+            }
           }
         }
       }
     }
     expect(checked).toBeGreaterThan(0);
+    // No floor on `chainsChecked` — a forcing chain is tier-gated and this
+    // sweep may legitimately not reach one. Reported rather than required, so
+    // the count above is never mistaken for chain coverage.
+    expect(chainsChecked).toBeGreaterThanOrEqual(0);
   });
 
   it("skips populate once notes are present", () => {

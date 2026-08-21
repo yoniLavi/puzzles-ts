@@ -18,7 +18,11 @@
  * compacting C semantics — see `removeFromBlock`/`splitBlock`).
  */
 
-import type { DeductionRecord, DeductionRecorder } from "../../engine/latin.ts";
+import type {
+  DeductionRecord,
+  DeductionRecorder,
+  ForcingLink,
+} from "../../engine/latin.ts";
 import type { BlockStructure, SoloState } from "./state.ts";
 import {
   DIFF_AMBIGUOUS,
@@ -72,8 +76,12 @@ export type SoloReason =
   /** A naked/hidden subset locks a set of digits to a set of cells in a region
    * (absent for the cross-line single-digit "X-wing" set). */
   | { kind: "set"; region?: SoloRegion }
-  /** A forcing-chain contradiction. */
-  | { kind: "forcing" }
+  /** A forcing-chain contradiction, with the chain it followed and the region
+   * that ties the conclusion back to the chain's origin — the other half of the
+   * case split (`walk-tactic-hint-chains`). Solo's chain hops through blocks and
+   * diagonals as well as lines, so unlike `latin.ts`'s it names a whole
+   * {@link SoloRegion}. */
+  | { kind: "forcing"; chain: ForcingLink[]; shares: SoloRegion }
   /** A *hidden* single — digit `n` fits only one cell of `region`. */
   | { kind: "hiddenSingle"; n: number; region: SoloRegion }
   /** A placement forced by deeper deductions the working notes don't reflect. */
@@ -245,6 +253,10 @@ class SolverUsage {
   private readonly sSet: Uint8Array;
   private readonly sNeighbours: Int32Array;
   private readonly sBfsqueue: Int32Array;
+  /** BFS parent pointers for {@link forcing}, so a firing can report the chain
+   * it followed rather than only its conclusion. Never *read* for a cell this
+   * BFS did not push, so it needs no clearing between runs. */
+  private readonly sParent: Int32Array;
   private readonly sIndexlist: Int32Array;
   private readonly sIndexlist2: Int32Array;
 
@@ -301,6 +313,7 @@ class SolverUsage {
     this.sSet = new Uint8Array(cr);
     this.sNeighbours = new Int32Array(5 * cr);
     this.sBfsqueue = new Int32Array(area);
+    this.sParent = new Int32Array(area);
     this.sIndexlist = new Int32Array(area);
     this.sIndexlist2 = new Int32Array(cr);
   }
@@ -530,6 +543,7 @@ class SolverUsage {
     const bfsqueue = this.sBfsqueue;
     const number = this.sGrid;
     const neighbours = this.sNeighbours;
+    const parent = this.sParent;
 
     for (let y = 0; y < cr; y++) {
       for (let x = 0; x < cr; x++) {
@@ -550,6 +564,7 @@ class SolverUsage {
           let tail = 0;
           bfsqueue[tail++] = y * cr + x;
           number[y * cr + x] = t - n;
+          parent[y * cr + x] = -1;
 
           while (head < tail) {
             let xx = bfsqueue[head++];
@@ -588,6 +603,7 @@ class SolverUsage {
               if (cc === 2) {
                 bfsqueue[tail++] = yt * cr + xt;
                 number[yt * cr + xt] = tt - currn;
+                parent[yt * cr + xt] = yy * cr + xx;
               }
 
               if (
@@ -600,14 +616,31 @@ class SolverUsage {
                     ((onDiag0(yt * cr + xt, cr) && onDiag0(y * cr + x, cr)) ||
                       (onDiag1(yt * cr + xt, cr) && onDiag1(y * cr + x, cr)))))
               ) {
-                this.recorder?.({
-                  kind: "elim",
-                  x: xt,
-                  y: yt,
-                  n: orign,
-                  reason: { kind: "forcing" },
-                  group: this.group,
-                });
+                if (this.recorder) {
+                  // Walk the parents back from the cell the chain drove to
+                  // `orign` — not from `(xt, yt)`, which is the *conclusion*
+                  // and is never on the chain (a visited cell is skipped
+                  // above).
+                  const path: number[] = [];
+                  for (let c = yy * cr + xx; c !== -1; c = parent[c]) path.push(c);
+                  path.reverse();
+                  this.recorder({
+                    kind: "elim",
+                    x: xt,
+                    y: yt,
+                    n: orign,
+                    reason: {
+                      kind: "forcing",
+                      chain: path.map((c) => ({
+                        x: c % cr,
+                        y: (c / cr) | 0,
+                        n: number[c],
+                      })),
+                      shares: this.sharedRegion(x, y, xt, yt),
+                    },
+                    group: this.group,
+                  });
+                }
                 this.setCube(xt, yt, orign, 0);
                 return 1;
               }
@@ -617,6 +650,23 @@ class SolverUsage {
       }
     }
     return 0;
+  }
+
+  /** The uniqueness region a forcing chain's *conclusion* shares with its
+   * *origin* — the half of the case split that fires when the origin turns out
+   * to hold the eliminated digit after all. Tested in exactly the order
+   * {@link forcing}'s own elimination condition tests them, so the name can
+   * never disagree with the reason the elimination fired. */
+  private sharedRegion(x: number, y: number, xt: number, yt: number): SoloRegion {
+    const cr = this.cr;
+    if (xt === x) return { kind: "col", index: x };
+    if (yt === y) return { kind: "row", index: y };
+    const blk = this.blocks.whichblock[y * cr + x];
+    if (this.blocks.whichblock[yt * cr + xt] === blk)
+      return { kind: "block", index: blk };
+    return onDiag0(yt * cr + xt, cr) && onDiag0(y * cr + x, cr)
+      ? { kind: "diag0" }
+      : { kind: "diag1" };
   }
 
   /** Cell indices → reading-order `{x, y}` (for a recorded cage reason). */

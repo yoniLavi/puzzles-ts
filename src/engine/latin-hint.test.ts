@@ -195,8 +195,24 @@ describe("narrateLatinReason (shared row/column-game narration)", () => {
     expect(narrateLatinReason({ kind: "set" }, [2, 3])).toBe(
       "Another group of cells already accounts for a fixed set of numbers that includes 2 and 3, so we must cross out 2 and 3 here.",
     );
-    expect(narrateLatinReason({ kind: "forcing" }, [5])).toBe(
-      "Following a chain of two-candidate cells, placing 5 here would force a contradiction further along — so we must cross out 5.",
+    // A forcing chain concludes from *both* branches of the origin's two
+    // candidates, so both are stated; the links between are numbered on the
+    // board rather than recited (`walk-tactic-hint-chains`).
+    expect(
+      narrateLatinReason(
+        {
+          kind: "forcing",
+          chain: [
+            { x: 0, y: 0, n: 2 },
+            { x: 3, y: 0, n: 7 },
+            { x: 3, y: 4, n: 5 },
+          ],
+          shares: "row",
+        },
+        [5],
+      ),
+    ).toBe(
+      "Cell 1 is 5 or 2, and every numbered cell has just two numbers left, so each forces the next. If cell 1 is 5, this cell's row already has it; if 2, cell 3 is driven to 5, in line with this cell. Either way, cross out 5 here.",
     );
   });
 
