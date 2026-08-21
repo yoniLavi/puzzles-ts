@@ -51,4 +51,4 @@
 ## 5. Close out
 
 - [x] 5.1 Spec delta into `app-shell`.
-- [ ] 5.2 Owner acceptance.
+- [x] 5.2 Owner acceptance — **accepted 2026-08-21**.

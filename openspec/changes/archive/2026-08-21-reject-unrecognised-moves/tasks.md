@@ -66,7 +66,8 @@
 - [x] 6.2 `docs/games/mechanics.md` — the `executeMove` section gains the rule,
       the helper, the two awkward shapes, and the put-it-before-the-bounds-check
       trap.
-- [ ] 6.3 Owner acceptance. **Flag explicitly at acceptance**: (a) in the ~20
+- [x] 6.3 Owner acceptance — **accepted 2026-08-21**, both flagged points
+      included. **Flag explicitly at acceptance**: (a) in the ~20
       formerly-tolerant games a save with an unplayable move now gets *refused*
       where it previously loaded a subtly different board — intended, endorsed in
       principle, but the one player-visible consequence; (b) Sixteen's unwired
