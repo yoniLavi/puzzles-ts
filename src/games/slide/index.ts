@@ -117,13 +117,13 @@ function isStepKey(button: number): boolean {
 function interpretMove(
   state: SlideState,
   ui: SlideUi,
-  ds: SlideDrawState | null,
+  ds: SlideDrawState,
   p: Point,
   rawButton: number,
 ): SlideMove | null | UiUpdate {
   const button = asPrimary(stripModifiers(rawButton));
   const { w, h, board } = state;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
 
   if (button === LEFT_BUTTON) {
     const cx = fromCoord(p.x, ts, BORDER);

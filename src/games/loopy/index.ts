@@ -236,12 +236,12 @@ export function autofollowEdges(
 function interpretMove(
   state: LoopyState,
   ui: LoopyUi,
-  ds: LoopyDrawState | null,
+  ds: LoopyDrawState,
   p: Point,
   rawButton: number,
 ): LoopyMove | null | UiUpdate {
   const g = state.grid;
-  const tileSize = ds?.tileSize ?? PREFERRED_TILE_SIZE;
+  const tileSize = ds.tileSize;
   const stylus = (rawButton & MOD_STYLUS) !== 0;
   const button = stripModifiers(rawButton);
 
@@ -381,7 +381,7 @@ export const loopyGame: Game<
   newDrawState,
   redraw: (
     dr: GameDrawing,
-    ds: LoopyDrawState | null,
+    ds: LoopyDrawState,
     prev: LoopyState | null,
     s: LoopyState,
     dir: number,

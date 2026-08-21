@@ -781,7 +781,7 @@ function drawPencilIndicator(dr: GameDrawing, ds: UndeadDrawState, on: boolean):
 
 export function redraw(
   dr: GameDrawing,
-  ds: UndeadDrawState | null,
+  ds: UndeadDrawState,
   _prev: UndeadState | null,
   state: UndeadState,
   _dir: number,
@@ -791,7 +791,6 @@ export function redraw(
   hint?: HintStep<UndeadMove, UndeadHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const common = state.common;
   const w = ds.w;

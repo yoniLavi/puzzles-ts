@@ -282,7 +282,7 @@ function tileRedraw(
 
 export function redraw(
   dr: GameDrawing,
-  ds: LightupDrawState | null,
+  ds: LightupDrawState,
   _prev: LightupState | null,
   state: LightupState,
   _dir: number,
@@ -292,7 +292,6 @@ export function redraw(
   hint?: HintStep<LightupMove, LightupHint>,
   mistakes?: readonly LightupMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h } = state;
 

@@ -243,7 +243,7 @@ function moveCursor(
 function interpretMove(
   from: GuessState,
   ui: GuessUi,
-  ds: GuessDrawState | null,
+  ds: GuessDrawState,
   p: Point,
   button: number,
 ): GuessMove | null | UiUpdate {

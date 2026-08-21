@@ -213,10 +213,9 @@ function drawSquare(
 
 // --- redraw --------------------------------------------------------------
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: per-tile cache-miss dispatch with region borders, clues and hint overlays.
 export function redrawFilling(
   dr: GameDrawing,
-  ds: FillingDrawState | null,
+  ds: FillingDrawState,
   _prev: FillingState | null,
   state: FillingState,
   _dir: number,
@@ -231,7 +230,6 @@ export function redrawFilling(
   hint?: HintStep<FillingMove, FillingHint>,
   mistakes?: readonly FillingMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, board, clues } = state;
   const sz = w * h;

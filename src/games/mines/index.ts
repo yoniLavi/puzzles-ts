@@ -355,14 +355,14 @@ export const minesGame: Game<
   interpretMove(
     s: MinesState,
     ui: MinesUi,
-    ds: MinesDrawState | null,
+    ds: MinesDrawState,
     p: Point,
     button: number,
   ): MinesMove | null | UiUpdate {
     const { w, h } = s;
     if (s.dead || s.won) return null; // no further moves permitted
 
-    const tileSize = ds?.tileSize || PREFERRED_TILE_SIZE;
+    const tileSize = ds.tileSize;
     const border = borderFor(tileSize);
     let cx = fromCoord(p.x, tileSize, border);
     let cy = fromCoord(p.y, tileSize, border);

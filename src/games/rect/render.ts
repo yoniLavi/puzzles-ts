@@ -205,7 +205,7 @@ function drawTile(
 
 export function redraw(
   dr: GameDrawing,
-  ds: RectDrawState | null,
+  ds: RectDrawState,
   _prev: RectState | null,
   state: RectState,
   _dir: number,
@@ -215,7 +215,6 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly RectMistake[],
 ): void {
-  if (!ds) return;
   const { w, h } = state;
   const tile = ds.tileSize;
 

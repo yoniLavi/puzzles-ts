@@ -21,6 +21,7 @@ import {
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { DEFAULT_BACKGROUND } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import type { ChangeNotification } from "../../engine/types.ts";
 import { newSaladDesc } from "./generator.ts";
 import { saladGame } from "./index.ts";
@@ -485,11 +486,27 @@ describe("salad input", () => {
   it("left-click selects a square and a symbol key enters it", () => {
     const s = newState(LETTERS.p, LETTERS.desc);
     const ui = newUi(s);
-    expect(saladGame.interpretMove(s, ui, null, at(1, 2), LEFT_BUTTON)).toBeTruthy();
+    expect(
+      saladGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(saladGame, s),
+        at(1, 2),
+        LEFT_BUTTON,
+      ),
+    ).toBeTruthy();
     expect(ui.hshow).toBe(true);
     expect(ui.hx).toBe(1);
     expect(ui.hy).toBe(2);
-    expect(saladGame.interpretMove(s, ui, null, at(1, 2), "B".charCodeAt(0))).toEqual({
+    expect(
+      saladGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(saladGame, s),
+        at(1, 2),
+        "B".charCodeAt(0),
+      ),
+    ).toEqual({
       type: "set",
       x: 1,
       y: 2,
@@ -500,12 +517,24 @@ describe("salad input", () => {
   it("refuses a symbol beyond the puzzle's range", () => {
     const s = newState(LETTERS.p, LETTERS.desc);
     const ui = newUi(s);
-    saladGame.interpretMove(s, ui, null, at(0, 0), LEFT_BUTTON);
+    saladGame.interpretMove(s, ui, sizedDrawState(saladGame, s), at(0, 0), LEFT_BUTTON);
     expect(
-      saladGame.interpretMove(s, ui, null, at(0, 0), "D".charCodeAt(0)),
+      saladGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(saladGame, s),
+        at(0, 0),
+        "D".charCodeAt(0),
+      ),
     ).toBeNull();
     expect(
-      saladGame.interpretMove(s, ui, null, at(0, 0), "4".charCodeAt(0)),
+      saladGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(saladGame, s),
+        at(0, 0),
+        "4".charCodeAt(0),
+      ),
     ).toBeNull();
   });
 
@@ -513,29 +542,63 @@ describe("salad input", () => {
     const s = newState(LETTERS.p, LETTERS.desc);
     const ui = newUi(s);
     expect(ui.pencilSticky).toBe(true);
-    saladGame.interpretMove(s, ui, null, at(0, 0), RIGHT_BUTTON);
+    saladGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(saladGame, s),
+      at(0, 0),
+      RIGHT_BUTTON,
+    );
     expect(ui.hpencil).toBe(true);
-    expect(saladGame.interpretMove(s, ui, null, at(0, 0), "A".charCodeAt(0))).toEqual({
+    expect(
+      saladGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(saladGame, s),
+        at(0, 0),
+        "A".charCodeAt(0),
+      ),
+    ).toEqual({
       type: "pencil",
       x: 0,
       y: 0,
       value: 1,
     });
     // ...and stays on for the next square, unlike upstream's per-click mode.
-    saladGame.interpretMove(s, ui, null, at(1, 0), LEFT_BUTTON);
+    saladGame.interpretMove(s, ui, sizedDrawState(saladGame, s), at(1, 0), LEFT_BUTTON);
     expect(ui.hpencil).toBe(true);
   });
 
   it("middle-click cycles a blank square: ball, cross, blank", () => {
     const s0 = newState(LETTERS.p, LETTERS.desc);
     const ui = newUi(s0);
-    const first = saladGame.interpretMove(s0, ui, null, at(2, 1), MIDDLE_BUTTON);
+    const first = saladGame.interpretMove(
+      s0,
+      ui,
+      sizedDrawState(saladGame, s0),
+      at(2, 1),
+      MIDDLE_BUTTON,
+    );
     expect(first).toEqual({ type: "set", x: 2, y: 1, value: "circle" });
     const s1 = saladGame.executeMove(s0, first as SaladMove);
-    const second = saladGame.interpretMove(s1, ui, null, at(2, 1), MIDDLE_BUTTON);
+    const second = saladGame.interpretMove(
+      s1,
+      ui,
+      sizedDrawState(saladGame, s1),
+      at(2, 1),
+      MIDDLE_BUTTON,
+    );
     expect(second).toEqual({ type: "set", x: 2, y: 1, value: "cross" });
     const s2 = saladGame.executeMove(s1, second as SaladMove);
-    expect(saladGame.interpretMove(s2, ui, null, at(2, 1), MIDDLE_BUTTON)).toEqual({
+    expect(
+      saladGame.interpretMove(
+        s2,
+        ui,
+        sizedDrawState(saladGame, s2),
+        at(2, 1),
+        MIDDLE_BUTTON,
+      ),
+    ).toEqual({
       type: "set",
       x: 2,
       y: 1,
@@ -546,10 +609,22 @@ describe("salad input", () => {
   it("the keyboard cursor moves and Enter flips ink/pencil", () => {
     const s = newState(LETTERS.p, LETTERS.desc);
     const ui = newUi(s);
-    saladGame.interpretMove(s, ui, null, { x: 0, y: 0 }, CURSOR_RIGHT);
+    saladGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(saladGame, s),
+      { x: 0, y: 0 },
+      CURSOR_RIGHT,
+    );
     expect(ui.hx).toBe(1);
     expect(ui.hshow).toBe(true);
-    saladGame.interpretMove(s, ui, null, { x: 0, y: 0 }, CURSOR_SELECT);
+    saladGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(saladGame, s),
+      { x: 0, y: 0 },
+      CURSOR_SELECT,
+    );
     expect(ui.hpencil).toBe(true);
   });
 
@@ -562,7 +637,13 @@ describe("salad input", () => {
     const s = newState(NUMBERS.p, NUMBERS.desc);
     const ui = newUi(s);
     const press = (st: typeof s) =>
-      saladGame.interpretMove(st, ui, null, { x: 0, y: 0 }, 109);
+      saladGame.interpretMove(
+        st,
+        ui,
+        sizedDrawState(saladGame, st),
+        { x: 0, y: 0 },
+        109,
+      );
 
     // 1. Fill.
     expect(press(s)).toEqual({ type: "pencilAll" });
@@ -600,10 +681,16 @@ describe("salad input", () => {
     const s = newState(NUMBERS.p, NUMBERS.desc);
     const ui = newUi(s);
     // Cell 4 (x=4, y=0) carries a given digit.
-    saladGame.interpretMove(s, ui, null, at(4, 0), LEFT_BUTTON);
+    saladGame.interpretMove(s, ui, sizedDrawState(saladGame, s), at(4, 0), LEFT_BUTTON);
     expect(ui.hshow).toBe(false);
     expect(
-      saladGame.interpretMove(s, ui, null, at(4, 0), "1".charCodeAt(0)),
+      saladGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(saladGame, s),
+        at(4, 0),
+        "1".charCodeAt(0),
+      ),
     ).toBeNull();
   });
 });

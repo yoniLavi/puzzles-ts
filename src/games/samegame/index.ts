@@ -139,7 +139,7 @@ function moveCursor(
 function interpretMove(
   state: SamegameState,
   ui: SamegameUi,
-  ds: SamegameDrawState | null,
+  ds: SamegameDrawState,
   p: Point,
   rawButton: number,
 ): SamegameMove | null | UiUpdate {
@@ -150,7 +150,7 @@ function interpretMove(
 
   if (button === RIGHT_BUTTON || button === LEFT_BUTTON) {
     ui.displaySel = false;
-    const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+    const ts = ds.tilesize;
     const bd = Math.floor(ts / 2);
     tx = fromCoord(p.x, ts, bd);
     ty = fromCoord(p.y, ts, bd);

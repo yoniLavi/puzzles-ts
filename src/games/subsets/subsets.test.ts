@@ -23,6 +23,7 @@ import {
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { seedBudget } from "../../engine/testing/slow.ts";
 import type { ChangeNotification, GameStatus } from "../../engine/types.ts";
 import cReference from "./__fixtures__/subsets-c-reference.json" with { type: "json" };
@@ -103,7 +104,13 @@ function press(
   x: number,
   y: number,
 ): SubsetsMove | null | typeof UI_UPDATE {
-  return subsetsGame.interpretMove(state, ui, null, { x, y }, button);
+  return subsetsGame.interpretMove(
+    state,
+    ui,
+    sizedDrawState(subsetsGame, state),
+    { x, y },
+    button,
+  );
 }
 
 /** Pixel centre of letter slot (sx, sy) of cell (cx, cy) at 36px tiles. */

@@ -152,7 +152,7 @@ function presets(): PresetMenu<UndeadParams> {
 function interpretMove(
   state: UndeadState,
   ui: UndeadUi,
-  ds: UndeadDrawState | null,
+  ds: UndeadDrawState,
   point: Point,
   rawButton: number,
 ): UndeadMove | null | UiUpdate {
@@ -160,7 +160,7 @@ function interpretMove(
   const w = common.w;
   const h = common.h;
   const stride = w + 2;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const b = Math.floor(ts / 4);
   const button = stripModifiers(rawButton);
   const gx = Math.trunc((point.x - b - 1) / ts);

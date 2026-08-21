@@ -23,6 +23,7 @@ import { randomNew } from "../../engine/random/index.ts";
 import type { DrawOp } from "../../engine/testing/recording-drawing.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import type { ChangeNotification } from "../../engine/types.ts";
 import { newDesc } from "./generator.ts";
 import { netslideGame } from "./index.ts";
@@ -289,7 +290,13 @@ describe("netslide input", () => {
   it("maps each of the four gutters to the slide its arrow shows", () => {
     const ui = newUi(s);
     const click = (cx: number, cy: number, button = LEFT_BUTTON) =>
-      netslideGame.interpretMove(s, ui, null, gutterPoint(cx, cy), button);
+      netslideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(netslideGame, s),
+        gutterPoint(cx, cy),
+        button,
+      );
 
     expect(click(-1, 0)).toEqual({ type: "slide", axis: "row", index: 0, dir: +1 });
     expect(click(s.w, 0)).toEqual({ type: "slide", axis: "row", index: 0, dir: -1 });
@@ -300,7 +307,13 @@ describe("netslide input", () => {
   it("reverses the slide on the right button", () => {
     const ui = newUi(s);
     const at = (button: number) =>
-      netslideGame.interpretMove(s, ui, null, gutterPoint(-1, 0), button);
+      netslideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(netslideGame, s),
+        gutterPoint(-1, 0),
+        button,
+      );
     expect(at(LEFT_BUTTON)).toEqual({ type: "slide", axis: "row", index: 0, dir: +1 });
     expect(at(RIGHT_BUTTON)).toEqual({ type: "slide", axis: "row", index: 0, dir: -1 });
   });
@@ -308,7 +321,13 @@ describe("netslide input", () => {
   it("refuses the centre row and column, which cannot be slid", () => {
     const ui = newUi(s);
     const click = (cx: number, cy: number) =>
-      netslideGame.interpretMove(s, ui, null, gutterPoint(cx, cy), LEFT_BUTTON);
+      netslideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(netslideGame, s),
+        gutterPoint(cx, cy),
+        LEFT_BUTTON,
+      );
     expect(click(-1, s.cy)).toBeNull();
     expect(click(s.w, s.cy)).toBeNull();
     expect(click(s.cx, -1)).toBeNull();
@@ -318,7 +337,13 @@ describe("netslide input", () => {
   it("refuses a click on the board itself", () => {
     const ui = newUi(s);
     expect(
-      netslideGame.interpretMove(s, ui, null, gutterPoint(1, 1), LEFT_BUTTON),
+      netslideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(netslideGame, s),
+        gutterPoint(1, 1),
+        LEFT_BUTTON,
+      ),
     ).toBeNull();
   });
 
@@ -328,7 +353,13 @@ describe("netslide input", () => {
 
     // Walk further than one full circuit, so every arrow position is visited.
     for (let i = 0; i < 2 * (s.w + s.h) + 3; i++) {
-      netslideGame.interpretMove(s, ui, null, { x: 0, y: 0 }, CURSOR_RIGHT);
+      netslideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(netslideGame, s),
+        { x: 0, y: 0 },
+        CURSOR_RIGHT,
+      );
       expect(ui.curVisible).toBe(true);
       // Never parked beside the centre column or the centre row...
       expect(ui.curX === s.cx && ui.curY >= 0 && ui.curY < s.h).toBe(false);
@@ -340,15 +371,33 @@ describe("netslide input", () => {
 
   it("select slides the line the cursor is on", () => {
     const ui = newUi(s);
-    netslideGame.interpretMove(s, ui, null, { x: 0, y: 0 }, CURSOR_RIGHT);
+    netslideGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(netslideGame, s),
+      { x: 0, y: 0 },
+      CURSOR_RIGHT,
+    );
     expect(
-      netslideGame.interpretMove(s, ui, null, { x: 0, y: 0 }, CURSOR_SELECT),
+      netslideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(netslideGame, s),
+        { x: 0, y: 0 },
+        CURSOR_SELECT,
+      ),
     ).toMatchObject({ type: "slide" });
   });
 
   it("a select with no cursor showing only reveals the cursor", () => {
     const ui = newUi(s);
-    const move = netslideGame.interpretMove(s, ui, null, { x: 0, y: 0 }, CURSOR_SELECT);
+    const move = netslideGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(netslideGame, s),
+      { x: 0, y: 0 },
+      CURSOR_SELECT,
+    );
     expect(ui.curVisible).toBe(true);
     expect(move).not.toMatchObject({ type: "slide" });
   });

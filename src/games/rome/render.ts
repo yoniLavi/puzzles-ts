@@ -229,7 +229,7 @@ export function drawArrow(
 
 export function redraw(
   dr: GameDrawing,
-  ds: RomeDrawState | null,
+  ds: RomeDrawState,
   _prev: RomeState | null,
   state: RomeState,
   _dir: number,
@@ -239,7 +239,6 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly RomeMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, grid, marks, regions } = state;
 

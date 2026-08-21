@@ -177,7 +177,7 @@ const CODE_A = "A".charCodeAt(0);
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: per-tile cache-miss dispatch across clue, candidate, hint and mistake overlays.
 export function redraw(
   dr: GameDrawing,
-  ds: SubsetsDrawState | null,
+  ds: SubsetsDrawState,
   _prev: SubsetsState | null,
   state: SubsetsState,
   _dir: number,
@@ -187,7 +187,6 @@ export function redraw(
   hint?: HintStep<SubsetsMove, SubsetsHintHighlights>,
   mistakes?: readonly SubsetsMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, n } = state;
   const cw = CELL_WIDTH;

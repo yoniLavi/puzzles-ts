@@ -162,13 +162,13 @@ function updateUiDrag(state: TracksState, ui: TracksUi, gx: number, gy: number):
 function interpretMove(
   state: TracksState,
   ui: TracksUi,
-  ds: TracksDrawState | null,
+  ds: TracksDrawState,
   p: Point,
   rawButton: number,
 ): TracksMove | null | UiUpdate {
   const button = stripModifiers(rawButton);
   const { w, h } = state;
-  const m = metrics(ds?.tileSize ?? PREFERRED_TILE_SIZE);
+  const m = metrics(ds.tileSize);
   const fromCoord = (px: number) =>
     px < m.border ? -1 : Math.floor((px - m.border) / m.tile) - 1;
   const board = stateToBoard(state);

@@ -544,37 +544,32 @@ describe("Midend.size is purely informational (regression: ResizeObserver flicke
     expect(bigTiles.preferredSize()).toEqual({ w: 3 * 24, h: 24 });
   });
 
-  it("expands past the preferred tile size to fill the slot (user size)", () => {
+  it("expands past the preferred tile size to fill the slot", () => {
     const m = midend();
-    const out = m.size({ w: 200, h: 200 }, true, 1);
-    // fakeGame.computeSize: w = target(3)*tile, h = tile. With user
-    // size (what the app passes), upstream midend_size's binary search
-    // picks the largest tile that fits: 3*66 = 198 ≤ 200.
+    const out = m.size({ w: 200, h: 200 });
+    // fakeGame.computeSize: w = target(3)*tile, h = tile. Upstream
+    // midend_size's binary search picks the largest tile that fits:
+    // 3*66 = 198 ≤ 200. The board fills the slot it is given; capping it at
+    // N× the preferred size is the `maxScale` setting's job, and it does it
+    // by shrinking the slot before we see it.
     expect(out).toEqual({ w: 198, h: 66 });
-  });
-
-  it("caps at the preferred tile size without user size", () => {
-    const m = midend();
-    const out = m.size({ w: 200, h: 200 }, false, 1);
-    // Preferred tile is 10 (fits easily), so it is the ceiling.
-    expect(out).toEqual({ w: 30, h: 10 });
   });
 
   it("shrinks below the preferred tile size when the slot is small", () => {
     const m = midend();
-    const out = m.size({ w: 15, h: 15 }, true, 1);
+    const out = m.size({ w: 15, h: 15 });
     // Largest tile with 3*tile ≤ 15 is 5.
     expect(out).toEqual({ w: 15, h: 5 });
   });
 
   it("does NOT recreate the drawstate when called repeatedly at the same size", () => {
     const m = midend();
-    m.size({ w: 200, h: 200 }, true, 1);
+    m.size({ w: 200, h: 200 });
     const ds0 = (m as unknown as { drawState: FakeDrawState }).drawState;
     const instance0 = ds0.instance;
 
-    m.size({ w: 200, h: 200 }, true, 1);
-    m.size({ w: 200, h: 200 }, true, 1);
+    m.size({ w: 200, h: 200 });
+    m.size({ w: 200, h: 200 });
     const ds1 = (m as unknown as { drawState: FakeDrawState }).drawState;
     expect(ds1).toBe(ds0); // same object reference
     expect(ds1.instance).toBe(instance0);
@@ -586,16 +581,16 @@ describe("Midend.size is purely informational (regression: ResizeObserver flicke
     // adapter from `resizeDrawing` only when the canvas backing
     // store really got reset).
     const m = midend();
-    m.size({ w: 200, h: 200 }, true, 1);
+    m.size({ w: 200, h: 200 });
     const instance0 = (m as unknown as { drawState: FakeDrawState }).drawState.instance;
-    m.size({ w: 400, h: 400 }, true, 1);
+    m.size({ w: 400, h: 400 });
     const instance1 = (m as unknown as { drawState: FakeDrawState }).drawState.instance;
     expect(instance1).toBe(instance0);
   });
 
   it("a redraw after only size() preserves the per-tile cache (no bg fill emitted)", () => {
     const m = midend();
-    m.size({ w: 200, h: 200 }, true, 1);
+    m.size({ w: 200, h: 200 });
 
     // First redraw: game's `!ds.started` branch paints its bg.
     const a = recordingDrawing();
@@ -605,8 +600,8 @@ describe("Midend.size is purely informational (regression: ResizeObserver flicke
     // Subsequent `size()` calls do NOT cause the next redraw to
     // re-emit a bg fill — the drawstate is preserved, so the game's
     // `!ds.started` branch doesn't fire again.
-    m.size({ w: 200, h: 200 }, true, 1);
-    m.size({ w: 400, h: 400 }, true, 1);
+    m.size({ w: 200, h: 200 });
+    m.size({ w: 400, h: 400 });
     const b = recordingDrawing();
     m.redraw(b.dr);
     expect(b.ops.some((o) => o.op === "drawRect" && o.colour === 0)).toBe(false);
@@ -624,7 +619,7 @@ describe("Midend.canvasCleared invalidates the drawstate (the only real signal)"
       () => {},
     );
     m.newGame();
-    m.size({ w: 200, h: 200 }, true, 1);
+    m.size({ w: 200, h: 200 });
     const { dr } = recordingDrawing();
     m.redraw(dr); // consumes the game's first-paint bg fill
     return m;
@@ -665,7 +660,7 @@ describe("Midend.forceRedraw is canvasCleared + redraw (palette/font replacement
       () => {},
     );
     m.newGame();
-    m.size({ w: 200, h: 200 }, true, 1);
+    m.size({ w: 200, h: 200 });
     const { dr } = recordingDrawing();
     m.redraw(dr);
     return m;
@@ -707,7 +702,7 @@ describe("Engine emits no pixels of its own (game owns the canvas content)", () 
       () => {},
     );
     m.newGame();
-    m.size({ w: 200, h: 200 }, true, 1);
+    m.size({ w: 200, h: 200 });
 
     // Replace fake game's `!ds.started` branch with one that paints
     // a distinctive marker, so we can prove every op in the

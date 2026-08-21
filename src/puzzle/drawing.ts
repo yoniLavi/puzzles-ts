@@ -68,16 +68,12 @@ export class Drawing implements GameDrawing<Blitter> {
     return hadPalette;
   }
 
-  /**
-   * Update font for later text drawing.
-   * (Does not redraw text already on the canvas.)
-   * Returns true if a non-default font was set.
-   */
-  public setFontInfo(fontInfo: FontInfo): boolean {
-    const hadCustomFont = this.fontInfo !== defaultFontInfo;
-    this.fontInfo = { ...fontInfo };
-    return hadCustomFont;
-  }
+  // The font is chosen once, at `attachCanvas`, from the host page's computed
+  // style. A `setFontInfo` used to sit here, reachable through a
+  // `setDrawingFontInfo` on every layer from `Puzzle` down — and callable from
+  // none of them: nothing has re-issued a font since the first commit
+  // (`audit-vestigial-contract-surface`). Reinstating it needs a trigger that
+  // does not exist either, a font preference; add both together or neither.
 
   /**
    * Resize the canvas

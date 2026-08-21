@@ -305,7 +305,7 @@ function drawNumbers(
 
 export function redraw(
   dr: GameDrawing,
-  ds: PatternDrawState | null,
+  ds: PatternDrawState,
   _prev: PatternState | null,
   state: PatternState,
   _dir: number,
@@ -315,7 +315,6 @@ export function redraw(
   hint?: HintStep<PatternMove, PatternHint>,
   mistakes?: readonly PatternMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h } = state.common;
   const { grid } = state;

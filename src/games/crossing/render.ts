@@ -783,7 +783,7 @@ function drawPencilIndicator(dr: GameDrawing, ts: number, on: boolean): void {
 
 export function redraw(
   dr: GameDrawing,
-  ds: CrossingDrawState | null,
+  ds: CrossingDrawState,
   _prev: CrossingState | null,
   state: CrossingState,
   _dir: number,
@@ -793,7 +793,6 @@ export function redraw(
   hint?: HintStep<CrossingMove, CrossingHint>,
   mistakes?: readonly CrossingMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const puzzle = state.puzzle;
   const { w, h, walls, numbers, runs } = puzzle;

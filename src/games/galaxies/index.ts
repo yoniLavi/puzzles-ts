@@ -531,11 +531,11 @@ function aimDrag(
 function interpretMove(
   s: GalaxiesState,
   ui: GalaxiesUi,
-  ds: GalaxiesDrawState | null,
+  ds: GalaxiesDrawState,
   p: Point,
   button: number,
 ): GalaxiesMove | null | UiUpdate {
-  const tile = ds?.tileSize ?? PREFERRED_TILE_SIZE;
+  const tile = ds.tileSize;
   const border = tile;
   const x = p.x;
   const y = p.y;

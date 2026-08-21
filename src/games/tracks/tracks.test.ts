@@ -18,6 +18,7 @@ import {
 } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { newDesc } from "./generator.ts";
 import { tracksGame } from "./index.ts";
 import { executeMove, uiCanFlipSquare } from "./moves.ts";
@@ -163,12 +164,24 @@ describe("tracks input", () => {
   it("a left-drag lays a straight run of track", () => {
     const st = newState(SMALL.p, SMALL.desc);
     const ui = tracksGame.newUi(st);
-    tracksGame.interpretMove(st, ui, null, { x: CENTRE(1), y: CENTRE(3) }, LEFT_BUTTON);
-    tracksGame.interpretMove(st, ui, null, { x: CENTRE(3), y: CENTRE(3) }, LEFT_DRAG);
+    tracksGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(tracksGame, st),
+      { x: CENTRE(1), y: CENTRE(3) },
+      LEFT_BUTTON,
+    );
+    tracksGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(tracksGame, st),
+      { x: CENTRE(3), y: CENTRE(3) },
+      LEFT_DRAG,
+    );
     const move = tracksGame.interpretMove(
       st,
       ui,
-      null,
+      sizedDrawState(tracksGame, st),
       { x: CENTRE(3), y: CENTRE(3) },
       LEFT_RELEASE,
     );
@@ -182,17 +195,35 @@ describe("tracks input", () => {
   it("a drag that drifts out of bounds keeps its last valid extent", () => {
     const st = newState(SMALL.p, SMALL.desc);
     const ui = tracksGame.newUi(st);
-    tracksGame.interpretMove(st, ui, null, { x: CENTRE(1), y: CENTRE(3) }, LEFT_BUTTON);
+    tracksGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(tracksGame, st),
+      { x: CENTRE(1), y: CENTRE(3) },
+      LEFT_BUTTON,
+    );
     // A valid horizontal drag out to column 3.
-    tracksGame.interpretMove(st, ui, null, { x: CENTRE(3), y: CENTRE(3) }, LEFT_DRAG);
+    tracksGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(tracksGame, st),
+      { x: CENTRE(3), y: CENTRE(3) },
+      LEFT_DRAG,
+    );
     // Now drift above the grid (y=5 → row −1): upstream would cancel; we freeze.
-    tracksGame.interpretMove(st, ui, null, { x: CENTRE(3), y: 5 }, LEFT_DRAG);
+    tracksGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(tracksGame, st),
+      { x: CENTRE(3), y: 5 },
+      LEFT_DRAG,
+    );
     expect(ui.dragging).toBe(true);
     expect(ui.dragEx).toBe(3); // extent preserved, not reset to the origin
     const move = tracksGame.interpretMove(
       st,
       ui,
-      null,
+      sizedDrawState(tracksGame, st),
       { x: CENTRE(3), y: 5 },
       LEFT_RELEASE,
     );
@@ -209,15 +240,21 @@ describe("tracks input", () => {
     tracksGame.interpretMove(
       st,
       ui,
-      null,
+      sizedDrawState(tracksGame, st),
       { x: CENTRE(1), y: CENTRE(3) },
       RIGHT_BUTTON,
     );
-    tracksGame.interpretMove(st, ui, null, { x: CENTRE(3), y: CENTRE(3) }, RIGHT_DRAG);
+    tracksGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(tracksGame, st),
+      { x: CENTRE(3), y: CENTRE(3) },
+      RIGHT_DRAG,
+    );
     const move = tracksGame.interpretMove(
       st,
       ui,
-      null,
+      sizedDrawState(tracksGame, st),
       { x: CENTRE(3), y: CENTRE(3) },
       RIGHT_RELEASE,
     );

@@ -140,8 +140,17 @@ export interface EngineCore {
    * (CSS transitions, mobile address-bar show/hide). The
    * canvas-clearing concern is captured separately by
    * `canvasCleared()` (called from the adapter's `resizeDrawing`),
-   * which is the *real* signal that the per-tile cache is stale. */
-  size(maxSize: Size, isUserSize: boolean, devicePixelRatio: number): Size;
+   * which is the *real* signal that the per-tile cache is stale.
+   *
+   * Upstream's `midend_size` also takes a `user_size` flag (cap at the
+   * preferred tile size when false) and our chain used to thread a
+   * `devicePixelRatio` alongside it. The app passed `true` at its one call
+   * site and never read the dpr at all, so both were removed
+   * (`audit-vestigial-contract-surface`). The "don't grow past the preferred
+   * size" job is done a layer up and better, by the `maxScale` setting, which
+   * caps `maxSize` at N× `preferredSize()` before this is called; the dpr's
+   * real consumer is `resizeDrawing`. */
+  size(maxSize: Size): Size;
   /** The frontend just cleared the canvas (`Drawing.resize` resets the
    * backing store), so any per-tile cache the game holds is now
    * stale. Discard the drawstate and let the game's next `redraw`
@@ -268,7 +277,6 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   getStaticProperties(): PuzzleStaticAttributes {
     return {
       displayName: this.game.id,
-      canConfigure: true,
       canSolve: this.game.canSolve,
       canHint: this.game.hint !== undefined,
       canFindMistakes: this.game.findMistakes !== undefined,
@@ -355,10 +363,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     // A fresh drawstate ensures the per-tile cache reflects the new
     // game; the game's `!ds.started` branch covers the
     // background/grid setup on its next paint.
-    this.drawState = this.game.newDrawState?.(initial) ?? null;
-    if (this.drawState !== null) {
-      this.game.setTileSize?.(this.drawState, this.currentTileSize);
-    }
+    this.drawState = this.freshDrawState(initial);
     this.usedSolve = false;
     this.clearHint();
     this.clearMistakes();
@@ -412,7 +417,29 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     return this.history[this.pos];
   }
 
+  /**
+   * A draw state for `s`, with the current tile size already applied.
+   *
+   * The two steps are paired here rather than at each of the (three) sites
+   * that need a fresh drawstate, because the pairing is what makes
+   * `Game.interpretMove`'s promise true — `ds` is non-null *and* sized, so a
+   * game reads `ds.tilesize` rather than guessing at the preferred size.
+   * Every game that had a `ds?.tilesize || PREFERRED_TILE_SIZE` was defending
+   * against the gap between these two lines (`newDrawState` initialises
+   * `tilesize: 0`), which is a gap only a fourth caller splitting them could
+   * open (`audit-vestigial-contract-surface`).
+   */
+  private freshDrawState(s: State): DrawState {
+    const ds = this.game.newDrawState(s);
+    this.game.setTileSize?.(ds, this.currentTileSize);
+    return ds;
+  }
+
   processInput(x: number, y: number, button: number): boolean {
+    // No board, no drawstate, nothing to interpret against. The app does not
+    // send input before a game exists; this is what makes `interpretMove`'s
+    // non-null `ds` true rather than merely usually-true.
+    if (this.drawState === null) return false;
     // A press from a finger or a pen arrives with MOD_STYLUS set. Strip it,
     // unless the game has asked to see it (`wantsStylusModifier`): a game with
     // no touch-specific behaviour must not have to *remember* to strip a bit it
@@ -1139,29 +1166,26 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * canvas-clearing concern is handled by `canvasCleared()` which
    * the adapter invokes from `resizeDrawing` only — the real signal
    * that the cache is stale. */
-  size(maxSize: Size, isUserSize: boolean, _dpr: number): Size {
+  size(maxSize: Size): Size {
     const base = this.game.computeSize(this.params, this.preferredTileSize);
     if (base.w <= 0 || base.h <= 0) {
       this.winSize = base;
       return base;
     }
     // Largest integer tile size whose board fits maxSize — upstream
-    // midend_size's binary search. With `isUserSize` (the app passes true:
-    // fill the layout slot) the tile may exceed the game's preferred size;
-    // without it, the preferred size is the ceiling.
+    // midend_size's binary search, in its `user_size` form: the board fills
+    // the layout slot it is given, and the tile may exceed the game's
+    // preferred size to do it. Capping instead at the preferred size is what
+    // upstream's flag bought, and the `maxScale` setting already does that job
+    // a layer up by shrinking `maxSize` itself.
     const fits = (ts: number): boolean => {
       const s = this.game.computeSize(this.params, ts);
       return s.w <= maxSize.w && s.h <= maxSize.h;
     };
-    let hi: number;
-    if (isUserSize) {
-      hi = 1;
-      do {
-        hi *= 2;
-      } while (fits(hi));
-    } else {
-      hi = this.preferredTileSize + 1;
-    }
+    let hi = 1;
+    do {
+      hi *= 2;
+    } while (fits(hi));
     let lo = 1;
     while (lo < hi - 1) {
       const mid = (lo + hi) >> 1;
@@ -1177,6 +1201,8 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       // unchanged, so this is genuinely cheap.
       this.game.setTileSize?.(this.drawState, tile);
     }
+    // (`drawState` is null only before the first `startFrom`, i.e. before
+    // there is a board to size for.)
     this.winSize = this.game.computeSize(this.params, tile);
     return this.winSize;
   }
@@ -1189,10 +1215,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * scratch, including its own background. */
   canvasCleared(): void {
     if (this.history.length === 0) return;
-    if (this.game.newDrawState) {
-      this.drawState = this.game.newDrawState(this.history[0]);
-      this.game.setTileSize?.(this.drawState, this.currentTileSize);
-    }
+    this.drawState = this.freshDrawState(this.history[0]);
   }
 
   formatAsText(): string | undefined {
@@ -1342,7 +1365,11 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   // --- drawing -----------------------------------------------------
 
   redraw(dr: GameDrawing): void {
-    if (!this.game.redraw) return;
+    // No board yet, so no drawstate and nothing to paint. (This used to be
+    // `if (!this.game.redraw) return;` — a check on an optional hook all 57
+    // games implement, standing in for the condition that can actually
+    // occur.)
+    if (this.drawState === null) return;
     // The engine paints no pixels of its own — it just orchestrates
     // the game's `redraw`. The background fill that used to live
     // here (mirroring `midend.c`'s first-draw rect) moved into each

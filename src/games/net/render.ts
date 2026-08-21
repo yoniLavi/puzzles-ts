@@ -390,7 +390,7 @@ function drawTile(
 
 export function redraw(
   dr: GameDrawing,
-  ds: NetDrawState | null,
+  ds: NetDrawState,
   prev: NetState | null,
   current: NetState,
   dir: number,
@@ -398,8 +398,6 @@ export function redraw(
   animTime: number,
   flashTime: number,
 ): void {
-  if (!ds) return;
-
   let state = current;
   const oldstate = prev;
 

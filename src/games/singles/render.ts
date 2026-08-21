@@ -235,7 +235,7 @@ function tileRedraw(
 
 export function redraw(
   dr: GameDrawing,
-  ds: SinglesDrawState | null,
+  ds: SinglesDrawState,
   _prev: SinglesState | null,
   state: SinglesState,
   _dir: number,
@@ -245,7 +245,6 @@ export function redraw(
   hint?: HintStep<SinglesMove, SinglesHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h } = state;
 

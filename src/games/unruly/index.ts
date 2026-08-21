@@ -103,13 +103,13 @@ function decideValue(button: number, current: Cell): Cell | null {
 function interpretMove(
   state: UnrulyState,
   ui: UnrulyUi,
-  ds: UnrulyDrawState | null,
+  ds: UnrulyDrawState,
   p: Point,
   rawButton: number,
 ): UnrulyMove | null | UiUpdate {
   const button = stripModifiers(rawButton);
   const { w2, h2 } = state;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const b = border(ts);
 
   let hx = ui.cx;

@@ -50,6 +50,10 @@ const prefGame: Game<{ n: number }, PrefState, "noop", PrefUi> = {
     [0, 0, 0],
   ],
   computeSize: () => ({ w: 10, h: 10 }),
+  // Required members this double has nothing to say about; see
+  // `Game.newDrawState` (`audit-vestigial-contract-surface`).
+  newDrawState: () => null,
+  redraw: () => {},
   prefs: [
     {
       kw: "highlight",

@@ -96,7 +96,7 @@ function newUi(_state: PatternState): PatternUi {
 function interpretMove(
   state: PatternState,
   ui: PatternUi,
-  ds: PatternDrawState | null,
+  ds: PatternDrawState,
   p: Point,
   rawButton: number,
 ): PatternMove | null | UiUpdate {
@@ -104,7 +104,7 @@ function interpretMove(
   const shift = (rawButton & MOD_SHFT) !== 0;
   const stylus = (rawButton & MOD_STYLUS) !== 0;
   const button = stripModifiers(rawButton);
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const { w, h } = state.common;
   const { grid } = state;
 

@@ -437,7 +437,7 @@ function drawPencilIndicator(dr: GameDrawing, ts: number, on: boolean): void {
 
 export function redraw(
   dr: GameDrawing,
-  ds: AbcdDrawState | null,
+  ds: AbcdDrawState,
   _prev: AbcdState | null,
   state: AbcdState,
   _dir: number,
@@ -447,7 +447,6 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, n } = state.params;
   const firstFrame = !ds.started;

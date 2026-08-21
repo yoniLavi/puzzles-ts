@@ -680,7 +680,7 @@ function splitMistakeOverlay(
 
 export function redraw(
   dr: GameDrawing,
-  ds: GalaxiesDrawState | null,
+  ds: GalaxiesDrawState,
   _prev: GalaxiesState | null,
   s: GalaxiesState,
   _dir: number,
@@ -703,7 +703,6 @@ export function redraw(
   hint?: HintStep<GalaxiesMove, GalaxiesHint>,
   mistakes?: readonly { kind: "tile" | "edge"; x: number; y: number }[],
 ): void {
-  if (ds === null) return;
   const w = ds.w;
   const h = ds.h;
   const tile = ds.tileSize;

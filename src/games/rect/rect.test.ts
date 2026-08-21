@@ -15,6 +15,7 @@ import {
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { DEFAULT_BACKGROUND } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { newDesc } from "./generator.ts";
 import { rectGame } from "./index.ts";
 import { cloneRectState, executeMove, newState, status } from "./moves.ts";
@@ -97,8 +98,16 @@ describe("rect input → moves", () => {
     const ui = rectGame.newUi(st);
     // Grid point (2.5, 3.0) is the horizontal edge on top of cell (2,3).
     const point = { x: px(2.5), y: px(3.0) };
-    expect(rectGame.interpretMove(st, ui, null, point, LEFT_BUTTON)).toBeDefined();
-    const move = rectGame.interpretMove(st, ui, null, point, LEFT_RELEASE);
+    expect(
+      rectGame.interpretMove(st, ui, sizedDrawState(rectGame, st), point, LEFT_BUTTON),
+    ).toBeDefined();
+    const move = rectGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(rectGame, st),
+      point,
+      LEFT_RELEASE,
+    );
     expect(move).toEqual({ type: "edge", edge: "h", x: 2, y: 3 });
     const next = executeMove(st, move as never);
     expect(next.hedge[3 * 7 + 2]).toBe(1);
@@ -111,12 +120,24 @@ describe("rect input → moves", () => {
     const st = newState(p, "zw");
     const ui = rectGame.newUi(st);
     // Drag from grid vertex (2,2) to (4,4) → a 2×2 outline at (2,2).
-    rectGame.interpretMove(st, ui, null, { x: px(2), y: px(2) }, LEFT_BUTTON);
-    rectGame.interpretMove(st, ui, null, { x: px(4), y: px(4) }, LEFT_DRAG);
+    rectGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(rectGame, st),
+      { x: px(2), y: px(2) },
+      LEFT_BUTTON,
+    );
+    rectGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(rectGame, st),
+      { x: px(4), y: px(4) },
+      LEFT_DRAG,
+    );
     const move = rectGame.interpretMove(
       st,
       ui,
-      null,
+      sizedDrawState(rectGame, st),
       { x: px(4), y: px(4) },
       LEFT_RELEASE,
     );
@@ -139,12 +160,24 @@ describe("rect input → moves", () => {
     expect(st.vedge[2 * 7 + 3]).toBe(1);
     // Right-drag over the box erases interior edges, keeping the outline.
     const ui = rectGame.newUi(st);
-    rectGame.interpretMove(st, ui, null, { x: px(2), y: px(2) }, RIGHT_BUTTON);
-    rectGame.interpretMove(st, ui, null, { x: px(4), y: px(4) }, LEFT_DRAG);
+    rectGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(rectGame, st),
+      { x: px(2), y: px(2) },
+      RIGHT_BUTTON,
+    );
+    rectGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(rectGame, st),
+      { x: px(4), y: px(4) },
+      LEFT_DRAG,
+    );
     const move = rectGame.interpretMove(
       st,
       ui,
-      null,
+      sizedDrawState(rectGame, st),
       { x: px(4), y: px(4) },
       RIGHT_RELEASE,
     );
@@ -160,8 +193,14 @@ describe("rect input → moves", () => {
     const ui = rectGame.newUi(st);
     // Clicking a cell centre (no edge/corner) is not an edge toggle.
     const centre = { x: px(3.5), y: px(3.5) };
-    rectGame.interpretMove(st, ui, null, centre, LEFT_BUTTON);
-    const move = rectGame.interpretMove(st, ui, null, centre, LEFT_RELEASE);
+    rectGame.interpretMove(st, ui, sizedDrawState(rectGame, st), centre, LEFT_BUTTON);
+    const move = rectGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(rectGame, st),
+      centre,
+      LEFT_RELEASE,
+    );
     // A centre click maps to no H/V edge, so no move is produced.
     expect(move === null || (move as { type?: string }).type === undefined).toBe(true);
   });
@@ -170,7 +209,13 @@ describe("rect input → moves", () => {
     const st = newState(P(), "zw");
     const ui = rectGame.newUi(st);
     expect(ui.cursorVisible).toBe(false);
-    rectGame.interpretMove(st, ui, null, { x: 0, y: 0 }, CURSOR_UP);
+    rectGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(rectGame, st),
+      { x: 0, y: 0 },
+      CURSOR_UP,
+    );
     expect(ui.cursorVisible).toBe(true);
   });
 });

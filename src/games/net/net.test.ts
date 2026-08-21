@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { CURSOR_RIGHT, MOD_CTRL, MOD_SHFT } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { newDesc } from "./generator.ts";
 import { netGame } from "./index.ts";
 import { computeLoops } from "./loops.ts";
@@ -214,13 +215,27 @@ describe("moves", () => {
     // The cursor starts at the centre (2,2); lock that tile, then 'a' rotates it.
     const locked = netGame.executeMove(s, { type: "lock", x: 2, y: 2 });
     const ui = newUi(locked);
-    expect(netGame.interpretMove(locked, ui, null, { x: 0, y: 0 }, 0x61)).toBeNull();
+    expect(
+      netGame.interpretMove(
+        locked,
+        ui,
+        sizedDrawState(netGame, locked),
+        { x: 0, y: 0 },
+        0x61,
+      ),
+    ).toBeNull();
   });
 
   it("jumble replays deterministically from its expanded op list", () => {
     const s = base();
     const ui = newUi(s);
-    const move = netGame.interpretMove(s, ui, null, { x: 0, y: 0 }, 0x6a /* 'j' */);
+    const move = netGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(netGame, s),
+      { x: 0, y: 0 },
+      0x6a /* 'j' */,
+    );
     expect((move as NetMove).type).toBe("jumble");
     const a = netGame.executeMove(s, move as NetMove);
     const b = netGame.executeMove(s, move as NetMove);
@@ -278,13 +293,25 @@ describe("moves", () => {
     const ui = newUi(state);
     const cx0 = ui.cx;
     expect(
-      netGame.interpretMove(state, ui, null, { x: 0, y: 0 }, CURSOR_RIGHT | MOD_CTRL),
+      netGame.interpretMove(
+        state,
+        ui,
+        sizedDrawState(netGame, state),
+        { x: 0, y: 0 },
+        CURSOR_RIGHT | MOD_CTRL,
+      ),
     ).toBe(UI_UPDATE);
     expect(ui.cx).toBe((cx0 + 1) % 5);
 
     const org0 = ui.orgX;
     expect(
-      netGame.interpretMove(state, ui, null, { x: 0, y: 0 }, CURSOR_RIGHT | MOD_SHFT),
+      netGame.interpretMove(
+        state,
+        ui,
+        sizedDrawState(netGame, state),
+        { x: 0, y: 0 },
+        CURSOR_RIGHT | MOD_SHFT,
+      ),
     ).toBe(UI_UPDATE);
     expect(ui.orgX).toBe((org0 + 1) % 5);
   });
@@ -294,7 +321,13 @@ describe("moves", () => {
     const ui = newUi(s);
     const org0 = ui.orgX;
     expect(
-      netGame.interpretMove(s, ui, null, { x: 0, y: 0 }, CURSOR_RIGHT | MOD_SHFT),
+      netGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(netGame, s),
+        { x: 0, y: 0 },
+        CURSOR_RIGHT | MOD_SHFT,
+      ),
     ).toBeNull();
     expect(ui.orgX).toBe(org0);
   });

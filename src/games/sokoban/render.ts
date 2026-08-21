@@ -216,7 +216,7 @@ function drawTile(
 
 export function redraw(
   dr: GameDrawing,
-  ds: SokobanDrawState | null,
+  ds: SokobanDrawState,
   _prev: SokobanState | null,
   state: SokobanState,
   _dir: number,
@@ -224,7 +224,6 @@ export function redraw(
   _animTime: number,
   flashTime: number,
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h } = state;
 

@@ -221,7 +221,7 @@ function drawCursor(dr: GameDrawing, ts: number, curX: number, curY: number): vo
 
 export function redraw(
   dr: GameDrawing,
-  ds: PalisadeDrawState | null,
+  ds: PalisadeDrawState,
   _prev: PalisadeState | null,
   state: PalisadeState,
   _dir: number,
@@ -231,7 +231,6 @@ export function redraw(
   hint?: HintStep<PalisadeMove, PalisadeHint>,
   mistakes?: readonly PalisadeMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, k, clues, borders } = state;
   const wh = w * h;

@@ -251,7 +251,7 @@ function newUi(_state: CubeState): CubeUi {
 function interpretMove(
   state: CubeState,
   _ui: CubeUi,
-  ds: CubeDrawState | null,
+  ds: CubeDrawState,
   p: Point,
   rawButton: number,
 ): CubeMove | null | UiUpdate {
@@ -305,12 +305,12 @@ function interpretMove(
  * `interpret_move`. Returns null for a dead-centre click. */
 function directionFromClick(
   state: CubeState,
-  ds: CubeDrawState | null,
+  ds: CubeDrawState,
   p: Point,
 ): Direction | null {
-  const gs = ds?.gridscale ?? PREFERRED_TILE_SIZE;
-  const ox = ds?.ox ?? 0;
-  const oy = ds?.oy ?? 0;
+  const gs = ds.gridscale;
+  const ox = ds.ox;
+  const oy = ds.oy;
   const sq = state.grid[state.current];
   const cx = Math.trunc(sq.x * gs) + ox;
   const cy = Math.trunc(sq.y * gs) + oy;

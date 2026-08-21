@@ -133,13 +133,13 @@ function markInDirection(
 function interpretMove(
   state: PearlState,
   ui: PearlUi,
-  ds: PearlDrawState | null,
+  ds: PearlDrawState,
   p: Point,
   rawButton: number,
 ): PearlMove | null | UiUpdate {
   const w = state.w;
   const h = state.h;
-  const m = metrics(ds?.tileSize ?? PREFERRED_TILE_SIZE);
+  const m = metrics(ds.tileSize);
   let x = p.x;
   let y = p.y;
   let gx = fromCoord(x, m);

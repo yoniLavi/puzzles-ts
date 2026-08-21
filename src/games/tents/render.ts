@@ -436,7 +436,7 @@ function drawTile(
 
 export function redraw(
   dr: GameDrawing,
-  ds: TentsDrawState | null,
+  ds: TentsDrawState,
   _prev: TentsState | null,
   state: TentsState,
   _dir: number,
@@ -446,7 +446,6 @@ export function redraw(
   _hint?: HintStep<TentsMove>,
   mistakes?: readonly TentsMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, grid, numbers } = state;
 

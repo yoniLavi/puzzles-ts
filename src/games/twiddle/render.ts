@@ -333,7 +333,7 @@ function drawRecessedBorder(dr: GameDrawing, w: number, h: number, ts: number): 
 
 export function redraw(
   dr: GameDrawing,
-  ds: TwiddleDrawState | null,
+  ds: TwiddleDrawState,
   prev: TwiddleState | null,
   state: TwiddleState,
   dir: number,
@@ -341,7 +341,6 @@ export function redraw(
   animTime: number,
   flashTime: number,
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, n } = state;
   const hw = highlightWidth(ts);

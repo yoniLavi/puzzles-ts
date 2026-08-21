@@ -151,7 +151,7 @@ function newUi(_state: SixteenState): SixteenUi {
 function interpretMove(
   state: SixteenState,
   ui: SixteenUi,
-  ds: SixteenDrawState | null,
+  ds: SixteenDrawState,
   p: Point,
   button: number,
 ): SixteenMove | null | UiUpdate {
@@ -274,7 +274,7 @@ function interpretMove(
     }
 
     if (rawButton === LEFT_RELEASE) {
-      const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+      const ts = ds.tilesize;
       const axis = ui.dragAxis;
       const index = ui.dragIndex;
       const startX = ui.dragStartX ?? p.x;
@@ -320,7 +320,7 @@ function interpretMove(
   let cx = -1,
     cy = -1;
   if (rawButton === LEFT_BUTTON || rawButton === RIGHT_BUTTON) {
-    const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+    const ts = ds.tilesize;
     cx = fromCoord(p.x, ts);
     cy = fromCoord(p.y, ts);
     ui.curVisible = false;
@@ -474,7 +474,7 @@ function colours(defaultBackground: Colour): Colour[] {
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: redraw with mid-slide interpolation: every tile can be in one of several animation phases.
 function redraw(
   dr: GameDrawing,
-  ds: SixteenDrawState | null,
+  ds: SixteenDrawState,
   prev: SixteenState | null,
   state: SixteenState,
   dir: number,
@@ -483,7 +483,6 @@ function redraw(
   flashTime: number,
   activeHint?: HintStep<SixteenMove, SixteenHintHighlights>,
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const hw = Math.max(1, Math.floor(ts / HIGHLIGHT_WIDTH_DIV));
 

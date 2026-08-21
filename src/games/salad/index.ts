@@ -128,13 +128,13 @@ function symbolFor(button: number): number | "clear" | null {
 function interpretMove(
   state: SaladState,
   ui: SaladUi,
-  ds: SaladDrawState | null,
+  ds: SaladDrawState,
   p: Point,
   rawButton: number,
 ): SaladMove | null | UiUpdate {
   const o = state.order;
   const nums = state.nums;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const button = stripModifiers(rawButton);
   const gx = fromCoord(p.x, ts);
   const gy = fromCoord(p.y, ts);

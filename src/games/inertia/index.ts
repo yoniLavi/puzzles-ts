@@ -191,11 +191,11 @@ function asPrimary(button: number): number {
 function interpretMove(
   s: InertiaState,
   ui: InertiaUi,
-  ds: InertiaDrawState | null,
+  ds: InertiaDrawState,
   p: Point,
   rawButton: number,
 ): InertiaMove | null | UiUpdate {
-  const ts = ds?.tileSize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tileSize;
   const button = asPrimary(rawButton);
   let dir = -1;
 

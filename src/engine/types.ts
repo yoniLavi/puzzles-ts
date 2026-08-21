@@ -155,7 +155,12 @@ export enum PuzzleButton {
 
 export interface PuzzleStaticAttributes {
   displayName: string;
-  canConfigure: boolean;
+  // A `canConfigure` used to sit here, gating the type menu's "Custom type…"
+  // entry — and the midend answered it with a hard-coded `true`, so the gate
+  // never closed. Every game declares a `paramConfig`, which
+  // `custom-params.test.ts` now asserts, so the entry is unconditional; a
+  // future preset-only game reopens the question with that test as the prompt
+  // (`audit-vestigial-contract-surface`).
   canSolve: boolean;
   canHint: boolean;
   /** The game can check the board for mistakes (the `findMistakes` hook). */

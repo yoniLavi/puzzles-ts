@@ -127,12 +127,12 @@ function dragDirection(dx: number, dy: number): number {
 function interpretMove(
   state: SpokesState,
   ui: SpokesUi,
-  ds: SpokesDrawState | null,
+  ds: SpokesDrawState,
   p: Point,
   rawButton: number,
 ): SpokesMove | null | UiUpdate {
   const { w, h } = state;
-  const ts = ds?.tilesize || PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const button = stripModifiers(rawButton);
 
   let from = -1;

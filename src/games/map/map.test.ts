@@ -16,6 +16,7 @@ import {
 } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { newMapDesc } from "./generator.ts";
 import { mapGame } from "./index.ts";
 import { TE, validateDesc } from "./map-data.ts";
@@ -284,7 +285,13 @@ describe("map interpretMove", () => {
     const { state } = makeGame(p, "input-4");
     const ui = newUi(state);
     expect(ui.showNumbers).toBe(false);
-    const r = mapGame.interpretMove(state, ui, null, { x: 0, y: 0 }, 108);
+    const r = mapGame.interpretMove(
+      state,
+      ui,
+      sizedDrawState(mapGame, state),
+      { x: 0, y: 0 },
+      108,
+    );
     expect(r).toBe(UI_UPDATE);
     expect(ui.showNumbers).toBe(true);
   });

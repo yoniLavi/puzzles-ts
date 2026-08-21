@@ -152,7 +152,7 @@ describe("a saved game reloads in every ported game", () => {
       // visible in any comparison above — `loadGame` returns `undefined` and
       // the text may even match — but the state is gone and drawing throws.
       const drawing = new RecordingDrawing(loaded.getColourPalette([1, 1, 1]));
-      loaded.size({ w: 400, h: 400 }, false, 1);
+      loaded.size({ w: 400, h: 400 });
       expect(
         () => loaded.redraw(drawing),
         `${id}: cannot draw the reloaded board`,
@@ -242,7 +242,7 @@ describe("a save this build cannot play is refused, not half-applied", () => {
       // saveable, and above all still drawable. The shipped crash failed
       // exactly here, and nowhere earlier.
       const drawing = new RecordingDrawing(m.getColourPalette([1, 1, 1]));
-      m.size({ w: 400, h: 400 }, false, 1);
+      m.size({ w: 400, h: 400 });
       expect(() => m.redraw(drawing), `${id}: board no longer draws`).not.toThrow();
       expect(drawing.ops.length, `${id}: reloaded board drew nothing`).toBeGreaterThan(
         0,

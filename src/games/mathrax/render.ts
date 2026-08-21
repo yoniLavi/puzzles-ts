@@ -362,7 +362,7 @@ function drawPencilIndicator(
 
 export function redraw(
   dr: GameDrawing,
-  ds: MathraxDrawState | null,
+  ds: MathraxDrawState,
   _prev: MathraxState | null,
   state: MathraxState,
   _dir: number,
@@ -372,7 +372,6 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const o = state.params.o;
   const size = computeSize({ o }, ts);

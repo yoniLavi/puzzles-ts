@@ -535,12 +535,12 @@ const PREFERRED_TILE_SIZE = 33;
 function interpretMove(
   s: PegsState,
   ui: PegsUi,
-  ds: PegsDrawState | null,
+  ds: PegsDrawState,
   p: Point,
   button: number,
 ): PegsMove | null | UiUpdate {
   const { w, h } = s;
-  const ts = ds?.tileSize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tileSize;
 
   if (button === LEFT_BUTTON) {
     const tx = fromCoordWithTileSize(p.x, ts);
@@ -873,7 +873,7 @@ function drawTile(
 
 function redraw(
   dr: GameDrawing,
-  ds: PegsDrawState | null,
+  ds: PegsDrawState,
   _prev: PegsState | null,
   s: PegsState,
   _dir: number,
@@ -881,7 +881,6 @@ function redraw(
   _animTime: number,
   flashTime: number,
 ): void {
-  if (!ds) return;
   const { w, h } = s;
   const ts = ds.tileSize;
   const hw = highlightWidth(ts);

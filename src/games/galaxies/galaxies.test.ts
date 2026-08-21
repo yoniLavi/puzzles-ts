@@ -10,6 +10,7 @@ import {
   RIGHT_RELEASE,
 } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { PuzzleButton } from "../../engine/types.ts";
 import { newGameDesc } from "./generator.ts";
 import {
@@ -730,23 +731,41 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
     const { s, ui } = twoDotBoard();
     // Press on the dot (pixel centre of doubled (3,3) at tile 32 is 80).
     expect(
-      galaxiesGame.interpretMove(s, ui, null, { x: 80, y: 80 }, RIGHT_BUTTON),
+      galaxiesGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(galaxiesGame, s),
+        { x: 80, y: 80 },
+        RIGHT_BUTTON,
+      ),
     ).toBe(UI_UPDATE);
     expect(ui.dragging).toBe(true);
     // Drag onto the left-middle tile.
-    expect(galaxiesGame.interpretMove(s, ui, null, { x: 48, y: 80 }, RIGHT_DRAG)).toBe(
-      UI_UPDATE,
-    );
+    expect(
+      galaxiesGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(galaxiesGame, s),
+        { x: 48, y: 80 },
+        RIGHT_DRAG,
+      ),
+    ).toBe(UI_UPDATE);
     expect([ui.targetX, ui.targetY]).toEqual([1, 3]);
     // A pointer move within the same tile has nothing to repaint.
     expect(
-      galaxiesGame.interpretMove(s, ui, null, { x: 51, y: 83 }, RIGHT_DRAG),
+      galaxiesGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(galaxiesGame, s),
+        { x: 51, y: 83 },
+        RIGHT_DRAG,
+      ),
     ).toBeNull();
     // Release far away (touch lift-jitter): the previewed tile wins.
     const move = galaxiesGame.interpretMove(
       s,
       ui,
-      null,
+      sizedDrawState(galaxiesGame, s),
       { x: 300, y: 300 },
       RIGHT_RELEASE,
     );
@@ -766,13 +785,31 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
     const s = galaxiesGame.newState(p, "a");
     const ui = galaxiesGame.newUi(s);
     expect(
-      galaxiesGame.interpretMove(s, ui, null, { x: 48, y: 48 }, RIGHT_BUTTON),
+      galaxiesGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(galaxiesGame, s),
+        { x: 48, y: 48 },
+        RIGHT_BUTTON,
+      ),
     ).toBe(UI_UPDATE);
-    expect(galaxiesGame.interpretMove(s, ui, null, { x: 80, y: 48 }, RIGHT_DRAG)).toBe(
-      UI_UPDATE,
-    );
     expect(
-      galaxiesGame.interpretMove(s, ui, null, { x: 80, y: 48 }, RIGHT_RELEASE),
+      galaxiesGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(galaxiesGame, s),
+        { x: 80, y: 48 },
+        RIGHT_DRAG,
+      ),
+    ).toBe(UI_UPDATE);
+    expect(
+      galaxiesGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(galaxiesGame, s),
+        { x: 80, y: 48 },
+        RIGHT_RELEASE,
+      ),
     ).toBe(UI_UPDATE);
     expect(ui.dragging).toBe(false);
   });
@@ -797,7 +834,14 @@ describe("Galaxies association gestures (left button, and cell→dot)", () => {
     x: number,
     y: number,
     button: number,
-  ) => galaxiesGame.interpretMove(s, ui, null, { x, y }, button);
+  ) =>
+    galaxiesGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(galaxiesGame, s),
+      { x, y },
+      button,
+    );
 
   it("a left click still toggles an edge — on release, not on press", () => {
     const { s, ui } = board();

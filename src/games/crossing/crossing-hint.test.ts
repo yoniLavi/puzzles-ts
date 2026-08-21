@@ -616,7 +616,7 @@ describe("crossing hint — the frame", () => {
       const midend = new Midend(crossingGame);
       const id = `${crossingGame.encodeParams(params, true)}#hint-dismiss`;
       expect(midend.newGameFromId(id)).toBeUndefined();
-      const size = midend.size({ w: 600, h: 900 }, false, 1);
+      const size = midend.size({ w: 600, h: 900 });
       const ts = size.w / (params.w + 1);
       if (showHint) expect(midend.hint()).toBeUndefined();
       midend.redraw(new RecordingDrawing(palette));

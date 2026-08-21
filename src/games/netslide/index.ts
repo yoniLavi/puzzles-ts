@@ -144,12 +144,12 @@ function executeMove(s: NetslideState, m: NetslideMove): NetslideState {
 function interpretMove(
   s: NetslideState,
   ui: NetslideUi,
-  ds: NetslideDrawState | null,
+  ds: NetslideDrawState,
   p: Point,
   rawButton: number,
 ): NetslideMove | null | UiUpdate {
   const button = stripModifiers(rawButton);
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
 
   if (isCursorMove(button)) {
     const diff = c2diff(s.w, s.h, ui.curX, ui.curY, button);

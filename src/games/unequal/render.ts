@@ -514,7 +514,7 @@ function drawPencilIndicator(
 
 export function redraw(
   dr: GameDrawing,
-  ds: UnequalDrawState | null,
+  ds: UnequalDrawState,
   _prev: UnequalState | null,
   state: UnequalState,
   _dir: number,
@@ -524,7 +524,6 @@ export function redraw(
   hint?: HintStep<UnequalMove, UnequalHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const o = state.order;
   const total = drawSize(o, ts);

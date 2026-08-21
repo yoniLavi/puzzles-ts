@@ -210,7 +210,7 @@ function drawCell(
 
 export function redraw(
   dr: GameDrawing,
-  ds: RangeDrawState | null,
+  ds: RangeDrawState,
   _prev: RangeState | null,
   state: RangeState,
   _dir: number,
@@ -220,7 +220,6 @@ export function redraw(
   hint?: HintStep<RangeMove, RangeHint>,
   mistakes?: readonly { r: number; c: number }[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, grid } = state;
 

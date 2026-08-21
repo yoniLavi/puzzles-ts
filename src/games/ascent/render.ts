@@ -374,7 +374,7 @@ function displayNumber(i: number, ui: AscentUi, state: AscentState): number {
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one redraw covering five grid modes (square/hex/honeycomb variants) on a shared substrate.
 export function redrawAscent(
   dr: GameDrawing,
-  ds: AscentDrawState | null,
+  ds: AscentDrawState,
   _prev: AscentState | null,
   state: AscentState,
   _dir: number,
@@ -384,7 +384,6 @@ export function redrawAscent(
   _hint?: unknown,
   mistakes?: readonly AscentMistake[],
 ): void {
-  if (!ds) return;
   const w = state.w;
   const h = state.h;
   const tilesize = ds.tileSize;

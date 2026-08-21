@@ -144,12 +144,12 @@ function leftCycle(from: BoatsFill): BoatsFill {
 function interpretMove(
   state: BoatsState,
   ui: BoatsUi,
-  ds: BoatsDrawState | null,
+  ds: BoatsDrawState,
   point: Point,
   rawButton: number,
 ): BoatsMove | null | UiUpdate {
   const { w, h } = state.params;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const button = stripModifiers(rawButton);
 
   let gx = fromCoord(point.x, ts);

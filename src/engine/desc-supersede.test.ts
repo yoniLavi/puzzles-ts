@@ -80,6 +80,10 @@ const minesish: Game<MinesishParams, MinesishState, MinesishMove, null, null> = 
     `layout=${s.layout} clicked=${s.clickedAt} opened=[${s.opened.join(",")}]`,
   colours: (bg) => [bg],
   computeSize: () => ({ w: 10, h: 10 }),
+  // Required members this double has nothing to say about; see
+  // `Game.newDrawState` (`audit-vestigial-contract-surface`).
+  newDrawState: () => null,
+  redraw: () => {},
 };
 
 /** The same game with the hook removed — the guard that a game which says

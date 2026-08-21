@@ -165,7 +165,12 @@ export class PuzzleTypeMenu extends SignalWatcher(LitElement) {
       }
     }
 
-    if (this.puzzle?.canConfigure) {
+    // Every game has a custom-params form (`custom-params.test.ts` asserts it),
+    // so the only condition left is that there is a puzzle to configure. This
+    // used to read `this.puzzle?.canConfigure`, and the midend answered that
+    // with a literal `true` — a gate that never closed
+    // (`audit-vestigial-contract-surface`).
+    if (this.puzzle) {
       result.push(html`<wa-divider></wa-divider>`);
       result.push(html`
         <wa-dropdown-item 

@@ -146,13 +146,13 @@ function fromCoordTrunc(pixel: number, ts: number): number {
 function interpretMove(
   state: RomeState,
   ui: RomeUi,
-  ds: RomeDrawState | null,
+  ds: RomeDrawState,
   p: Point,
   rawButton: number,
 ): RomeMove | null | UiUpdate {
   const { w, h, grid } = state;
   const button = stripModifiers(rawButton);
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
 
   // The highlighted square, captured up front exactly as upstream does: a
   // cursor move below updates `ui`, but every move emitted this call is about

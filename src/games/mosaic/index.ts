@@ -102,7 +102,7 @@ function paintWouldChange(
 function interpretMove(
   state: MosaicState,
   ui: MosaicUi,
-  ds: MosaicDrawState | null,
+  ds: MosaicDrawState,
   p: Point,
   button: number,
 ): MosaicMove | null | UiUpdate {
@@ -113,7 +113,7 @@ function interpretMove(
   // After completion, only cursor browsing is accepted (upstream freeze).
   if (state.notCompletedClues === 0 && !d) return null;
 
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const m = Math.floor(ts / 2);
   const offsetX = p.x - m;
   const offsetY = p.y - m;

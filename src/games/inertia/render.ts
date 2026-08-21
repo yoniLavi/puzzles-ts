@@ -334,7 +334,7 @@ function drawPlayer(
 
 export function redraw(
   dr: GameDrawing,
-  ds: InertiaDrawState | null,
+  ds: InertiaDrawState,
   prev: InertiaState | null,
   s: InertiaState,
   dir: number,
@@ -343,7 +343,6 @@ export function redraw(
   flashTime: number,
   hint?: HintStep<InertiaMove, InertiaHintHighlights>,
 ): void {
-  if (!ds) return;
   const { w, h } = s.params;
   const ts = ds.tileSize;
 

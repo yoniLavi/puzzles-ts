@@ -327,9 +327,13 @@ condition — and keep a flash-overlay-isolation test (Flip has one).
 `computeSize(params, tileSize)` is the pure size function;
 `setTileSize(ds, tileSize)` tells the draw state the chosen size so
 `interpretMove` coordinate mapping and `redraw` agree; `preferredTileSize` is
-the baseline (default 32). The midend calls `setTileSize` after
-`newDrawState` and again whenever a new tile size is picked; `Midend.size` is
-informational and side-effect-free (see the doctrine above).
+the baseline (default 32). The midend creates the draw state and applies
+`setTileSize` in one step (`Midend.freshDrawState`), and calls `setTileSize`
+again whenever a new tile size is picked; `Midend.size` is informational and
+side-effect-free (see the doctrine above). Because those two are paired, a
+game's `redraw`/`interpretMove` is handed a draw state that is both non-null and
+sized — so no `if (!ds) return;` and no `ds?.tilesize ?? PREFERRED_TILE_SIZE`
+(see [mechanics](./mechanics.md) § "interpretMove and UI_UPDATE").
 
 *Compressed history:* the retired web build defined `NARROW_BORDERS`, so C
 games with an `#ifdef NARROW_BORDERS` variant (Slant's slim border; Bricks'

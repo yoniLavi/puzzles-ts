@@ -486,7 +486,7 @@ function drawWaves(
 
 export function redraw(
   dr: GameDrawing,
-  ds: BoatsDrawState | null,
+  ds: BoatsDrawState,
   _prev: BoatsState | null,
   state: BoatsState,
   _dir: number,
@@ -496,7 +496,6 @@ export function redraw(
   hint?: HintStep<BoatsMove, BoatsHint>,
   mistakes?: readonly BoatsMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const p = state.params;
   const { w, h } = p;

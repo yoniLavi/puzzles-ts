@@ -315,7 +315,7 @@ function drawLaserTile(
 
 export function redraw(
   dr: GameDrawing,
-  ds: BlackboxDrawState | null,
+  ds: BlackboxDrawState,
   _prev: BlackboxState | null,
   state: BlackboxState,
   _dir: number,
@@ -323,7 +323,6 @@ export function redraw(
   animTime: number,
   flashTime: number,
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   let isflash = false;
   let force = false;

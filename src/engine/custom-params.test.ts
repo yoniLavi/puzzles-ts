@@ -83,6 +83,12 @@ function makeGame(
       [0, 0, 0],
     ],
     computeSize: () => ({ w: 10, h: 10 }),
+    // Required since `audit-vestigial-contract-surface`: a game that draws
+    // nothing is not a game, and while these were optional every real game
+    // received a `DrawState | null` and guarded a null the engine cannot
+    // produce. This double genuinely draws nothing, so its DrawState is `null`.
+    newDrawState: () => null,
+    redraw: () => {},
     ...overrides,
   };
 }
@@ -195,6 +201,20 @@ const REGISTERED = registeredGameIds();
 describe("Every registered game with paramConfig round-trips its presets", () => {
   it("swept a populated registry, so the cases below are not vacuous", () => {
     expect(REGISTERED.length).toBeGreaterThan(50);
+  });
+
+  it("no game ships a blank Custom type… dialog", () => {
+    // The `continue` below skips a game with no `paramConfig` **in silence**,
+    // and the type menu offers "Custom type…" for every game unconditionally,
+    // so a port that forgets the hook ships a dialog with no fields in it and
+    // nothing objects. Sokoban did, from its port until
+    // `audit-vestigial-contract-surface` — invisible because the menu entry was
+    // gated on a `canConfigure` flag the midend hard-coded to `true`.
+    //
+    // If a genuinely preset-only game ever arrives, this is the prompt to
+    // decide what its menu should say, rather than to add an exception.
+    const blank = REGISTERED.filter((id) => !getTsGame(id)?.paramConfig?.length);
+    expect(blank, "games whose custom-params dialog would open empty").toEqual([]);
   });
 
   for (const id of REGISTERED) {

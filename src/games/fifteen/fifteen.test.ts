@@ -6,6 +6,7 @@ import {
   LEFT_BUTTON,
 } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { executeMove, fifteenGame } from "./index.ts";
 import {
   decodeParams,
@@ -255,15 +256,33 @@ describe("Fifteen input", () => {
     // direction, so the gap moves the opposite way (flip).
     // CURSOR_UP → flips to DOWN → gap moves down, clamped at the bottom row.
     expect(
-      fifteenGame.interpretMove(solved, ui, null, { x: 0, y: 0 }, CURSOR_UP),
+      fifteenGame.interpretMove(
+        solved,
+        ui,
+        sizedDrawState(fifteenGame, solved),
+        { x: 0, y: 0 },
+        CURSOR_UP,
+      ),
     ).toBeNull();
     // CURSOR_LEFT → flips to RIGHT → gap moves right, clamped at x = 3.
     expect(
-      fifteenGame.interpretMove(solved, ui, null, { x: 0, y: 0 }, CURSOR_LEFT),
+      fifteenGame.interpretMove(
+        solved,
+        ui,
+        sizedDrawState(fifteenGame, solved),
+        { x: 0, y: 0 },
+        CURSOR_LEFT,
+      ),
     ).toBeNull();
     // CURSOR_DOWN → flips to UP → gap moves up to (3,2): legal.
     expect(
-      fifteenGame.interpretMove(solved, ui, null, { x: 0, y: 0 }, CURSOR_DOWN),
+      fifteenGame.interpretMove(
+        solved,
+        ui,
+        sizedDrawState(fifteenGame, solved),
+        { x: 0, y: 0 },
+        CURSOR_DOWN,
+      ),
     ).toEqual({
       type: "move",
       x: 3,

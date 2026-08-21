@@ -90,7 +90,7 @@ function changedState(
 
 // --- helpers ----------------------------------------------------------
 
-function tileSizeOf(ds: BlackboxDrawState | null): number {
+function tileSizeOf(ds: BlackboxDrawState): number {
   return ds && ds.tilesize > 0 ? ds.tilesize : PREFERRED_TILE_SIZE;
 }
 
@@ -108,7 +108,7 @@ function fromDraw(px: number, ts: number): number {
 function interpretMove(
   state: BlackboxState,
   ui: BlackboxUi,
-  ds: BlackboxDrawState | null,
+  ds: BlackboxDrawState,
   p: Point,
   button: number,
 ): BlackboxMove | null | UiUpdate {

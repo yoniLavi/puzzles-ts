@@ -164,7 +164,7 @@ function executeMove(s: NetState, m: NetMove): NetState {
 function interpretMove(
   s: NetState,
   ui: NetUi,
-  ds: NetDrawState | null,
+  ds: NetDrawState,
   p: Point,
   rawButton: number,
 ): NetMove | null | UiUpdate {
@@ -198,7 +198,7 @@ function interpretMove(
     // Pixel → tile. (No stylus branch: the midend strips MOD_STYLUS for us, so a
     // touch tap rotates left and a long-press right — deliberate divergence,
     // docs/games/input.md § "Touch is stripped for you". Lock stays on the middle button / `s`.)
-    const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+    const ts = ds.tilesize;
     const lt = lineThick(ts);
     const px = Math.floor(p.x) - WINDOW_OFFSET - lt;
     const py = Math.floor(p.y) - WINDOW_OFFSET - lt;

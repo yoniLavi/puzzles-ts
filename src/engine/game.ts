@@ -231,7 +231,23 @@ export interface Game<
   /** The game genuinely needs a right (secondary) button to be playable —
    * upstream's `REQUIRE_RBUTTON` flag. Pattern marks empty cells only with
    * the right button, so a touch frontend must surface a secondary-action
-   * affordance. Defaults to false (the midend reports it for the app shell). */
+   * affordance. Defaults to false.
+   *
+   * **Eighteen games declare this and nothing reads it**
+   * (`audit-vestigial-contract-surface`). The midend forwards it to
+   * `PuzzleStaticAttributes` and the app shell carries it as far as
+   * `Puzzle.needsRightButton`, where the trail ends: the one site that
+   * considered branching on it — `view-interactive.ts`'s `handleContextMenu` —
+   * says in a comment why it does not, and the affordance upstream wanted it
+   * for is offered to *every* game unconditionally (long-press and
+   * two-finger-tap, configurable globally in settings).
+   *
+   * It is kept rather than deleted because `audit-input-mode-parity` is
+   * already asking for the control this is half of — "a game cannot tell the
+   * frontend *I have no secondary button, do not long-press me*" — and the
+   * eighteen declarations are upstream knowledge that no longer has a C build
+   * to be re-derived from. That audit owns the decision: give it a consumer,
+   * or remove it and the declarations together. */
   readonly needsRightButton?: boolean;
   /**
    * The game wants to know that a press came from a finger or a pen, and will
@@ -323,11 +339,19 @@ export interface Game<
 
   /** Translate a pointer/key event to a move, `null` for "nothing
    * happened", or `UI_UPDATE` for "UI/cursor changed in place, redraw
-   * but add no history entry". */
+   * but add no history entry".
+   *
+   * `ds` is the live draw state, **never null and always sized**: the midend
+   * creates it and applies `setTileSize` in the same breath (see
+   * `Midend.freshDrawState`) and refuses input before there is a board. So
+   * read `ds.tilesize` directly — a `ds?.tilesize ?? PREFERRED_TILE_SIZE`
+   * fallback is not merely inert, it is a *wrong answer* waiting to happen,
+   * mapping the pointer at the preferred tile size rather than the one on
+   * screen (`audit-vestigial-contract-surface`; fifty-seven games had one). */
   interpretMove(
     s: State,
     ui: Ui,
-    ds: DrawState | null,
+    ds: DrawState,
     p: Point,
     button: number,
   ): Move | null | UiUpdate;
@@ -496,10 +520,16 @@ export interface Game<
    * The midend calls this after `newDrawState` (at the preferred
    * size) and again whenever `size()` picks a new tile size. */
   setTileSize?(ds: DrawState, tileSize: number): void;
-  newDrawState?(s: State): DrawState;
-  redraw?(
+  /** Build the per-game draw state (the tile cache and whatever else `redraw`
+   * needs). Required, not optional: all 57 games have one, the midend has no
+   * sensible behaviour without one, and while it *was* optional every game
+   * received a `DrawState | null` and wrote a guard against a null the engine
+   * could not produce (`audit-vestigial-contract-surface`). */
+  newDrawState(s: State): DrawState;
+  /** Paint the board. `ds` is never null — see {@link Game.newDrawState}. */
+  redraw(
     dr: GameDrawing,
-    ds: DrawState | null,
+    ds: DrawState,
     prev: State | null,
     s: State,
     dir: number,

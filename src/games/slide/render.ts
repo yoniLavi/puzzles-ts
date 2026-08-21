@@ -680,7 +680,7 @@ function findPiecepart(w: number, h: number, dsf: Dsf, x: number, y: number): nu
 
 export function redraw(
   dr: GameDrawing,
-  ds: SlideDrawState | null,
+  ds: SlideDrawState,
   _prev: SlideState | null,
   state: SlideState,
   _dir: number,
@@ -688,7 +688,6 @@ export function redraw(
   _animTime: number,
   flashTime: number,
 ): void {
-  if (!ds) return;
   const { w, h } = state;
   const wh = w * h;
   const ts = ds.tilesize;

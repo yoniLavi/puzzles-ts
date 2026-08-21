@@ -197,7 +197,7 @@ function drawCursor(dr: GameDrawing, ts: number, curX: number, curY: number): vo
 
 export function redraw(
   dr: GameDrawing,
-  ds: SeparateDrawState | null,
+  ds: SeparateDrawState,
   _prev: SeparateState | null,
   state: SeparateState,
   _dir: number,
@@ -207,7 +207,6 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly SeparateMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, k, letters, borders } = state;
   const wh = w * h;

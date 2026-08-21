@@ -69,7 +69,7 @@ export function setTileSize(ds: CubeDrawState, tileSize: number): void {
 
 export function redraw(
   dr: GameDrawing,
-  ds: CubeDrawState | null,
+  ds: CubeDrawState,
   prev: CubeState | null,
   state: CubeState,
   dir: number,
@@ -77,7 +77,6 @@ export function redraw(
   animTime: number,
   _flashTime: number,
 ): void {
-  if (!ds) return;
   const gs = ds.gridscale;
   const bb = ds.bbox;
   const xsize = Math.trunc((bb.r - bb.l + 2 * ds.border) * gs);

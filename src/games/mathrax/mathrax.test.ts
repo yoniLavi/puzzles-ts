@@ -21,6 +21,7 @@ import {
   DEFAULT_BACKGROUND,
   renderScenario,
 } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import type { ChangeNotification, GameStatus } from "../../engine/types.ts";
 import cReference from "./__fixtures__/mathrax-c-reference.json" with { type: "json" };
 import { mathraxCandidateClue, newMathraxDesc } from "./generator.ts";
@@ -112,7 +113,13 @@ function press(
   button: number,
   p: { x: number; y: number } = { x: 0, y: 0 },
 ): MathraxMove | null | typeof UI_UPDATE {
-  return mathraxGame.interpretMove(state, ui, null, p, button);
+  return mathraxGame.interpretMove(
+    state,
+    ui,
+    sizedDrawState(mathraxGame, state),
+    p,
+    button,
+  );
 }
 
 function harness() {

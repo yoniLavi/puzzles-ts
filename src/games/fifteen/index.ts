@@ -162,7 +162,7 @@ function flipCursor(button: number): number {
 function interpretMove(
   state: FifteenState,
   ui: FifteenUi,
-  ds: FifteenDrawState | null,
+  ds: FifteenDrawState,
   p: Point,
   button: number,
 ): FifteenMove | null | UiUpdate {
@@ -176,7 +176,7 @@ function interpretMove(
   const raw = stripModifiers(button);
 
   if (raw === LEFT_BUTTON) {
-    const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+    const ts = ds.tilesize;
     nx = fromCoord(p.x, ts);
     ny = fromCoord(p.y, ts);
     if (nx < 0 || nx >= w || ny < 0 || ny >= h) return null; // out of bounds
@@ -310,7 +310,7 @@ function drawRecessedBorder(
 
 function redraw(
   dr: GameDrawing,
-  ds: FifteenDrawState | null,
+  ds: FifteenDrawState,
   prev: FifteenState | null,
   state: FifteenState,
   _dir: number,
@@ -319,7 +319,6 @@ function redraw(
   flashTime: number,
   activeHint?: HintStep<FifteenMove, FifteenHintHighlights>,
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, n } = state;
   const hw = Math.max(1, Math.floor(ts / HIGHLIGHT_WIDTH_DIV));

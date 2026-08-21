@@ -105,7 +105,7 @@ function fillFromDragType(dragType: number): ClustersFill {
 function interpretMove(
   state: ClustersState,
   ui: ClustersUi,
-  ds: ClustersDrawState | null,
+  ds: ClustersDrawState,
   p: Point,
   rawButton: number,
 ): ClustersMove | null | UiUpdate {
@@ -113,7 +113,7 @@ function interpretMove(
   const shift = (rawButton & MOD_SHFT) !== 0;
   const control = (rawButton & MOD_CTRL) !== 0;
   const button = stripModifiers(rawButton);
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const b = border(ts);
 
   let hx = ui.cx;

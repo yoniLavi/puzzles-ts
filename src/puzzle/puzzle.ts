@@ -1,6 +1,7 @@
 import { computed, type Signal, signal } from "@lit-labs/signals";
 import * as Sentry from "@sentry/browser";
 import { proxy, releaseProxy, transfer, wrap } from "comlink";
+import { assertNever } from "../engine/assert-never.ts";
 import type {
   ChangeNotification,
   Colour,
@@ -93,7 +94,6 @@ export class Puzzle {
     private readonly workerPuzzle: RemoteWorkerPuzzle,
     {
       displayName,
-      canConfigure,
       canSolve,
       canHint,
       canFindMistakes,
@@ -108,8 +108,6 @@ export class Puzzle {
     // Prefer catalog name to midend API name
     // (e.g., catalog "Tracks" vs API "Train Tracks")
     this.displayName = catalogData?.name ?? displayName;
-    this.isUnfinished = catalogData?.unfinished ?? false;
-    this.canConfigure = canConfigure;
     this.canSolve = canSolve;
     this.canHint = canHint;
     this.canFindMistakes = canFindMistakes;
@@ -183,8 +181,13 @@ export class Puzzle {
         update(this._activeHintExplanation, message.activeHintExplanation ?? "");
         break;
       default:
-        // @ts-expect-error: message.type never
-        throw new Error(`Unknown notifyChange type ${message.type}`);
+        // The last hand-rolled copy of `assertNever`, written before the helper
+        // existed: a `@ts-expect-error: message.type never` over a bare throw.
+        // That form asserts the narrowing at the comment's own line but throws
+        // a message built from a value the compiler has just been told is
+        // `never`, so it named neither the notification nor where it came from
+        // (`audit-vestigial-contract-surface`).
+        assertNever(message, "Puzzle: notifyChange");
     }
 
     this.captureSentryContext();
@@ -206,8 +209,11 @@ export class Puzzle {
 
   // Static properties (no reactivity needed)
   public readonly displayName: string;
-  public readonly isUnfinished: boolean; // "experimental" puzzle status
-  public readonly canConfigure: boolean;
+  // An `isUnfinished` used to sit here, copied off the catalog's `unfinished`
+  // flag and read by nobody: every consumer — the home screen's filter, the
+  // other-puzzles menu, the experimental-puzzle warning, the share dialog —
+  // reads `puzzleDataMap[id].unfinished` straight from the catalog, which is
+  // where the fact lives (`audit-vestigial-contract-surface`).
   public readonly canSolve: boolean;
   public readonly canHint: boolean;
   public readonly canFindMistakes: boolean;
@@ -596,18 +602,14 @@ export class Puzzle {
   // Whether size() has been successfully called yet.
   private hasSize = false;
 
-  public async size(
-    maxSize: Size,
-    isUserSize: boolean,
-    devicePixelRatio: number,
-  ): Promise<Size> {
+  public async size(maxSize: Size): Promise<Size> {
     if (!this.currentGameId) {
       // "The midend relies on the frontend calling midend_new_game() before calling
       // midend_size()." (Or otherwise having a game, e.g., midend_deserialise().)
       console.error("Ignoring Puzzle.size() called before game initialized");
       return maxSize;
     }
-    const result = await this.workerPuzzle.size(maxSize, isUserSize, devicePixelRatio);
+    const result = await this.workerPuzzle.size(maxSize);
     this.hasSize = true;
     return result;
   }
@@ -757,10 +759,6 @@ export class Puzzle {
 
   public async setDrawingPalette(colors: string[]): Promise<void> {
     await this.workerPuzzle.setDrawingPalette(colors);
-  }
-
-  public async setDrawingFontInfo(fontInfo: FontInfo): Promise<void> {
-    await this.workerPuzzle.setDrawingFontInfo(fontInfo);
   }
 
   public async getImage(options?: ImageEncodeOptions): Promise<Blob> {

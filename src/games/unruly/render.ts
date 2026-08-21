@@ -324,7 +324,7 @@ function drawTile(
 
 export function redraw(
   dr: GameDrawing,
-  ds: UnrulyDrawState | null,
+  ds: UnrulyDrawState,
   prev: UnrulyState | null,
   state: UnrulyState,
   _dir: number,
@@ -334,7 +334,6 @@ export function redraw(
   hint?: HintStep<UnrulyMove, UnrulyHint>,
   mistakes?: readonly UnrulyMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w2, h2, grid, immutable } = state;
   const s = w2 * h2;

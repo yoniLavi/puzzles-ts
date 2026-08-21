@@ -435,7 +435,7 @@ export const ascentGame: Game<
   interpretMove(
     s: AscentState,
     ui: AscentUi,
-    ds: AscentDrawState | null,
+    ds: AscentDrawState,
     p: Point,
     button: number,
   ): AscentMove | null | UiUpdate {

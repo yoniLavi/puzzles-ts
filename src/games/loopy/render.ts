@@ -248,7 +248,7 @@ function lineColour(key: number, flashing: boolean): number {
 
 export function redraw(
   dr: GameDrawing,
-  ds: LoopyDrawState | null,
+  ds: LoopyDrawState,
   _prev: LoopyState | null,
   s: LoopyState,
   _dir: number,
@@ -256,7 +256,6 @@ export function redraw(
   _animTime: number,
   flashTime: number,
 ): void {
-  if (ds === null) return;
   const g = s.grid;
   const ts = ds.tileSize;
   const b = border(ts);

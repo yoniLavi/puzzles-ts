@@ -187,7 +187,7 @@ function drawCell(
 
 export function redraw(
   dr: GameDrawing,
-  ds: MosaicDrawState | null,
+  ds: MosaicDrawState,
   _prev: MosaicState | null,
   state: MosaicState,
   _dir: number,
@@ -197,7 +197,6 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly MosaicMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { width, height, board, cells } = state;
 

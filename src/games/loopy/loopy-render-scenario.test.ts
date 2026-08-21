@@ -353,9 +353,7 @@ describe("Loopy render scenarios: clue-position cache", () => {
     // largest tile that fits, and computeSize is strictly increasing here, so
     // handing it the size of a 16px board pins the tile size at 16.
     const SMALL_TILE = PREFERRED_TILE_SIZE / 2;
-    expect(midend.size(computeSize(p, SMALL_TILE), false, 1)).toEqual(
-      computeSize(p, SMALL_TILE),
-    );
+    expect(midend.size(computeSize(p, SMALL_TILE))).toEqual(computeSize(p, SMALL_TILE));
     const small = new RecordingDrawing(palette);
     midend.redraw(small);
 

@@ -360,7 +360,7 @@ function drawTile(
 
 export function redraw(
   dr: GameDrawing,
-  ds: SlantDrawState | null,
+  ds: SlantDrawState,
   _prev: SlantState | null,
   state: SlantState,
   _dir: number,
@@ -370,7 +370,6 @@ export function redraw(
   hint?: HintStep<SlantMove, SlantHint>,
   mistakes?: readonly SlantMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, clues, soln } = state;
   const W = w + 1;

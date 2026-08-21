@@ -7,6 +7,7 @@ import { Midend } from "../../engine/index.ts";
 import { LEFT_BUTTON } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { newUnequalDesc } from "./generator.ts";
 import { unequalGame } from "./index.ts";
 import { computeSize, coord, PREFERRED_TILE_SIZE } from "./render.ts";
@@ -288,18 +289,36 @@ describe("unequal interpretMove", () => {
     const x = i % st.order;
     const y = (i / st.order) | 0;
     // Select the immutable cell (highlight is suppressed for givens).
-    unequalGame.interpretMove?.(st, ui, null, center(x, y), LEFT_BUTTON);
+    unequalGame.interpretMove?.(
+      st,
+      ui,
+      sizedDrawState(unequalGame, st),
+      center(x, y),
+      LEFT_BUTTON,
+    );
     ui.hshow = true;
     ui.hx = x;
     ui.hy = y;
-    const move = unequalGame.interpretMove?.(st, ui, null, { x: 0, y: 0 }, 49); // '1'
+    const move = unequalGame.interpretMove?.(
+      st,
+      ui,
+      sizedDrawState(unequalGame, st),
+      { x: 0, y: 0 },
+      49,
+    ); // '1'
     expect(move).toBeNull();
   });
 
   it("maps 'M' to a fill-all-pencil-marks move", () => {
     const { st } = gen(5, "unequal", "easy", "mk-1");
     const ui = newUi(st);
-    const move = unequalGame.interpretMove?.(st, ui, null, { x: 0, y: 0 }, 109); // 'm'
+    const move = unequalGame.interpretMove?.(
+      st,
+      ui,
+      sizedDrawState(unequalGame, st),
+      { x: 0, y: 0 },
+      109,
+    ); // 'm'
     expect(move).toEqual({ type: "pencilAll" });
   });
 });

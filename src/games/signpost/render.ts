@@ -341,7 +341,7 @@ function drawDragIndicator(
 
 export function redrawSignpost(
   dr: GameDrawing,
-  ds: SignpostDrawState | null,
+  ds: SignpostDrawState,
   _prev: SignpostState | null,
   state: SignpostState,
   _dir: number,
@@ -350,7 +350,6 @@ export function redrawSignpost(
   flashTime: number,
   mistakes?: readonly SignpostMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tileSize;
   const w = state.w;
 

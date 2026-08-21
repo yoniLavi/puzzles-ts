@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { executeMove, samegameGame } from "./index.ts";
 import {
   check,
@@ -135,7 +136,13 @@ describe("Same Game selection + execution", () => {
     const s = state3x3(DESC, { scoresub: 1 });
     const ui = freshUi(s);
     // Click the colour-3 group (cell (0,1) = index 3).
-    const first = samegameGame.interpretMove(s, ui, null, at(0, 1), LEFT_BUTTON);
+    const first = samegameGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(samegameGame, s),
+      at(0, 1),
+      LEFT_BUTTON,
+    );
     expect(first).toBe(UI_UPDATE);
     expect(ui.nselected).toBe(3);
     expect([ui.selected[3], ui.selected[4], ui.selected[5]]).toEqual([
@@ -145,7 +152,13 @@ describe("Same Game selection + execution", () => {
     ]);
 
     // Click again to confirm removal.
-    const move = samegameGame.interpretMove(s, ui, null, at(0, 1), LEFT_BUTTON);
+    const move = samegameGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(samegameGame, s),
+      at(0, 1),
+      LEFT_BUTTON,
+    );
     expect(move).toEqual({ type: "remove", tiles: [3, 4, 5] });
     expect(ui.nselected).toBe(0); // selection cleared after the move
 
@@ -160,7 +173,13 @@ describe("Same Game selection + execution", () => {
     const s = state3x3(DESC);
     const ui = freshUi(s);
     // Cell (2,0) = index 2 (colour 2) has no same-colour orthogonal neighbour.
-    const res = samegameGame.interpretMove(s, ui, null, at(2, 0), LEFT_BUTTON);
+    const res = samegameGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(samegameGame, s),
+      at(2, 0),
+      LEFT_BUTTON,
+    );
     expect(res).toBe(UI_UPDATE);
     expect(ui.nselected).toBe(0);
   });
@@ -168,9 +187,21 @@ describe("Same Game selection + execution", () => {
   it("right-clicking a selection deselects it", () => {
     const s = state3x3(DESC);
     const ui = freshUi(s);
-    samegameGame.interpretMove(s, ui, null, at(0, 1), LEFT_BUTTON); // select group
+    samegameGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(samegameGame, s),
+      at(0, 1),
+      LEFT_BUTTON,
+    ); // select group
     expect(ui.nselected).toBe(3);
-    const res = samegameGame.interpretMove(s, ui, null, at(0, 1), RIGHT_BUTTON);
+    const res = samegameGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(samegameGame, s),
+      at(0, 1),
+      RIGHT_BUTTON,
+    );
     expect(res).toBe(UI_UPDATE);
     expect(ui.nselected).toBe(0);
   });
@@ -178,7 +209,13 @@ describe("Same Game selection + execution", () => {
   it("clears the selection across a real transition (changedState)", () => {
     const s = state3x3(DESC);
     const ui = freshUi(s);
-    samegameGame.interpretMove(s, ui, null, at(0, 1), LEFT_BUTTON);
+    samegameGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(samegameGame, s),
+      at(0, 1),
+      LEFT_BUTTON,
+    );
     expect(ui.nselected).toBe(3);
     samegameGame.changedState?.(ui, s, s);
     expect(ui.nselected).toBe(0);
@@ -189,8 +226,20 @@ describe("Same Game selection + execution", () => {
     const p: SamegameParams = { w: 2, h: 1, ncols: 3, scoresub: 2, soluble: true };
     const s = newState(p, "1,1");
     const ui = freshUi(s);
-    samegameGame.interpretMove(s, ui, null, at(0, 0), LEFT_BUTTON); // select the pair
-    const move = samegameGame.interpretMove(s, ui, null, at(0, 0), LEFT_BUTTON);
+    samegameGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(samegameGame, s),
+      at(0, 0),
+      LEFT_BUTTON,
+    ); // select the pair
+    const move = samegameGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(samegameGame, s),
+      at(0, 0),
+      LEFT_BUTTON,
+    );
     const next = executeMove(s, move as { type: "remove"; tiles: number[] });
     expect(next.complete).toBe(true);
     expect(status(next)).toBe("solved");
@@ -202,7 +251,13 @@ describe("Same Game selection + execution", () => {
     const s = state3x3(DESC);
     const ui = freshUi(s);
     expect(samegameGame.statusbarText?.(s, ui)).toBe("Score: 0");
-    samegameGame.interpretMove(s, ui, null, at(0, 1), LEFT_BUTTON); // select 3, scoresub 2
+    samegameGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(samegameGame, s),
+      at(0, 1),
+      LEFT_BUTTON,
+    ); // select 3, scoresub 2
     expect(samegameGame.statusbarText?.(s, ui)).toBe("Score: 0  Selected: 3 (1)");
     expect(
       samegameGame.statusbarText?.({ ...s, complete: true, score: 7 }, freshUi(s)),

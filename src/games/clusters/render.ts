@@ -257,7 +257,7 @@ function drawTile(
 
 export function redraw(
   dr: GameDrawing,
-  ds: ClustersDrawState | null,
+  ds: ClustersDrawState,
   _prev: ClustersState | null,
   state: ClustersState,
   _dir: number,
@@ -266,7 +266,6 @@ export function redraw(
   flashTime: number,
   hint?: HintStep<ClustersMove>,
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, grid } = state;
   const b = border(ts);

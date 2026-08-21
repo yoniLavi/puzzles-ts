@@ -539,7 +539,7 @@ function s2dFlags(
 
 export function redraw(
   dr: GameDrawing,
-  ds: TracksDrawState | null,
+  ds: TracksDrawState,
   _prev: TracksState | null,
   state: TracksState,
   _dir: number,
@@ -549,7 +549,6 @@ export function redraw(
   _hint?: HintStep<TracksMove>,
   mistakes?: readonly TracksMistake[],
 ): void {
-  if (!ds) return;
   const m = metrics(ds.tileSize);
   const { w, h } = state;
   let force = false;

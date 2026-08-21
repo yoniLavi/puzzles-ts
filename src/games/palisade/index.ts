@@ -80,7 +80,7 @@ function paramsOf(state: PalisadeState): PalisadeParams {
 function interpretMove(
   state: PalisadeState,
   ui: PalisadeUi,
-  ds: PalisadeDrawState | null,
+  ds: PalisadeDrawState,
   p: Point,
   rawButton: number,
 ): PalisadeMove | null | UiUpdate {
@@ -89,7 +89,7 @@ function interpretMove(
     ui,
     p,
     stripModifiers(rawButton),
-    ds?.tilesize ?? PREFERRED_TILE_SIZE,
+    ds.tilesize,
   );
   if (r === null) return null;
   return r === "ui" ? UI_UPDATE : { type: "edges", edits: r };

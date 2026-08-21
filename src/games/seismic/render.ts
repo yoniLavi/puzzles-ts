@@ -330,7 +330,7 @@ function drawPencilIndicator(
 
 export function redraw(
   dr: GameDrawing,
-  ds: SeismicDrawState | null,
+  ds: SeismicDrawState,
   _prev: SeismicState | null,
   state: SeismicState,
   _dir: number,
@@ -340,7 +340,6 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h } = state;
   const size = computeSize(state.params, ts);

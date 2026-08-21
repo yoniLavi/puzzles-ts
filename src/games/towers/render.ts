@@ -383,7 +383,7 @@ export interface TowersHint {
 
 export function redraw(
   dr: GameDrawing,
-  ds: TowersDrawState | null,
+  ds: TowersDrawState,
   _prev: TowersState | null,
   state: TowersState,
   _dir: number,
@@ -393,7 +393,6 @@ export function redraw(
   hint?: HintStep<TowersMove, TowersHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const w = state.w;
   const W = w + 2;

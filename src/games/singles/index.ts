@@ -122,7 +122,7 @@ function inGrid(s: SinglesState, x: number, y: number): boolean {
 function interpretMove(
   state: SinglesState,
   ui: SinglesUi,
-  ds: SinglesDrawState | null,
+  ds: SinglesDrawState,
   p: Point,
   rawButton: number,
 ): SinglesMove | null | UiUpdate {
@@ -158,7 +158,7 @@ function interpretMove(
     button === MIDDLE_BUTTON ||
     button === RIGHT_BUTTON
   ) {
-    const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+    const ts = ds.tilesize;
     const border = Math.floor(ts / 2);
     const fromCoord = (v: number): number => Math.floor((v - border + ts) / ts) - 1;
     x = fromCoord(p.x);

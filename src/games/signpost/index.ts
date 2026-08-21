@@ -171,12 +171,12 @@ function changedState(
 function interpretMove(
   s: SignpostState,
   ui: SignpostUi,
-  ds: SignpostDrawState | null,
+  ds: SignpostDrawState,
   p: Point,
   button: number,
 ): SignpostMove | null | UiUpdate {
   const { w, h } = s;
-  const ts = ds?.tileSize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tileSize;
 
   if (isCursorMove(button)) {
     const delta = cursorDelta(button);
@@ -471,7 +471,7 @@ export const signpostGame: Game<
   newDrawState,
   redraw(
     dr: GameDrawing,
-    ds: SignpostDrawState | null,
+    ds: SignpostDrawState,
     prev: SignpostState | null,
     s: SignpostState,
     dir: number,

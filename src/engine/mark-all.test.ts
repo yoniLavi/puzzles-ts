@@ -30,6 +30,7 @@ import { unequalGame } from "../games/unequal/index.ts";
 import { UI_UPDATE } from "./game.ts";
 import { randomNew } from "./random/index.ts";
 import { type AnyGame, firstLeaf } from "./testing/hint-games.ts";
+import { sizedDrawState } from "./testing/sized-draw-state.ts";
 
 /** Where a game keeps its pencil marks, and how many array slots one cell owns
  * (ABCD's notes are a candidate *cube*: `n` contiguous slots per cell — see its
@@ -78,7 +79,13 @@ function press(
   ui: any,
   // biome-ignore lint/suspicious/noExplicitAny: game-agnostic probe.
 ): any | null {
-  const move = row.game.interpretMove(state, ui, null, { x: 0, y: 0 }, 77);
+  const move = row.game.interpretMove(
+    state,
+    ui,
+    sizedDrawState(row.game, state),
+    { x: 0, y: 0 },
+    77,
+  );
   if (move === null || move === UI_UPDATE) return null;
   return row.game.executeMove(state, move);
 }

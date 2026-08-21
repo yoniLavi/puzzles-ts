@@ -51,7 +51,7 @@ function mix(a: RationalPoint, b: RationalPoint, t: number): RationalPoint {
 
 export function redrawUntangle(
   dr: GameDrawing,
-  ds: UntangleDrawState | null,
+  ds: UntangleDrawState,
   prev: UntangleState | null,
   s: UntangleState,
   ui: UntangleUi,
@@ -59,7 +59,6 @@ export function redrawUntangle(
   flashTime: number,
   hint?: UntangleHint,
 ): void {
-  if (ds === null) return;
   const n = s.n;
   const ts = ds.tileSize;
 

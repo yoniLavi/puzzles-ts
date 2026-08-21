@@ -526,7 +526,7 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
   interpretMove(s, ui, ds, point, button): FlipMove | null | UiUpdate {
     const { w, h } = s;
     const wh = w * h;
-    const tile = ds?.tileSize ?? PREFERRED_TILE_SIZE;
+    const tile = ds.tileSize;
     const border = tile >> 1;
     const fromCoord = (v: number) => fromCoordE(v, tile, border);
 
@@ -783,7 +783,6 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
   },
 
   redraw(dr, ds, prev, s, _dir, ui, animTime, flashTime): void {
-    if (ds === null) return;
     const { w, h } = s;
     const wh = w * h;
     const tile = ds.tileSize;

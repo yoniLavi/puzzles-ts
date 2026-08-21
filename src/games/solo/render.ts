@@ -560,7 +560,7 @@ function drawPencilIndicator(
 
 export function redraw(
   dr: GameDrawing,
-  ds: SoloDrawState | null,
+  ds: SoloDrawState,
   _prev: SoloState | null,
   state: SoloState,
   _dir: number,
@@ -570,7 +570,6 @@ export function redraw(
   hint?: HintStep<SoloMove, SoloHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
-  if (!ds) return;
   const ts = ds.tileSize;
   const cr = state.cr;
   const ge = gridExtra(ts);

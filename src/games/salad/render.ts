@@ -492,7 +492,7 @@ function drawMistakeBox(dr: GameDrawing, tx: number, ty: number, ts: number): vo
 
 export function redraw(
   dr: GameDrawing,
-  ds: SaladDrawState | null,
+  ds: SaladDrawState,
   _prev: SaladState | null,
   s: SaladState,
   _dir: number,
@@ -502,7 +502,6 @@ export function redraw(
   hint?: HintStep<SaladMove, SaladHint>,
   mistakes?: readonly SaladMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const o = s.order;
   const base = s.mode === GAMEMODE_LETTERS ? 64 : 48;

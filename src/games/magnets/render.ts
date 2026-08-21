@@ -361,7 +361,7 @@ function getCountColour(
 
 export function redraw(
   dr: GameDrawing,
-  ds: MagnetsDrawState | null,
+  ds: MagnetsDrawState,
   _prev: MagnetsState | null,
   state: MagnetsState,
   _dir: number,
@@ -370,7 +370,6 @@ export function redraw(
   flashTime: number,
   mistakes?: readonly MagnetsMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, grid, flags, common } = state;
   const { dominoes, colcount, rowcount } = common;

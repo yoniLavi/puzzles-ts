@@ -136,13 +136,13 @@ function dragOps(
 function interpretMove(
   state: MapState,
   ui: MapUi,
-  ds: MapDrawState | null,
+  ds: MapDrawState,
   point: Point,
   rawButton: number,
 ): MapMove | null | UiUpdate {
   const button = stripModifiers(rawButton);
   const { w, h } = state.params;
-  const ts = ds?.tileSize ?? 20;
+  const ts = ds.tileSize;
 
   // Toggle region numbers.
   if (button === 108 || button === 76) {

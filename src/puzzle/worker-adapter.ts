@@ -214,8 +214,8 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
   darkPalette(defaultBackground: Colour): Record<number, Colour> {
     return this.engine.darkPalette(defaultBackground);
   }
-  size(maxSize: Size, isUserSize: boolean, devicePixelRatio: number): Size {
-    return this.engine.size(maxSize, isUserSize, devicePixelRatio);
+  size(maxSize: Size): Size {
+    return this.engine.size(maxSize);
   }
   preferredSize(): Size {
     return this.engine.preferredSize();
@@ -286,12 +286,6 @@ export class TsWorkerPuzzle implements PuzzleEngineSurface {
     // affected every TS-ported game (reproduced on Pearl, shipped since
     // 2026-07) and no C/WASM game, which is what pinned it to this adapter.
     if (firstInstall) this.forceRedraw();
-  }
-  setDrawingFontInfo(fontInfo: FontInfo): void {
-    if (!this.drawing) throw new Error("setDrawingFontInfo: no canvas attached");
-    // Same reasoning: a font change invalidates any per-tile cache;
-    // C path calls `forceRedraw()` here too.
-    if (this.drawing.setFontInfo(fontInfo)) this.forceRedraw();
   }
   async getImage(options?: ImageEncodeOptions): Promise<Blob> {
     if (!this.drawing) throw new Error("getImage: no canvas attached");

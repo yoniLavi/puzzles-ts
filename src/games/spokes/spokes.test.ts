@@ -29,6 +29,7 @@ import {
   DEFAULT_BACKGROUND,
   renderScenario,
 } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import type { ChangeNotification, GameStatus, Point } from "../../engine/types.ts";
 import { newSpokesDesc } from "./generator.ts";
 import { spokesGame } from "./index.ts";
@@ -107,7 +108,13 @@ function press(
   button: number,
   p: Point,
 ): SpokesMove | null | typeof UI_UPDATE {
-  return spokesGame.interpretMove(state, ui, null, p, button);
+  return spokesGame.interpretMove(
+    state,
+    ui,
+    sizedDrawState(spokesGame, state),
+    p,
+    button,
+  );
 }
 
 /** The unique solution as a board, via the game's own solver. */

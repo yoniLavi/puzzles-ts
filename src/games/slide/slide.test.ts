@@ -22,6 +22,7 @@ import {
   RIGHT_RELEASE,
 } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import type { ChangeNotification, GameStatus } from "../../engine/types.ts";
 import { newSlideDesc } from "./generator.ts";
 import { slideGame } from "./index.ts";
@@ -583,17 +584,35 @@ describe("slide input", () => {
 
   it("grabs a block, follows the pointer and commits on release", () => {
     const { s, ui } = scenario();
-    expect(slideGame.interpretMove(s, ui, null, at(3, 1), LEFT_BUTTON)).toBe(UI_UPDATE);
+    expect(
+      slideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(slideGame, s),
+        at(3, 1),
+        LEFT_BUTTON,
+      ),
+    ).toBe(UI_UPDATE);
     expect(ui.dragging).toBe(true);
     expect(ui.dragAnchor).toBe(idx(3, 1));
     expect(ui.reachable[ui.dragAnchor]).toBe(1);
 
     // Drag towards the far corner; the block snaps to the nearest reachable
     // square, which here is the corner itself.
-    expect(slideGame.interpretMove(s, ui, null, at(4, 3), LEFT_DRAG)).toBe(UI_UPDATE);
+    expect(
+      slideGame.interpretMove(s, ui, sizedDrawState(slideGame, s), at(4, 3), LEFT_DRAG),
+    ).toBe(UI_UPDATE);
     expect(ui.dragCurrpos).toBe(idx(4, 3));
 
-    expect(slideGame.interpretMove(s, ui, null, at(4, 3), LEFT_RELEASE)).toEqual({
+    expect(
+      slideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(slideGame, s),
+        at(4, 3),
+        LEFT_RELEASE,
+      ),
+    ).toEqual({
       kind: "move",
       from: idx(3, 1),
       to: idx(4, 3),
@@ -606,7 +625,7 @@ describe("slide input", () => {
     const { s, ui } = scenario();
     // Press the main block's bottom-right square; the drag anchors on its
     // top-left one, and the grab offset remembers which square was held.
-    slideGame.interpretMove(s, ui, null, at(2, 2), LEFT_BUTTON);
+    slideGame.interpretMove(s, ui, sizedDrawState(slideGame, s), at(2, 2), LEFT_BUTTON);
     expect(ui.dragAnchor).toBe(idx(1, 1));
     expect(ui.dragOffsetX).toBe(1);
     expect(ui.dragOffsetY).toBe(1);
@@ -614,33 +633,73 @@ describe("slide input", () => {
 
   it("releases without a move when the block never left its square", () => {
     const { s, ui } = scenario();
-    slideGame.interpretMove(s, ui, null, at(3, 1), LEFT_BUTTON);
-    expect(slideGame.interpretMove(s, ui, null, at(3, 1), LEFT_RELEASE)).toBe(
-      UI_UPDATE,
-    );
+    slideGame.interpretMove(s, ui, sizedDrawState(slideGame, s), at(3, 1), LEFT_BUTTON);
+    expect(
+      slideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(slideGame, s),
+        at(3, 1),
+        LEFT_RELEASE,
+      ),
+    ).toBe(UI_UPDATE);
     expect(ui.dragging).toBe(false);
   });
 
   it("ignores a press on empty space, a wall, or off the board", () => {
     const { s, ui } = scenario();
-    expect(slideGame.interpretMove(s, ui, null, at(0, 0), LEFT_BUTTON)).toBeNull();
-    expect(slideGame.interpretMove(s, ui, null, at(4, 3), LEFT_BUTTON)).toBeNull();
     expect(
-      slideGame.interpretMove(s, ui, null, { x: -5, y: -5 }, LEFT_BUTTON),
+      slideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(slideGame, s),
+        at(0, 0),
+        LEFT_BUTTON,
+      ),
+    ).toBeNull();
+    expect(
+      slideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(slideGame, s),
+        at(4, 3),
+        LEFT_BUTTON,
+      ),
+    ).toBeNull();
+    expect(
+      slideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(slideGame, s),
+        { x: -5, y: -5 },
+        LEFT_BUTTON,
+      ),
     ).toBeNull();
     expect(ui.dragging).toBe(false);
   });
 
   it("does not repaint when a drag event leaves the block where it was", () => {
     const { s, ui } = scenario();
-    slideGame.interpretMove(s, ui, null, at(3, 1), LEFT_BUTTON);
-    expect(slideGame.interpretMove(s, ui, null, at(3, 1), LEFT_DRAG)).toBeNull();
+    slideGame.interpretMove(s, ui, sizedDrawState(slideGame, s), at(3, 1), LEFT_BUTTON);
+    expect(
+      slideGame.interpretMove(s, ui, sizedDrawState(slideGame, s), at(3, 1), LEFT_DRAG),
+    ).toBeNull();
   });
 
   it("ignores a drag or release that no press started", () => {
     const { s, ui } = scenario();
-    expect(slideGame.interpretMove(s, ui, null, at(3, 1), LEFT_DRAG)).toBeNull();
-    expect(slideGame.interpretMove(s, ui, null, at(3, 1), LEFT_RELEASE)).toBeNull();
+    expect(
+      slideGame.interpretMove(s, ui, sizedDrawState(slideGame, s), at(3, 1), LEFT_DRAG),
+    ).toBeNull();
+    expect(
+      slideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(slideGame, s),
+        at(3, 1),
+        LEFT_RELEASE,
+      ),
+    ).toBeNull();
   });
 
   it("treats a touch long-press as a primary drag", () => {
@@ -649,13 +708,31 @@ describe("slide input", () => {
     // gesture Slide is entirely built from (docs/games/input.md § "A touch hold arrives as the right button").
     const { s, ui } = scenario();
     expect(
-      slideGame.interpretMove(s, ui, null, at(3, 1), RIGHT_BUTTON | MOD_STYLUS),
+      slideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(slideGame, s),
+        at(3, 1),
+        RIGHT_BUTTON | MOD_STYLUS,
+      ),
     ).toBe(UI_UPDATE);
     expect(ui.dragging).toBe(true);
-    slideGame.interpretMove(s, ui, null, at(4, 3), RIGHT_DRAG | MOD_STYLUS);
+    slideGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(slideGame, s),
+      at(4, 3),
+      RIGHT_DRAG | MOD_STYLUS,
+    );
     expect(ui.dragCurrpos).toBe(idx(4, 3));
     expect(
-      slideGame.interpretMove(s, ui, null, at(4, 3), RIGHT_RELEASE | MOD_STYLUS),
+      slideGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(slideGame, s),
+        at(4, 3),
+        RIGHT_RELEASE | MOD_STYLUS,
+      ),
     ).toEqual({ kind: "move", from: idx(3, 1), to: idx(4, 3) });
   });
 
@@ -663,7 +740,7 @@ describe("slide input", () => {
     // Upstream's `game_changed_state` is empty, so a drag held across an undo
     // left `game_redraw` asserting on a block that no longer fits.
     const { s, ui } = scenario();
-    slideGame.interpretMove(s, ui, null, at(3, 1), LEFT_BUTTON);
+    slideGame.interpretMove(s, ui, sizedDrawState(slideGame, s), at(3, 1), LEFT_BUTTON);
     expect(ui.dragging).toBe(true);
     slideGame.changedState?.(ui, s, s);
     expect(ui.dragging).toBe(false);

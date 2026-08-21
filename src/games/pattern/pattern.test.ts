@@ -9,6 +9,7 @@ import { Midend } from "../../engine/index.ts";
 import { CURSOR_SELECT, LEFT_DRAG, LEFT_RELEASE } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { newPatternDesc } from "./generator.ts";
 import { patternGame } from "./index.ts";
 import { COL_UNKNOWN } from "./render.ts";
@@ -184,12 +185,24 @@ describe("pattern moves and completion", () => {
     const st = newState({ w: 5, h: 5 }, "4/2.2/2/1/2/2/2/1/3.1/4");
     const ui = patternGame.newUi(st);
     // First select just reveals the cursor.
-    expect(patternGame.interpretMove(st, ui, null, { x: 0, y: 0 }, CURSOR_SELECT)).toBe(
-      UI_UPDATE,
-    );
+    expect(
+      patternGame.interpretMove(
+        st,
+        ui,
+        sizedDrawState(patternGame, st),
+        { x: 0, y: 0 },
+        CURSOR_SELECT,
+      ),
+    ).toBe(UI_UPDATE);
     expect(ui.curVisible).toBe(true);
     // Second select cycles the (0,0) cell UNKNOWN → FULL.
-    const move = patternGame.interpretMove(st, ui, null, { x: 0, y: 0 }, CURSOR_SELECT);
+    const move = patternGame.interpretMove(
+      st,
+      ui,
+      sizedDrawState(patternGame, st),
+      { x: 0, y: 0 },
+      CURSOR_SELECT,
+    );
     expect(move).toEqual({ type: "fill", value: GRID_FULL, x: 0, y: 0, w: 1, h: 1 });
   });
 });
@@ -251,7 +264,13 @@ describe("pattern drag-paint skips placed marks", () => {
         dragEndX: endX,
         dragEndY: 0,
       });
-      return patternGame.interpretMove(st, ui, null, { x: 0, y: 0 }, LEFT_RELEASE);
+      return patternGame.interpretMove(
+        st,
+        ui,
+        sizedDrawState(patternGame, st),
+        { x: 0, y: 0 },
+        LEFT_RELEASE,
+      );
     };
     expect(drag(3)).toMatchObject({ type: "fill", onlyBlank: true, w: 4 });
     expect(drag(0)).toMatchObject({ type: "fill", onlyBlank: false, w: 1 });

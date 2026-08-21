@@ -150,12 +150,12 @@ function requestKeys(p: GroupParams): KeyLabel[] {
 function interpretMove(
   state: GroupState,
   ui: GroupUi,
-  ds: GroupDrawState | null,
+  ds: GroupDrawState,
   point: Point,
   buttonRaw: number,
 ): GroupMove | null | UiUpdate {
   const w = state.w;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const button = stripModifiers(buttonRaw);
 
   const tx = fromCoord(point.x, ts);

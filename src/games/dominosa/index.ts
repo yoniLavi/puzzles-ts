@@ -108,12 +108,12 @@ function toggleHighlight(ui: DominosaUi, num: number): boolean {
 function interpretMove(
   state: DominosaState,
   ui: DominosaUi,
-  ds: DominosaDrawState | null,
+  ds: DominosaDrawState,
   p: Point,
   button: number,
 ): DominosaMove | null | UiUpdate {
   const { w, h } = state;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const border = -Math.floor(ts / 16); // NARROW_BORDERS
   const coord = (v: number) => v * ts + border;
   const fromCoord = (px: number) => Math.floor((px - border + ts) / ts) - 1;

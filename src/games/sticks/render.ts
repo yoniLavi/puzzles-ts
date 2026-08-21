@@ -238,7 +238,7 @@ function drawTile(
 
 export function redraw(
   dr: GameDrawing,
-  ds: SticksDrawState | null,
+  ds: SticksDrawState,
   _prev: SticksState | null,
   state: SticksState,
   _dir: number,
@@ -248,7 +248,6 @@ export function redraw(
   hint?: HintStep<SticksMove, SticksHint>,
   mistakes?: readonly SticksMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, grid, numbers } = state;
   const b = border(ts);

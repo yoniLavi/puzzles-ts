@@ -529,14 +529,13 @@ function buildMistakeMask(
 
 export function redrawBridges(
   dr: GameDrawing,
-  ds: BridgesDrawState | null,
+  ds: BridgesDrawState,
   _prev: BridgesState | null,
   s: BridgesState,
   ui: BridgesUi,
   flashTime: number,
   mistakes: readonly BridgesMistake[] = [],
 ): void {
-  if (!ds) return;
   const ts = ds.tileSize;
   const b = border(ts);
   const w = s.w;

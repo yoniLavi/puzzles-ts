@@ -294,7 +294,7 @@ function drawTile(
 
 export function redraw(
   dr: GameDrawing,
-  ds: DominosaDrawState | null,
+  ds: DominosaDrawState,
   _prev: DominosaState | null,
   state: DominosaState,
   _dir: number,
@@ -304,7 +304,6 @@ export function redraw(
   hint?: HintStep<DominosaMove, DominosaHint>,
   mistakes?: readonly DominosaMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, grid, numbers } = state;
   const wh = w * h;

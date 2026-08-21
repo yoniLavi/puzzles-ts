@@ -407,7 +407,7 @@ function drawPencilIndicator(
 
 export function redraw(
   dr: GameDrawing,
-  ds: KeenDrawState | null,
+  ds: KeenDrawState,
   _prev: KeenState | null,
   state: KeenState,
   _dir: number,
@@ -417,7 +417,6 @@ export function redraw(
   hint?: HintStep<KeenMove, KeenHint>,
   mistakes?: readonly { x: number; y: number }[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const w = state.params.w;
   const ge = gridExtra(ts);

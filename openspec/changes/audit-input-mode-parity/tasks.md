@@ -54,6 +54,31 @@
       undecided.
 - [ ] 4.4 Every fix must be shown not to change what the *other* modes do.
 
+## 4b. One finding handed over from `audit-vestigial-contract-surface` (2026-08-21)
+
+- [ ] 4b.1 **`Game.needsRightButton` has eighteen implementers and no reader.**
+      That audit swept every optional `Game` member for implementers *and*
+      consumers; this is the one that has the first and not the second. The
+      midend forwards it into `PuzzleStaticAttributes` and the shell carries it
+      to `Puzzle.needsRightButton`, and there the trail stops — the only site
+      that ever considered branching on it, `view-interactive.ts`'s
+      `handleContextMenu`, says in a comment why it doesn't ("some puzzles,
+      e.g. Tracks, say they don't *need* the right button, even though they can
+      *use* it"), and the secondary-action affordance upstream's
+      `REQUIRE_RBUTTON` existed to gate is offered to every game
+      unconditionally anyway (long-press / two-finger-tap, global settings).
+
+      It was **not** deleted, for two reasons this audit is the right place to
+      weigh. First, the proposal already asks for the control it is half of:
+      *"a game cannot tell the frontend 'I have no secondary button, do not
+      long-press me'"* — that is `needsRightButton`, inverted, and Slide's
+      `asPrimary` fold is the per-game workaround for its absence. Second, the
+      eighteen declarations are upstream knowledge with no C build left to
+      re-derive them from. So: **give it a consumer or remove it and the
+      eighteen declarations together** — but not leave it as surface that reads
+      as a capability and is not one. Its doc comment in `game.ts` now says so
+      and names this task.
+
 ## 5. Specs, docs and close-out
 
 - [ ] 5.1 `ts-engine`: MODIFIED "Touch equivalence is guarded for every registered

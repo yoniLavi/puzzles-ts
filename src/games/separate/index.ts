@@ -67,7 +67,7 @@ function paramsOf(state: SeparateState): SeparateParams {
 function interpretMove(
   state: SeparateState,
   ui: SeparateUi,
-  ds: SeparateDrawState | null,
+  ds: SeparateDrawState,
   p: Point,
   rawButton: number,
 ): SeparateMove | null | UiUpdate {
@@ -76,7 +76,7 @@ function interpretMove(
     ui,
     p,
     stripModifiers(rawButton),
-    ds?.tilesize ?? PREFERRED_TILE_SIZE,
+    ds.tilesize,
   );
   if (r === null) return null;
   return r === "ui" ? UI_UPDATE : { type: "edges", edits: r };

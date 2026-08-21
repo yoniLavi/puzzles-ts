@@ -16,6 +16,7 @@ import {
   DEFAULT_BACKGROUND,
   renderScenario,
 } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { newKeenDesc } from "./generator.ts";
 import { keenGame } from "./index.ts";
 import {
@@ -399,7 +400,13 @@ describe("keen render", () => {
 describe("adaptive mark-all ('M')", () => {
   const W = 4;
   const press = (st: KeenState) =>
-    keenGame.interpretMove(st, newUi(st), null, { x: 0, y: 0 }, 77);
+    keenGame.interpretMove(
+      st,
+      newUi(st),
+      sizedDrawState(keenGame, st),
+      { x: 0, y: 0 },
+      77,
+    );
 
   it("fills note-less cells on the first press, then cleans obvious dups, then no-ops", () => {
     // First press on a fresh board: empty cells are note-less → fill all.

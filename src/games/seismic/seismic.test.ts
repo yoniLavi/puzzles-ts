@@ -18,6 +18,7 @@ import {
   RecordingDrawing,
 } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import cReference from "./__fixtures__/seismic-c-reference.json" with { type: "json" };
 import { maxRegionSize, newSeismicDesc } from "./generator.ts";
 import { seismicGame } from "./index.ts";
@@ -636,13 +637,27 @@ describe("seismic input", () => {
     const cell = firstFreeCell(state);
 
     expect(
-      seismicGame.interpretMove(state, ui, null, pixel(cell.x, cell.y), LEFT_BUTTON),
+      seismicGame.interpretMove(
+        state,
+        ui,
+        sizedDrawState(seismicGame, state),
+        pixel(cell.x, cell.y),
+        LEFT_BUTTON,
+      ),
     ).toBe(UI_UPDATE);
     expect(ui.cshow).toBe(true);
     expect(ui.hx).toBe(cell.x);
     expect(ui.hy).toBe(cell.y);
 
-    expect(seismicGame.interpretMove(state, ui, null, { x: 0, y: 0 }, 0x31)).toEqual({
+    expect(
+      seismicGame.interpretMove(
+        state,
+        ui,
+        sizedDrawState(seismicGame, state),
+        { x: 0, y: 0 },
+        0x31,
+      ),
+    ).toEqual({
       type: "set",
       x: cell.x,
       y: cell.y,
@@ -658,11 +673,17 @@ describe("seismic input", () => {
     const cell = firstFreeCell(state);
     const mouse = newUi(state);
     const touch = newUi(state);
-    seismicGame.interpretMove(state, mouse, null, pixel(cell.x, cell.y), LEFT_BUTTON);
+    seismicGame.interpretMove(
+      state,
+      mouse,
+      sizedDrawState(seismicGame, state),
+      pixel(cell.x, cell.y),
+      LEFT_BUTTON,
+    );
     seismicGame.interpretMove(
       state,
       touch,
-      null,
+      sizedDrawState(seismicGame, state),
       pixel(cell.x, cell.y),
       LEFT_BUTTON | MOD_STYLUS,
     );
@@ -681,10 +702,22 @@ describe("seismic input", () => {
     ui.hx = cell.x;
     ui.hy = cell.y;
     expect(
-      seismicGame.interpretMove(state, ui, null, { x: 0, y: 0 }, 0x30 + size + 1),
+      seismicGame.interpretMove(
+        state,
+        ui,
+        sizedDrawState(seismicGame, state),
+        { x: 0, y: 0 },
+        0x30 + size + 1,
+      ),
     ).toBeNull();
     expect(
-      seismicGame.interpretMove(state, ui, null, { x: 0, y: 0 }, 0x30 + size),
+      seismicGame.interpretMove(
+        state,
+        ui,
+        sizedDrawState(seismicGame, state),
+        { x: 0, y: 0 },
+        0x30 + size,
+      ),
     ).toEqual({ type: "set", x: cell.x, y: cell.y, n: size, pencil: false });
   });
 
@@ -703,7 +736,15 @@ describe("seismic input", () => {
     ui.ckey = true;
     ui.hx = cell.x;
     ui.hy = cell.y;
-    expect(seismicGame.interpretMove(next, ui, null, { x: 0, y: 0 }, 0x31)).toBeNull();
+    expect(
+      seismicGame.interpretMove(
+        next,
+        ui,
+        sizedDrawState(seismicGame, next),
+        { x: 0, y: 0 },
+        0x31,
+      ),
+    ).toBeNull();
   });
 
   it("never leaves a given cell highlighted", () => {
@@ -716,7 +757,7 @@ describe("seismic input", () => {
     seismicGame.interpretMove(
       state,
       ui,
-      null,
+      sizedDrawState(seismicGame, state),
       pixel(given % state.w, (given / state.w) | 0),
       LEFT_BUTTON,
     );
@@ -728,22 +769,48 @@ describe("seismic input", () => {
     const ui = newUi(state);
     expect(ui.pencilSticky).toBe(true);
     const cell = firstFreeCell(state);
-    seismicGame.interpretMove(state, ui, null, pixel(cell.x, cell.y), RIGHT_BUTTON);
+    seismicGame.interpretMove(
+      state,
+      ui,
+      sizedDrawState(seismicGame, state),
+      pixel(cell.x, cell.y),
+      RIGHT_BUTTON,
+    );
     expect(ui.cpencil).toBe(true);
     expect(ui.cshow).toBe(true);
-    seismicGame.interpretMove(state, ui, null, pixel(cell.x, cell.y), RIGHT_BUTTON);
+    seismicGame.interpretMove(
+      state,
+      ui,
+      sizedDrawState(seismicGame, state),
+      pixel(cell.x, cell.y),
+      RIGHT_BUTTON,
+    );
     expect(ui.cpencil).toBe(false);
   });
 
   it("offers mark-all only while some cell's notes are incomplete", () => {
     const state = stateOf(SMALL);
     const ui = newUi(state);
-    expect(seismicGame.interpretMove(state, ui, null, { x: 0, y: 0 }, 0x4d)).toEqual({
+    expect(
+      seismicGame.interpretMove(
+        state,
+        ui,
+        sizedDrawState(seismicGame, state),
+        { x: 0, y: 0 },
+        0x4d,
+      ),
+    ).toEqual({
       type: "pencilAll",
     });
     const filled = seismicGame.executeMove(state, { type: "pencilAll" });
     expect(
-      seismicGame.interpretMove(filled, ui, null, { x: 0, y: 0 }, 0x6d),
+      seismicGame.interpretMove(
+        filled,
+        ui,
+        sizedDrawState(seismicGame, filled),
+        { x: 0, y: 0 },
+        0x6d,
+      ),
     ).toBeNull();
     for (let i = 0; i < filled.w * filled.h; i++) {
       if (filled.grid[i] === 0) {
@@ -1083,7 +1150,13 @@ describe("seismic rendering", () => {
     ui.cshow = true;
     ui.ckey = true;
     ui.cpencil = true;
-    const move = seismicGame.interpretMove(state, ui, null, { x: 0, y: 0 }, 0x39);
+    const move = seismicGame.interpretMove(
+      state,
+      ui,
+      sizedDrawState(seismicGame, state),
+      { x: 0, y: 0 },
+      0x39,
+    );
     expect(move).toEqual({ type: "set", x: 0, y: 0, n: 9, pencil: true });
 
     const r = renderScenario({

@@ -569,7 +569,7 @@ function arrowFill(
 
 export function redraw(
   dr: GameDrawing,
-  ds: NetslideDrawState | null,
+  ds: NetslideDrawState,
   prev: NetslideState | null,
   current: NetslideState,
   _dir: number,
@@ -578,8 +578,6 @@ export function redraw(
   flashTime: number,
   hint?: HintStep<NetslideMove, NetslideHint>,
 ): void {
-  if (!ds) return;
-
   const ts = ds.tilesize;
   const b = border(ts);
 

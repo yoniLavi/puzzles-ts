@@ -266,12 +266,12 @@ export const untangleGame: Game<
   interpretMove: (
     s: UntangleState,
     ui: UntangleUi,
-    ds: UntangleDrawState | null,
+    ds: UntangleDrawState,
     pt: Point,
     button: number,
   ): UntangleMove | null | UiUpdate => {
     const n = s.n;
-    const tileSize = ds?.tileSize ?? PREFERRED_TILESIZE;
+    const tileSize = ds.tileSize;
     const { x, y } = pt;
 
     if (isMouseDown(button)) {

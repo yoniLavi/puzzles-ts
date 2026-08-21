@@ -105,7 +105,7 @@ function changedState(
 function interpretMove(
   state: LightupState,
   ui: LightupUi,
-  ds: LightupDrawState | null,
+  ds: LightupDrawState,
   p: Point,
   rawButton: number,
 ): LightupMove | null | UiUpdate {
@@ -122,7 +122,7 @@ function interpretMove(
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
     if (ui.cursorShow) nullret = UI_UPDATE;
     ui.cursorShow = false;
-    const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+    const ts = ds.tilesize;
     cx = fromCoord(p.x, ts);
     cy = fromCoord(p.y, ts);
     action = button === LEFT_BUTTON ? "light" : "impossible";

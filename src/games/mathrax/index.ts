@@ -135,12 +135,12 @@ function presets(): PresetMenu<MathraxParams> {
 function interpretMove(
   state: MathraxState,
   ui: MathraxUi,
-  ds: MathraxDrawState | null,
+  ds: MathraxDrawState,
   p: Point,
   rawButton: number,
 ): MathraxMove | null | UiUpdate {
   const o = state.params.o;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const button = stripModifiers(rawButton);
 
   const gx = fromCoord(p.x, ts);

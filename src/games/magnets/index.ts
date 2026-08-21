@@ -82,13 +82,13 @@ const CYCLE_NEUTRAL = 1;
 function interpretMove(
   state: MagnetsState,
   ui: MagnetsUi,
-  ds: MagnetsDrawState | null,
+  ds: MagnetsDrawState,
   p: Point,
   rawButton: number,
 ): MagnetsMove | null | UiUpdate {
   const { w, h, grid, flags, common } = state;
   const button = stripModifiers(rawButton);
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const fromCoord = (v: number) => Math.floor(v / ts) - 1; // NARROW_BORDERS: BORDER = 0
 
   let gx = fromCoord(p.x);

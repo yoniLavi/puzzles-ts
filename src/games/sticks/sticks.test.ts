@@ -22,6 +22,7 @@ import { randomNew } from "../../engine/random/index.ts";
 import { SYMM_NONE, SYMM_ROT2 } from "../../engine/symmetric-blacks.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { seedBudget } from "../../engine/testing/slow.ts";
 import type { ChangeNotification, GameStatus } from "../../engine/types.ts";
 import cReference from "./__fixtures__/sticks-c-reference.json" with { type: "json" };
@@ -104,7 +105,13 @@ function press(
   x: number,
   y: number,
 ): SticksMove | null | typeof UI_UPDATE {
-  return sticksGame.interpretMove(state, ui, null, { x, y }, button);
+  return sticksGame.interpretMove(
+    state,
+    ui,
+    sizedDrawState(sticksGame, state),
+    { x, y },
+    button,
+  );
 }
 
 /** Pixel centre of cell (x, y) at the default tile size. */

@@ -21,6 +21,7 @@ import {
   DEFAULT_BACKGROUND,
   renderScenario,
 } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import cReference from "./__fixtures__/lightup-c-reference.json" with { type: "json" };
 import { puzzleIsGood } from "./generator.ts";
 import { type LightupMistake, lightupGame } from "./index.ts";
@@ -211,7 +212,7 @@ describe("lightup input", () => {
     const m = lightupGame.interpretMove(
       state(),
       ui(),
-      null,
+      sizedDrawState(lightupGame, state()),
       { x: px(0), y: px(0) },
       LEFT_BUTTON,
     );
@@ -219,7 +220,7 @@ describe("lightup input", () => {
     const m2 = lightupGame.interpretMove(
       state(),
       ui(),
-      null,
+      sizedDrawState(lightupGame, state()),
       { x: px(0), y: px(0) },
       RIGHT_BUTTON,
     );
@@ -232,13 +233,19 @@ describe("lightup input", () => {
       lightupGame.interpretMove(
         state(),
         ui(),
-        null,
+        sizedDrawState(lightupGame, state()),
         { x: px(1), y: px(1) },
         LEFT_BUTTON,
       ),
     ).toBeNull();
     expect(
-      lightupGame.interpretMove(state(), ui(), null, { x: 5000, y: 5000 }, LEFT_BUTTON),
+      lightupGame.interpretMove(
+        state(),
+        ui(),
+        sizedDrawState(lightupGame, state()),
+        { x: 5000, y: 5000 },
+        LEFT_BUTTON,
+      ),
     ).toBeNull();
   });
 
@@ -246,12 +253,24 @@ describe("lightup input", () => {
     let s = state();
     s = lightupGame.executeMove(s, mark(0, 0));
     expect(
-      lightupGame.interpretMove(s, ui(), null, { x: px(0), y: px(0) }, LEFT_BUTTON),
+      lightupGame.interpretMove(
+        s,
+        ui(),
+        sizedDrawState(lightupGame, s),
+        { x: px(0), y: px(0) },
+        LEFT_BUTTON,
+      ),
     ).toBeNull();
     let s2 = state();
     s2 = lightupGame.executeMove(s2, light(0, 0));
     expect(
-      lightupGame.interpretMove(s2, ui(), null, { x: px(0), y: px(0) }, RIGHT_BUTTON),
+      lightupGame.interpretMove(
+        s2,
+        ui(),
+        sizedDrawState(lightupGame, s2),
+        { x: px(0), y: px(0) },
+        RIGHT_BUTTON,
+      ),
     ).toBeNull();
   });
 
@@ -260,24 +279,54 @@ describe("lightup input", () => {
     // Upstream move_cursor applies the delta *and* reveals on the first
     // press, so the cursor appears already moved to (1,0).
     expect(
-      lightupGame.interpretMove(state(), u, null, { x: 0, y: 0 }, CURSOR_RIGHT),
+      lightupGame.interpretMove(
+        state(),
+        u,
+        sizedDrawState(lightupGame, state()),
+        { x: 0, y: 0 },
+        CURSOR_RIGHT,
+      ),
     ).toBe(UI_UPDATE);
     expect(u.cursorShow).toBe(true);
     expect(u.x).toBe(1);
     expect(
-      lightupGame.interpretMove(state(), u, null, { x: 0, y: 0 }, CURSOR_DOWN),
+      lightupGame.interpretMove(
+        state(),
+        u,
+        sizedDrawState(lightupGame, state()),
+        { x: 0, y: 0 },
+        CURSOR_DOWN,
+      ),
     ).toBe(UI_UPDATE);
     // (1,1) is black: select there is inert.
     expect(
-      lightupGame.interpretMove(state(), u, null, { x: 0, y: 0 }, CURSOR_SELECT),
+      lightupGame.interpretMove(
+        state(),
+        u,
+        sizedDrawState(lightupGame, state()),
+        { x: 0, y: 0 },
+        CURSOR_SELECT,
+      ),
     ).toBeNull();
     u.x = 0;
     expect(
-      lightupGame.interpretMove(state(), u, null, { x: 0, y: 0 }, CURSOR_SELECT),
+      lightupGame.interpretMove(
+        state(),
+        u,
+        sizedDrawState(lightupGame, state()),
+        { x: 0, y: 0 },
+        CURSOR_SELECT,
+      ),
     ).toEqual(light(0, 1));
     // 'i' places a mark at the cursor.
     expect(
-      lightupGame.interpretMove(state(), u, null, { x: 0, y: 0 }, "i".charCodeAt(0)),
+      lightupGame.interpretMove(
+        state(),
+        u,
+        sizedDrawState(lightupGame, state()),
+        { x: 0, y: 0 },
+        "i".charCodeAt(0),
+      ),
     ).toEqual(mark(0, 1));
   });
 
@@ -286,7 +335,13 @@ describe("lightup input", () => {
     u.cursorShow = true;
     // Click on a black square: no move, but the cursor hides — repaint.
     expect(
-      lightupGame.interpretMove(state(), u, null, { x: px(1), y: px(1) }, LEFT_BUTTON),
+      lightupGame.interpretMove(
+        state(),
+        u,
+        sizedDrawState(lightupGame, state()),
+        { x: px(1), y: px(1) },
+        LEFT_BUTTON,
+      ),
     ).toBe(UI_UPDATE);
     expect(u.cursorShow).toBe(false);
   });

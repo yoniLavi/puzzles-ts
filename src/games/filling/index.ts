@@ -89,14 +89,14 @@ function selectCursor(ui: FillingUi, state: FillingState): void {
 function interpretMove(
   state: FillingState,
   ui: FillingUi,
-  ds: FillingDrawState | null,
+  ds: FillingDrawState,
   p: Point,
   rawButton: number,
 ): FillingMove | null | UiUpdate {
   const button = stripModifiers(rawButton);
   const { w, h, clues, board } = state;
   const sz = w * h;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const b = Math.floor(ts / 2);
   const tx = Math.floor((p.x + ts - b) / ts) - 1;
   const ty = Math.floor((p.y + ts - b) / ts) - 1;

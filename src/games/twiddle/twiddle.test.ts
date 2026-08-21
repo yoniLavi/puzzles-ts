@@ -13,6 +13,7 @@ import {
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import type { Point } from "../../engine/types.ts";
 import { twiddleGame } from "./index.ts";
 import {
@@ -56,7 +57,16 @@ function stateFromNumbers(
 
 function interpret(state: TwiddleState, button: number, p: Point = { x: 0, y: 0 }) {
   const ui = twiddleGame.newUi(state);
-  return { move: twiddleGame.interpretMove(state, ui, null, p, button), ui };
+  return {
+    move: twiddleGame.interpretMove(
+      state,
+      ui,
+      sizedDrawState(twiddleGame, state),
+      p,
+      button,
+    ),
+    ui,
+  };
 }
 
 describe("Twiddle params", () => {
@@ -269,12 +279,24 @@ describe("Twiddle input", () => {
   it("moves the cursor (clamped) and reveals it", () => {
     const ui = twiddleGame.newUi(s);
     // From (0,0): left is clamped (stays), but cursor becomes visible.
-    const m1 = twiddleGame.interpretMove(s, ui, null, { x: 0, y: 0 }, CURSOR_LEFT);
+    const m1 = twiddleGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(twiddleGame, s),
+      { x: 0, y: 0 },
+      CURSOR_LEFT,
+    );
     expect(m1).toBe(UI_UPDATE);
     expect(ui.curVisible).toBe(true);
     expect(ui.curX).toBe(0);
     // Right moves to 1 (origin space is (w-n+1)=3 wide: 0..2).
-    twiddleGame.interpretMove(s, ui, null, { x: 0, y: 0 }, CURSOR_RIGHT);
+    twiddleGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(twiddleGame, s),
+      { x: 0, y: 0 },
+      CURSOR_RIGHT,
+    );
     expect(ui.curX).toBe(1);
   });
 
@@ -284,18 +306,36 @@ describe("Twiddle input", () => {
     ui.curX = 1;
     ui.curY = 0;
     expect(
-      twiddleGame.interpretMove(s, ui, null, { x: 0, y: 0 }, CURSOR_SELECT),
+      twiddleGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(twiddleGame, s),
+        { x: 0, y: 0 },
+        CURSOR_SELECT,
+      ),
     ).toEqual({ type: "rotate", x: 1, y: 0, dir: 1 });
     expect(
-      twiddleGame.interpretMove(s, ui, null, { x: 0, y: 0 }, CURSOR_SELECT2),
+      twiddleGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(twiddleGame, s),
+        { x: 0, y: 0 },
+        CURSOR_SELECT2,
+      ),
     ).toEqual({ type: "rotate", x: 1, y: 0, dir: -1 });
   });
 
   it("first select only reveals the cursor", () => {
     const ui = twiddleGame.newUi(s);
-    expect(twiddleGame.interpretMove(s, ui, null, { x: 0, y: 0 }, CURSOR_SELECT)).toBe(
-      UI_UPDATE,
-    );
+    expect(
+      twiddleGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(twiddleGame, s),
+        { x: 0, y: 0 },
+        CURSOR_SELECT,
+      ),
+    ).toBe(UI_UPDATE);
     expect(ui.curVisible).toBe(true);
   });
 

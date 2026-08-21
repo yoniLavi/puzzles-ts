@@ -199,7 +199,7 @@ function drawRecessedFrame(dr: GameDrawing, w: number, h: number, ts: number): v
 
 export function redraw(
   dr: GameDrawing,
-  ds: SamegameDrawState | null,
+  ds: SamegameDrawState,
   _prev: SamegameState | null,
   state: SamegameState,
   _dir: number,
@@ -207,7 +207,6 @@ export function redraw(
   _animTime: number,
   flashTime: number,
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h } = state;
 

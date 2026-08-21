@@ -148,7 +148,7 @@ type SlotType = "known" | "unknown" | "cleared";
 function interpretMove(
   state: SubsetsState,
   ui: SubsetsUi,
-  ds: SubsetsDrawState | null,
+  ds: SubsetsDrawState,
   p: Point,
   rawButton: number,
 ): SubsetsMove | null | UiUpdate {
@@ -156,7 +156,7 @@ function interpretMove(
   const cw = CELL_WIDTH;
   const ch = CELL_HEIGHT;
   const button = stripModifiers(rawButton);
-  const ts = ds?.tilesize || PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
 
   // --- reference aid, both directions are mutually exclusive (selecting one
   // clears the other). A cell's top-left inspect icon lights its still-possible

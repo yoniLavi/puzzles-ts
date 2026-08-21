@@ -19,6 +19,7 @@ import {
   DEFAULT_BACKGROUND,
   renderScenario,
 } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import type { ChangeNotification, GameStatus } from "../../engine/types.ts";
 import { newSokobanDesc } from "./generator.ts";
 import { executeMove, sokobanGame } from "./index.ts";
@@ -231,18 +232,42 @@ describe("Sokoban interpretMove", () => {
 
   it("maps cursor keys and bare digits to directions", () => {
     expect(
-      sokobanGame.interpretMove(s, {}, null, { x: 0, y: 0 }, CURSOR_RIGHT),
+      sokobanGame.interpretMove(
+        s,
+        {},
+        sizedDrawState(sokobanGame, s),
+        { x: 0, y: 0 },
+        CURSOR_RIGHT,
+      ),
     ).toEqual(move(1, 0));
-    expect(sokobanGame.interpretMove(s, {}, null, { x: 0, y: 0 }, CURSOR_DOWN)).toEqual(
-      move(0, 1),
-    );
+    expect(
+      sokobanGame.interpretMove(
+        s,
+        {},
+        sizedDrawState(sokobanGame, s),
+        { x: 0, y: 0 },
+        CURSOR_DOWN,
+      ),
+    ).toEqual(move(0, 1));
     // Bare '3' = down-right diagonal (MOD_NUM_KEYPAD never arrives — §3.8a).
     expect(
-      sokobanGame.interpretMove(s, {}, null, { x: 0, y: 0 }, "3".charCodeAt(0)),
+      sokobanGame.interpretMove(
+        s,
+        {},
+        sizedDrawState(sokobanGame, s),
+        { x: 0, y: 0 },
+        "3".charCodeAt(0),
+      ),
     ).toEqual(move(1, 1));
     // '5' is not a direction.
     expect(
-      sokobanGame.interpretMove(s, {}, null, { x: 0, y: 0 }, "5".charCodeAt(0)),
+      sokobanGame.interpretMove(
+        s,
+        {},
+        sizedDrawState(sokobanGame, s),
+        { x: 0, y: 0 },
+        "5".charCodeAt(0),
+      ),
     ).toBeNull();
   });
 
@@ -250,15 +275,27 @@ describe("Sokoban interpretMove", () => {
     // Player is at cell (1,1); a click well to its right (cell 3) → move right.
     const ts = 32;
     const click = { x: 3 * ts + ts / 2, y: 1 * ts + ts / 2 };
-    expect(sokobanGame.interpretMove(s, {}, null, click, LEFT_BUTTON)).toEqual(
-      move(1, 0),
-    );
+    expect(
+      sokobanGame.interpretMove(
+        s,
+        {},
+        sizedDrawState(sokobanGame, s),
+        click,
+        LEFT_BUTTON,
+      ),
+    ).toEqual(move(1, 0));
   });
 
   it("returns null for an illegal move (into a wall)", () => {
     // Bare '4' = left, into a wall.
     expect(
-      sokobanGame.interpretMove(s, {}, null, { x: 0, y: 0 }, "4".charCodeAt(0)),
+      sokobanGame.interpretMove(
+        s,
+        {},
+        sizedDrawState(sokobanGame, s),
+        { x: 0, y: 0 },
+        "4".charCodeAt(0),
+      ),
     ).toBeNull();
   });
 });

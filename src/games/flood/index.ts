@@ -106,7 +106,7 @@ function newUi(_state: FloodState): FloodUi {
 function interpretMove(
   state: FloodState,
   ui: FloodUi,
-  ds: FloodDrawState | null,
+  ds: FloodDrawState,
   p: Point,
   button: number,
 ): FloodMove | null | UiUpdate {
@@ -117,7 +117,7 @@ function interpretMove(
   let uiUpdated = false;
 
   if (raw === LEFT_BUTTON) {
-    const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+    const ts = ds.tilesize;
     tx = fromCoordE(p.x, ts, Math.floor(ts / 2));
     ty = fromCoordE(p.y, ts, Math.floor(ts / 2));
     if (ui.cursorVisible) {

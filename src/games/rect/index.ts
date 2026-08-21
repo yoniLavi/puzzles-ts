@@ -155,13 +155,13 @@ function moveCursor(ui: RectUi, button: number, w: number, h: number): boolean {
 function interpretMove(
   state: RectState,
   ui: RectUi,
-  ds: RectDrawState | null,
+  ds: RectDrawState,
   p: Point,
   rawButton: number,
 ): RectMove | null | UiUpdate {
   const button = stripModifiers(rawButton);
   const { w, h } = state;
-  const tile = ds?.tileSize ?? PREFERRED_TILE_SIZE;
+  const tile = ds.tileSize;
   const fromCoord = (px: number) => (px - BORDER) / tile;
 
   let [xc, yc] = coordRound(fromCoord(p.x), fromCoord(p.y));

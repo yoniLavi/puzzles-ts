@@ -450,7 +450,7 @@ function currmoveRedraw(
 
 export function redraw(
   dr: GameDrawing,
-  ds: GuessDrawState | null,
+  ds: GuessDrawState,
   _prev: GuessState | null,
   s: GuessState,
   _dir: number,
@@ -458,7 +458,6 @@ export function redraw(
   _animTime: number,
   _flashTime: number,
 ): void {
-  if (!ds) return;
   const ncolours = s.params.ncolours;
   const newMove = s.nextGo !== ds.nextGo || !ds.started;
 

@@ -7,6 +7,7 @@
 import { describe, expect, it } from "vitest";
 import { CURSOR_SELECT } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { guessGame } from "./index.ts";
 import {
   defaultParams,
@@ -132,7 +133,13 @@ describe("hint (compute_hint)", () => {
     let guesses = 0;
     while (state.solved === 0 && guesses < params.nguesses) {
       // Press the hint key: fills ui.currPegs with a consistent row.
-      const r = guessGame.interpretMove(state, ui, null, ZERO, 0x68 /* 'h' */);
+      const r = guessGame.interpretMove(
+        state,
+        ui,
+        sizedDrawState(guessGame, state),
+        ZERO,
+        0x68 /* 'h' */,
+      );
       expect(r).toBeTruthy();
       const move = submit(ui.currPegs.slice());
       state = guessGame.executeMove(state, move);
@@ -149,7 +156,7 @@ describe("hint (compute_hint)", () => {
     const wrong = [1, 2, 3, 4];
     const s1 = guessGame.executeMove(s0, submit(wrong));
     guessGame.changedState?.(ui, s0, s1);
-    guessGame.interpretMove(s1, ui, null, ZERO, 0x68);
+    guessGame.interpretMove(s1, ui, sizedDrawState(guessGame, s1), ZERO, 0x68);
     // Re-score the hint row against the prior guess; it must reproduce
     // that guess's feedback (the definition of "consistent").
     // Use the same maxcolour bound compute_hint uses (here ncolours).
@@ -164,7 +171,13 @@ describe("interpretMove keyboard", () => {
   it("number keys place a peg and advance the cursor", () => {
     const { state, ui } = freshGame();
     ui.displayCur = true;
-    const r = guessGame.interpretMove(state, ui, null, ZERO, 0x33 /* '3' */);
+    const r = guessGame.interpretMove(
+      state,
+      ui,
+      sizedDrawState(guessGame, state),
+      ZERO,
+      0x33 /* '3' */,
+    );
     expect(r).toBeTruthy();
     expect(ui.currPegs[0]).toBe(3);
     expect(ui.pegCur).toBe(1);
@@ -177,7 +190,13 @@ describe("interpretMove keyboard", () => {
     ui.markable = true;
     ui.pegCur = state.params.npegs;
     ui.displayCur = true;
-    const r = guessGame.interpretMove(state, ui, null, ZERO, CURSOR_SELECT);
+    const r = guessGame.interpretMove(
+      state,
+      ui,
+      sizedDrawState(guessGame, state),
+      ZERO,
+      CURSOR_SELECT,
+    );
     expect(r).toMatchObject({ type: "guess" });
   });
 
@@ -185,7 +204,13 @@ describe("interpretMove keyboard", () => {
     const { state, ui } = freshGame();
     const solved = guessGame.executeMove(state, submit(state.solution.slice()));
     const before = ui.showLabels;
-    const r = guessGame.interpretMove(solved, ui, null, ZERO, 0x6c /* 'l' */);
+    const r = guessGame.interpretMove(
+      solved,
+      ui,
+      sizedDrawState(guessGame, solved),
+      ZERO,
+      0x6c /* 'l' */,
+    );
     expect(r).toBeTruthy();
     expect(ui.showLabels).toBe(!before);
   });

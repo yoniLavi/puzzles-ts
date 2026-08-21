@@ -191,12 +191,12 @@ function moveCursor(button: number, ui: SoloUi, cr: number): UiUpdate | null {
 function interpretMove(
   state: SoloState,
   ui: SoloUi,
-  ds: SoloDrawState | null,
+  ds: SoloDrawState,
   p: Point,
   rawButton: number,
 ): SoloMove | null | UiUpdate {
   const cr = state.cr;
-  const ts = ds?.tileSize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tileSize;
   const button = stripModifiers(rawButton);
 
   const tx = fromCoord(p.x, ts);

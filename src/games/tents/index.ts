@@ -100,7 +100,7 @@ const isMouseRelease = (b: number) =>
 function interpretMove(
   state: TentsState,
   ui: TentsUi,
-  ds: TentsDrawState | null,
+  ds: TentsDrawState,
   p: Point,
   rawButton: number,
 ): TentsMove | null | UiUpdate {
@@ -108,7 +108,7 @@ function interpretMove(
   const shift = rawButton & MOD_SHFT;
   const control = rawButton & MOD_CTRL;
   const button = stripModifiers(rawButton);
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   // NARROW_BORDERS FROMCOORD: TLBORDER = 1.
   const fromCoord = (v: number) => Math.floor((v - 1 + ts) / ts) - 1;
 

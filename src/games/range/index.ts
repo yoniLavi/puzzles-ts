@@ -108,7 +108,7 @@ function cycle(cell: number, forwards: boolean): RangeCellValue | null {
 function interpretMove(
   state: RangeState,
   ui: RangeUi,
-  ds: RangeDrawState | null,
+  ds: RangeDrawState,
   p: Point,
   rawButton: number,
 ): RangeMove | null | UiUpdate {
@@ -124,7 +124,7 @@ function interpretMove(
   let c = ui.c;
 
   if (isMouseDown(button)) {
-    const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+    const ts = ds.tilesize;
     const border = Math.floor(ts / 2);
     const fromCoord = (v: number): number => Math.floor((v - border) / ts);
     r = fromCoord(p.y + ts) - 1;

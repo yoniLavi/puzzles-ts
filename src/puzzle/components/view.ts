@@ -293,7 +293,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         availableSize.w = Math.min(scaledSize.w, availableSize.w);
         availableSize.h = Math.min(scaledSize.h, availableSize.h);
       }
-      size = await this.puzzle.size(availableSize, true, 1);
+      size = await this.puzzle.size(availableSize);
     }
 
     const changed = size.w !== this.canvasSize?.w || size.h !== this.canvasSize?.h;
@@ -385,9 +385,13 @@ export class PuzzleView extends SignalWatcher(LitElement) {
 
   protected destroyCanvas() {
     if (this.canvas) {
-      // Puzzle.detachCanvas is actually a noop, so don't bother calling it.
-      // (We'd need to make sure we were calling it for the Puzzle in use
-      // during createCanvas, which isn't necessarily this.puzzle any more.)
+      // Deliberately not calling `Puzzle.detachCanvas` here: we'd need the
+      // Puzzle that was in use during `createCanvas`, which isn't necessarily
+      // `this.puzzle` any more. `Puzzle.delete()` calls it on the right
+      // instance. (This used to say `detachCanvas` "is actually a noop", which
+      // it has never been — it shrinks the offscreen canvas to 1x1 to release
+      // its backing store, in the C worker as in this one.
+      // `audit-vestigial-contract-surface`.)
       this.canvas.remove();
       this.canvas = undefined;
     }

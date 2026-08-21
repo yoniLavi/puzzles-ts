@@ -237,11 +237,11 @@ function finishDrag(ui: BridgesUi): BridgesMove | UiUpdate | null {
 function interpretMove(
   s: BridgesState,
   ui: BridgesUi,
-  ds: BridgesDrawState | null,
+  ds: BridgesDrawState,
   p: Point,
   button: number,
 ): BridgesMove | null | UiUpdate {
-  const ts = ds?.tileSize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tileSize;
   const b = border(ts);
   const gx = fromCoord(p.x, ts, b);
   const gy = fromCoord(p.y, ts, b);

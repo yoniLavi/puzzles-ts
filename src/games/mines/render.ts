@@ -266,7 +266,7 @@ function drawTile(
 
 export function redraw(
   dr: GameDrawing,
-  ds: MinesDrawState | null,
+  ds: MinesDrawState,
   _prev: MinesState | null,
   s: MinesState,
   _dir: number,
@@ -274,7 +274,6 @@ export function redraw(
   _animTime: number,
   flashTime: number,
 ): void {
-  if (!ds) return;
   const ts = ds.tileSize;
   const border = borderFor(ts);
   const cx0 = (x: number) => coord(x, ts, border);

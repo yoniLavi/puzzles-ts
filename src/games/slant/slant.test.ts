@@ -20,6 +20,7 @@ import {
   DEFAULT_BACKGROUND,
   renderScenario,
 } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import cReference from "./__fixtures__/slant-c-reference.json" with { type: "json" };
 import { newDesc, slantGenerate } from "./generator.ts";
 import { slantGame } from "./index.ts";
@@ -193,18 +194,42 @@ describe("slant input", () => {
 
   it("left-click cycles blank -> \\ -> / -> blank", () => {
     const u = ui();
-    const m1 = slantGame.interpretMove(state, u, null, centre(0, 0), LEFT_BUTTON);
+    const m1 = slantGame.interpretMove(
+      state,
+      u,
+      sizedDrawState(slantGame, state),
+      centre(0, 0),
+      LEFT_BUTTON,
+    );
     expect(m1).toEqual(set(0, 0, -1));
     const s1 = executeMove(state, m1 as SlantMove);
-    const m2 = slantGame.interpretMove(s1, u, null, centre(0, 0), LEFT_BUTTON);
+    const m2 = slantGame.interpretMove(
+      s1,
+      u,
+      sizedDrawState(slantGame, s1),
+      centre(0, 0),
+      LEFT_BUTTON,
+    );
     expect(m2).toEqual(set(0, 0, 1));
     const s2 = executeMove(s1, m2 as SlantMove);
-    const m3 = slantGame.interpretMove(s2, u, null, centre(0, 0), LEFT_BUTTON);
+    const m3 = slantGame.interpretMove(
+      s2,
+      u,
+      sizedDrawState(slantGame, s2),
+      centre(0, 0),
+      LEFT_BUTTON,
+    );
     expect(m3).toEqual(set(0, 0, 0));
   });
 
   it("right-click cycles the other way", () => {
-    const m = slantGame.interpretMove(state, ui(), null, centre(1, 1), RIGHT_BUTTON);
+    const m = slantGame.interpretMove(
+      state,
+      ui(),
+      sizedDrawState(slantGame, state),
+      centre(1, 1),
+      RIGHT_BUTTON,
+    );
     expect(m).toEqual(set(1, 1, 1));
   });
 
@@ -212,7 +237,7 @@ describe("slant input", () => {
     const m = slantGame.interpretMove(
       state,
       ui({ swapButtons: true }),
-      null,
+      sizedDrawState(slantGame, state),
       centre(0, 0),
       LEFT_BUTTON,
     );
@@ -221,54 +246,122 @@ describe("slant input", () => {
 
   it("ignores clicks outside the grid and hides the cursor on a click", () => {
     expect(
-      slantGame.interpretMove(state, ui(), null, { x: 2, y: 2 }, LEFT_BUTTON),
+      slantGame.interpretMove(
+        state,
+        ui(),
+        sizedDrawState(slantGame, state),
+        { x: 2, y: 2 },
+        LEFT_BUTTON,
+      ),
     ).toBe(null);
     const u = ui({ cursorVisible: true });
-    slantGame.interpretMove(state, u, null, centre(0, 0), LEFT_BUTTON);
+    slantGame.interpretMove(
+      state,
+      u,
+      sizedDrawState(slantGame, state),
+      centre(0, 0),
+      LEFT_BUTTON,
+    );
     expect(u.cursorVisible).toBe(false);
   });
 
   it("cursor keys reveal and move the cursor", () => {
     const u = ui();
-    expect(slantGame.interpretMove(state, u, null, { x: 0, y: 0 }, CURSOR_RIGHT)).toBe(
-      UI_UPDATE,
-    );
+    expect(
+      slantGame.interpretMove(
+        state,
+        u,
+        sizedDrawState(slantGame, state),
+        { x: 0, y: 0 },
+        CURSOR_RIGHT,
+      ),
+    ).toBe(UI_UPDATE);
     expect(u).toMatchObject({ cx: 1, cy: 0, cursorVisible: true });
     // Clamped at the edge, still a UI update.
-    expect(slantGame.interpretMove(state, u, null, { x: 0, y: 0 }, CURSOR_RIGHT)).toBe(
-      UI_UPDATE,
-    );
+    expect(
+      slantGame.interpretMove(
+        state,
+        u,
+        sizedDrawState(slantGame, state),
+        { x: 0, y: 0 },
+        CURSOR_RIGHT,
+      ),
+    ).toBe(UI_UPDATE);
     expect(u.cx).toBe(1);
-    expect(slantGame.interpretMove(state, u, null, { x: 0, y: 0 }, CURSOR_LEFT)).toBe(
-      UI_UPDATE,
-    );
+    expect(
+      slantGame.interpretMove(
+        state,
+        u,
+        sizedDrawState(slantGame, state),
+        { x: 0, y: 0 },
+        CURSOR_LEFT,
+      ),
+    ).toBe(UI_UPDATE);
     expect(u.cx).toBe(0);
   });
 
   it("select reveals the cursor first, then cycles", () => {
     const u = ui();
-    expect(slantGame.interpretMove(state, u, null, { x: 0, y: 0 }, CURSOR_SELECT)).toBe(
-      UI_UPDATE,
-    );
+    expect(
+      slantGame.interpretMove(
+        state,
+        u,
+        sizedDrawState(slantGame, state),
+        { x: 0, y: 0 },
+        CURSOR_SELECT,
+      ),
+    ).toBe(UI_UPDATE);
     expect(u.cursorVisible).toBe(true);
     expect(
-      slantGame.interpretMove(state, u, null, { x: 0, y: 0 }, CURSOR_SELECT),
+      slantGame.interpretMove(
+        state,
+        u,
+        sizedDrawState(slantGame, state),
+        { x: 0, y: 0 },
+        CURSOR_SELECT,
+      ),
     ).toEqual(set(0, 0, -1));
     expect(
-      slantGame.interpretMove(state, u, null, { x: 0, y: 0 }, CURSOR_SELECT2),
+      slantGame.interpretMove(
+        state,
+        u,
+        sizedDrawState(slantGame, state),
+        { x: 0, y: 0 },
+        CURSOR_SELECT2,
+      ),
     ).toEqual(set(0, 0, 1));
   });
 
   it("direct keys place at the cursor; a no-op returns null", () => {
     const u = ui({ cx: 1, cy: 0, cursorVisible: true });
-    expect(slantGame.interpretMove(state, u, null, { x: 0, y: 0 }, 92)).toEqual(
-      set(1, 0, -1),
-    );
-    expect(slantGame.interpretMove(state, u, null, { x: 0, y: 0 }, 47)).toEqual(
-      set(1, 0, 1),
-    );
+    expect(
+      slantGame.interpretMove(
+        state,
+        u,
+        sizedDrawState(slantGame, state),
+        { x: 0, y: 0 },
+        92,
+      ),
+    ).toEqual(set(1, 0, -1));
+    expect(
+      slantGame.interpretMove(
+        state,
+        u,
+        sizedDrawState(slantGame, state),
+        { x: 0, y: 0 },
+        47,
+      ),
+    ).toEqual(set(1, 0, 1));
     // Backspace on an already-blank square: no effect.
-    expect(slantGame.interpretMove(state, u, null, { x: 0, y: 0 }, 8)).toBe(null);
+    expect(
+      slantGame.interpretMove(
+        state,
+        u,
+        sizedDrawState(slantGame, state),
+        { x: 0, y: 0 },
+        8,
+      ),
+    ).toBe(null);
   });
 });
 

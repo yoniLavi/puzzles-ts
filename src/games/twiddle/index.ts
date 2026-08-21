@@ -91,13 +91,13 @@ function rotateMove(x: number, y: number, dir: 1 | -1): TwiddleMove {
 function interpretMove(
   state: TwiddleState,
   ui: TwiddleUi,
-  ds: TwiddleDrawState | null,
+  ds: TwiddleDrawState,
   p: Point,
   rawButton: number,
 ): TwiddleMove | null | UiUpdate {
   const { w, h, n } = state;
   const button = rawButton & (~MOD_MASK | MOD_NUM_KEYPAD);
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
 
   // Cursor movement over the (w-n+1) × (h-n+1) rotation-origin space.
   // No toroidal wrap; the origin space is clamped.

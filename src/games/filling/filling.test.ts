@@ -11,6 +11,7 @@ import { Midend } from "../../engine/index.ts";
 import { LEFT_BUTTON } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { newFillingDesc } from "./generator.ts";
 import { fillingGame } from "./index.ts";
 import { COL_CORRECT, COL_ERROR, COL_GRID } from "./render.ts";
@@ -150,7 +151,7 @@ describe("filling moves + selection", () => {
     const move = fillingGame.interpretMove(
       st,
       ui,
-      null,
+      sizedDrawState(fillingGame, st),
       { x: 0, y: 0 },
       0x34 /* '4' */,
     );

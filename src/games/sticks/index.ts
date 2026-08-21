@@ -113,11 +113,10 @@ const lineBits = (line: SticksLine): number =>
 const bitsLine = (bits: number): SticksLine =>
   bits & F_HOR ? "hor" : bits & F_VER ? "ver" : "none";
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: input dispatch over button x cursor x the three edge states.
 function interpretMove(
   state: SticksState,
   ui: SticksUi,
-  ds: SticksDrawState | null,
+  ds: SticksDrawState,
   p: Point,
   rawButton: number,
 ): SticksMove | null | UiUpdate {
@@ -125,7 +124,7 @@ function interpretMove(
   const shift = (rawButton & MOD_SHFT) !== 0;
   const control = (rawButton & MOD_CTRL) !== 0;
   const button = stripModifiers(rawButton);
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const b = border(ts);
   // C's FROMCOORD is truncating integer division, so a pointer slightly
   // inside the border still maps to row/column 0 — keep trunc, not floor.

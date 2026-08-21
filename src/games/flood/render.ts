@@ -188,7 +188,7 @@ function drawRecessedFrame(dr: GameDrawing, w: number, h: number, ts: number): v
 
 export function redraw(
   dr: GameDrawing,
-  ds: FloodDrawState | null,
+  ds: FloodDrawState,
   _prev: FloodState | null,
   state: FloodState,
   _dir: number,
@@ -197,7 +197,6 @@ export function redraw(
   flashTime: number,
   activeHint?: HintStep<FloodMove>,
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, colours: ncolours } = state;
   const wh = w * h;

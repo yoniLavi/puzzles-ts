@@ -266,7 +266,7 @@ function drawSquare(
 
 export function redraw(
   dr: GameDrawing,
-  ds: PearlDrawState | null,
+  ds: PearlDrawState,
   _prev: PearlState | null,
   state: PearlState,
   _dir: number,
@@ -276,7 +276,6 @@ export function redraw(
   _hint?: unknown,
   mistakes?: readonly { x: number; y: number; dir: number }[],
 ): void {
-  if (ds === null) return;
   const { w, h } = state;
   const m = metrics(ds.tileSize);
   const guiStyle = ui.guiStyle;

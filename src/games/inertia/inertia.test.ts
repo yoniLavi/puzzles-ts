@@ -13,6 +13,7 @@ import {
   RecordingDrawing,
 } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import type { ChangeNotification } from "../../engine/types.ts";
 import { newInertiaDesc } from "./generator.ts";
 import { inertiaGame } from "./index.ts";
@@ -175,13 +176,31 @@ describe("inertia sliding", () => {
     const s = newState(params, desc);
     // West of the ball is a wall; so is everything south.
     expect(
-      inertiaGame.interpretMove(s, ui(), null, { x: 0, y: 0 }, key("left")),
+      inertiaGame.interpretMove(
+        s,
+        ui(),
+        sizedDrawState(inertiaGame, s),
+        { x: 0, y: 0 },
+        key("left"),
+      ),
     ).toBeNull();
     expect(
-      inertiaGame.interpretMove(s, ui(), null, { x: 0, y: 0 }, key("down")),
+      inertiaGame.interpretMove(
+        s,
+        ui(),
+        sizedDrawState(inertiaGame, s),
+        { x: 0, y: 0 },
+        key("down"),
+      ),
     ).toBeNull();
     expect(
-      inertiaGame.interpretMove(s, ui(), null, { x: 0, y: 0 }, key("right")),
+      inertiaGame.interpretMove(
+        s,
+        ui(),
+        sizedDrawState(inertiaGame, s),
+        { x: 0, y: 0 },
+        key("right"),
+      ),
     ).toEqual({ type: "move", dir: E });
   });
 
@@ -190,7 +209,13 @@ describe("inertia sliding", () => {
     const s1 = play(newState(params, desc), E);
     expect(s1.dead).toBe(true);
     expect(
-      inertiaGame.interpretMove(s1, ui(), null, { x: 0, y: 0 }, key("right")),
+      inertiaGame.interpretMove(
+        s1,
+        ui(),
+        sizedDrawState(inertiaGame, s1),
+        { x: 0, y: 0 },
+        key("right"),
+      ),
     ).toBeNull();
     expect(() => play(s1, E)).toThrow();
   });
@@ -228,7 +253,15 @@ describe("inertia input", () => {
     ];
     for (const [k, dir] of pad) {
       const button = 0x4000 | k.charCodeAt(0); // MOD_NUM_KEYPAD
-      expect(inertiaGame.interpretMove(s, ui(), null, { x: 0, y: 0 }, button)).toEqual({
+      expect(
+        inertiaGame.interpretMove(
+          s,
+          ui(),
+          sizedDrawState(inertiaGame, s),
+          { x: 0, y: 0 },
+          button,
+        ),
+      ).toEqual({
         type: "move",
         dir,
       });
@@ -247,12 +280,24 @@ describe("inertia input", () => {
       ["3", SE],
     ] as const) {
       expect(
-        inertiaGame.interpretMove(s, ui(), null, { x: 0, y: 0 }, k.charCodeAt(0)),
+        inertiaGame.interpretMove(
+          s,
+          ui(),
+          sizedDrawState(inertiaGame, s),
+          { x: 0, y: 0 },
+          k.charCodeAt(0),
+        ),
       ).toEqual({ type: "move", dir });
     }
     // A digit Inertia doesn't bind is simply not a move.
     expect(
-      inertiaGame.interpretMove(s, ui(), null, { x: 0, y: 0 }, "5".charCodeAt(0)),
+      inertiaGame.interpretMove(
+        s,
+        ui(),
+        sizedDrawState(inertiaGame, s),
+        { x: 0, y: 0 },
+        "5".charCodeAt(0),
+      ),
     ).toBeNull();
   });
 
@@ -472,7 +517,13 @@ describe("inertia route aid", () => {
     const wrong = [N, NE, E, SE, S, SW, W, NW].find(
       (d) =>
         d !== route[0] &&
-        inertiaGame.interpretMove(s1, ui(), null, { x: 0, y: 0 }, padKey(d)) !== null,
+        inertiaGame.interpretMove(
+          s1,
+          ui(),
+          sizedDrawState(inertiaGame, s1),
+          { x: 0, y: 0 },
+          padKey(d),
+        ) !== null,
     );
     expect(wrong).toBeDefined();
     if (wrong === undefined) return;
@@ -516,7 +567,13 @@ describe("inertia route aid", () => {
     if (!result?.ok) throw new Error("expected a route");
     const s1 = inertiaGame.executeMove(s0, result.move);
 
-    const move = inertiaGame.interpretMove(s1, ui(), null, { x: 0, y: 0 }, 0x020d);
+    const move = inertiaGame.interpretMove(
+      s1,
+      ui(),
+      sizedDrawState(inertiaGame, s1),
+      { x: 0, y: 0 },
+      0x020d,
+    );
     expect(move).toEqual({ type: "move", dir: (s1.route ?? [])[0] });
   });
 

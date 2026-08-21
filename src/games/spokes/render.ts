@@ -272,7 +272,7 @@ function drawHub(
 
 export function redraw(
   dr: GameDrawing,
-  ds: SpokesDrawState | null,
+  ds: SpokesDrawState,
   _prev: SpokesState | null,
   state: SpokesState,
   _dir: number,
@@ -282,7 +282,6 @@ export function redraw(
   hint?: HintStep<SpokesMove, SpokesHint>,
   mistakes?: readonly SpokesMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h } = state;
 

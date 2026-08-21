@@ -270,7 +270,7 @@ function drawTile(
 
 export function redraw(
   dr: GameDrawing,
-  ds: BricksDrawState | null,
+  ds: BricksDrawState,
   _prev: BricksState | null,
   state: BricksState,
   _dir: number,
@@ -280,7 +280,6 @@ export function redraw(
   hint?: HintStep<BricksMove, BricksHint>,
   mistakes?: readonly BricksMistake[],
 ): void {
-  if (!ds) return;
   const ts = ds.tilesize;
   const { w, h, grid } = state;
   const s = w * h;

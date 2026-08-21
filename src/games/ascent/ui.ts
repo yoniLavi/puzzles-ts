@@ -604,7 +604,7 @@ function mouseClick(
 export function interpretAscentMove(
   state: AscentState,
   ui: AscentUi,
-  ds: AscentDrawState | null,
+  ds: AscentDrawState,
   p: Point,
   button: number,
 ): AscentMove | null | UiUpdate {

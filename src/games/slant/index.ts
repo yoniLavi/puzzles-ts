@@ -100,13 +100,13 @@ function cycle(current: number, clockwise: boolean): Slash {
 function interpretMove(
   state: SlantState,
   ui: SlantUi,
-  ds: SlantDrawState | null,
+  ds: SlantDrawState,
   p: Point,
   rawButton: number,
 ): SlantMove | null | UiUpdate {
   const button = stripModifiers(rawButton);
   const { w, h } = state;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const b = Math.floor(ts / 3) + 1; // render.ts border (NARROW_BORDERS)
   const fromCoord = (v: number) => Math.floor((v - b + ts) / ts) - 1;
 

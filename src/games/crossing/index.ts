@@ -128,12 +128,12 @@ function placementChanges(state: CrossingState, r: number, l: number): boolean {
 function interpretMove(
   state: CrossingState,
   ui: CrossingUi,
-  ds: CrossingDrawState | null,
+  ds: CrossingDrawState,
   point: Point,
   rawButton: number,
 ): CrossingMove | null | UiUpdate {
   const { w, h, walls } = state.puzzle;
-  const ts = ds?.tilesize || PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const button = stripModifiers(rawButton);
 
   const gx = fromCoord(point.x, ts);

@@ -101,7 +101,7 @@ export interface PuzzleEngineSurface {
    * adapt this index"). Empty when the palette states nothing of its own.
    */
   darkPalette(defaultBackground: Colour): Record<number, Colour>;
-  size(maxSize: Size, isUserSize: boolean, devicePixelRatio: number): Size;
+  size(maxSize: Size): Size;
   preferredSize(): Size;
   formatAsText(): string | undefined;
 
@@ -113,7 +113,6 @@ export interface PuzzleEngineSurface {
   detachCanvas(): void;
   resizeDrawing(size: Size, dpr: number): void;
   setDrawingPalette(colors: string[]): void;
-  setDrawingFontInfo(fontInfo: FontInfo): void;
   getImage(options?: ImageEncodeOptions): Promise<Blob>;
 
   delete(): void;

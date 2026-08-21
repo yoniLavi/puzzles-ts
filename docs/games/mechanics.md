@@ -25,6 +25,18 @@ means "this game does not have that capability"** — that is correct behaviour,
 not a stub: a game with no solver omits `solve`, a permutation game with no
 notion of a wrong-but-legal position omits `findMistakes`.
 
+The converse is a rule too, and it is checked:
+[`contract-surface.test.ts`](../../src/contract-surface.test.ts) requires every
+optional member to have at least one implementer **and** at least one consumer.
+The two are counted separately because they fail differently — no implementer is
+dead weight in the interface, no consumer means every implementer wrote code
+that never runs. So don't add an optional member speculatively (the
+`PointerAction` mistake), and don't leave one whose consumer has gone: if a
+capability is worth keeping unread, it needs an entry naming the change that
+owns the decision. Corollary: a member every game implements is not optional —
+`newDrawState` and `redraw` were, and 112 game files paid for it in guards
+against a null the engine could not produce.
+
 The five type parameters are yours to shape idiomatically; the file layout that
 has held across all 57 games is `index.ts` (the `Game` object + glue),
 `state.ts` (types + codecs), `solver.ts`, `generator.ts`, `render.ts` — see
@@ -119,7 +131,13 @@ builds the app's form from it and parses a submission back onto a **copy** of
 the params, validated by the game's own `validateParams`, so the dialog rejects
 exactly what a game ID would. It is independent of `describeParams` (the menu
 label). A game that omits it ships a blank Custom dialog — wire it or your
-game has no custom sizes. Conventions that keep it correct:
+game has no custom sizes. **This is now asserted rather than advised**
+([`custom-params.test.ts`](../../src/engine/custom-params.test.ts)): every
+registered game must declare a non-empty `paramConfig`. Sokoban shipped without
+one from its port until `audit-vestigial-contract-surface`, and nothing
+objected, because the sweep over `paramConfig` opened by skipping any game that
+had none and the menu entry was gated on a flag the midend answered `true`
+unconditionally. Conventions that keep it correct:
 
 - **Keys match the C config slug**, so the form is stable across eras; `get`
   mirrors `describeParams` (index for a choice, string for a numeric field),
@@ -192,6 +210,18 @@ be the same one `executeMove` filters with, so the two cannot drift (see
 [input](./input.md) § "A line-fill drag picks a transformation" for the Boats
 worked example). Input-device traps — touch, stylus, keypad, drag classes —
 are [input](./input.md)'s whole subject; read it before writing this hook.
+
+**`ds` is non-null and already sized, so read `ds.tilesize` directly.** The
+midend creates the draw state and applies `setTileSize` in one step
+(`Midend.freshDrawState`) and declines input before a board exists. Do **not**
+write `ds?.tilesize ?? PREFERRED_TILE_SIZE`: that fallback cannot fire, and if
+it ever did it would map the click at the preferred tile size rather than the
+one on screen — the wrong cell, silently. Fifty-seven games had one, from back
+when `newDrawState` was optional; `audit-vestigial-contract-surface` made both
+it and `redraw` required and removed the lot. A test that calls `interpretMove`
+or `redraw` directly builds the drawstate with
+[`sizedDrawState`](../../src/engine/testing/sized-draw-state.ts) rather than
+passing `null`.
 
 ### executeMove is pure
 
@@ -274,7 +304,7 @@ Solve is [solver & generator](./solver-and-generator.md) § "Solve and the gener
 | `canSolve` | `solve` present | test through a real `Midend` when `aux` matters |
 | `canFormatAsText` | `textFormat` present | may still return `undefined` for params with no rendering (Loopy: square grid only) |
 | `canMarkAll` | game handles the `M`/`m` key; shell shows the button | see "Pencil marks" |
-| `needsRightButton` | game is unplayable without a secondary action | drives the touch affordance — [input](./input.md) |
+| `needsRightButton` | game is unplayable without a secondary action | **nothing reads it today** — eighteen games declare it and the trail ends at `Puzzle.needsRightButton`; the touch affordance is offered to every game unconditionally. Kept pending `audit-input-mode-parity` task 4b.1, which wants the per-game control this is half of |
 | `wantsStylusModifier` | game handles `MOD_STYLUS` itself | **keep false** unless touch has its own behaviour; the midend strips the bit for everyone else — [input](./input.md) § "Touch is stripped for you" |
 
 **A param-dependent capability the static flag can't express: widen the

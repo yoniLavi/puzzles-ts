@@ -13,6 +13,7 @@
 
 import { rejectMove } from "../../engine/assert-never.ts";
 import type { Game } from "../../engine/game.ts";
+import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -84,7 +85,7 @@ const DIGIT_DIRECTIONS: Record<string, { dx: number; dy: number }> = {
 function interpretMove(
   state: SokobanState,
   _ui: SokobanUi,
-  ds: SokobanDrawState | null,
+  ds: SokobanDrawState,
   p: Point,
   rawButton: number,
 ): SokobanMove | null {
@@ -98,7 +99,7 @@ function interpretMove(
   else if (button === CURSOR_RIGHT) dx = 1;
   else if (button === LEFT_BUTTON) {
     // Direction relative to the player's cell (can be diagonal).
-    const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+    const ts = ds.tilesize;
     const coord = (n: number) => n * ts; // BORDER = 0
     if (p.x < coord(state.px)) dx = -1;
     else if (p.x > coord(state.px + 1)) dx = 1;
@@ -218,6 +219,12 @@ export const sokobanGame: Game<
   encodeParams,
   decodeParams,
   validateParams,
+  // Sokoban's params are exactly width and height, so this is the plain form.
+  // It was missing until `audit-vestigial-contract-surface`, which made Sokoban
+  // the one game in the collection whose "Custom type…" dialog opened with no
+  // fields in it — invisible because the menu entry is gated on a flag the
+  // midend hard-coded to `true`.
+  paramConfig: dimensionParamConfig(),
 
   newDesc: (p: SokobanParams, rng: RandomState) => newSokobanDesc(p, rng),
   validateDesc,

@@ -179,12 +179,12 @@ function moveCursor(button: number, ui: KeenUi, w: number): UiUpdate | null {
 function interpretMove(
   state: KeenState,
   ui: KeenUi,
-  ds: KeenDrawState | null,
+  ds: KeenDrawState,
   p: Point,
   rawButton: number,
 ): KeenMove | null | UiUpdate {
   const w = state.params.w;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const button = stripModifiers(rawButton);
 
   const tx = fromCoord(p.x, ts);

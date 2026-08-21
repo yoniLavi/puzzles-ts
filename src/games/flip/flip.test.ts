@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { type GameDrawing, Midend, UI_UPDATE } from "../../engine/index.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import { type ChangeNotification, PuzzleButton } from "../../engine/types.ts";
 import { type FlipParams, type FlipState, flipGame } from "./index.ts";
 
@@ -166,7 +167,13 @@ describe("Flip interpretMove", () => {
   it("left-click in a cell yields a flip move at that cell", () => {
     const s = flipGame.newState(p, desc);
     const ui = flipGame.newUi(s);
-    const m = flipGame.interpretMove(s, ui, null, at(2, 1), 0x0200);
+    const m = flipGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(flipGame, s),
+      at(2, 1),
+      0x0200,
+    );
     expect(m).toEqual({ kind: "flip", x: 2, y: 1 });
     expect(ui.cursorVisible).toBe(false);
   });
@@ -174,20 +181,38 @@ describe("Flip interpretMove", () => {
   it("left-click outside the grid is a UI update, not a move", () => {
     const s = flipGame.newState(p, desc);
     const ui = flipGame.newUi(s);
-    expect(flipGame.interpretMove(s, ui, null, { x: 9999, y: 9999 }, 0x0200)).toBe(
-      UI_UPDATE,
-    );
+    expect(
+      flipGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(flipGame, s),
+        { x: 9999, y: 9999 },
+        0x0200,
+      ),
+    ).toBe(UI_UPDATE);
   });
 
   it("cursor move is a UI update and advances the cursor; select acts", () => {
     const s = flipGame.newState(p, desc);
     const ui = flipGame.newUi(s);
-    expect(flipGame.interpretMove(s, ui, null, { x: 0, y: 0 }, 0x0200 + 12)).toBe(
-      UI_UPDATE,
-    ); // CURSOR_RIGHT
+    expect(
+      flipGame.interpretMove(
+        s,
+        ui,
+        sizedDrawState(flipGame, s),
+        { x: 0, y: 0 },
+        0x0200 + 12,
+      ),
+    ).toBe(UI_UPDATE); // CURSOR_RIGHT
     expect(ui.cx).toBe(1);
     expect(ui.cursorVisible).toBe(true);
-    const m = flipGame.interpretMove(s, ui, null, { x: 0, y: 0 }, 0x0200 + 13);
+    const m = flipGame.interpretMove(
+      s,
+      ui,
+      sizedDrawState(flipGame, s),
+      { x: 0, y: 0 },
+      0x0200 + 13,
+    );
     expect(m).toEqual({ kind: "flip", x: 1, y: 0 }); // CURSOR_SELECT
   });
 
@@ -204,14 +229,26 @@ describe("Flip interpretMove", () => {
       hintsActive: false,
     };
     expect(
-      flipGame.interpretMove(s, flipGame.newUi(s), null, at(0, 0), 0x0200),
+      flipGame.interpretMove(
+        s,
+        flipGame.newUi(s),
+        sizedDrawState(flipGame, s),
+        at(0, 0),
+        0x0200,
+      ),
     ).toBeNull();
   });
 
   it("an unhandled button yields null", () => {
     const s = flipGame.newState(p, desc);
     expect(
-      flipGame.interpretMove(s, flipGame.newUi(s), null, at(0, 0), 0x0201),
+      flipGame.interpretMove(
+        s,
+        flipGame.newUi(s),
+        sizedDrawState(flipGame, s),
+        at(0, 0),
+        0x0201,
+      ),
     ).toBeNull();
   });
 });
@@ -306,6 +343,7 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
   it("canvasCleared after a same-tile reshape repaints bg + grid lines", () => {
     const p3: FlipParams = { w: 3, h: 3, matrixType: "crosses" };
     const p5: FlipParams = { w: 5, h: 5, matrixType: "crosses" };
+    const TILE = flipGame.preferredTileSize ?? 32;
     const { desc: desc3 } = flipGame.newDesc(p3, randomNew("flip-reshape-3"));
     const { desc: desc5 } = flipGame.newDesc(p5, randomNew("flip-reshape-5"));
 
@@ -315,8 +353,16 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
       () => {},
     );
     // First game (3x3): size + first redraw paints bg + grid + tiles.
+    //
+    // The slot is the board's own size at tile 48, so `size()` resolves to
+    // exactly 48 — and the same is done for the 5x5 below, which is what makes
+    // this a *same-tile* reshape and so reproduces the bug. It used to hand
+    // both shapes a flat 1000x1000 viewport, where the binary search picks 250
+    // and then 166: two different tiles, so `setTileSize` was not a no-op and
+    // the trigger the test is named for never fired
+    // (`audit-vestigial-contract-surface`).
     expect(me.newGameFromId(`3x3c:${desc3}`)).toBeUndefined();
-    me.size({ w: 1000, h: 1000 }, true, 1); // tile pinned to preferred (48)
+    me.size(flipGame.computeSize(p3, TILE));
     const first = recordingDrawing();
     me.redraw(first.dr);
     const firstGridLines = first.ops.filter(
@@ -324,13 +370,32 @@ describe("Flip reshape (regression: black canvas when shapes share a tile size)"
     ).length;
     expect(firstGridLines).toBeGreaterThan(0); // grid drawn once
 
-    // Switch to 5x5 — at typical viewports the tile resolves to 48
-    // for both shapes (the bug-1 trigger). `newGameFromId` builds a
-    // fresh drawstate for the new game; the app's reshape would
-    // then call `resizeDrawing` → engine.canvasCleared (we invoke
-    // it directly here since this is a midend-level test).
+    // Switch to 5x5 at the *same* tile size — the bug-1 trigger, since
+    // `setTileSize` then has nothing to change. `newGameFromId` builds a fresh
+    // drawstate for the new game; the app's reshape would then call
+    // `resizeDrawing` → engine.canvasCleared (we invoke it directly here since
+    // this is a midend-level test).
     expect(me.newGameFromId(`5x5c:${desc5}`)).toBeUndefined();
-    me.size({ w: 1000, h: 1000 }, true, 1);
+    const reshaped = me.size(flipGame.computeSize(p5, TILE));
+    // The claim the test's name makes, asserted rather than assumed: both
+    // boards were laid out at the same tile size.
+    expect(reshaped).toEqual(flipGame.computeSize(p5, TILE));
+
+    // Before `canvasCleared`, the drawstate must be a *live cache* — otherwise
+    // the assertion after it is vacuous. This paint is the one that arms it:
+    // `newGameFromId` builds a fresh drawstate, so this first paint of the 5x5
+    // board draws the grid whatever `canvasCleared` does, and every version of
+    // this test until `audit-vestigial-contract-surface` stopped here and
+    // credited the result to `canvasCleared`. It passed with `canvasCleared`
+    // gutted to a bare `return`.
+    const armed = recordingDrawing();
+    me.redraw(armed.dr);
+    const idle = recordingDrawing();
+    me.redraw(idle.dr);
+    expect(
+      idle.ops.filter((o) => o.op === "drawLine" && o.colour === COL_GRID).length,
+    ).toBe(0);
+
     me.canvasCleared(); // app calls this from `resizeDrawing`
     const second = recordingDrawing();
     me.redraw(second.dr);

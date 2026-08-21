@@ -180,12 +180,12 @@ function moveCursor(button: number, ui: TowersUi, w: number): UiUpdate | null {
 function interpretMove(
   state: TowersState,
   ui: TowersUi,
-  ds: TowersDrawState | null,
+  ds: TowersDrawState,
   p: Point,
   rawButton: number,
 ): TowersMove | null | UiUpdate {
   const w = state.w;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const shiftOrCtrl = (rawButton & (MOD_SHFT | MOD_CTRL)) !== 0;
   const button = stripModifiers(rawButton);
 

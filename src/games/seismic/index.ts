@@ -115,12 +115,12 @@ const DELETE = 127;
 function interpretMove(
   state: SeismicState,
   ui: SeismicUi,
-  ds: SeismicDrawState | null,
+  ds: SeismicDrawState,
   p: Point,
   rawButton: number,
 ): SeismicMove | null | UiUpdate {
   const { w, h, grid, flags, marks, dsf } = state;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const button = stripModifiers(rawButton);
 
   const gx = fromCoord(p.x, ts);

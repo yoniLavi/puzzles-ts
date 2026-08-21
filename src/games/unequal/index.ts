@@ -175,12 +175,12 @@ function moveCursor(button: number, ui: UnequalUi, o: number): UiUpdate | null {
 function interpretMove(
   state: UnequalState,
   ui: UnequalUi,
-  ds: UnequalDrawState | null,
+  ds: UnequalDrawState,
   p: Point,
   rawButton: number,
 ): UnequalMove | null | UiUpdate {
   const o = state.order;
-  const ts = ds?.tilesize ?? PREFERRED_TILE_SIZE;
+  const ts = ds.tilesize;
   const shiftOrCtrl = (rawButton & (MOD_SHFT | MOD_CTRL)) !== 0;
   const button = stripModifiers(rawButton);
 
