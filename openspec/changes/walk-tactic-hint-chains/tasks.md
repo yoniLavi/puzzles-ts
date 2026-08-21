@@ -9,6 +9,12 @@
 > engine contract is untouched and this is per-game narration and rendering.
 > A working prototype and a rendered frame are in
 > [`reference/`](./reference/); they are reverted from the tree, not lost.
+>
+> **⚠️ And it moved again on 2026-08-21 — read [D5](./design.md) too.** The
+> arrows in that prototype were measured before being adopted, and a third of
+> them assert an implication the deduction does not have. The order is drawn as
+> an **ordinal per cell**; the `reference/` frame is kept as the thing that was
+> rejected, not as the target.
 
 ## 0. Clusters' hint target was the same colour as a blue tile — **done, ahead of this change** (design D4)
 
@@ -34,17 +40,26 @@
 
 ## 1. Clusters first — it establishes the pattern most cheaply
 
-- [ ] 1.1 Its chain is already captured (`ClustersReason`'s `chain.steps`) and
-      already rendered; what is missing is the **order** and the link to the
-      break. Add the arrow path: hypothesis → each forced cell in turn → the
-      ringed contradiction. Prototype in `reference/arrow-prototype.patch`.
-- [ ] 1.2 Narration names the two ends and the *count* between, and lets the
-      arrows carry the middle — reciting the links is the thing the picture
-      exists to replace.
-- [ ] 1.3 Judge the frame with **long jumps in view**: consecutive links are not
-      adjacent (the chain re-scans row-major), so a leg can cross the board.
-      Decide then whether ordinals are needed alongside the arrows.
-- [ ] 1.4 Remove its `PENDING_WALK` entry from `hint-quality.test.ts`.
+- [x] 1.1 Its chain is already captured (`ClustersReason`'s `chain.steps`) and
+      already rendered; what was missing is the **order** and the link to the
+      break. **The arrow path was measured and rejected — see design D5.** A
+      third of its links assert an implication that does not hold; the order is
+      drawn as a per-cell **ordinal** instead, and the link to the break needs no
+      glyph because the ring is already beside the last number in 140/140
+      firings. The highlight type is unchanged (`chain` was already in order).
+- [x] 1.2 Narration names the two ends and cites the numbers, and lets the board
+      carry the middle. It also keeps *"from it"*: the ordinals answer *when a
+      consequence fell*, not *which mark "this cell" is*, so they do not retire
+      the deixis tie `disambiguate-hint-deixis` added.
+- [x] 1.3 Frames judged at chain length 2, 4 and 6 on 10x10 Tricky. Long jumps
+      are the reason arrows lost; the ordinals are unaffected by them. One real
+      defect found only by rendering: on a cell that is both numbered and ringed
+      — a *common* frame — the doubled ring painted over the digit.
+- [x] 1.4 Remove its `PENDING_WALK` entry from `hint-quality.test.ts`.
+- [x] 1.5 Guard it: the chain frame asserts the drawn ordinals are exactly the
+      set `1..n`, so a chain that numbers only its first cell, numbers from 0 or
+      repeats a digit fails. A count, not a "some text was drawn" — the shape a
+      snapshot re-baseline cannot erase.
 
 ## 2. The Latin family — one shared walk, six games
 

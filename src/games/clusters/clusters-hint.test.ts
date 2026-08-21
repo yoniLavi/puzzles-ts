@@ -405,6 +405,20 @@ describe("hint rendering (tier 2.5)", () => {
         true,
       );
     }
+
+    // …and each carries its **ordinal**, the fact the marks used to omit: an
+    // unordered set of shaded cells cannot be checked against a narration that
+    // says they fall one after another (`walk-tactic-hint-chains` D5). Asserted
+    // as the exact set `1..n` rather than "some text was drawn", so a chain
+    // that numbers only its first cell, numbers from 0, or repeats a digit
+    // fails — the count is the guard that a snapshot re-baseline cannot erase.
+    const digits = ops
+      .flatMap((o) => (o.op === "text" && o.colour === COL_HINT_DANGER ? [o.text] : []))
+      .sort();
+    expect(digits).toEqual(
+      Array.from({ length: hl.chain.length }, (_, i) => String(i + 1)).sort(),
+    );
+
     expect(ops).toMatchSnapshot();
   });
 });

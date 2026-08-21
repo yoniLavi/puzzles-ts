@@ -341,7 +341,26 @@ function narrate(d: ClustersDeduction): string {
     // target, so the neighbour relation above is unavailable here. What ties
     // the three marks together instead is that the chain runs **from** this
     // cell — which is also the one fact a reader needs to follow it.
-    return `Suppose this cell were ${t}: the marked cells would each be forced in turn from it, until ${end} — impossible. So this cell must be ${f}.`;
+    //
+    // **The sentence names the two ends and lets the numbers carry the
+    // middle** (`walk-tactic-hint-chains` D5). It used to say the marked cells
+    // "would each be forced in turn", which named no order the player could
+    // check — the marks were an unordered set — so the only way to verify it
+    // was to redo the deduction, the thing docs/games/hints.md § "The forcing
+    // boundary" forbids. The consequences are numbered on the board now, and
+    // this cites them by number; reciting the links here would put the chain
+    // back in the reader's head, which is what the picture exists to prevent.
+    //
+    // *"from it"* survives the rewrite deliberately: it is the deixis tie the
+    // guard in `clusters-hint.test.ts` checks, and the numbering does not
+    // replace it. The digits say which consequence came when; they do not say
+    // which of the three marks the opening "this cell" means.
+    const n = d.reason.steps.length;
+    const run =
+      n === 1
+        ? "cell 1 is then forced from it, and"
+        : `cells 1 to ${n} are then forced from it, and by ${n}`;
+    return `Suppose this cell were ${t}: ${run} ${end} — impossible. So this cell must be ${f}.`;
   }
 
   if (at.cell === d.index) {

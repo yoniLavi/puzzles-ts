@@ -119,6 +119,32 @@ const HB_DANGER = 1 << 1; // tile that would break — double COL_HINT_DANGER ri
 const HB_CHAIN_0 = 1 << 2; // what-if cell forced red in the hypothetical
 const HB_CHAIN_1 = 1 << 3; // what-if cell forced blue in the hypothetical
 
+/**
+ * Bits 4+: a chain cell's **1-based position in the chain** — the one fact the
+ * board used to throw away. The player could see five marked cells but not
+ * which fell first, so the narration's "each forced in turn" was a claim they
+ * could only check by redoing the deduction.
+ *
+ * **A number, not an arrow, and that is a measurement rather than a taste.**
+ * The obvious drawing is a path from the hypothesis through each consequence to
+ * the break, and it was prototyped
+ * (`openspec/changes/walk-tactic-hint-chains/reference/`). An arrow between
+ * consecutive cells says *this one forces that one*, and over 140 firings on
+ * 7x7 and 10x10 Tricky boards that is **false in 34% of links**: delete the
+ * predecessor from the hypothetical board and the successor is still forced,
+ * because what forces it is its own neighbourhood, not the cell before it in
+ * discovery order. Half the links (51%) join non-adjacent cells too — the chain
+ * re-scans row-major after every forcing — so half the arrows crossed the
+ * board. An ordinal claims only the order, which is exactly what is true.
+ *
+ * Nothing draws the last link either: the contradiction sits on, or
+ * orthogonally beside, the final forced cell in **140 of 140** firings, so the
+ * ring is already next to the highest number.
+ */
+const HB_ORDINAL_SHIFT = 4;
+const ordinalBits = (k: number): number => k << HB_ORDINAL_SHIFT;
+const ordinalOf = (bits: number): number => bits >>> HB_ORDINAL_SHIFT;
+
 export interface ClustersDrawState {
   started: boolean;
   tilesize: number;
@@ -244,10 +270,34 @@ function drawTile(
 
   // The danger ring, last so nothing paints over it. Doubled — structure,
   // not just hue, distinguishes it from the single red live-error frame.
+  const rt = Math.max(2, Math.floor(ts / 12));
   if (hintBits & HB_DANGER) {
-    const rt = Math.max(2, Math.floor(ts / 12));
     drawRing(dr, px, py, ts - 1, 1, rt, COL_HINT_DANGER);
     drawRing(dr, px, py, ts - 1, 1 + 2 * rt, rt, COL_HINT_DANGER);
+  }
+
+  // The order this consequence falls in — top-left, so it never sits on the
+  // centred colour mark: the two say different things (*what* the cell would
+  // become, and *when*), and overlapping them would blur that. It is the
+  // danger ring's own orange, on the reasoning D3 gave for the prototype's
+  // path colour — the ordered chain and the place it ends are one argument,
+  // and the digits visibly run out where the ring is.
+  //
+  // Drawn after the ring, and inside it when there is one: the break lands on
+  // the last forced cell often enough that "ringed *and* numbered" is a common
+  // frame, and at the shared inset the ring covered the digit outright.
+  const k = ordinalOf(hintBits);
+  if (k > 0) {
+    const inset = hintBits & HB_DANGER ? 1 + 4 * rt : Math.max(1, Math.floor(ts / 12));
+    const size = Math.max(7, Math.floor(ts / 3));
+    dr.drawText(
+      // `mathematical` centres the glyph vertically on `y`, so the top inset
+      // has to carry half the size or the digit is clipped by the tile edge.
+      { x: px + inset, y: py + inset + Math.floor(size / 2) },
+      { align: "left", baseline: "mathematical", fontType: "variable", size },
+      COL_HINT_DANGER,
+      String(k),
+    );
   }
 
   dr.drawUpdate({ x: px, y: py, w: ts, h: ts });
@@ -297,9 +347,15 @@ export function redraw(
   if (hl) {
     ds.hint.add(hl.target.y * w + hl.target.x, HB_TARGET);
     if (hl.danger) ds.hint.add(hl.danger.y * w + hl.danger.x, HB_DANGER);
-    for (const c of hl.chain) {
-      ds.hint.add(c.y * w + c.x, c.fill === F_COLOR_0 ? HB_CHAIN_0 : HB_CHAIN_1);
-    }
+    // `chain` is already in the order the consequences fall, so the ordinal is
+    // the array index — the fact was on the highlight all along and only the
+    // drawing threw it away.
+    hl.chain.forEach((c, k) => {
+      ds.hint.add(
+        c.y * w + c.x,
+        (c.fill === F_COLOR_0 ? HB_CHAIN_0 : HB_CHAIN_1) | ordinalBits(k + 1),
+      );
+    });
   }
 
   for (let y = 0; y < h; y++) {

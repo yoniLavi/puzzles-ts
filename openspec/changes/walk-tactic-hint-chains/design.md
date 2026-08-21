@@ -143,6 +143,64 @@ so it reported the pair for months and failed nothing. The game now carries a
 direct assertion that **no hint role resolves to a colour the board already
 uses**, and that the three hint roles are distinct from each other.
 
+## D5 — The glyph is a **number**, not an arrow (measured, 2026-08-21)
+
+D2 settled *what* the frame owes the player — the order, and the link to the
+break — and named an arrow path as the way to draw it. Implementing it started by
+asking what an arrow between two chain cells actually **claims**, and the answer
+retires the arrow.
+
+An arrow from `c[k-1]` to `c[k]` says *this one forces that one*. Over **140
+chain firings** on 7x7 and 10x10 Tricky boards (60 boards, every firing in every
+plan):
+
+| | |
+| --- | --- |
+| consecutive links where the predecessor is load-bearing | **279 / 425 (65.6%)** |
+| consecutive links between orthogonally adjacent cells | 206 / 425 (48.5%) |
+| firings where the break sits on, or beside, the *last* forced cell | **140 / 140** |
+| chain length | median 2, mean 3.04, max 9 |
+| other hypothetical marks within the rules' reach of each link | mean 1.78 |
+
+So **a third of the arrows assert a dependency that is not there**. What forces
+`c[k]` is its own neighbourhood on the accumulated hypothetical board;
+`chainToContradiction` re-scans row-major after each forcing, so the cell before
+it in *discovery order* is frequently irrelevant — and, half the time, not even
+nearby, which is why the prototype frame reads as a scribble crossing the board.
+
+The dependence test is one-directional and that is what makes it usable: emptying
+a cell can only shrink `same`/`other` in `neighbourCounts`, so removing the
+predecessor can never *create* an error. A cell that stops being forced therefore
+really did depend on it; the 65.6% is a ceiling, not an estimate.
+
+**An ordinal claims exactly what is true** — the order the consequences fall in —
+and nothing more. Three consequences follow:
+
+- **No glyph is needed for the link to the break at all.** The contradiction is
+  on or beside the final forced cell in every firing measured, so the ring is
+  already sitting next to the highest number.
+- **The whole post-tile pass disappears.** D3's arrows crossed tile boundaries,
+  which forced a second drawing pass, a full-canvas `drawUpdate` on every hint
+  frame, and the no-diffing rule that went with it. A digit is inside one tile,
+  so it rides the existing `OverlaySidecar` diff untouched.
+- **The highlight type does not change.** `chain` was already in causal order;
+  only the drawing threw the order away. The ordinal is the array index.
+
+Kept from D3: the mark is the **danger ring's orange**, for D3's own reason — the
+ordered chain and the place it ends are one argument, and a fourth hue would
+claim they were separate roles.
+
+Two things the frames settled that only rendering could
+(`toSvg`, 10x10 Tricky, chains of 2 / 4 / 6):
+
+- The digit goes **top-left, not on the colour mark**: the mark says *what* the
+  cell would become and the number says *when*, and overlapping them blurs two
+  different claims.
+- A cell that is both numbered and ringed is a **common** frame, not an edge
+  case (the break lands on the last forced cell often), and at the shared inset
+  the doubled ring painted straight over the digit. The ordinal is drawn after
+  the ring and inside it.
+
 ## Open Questions
 
 - Do the numbered ordinals earn their place alongside the arrows, or is the

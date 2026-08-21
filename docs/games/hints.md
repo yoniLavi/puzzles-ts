@@ -278,7 +278,10 @@ Tie them by something the code guarantees, cheapest first:
   **above** rests only on this cell"*. **Check the relation holds in code first:**
   Clusters' chain branch could *not* use it, because that break is adjacent to
   the last forced cell rather than to the target, so it ties on the chain's
-  origin instead (*"forced in turn **from it**"*).
+  origin instead (*"forced **from it**"*). That tie survived
+  `walk-tactic-hint-chains` numbering the chain: ordinals say which consequence
+  fell when, which is a different question from which of three marks "this
+  cell" means, so numbering the marks does not retire the deixis tie.
 - **A value**, where the puzzle has one — see the next section.
 - **A role word tied to the mark's shape**, where the game's other marks already
   use distinct ones ("ringed" outline vs "shaded" wash).

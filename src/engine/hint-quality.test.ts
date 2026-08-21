@@ -123,8 +123,6 @@ const PENDING_WALK: RegExp[] = [
   // The shared Latin forcing chain (Keen, Unequal, Group, Salad) and Towers' and
   // Solo's copies of it.
   /^Following a chain of (?:two-candidate|forced)/,
-  // Clusters' lookahead: shows every forced cell on the board, but as one step.
-  /^Suppose this cell were (?:red|blue): the marked cells would each be forced in turn/,
 ];
 
 const pendingWalk = (s: string): boolean => PENDING_WALK.some((r) => r.test(s));
