@@ -209,27 +209,34 @@ describe("a save this build cannot play is refused, not half-applied", () => {
 
       const err = m.loadGame(tampered);
 
-      // Games split into two camps here, and BOTH are safe — which is the
-      // property this test exists to hold. A game whose `executeMove` has no
-      // arm for the move either throws or falls off the end (37 games: the
-      // midend turns that into a refusal), or has a tolerant `default` that
-      // returns an unchanged state (20 games: the move is a silent no-op).
-      // What must never happen again is the third outcome — the move landing
-      // in `history` as `undefined` and taking the session with it.
-      if (err !== undefined) {
-        expect(err).toMatch(/Could not restore|Could not read save/);
-        // Refused ⇒ rewound to the saved game's OPENING position: a real board
-        // with the right params, rather than a half-replayed history.
-        //
-        // Deliberately not the stronger "the previous game is untouched".
-        // That needed the midend to snapshot and restore a dozen fields by
-        // hand, and a hand-listed field set rots the first time somebody adds
-        // a thirteenth — silently, in the rollback path nobody exercises. The
-        // caller that actually matters (`restoreAutoSavedGame`) throws the
-        // save away and deals a fresh game regardless, so the stronger promise
-        // bought nothing that anything kept.
-        expect(m.getParams(), `${id}: params lost on refusal`).toBeTruthy();
-      }
+      // Every game refuses, and refuses *as itself*. The regex is doing three
+      // jobs at once, and the middle one is the point: the save was rejected,
+      // the game named itself, and the error came from its own guard rather
+      // than from whatever a misread happened to break first.
+      //
+      // That third job is why this is not merely `toMatch(/Could not restore/)`.
+      // Before `reject-unrecognised-moves` the collection split three ways on an
+      // unplayable move — 8 games returned `undefined`, 29 threw something
+      // downstream ("m.ops is not iterable", "Paint out of bounds", "Illegal
+      // fifteen move to (undefined, undefined)"), and **20 silently returned a
+      // board that was not the one saved**. All 57 measured, none guessed. The
+      // loose form here passed for all three, which is what let the silent camp
+      // exist; the strict form is the guarantee.
+      expect(err, `${id}: a foreign move in the log was not refused`).toMatch(
+        new RegExp(`^Could not restore this saved game: ${id}: .*unrecognised`),
+      );
+
+      // Refused ⇒ rewound to the saved game's OPENING position: a real board
+      // with the right params, rather than a half-replayed history.
+      //
+      // Deliberately not the stronger "the previous game is untouched".
+      // That needed the midend to snapshot and restore a dozen fields by
+      // hand, and a hand-listed field set rots the first time somebody adds
+      // a thirteenth — silently, in the rollback path nobody exercises. The
+      // caller that actually matters (`restoreAutoSavedGame`) throws the
+      // save away and deals a fresh game regardless, so the stronger promise
+      // bought nothing that anything kept.
+      expect(m.getParams(), `${id}: params lost on refusal`).toBeTruthy();
 
       // Universal: whichever camp, the midend is intact — self-consistent,
       // saveable, and above all still drawable. The shipped crash failed

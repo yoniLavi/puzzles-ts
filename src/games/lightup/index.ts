@@ -11,6 +11,7 @@
  * unique solution.
  */
 
+import { assertNever, rejectMove } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import type {
   HintResult,
@@ -169,6 +170,10 @@ function interpretMove(
 }
 
 function executeMove(state: LightupState, move: LightupMove): LightupState {
+  // A move is an op list, not a union, so there is no discriminant to narrow to
+  // `never`: check the one field the dispatch reads (see `rejectMove`).
+  if (!Array.isArray(move.ops)) rejectMove(move, "lightup: executeMove");
+
   const next = cloneState(state);
   const { w, h } = next;
   for (const op of move.ops) {
@@ -181,9 +186,14 @@ function executeMove(state: LightupState, move: LightupMove): LightupState {
     if (op.kind === "light") {
       next.flags[i] &= ~F_IMPOSSIBLE;
       setLight(next, op.x, op.y, !(flags & F_LIGHT));
-    } else {
+    } else if (op.kind === "impossible") {
       setLight(next, op.x, op.y, false);
       next.flags[i] ^= F_IMPOSSIBLE;
+    } else {
+      // `op` is one interface with a two-value `kind`, not a union of shapes,
+      // so it is `op.kind` that narrows to `never` here. The offending op goes
+      // in the context instead.
+      assertNever(op.kind, `lightup: executeMove op at (${op.x},${op.y})`);
     }
   }
   if (move.solve) next.usedSolve = true;

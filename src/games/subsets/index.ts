@@ -20,6 +20,7 @@
  * a Custom dialog offering the tier alone.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
@@ -272,6 +273,10 @@ function executeMove(state: SubsetsState, move: SubsetsMove): SubsetsState {
     next.cheated = next.completed;
     return next;
   }
+  // Before the range checks below, not after: `pos < 0` and `pos >= n` are
+  // *both* false for a missing `pos`, so a foreign move walked straight through
+  // them and out of the inner `switch` as an unchanged board.
+  if (move.kind !== "set") return assertNever(move, "subsets: executeMove");
 
   const { pos, bit } = move;
   if (pos < 0 || pos >= state.w * state.h)
@@ -295,6 +300,8 @@ function executeMove(state: SubsetsState, move: SubsetsMove): SubsetsState {
       next.known[pos] &= ~b;
       next.mask[pos] |= b;
       break;
+    default:
+      return assertNever(move.type, "subsets: executeMove set");
   }
 
   if (subsetsValidate(next) === "complete") next.completed = true;

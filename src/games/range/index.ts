@@ -11,6 +11,7 @@
  * contradict the unique solution.
  */
 
+import { rejectMove } from "../../engine/assert-never.ts";
 import {
   type Game,
   type HintResult,
@@ -178,6 +179,11 @@ function interpretMove(
 }
 
 function executeMove(state: RangeState, move: RangeMove): RangeState {
+  // A move is a list of cell settings, not a union, so there is no discriminant
+  // to narrow to `never`: check the one field the dispatch reads. (The `value`
+  // inside each setting *is* a union — `cellValueToGrid` asserts on it.)
+  if (!Array.isArray(move.sets)) rejectMove(move, "range: executeMove");
+
   const next = cloneState(state);
   for (const { r, c, value } of move.sets) {
     if (outOfBounds(r, c, next.w, next.h)) throw new Error("Range move out of bounds");

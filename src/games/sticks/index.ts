@@ -15,6 +15,7 @@
  * (`findMistakes`).
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import {
   type Game,
   type HintResult,
@@ -332,11 +333,13 @@ function executeMove(state: SticksState, move: SticksMove): SticksState {
       if (state.grid[i] & F_BLOCK) continue;
       next.grid[i] = lineBits(move.grid[i]);
     }
-  } else {
+  } else if (move.kind === "set") {
     for (const { index, line } of move.changes) {
       if (state.grid[index] & F_BLOCK) continue;
       next.grid[index] = lineBits(line);
     }
+  } else {
+    return assertNever(move, "sticks: executeMove");
   }
   if (sticksValidate(next.grid, next.numbers, next.w, next.h) === "complete")
     next.completed = true;

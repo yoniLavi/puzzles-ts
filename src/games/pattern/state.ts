@@ -10,6 +10,7 @@
  * `grid` plus `completed`/`cheated` clone per move.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import type { GameStatus } from "../../engine/types.ts";
@@ -352,6 +353,7 @@ export function executeMove(state: PatternState, move: PatternMove): PatternStat
     }
     return next;
   }
+  if (move.type !== "fill") return assertNever(move, "pattern: executeMove");
 
   const { value, x, y } = move;
   const rw = move.w;

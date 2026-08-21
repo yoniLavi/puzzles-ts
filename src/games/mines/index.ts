@@ -11,6 +11,7 @@
  * Logic mirrors the C reference; not a control-flow transliteration.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import {
   BLACK,
   BLUE,
@@ -549,6 +550,7 @@ export const minesGame: Game<
       ret.usedSolve = true;
       return ret;
     }
+    if (m.type !== "ops") return assertNever(m, "mines: executeMove");
 
     if (s.dead) throw new Error("dead players cannot move");
     const ret = cloneState(s);
@@ -581,6 +583,10 @@ export const minesGame: Game<
             }
           }
         }
+      } else {
+        // `op` is one shape with a three-value `op` field, not a union of
+        // shapes, so it is `op.op` that narrows to `never` here.
+        assertNever(op.op, `mines: executeMove op at (${x},${y})`);
       }
     }
     return ret;

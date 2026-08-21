@@ -10,6 +10,7 @@
  * forward slash `/`, `-1` for a backslash `\`, `0` for blank.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { findLoops } from "../../engine/findloop.ts";
 import type { PresetMenu } from "../../engine/game.ts";
@@ -340,10 +341,12 @@ export function executeMove(state: SlantState, move: SlantMove): SlantState {
       soln[i] = c === "\\" ? -1 : 1;
     }
     usedSolve = true;
-  } else {
+  } else if (move.type === "set") {
     const { x, y, v } = move;
     if (x < 0 || x >= w || y < 0 || y >= h) throw new Error("Move out of bounds");
     soln[y * w + x] = v;
+  } else {
+    return assertNever(move, "slant: executeMove");
   }
 
   // Always re-run the completion check — it also recomputes the error

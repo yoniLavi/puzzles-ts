@@ -29,6 +29,7 @@
  *    of the per-game preferences hook this change adds.
  */
 
+import { rejectMove } from "../../engine/assert-never.ts";
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import { BLUE, BLUE_WASH, GREY, ORANGE, WHITE } from "../../engine/colour/colours.ts";
 import { ERROR, INK, PAPER } from "../../engine/colour/palette.ts";
@@ -392,6 +393,14 @@ export const untangleGame: Game<
   },
 
   executeMove: (s, m) => {
+    // Untangle's move is one object shape rather than a union, so there is no
+    // discriminant to narrow to `never`: check the fields the dispatch reads.
+    // The per-point validation below is stricter still, but it only runs over
+    // points that exist — an empty or absent list would sail past it.
+    if (m.kind !== "place" || !Array.isArray(m.points)) {
+      rejectMove(m, "untangle: executeMove");
+    }
+
     const ns = cloneUntangleState(s);
     ns.justSolved = false;
     if (m.solving) {

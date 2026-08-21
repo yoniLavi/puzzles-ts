@@ -10,6 +10,7 @@
  * contradict the unique solution.
  */
 
+import { assertNever, rejectMove } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
@@ -190,13 +191,20 @@ function interpretMove(
 }
 
 function executeMove(state: SinglesState, move: SinglesMove): SinglesState {
+  // A move is a list of cell settings, not a union, so there is no discriminant
+  // to narrow to `never`: check the one field the dispatch reads.
+  if (!Array.isArray(move.sets)) rejectMove(move, "singles: executeMove");
+
   const next = cloneState(state);
   for (const { x, y, value } of move.sets) {
     if (!inGrid(next, x, y)) throw new Error("singles move out of bounds");
     const i = y * next.w + x;
     next.flags[i] &= ~(F_BLACK | F_CIRCLE);
+    // `value` *is* a union, so the fall-through case is asserted: an
+    // unrecognised one used to arrive here as "empty" and clear the cell.
     if (value === "black") next.flags[i] |= F_BLACK;
     else if (value === "circle") next.flags[i] |= F_CIRCLE;
+    else if (value !== "empty") assertNever(value, `singles: executeMove (${x},${y})`);
   }
   if (move.solve) next.usedSolve = true;
   if (checkComplete(next, CC_MARK_ERRORS)) next.completed = true;

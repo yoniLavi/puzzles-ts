@@ -11,6 +11,7 @@
  * mapping, and the move executor.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
@@ -310,6 +311,8 @@ function executeMove(from: BlackboxState, m: BlackboxMove): BlackboxState {
       }
       break;
     }
+    default:
+      return assertNever(m, "blackbox: executeMove");
   }
 
   return ret;

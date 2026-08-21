@@ -14,6 +14,7 @@
  * control-flow transliteration.
  */
 
+import { rejectMove } from "../../engine/assert-never.ts";
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import { BLUE, BLUE_WASH } from "../../engine/colour/colours.ts";
 import {
@@ -664,7 +665,10 @@ function interpretMove(
 // --- executeMove -----------------------------------------------------
 
 function executeMove(s: PegsState, m: PegsMove): PegsState {
-  if (m.type !== "jump") throw new Error(`Unknown move type: ${m.type}`);
+  // Pegs' move is one object shape rather than a union, so `m` does not narrow
+  // to `never` here and there is no compile-time guarantee to be had; this is
+  // the field check the dispatch below depends on (see `rejectMove`).
+  if (m.type !== "jump") rejectMove(m, "pegs: executeMove");
 
   const { w, h } = s;
   const { sx, sy, tx, ty } = m;
@@ -741,7 +745,11 @@ function serialiseMove(m: PegsMove): unknown {
 function deserialiseMove(raw: unknown): PegsMove {
   const s = String(raw);
   const match = s.match(/^(-?\d+),(-?\d+)-(-?\d+),(-?\d+)$/);
-  if (!match) throw new Error(`Invalid pegs move: ${s}`);
+  // Pegs is the one game that parses its moves at the save boundary, so this is
+  // where a foreign move is caught — before `executeMove` ever sees it. Same
+  // message shape as every other game's refusal, and `raw` rather than `s`,
+  // which renders an object as the useless "[object Object]".
+  if (!match) rejectMove(raw, "pegs: deserialiseMove");
   return {
     type: "jump",
     sx: Number.parseInt(match[1], 10),

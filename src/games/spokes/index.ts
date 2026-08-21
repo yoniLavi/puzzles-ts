@@ -18,6 +18,7 @@
  * answer.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
@@ -263,6 +264,7 @@ function executeMove(state: SpokesState, move: SpokesMove): SpokesState {
     }
     return next;
   }
+  if (move.kind !== "set") return assertNever(move, "spokes: executeMove");
 
   if (getSpoke(next.spokes[move.index], move.dir) !== SPOKE_HIDDEN) {
     const old = getSpoke(next.spokes[move.index], move.dir);

@@ -12,6 +12,7 @@
  * not a control-flow transliteration.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import { CURSOR, HINT_ACTION, PAPER } from "../../engine/colour/palette.ts";
 import { flipGrid, flipWrongFace } from "../../engine/colour/palette-games.ts";
 import {
@@ -586,6 +587,8 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
         cheated: true,
       };
     }
+    if (move.kind !== "flip") return assertNever(move, "flip: executeMove");
+
     const { x, y } = move;
     if (x < 0 || x >= w || y < 0 || y >= h) {
       throw new Error(`Flip: move out of range (${x},${y})`);

@@ -12,6 +12,7 @@
  * Check & Save (`findMistakes`) hard-blocks on any current violation.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
@@ -297,10 +298,12 @@ function executeMove(state: BricksState, move: BricksMove): BricksState {
       next.grid[i] = colourBits(move.grid[i]);
     }
     next.cheated = true;
-  } else {
+  } else if (move.kind === "paint") {
     for (const { index, to } of move.cells) {
       if (state.grid[index] & COL_MASK) next.grid[index] = colourBits(to);
     }
+  } else {
+    return assertNever(move, "bricks: executeMove");
   }
   if (bricksValidate(next.grid, w, h, false) === "complete") next.completed = true;
   return next;

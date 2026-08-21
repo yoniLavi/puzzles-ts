@@ -14,6 +14,7 @@
  * neither rewind nor re-count a death.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import {
   type Game,
   type SolveResult,
@@ -106,6 +107,7 @@ function executeMove(s: InertiaState, m: InertiaMove): InertiaState {
     if (m.route.length === 0) throw new Error("inertia: empty route");
     return { ...s, cheated: true, route: Object.freeze([...m.route]), routePos: 0 };
   }
+  if (m.type !== "move") return assertNever(m, "inertia: executeMove");
 
   const dir = m.dir;
   if (dir < 0 || dir >= DIRECTIONS) throw new Error(`inertia: bad direction ${dir}`);

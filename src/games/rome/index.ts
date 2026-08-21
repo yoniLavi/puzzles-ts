@@ -13,6 +13,7 @@
  * live checks cannot give — see {@link findMistakes}.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
@@ -301,6 +302,11 @@ function executeMove(state: RomeState, move: RomeMove): RomeState {
     next.completed = validateGame(next, true) === STATUS_COMPLETE;
     next.cheated = next.completed;
     return next;
+  }
+  // Before the bounds check below, not inside it: a move with no coordinates
+  // makes every one of those comparisons false rather than true.
+  if (move.kind !== "place" && move.kind !== "pencil") {
+    return assertNever(move, "rome: executeMove");
   }
 
   const { x, y } = move;

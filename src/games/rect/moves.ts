@@ -5,6 +5,7 @@
  * (docs/games/rendering.md § "The tile cache and the diff key").
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { GameStatus } from "../../engine/types.ts";
 import {
   decodeNumbers,
@@ -221,6 +222,8 @@ export function executeMove(from: RectState, move: RectMove): RectState {
   } else if (move.type === "edge") {
     if (move.edge === "h") hedge[move.y * w + move.x] ^= 1;
     else vedge[move.y * w + move.x] ^= 1;
+  } else {
+    return assertNever(move, "rect: executeMove");
   }
 
   const correct = getCorrect(w, h, next.grid, hedge, vedge);

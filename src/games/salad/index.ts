@@ -13,6 +13,7 @@
  * flags every marking that contradicts the unique solution.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import { adaptiveMarkAll, obviousCandidateMarks } from "../../engine/candidate-hint.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
@@ -308,7 +309,11 @@ function executeMove(state: SaladState, move: SaladMove): SaladState {
       for (const { x, y, n } of move.marks) next.marks[y * o + x] &= ~(1 << (n - 1));
       return next;
     }
-    default: {
+    // Named rather than left as the `default`, which used to be this working
+    // arm: an unrecognised move fell into it and was read as an entry at
+    // `(undefined, undefined)`. The `default` below is now only a guard.
+    case "set":
+    case "pencil": {
       const i = move.y * o + move.x;
       const pencil = move.type === "pencil";
       const v = move.value;
@@ -346,6 +351,8 @@ function executeMove(state: SaladState, move: SaladMove): SaladState {
       if (isComplete(next)) next.completed = true;
       return next;
     }
+    default:
+      return assertNever(move, "salad: executeMove");
   }
 }
 

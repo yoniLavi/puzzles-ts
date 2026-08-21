@@ -12,6 +12,7 @@
  * cells that contradict the unique solution.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
@@ -379,6 +380,8 @@ function executeMove(state: UndeadState, move: UndeadMove): UndeadState {
       for (let i = 0; i < common.numTotal; i++) next.guess[i] = move.placements[i];
       solver = true;
       break;
+    default:
+      return assertNever(move, "undead: executeMove");
   }
 
   const correct = recomputeErrors(next);

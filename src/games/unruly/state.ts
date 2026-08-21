@@ -9,6 +9,7 @@
  * `ZERO` renders light ("white")** (see `render.ts`).
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import type { GameStatus } from "../../engine/types.ts";
@@ -262,6 +263,7 @@ export function executeMove(state: UnrulyState, move: UnrulyMove): UnrulyState {
     }
     return { ...state, grid, completed: true, cheated: true };
   }
+  if (move.type !== "place") return assertNever(move, "unruly: executeMove");
 
   const { x, y, value } = move;
   if (x < 0 || x >= w2 || y < 0 || y >= h2) throw new Error("Move out of bounds");

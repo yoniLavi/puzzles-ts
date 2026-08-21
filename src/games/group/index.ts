@@ -9,6 +9,7 @@
  * Check & Save, and the config/pref forms.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import {
   adaptiveMarkAllMove,
   type CandidateMoveAdapter,
@@ -416,6 +417,8 @@ function executeMove(from: GroupState, move: GroupMove): GroupState {
       for (const { x, y, n } of move.marks) ret.pencil[y * w + x] &= ~(1 << n);
       return ret;
     }
+    default:
+      return assertNever(move, "group: executeMove");
   }
 }
 

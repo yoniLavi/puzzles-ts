@@ -8,6 +8,7 @@
  * input, moves, solve, preferences, and the game object.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { Game, GamePref, SolveResult } from "../../engine/game.ts";
 import { UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -145,6 +146,8 @@ function executeMove(s: NetState, m: NetMove): NetState {
       if (m.type === "solve") usedSolve = true;
       break;
     }
+    default:
+      return assertNever(m, "net: executeMove");
   }
 
   const tiled: NetState = {

@@ -9,6 +9,7 @@
  * the working `grid` / `flags` / `countsDone` are cloned per move.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import type { GameStatus } from "../../engine/types.ts";
@@ -543,6 +544,8 @@ export function executeMove(state: MagnetsState, move: MagnetsMove): MagnetsStat
       }
       break;
     }
+    default:
+      return assertNever(move, "magnets: executeMove");
   }
 
   const complete = checkCompletion(next) === 1;

@@ -25,6 +25,7 @@
  * [`render.ts`](./render.ts).
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
@@ -275,10 +276,12 @@ function executeMove(state: BoatsState, move: BoatsMove): BoatsState {
         next.grid[i] = fill;
       }
     }
-  } else {
+  } else if (move.kind === "solve") {
     if (move.grid.length !== w * state.params.h)
       throw new Error("boats: solve move has the wrong grid size");
     next.grid.set(move.grid);
+  } else {
+    return assertNever(move, "boats: executeMove");
   }
 
   // Resolve every segment's shape from its neighbours, then see whether that

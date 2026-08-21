@@ -13,6 +13,7 @@
  * contradict the unique solution.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import { adaptiveMarkAllMove } from "../../engine/candidate-hint.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
@@ -300,6 +301,8 @@ function executeMove(state: MathraxState, move: MathraxMove): MathraxState {
       next.cheated = next.completed;
       return next;
     }
+    default:
+      return assertNever(move, "mathrax: executeMove");
   }
 }
 

@@ -8,6 +8,7 @@
  * Signpost precedent).
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import {
   EMPTY,
   isAnchor,
@@ -185,6 +186,7 @@ export function executeMove(state: SlideState, move: SlideMove): SlideState {
     );
     return { ...state, soln, solnIndex: 0, cheated: true };
   }
+  if (move.kind !== "move") return assertNever(move, "slide: executeMove");
 
   const { w } = state;
   const { from, to } = move;

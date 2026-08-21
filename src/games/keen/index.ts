@@ -9,6 +9,7 @@
  * contradict the unique solution.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import {
   adaptiveMarkAllMove,
   candidateHint,
@@ -331,6 +332,8 @@ function executeMove(state: KeenState, move: KeenMove): KeenState {
       next.cheated = true;
       return next;
     }
+    default:
+      return assertNever(move, "keen: executeMove");
   }
 }
 

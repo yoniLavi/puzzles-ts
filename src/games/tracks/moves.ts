@@ -4,6 +4,7 @@
  * (which reflects an in-progress drag) can import them without a cycle
  * (docs/games/rendering.md § "The tile cache and the diff key").
  */
+import { assertNever, rejectMove } from "../../engine/assert-never.ts";
 import {
   type Board,
   checkCompletion,
@@ -142,6 +143,10 @@ export function moveDiff(before: Board, after: Board, solve: boolean): TracksMov
  * predicate unless the move is a solve; then live errors + completion are
  * recomputed. Throws on an illegal (non-solve) op, faithful to `badmove`. */
 export function executeMove(state: TracksState, move: TracksMove): TracksState {
+  // A move is an op list, not a union, so there is no discriminant to narrow to
+  // `never`: check the one field the dispatch reads (see `rejectMove`).
+  if (!Array.isArray(move.ops)) rejectMove(move, "tracks: executeMove");
+
   const b = stateToBoard(state);
   const isSolve = move.solve === true;
   for (const op of move.ops) {
@@ -153,6 +158,10 @@ export function executeMove(state: TracksState, move: TracksMove): TracksState {
       const f = op.track ? S_TRACK : S_NOTRACK;
       if (op.set) b.sflags[op.y * b.w + op.x] |= f;
       else b.sflags[op.y * b.w + op.x] &= ~f;
+    } else if (op.kind !== "edge") {
+      // `op` is one interface with a two-value `kind`, not a union of shapes,
+      // so it is `op.kind` that narrows to `never` here.
+      assertNever(op.kind, `tracks: executeMove op at (${op.x},${op.y})`);
     } else {
       const dir = op.dir ?? 0;
       if (!isSolve && !uiCanFlipEdge(b, op.x, op.y, dir, notrack)) {

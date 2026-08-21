@@ -10,6 +10,7 @@
  * transformed geometry is re-derived each frame in `render.ts`.
  */
 
+import { rejectMove } from "../../engine/assert-never.ts";
 import type { Game, UiUpdate } from "../../engine/game.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
@@ -115,6 +116,13 @@ const CHAR_OF_DIR: Partial<Record<Direction, CubeMove["dir"]>> = {
 };
 
 export function executeMove(from: CubeState, move: CubeMove): CubeState {
+  // Cube's move is one object shape, not a union, so there is no discriminant
+  // to narrow to `never`: check the one field the dispatch reads. Without this
+  // an unknown direction indexes the table to `undefined` and comes out as
+  // "cube: illegal move" — true of a real roll into a wall, and misleading
+  // about a move from another build.
+  if (!Object.hasOwn(DIR_OF_CHAR, move.dir)) rejectMove(move, "cube: executeMove");
+
   const direction = DIR_OF_CHAR[move.dir];
   const { dest, skey } = findMoveDest(from, direction);
   if (dest < 0) throw new Error("cube: illegal move");

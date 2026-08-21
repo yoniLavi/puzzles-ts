@@ -7,6 +7,7 @@
  * drag) and `index.ts` can both import the drag helpers without a cycle
  * (docs/games/rendering.md § "The tile cache and the diff key").
  */
+import { assertNever, rejectMove } from "../../engine/assert-never.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import { pearlSolve } from "./solver.ts";
 import {
@@ -305,6 +306,10 @@ export function checkCompletion(state: PearlState): CompletionResult {
 /** Apply a move purely, recompute completion/errors. Throws on an illegal
  * move (upstream `execute_move` returning NULL). Faithful to `execute_move`. */
 export function executeMove(state: PearlState, move: PearlMove): PearlState {
+  // A move is an op list, not a union, so there is no discriminant to narrow to
+  // `never`: check the one field the dispatch reads (see `rejectMove`).
+  if (!Array.isArray(move.ops)) rejectMove(move, "pearl: executeMove");
+
   const w = state.w;
   const h = state.h;
   const ret = cloneState(state);
@@ -330,6 +335,7 @@ export function executeMove(state: PearlState, move: PearlMove): PearlState {
       ret.marks[idx] &= ~l; // erase marks too
     } else if (op.kind === "flip") ret.lines[idx] ^= l;
     else if (op.kind === "mark") ret.marks[idx] ^= l;
+    else assertNever(op, "pearl: executeMove");
 
     // Reject laying a line over a mark (interpret_move should prevent it).
     if (ret.lines[idx] & l && ret.marks[idx] & l)

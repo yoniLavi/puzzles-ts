@@ -9,6 +9,7 @@
  * value highlights.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import type {
   Game,
@@ -245,7 +246,7 @@ function executeMove(state: DominosaState, m: DominosaMove): DominosaState {
       ret.grid[a] = b;
       ret.grid[b] = a;
     }
-  } else {
+  } else if (m.type === "domino" || m.type === "edge") {
     const { d1, d2 } = m;
     if (!(d1 >= 0 && d2 < wh && d1 < d2 && (d2 - d1 === 1 || d2 - d1 === w)))
       throw new Error(`dominosa: illegal move ${JSON.stringify(m)}`);
@@ -278,6 +279,8 @@ function executeMove(state: DominosaState, m: DominosaMove): DominosaState {
         ret.edges[d2] ^= EDGE_T;
       }
     }
+  } else {
+    return assertNever(m, "dominosa: executeMove");
   }
 
   checkCompletion(ret);

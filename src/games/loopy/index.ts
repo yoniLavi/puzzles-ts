@@ -18,6 +18,7 @@
  * plus input handling.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import type {
   Game,
@@ -269,6 +270,13 @@ function interpretMove(
 }
 
 function executeMove(state: LoopyState, move: LoopyMove): LoopyState {
+  // Both arms carry the same op list and differ only in whether the fill counts
+  // as a cheat, so nothing below would notice an unknown kind — hence the
+  // up-front check rather than a `default` on a dispatch that does not exist.
+  if (move.kind !== "set" && move.kind !== "solve") {
+    return assertNever(move, "loopy: executeMove");
+  }
+
   const next = cloneState(state);
   for (const op of move.ops) {
     if (op.edge < 0 || op.edge >= next.grid.numEdges) {

@@ -11,6 +11,7 @@
  * `0..h-1` — shared (frozen) across a game's states.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { matching } from "../../engine/latin.ts";
 import { parseDimensions } from "../../engine/params.ts";
@@ -358,12 +359,14 @@ export function executeMove(state: TentsState, move: TentsMove): TentsState {
         throw new Error("Bad solve move");
       grid[idx] = TENT;
     }
-  } else {
+  } else if (move.type === "cells") {
     for (const { x, y, v } of move.cells) {
       if (x < 0 || x >= w || y < 0 || y >= h) throw new Error("Move out of bounds");
       if (grid[y * w + x] === TREE) throw new Error("Cannot modify a tree");
       grid[y * w + x] = v;
     }
+  } else {
+    return assertNever(move, "tents: executeMove");
   }
 
   const completed = state.completed || checkCompletion(w, h, grid, state.numbers);

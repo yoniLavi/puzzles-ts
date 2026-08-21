@@ -1,3 +1,4 @@
+import { rejectMove } from "../../engine/assert-never.ts";
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import { fromCoord } from "../../engine/geometry.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
@@ -181,6 +182,12 @@ function interpretMove(
 // --- move execution ---------------------------------------------------
 
 export function executeMove(state: SamegameState, move: SamegameMove): SamegameState {
+  // Samegame's move is one object shape rather than a union, so there is no
+  // discriminant to narrow to `never`: check the fields the dispatch reads.
+  if (move.type !== "remove" || !Array.isArray(move.tiles)) {
+    rejectMove(move, "samegame: executeMove");
+  }
+
   const { w, h } = state;
   const area = w * h;
   const tiles = state.tiles.slice();

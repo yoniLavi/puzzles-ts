@@ -10,6 +10,7 @@
  * player-filled. Region sizes never exceed 9 (the generator caps them).
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
@@ -204,6 +205,7 @@ export function executeMove(state: FillingState, move: FillingMove): FillingStat
     }
     return { ...state, board, completed: true, cheated: true };
   }
+  if (move.type !== "set") return assertNever(move, "filling: executeMove");
 
   const { cells, value } = move;
   if (value < 0 || value > 9) throw new Error("Move value out of range");

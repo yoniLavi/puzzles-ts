@@ -209,6 +209,51 @@ became a union the type-checker fully covers.) For the save file a move must be
 structured-clone-safe as-is, or the game supplies `serialiseMove`/
 `deserialiseMove`.
 
+### A move you do not recognise is refused, never guessed
+
+`executeMove`'s signature says `(state, move) => State` and *lies*: a save is
+untrusted input. `SaveEnvelope.moves` is `unknown[]` and is **cast** to `Move` on
+replay, never parsed, so a move written by another build arrives looking
+perfectly well typed. Your dispatch must refuse it — normative rule in the
+[`ts-engine` spec](../../openspec/specs/ts-engine/spec.md) § "A game rejects a
+move it cannot play, rather than guessing".
+
+End the dispatch with [`assertNever`](../../src/engine/assert-never.ts):
+
+```ts
+default:
+  return assertNever(move, "abcd: executeMove");
+```
+
+Bind the value to `never` rather than writing `default: throw`. The two are not
+equivalent: a bare `default` makes the function total *for the type checker*
+whatever the union says, so adding a move type and forgetting an arm compiles
+cleanly and fails at runtime — you would be trading the compile-time guarantee
+for the runtime one. `assertNever` keeps both, and the `never` binding works the
+same through an `if / else if / else` chain, so a game with a shared prologue
+does not have to become a `switch` to get it.
+
+Two shapes need care, and both are common here:
+
+- **Where the discriminant is a field on a single interface** rather than a union
+  of shapes (`LightupOp.kind: "light" | "impossible"`), it is `op.kind` that
+  narrows to `never`, not `op`. Assert on the field and put the op in the
+  context string: ``assertNever(op.kind, `lightup: executeMove op at (${op.x},${op.y})`)``.
+- **Where the move is one object shape with no discriminant at all**
+  (`{ ops: Op[] }`, `{ dir }`), there is nothing to narrow. Use
+  [`rejectMove`](../../src/engine/assert-never.ts) on the fields the dispatch
+  reads — and **never** `assertNever(move as never, …)`, which silences the
+  error the helper exists to raise.
+
+Put the guard **before** any bounds check it might hide behind. A missing
+coordinate makes `x < 0` and `x >= w` *both* false, so range tests wave a foreign
+move straight through — that is how Subsets and Crossing came to return a board
+the player never made.
+
+The collection-wide guard is `engine/save-round-trip.test.ts`, which pushes a
+foreign move into every game's saved move log and requires the refusal to name
+the game.
+
 ## Status
 
 `status(state)` reports won/ongoing/lost. **Solve must complete the game**:

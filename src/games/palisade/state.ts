@@ -13,6 +13,7 @@
  * two cells it separates, so every edit records both sides.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
 import type { GameStatus } from "../../engine/types.ts";
@@ -279,6 +280,7 @@ export function executeMove(state: PalisadeState, move: PalisadeMove): PalisadeS
     ret.completed = true;
     return ret;
   }
+  if (move.type !== "edges") return assertNever(move, "palisade: executeMove");
 
   for (const { x, y, flag } of move.edits) {
     if (outOfBounds(x, y, w, h)) throw new Error("palisade: move out of bounds");

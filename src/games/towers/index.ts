@@ -9,6 +9,7 @@
  * & Save additionally flags cells that contradict the unique solution.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import {
   adaptiveMarkAllMove,
   candidateHint,
@@ -396,6 +397,8 @@ function executeMove(state: TowersState, move: TowersMove): TowersState {
       next.cheated = true;
       return next;
     }
+    default:
+      return assertNever(move, "towers: executeMove");
   }
 }
 

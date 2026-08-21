@@ -1,3 +1,4 @@
+import { assertNever } from "../../engine/assert-never.ts";
 import {
   type Game,
   type HintResult,
@@ -82,6 +83,7 @@ export function executeMove(state: FloodState, move: FloodMove): FloodState {
       cheated: true,
     };
   }
+  if (move.type !== "fill") return assertNever(move, "flood: executeMove");
 
   const corner = state.grid[FILLY * state.w + FILLX];
   if (

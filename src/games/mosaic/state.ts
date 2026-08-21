@@ -5,6 +5,7 @@
  * are black).
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
 import type { GameStatus } from "../../engine/types.ts";
@@ -307,7 +308,7 @@ export function executeMove(state: MosaicState, move: MosaicMove): MosaicState {
     // Strip any SOLVED/ERROR overlay, then cycle the mark.
     cells[pos] = ((cells[pos] & STATE_OK_NUM) + (move.double ? 2 : 1)) % STATE_OK_NUM;
     updateBoardStateAround(state, cells, move.x, move.y);
-  } else {
+  } else if (move.type === "paint") {
     const { x, y, srcX, srcY, paintState } = move;
     if (!inBounds(x, y)) throw new Error("Paint out of bounds");
     // Walk from (x,y) toward the anchor, exclusive (the anchor cell was
@@ -332,6 +333,8 @@ export function executeMove(state: MosaicState, move: MosaicMove): MosaicState {
         updateBoardStateAround(state, cells, cx, cy);
       }
     }
+  } else {
+    return assertNever(move, "mosaic: executeMove");
   }
 
   return {

@@ -10,6 +10,7 @@
  * `solve` replays it, faithful to upstream.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { Game, SolveResult } from "../../engine/game.ts";
 import { UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
@@ -109,6 +110,7 @@ function executeMove(s: NetslideState, m: NetslideMove): NetslideState {
       lastMoveDir: 0,
     };
   }
+  if (m.type !== "slide") return assertNever(m, "netslide: executeMove");
 
   const limit = m.axis === "col" ? s.w : s.h;
   if (m.index < 0 || m.index >= limit) throw new Error(`no such ${m.axis} ${m.index}`);

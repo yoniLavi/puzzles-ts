@@ -11,6 +11,7 @@
  * suppression — no state-string undo).
  */
 
+import { assertNever, rejectMove } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import type { Game, SolveResult, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
@@ -232,16 +233,22 @@ function isComplete(s: MapState): boolean {
 }
 
 function executeMove(s: MapState, m: MapMove): MapState {
+  // A move is an op list, not a union, so there is no discriminant to narrow to
+  // `never`: check the one field the dispatch reads (see `rejectMove`).
+  if (!Array.isArray(m.ops)) rejectMove(m, "map: executeMove");
+
   const ret = cloneState(s);
   for (const op of m.ops) {
     if (op.op === "colour") {
       ret.colouring[op.region] = op.colour ?? -1;
       ret.pencil[op.region] = 0;
-    } else {
+    } else if (op.op === "pencil") {
       // pencil toggle — illegal on a coloured region (upstream returns NULL).
       if (ret.colouring[op.region] >= 0)
         throw new Error("map: pencil on a coloured region");
       ret.pencil[op.region] ^= 1 << op.bit;
+    } else {
+      return assertNever(op, "map: executeMove");
     }
   }
   if (m.solve) return { ...ret, cheated: true };

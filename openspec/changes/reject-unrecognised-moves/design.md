@@ -46,6 +46,37 @@ The `context` string is required rather than derived: the message is read in a
 player's console and in a `loadGame` refusal, and "unrecognised move" with no
 game name in it is the same class of unhelpfulness this change exists to remove.
 
+## D1a: a second helper, `rejectMove` — because the alternative is a cast that defeats D1
+
+**Added during implementation.** D1 covers the case where there *is* a union to
+narrow. The survey found many where there is not: a move that is one object shape
+with an op list inside it (`{ ops: Op[] }` — bridges, galaxies, lightup, map,
+pearl, tracks), a coordinate list (`{ sets: … }` — range, singles), or a bare
+field set (`{ dir }` — cube; `{ type: "jump", … }` — pegs, and note that a
+*single-member* union does not narrow to `never` either).
+
+Those cannot call `assertNever` without `assertNever(move as never, …)`, and that
+cast is precisely the thing D1 exists to prevent: it makes the call compile
+whatever the union later becomes, which is the bare-`throw` downgrade wearing the
+safe helper's name. So there is a second export with the same message shape and a
+different name:
+
+```ts
+export function rejectMove(move: unknown, context: string): never;
+```
+
+Same output, honest about carrying no compile-time guarantee. A reader is
+entitled to see which of the two they are looking at.
+
+**A third shape needs neither.** Where the discriminant is a *field on a single
+interface* rather than a union of shapes — `LightupOp.kind: "light" |
+"impossible"`, `TracksOp.kind`, `MineOp.op: "F" | "O" | "C"` — it is the *field*
+that narrows to `never`, not the object. `assertNever(op.kind, …)` gets the full
+guarantee, and the op goes in the context string:
+``assertNever(op.kind, `lightup: executeMove op at (${op.x},${op.y})`)``. The
+`context` parameter being a plain string rather than a static literal is what
+makes this work.
+
 ## D2: The three shapes get three treatments, because the requirement is the behaviour
 
 A survey of the 53 `executeMove` implementations (proposal table) found only one
@@ -55,11 +86,40 @@ dispatch on something that is not a union at all.
 
 - **Exhaustive `switch`** → add `default: return assertNever(move, "<game>: executeMove")`.
   Pure addition; no existing arm moves.
-- **`if (move.kind === "x") … else …`** (Clusters, Bricks and kin) → convert to a
-  `switch` on the discriminant. This is the case that *gains* the most: an
-  `if/else` chain over a union has **no** compile-time exhaustiveness at all, so
-  these games have never had the guarantee the switch games are merely at risk of
-  losing. The conversion is behaviour-preserving for every real move.
+- **`if (move.kind === "x") … else …`** (Clusters, Bricks and kin) → ~~convert to a
+  `switch` on the discriminant~~ **complete the chain and terminate it in
+  `assertNever`.** This is the case that *gains* the most: an `if/else` chain over
+  a union has **no** compile-time exhaustiveness at all, so these games have never
+  had the guarantee the switch games are merely at risk of losing.
+
+  **Corrected during implementation, and the correction shrank the diff by most
+  of its size.** The conversion to `switch` is not what buys the guarantee —
+  *terminating the chain* is. TypeScript narrows a discriminated union through
+  `if / else if / else` exactly as it does through `switch`, so
+
+  ```ts
+  if (move.kind === "solve") { … }
+  else if (move.kind === "paint") { … }
+  else return assertNever(move, "bricks: executeMove");
+  ```
+
+  gives `never` in the final `else` and fails to compile when a member is added.
+  What these games were missing was never the `switch` keyword; it was the last
+  branch. Rewriting ~28 working dispatchers into a different control-flow shape
+  would have been risk taken for nothing, and several of them (Crossing, Rome,
+  Subsets) share a prologue between two arms that a `switch` would have had to
+  duplicate or restructure around.
+
+  Where a game is already switch-shaped it keeps its `switch`; where the chain
+  falls through to a shared tail rather than nesting (Crossing, Rome, Subsets,
+  Loopy, and every two-member `if (solve) { … return }` game), the guard is a
+  single narrowing line placed after the early returns —
+  `if (move.kind !== "set") return assertNever(move, "…")` — which is both the
+  smallest edit and the clearest statement of what the code below assumes.
+
+  **And it must go before any bounds check it could hide behind.** Subsets'
+  `pos < 0 || pos >= w * h` is *both* false for a missing `pos`, so a range test
+  waves a foreign move through rather than catching it (survey.md).
 - **Not a union** (Cube's single move shape) → no catch-all is meaningful;
   validate the fields the dispatcher relies on and throw with the same message
   shape. Cube already throws `"cube: illegal move"` for an undeliverable
@@ -92,6 +152,15 @@ data enters, instead of touching 53 files. But:
 Boundary parsing stays available if a *future* need appears (a save format that
 must survive a genuine move-type migration, say), and would compose with this
 change rather than replace it.
+
+**One game already does it**, which the survey found and this section had not
+known: **Pegs** ships `serialiseMove`/`deserialiseMove`, so its foreign move is
+refused at the boundary and never reaches `executeMove`. That is a *better* place
+to catch it, and it is left exactly where it is — only its message shape is
+brought into line (`rejectMove(raw, "pegs: deserialiseMove")`; it previously
+stringified the raw value to `Invalid pegs move: [object Object]`). It is the
+concrete evidence for "would compose rather than replace": Pegs has both guards
+now, and the boundary one wins.
 
 ## D4: What the safety net already covers, so this change does not claim it
 

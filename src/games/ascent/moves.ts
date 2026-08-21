@@ -8,6 +8,7 @@
  * runs.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import {
   type AscentMove,
   type AscentState,
@@ -177,6 +178,8 @@ export function executeAscentMove(state: AscentState, move: AscentMove): AscentS
       ret.cheated = true;
       break;
     }
+    default:
+      return assertNever(move, "ascent: executeMove");
   }
 
   if (ret.path) {

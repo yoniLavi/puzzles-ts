@@ -6,6 +6,7 @@
  * cross, and all islands form one connected group.
  */
 
+import { assertNever, rejectMove } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
@@ -427,6 +428,10 @@ function interpretMove(
 // --- executeMove (bridges.c execute_move) ---
 
 function executeMove(s: BridgesState, m: BridgesMove): BridgesState {
+  // A move is an op list, not a union, so there is no discriminant to narrow to
+  // `never`: check the one field the dispatch reads (see `rejectMove`).
+  if (!Array.isArray(m.ops)) rejectMove(m, "bridges: executeMove");
+
   const ret = s.clone();
   for (const op of m.ops) {
     if (op.op === "S") {
@@ -453,12 +458,13 @@ function executeMove(s: BridgesState, m: BridgesMove): BridgesState {
       if (!is1 || !is2)
         throw new Error("bridges executeMove: N endpoint not an island");
       ret.islandJoin(is1, is2, -1, false);
-    } else {
-      // op.op === "M"
+    } else if (op.op === "M") {
       if (!ret.inGrid(op.x, op.y)) throw new Error("bridges executeMove: M off-grid");
       const is1 = ret.islandAt(op.x, op.y);
       if (!is1) throw new Error("bridges executeMove: M not an island");
       ret.islandTogglemark(is1);
+    } else {
+      return assertNever(op, "bridges: executeMove");
     }
   }
   ret.mapUpdatePossibles();

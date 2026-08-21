@@ -150,22 +150,16 @@ export function status(state: SixteenState): "solved" | "ongoing" {
   return state.completed > 0 ? "solved" : "ongoing";
 }
 
-// --- move serialisation -----------------------------------------------
-
-export function serialiseMove(m: SixteenMove): string {
-  if (m.type === "solve") return "S";
-  const axis = m.axis === "row" ? "R" : "C";
-  return `${axis}${m.index},${m.delta}`;
-}
-
-export function deserialiseMove(s: string): SixteenMove {
-  if (s === "S") return { type: "solve" };
-  const axis = s[0] === "R" ? "row" : "column";
-  const commaIdx = s.indexOf(",");
-  const index = Number(s.slice(1, commaIdx));
-  const delta = Number(s.slice(commaIdx + 1));
-  return { type: "slide", axis, index, delta };
-}
+/* A `serialiseMove`/`deserialiseMove` pair lived here and was never wired into
+ * `sixteenGame`, so the save codec has always used the default identity path —
+ * `SixteenMove` is plain JSON, which is why nothing noticed. Its own test
+ * round-tripped the pair against itself, and a round-trip test passes whether or
+ * not anybody calls either half. Deleted rather than wired: wiring it now would
+ * change the bytes of every existing Sixteen save, which is the owner's call and
+ * not a refactor's (see AGENTS.md, "Nothing is sacred"). Found by
+ * `reject-unrecognised-moves`, whose foreign-move sweep expected the guard in
+ * `executeMove` to fire and got a parse error from Pegs — the only game that
+ * really does parse at the boundary — instead. */
 
 // --- text format ------------------------------------------------------
 

@@ -10,6 +10,7 @@
  * Save additionally flags any entry (or note) contradicting the unique answer.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import {
   type CandidateMoveAdapter,
   candidateHint,
@@ -344,6 +345,14 @@ function executeMove(state: CrossingState, move: CrossingMove): CrossingState {
       next.marks[j] &= ~(1 << (n - 1));
     }
     return next;
+  }
+
+  // Everything below is a single-cell ink-or-note move, and shares a prologue.
+  // The guard is here rather than in the tail's `if/else` because the prologue
+  // reads `move.y`/`move.x` first, and a missing coordinate makes every bound
+  // check below false rather than true.
+  if (move.kind !== "set" && move.kind !== "pencil") {
+    return assertNever(move, "crossing: executeMove");
   }
 
   const i = move.y * w + move.x;

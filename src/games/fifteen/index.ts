@@ -1,3 +1,4 @@
+import { assertNever } from "../../engine/assert-never.ts";
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import { HINT_ACTION, INK } from "../../engine/colour/palette.ts";
 import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
@@ -99,6 +100,7 @@ export function executeMove(state: FifteenState, move: FifteenMove): FifteenStat
       moveCount: 1,
     };
   }
+  if (move.type !== "move") return assertNever(move, "fifteen: executeMove");
 
   const { x: dx, y: dy } = move;
   const gx = state.gapPos % w;

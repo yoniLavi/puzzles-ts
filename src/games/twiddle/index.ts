@@ -11,6 +11,7 @@
  * transliteration.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import type { Game, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
@@ -177,6 +178,7 @@ export function executeMove(from: TwiddleState, move: TwiddleMove): TwiddleState
       moveCount: 1,
     };
   }
+  if (move.type !== "rotate") return assertNever(move, "twiddle: executeMove");
 
   const { w, h, n } = from;
   if (move.x < 0 || move.y < 0 || move.x > w - n || move.y > h - n) {

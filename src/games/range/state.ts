@@ -10,6 +10,7 @@
  * and are never written by a move.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -57,7 +58,12 @@ export interface RangeUi {
 }
 
 export function cellValueToGrid(v: RangeCellValue): number {
-  return v === "black" ? BLACK : v === "white" ? WHITE : EMPTY;
+  if (v === "black") return BLACK;
+  if (v === "white") return WHITE;
+  if (v === "empty") return EMPTY;
+  // The trailing `: EMPTY` this replaces was where an unrecognised move landed:
+  // a foreign `value` painted the cell blank instead of being refused.
+  return assertNever(v, "range: cellValueToGrid");
 }
 
 // --- params ----------------------------------------------------------------

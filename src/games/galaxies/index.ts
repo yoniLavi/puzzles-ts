@@ -11,6 +11,7 @@
  * transliteration.
  */
 
+import { assertNever, rejectMove } from "../../engine/assert-never.ts";
 import { mkhighlightBackground } from "../../engine/colour/colour-mkhighlight.ts";
 import { PURPLE } from "../../engine/colour/colours.ts";
 import {
@@ -345,10 +346,16 @@ function applyOp(s: GalaxiesState, op: GalaxiesOp, solving: boolean): void {
         }
       }
     }
+  } else {
+    assertNever(op, "galaxies: executeMove");
   }
 }
 
 function executeMove(s: GalaxiesState, move: GalaxiesMove): GalaxiesState {
+  // A move is an op list, not a union, so there is no discriminant to narrow to
+  // `never`: check the one field the dispatch reads (see `rejectMove`).
+  if (!Array.isArray(move.ops)) rejectMove(move, "galaxies: executeMove");
+
   const next = cloneState(s);
   for (const op of move.ops) applyOp(next, op, move.solving);
   if (move.solving) next.usedSolve = true;

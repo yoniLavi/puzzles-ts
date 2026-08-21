@@ -1,3 +1,4 @@
+import { assertNever } from "../../engine/assert-never.ts";
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import { HINT_ACTION, INK } from "../../engine/colour/palette.ts";
 import { drawRecessedBorder as drawBevel } from "../../engine/draw.ts";
@@ -96,6 +97,7 @@ export function executeMove(state: SixteenState, move: SixteenMove): SixteenStat
       moveCount: state.moveCount + 1,
     };
   }
+  if (move.type !== "slide") return assertNever(move, "sixteen: executeMove");
 
   const { axis, index, delta } = move;
   const tiles = new Int32Array(state.tiles);

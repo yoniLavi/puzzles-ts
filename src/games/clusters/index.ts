@@ -12,6 +12,7 @@
  * forced cell would break.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import {
   type Game,
@@ -249,11 +250,13 @@ function executeMove(state: ClustersState, move: ClustersMove): ClustersState {
       grid[i] = move.fills[i];
     }
     next.cheated = true;
-  } else {
+  } else if (move.kind === "paint") {
     for (const { index, fill } of move.cells) {
       if (grid[index] & F_SINGLE) continue; // never overwrite a given
       grid[index] = fill;
     }
+  } else {
+    return assertNever(move, "clusters: executeMove");
   }
   if (clustersStatus(grid, next.w, next.h) === COMPLETE) next.completed = true;
   return next;

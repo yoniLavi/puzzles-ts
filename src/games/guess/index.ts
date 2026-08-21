@@ -11,6 +11,7 @@
  * `changedState` engine hook this port introduces.
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
@@ -390,6 +391,7 @@ function executeMove(s: GuessState, m: GuessMove): GuessState {
     const ret = cloneState(s);
     return { ...ret, solved: -1 };
   }
+  if (m.type !== "guess") return assertNever(m, "guess: executeMove");
 
   if (s.solved) throw new Error("No guesses allowed once the game is over");
 

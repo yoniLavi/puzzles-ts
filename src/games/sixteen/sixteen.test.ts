@@ -10,7 +10,6 @@ import {
 import {
   decodeParams,
   defaultParams,
-  deserialiseMove,
   encodeParams,
   isCompleted,
   newDesc,
@@ -19,7 +18,6 @@ import {
   type SixteenMove,
   type SixteenParams,
   type SixteenState,
-  serialiseMove,
   status,
   textFormat,
   validateDesc,
@@ -165,24 +163,10 @@ describe("Sixteen completion", () => {
   });
 });
 
-// --- move serialisation -----------------------------------------------
-
-describe("Sixteen move serialisation", () => {
-  it("round-trips slide moves", () => {
-    const moves: SixteenMove[] = [
-      { type: "slide", axis: "row", index: 2, delta: 1 },
-      { type: "slide", axis: "column", index: 0, delta: -1 },
-    ];
-    for (const m of moves) {
-      expect(deserialiseMove(serialiseMove(m))).toEqual(m);
-    }
-  });
-
-  it("round-trips solve move", () => {
-    const m: SixteenMove = { type: "solve" };
-    expect(deserialiseMove(serialiseMove(m))).toEqual(m);
-  });
-});
+/* The "Sixteen move serialisation" block went with the codec it tested: that
+ * pair was never wired into `sixteenGame`, and a round-trip against itself is
+ * green either way. The save path Sixteen actually uses is covered end to end by
+ * `engine/save-round-trip.test.ts`. */
 
 // --- text format ------------------------------------------------------
 

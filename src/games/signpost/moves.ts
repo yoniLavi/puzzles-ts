@@ -5,6 +5,7 @@
  * import `index` (which would be a cycle).
  */
 
+import { assertNever } from "../../engine/assert-never.ts";
 import {
   checkCompletion,
   cloneState,
@@ -67,6 +68,8 @@ export function executeMove(s: SignpostState, move: SignpostMove): SignpostState
       ret.usedSolve = true;
       break;
     }
+    default:
+      return assertNever(move, "signpost: executeMove");
   }
 
   updateNumbers(ret);

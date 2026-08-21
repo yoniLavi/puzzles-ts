@@ -11,6 +11,7 @@
  * either — moves are instant, matching upstream `game_anim_length` = 0 (D5).
  */
 
+import { rejectMove } from "../../engine/assert-never.ts";
 import type { Game } from "../../engine/game.ts";
 import {
   CURSOR_DOWN,
@@ -118,6 +119,19 @@ function interpretMove(
 // --- move execution ---------------------------------------------------
 
 export function executeMove(state: SokobanState, move: SokobanMove): SokobanState {
+  // Sokoban's move is one object shape rather than a union, so there is no
+  // discriminant to narrow to `never`: check the fields the dispatch reads.
+  // Without this a move with no step lands in `moveType` as `(NaN, NaN)`, which
+  // reads the grid out of bounds and comes back "no barrel here" — a *legal*
+  // walk, so the board silently gained a move it never made.
+  if (
+    move.type !== "move" ||
+    !Number.isInteger(move.dx) ||
+    !Number.isInteger(move.dy)
+  ) {
+    rejectMove(move, "sokoban: executeMove");
+  }
+
   const { dx, dy } = move;
   const kind = moveType(state, dx, dy);
   if (kind === "illegal") throw new Error("sokoban: illegal move");
