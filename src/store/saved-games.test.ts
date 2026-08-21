@@ -50,6 +50,67 @@ async function waitFor(predicate: () => boolean, ms = 500): Promise<boolean> {
   return predicate();
 }
 
+/**
+ * A `fakePuzzle` whose `loadGame` refuses with `error`, as the midend does for
+ * a save whose move log this build cannot replay.
+ */
+function refusingPuzzle(puzzleId: string, error: string) {
+  const fake = fakePuzzle(puzzleId, "board");
+  return Object.assign(fake, {
+    async loadGame(): Promise<string | undefined> {
+      return error;
+    },
+  });
+}
+
+describe("saved-games: an autosave this build cannot replay", () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+  afterEach(async () => {
+    await resetDb();
+  });
+
+  // The failure this covers reached a player: a crash *during startup* meant
+  // the puzzle's page threw on every visit, and there was no way out from
+  // inside the app — you cannot press "New game" on a page that never
+  // finished loading. So an unreplayable autosave must be dropped, not
+  // rethrown, and the only thing lost is one board nobody asked to keep.
+  it.each([
+    [
+      "a move this build cannot play",
+      "Could not restore this saved game: abcd: executeMove returned no state",
+    ],
+    ["a corrupt envelope", "Could not read save: unexpected end of JSON input"],
+    ["a pre-TS C-format save", "This is a pre-pivot C-format save"],
+  ])("is dropped rather than thrown: %s", async (_label, error) => {
+    const puzzle = refusingPuzzle("abcd", error);
+    await savedGames.autoSaveGame(puzzle, "autosave-1");
+
+    // Must not throw, and must report "nothing restored" so the caller deals
+    // a fresh board instead of showing an empty one.
+    await expect(savedGames.restoreAutoSavedGame(puzzle, "autosave-1")).resolves.toBe(
+      false,
+    );
+
+    // And the bad record is gone, so the next visit does not repeat the whole
+    // dance — the difference between "one lost board" and "this puzzle is
+    // broken for ever".
+    const again = await savedGames.restoreAutoSavedGame(puzzle, "autosave-1");
+    expect(again).toBe(false);
+  });
+
+  it("still throws on an error that is NOT a stale or unplayable save", async () => {
+    // The escape hatch stays narrow: a genuine bug in the load path must keep
+    // surfacing, or this becomes a blanket `catch {}` that hides everything.
+    const puzzle = refusingPuzzle("abcd", 'Save is for "galaxies", not "abcd"');
+    await savedGames.autoSaveGame(puzzle, "autosave-1");
+    await expect(savedGames.restoreAutoSavedGame(puzzle, "autosave-1")).rejects.toThrow(
+      /Error restoring autosave/,
+    );
+  });
+});
+
 describe("saved-games: quick-save slot (fake-indexeddb)", () => {
   beforeEach(async () => {
     await resetDb();

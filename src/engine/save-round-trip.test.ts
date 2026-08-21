@@ -1,0 +1,246 @@
+/**
+ * The collection-wide save/load guard.
+ *
+ * Every game's move log is written to a save and replayed on load, and until
+ * this test there was **no cross-game coverage of that replay at all** — the
+ * per-game suites each round-trip a save they made themselves, from a handful
+ * of hand-written moves, so no game was ever asked what happens when the *whole*
+ * range of moves its own input produces goes through `loadGame`.
+ *
+ * That gap shipped a crash. `Midend.applyMove` hands `executeMove`'s return
+ * straight to `commitMove`, which pushes it into `history` **before** anything
+ * looks at it — so a game whose `executeMove` falls off the end of its `switch`
+ * (returning `undefined`, which the exhaustive-union typing hides at compile
+ * time) poisons the history array, and every later `redraw` throws on a state
+ * that is not there. The first symptom a player sees is an unhandled rejection
+ * from `changedState`, and the second is the same from `redraw` — one broken
+ * move, then a permanently broken board.
+ *
+ * So this sweep drives each game with *real* input through a real `Midend`,
+ * saves, loads into a fresh one, and checks the two agree — and, because the
+ * failure mode is a corrupt history rather than a wrong answer, it also checks
+ * the loaded midend can still be *drawn*, which is the assertion the crash
+ * would have failed.
+ */
+
+import { beforeAll, describe, expect, it } from "vitest";
+// Registers every ported game; `beforeAll` re-runs it in case a sibling file
+// reset the shared registry under `isolate: false`.
+import { registerAllGames } from "../games/index.ts";
+import type { Game } from "./game.ts";
+import { Midend } from "./midend.ts";
+import {
+  CURSOR_DOWN,
+  CURSOR_LEFT,
+  CURSOR_RIGHT,
+  CURSOR_SELECT,
+  CURSOR_UP,
+  LEFT_BUTTON,
+  RIGHT_BUTTON,
+} from "./pointer.ts";
+import { randomNew } from "./random/index.ts";
+import { getTsGame, registeredGameIds } from "./registry.ts";
+import { RecordingDrawing } from "./testing/recording-drawing.ts";
+
+type AnyGame = Game<unknown, unknown, unknown, unknown, unknown>;
+
+const KEY_M = 77; // adaptive mark-all, for the games that offer it
+
+function midendFor(game: AnyGame): Midend<unknown, unknown, unknown, unknown, unknown> {
+  const m = new Midend(game);
+  m.setCallbacks(
+    () => {},
+    () => {},
+    () => {},
+  );
+  return m;
+}
+
+/**
+ * Drive a broad, *real* slice of this game's input and report how many presses
+ * the game actually consumed.
+ *
+ * Deliberately not a hand-written move list: the defect this guards against is
+ * a move type the game's own input can emit but its `executeMove` does not
+ * handle, and a hand-written list only ever contains moves somebody remembered.
+ * The pointer sweep is the touch guard's — a coarse grid misses Untangle's
+ * vertices — and the key presses reach the paths pointer input cannot
+ * (mark-all, cursor movement, the on-screen keypad's own buttons).
+ */
+function play(
+  m: Midend<unknown, unknown, unknown, unknown, unknown>,
+  game: AnyGame,
+  params: unknown,
+): number {
+  let consumed = 0;
+  const size = game.computeSize(params, game.preferredTileSize ?? 32);
+  const step = Math.max(6, Math.floor(Math.min(size.w, size.h) / 6));
+
+  for (const button of [LEFT_BUTTON, RIGHT_BUTTON]) {
+    for (let x = 2; x < size.w; x += step) {
+      for (let y = 2; y < size.h; y += step) {
+        if (m.processInput(x, y, button)) consumed++;
+      }
+    }
+  }
+
+  // Keyboard: cursor movement, select, then this game's own keypad buttons —
+  // the digits/letters a player types — and mark-all where it is offered.
+  const keys: number[] = [
+    CURSOR_RIGHT,
+    CURSOR_DOWN,
+    CURSOR_SELECT,
+    CURSOR_LEFT,
+    CURSOR_UP,
+  ];
+  if (game.canMarkAll) keys.push(KEY_M, KEY_M); // fill, then strike
+  for (const k of game.requestKeys?.(params) ?? []) keys.push(k.button);
+  for (const button of keys) {
+    if (m.processInput(0, 0, button)) consumed++;
+  }
+  return consumed;
+}
+
+const REGISTERED = registeredGameIds();
+
+beforeAll(registerAllGames);
+
+describe("a saved game reloads in every ported game", () => {
+  for (const id of REGISTERED) {
+    const game = getTsGame(id);
+    if (!game) continue;
+
+    it(`${id}: play, save, load — the board survives and can still be drawn`, () => {
+      const params = game.defaultParams();
+      const desc = game.newDesc(params, randomNew(`save-${id}`)).desc;
+      const gameId = `${game.encodeParams(params, true)}:${desc}`;
+
+      const played = midendFor(game);
+      played.newGameFromId(gameId);
+      const consumed = play(played, game, params);
+
+      // Guard the guard: a game none of whose presses landed would round-trip
+      // an untouched board and prove nothing about its move log.
+      expect(
+        consumed,
+        `${id}: no input was consumed, so the save is empty`,
+      ).toBeGreaterThan(0);
+
+      const saved = played.saveGame();
+
+      // The replay itself. A move the game cannot execute surfaces here.
+      const loaded = midendFor(game);
+      expect(
+        loaded.loadGame(saved),
+        `${id}: loadGame refused its own save`,
+      ).toBeUndefined();
+
+      // The board came back. `formatAsText` is the game's own description of
+      // its state, so this compares what the player would see.
+      if (game.canFormatAsText) {
+        expect(loaded.formatAsText(), `${id}: board differs after reload`).toBe(
+          played.formatAsText(),
+        );
+      }
+
+      // Re-saving must produce the same bytes: proves the *whole* envelope
+      // (move log, cursor position, timer, solve flag) survived, not just the
+      // part `formatAsText` happens to render.
+      expect(loaded.saveGame(), `${id}: re-saved bytes differ`).toEqual(saved);
+
+      // The assertion the crash would have failed. A poisoned history is not
+      // visible in any comparison above — `loadGame` returns `undefined` and
+      // the text may even match — but the state is gone and drawing throws.
+      const drawing = new RecordingDrawing(loaded.getColourPalette([1, 1, 1]));
+      loaded.size({ w: 400, h: 400 }, false, 1);
+      expect(
+        () => loaded.redraw(drawing),
+        `${id}: cannot draw the reloaded board`,
+      ).not.toThrow();
+      expect(drawing.ops.length, `${id}: reloaded board drew nothing`).toBeGreaterThan(
+        0,
+      );
+    });
+  }
+
+  it("the registry is populated, so the sweep above is not vacuous", () => {
+    expect(REGISTERED.length).toBeGreaterThan(25);
+  });
+});
+
+/**
+ * The other half, and the one the shipped crash actually needed.
+ *
+ * A save is untrusted input: it is JSON that has been sitting in the player's
+ * IndexedDB since whenever, written by whatever build they were running then.
+ * Its `moves` are typed `unknown[]` and *cast* to `Move`, never parsed — so a
+ * move a later build no longer handles reaches `executeMove` looking perfectly
+ * well-typed, and comes back `undefined`.
+ *
+ * The replay used to run straight into the live game, so a bad move left the
+ * board neither the old game nor the new one, but a history with a hole in it
+ * that threw on every subsequent repaint. It is now rewound to the saved
+ * game's opening position and reported, which is all any caller needs.
+ */
+describe("a save this build cannot play is refused, not half-applied", () => {
+  for (const id of REGISTERED) {
+    const game = getTsGame(id);
+    if (!game) continue;
+
+    it(`${id}: a foreign move in the log never corrupts the board`, () => {
+      const params = game.defaultParams();
+      const desc = game.newDesc(params, randomNew(`foreign-${id}`)).desc;
+      const gameId = `${game.encodeParams(params, true)}:${desc}`;
+
+      const m = midendFor(game);
+      m.newGameFromId(gameId);
+      play(m, game, params);
+      const beforeBytes = m.saveGame();
+
+      // A move from no build that ever existed. Every game's `executeMove`
+      // dispatches on some property of the move; none of them has a case for
+      // this, so each either falls off its `switch` or throws — and both must
+      // come out as a refusal rather than a corrupted board.
+      const env = JSON.parse(new TextDecoder().decode(beforeBytes)) as {
+        moves: unknown[];
+      };
+      env.moves.push({ type: "__not_a_move__", kind: "__not_a_move__" });
+      const tampered = new TextEncoder().encode(JSON.stringify(env));
+
+      const err = m.loadGame(tampered);
+
+      // Games split into two camps here, and BOTH are safe — which is the
+      // property this test exists to hold. A game whose `executeMove` has no
+      // arm for the move either throws or falls off the end (37 games: the
+      // midend turns that into a refusal), or has a tolerant `default` that
+      // returns an unchanged state (20 games: the move is a silent no-op).
+      // What must never happen again is the third outcome — the move landing
+      // in `history` as `undefined` and taking the session with it.
+      if (err !== undefined) {
+        expect(err).toMatch(/Could not restore|Could not read save/);
+        // Refused ⇒ rewound to the saved game's OPENING position: a real board
+        // with the right params, rather than a half-replayed history.
+        //
+        // Deliberately not the stronger "the previous game is untouched".
+        // That needed the midend to snapshot and restore a dozen fields by
+        // hand, and a hand-listed field set rots the first time somebody adds
+        // a thirteenth — silently, in the rollback path nobody exercises. The
+        // caller that actually matters (`restoreAutoSavedGame`) throws the
+        // save away and deals a fresh game regardless, so the stronger promise
+        // bought nothing that anything kept.
+        expect(m.getParams(), `${id}: params lost on refusal`).toBeTruthy();
+      }
+
+      // Universal: whichever camp, the midend is intact — self-consistent,
+      // saveable, and above all still drawable. The shipped crash failed
+      // exactly here, and nowhere earlier.
+      const drawing = new RecordingDrawing(m.getColourPalette([1, 1, 1]));
+      m.size({ w: 400, h: 400 }, false, 1);
+      expect(() => m.redraw(drawing), `${id}: board no longer draws`).not.toThrow();
+      expect(drawing.ops.length, `${id}: reloaded board drew nothing`).toBeGreaterThan(
+        0,
+      );
+      expect(() => m.saveGame(), `${id}: board no longer saves`).not.toThrow();
+    });
+  }
+});

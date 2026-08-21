@@ -187,15 +187,26 @@ class SavedGames {
       filename: autoSaveFilename,
     });
     if (error) {
-      // C-format autosaves from before a game's TS migration are
-      // expendable per the ts-migration doctrine. Silently delete
-      // and fall through to a new game rather than crashing.
-      const isCFormat =
+      // An autosave the current build cannot replay is expendable — it is one
+      // board the player did not ask to keep, and refusing to open the game at
+      // all is far worse than losing it. Two ways that happens, both handled
+      // the same way: a C-format save from before a game's TS migration
+      // (expendable per the ts-migration doctrine), and a TS save whose move
+      // log contains a move this build no longer plays, which the midend now
+      // refuses rather than half-applying.
+      //
+      // Before this, ANY restore error threw, so a single unplayable autosave
+      // bricked that puzzle's page on every visit — the player could not even
+      // start a new game to get out of it, because the crash happened during
+      // startup. Dropping it means the next visit just deals a fresh board.
+      const isUnplayable =
         error.includes("pre-pivot C-format") ||
-        error.includes("not a recognised TS save envelope");
-      if (isCFormat) {
+        error.includes("not a recognised TS save envelope") ||
+        error.includes("Could not restore this saved game") ||
+        error.includes("Could not read save");
+      if (isUnplayable) {
         console.warn(
-          `Dropping stale C-format autosave ${autoSaveFilename} for ${puzzle.puzzleId}`,
+          `Dropping unplayable autosave ${autoSaveFilename} for ${puzzle.puzzleId}: ${error}`,
         );
         await this.removeAutoSavedGame(puzzle.puzzleId, autoSaveFilename);
         return false;

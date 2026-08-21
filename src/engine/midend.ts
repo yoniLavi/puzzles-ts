@@ -493,6 +493,25 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * commit's redraw paints, keeping the displayed step in sync with the
    * frame. */
   private commitMove(next: State, move: Move): boolean {
+    // Check BEFORE touching history. `executeMove`'s return type says `State`,
+    // but a game whose `switch` is exhaustive over its move union has no
+    // `default` arm and no trailing `return` — so a move that is *typed* right
+    // and *valued* wrong (an unknown `type` replayed out of a save, which
+    // arrives as `unknown` and is cast, never parsed) falls off the end and
+    // yields `undefined`. TypeScript cannot see it; only a save from another
+    // build produces it.
+    //
+    // Pushing that into `history` is what turned one bad move into a broken
+    // session: `this.state` became `undefined`, so `changedState` threw, and
+    // then every later `redraw` threw too, on a board the player could no
+    // longer do anything with. Failing here keeps the damage to the one move
+    // and gives `loadGame` something to report.
+    if (next === undefined || next === null) {
+      throw new Error(
+        `${this.game.id}: executeMove returned no state for move ` +
+          `${JSON.stringify(move)} — the move is not one this build can play`,
+      );
+    }
     const prev = this.state;
     // A new move after an undo truncates the redo branch (history and
     // the parallel move log stay in lockstep: moveLog[i] is the move
@@ -1231,8 +1250,21 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       this.emitIdChange();
     }
     const deMove = this.game.deserialiseMove ?? ((raw: unknown) => raw as Move);
-    for (const raw of env.moves) {
-      this.applyMove(deMove(raw));
+    try {
+      for (const raw of env.moves) {
+        this.applyMove(deMove(raw));
+      }
+    } catch (e) {
+      // A save is untrusted input: its `moves` are `unknown[]`, *cast* to
+      // `Move` rather than parsed, so a move written by a different build
+      // reaches `executeMove` looking well-typed and can come back with no
+      // state at all (`commitMove` refuses it rather than letting it into
+      // `history`). Rewind to the saved game's opening position — a real,
+      // drawable board with the right params and desc — and report. Anything
+      // that leaves a half-replayed history strands the player on a board
+      // that throws on every repaint, which is the bug this replaced.
+      this.startFrom(env.privDesc ?? env.desc);
+      return `Could not restore this saved game: ${(e as Error).message}`;
     }
     this.pos = Math.min(env.pos, this.history.length - 1);
     this.usedSolve = env.usedSolve;
