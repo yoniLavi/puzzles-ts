@@ -42,4 +42,4 @@
 - [x] 4.1 `ts-engine` spec delta (ADDED).
 - [x] 4.2 `docs/games/mechanics.md` — the optional-and-universal criterion, and
       a pointer to the sibling contract.
-- [ ] 4.3 Owner acceptance, then archive.
+- [x] 4.3 Owner acceptance (2026-08-21), then archive.

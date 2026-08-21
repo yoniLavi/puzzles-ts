@@ -43,4 +43,4 @@
 
 ## 5. Close out
 
-- [ ] 5.1 Owner acceptance, then archive.
+- [x] 5.1 Owner acceptance (2026-08-21), then archive.
