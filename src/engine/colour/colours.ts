@@ -39,6 +39,12 @@
  * - **base** — the colour: a mark, a line, a piece, a tile.
  * - **`_WASH`** — a fill that content must stay readable *on top of*. Light in
  *   light mode, dark in dark mode.
+ * - **`_WASH_DEEP`** — the same, for a fill that has to carry the collection's
+ *   **derived** foregrounds: pencil marks and entered digits, which are computed
+ *   from the board rather than authored and land at *mid* luminance in dark mode.
+ *   Identical to `_WASH` in light mode, and darker in dark. See the note under
+ *   {@link DESIGN}'s dark bounds for why this could not be done by moving `_WASH`
+ *   itself.
  * - **`_BOLD`** — the emphatic end: a mark that has to read against a large
  *   light fill, or a second member of a set (Mines' navy 4 against its blue 1).
  *   Dark in light mode, light in dark mode.
@@ -104,10 +110,10 @@ function oklch(l: number, c: number, hDegrees: number): Colour {
 /** One intensity of one colour, in one scheme: `[lightness, chroma]`. */
 type Step = readonly [l: number, c: number];
 
-/** A colour's three intensities under one scheme. `wash` and `bold` are absent
- * where nothing needs them — an unused intensity is a colour decision nobody can
+/** A colour's intensities under one scheme. Every step but `base` is absent
+ * where nothing needs it — an unused intensity is a colour decision nobody can
  * see, and it will be wrong by the time somebody looks. */
-type Steps = { base: Step; wash?: Step; bold?: Step };
+type Steps = { base: Step; wash?: Step; washDeep?: Step; bold?: Step };
 
 /**
  * **The palette.** Hue per name, then lightness and chroma per intensity per
@@ -184,8 +190,24 @@ const DESIGN: Record<string, { h: number; light: Steps; dark: Steps }> = {
   },
   TEAL: {
     h: 200,
-    light: { base: [0.72, 0.115], wash: [0.94, 0.072], bold: [0.42, 0.067] },
-    dark: { base: [0.72, 0.115], wash: [0.48, 0.077], bold: [0.84, 0.134] },
+    light: {
+      base: [0.72, 0.115],
+      wash: [0.94, 0.072],
+      // Identical to `wash`: light mode has no defect here and nothing moves.
+      washDeep: [0.94, 0.072],
+      bold: [0.42, 0.067],
+    },
+    dark: {
+      base: [0.72, 0.115],
+      wash: [0.48, 0.077],
+      // Chroma is 0.06 rather than the wash's 0.077 because teal cannot carry
+      // 0.077 at this lightness — the first attempt asked for it and the gamut
+      // clamp silently returned 0.050 at L 0.293 and hue 204.5, which is how the
+      // separation from `HINT_FILL` came out at 0.106 instead of the 0.124 the
+      // arithmetic predicted.
+      washDeep: [0.26, 0.06],
+      bold: [0.84, 0.134],
+    },
   },
   BLUE: {
     h: 258,
@@ -257,6 +279,19 @@ export const GREEN_BOLD: Colour = of("GREEN", "bold");
 export const TEAL: Colour = of("TEAL", "base");
 /** @see TEAL */
 export const TEAL_WASH: Colour = of("TEAL", "wash");
+/**
+ * @see TEAL — the deep wash, for a fill the collection's *derived* foregrounds
+ * are drawn on. Its one consumer is `HINT_EVIDENCE`.
+ *
+ * **Why this is a step and not a retune of {@link TEAL_WASH}.** `TEAL_WASH` is a
+ * member of {@link EIGHT_FILLS} and {@link FOUR_FILLS}, so its dark lightness is
+ * an *output* of the search that keeps Signpost's sixteen region colours and
+ * Map's four mutually distinguishable — darkening it to 0.28 drops Signpost's
+ * worst pair from 0.071 to **0.050**, which `colours.test.ts` fails on. One value
+ * was serving two constraints that have now diverged: "eight fills a player can
+ * tell apart" and "a fill a mid-luminance pencil mark stays readable on".
+ */
+export const TEAL_WASH_DEEP: Colour = of("TEAL", "washDeep");
 /** @see TEAL */
 export const TEAL_BOLD: Colour = of("TEAL", "bold");
 

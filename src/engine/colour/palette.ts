@@ -53,7 +53,7 @@ import {
   RED,
   RED_WASH,
   TEAL_BOLD,
-  TEAL_WASH,
+  TEAL_WASH_DEEP,
   YELLOW,
 } from "./colours.ts";
 
@@ -195,8 +195,17 @@ export const HINT_FILL: Colour = BLUE_WASH;
  * colour; the distinction the player actually needs — *this is what I am reasoning
  * from, that is what I am concluding* — survives a hue change and did not survive
  * a shade change.
+ *
+ * **It takes teal's *deep* wash, and only in dark mode** (owner-reported,
+ * 2026-08-21). This is the one shared fill the candidate games draw their pencil
+ * marks and entered digits straight on top of, and those are *derived* colours —
+ * computed from the board, not authored — which land at mid luminance in dark
+ * mode. On the ordinary dark wash Keen's pencil marks measured **1.23:1** and its
+ * entered digits **1.71:1**, against 2.95 and 3.41 for the same pairs in light.
+ * The light value is unchanged; see {@link TEAL_WASH_DEEP} for why the ordinary
+ * wash could not simply be darkened.
  */
-export const HINT_EVIDENCE: Colour = TEAL_WASH;
+export const HINT_EVIDENCE: Colour = TEAL_WASH_DEEP;
 
 /**
  * The **position an evidence cell takes in an ordered chain** — the small

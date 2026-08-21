@@ -114,9 +114,56 @@
       `colour-collide` **171 → 171** pairs and `colour-dark-check` **64 → 64**
       violations, so the new role neither collides nor misbehaves in dark mode.
 
-## 4. Close out
+## 4. Owner acceptance found the evidence wash unreadable in dark — **fixed**
 
-- [x] 4.1 `ts-engine` spec delta: the Tactic bar as **D2 revised it** — the chain
+Found by the owner playtesting this change (2026-08-21), on Keen. Not a cost of
+the ordinals: `HINT_EVIDENCE` has been `TEAL_WASH` since
+`consolidate-colour-palette`, and this is a live defect on `main` — so it is
+fixed here rather than carried, exactly as task 0 was.
+
+- [x] 4.1 **Measured before touched.** Keen's dark pencil marks scored
+      **1.23:1** on the evidence wash and its entered digits **1.71:1**, against
+      **2.95** and **3.41** for the same pairs in *light*. So the bug is a scheme
+      *disparity*, not a design choice — which also fixes the target: restore
+      dark to light's numbers, don't invent a threshold.
+- [x] 4.2 **The obvious fix is impossible, and the sweep is what showed it.**
+      Darkening the wash and lifting the foreground trade against each other:
+      any fill lighter than the board necessarily contrasts *worse* with a
+      mid-luminance mark than the board does. At the pencil's lightness the
+      feasible band is **empty** — 3:1 needs a wash at L ≤ 0.25, where it is
+      invisible as a mark (1.1:1 against the board).
+- [x] 4.3 **`TEAL_WASH` cannot move**, which the tests said and the first attempt
+      did not know: it is a member of `EIGHT_FILLS` and `FOUR_FILLS`, so its dark
+      lightness is an *output* of the search keeping Signpost's sixteen region
+      colours and Map's four apart. Darkening it dropped Signpost's worst pair
+      **0.071 → 0.050**. One value was serving two constraints that had diverged.
+- [x] 4.4 So `HINT_EVIDENCE` takes a **step of its own** — `TEAL_WASH_DEEP`,
+      identical to `TEAL_WASH` in light (no light-mode change at all, and no
+      snapshot churn) and `[0.26, 0.06]` in dark. Result: pencil **2.92** (light
+      2.95), entries **4.04** (light 3.41), and the tint still reads as a mark —
+      1.15:1 against the dark board, where light mode's own tint scores 1.11:1.
+- [x] 4.5 **The chroma had to be measured, not derived.** The first value asked
+      for the wash's own 0.077 at lightness 0.28; teal cannot carry that there,
+      the gamut clamp silently returned **0.050 at L 0.293, hue 204.5**, and the
+      separation from `HINT_FILL` came out 0.106 instead of the 0.124 the
+      arithmetic predicted. `palette.test.ts` failed on it.
+- [x] 4.6 **Two guards were bounded in one direction only; both now have their
+      mirror.** `palette.test.ts` asserted the hint fills are *pale enough for
+      dark content* in light and said nothing about dark — the exact shape the
+      palette's own notes record. It now asserts the dark fills clear the
+      **derived** foregrounds (stated as contrast, because a lightness bound
+      cannot predict them: a saturated blue-purple at mid OKLCH lightness carries
+      almost no luminance), and that the tint stays visible. And
+      `colours.test.ts`'s "names each colour once" keyed on the **light value
+      alone**, so it read two colours agreeing in light and differing in dark as
+      one — it keys on the pair now, which is what `colour-token.ts` says a
+      token's identity is.
+- [x] 4.7 Verified in Chrome in dark mode, and the instruments are unmoved:
+      colour-collide **171 → 171** pairs, dark-check **64 → 64** violations.
+
+## 5. Close out
+
+- [x] 5.1 `ts-engine` spec delta: the Tactic bar as **D2 revised it** — the chain
       is *shown* (ordered, anchored at both ends) rather than walked leg by leg,
       and the engine gains no display-only step. It says plainly that the
       stricter version was designed, costed and set aside by an owner decision,
@@ -128,9 +175,9 @@
       journey while the code shipped one step. `openspec-delta-integrity` then
       caught a renamed scenario (a rename archives as a deletion), so the
       scenario keeps its name and only its THEN changed.
-- [x] 4.2 `PENDING_WALK` is empty; the list, its helper and its two call sites
+- [x] 5.2 `PENDING_WALK` is empty; the list, its helper and its two call sites
       are deleted, and the two doc comments that stated the stricter bar now
       state the revised one.
-- [x] 4.3 `openspec validate --strict` passes. `docs/games/hints.md` gained the
+- [x] 5.3 `openspec validate --strict` passes. `docs/games/hints.md` gained the
       ordinal section and the fourth deixis tie. Owner acceptance and archive
       remain.

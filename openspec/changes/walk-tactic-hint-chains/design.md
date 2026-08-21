@@ -201,6 +201,67 @@ Two things the frames settled that only rendering could
   the doubled ring painted straight over the digit. The ordinal is drawn after
   the ring and inside it.
 
+## D6 — One value, two constraints: the evidence wash in dark (owner, 2026-08-21)
+
+Owner acceptance found Keen's hint evidence unreadable in dark mode. Like D4 this
+is a **live defect on `main`** rather than a cost of this change —
+`HINT_EVIDENCE` has been `TEAL_WASH` since `consolidate-colour-palette` — so it
+is fixed here, and the reasoning is worth keeping because two attempts were
+wrong before the third was right.
+
+**It is a scheme disparity, which fixes the target.** The same pairs, measured:
+
+| on the evidence wash | light | dark (before) | dark (after) |
+| --- | --- | --- | --- |
+| pencil marks | 2.95 | **1.23** | **2.92** |
+| entered digits | 3.41 | **1.71** | **4.04** |
+| the tint itself, vs its board | 1.11 | 2.74 | 1.15 |
+
+So the bar is *light mode's own numbers*, not an invented threshold — and the
+last row is why "just darken it" is not free: the tint's visibility trades
+directly against the readability of what sits on it.
+
+**Attempt 1 — darken the wash. Impossible, and the sweep is what proved it.**
+Any fill lighter than the board necessarily contrasts *worse* with a
+mid-luminance mark than the board does, so the two goals move in opposite
+directions along one axis. At the pencil's lightness the feasible band is
+**empty**: 3:1 needs L ≤ 0.25, where the tint scores 1.1:1 against the board.
+
+**Attempt 2 — darken `TEAL_WASH` anyway. The tests refused, and were right.**
+`TEAL_WASH` is a member of `EIGHT_FILLS` and `FOUR_FILLS`; its dark lightness is
+an *output* of the search that keeps Signpost's sixteen region colours and Map's
+four mutually distinguishable. Moving it to 0.28 dropped Signpost's worst pair
+from 0.071 to **0.050**. The grep that led me to believe it had one consumer
+searched two files for one spelling — the instrument was too narrow, and the
+suite was the thing that knew.
+
+**What it actually is: one value serving two constraints that have diverged** —
+"eight fills a player can tell apart" and "a fill a mid-luminance pencil mark
+stays readable on". The repo names this shape elsewhere ("when one bound serves
+two mechanisms, retiring the stricter one silently takes the looser one with
+it"). So the role takes a step of its own: `TEAL_WASH_DEEP`, **identical to
+`TEAL_WASH` in light** — no light-mode change, no snapshot churn — and
+`[0.26, 0.06]` in dark.
+
+**The chroma is measured, not derived.** The first value asked for the wash's own
+0.077 at lightness 0.28. Teal cannot carry that there; the gamut clamp silently
+returned **0.050 at L 0.293, hue 204.5**, and the separation from `HINT_FILL`
+came out 0.106 against a 0.12 bound instead of the 0.124 the arithmetic
+predicted. A conversion that clamps is a conversion whose output must be read
+back rather than assumed.
+
+**Two guards were bounded in one direction only.** `palette.test.ts` asserted the
+hint fills are pale enough for dark content *in light* and said nothing about
+dark — the exact shape the palette's own notes record from
+`consolidate-colour-palette`, and the reason the value was free to drift to the
+top of the band. It now asserts the dark fills clear the **derived** foregrounds,
+stated as contrast rather than lightness because a lightness bound cannot predict
+them: a saturated blue-purple at mid OKLCH lightness carries almost no luminance.
+And `colours.test.ts`'s "names each colour once" keyed on the **light value
+alone**, so it read two colours agreeing in light and differing in dark as one —
+it keys on the pair now, which is what `colour-token.ts` says a token's identity
+is.
+
 ## Open Questions
 
 - Do the numbered ordinals earn their place alongside the arrows, or is the
