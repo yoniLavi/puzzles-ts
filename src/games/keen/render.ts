@@ -27,6 +27,8 @@ import {
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import {
+  HINT_AREA,
+  HINT_TARGET,
   hintMarkBit,
   type OrderedCell,
   OverlaySidecar,
@@ -145,6 +147,11 @@ export interface KeenDrawState {
   wrong: OverlaySidecar;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
   pencilModeShown: boolean;
+  /** Cells currently carrying a hint-target ring (fork addition). The ring is
+   * drawn in the **gutter**, which no tile repaints, so its removal has to be
+   * driven from here rather than from the tile cache — see
+   * {@link drawTargetRing}. */
+  ringed: number[];
 }
 
 export function newDrawState(state: KeenState): KeenDrawState {
@@ -158,6 +165,7 @@ export function newDrawState(state: KeenState): KeenDrawState {
     hint: new OverlaySidecar(a),
     wrong: new OverlaySidecar(a),
     pencilModeShown: false,
+    ringed: [],
   };
 }
 
@@ -191,8 +199,8 @@ function drawTile(
   // the end of this function rather than competing for the background. `struck`
   // is the set of candidates this firing rules out, drawn crossed through among
   // the marks.
-  const hintTarget = (hint & 1) !== 0;
-  const hintArea = (hint & 2) !== 0;
+  // (the target bit is read in `redraw`, which draws its ring in the gutter)
+  const hintArea = (hint & HINT_AREA) !== 0;
   const struck = hint >> 2; // bit n ⇒ candidate n struck
 
   const tx = border(ts) + x * ts + 1 + ge;
@@ -398,39 +406,59 @@ function drawTile(
   if (hintOrder > 0)
     drawHintOrdinal(dr, { x: tx, y: ty }, ts - 2 * ge, hintOrder, COL_HINT_ORDER);
 
-  // The acted-on cell, **ringed rather than filled** — last, so nothing paints
-  // over it.
-  //
-  // A wash behind a digit has to be pale enough to read through, and measurement
-  // says no colour in the palette is: `HINT_FILL` scored **1.91:1** against a
-  // pencil mark in light and 1.96 in dark, and the only hues that clear ~2.6 are
-  // the ones nearest `ERROR_WASH`, which would make the cell the hint points at
-  // look like the cell that is wrong. A ring sits *beside* the content instead
-  // of under it, so the constraint disappears rather than being traded — and it
-  // can then use `HINT_ACTION`, the emphatic blue, which is the colour this cell
-  // always meant (`palette.ts`: the two are "one role by name and two by
-  // function"; ringing collapses them back into one).
-  //
-  // It also **unifies the two branches**. The fill was applied only when nothing
-  // was struck here, because a strike's crossed-through digits had to stay
-  // legible — so on a strike step the target carried no cell-level mark at all,
-  // and the player had to find the strikethrough to know where the hint was
-  // pointing. Both kinds of target ring identically now.
-  //
-  // Distinct from the Check & Save frame above by hue *and* geometry: that one
-  // is red, 1px, at insets 2–3; this is blue and thicker, hard against the tile
-  // edge.
-  if (hintTarget) {
-    const t = Math.max(2, Math.floor(ts / 14));
-    const inner = ts - 1 - 2 * ge;
-    dr.drawRect({ x: tx, y: ty, w: inner, h: t }, COL_HINT);
-    dr.drawRect({ x: tx, y: ty, w: t, h: inner }, COL_HINT);
-    dr.drawRect({ x: tx, y: ty + inner - t, w: inner, h: t }, COL_HINT);
-    dr.drawRect({ x: tx + inner - t, y: ty, w: t, h: inner }, COL_HINT);
-  }
+  // The acted-on cell's ring is **not drawn here** — it goes in the gutter, in a
+  // pass after the tile loop. See `drawTargetRing`.
 
   dr.unclip();
   dr.drawUpdate({ x: cx, y: cy, w: cw, h: ch });
+}
+
+/**
+ * Frame cell `(x, y)` **in its own gutter** — the grid line around it — rather
+ * than inside the tile.
+ *
+ * The acted-on cell is ringed, not filled: a wash behind a digit has to be pale
+ * enough to read through and no colour in the palette is (`HINT_FILL` scored
+ * 1.91:1 against a pencil mark in light, 1.96 in dark, and the only hues that
+ * clear ~2.6 sit next to `ERROR_WASH`). A ring sits beside the content instead
+ * of under it, so it can use `HINT_ACTION`, the emphatic blue this cell always
+ * meant.
+ *
+ * **In the gutter, because the tile has no spare room.** The first cut drew the
+ * ring inside the tile and clipped the outer pencil marks — Keen lays its marks
+ * out across the *whole* tile (`pl = tx + (ts − fontsize·pw) / 2`, a block as
+ * wide as the cell), so a glyph has only its own ~3 px of font padding at the
+ * edge and any ring thick enough to read eats into it. The gutter is space the
+ * grid line already owns, so the ring costs the content nothing: it replaces the
+ * border rather than crowding the digits.
+ *
+ * Thickness is the gutter's **exact** width. Neighbouring cell contents are
+ * `2·ge + 1` apart (cell `x` ends at `border + x·ts − ge`, cell `x + 1` starts at
+ * `border + (x + 1)·ts + 1 + ge`), so that is the most a ring can take without
+ * touching either tile — which is what "over the existing borders" means. The
+ * ring reads as a highlight by *colour*, not by weight.
+ */
+function drawTargetRing(
+  dr: GameDrawing,
+  ds: KeenDrawState,
+  x: number,
+  y: number,
+  colour: number,
+): void {
+  const ts = ds.tilesize;
+  const ge = gridExtra(ts);
+  const g = 2 * ge + 1;
+  const tx = border(ts) + x * ts + 1 + ge;
+  const ty = border(ts) + y * ts + 1 + ge;
+  const inner = ts - 1 - 2 * ge;
+  const o = inner + 2 * g; // outer extent: the tile plus its gutter on both sides
+  const l = tx - g;
+  const t = ty - g;
+  dr.drawRect({ x: l, y: t, w: o, h: g }, colour);
+  dr.drawRect({ x: l, y: t, w: g, h: o }, colour);
+  dr.drawRect({ x: l, y: t + o - g, w: o, h: g }, colour);
+  dr.drawRect({ x: l + o - g, y: t, w: g, h: o }, colour);
+  dr.drawUpdate({ x: l, y: t, w: o, h: o });
 }
 
 // --- pencil-mode indicator -------------------------------------------------
@@ -526,6 +554,28 @@ export function redraw(
       }
     }
   }
+
+  // The hint target's ring, **after** the tile loop and outside every clip,
+  // because it lives in the gutter: no tile owns those pixels, so a tile can
+  // neither paint it nor rub it out. Two consequences the tile cache cannot
+  // express, which is why `ds.ringed` exists:
+  //
+  //  - a ring that has *moved or gone* has to be erased explicitly, by painting
+  //    its old gutter back to `COL_GRID`. The cell underneath repaints itself
+  //    (the sidecar sees the overlay change) but stops at its own edge;
+  //  - a ring that is *still there* is repainted every frame, unconditionally.
+  //    It is four thin rects, and a neighbouring cell repainting for its own
+  //    reasons (a cursor move, an error appearing) widens its background into
+  //    the shared gutter and would otherwise clip a side off.
+  const ringed: number[] = [];
+  for (let i = 0; i < w * w; i++) {
+    if (ds.hint.packed[i] & HINT_TARGET) ringed.push(i);
+  }
+  for (const i of ds.ringed) {
+    if (!ringed.includes(i)) drawTargetRing(dr, ds, i % w, (i / w) | 0, COL_GRID);
+  }
+  for (const i of ringed) drawTargetRing(dr, ds, i % w, (i / w) | 0, COL_HINT);
+  ds.ringed = ringed;
 
   // Pencil-mode indicator (fork addition).
   if (firstFrame || ds.pencilModeShown !== ui.hpencil) {

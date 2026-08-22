@@ -305,6 +305,23 @@ hidden-single frame gets its missing evidence cell back (the line shades `w`
 cells rather than `w − 1`, because the target no longer takes the background for
 itself).
 
+**The ring goes in the gutter, which the first cut got wrong** (owner, on the
+prototype: *"the weight is a bit too strong and covers some of the pencilled
+digits"*). Keen lays its pencil marks across the *whole* tile — `pl = tx + (ts −
+fontsize·pw) / 2` is a block as wide as the cell — so a glyph has only its own
+few pixels of font padding at the edge, and there is no thickness that both reads
+and clears the digits. The grid line is space the border already owns, so a ring
+there costs the content nothing and can be the gutter's own thickness: it reads
+as a highlight by **colour**, not by weight.
+
+The consequence to carry into the rollout: **no tile owns those pixels**, so a
+tile can neither paint the ring nor rub it out. It lives in a pass after the tile
+loop, and the drawstate remembers which cells are ringed — to erase one that
+moved (paint its old gutter back to `COL_GRID`; the cell underneath repaints but
+stops at its own edge) and to restamp one that stayed (a neighbour repainting for
+its own reasons widens its background into the shared gutter and would clip a
+side off).
+
 Prototyped in **Keen** and verified in both schemes. Six games still fill:
 group, solo, undead, unequal, towers, filling. The guard asserts the *shape* —
 four thin rects, none solid — because "some rect is `COL_HINT`" is exactly what a

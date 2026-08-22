@@ -1036,7 +1036,25 @@ struck (Towers: *"painting the cell COL_HINT as well would hide the very digit
 the hint is crossing out"*), so on a strike step the target carried **no
 cell-level mark at all** and the player had to hunt for the strikethrough.
 
-Exemplar: the last block of `drawTile` in
+**Put the ring in the gutter, not inside the tile.** The first cut drew it just
+inside the cell edge and clipped the outer pencil marks — a candidate game lays
+its marks across the *whole* tile (Keen: `pl = tx + (ts − fontsize·pw) / 2`, a
+block as wide as the cell), so a glyph has only its own few pixels of font
+padding to spare and any ring thick enough to read eats into them. The grid line
+around the cell is space the border already owns, so a ring there costs the
+content nothing: it *replaces* the border rather than crowding the digits, and it
+can be the gutter's own thickness because it reads as a highlight by **colour**,
+not by weight.
+
+That has one consequence worth knowing before you copy it: **no tile owns those
+pixels**, so a tile can neither paint the ring nor rub it out. It therefore
+belongs in a pass after the tile loop, and the drawstate has to remember which
+cells are ringed — to erase a ring that moved (paint its old gutter back to
+`COL_GRID`; the cell underneath repaints itself but stops at its own edge), and
+to restamp a ring that stayed (a neighbour repainting for its own reasons widens
+its background into the shared gutter and would clip a side off).
+
+Exemplar: `drawTargetRing` and the post-tile block of `redraw` in
 [`keen/render.ts`](../../src/games/keen/render.ts), guarded by `expectRing` in
 `keen-hint.test.ts` — which asserts the *shape* (four thin rects, none solid),
 because "some rect is `COL_HINT`" is precisely what a fill also satisfies.
