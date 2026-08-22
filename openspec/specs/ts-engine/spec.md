@@ -1629,12 +1629,36 @@ the reasoning is a **bounded run of individually glanceable steps**:
 - **Check** — a contradiction visible **at the placement**, with no propagation.
   Ordinary deduction; narratable at any tier.
 - **Tactic** — a **bounded** chain of forced consequences to a named endpoint.
-  Permitted at a non-`Unreasonable` tier, and its hint SHALL narrate it as a
-  **multi-leg journey** — one glanceable inferential step per leg, with the board
-  carrying the accumulated state — rather than compressing it into a single
-  claim the player can only check by redoing the deduction. Where the conclusion
-  rests on more than one branch of a case split, the narration SHALL say so; a
-  final leg that does not follow from its own stated premises is a defect.
+  Permitted at a non-`Unreasonable` tier, and its hint SHALL **show the chain on
+  the board** — every link marked, *in the order it falls*, with both ends
+  anchored (the hypothesis and the contradiction) — rather than compressing it
+  into a single claim the player can only check by redoing the deduction. The
+  narration SHALL name the two ends and cite the links by their position, and
+  SHALL supply the **rule that propagates the chain**, which is the technique
+  being taught and is nowhere on the board. Where the conclusion rests on more
+  than one branch of a case split, the narration SHALL say so; a conclusion that
+  does not follow from its own stated premises is a defect.
+
+  **The order is not optional and is not the marks' array position.** A set of
+  marked cells with no order is not a chain — the narration's "then", "next" and
+  "by the time you reach" name nothing the player can follow, which is the
+  compressed-claim failure in a different costume. A game SHALL therefore declare
+  each link's position as data its renderer reads, and that position SHALL reach
+  the canvas.
+
+  **The order SHALL be drawn as an ordinal, not as a path.** A line or arrow
+  between consecutive links asserts that each forces the next, which is true of
+  some chains and false of others — measured at **34%** false for Clusters, whose
+  links are forced by their own neighbourhood rather than by their predecessor in
+  discovery order. One mark means one thing across the collection, so every game
+  draws the weakest claim every chain can make: *this is the order they fall in*.
+
+  A Tactic SHALL NOT be required to advance one leg at a time. That stricter
+  reading — a display-only step per link, so the player is walked through one
+  inference at a time — was designed, costed and **set aside by owner decision**
+  (2026-08-12): holding a *hypothesis* in mind is acceptable, holding the *chain*
+  is not, and marking the chain meets the weaker requirement without widening
+  `HintStep` (whose `move` is required, and which 29 games' types live under).
 - **Search** — running the whole solver from a hypothesis, or branching and
   backtracking. The hint SHALL NOT report its survivor as a deduction on any
   tier; it SHALL refuse, and the refusal SHALL say that deduction has run out
@@ -1715,7 +1739,12 @@ parses. The narration SHALL tie the acted-on element to the others by one of:
 - a **value or other concrete identifier** the player can read off the board, in
   games that have one ("This 3 shares a line with the ringed white 3");
 - a **role word tied to the mark's shape**, where the game's other marks already
-  use distinct ones ("ringed" for an outline against "shaded" for a wash).
+  use distinct ones ("ringed" for an outline against "shaded" for a wash);
+- a **number on the other marks**, where the step marks an ordered chain: the
+  narration names those elements by their position and keeps the bare deictic for
+  the one carrying no number. A numbered mark and an unnumbered one are not the
+  same kind of thing, which is the general rule the three ties above are each an
+  instance of.
 
 A narration SHALL NOT identify an element by its **colour**. Colour is never the
 only cue available to a player: the palette is scheme-relative by construction,
@@ -1785,9 +1814,25 @@ needed, while the walk that produces the verdict continues.
 
 - **WHEN** a hint's next deduction is a bounded chain of forced consequences
   reaching a named contradiction
-- **THEN** it is narrated as a multi-leg journey, each leg one inferential step
-  shown on the board, rather than as one sentence asserting the conclusion — and
-  where the conclusion rests on a case split, the narration states both branches
+- **THEN** every link is marked on the board in the order it falls, with the
+  hypothesis and the contradiction both anchored, and the narration names the two
+  ends, cites the links by position and states the rule that propagates them —
+  rather than one sentence asserting the conclusion
+- **AND** where the conclusion rests on a case split, the narration states both
+  branches
+- **AND** the player walks it on the board at their own pace; the hint is not
+  required to advance one link per step (`walk-tactic-hint-chains` D2 — the
+  scenario keeps its name because renaming one is a deletion, and its THEN is
+  what binds)
+
+#### Scenario: A declared chain order reaches the canvas
+
+- **WHEN** a hint step declares a position for each link of a chain
+- **THEN** those positions are exactly `1..n`, and the frame drawn for that step
+  paints every one of them in the ordinal's own colour
+- **AND** the check is made against the resolved colour rather than a palette
+  index or the bare glyph, since a candidate game already prints those digits as
+  pencil marks
 
 #### Scenario: Two strengths of one rung are classified separately
 
