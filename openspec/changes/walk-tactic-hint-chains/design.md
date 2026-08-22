@@ -322,10 +322,45 @@ stops at its own edge) and to restamp one that stayed (a neighbour repainting fo
 its own reasons widens its background into the shared gutter and would clip a
 side off).
 
+**The evidence goes the same way** (owner, on the second prototype: *"I'd
+probably remove the highlighting entirely"*). Darkening the evidence wash to make
+its content readable cost it so much of its own visibility that it stopped
+reading as a mark — the same squeeze as the target fill, one step further along.
+Removing it is not available, though: Keen's narration says *"**This** cage"*
+while the target frequently sits in a *different* cage, so the wash is the only
+thing identifying which. It becomes the region's **outline** instead.
+
+**One rule draws both shapes it needs**: paint a side wherever the neighbour
+across it is not also evidence. A contiguous region (a cage, a row) comes out as
+a single contour — including the concave corners of an L-shaped cage — and a
+scattered set (a forcing chain's cells) as one ring per cell, which is honest,
+because they really are separate cells.
+
+Colour is teal's **bold** step, and the instrument chose it: at the base step
+`colour-dark-check` flagged a new background-relationship violation (64 → 65),
+because `TEAL` is L 0.72 under *both* schemes and so lands 0.18 from a light
+board and 0.52 from a dark one — a soft line on pale, a bright one on dark. The
+bold step is the one defined as "dark in light mode, light in dark mode", stands
+off the board by 0.48 / 0.64, and takes the count back to 64.
+
+One consequence to weigh at rollout: that makes `COL_HINT_CELL` and
+`COL_HINT_ORDER` **the same colour**, which `colour-collide` duly reports as a
+new pair (171 → 172). It is deliberate — the ordinal was always defined as *an
+index into the evidence*, and now that the evidence is bold rather than a wash
+the two coincide exactly. But they coincide by *arriving at the same value down
+two routes*, which is the shape `palette.ts` exists to prevent; if this rolls
+out, the outline form of `HINT_EVIDENCE` and `HINT_ORDER` should become **one
+role** rather than two that happen to agree.
+
 Prototyped in **Keen** and verified in both schemes. Six games still fill:
-group, solo, undead, unequal, towers, filling. The guard asserts the *shape* —
-four thin rects, none solid — because "some rect is `COL_HINT`" is exactly what a
-fill also satisfies.
+group, solo, undead, unequal, towers, filling. The guards assert *shape*, not
+colour: four thin rects and none solid for the ring, and `2w + 2` sides for a
+`w`-cell line's contour — "some rect is `COL_HINT`" is exactly what a fill also
+satisfies, and a per-cell ring would give `4w`.
+
+**And it makes `TEAL_WASH_DEEP` provisional.** That step exists only to let
+`HINT_EVIDENCE` work *as a wash* under content. Nineteen games still wash, so it
+stays; if the rollout finishes, its reason is gone and it should go with it.
 
 ## Open Questions
 

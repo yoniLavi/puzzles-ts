@@ -13,10 +13,10 @@
  * overlay tracked in a sidecar so Check & Save repaints an already-drawn cell.
  */
 
+import { TEAL_BOLD } from "../../engine/colour/colours.ts";
 import {
   ERROR,
   HINT_ACTION,
-  HINT_EVIDENCE,
   HINT_ORDER,
   highlightWash,
   INK,
@@ -63,8 +63,8 @@ export const COL_PENCIL = 5;
 // Fork additions, appended past the upstream enum; Keen has no dark-mode
 // paletteOverrides, so a plain append is safe.
 export const COL_PENCIL_BODY = 6; // the yellow body of the pencil-mode indicator
-export const COL_HINT = 7; // the acted-on cell's ring (see drawTile's last block)
-export const COL_HINT_CELL = 8; // the driving cage's cells (evidence shade)
+export const COL_HINT = 7; // the acted-on cell's ring (drawn in redraw's last block)
+export const COL_HINT_CELL = 8; // the driving cage's outline (same block)
 export const COL_HINT_ORDER = 9; // a forcing chain's ordinal, indexing the above
 
 export function colours(defaultBackground: Colour): Colour[] {
@@ -78,7 +78,18 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL] = pencilColour(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_ACTION;
-  out[COL_HINT_CELL] = HINT_EVIDENCE;
+  // Both hint marks are outlines in the grid gutter, so both take a **strong**
+  // colour: `HINT_EVIDENCE` is a wash, sized to be read *through*, and an
+  // outline is read *against*. They differ in shape as well as hue — a region's
+  // contour against one cell's ring.
+  //
+  // Teal's **bold** step, not its base, because the bold step is the one defined
+  // to be "dark in light mode, light in dark mode": it therefore stands off the
+  // board by a similar margin in both schemes (0.48 / 0.64), where the base sits
+  // at L 0.72 under either and comes out a soft line on a pale board and a
+  // bright one on a dark board. `colour-dark-check` measures precisely that and
+  // flags the base.
+  out[COL_HINT_CELL] = TEAL_BOLD;
   out[COL_HINT_ORDER] = HINT_ORDER;
   return out;
 }
@@ -147,11 +158,12 @@ export interface KeenDrawState {
   wrong: OverlaySidecar;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
   pencilModeShown: boolean;
-  /** Cells currently carrying a hint-target ring (fork addition). The ring is
-   * drawn in the **gutter**, which no tile repaints, so its removal has to be
-   * driven from here rather than from the tile cache — see
-   * {@link drawTargetRing}. */
+  /** Cells currently carrying a hint-target ring, and cells currently inside the
+   * outlined evidence region (fork additions). Both are drawn in the **gutter**,
+   * which no tile repaints, so their removal has to be driven from here rather
+   * than from the tile cache — see {@link drawCellSides}. */
   ringed: number[];
+  evidenced: number[];
 }
 
 export function newDrawState(state: KeenState): KeenDrawState {
@@ -166,6 +178,7 @@ export function newDrawState(state: KeenState): KeenDrawState {
     wrong: new OverlaySidecar(a),
     pencilModeShown: false,
     ringed: [],
+    evidenced: [],
   };
 }
 
@@ -199,8 +212,8 @@ function drawTile(
   // the end of this function rather than competing for the background. `struck`
   // is the set of candidates this firing rules out, drawn crossed through among
   // the marks.
-  // (the target bit is read in `redraw`, which draws its ring in the gutter)
-  const hintArea = (hint & HINT_AREA) !== 0;
+  // (both hint bits are read in `redraw`, which draws the target's ring and the
+  // evidence region's outline in the gutter, so neither is a background here)
   const struck = hint >> 2; // bit n ⇒ candidate n struck
 
   const tx = border(ts) + x * ts + 1 + ge;
@@ -225,11 +238,10 @@ function drawTile(
 
   dr.clip({ x: cx, y: cy, w: cw, h: ch });
 
-  // Background. The hint **target** is not a background at all any more — it is
-  // ringed, below (docs/games/hints.md § "Shade vs ring"). The evidence area is
-  // still a wash, because a wash is what an *area* wants.
-  let bg = tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : COL_BACKGROUND;
-  if (hintArea) bg = COL_HINT_CELL;
+  // Background. No hint role appears here: the target's ring and the evidence
+  // region's outline are both drawn in the gutter (see `redraw`), so a hint
+  // never paints over the digits it is talking about.
+  const bg = tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : COL_BACKGROUND;
   dr.drawRect({ x: cx, y: cy, w: cw, h: ch }, bg);
 
   // Pencil-mode highlight (top-left triangle).
@@ -406,43 +418,44 @@ function drawTile(
   if (hintOrder > 0)
     drawHintOrdinal(dr, { x: tx, y: ty }, ts - 2 * ge, hintOrder, COL_HINT_ORDER);
 
-  // The acted-on cell's ring is **not drawn here** — it goes in the gutter, in a
-  // pass after the tile loop. See `drawTargetRing`.
-
   dr.unclip();
   dr.drawUpdate({ x: cx, y: cy, w: cw, h: ch });
 }
 
+/** Sides of a cell, for {@link drawCellSides}. */
+const S_TOP = 1;
+const S_LEFT = 2;
+const S_BOTTOM = 4;
+const S_RIGHT = 8;
+const S_ALL = S_TOP | S_LEFT | S_BOTTOM | S_RIGHT;
+
 /**
- * Frame cell `(x, y)` **in its own gutter** — the grid line around it — rather
- * than inside the tile.
+ * Paint some sides of cell `(x, y)` **in its own gutter** — the grid line around
+ * it — rather than inside the tile.
  *
- * The acted-on cell is ringed, not filled: a wash behind a digit has to be pale
- * enough to read through and no colour in the palette is (`HINT_FILL` scored
- * 1.91:1 against a pencil mark in light, 1.96 in dark, and the only hues that
- * clear ~2.6 sit next to `ERROR_WASH`). A ring sits beside the content instead
- * of under it, so it can use `HINT_ACTION`, the emphatic blue this cell always
- * meant.
+ * Hint marks go here rather than behind the content, because a fill behind a
+ * digit has to be pale enough to read through and no colour in the palette is:
+ * `HINT_FILL` measures 1.91:1 against a pencil mark in light and 1.96 in dark,
+ * and the only hues clearing ~2.6 sit next to `ERROR_WASH`, which would make the
+ * cell a hint points at look like the cell that is wrong. Out here a mark is read
+ * *against* rather than *through*, so it can take a strong colour.
  *
- * **In the gutter, because the tile has no spare room.** The first cut drew the
- * ring inside the tile and clipped the outer pencil marks — Keen lays its marks
- * out across the *whole* tile (`pl = tx + (ts − fontsize·pw) / 2`, a block as
- * wide as the cell), so a glyph has only its own ~3 px of font padding at the
- * edge and any ring thick enough to read eats into it. The gutter is space the
- * grid line already owns, so the ring costs the content nothing: it replaces the
- * border rather than crowding the digits.
+ * **There is no room inside the tile**, so this is not a matter of taste. Keen
+ * lays its pencil marks across the *whole* tile — `pl = tx + (ts − fontsize·pw) /
+ * 2` is a block as wide as the cell — leaving a glyph only its own few pixels of
+ * font padding at the edge. Anything thick enough to read eats into it.
  *
- * Thickness is the gutter's **exact** width. Neighbouring cell contents are
+ * Thickness is the gutter's **exact** width: neighbouring cell contents are
  * `2·ge + 1` apart (cell `x` ends at `border + x·ts − ge`, cell `x + 1` starts at
- * `border + (x + 1)·ts + 1 + ge`), so that is the most a ring can take without
- * touching either tile — which is what "over the existing borders" means. The
- * ring reads as a highlight by *colour*, not by weight.
+ * `border + (x + 1)·ts + 1 + ge`), which is the most a mark can take while
+ * touching neither tile. It reads as a highlight by *colour*, not by weight.
  */
-function drawTargetRing(
+function drawCellSides(
   dr: GameDrawing,
   ds: KeenDrawState,
   x: number,
   y: number,
+  sides: number,
   colour: number,
 ): void {
   const ts = ds.tilesize;
@@ -454,11 +467,11 @@ function drawTargetRing(
   const o = inner + 2 * g; // outer extent: the tile plus its gutter on both sides
   const l = tx - g;
   const t = ty - g;
-  dr.drawRect({ x: l, y: t, w: o, h: g }, colour);
-  dr.drawRect({ x: l, y: t, w: g, h: o }, colour);
-  dr.drawRect({ x: l, y: t + o - g, w: o, h: g }, colour);
-  dr.drawRect({ x: l + o - g, y: t, w: g, h: o }, colour);
-  dr.drawUpdate({ x: l, y: t, w: o, h: o });
+  if (sides & S_TOP) dr.drawRect({ x: l, y: t, w: o, h: g }, colour);
+  if (sides & S_LEFT) dr.drawRect({ x: l, y: t, w: g, h: o }, colour);
+  if (sides & S_BOTTOM) dr.drawRect({ x: l, y: t + o - g, w: o, h: g }, colour);
+  if (sides & S_RIGHT) dr.drawRect({ x: l + o - g, y: t, w: g, h: o }, colour);
+  if (sides) dr.drawUpdate({ x: l, y: t, w: o, h: o });
 }
 
 // --- pencil-mode indicator -------------------------------------------------
@@ -555,27 +568,62 @@ export function redraw(
     }
   }
 
-  // The hint target's ring, **after** the tile loop and outside every clip,
-  // because it lives in the gutter: no tile owns those pixels, so a tile can
-  // neither paint it nor rub it out. Two consequences the tile cache cannot
-  // express, which is why `ds.ringed` exists:
+  // The hint marks, **after** the tile loop and outside every clip, because they
+  // live in the gutter: no tile owns those pixels, so a tile can neither paint
+  // them nor rub them out. Two things follow that the tile cache cannot express,
+  // and they are what `ds.ringed` / `ds.evidenced` are for:
   //
-  //  - a ring that has *moved or gone* has to be erased explicitly, by painting
-  //    its old gutter back to `COL_GRID`. The cell underneath repaints itself
-  //    (the sidecar sees the overlay change) but stops at its own edge;
-  //  - a ring that is *still there* is repainted every frame, unconditionally.
-  //    It is four thin rects, and a neighbouring cell repainting for its own
+  //  - a mark that *moves or goes* must be erased explicitly, by painting its
+  //    old gutter back to `COL_GRID`. The cell underneath does repaint (the
+  //    sidecar sees the overlay change) but stops at its own edge;
+  //  - a mark that *stays* is repainted every frame, unconditionally. These are
+  //    a handful of thin rects, and a neighbouring cell repainting for its own
   //    reasons (a cursor move, an error appearing) widens its background into
   //    the shared gutter and would otherwise clip a side off.
   const ringed: number[] = [];
+  const evidence: number[] = [];
   for (let i = 0; i < w * w; i++) {
     if (ds.hint.packed[i] & HINT_TARGET) ringed.push(i);
+    if (ds.hint.packed[i] & HINT_AREA) evidence.push(i);
   }
-  for (const i of ds.ringed) {
-    if (!ringed.includes(i)) drawTargetRing(dr, ds, i % w, (i / w) | 0, COL_GRID);
+  const isEvidence = (x: number, y: number): boolean =>
+    x >= 0 && x < w && y >= 0 && y < w && (ds.hint.packed[y * w + x] & HINT_AREA) !== 0;
+
+  // Restore every previously-marked gutter to COL_GRID before drawing anything,
+  // all four sides: a side that is still wanted is repainted below, and going in
+  // this order is what stops a shrinking region leaving an interior edge behind.
+  const same =
+    ringed.length === ds.ringed.length &&
+    evidence.length === ds.evidenced.length &&
+    ringed.every((v, k) => v === ds.ringed[k]) &&
+    evidence.every((v, k) => v === ds.evidenced[k]);
+  if (!same) {
+    for (const i of [...ds.ringed, ...ds.evidenced])
+      drawCellSides(dr, ds, i % w, (i / w) | 0, S_ALL, COL_GRID);
   }
-  for (const i of ringed) drawTargetRing(dr, ds, i % w, (i / w) | 0, COL_HINT);
+
+  // The evidence region's **outline**. A wash over it would face the same squeeze
+  // as a fill behind the target and lose it twice over: pale enough to read the
+  // digits through leaves it too faint to read as a mark itself.
+  //
+  // One rule draws both shapes it needs: paint a side wherever the neighbour
+  // across it is *not* also evidence. A contiguous region (a cage, a row) comes
+  // out as a single contour; a scattered set (a forcing chain's cells) comes out
+  // as one ring per cell, which is honest — they really are separate cells.
+  for (const i of evidence) {
+    const x = i % w;
+    const y = (i / w) | 0;
+    const sides =
+      (isEvidence(x, y - 1) ? 0 : S_TOP) |
+      (isEvidence(x - 1, y) ? 0 : S_LEFT) |
+      (isEvidence(x, y + 1) ? 0 : S_BOTTOM) |
+      (isEvidence(x + 1, y) ? 0 : S_RIGHT);
+    drawCellSides(dr, ds, x, y, sides, COL_HINT_CELL);
+  }
+  // The target last, so it wins any gutter the two share.
+  for (const i of ringed) drawCellSides(dr, ds, i % w, (i / w) | 0, S_ALL, COL_HINT);
   ds.ringed = ringed;
+  ds.evidenced = evidence;
 
   // Pencil-mode indicator (fork addition).
   if (firstFrame || ds.pencilModeShown !== ui.hpencil) {

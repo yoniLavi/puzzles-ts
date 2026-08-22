@@ -1054,10 +1054,31 @@ cells are ringed — to erase a ring that moved (paint its old gutter back to
 to restamp a ring that stayed (a neighbour repainting for its own reasons widens
 its background into the shared gutter and would clip a side off).
 
-Exemplar: `drawTargetRing` and the post-tile block of `redraw` in
-[`keen/render.ts`](../../src/games/keen/render.ts), guarded by `expectRing` in
-`keen-hint.test.ts` — which asserts the *shape* (four thin rects, none solid),
-because "some rect is `COL_HINT`" is precisely what a fill also satisfies.
+**The evidence area goes the same way, as the region's outline.** A wash over it
+faces the identical squeeze and loses twice: pale enough to read the digits
+through leaves it too faint to read as a mark. One rule draws both shapes it
+needs — paint a side wherever the neighbour across it is not also evidence — so a
+contiguous region (a cage, a row) comes out as a single contour, concave corners
+and all, and a scattered set (a forcing chain's cells) as one ring per cell,
+which is honest because they really are separate cells.
+
+Note what is *not* an option: dropping the evidence mark. Keen's narration says
+*"**This** cage"* while the target often sits in a different one, so the mark is
+the only thing identifying which — the deixis rule two sections up, enforced by
+geometry rather than prose.
+
+Give an outline a **`_BOLD`** colour, not the base. `colour-dark-check` is what
+settles it: a base step at the same lightness in both schemes lands close to a
+pale board and far from a dark one — a soft line under one scheme and a bright
+one under the other — and the check flags exactly that. The bold step is defined
+as "dark in light mode, light in dark mode", which is what a line drawn *against*
+a board wants.
+
+Exemplars: `drawCellSides` and the post-tile block of `redraw` in
+[`keen/render.ts`](../../src/games/keen/render.ts). Guard the *shape*, not the
+colour — `expectRing` asserts four thin rects and none solid, and the line frame
+asserts `2w + 2` sides for a `w`-cell contour, because "some rect is `COL_HINT`"
+is precisely what a fill also satisfies and a per-cell ring would give `4w`.
 **Six games still fill** and are the rollout: group, solo, undead, unequal,
 towers, filling.
 

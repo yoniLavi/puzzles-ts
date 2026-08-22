@@ -429,9 +429,9 @@ describe("keen hint render", () => {
       true,
     );
     // The target is **ringed** COL_HINT — four thin rects, never a solid fill.
-    // It used to carry no cell-level mark at all on a strike step (the fill was
-    // suppressed so the crossed-through digits stayed legible), so the player
-    // had to find the strikethrough to see where the hint was pointing.
+    // A strike step gets the same ring as a placement: the cell a hint acts on
+    // is marked the same way whatever the move, so it is never left identified
+    // only by the strikethrough the player has to spot first.
     expectRing(recording.ops);
     expect(recording.ops).toMatchSnapshot();
   });
@@ -447,13 +447,14 @@ describe("keen hint render", () => {
       hintUntil: (s) => /can go in only this cell/.test(s.explanation),
     });
     expect(hint?.explanation).toMatch(/In this (row|column)/);
-    // The whole line is shaded COL_HINT_CELL — **all** w cells now, including the
-    // target's, which used to be excluded because the target took the background
-    // for its own fill. Ringing it gives the line back its missing cell.
-    const cellRects = recording.ops.filter(
+    // The line is outlined COL_HINT_CELL, and the count is the point: a contour
+    // around a `w`-cell row is `2w + 2` sides — two long ones plus a cap at each
+    // end — so a line that lost its target cell, or that drew a ring per cell
+    // instead of one contour, fails here.
+    const sides = recording.ops.filter(
       (o) => o.op === "rect" && o.colour === COL_HINT_CELL,
     );
-    expect(cellRects.length).toBe(small.w);
+    expect(sides.length).toBe(2 * small.w + 2);
     expectRing(recording.ops);
     expect(recording.ops).toMatchSnapshot();
   });
