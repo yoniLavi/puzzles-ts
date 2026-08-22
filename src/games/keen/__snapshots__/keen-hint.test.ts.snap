@@ -150,6 +150,42 @@ exports[`keen hint render > a cage elimination shades the cage and strikes the c
     "y": 63,
   },
   {
+    "colour": 7,
+    "h": 3,
+    "op": "rect",
+    "rgb": "rgb(21, 113, 233)",
+    "w": 45,
+    "x": 26,
+    "y": 26,
+  },
+  {
+    "colour": 7,
+    "h": 45,
+    "op": "rect",
+    "rgb": "rgb(21, 113, 233)",
+    "w": 3,
+    "x": 26,
+    "y": 26,
+  },
+  {
+    "colour": 7,
+    "h": 3,
+    "op": "rect",
+    "rgb": "rgb(21, 113, 233)",
+    "w": 45,
+    "x": 26,
+    "y": 68,
+  },
+  {
+    "colour": 7,
+    "h": 45,
+    "op": "rect",
+    "rgb": "rgb(21, 113, 233)",
+    "w": 3,
+    "x": 68,
+    "y": 26,
+  },
+  {
     "op": "unclip",
   },
   {
@@ -4366,7 +4402,7 @@ exports[`keen hint render > a cage elimination shades the cage and strikes the c
 ]
 `;
 
-exports[`keen hint render > a hidden-single placement shades the whole line and fills the target 1`] = `
+exports[`keen hint render > a hidden-single placement shades the whole line and rings the target 1`] = `
 [
   {
     "colour": 0,
@@ -4458,10 +4494,10 @@ exports[`keen hint render > a hidden-single placement shades the whole line and 
     "y": 26,
   },
   {
-    "colour": 7,
+    "colour": 8,
     "h": 46,
     "op": "rect",
-    "rgb": "rgb(165, 195, 239)",
+    "rgb": "rgb(177, 250, 254)",
     "w": 45,
     "x": 74,
     "y": 26,
@@ -4519,6 +4555,42 @@ exports[`keen hint render > a hidden-single placement shades the whole line and 
     "text": "4",
     "x": 97,
     "y": 48,
+  },
+  {
+    "colour": 7,
+    "h": 3,
+    "op": "rect",
+    "rgb": "rgb(21, 113, 233)",
+    "w": 45,
+    "x": 74,
+    "y": 26,
+  },
+  {
+    "colour": 7,
+    "h": 45,
+    "op": "rect",
+    "rgb": "rgb(21, 113, 233)",
+    "w": 3,
+    "x": 74,
+    "y": 26,
+  },
+  {
+    "colour": 7,
+    "h": 3,
+    "op": "rect",
+    "rgb": "rgb(21, 113, 233)",
+    "w": 45,
+    "x": 74,
+    "y": 68,
+  },
+  {
+    "colour": 7,
+    "h": 45,
+    "op": "rect",
+    "rgb": "rgb(21, 113, 233)",
+    "w": 3,
+    "x": 116,
+    "y": 26,
   },
   {
     "op": "unclip",

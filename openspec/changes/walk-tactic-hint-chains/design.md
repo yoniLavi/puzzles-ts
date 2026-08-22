@@ -262,6 +262,54 @@ alone**, so it read two colours agreeing in light and differing in dark as one �
 it keys on the pair now, which is what `colour-token.ts` says a token's identity
 is.
 
+## D7 — `HINT_FILL` has no colour that works, so the target is ringed (owner, 2026-08-22)
+
+The second thing acceptance turned up: the target *fill* is low-contrast in
+**both** schemes, not just dark. Behind a pencil mark it scores **1.91:1** light
+and **1.96:1** dark; behind an entered digit 2.20 / 2.71. (Clue digits are fine
+at 11.6 / 10.0 — it is the player's own marks that vanish.)
+
+**There is no colour that fixes it, and that is a search result rather than an
+opinion.** `BLUE_WASH` cannot move (an `EIGHT_FILLS` member *and* `DRAG_REMOVE`),
+so the role would need its own step, as `HINT_EVIDENCE` just did — but:
+
+- **Blue is impossible.** Clearing ~2.6:1 against the pencil needs a wash at
+  lightness **≥ 0.90**; a blue wash there is under 0.13 from `HINT_EVIDENCE`
+  (teal at 0.94). *The pale end has room for exactly one cool wash and the
+  evidence has it.*
+- **Warm clears the contrast and collides with error.** Best amber (h≈60) lands
+  **0.072** from `ERROR_WASH` in dark, best pink-magenta (h≈338) **0.107**,
+  against today's 0.192 — the cell the hint points at starts to look like the
+  cell that is wrong.
+- **Re-siting *both* roles jointly** — fill anywhere in blue, evidence at any
+  hue, both clearing 2.6 and separated from each other, from `HINT_ACTION` and
+  from every other shared role — returns **no feasible arrangement at all**. Two
+  content-bearing washes plus a mid-luminance pencil mark do not fit in a
+  twelve-colour palette.
+
+(Proximity to `PAPER` looked like a fourth objection and is not: today's evidence
+is already 0.094 from it, closer than any candidate. Worth checking a baseline
+before treating a number as a defect.)
+
+**So the answer is not a colour.** Ring the target instead of filling it: a ring
+sits beside the content, so the constraint disappears rather than being traded,
+and it can use `HINT_ACTION` — the emphatic blue this cell always meant.
+`palette.ts` calls action and fill "one role by name and two by function";
+ringing collapses them back into one.
+
+**It also fixes something nobody had listed as a defect.** The fill was applied
+only when nothing was struck in the cell — because a strike's crossed-through
+digits had to stay legible — so on a strike step the target carried *no
+cell-level mark at all*. Both kinds of target ring identically now, and the
+hidden-single frame gets its missing evidence cell back (the line shades `w`
+cells rather than `w − 1`, because the target no longer takes the background for
+itself).
+
+Prototyped in **Keen** and verified in both schemes. Six games still fill:
+group, solo, undead, unequal, towers, filling. The guard asserts the *shape* —
+four thin rects, none solid — because "some rect is `COL_HINT`" is exactly what a
+fill also satisfies.
+
 ## Open Questions
 
 - Do the numbered ordinals earn their place alongside the arrows, or is the

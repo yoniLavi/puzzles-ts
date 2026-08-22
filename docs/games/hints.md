@@ -1018,6 +1018,31 @@ the cell's own state — one `evidence` list, not two.** Exemplars: the
 [`singles/render.ts`](../../src/games/singles/render.ts); `buildHighlights`
 in [`unruly/index.ts`](../../src/games/unruly/index.ts).
 
+**"Hide" includes *by contrast*, not only by occlusion — and the acted-on cell
+should be ringed in every game.** The rule above reasons that a digit is safe
+because it "draws *on top of* a light background". Measurement says it is not:
+`HINT_FILL` behind a pencil mark scores **1.91:1** in light and **1.96:1** in
+dark, and behind an entered digit 2.20 / 2.71. Nor is it fixable by recolouring —
+the pale end of the palette holds exactly one cool wash and `HINT_EVIDENCE` has
+it, so the only hues clearing ~2.6:1 are the ones nearest `ERROR_WASH`, which
+would make the cell the hint points at look like the cell that is *wrong*
+(owner-reported, 2026-08-22; the search is in `walk-tactic-hint-chains` D7).
+
+A ring sits *beside* the content rather than under it, so the constraint
+disappears instead of being traded, and it can then use **`HINT_ACTION`** — the
+emphatic blue, which is what this cell always meant. It also unifies two branches
+the candidate games had split: they suppressed the fill whenever candidates were
+struck (Towers: *"painting the cell COL_HINT as well would hide the very digit
+the hint is crossing out"*), so on a strike step the target carried **no
+cell-level mark at all** and the player had to hunt for the strikethrough.
+
+Exemplar: the last block of `drawTile` in
+[`keen/render.ts`](../../src/games/keen/render.ts), guarded by `expectRing` in
+`keen-hint.test.ts` — which asserts the *shape* (four thin rects, none solid),
+because "some rect is `COL_HINT`" is precisely what a fill also satisfies.
+**Six games still fill** and are the rollout: group, solo, undead, unequal,
+towers, filling.
+
 ### Group one firing into one step
 
 Quality-bar rule 2 has a second form beyond `continuesPrevious` legs: when a

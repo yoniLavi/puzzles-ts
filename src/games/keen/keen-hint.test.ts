@@ -38,6 +38,33 @@ function gen(p: KeenParams, seed: string) {
 // biome-ignore lint/suspicious/noExplicitAny: structural access to hint highlights/move in tests.
 type AnyStep = any;
 
+/**
+ * The acted-on cell is **ringed**, not filled: four thin `COL_HINT` rects, and
+ * no solid one.
+ *
+ * Asserted as a shape rather than "some rect is COL_HINT", because the whole
+ * point of the change is *which* rect. A fill measured **1.91:1** against a
+ * pencil mark in light and 1.96 in dark — the digits the hint is talking about
+ * were the thing it painted over — and no colour in the palette can fix that
+ * without landing next to `ERROR_WASH`. A ring sits beside the content instead
+ * of under it, so it can use the emphatic `HINT_ACTION` blue.
+ */
+function expectRing(ops: readonly { op: string }[]): void {
+  const sides = ops.filter(
+    (o): o is { op: "rect"; colour: number; w: number; h: number } =>
+      o.op === "rect" && (o as { colour?: number }).colour === COL_HINT,
+  );
+  expect(sides.length, "the target ring is four rects").toBe(4);
+  // Every one is thin in exactly one direction — a solid fill would be thick in
+  // both, which is the shape this replaced.
+  for (const s of sides) {
+    expect(
+      Math.min(s.w, s.h) * 4 < Math.max(s.w, s.h),
+      `ring side ${s.w}x${s.h} is not thin — that is a fill`,
+    ).toBe(true);
+  }
+}
+
 const NORMAL: KeenParams = { w: 6, diff: "normal", multiplicationOnly: false };
 const HARD: KeenParams = { w: 6, diff: "hard", multiplicationOnly: false };
 
@@ -401,14 +428,15 @@ describe("keen hint render", () => {
     expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(
       true,
     );
-    // A strike cell is NOT solid-filled COL_HINT (that is the placement-target fill).
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
-      false,
-    );
+    // The target is **ringed** COL_HINT — four thin rects, never a solid fill.
+    // It used to carry no cell-level mark at all on a strike step (the fill was
+    // suppressed so the crossed-through digits stayed legible), so the player
+    // had to find the strikethrough to see where the hint was pointing.
+    expectRing(recording.ops);
     expect(recording.ops).toMatchSnapshot();
   });
 
-  it("a hidden-single placement shades the whole line and fills the target", () => {
+  it("a hidden-single placement shades the whole line and rings the target", () => {
     const small: KeenParams = { w: 4, diff: "easy", multiplicationOnly: false };
     const id = hiddenSingleFrame(small);
     const { recording, hint } = renderScenario({
@@ -419,15 +447,14 @@ describe("keen hint render", () => {
       hintUntil: (s) => /can go in only this cell/.test(s.explanation),
     });
     expect(hint?.explanation).toMatch(/In this (row|column)/);
-    // The line is shaded COL_HINT_CELL (≥ w−1 evidence cells; the target itself is
-    // COL_HINT) and the placement target is solid-filled COL_HINT.
+    // The whole line is shaded COL_HINT_CELL — **all** w cells now, including the
+    // target's, which used to be excluded because the target took the background
+    // for its own fill. Ringing it gives the line back its missing cell.
     const cellRects = recording.ops.filter(
       (o) => o.op === "rect" && o.colour === COL_HINT_CELL,
     );
-    expect(cellRects.length).toBe(small.w - 1);
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
-      true,
-    );
+    expect(cellRects.length).toBe(small.w);
+    expectRing(recording.ops);
     expect(recording.ops).toMatchSnapshot();
   });
 });

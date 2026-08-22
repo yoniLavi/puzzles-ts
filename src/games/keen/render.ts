@@ -15,8 +15,8 @@
 
 import {
   ERROR,
+  HINT_ACTION,
   HINT_EVIDENCE,
-  HINT_FILL,
   HINT_ORDER,
   highlightWash,
   INK,
@@ -61,7 +61,7 @@ export const COL_PENCIL = 5;
 // Fork additions, appended past the upstream enum; Keen has no dark-mode
 // paletteOverrides, so a plain append is safe.
 export const COL_PENCIL_BODY = 6; // the yellow body of the pencil-mode indicator
-export const COL_HINT = 7; // the cell(s)/candidate(s) the deduction acts on
+export const COL_HINT = 7; // the acted-on cell's ring (see drawTile's last block)
 export const COL_HINT_CELL = 8; // the driving cage's cells (evidence shade)
 export const COL_HINT_ORDER = 9; // a forcing chain's ordinal, indexing the above
 
@@ -75,7 +75,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = ERROR;
   out[COL_PENCIL] = pencilColour(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
-  out[COL_HINT] = HINT_FILL;
+  out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   out[COL_HINT_ORDER] = HINT_ORDER;
   return out;
@@ -83,13 +83,13 @@ export function colours(defaultBackground: Colour): Colour[] {
 
 /** Highlight payload a Keen hint step carries (built in `index.ts`). The
  * element-type legend (docs/games/hints.md § "The element-type colour legend"): the driving cage's cells shaded
- * `COL_HINT_CELL`, the acted-on cell(s) `COL_HINT`, the ruled-out candidate(s)
- * shown struck. */
+ * `COL_HINT_CELL`, the acted-on cell(s) **ringed** `COL_HINT`, the ruled-out
+ * candidate(s) shown struck. */
 export interface KeenHint {
   /** The driving cage's cells (evidence), shaded `COL_HINT_CELL`. A forcing
    * chain's cells additionally carry their place in it, drawn as an ordinal. */
   area: OrderedCell[];
-  /** The cell(s) the deduction acts on, marked `COL_HINT`. */
+  /** The cell(s) the deduction acts on, ringed `COL_HINT`. */
   targets: { x: number; y: number }[];
   /** The candidate number(s) ruled out, shown struck among the pencil marks. */
   marks: { x: number; y: number; n: number }[];
@@ -186,9 +186,11 @@ function drawTile(
   const cell = y * w + x;
   const drawClue = minimal[cell] === cell;
 
-  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): target cell (COL_HINT) > evidence cell
-  // (COL_HINT_CELL) > cursor/flash highlight > background. `struck` is the set of
-  // candidates this firing rules out, drawn crossed through among the marks.
+  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): the
+  // evidence cell washes COL_HINT_CELL, and the target is *ringed* COL_HINT at
+  // the end of this function rather than competing for the background. `struck`
+  // is the set of candidates this firing rules out, drawn crossed through among
+  // the marks.
   const hintTarget = (hint & 1) !== 0;
   const hintArea = (hint & 2) !== 0;
   const struck = hint >> 2; // bit n ⇒ candidate n struck
@@ -215,14 +217,11 @@ function drawTile(
 
   dr.clip({ x: cx, y: cy, w: cw, h: ch });
 
-  // Background. A solid COL_HINT fill is the *placement*-target fill; a strike
-  // step also flags its cell as a target, but its struck candidates are drawn over
-  // the background, so painting it COL_HINT would wash them out — fill solid only
-  // when nothing is struck here (a placement), else keep the lighter evidence /
-  // normal background so the crossed-through digit stays legible.
+  // Background. The hint **target** is not a background at all any more — it is
+  // ringed, below (docs/games/hints.md § "Shade vs ring"). The evidence area is
+  // still a wash, because a wash is what an *area* wants.
   let bg = tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : COL_BACKGROUND;
   if (hintArea) bg = COL_HINT_CELL;
-  if (hintTarget && struck === 0) bg = COL_HINT;
   dr.drawRect({ x: cx, y: cy, w: cw, h: ch }, bg);
 
   // Pencil-mode highlight (top-left triangle).
@@ -398,6 +397,37 @@ function drawTile(
   // into a neighbouring cage.
   if (hintOrder > 0)
     drawHintOrdinal(dr, { x: tx, y: ty }, ts - 2 * ge, hintOrder, COL_HINT_ORDER);
+
+  // The acted-on cell, **ringed rather than filled** — last, so nothing paints
+  // over it.
+  //
+  // A wash behind a digit has to be pale enough to read through, and measurement
+  // says no colour in the palette is: `HINT_FILL` scored **1.91:1** against a
+  // pencil mark in light and 1.96 in dark, and the only hues that clear ~2.6 are
+  // the ones nearest `ERROR_WASH`, which would make the cell the hint points at
+  // look like the cell that is wrong. A ring sits *beside* the content instead
+  // of under it, so the constraint disappears rather than being traded — and it
+  // can then use `HINT_ACTION`, the emphatic blue, which is the colour this cell
+  // always meant (`palette.ts`: the two are "one role by name and two by
+  // function"; ringing collapses them back into one).
+  //
+  // It also **unifies the two branches**. The fill was applied only when nothing
+  // was struck here, because a strike's crossed-through digits had to stay
+  // legible — so on a strike step the target carried no cell-level mark at all,
+  // and the player had to find the strikethrough to know where the hint was
+  // pointing. Both kinds of target ring identically now.
+  //
+  // Distinct from the Check & Save frame above by hue *and* geometry: that one
+  // is red, 1px, at insets 2–3; this is blue and thicker, hard against the tile
+  // edge.
+  if (hintTarget) {
+    const t = Math.max(2, Math.floor(ts / 14));
+    const inner = ts - 1 - 2 * ge;
+    dr.drawRect({ x: tx, y: ty, w: inner, h: t }, COL_HINT);
+    dr.drawRect({ x: tx, y: ty, w: t, h: inner }, COL_HINT);
+    dr.drawRect({ x: tx, y: ty + inner - t, w: inner, h: t }, COL_HINT);
+    dr.drawRect({ x: tx + inner - t, y: ty, w: t, h: inner }, COL_HINT);
+  }
 
   dr.unclip();
   dr.drawUpdate({ x: cx, y: cy, w: cw, h: ch });
