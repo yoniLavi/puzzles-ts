@@ -118,4 +118,5 @@ two mark roles calls `drawMarkSides` directly from its tile painter.
         means a *dot*, so its cells became "outlined" to keep the two marks apart
         by noun as well as by word.
       - **The dark evidence wash drowned the ring inside it** (design D7).
-- [ ] 5.3 `openspec validate --strict` (passing); owner acceptance; archive.
+- [x] 5.3 `openspec validate --strict` passing; owner-accepted 2026-08-23;
+      archived.
