@@ -131,6 +131,40 @@ than taste**: Undead's pencilled monster is a circle of radius `2/5` of its
 `TILESIZE/20`; Unequal's greater-than chevron reaches to within `GAP/4 − 1` of the
 cell it points away from. Each game's `markBand` records its own.
 
+## D7 — The retired wash step was doing a second job nobody had named
+
+D2 said a wash that carries nothing can be bright again, so `TEAL_WASH_DEEP` was
+retired and the three wash games went back to `TEAL_WASH`. The dark browser pass
+found that wrong, and it is worth keeping because the mistake is a familiar
+shape: **"nothing is drawn here" excluded the game's content and forgot the
+hint's own marks.**
+
+A target cell is very often *inside* the region the deduction reasons from —
+Pattern's forced square is one of the reasoned line's — so the action ring lands
+on the evidence fill. Measured on the ordinary wash:
+
+| | light | dark |
+| --- | --- | --- |
+| the ring, against the wash it sits on | 3.94 | **1.69** |
+| the wash, against its own board | 1.29 | 2.73 |
+
+In dark the evidence shouted and the conclusion whispered, which is exactly what
+the Pattern frame looked like: a bright teal column with a barely-there blue ring
+in it.
+
+**The two requirements move in opposite directions along one axis**, which is the
+same trade the *content*-carrying wash lost — one step further out. So the role
+keeps a step of its own after all, renamed for the job rather than the
+appearance: `TEAL_WASH_QUIET`, identical to `TEAL_WASH` in light, `[0.30, 0.06]`
+in dark. That is the crossing point, found by sweeping lightness rather than
+chosen: it reaches light mode's own visibility (1.31 against 1.288) and leaves
+the ring 3.54.
+
+**And the guard that missed it was a floor with no ceiling** — the third time
+this repo has recorded that shape. `palette.test.ts` asserted every mark is
+*visible enough* against the board and said nothing about the wash staying
+*quiet enough* for what is drawn on it. Both directions are now asserted.
+
 ## Open Questions
 
 - Does any evidence area outline *badly* — a region so scattered that per-cell

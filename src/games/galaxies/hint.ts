@@ -300,9 +300,11 @@ export function narrate(s: GalaxiesState, firing: GalaxiesFiring): string {
       // The mirrored wall is very often the board's own rim, and calling that
       // "the marked wall" would have the player hunting for a wall they are
       // already looking at the edge of.
+      // "Outlined" for a **cell**, "ringed" for a **dot**: both marks are rings
+      // now, so the noun is what keeps them apart and the words follow it.
       return atBoardEdge(s, firing.from)
-        ? `The two shaded cells are partners across the ${dot}, and one of them is up against the edge of the board — so the other must be walled off on the matching side.`
-        : `A galaxy looks the same turned 180° about its dot: the two shaded cells are partners across the ${dot}, so the marked wall beside one must be matched beside the other.`;
+        ? `The two outlined cells are partners across the ${dot}, and one of them is up against the edge of the board — so the other must be walled off on the matching side.`
+        : `A galaxy looks the same turned 180° about its dot: the two outlined cells are partners across the ${dot}, so the marked wall beside one must be matched beside the other.`;
     }
     case "enclosed": {
       const lead =
@@ -311,7 +313,7 @@ export function narrate(s: GalaxiesState, firing: GalaxiesFiring): string {
           : "Every way out of this cell leads";
       const walled =
         firing.openings.length === 4 ? "" : " — its other sides are walled";
-      return `${lead} into the shaded galaxy${walled}, and a galaxy is one connected region, so this cell must belong to the ringed ${dotWord(s, firing.dot)}.`;
+      return `${lead} into the outlined galaxy${walled}, and a galaxy is one connected region, so this cell must belong to the ringed ${dotWord(s, firing.dot)}.`;
     }
     case "soleOwner":
       // The claim *is* this rung's own condition, so it is checkable by the
@@ -319,12 +321,12 @@ export function narrate(s: GalaxiesState, firing: GalaxiesFiring): string {
       // count the rings.
       return `Only one dot could ever own this cell — for any other, the cell across the dot from it would be off the board or on top of another dot. So it must belong to the ringed ${dotWord(s, firing.dot)}.`;
     case "onlyReach":
-      // "shows how far", not "is everywhere": the acted-on cell is painted in
-      // the action colour rather than shaded, so the shading is the reach
-      // minus one square and an absolute claim would be a shade off true.
-      return `The shading shows how far the ringed ${dotWord(s, firing.dot)}'s galaxy can still stretch. No other galaxy can reach this cell at all, so it must belong to the ringed dot.`;
+      // "shows how far", not "is everywhere": the acted-on cell carries the
+      // action mark rather than the evidence one, so the outlined set is the
+      // reach minus one square and an absolute claim would be a shade off true.
+      return `The outline shows how far the ringed ${dotWord(s, firing.dot)}'s galaxy can still stretch. No other galaxy can reach this cell at all, so it must belong to the ringed dot.`;
     case "exclave":
-      return `The shaded cells belong to the ringed ${dotWord(s, firing.dot)} but are cut off from it, and this is the only cell they can still grow through — so it must belong to the ringed dot too.`;
+      return `The outlined cells belong to the ringed ${dotWord(s, firing.dot)} but are cut off from it, and this is the only cell they can still grow through — so it must belong to the ringed dot too.`;
   }
 }
 

@@ -185,7 +185,7 @@ export function narrate(
           ? `${side === "top" ? "above" : "below"} this column`
           : `to the ${side} of this row`;
       if (reason.circleAt !== null) {
-        return `The clue ${where} sees ${clue} first, and the shaded square furthest from it already holds ${vocab.noun === "letter" ? "a letter" : "a number"} — so the ${clue} must sit somewhere in the shaded run. We must cross out the ${clue} past it.`;
+        return `The clue ${where} sees ${clue} first, and the outlined square furthest from it already holds ${vocab.noun === "letter" ? "a letter" : "a number"} — so the ${clue} must sit somewhere in the outlined run. We must cross out the ${clue} past it.`;
       }
       const bound =
         reason.reach === 0

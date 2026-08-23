@@ -200,8 +200,10 @@ describe("the shared colour vocabulary", () => {
       ["HINT_EVIDENCE", roles.HINT_EVIDENCE, 3],
       ["HINT_ACTION", roles.HINT_ACTION, 3],
       // A fill covers a whole cell, so it reads at far less — the bar is what
-      // the light scheme's own tint has always scored against its own board.
-      ["HINT_EVIDENCE_WASH", roles.HINT_EVIDENCE_WASH, 1.11],
+      // the light scheme's own tint scores against its own board (1.288), so
+      // the dark value is chosen to reach parity rather than to hit a threshold
+      // somebody invented.
+      ["HINT_EVIDENCE_WASH", roles.HINT_EVIDENCE_WASH, 1.28],
     ] as [string, Colour, number][]) {
       expect(contrast(mark, LIGHT_BOARD), `${name} on a light board`).toBeGreaterThan(
         bar,
@@ -210,6 +212,32 @@ describe("the shared colour vocabulary", () => {
         contrast(inDark(mark), DARK_BOARD),
         `${name} on a dark board`,
       ).toBeGreaterThan(bar);
+    }
+
+    // **And the bound in the other direction, which is the one that was
+    // missing.** The three assertions above are all floors: they say each mark
+    // is visible enough. Nothing said the *wash* must stay quiet enough for the
+    // marks that land on it — and a target cell is very often inside the region
+    // the deduction reasons from, so the action ring is drawn straight onto this
+    // fill. Left unbounded, the dark wash went to the visible end of its band
+    // and the ring measured **1.69:1** on it: the evidence shouting, the
+    // conclusion whispering.
+    //
+    // The two requirements move in opposite directions along one axis, so light
+    // mode's own 3.94 is not reachable in dark at a wash anyone can see; 3 is a
+    // floor with real slack rather than a tuned target (dark scores 3.54).
+    for (const [name, fg] of [
+      ["the action ring", roles.HINT_ACTION],
+      ["the evidence outline", roles.HINT_EVIDENCE],
+    ] as [string, Colour][]) {
+      expect(
+        contrast(fg, roles.HINT_EVIDENCE_WASH),
+        `${name} on the evidence wash in light`,
+      ).toBeGreaterThan(3);
+      expect(
+        contrast(inDark(fg), inDark(roles.HINT_EVIDENCE_WASH)),
+        `${name} on the evidence wash in dark`,
+      ).toBeGreaterThan(3);
     }
   });
 

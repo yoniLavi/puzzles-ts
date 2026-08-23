@@ -165,9 +165,9 @@ describe("salad hint — journeys and highlights", () => {
   });
 
   it("a border step highlights its clue and the run it reasons over", () => {
-    /** The two far arms both conclude *about squares past* the shaded run. */
+    /** The two far arms both conclude *about squares past* the outlined run. */
     const isFar = (t: string): boolean =>
-      /has room for only|shaded square furthest/.test(t);
+      /has room for only|outlined square furthest/.test(t);
     let near = 0;
     let far = 0;
     for (const seed of ["h1", "h2", "h3"]) {
@@ -240,8 +240,8 @@ describe("salad hint — narration arms", () => {
       [3],
       s,
     );
-    expect(t).toMatch(/shaded square furthest from it already holds a letter/);
-    expect(t).toMatch(/must sit somewhere in the shaded run/);
+    expect(t).toMatch(/outlined square furthest from it already holds a letter/);
+    expect(t).toMatch(/must sit somewhere in the outlined run/);
   });
 
   it("reads correctly where a line holds exactly one empty square", () => {

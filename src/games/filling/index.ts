@@ -235,14 +235,14 @@ function narrate(reason: FillingHintReason, count: number): string {
     case "growth":
       if (reason.exact) {
         return many
-          ? `The shaded region of ${reason.n} fits exactly into these squares.`
-          : `The shaded region of ${reason.n} fits exactly into this last square.`;
+          ? `The outlined region of ${reason.n} fits exactly into these squares.`
+          : `The outlined region of ${reason.n} fits exactly into this last square.`;
       }
       return many
-        ? `The shaded region of ${reason.n} can't fully grow without these squares.`
-        : `The shaded region of ${reason.n} can't fully grow without this square.`;
+        ? `The outlined region of ${reason.n} can't fully grow without these squares.`
+        : `The outlined region of ${reason.n} can't fully grow without this square.`;
     case "blocked":
-      return `The shaded region of ${reason.n} has only this one empty square to grow into.`;
+      return `The outlined region of ${reason.n} has only this one empty square to grow into.`;
     case "lonely":
       return "No neighbouring region can grow to include this square, so it can only be a 1.";
     case "bitmap":

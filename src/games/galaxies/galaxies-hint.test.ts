@@ -198,29 +198,29 @@ describe("each deduction is narrated in its own vocabulary", () => {
     ],
     [
       "the limit of a galaxy's reach",
-      "The shading shows how far the ringed white dot's galaxy can still stretch. No other galaxy can reach this cell at all, so it must belong to the ringed dot.",
+      "The outline shows how far the ringed white dot's galaxy can still stretch. No other galaxy can reach this cell at all, so it must belong to the ringed dot.",
     ],
     [
       "a wall mirrored about the dot",
-      "A galaxy looks the same turned 180° about its dot: the two shaded cells are partners across the white dot, so the marked wall beside one must be matched beside the other.",
+      "A galaxy looks the same turned 180° about its dot: the two outlined cells are partners across the white dot, so the marked wall beside one must be matched beside the other.",
     ],
     [
       "a wall mirrored off the board's edge",
-      "The two shaded cells are partners across the white dot, and one of them is up against the edge of the board — so the other must be walled off on the matching side.",
+      "The two outlined cells are partners across the white dot, and one of them is up against the edge of the board — so the other must be walled off on the matching side.",
     ],
     // Two ways out or three: the common shape of this rung. (One way out is a
     // fourth wording the scan never reaches — see the branch test below.)
     [
       "a cell hemmed in on some sides",
-      "Every way out of this cell leads into the shaded galaxy — its other sides are walled, and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
+      "Every way out of this cell leads into the outlined galaxy — its other sides are walled, and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
     ],
     [
       "a cell with no walls but only one galaxy around it",
-      "Every way out of this cell leads into the shaded galaxy, and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
+      "Every way out of this cell leads into the outlined galaxy, and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
     ],
     [
       "a detached piece of a galaxy",
-      "The shaded cells belong to the ringed white dot but are cut off from it, and this is the only cell they can still grow through — so it must belong to the ringed dot too.",
+      "The outlined cells belong to the ringed white dot but are cut off from it, and this is the only cell they can still grow through — so it must belong to the ringed dot too.",
     ],
   ];
 
@@ -253,7 +253,7 @@ describe("each deduction is narrated in its own vocabulary", () => {
         openings: [{ x: 5, y: 3 }],
       }).replace("black dot", "white dot"),
     ).toBe(
-      "The only way out of this cell leads into the shaded galaxy — its other sides are walled, and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
+      "The only way out of this cell leads into the outlined galaxy — its other sides are walled, and a galaxy is one connected region, so this cell must belong to the ringed white dot.",
     );
   });
 });
@@ -397,20 +397,20 @@ describe("the picture carries the argument", () => {
             `${step.explanation} — marks nothing to act on`,
           ).toBeGreaterThan(0);
           // Only the cell being acted on is kept out of its own evidence: it
-          // owns the action colour. The *partner* stays shaded — it is inside
-          // the area the sentence describes, and shading it is what keeps its
-          // outline the quieter of the two marks.
+          // owns the action colour and the doubled ring. The *partner* stays in
+          // the evidence — it is inside the area the sentence describes, and
+          // marking it there is what keeps it the quieter of the two.
           const f = hl.focus;
           if (f) {
             expect(
               hl.area.some((a) => a.x === f.x && a.y === f.y),
-              "the acted-on cell is also shaded as evidence",
+              "the acted-on cell is also marked as evidence",
             ).toBe(false);
           } else {
             for (const t of hl.targets) {
               expect(
                 hl.area.some((a) => a.x === t.x && a.y === t.y),
-                "a target cell is also shaded as evidence",
+                "a target cell is also marked as evidence",
               ).toBe(false);
             }
           }
@@ -420,10 +420,10 @@ describe("the picture carries the argument", () => {
     }
   });
 
-  it("a shaded-evidence deduction actually shades something", () => {
+  it("an outlined-evidence deduction actually outlines something", () => {
     // The per-game form of the visible-evidence rule: the four rungs whose
-    // sentences say "the shaded cells" must have some.
-    const shading = /shaded/;
+    // sentences say "the outlined cells" must have some.
+    const shading = /outlined|outline shows/;
     for (const seed of SCAN_SEEDS.slice(0, 4)) {
       let s = board(UNREASONABLE_7, seed);
       for (let i = 0; i < 400 && galaxiesGame.status(s) === "ongoing"; i++) {
@@ -433,7 +433,7 @@ describe("the picture carries the argument", () => {
         if (shading.test(step.explanation)) {
           expect(
             step.highlights?.area.length ?? 0,
-            `"${step.explanation}" says shaded and shades nothing`,
+            `"${step.explanation}" says outlined and outlines nothing`,
           ).toBeGreaterThan(0);
         }
         s = galaxiesGame.executeMove(s, step.move);

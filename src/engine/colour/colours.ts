@@ -113,7 +113,7 @@ type Step = readonly [l: number, c: number];
 /** A colour's intensities under one scheme. Every step but `base` is absent
  * where nothing needs it — an unused intensity is a colour decision nobody can
  * see, and it will be wrong by the time somebody looks. */
-type Steps = { base: Step; wash?: Step; bold?: Step };
+type Steps = { base: Step; wash?: Step; washQuiet?: Step; bold?: Step };
 
 /**
  * **The palette.** Hue per name, then lightness and chroma per intensity per
@@ -190,8 +190,23 @@ const DESIGN: Record<string, { h: number; light: Steps; dark: Steps }> = {
   },
   TEAL: {
     h: 200,
-    light: { base: [0.72, 0.115], wash: [0.94, 0.072], bold: [0.42, 0.067] },
-    dark: { base: [0.72, 0.115], wash: [0.48, 0.077], bold: [0.84, 0.134] },
+    light: {
+      base: [0.72, 0.115],
+      wash: [0.94, 0.072],
+      // Identical to `wash`: light mode has no defect here and nothing moves.
+      washQuiet: [0.94, 0.072],
+      bold: [0.42, 0.067],
+    },
+    dark: {
+      base: [0.72, 0.115],
+      wash: [0.48, 0.077],
+      // Chroma 0.06 rather than the wash's 0.077 because teal cannot carry
+      // 0.077 this dark — asking for it makes the gamut clamp return something
+      // else entirely, silently, which is how a separation once came out at
+      // 0.106 instead of the 0.124 the arithmetic predicted.
+      washQuiet: [0.3, 0.06],
+      bold: [0.84, 0.134],
+    },
   },
   BLUE: {
     h: 258,
@@ -263,6 +278,27 @@ export const GREEN_BOLD: Colour = of("GREEN", "bold");
 export const TEAL: Colour = of("TEAL", "base");
 /** @see TEAL */
 export const TEAL_WASH: Colour = of("TEAL", "wash");
+/**
+ * @see TEAL — the **quiet** wash: a fill the hint's own marks are drawn on top
+ * of, so it has to stay close enough to the board that they still win. Its one
+ * consumer is `HINT_EVIDENCE_WASH`.
+ *
+ * **Why this is a step and not a retune of {@link TEAL_WASH}.** `TEAL_WASH` is a
+ * member of {@link EIGHT_FILLS} and {@link FOUR_FILLS}, so its dark lightness is
+ * an *output* of the search that keeps Signpost's sixteen region colours and
+ * Map's four mutually distinguishable — it is not free to move for a reason
+ * outside that set.
+ *
+ * **And why the value is where it is.** Two requirements pull in opposite
+ * directions along one axis, and only measurement finds the crossing point: the
+ * wash must be *seen* against its board, and the action ring — which sits on it,
+ * because a target cell is very often inside the region the deduction reasons
+ * from — must be seen against *the wash*. At the ordinary dark wash the ring
+ * scored **1.69:1**, against 3.94 in light: the evidence shouted and the
+ * conclusion whispered. Lightness 0.30 is where the wash reaches light mode's
+ * own visibility (1.31 against 1.29) and leaves the ring 3.54.
+ */
+export const TEAL_WASH_QUIET: Colour = of("TEAL", "washQuiet");
 /** @see TEAL */
 export const TEAL_BOLD: Colour = of("TEAL", "bold");
 

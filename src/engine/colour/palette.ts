@@ -53,7 +53,7 @@ import {
   RED,
   RED_WASH,
   TEAL_BOLD,
-  TEAL_WASH,
+  TEAL_WASH_QUIET,
   YELLOW,
 } from "./colours.ts";
 
@@ -229,12 +229,14 @@ export const HINT_EVIDENCE: Colour = TEAL_BOLD;
  * the lightness that legibility needed). Those are two requirements moving in
  * opposite directions along one axis, and an outline is not on that axis at all.
  *
- * Teal's ordinary wash, which is the visible one — the step is free to be as
- * visible as the eight-fill set allows precisely because nothing is drawn on it.
- * A darker step would only be needed for a fill carrying the collection's
- * derived foregrounds, and no game asks this one to.
+ * **"Nothing is drawn here" excludes the game's content, not the hint's own
+ * marks.** A target cell is very often inside the region the deduction reasons
+ * from, so the action ring lands on this fill and has to win against it — which
+ * is why the role takes teal's *quiet* wash rather than its ordinary one. On the
+ * ordinary one the ring measured 1.69:1 in dark against 3.94 in light: the
+ * evidence shouted and the conclusion whispered. See {@link TEAL_WASH_QUIET}.
  */
-export const HINT_EVIDENCE_WASH: Colour = TEAL_WASH;
+export const HINT_EVIDENCE_WASH: Colour = TEAL_WASH_QUIET;
 
 /** A hint premise that refers to a **black/filled** reference cell, where the
  * hint needs to point at two kinds of evidence at once (Range, Light Up). */

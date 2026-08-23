@@ -78,9 +78,11 @@ two mark roles calls `drawMarkSides` directly from its tile painter.
       precedent — the stroke takes the plain name. Games collapsed their
       `COL_HINT_ORDER` palette index into `COL_HINT_CELL`, so the identity is
       structural rather than a coincidence two names agree on.
-- [x] 3.2 `TEAL_WASH_DEEP` retired with its last consumer, and `HINT_FILL` with
-      it — the fill the search proved has no working value. `colour-collide`
-      **172 → 171 pairs**: exactly the coincidental pair D3 named.
+- [x] 3.2 `HINT_FILL` retired — the fill the search proved has no working value.
+      `colour-collide` **172 → 171 pairs**: exactly the coincidental pair D3
+      named. The evidence wash's separate dark step was retired too and then
+      **reinstated** as `TEAL_WASH_QUIET` when the dark browser pass showed why
+      it existed: see design D7.
 
 ## 4. Guards
 
@@ -107,5 +109,13 @@ two mark roles calls `drawMarkSides` directly from its tile painter.
 - [x] 5.1 `ts-engine` delta rewritten to what shipped; `docs/games/hints.md`
       § "Shade vs ring" rewritten around the rule, the band placements, and the
       three named wash games.
-- [ ] 5.2 Browser pass per game, **both schemes**.
+- [x] 5.2 Browser pass, both schemes, and it found the two things a green suite
+      could not:
+      - **Five games' narrations named a mark that no longer exists** — Filling's
+        *"The **shaded** region of 2"*, and the same in Dominosa, Salad, Range and
+        Galaxies. Nothing can catch this: the narration and the renderer never
+        touch. Galaxies needed more than a word swap — "ringed" there already
+        means a *dot*, so its cells became "outlined" to keep the two marks apart
+        by noun as well as by word.
+      - **The dark evidence wash drowned the ring inside it** (design D7).
 - [ ] 5.3 `openspec validate --strict` (passing); owner acceptance; archive.
