@@ -104,12 +104,18 @@
 
 ## 4. Verify
 
-- [ ] 4.1 Archive one converted change end-to-end and confirm
-      `git diff openspec/specs/` shows additions only. Run **after** committing,
-      then `git reset --hard` — this project does not branch
+- [x] 4.1 Archived `add-slide-keyboard-control` end-to-end (the unimplemented one,
+      so there is no temptation to keep the result): openspec reported
+      `+ 1 added, ~ 0, - 0` and `git diff` showed **62 insertions and zero
+      deleted lines** in `openspec/specs/slide/spec.md`. Reverted with
+      `git reset --hard` + `git clean -fd openspec/changes/`. Run **after**
+      committing rather than on a branch — this project does not branch
       (`feedback_trunk_based_no_branches`), and a committed tree makes the
       experiment reversible without one.
-- [ ] 4.2 Full gate green.
+- [x] 4.2 Full gate green — 268 files, 7310 passed, 6 skipped; probe anchors all
+      apply (174 cases, 18 modules); `vite build` clean. Also proved the 1.3
+      override guard fires: removing the marker from `OPENSPEC_AGENTS.md` fails
+      the commit with the re-apply instruction, and restoring it goes green.
 
 ## 5. Close out
 
