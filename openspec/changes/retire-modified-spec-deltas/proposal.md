@@ -85,12 +85,19 @@ Under Option A:
 
 - The three open changes using `MODIFIED` (`add-latin-repeats-support`,
   `add-slide-keyboard-control`, `audit-input-mode-parity`) are converted **by
-  re-deriving them from the live spec**, not by editing the stale copies.
+  re-deriving them from the live spec**, not by editing the stale copies. Doing
+  so immediately found a fourth failure mode the integrity check could not have
+  seen: `add-slide-keyboard-control`'s delta modified one requirement while its
+  prose announced the removal of a sentence living in **another**, so archiving
+  it would have published a spec declaring a keyboard player's exclusion removed
+  while leaving it in force. A copy can be faithful to the wrong original.
 - `openspec/OPENSPEC_AGENTS.md` and `AGENTS.md` lose the workaround paragraph
   and gain the rule.
 - `openspec-delta-integrity.test.ts` is repointed: it stops checking scenario
-  survival inside `MODIFIED` deltas and starts asserting **no delta uses
-  `MODIFIED` at all**, which is a check that cannot be subtly wrong.
+  survival inside `MODIFIED` deltas and starts asserting **no open change's delta
+  uses `MODIFIED`, `REMOVED` or `RENAMED` at all**, which is a check that cannot
+  be subtly wrong. All three, not just the copying one — see `tasks.md` §3.1 for
+  why the two that carry no copy are banned anyway.
 
 ## Impact
 

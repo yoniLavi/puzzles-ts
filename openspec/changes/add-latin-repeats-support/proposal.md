@@ -69,8 +69,20 @@ and there is none today.
 
 ## Impact
 
-- Affected specs: `latin-solver` (the cube gains a repeatable symbol), `salad`
-  (solver strength, tier grading, differential basis).
+- Affected specs: `latin-solver` (the cube gains a repeatable symbol, an added
+  requirement) and `salad` (solver strength, tier grading, differential basis —
+  an added requirement plus one **edit in place**, to be made in
+  `openspec/specs/salad/spec.md` when this change is archived, reading the live
+  text at that moment):
+
+  > In **"Salad ports the solver as a shared Latin-square consumer"**, the
+  > sentence realising the "some squares empty" rule *"by treating symbols above
+  > `nums` in a full order-`order` Latin square as empty squares, so the shared
+  > Latin generator and solver cube are reused unchanged"* describes the
+  > translation layer this change retires, and is replaced by the direct
+  > representation. The rest of that requirement — the game's own deductions, the
+  > two difficulties, pure deduction without guessing, the clue-removal loop,
+  > seed reproducibility — is unaffected and stays as written.
 - Affected code: `src/engine/latin.ts`, `src/games/salad/`.
 - **Every Salad board changes.** Existing IDs carrying a description still load.
 - Risk: `latin.ts` is shared by the whole Latin family (Solo, Keen, Towers,

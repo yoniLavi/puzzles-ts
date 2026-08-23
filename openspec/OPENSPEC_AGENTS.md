@@ -2,6 +2,29 @@
 
 Instructions for AI coding assistants using OpenSpec for spec-driven development.
 
+<!-- PROJECT OVERRIDE — re-apply after `openspec update` -->
+
+> ## Project override: deltas only ADD
+>
+> **This project overrides the delta guidance below. A change's spec deltas use
+> `## ADDED Requirements` only.** `MODIFIED`, `REMOVED` and `RENAMED` are
+> refused by the commit gate for any change under `openspec/changes/` (the
+> archive is exempt). To alter or remove an existing requirement, say so in prose
+> in the change's `proposal.md`, then edit
+> `openspec/specs/<capability>/spec.md` **directly, as part of archiving**,
+> reading the live text at the moment you edit it.
+>
+> Everything below about "paste the full, updated requirement" and "authoring a
+> MODIFIED requirement correctly" describes the retired mechanism. It is the
+> mechanism, not the discipline, that failed: a `MODIFIED` delta is a copy taken
+> at one moment and applied at another, and archiving one such copy destroyed 134
+> lines of committed work. See `AGENTS.md` § "Work management" for the full
+> reason and the accepted costs.
+>
+> `openspec update` regenerates this file and will delete this block.
+> `src/openspec-delta-integrity.test.ts` fails the commit if it goes missing —
+> re-apply it rather than deleting the test.
+
 ## TL;DR Quick Checklist
 
 - Search existing work: `openspec spec list --long`, `openspec list` (use `rg` only for full-text search)

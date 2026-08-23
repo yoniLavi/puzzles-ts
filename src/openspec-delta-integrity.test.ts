@@ -1,41 +1,47 @@
 /**
- * **A `## MODIFIED Requirements` delta must reproduce the requirement it is
- * modifying — all of it.**
+ * **An open change's spec deltas may only add.** A delta that edits, removes or
+ * renames an existing requirement is refused here; the edit is made directly in
+ * `openspec/specs/<capability>/spec.md` when the change is archived.
  *
- * `openspec archive` replaces the live requirement with whatever the delta
- * contains, so a delta written against a *stale* copy deletes everything added
- * to that requirement since. This is not hypothetical and not cheap: archiving
- * `disambiguate-hint-deixis` silently removed **134 lines** of the `ts-engine`
- * hint requirement — the whole Check / Tactic / Search taxonomy and four of its
- * scenarios, a change's worth of work from `audit-guessing-tier-names` — because
- * the delta had been scaffolded from an earlier copy. It was caught by reading
- * `git diff` after the archive, which is not a control.
+ * The hazard this closes is specific and has already cost real work. `openspec
+ * archive` *replaces* a live requirement with whatever a `MODIFIED` delta
+ * contains, and that delta is a **full copy taken at one moment and applied at
+ * another** — scaffolded when the change was written, applied when it was
+ * archived, with days and other changes in between. Nothing keeps the copy
+ * fresh. Archiving `disambiguate-hint-deixis` (2026-08-15) silently removed
+ * **134 lines** of the `ts-engine` hint requirement, and it was caught by
+ * reading `git diff` afterwards, which is not a control.
  *
- * `openspec validate --strict` cannot catch it: a MODIFIED delta needs a SHALL
- * and one scenario, and a partial one has both. `OPENSPEC_AGENTS.md` has warned
- * about the pitfall in prose since long before this happened, which is the
- * lesson rather than a mitigation — **a rule with no instrument is a rule that
- * holds until someone is in a hurry.**
+ * The previous version of this file policed that copy instead of removing it:
+ * it compared scenario *names* between the delta and the live requirement and
+ * failed when the delta dropped one. It worked — three of the four then-active
+ * `MODIFIED` deltas were unsafe — and that hit rate is the argument against the
+ * mechanism rather than for the check. Two things it could never do: prose
+ * inside a requirement has no name to enumerate, so a copy that drops the
+ * paragraph explaining *why* a rule exists passes; and nothing made a delta
+ * target the requirement it claimed to. Converting the three open deltas found
+ * exactly that — `add-slide-keyboard-control` narrated the removal of a sentence
+ * that lives in a different requirement, so archiving it would have left the
+ * sentence in place under a spec that said it was gone.
  *
- * The decidable proxy is **scenario names**. Prose cannot be diffed
- * meaningfully, but scenarios are named and enumerable, and dropping them is
- * exactly what a stale copy does. Renaming one deliberately trips this too, and
- * that is intended: it forces the author to look at the live requirement, which
- * is the whole of what went wrong here.
+ * `openspec validate --strict` cannot see either: a partial copy still has a
+ * `SHALL` and a scenario, so it is a structurally valid delta describing a
+ * smaller requirement.
  *
- * **It found two more the moment it ran**, neither yet archived and both
- * therefore still fixable: `add-latin-repeats-support` would have dropped two
- * Salad scenarios, and `add-slide-keyboard-control` two Slide ones.
- * `walk-tactic-hint-chains` was worse and became the demonstration of the other
- * half of the rule — it modified this same hint requirement and would have taken
- * **eleven** scenarios with it, so it is an ADDED requirement now, which is what
- * `OPENSPEC_AGENTS.md` prescribes for a delta that adds a concern rather than
- * changing one. Three of four active MODIFIED deltas were unsafe; the practice
- * was not "usually right".
+ * **Why all three verbs and not just `MODIFIED`.** Only `MODIFIED` carries a
+ * copy, so only it can delete content silently; `REMOVED` names a requirement
+ * plus a reason, and `RENAMED` is a `FROM:`/`TO:` pair. Their staleness is
+ * milder — the *decision* ages, not the text. They are banned anyway, because
+ * "`ADDED` is the only verb" is a rule with nothing to remember and a check that
+ * cannot be subtly wrong, whereas a per-verb carve-out re-opens "is this one
+ * safe?" at every use. An in-place removal is an ordinary diff to the spec,
+ * legible in `git log openspec/specs/<capability>/spec.md`; the reason for it
+ * goes in the change's `proposal.md`, where the `**Reason**`/`**Migration**`
+ * prose of a `REMOVED` block was already being written by hand.
  *
- * Unrelated trap, met twice while writing those deltas and cheap to pass on:
- * `openspec validate` reads a requirement's *first line* as its text, so a
- * requirement whose `SHALL` falls on the second line is rejected as having none.
+ * The archive is deliberately out of scope: its 112 non-`ADDED` deltas were
+ * authored under the previous scheme and are history. Rewriting them would risk
+ * the very loss the rule prevents.
  *
  * Reads the markdown through `import.meta.glob` rather than `node:fs`,
  * following `asset-integrity.test.ts` and `palette-source.test.ts`: it keeps the
@@ -65,44 +71,44 @@ const deltaSpecs = import.meta.glob<string>("../openspec/changes/*/specs/*/spec.
   eager: true,
 });
 
-interface Requirement {
-  name: string;
-  scenarios: string[];
-}
+/**
+ * The openspec instruction file, which still documents the retired mechanism in
+ * its own voice — it is upstream openspec's text, regenerated wholesale by
+ * `openspec update`. The project override that countermands it therefore has a
+ * deletion scheduled for whenever that command is next run, and its loss would
+ * be silent: the guidance would simply go back to prescribing `MODIFIED`, with
+ * only the commit gate disagreeing and no explanation of why.
+ */
+const openspecInstructions = import.meta.glob<string>(
+  "../openspec/OPENSPEC_AGENTS.md",
+  { query: "?raw", import: "default", eager: true },
+);
+const PROJECT_OVERRIDE_MARKER = "PROJECT OVERRIDE — re-apply after `openspec update`";
 
 /**
- * Requirements and their scenario names, from a spec or delta file. `section`
- * limits the scan to one `## <section> Requirements` block — deltas keep ADDED
- * and MODIFIED in one file, and only MODIFIED replaces anything.
+ * The delta verbs that are not `ADDED`, i.e. every openspec operation that acts
+ * on a requirement the live spec already has.
  */
-function parseRequirements(md: string, section?: string): Requirement[] {
-  const out: Requirement[] = [];
-  let inSection = section === undefined;
-  let current: Requirement | null = null;
-  for (const line of md.split("\n")) {
-    if (line.startsWith("## ")) {
-      if (section !== undefined)
-        inSection = line.trim() === `## ${section} Requirements`;
-      current = null;
-      continue;
-    }
-    if (!inSection) continue;
-    if (line.startsWith("### Requirement:")) {
-      current = { name: line.slice("### Requirement:".length).trim(), scenarios: [] };
-      out.push(current);
-      continue;
-    }
-    if (line.startsWith("#### Scenario:") && current) {
-      current.scenarios.push(line.slice("#### Scenario:".length).trim());
-    }
-  }
-  return out;
-}
+const EDITING_VERBS = ["MODIFIED", "REMOVED", "RENAMED"] as const;
 
-/** Scenario names the live requirement has and the delta's copy does not. */
-function droppedScenarios(live: Requirement, delta: Requirement): string[] {
-  const kept = new Set(delta.scenarios);
-  return live.scenarios.filter((s) => !kept.has(s));
+/**
+ * Editing-verb headings in a delta, with their line numbers.
+ *
+ * Matched **more loosely than openspec applies them** (`##` plus any run of
+ * spaces, and the verb alone is enough — `Requirements` is not required to
+ * follow). A guard over-approximating the hazard is the right way round here:
+ * a heading openspec fails to recognise is inert and harmless, so the only cost
+ * of a wider match is being told not to write a heading that would not have
+ * worked anyway. Ordinary `##` prose sections are untouched — four archived
+ * deltas carry `## Types`, `## Testing`, `## Registration` and
+ * `## Game interface methods`, and those are fine.
+ */
+function editingVerbHeadings(md: string): { line: number; text: string }[] {
+  const pattern = new RegExp(`^##\\s+(${EDITING_VERBS.join("|")})\\b`);
+  return md
+    .split("\n")
+    .map((text, i) => ({ line: i + 1, text: text.trim() }))
+    .filter((entry) => pattern.test(entry.text));
 }
 
 /**
@@ -119,56 +125,44 @@ function locate(path: string): { change: string; capability: string } {
   return { change: match[1], capability: match[2] };
 }
 
-describe("openspec MODIFIED deltas reproduce the whole requirement", () => {
-  it("detects a delta that drops a scenario, and passes one that keeps them", () => {
-    // The instrument, tested against a case whose answer is known — because the
-    // sweep below asserts nothing on a day when no active change modifies a
-    // requirement, and a checker nobody has seen fail is a checker nobody has
-    // seen work.
-    const live = parseRequirements(
-      [
-        "### Requirement: A thing SHALL hold",
-        "",
-        "#### Scenario: The old one",
-        "",
-        "#### Scenario: The other old one",
-      ].join("\n"),
-    )[0];
-    const stale = parseRequirements(
-      [
-        "## MODIFIED Requirements",
-        "",
-        "### Requirement: A thing SHALL hold",
-        "",
-        "#### Scenario: The old one",
-        "",
-        "#### Scenario: A new one",
-      ].join("\n"),
-      "MODIFIED",
-    )[0];
-    expect(droppedScenarios(live, stale)).toEqual(["The other old one"]);
+describe("an open change's spec deltas only add", () => {
+  it("detects each editing verb, and passes a delta that only adds", () => {
+    // The instrument, tested against cases whose answers are known — because the
+    // sweep below asserts nothing on a day when every active delta is clean, and
+    // a checker nobody has seen fail is a checker nobody has seen work.
+    for (const verb of EDITING_VERBS) {
+      const found = editingVerbHeadings(
+        ["# delta", "", `## ${verb} Requirements`, "", "### Requirement: A thing"].join(
+          "\n",
+        ),
+      );
+      expect(found.map((f) => f.text)).toEqual([`## ${verb} Requirements`]);
+      expect(found[0].line).toBe(3);
+    }
 
-    const faithful = parseRequirements(
-      [
-        "## MODIFIED Requirements",
-        "",
-        "### Requirement: A thing SHALL hold",
-        "",
-        "#### Scenario: The old one",
-        "",
-        "#### Scenario: The other old one",
-        "",
-        "#### Scenario: A new one",
-      ].join("\n"),
-      "MODIFIED",
-    )[0];
-    expect(droppedScenarios(live, faithful)).toEqual([]);
+    expect(
+      editingVerbHeadings(
+        [
+          "# delta",
+          "",
+          "## ADDED Requirements",
+          "",
+          "### Requirement: A thing SHALL hold",
+          "",
+          "#### Scenario: It holds",
+          "",
+          "## Testing",
+          "",
+          "Prose about how the requirement above is checked.",
+        ].join("\n"),
+      ),
+    ).toEqual([]);
   });
 
   it("finds the specs and the active deltas at all", () => {
     // The "how many did I look at?" guard. An unmatched glob is `{}`, and the
     // sweep below would then report a clean bill of health over nothing — the
-    // silent failure this repo has now met five times.
+    // silent failure this repo has now met six times.
     expect(Object.keys(liveSpecs).length).toBeGreaterThan(50);
     expect(Object.keys(deltaSpecs).length).toBeGreaterThan(0);
     // …and the archive stays out of it, or the sweep would judge history.
@@ -177,35 +171,34 @@ describe("openspec MODIFIED deltas reproduce the whole requirement", () => {
     }
   });
 
-  it("every active change's MODIFIED delta keeps the live requirement's scenarios", () => {
+  it("the openspec instructions still carry the project override", () => {
+    const entries = Object.entries(openspecInstructions);
+    // Vacuity guard again: a moved or renamed instruction file must fail loudly
+    // rather than let the marker check pass over an empty set.
+    expect(entries.length, "openspec/OPENSPEC_AGENTS.md was not found").toBe(1);
+    const [path, md] = entries[0];
+    expect(
+      md,
+      `${path} has lost the project-override block. \`openspec update\` regenerates` +
+        " this file from upstream's text, which prescribes the retired MODIFIED" +
+        " mechanism; without the override the instructions and the commit gate" +
+        ' contradict each other. Re-apply the block (AGENTS.md, "Work management")',
+    ).toContain(PROJECT_OVERRIDE_MARKER);
+  });
+
+  it("no active change's delta edits, removes or renames a live requirement", () => {
     for (const [path, md] of Object.entries(deltaSpecs)) {
-      const modified = parseRequirements(md, "MODIFIED");
-      if (modified.length === 0) continue;
+      const headings = editingVerbHeadings(md);
+      if (headings.length === 0) continue;
       const { change, capability } = locate(path);
-      const livePath = `../openspec/specs/${capability}/spec.md`;
-      const liveMd = liveSpecs[livePath];
       expect(
-        liveMd,
-        `${change}: MODIFIED delta for '${capability}', which has no live spec`,
-      ).toBeDefined();
-      if (!liveMd) continue;
-      const live = parseRequirements(liveMd);
-      for (const delta of modified) {
-        const match = live.find((r) => r.name === delta.name);
-        expect(
-          match,
-          `${change}/${capability}: MODIFIED "${delta.name}" matches no requirement in the live spec` +
-            " — a renamed or mistyped header, which archives as a brand-new requirement",
-        ).toBeDefined();
-        if (!match) continue;
-        expect(
-          droppedScenarios(match, delta),
-          `${change}/${capability}: MODIFIED "${delta.name}" drops scenarios the live` +
-            " requirement has; archiving would delete them. Re-copy the requirement" +
-            " from the live spec and re-apply the edit (OPENSPEC_AGENTS.md," +
-            ' "Authoring a MODIFIED requirement correctly")',
-        ).toEqual([]);
-      }
+        headings.map((h) => `line ${h.line}: ${h.text}`),
+        `${change}/${capability}: a delta may only use '## ADDED Requirements'.` +
+          " An edit to an existing requirement is made directly in" +
+          ` openspec/specs/${capability}/spec.md as part of archiving, reading the` +
+          " live text at the moment it edits it, with the intent stated in prose" +
+          ' in the change\'s proposal.md (AGENTS.md, "Work management")',
+      ).toEqual([]);
     }
   });
 });

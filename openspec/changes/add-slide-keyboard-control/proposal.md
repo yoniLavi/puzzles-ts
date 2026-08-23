@@ -56,15 +56,33 @@ inherited an absence rather than deciding one.
 - **The Solve-route step key keeps working**, and the two uses must not collide.
   See `design.md` D2 — the collision is narrower than it looks, because the step
   key is gated on a route being installed.
-- **Spec**: `slide`'s input requirement stops saying "mouse or touch drag only"
-  and gains the keyboard route, with scenarios.
+- **Spec**: `slide` gains a keyboard requirement with scenarios, and stops saying
+  "mouse or touch drag only". Note *where* that sentence lives — in the **Game
+  interface** requirement, not the input one, which is not where a reader looking
+  for it would go. An earlier draft of this change's delta assumed the input
+  requirement and would have archived a spec that announced the sentence's
+  removal while leaving it in place, one requirement above.
 - **Help**: `help/games/slide.md` describes the keyboard controls, in the same
   register as the games that already have them.
 
 ## Impact
 
-- **Affected specs**: `slide` (MODIFIED "Slide input, movement and completion",
-  and the sentence in the parameters requirement that repeats the claim).
+- **Affected specs**: `slide`. The keyboard route is an ADDED requirement,
+  "Slide is playable by keyboard". One **edit in place** is also needed, to be
+  made in `openspec/specs/slide/spec.md` when this change is archived, reading
+  the live text at that moment:
+
+  > In **"Slide game implements the Game interface"**, the sentence beginning
+  > *"Slide SHALL be played by mouse or touch drag only — it has no keyboard
+  > cursor — and SHALL declare no `findMistakes` hook…"* loses the
+  > drag-only clause and keeps the `findMistakes` clause, which is unrelated and
+  > still true.
+
+  Nothing else needs editing: "Slide input, movement and completion" describes
+  the pointer gesture, the move count, the Solve route, the drag cancellation and
+  the rendering, and every one of those statements stays true. The keyboard's
+  obligations are additions to them, which is why they are expressed as an added
+  requirement rather than as a rewrite.
 - **Affected code**: `src/games/slide/{index,state,render}.ts` — `SlideUi` gains
   cursor/selection fields alongside the existing drag fields; `interpretMove`
   gains the cursor branch; `redraw` draws the cursor and selection.

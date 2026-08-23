@@ -1,78 +1,24 @@
 # ts-engine Specification Delta — audit-input-mode-parity
 
-## MODIFIED Requirements
+## ADDED Requirements
 
-### Requirement: The midend hides the stylus modifier from games that do not want it
+### Requirement: Touch equivalence is guarded at gesture level, not only at press level
 
-The midend SHALL strip `MOD_STYLUS` from the button before calling
-`Game.interpretMove`, unless the game sets `wantsStylusModifier`. A press, drag
-or release from a finger or a pen therefore reaches an ordinary game as the plain
-button code, and a game that tests `button === LEFT_BUTTON` works on touch
-without having to strip anything.
+The collection-wide touch guard SHALL cover **gestures, not only a single
+press**. A press alone is not what play consists of, and it is not what the
+frontend's traps break: a finger that stays within 8 px for 350 ms is delivered
+as `RIGHT_BUTTON` (`detectSecondaryButton`), which kills a press-and-drag gesture
+precisely when the player pauses to aim — while leaving the press itself working,
+so a press-only guard passes.
 
-This is a deliberate divergence from upstream, where `midend.c` hands the bit to
-`interpret_move` and each game is expected to strip it. That contract is a
-footgun: comparing the raw button is the obvious thing to write, it reads
-correctly, and it fails silently — and only on a device no test suite exercises.
-It caught nine of this collection's first thirty-two ports (Flip, Galaxies, Pegs,
-Blackbox, Dominosa, Guess, Signpost, Untangle, Inertia), each of which shipped
-completely deaf to touch. Inverting the default makes the dangerous case the one a
-game has to ask for.
+The sweep SHALL therefore exercise press → drag → release sequences for every
+game that handles drags, and the long-press-as-secondary case for every game
+whose gesture is a drag. It SHALL fail rather than pass vacuously when no gesture
+probe reaches a live target, on the same terms as the existing press sweep.
 
-A game whose touch behaviour genuinely differs SHALL set `wantsStylusModifier`
-and handle the bit itself. **Two** games do: Pattern, where with no right button
-available to a finger a touch press cycles a cell through its three states rather
-than simply filling it; and Loopy, where a tap must be able to reach all three
-line states. This requirement previously said "Pattern is the only such game",
-which was true when written and stopped being true when Loopy landed — a count
-in a spec is a fact that goes stale silently, and this one did.
-
-#### Scenario: A touch press plays the game
-
-- **WHEN** a press arrives with `MOD_STYLUS` set, for a game that has not set
-  `wantsStylusModifier`
-- **THEN** the game interprets it exactly as it interprets the same press from a
-  mouse
-
-#### Scenario: A game may still ask for the stylus bit
-
-- **WHEN** a game sets `wantsStylusModifier` and a touch press arrives
-- **THEN** `interpretMove` receives the button with `MOD_STYLUS` still set
-
-#### Scenario: A game that asks for the bit is still covered by a guard
-
-- **WHEN** the collection-wide input guards run
-- **THEN** a game setting `wantsStylusModifier` is not simply skipped, but is
-  asserted against the touch behaviour it declares
-- **BECAUSE** excluding it makes the two games with bespoke touch handling the
-  two games nothing checks
-
-### Requirement: Touch equivalence is guarded for every registered game
-
-The test suite SHALL assert, for **every** game in the runtime registry, that
-touch input does what the equivalent mouse input does — so that a newly ported
-game is covered on the day it is registered rather than when somebody remembers
-to check it on a phone.
-
-The guard SHALL cover **gestures, not only a single press**. A press alone is not
-what play consists of, and it is not what the frontend's traps break: a finger
-that stays within 8 px for 350 ms is delivered as `RIGHT_BUTTON`
-(`detectSecondaryButton`), which kills a press-and-drag gesture precisely when
-the player pauses to aim — while leaving the press itself working, so a
-press-only guard passes. The sweep SHALL therefore exercise press → drag →
-release sequences for every game that handles drags, and the
-long-press-as-secondary case for every game whose gesture is a drag.
-
-The sweep SHALL be dense enough to land on the game's live targets, and SHALL
-fail rather than pass vacuously when no probe reaches one (an early cut of this
-guard missed Untangle entirely, because its vertices sit at arbitrary points that
-a coarse grid never hit).
-
-#### Scenario: A new port that ignores touch fails the suite
-
-- **WHEN** a game is registered whose `interpretMove` compares an unstripped
-  button against `LEFT_BUTTON`, and the midend's stripping is removed
-- **THEN** the guard fails, naming that game
+A game that sets `wantsStylusModifier` SHALL NOT be skipped by the guard, but
+SHALL be asserted against the touch behaviour it declares — excluding those games
+makes the two with bespoke touch handling the two that nothing checks.
 
 #### Scenario: A drag gesture is equivalent from a finger
 
@@ -89,7 +35,11 @@ a coarse grid never hit).
   game is on a recorded exemption stating why the secondary button carries its
   own meaning
 
-## ADDED Requirements
+#### Scenario: A game that asks for the stylus bit is still covered
+
+- **WHEN** the collection-wide input guards run
+- **THEN** a game setting `wantsStylusModifier` is not simply skipped, but is
+  asserted against the touch behaviour it declares
 
 ### Requirement: Keyboard reachability is a recorded decision for every game
 

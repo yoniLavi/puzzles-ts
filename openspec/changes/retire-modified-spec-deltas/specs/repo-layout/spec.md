@@ -16,7 +16,16 @@ arbitrary interval during which another change could edit the same requirement,
 whose work the copy then silently deleted. That is not a hazard the author can
 be careful about: the loss leaves a valid-looking delta, so schema validation
 cannot detect it, and a scenario-survival check cannot see prose removed from
-inside a requirement.
+inside a requirement, nor a delta that edits a *different* requirement from the
+one it claims to.
+
+The prohibition SHALL cover every verb that acts on an existing requirement, not
+only the copying one. Removal and renaming carry no copy and so cannot delete
+content silently, but admitting them re-opens "is this one safe?" at every use,
+where one verb is a rule with nothing to remember and a check that cannot be
+subtly wrong. The reason for a removal, which the retired form carried as
+`**Reason**` and `**Migration**` prose, SHALL be stated in the change's
+`proposal.md` instead.
 
 The rule SHALL be enforced mechanically against open changes, and SHALL NOT be
 applied to `openspec/changes/archive/`, whose contents were authored under the
@@ -24,8 +33,12 @@ previous scheme and are history.
 
 #### Scenario: A delta that edits rather than adds is refused
 
-- **WHEN** a delta file under an open change declares `## MODIFIED Requirements`
-- **THEN** the commit gate fails, naming the file
+- **WHEN** a delta file under an open change declares a requirements section
+  under any verb that acts on an existing requirement — modifying, removing or
+  renaming it
+- **THEN** the commit gate fails, naming the file and the line
+- **AND** a delta carrying ordinary prose sections alongside its additions is
+  unaffected
 
 #### Scenario: Archived changes keep their original deltas
 

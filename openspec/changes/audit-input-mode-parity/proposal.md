@@ -112,10 +112,24 @@ the work.
 
 ## Impact
 
-- **Affected specs**: `ts-engine` (MODIFIED "Touch equivalence is guarded for
-  every registered game" → gesture-level; ADDED a keyboard-reachability
-  requirement). Per-game specs as the findings require — several currently
-  contain a normative "mouse only" sentence.
+- **Affected specs**: `ts-engine` gains two added requirements — gesture-level
+  touch guarding, and keyboard reachability as a recorded decision. The live
+  "Touch equivalence is guarded for every registered game" is **not** rewritten:
+  its press-level, whole-board sweep stays true and stays worth having; the
+  gesture obligation is an addition to it, not a correction of it.
+
+  One **edit in place** is needed, to be made in
+  `openspec/specs/ts-engine/spec.md` when this change is archived, reading the
+  live text at that moment:
+
+  > In **"The midend hides the stylus modifier from games that do not want it"**,
+  > *"Pattern is the only such game"* is false — Loopy sets
+  > `wantsStylusModifier` too, so that a tap can reach all three line states. The
+  > sentence names both games. It was true when written and stopped being true
+  > when Loopy landed: **a count in a spec is a fact that goes stale silently.**
+
+  Per-game specs as the findings require — several currently contain a normative
+  "mouse only" sentence.
 - **Affected code**: `src/engine/touch-input.test.ts` and its siblings; whichever
   games the sweep convicts.
 - **Player-visible**: yes, wherever a mode is currently broken — that is the
