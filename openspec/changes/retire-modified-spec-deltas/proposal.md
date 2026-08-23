@@ -1,5 +1,33 @@
 # retire-modified-spec-deltas
 
+> ## ⚠️ DO NOT ARCHIVE — the premise is under review (2026-08-23)
+>
+> **This change was implemented against openspec 0.15.0, and upstream fixed the
+> hazard it exists to route around.** The repo runs `@fission-ai/openspec@0.15.0`,
+> `npm i -g` on 2025-11-20 and never updated; current is **1.10.0**. Since
+> **1.6.0** `openspec archive` refuses a `MODIFIED` block that would drop a live
+> scenario, and since **1.8.0** `openspec validate` reports it at authoring time.
+> Verified directly, not from the changelog — same repo, same delta with one live
+> scenario removed:
+>
+> ```
+> 0.15.0 →  Change 'add-latin-repeats-support' is valid
+> 1.10.0 →  ✗ [ERROR] salad/spec.md: MODIFIED "…" omits scenario(s) the current
+>           spec still has: "Generation is reproducible from a seed".
+> ```
+>
+> The `ADDED`-only rule below therefore rests on a tool defect that a version bump
+> removes, and the delta format stays central in 1.x — upstream's answer is *keep
+> `MODIFIED`, make it safe*, which is the Option C this proposal rejected on the
+> grounds that "guidance is what you write when the tool cannot be trusted; the
+> goal here is a tool that can". It now can.
+>
+> Resolution is sequenced behind `upgrade-openspec-tooling`. **Two findings
+> survive that change's outcome either way**: the `add-slide-keyboard-control`
+> delta targeted the wrong requirement (a content bug no scenario check can see —
+> see §2.2 of `tasks.md`), and the openspec CLI is an unpinned global install that
+> no file in this repo names.
+
 ## Why
 
 **`openspec archive` replaces a live requirement with the delta's copy of it, so

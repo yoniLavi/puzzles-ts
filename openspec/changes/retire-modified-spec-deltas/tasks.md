@@ -119,5 +119,8 @@
 
 ## 5. Close out
 
-- [ ] 5.1 Owner acceptance, then archive — using the new rule, which makes this
-      change its own first test.
+- [ ] 5.1 **Blocked — do not archive.** See the banner at the top of
+      `proposal.md`: openspec 1.6.0+ already refuses the loss this change routes
+      around, and the repo is on 0.15.0. Sequenced behind
+      `upgrade-openspec-tooling`; the likely outcome is that most of this change
+      is reverted, keeping the §2.2 Slide fix.
