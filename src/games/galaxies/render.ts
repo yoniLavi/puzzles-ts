@@ -6,6 +6,8 @@
  * 2026-05-21; ports stay on imperative `Game.redraw` with the
  * cache-fragility doctrine fixes from `fix-flip-canvas-reshape`.
  */
+
+import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import {
   drawRectOutline,
   type GameDrawing,
@@ -343,23 +345,17 @@ function drawSquare(
 
   dr.clip({ x: lx, y: ly, w: tileSize, h: tileSize });
 
-  // Background. A displayed hint owns the cell's fill: the cell it acts on is
-  // solid `COL_HINT`, a cell it reasons over is the `COL_HINT_CELL` wash.
-  // Nothing the argument turns on is hidden by either — an arrow, a wall, a
-  // dot and the region's own black grid lines are all drawn on top — and the
-  // fills replace the region colour rather than covering it, because a cell
-  // inside a finished region is never a hint's target (the game refuses to
-  // re-associate one) and is worth seeing as evidence in the hint's colour.
+  // Background. No hint role appears here: a Galaxies cell's fill *is* its
+  // association — white with one dot, black with the other, plain when
+  // unassociated — which is the very thing a hint is reasoning about, so a fill
+  // over it takes the premise away. Both marks are inset rings instead, drawn
+  // below.
   const bg =
-    hint & HINT_TARGET_CELL
-      ? COL_HINT
-      : hint & HINT_AREA_CELL
-        ? COL_HINT_CELL
-        : flags & DRAW_WHITE
-          ? COL_WHITEBG
-          : flags & DRAW_BLACK
-            ? COL_BLACKBG
-            : COL_BACKGROUND;
+    flags & DRAW_WHITE
+      ? COL_WHITEBG
+      : flags & DRAW_BLACK
+        ? COL_BLACKBG
+        : COL_BACKGROUND;
   dr.drawRect({ x: lx, y: ly, w: tileSize, h: tileSize }, bg);
 
   // Grid lines (top-left only — neighbours will draw their own)
@@ -577,21 +573,53 @@ function drawSquare(
     }
   }
 
-  // The hint's partner cell: outlined, not filled. It borrows the drag
-  // preview's outline geometry deliberately — in both cases the mark means
-  // "this cell is part of what is about to be committed" — and differs only in
-  // colour, which is the one thing that has to separate a hint from a drag.
-  if (hint & HINT_PARTNER_CELL) {
+  // The hint's cell marks, all three of them rings.
+  //
+  // **Inset, not on the cell's border**, because in Galaxies that border is
+  // where a *wall* lives: a mark drawn there would read as one, and a hint that
+  // suggests a wall already draws a `COL_HINT` bar in exactly that place. The
+  // inset borrows the drag preview's geometry deliberately — in both cases the
+  // mark means "this cell is part of what is about to be committed" — and
+  // differs only in colour, which is the one thing that has to separate a hint
+  // from a drag.
+  //
+  // **And none of them is a fill**, because a Galaxies cell's fill *is* its
+  // association: white with one dot, black with the other, plain when
+  // unassociated. That is the very thing the deduction is about, so painting
+  // over it takes the premise away.
+  //
+  // The **focus** cell is doubled and the partner single. The words say "this
+  // cell", so only one cell may look like the thing being said (owner-reported
+  // when both were marked alike) — and with the fill gone, weight is what is
+  // left to say it with.
+  const cellMark =
+    hint & HINT_TARGET_CELL
+      ? COL_HINT
+      : hint & HINT_PARTNER_CELL
+        ? COL_HINT
+        : hint & HINT_AREA_CELL
+          ? COL_HINT_CELL
+          : -1;
+  if (cellMark >= 0) {
     const inset = Math.max(edgeThickness + 1, (tileSize / 8) | 0);
-    drawRectOutline(
-      dr,
-      lx + inset,
-      ly + inset,
-      tileSize - 2 * inset,
-      tileSize - 2 * inset,
-      COL_HINT,
-      previewThickness,
-    );
+    const ring = (extra: number) =>
+      drawMarkSides(
+        dr,
+        {
+          box: {
+            x: lx + inset + extra,
+            y: ly + inset + extra,
+            w: tileSize - 2 * (inset + extra),
+            h: tileSize - 2 * (inset + extra),
+          },
+          outer: 0,
+          inner: previewThickness,
+        },
+        MARK_ALL,
+        cellMark,
+      );
+    ring(0);
+    if (hint & HINT_TARGET_CELL) ring(2 * previewThickness);
   }
 
   // The drop target itself gets an outline on top of its preview

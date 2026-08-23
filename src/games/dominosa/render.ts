@@ -23,6 +23,7 @@ import {
 import { dominosaEdge } from "../../engine/colour/palette-games.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { DominosaHint } from "./index.ts";
 import {
@@ -54,8 +55,8 @@ export const COL_HIGHLIGHT_2 = 7;
 // Fork mistake overlay, appended past the upstream enum.
 export const COL_MISTAKE = 8;
 // Fork hint overlay, appended past the enum (no dark-mode overrides touch these).
-export const COL_HINT = 9; // target cells / suggested edge, blue
-export const COL_HINT_CELL = 10; // evidence squares, light blue
+export const COL_HINT = 9; // the acted-on square's ring / the suggested edge
+export const COL_HINT_CELL = 10; // the evidence squares' outline
 // Fork reference-panel spotlight: boxes a domino's candidate placements. Violet,
 // distinct from the mistake (red), hint (blue), and value-highlight (red/green)
 // colours; appended past the enum so no dark-mode override touches it.
@@ -74,6 +75,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HIGHLIGHT_2] = GREEN;
   out[COL_MISTAKE] = ERROR;
   out[COL_HINT] = HINT_ACTION;
+  // Both hint marks are outlines on the square's own border, so both take a
+  // strong colour: every Dominosa square carries a number, so a fill behind one
+  // is exactly what has no working value.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   out[COL_REFERENCE] = PURPLE;
   return out;
@@ -135,6 +139,9 @@ export interface DominosaDrawState {
   h: number;
   /** Last-drawn packed word per square; −1 forces a redraw. */
   visible: Int32Array;
+  /** The hint target's ring and the evidence area's outline (fork additions),
+   * drawn after the square loop. See {@link markBand}. */
+  marks: HintMarks;
 }
 
 export function newDrawState(state: DominosaState): DominosaDrawState {
@@ -144,6 +151,26 @@ export function newDrawState(state: DominosaState): DominosaDrawState {
     w: state.w,
     h: state.h,
     visible: new Int32Array(state.w * state.h).fill(-1),
+    marks: new HintMarks(),
+  };
+}
+
+/**
+ * Where a hint mark sits around square `(x, y)` — **on the square's own border**.
+ *
+ * Dominosa's squares tile exactly, so the band lies wholly inside the box
+ * (`outer` 0) and a square whose hint flags change repaints itself and takes its
+ * mark with it. Every square carries a number, drawn centred, so the border is
+ * the only place a mark can go — a fill behind those numbers is what this
+ * replaces, and it was the collection's *strongest* case of it: `HINT_ACTION` is
+ * the emphatic blue rather than a wash.
+ */
+function markBand(ds: DominosaDrawState, x: number, y: number): MarkBand {
+  const ts = ds.tilesize;
+  return {
+    box: { x: coord(x, ts), y: coord(y, ts), w: ts, h: ts },
+    outer: 0,
+    inner: Math.max(2, ts >> 4),
   };
 }
 
@@ -164,16 +191,13 @@ function drawTile(
   const co = coffset(ts);
   const rad = dominoRadius(ts);
 
-  const flags0 = packed & ~TYPE_MASK;
-  const bgColour =
-    flags0 & DF_HINT_TARGET
-      ? COL_HINT
-      : flags0 & DF_HINT_EVID
-        ? COL_HINT_CELL
-        : COL_BACKGROUND;
-
+  // No hint role in the background: every square carries a number, so the target
+  // ring and the evidence outline go on the square's own border in `redraw`.
+  // `DF_HINT_TARGET` / `DF_HINT_EVID` stay in the cache word regardless — they
+  // are what makes a square repaint when the mark leaves it, and that repaint is
+  // also what erases the mark.
   dr.clip({ x: cx, y: cy, w: ts, h: ts });
-  dr.drawRect({ x: cx, y: cy, w: ts, h: ts }, bgColour);
+  dr.drawRect({ x: cx, y: cy, w: ts, h: ts }, COL_BACKGROUND);
 
   const flags = packed & ~TYPE_MASK;
   const type = packed & TYPE_MASK;
@@ -393,8 +417,10 @@ export function redraw(
 
       if (refSet?.has(i)) c |= DF_REF;
 
+      // Independent bits, not an either/or: a square can be both acted on and
+      // part of the evidence, and it then carries both marks.
       if (hintTargets.has(i)) c |= DF_HINT_TARGET;
-      else if (hintEvidence.has(i)) c |= DF_HINT_EVID;
+      if (hintEvidence.has(i)) c |= DF_HINT_EVID;
       if (hintEdge) {
         const [a, b] = hintEdge;
         if (i === a && b === a + 1) c |= DF_HINT_EDGE_R;
@@ -409,4 +435,12 @@ export function redraw(
       }
     }
   }
+
+  // The hint marks, after the square loop and outside every clip.
+  const cellAt = (i: number): MarkCell => ({ x: i % w, y: (i / w) | 0 });
+  ds.marks.paint(dr, [...hintTargets].map(cellAt), [...hintEvidence].map(cellAt), {
+    band: (x, y) => markBand(ds, x, y),
+    targetColour: COL_HINT,
+    evidenceColour: COL_HINT_CELL,
+  });
 }

@@ -33,6 +33,7 @@ import {
   lineNoColour,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {
   bitcount,
@@ -57,7 +58,7 @@ export const COL_LINE_MAYBE = 3;
 export const COL_LINE_NO = 4;
 export const COL_ERROR = 5;
 export const COL_HINT = 6; // every edge the deduction forces this step (blue)
-export const COL_HINT_CELL = 7; // referenced-cell shading (a light blue)
+export const COL_HINT_CELL = 7; // referenced-cell outline, inset inside the cell
 export const COL_CORRECT = 8; // a completed, correct region (shared grey shade)
 
 export function colours(defaultBackground: Colour): Colour[] {
@@ -154,16 +155,27 @@ function drawTile(
 
   dr.clip({ x, y, w: ts + w, h: ts + w });
 
+  const body = { x: x + w, y: y + w, w: ts - w, h: ts - w };
   dr.drawRect(
-    { x: x + w, y: y + w, w: ts - w, h: ts - w },
-    flags & F_FLASH
-      ? COL_FLASH
-      : flags & F_HINT_CELL
-        ? COL_HINT_CELL
-        : flags & F_CORRECT
-          ? COL_CORRECT
-          : COL_BACKGROUND,
+    body,
+    flags & F_FLASH ? COL_FLASH : flags & F_CORRECT ? COL_CORRECT : COL_BACKGROUND,
   );
+
+  // The referenced cells are **outlined**, not washed. Two reasons, and the
+  // second is Palisade's own: a referenced cell carries the clue digit the
+  // deduction counts with, and the wash also took the cell's background from
+  // `F_CORRECT`, so a hint over a finished region hid the fact that it was
+  // finished. The outline is **inset inside the cell body** rather than on its
+  // border, because in Palisade that border is a *wall* — it is where the hint's
+  // own forced edges are drawn, in `COL_HINT`.
+  if (flags & F_HINT_CELL) {
+    drawMarkSides(
+      dr,
+      { box: body, outer: 0, inner: Math.max(2, ts >> 4) },
+      MARK_ALL,
+      COL_HINT_CELL,
+    );
+  }
 
   if (clue !== EMPTY) {
     dr.drawText(

@@ -76,13 +76,73 @@ and watching it go red — before trusting it. The two guards written during
 `walk-tactic-hint-chains` were *both* vacuous on their first cut, and neither was
 caught by reading them.
 
+## D5 — "The six remaining fills" was a proxy, and the sweep is fifteen games
+
+The proposal enumerated the work by grepping `HINT_FILL`'s consumers. That names
+a **colour**, not the thing being fixed, and it fails exactly where a game is
+unusual: three games fill in a hue of their own, for the same documented reason
+in each — the collection's hint blue is already spoken for by something the
+board says. Crossing uses `GREEN` (blue means "across"), Clusters uses `PURPLE`
+(blue is one of the two colours a player *paints*), and Dominosa fills with
+`HINT_ACTION` itself rather than the wash. All three were invisible to the grep.
+
+**What it should have asked, and what was measured instead:** render a hint frame
+for every game in the `hint-games.ts` enrolment; find every cell-sized rect drawn
+in that game's own `COL_HINT` / `COL_HINT_CELL` (their indices read out of each
+`render.ts`'s exports, so nothing is hand-listed); and report whether any later
+op puts ink inside it.
+
+| | fill covered by content | fill with nothing on it |
+| --- | --- | --- |
+| **target** | dominosa (a number), netslide (the tile's wires), singles | bricks, clusters, galaxies, lightup, pattern, range, slant, unruly |
+| **evidence** | palisade, range, salad, singles, sticks, subsets, galaxies, lightup | pattern, slant |
+
+**Owner's call on the scope this opened (2026-08-22): every target cell becomes a
+ring**, the eight bare ones included. The measurement says those eight hide
+nothing, so the gain is not legibility — it is that **one mark means one thing**.
+It also removes a category error the bare column hides: in Bricks, Clusters,
+Unruly and Singles the move *is* "give this cell a colour", so a solid fill of
+the target says with the board what the narration is still only proposing.
+
+Evidence keeps its per-game judgement, decided on the measurement rather than on
+the game's family.
+
+## D6 — Where the band sits is a per-game fact, and it has two answers
+
+`hint-mark.ts` takes a `MarkBand` — a content box plus how far the band reaches
+**outside** it and how far **inside**. That is not configuration for its own sake;
+it is the one thing that genuinely differs, and it decides who undoes the mark.
+
+- **Outside** (`outer > 0`): Keen and Solo sit on a `COL_GRID` backing with a
+  `2·GRIDEXTRA + 1` gutter, and Unequal has a `TILESIZE/2` gap. No tile owns those
+  pixels, so `HintMarks` is told the gutter's resting colour and repaints it when
+  a mark moves — and repaints a mark that stays, every frame, because a
+  neighbour's repaint widens its background into the shared gutter.
+- **Inside** (`outer = 0`): Towers, Filling and Crossing tile exactly and draw
+  their own per-cell outline, so the band replaces that outline. Nothing has to
+  be erased: the cell whose overlay changed repaints itself and takes its mark
+  with it.
+- **Both** (Group, Undead): a one-pixel gutter plus a couple of pixels of the
+  cell's own edge.
+
+The inner reach is **bounded by the content, and the bound is arithmetic rather
+than taste**: Undead's pencilled monster is a circle of radius `2/5` of its
+`TILESIZE/2` box centred a quarter-tile in, so it clears the edge by
+`TILESIZE/20`; Unequal's greater-than chevron reaches to within `GAP/4 − 1` of the
+cell it points away from. Each game's `markBand` records its own.
+
 ## Open Questions
 
 - Does any evidence area outline *badly* — a region so scattered that per-cell
   rings read as noise rather than as a set? The forcing chain is the known
   scattered case and it looked right in Keen, but it is 3–6 cells; Solo's
   `set` reason can name more.
-- Filling's evidence is a *region of digits* rather than pencil marks, and its
-  own § "Shade vs ring" entry is the one that argues shading is right for a
-  number premise. It is the most likely game to keep its wash, and the reason it
-  keeps it should be written down rather than left as an omission.
+- ~~Filling's evidence is a *region of digits*…~~ **Answered, and the reason is
+  not the one the question expected.** A digit on the evidence wash is perfectly
+  legible — 3.41:1 light, 4.04:1 dark, which is exactly what `TEAL_WASH_DEEP`
+  bought. The binding constraint is the *other* side: at the lightness that
+  legibility requires, the wash measures **1.15:1 against its own board in dark
+  mode**. So it is not "content on a wash is unreadable" but "a wash that carries
+  content is unreadable *as a mark*" — the two requirements move in opposite
+  directions along one axis, and a wash under content loses whichever way it is
+  tuned. Filling outlines, and its `colours()` records this.

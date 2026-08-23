@@ -16,11 +16,12 @@ import {
   ERROR,
   GRID_DARK,
   HINT_ACTION,
-  HINT_EVIDENCE,
+  HINT_EVIDENCE_WASH,
   UNDECIDED,
 } from "../../engine/colour/palette.ts";
 import { UNRULY_BLACK, UNRULY_WHITE } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import { EMPTY, ONE, ZERO } from "./constants.ts";
 import type { UnrulyHint } from "./index.ts";
@@ -66,6 +67,10 @@ export const COL_ERROR = 10;
 // deduction's empty siblings shade COL_HINT_CELL (light blue); the cited
 // premise / pivotal cells ring COL_HINT_REF (orange), distinct from the move.
 export const COL_HINT = 11;
+/** The evidence **wash**, and this is the game that shows why the role has a
+ * wash form at all: these cells are the journey's still-*empty* siblings, so
+ * nothing is drawn on the shade and it can be the more visible of the two
+ * teals. A game whose evidence carries content outlines instead. */
 export const COL_HINT_CELL = 12;
 export const COL_HINT_REF = 13;
 
@@ -87,7 +92,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_CURSOR] = CURSOR;
   out[COL_ERROR] = ERROR;
   out[COL_HINT] = HINT_ACTION;
-  out[COL_HINT_CELL] = HINT_EVIDENCE;
+  out[COL_HINT_CELL] = HINT_EVIDENCE_WASH;
   // Cited premise / pivotal cells. A single ring colour (not the cross-game
   // teal/violet black/white-ref pair): Unruly's ring set is mixed — filled
   // black cells, a balanced reference row holding both colours, and empty
@@ -200,15 +205,9 @@ function drawTile(
       const off = Math.floor((ts - 1 - sz) / 2);
       dr.drawRect({ x: px + off, y: py + off, w: sz, h: sz }, val);
     }
-  } else if (tile & FF_HINT_TARGET) {
-    // The forced cell: blue highlight only — the hint marks where to act, it
-    // does not place the colour the player must enter themselves (that would
-    // read as already-done). The narration says which colour; auto-hint
-    // applies it for real in animation mode. (Owner-directed, 2026-06-20 —
-    // see hint-authoring.md.)
-    dr.drawRect(inner, COL_HINT);
   } else if (tile & FF_HINT_AREA) {
-    // A journey-sibling empty cell: light-blue shade.
+    // A journey-sibling **empty** cell: a shade, which is what the evidence wash
+    // is for — nothing is drawn on these, so nothing is hidden.
     dr.drawRect(inner, COL_HINT_CELL);
   } else {
     dr.drawRect(inner, val);
@@ -305,6 +304,21 @@ function drawTile(
     dr.drawRect({ x: px, y: py + ts - 1 - t, w: ts - 1, h: t }, COL_HINT_REF);
     dr.drawRect({ x: px, y: py, w: t, h: ts - 1 }, COL_HINT_REF);
     dr.drawRect({ x: px + ts - 1 - t, y: py, w: t, h: ts - 1 }, COL_HINT_REF);
+  }
+
+  // The forced cell is **ringed**, in the same shape and place a cited premise
+  // is: the hint marks where to act, it does not place the colour the player
+  // must enter themselves. A blue *fill* in a game whose entire move is "make
+  // this cell black or white" reads as a third colour already placed. The
+  // narration says which colour; auto-hint applies it for real in animation
+  // mode. (Owner-directed, 2026-06-20.)
+  if (tile & FF_HINT_TARGET) {
+    drawMarkSides(
+      dr,
+      { box: inner, outer: 0, inner: Math.max(2, Math.floor(ts / 12)) },
+      MARK_ALL,
+      COL_HINT,
+    );
   }
 
   // Cursor outline.

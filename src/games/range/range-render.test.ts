@@ -5,6 +5,7 @@
 // reviewable text diff.
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
+import { expectRing, isThin, markSides } from "../../engine/testing/mark-shape.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { type RangeHint, rangeGame } from "./index.ts";
@@ -135,7 +136,7 @@ describe("render scenario snapshot", () => {
     expect(result.recording.ops).toMatchSnapshot();
   });
 
-  it("draws the hint target and premise highlight on the first hint step", () => {
+  it("rings the hint target and outlines the premise on the first hint step", () => {
     const result = renderScenario({
       game: rangeGame,
       id: "9x6#range-render",
@@ -143,9 +144,14 @@ describe("render scenario snapshot", () => {
     });
     expect(result.hint).toBeDefined();
     const ops = result.recording.ops;
-    // The hint target cell is filled COL_HINT; premise cells COL_HINT_CELL.
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(true);
+    // The hint target cell is **ringed** COL_HINT; the premise cells are
+    // outlined COL_HINT_CELL. Neither is a fill: a Range premise area runs along
+    // a clue's arms and takes in the clue cell, so it carries the very digit the
+    // deduction counts with.
+    expectRing(ops, COL_HINT);
+    const premise = markSides(ops, COL_HINT_CELL);
+    expect(premise.length).toBeGreaterThan(0);
+    for (const s of premise) expect(isThin(s)).toBe(true);
     // Clues are still drawn.
     expect(ops.some((o) => o.op === "text")).toBe(true);
     // …and the clue *driving* the deduction draws its digit in COL_HINT, which

@@ -10,6 +10,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
+import { isThin, markSides } from "../../engine/testing/mark-shape.ts";
 import type { DrawOp } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import type { GalaxiesHint } from "./hint.ts";
@@ -67,7 +68,7 @@ const BOARDS = Array.from({ length: 8 }, (_, i) => ({
 }));
 
 describe("a displayed hint reaches the canvas", () => {
-  it("an association fills the deduced cell, outlines its partner, rings the dot", () => {
+  it("an association double-rings the deduced cell, rings its partner and the dot", () => {
     // A `focus` is what marks a deduction about *one* cell, whose dot is
     // therefore somewhere else and gets a ring; a dot's-own-cells step has no
     // focus and no ring (the next test).
@@ -78,19 +79,17 @@ describe("a displayed hint reaches the canvas", () => {
     expect(hl.focus).toBeDefined();
     expect(hl.refDots).toHaveLength(0);
 
-    // Exactly *one* solid fill, however many cells the move claims: the words
-    // say "this cell", so only one cell may look like the thing being said
-    // (owner-reported when both were filled alike).
-    const fills = rects(recording.ops, COL_HINT).filter(
-      (o) => o.op === "rect" && o.w > 4 && o.h > 4,
-    );
-    expect(fills).toHaveLength(1);
-    // The partner is still shown — the move claims it — as an outline: four
-    // COL_HINT lines, and no fill of its own.
-    const outline = recording.ops.filter(
-      (o) => o.op === "line" && o.colour === COL_HINT,
-    );
-    expect(outline.length).toBe(4 * (hl.targets.length - 1));
+    // No solid fill anywhere in the hint colour: a Galaxies cell's fill *is* its
+    // association, so a hint that painted over it would take away the premise.
+    expect(
+      rects(recording.ops, COL_HINT).filter((o) => o.op === "rect" && !isThin(o)),
+    ).toHaveLength(0);
+    // The focus cell is **doubled** and the partner single: the words say "this
+    // cell", so only one cell may look like the thing being said (owner-reported
+    // when both were marked alike). Doubling is what says it now the fill is
+    // gone — 8 sides for the focus, 4 for each partner.
+    const sides = markSides(recording.ops, COL_HINT);
+    expect(sides.length).toBe(8 + 4 * (hl.targets.length - 1));
     // Exactly one ring role on screen: "the ringed dot" cannot be ambiguous.
     expect(circles(recording.ops, COL_HINT).length).toBeGreaterThan(0);
     expect(circles(recording.ops, COL_HINT_CELL)).toHaveLength(0);
@@ -129,14 +128,16 @@ describe("a displayed hint reaches the canvas", () => {
     }
   });
 
-  it("evidence shades the cells the sentence says are shaded", () => {
+  it("evidence rings the cells the sentence says it reasons over", () => {
     const { recording, hl } = hintFrame(
       (h) => h.area.length > 1 && h.targets.length > 0,
     );
-    const washes = rects(recording.ops, COL_HINT_CELL).filter(
-      (o) => o.op === "rect" && o.w > 4 && o.h > 4,
-    );
-    expect(washes).toHaveLength(hl.area.length);
+    // One ring per evidence cell, and no fill: an evidence cell's own black or
+    // white background is what the deduction is reading, so a wash over it would
+    // erase the reading.
+    const sides = markSides(recording.ops, COL_HINT_CELL);
+    expect(sides.length).toBe(4 * hl.area.length);
+    for (const s of sides) expect(isThin(s)).toBe(true);
   });
 
   it("the opening hint frame is stable", () => {

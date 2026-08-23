@@ -19,6 +19,7 @@ import {
 } from "../../engine/colour/palette.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { RangeHint } from "./index.ts";
 import { findErrors } from "./solver.ts";
@@ -41,8 +42,8 @@ export const COL_BACKGROUND = 0; // an undecided (EMPTY) cell — a soft grey
 export const COL_GRID = 1; // == COL_BLACK == COL_TEXT == COL_USER
 export const COL_ERROR = 2;
 export const COL_LOWLIGHT = 3; // == COL_CURSOR
-export const COL_HINT = 4; // the cell the displayed hint forces (blue)
-export const COL_HINT_CELL = 5; // the deduction's premise/area cells (light blue)
+export const COL_HINT = 4; // the cell the displayed hint forces — ringed
+export const COL_HINT_CELL = 5; // the deduction's premise/area cells — outlined
 export const COL_WHITEBG = 6; // a known-white cell: a clue or the player's white mark
 export const COL_HINT_BLACKREF = 7; // a cited decided-black premise (teal ring)
 
@@ -140,30 +141,37 @@ function drawCell(
   const ty = y + Math.floor(ts / 2);
   const dotsz = Math.floor((ts + 9) / 10);
 
-  // Fill precedence: a hint target paints the whole cell blue; a black
-  // square keeps its identity (even when it is a black premise cell —
-  // kind 4 only adds an outline); a hint area cell shades light blue;
-  // the cursor/flash overlay is a lowlight; a known-white cell (clue or
-  // white mark) is pure white; an undecided cell is the soft-grey
-  // background.
+  // Fill precedence: a black square keeps its identity; the cursor/flash
+  // overlay is a lowlight; a known-white cell (clue or white mark) is pure
+  // white; an undecided cell is the soft-grey background. No hint role appears
+  // here — the target is ringed and the evidence outlined, below. A Range
+  // premise area reaches along a clue's arms and takes in the clue cell itself,
+  // so it is not the all-undecided region it looks like: it carries the digit
+  // the deduction is counting with.
   const fill =
-    hintKind === 1
-      ? COL_HINT
-      : value === BLACK
-        ? error
-          ? COL_ERROR
-          : COL_GRID
-        : hintKind === 3
-          ? COL_HINT_CELL
-          : flash || cursor
-            ? COL_LOWLIGHT
-            : value === WHITE || value > 0
-              ? COL_WHITEBG
-              : COL_BACKGROUND;
+    value === BLACK
+      ? error
+        ? COL_ERROR
+        : COL_GRID
+      : flash || cursor
+        ? COL_LOWLIGHT
+        : value === WHITE || value > 0
+          ? COL_WHITEBG
+          : COL_BACKGROUND;
 
   drawRectOutline(dr, x, y, ts + 1, ts + 1, COL_GRID);
   dr.drawRect({ x: x + 1, y: y + 1, w: ts - 1, h: ts - 1 }, fill);
   if (error) drawRectOutline(dr, x + 1, y + 1, ts - 1, ts - 1, COL_ERROR);
+
+  // The evidence area's outline and the acted-on cell's ring, on the cell's own
+  // border. The evidence first, so a cell that is both keeps the target's mark.
+  const band = {
+    box: { x: x + 1, y: y + 1, w: ts - 1, h: ts - 1 },
+    outer: 0,
+    inner: Math.max(2, ts >> 4),
+  };
+  if (hintKind === 3) drawMarkSides(dr, band, MARK_ALL, COL_HINT_CELL);
+  if (hintKind === 1) drawMarkSides(dr, band, MARK_ALL, COL_HINT);
 
   // A black premise cell stays black; ring it in COL_HINT_BLACKREF (a doubled
   // 2px inset outline) so "this shaded square is the reason" reads distinct from

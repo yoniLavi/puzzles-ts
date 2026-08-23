@@ -17,9 +17,8 @@
 
 import {
   ERROR,
+  HINT_ACTION,
   HINT_EVIDENCE,
-  HINT_FILL,
-  HINT_ORDER,
   highlightWash,
   INK,
   pencilColour,
@@ -27,8 +26,11 @@ import {
 } from "../../engine/colour/palette.ts";
 import { groupDiagonal } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import {
+  HINT_AREA,
+  HINT_TARGET,
   hintMarkBit,
   type OrderedCell,
   OverlaySidecar,
@@ -60,13 +62,12 @@ export const COL_PENCIL = 5;
 export const COL_DIAGONAL = 6;
 /** Fork addition (past the upstream enum): the Check & Save mistake outline. */
 export const COL_MISTAKE = 7;
-/** Hint overlay (fork addition): the cell(s)/candidate(s) the deduction acts on. */
+/** Hint overlay (fork addition): the acted-on cell's ring. */
 export const COL_HINT = 8;
-/** Hint overlay: the premise cells shaded as evidence (associativity's three
- * known products, an identity fill's revealing cell). */
+/** Hint overlay: the premise cells outlined as evidence (associativity's three
+ * known products, an identity fill's revealing cell), **and** a forcing chain's
+ * ordinal — one index, because the number indexes the evidence. */
 export const COL_HINT_CELL = 9;
-/** Hint overlay: a forcing chain's ordinal, indexing the evidence above. */
-export const COL_HINT_ORDER = 10;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -79,9 +80,12 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL] = pencilColour(bg);
   out[COL_DIAGONAL] = groupDiagonal(bg);
   out[COL_MISTAKE] = ERROR;
-  out[COL_HINT] = HINT_FILL;
+  out[COL_HINT] = HINT_ACTION;
+  // Both hint marks are outlines on the cell's border, so both take a strong
+  // colour and differ in shape rather than in weight — a premise set's rings
+  // against one cell's ring. `HINT_EVIDENCE` covers the chain ordinal too; see
+  // its doc comment for why the index and the thing it indexes are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  out[COL_HINT_ORDER] = HINT_ORDER;
   return out;
 }
 
@@ -164,6 +168,10 @@ export interface GroupDrawState {
    * by grid cell (`y·w + x`) so the overlay follows an element through a display
    * reorder; owns its own drawn-vs-packed diff (docs/games/rendering.md § "Overlay sidecars" / OverlaySidecar). */
   hint: OverlaySidecar;
+  /** The hint target's ring and the evidence region's outline (fork additions),
+   * keyed by **display** position — a reorder moves the mark with its element.
+   * See {@link markBand}. */
+  marks: HintMarks;
   /** Scratch: the drag-modified display sequence, rebuilt each redraw. */
   sequence: Uint8Array;
   /** Scratch: grid-indexed error overlay from `checkErrors`. */
@@ -184,6 +192,7 @@ export function newDrawState(state: GroupState): GroupDrawState {
     errors: new Int32Array(a),
     mistakes: new Uint8Array(a),
     hint: new OverlaySidecar(a),
+    marks: new HintMarks(),
     sequence: new Uint8Array(w),
     errtmp: new Int32Array(a),
   };
@@ -191,6 +200,35 @@ export function newDrawState(state: GroupState): GroupDrawState {
 
 export function setTileSize(ds: GroupDrawState, ts: number): void {
   ds.tilesize = ts;
+}
+
+/**
+ * Where a hint mark sits around **display** cell `(x, y)` — straddling the grid
+ * line, one pixel of gutter and two of the cell's own edge.
+ *
+ * Group's cells are a `TILESIZE` pitch of `TILESIZE − 1` squares, so the grid the
+ * player sees is a single pixel of the `COL_GRID` backing rectangle showing
+ * between them. That one pixel is real gutter and is what `HintMarks` paints back
+ * when a mark moves; the rest of the band lies inside the cell, where the cell's
+ * own repaint undoes it.
+ *
+ * The band is keyed by display position, not by grid cell, because the player can
+ * drag the Cayley table's rows and columns into any order — the sidecar packs the
+ * overlay by grid cell precisely so a mark follows its element through a reorder,
+ * and this is the other half of that.
+ */
+function markBand(ds: GroupDrawState, x: number, y: number): MarkBand {
+  const ts = ds.tilesize;
+  return {
+    box: {
+      x: border(ts) + legend(ts) + x * ts + 1,
+      y: border(ts) + legend(ts) + y * ts + 1,
+      w: ts - 1,
+      h: ts - 1,
+    },
+    outer: 1,
+    inner: Math.max(2, ts >> 5),
+  };
 }
 
 // --- per-tile drawing (draw_tile) ------------------------------------------
@@ -223,11 +261,11 @@ function drawTile(
   const id = ds.id;
   let tile = tileIn;
 
-  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): a placement target fills solid COL_HINT;
-  // an evidence cell shades COL_HINT_CELL; a strike keeps its ordinary background
-  // so the crossed-through candidates stay legible (`struck` bit `2 + n`).
-  const hintTarget = (hint & 1) !== 0;
-  const hintArea = (hint & 2) !== 0;
+  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): both
+  // cell-level marks are read in `redraw`, which rings the target and outlines
+  // the evidence region on the cell's own border, so a hint never paints over
+  // the elements it is talking about. What is left here is `struck` (bit
+  // `2 + n`), the candidates this firing rules out, crossed through among marks.
   const struck = hint >> 2;
 
   const tx = border(ts) + legend(ts) + x * ts + 1;
@@ -248,12 +286,9 @@ function drawTile(
 
   dr.clip({ x: cx, y: cy, w: cw, h: ch });
 
-  // Background: hint target (solid, placement only) > hint evidence > highlight >
-  // diagonal shade > plain.
-  let bg =
+  // Background: highlight > diagonal shade > plain. No hint role appears here.
+  const bg =
     tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : x === y ? COL_DIAGONAL : COL_BACKGROUND;
-  if (hintArea) bg = COL_HINT_CELL;
-  if (hintTarget && struck === 0) bg = COL_HINT;
   dr.drawRect({ x: cx, y: cy, w: cw, h: ch }, bg);
 
   // Dividers.
@@ -377,7 +412,7 @@ function drawTile(
   // (`walk-tactic-hint-chains`). Inside the clip, so a legend cell's inset
   // never lets it spill.
   if (hintOrder > 0)
-    drawHintOrdinal(dr, { x: cx, y: cy }, Math.min(cw, ch), hintOrder, COL_HINT_ORDER);
+    drawHintOrdinal(dr, { x: cx, y: cy }, Math.min(cw, ch), hintOrder, COL_HINT_CELL);
 
   dr.unclip();
   dr.drawUpdate({ x: cx, y: cy, w: cw, h: ch });
@@ -416,6 +451,7 @@ export function redraw(
       COL_GRID,
     );
     dr.drawUpdate({ x: 0, y: 0, w: total, h: total });
+    ds.marks.reset(); // the backing rect just erased every gutter
     ds.started = true;
   }
 
@@ -539,6 +575,25 @@ export function redraw(
       }
     }
   }
+
+  // The hint marks, after the tile loop and outside every clip. The overlay is
+  // keyed by grid cell so it follows an element through a reorder, so this is
+  // where it is resolved back to where that element is currently *shown*.
+  const targets: MarkCell[] = [];
+  const evidence: MarkCell[] = [];
+  for (let y = 0; y < w; y++) {
+    for (let x = 0; x < w; x++) {
+      const packed = ds.hint.packed[ds.sequence[y] * w + ds.sequence[x]];
+      if (packed & HINT_TARGET) targets.push({ x, y });
+      if (packed & HINT_AREA) evidence.push({ x, y });
+    }
+  }
+  ds.marks.paint(dr, targets, evidence, {
+    band: (x, y) => markBand(ds, x, y),
+    targetColour: COL_HINT,
+    evidenceColour: COL_HINT_CELL,
+    gutterColour: COL_GRID,
+  });
 }
 
 export function flashLength(a: GroupState, b: GroupState): number {

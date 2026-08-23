@@ -247,8 +247,10 @@ describe("rendering smoke", () => {
     const { desc } = newGameDesc(p, rng);
     const state = newState(p, desc);
     const pal = colours([0.9, 0.9, 0.9]);
-    // 8 upstream + COL_HINT / COL_HINT_CELL / COL_HINT_ORDER
-    expect(pal).toHaveLength(11);
+    // 8 upstream + COL_HINT / COL_HINT_CELL. The chain ordinal shares
+    // `COL_HINT_CELL`: a number saying where a cell falls in the chain is an
+    // index into the evidence, not a hint role of its own.
+    expect(pal).toHaveLength(10);
 
     const ds = newDrawState(state);
     setTileSize(ds, 48);

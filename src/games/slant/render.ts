@@ -21,6 +21,7 @@ import {
 } from "../../engine/colour/palette.ts";
 import { slantGrid, slantGrounded } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { SlantHint } from "./index.ts";
 import type {
@@ -46,9 +47,9 @@ export const COL_FILLEDSQUARE = 7;
 export const COL_GROUNDED = 8;
 // Fork hint palette, appended past the upstream enum so slant's dark-mode
 // overrides (indices 1/8) never touch these.
-export const COL_HINT = 9; // forced square(s), blue fill (highlight only)
-export const COL_HINT_CELL = 10; // evidence area, light-blue shade
-export const COL_HINT_REF = 11; // a cited filled anchor (teal ring)
+export const COL_HINT = 9; // forced square(s), ringed on their own border
+export const COL_HINT_CELL = 10; // evidence area, outlined
+export const COL_HINT_REF = 11; // a cited filled anchor (a doubled ring)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight } = mkhighlight(defaultBackground);
@@ -188,19 +189,21 @@ function drawTile(
 
   dr.clip({ x: coord(x, ts), y: coord(y, ts), w: ts, h: ts });
 
+  // No hint role in the background. The target is ringed and the evidence
+  // outlined, at the end of this function: a Slant evidence square is one of the
+  // clue's *already-decided* neighbours by construction, so it carries the very
+  // diagonal the deduction is reasoning from, and a fill over that hides the
+  // premise. The target keeps its own colour for the same reason the move does —
+  // a blue square would read as a slash already placed.
   dr.drawRect(
     { x: coord(x, ts), y: coord(y, ts), w: ts, h: ts },
-    v & HINT_TARGET
-      ? COL_HINT
-      : v & FLASH
-        ? COL_GRID
-        : v & HINT_EVID
-          ? COL_HINT_CELL
-          : v & CURSOR
-            ? COL_CURSOR
-            : v & (BACKSLASH | FORWSLASH)
-              ? COL_FILLEDSQUARE
-              : COL_BACKGROUND,
+    v & FLASH
+      ? COL_GRID
+      : v & CURSOR
+        ? COL_CURSOR
+        : v & (BACKSLASH | FORWSLASH)
+          ? COL_FILLEDSQUARE
+          : COL_BACKGROUND,
   );
 
   // Grid lines.
@@ -298,6 +301,20 @@ function drawTile(
     dr.drawRect({ x: sx + 1, y: sy + span - 2, w: span - 2, h: 1 }, COL_HINT_REF);
     dr.drawRect({ x: sx + 1, y: sy + 1, w: 1, h: span - 2 }, COL_HINT_REF);
     dr.drawRect({ x: sx + span - 2, y: sy + 1, w: 1, h: span - 2 }, COL_HINT_REF);
+  }
+
+  // The acted-on square's ring, and the evidence region's outline — both on the
+  // square's own border, over the grid line rather than over the slash. Drawn
+  // before the mistake overlay and the clues, which are inset and at the corners
+  // respectively, so all three can show at once.
+  {
+    const band = {
+      box: { x: coord(x, ts), y: coord(y, ts), w: ts, h: ts },
+      outer: 0,
+      inner: Math.max(2, ts >> 4),
+    };
+    if (v & HINT_EVID) drawMarkSides(dr, band, MARK_ALL, COL_HINT_CELL);
+    if (v & HINT_TARGET) drawMarkSides(dr, band, MARK_ALL, COL_HINT);
   }
 
   // findMistakes overlay: an inset red outline (the fork's cross-game

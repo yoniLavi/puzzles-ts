@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
+import { expectRing } from "../../engine/testing/mark-shape.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { type FillingHint, fillingGame } from "./index.ts";
 import { COL_HINT, COL_HINT_CELL } from "./render.ts";
@@ -172,7 +173,7 @@ describe("hintKeepTrack", () => {
 });
 
 describe("filling hint render scenario", () => {
-  it("paints the target(s) blue and shades the evidence region", () => {
+  it("rings the target(s) and outlines the evidence region", () => {
     let result: ReturnType<typeof renderScenario> | null = null;
     for (let s = 0; s < 20; s++) {
       const r = renderScenario({
@@ -189,12 +190,17 @@ describe("filling hint render scenario", () => {
     if (!result) throw new Error("no seed produced an area-carrying first hint");
 
     const { recording } = result;
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
-      true,
-    );
-    expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
-    ).toBe(true);
+    const hl = result.hint?.highlights as FillingHint;
+    expectRing(recording.ops, COL_HINT, hl.cells.length);
+    // The evidence is **outlined**, not shaded: its cells carry the digits the
+    // deduction counts, and a wash dark enough to keep a derived foreground
+    // legible on it is itself invisible against a dark board.
+    //
+    // Filling's premise is a *single* clue cell — the region whose size the
+    // deduction is counting off — so its outline is one ring, which is what the
+    // neighbour rule gives for a one-cell region.
+    expect(hl.area.length).toBe(1);
+    expectRing(recording.ops, COL_HINT_CELL, hl.area.length);
     expect(recording.ops.some((o) => o.op === "text")).toBe(true); // clues
     expect(recording.ops).toMatchSnapshot();
   });

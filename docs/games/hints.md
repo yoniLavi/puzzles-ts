@@ -996,71 +996,96 @@ premise type to disambiguate. The legend bites only when a hint narrates a
 
 ### Shade vs ring
 
-The choice between shading evidence (`COL_HINT_CELL` background) and ringing
-it (`COL_HINT` outline) turns on one question: **would a light-blue fill hide
-the information that makes the cell evidence?**
+**The acted-on cell is ringed in every game, with no exceptions**, and an
+evidence area is outlined unless the game can say that nothing is drawn on it.
+The mechanism is [`engine/hint-mark.ts`](../../src/engine/hint-mark.ts); this
+section is the rule and the reasoning.
 
-- **Range** shades — its premises are *undecided* cells; nothing to hide.
-- **Unruly** rings — its premises are *filled black/white tiles* whose
-  **colour is the reason**; a fill would paint over it. So split the
-  highlight: shade still-empty cells (the journey's forced siblings) and ring
-  filled premise cells. For a fill-style game this is the *common* case.
-- **Filling** shades *even though its evidence cells are filled* — because the
-  premise is a **number**, and a digit draws *on top of* a light background.
+#### Why a fill cannot work, whatever colour it is
 
-So "is the premise filled?" is the wrong question; "would the area fill hide
-the premise?" is the right one — a *colour* premise yes (ring), a *number*
-premise no (shade). Light Up is the same call with a *state* premise: a fill
-would hide the yellow lit-ness, so it shades dark evidence squares and rings
-lit ones, from one list. **When a game has both kinds, decide in `redraw` from
-the cell's own state — one `evidence` list, not two.** Exemplars: the
-`DS_HINT_EVID` branch in
-[`singles/render.ts`](../../src/games/singles/render.ts); `buildHighlights`
-in [`unruly/index.ts`](../../src/games/unruly/index.ts).
+`HINT_FILL` behind a pencil mark scored **1.91:1** in light and **1.96:1** in
+dark, and behind an entered digit 2.20 / 2.71. It is not fixable by recolouring:
+the pale end of the palette holds exactly one cool wash and the evidence has it,
+so the only hues clearing ~2.6:1 are the ones nearest `ERROR_WASH` — which would
+make the cell the hint points at look like the cell that is *wrong*. A joint
+search over both hint roles, every hue and both schemes returns **no feasible
+arrangement** (owner-reported, 2026-08-22; the search is in
+`walk-tactic-hint-chains` D7). The role is gone from the palette, so nobody
+reopens the question by retuning a colour.
 
-**"Hide" includes *by contrast*, not only by occlusion — and the acted-on cell
-should be ringed in every game.** The rule above reasons that a digit is safe
-because it "draws *on top of* a light background". Measurement says it is not:
-`HINT_FILL` behind a pencil mark scores **1.91:1** in light and **1.96:1** in
-dark, and behind an entered digit 2.20 / 2.71. Nor is it fixable by recolouring —
-the pale end of the palette holds exactly one cool wash and `HINT_EVIDENCE` has
-it, so the only hues clearing ~2.6:1 are the ones nearest `ERROR_WASH`, which
-would make the cell the hint points at look like the cell that is *wrong*
-(owner-reported, 2026-08-22; the search is in `walk-tactic-hint-chains` D7).
+A mark drawn on the cell's **border** is read *against* a surface rather than
+*through* it, so the constraint disappears instead of being traded, and the mark
+can take a strong colour — **`HINT_ACTION`**, the emphatic blue this cell always
+meant. It also unifies two branches the candidate games had split: they
+suppressed the fill whenever candidates were struck (Towers: *"painting the cell
+COL_HINT as well would hide the very digit the hint is crossing out"*), so on a
+strike step the target carried **no cell-level mark at all** and the player had
+to hunt for the strikethrough.
 
-A ring sits *beside* the content rather than under it, so the constraint
-disappears instead of being traded, and it can then use **`HINT_ACTION`** — the
-emphatic blue, which is what this cell always meant. It also unifies two branches
-the candidate games had split: they suppressed the fill whenever candidates were
-struck (Towers: *"painting the cell COL_HINT as well would hide the very digit
-the hint is crossing out"*), so on a strike step the target carried **no
-cell-level mark at all** and the player had to hunt for the strikethrough.
+**And the target is ringed even where the fill hid nothing.** Eight games filled
+a genuinely empty cell — measured, one frame at a time — and were converted
+anyway (owner, 2026-08-22). Two reasons: one mark should mean one thing across
+the collection, and in a shading game (Bricks, Clusters, Unruly, Singles,
+Pattern, Slant) the move *is* "give this cell a colour", so a solid fill says
+with the board what the narration is still proposing.
 
-**Put the ring in the gutter, not inside the tile.** The first cut drew it just
-inside the cell edge and clipped the outer pencil marks — a candidate game lays
-its marks across the *whole* tile (Keen: `pl = tx + (ts − fontsize·pw) / 2`, a
-block as wide as the cell), so a glyph has only its own few pixels of font
-padding to spare and any ring thick enough to read eats into them. The grid line
-around the cell is space the border already owns, so a ring there costs the
-content nothing: it *replaces* the border rather than crowding the digits, and it
-can be the gutter's own thickness because it reads as a highlight by **colour**,
-not by weight.
+#### Where the band goes, and who rubs it out
 
-That has one consequence worth knowing before you copy it: **no tile owns those
-pixels**, so a tile can neither paint the ring nor rub it out. It therefore
-belongs in a pass after the tile loop, and the drawstate has to remember which
-cells are ringed — to erase a ring that moved (paint its old gutter back to
-`COL_GRID`; the cell underneath repaints itself but stops at its own edge), and
-to restamp a ring that stayed (a neighbour repainting for its own reasons widens
-its background into the shared gutter and would clip a side off).
+`MarkBand` is a content box plus how far the band reaches **outside** it and how
+far **inside**. That is the one thing that genuinely differs between games, and
+it decides who undoes the mark:
 
-**The evidence area goes the same way, as the region's outline.** A wash over it
-faces the identical squeeze and loses twice: pale enough to read the digits
-through leaves it too faint to read as a mark. One rule draws both shapes it
-needs — paint a side wherever the neighbour across it is not also evidence — so a
-contiguous region (a cage, a row) comes out as a single contour, concave corners
-and all, and a scattered set (a forcing chain's cells) as one ring per cell,
-which is honest because they really are separate cells.
+- **Outside** (`outer > 0`) — Keen and Solo have a `2·GRIDEXTRA + 1` gutter of
+  `COL_GRID` backing; Unequal has a `TILESIZE/2` gap. The mark costs the content
+  nothing. **No tile owns those pixels**, so `HintMarks` is told the gutter's
+  resting colour: it paints a moved mark back, and **restamps a mark that stayed
+  every frame**, because a neighbour repainting for its own reasons widens its
+  background into the shared gutter and would clip a side off.
+- **Inside** (`outer = 0`) — Towers, Filling, Crossing, Dominosa and Salad tile
+  exactly and draw their own per-cell outline, so the band replaces it. Nothing
+  needs erasing: the cell whose overlay changed repaints itself and takes its
+  mark with it, which is why those games can draw the mark from `drawTile`.
+- **Both** — Group, Undead and Clusters have a one-pixel gutter plus a couple of
+  pixels of the cell's own edge.
+- **Inset** — Galaxies and Palisade put the mark *inside* the cell body, because
+  in those games the cell border is where a **wall** lives and a mark there would
+  read as one.
+
+The band is the width of the border it replaces, not the heaviest line that fits:
+it reads as a highlight by **colour**, not by weight. The inner reach is bounded
+by the content, and the bound is arithmetic rather than taste — Undead's pencilled
+monster is a circle of radius `2/5` of its `TILESIZE/2` box centred a quarter-tile
+in, so it clears the edge by `TILESIZE/20`; Unequal's greater-than chevron reaches
+to within `GAP/4 − 1` of the cell it points away from. Each game's `markBand`
+records its own.
+
+#### Outline or wash: what the evidence cells carry
+
+**Outline** where the cells carry anything the player has to read — digits,
+pencil marks, clue glyphs, a placed slash, an association's own black or white
+background. One rule draws both shapes it needs: paint a side wherever the
+neighbour across it is not also evidence, so a contiguous region (a cage, a row,
+a line of sight) comes out as a single contour, concave corners and all, and a
+scattered set (a forcing chain's cells) as one ring per cell — honest, because
+they really are separate cells.
+
+**Wash** only where the game can say *nothing is drawn on these*, and three games
+can: **Unruly** (the journey's still-empty siblings), **Pattern** (the reasoned
+line's undecided squares) and **Light Up** (dark squares, where the premise is
+that the square is **not lit** — which a teal shade preserves, being not yellow).
+`hint-mark.test.ts` asserts that set exactly, so a fourth game washing its
+evidence fails until somebody writes down why it may.
+
+**Filling used to be the counterexample and is not.** Its premise is a *number*,
+and a digit reads perfectly well on a pale fill — 3.41:1 in light, 4.04:1 in
+dark. That is true, and it is not the binding constraint. The wash also has to be
+dark enough for a *derived* foreground, and at that lightness it measures
+**1.15:1 against its own board in dark mode**: legible content on a tint nobody
+can see. The two requirements move in opposite directions along one axis, so a
+wash under content loses whichever way it is tuned; an outline is not on that
+axis at all. Sticks and Boats collapsed the same way — each had *split* its
+evidence, washing one kind of cell and ringing the other, and both are now one
+shape for one role.
 
 Note what is *not* an option: dropping the evidence mark. Keen's narration says
 *"**This** cage"* while the target often sits in a different one, so the mark is
@@ -1072,15 +1097,27 @@ settles it: a base step at the same lightness in both schemes lands close to a
 pale board and far from a dark one — a soft line under one scheme and a bright
 one under the other — and the check flags exactly that. The bold step is defined
 as "dark in light mode, light in dark mode", which is what a line drawn *against*
-a board wants.
+a board wants. `HINT_EVIDENCE` is that step, and it covers the **chain ordinal**
+too: a number saying where a cell falls in the chain is an index *into* the
+evidence, not a hint role of its own, so the two are one role rather than two
+that happen to agree.
 
-Exemplars: `drawCellSides` and the post-tile block of `redraw` in
-[`keen/render.ts`](../../src/games/keen/render.ts). Guard the *shape*, not the
-colour — `expectRing` asserts four thin rects and none solid, and the line frame
-asserts `2w + 2` sides for a `w`-cell contour, because "some rect is `COL_HINT`"
-is precisely what a fill also satisfies and a per-cell ring would give `4w`.
-**Six games still fill** and are the rollout: group, solo, undead, unequal,
-towers, filling.
+#### Guarding it
+
+Guard the *shape*, not the colour: "some rect is `COL_HINT`" is precisely what a
+fill also satisfies, so it would pass unchanged through the very rewrite that
+removed the fills. [`hint-mark.test.ts`](../../src/engine/hint-mark.test.ts)
+sweeps the `hint-games.ts` enrolment and asserts that no rect in a game's hint
+colours is cell-sized and thick in both directions, reading each game's palette
+indices out of its own `render.ts` exports so there is no second list to drift.
+Per-game, [`mark-shape.ts`](../../src/engine/testing/mark-shape.ts) gives
+`expectRing` (four thin rects, none solid) and `expectContour` (`2w + 2` sides
+for a `w`-cell region, where a per-cell renderer would give `4w`).
+
+Exemplars: `markBand` plus the post-tile block of `redraw` in
+[`keen/render.ts`](../../src/games/keen/render.ts) for a gutter game;
+[`filling/render.ts`](../../src/games/filling/render.ts) for a tiling one;
+[`galaxies/render.ts`](../../src/games/galaxies/render.ts) for the inset case.
 
 ### Group one firing into one step
 

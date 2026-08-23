@@ -20,6 +20,7 @@ import {
   netslideLowlight,
 } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
 import type { NetslideHint } from "./hint.ts";
 import {
@@ -211,12 +212,11 @@ function drawTile(
   const bx = b + ts * x + Math.trunc(xshift * ts);
   const by = b + ts * y + Math.trunc(yshift * ts);
 
-  // Blank the tile: a border-coloured rect with a background-coloured one
-  // inset by the tile border. The tile the hint is placing is backed in the hint
-  // colour instead — its wires stay drawn on top, so the player can still see
-  // *which* piece is being talked about.
-  const background =
-    tile & HINT_TILE ? COL_HINT : tile & FLASHING ? COL_FLASHING : COL_BACKGROUND;
+  // Blank the tile: a border-coloured rect with a background-coloured one inset
+  // by the tile border. The tile the hint is placing takes no fill — it is
+  // **double-ringed** at the end of this function instead, so the wires that say
+  // *which piece* this is keep their own colour rather than sitting on blue.
+  const background = tile & FLASHING ? COL_FLASHING : COL_BACKGROUND;
   dr.drawRect({ x: bx, y: by, w: ts + TILE_BORDER, h: ts + TILE_BORDER }, COL_BORDER);
   dr.drawRect(
     {
@@ -305,6 +305,30 @@ function drawTile(
     } else {
       rectCoords(dr, px, py, px, py, COL_WIRE);
     }
+  }
+
+  // The hinted tile's own mark: a **double** ring on the tile's frame, drawn
+  // last so no wire crosses it. Double, and on the frame rather than inset,
+  // because `drawHintOutline` already puts a single inset ring in this colour on
+  // the destination *cell* — the two marks say different things ("move this
+  // piece" against "to here"), so they have to look different (the same reason
+  // Clusters doubles its danger ring). A mark on a **tile** belongs here rather
+  // than in `drawHintTargets`: `bx`/`by` are the shifted origin, so it rides with
+  // the tile through the slide instead of staying on the cell it left.
+  if (tile & HINT_TILE) {
+    const t = Math.max(2, Math.round(ts / 16));
+    const box = { x: bx, y: by, w: ts + TILE_BORDER, h: ts + TILE_BORDER };
+    drawMarkSides(dr, { box, outer: 0, inner: t }, MARK_ALL, COL_HINT);
+    drawMarkSides(
+      dr,
+      {
+        box: { x: box.x + 2 * t, y: box.y + 2 * t, w: box.w - 4 * t, h: box.h - 4 * t },
+        outer: 0,
+        inner: t,
+      },
+      MARK_ALL,
+      COL_HINT,
+    );
   }
 
   dr.drawUpdate({ x: bx, y: by, w: ts + TILE_BORDER, h: ts + TILE_BORDER });

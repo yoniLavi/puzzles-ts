@@ -21,7 +21,6 @@ import {
   ERROR,
   HINT_ACTION,
   HINT_EVIDENCE,
-  HINT_ORDER,
   INK,
   PAPER,
   PENCIL_BODY,
@@ -29,6 +28,7 @@ import {
   playerEntryColour,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import {
   HINT_AREA,
@@ -83,10 +83,10 @@ export const COL_PENCIL_BODY = 18;
 // Fork additions: the explained-hint legend (docs/games/hints.md § "The element-type colour legend").
 /** The square(s) / candidate(s) / entry the deduction acts on. */
 export const COL_HINT = 19;
-/** The deduction's evidence — a clue's line of sight, or a whole line. */
+/** The deduction's evidence — a clue's line of sight, or a whole line, outlined
+ * — **and** a forcing chain's ordinal, one index because the number indexes the
+ * evidence. */
 export const COL_HINT_CELL = 20;
-/** Hint overlay: a forcing chain's ordinal, indexing the evidence above. */
-export const COL_HINT_ORDER = 21;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
@@ -111,8 +111,12 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_MISTAKE] = ERROR;
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_ACTION;
+  // Both hint marks are outlines on the square's border. A Salad square carries
+  // a letter, a ghosted preview and up to three struck notes, so an evidence
+  // wash would have to be pale enough to read all of that through — and at that
+  // lightness it stops reading as a mark at all. `HINT_EVIDENCE` covers the
+  // chain ordinal too; see its doc comment for why they are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  out[COL_HINT_ORDER] = HINT_ORDER;
   return out;
 }
 
@@ -180,6 +184,9 @@ export interface SaladDrawState {
   /** Explained-hint overlay, same rule: target/area flags, struck candidates and
    * the ghosted entry, none of which touch a square's tile value. */
   hint: OverlaySidecar;
+  /** The hint target's ring and the evidence area's outline (fork additions),
+   * drawn after the cell loop. See {@link markBand}. */
+  marks: HintMarks;
   /** Scratch symbol/hole counts per line, refilled each frame. */
   rowcount: Int32Array;
   colcount: Int32Array;
@@ -201,9 +208,29 @@ export function newDrawState(s: SaladState): SaladDrawState {
     borderDrawn: new Int32Array(o * 4).fill(-1),
     wrong: new OverlaySidecar(o2),
     hint: new OverlaySidecar(o2),
+    marks: new HintMarks(),
     rowcount: new Int32Array(o2),
     colcount: new Int32Array(o2),
     pencilMode: false,
+  };
+}
+
+/**
+ * Where a hint mark sits around square `(x, y)` — **on the square's own border**,
+ * where the grid line already runs.
+ *
+ * Salad's squares tile exactly at a `TILESIZE` pitch, so the band lies wholly
+ * inside the box (`outer` 0) and a square whose overlay changes repaints itself
+ * and takes its mark with it. There is room because the content — a letter, a
+ * ghosted preview, up to three struck notes — is laid out inside the square's
+ * `drawBall`/`drawGhost` insets rather than to its edge.
+ */
+function markBand(ds: SaladDrawState, x: number, y: number): MarkBand {
+  const ts = ds.tilesize;
+  return {
+    box: { x: (x + 1) * ts, y: (y + 1) * ts, w: ts, h: ts },
+    outer: 0,
+    inner: Math.max(2, ts >> 4),
   };
 }
 
@@ -563,15 +590,12 @@ export function redraw(
       const ghost = (overlay & HINT_GHOST_MASK) >> HINT_GHOST_SHIFT;
 
       // Background, or the three-phase completion wave (letters mode paints the
-      // whole cell; numbers mode waves the ball backgrounds instead). A hint's
-      // evidence area and its acted-on squares both take the light
-      // `COL_HINT_CELL` tint, and win over the cursor as in every other
-      // candidate game; the acted-on square is then *ringed* rather than filled
-      // (§5.4), because its ghost entry and struck notes have to stay legible.
+      // whole cell; numbers mode waves the ball backgrounds instead). Neither
+      // hint mark appears here: the acted-on square is ringed and the evidence
+      // area outlined, both on the square's own border in the pass below, so a
+      // hinted square keeps showing its ghost entry and its struck notes.
       const hinted = flash === -1 && (overlay & (HINT_TARGET | HINT_AREA)) !== 0;
-      if (hinted) {
-        dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, COL_HINT_CELL);
-      } else if (s.mode === GAMEMODE_LETTERS && flash >= 0) {
+      if (s.mode === GAMEMODE_LETTERS && flash >= 0) {
         const colour =
           (x + y) % 3 === flash
             ? COL_BACKGROUND
@@ -583,9 +607,11 @@ export function redraw(
         dr.drawRect({ x: tx, y: ty, w: ts, h: ts }, COL_BACKGROUND);
       }
 
-      if (hinted) {
-        // Nothing further: the cursor's own fill would hide the hint, and the
-        // pencil-mode corner triangle below still draws on top.
+      if (hinted && flags[i] & FD_CURSOR && !(flags[i] & FD_PENCIL)) {
+        // The cursor's own fill would swamp the square a hint is pointing at —
+        // and the hint deliberately stays while the player types into it, so the
+        // two cues have to coexist. The ring says which square the deduction is
+        // about; the cursor keeps its corner triangle below.
       } else if (flash === -1 && flags[i] & FD_PENCIL) {
         dr.drawPolygon(
           [
@@ -653,26 +679,12 @@ export function redraw(
 
       // The entry the hint asks for, and the ring saying "act here".
       if (ghost !== 0) drawGhost(dr, ts, base, tx, ty, ghost);
-      if (overlay & HINT_TARGET) {
-        for (const inset of [1, 2]) {
-          dr.drawPolygon(
-            [
-              { x: tx + inset, y: ty + inset },
-              { x: tx + ts - 1 - inset, y: ty + inset },
-              { x: tx + ts - 1 - inset, y: ty + ts - 1 - inset },
-              { x: tx + inset, y: ty + ts - 1 - inset },
-            ],
-            -1,
-            COL_HINT,
-          );
-        }
-      }
 
       // A forcing chain's place in the order it fires, so the narration can
       // cite the squares by number rather than asking the player to
       // reconstruct the chain (`walk-tactic-hint-chains`).
       if (ds.hint.order[i] > 0)
-        drawHintOrdinal(dr, { x: tx, y: ty }, ts, ds.hint.order[i], COL_HINT_ORDER);
+        drawHintOrdinal(dr, { x: tx, y: ty }, ts, ds.hint.order[i], COL_HINT_CELL);
 
       if (ds.wrong.at(i)) drawMistakeBox(dr, tx, ty, ts);
       ds.wrong.commit(i);
@@ -680,6 +692,27 @@ export function redraw(
 
       dr.drawUpdate({ x: tx, y: ty, w: ts, h: ts });
     }
+  }
+
+  // The hint marks, after the cell loop and outside every clip. A Salad square
+  // carries a letter, a ghost preview and up to three struck notes, so neither
+  // mark can be a fill; both go on the square's own border, where the grid line
+  // already is.
+  {
+    const targets: MarkCell[] = [];
+    const evidence: MarkCell[] = [];
+    for (let y = 0; y < o; y++) {
+      for (let x = 0; x < o; x++) {
+        const packed = ds.hint.packed[y * o + x];
+        if (packed & HINT_TARGET) targets.push({ x, y });
+        if (packed & HINT_AREA) evidence.push({ x, y });
+      }
+    }
+    ds.marks.paint(dr, targets, evidence, {
+      band: (x, y) => markBand(ds, x, y),
+      targetColour: COL_HINT,
+      evidenceColour: COL_HINT_CELL,
+    });
   }
 
   // Border clues, in the one-tile margin.

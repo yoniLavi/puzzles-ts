@@ -38,7 +38,7 @@
  * can never quietly go from guarding six games to guarding none.
  */
 import { describe, expect, it } from "vitest";
-import { HINT_ORDER } from "./colour/palette.ts";
+import { HINT_EVIDENCE } from "./colour/palette.ts";
 import type { PresetMenu } from "./game.ts";
 import { randomNew } from "./random/index.ts";
 import { firstLeaf, HINT_GAMES } from "./testing/hint-games.ts";
@@ -92,9 +92,13 @@ function rgbOf(colour: Colour): string {
   return `rgb(${c(colour[0])}, ${c(colour[1])}, ${c(colour[2])})`;
 }
 
-/** `HINT_ORDER` as that label — computed once, so a game whose `COL_HINT_ORDER`
- * index drifted would fail rather than quietly match a neighbour. */
-const ORDINAL_RGB = rgbOf(HINT_ORDER);
+/** The ordinal's colour as that label — computed once, so a game whose palette
+ * index drifted would fail rather than quietly match a neighbour.
+ *
+ * It is `HINT_EVIDENCE`, and by construction rather than by coincidence: the
+ * number is an *index into* the evidence, so it is the same role as the evidence
+ * outline it numbers rather than a fourth hint colour. */
+const ORDINAL_RGB = rgbOf(HINT_EVIDENCE);
 
 /** The leaf preset with this exact title, or undefined. */
 function presetTitled<P>(menu: PresetMenu<P>, title: string): P | undefined {

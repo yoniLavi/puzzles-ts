@@ -26,6 +26,7 @@ import {
   PAPER,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import { findLiveErrors } from "./solver.ts";
@@ -55,7 +56,7 @@ export const COL_ERROR = 4;
 export const COL_CURSOR = 5;
 // Fork additions beyond upstream's COL_* enum: the explained hint.
 export const COL_HINT = 6; // the forced square's line, in the game's own bar shape
-export const COL_HINT_CELL = 7; // the deduction's evidence — shade or ring
+export const COL_HINT_CELL = 7; // the deduction's evidence — an inset ring
 
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
@@ -143,12 +144,15 @@ function drawTile(
   const black = (tile & F_BLOCK) !== 0;
 
   dr.drawRect({ x: px, y: py, w: ts, h: ts }, COL_GRID);
-  // Evidence on a white square is a wash the clue digit and any line draw over;
-  // on a black square it would hide the very blackness the argument is about, so
-  // that case rings instead (docs/games/hints.md § "Shade vs ring").
+  // Evidence is an inset **ring** on every square, black or white — one rule and
+  // one shape for one role. A fill on a black square hides the very blackness
+  // the argument is about; on a white one it is the wash itself that loses, since
+  // a fill pale enough to leave the clue digit legible is too faint to read as a
+  // mark (`hint-mark.ts`). A white evidence square is not empty either: it
+  // carries the clue the deduction counts with, and often a line.
   dr.drawRect(
     { x: px, y: py, w: ts - 1, h: ts - 1 },
-    black ? COL_GRID : evidence ? COL_HINT_CELL : COL_BACKGROUND,
+    black ? COL_GRID : COL_BACKGROUND,
   );
 
   if (tile & F_HOR) {
@@ -180,14 +184,18 @@ function drawTile(
     );
   }
 
-  if (evidence && black) {
-    const t = Math.floor(ts / 10);
+  if (evidence) {
     const m = Math.floor(ts / 12);
-    const inner = ts - 1 - 2 * m;
-    dr.drawRect({ x: px + m, y: py + m, w: inner, h: t }, COL_HINT_CELL);
-    dr.drawRect({ x: px + m, y: py + m, w: t, h: inner }, COL_HINT_CELL);
-    dr.drawRect({ x: px + m, y: py + ts - 1 - m - t, w: inner, h: t }, COL_HINT_CELL);
-    dr.drawRect({ x: px + ts - 1 - m - t, y: py + m, w: t, h: inner }, COL_HINT_CELL);
+    drawMarkSides(
+      dr,
+      {
+        box: { x: px + m, y: py + m, w: ts - 1 - 2 * m, h: ts - 1 - 2 * m },
+        outer: 0,
+        inner: Math.max(2, Math.floor(ts / 10)),
+      },
+      MARK_ALL,
+      COL_HINT_CELL,
+    );
   }
 
   if (clue !== -1) {

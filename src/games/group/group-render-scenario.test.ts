@@ -10,6 +10,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { expectRing, isThin, markSides } from "../../engine/testing/mark-shape.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { groupGame } from "./index.ts";
 import { COL_DIAGONAL, COL_GRID, COL_HINT, COL_HINT_CELL } from "./render.ts";
@@ -81,14 +82,25 @@ describe("group render scenarios", () => {
     expect(frame, "no associativity frame found in 40 seeds").toBeDefined();
     if (!frame) return;
 
-    // The forced cell is ringed with a solid COL_HINT fill; the three known
-    // products are shaded COL_HINT_CELL as evidence (design D4 / §5.2).
-    const hintTargets = rects(frame.recording.ops).filter((r) => r.colour === COL_HINT);
-    const evidence = rects(frame.recording.ops).filter(
-      (r) => r.colour === COL_HINT_CELL,
-    );
-    expect(hintTargets.length).toBeGreaterThanOrEqual(1);
-    expect(evidence.length).toBeGreaterThanOrEqual(3);
+    // The forced cell is **ringed** COL_HINT — four thin rects, no fill — and
+    // the three known products are outlined COL_HINT_CELL as evidence.
+    //
+    // The side count is the assertion, because it is what distinguishes one
+    // contour from a ring per cell. This frame's premises are (1,1), (2,1) and
+    // (4,1): an adjacent pair, which the neighbour rule joins into a 6-sided
+    // contour, plus a separate cell at 4 — **10**, where a per-cell renderer
+    // would give 12 and one that dropped a premise 6.
+    expectRing(frame.recording.ops, COL_HINT);
+    expect(frame.hint?.highlights).toMatchObject({
+      area: [
+        { x: 1, y: 1 },
+        { x: 2, y: 1 },
+        { x: 4, y: 1 },
+      ],
+    });
+    const evidence = markSides(frame.recording.ops, COL_HINT_CELL);
+    expect(evidence.length).toBe(10);
+    for (const s of evidence) expect(isThin(s)).toBe(true);
 
     expect(frame.recording.ops).toMatchSnapshot();
   });

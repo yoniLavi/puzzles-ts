@@ -10,6 +10,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
+import { isThin, markSides } from "../../engine/testing/mark-shape.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { newSticksDesc } from "./generator.ts";
 import { sticksGame } from "./index.ts";
@@ -346,8 +347,13 @@ describe("sticks hint — render frames (tier 2.5)", () => {
       if (bar.op !== "rect") throw new Error("unreachable");
       // A bar, not a square: its long axis *is* the orientation being hinted.
       expect(bar.w === bar.h).toBe(false);
-      // …and the evidence as an area, not a single premise square (§5.2).
-      expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(true);
+      // …and the evidence as an area, not a single premise square (§5.2), drawn
+      // as a **ring per square** — never a wash, on a white square or a black
+      // one: a white evidence square carries the clue the deduction counts with.
+      const evidence = markSides(ops, COL_HINT_CELL);
+      expect(evidence.length).toBeGreaterThanOrEqual(4);
+      expect(evidence.length % 4).toBe(0);
+      for (const s of evidence) expect(isThin(s)).toBe(true);
       // Clue numbers stay drawn under the overlay.
       expect(ops.some((o) => o.op === "text")).toBe(true);
       expect(ops).toMatchSnapshot();

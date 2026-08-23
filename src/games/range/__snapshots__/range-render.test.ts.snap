@@ -2780,7 +2780,7 @@ exports[`render scenario snapshot > draws a generated board with grid outline, c
 ]
 `;
 
-exports[`render scenario snapshot > draws the hint target and premise highlight on the first hint step 1`] = `
+exports[`render scenario snapshot > rings the hint target and outlines the premise on the first hint step 1`] = `
 [
   {
     "colour": 0,
@@ -3028,12 +3028,48 @@ exports[`render scenario snapshot > draws the hint target and premise highlight 
     "y2": 16,
   },
   {
+    "colour": 6,
+    "h": 31,
+    "op": "rect",
+    "rgb": "rgb(255, 255, 255)",
+    "w": 31,
+    "x": 145,
+    "y": 17,
+  },
+  {
+    "colour": 5,
+    "h": 2,
+    "op": "rect",
+    "rgb": "rgb(14, 88, 91)",
+    "w": 31,
+    "x": 145,
+    "y": 17,
+  },
+  {
     "colour": 5,
     "h": 31,
     "op": "rect",
-    "rgb": "rgb(177, 250, 254)",
+    "rgb": "rgb(14, 88, 91)",
+    "w": 2,
+    "x": 145,
+    "y": 17,
+  },
+  {
+    "colour": 5,
+    "h": 2,
+    "op": "rect",
+    "rgb": "rgb(14, 88, 91)",
     "w": 31,
     "x": 145,
+    "y": 46,
+  },
+  {
+    "colour": 5,
+    "h": 31,
+    "op": "rect",
+    "rgb": "rgb(14, 88, 91)",
+    "w": 2,
+    "x": 174,
     "y": 17,
   },
   {
@@ -3493,12 +3529,48 @@ exports[`render scenario snapshot > draws the hint target and premise highlight 
     "y2": 48,
   },
   {
-    "colour": 4,
+    "colour": 0,
     "h": 31,
+    "op": "rect",
+    "rgb": "rgb(211, 211, 211)",
+    "w": 31,
+    "x": 145,
+    "y": 49,
+  },
+  {
+    "colour": 4,
+    "h": 2,
     "op": "rect",
     "rgb": "rgb(21, 113, 233)",
     "w": 31,
     "x": 145,
+    "y": 49,
+  },
+  {
+    "colour": 4,
+    "h": 31,
+    "op": "rect",
+    "rgb": "rgb(21, 113, 233)",
+    "w": 2,
+    "x": 145,
+    "y": 49,
+  },
+  {
+    "colour": 4,
+    "h": 2,
+    "op": "rect",
+    "rgb": "rgb(21, 113, 233)",
+    "w": 31,
+    "x": 145,
+    "y": 78,
+  },
+  {
+    "colour": 4,
+    "h": 31,
+    "op": "rect",
+    "rgb": "rgb(21, 113, 233)",
+    "w": 2,
+    "x": 174,
     "y": 49,
   },
   {

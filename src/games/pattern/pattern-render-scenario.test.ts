@@ -8,6 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
+import { expectRing, isThin } from "../../engine/testing/mark-shape.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { type PatternHint, patternGame } from "./index.ts";
 import { COL_GRID, COL_HINT, COL_HINT_BLACKREF, COL_HINT_CELL } from "./render.ts";
@@ -20,7 +21,7 @@ function boardId(seed: string): string {
 }
 
 describe("Pattern hint render scenarios", () => {
-  it("opener frame: a COL_HINT target over a shaded line, clues intact", () => {
+  it("opener frame: a ringed COL_HINT target over a shaded line, clues intact", () => {
     const { recording, hint, size } = renderScenario({
       game: patternGame,
       id: boardId("pattern-hint-opener"),
@@ -32,13 +33,16 @@ describe("Pattern hint render scenarios", () => {
     const hl = hint?.highlights as PatternHint | undefined;
     expect(hl).toBeDefined();
 
-    // The forced cell(s) paint COL_HINT (the blue highlight, never the mark).
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
-      true,
-    );
-    // The reasoned line of sight shades COL_HINT_CELL.
+    // The forced cell(s) are **ringed** COL_HINT — never filled with it, and
+    // never pre-filled with the black/white the move will place.
+    expectRing(recording.ops, COL_HINT, hl?.cells.length);
+    // The reasoned line of sight *shades* COL_HINT_CELL. This is the wash form
+    // of the evidence role and it is right here: the shaded cells are the line's
+    // still-undecided squares, so nothing is drawn on them.
     expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
+      recording.ops.some(
+        (o) => o.op === "rect" && o.colour === COL_HINT_CELL && !isThin(o),
+      ),
     ).toBe(true);
     // The clue numbers are still drawn (the hint overlays, it doesn't erase).
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);

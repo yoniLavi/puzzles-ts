@@ -11,6 +11,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
+import { expectRing, markSides } from "../../engine/testing/mark-shape.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { type SinglesHint, singlesGame } from "./index.ts";
 import {
@@ -335,18 +336,22 @@ describe("hintKeepTrack", () => {
 });
 
 describe("singles hint render", () => {
-  it("draws the hint target in COL_HINT with evidence and numbers", () => {
-    const { recording } = renderScenario({
+  it("rings the hint target, with evidence and numbers", () => {
+    const { recording, hint } = renderScenario({
       game: singlesGame,
       id: "6x6dk#hint-render",
       showHint: true,
     });
     const ops = recording.ops;
-    expect(ops.some((o) => "colour" in o && o.colour === COL_HINT)).toBe(true);
+    // Every Singles cell carries a number, so the target is **ringed**, never
+    // filled — four thin rects and no solid one.
+    const forced = (hint?.highlights as SinglesHint | undefined)?.targets ?? [];
+    expectRing(ops, COL_HINT, forced.length);
     expect(
-      ops.some((o) => "colour" in o && o.colour === COL_HINT_CELL) ||
-        // a decided premise is ringed in COL_HINT rather than shaded
-        ops.filter((o) => "colour" in o && o.colour === COL_HINT).length > 1,
+      markSides(ops, COL_HINT_CELL).length > 0 ||
+        // a decided premise is ringed in its own legend colour rather than here
+        markSides(ops, COL_HINT_BLACKREF).length > 0 ||
+        markSides(ops, COL_HINT_WHITEREF).length > 0,
     ).toBe(true);
     // Numbers are still rendered (clue digits not hidden by the overlay).
     expect(ops.some((o) => o.op === "text")).toBe(true);

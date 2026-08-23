@@ -35,6 +35,7 @@ import {
 } from "../../engine/colour/palette.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import {
   HINT_AREA,
   HINT_TARGET,
@@ -564,16 +565,25 @@ export function redraw(
       const colour =
         counts[cn] > 1 ? COL_ERROR : counts[cn] === 1 ? COL_LOWLIGHT : COL_FIXED;
 
-      dr.drawRect(
-        {
-          x: tx - ts,
-          y: ty - Math.floor(ts * 0.375),
-          w: ts * 2,
-          h: Math.floor(ts * 0.75),
-        },
-        // "The highlighted set": a hint tints the tally entry it points at.
-        hinted ? COL_HINT_CELL : COL_OUTERBG,
-      );
+      const slot = {
+        x: tx - ts,
+        y: ty - Math.floor(ts * 0.375),
+        w: ts * 2,
+        h: Math.floor(ts * 0.75),
+      };
+      dr.drawRect(slot, COL_OUTERBG);
+      // "The highlighted set": a hint **boxes** the tally entry it points at,
+      // the same mark it uses on the board rather than a tint behind the label.
+      // The label's own colour is information here — error red, used-up grey,
+      // fixed — so a fill behind it competes with exactly what it has to be read
+      // against.
+      if (hinted)
+        drawMarkSides(
+          dr,
+          { box: slot, outer: 0, inner: Math.max(1, Math.floor(ts / 10)) },
+          MARK_ALL,
+          COL_HINT_CELL,
+        );
       dr.drawText(
         { x: tx, y: ty },
         {

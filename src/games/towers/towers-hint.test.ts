@@ -10,6 +10,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
+import { expectRing, isThin, markSides } from "../../engine/testing/mark-shape.ts";
 import {
   DEFAULT_BACKGROUND,
   renderScenario,
@@ -496,10 +497,10 @@ describe("towers hint render", () => {
     expect(hint).toBeDefined();
     expect(hint?.explanation).toMatch(/sees exactly/);
 
-    // The clue line of sight is shaded COL_HINT_CELL.
-    expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
-    ).toBe(true);
+    // The clue line of sight is **outlined** COL_HINT_CELL, not shaded.
+    const evidence = markSides(recording.ops, COL_HINT_CELL);
+    expect(evidence.length).toBeGreaterThan(0);
+    for (const s of evidence) expect(isThin(s)).toBe(true);
     // The struck candidate keeps its normal pencil colour (legible) and is
     // crossed through with a same-colour (COL_PENCIL) line — the strikethrough,
     // not a recolour, is the "ruled out" cue (highest contrast against the
@@ -513,23 +514,21 @@ describe("towers hint render", () => {
     expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(
       false,
     );
-    // ...and a strike cell is NOT solid-filled COL_HINT. That fill is the
-    // *placement*-target colour; painting a struck cell with it would hide the
-    // struck digit, making the candidate look already-removed. (Regression:
-    // fix-stale-hint-step — owner-reported "the hint deletes my note". The note
-    // is intact; the frame must show it.)
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
-      false,
-    );
+    // ...and the strike cell is **ringed** COL_HINT rather than filled with it.
+    // A fill would hide the struck digit, making the candidate look
+    // already-removed (regression: fix-stale-hint-step — owner-reported "the
+    // hint deletes my note"; the note is intact and the frame must show it).
+    // The ring is what the cell gets instead, and it is the same mark a
+    // placement target gets, so a strike is never identified *only* by a
+    // strikethrough the player has to spot first.
+    expectRing(recording.ops, COL_HINT, (hint?.highlights as AnyStep)?.targets.length);
     // Clues are still drawn (text).
     expect(recording.ops.some((o) => o.op === "text")).toBe(true);
 
     expect(recording.ops).toMatchSnapshot();
   });
 
-  it("a placement step DOES solid-fill its target cell COL_HINT (no struck digit to hide)", () => {
-    // The `struck === 0` guard must still fill a placement target — only strike
-    // cells (which carry COL_HINT digits) skip the solid fill.
+  it("a placement step rings its target cell COL_HINT", () => {
     const id = facingPlacementFrame();
     const { recording, hint } = renderScenario({
       game: towersGame,
@@ -540,10 +539,8 @@ describe("towers hint render", () => {
       hintUntil: (s) => (s.move as TowersMove).type === "set",
     });
     expect((hint?.move as TowersMove)?.type).toBe("set");
-    // A placement target is solid COL_HINT, and carries no struck digit/line.
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
-      true,
-    );
+    // A placement target is ringed COL_HINT, and carries no struck digit/line.
+    expectRing(recording.ops, COL_HINT, (hint?.highlights as AnyStep)?.targets.length);
     expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_HINT)).toBe(
       false,
     );

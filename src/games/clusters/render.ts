@@ -19,11 +19,11 @@ import {
   CURSOR,
   ERROR,
   HINT_EVIDENCE,
-  HINT_ORDER,
   INK,
   PAPER,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { Colour, Size } from "../../engine/types.ts";
@@ -79,9 +79,10 @@ export const COL_CURSOR = 7;
 // substitute this repo already reaches for when blue is spoken for (Sticks',
 // Subsets' cursors).
 export const COL_HINT = 8;
+/** The chain's outline, **and** a chain cell's ordinal — one index, because the
+ * number indexes the evidence. */
 export const COL_HINT_CELL = 9;
 export const COL_HINT_DANGER = 10;
-export const COL_HINT_ORDER = 11; // a chain cell's ordinal, indexing the evidence
 
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
@@ -94,9 +95,11 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = ERROR;
   out[COL_CURSOR] = CURSOR;
   out[COL_HINT] = PURPLE;
+  // The chain is outlined rather than washed, so it takes the mark form of the
+  // evidence role. `HINT_EVIDENCE` covers the chain ordinal too; see its doc
+  // comment for why the index and the thing it indexes are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   out[COL_HINT_DANGER] = ORANGE;
-  out[COL_HINT_ORDER] = HINT_ORDER;
   return out;
 }
 
@@ -143,6 +146,9 @@ export interface ClustersDrawState {
   h: number;
   cache: Int32Array;
   hint: OverlaySidecar;
+  /** The hint target's ring and the chain's outline (fork additions), drawn
+   * after the tile loop. See {@link markBand}. */
+  marks: HintMarks;
 }
 
 export function newDrawState(state: ClustersState): ClustersDrawState {
@@ -153,11 +159,32 @@ export function newDrawState(state: ClustersState): ClustersDrawState {
     h: state.h,
     cache: new Int32Array(state.w * state.h).fill(-1),
     hint: new OverlaySidecar(state.w * state.h),
+    marks: new HintMarks(),
   };
 }
 
 export function setTileSize(ds: ClustersDrawState, ts: number): void {
   ds.tilesize = ts;
+}
+
+/**
+ * Where a hint mark sits around cell `(x, y)` — straddling the grid line, one
+ * pixel of `COL_GRID` gutter and a couple of the cell's own edge.
+ *
+ * Each tile paints a `TILESIZE` square of `COL_GRID` and then its own colour one
+ * pixel smaller, so a single pixel between two cells is real gutter and is what
+ * `HintMarks` paints back when a mark moves; the rest lies inside the cell,
+ * where the cell's own repaint undoes it. There is room because a Clusters cell's
+ * content is a centred dot or a `TILESIZE/3` what-if mark.
+ */
+function markBand(ds: ClustersDrawState, x: number, y: number): MarkBand {
+  const ts = ds.tilesize;
+  const b = border(ts);
+  return {
+    box: { x: x * ts + b, y: y * ts + b, w: ts - 1, h: ts - 1 },
+    outer: 1,
+    inner: Math.max(2, ts >> 5),
+  };
 }
 
 // --- cell drawing ----------------------------------------------------------
@@ -195,18 +222,13 @@ function drawTile(
   const px = x * ts + b;
   const py = y * ts + b;
 
-  // The hint target and a chain's what-if cells are always empty cells, so
-  // their highlight takes the fill (nothing underneath to hide, §5.4).
-  const fill =
-    hintBits & HB_TARGET
-      ? COL_HINT
-      : hintBits & (HB_CHAIN_0 | HB_CHAIN_1)
-        ? COL_HINT_CELL
-        : tile & F_COLOR_1
-          ? COL_1
-          : tile & F_COLOR_0
-            ? COL_0
-            : COL_BACKGROUND;
+  // The cell keeps its own colour under a hint: the target is ringed and the
+  // chain outlined, both on the cell's border in `redraw`. In a game whose move
+  // *is* "give this cell a colour", a solid fill is not merely a legibility
+  // question — it says with the board what the narration is still proposing, and
+  // it buries the what-if mark's colour, which is the whole content of a chain
+  // cell.
+  const fill = tile & F_COLOR_1 ? COL_1 : tile & F_COLOR_0 ? COL_0 : COL_BACKGROUND;
   dr.drawRect({ x: px, y: py, w: ts, h: ts }, COL_GRID);
   dr.drawRect({ x: px, y: py, w: ts - 1, h: ts - 1 }, fill);
 
@@ -278,7 +300,7 @@ function drawTile(
       { x: px, y: py },
       ts - 1,
       hintOrder,
-      COL_HINT_ORDER,
+      COL_HINT_CELL,
       hintBits & HB_DANGER ? 1 + 4 * rt : undefined,
     );
   }
@@ -371,4 +393,20 @@ export function redraw(
       }
     }
   }
+
+  // The hint marks, after the tile loop and outside every clip, because they
+  // straddle the grid line, which no tile repaints.
+  const targets: MarkCell[] = [];
+  const chain: MarkCell[] = [];
+  for (let i = 0; i < w * h; i++) {
+    const c = { x: i % w, y: (i / w) | 0 };
+    if (ds.hint.packed[i] & HB_TARGET) targets.push(c);
+    if (ds.hint.packed[i] & (HB_CHAIN_0 | HB_CHAIN_1)) chain.push(c);
+  }
+  ds.marks.paint(dr, targets, chain, {
+    band: (x, y) => markBand(ds, x, y),
+    targetColour: COL_HINT,
+    evidenceColour: COL_HINT_CELL,
+    gutterColour: COL_GRID,
+  });
 }

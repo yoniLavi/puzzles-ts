@@ -16,11 +16,11 @@
  * separate Check & Save mistake overlay.
  */
 
+import { TEAL_BOLD } from "../../engine/colour/colours.ts";
 import {
   clueDoneColour,
   ERROR,
-  HINT_EVIDENCE,
-  HINT_FILL,
+  HINT_ACTION,
   highlightWash,
   INK,
   PAPER,
@@ -32,7 +32,12 @@ import {
   undeadZombie,
 } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
-import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
+import {
+  HINT_AREA,
+  HINT_TARGET,
+  OverlaySidecar,
+} from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {
@@ -100,8 +105,14 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_VAMPIRE] = undeadVampire(bg);
   out[COL_DONE] = clueDoneColour(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
-  out[COL_HINT] = HINT_FILL;
-  out[COL_HINT_CELL] = HINT_EVIDENCE;
+  out[COL_HINT] = HINT_ACTION;
+  // Both hint marks are outlines on the cell's border, so both take a **strong**
+  // colour: a wash is sized to be read *through*, an outline is read *against*.
+  // Teal's **bold** step, not its base: the bold step is the one defined as
+  // "dark in light mode, light in dark mode", so it stands off the board by a
+  // similar margin in both schemes, where the base sits at one lightness under
+  // either and comes out soft on a pale board and bright on a dark one.
+  out[COL_HINT_CELL] = TEAL_BOLD;
   return out;
 }
 
@@ -150,6 +161,9 @@ export interface UndeadDrawState {
   hint: OverlaySidecar;
   /** `wh` mistake-overlay sidecar (Check & Save) — same dance. */
   wrong: OverlaySidecar;
+  /** The hint target's ring and the evidence area's outline (fork additions),
+   * drawn after the cell loop. See {@link markBand}. */
+  marks: HintMarks;
   pencilModeShown: boolean;
 }
 
@@ -180,6 +194,7 @@ export function newDrawState(state: UndeadState): UndeadDrawState {
     countPadding: 0,
     hint: new OverlaySidecar(common.wh),
     wrong: new OverlaySidecar(common.wh),
+    marks: new HintMarks(),
     pencilModeShown: false,
   };
 }
@@ -455,6 +470,30 @@ function cellCentre(
   return {
     dx: border(ts) + x * ts + f(ts / 2),
     dy: border(ts) + y * ts + f(ts / 2) + ts,
+  };
+}
+
+/**
+ * Where a hint mark sits around cell `(x, y)` (border-ring coordinates) —
+ * straddling the grid line, one pixel of gutter and a couple of the cell's own
+ * edge.
+ *
+ * Undead's cells are `TILESIZE − 1` squares on a `TILESIZE` pitch over a
+ * `COL_GRID` backing rectangle, so a single pixel between them is real gutter and
+ * is what `HintMarks` paints back when a mark moves; the rest lies inside the
+ * cell, where the cell's own repaint undoes it.
+ *
+ * The inner reach is bounded by the pencil glyphs rather than chosen: a pencilled
+ * monster is a circle of radius `2/5` of its `TILESIZE/2` box, centred a quarter
+ * of a tile in, so it clears the cell edge by `TILESIZE/20`.
+ */
+function markBand(ds: UndeadDrawState, x: number, y: number): MarkBand {
+  const ts = ds.tilesize;
+  const { dx, dy } = cellCentre(ds, x, y);
+  return {
+    box: { x: dx - f(ts / 2) + 1, y: dy - f(ts / 2) + 1, w: ts - 1, h: ts - 1 },
+    outer: 1,
+    inner: Math.max(2, f(ts / 24)),
   };
 }
 
@@ -816,6 +855,7 @@ export function redraw(
       }
     }
     dr.drawUpdate({ x: 0, y: 0, w: fullW, h: fullH });
+    ds.marks.reset(); // the backing rect just erased every grid line
   }
 
   const hchanged =
@@ -917,18 +957,13 @@ export function redraw(
 
       if (stale) {
         const pack = ds.hint.packed[xy];
-        const isTarget = (pack & 1) !== 0;
-        const isArea = (pack & 2) !== 0;
         const struck = (pack >> 2) & 7;
-        // A placement target (no struck candidates) fills solid COL_HINT, with no
-        // monster glyph drawn over it (§5.1); a strike/evidence cell shades
-        // COL_HINT_CELL so the struck glyph + its strikethrough stay legible (§5.3).
-        const placement = isTarget && struck === 0;
-        const hintBg = placement ? COL_HINT : isArea ? COL_HINT_CELL : -1;
-        drawCellBackground(dr, ds, ui, x, y, hintBg);
-        if (placement) {
-          // solid COL_HINT, nothing drawn on top (the narration says what to place)
-        } else if (xi < 0) {
+        // Both cell-level marks are drawn in `redraw` — the target ringed, the
+        // evidence area outlined, both on the cell's own border — so the cell
+        // paints its ordinary background here and a marked cell keeps showing
+        // the candidates the hint is reasoning about.
+        drawCellBackground(dr, ds, ui, x, y);
+        if (xi < 0) {
           drawMirror(dr, ds, x, y, hflash, c);
         } else if (
           state.guess[xi] === MON_GHOST ||
@@ -963,6 +998,24 @@ export function redraw(
       }
     }
   }
+
+  // The hint marks, after the cell loop and outside every clip, because they
+  // straddle the grid line, which no cell repaints.
+  const targets: MarkCell[] = [];
+  const evidence: MarkCell[] = [];
+  for (let x = 1; x < w + 1; x++) {
+    for (let y = 1; y < h + 1; y++) {
+      const packed = ds.hint.packed[x + y * stride];
+      if (packed & HINT_TARGET) targets.push({ x, y });
+      if (packed & HINT_AREA) evidence.push({ x, y });
+    }
+  }
+  ds.marks.paint(dr, targets, evidence, {
+    band: (x, y) => markBand(ds, x, y),
+    targetColour: COL_HINT,
+    evidenceColour: COL_HINT_CELL,
+    gutterColour: COL_GRID,
+  });
 
   // Pencil-mode indicator (fork addition).
   if (!ds.started || ds.pencilModeShown !== ui.hpencil) {

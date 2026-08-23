@@ -9,6 +9,7 @@
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { expectRing, isThin, markSides } from "../../engine/testing/mark-shape.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { type SlantHint, slantGame } from "./index.ts";
 import { COL_GRID, COL_HINT, COL_HINT_CELL, COL_HINT_REF } from "./render.ts";
@@ -23,7 +24,7 @@ const hl = (step: HintStep<unknown> | undefined): SlantHint | undefined =>
   step?.highlights as SlantHint | undefined;
 
 describe("Slant hint render scenarios", () => {
-  it("opener frame: blue target(s), recoloured clue digit, board intact", () => {
+  it("opener frame: ringed target(s), recoloured clue digit, board intact", () => {
     const { recording, hint, size } = renderScenario({
       game: slantGame,
       id: boardId({ w: 5, h: 5, diff: DIFF_EASY }, "srs-easy-0"),
@@ -35,11 +36,9 @@ describe("Slant hint render scenarios", () => {
     // The opener is a clue firing: it carries a driving clue.
     expect(h?.clue).toBeDefined();
 
-    // At least one blue COL_HINT target fill (target + any siblings).
-    const targetRects = recording.ops.filter(
-      (o) => o.op === "rect" && o.colour === COL_HINT,
-    );
-    expect(targetRects.length).toBeGreaterThanOrEqual(1);
+    // The target and any siblings are **ringed**, four thin rects each and none
+    // solid: a blue square in Slant would read as a slash already placed.
+    expectRing(recording.ops, COL_HINT, 1 + (h?.siblings?.length ?? 0));
     // The driving clue's digit recolours COL_HINT (the clue↔move tie).
     expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(
       true,
@@ -54,7 +53,7 @@ describe("Slant hint render scenarios", () => {
     expect(recording.ops).toMatchSnapshot();
   });
 
-  it("loop frame: the closing chain shades COL_HINT_CELL under one blue target", () => {
+  it("loop frame: the closing chain outlines COL_HINT_CELL under one ringed target", () => {
     const { recording, hint } = renderScenario({
       game: slantGame,
       id: boardId({ w: 8, h: 8, diff: DIFF_HARD }, "srs-hard-0"),
@@ -65,14 +64,13 @@ describe("Slant hint render scenarios", () => {
     const h = hl(hint);
     expect(h).toBeDefined();
     expect(h?.area?.length ?? 0).toBeGreaterThan(0);
-    // Exactly one blue target (loop firings force a single square).
-    expect(
-      recording.ops.filter((o) => o.op === "rect" && o.colour === COL_HINT).length,
-    ).toBe(1);
-    // The chain is shaded.
-    expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
-    ).toBe(true);
+    // Exactly one ringed target (loop firings force a single square).
+    expectRing(recording.ops, COL_HINT);
+    // The chain is **outlined**, not shaded: its squares carry the very
+    // diagonals the deduction reasons from.
+    const chain = markSides(recording.ops, COL_HINT_CELL);
+    expect(chain.length).toBeGreaterThan(0);
+    for (const s of chain) expect(isThin(s)).toBe(true);
   });
 
   it("equivalence frame: the cited anchor rings COL_HINT_REF", () => {
@@ -85,9 +83,7 @@ describe("Slant hint render scenarios", () => {
 
     const h = hl(hint);
     expect(h?.ref).toBeDefined();
-    expect(
-      recording.ops.filter((o) => o.op === "rect" && o.colour === COL_HINT).length,
-    ).toBe(1);
+    expectRing(recording.ops, COL_HINT);
     expect(recording.ops.some((o) => "colour" in o && o.colour === COL_HINT_REF)).toBe(
       true,
     );

@@ -53,7 +53,7 @@ import {
   RED,
   RED_WASH,
   TEAL_BOLD,
-  TEAL_WASH_DEEP,
+  TEAL_WASH,
   YELLOW,
 } from "./colours.ts";
 
@@ -155,8 +155,8 @@ export const ERROR_TEXT: Colour = PAPER;
 
 /**
  * A **red fill behind content that must stay readable** — the fill counterpart to
- * {@link ERROR}'s stroke, in the same way {@link HINT_FILL} is the fill
- * counterpart to {@link HINT_ACTION}. Filling's `COL_ERROR`, Mathrax's and Rome's
+ * {@link ERROR}'s stroke, in the same way {@link HINT_EVIDENCE_WASH} is the fill
+ * counterpart to {@link HINT_EVIDENCE}. Filling's `COL_ERROR`, Mathrax's and Rome's
  * `COL_ERRORBG`, Mines' contradicted count, Light Up's two-lamps-see-each-other
  * square.
  *
@@ -171,54 +171,70 @@ export const ERROR_WASH: Colour = RED_WASH;
 
 // --- hints ------------------------------------------------------------
 
-/** The thing the deduction acts on, drawn *on* the board: a forced edge, a line,
- * a mark, or a fill on a cell that carries no text. */
+/**
+ * The thing the deduction acts on, drawn *on* the board: the **ring** around the
+ * acted-on cell, a forced edge, a line, a mark.
+ *
+ * **There is deliberately no fill counterpart, and its absence is the rule**: a
+ * hint mark goes *beside* content, never behind it. A fill for this role has no
+ * working value at all — it scores 1.91:1 against a pencil mark in light and
+ * 1.96:1 in dark, and a joint search over both hint roles, every hue and both
+ * schemes returns no feasible arrangement, because the pale end of a
+ * twelve-colour palette holds exactly one cool wash and the evidence has it. Do
+ * not add one back: ringing the cell removes the constraint rather than trading
+ * it, which is why this role has the *emphatic* blue and not a pale one.
+ * `hint-mark.ts` is the mechanism; `docs/games/hints.md` § "Shade vs ring" is the
+ * rule.
+ */
 export const HINT_ACTION: Colour = BLUE;
 
 /**
- * The same "this is the target" meaning, as a **fill behind text**. Pale enough
- * that a black digit and its pencil marks stay readable on top — this is
- * load-bearing, not decorative. Towers' own renderer comments on the hazard:
- * *"painting the cell COL_HINT as well would hide the very digit the hint is
- * crossing out (blue-on-blue)"*, which is why the two are one role by name and
- * two by function.
- */
-export const HINT_FILL: Colour = BLUE_WASH;
-
-/**
  * The *evidence* a deduction rests on — the row, region or area the hint is
- * reasoning from, rather than the cell it is acting on.
+ * reasoning from, rather than the cell it is acting on — **drawn as a mark**: the
+ * region's outline, and the small ordinal `drawHintOrdinal` puts in a chain
+ * cell's corner to say where in the chain it falls.
  *
- * A **different hue** from the other two, where it used to be a third shade of the
- * same blue. Seven games paint an evidence region and a target cell at once, and
- * as two blues eight hundredths of a lightness apart they were all but the same
- * colour; the distinction the player actually needs — *this is what I am reasoning
- * from, that is what I am concluding* — survives a hue change and did not survive
- * a shade change.
+ * Those two are **one role, not two that agree**. The ordinal is not a fourth
+ * hint colour, it is an *index into the evidence*; a hue of its own would claim
+ * the ordered cells were a different kind of premise from the unordered ones,
+ * which is exactly what they are not. Giving them separate names that happen to
+ * hold the same value is the coincidence this module's two-layer split exists to
+ * prevent, because restyling one would silently fail to restyle the other.
  *
- * **It takes teal's *deep* wash, and only in dark mode** (owner-reported,
- * 2026-08-21). This is the one shared fill the candidate games draw their pencil
- * marks and entered digits straight on top of, and those are *derived* colours —
- * computed from the board, not authored — which land at mid luminance in dark
- * mode. On the ordinary dark wash Keen's pencil marks measured **1.23:1** and its
- * entered digits **1.71:1**, against 2.95 and 3.41 for the same pairs in light.
- * The light value is unchanged; see {@link TEAL_WASH_DEEP} for why the ordinary
- * wash could not simply be darkened.
+ * A **different hue** from {@link HINT_ACTION}, rather than a third shade of the
+ * same blue. Seven games mark an evidence region and a target cell at once, and
+ * two blues eight hundredths of a lightness apart are all but the same colour;
+ * the distinction the player actually needs — *this is what I am reasoning from,
+ * that is what I am concluding* — survives a hue change and does not survive a
+ * shade change.
+ *
+ * Teal's **bold** step, not its base. A line drawn *against* a board wants a step
+ * whose lightness differs between schemes, and bold is the one defined that way
+ * ("dark in light mode, light in dark mode"): it stands off the board by 0.48 /
+ * 0.64, where the base sits at L 0.72 under both and comes out a soft line on a
+ * pale board and a bright one on a dark board. `colour-dark-check` measures
+ * precisely that and flags the base.
  */
-export const HINT_EVIDENCE: Colour = TEAL_WASH_DEEP;
+export const HINT_EVIDENCE: Colour = TEAL_BOLD;
 
 /**
- * The **position an evidence cell takes in an ordered chain** — the small
- * ordinal `drawHintOrdinal` puts in its corner (`walk-tactic-hint-chains`).
+ * The same "this is the evidence" meaning as a **fill**, for a game whose
+ * evidence cells carry nothing the player has to read — Range's undecided cells,
+ * Pattern's unfilled squares.
  *
- * The bold end of {@link HINT_EVIDENCE}'s own hue, and that is the whole
- * argument: the number is not a fourth hint role, it is an *index into the
- * evidence*, so it takes the evidence's colour at the strength a digit needs to
- * read against the wash it sits on. A hue of its own would claim the ordered
- * cells were a different kind of premise from the unordered ones, which is
- * exactly what they are not.
+ * A game reaching for this is making a claim, and the claim is *nothing is drawn
+ * here*. Where content does sit on the evidence, the wash loses whichever way it
+ * is tuned: pale enough to read a derived foreground through, and it stops
+ * reading as a mark (it measured **1.15:1 against its own board in dark mode** at
+ * the lightness that legibility needed). Those are two requirements moving in
+ * opposite directions along one axis, and an outline is not on that axis at all.
+ *
+ * Teal's ordinary wash, which is the visible one — the step is free to be as
+ * visible as the eight-fill set allows precisely because nothing is drawn on it.
+ * A darker step would only be needed for a fill carrying the collection's
+ * derived foregrounds, and no game asks this one to.
  */
-export const HINT_ORDER: Colour = TEAL_BOLD;
+export const HINT_EVIDENCE_WASH: Colour = TEAL_WASH;
 
 /** A hint premise that refers to a **black/filled** reference cell, where the
  * hint needs to point at two kinds of evidence at once (Range, Light Up). */

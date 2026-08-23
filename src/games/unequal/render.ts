@@ -16,17 +16,19 @@ import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import {
   ERROR,
   GRID_MID,
+  HINT_ACTION,
   HINT_EVIDENCE,
-  HINT_FILL,
-  HINT_ORDER,
   INK,
   PENCIL_BODY,
   pencilColour,
   playerEntryColour,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import {
+  HINT_AREA,
+  HINT_TARGET,
   hintMarkBit,
   type OrderedCell,
   OverlaySidecar,
@@ -71,9 +73,10 @@ export const COL_SPENT = COL_LOWLIGHT;
 // Fork additions, appended past the upstream enum; Unequal has no dark-mode
 // paletteOverrides, so a plain append is safe.
 export const COL_PENCIL_BODY = 8; // the yellow body of the pencil-mode indicator
-export const COL_HINT = 9; // the cell(s)/candidate(s) the deduction acts on
-export const COL_HINT_CELL = 10; // the driving clue's cells (evidence shade)
-export const COL_HINT_ORDER = 11; // a forcing chain's ordinal, indexing the above
+export const COL_HINT = 9; // the acted-on cell's ring (drawn in redraw's last block)
+/** The driving clue's cells, outlined (same block), **and** a forcing chain's
+ * ordinal — one index, because the number indexes the evidence. */
+export const COL_HINT_CELL = 10;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
@@ -88,9 +91,12 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_PENCIL_BODY] = PENCIL_BODY;
-  out[COL_HINT] = HINT_FILL;
+  out[COL_HINT] = HINT_ACTION;
+  // Both hint marks are outlines drawn beside the cell, so both take a strong
+  // colour and differ in shape rather than in weight — a clue pair's contour
+  // against one cell's ring. `HINT_EVIDENCE` covers the chain ordinal too; see
+  // its doc comment for why the index and the thing it indexes are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  out[COL_HINT_ORDER] = HINT_ORDER;
   return out;
 }
 
@@ -157,6 +163,10 @@ export interface UnequalDrawState {
   hflash: boolean;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
   pencilModeShown: boolean;
+  /** The hint target's ring and the evidence region's outline (fork additions),
+   * both drawn in the **gap** between cells, which no cell repaints. See
+   * {@link markBand}. */
+  marks: HintMarks;
 }
 
 export function newDrawState(state: UnequalState): UnequalDrawState {
@@ -177,11 +187,35 @@ export function newDrawState(state: UnequalState): UnequalDrawState {
     hpencil: false,
     hflash: false,
     pencilModeShown: false,
+    marks: new HintMarks(),
   };
 }
 
 export function setTileSize(ds: UnequalDrawState, ts: number): void {
   ds.tilesize = ts;
+}
+
+/**
+ * Where a hint mark sits around cell `(x, y)`: **entirely outside the cell**, in
+ * the `TILESIZE/2` gap the greater-than chevrons live in.
+ *
+ * The gap is generous, but it is not free: a chevron reaches to within
+ * `GAP/4 − 1` of the cell it points away from, so the band is bounded by that
+ * rather than by taste. `TILESIZE/16` clears it at every tile size (the chevron's
+ * clearance grows twice as fast), and the mark still costs the cell's own digits
+ * and pencil marks nothing.
+ *
+ * That gap belongs to no cell — `drawGts`/`drawAdjs` repaint their own band only
+ * where a clue flag is set — so `HintMarks` is told the resting colour and undoes
+ * a mark that moved itself.
+ */
+function markBand(ds: UnequalDrawState, x: number, y: number): MarkBand {
+  const ts = ds.tilesize;
+  return {
+    box: { x: coord(x, ts), y: coord(y, ts), w: ts, h: ts },
+    outer: Math.max(2, ts >> 4),
+    inner: 0,
+  };
 }
 
 // --- inter-cell clue drawing -----------------------------------------------
@@ -380,21 +414,14 @@ function drawCell(
   const oy = coord(y, ts);
   const hon = ui.hshow && x === ui.hx && y === ui.hy;
 
-  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): target cell (COL_HINT) > evidence cell
-  // (COL_HINT_CELL) > cursor highlight > flash > background. `struck` is the set
-  // of candidates this firing rules out, drawn crossed through among the marks.
-  const hintTarget = (hint & 1) !== 0;
-  const hintArea = (hint & 2) !== 0;
+  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): both
+  // cell-level marks are read in `redraw`, which rings the target and outlines
+  // the evidence region in the gap around the cell, so a hint never paints over
+  // the digits it is talking about. What is left here is `struck`, the set of
+  // candidates this firing rules out, drawn crossed through among the marks.
   const struck = hint >> 2; // bit (2 + n) ⇒ candidate n struck
   let bg = hflash ? COL_HIGHLIGHT : COL_BACKGROUND;
   if (hon && !ui.hpencil) bg = COL_HIGHLIGHT;
-  if (hintArea) bg = COL_HINT_CELL;
-  // A solid COL_HINT background is the *placement*-target fill. A strike step
-  // also flags its cell as a target, but its struck candidates are drawn over
-  // the background, so painting it COL_HINT would wash them out — fill solid
-  // only when nothing is struck here (a placement); a strike keeps the lighter
-  // background so the crossed-through digit stays legible.
-  if (hintTarget && struck === 0) bg = COL_HINT;
 
   // Clear the square.
   dr.drawRect({ x: ox, y: oy, w: ts, h: ts }, bg);
@@ -455,7 +482,7 @@ function drawCell(
   // the cells by number rather than asking the player to reconstruct the chain
   // (`walk-tactic-hint-chains`).
   if (hintOrder > 0)
-    drawHintOrdinal(dr, { x: ox, y: oy }, ts, hintOrder, COL_HINT_ORDER);
+    drawHintOrdinal(dr, { x: ox, y: oy }, ts, hintOrder, COL_HINT_CELL);
 }
 
 /** Pencil-mark grid (upstream `draw_hints`, stolen from solo). A candidate in
@@ -547,6 +574,7 @@ export function redraw(
   if (!ds.started) {
     dr.drawRect({ x: 0, y: 0, w: total, h: total }, COL_BACKGROUND);
     dr.drawUpdate({ x: 0, y: 0, w: total, h: total });
+    ds.marks.reset(); // that fill just erased every gap
   }
 
   const hflash =
@@ -613,6 +641,22 @@ export function redraw(
       }
     }
   }
+
+  // The hint marks, after the tile loop, because they live in the gap between
+  // cells, which no cell owns.
+  const targets: MarkCell[] = [];
+  const evidence: MarkCell[] = [];
+  for (let i = 0; i < o * o; i++) {
+    const c = { x: i % o, y: (i / o) | 0 };
+    if (ds.hint.packed[i] & HINT_TARGET) targets.push(c);
+    if (ds.hint.packed[i] & HINT_AREA) evidence.push(c);
+  }
+  ds.marks.paint(dr, targets, evidence, {
+    band: (x, y) => markBand(ds, x, y),
+    targetColour: COL_HINT,
+    evidenceColour: COL_HINT_CELL,
+    gutterColour: COL_BACKGROUND,
+  });
 
   // Pencil-mode indicator (fork addition).
   if (!ds.started || ds.pencilModeShown !== ui.hpencil) {

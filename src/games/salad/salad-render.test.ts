@@ -9,11 +9,13 @@
  * `__snapshots__/*.snap`.
  */
 import { describe, expect, it } from "vitest";
+import { expectRing, isThin, markSides } from "../../engine/testing/mark-shape.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import {
   DEFAULT_BACKGROUND,
   renderScenario,
 } from "../../engine/testing/render-scenario.ts";
+import type { SaladHint } from "./hint.ts";
 import { saladGame } from "./index.ts";
 import {
   COL_BACKGROUND,
@@ -186,41 +188,45 @@ describe("salad hint frames", () => {
       hintUntil: (step) => re.test(step.explanation),
     });
 
-  it("shades the run a clue's symbol is confined to, and lights the clue", () => {
+  it("outlines the run a clue's symbol is confined to, and lights the clue", () => {
     // The far arm: the clue's own symbol can sit only within the line's hole
     // budget of the clue, so the squares beyond it lose that candidate. The
-    // shaded run is where it *can* be — the premise as an area, not one cell
+    // outlined run is where it *can* be — the premise as an area, not one cell
     // (§5.2).
     const { recording, hint } = hintFrame(LETTERS_ID, /has room for only/);
     expect(hint?.explanation).toMatch(/has room for only \d+ empty square/);
-    const shaded = recording.ops.filter(
-      (o) => o.op === "rect" && o.colour === COL_HINT_CELL,
-    );
-    expect(shaded.length).toBeGreaterThan(1);
+    // The run is a **contour**: a side wherever the neighbour across it is not
+    // also evidence, so a contiguous run of `n` squares comes out as `2n + 2`
+    // thin sides rather than `4n` per-square rings or one solid wash.
+    const outline = markSides(recording.ops, COL_HINT_CELL);
+    expect(outline.length).toBeGreaterThan(4);
+    for (const s of outline) expect(isThin(s)).toBe(true);
     // The premise is only visible if the clue glyph is part of the highlight
     // (design D8): it is redrawn in COL_HINT rather than the usual clue colour.
     expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(
       true,
     );
     // Each square acted on is ringed in COL_HINT, so its struck notes stay
-    // legible against the light shade (§5.4).
-    expect(
-      recording.ops.some((o) => o.op === "polygon" && o.outline === COL_HINT),
-    ).toBe(true);
+    // legible (§5.4).
+    expectRing(
+      recording.ops,
+      COL_HINT,
+      (hint?.highlights as SaladHint | undefined)?.targets.length,
+    );
     expect(recording.ops).toMatchSnapshot();
   });
 
-  it("shades the nearest square a clue can see, when that is the whole premise", () => {
+  it("outlines the nearest square a clue can see, when that is the whole premise", () => {
     // The near arm on a board with one empty square per line: the run really is
-    // a single square, and saying so is honest rather than a missing area.
+    // a single square, and saying so is honest rather than a missing area. One
+    // square's contour is a ring — four sides, which is what the neighbour rule
+    // gives when nothing beside it is evidence.
     const { recording, hint } = hintFrame(
       LETTERS_ID,
       /so nothing but [A-C] can go here/,
     );
     expect(hint?.explanation).toMatch(/and this is the nearest square to it/);
-    expect(
-      recording.ops.filter((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
-    ).toHaveLength(1);
+    expectRing(recording.ops, COL_HINT_CELL);
     expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(
       true,
     );

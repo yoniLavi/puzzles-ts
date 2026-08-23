@@ -99,26 +99,24 @@ describe("the shared colour vocabulary", () => {
     expect(decisions).toContain(4);
   });
 
-  it("keeps the three hint emphases distinct, in both schemes", () => {
-    // These are one meaning at three jobs — the move, the fill behind the digit
-    // the move is about, and the evidence the deduction rests on — and seven games
-    // put two or three of them on screen at once. Two of the three used to be
-    // shades of one blue eight hundredths of a lightness apart; they are a shade
-    // and a hue apart now, and this is what says so.
+  it("keeps the hint emphases distinct, in both schemes", () => {
+    // These are one meaning at several jobs — the move, the evidence the
+    // deduction rests on, and the two reference premises — and seven games put
+    // two or three of them on screen at once. The first two used to be shades of
+    // one blue eight hundredths of a lightness apart; they are a hue apart now,
+    // and this is what says so.
     //
     // **Both schemes, because one is not evidence for the other** — the lesson
     // `hand-author-dark-palette` paid for, and this guard was measuring the
-    // light column only. It matters here rather than academically: the pairs
-    // are *not* equally separated in the two schemes, and the tightest of the
-    // six is `FILL/EVIDENCE` in **dark**, at **0.129** against this bound
-    // (0.147 in light). So the next person to retune `BLUE_WASH` or
-    // `TEAL_WASH_DEEP`'s dark step learns about it from a red test rather than
-    // from a hint frame where the target and its evidence read as one wash.
+    // light column only. It matters here rather than academically: the pairs are
+    // *not* equally separated in the two schemes, so the next person to retune
+    // one of these learns about it from a red test rather than from a hint frame
+    // where the target and its evidence read as one mark.
     //
-    // It did exactly that job on 2026-08-21: the first attempt at the contrast
-    // fix below asked for chroma 0.077 at lightness 0.28, the sRGB gamut clamp
-    // silently returned 0.050 at 0.293, and this failed at **0.106**. A bound
-    // the arithmetic cannot be trusted to predict is one worth asserting.
+    // It did exactly that job on 2026-08-21: an attempt at the contrast fix
+    // asked for chroma 0.077 at lightness 0.28, the sRGB gamut clamp silently
+    // returned 0.050 at 0.293, and this failed at **0.106**. A bound the
+    // arithmetic cannot be trusted to predict is one worth asserting.
     //
     // `disambiguate-hint-deixis` is what makes it load-bearing rather than
     // tidy: that change ties the acted-on element to the evidence *in prose*
@@ -145,9 +143,8 @@ describe("the shared colour vocabulary", () => {
     /** The same pair as the scheme actually paints it. */
     const inDark = (c: Colour): Colour => darkValue(c) ?? c;
     for (const [x, y] of [
-      [roles.HINT_ACTION, roles.HINT_FILL],
-      [roles.HINT_FILL, roles.HINT_EVIDENCE],
       [roles.HINT_ACTION, roles.HINT_EVIDENCE],
+      [roles.HINT_ACTION, roles.HINT_EVIDENCE_WASH],
       [roles.HINT_BLACKREF, roles.HINT_WHITEREF],
       [roles.HINT_ACTION, roles.HINT_BLACKREF],
       [roles.HINT_ACTION, roles.HINT_WHITEREF],
@@ -158,38 +155,21 @@ describe("the shared colour vocabulary", () => {
       );
     }
     // The acted-on colour is the emphatic one in both schemes — the property a
-    // reader who cannot compare hues is left with, and what lets a narration
-    // say "this cell" *at all* once it has tied it to the evidence in words.
+    // reader who cannot compare hues is left with, and what lets a narration say
+    // "this cell" *at all* once it has tied it to the evidence in words.
+    // Measured against the *wash*, which is the only hint role that is a fill;
+    // the evidence **mark** is a line read against the board and is emphatic by
+    // design, so a chroma comparison against it would say nothing.
     for (const resolveScheme of [(c: Colour) => c, inDark]) {
       const action = colourToOKLCH(resolveScheme(roles.HINT_ACTION));
-      for (const wash of [roles.HINT_FILL, roles.HINT_EVIDENCE]) {
-        expect(action[1], `${key(wash)} vs the action colour`).toBeGreaterThan(
-          colourToOKLCH(resolveScheme(wash))[1] * 2,
-        );
-      }
+      const wash = roles.HINT_EVIDENCE_WASH;
+      expect(action[1], `${key(wash)} vs the action colour`).toBeGreaterThan(
+        colourToOKLCH(resolveScheme(wash))[1] * 2,
+      );
     }
-    // ...and the two that are fills stay fills: a digit and its pencil marks are
-    // drawn on top of them.
-    expect(colourToOKLCH(roles.HINT_FILL)[0]).toBeGreaterThan(0.75);
-    expect(colourToOKLCH(roles.HINT_EVIDENCE)[0]).toBeGreaterThan(0.75);
+    // ...and the one that is a fill stays a fill.
+    expect(colourToOKLCH(roles.HINT_EVIDENCE_WASH)[0]).toBeGreaterThan(0.75);
 
-    // **And the same obligation in dark, which is what was missing.** The two
-    // assertions above are a bound in *one direction only* — they say a fill is
-    // pale enough for dark content, and there was no counterpart saying the dark
-    // fill is dark enough for light content. `HINT_EVIDENCE` duly drifted to the
-    // top of the dark wash band and Keen's pencil marks measured **1.23:1** on
-    // it (owner-reported, 2026-08-21). The exact shape the palette's own note
-    // records from `consolidate-colour-palette`: *a search buys separation with
-    // anything not bounded*.
-    //
-    // Stated as contrast against the **derived** foregrounds rather than as a
-    // lightness, because that is the actual obligation, and because these are
-    // the colours a lightness bound cannot predict: they are computed from the
-    // board and land at mid *luminance* in dark mode even at a mid OKLCH
-    // lightness (a saturated blue-purple contributes almost nothing to
-    // luminance). Bar is the **light scheme's own worst pair**, so this asserts
-    // scheme parity rather than an invented threshold.
-    const DARK_BOARD: Colour = [0.106, 0.106, 0.106];
     const relLum = (c: Colour): number => {
       const lin = (v: number) =>
         v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
@@ -199,27 +179,38 @@ describe("the shared colour vocabulary", () => {
       const [hi, lo] = [relLum(a), relLum(b)].sort((p, q) => q - p);
       return (hi + 0.05) / (lo + 0.05);
     };
-    // The two foregrounds every candidate game draws on an evidence cell, as the
-    // dark pipeline actually produces them (games are handed pure white in dark
-    // mode, then `dark-palette.ts` adapts).
-    const darkPencil: Colour = [0.384, 0.376, 0.812];
-    const darkEntry: Colour = [0.231, 0.592, 0.216];
-    for (const [name, fg] of [
-      ["pencil marks", darkPencil],
-      ["entered digits", darkEntry],
-    ] as [string, Colour][]) {
+    const LIGHT_BOARD: Colour = [0.827, 0.827, 0.827];
+    const DARK_BOARD: Colour = [0.106, 0.106, 0.106];
+
+    // **A mark has to be visible against the board it is drawn on, in both
+    // schemes**, and this is the bound that replaces the one the fill regime
+    // needed. That one asked whether a *derived* foreground stayed legible on
+    // the evidence wash — a real obligation while games drew their digits on it,
+    // and the reason `TEAL_WASH_DEEP` existed. Nothing is drawn on the evidence
+    // any more: it is an outline, and the wash is kept only where the cells
+    // under it are empty. So the obligation moves rather than lapsing, and it
+    // moves to the side that was *also* failing — at the lightness that
+    // legibility demanded, the wash scored 1.15:1 against a dark board, a mark
+    // nobody could see.
+    //
+    // Both directions in both schemes, deliberately: a bound in one direction
+    // only is exactly how the previous value drifted to the top of its band.
+    for (const [name, mark, bar] of [
+      // The outline is read *against* the board, so it wants a real margin.
+      ["HINT_EVIDENCE", roles.HINT_EVIDENCE, 3],
+      ["HINT_ACTION", roles.HINT_ACTION, 3],
+      // A fill covers a whole cell, so it reads at far less — the bar is what
+      // the light scheme's own tint has always scored against its own board.
+      ["HINT_EVIDENCE_WASH", roles.HINT_EVIDENCE_WASH, 1.11],
+    ] as [string, Colour, number][]) {
+      expect(contrast(mark, LIGHT_BOARD), `${name} on a light board`).toBeGreaterThan(
+        bar,
+      );
       expect(
-        contrast(fg, inDark(roles.HINT_EVIDENCE)),
-        `${name} on HINT_EVIDENCE in dark`,
-      ).toBeGreaterThan(2.9);
+        contrast(inDark(mark), DARK_BOARD),
+        `${name} on a dark board`,
+      ).toBeGreaterThan(bar);
     }
-    // …and the evidence tint stays *visible* as a mark, or the fix for the above
-    // is a fill nobody can see. Bar is what the light scheme's own tint scores
-    // against its own board (1.11:1) — the same parity argument.
-    expect(
-      contrast(inDark(roles.HINT_EVIDENCE), DARK_BOARD),
-      "the dark evidence tint against a dark board",
-    ).toBeGreaterThan(1.11);
   });
 
   it("keeps every derived role visible against both host backgrounds", () => {

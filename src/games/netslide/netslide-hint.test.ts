@@ -587,8 +587,8 @@ describe("netslide hint rendering", () => {
       showHint: true,
     });
 
-    // The tile being placed is backed in the hint colour, and its destination is
-    // outlined in it.
+    // The tile being placed is double-ringed in the hint colour, and its
+    // destination outlined in it.
     const rects = result.recording.ops.filter(
       (op) => op.op === "rect" && op.colour === COL_HINT,
     );
@@ -621,13 +621,16 @@ describe("the hint marks while the hinted slide animates", () => {
   const border = (ts: number) => Math.floor((3 * ts) / 4) + 1;
 
   /** The tile-background rect `drawTile` lays down, by its distinctive size. */
+  /** The top side of the hinted **tile's** double ring, by its distinctive size:
+   * it spans the whole tile frame, where the destination's outline is inset past
+   * the tile border. */
   function hintFill(ops: RecordingDrawing["ops"]) {
     return ops.find(
       (op) =>
         op.op === "rect" &&
         op.colour === COL_HINT &&
-        op.w === TS - TILE_BORDER &&
-        op.h === TS - TILE_BORDER,
+        op.w === TS + TILE_BORDER &&
+        op.h === Math.max(2, Math.round(TS / 16)),
     );
   }
 
@@ -705,11 +708,8 @@ describe("the hint marks while the hinted slide animates", () => {
       border(TS) + TS * ly + Math.trunc((slide.axis === "col" ? shift : 0) * TS);
 
     const fill = hintFill(rec.ops);
-    expect(
-      fill,
-      "the hinted tile is not painted in the hint colour at all",
-    ).toBeDefined();
-    expect(fill).toMatchObject({ x: bx + TILE_BORDER, y: by + TILE_BORDER });
+    expect(fill, "the hinted tile carries no mark at all").toBeDefined();
+    expect(fill).toMatchObject({ x: bx, y: by });
   });
 
   it("leaves the destination mark where the destination is", () => {

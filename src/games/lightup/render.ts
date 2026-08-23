@@ -18,13 +18,14 @@ import {
   ERROR_WASH,
   HINT_ACTION,
   HINT_BLACKREF,
-  HINT_EVIDENCE,
+  HINT_EVIDENCE_WASH,
   INK,
   PAPER,
 } from "../../engine/colour/palette.ts";
 import { lightupCursor, lightupGrid } from "../../engine/colour/palette-games.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { LightupHint, LightupMistake } from "./index.ts";
 import {
@@ -55,7 +56,7 @@ export const COL_CURSOR = 6;
 // paletteOverrides touch only indices 2/3, so these are safe). The digit
 // of a driving clue recolours COL_HINT (the Pattern clue↔move tie).
 export const COL_HINT = 7; // forced cell(s), blue fill (highlight only)
-export const COL_HINT_CELL = 8; // evidence: light-blue shade / digit on black
+export const COL_HINT_CELL = 8; // evidence: the shade on a *dark* square
 export const COL_HINT_LITREF = 9; // cited lit/bulb premise (teal ring)
 export const COL_HINT_DARKREF = 10; // the unlit square a deduction is about (amber ring)
 
@@ -75,7 +76,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = ERROR_WASH;
   out[COL_CURSOR] = lightupCursor(bg);
   out[COL_HINT] = HINT_ACTION;
-  out[COL_HINT_CELL] = HINT_EVIDENCE;
+  out[COL_HINT_CELL] = HINT_EVIDENCE_WASH;
   out[COL_HINT_LITREF] = HINT_BLACKREF;
   out[COL_HINT_DARKREF] = ORANGE;
   return out;
@@ -215,21 +216,29 @@ function tileRedraw(
       );
     }
   } else {
-    // Hint roles (fork): a target square fills COL_HINT (it is never lit —
-    // targets are always placeable squares); a dark evidence square shades
-    // COL_HINT_CELL (its blob, if any, draws on top); a *lit* evidence
-    // square keeps its yellow (the fill would hide the "already lit"
-    // premise) and gets a teal ring below instead.
+    // Hint roles (fork): the target square is **ringed** COL_HINT below, so a
+    // square that already holds a light or an impossible-blob keeps showing it.
+    // A *dark* evidence square shades COL_HINT_CELL and that is the wash form of
+    // the role doing its job: the premise there is that the square is **not
+    // lit**, which a teal shade preserves — it is not yellow — where a *lit*
+    // evidence square's premise is the yellow itself, so that one keeps its
+    // colour and takes a teal ring instead.
     const fill =
-      dsFlags & DF_HINT_TARGET
-        ? COL_HINT
-        : dsFlags & DF_HINT_AREA && !(dsFlags & DF_LIT)
-          ? COL_HINT_CELL
-          : dsFlags & DF_LIT
-            ? lit
-            : COL_BACKGROUND;
+      dsFlags & DF_HINT_AREA && !(dsFlags & DF_LIT)
+        ? COL_HINT_CELL
+        : dsFlags & DF_LIT
+          ? lit
+          : COL_BACKGROUND;
     dr.drawRect({ x: dx, y: dy, w: ts, h: ts }, fill);
     drawRectOutline(dr, dx, dy, ts, ts, COL_GRID);
+    if (dsFlags & DF_HINT_TARGET) {
+      drawMarkSides(
+        dr,
+        { box: { x: dx, y: dy, w: ts, h: ts }, outer: 0, inner: Math.max(2, ts >> 4) },
+        MARK_ALL,
+        COL_HINT,
+      );
+    }
     if (dsFlags & DF_HINT_AREA && dsFlags & DF_LIT) {
       drawRectOutline(dr, dx + 1, dy + 1, ts - 1, ts - 1, COL_HINT_LITREF);
       drawRectOutline(dr, dx + 2, dy + 2, ts - 3, ts - 3, COL_HINT_LITREF);

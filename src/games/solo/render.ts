@@ -26,9 +26,8 @@
 
 import {
   ERROR,
+  HINT_ACTION,
   HINT_EVIDENCE,
-  HINT_FILL,
-  HINT_ORDER,
   highlightWash,
   INK,
   PENCIL_BODY,
@@ -37,8 +36,11 @@ import {
 } from "../../engine/colour/palette.ts";
 import { soloKiller, soloXDiagonals } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import {
+  HINT_AREA,
+  HINT_TARGET,
   hintMarkBit,
   type OrderedCell,
   OverlaySidecar,
@@ -72,9 +74,10 @@ export const COL_KILLER = 8;
 // Fork additions, appended past the upstream enum (NCOLOURS = 9). Solo's only
 // dark-mode override touches index 2, so a plain append is safe.
 export const COL_PENCIL_BODY = 9; // the yellow body of the pencil-mode indicator
-export const COL_HINT = 10; // the cell(s)/candidate(s) the deduction acts on
-export const COL_HINT_CELL = 11; // the driving region's cells (evidence shade)
-export const COL_HINT_ORDER = 12; // a forcing chain's ordinal, indexing the above
+export const COL_HINT = 10; // the acted-on cell's ring (drawn in redraw's last block)
+/** The driving region's outline (same block), **and** a forcing chain's ordinal —
+ * one index, because they are one role: the number indexes the evidence. */
+export const COL_HINT_CELL = 11;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -89,9 +92,12 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL] = pencilColour(bg);
   out[COL_KILLER] = soloKiller(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
-  out[COL_HINT] = HINT_FILL;
+  out[COL_HINT] = HINT_ACTION;
+  // Both hint marks are outlines in the cell's gutter, so both take a strong
+  // colour and differ in shape rather than in weight — a region's contour
+  // against one cell's ring. `HINT_EVIDENCE` covers the chain ordinal too; see
+  // its doc comment for why the index and the thing it indexes are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  out[COL_HINT_ORDER] = HINT_ORDER;
   return out;
 }
 
@@ -157,6 +163,10 @@ export interface SoloDrawState {
   wrong: OverlaySidecar;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
   pencilModeShown: boolean;
+  /** The hint target's ring and the evidence region's outline (fork additions),
+   * both drawn in the **gutter**, which no tile repaints — so their removal is
+   * driven from here rather than from the tile cache. See {@link markBand}. */
+  marks: HintMarks;
 }
 
 export function newDrawState(state: SoloState): SoloDrawState {
@@ -171,11 +181,40 @@ export function newDrawState(state: SoloState): SoloDrawState {
     hint: new OverlaySidecar(a),
     wrong: new OverlaySidecar(a),
     pencilModeShown: false,
+    marks: new HintMarks(),
   };
 }
 
 export function setTileSize(ds: SoloDrawState, ts: number): void {
   ds.tileSize = ts;
+}
+
+/**
+ * Where a hint mark sits around cell `(x, y)`: **entirely in the gutter**, the
+ * grid line around the tile, rather than inside it.
+ *
+ * Solo's geometry is Keen's, so the reasoning is Keen's too — its pencil-mark
+ * block is as wide as the cell, leaving a glyph only its own font padding at the
+ * edge, and the gutter is `2·ge + 1` of `COL_GRID` backing that belongs to no
+ * tile. Two cells in the same sub-block sit a single pixel apart (each widens by
+ * `ge` toward the other), so a mark there overlaps the neighbour's background by
+ * `ge` on that side; it is grid-coloured space either way, and the block
+ * boundary — the wide gutter — is where the ring is thickest and reads best.
+ */
+function markBand(ds: SoloDrawState, x: number, y: number): MarkBand {
+  const ts = ds.tileSize;
+  const ge = gridExtra(ts);
+  const inner = ts - 1 - 2 * ge;
+  return {
+    box: {
+      x: border(ts) + x * ts + 1 + ge,
+      y: border(ts) + y * ts + 1 + ge,
+      w: inner,
+      h: inner,
+    },
+    outer: 2 * ge + 1,
+    inner: 0,
+  };
 }
 
 // --- digit glyph (upstream: '1'..'9' then 'a'.. for orders > 9) -------------
@@ -206,11 +245,10 @@ function drawNumber(
   const cell = y * cr + x;
   const colKiller = hl & HL_KSUM ? COL_ERROR : COL_KILLER;
 
-  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): target cell (COL_HINT) > evidence cell
-  // (COL_HINT_CELL) > cursor/flash highlight > X-diagonal > background. `struck`
-  // is the set of candidates this firing rules out, crossed through among marks.
-  const hintTarget = (hint & 1) !== 0;
-  const hintArea = (hint & 2) !== 0;
+  // Hint overlay (docs/games/hints.md § "The element-type colour legend"): both
+  // cell-level marks are read in `redraw`, which draws the target's ring and the
+  // evidence region's outline in the gutter. What is left here is `struck`, the
+  // set of candidates this firing rules out, crossed through among the marks.
   const struck = hint >> 2; // bit n ⇒ candidate n struck
 
   const tx = b + x * ts + 1 + ge;
@@ -237,18 +275,15 @@ function drawNumber(
 
   dr.clip({ x: cx, y: cy, w: cw, h: ch });
 
-  // Background: a hint target (with nothing struck here — a placement) wins as a
-  // solid COL_HINT fill; a strike cell instead keeps a lighter background so the
-  // crossed-through candidate stays legible. Else evidence shade, solid
-  // highlight, X-diagonal shade, or plain.
-  let bg =
+  // Background. No hint role appears here: the target's ring and the evidence
+  // region's outline are both drawn in the gutter (see `redraw`), so a hint
+  // never paints over the digits it is talking about.
+  const bg =
     (hl & 15) === HL_SOLID
       ? COL_HIGHLIGHT
       : ds.xtype && (onDiag0(cell, cr) || onDiag1(cell, cr))
         ? COL_XDIAGONALS
         : COL_BACKGROUND;
-  if (hintArea) bg = COL_HINT_CELL;
-  if (hintTarget && struck === 0) bg = COL_HINT;
   dr.drawRect({ x: cx, y: cy, w: cw, h: ch }, bg);
 
   // Pencil-mode highlight (top-left triangle).
@@ -463,7 +498,7 @@ function drawNumber(
   // (`walk-tactic-hint-chains`). Inside the clip, so it can never spill into a
   // neighbouring block.
   if (hintOrder > 0)
-    drawHintOrdinal(dr, { x: tx, y: ty }, ts - 2 * ge, hintOrder, COL_HINT_ORDER);
+    drawHintOrdinal(dr, { x: tx, y: ty }, ts - 2 * ge, hintOrder, COL_HINT_CELL);
 
   dr.unclip();
   dr.drawUpdate({ x: cx, y: cy, w: cw, h: ch });
@@ -608,6 +643,7 @@ export function redraw(
       COL_GRID,
     );
     dr.drawUpdate({ x: 0, y: 0, w: size.w, h: size.h });
+    ds.marks.reset(); // the backing rect just erased every gutter
     ds.started = true;
   }
 
@@ -704,6 +740,24 @@ export function redraw(
       }
     }
   }
+
+  // The hint marks, **after** the tile loop and outside every clip, because they
+  // live in the gutter, which no tile owns. `gutterColour` is what tells
+  // `HintMarks` to undo a mark that moved: the cell underneath does repaint (the
+  // sidecar sees the overlay change) but stops at its own edge.
+  const targets: MarkCell[] = [];
+  const evidence: MarkCell[] = [];
+  for (let i = 0; i < cr * cr; i++) {
+    const c = { x: i % cr, y: (i / cr) | 0 };
+    if (ds.hint.packed[i] & HINT_TARGET) targets.push(c);
+    if (ds.hint.packed[i] & HINT_AREA) evidence.push(c);
+  }
+  ds.marks.paint(dr, targets, evidence, {
+    band: (x, y) => markBand(ds, x, y),
+    targetColour: COL_HINT,
+    evidenceColour: COL_HINT_CELL,
+    gutterColour: COL_GRID,
+  });
 
   // Pencil-mode indicator (fork addition).
   if (firstFrame || ds.pencilModeShown !== ui.hpencil) {

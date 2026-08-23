@@ -7,6 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
+import { expectRing } from "../../engine/testing/mark-shape.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import cReference from "./__fixtures__/bricks-c-reference.json" with { type: "json" };
 import { type BricksHint, bricksGame } from "./index.ts";
@@ -327,14 +328,17 @@ describe("bricks hint — hintKeepTrack", () => {
 });
 
 describe("bricks hint — rendering (tier 2.5)", () => {
-  it("draws the target COL_HINT and evidence COL_HINT_CELL", () => {
+  it("rings the target COL_HINT and the evidence COL_HINT_CELL", () => {
     const result = renderScenario({
       game: bricksGame,
       id: FIX_ID,
       showHint: true,
     });
     const ops = result.recording.ops;
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);
+    // The forced cell is **ringed**, not filled: the move is "shade this cell or
+    // rule it out", so a fill would say with the board what the narration is
+    // still proposing.
+    expectRing(ops, COL_HINT);
     // Some first-step deductions have evidence off-board (edge walls); the
     // 7x6 easy opener's first step should carry at least one evidence cell.
     const hasEvidence = ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL);

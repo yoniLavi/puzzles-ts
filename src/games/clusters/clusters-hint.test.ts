@@ -20,14 +20,7 @@ import { Midend } from "../../engine/midend.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { type ClustersHintHighlights, clustersGame } from "./index.ts";
-import {
-  COL_0,
-  COL_1,
-  COL_HINT,
-  COL_HINT_CELL,
-  COL_HINT_DANGER,
-  COL_HINT_ORDER,
-} from "./render.ts";
+import { COL_0, COL_1, COL_HINT, COL_HINT_CELL, COL_HINT_DANGER } from "./render.ts";
 import {
   type ClustersDeduction,
   COMPLETE,
@@ -354,7 +347,7 @@ describe("hint rendering (tier 2.5)", () => {
   it("every hint role is a colour the board does not already use", () => {
     const palette = clustersGame.colours([1, 1, 1]);
     const key = (i: number) => palette[i].join(",");
-    const roles = [COL_HINT, COL_HINT_CELL, COL_HINT_DANGER, COL_HINT_ORDER];
+    const roles = [COL_HINT, COL_HINT_CELL, COL_HINT_DANGER];
     for (const role of roles) {
       for (const tile of [COL_0, COL_1]) {
         expect(
@@ -364,9 +357,13 @@ describe("hint rendering (tier 2.5)", () => {
       }
     }
     // …and the hint roles are distinct from one another, so a target, its
-    // evidence, its ordering and its contradiction never collapse into one
-    // mark. The ordinal is drawn *on* an evidence cell, so `COL_HINT_ORDER`
-    // being distinct from `COL_HINT_CELL` is what keeps it readable at all.
+    // evidence and its contradiction never collapse into one mark.
+    //
+    // The chain ordinal is deliberately *not* a fourth role: it is drawn in
+    // `COL_HINT_CELL` because a number saying where a cell falls in the chain is
+    // an index into the evidence, not a premise of its own. Asserting that
+    // identity is the point — two meanings arriving at one value down two routes
+    // is what `palette.ts`'s two-layer split exists to prevent.
     expect(new Set(roles.map(key)).size).toBe(roles.length);
   });
 
@@ -423,7 +420,7 @@ describe("hint rendering (tier 2.5)", () => {
     // that numbers only its first cell, numbers from 0, or repeats a digit
     // fails — the count is the guard that a snapshot re-baseline cannot erase.
     const digits = ops
-      .flatMap((o) => (o.op === "text" && o.colour === COL_HINT_ORDER ? [o.text] : []))
+      .flatMap((o) => (o.op === "text" && o.colour === COL_HINT_CELL ? [o.text] : []))
       .sort();
     expect(digits).toEqual(
       Array.from({ length: hl.chain.length }, (_, i) => String(i + 1)).sort(),

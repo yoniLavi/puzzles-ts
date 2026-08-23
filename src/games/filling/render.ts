@@ -13,14 +13,15 @@
 
 import {
   ERROR_WASH,
+  HINT_ACTION,
   HINT_EVIDENCE,
-  HINT_FILL,
   highlightWash,
   INK,
   playerEntryColour,
 } from "../../engine/colour/palette.ts";
 import { fillingCorrect, fillingCursor } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { FillingHint } from "./index.ts";
 import {
@@ -43,8 +44,8 @@ export const COL_CORRECT = 3; // completed-region background
 export const COL_ERROR = 4; // overfull / boxed-in region background
 export const COL_USER = 5; // player-filled digit
 export const COL_CURSOR = 6;
-export const COL_HINT = 7; // the cell to fill — a mild "act here" highlight
-export const COL_HINT_CELL = 8; // the deduction's evidence cells (fainter blue)
+export const COL_HINT = 7; // the cell to fill — ringed on its own border
+export const COL_HINT_CELL = 8; // the deduction's evidence cells — outlined
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -56,7 +57,23 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_ERROR] = ERROR_WASH;
   out[COL_USER] = playerEntryColour(bg);
   out[COL_CURSOR] = fillingCursor(bg);
-  out[COL_HINT] = HINT_FILL;
+  out[COL_HINT] = HINT_ACTION;
+  // Filling's evidence is **outlined rather than washed**, and it is the game
+  // where that call is least obvious, so here is the reason.
+  //
+  // Filling is the strongest case *for* a shade in the whole collection: its
+  // premise is a **number**, and a digit reads perfectly well on a pale fill
+  // (3.41:1 in light, 4.04:1 in dark against the evidence wash). That is true,
+  // and it is not the binding constraint. The wash also has to be dark enough
+  // for a *derived* foreground to survive on it, and at that lightness it
+  // measures **1.15:1 against its own board in dark mode** — legible content on
+  // a tint nobody can see. The two requirements move in opposite directions
+  // along one axis, so a wash under content loses whichever way it is tuned.
+  //
+  // An outline is not on that axis at all: it is read *against* the board rather
+  // than through, so it can take teal's **bold** step — the one defined as "dark
+  // in light mode, light in dark mode", standing off the board by a similar
+  // margin in both schemes where the base sits at one lightness under either.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
 }
@@ -98,6 +115,9 @@ export interface FillingDrawState {
   h: number;
   /** Last-drawn packed word per cell; -1 forces a draw. */
   cache: Int32Array;
+  /** The hint target's ring and the evidence region's outline (fork additions),
+   * drawn after the cell loop. See {@link markBand}. */
+  marks: HintMarks;
 }
 
 export function newDrawState(state: FillingState): FillingDrawState {
@@ -107,6 +127,30 @@ export function newDrawState(state: FillingState): FillingDrawState {
     w: state.w,
     h: state.h,
     cache: new Int32Array(state.w * state.h).fill(-1),
+    marks: new HintMarks(),
+  };
+}
+
+/**
+ * Where a hint mark sits around cell `(x, y)` — **on the cell's own border**,
+ * where its region outline already runs.
+ *
+ * Filling's cells tile exactly, so there is no gutter and the band lies wholly
+ * inside the box (`outer` 0); a cell whose hint flags change repaints itself and
+ * takes its mark with it, so there is nothing to erase. It has room because the
+ * content is a single digit at half the tile size, centred — a quarter of a tile
+ * clear on every side.
+ *
+ * A mark does cover the region border along the sides it draws. The border
+ * survives regardless: each of two cells across a region boundary draws its own
+ * `BORDER_WIDTH` half, and only the marked cell's half is painted over.
+ */
+function markBand(ds: FillingDrawState, x: number, y: number): MarkBand {
+  const ts = ds.tilesize;
+  return {
+    box: { x: coord(x, ts), y: coord(y, ts), w: ts, h: ts },
+    outer: 0,
+    inner: Math.max(2, ts >> 4),
   };
 }
 
@@ -125,18 +169,19 @@ function drawSquare(
   const bw = borderWidth(ts);
   dr.clip({ x: px, y: py, w: ts, h: ts });
 
+  // No hint role appears here: the target's ring and the evidence region's
+  // outline are drawn on the cell's own border in `redraw`, so a hint never
+  // paints over the digits it is reasoning about. `HINT_TARGET`/`HINT_AREA`
+  // stay in the cache word regardless — they are what makes a cell repaint when
+  // the mark leaves it, which is also what erases the mark.
   const bg =
-    flags & HINT_TARGET
-      ? COL_HINT
-      : flags & HINT_AREA
-        ? COL_HINT_CELL
-        : flags & HIGH_BG
-          ? COL_HIGHLIGHT
-          : flags & ERROR_BG
-            ? COL_ERROR
-            : flags & CORRECT_BG
-              ? COL_CORRECT
-              : COL_BACKGROUND;
+    flags & HIGH_BG
+      ? COL_HIGHLIGHT
+      : flags & ERROR_BG
+        ? COL_ERROR
+        : flags & CORRECT_BG
+          ? COL_CORRECT
+          : COL_BACKGROUND;
   dr.drawRect({ x: px, y: py, w: ts, h: ts }, bg);
 
   // Thin grid lines on the top and left edges (interior lines come from each
@@ -364,8 +409,10 @@ export function redrawFilling(
 
       if (clues[i] === 0) flags |= USER_COL;
       if (mistakeSet?.has(i)) flags |= FF_MISTAKE;
+      // Independent bits, not an either/or: a cell can be both the acted-on cell
+      // and part of the evidence, and it then carries both marks.
       if (hintTargets?.has(i)) flags |= HINT_TARGET;
-      else if (hintArea?.has(i)) flags |= HINT_AREA;
+      if (hintArea?.has(i)) flags |= HINT_AREA;
 
       const word = v | (flags << VALUE_BITS);
       if (ds.cache[i] !== word) {
@@ -374,4 +421,24 @@ export function redrawFilling(
       }
     }
   }
+
+  paintHintMarks(dr, ds, hintTargets, hintArea);
+}
+
+/**
+ * The hint marks, after the cell loop and outside every clip, so a mark on a
+ * shared region border is not half-covered by the neighbour drawing its own.
+ */
+function paintHintMarks(
+  dr: GameDrawing,
+  ds: FillingDrawState,
+  targets: ReadonlySet<number> | null,
+  area: ReadonlySet<number> | null,
+): void {
+  const cellAt = (i: number): MarkCell => ({ x: i % ds.w, y: (i / ds.w) | 0 });
+  ds.marks.paint(dr, [...(targets ?? [])].map(cellAt), [...(area ?? [])].map(cellAt), {
+    band: (x, y) => markBand(ds, x, y),
+    targetColour: COL_HINT,
+    evidenceColour: COL_HINT_CELL,
+  });
 }

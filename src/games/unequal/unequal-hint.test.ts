@@ -11,6 +11,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { randomNew } from "../../engine/random/index.ts";
+import { expectContour, expectRing } from "../../engine/testing/mark-shape.ts";
 import {
   DEFAULT_BACKGROUND,
   renderScenario,
@@ -356,7 +357,7 @@ function clueStrikeFrame(p: UnequalParams, pred: (s: string) => boolean): string
 }
 
 describe("unequal hint render", () => {
-  it("an Unequal-mode link elimination shades the pair and strikes the candidate", () => {
+  it("an Unequal-mode link elimination outlines the pair and strikes the candidate", () => {
     const id = clueStrikeFrame(UNEQ, (e) => /greater-than sign/.test(e));
     const { recording, hint } = renderScenario({
       game: unequalGame,
@@ -367,10 +368,10 @@ describe("unequal hint render", () => {
       hintUntil: (s) => /greater-than sign/.test(s.explanation),
     });
     expect(hint?.explanation).toMatch(/greater-than sign/);
-    // The two clue cells are shaded COL_HINT_CELL evidence.
-    expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
-    ).toBe(true);
+    // The two clue cells are **outlined** COL_HINT_CELL evidence: the pair is
+    // adjacent (a greater-than sign joins them), so the contour is one two-cell
+    // ring of `2·2 + 2` sides, not two four-sided ones.
+    expectContour(recording.ops, COL_HINT_CELL, 2);
     // The struck candidate keeps its COL_PENCIL digit, crossed through in COL_PENCIL.
     expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(
       true,
@@ -378,16 +379,16 @@ describe("unequal hint render", () => {
     expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_PENCIL)).toBe(
       true,
     );
-    // A strike cell is NOT solid-filled COL_HINT (that is the placement-target fill).
-    expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(
-      false,
-    );
+    // The strike cell is **ringed** COL_HINT rather than filled with it — a fill
+    // would hide the very digit being crossed out, and a strike gets the same
+    // mark as a placement so it is never identified only by the strikethrough.
+    expectRing(recording.ops, COL_HINT, (hint?.highlights as AnyStep)?.targets.length);
     // Clue glyphs (the > polygons) are still drawn.
     expect(recording.ops.some((o) => o.op === "polygon")).toBe(true);
     expect(recording.ops).toMatchSnapshot();
   });
 
-  it("an Adjacent-mode elimination shades the pair and strikes the candidate", () => {
+  it("an Adjacent-mode elimination outlines the pair and strikes the candidate", () => {
     const id = clueStrikeFrame(ADJ, (e) => /bar/.test(e));
     const { recording, hint } = renderScenario({
       game: unequalGame,
@@ -398,9 +399,7 @@ describe("unequal hint render", () => {
       hintUntil: (s) => /bar/.test(s.explanation),
     });
     expect(hint?.explanation).toMatch(/bar/);
-    expect(
-      recording.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL),
-    ).toBe(true);
+    expectContour(recording.ops, COL_HINT_CELL, 2);
     expect(recording.ops.some((o) => o.op === "line" && o.colour === COL_PENCIL)).toBe(
       true,
     );

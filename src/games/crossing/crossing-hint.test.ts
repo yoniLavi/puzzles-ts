@@ -18,6 +18,7 @@ import type { HintStep } from "../../engine/game.ts";
 import { Midend } from "../../engine/index.ts";
 import { LEFT_BUTTON } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { expectRing, markSides } from "../../engine/testing/mark-shape.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import {
   DEFAULT_BACKGROUND,
@@ -32,9 +33,9 @@ import {
 } from "./hint-solver.ts";
 import { crossingGame } from "./index.ts";
 import {
-  COL_GRID,
   COL_HINT,
   COL_HINT_CELL,
+  COL_SELECTED,
   type CrossingDrawState,
   type CrossingHint,
   PREFERRED_TILE_SIZE,
@@ -589,30 +590,17 @@ describe("crossing hint — the frame", () => {
     expect(midend.activeHintStep()).toBeDefined();
   });
 
-  it("keeps the cursor visible on a square the hint has painted", () => {
-    // The corollary of keeping the hint up: the hint owns the background there,
-    // so the ordinary mouse-selection cue (a highlighted background) would be
-    // invisible exactly when the player is about to type into it. The cue falls
-    // back to dark corner marks — which a plain selection does *not* draw, so
-    // the second half of this test is what makes the first half mean anything.
+  it("keeps the cursor visible on a square the hint has marked", () => {
+    // The corollary of keeping the hint up: the player has to see where they are
+    // about to type. The mark is a *ring*, so the background is still the
+    // selection's and both cues show at once — the ring saying which square the
+    // deduction is about, the fill saying which square the keystroke goes to.
     const params = crossingPresets[0];
     const palette = crossingGame.colours(DEFAULT_BACKGROUND);
 
-    /** The first corner-mark segment `drawRectCorners` emits for cell `c`. */
-    const cornerCue = (
-      c: { x: number; y: number },
-      ts: number,
-    ): { x1: number; y1: number; x2: number; y2: number } => {
-      const cx = (1 + c.x) * ts;
-      const cy = (1 + c.y) * ts;
-      const r = Math.floor(ts * 0.35);
-      const hr = Math.floor(r / 2);
-      return { x1: cx - r, y1: cy - r, x2: cx - r, y2: cy - hr };
-    };
-
     /** Click `cell` on a board whose hint is (or is not) displayed, and report
-     * whether the frame draws the dark corner cue there. */
-    const cueDrawn = (showHint: boolean, cell: { x: number; y: number }): boolean => {
+     * the frame it produces. */
+    const frameAfterClick = (showHint: boolean, cell: { x: number; y: number }) => {
       const midend = new Midend(crossingGame);
       const id = `${crossingGame.encodeParams(params, true)}#hint-dismiss`;
       expect(midend.newGameFromId(id)).toBeUndefined();
@@ -624,16 +612,7 @@ describe("crossing hint — the frame", () => {
 
       const frame = new RecordingDrawing(palette);
       midend.redraw(frame);
-      const want = cornerCue(cell, ts);
-      return frame.ops.some(
-        (o) =>
-          o.op === "line" &&
-          o.colour === COL_GRID &&
-          o.x1 === want.x1 &&
-          o.y1 === want.y1 &&
-          o.x2 === want.x2 &&
-          o.y2 === want.y2,
-      );
+      return { frame, ts };
     };
 
     const { step } = hinted("hint-dismiss");
@@ -641,11 +620,34 @@ describe("crossing hint — the frame", () => {
     expect(target).toBeDefined();
     if (!target) return;
 
-    expect(cueDrawn(true, target), "no cursor cue on the hinted square").toBe(true);
-    expect(
-      cueDrawn(false, target),
-      "the plain mouse selection should use its background highlight, not corners",
-    ).toBe(false);
+    /** Is the selection fill drawn over the whole of cell `c`? */
+    const selectionFill = (
+      ops: readonly { op: string; colour?: number; x?: number; y?: number }[],
+      c: { x: number; y: number },
+      ts: number,
+    ) =>
+      ops.some(
+        (o) =>
+          o.op === "rect" &&
+          o.colour === COL_SELECTED &&
+          o.x === Math.round(c.x * ts + ts / 2) &&
+          o.y === Math.round(c.y * ts + ts / 2),
+      );
+
+    const hintUp = frameAfterClick(true, target);
+    const plain = frameAfterClick(false, target);
+    // The selection reads the same way whether or not a hint is displayed —
+    // which is the whole gain from ringing rather than filling.
+    expect(selectionFill(hintUp.frame.ops, target, hintUp.ts)).toBe(true);
+    expect(selectionFill(plain.frame.ops, target, plain.ts)).toBe(true);
+    // ...and only the hinted frame carries the ring. The count covers the clue
+    // list too: a whole-run placement boxes the number it writes in, in the same
+    // colour and the same shape as the square it writes it into.
+    const boxes =
+      (step.highlights?.targets.length ?? 0) +
+      (step.highlights?.numberTarget == null ? 0 : 1);
+    expectRing(hintUp.frame.ops, COL_HINT, boxes);
+    expect(markSides(plain.frame.ops, COL_HINT)).toHaveLength(0);
   });
 
   it("matches its recorded frame", () => {

@@ -15,9 +15,8 @@
 import {
   clueDoneColour,
   ERROR,
+  HINT_ACTION,
   HINT_EVIDENCE,
-  HINT_FILL,
-  HINT_ORDER,
   highlightWash,
   INK,
   PENCIL_BODY,
@@ -25,8 +24,11 @@ import {
   playerEntryColour,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
 import {
+  HINT_AREA,
+  HINT_TARGET,
   hintMarkBit,
   type OrderedCell,
   OverlaySidecar,
@@ -58,9 +60,10 @@ export const COL_DONE = 6;
 // paletteOverrides, so the extra indices are safe.
 export const COL_PENCIL_BODY = 7;
 // Fork additions: the explained-hint legend (see docs/games/hints.md § "The element-type colour legend").
-export const COL_HINT = 8; // the cell(s)/candidate(s) the deduction acts on
-export const COL_HINT_CELL = 9; // the driving clue's line of sight (evidence)
-export const COL_HINT_ORDER = 10; // a forcing chain's ordinal, indexing the above
+export const COL_HINT = 8; // the acted-on cell's ring (drawn once per frame in redraw)
+/** The driving clue's line of sight, outlined (same pass), **and** a forcing
+ * chain's ordinal — one index, because the number indexes the evidence. */
+export const COL_HINT_CELL = 9;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
@@ -73,9 +76,12 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL] = pencilColour(bg);
   out[COL_DONE] = clueDoneColour(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
-  out[COL_HINT] = HINT_FILL;
+  out[COL_HINT] = HINT_ACTION;
+  // Both hint marks are outlines on the cell's border, so both take a strong
+  // colour and differ in shape rather than in weight — a line of sight's contour
+  // against one cell's ring. `HINT_EVIDENCE` covers the chain ordinal too; see
+  // its doc comment for why the index and the thing it indexes are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  out[COL_HINT_ORDER] = HINT_ORDER;
   return out;
 }
 
@@ -135,6 +141,9 @@ export interface TowersDrawState {
    * a cell's tile value, so both must be in the diff key — this one is where
    * that was learnt: a Check & Save on an already-drawn cell repainted nothing. */
   wrong: OverlaySidecar;
+  /** The hint target's ring and the evidence area's outline (fork additions),
+   * drawn once per frame after the tile loop. See {@link markBand}. */
+  marks: HintMarks;
 }
 
 export function newDrawState(state: TowersState): TowersDrawState {
@@ -149,11 +158,41 @@ export function newDrawState(state: TowersState): TowersDrawState {
     errtmp: new Uint8Array(W * W),
     hint: new OverlaySidecar(W * W),
     wrong: new OverlaySidecar(W * W),
+    marks: new HintMarks(),
   };
 }
 
 export function setTileSize(ds: TowersDrawState, ts: number): void {
   ds.tilesize = ts;
+}
+
+/**
+ * Where a hint mark sits around cell `(x, y)` — **on the cell's own border**,
+ * the outline `drawTile` already paints there, rather than in a gutter.
+ *
+ * Towers has no gutter: `coord` puts consecutive tiles at a `TILESIZE` pitch and
+ * each fills its whole square, so the grid the player sees is the one-pixel box
+ * outline at each tile's edge. The band therefore lies wholly *inside* the box
+ * (`outer` 0), which is also what undoes it — a cell whose overlay changes
+ * repaints itself and takes its mark with it, so there is nothing for
+ * {@link HintMarks} to erase.
+ *
+ * There is room for it because a Towers cell holds at most six pencil marks, so
+ * the layout search settles on a 3×2 grid whose glyph ink clears the tile edge by
+ * about a quarter of the font size. That is a fact about Towers, not about
+ * candidate games in general: Keen and Solo pack up to sixteen marks into the
+ * same square and have no such slack, which is why they mark in the gutter.
+ *
+ * `x`/`y` are play coordinates, so `-1` and `w` are the clue ring — a hint's
+ * evidence names the clue it reasons from as well as the line it sees.
+ */
+function markBand(ds: TowersDrawState, x: number, y: number): MarkBand {
+  const ts = ds.tilesize;
+  return {
+    box: { x: coord(x, ts), y: coord(y, ts), w: ts, h: ts },
+    outer: 0,
+    inner: Math.max(2, ts >> 4),
+  };
 }
 
 // --- tile drawing ----------------------------------------------------------
@@ -173,21 +212,13 @@ function drawTile(
   let tx = coord(x, ts);
   let ty = coord(y, ts);
   const digit = tile & DF_DIGIT_MASK;
-  // Hint overlay: target cell (COL_HINT) > evidence area (COL_HINT_CELL) >
-  // cursor highlight > background. `struck` is the set of candidate heights
-  // this firing rules out, drawn struck in COL_HINT among the pencil marks.
-  const hintTarget = (hint & 1) !== 0;
-  const hintArea = (hint & 2) !== 0;
+  // Hint overlay: both cell-level marks are read in `redraw`, which rings the
+  // target and outlines the evidence area on the cell's own border, so a hint
+  // never paints over the digits it is talking about. What is left here is
+  // `struck`, the set of candidate heights this firing rules out, crossed
+  // through among the pencil marks.
   const struck = hint >> 2;
-  let bg = tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : COL_BACKGROUND;
-  if (hintArea) bg = COL_HINT_CELL;
-  // A solid COL_HINT background is the *placement*-target fill. A strike step
-  // also flags its cells as targets, but their struck candidates are drawn in
-  // COL_HINT too — painting the cell COL_HINT as well would hide the very digit
-  // the hint is crossing out (blue-on-blue). So only fill solid when there is
-  // nothing struck here; a strike cell keeps the lighter evidence/normal
-  // background and the COL_HINT strikethrough digit stays legible against it.
-  if (hintTarget && struck === 0) bg = COL_HINT;
+  const bg = tile & DF_HIGHLIGHT ? COL_HIGHLIGHT : COL_BACKGROUND;
 
   // 3D tower: left + bottom faces, then offset to the top face.
   if (threeD && tile & DF_PLAYAREA && digit) {
@@ -379,7 +410,7 @@ function drawTile(
   // offset for a 3D tower's top face, so the ordinal follows the tile it
   // belongs to rather than floating over the one behind it.
   if (hintOrder > 0)
-    drawHintOrdinal(dr, { x: tx, y: ty }, ts, hintOrder, COL_HINT_ORDER);
+    drawHintOrdinal(dr, { x: tx, y: ty }, ts, hintOrder, COL_HINT_CELL);
 }
 
 // --- hint overlay ----------------------------------------------------------
@@ -543,6 +574,23 @@ export function redraw(
       }
     }
   }
+
+  // The hint marks, **once per frame after the tile loop** and outside every
+  // clip. Once, because Towers repaints each tile up to four times inside a
+  // single clip (a 3D tower spills into the cells up and to the left of its
+  // own); after and unclipped, so a neighbour's tower cannot bury the mark.
+  const targets: MarkCell[] = [];
+  const evidence: MarkCell[] = [];
+  for (let i = 0; i < W * W; i++) {
+    const c = { x: (i % W) - 1, y: ((i / W) | 0) - 1 };
+    if (ds.hint.packed[i] & HINT_TARGET) targets.push(c);
+    if (ds.hint.packed[i] & HINT_AREA) evidence.push(c);
+  }
+  ds.marks.paint(dr, targets, evidence, {
+    band: (x, y) => markBand(ds, x, y),
+    targetColour: COL_HINT,
+    evidenceColour: COL_HINT_CELL,
+  });
 
   ds.started = true;
 }

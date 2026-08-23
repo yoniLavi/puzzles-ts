@@ -60,10 +60,10 @@ exports[`the hint frame paints the overlay > draws a COL_HINT spoke and a COL_HI
     "cx": 36,
     "cy": 36,
     "fill": 10,
-    "fillRgb": "rgb(177, 250, 254)",
+    "fillRgb": "rgb(14, 88, 91)",
     "op": "circle",
     "outline": 10,
-    "outlineRgb": "rgb(177, 250, 254)",
+    "outlineRgb": "rgb(14, 88, 91)",
     "r": 26,
   },
   {

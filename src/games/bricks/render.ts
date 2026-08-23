@@ -30,6 +30,7 @@ import {
 } from "../../engine/colour/palette.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { BricksHint } from "./index.ts";
 import { bricksValidate } from "./solver.ts";
@@ -67,8 +68,8 @@ export const COL_SHADE = 4;
 export const COL_ERROR = 5;
 export const COL_CURSOR = 6;
 // Fork additions (beyond upstream's COL_* enum): the explained hint.
-export const COL_HINT = 7; // the forced cell — COL_HINT fill (blue)
-export const COL_HINT_CELL = 8; // the deduction's evidence — a light-blue ring
+export const COL_HINT = 7; // the forced cell — ringed on its own border
+export const COL_HINT_CELL = 8; // the deduction's evidence — an inset ring
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
@@ -190,16 +191,18 @@ function drawTile(
   ty: number,
   n: number,
 ): void {
+  // The forced cell keeps its own colour and is **ringed** below. In a game
+  // whose move is "shade this cell or rule it out", a solid fill says with the
+  // board what the narration is still proposing — and the player still has to
+  // apply it.
   const col =
-    n & HINT_TARGET
-      ? COL_HINT // the forced cell (empty) is painted blue — the player still applies it
-      : n & F_BOUND
-        ? COL_MIDLIGHT
-        : (n & COL_MASK) === F_SHADE
-          ? COL_SHADE
-          : (n & COL_MASK) === F_UNSHADE || !(n & COL_MASK)
-            ? COL_HIGHLIGHT
-            : COL_MIDLIGHT;
+    n & F_BOUND
+      ? COL_MIDLIGHT
+      : (n & COL_MASK) === F_SHADE
+        ? COL_SHADE
+        : (n & COL_MASK) === F_UNSHADE || !(n & COL_MASK)
+          ? COL_HIGHLIGHT
+          : COL_MIDLIGHT;
 
   dr.drawRect({ x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 }, col);
 
@@ -261,6 +264,21 @@ function drawTile(
     dr.drawRect({ x: tx + in0, y: ty + in0, w: t, h: inSz }, COL_HINT_CELL);
     dr.drawRect({ x: tx + in0, y: ty + ts - m - t, w: inSz, h: t }, COL_HINT_CELL);
     dr.drawRect({ x: tx + ts - m - t, y: ty + in0, w: t, h: inSz }, COL_HINT_CELL);
+  }
+
+  // The acted-on cell's ring, on the square's own border — where the evidence
+  // ring is *inset*, so a cell that is both keeps both marks legible.
+  if (n & HINT_TARGET) {
+    drawMarkSides(
+      dr,
+      {
+        box: { x: tx, y: ty, w: ts + 1, h: ts + 1 },
+        outer: 0,
+        inner: Math.max(2, (ts / 12) | 0),
+      },
+      MARK_ALL,
+      COL_HINT,
+    );
   }
 
   dr.drawUpdate({ x: tx, y: ty, w: ts + 1, h: ts + 1 });

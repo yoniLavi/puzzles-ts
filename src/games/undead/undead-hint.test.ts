@@ -13,13 +13,14 @@
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { expectRing, isThin, markSides } from "../../engine/testing/mark-shape.ts";
 import {
   DEFAULT_BACKGROUND,
   renderScenario,
 } from "../../engine/testing/render-scenario.ts";
 import { newUndeadDesc } from "./generator.ts";
 import { undeadGame } from "./index.ts";
-import { COL_HINT, COL_HINT_CELL } from "./render.ts";
+import { COL_HINT, COL_HINT_CELL, type UndeadHint } from "./render.ts";
 import { recordUndeadDeductions } from "./solver.ts";
 import {
   MON_GHOST,
@@ -352,7 +353,7 @@ describe("undead hint resume (per tier)", () => {
 });
 
 describe("undead hint render (tier 2.5)", () => {
-  it("a sightline-elimination frame shades the path, struck candidate, clues drawn", () => {
+  it("a sightline-elimination frame outlines the path, struck candidate, clues drawn", () => {
     const { recording, hint } = renderScenario({
       game: undeadGame,
       id: "5x5dn#hint-render",
@@ -363,9 +364,18 @@ describe("undead hint render (tier 2.5)", () => {
     });
     expect(hint).toBeDefined();
     const ops = recording.ops;
-    // The sightline's bounce path is shaded COL_HINT_CELL.
-    expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT_CELL)).toBe(true);
-    // A struck candidate draws a COL_HINT strikethrough line.
+    // The sightline's bounce path is **outlined** COL_HINT_CELL, not shaded —
+    // the cells on it carry pencilled monsters the player has to read.
+    const evidence = markSides(ops, COL_HINT_CELL);
+    expect(evidence.length).toBeGreaterThan(0);
+    for (const s of evidence) expect(isThin(s)).toBe(true);
+    // The struck cell is ringed COL_HINT, and the struck candidate itself keeps
+    // its glyph and draws a COL_HINT strikethrough line over it.
+    expectRing(
+      ops,
+      COL_HINT,
+      (hint?.highlights as UndeadHint | undefined)?.targets.length,
+    );
     expect(ops.some((o) => o.op === "line" && o.colour === COL_HINT)).toBe(true);
     // Edge clue numbers are still drawn (text ops present).
     expect(ops.some((o) => o.op === "text")).toBe(true);

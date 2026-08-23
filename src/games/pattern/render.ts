@@ -15,12 +15,13 @@ import {
   GRID_DARK,
   HINT_ACTION,
   HINT_BLACKREF,
-  HINT_EVIDENCE,
+  HINT_EVIDENCE_WASH,
   HINT_WHITEREF,
   INK,
   UNDECIDED,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { PatternHint } from "./index.ts";
 import { lineHasError } from "./solver.ts";
@@ -50,9 +51,11 @@ export const COL_ERROR = 7;
 export const COL_CURSOR_GUIDE = 8;
 // Hint colours — appended past the C colour enum (0–8) so the dark-mode
 // palette overrides (which target the C indices) leave them unchanged. The
-// forced cell is COL_HINT (blue); the reasoned line's cells shade
-// COL_HINT_CELL (light blue); cited black / white marks ring COL_HINT_BLACKREF
-// (teal) / COL_HINT_WHITEREF (violet) — the cross-game element-type legend.
+// forced cell is **ringed** COL_HINT (blue); the reasoned line's still-undecided
+// cells shade COL_HINT_CELL — the evidence wash, which is right here because
+// nothing is drawn on an undecided square; cited black / white marks ring
+// COL_HINT_BLACKREF (teal) / COL_HINT_WHITEREF (violet) — the cross-game
+// element-type legend.
 export const COL_HINT = 9;
 export const COL_HINT_CELL = 10;
 export const COL_HINT_BLACKREF = 11;
@@ -72,7 +75,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_CURSOR] = CURSOR;
   out[COL_ERROR] = ERROR;
   out[COL_HINT] = HINT_ACTION;
-  out[COL_HINT_CELL] = HINT_EVIDENCE;
+  out[COL_HINT_CELL] = HINT_EVIDENCE_WASH;
   out[COL_HINT_BLACKREF] = HINT_BLACKREF;
   out[COL_HINT_WHITEREF] = HINT_WHITEREF;
   return out;
@@ -179,19 +182,29 @@ function gridSquare(
   const dw = ts - xl - xr - 1;
   const dh = ts - yt - yb - 1;
 
-  // A hint target paints a blue highlight (it never pre-fills the black/white
-  // the move will place — the narration says which); an undecided cell of the
-  // reasoned line shades light-blue; a cited mark keeps its own colour (so the
-  // premise stays visible) and gets a ring below.
+  // A hint target is **ringed** below — it never pre-fills the black/white the
+  // move will place, and in a game whose move is exactly "make this square black
+  // or white" a solid fill says with the board what the narration is proposing.
+  // An undecided cell of the reasoned line *shades*: nothing is drawn on it, so
+  // the wash covers nothing. A cited mark keeps its own colour (the premise) and
+  // gets a ring below.
   const baseFill =
     val === GRID_FULL ? COL_FULL : val === GRID_EMPTY ? COL_EMPTY : COL_UNKNOWN;
-  const fill =
-    hintBits & K_HINT_TARGET
-      ? COL_HINT
-      : hintBits & K_HINT_SHADE
-        ? COL_HINT_CELL
-        : baseFill;
+  const fill = hintBits & K_HINT_SHADE ? COL_HINT_CELL : baseFill;
   dr.drawRect({ x: dx, y: dy, w: dw, h: dh }, fill);
+
+  if (hintBits & K_HINT_TARGET) {
+    drawMarkSides(
+      dr,
+      {
+        box: { x: dx, y: dy, w: dw, h: dh },
+        outer: 0,
+        inner: Math.max(2, Math.floor(ts / 10)),
+      },
+      MARK_ALL,
+      COL_HINT,
+    );
+  }
 
   if (hintBits & (K_HINT_BLACKREF | K_HINT_WHITEREF)) {
     const t = Math.max(1, Math.floor(ts / 10));

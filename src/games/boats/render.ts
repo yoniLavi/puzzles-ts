@@ -43,6 +43,7 @@ import {
 } from "../../engine/colour/palette.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
 import type { BoatsHint } from "./index.ts";
@@ -630,13 +631,9 @@ export function redraw(
       ds.tiles[i] = key;
 
       dr.drawUpdate({ x: tx, y: ty, w: ts + 1, h: ts + 1 });
-      // Shade an *undecided* evidence square, ring a decided one: a light-blue
-      // fill over water or a segment would paint over the very thing that makes
-      // the square evidence (docs/games/hints.md § "Shade vs ring").
-      const shadeEvidence = hintBit & HINT_EVID && ship === EMPTY;
       dr.drawRect(
         { x: tx, y: ty, w: ts, h: ts },
-        shadeEvidence ? COL_HINT_CELL : ship !== EMPTY ? COL_WATER : COL_BACKGROUND,
+        ship !== EMPTY ? COL_WATER : COL_BACKGROUND,
       );
       drawRectOutline(dr, tx, ty, ts + 1, ts + 1, COL_GRID);
 
@@ -663,15 +660,26 @@ export function redraw(
         else drawWaves(dr, tx, ty, ts, COL_HINT);
       }
 
-      // A decided evidence square keeps its own colour and gets an inset ring.
-      if (hintBit & HINT_EVID && ship !== EMPTY) {
+      // Every evidence square keeps its own colour and gets an inset ring —
+      // undecided or not, one mark for one role. A fill over water or a segment
+      // would paint over the very thing that makes the square evidence, and a
+      // fill pale enough not to is too faint to read as a mark at all
+      // (`hint-mark.ts`), so neither kind of square gets one.
+      if (hintBit & HINT_EVID) {
         const inset = (ts / 6) | 0;
-        drawRectOutline(
+        drawMarkSides(
           dr,
-          tx + inset,
-          ty + inset,
-          ts - inset * 2 + 1,
-          ts - inset * 2 + 1,
+          {
+            box: {
+              x: tx + inset,
+              y: ty + inset,
+              w: ts - inset * 2 + 1,
+              h: ts - inset * 2 + 1,
+            },
+            outer: 0,
+            inner: Math.max(2, ts >> 4),
+          },
+          MARK_ALL,
           COL_HINT_CELL,
         );
       }

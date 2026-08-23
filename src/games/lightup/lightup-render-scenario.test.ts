@@ -12,6 +12,7 @@
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
 import { randomNew } from "../../engine/random/index.ts";
+import { expectRing } from "../../engine/testing/mark-shape.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { type LightupHint, lightupGame } from "./index.ts";
 import {
@@ -35,7 +36,7 @@ const hl = (step: HintStep<unknown> | undefined): LightupHint | undefined =>
   step?.highlights as LightupHint | undefined;
 
 describe("Light Up hint render scenarios", () => {
-  it("opener frame: grouped blue targets, recoloured clue digit, board intact", () => {
+  it("opener frame: grouped ringed targets, recoloured clue digit, board intact", () => {
     // lrs-easy-0's opener is a clueSaturated firing forcing three bulbs.
     const { recording, hint, size } = renderScenario({
       game: lightupGame,
@@ -48,12 +49,9 @@ describe("Light Up hint render scenarios", () => {
     expect(h?.targets.length).toBeGreaterThan(1);
     expect(h?.clue).toBeDefined();
 
-    // Every target paints the blue COL_HINT fill (highlight only — no
-    // bulb circle is drawn on a target).
-    const hintRects = recording.ops.filter(
-      (o) => o.op === "rect" && o.colour === COL_HINT,
-    );
-    expect(hintRects.length).toBe(h?.targets.length);
+    // Every target is **ringed** COL_HINT (a mark, not the bulb the player must
+    // place) — four thin rects each, and no solid one.
+    expectRing(recording.ops, COL_HINT, h?.targets.length);
     // The driving clue's digit recolours COL_HINT (the clue↔move tie).
     expect(recording.ops.some((o) => o.op === "text" && o.colour === COL_HINT)).toBe(
       true,
@@ -85,12 +83,10 @@ describe("Light Up hint render scenarios", () => {
 
     const h = hl(hint);
     expect(h?.dark).toBeDefined();
-    // One blue target; corridor evidence cues (shade on a dark square,
+    // One ringed target; corridor evidence cues (shade on a dark square,
     // teal ring on a lit one — this frame's corridor is fully lit/crossed,
     // so at least one of the two cues must appear); the amber ring.
-    expect(
-      recording.ops.filter((o) => o.op === "rect" && o.colour === COL_HINT).length,
-    ).toBe(1);
+    expectRing(recording.ops, COL_HINT);
     expect(
       recording.ops.some(
         (o) =>
@@ -103,7 +99,7 @@ describe("Light Up hint render scenarios", () => {
     ).toBe(true);
   });
 
-  it("clueSatisfied frame: grouped impossible-mark targets all paint COL_HINT", () => {
+  it("clueSatisfied frame: grouped impossible-mark targets are all ringed", () => {
     const { recording, hint } = renderScenario({
       game: lightupGame,
       id: boardId(EASY, "lrs-easy-0"),
@@ -116,9 +112,7 @@ describe("Light Up hint render scenarios", () => {
 
     const h = hl(hint);
     expect(h?.kind).toBe("impossible");
-    expect(
-      recording.ops.filter((o) => o.op === "rect" && o.colour === COL_HINT).length,
-    ).toBe(h?.targets.length);
+    expectRing(recording.ops, COL_HINT, h?.targets.length);
   });
 
   it("discount frame: the dark square rings amber over its shaded rule-out set", () => {

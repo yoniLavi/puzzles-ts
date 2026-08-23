@@ -631,7 +631,7 @@ describe("hint rendering (tier 2.5)", () => {
     expect(ops).toMatchSnapshot();
   });
 
-  it("a collapse hint frame tints the highlighted set in the tally band", () => {
+  it("a collapse hint frame boxes the highlighted set in the tally band", () => {
     // Reach a collapse frame by replaying prior firings, then show the hint.
     let seed: string | null = null;
     let moves: SubsetsMove[] | null = null;
@@ -652,8 +652,10 @@ describe("hint rendering (tier 2.5)", () => {
     });
     expect(result.hint).toBeDefined();
     const hl = result.hint?.highlights as SubsetsHintHighlights;
-    // A collapse tints the surviving sets in the tally (COL_HINT_CELL), and may
-    // also frame one blocker cell for the "why not X" clause (#2).
+    // A collapse boxes the surviving sets in the tally (COL_HINT_CELL), and may
+    // also frame one blocker cell for the "why not X" clause (#2). A box rather
+    // than a tint: the label's own colour carries the state (error red, used-up
+    // grey), so a fill behind it competes with what has to be read.
     expect(hl.sets.length).toBeGreaterThan(0);
     const ops = result.recording.ops;
     expect(ops.some((o) => o.op === "rect" && o.colour === COL_HINT)).toBe(true);

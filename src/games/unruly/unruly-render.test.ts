@@ -236,7 +236,7 @@ describe("Unruly redraw", () => {
     ).toBe(false);
   });
 
-  it("renders a displayed hint: target fill + preview, sibling shade, premise ring", () => {
+  it("renders a displayed hint: target ring, sibling shade, premise ring", () => {
     // A black clue at (0,0) (a ring premise), an empty target at (2,0) forced
     // black, and an empty sibling at (4,0).
     const state = withClue(ONE);
@@ -249,9 +249,16 @@ describe("Unruly redraw", () => {
     };
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, state, 1, freshUi(), 0, 0, hint);
-    // Target cell: a full COL_HINT body.
-    expect(ops.some((o) => body(o) && o.colour === COL_HINT)).toBe(true);
-    // Sibling area cell: a full COL_HINT_CELL body.
+    // Target cell: a COL_HINT **ring**, and no COL_HINT body. A fill in a game
+    // whose move is "make this cell black or white" reads as a third colour
+    // already placed, so the cell keeps its own colour under the mark.
+    expect(
+      ops.filter((o) => o.op === "drawRect" && o.colour === COL_HINT && !body(o))
+        .length,
+    ).toBe(4);
+    expect(ops.some((o) => body(o) && o.colour === COL_HINT)).toBe(false);
+    // Sibling area cell: a full COL_HINT_CELL body. This one *stays* a fill —
+    // the siblings are still-empty cells, so the wash covers nothing.
     expect(ops.some((o) => body(o) && o.colour === COL_HINT_CELL)).toBe(true);
     // Premise ring: COL_HINT_REF outline strips around the cited clue — a
     // distinct colour from the COL_HINT move, so premise and move don't read
@@ -260,10 +267,6 @@ describe("Unruly redraw", () => {
       ops.filter((o) => o.op === "drawRect" && o.colour === COL_HINT_REF && !body(o))
         .length,
     ).toBeGreaterThanOrEqual(4);
-    // …and the ring is NOT drawn in the target's COL_HINT.
-    expect(
-      ops.some((o) => o.op === "drawRect" && o.colour === COL_HINT && !body(o)),
-    ).toBe(false);
   });
 
   it("suppresses unchanged tiles via the cache", () => {

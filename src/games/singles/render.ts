@@ -23,6 +23,7 @@ import {
 } from "../../engine/colour/palette.ts";
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { SinglesHint } from "./index.ts";
 import {
@@ -85,6 +86,10 @@ const border = (ts: number): number => Math.floor(ts / 2);
 const crad = (ts: number): number => Math.floor(ts / 2) - 1;
 const textsz = (ts: number): number => Math.floor((14 * crad(ts)) / 10) - 1;
 const coord = (v: number, ts: number): number => v * ts + border(ts);
+/** A hint mark's thickness: it replaces the cell's own grid outline, and reads
+ * as a highlight by colour rather than by weight. Bounded by the number the cell
+ * always carries, which is drawn at `textsz(ts)` centred. */
+const markT = (ts: number): number => Math.max(2, ts >> 4);
 
 export function computeSize(p: { w: number; h: number }, ts: number): Size {
   return { w: ts * p.w + 2 * border(ts), h: ts * p.h + 2 * border(ts) };
@@ -156,25 +161,18 @@ function tileRedraw(
     dnum = true;
   }
 
-  // Hint overrides. A forced cell is only *highlighted* — the whole cell
-  // painted the hint blue with its number kept visible — never pre-filled
-  // with the black square / circle the player must place themselves. The
-  // highlight says "act here"; the narration says which action. (Doing the
-  // move for the player obscured the number and read as already-done, when
-  // it's still the player's to apply — owner-directed, 2026-06-20. Auto-hint
-  // applies the move for real, so animation mode renders the actual mark.)
-  // An evidence cell shades light blue only while it is still undecided; a
-  // decided black/circle premise keeps its colour (the reason) and is ringed
-  // below instead.
+  // A forced cell is never pre-filled with the black square / circle the player
+  // must place themselves: the mark says "act here", the narration says which
+  // action. (Doing the move for the player read as already-done, when it is
+  // still theirs to apply — owner-directed, 2026-06-20. Auto-hint applies the
+  // move for real, so animation mode renders the actual mark.)
+  //
+  // Every Singles cell carries a **number**, so no hint role can be a fill; all
+  // of them are marks on the cell's own border, drawn below. The band lies
+  // inside the cell (`outer` 0), so this cell's own repaint — which its hint
+  // bits are part of the cache key for — is what erases a mark that moves.
   const target = f & (DS_HINT_BLACK | DS_HINT_WHITE);
   const decided = f & (DS_BLACK | DS_CIRCLE);
-  if (target) {
-    bg = COL_HINT;
-  } else if (f & DS_HINT_STRAND && !decided) {
-    bg = COL_HINT_STRAND;
-  } else if (f & DS_HINT_EVID && !decided) {
-    bg = COL_HINT_CELL;
-  }
 
   const cx = x + Math.floor(ts / 2);
   const cy = y + Math.floor(ts / 2);
@@ -206,6 +204,15 @@ function tileRedraw(
     drawRectOutline(dr, x + 1, y + 1, ts - 2, ts - 2, ringCol);
     drawRectOutline(dr, x + 2, y + 2, ts - 4, ts - 4, ringCol);
   }
+
+  // The acted-on cell's ring, and an undecided premise's outline. Drawn last so
+  // they sit over the cell's own grid outline, which is what they replace.
+  const band = { box: { x, y, w: ts, h: ts }, outer: 0, inner: markT(ts) };
+  if (!target && !decided && f & DS_HINT_STRAND)
+    drawMarkSides(dr, band, MARK_ALL, COL_HINT_STRAND);
+  else if (!target && !decided && f & DS_HINT_EVID)
+    drawMarkSides(dr, band, MARK_ALL, COL_HINT_CELL);
+  if (target) drawMarkSides(dr, band, MARK_ALL, COL_HINT);
 
   if (dnum) {
     const buf = String(num);
