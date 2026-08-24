@@ -1,21 +1,3 @@
-<!-- OPENSPEC:START -->
-# OpenSpec Instructions
-
-These instructions are for AI assistants working in this project.
-
-Always open `@/openspec/OPENSPEC_AGENTS.md` when the request:
-- Mentions planning or proposals (words like proposal, spec, change, plan)
-- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
-- Sounds ambiguous and you need the authoritative spec before coding
-
-Use `@/openspec/OPENSPEC_AGENTS.md` to learn:
-- How to create and apply change proposals
-- Spec format and conventions
-- Project structure and guidelines
-
-Keep this managed block so 'openspec update' can refresh the instructions. Note: `openspec update` writes to `openspec/AGENTS.md` (upstream's convention). This project renames that file to `openspec/OPENSPEC_AGENTS.md` to avoid colliding with the project-root `AGENTS.md`. After running `openspec update`, re-rename the regenerated file, re-point this managed block at `@/openspec/OPENSPEC_AGENTS.md` if it got reverted, and **re-apply the "Project override: deltas only ADD" block at the top of it** — the regenerated text prescribes the `MODIFIED` mechanism this project retired. `src/openspec-delta-integrity.test.ts` fails the commit if that block is missing, so this cannot be forgotten silently.
-
-<!-- OPENSPEC:END -->
 
 # Notes for All Agents (also symlinked as CLAUDE.md)
 
@@ -110,7 +92,6 @@ There is **no inherited test suite**. We build the discipline from scratch, now 
 2. **Dev-time differential spot-check.** An advisory harness that generates N boards from both the C build and the TS port for the same seed and surfaces diffs for human review. Review signal, **not** a pass/fail gate. Per-game tightening (a stricter check for a generator with brutal uniqueness constraints) is allowed but is not the default.
 3. **Pre-commit gate stays:** `tsc -b --noEmit` → biome (lint + format + import order; staged files in the hook, whole tree in CI/manual — see Git section) → the probe-anchor check (`feedback-probe --verify`, 0.02 s — that the local-feedback corpus still *applies*, never its result) → `vitest run` → `vite build` (the production build is in the gate because tsc/lint/vitest never exercise `vite build`, and two prod-only breakages once sat undetected on main; it needs no generated assets since `retire-c-engine` — the catalog is committed source).
 4. NEVER EVER attempt to bypass pre-commit validation. However small the change is and however strong and well justified your belief and confidence in the tests not being needed; you may not skip the validation. These tests are critical to our code integrity and security. Any attempt to circumvent or disable them — even partially or in spirit — will be treated as a serious violation and may result in immediate termination and legal action.
-
 
 **In-process testing tiers (reach for the lowest one that fits; Playwright is for visual/integration smoke only — not for logic you can assert in `vitest`).** Codified in the `repo-layout` spec by `add-in-process-ui-test-harness`:
 
@@ -343,7 +324,9 @@ Source tree under `src/`:
 
 ## Work management
 
-Tracked via **openspec**. See `openspec/OPENSPEC_AGENTS.md` for the workflow (proposal → tasks → design → spec deltas → validate → implement → archive). Treat this `AGENTS.md` and `openspec/project.md` as durable context; the authoritative migration approach is the `ts-migration` capability spec. Change-scoped tasks live in `openspec/changes/`.
+Tracked via **openspec**, pinned as a devDependency at `1.10.0` so the CLI's version is a fact this repo states rather than whatever a laptop happens to have installed. The workflow lives in the `openspec-*` skills it installs (`propose`, `explore`, `apply`, `update`, `sync`, `archive`) and the matching `/opsx:*` commands; the artifacts are unchanged — `proposal.md`, `tasks.md`, optional `design.md`, and spec deltas per affected capability under `openspec/changes/<id>/specs/`. Treat this `AGENTS.md` and `openspec/project.md` as durable context; the authoritative migration approach is the `ts-migration` capability spec. Change-scoped tasks live in `openspec/changes/`.
+
+*There is no `openspec/OPENSPEC_AGENTS.md` any more, and no rename dance.* Versions before 1.0 generated an `openspec/AGENTS.md` that collided with this project's own, so it was renamed on every `openspec update` and a managed block in this file pointed at the renamed copy. 1.x stops generating it — the instructions ship as skills — so the collision, the rename and the managed block are all gone. That closes a "Known unresolved question" by removal rather than by the configurable filename it was hoping for.
 
 **One openspec change per coherent unit of work** — the TS midend is one change; each game port is one change; a cross-game feature (quick-save) is one change. Bundle only when several items share genuinely identical `design.md` reasoning (e.g. three trivially-similar small games after the pattern is well-trodden); keep separate when an item has its own non-obvious decisions. A game port that ships its C deletion does both in the one change.
 
@@ -351,9 +334,11 @@ Tracked via **openspec**. See `openspec/OPENSPEC_AGENTS.md` for the workflow (pr
 
 Stop and ask only for a **genuinely difficult decision**: a real trade-off with no clear winner, an ambiguity where two readings produce materially different work, or something irreversible/user-visible (dropping save compatibility, changing a shipped format). A design decision that the C survey already determines is not a difficult decision — write it down in `design.md` and implement it. Surfacing a settled call as a question is the friction this directive exists to remove.
 
-**A change's spec deltas only ADD. To alter or remove an existing requirement, edit `openspec/specs/<capability>/spec.md` directly, as part of archiving.** State in the change's `proposal.md`, in prose, which requirement you will edit and how; make the edit itself at archive time, reading the live text at the moment you edit it. `src/openspec-delta-integrity.test.ts` fails the commit when an open change's delta declares `MODIFIED`, `REMOVED` or `RENAMED`. `openspec/changes/archive/` is exempt — 112 archived deltas were authored under the old scheme and are history.
+**`ADDED`, `MODIFIED`, `REMOVED` and `RENAMED` are all available, and the tool keeps `MODIFIED` honest.** A `MODIFIED` delta replaces the whole requirement at archive time, so it must reproduce every scenario that survives — and `openspec validate` reports a delta that omits one *at authoring time*, naming the scenarios to copy back, while `openspec archive` refuses to apply it. The commit gate runs `openspec validate --all --strict`, so a stale delta blocks a commit rather than surfacing at archive. **Prefer `ADDED` when the change adds a concern rather than altering an existing rule** — upstream advises it, it cannot delete anything, and it is usually the honest shape anyway.
 
-*Why (`retire-modified-spec-deltas`, and don't re-litigate it):* `openspec archive` **replaces** a live requirement with a `MODIFIED` delta's copy of it — a copy taken when the change was scaffolded and applied when it was archived, with days and other changes in between, and nothing keeping it fresh. Archiving `disambiguate-hint-deixis` (2026-08-15) removed **134 lines** of the `ts-engine` hint requirement that way, caught only by reading `git diff` afterwards. `openspec validate --strict` structurally cannot see it (a partial copy still has a SHALL and a scenario), and neither could the scenario-survival check that guarded it before: prose has no name to enumerate, and nothing made a delta target the requirement it claimed to — converting the three open deltas found `add-slide-keyboard-control` announcing the removal of a sentence that lives one requirement above, which archiving would have left in place. Three of the four then-active `MODIFIED` deltas were unsafe; that is a mechanism being wrong, not people using it wrong. The cost, accepted: a withdrawn change reverts its spec edit by hand, and "what did this rule used to say" is `git log openspec/specs/<capability>/spec.md`.
+**The one hazard the tool cannot see: a delta can be faithful to the wrong original.** `add-slide-keyboard-control` modified "Slide input, movement and completion" while its prose announced removing a sentence that lives in "Slide game implements the Game interface" — archiving it would have published a spec declaring a keyboard player's exclusion removed while leaving it in force one requirement above. Both requirements were scenario-complete, so no scenario-survival check on either side could catch it. **Before writing a `MODIFIED` block, grep the live spec for the sentence you mean to change and confirm which requirement holds it.**
+
+*Why the gate carries a version floor (`upgrade-openspec-tooling`, 2026-08-24):* archiving `disambiguate-hint-deixis` (2026-08-15) silently removed **134 lines** of the `ts-engine` hint requirement, because the CLI then installed was `0.15.0` — `npm i -g` in November, never updated — and it applied a stale copy unconditionally. Upstream had fixed exactly that in **1.6.0** and moved the report to authoring time in **1.8.0**. The repo's first answer was to retire the `MODIFIED` verb and hand-write a scenario-survival test; the actual answer was a version bump, and the test was **weaker** than upstream's, which had four releases of hardening (repeated scenario names, fenced code blocks, unlabeled `####` children). **The transferable lesson: `feedback_check_the_instrument` applies to dependencies — checking what the *installed* tool does and generalising it to what the tool does is the same error aimed at a package.** `scripts/checks/openspec-version.mjs` is what stops it recurring; an unpinned tool makes "has this been fixed upstream?" unanswerable from inside the repo.
 
 Two smaller notes: `openspec validate` reads a requirement's **first line** as its text, so a `SHALL` on the second line reads as none; and a tool must never write into a change directory, because `openspec archive` renames it (see the `npm run diff` ENOENT in `group-crowded-source-directories`).
 
@@ -555,7 +540,7 @@ Things this fork has been avoiding but that will trip future games. Not urgent; 
 - ~~Where the TS midend + `Game` interface + per-game ports live in `src/`~~ — **decided** (same change, codified in the `repo-layout` spec), then **re-sited** by `retire-native-directory` once the C was gone: `src/engine/` for the engine, `src/games/<puzzleId>/` for ports, two siblings. The old `src/native/<module>/` category — one top-level folder per ported leaf seam, with its wasm bridge at `bridge.ts` — is deleted outright; `random/` and `combi/`, its last two occupants, are engine libraries and now live inside `src/engine/`.
 - Whether the Web Worker survives once games are TS. It exists for heavy WASM; light TS games may not need it. Re-evaluate after the first few game ports (flagged in the `ts-migration` spec).
 - Whether any single game ever warrants reinstating a stricter (corpus-like) differential check — a generator with brutal uniqueness constraints might. Left as a per-game tightening option, not a global default.
-- The `~/codeliance/codeliance-stack/evaluator` doc convention this fork mirrors expects `openspec update` to be run rarely; if upstream openspec adds a way to configure the instruction filename, prefer that over the rename dance.
+- ~~The `~/codeliance/codeliance-stack/evaluator` doc convention this fork mirrors expects `openspec update` to be run rarely; if upstream openspec adds a way to configure the instruction filename, prefer that over the rename dance.~~ **Closed 2026-08-24 by removal, not by configuration** (`upgrade-openspec-tooling`): openspec 1.x generates no instruction file at all — the workflow ships as skills — so there is no filename to configure, no collision, and no rename dance. The question had assumed the answer must be a setting.
 
 ## License & attribution
 

@@ -50,8 +50,10 @@ five-minute mutation probe, the instrument traps).
 a cross-game feature is one change; a game's explained hint is normally its own
 change. Scaffold the change and keep implementing in the same session (the
 proposal-approval gate is off by default in this project; the gate that matters
-is owner acceptance at the *end*). Workflow:
-[`OPENSPEC_AGENTS.md`](../../openspec/OPENSPEC_AGENTS.md).
+is owner acceptance at the *end*). The workflow ships as the `openspec-*` skills
+the pinned CLI installs (`propose`, `explore`, `apply`, `update`, `sync`,
+`archive`), with the project's own rules for it in
+[`AGENTS.md`](../../AGENTS.md) § "Work management".
 
 For a new game:
 

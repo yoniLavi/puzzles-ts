@@ -96,6 +96,24 @@ fi
 # decide whether it still states the defect it claims to.
 node scripts/feedback-probe.mjs --verify
 
+# --- 1c. The specs and every open change parse and validate. ~1s. ---
+#
+# This is the tool's own check, deliberately, and it replaces a hand-written one.
+# A `MODIFIED` delta replaces the whole requirement at archive time, so a delta
+# holding a stale copy deletes whatever it omits — that cost this project 134
+# lines of the `ts-engine` hint requirement on 2026-08-15. The repo answered by
+# retiring the verb and writing its own scenario-survival check; the actual cause
+# was an openspec CLI nine months and fifteen releases stale, which had fixed it
+# in 1.6.0 (archive refuses the loss) and 1.8.0 (validate reports it at authoring
+# time). See `AGENTS.md` § "Work management".
+#
+# So the floor is load-bearing, not hygiene: below 1.6.0 the archiver will apply
+# the loss silently, and this line would still print a cheerful pass. `npx`
+# resolves the pinned devDependency, which is why the version is a fact the repo
+# states rather than a property of the machine.
+node scripts/checks/openspec-version.mjs
+npx --no-install openspec validate --all --strict
+
 # `nice` (weak on macOS but free insurance) is applied to BOTH heavy branches,
 # so the gate yields to whatever else the developer is running rather than
 # competing with it. The build is niced hardest, since vitest is the branch that
