@@ -99,9 +99,17 @@
 
 ## 5. Verify
 
-- [ ] 5.1 Full gate green.
-- [ ] 5.2 Archive one change end-to-end under 1.x on a committed tree, confirm the
-      spec diff matches the delta, then `git reset --hard`.
+- [x] 5.1 Full gate green — 267 files / 7306 passed, down exactly the one file
+      and four tests of the deleted guard and nothing else, which is the check
+      that a deletion did not quietly take a neighbour with it. The gate's new
+      `openspec validate --all --strict` step runs in ~1 s.
+- [x] 5.2 Archived **this** change end-to-end on the committed tree, which
+      exercises the restored `REMOVED` + `ADDED` path rather than a toy one:
+      openspec reported `+ 2 added, ~ 0, - 1 removed`, the spec went 23 → 24
+      requirements, and the diff touched **only** the three requirement headers
+      and their own scenarios — no neighbouring requirement altered. Reverted
+      with `git reset --hard` + `git clean -fd openspec/changes/`, since
+      archiving waits on owner acceptance.
 
 ## 6. Close out
 
