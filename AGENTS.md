@@ -20,10 +20,17 @@ nothing generated, anywhere in the tree.**
 
 The authoritative statement of the migration approach is the `ts-migration`
 capability spec (`openspec/specs/ts-migration/spec.md`); this section is the
-readable summary. **The record of how the project got here — every port, every
-change, and what each one found — is [`docs/project-history.md`](docs/project-history.md).**
-Nothing in it needs reading to do a piece of work; this file and the `docs/`
-guides carry everything that still binds.
+readable summary.
+
+**The record of how the project got here is `openspec/changes/archive/` and the
+git log** — one directory per change, with its proposal, tasks and design, plus
+`openspec/postmortems/` for the directions that were tried and dropped. **Do not
+write a summary of it anywhere.** A hand-maintained digest of a record the
+workflow already produces is a second copy with a maintenance tax and no reader,
+and second copies drift: the `openspec/project.md` that used to sit beside this
+file ended up describing directories that had been deleted. If a completed change
+established a rule, that rule belongs *here*, in the present tense, with no date
+and no change id attached.
 
 ## Dev guides under `docs/games/` — consult *and* maintain them (live wiki)
 
@@ -122,6 +129,16 @@ twice reaching a proposal and a spec before anyone checked; `docs/test-strength.
 tool does and generalising it to what the tool does is the same error aimed at a
 package. When you find yourself building a workaround layer, an override of
 generated content, or a guard that a guard survived, check the version first.
+
+**Don't repoint a dead recipe — retire it.** When an instruction has gone stale,
+fixing the one part you noticed is the worst available outcome: every *other*
+line is equally dead, so the result looks maintained and fails on its first step.
+Thirty-seven differential headers here carried a build command naming a
+directory, a toolchain, a flag and a script that had all been deleted; the fix
+was to delete the recipe and keep the one fact still true. The same goes for a
+generated file whose generator is gone — **check what the generator asserted
+about its output before accepting the file as source**, because those assertions
+may be the only statement of an invariant anywhere.
 
 **An optimised artefact needs its bounds asserted**, because the objective will
 never complain about what it traded away. A search maximising colour
@@ -344,7 +361,17 @@ Tracked via **openspec**, pinned as a devDependency at `1.10.0` so the CLI's ver
 
 **One openspec change per coherent unit of work** — the TS midend is one change; each game port is one change; a cross-game feature (quick-save) is one change. Bundle only when several items share genuinely identical `design.md` reasoning (e.g. three trivially-similar small games after the pattern is well-trodden); keep separate when an item has its own non-obvious decisions. A game port that ships its C deletion does both in the one change.
 
-**Don't wait for proposal approval before implementing** (owner directive, 2026-07-20). openspec's generic workflow has an approval gate between proposal and implementation; in this project that gate is **off by default**. Scaffold the change, then keep going into the implementation in the same session. The gate that actually matters here is the one at the *other* end — owner acceptance before archiving (see "Acceptance bar" above), and that one is unchanged.
+**Don't wait for proposal approval before implementing.** openspec's generic workflow has an approval gate between proposal and implementation; in this project that gate is **off by default**. Scaffold the change, then keep going into the implementation in the same session.
+
+**And don't ask to have your own work accepted.** Owner directive: *"there's no need to ask me to accept spec changes that I didn't actually create myself — if the spec itself is an implementation detail that you decided upon, then there's no need for me to go through accepting it, just archive it with the same self-driven initiative that you created it with."* A change you scoped, decided and implemented is yours to finish: implement it, verify it, commit it and **archive it**, in the one session, without a checkpoint.
+
+Acceptance is for work whose *correctness the owner is the only judge of* — which is a narrow, concrete set, not a vibe:
+
+- **Anything a player sees or feels.** How a game plays, renders, animates or responds to input; wording a player reads; a hint's explanation. This is the "Acceptance bar" section above, and it is unchanged.
+- **Anything the owner asked for by name.** If they described the outcome, they decide whether you hit it.
+- **Anything that breaks compatibility with data a player already has** — save formats, preference keys, shared game IDs. Ask *before*, with the cost stated, not after.
+
+Everything else — an internal contract, a helper's shape, a test harness, a doc restructure, a spec requirement recording a decision you made and can defend — is an implementation detail wearing a spec's clothing. **Archiving it yourself is not a shortcut; asking is the error**, because it converts a decision you already own into a queue item on someone else's desk.
 
 Stop and ask only for a **genuinely difficult decision**: a real trade-off with no clear winner, an ambiguity where two readings produce materially different work, or something irreversible/user-visible (dropping save compatibility, changing a shipped format). A design decision that the C survey already determines is not a difficult decision — write it down in `design.md` and implement it. Surfacing a settled call as a question is the friction this directive exists to remove.
 

@@ -16,8 +16,8 @@ context: |
   constraints, the acceptance bar, the hint quality bar, test discipline, and the
   method rules this project keeps rediscovering. `openspec/specs/` is what is
   normatively true; `docs/games/` holds the followable procedures for game work;
-  `docs/project-history.md` is the record of what was built and is not required
-  reading.
+  the record of what was built is `openspec/changes/archive/` and the git log,
+  and is not required reading.
 
   Points that most often need stating up front:
 
