@@ -118,7 +118,10 @@ the work.
   its press-level, whole-board sweep stays true and stays worth having; the
   gesture obligation is an addition to it, not a correction of it.
 
-  One **edit in place** is needed, to be made in
+  One **edit to an existing requirement** is needed — write it as a
+  `## MODIFIED Requirements` delta **when you implement**, copying the live text
+  at that moment, so `openspec validate` checks you dropped nothing. It is to be
+  made in
   `openspec/specs/ts-engine/spec.md` when this change is archived, reading the
   live text at that moment:
 

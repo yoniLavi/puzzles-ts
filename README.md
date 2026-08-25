@@ -158,8 +158,9 @@ pages are committed markdown.
 
 Work is tracked with **openspec** (`openspec/`): a change is proposed,
 specced, implemented, then archived. Durable context is
-[`AGENTS.md`](AGENTS.md) + [`openspec/project.md`](openspec/project.md);
-the migration rules of record are the `ts-migration` capability spec.
+[`AGENTS.md`](AGENTS.md) — how the project is built and what the rules are —
+with [`docs/project-history.md`](docs/project-history.md) as the record of what
+was built. The rules of record are the capability specs under `openspec/specs/`.
 
 ## License
 

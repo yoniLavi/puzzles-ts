@@ -68,7 +68,10 @@ inherited an absence rather than deciding one.
 ## Impact
 
 - **Affected specs**: `slide`. The keyboard route is an ADDED requirement,
-  "Slide is playable by keyboard". One **edit in place** is also needed, to be
+  "Slide is playable by keyboard". One **edit to an existing requirement** is
+  also needed — write it as a `## MODIFIED Requirements` delta **when you
+  implement**, copying the live text at that moment, so `openspec validate`
+  checks you dropped nothing. It is to be
   made in `openspec/specs/slide/spec.md` when this change is archived, reading
   the live text at that moment:
 

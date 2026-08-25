@@ -1,32 +1,48 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+# Shown to the AI when creating artifacts. Deliberately a *pointer*, not a copy:
+# the previous `openspec/project.md` duplicated AGENTS.md and drifted — it still
+# described `puzzles/` as a live subtree after that directory was deleted, and
+# cited two AGENTS.md sections that no longer existed. A second copy of the brief
+# is a second thing to keep true.
+context: |
+  puzzles-ts is a PWA of Simon Tatham's Portable Puzzle Collection, rewritten
+  from C/WASM into native TypeScript. All 57 games and the engine are TypeScript;
+  there is no C, no build system, and nothing generated anywhere in the tree.
+  `npm install` is the entire setup.
+
+  Read AGENTS.md at the repository root before proposing or implementing
+  anything. It is the authoritative brief on how work is done here — conventions,
+  constraints, the acceptance bar, the hint quality bar, test discipline, and the
+  method rules this project keeps rediscovering. `openspec/specs/` is what is
+  normatively true; `docs/games/` holds the followable procedures for game work;
+  `docs/project-history.md` is the record of what was built and is not required
+  reading.
+
+  Points that most often need stating up front:
+
+  - Deliberate divergence from upstream is the point of this fork, not a
+    regression. Explained hints, mistake-checking, quick-save and per-game aids
+    are why it exists.
+  - One openspec change per coherent unit of work. Scaffold and implement in the
+    same session; there is no proposal-approval gate here. The gate that matters
+    is owner acceptance before archiving.
+  - Never bypass the pre-commit gate (`npm run gate`): tsc, biome, the probe
+    anchor check, openspec validate, vitest, and a production `vite build`.
+  - Game-facing work is done when the owner says it plays correctly, not when the
+    suite is green. A shortfall is never called "cosmetic" or "out of scope".
+  - Take ownership of everything in the repo. Never describe a problem as
+    "pre-existing", "unrelated", or "out of scope".
 
 # Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
 # Example:
 #   rules:
 #     proposal:
 #       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
 
 # Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
 # Example:
 #   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
 #     archive:
 #       guidance:
 #         - Summarize the archive outcome before finishing

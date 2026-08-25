@@ -71,7 +71,10 @@ and there is none today.
 
 - Affected specs: `latin-solver` (the cube gains a repeatable symbol, an added
   requirement) and `salad` (solver strength, tier grading, differential basis —
-  an added requirement plus one **edit in place**, to be made in
+  an added requirement plus one **edit to an existing requirement**. Write it as
+  a `## MODIFIED Requirements` delta **when you implement**, copying the live text
+  at that moment — `openspec validate` then checks you dropped nothing, which a
+  hand-edit at archive time bypasses. The edit is in
   `openspec/specs/salad/spec.md` when this change is archived, reading the live
   text at that moment):
 
