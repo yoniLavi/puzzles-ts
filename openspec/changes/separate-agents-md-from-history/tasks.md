@@ -48,5 +48,8 @@
 
 - [x] 4.1 `AGENTS.md` **581 → 416 lines**, with zero occurrences of the chronicle
       markers (`landed`, `owner-accepted`, `owner-confirmed`, `~~`).
-- [ ] 4.2 Full gate green.
+- [x] 4.2 Full gate green — 267 files / 7306 passed, unchanged from before the
+      split, which is the check that a docs-only change stayed docs-only. Every
+      relative link in `AGENTS.md` resolves, and no retained section cites a
+      heading that moved.
 - [ ] 4.3 Owner acceptance, then archive.
