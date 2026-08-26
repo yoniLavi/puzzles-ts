@@ -12,7 +12,12 @@ import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { Midend } from "../../engine/index.ts";
 import {
+  CURSOR_DOWN,
+  CURSOR_LEFT,
+  CURSOR_RIGHT,
+  CURSOR_SELECT,
   CURSOR_SELECT2,
+  CURSOR_UP,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
@@ -593,16 +598,16 @@ describe("slide input", () => {
         LEFT_BUTTON,
       ),
     ).toBe(UI_UPDATE);
-    expect(ui.dragging).toBe(true);
-    expect(ui.dragAnchor).toBe(idx(3, 1));
-    expect(ui.reachable[ui.dragAnchor]).toBe(1);
+    expect(ui.grabbed).toBe(true);
+    expect(ui.grabAnchor).toBe(idx(3, 1));
+    expect(ui.reachable[ui.grabAnchor]).toBe(1);
 
     // Drag towards the far corner; the block snaps to the nearest reachable
     // square, which here is the corner itself.
     expect(
       slideGame.interpretMove(s, ui, sizedDrawState(slideGame, s), at(4, 3), LEFT_DRAG),
     ).toBe(UI_UPDATE);
-    expect(ui.dragCurrpos).toBe(idx(4, 3));
+    expect(ui.grabCurrpos).toBe(idx(4, 3));
 
     expect(
       slideGame.interpretMove(
@@ -617,7 +622,7 @@ describe("slide input", () => {
       from: idx(3, 1),
       to: idx(4, 3),
     });
-    expect(ui.dragging).toBe(false);
+    expect(ui.grabbed).toBe(false);
     expect([...ui.reachable].every((v) => v === 0)).toBe(true);
   });
 
@@ -626,9 +631,9 @@ describe("slide input", () => {
     // Press the main block's bottom-right square; the drag anchors on its
     // top-left one, and the grab offset remembers which square was held.
     slideGame.interpretMove(s, ui, sizedDrawState(slideGame, s), at(2, 2), LEFT_BUTTON);
-    expect(ui.dragAnchor).toBe(idx(1, 1));
-    expect(ui.dragOffsetX).toBe(1);
-    expect(ui.dragOffsetY).toBe(1);
+    expect(ui.grabAnchor).toBe(idx(1, 1));
+    expect(ui.grabOffsetX).toBe(1);
+    expect(ui.grabOffsetY).toBe(1);
   });
 
   it("releases without a move when the block never left its square", () => {
@@ -643,7 +648,7 @@ describe("slide input", () => {
         LEFT_RELEASE,
       ),
     ).toBe(UI_UPDATE);
-    expect(ui.dragging).toBe(false);
+    expect(ui.grabbed).toBe(false);
   });
 
   it("ignores a press on empty space, a wall, or off the board", () => {
@@ -675,7 +680,7 @@ describe("slide input", () => {
         LEFT_BUTTON,
       ),
     ).toBeNull();
-    expect(ui.dragging).toBe(false);
+    expect(ui.grabbed).toBe(false);
   });
 
   it("does not repaint when a drag event leaves the block where it was", () => {
@@ -716,7 +721,7 @@ describe("slide input", () => {
         RIGHT_BUTTON | MOD_STYLUS,
       ),
     ).toBe(UI_UPDATE);
-    expect(ui.dragging).toBe(true);
+    expect(ui.grabbed).toBe(true);
     slideGame.interpretMove(
       s,
       ui,
@@ -724,7 +729,7 @@ describe("slide input", () => {
       at(4, 3),
       RIGHT_DRAG | MOD_STYLUS,
     );
-    expect(ui.dragCurrpos).toBe(idx(4, 3));
+    expect(ui.grabCurrpos).toBe(idx(4, 3));
     expect(
       slideGame.interpretMove(
         s,
@@ -741,13 +746,269 @@ describe("slide input", () => {
     // left `game_redraw` asserting on a block that no longer fits.
     const { s, ui } = scenario();
     slideGame.interpretMove(s, ui, sizedDrawState(slideGame, s), at(3, 1), LEFT_BUTTON);
-    expect(ui.dragging).toBe(true);
+    expect(ui.grabbed).toBe(true);
     slideGame.changedState?.(ui, s, s);
-    expect(ui.dragging).toBe(false);
-    expect(ui.dragAnchor).toBe(-1);
+    expect(ui.grabbed).toBe(false);
+    expect(ui.grabAnchor).toBe(-1);
     expect([...ui.reachable].every((v) => v === 0)).toBe(true);
   });
 });
+
+// --- keyboard ----------------------------------------------------------
+
+describe("slide keyboard control", () => {
+  const ts = PREFERRED_TILE_SIZE;
+  const at = (cx: number, cy: number) => ({
+    x: cx * ts + ts / 2,
+    y: cy * ts + ts / 2,
+  });
+  const ORIGIN = { x: 0, y: 0 };
+
+  function scenario(): { s: SlideState; ui: SlideUi } {
+    const s = fixtureState();
+    return { s, ui: newUi(s) };
+  }
+
+  /** A keypress. Keyboard input carries no coordinates, so the point passed is
+   * deliberately the origin: anything the cursor branch read off it would show
+   * up as a wrong cell rather than as a silently-correct one. */
+  function press(s: SlideState, ui: SlideUi, button: number) {
+    return slideGame.interpretMove(s, ui, sizedDrawState(slideGame, s), ORIGIN, button);
+  }
+
+  function pointer(
+    s: SlideState,
+    ui: SlideUi,
+    cell: { x: number; y: number },
+    button: number,
+  ) {
+    return slideGame.interpretMove(s, ui, sizedDrawState(slideGame, s), cell, button);
+  }
+
+  /** Walk the cursor to `(x, y)` from wherever it is, one press per cell. */
+  function cursorTo(s: SlideState, ui: SlideUi, x: number, y: number) {
+    while (ui.cursorX < x) press(s, ui, CURSOR_RIGHT);
+    while (ui.cursorX > x) press(s, ui, CURSOR_LEFT);
+    while (ui.cursorY < y) press(s, ui, CURSOR_DOWN);
+    while (ui.cursorY > y) press(s, ui, CURSOR_UP);
+  }
+
+  /**
+   * The requirement, asserted as the equality it actually is (design D5).
+   *
+   * Checking the keyboard path *in isolation* would pass just as happily
+   * against a second, subtly different movement model — which is the one thing
+   * this design set out not to build. So the same journey is made twice, by
+   * keyboard and by drag, and the two results are compared.
+   */
+  it("produces the same move, board and move count as the equivalent drag", () => {
+    const byKey = scenario();
+    cursorTo(byKey.s, byKey.ui, 3, 1);
+    expect(press(byKey.s, byKey.ui, CURSOR_SELECT)).toBe(UI_UPDATE);
+    // Walk the block right one and down two — three presses, one move.
+    press(byKey.s, byKey.ui, CURSOR_RIGHT);
+    press(byKey.s, byKey.ui, CURSOR_DOWN);
+    press(byKey.s, byKey.ui, CURSOR_DOWN);
+    const keyMove = press(byKey.s, byKey.ui, CURSOR_SELECT);
+
+    const byDrag = scenario();
+    pointer(byDrag.s, byDrag.ui, at(3, 1), LEFT_BUTTON);
+    pointer(byDrag.s, byDrag.ui, at(4, 3), LEFT_DRAG);
+    const dragMove = pointer(byDrag.s, byDrag.ui, at(4, 3), LEFT_RELEASE);
+
+    expect(keyMove).toEqual({ kind: "move", from: idx(3, 1), to: idx(4, 3) });
+    expect(keyMove).toEqual(dragMove);
+
+    const afterKey = executeMove(byKey.s, keyMove as SlideMove);
+    const afterDrag = executeMove(byDrag.s, dragMove as SlideMove);
+    expect([...afterKey.board]).toEqual([...afterDrag.board]);
+    expect(afterKey.movecount).toBe(afterDrag.movecount);
+    expect(afterKey.movecount).toBe(1); // three presses, one move
+  });
+
+  it("refuses a step that would leave the reachable set, and keeps the grab", () => {
+    const { s, ui } = scenario();
+    cursorTo(s, ui, 3, 1);
+    press(s, ui, CURSOR_SELECT);
+    const held = ui.grabCurrpos;
+
+    // Up from (3,1) is the top wall: outside the set, so nothing moves.
+    expect(ui.reachable[idx(3, 0)]).toBe(0);
+    expect(press(s, ui, CURSOR_UP)).toBeNull();
+    expect(ui.grabCurrpos).toBe(held);
+    expect(ui.grabbed).toBe(true);
+    expect([ui.cursorX, ui.cursorY]).toEqual([3, 1]);
+  });
+
+  it("hands the block back on Escape, and the cursor with it", () => {
+    const { s, ui } = scenario();
+    cursorTo(s, ui, 3, 1);
+    press(s, ui, CURSOR_SELECT);
+    press(s, ui, CURSOR_DOWN);
+    press(s, ui, CURSOR_DOWN);
+    expect(ui.grabCurrpos).toBe(idx(3, 3));
+
+    expect(press(s, ui, 27)).toBe(UI_UPDATE);
+    expect(ui.grabbed).toBe(false);
+    // The cursor rode the block, so it comes back with it rather than being
+    // stranded where the abandoned journey ended.
+    expect([ui.cursorX, ui.cursorY]).toEqual([3, 1]);
+    expect(ui.cursorVisible).toBe(true);
+  });
+
+  it("treats a select back at the start as putting the block down, not a move", () => {
+    const { s, ui } = scenario();
+    cursorTo(s, ui, 3, 1);
+    press(s, ui, CURSOR_SELECT);
+    press(s, ui, CURSOR_DOWN);
+    press(s, ui, CURSOR_UP);
+    expect(ui.grabCurrpos).toBe(ui.grabAnchor);
+    expect(press(s, ui, CURSOR_SELECT)).toBe(UI_UPDATE);
+    expect(ui.grabbed).toBe(false);
+  });
+
+  it("carries the grab offset, so the cursor stays on the square picked up", () => {
+    const { s, ui } = scenario();
+    // The main block anchors at (1,1); grab it by its bottom-right square.
+    cursorTo(s, ui, 2, 2);
+    press(s, ui, CURSOR_SELECT);
+    expect(ui.grabAnchor).toBe(idx(1, 1));
+    expect([ui.grabOffsetX, ui.grabOffsetY]).toEqual([1, 1]);
+
+    // Right is blocked by the 1×1 at (3,1); down is the way this block goes.
+    press(s, ui, CURSOR_DOWN);
+    expect(ui.grabCurrpos).toBe(idx(1, 2));
+    expect([ui.cursorX, ui.cursorY]).toEqual([2, 3]);
+  });
+
+  it("reveals the cursor on the first press and moves it in the same press", () => {
+    // Flip and Mosaic both move-and-reveal rather than spending a press on the
+    // reveal alone; Slide follows them.
+    const { s, ui } = scenario();
+    expect(ui.cursorVisible).toBe(false);
+    expect(press(s, ui, CURSOR_RIGHT)).toBe(UI_UPDATE);
+    expect(ui.cursorVisible).toBe(true);
+    expect([ui.cursorX, ui.cursorY]).toEqual([1, 0]);
+  });
+
+  it("clamps the cursor to the board and repaints nothing at a held edge", () => {
+    const { s, ui } = scenario();
+    press(s, ui, CURSOR_RIGHT); // reveals, and moves off (0,0)
+    press(s, ui, CURSOR_LEFT);
+    expect([ui.cursorX, ui.cursorY]).toEqual([0, 0]);
+    expect(press(s, ui, CURSOR_LEFT)).toBeNull();
+    expect(press(s, ui, CURSOR_UP)).toBeNull();
+  });
+
+  it("selects nothing on an empty square, but still shows the cursor", () => {
+    const { s, ui } = scenario();
+    cursorTo(s, ui, 4, 3); // empty floor
+    expect(press(s, ui, CURSOR_SELECT)).toBe(UI_UPDATE);
+    expect(ui.grabbed).toBe(false);
+    expect(ui.cursorVisible).toBe(true);
+  });
+
+  it("hides the cursor and drops a keyboard grab when a pointer takes over", () => {
+    // Without this the grab would survive under a pointer press that grabbed
+    // nothing, and the next LEFT_DRAG would fling the held block at the pointer.
+    const { s, ui } = scenario();
+    cursorTo(s, ui, 3, 1);
+    press(s, ui, CURSOR_SELECT);
+    expect(ui.grabbed).toBe(true);
+
+    expect(pointer(s, ui, at(4, 3), LEFT_BUTTON)).toBe(UI_UPDATE); // empty floor
+    expect(ui.grabbed).toBe(false);
+    expect(ui.cursorVisible).toBe(false);
+    expect(pointer(s, ui, at(1, 3), LEFT_DRAG)).toBeNull();
+  });
+
+  it("still reports no effect for a press on empty floor with nothing held", () => {
+    const { s, ui } = scenario();
+    expect(pointer(s, ui, at(4, 3), LEFT_BUTTON)).toBeNull();
+  });
+
+  it("leaves the select key to an installed Solve route (design D2)", () => {
+    const me = play("5x5u#slide-solve");
+    expect(me.solve()).toBeUndefined();
+    const before = stateOf(me).board.slice();
+
+    // A route is installed, so the select key steps it rather than grabbing —
+    // and stepping it moves a block, which grabbing never would.
+    me.processInput(0, 0, CURSOR_SELECT);
+    expect([...stateOf(me).board]).not.toEqual([...before]);
+    expect(stateOf(me).movecount).toBe(1);
+  });
+
+  it("gives the select key back once the route is gone", () => {
+    // Straying from the route discards it (an existing rule), and that is how a
+    // player takes the keyboard back — no third binding needed.
+    const { s, ui } = scenario();
+    const armed: SlideState = {
+      ...s,
+      soln: [{ from: idx(3, 1), to: idx(4, 1) }],
+      solnIndex: 0,
+    };
+    cursorTo(armed, ui, 3, 1);
+    expect(press(armed, ui, CURSOR_SELECT)).toEqual({
+      kind: "move",
+      from: idx(3, 1),
+      to: idx(4, 1),
+    });
+    expect(ui.grabbed).toBe(false);
+
+    // Same board, no route: now the select key grabs.
+    expect(press(s, ui, CURSOR_SELECT)).toBe(UI_UPDATE);
+    expect(ui.grabbed).toBe(true);
+    expect(ui.grabAnchor).toBe(idx(3, 1));
+  });
+
+  it("keeps the cursor when a grab is cancelled under it", () => {
+    // The grab dies with the board it was computed against; the cursor is a
+    // position on a grid whose size has not changed, so it survives. Losing it
+    // here would read to a keyboard player as a dropped keypress.
+    const { s, ui } = scenario();
+    cursorTo(s, ui, 1, 1);
+    press(s, ui, CURSOR_SELECT);
+    expect(ui.grabbed).toBe(true);
+
+    slideGame.changedState?.(ui, s, s);
+    expect(ui.grabbed).toBe(false);
+    expect(ui.cursorVisible).toBe(true);
+    expect([ui.cursorX, ui.cursorY]).toEqual([1, 1]);
+  });
+
+  /**
+   * Design D3. `asPrimary` folds `RIGHT_*` onto `LEFT_*` so a touch long-press
+   * still drags, and the risk is that the fold widens one day into a range that
+   * swallows the cursor buttons — which sit immediately above `RIGHT_RELEASE`.
+   * Asserting the *mapping* rather than an outcome is what makes that fail here
+   * rather than in a player's hands.
+   */
+  it("passes cursor and cancel keys through untouched by the right→left fold", () => {
+    const { s, ui } = scenario();
+    // A touch gesture is in flight — the state that installs the fold.
+    pointer(s, ui, at(3, 1), RIGHT_BUTTON | MOD_STYLUS);
+    expect(ui.grabbed).toBe(true);
+
+    // The keyboard still does exactly what it does with no gesture in flight.
+    expect(press(s, ui, CURSOR_RIGHT)).toBe(UI_UPDATE);
+    expect(ui.grabCurrpos).toBe(idx(4, 1));
+
+    for (const button of [CURSOR_UP, CURSOR_DOWN, CURSOR_LEFT, CURSOR_RIGHT, 27, 127]) {
+      expect(asPrimaryFold(button)).toBe(button);
+    }
+  });
+});
+
+/** What `asPrimary` would do to `button`, expressed as the three codes it
+ * actually names. Kept here rather than exported so the guard is a statement of
+ * the intended mapping, not a copy of the implementation. */
+function asPrimaryFold(button: number): number {
+  if (button === RIGHT_BUTTON) return LEFT_BUTTON;
+  if (button === RIGHT_DRAG) return LEFT_DRAG;
+  if (button === RIGHT_RELEASE) return LEFT_RELEASE;
+  return button;
+}
 
 // --- Solve, through a real Midend --------------------------------------
 

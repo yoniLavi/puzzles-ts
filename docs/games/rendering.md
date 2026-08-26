@@ -85,6 +85,26 @@ drawing. Three pack entry points, by the shape of what you have:
 | A `findMistakes` cell list | `packCells(mistakes, indexFn)` | `towers/render.ts` `ds.wrong` |
 | An overlay with its own topology | `clear()` + `add(i, bits)` | [`galaxies/render.ts`](../../src/games/galaxies/render.ts) `ds.wrongEdges` — one wrong wall is a *shared* edge, so it lights a different bit in each of the two tiles it separates |
 
+### A packed diff key runs out of bits, and dead flags are where the next one comes from
+
+**A game that packs every overlay into one `Int32Array` word has 31 usable bits
+and no warning when they are gone** — bit 31 is the array's sign. Slide reached
+exactly full: eleven flags, two eight-bit shape fields, four gate borders. The
+next overlay cannot simply be `<< 27`.
+
+Before widening, **audit the flags for one that is written and never read**.
+Slide's `BG_NORMAL` was set on every non-target square and tested nowhere,
+because `drawTile` asks `val & BG_TARGET` and takes the floor as the `else` — a
+bit spent saying nothing, and the bit the keyboard cursor now uses. This is the
+Method section's "what would have to break for this to matter?" aimed at a
+bitfield, and it is worth one grep before any restructuring: a flag that appears
+exactly twice (its definition and one `val |=`) is dead.
+
+When there genuinely is no dead flag, **widen the key rather than squeezing** —
+it is a repaint cache, not a wire format, so nothing outside the renderer
+constrains its type. Do it as a deliberate step and say so in a comment, because
+the failure mode of getting it wrong is silence.
+
 ### Prove the overlay repaints
 
 **A cold-frame test proves nothing about an overlay.** On frame 1 every cell
@@ -387,6 +407,22 @@ collisions. If nothing in the palette fits, that is an exception recorded in
 colour serves — there is currently **one** in the collection (Unruly's tile
 colours, which are bevel *bases* where near-black/near-white is headroom).
 Aim to add none.
+
+**Pick the replacement against the span of what it lands on, not against one
+material — and remember the span inverts.** A cursor is clamped to the whole
+grid, so it sits on every material the board has. Slide's run from the key block
+and wall at the dark end to the floor and exit at the light end, which rules out
+every mid-tone: teal, pink and orange all disappear against something, and
+yellow vanishes into the floor outright. That argues for an *end* of the range —
+except that in dark mode the ladder flips, and the wall and key block become the
+**lightest** things on the board. There is no flat colour at the dark end of
+both schemes, which is why the tie-break is **chroma**: red against a neutral
+grey wall reads at equal lightness, where a second grey would not, and red
+against the blue key block is opposite in hue rather than adjacent to it.
+Purple was tried first and read as a smudge on that block for exactly that
+reason. This is `hand-author-dark-palette` F1's "'brightest' is scheme-relative"
+seen from the other side: it applies to *darkest* too, and to any argument that
+picks a colour by where it sits in one scheme's ordering.
 
 ### A relative colour is a named function
 

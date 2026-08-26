@@ -16,7 +16,14 @@
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/index.ts";
-import { LEFT_BUTTON, LEFT_DRAG, LEFT_RELEASE } from "../../engine/pointer.ts";
+import {
+  CURSOR_DOWN,
+  CURSOR_RIGHT,
+  CURSOR_SELECT,
+  LEFT_BUTTON,
+  LEFT_DRAG,
+  LEFT_RELEASE,
+} from "../../engine/pointer.ts";
 import type { DrawOp } from "../../engine/testing/recording-drawing.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { DEFAULT_BACKGROUND } from "../../engine/testing/render-scenario.ts";
@@ -25,11 +32,12 @@ import { slideGame } from "./index.ts";
 import {
   COL_BACKGROUND,
   COL_BLOCK,
-  COL_DRAGGING,
+  COL_CURSOR,
+  COL_GRABBED,
   COL_HIGHLIGHT,
   COL_LOWLIGHT,
   COL_MAIN,
-  COL_MAIN_DRAGGING,
+  COL_MAIN_GRABBED,
   COL_ROUTE,
   COL_ROUTE_SHADOW,
   COL_TARGET,
@@ -167,7 +175,7 @@ function rectsInTile(ops: readonly DrawOp[], gx: number, gy: number): RectOp[] {
 /**
  * The colour of a tile's *largest* rect — for a tile holding part of a block
  * that is the block's central fill, which is exactly the section `draw_tile`
- * recolours to signal "dragging" or "next in the Solve route". Ignores the
+ * recolours to signal "held" or "next in the Solve route". Ignores the
  * full-tile background rect so the piece's own fill is what we read.
  */
 function pieceFillColour(
@@ -292,19 +300,19 @@ describe("slide drag frame", () => {
     expect(pieceFillColour(before, 1, 1)).toBe(COL_MAIN);
 
     const ops = capture(midDrag());
-    // The block is drawn where it will come to rest, in its dragging colour...
-    expect(pieceFillColour(ops, 2, 1)).toBe(COL_MAIN_DRAGGING);
-    expect(pieceFillColour(ops, 3, 2)).toBe(COL_MAIN_DRAGGING);
+    // The block is drawn where it will come to rest, in its held colour...
+    expect(pieceFillColour(ops, 2, 1)).toBe(COL_MAIN_GRABBED);
+    expect(pieceFillColour(ops, 3, 2)).toBe(COL_MAIN_GRABBED);
     // ...and the square it came from is now empty floor.
     expect(pieceFillColour(ops, 1, 1)).toBeUndefined();
   });
 
-  it("lights up an ordinary block in its own dragging colour", () => {
+  it("lights up an ordinary block in its own held colour", () => {
     const me = newBoard();
     capture(me);
     me.processInput(...at(3, 1), LEFT_BUTTON);
     me.processInput(...at(4, 3), LEFT_DRAG);
-    expect(pieceFillColour(capture(me), 4, 3)).toBe(COL_DRAGGING);
+    expect(pieceFillColour(capture(me), 4, 3)).toBe(COL_GRABBED);
   });
 
   it("puts the block back to its committed colour on release", () => {
@@ -317,6 +325,86 @@ describe("slide drag frame", () => {
 
   it("matches its snapshot", () => {
     expect(capture(midDrag())).toMatchSnapshot();
+  });
+});
+
+// --- the keyboard cursor -----------------------------------------------
+
+describe("slide keyboard frame", () => {
+  /** Every line drawn in the cursor's colour inside cell `(gx, gy)`. The mark
+   * is `drawRectCorners`, i.e. eight short strokes — two per corner. */
+  function cursorLines(ops: readonly DrawOp[], gx: number, gy: number) {
+    const x0 = gx * TS;
+    const y0 = gy * TS;
+    return ops.filter(
+      (o) =>
+        o.op === "line" &&
+        o.colour === COL_CURSOR &&
+        o.x1 >= x0 &&
+        o.x1 < x0 + TS &&
+        o.y1 >= y0 &&
+        o.y1 < y0 + TS,
+    );
+  }
+
+  /** Cursor onto the 1×1 block at (3,1), on a **warm** draw state — the case
+   * where an overlay missing from the per-tile diff key silently fails to
+   * repaint. It starts at (0,0), so it takes three rights and one down. */
+  function cursorOnBlock(): SlideMidend {
+    const me = newBoard();
+    capture(me);
+    for (let i = 0; i < 3; i++) me.processInput(0, 0, CURSOR_RIGHT);
+    me.processInput(0, 0, CURSOR_DOWN);
+    return me;
+  }
+
+  it("draws nothing until the first cursor key", () => {
+    const ops = capture(newBoard());
+    expect(ops.filter((o) => o.op === "line" && o.colour === COL_CURSOR)).toHaveLength(
+      0,
+    );
+  });
+
+  it("marks the cursor's cell, and only that cell", () => {
+    const ops = capture(cursorOnBlock());
+    expect(cursorLines(ops, 3, 1)).toHaveLength(8);
+    // The vacuity guard this file's doctrine asks for: count what was looked
+    // at, so "no cursor drawn anywhere" cannot pass as "drawn in one place".
+    expect(ops.filter((o) => o.op === "line" && o.colour === COL_CURSOR)).toHaveLength(
+      8,
+    );
+  });
+
+  it("rides the block it has picked up, and lights it as a drag would", () => {
+    const me = cursorOnBlock();
+    me.processInput(0, 0, CURSOR_SELECT);
+    me.processInput(0, 0, CURSOR_RIGHT);
+    const ops = capture(me);
+
+    // The held block is drawn where it would land, in the same held colour the
+    // pointer drag uses — there is one grab, not two.
+    expect(pieceFillColour(ops, 4, 1)).toBe(COL_GRABBED);
+    expect(pieceFillColour(ops, 3, 1)).toBeUndefined();
+    // ...with the cursor on it, having travelled with it.
+    expect(cursorLines(ops, 4, 1)).toHaveLength(8);
+    expect(cursorLines(ops, 3, 1)).toHaveLength(0);
+  });
+
+  it("takes the cursor off the board when a pointer press takes over", () => {
+    const me = cursorOnBlock();
+    expect(cursorLines(capture(me), 3, 1)).toHaveLength(8);
+    me.processInput(...at(4, 3), LEFT_BUTTON);
+    me.processInput(...at(4, 3), LEFT_RELEASE);
+    expect(
+      capture(me).filter((o) => o.op === "line" && o.colour === COL_CURSOR),
+    ).toHaveLength(0);
+  });
+
+  it("matches its snapshot", () => {
+    const me = cursorOnBlock();
+    me.processInput(0, 0, CURSOR_SELECT);
+    me.processInput(0, 0, CURSOR_RIGHT);
+    expect(capture(me)).toMatchSnapshot();
   });
 });
 

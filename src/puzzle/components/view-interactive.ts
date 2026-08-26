@@ -160,6 +160,11 @@ export class PuzzleViewInteractive extends PuzzleView {
     Enter: PuzzleButton.CURSOR_SELECT,
     Select: PuzzleButton.CURSOR_SELECT,
     " ": PuzzleButton.CURSOR_SELECT2,
+    // Upstream's two "put it back / rub it out" keys. A game that wants either
+    // must test **both** codes below: this map sends 127 for Backspace, where
+    // upstream's own ports send `'\b'` (8), so a transcribed `button == '\b'`
+    // is a key that can never fire.
+    Escape: 27,
     Backspace: 127,
     Clear: 127,
     Delete: 127,
@@ -203,13 +208,20 @@ export class PuzzleViewInteractive extends PuzzleView {
     if (!this.puzzle) {
       return;
     }
-    if (event.key === "Escape") {
-      if (this.pointerTracking) {
-        event.preventDefault();
-        await this.cancelPointerTracking();
-      }
+    if (event.key === "Escape" && this.pointerTracking) {
+      // A pointer is down: Escape abandons *that* gesture, and the game hears
+      // about it as a release, so it must not also arrive as a keypress.
+      event.preventDefault();
+      await this.cancelPointerTracking();
       return;
     }
+    // Otherwise Escape falls through to the game as button 27 below. It used to
+    // return here instead, which made it a **dead key**: Pearl and Rectangles
+    // each ship a `button === 27` arm to abandon a keyboard drag, and neither
+    // could ever run. Nothing is claimed that was not claimed before —
+    // `wantsKeyEvent` already returned true for Escape — and the fall-through
+    // does not `preventDefault`, so Escape still composes with the reference
+    // spotlight and with a dialog closing above it.
 
     if (event.key === "Copy" || (event.key === "c" && hasCtrlKey(event))) {
       // A real text selection (e.g. the hint banner) takes precedence: let the

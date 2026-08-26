@@ -85,6 +85,21 @@ frontend does send (keeping the literal too costs nothing). Exemplars:
 [`slide/index.ts`](../../src/games/slide/index.ts) (`isStepKey`);
 Inertia's route-following accepts `CURSOR_SELECT`/`CURSOR_SELECT2`.
 
+**The cancel keys are the same trap, and were dead until `add-slide-keyboard-control`.**
+Upstream's "put it back down" arm tests Escape (27) and `'\b'` (8). This
+frontend sends **127** for Backspace, Delete *and* Clear — never 8 — and it used
+to swallow Escape whole rather than forwarding it. Pearl and Rectangles each
+shipped a `button === 27 || button === 8` arm in which *neither* code could ever
+arrive. Escape now reaches games as 27 whenever no pointer gesture is in flight
+(`app-shell` spec, "Escape reaches the puzzle when there is no gesture to
+cancel"), so **test `27` and `127`** — keeping `8` costs nothing.
+
+Note the shape of that fix, because it generalises past keys: the dead binding
+was in the *games*, but the repair was in the **frontend**, and repairing only
+the games would have left three of them each accepting a code nothing sends.
+When a per-game obligation keeps being got wrong, check whether the layer below
+is the thing that is wrong.
+
 ## Touch is stripped for you
 
 **Compare the plain button; touch just works.** The view ORs `MOD_STYLUS`
@@ -183,6 +198,38 @@ only a game's `index.ts` would wrongly convict them of having none.
 A cursor move that changes only `Ui` returns `UI_UPDATE` (the midend redraws,
 notifies, and records no history entry) — the contract is in
 [`mechanics.md`](./mechanics.md).
+
+### Giving a drag game a keyboard
+
+**Do not model the keyboard as a second way to move; model it as a second way to
+hold.** A press-and-drag game already has the whole machinery — a grab computes
+what the held thing can reach, and a release turns "where it is now" into one
+move. The keyboard needs no part of that rebuilt; it needs a *cursor* that can
+reach the same set. Slide is the worked example
+([`slide/index.ts`](../../src/games/slide/index.ts)): `grabBlockAt` and
+`releaseGrab` are called by the pointer arm and the cursor arm alike, so a
+keyboard journey and the equivalent drag are the same move by construction
+rather than by agreement.
+
+The concrete rules that fell out, each of which had a wrong answer available:
+
+- **Rename the drag state to what it now is.** `ui.dragging` set true by a
+  keypress is false documentation, and it propagates: `FG_DRAGGING`,
+  `COL_DRAGGING`. Slide's became `grabbed`/`FG_GRABBED`/`COL_GRABBED`.
+- **One cell per press, not slide-to-the-end.** Sliding as far as the set allows
+  is fewer presses, but it cannot stop *inside* a corridor — so it cannot reach
+  every cell the drag reaches, which is the whole point of adding the keyboard.
+- **Keep the cursor out of the grab.** A grab is cancelled whenever the board
+  moves under it (its reachable set is stale); a cursor is a position on a grid
+  whose size did not change. Clearing both in one `cancelGrab` reads to a player
+  as a dropped keypress.
+- **A pointer press takes the board over.** Hide the cursor, and where the press
+  grabs nothing, put down whatever the keyboard was holding — otherwise the grab
+  survives under a pointer and the next `LEFT_DRAG` flings it.
+- **Test the equality, not the new path.** Asserting the keyboard in isolation
+  passes just as happily against the second movement model you were trying not
+  to build. Make the same journey both ways and compare the move, the board and
+  the move count.
 
 ## Drag models
 

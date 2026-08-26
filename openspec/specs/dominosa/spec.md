@@ -147,7 +147,6 @@ correctly.
 - **WHEN** the same domino value is placed in two locations
 - **THEN** both placements render with the clash colour rather than the normal
   domino colour
-</content>
 
 ### Requirement: Dominosa provides an explained deductive hint
 
@@ -201,7 +200,6 @@ the render diff key so the overlay paints and clears correctly.
 
 - **WHEN** a placement hint step is displayed
 - **THEN** the two cells of the forced domino render in `COL_HINT`
-</content>
 
 ### Requirement: Dominosa provides a domino reference with pair-occurrence highlight
 

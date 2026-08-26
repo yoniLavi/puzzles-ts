@@ -5,8 +5,12 @@
  * There is **no slide animation**: upstream's `game_anim_length` returns 0, and
  * all the movement feedback lives here (design D3) —
  *
- *  - while dragging, the picked-up block is drawn *following the pointer*, lit
- *    up (`FG_DRAGGING`), by simulating the release move and drawing the result;
+ *  - while a block is held, it is drawn *where it would land*, lit up
+ *    (`FG_GRABBED`), by simulating the release move and drawing the result —
+ *    for a pointer drag and for a keyboard selection alike, because both move
+ *    the same `ui.grabCurrpos`;
+ *  - the keyboard cursor is four corner brackets (`FG_CURSOR`), riding the held
+ *    block while there is one;
  *  - the target area is tinted green wherever the main block would land;
  *  - the exit gate is outlined, so it reads that nothing but the main block may
  *    cross it;
@@ -48,7 +52,7 @@ import {
   mkhighlight,
   mkhighlightSpecific,
 } from "../../engine/colour/colour-mkhighlight.ts";
-import { ORANGE } from "../../engine/colour/colours.ts";
+import { ORANGE, RED } from "../../engine/colour/colours.ts";
 import {
   slideBlockBase,
   slideMainBlockBase,
@@ -56,12 +60,14 @@ import {
   slideTargetBase,
   slideWallBase,
 } from "../../engine/colour/palette-games.ts";
+import { drawRectCorners } from "../../engine/draw.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import { coord as gridCoord } from "../../engine/geometry.ts";
 import type { Colour, Point, Rect, Size } from "../../engine/types.ts";
 import { movePiece } from "./moves.ts";
 import {
+  cursorPos,
   EMPTY,
   isDist,
   MAINANCHOR,
@@ -75,15 +81,15 @@ import {
 export const COL_BACKGROUND = 0;
 export const COL_HIGHLIGHT = 1;
 export const COL_LOWLIGHT = 2;
-export const COL_DRAGGING = 3;
-export const COL_DRAGGING_HIGHLIGHT = 4;
-export const COL_DRAGGING_LOWLIGHT = 5;
+export const COL_GRABBED = 3;
+export const COL_GRABBED_HIGHLIGHT = 4;
+export const COL_GRABBED_LOWLIGHT = 5;
 export const COL_MAIN = 6;
 export const COL_MAIN_HIGHLIGHT = 7;
 export const COL_MAIN_LOWLIGHT = 8;
-export const COL_MAIN_DRAGGING = 9;
-export const COL_MAIN_DRAGGING_HIGHLIGHT = 10;
-export const COL_MAIN_DRAGGING_LOWLIGHT = 11;
+export const COL_MAIN_GRABBED = 9;
+export const COL_MAIN_GRABBED_HIGHLIGHT = 10;
+export const COL_MAIN_GRABBED_LOWLIGHT = 11;
 export const COL_TARGET = 12;
 export const COL_TARGET_HIGHLIGHT = 13;
 export const COL_TARGET_LOWLIGHT = 14;
@@ -98,7 +104,10 @@ export const COL_BLOCK_HIGHLIGHT = 19;
 export const COL_BLOCK_LOWLIGHT = 20;
 export const COL_ROUTE = 21;
 export const COL_ROUTE_SHADOW = 22;
-export const NCOLOURS = 23;
+/** The keyboard cursor. Flat, so it needs no bevel trio and no `paletteSwaps`
+ * pair — the token carries its own dark value. */
+export const COL_CURSOR = 23;
+export const NCOLOURS = 24;
 
 /** Upstream `raise_colour`: two parts `src` to one part `limit`. */
 function raise(src: Colour, limit: Colour): Colour {
@@ -126,10 +135,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BLOCK_HIGHLIGHT] = block.highlight;
   out[COL_BLOCK_LOWLIGHT] = block.lowlight;
 
-  // ...and lit up a bit while it is being dragged.
-  out[COL_DRAGGING] = raise(block.base, block.highlight);
-  out[COL_DRAGGING_HIGHLIGHT] = raise(block.highlight, block.highlight);
-  out[COL_DRAGGING_LOWLIGHT] = raise(block.lowlight, block.highlight);
+  // ...and lit up a bit while it is held — by a pointer or by the keyboard.
+  out[COL_GRABBED] = raise(block.base, block.highlight);
+  out[COL_GRABBED_HIGHLIGHT] = raise(block.highlight, block.highlight);
+  out[COL_GRABBED_LOWLIGHT] = raise(block.lowlight, block.highlight);
 
   // The wall: the heaviest thing on the board, because it is the one thing that
   // never moves.
@@ -143,9 +152,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_MAIN] = main.base;
   out[COL_MAIN_HIGHLIGHT] = main.highlight;
   out[COL_MAIN_LOWLIGHT] = main.lowlight;
-  out[COL_MAIN_DRAGGING] = raise(main.base, main.highlight);
-  out[COL_MAIN_DRAGGING_HIGHLIGHT] = raise(main.highlight, main.highlight);
-  out[COL_MAIN_DRAGGING_LOWLIGHT] = raise(main.lowlight, main.highlight);
+  out[COL_MAIN_GRABBED] = raise(main.base, main.highlight);
+  out[COL_MAIN_GRABBED_HIGHLIGHT] = raise(main.highlight, main.highlight);
+  out[COL_MAIN_GRABBED_LOWLIGHT] = raise(main.lowlight, main.highlight);
 
   // The exit area on the floor is tinted green — likewise named to the player,
   // and left pale on purpose: it stays the most prominent thing on the board.
@@ -158,6 +167,26 @@ export function colours(defaultBackground: Colour): Colour[] {
   // read as one instruction.
   out[COL_ROUTE] = ORANGE;
   out[COL_ROUTE_SHADOW] = slideRouteShadow(background);
+
+  // The keyboard cursor. `palette.ts`'s default `CURSOR` is green, and reaching
+  // past it needs a reason at the assignment: **Slide has already spent green**
+  // on the exit area, which the help page names to the player in as many words.
+  // A green mark elsewhere on this board would read as "the exit is here", and a
+  // green mark *on* the exit would vanish into it.
+  //
+  // Of what is left, red is the one that works everywhere the cursor can go,
+  // and the board's own spread is why. The cursor is clamped to the whole grid,
+  // so the mark sits on materials from the key block (L 0.44) and the wall
+  // (0.48) up to the floor (0.83) and the exit (0.94) — a span no mid-tone can
+  // straddle, which rules out teal, pink and orange, and yellow (0.80)
+  // disappears into the floor outright. That leaves the dark end, and there red
+  // beats purple twice: darker (0.29 against 0.33), and opposite in hue to the
+  // one saturated thing on the board rather than adjacent to it — purple on the
+  // blue-violet key block was tried first and read as a smudge.
+  //
+  // Red carries no "mistake" meaning to steal here: Slide declares no
+  // `findMistakes` hook, because every reachable position is legal.
+  out[COL_CURSOR] = RED;
 
   return out;
 }
@@ -181,7 +210,20 @@ export function computeSize(p: { w: number; h: number }, ts: number): Size {
 
 // --- the packed per-tile value ----------------------------------------
 
-const BG_NORMAL = 0x00000001;
+/**
+ * The keyboard cursor is on this square.
+ *
+ * It sits on bit 0 because upstream's `BG_NORMAL` did, and `BG_NORMAL` was
+ * **write-only** — set on every non-target square and never once tested, since
+ * `drawTile` asks `val & BG_TARGET` and takes the floor as the else. It cost a
+ * bit to say nothing, which is exactly the bit an overlay needed: bits 0–30 are
+ * now all spoken for (bit 31 is the `Int32Array`'s sign), so **the next overlay
+ * has to widen the diff key rather than find a spare flag**. Widening it is the
+ * cheap option — it is a repaint cache, not a wire format — but it must be a
+ * deliberate step, because an overlay that cannot fit in the word silently
+ * fails to repaint (docs/games/rendering.md § "Overlay sidecars").
+ */
+const FG_CURSOR = 0x00000001;
 const BG_TARGET = 0x00000002;
 const BG_FORCEFIELD = 0x00000004;
 const FLASH_LOW = 0x00000008;
@@ -189,7 +231,7 @@ const FLASH_HIGH = 0x00000010;
 const FG_WALL = 0x00000020;
 const FG_MAIN = 0x00000040;
 const FG_NORMAL = 0x00000080;
-const FG_DRAGGING = 0x00000100;
+const FG_GRABBED = 0x00000100;
 const FG_SHADOW = 0x00000200;
 const FG_SOLVEPIECE = 0x00000400;
 /** Shift of the block's own border/corner flags within the packed value. */
@@ -627,7 +669,7 @@ function drawTile(
 
     drawWallpart(dr, ts, tx, ty, (val >> FG_MAINPIECESH) & PIECE_MASK, cl, cc, ch);
   } else if (val & (FG_MAIN | FG_NORMAL)) {
-    if (val & FG_DRAGGING) cc = val & FG_MAIN ? COL_MAIN_DRAGGING : COL_DRAGGING;
+    if (val & FG_GRABBED) cc = val & FG_MAIN ? COL_MAIN_GRABBED : COL_GRABBED;
     else cc = val & FG_MAIN ? COL_MAIN : COL_BLOCK;
     ch = cc + 1;
     cl = cc + 2;
@@ -645,6 +687,30 @@ function drawTile(
     }
 
     drawPiecepart(dr, ts, tx, ty, (val >> FG_MAINPIECESH) & PIECE_MASK, cl, cc, ch);
+  }
+
+  // Topmost: the keyboard cursor, as the collection's four corner brackets.
+  // Brackets rather than a fill or an outline, for two reasons that both matter
+  // here: they sit *beside* the content instead of over it, so a block's bevel
+  // and the exit's tint still read underneath (the mark-beside-the-content
+  // rule); and they are the mark every other game in the collection uses for
+  // "the keyboard is here", so it needs no learning.
+  //
+  // The bracket arms are half the radius, so at the smallest shipped tile they
+  // are still two distinct strokes per corner rather than a smudge — `r` is
+  // floored to at least 2 for that reason. The stroke scales with the tile:
+  // upstream's hairline is sized for ink on paper, and this board is four
+  // shades of one grey, so a one-pixel line has nothing carrying it.
+  if (val & FG_CURSOR) {
+    const r = Math.max(2, Math.floor(ts / 2) - highlightWidth(ts));
+    drawRectCorners(
+      dr,
+      tx + Math.floor(ts / 2),
+      ty + Math.floor(ts / 2),
+      r,
+      COL_CURSOR,
+      1 + Math.floor(ts / 24),
+    );
   }
 
   dr.drawUpdate({ x: tx, y: ty, w: ts, h: ts });
@@ -699,10 +765,12 @@ export function redraw(
     ds.started = true;
   }
 
-  // The board we display, which is not state's board while a drag is in
-  // progress: the dragged block is drawn where it would land on release.
+  // The board we display, which is not state's board while a block is held:
+  // the held block is drawn where it would land if it were put down now. That
+  // is the whole of the keyboard's move preview too — a keyboard grab moves the
+  // same `grabCurrpos`, so it needs no rendering of its own.
   const board = state.board.slice();
-  if (ui.dragging) {
+  if (ui.grabbed) {
     if (
       !movePiece(
         w,
@@ -710,11 +778,11 @@ export function redraw(
         state.board,
         board,
         state.forcefield,
-        ui.dragAnchor,
-        ui.dragCurrpos,
+        ui.grabAnchor,
+        ui.grabCurrpos,
       )
     ) {
-      // Upstream asserts here. A drag can only be left dangling against a
+      // Upstream asserts here. A grab can only be left dangling against a
       // board it no longer fits if the state changed underneath it (an undo
       // with the pointer still down), which `changedState` cancels — but draw
       // the plain board rather than throwing if it ever happens anyway.
@@ -730,7 +798,7 @@ export function redraw(
     solvesrc = step.from;
     solvedst = step.to;
     if (solvesrc === state.lastmovedPos) solvesrc = state.lastmoved;
-    if (solvesrc === ui.dragAnchor) solvesrc = ui.dragCurrpos;
+    if (solvesrc === ui.grabAnchor) solvesrc = ui.grabCurrpos;
   }
 
   // A dsf over the displayed board, so we can tell which edges are internal to
@@ -751,8 +819,9 @@ export function redraw(
   if (mainanchor < 0) throw new Error("slide: board has no main block");
 
   const mainpos = dsf.canonify(mainanchor);
-  const dragpos = ui.dragCurrpos > 0 ? dsf.canonify(ui.dragCurrpos) : -1;
+  const grabpos = ui.grabCurrpos > 0 ? dsf.canonify(ui.grabCurrpos) : -1;
   const solvepos = solvesrc >= 0 ? dsf.canonify(solvesrc) : -1;
+  const cursor = ui.cursorVisible ? cursorPos(ui, w) : -1;
 
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {
@@ -763,7 +832,9 @@ export function redraw(
       // whether it lands on the main block.
       let j = i + mainanchor - (state.ty * w + state.tx);
       while (j >= 0 && j < wh && isDist(board[j])) j -= board[j];
-      let val = j === mainanchor ? BG_TARGET : BG_NORMAL;
+      let val = j === mainanchor ? BG_TARGET : 0;
+
+      if (i === cursor) val |= FG_CURSOR;
 
       if (state.forcefield[i]) {
         // The gate is outlined as a region, so each square carries the sides
@@ -786,7 +857,7 @@ export function redraw(
         if (board[i] === WALL) val |= FG_WALL;
         else if (canon === mainpos) val |= FG_MAIN;
         else val |= FG_NORMAL;
-        if (canon === dragpos) val |= FG_DRAGGING;
+        if (canon === grabpos) val |= FG_GRABBED;
         if (canon === solvepos) val |= FG_SOLVEPIECE;
 
         val |= findPiecepart(w, h, dsf, x, y) << FG_MAINPIECESH;

@@ -153,7 +153,6 @@ SHALL flash on completion. There SHALL be no interpolated sliding animation.
 
 - **WHEN** a block is grabbed and released without having moved
 - **THEN** the board and the move count are unchanged
-</content>
 
 ### Requirement: Slide's board reads by colour, not only by bevel
 

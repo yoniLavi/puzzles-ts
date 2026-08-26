@@ -221,6 +221,76 @@ describe("press/release delivery", () => {
   });
 });
 
+// --- Escape delivery --------------------------------------------------------
+
+/**
+ * Escape is the collection's "put it back down" key, and it used to be a **dead
+ * key**: `handleKeyEvent` swallowed it whether or not there was a gesture to
+ * cancel, so Pearl's and Rectangles' `button === 27` arms — both shipped, both
+ * intended to abandon a keyboard drag — could never run.
+ *
+ * The two arms are asserted separately because they are genuinely different
+ * jobs, and collapsing them is how the bug came back: with a pointer down,
+ * Escape abandons *that gesture* and the puzzle hears a release, so it must not
+ * also arrive as a keypress.
+ */
+describe("Escape delivery", () => {
+  function makeKeyView() {
+    const keys: number[] = [];
+    const mouse: number[] = [];
+    const puzzle = {
+      processKey: vi.fn(async (button: number) => {
+        keys.push(button);
+        return true;
+      }),
+      processMouse: vi.fn(async (_l: { x: number; y: number }, button: number) => {
+        mouse.push(button);
+        return true;
+      }),
+    };
+    const view = makeView();
+    Object.defineProperty(view, "puzzle", { value: puzzle, writable: true });
+    Object.defineProperty(view, "canvas", {
+      value: {
+        getBoundingClientRect: () => ({ left: 0, top: 0 }),
+        setPointerCapture: vi.fn(),
+        hasPointerCapture: () => false,
+        releasePointerCapture: vi.fn(),
+      },
+      writable: true,
+    });
+    return { view, keys, mouse };
+  }
+
+  it("sends Escape to the puzzle as button 27 when no gesture is in flight", async () => {
+    const { view, keys } = makeKeyView();
+    await view.handleKeyEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(keys).toEqual([27]);
+  });
+
+  it("cancels the gesture instead, when a pointer is down", async () => {
+    const { view, keys, mouse } = makeKeyView();
+    const host = view as unknown as PointerHost;
+    await host.handlePointerDown(pointerEvent("pointerdown"));
+    mouse.length = 0;
+
+    await view.handleKeyEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+
+    // The gesture ends as a drag out of bounds then a release — and Escape does
+    // *not* also arrive as a keypress.
+    expect(mouse).toEqual([PuzzleButton.LEFT_DRAG, PuzzleButton.LEFT_RELEASE]);
+    expect(keys).toEqual([]);
+  });
+
+  it("keeps claiming Escape at the document level", () => {
+    // The bubbled path only forwards keys `wantsKeyEvent` claims, so the fix
+    // above reaches a puzzle that is not focused only if this stays true.
+    expect(
+      makeView().wantsKeyEvent(new KeyboardEvent("keydown", { key: "Escape" })),
+    ).toBe(true);
+  });
+});
+
 describe("pointer coordinates", () => {
   // Both terms of the canvas-relative subtraction are fractional in general: a
   // pointer reports a sub-pixel position, and a centred canvas routinely lands

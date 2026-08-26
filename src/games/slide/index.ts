@@ -34,6 +34,9 @@ import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  cursorDelta,
+  gridCursorMove,
+  isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
@@ -60,7 +63,7 @@ import {
 } from "./render.ts";
 import { solveBoard } from "./solver.ts";
 import {
-  cancelDrag,
+  cancelGrab,
   decodeParams,
   defaultParams,
   describeParams,
@@ -92,6 +95,12 @@ import {
  * you want it, then drag" dies precisely when the player stops to think, and
  * only on touch. Folding right onto left makes the gesture work whichever the
  * long-press detector decided it saw.
+ *
+ * The fold is about *pointer* buttons and touches nothing else: it names three
+ * codes explicitly, so no cursor key, select key or cancel key can arrive at
+ * the pointer arms disguised as a press (design D3). `cursor keys are unmoved
+ * by asPrimary` in `slide.test.ts` is the guard, and it asserts the mapping
+ * rather than the outcome, so a fold widened to a range would fail it.
  */
 function asPrimary(button: number): number {
   if (button === RIGHT_BUTTON) return LEFT_BUTTON;
@@ -114,6 +123,48 @@ function isStepKey(button: number): boolean {
   );
 }
 
+/** Escape (27) or Delete/Backspace/Clear (127, which is what `puzzleKeyMap`
+ * sends for all three) — the collection's "put it back down" keys. */
+function isCancelKey(button: number): boolean {
+  return button === 27 || button === 127;
+}
+
+/**
+ * Pick up the block covering `(cx, cy)`, held by that square, and work out —
+ * once — every square its anchor can be slid to. Returns false when there is
+ * no block there.
+ *
+ * The one grab implementation. The pointer press and the keyboard select
+ * differ only in where `(cx, cy)` comes from, which is the whole of what makes
+ * a keyboard journey produce the *same* move as the equivalent drag rather
+ * than a parallel one.
+ */
+function grabBlockAt(state: SlideState, ui: SlideUi, cx: number, cy: number): boolean {
+  const { w, h, board } = state;
+  if (cx < 0 || cx >= w || cy < 0 || cy >= h) return false;
+  if (!isBlock(board[cy * w + cx])) return false;
+
+  let anchor = cy * w + cx;
+  while (isDist(board[anchor])) anchor -= board[anchor];
+
+  ui.grabbed = true;
+  ui.grabAnchor = anchor;
+  ui.grabOffsetX = cx - (anchor % w);
+  ui.grabOffsetY = cy - Math.floor(anchor / w);
+  ui.grabCurrpos = anchor;
+  computeReachable(state, anchor, ui.reachable);
+  return true;
+}
+
+/** Put the held block down where it now sits — a move if it actually went
+ * anywhere, and otherwise just the grab coming off the display. */
+function releaseGrab(ui: SlideUi): SlideMove | UiUpdate {
+  const from = ui.grabAnchor;
+  const to = ui.grabCurrpos;
+  cancelGrab(ui);
+  return from !== to ? { kind: "move", from, to } : UI_UPDATE;
+}
+
 function interpretMove(
   state: SlideState,
   ui: SlideUi,
@@ -122,53 +173,43 @@ function interpretMove(
   rawButton: number,
 ): SlideMove | null | UiUpdate {
   const button = asPrimary(stripModifiers(rawButton));
-  const { w, h, board } = state;
+  const { w, h } = state;
   const ts = ds.tilesize;
 
   if (button === LEFT_BUTTON) {
-    const cx = fromCoord(p.x, ts, BORDER);
-    const cy = fromCoord(p.y, ts, BORDER);
-
-    if (cx < 0 || cx >= w || cy < 0 || cy >= h || !isBlock(board[cy * w + cx]))
-      return null; // this click has no effect
-
-    // Find the pressed block's anchor and start dragging it.
-    let anchor = cy * w + cx;
-    while (isDist(board[anchor])) anchor -= board[anchor];
-
-    ui.dragging = true;
-    ui.dragAnchor = anchor;
-    ui.dragOffsetX = cx - (anchor % w);
-    ui.dragOffsetY = cy - Math.floor(anchor / w);
-    ui.dragCurrpos = anchor;
-
-    // Work out, once, every square this block can be dragged to.
-    computeReachable(state, anchor, ui.reachable);
+    // A pointer press always takes over: the cursor goes away, and pressing
+    // anywhere that is not a block puts down whatever the keyboard was
+    // holding. Without that, a keyboard grab would survive under a pointer and
+    // the next `LEFT_DRAG` would fling it at the pointer.
+    const hadUi = ui.grabbed || ui.cursorVisible;
+    ui.cursorVisible = false;
+    if (
+      !grabBlockAt(state, ui, fromCoord(p.x, ts, BORDER), fromCoord(p.y, ts, BORDER))
+    ) {
+      cancelGrab(ui);
+      return hadUi ? UI_UPDATE : null; // this click has no effect
+    }
     return UI_UPDATE;
   }
 
-  if (button === LEFT_DRAG && ui.dragging) {
-    const tx = fromCoord(p.x, ts, BORDER) - ui.dragOffsetX;
-    const ty = fromCoord(p.y, ts, BORDER) - ui.dragOffsetY;
+  if (button === LEFT_DRAG && ui.grabbed) {
+    const tx = fromCoord(p.x, ts, BORDER) - ui.grabOffsetX;
+    const ty = fromCoord(p.y, ts, BORDER) - ui.grabOffsetY;
     const target = nearestReachable(w, h, ui.reachable, tx, ty);
     // No reachable square within range, or the block is already where the
     // pointer wants it: nothing to repaint. (Upstream repaints unconditionally
     // on a hit; suppressing the no-change case saves a notification per pixel
     // of pointer movement and is invisible.)
-    if (target === null || target === ui.dragCurrpos) return null;
-    ui.dragCurrpos = target;
+    if (target === null || target === ui.grabCurrpos) return null;
+    ui.grabCurrpos = target;
     return UI_UPDATE;
   }
 
-  if (button === LEFT_RELEASE && ui.dragging) {
-    const from = ui.dragAnchor;
-    const to = ui.dragCurrpos;
-    cancelDrag(ui);
-    // Only a block that actually moved is a move; otherwise the drag still has
-    // to come off the display.
-    return from !== to ? { kind: "move", from, to } : UI_UPDATE;
-  }
+  if (button === LEFT_RELEASE && ui.grabbed) return releaseGrab(ui);
 
+  // The Solve route owns the select key for as long as one is installed
+  // (design D2). It is gated on `state.soln`, so the two uses never contend:
+  // straying from the route discards it, and the select key grabs again.
   if (isStepKey(button) && state.soln) {
     const step = state.soln[state.solnIndex];
     // If the player has already part-way nudged this block, the route's source
@@ -177,7 +218,76 @@ function interpretMove(
     return { kind: "move", from, to: step.to };
   }
 
+  if (isCursorMove(button)) return moveCursor(state, ui, button);
+
+  if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
+    ui.cursorVisible = true;
+    if (ui.grabbed) return releaseGrab(ui);
+    grabBlockAt(state, ui, ui.cursorX, ui.cursorY);
+    return UI_UPDATE; // an empty square grabs nothing, but still reveals the cursor
+  }
+
+  if (isCancelKey(button)) {
+    if (ui.grabbed) {
+      // Hand the block back, and the cursor with it: it has been riding the
+      // block, so leaving it where the abandoned journey ended would strand it
+      // somewhere the player never chose.
+      ui.cursorX = (ui.grabAnchor % w) + ui.grabOffsetX;
+      ui.cursorY = Math.floor(ui.grabAnchor / w) + ui.grabOffsetY;
+      cancelGrab(ui);
+      return UI_UPDATE;
+    }
+    if (ui.cursorVisible) {
+      ui.cursorVisible = false;
+      return UI_UPDATE;
+    }
+    return null;
+  }
+
   return null;
+}
+
+/**
+ * One cursor-key press, in whichever of the cursor's two modes is live.
+ *
+ * **Ungrabbed** it walks a cell cursor over the board, clamped to the grid.
+ * **Grabbed** it walks the held block one cell through its reachable set,
+ * refusing a step that would leave it — and the cursor goes with the block, so
+ * it stays on the square the block was picked up by.
+ *
+ * One cell per press, not slide-as-far-as-it-goes (design D1's open point).
+ * Sliding to the end is fewer presses down a long corridor, but it cannot stop
+ * *inside* one, so it cannot reach every cell of the reachable set — and a
+ * keyboard that cannot reach a cell the drag can reach is the same defect D1
+ * rejected the free cursor for.
+ */
+function moveCursor(state: SlideState, ui: SlideUi, button: number): null | UiUpdate {
+  const { w, h } = state;
+
+  if (!ui.grabbed) {
+    const moved = gridCursorMove(button, ui.cursorX, ui.cursorY, w, h);
+    if (moved) {
+      ui.cursorX = moved.x;
+      ui.cursorY = moved.y;
+    }
+    // The first press reveals *and* moves, as Flip and Mosaic do.
+    const revealed = !ui.cursorVisible;
+    ui.cursorVisible = true;
+    return moved || revealed ? UI_UPDATE : null;
+  }
+
+  const delta = cursorDelta(button);
+  if (!delta) return null;
+  const ax = (ui.grabCurrpos % w) + delta.dx;
+  const ay = Math.floor(ui.grabCurrpos / w) + delta.dy;
+  if (ax < 0 || ax >= w || ay < 0 || ay >= h) return null;
+  const anchor = ay * w + ax;
+  if (!ui.reachable[anchor]) return null; // outside the set: nothing moves
+
+  ui.grabCurrpos = anchor;
+  ui.cursorX = ax + ui.grabOffsetX;
+  ui.cursorY = ay + ui.grabOffsetY;
+  return UI_UPDATE;
 }
 
 // --- solve ------------------------------------------------------------
@@ -269,14 +379,20 @@ export const slideGame: Game<
   newState,
   newUi,
 
-  /** Upstream's `game_changed_state` is empty, but a drag left dangling across
-   * an undo (pointer still down while the toolbar/keyboard rewinds the board)
-   * points at an anchor the new board may not have — which upstream's
-   * `game_redraw` asserts on. Cancelling the drag when the state moves under it
-   * is the fix, and costs nothing: a `UI_UPDATE` (which is all a grab or a
-   * drag-follow is) never reaches here. */
+  /** Upstream's `game_changed_state` is empty, but a grab left dangling across
+   * an undo (pointer still down, or a block held by the keyboard, while the
+   * toolbar rewinds the board) points at an anchor the new board may not have
+   * — which upstream's `game_redraw` asserts on. Cancelling the grab when the
+   * state moves under it is the fix, and costs nothing: a `UI_UPDATE` (which is
+   * all a grab or a drag-follow is) never reaches here.
+   *
+   * It applies to a keyboard grab for the same reason and not merely by
+   * inheritance: the reachable set was computed against the board that has just
+   * been replaced, so it is stale however the block was picked up. The *cursor*
+   * deliberately survives — it is a position on a grid whose size has not
+   * changed, and dropping it would read as a lost keypress. */
   changedState(ui: SlideUi): void {
-    cancelDrag(ui);
+    cancelGrab(ui);
   },
 
   interpretMove,

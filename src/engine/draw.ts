@@ -94,6 +94,11 @@ export function drawRectOutline(
  * Promoted from seven byte-identical private copies (ascent, bricks, dominosa,
  * signpost, singles, spokes, subsets) when Crossing would have been the eighth.
  * The emitted line order matches upstream's, so no render snapshot moves.
+ *
+ * `thickness` defaults to upstream's hairline. Raise it on a board whose
+ * materials are mid-tone rather than ink-on-paper, where a one-pixel stroke has
+ * nothing to carry it: Slide scales it with the tile, because its floor, blocks
+ * and walls are four shades of the same grey.
  */
 export function drawRectCorners(
   dr: GameDrawing,
@@ -101,14 +106,15 @@ export function drawRectCorners(
   cy: number,
   r: number,
   colour: number,
+  thickness = 1,
 ): void {
   const hr = Math.floor(r / 2);
   for (const sx of [-1, 1]) {
     for (const sy of [-1, 1]) {
       const px = cx + sx * r;
       const py = cy + sy * r;
-      dr.drawLine({ x: px, y: py }, { x: px, y: cy + sy * hr }, colour, 1);
-      dr.drawLine({ x: px, y: py }, { x: cx + sx * hr, y: py }, colour, 1);
+      dr.drawLine({ x: px, y: py }, { x: px, y: cy + sy * hr }, colour, thickness);
+      dr.drawLine({ x: px, y: py }, { x: cx + sx * hr, y: py }, colour, thickness);
     }
   }
 }

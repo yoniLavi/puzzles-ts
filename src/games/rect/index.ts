@@ -208,8 +208,10 @@ function interpretMove(
       startdrag = true;
       active = true;
     }
-  } else if (button === 8 || button === 27) {
-    // Backspace / Escape: cancel.
+  } else if (button === 8 || button === 27 || button === 127) {
+    // Backspace / Escape: cancel. 127 is what `puzzleKeyMap` sends for
+    // Backspace; upstream's own `'\b'` (8) is kept because it costs nothing,
+    // but on its own it was a key that could never fire.
     if (!ui.cursorDragging) {
       ui.cursorVisible = false;
     } else {

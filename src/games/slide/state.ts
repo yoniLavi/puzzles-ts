@@ -221,39 +221,69 @@ export function status(s: SlideState): GameStatus {
 
 // --- UI (ephemeral; never serialised) ---------------------------------
 
+/**
+ * Two independent things, kept apart on purpose.
+ *
+ * **The grab** is a block picked up and not yet put down. It is reached two
+ * ways — a pointer press, or a keyboard select — and the fields below do not
+ * record which, because nothing downstream needs to know: both drive the same
+ * reachable set and the same `{ kind: "move", from, to }`. It is *ephemeral*,
+ * and {@link cancelGrab} drops it whenever the board moves underneath it.
+ *
+ * **The cursor** is a keyboard player's position on the board. It survives a
+ * grab being cancelled, because an undo changes the board but not the grid the
+ * cursor is clamped to — losing it there would read as a lost keypress.
+ */
 export interface SlideUi {
-  dragging: boolean;
-  /** Anchor of the block being dragged, and where its anchor currently sits
+  /** A block is picked up — by pointer drag or by keyboard select. */
+  grabbed: boolean;
+  /** Anchor of the grabbed block, and where its anchor currently sits
    * (snapped to the nearest reachable square). */
-  dragAnchor: number;
-  dragCurrpos: number;
+  grabAnchor: number;
+  grabCurrpos: number;
   /** Which square *within* the block the player grabbed, so the block follows
-   * the pointer under the same square it was picked up by. */
-  dragOffsetX: number;
-  dragOffsetY: number;
-  /** Squares the dragged block's anchor can be slid to (1 = reachable),
+   * the pointer — or the cursor — under the same square it was picked up by. */
+  grabOffsetX: number;
+  grabOffsetY: number;
+  /** Squares the grabbed block's anchor can be slid to (1 = reachable),
    * computed once at grab time. Length `w*h`. */
   reachable: Uint8Array;
+  /** The keyboard cursor's cell, and whether it is on screen. Hidden until the
+   * first cursor key, and hidden again by any pointer press — the collection's
+   * idiom (Flip, Mosaic). While a block is grabbed the cursor rides *with* it,
+   * staying on the square the block was picked up by. */
+  cursorX: number;
+  cursorY: number;
+  cursorVisible: boolean;
 }
 
 export function newUi(state: SlideState): SlideUi {
   return {
-    dragging: false,
-    dragAnchor: -1,
-    dragCurrpos: -1,
-    dragOffsetX: -1,
-    dragOffsetY: -1,
+    grabbed: false,
+    grabAnchor: -1,
+    grabCurrpos: -1,
+    grabOffsetX: -1,
+    grabOffsetY: -1,
     reachable: new Uint8Array(state.w * state.h),
+    cursorX: 0,
+    cursorY: 0,
+    cursorVisible: false,
   };
 }
 
-export function cancelDrag(ui: SlideUi): void {
-  ui.dragging = false;
-  ui.dragAnchor = -1;
-  ui.dragCurrpos = -1;
-  ui.dragOffsetX = -1;
-  ui.dragOffsetY = -1;
+/** Put down whatever is held, leaving the cursor exactly where it is. */
+export function cancelGrab(ui: SlideUi): void {
+  ui.grabbed = false;
+  ui.grabAnchor = -1;
+  ui.grabCurrpos = -1;
+  ui.grabOffsetX = -1;
+  ui.grabOffsetY = -1;
   ui.reachable.fill(0);
+}
+
+/** The cell the cursor sits on, as a flat board index. */
+export function cursorPos(ui: SlideUi, w: number): number {
+  return ui.cursorY * w + ui.cursorX;
 }
 
 // --- moves ------------------------------------------------------------
