@@ -319,6 +319,10 @@ export const fillingGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
+  // Selection is a left press or a left drag across a run of cells, and the
+  // secondary button has no meaning — so a held press must not be promoted
+  // into one, which would have killed the drag mid-gesture.
+  ignoresSecondaryButton: true,
 
   defaultParams,
   presets,

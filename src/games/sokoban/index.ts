@@ -213,6 +213,9 @@ export const sokobanGame: Game<
   isTimed: false,
   canSolve: false,
   canFormatAsText: false,
+  // Stepping the player is the only gesture; the secondary button has no
+  // meaning, so a touch player's held press must not be promoted into one.
+  ignoresSecondaryButton: true,
 
   defaultParams,
   presets,

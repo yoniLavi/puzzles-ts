@@ -1,149 +1,156 @@
 # Tasks — audit-input-mode-parity
 
+**The findings live in [`audit.md`](./audit.md).** This file records what was
+done; that one records what was found.
+
 ## 1. Build the instrument, and check it first (D2)
 
-- [ ] 1.1 Derive per-game input coverage **mechanically through the registry**,
-      not by grepping `index.ts`: a game's cursor handling may come from
-      `border-grid.ts`, the latin input helper, or `gridCursorMove`. Verify the
-      derivation on two games known to use a shared helper and two known not to.
-- [ ] 1.2 Give the sweep a **live-target count** and fail when it is zero for a
-      game. The existing touch guard's near-miss is the reason: an early cut
-      swept Untangle, hit nothing, and would have reported health.
-- [ ] 1.3 Confirm the derivation's totals against the registry, not the catalog —
-      `touch-input.test.ts` once guarded itself with the catalog's length while
-      iterating the registry, so an empty registry would have passed.
+- [x] 1.1 Coverage derived **mechanically through the registry** and a real
+      `Midend`, never by grepping `index.ts` — verified on Palisade and Separate
+      (cursor via `border-grid.ts`, no `CURSOR_*` in their own files, correctly
+      scored covered) and on Loopy and Cube (no shared helper).
+- [x] 1.2 Every sweep carries a **live-target count** and fails per game when it
+      is zero. The gesture sweep also asserts a collection-wide floor
+      (>1000 live gestures), so a change that made every probe miss cannot pass.
+- [x] 1.3 Totals asserted against the **registry**, not the catalog —
+      `sweptGames === REGISTERED.length`.
+- [x] 1.4 **Instrument checked before the findings, and it was wrong four
+      times** — Rectangles convicted twice, Abcd/Crossing once, Fifteen once, all
+      by a probe that measured "the board did not change". `audit.md`
+      § "Instrument corrections" has the full account; the rule that replaced it
+      ("ask whether the button was *consumed*, and prime anything that needs
+      something to act on") is now in the guard's header and in
+      `docs/games/input.md`.
 
 ## 2. Sweep 57 games × 3 modes
 
-- [ ] 2.1 **Mouse**: baseline. Every game's documented interaction, exercised.
-- [ ] 2.2 **Touch**: press (already guarded), and then what is not — drag
-      sequences, long-press-as-`RIGHT_BUTTON` (§3.8c), two-finger tap, and any
-      game whose gesture needs a pause mid-press.
-- [ ] 2.3a **Two outputs this sweep owes its successor**, because
-      `unify-cross-game-vocabulary` is sequenced *after* this change and would
-      otherwise rebuild them: (a) which games' tests actually press an arrow key
-      — that change's task 0.1, and the only thing that makes a
-      behaviour-preserving rename's green suite mean anything; (b) which games
-      reveal-only on the first arrow press versus reveal-and-move, with a count.
-      The second is a finding of this audit, not a decision to be taken inside a
-      rename.
-
-- [ ] 2.3 **Keyboard**: can each game be played to completion with no pointer?
-      For the keypad, check for bare-digit fallbacks wherever the keypad is the
-      only route to an input — **not** because `MOD_NUM_KEYPAD | digit` cannot
-      fire (it can, and Cube and Bricks depend on it — see the corrected §3.8a
-      bullet), but because a numpad key only arrives as a digit with Num Lock on
-      and a laptop may have no numpad. Convicting a keypad binding as dead would
-      break working, tested code.
-- [ ] 2.4 Record every cell in `audit.md` with verdict OK / BROKEN / EXEMPT (D1),
-      and for EXEMPT, the reason — which then has to go in the spec, not just the
-      table.
-- [ ] 2.5 Browser pass (Chrome, `playwright-cli`) on a sample chosen for
-      *gesture variety*, not alphabetically: at least one drag game, one
-      accreting-drag game, one keypad-digit game, one game with a lock mode, and
-      Untangle (arbitrary hit targets).
+- [x] 2.1 **Mouse**: 57 OK.
+- [x] 2.2 **Touch**: press (already guarded, still green), gesture equivalence
+      (new, 0 findings), long-press promotion (**7 BROKEN**), two-finger tap
+      (same seven), and the gesture layer itself (`src/utils/touch.test.ts`, 15
+      cases where there were none).
+- [x] 2.3a **Both outputs owed to `unify-cross-game-vocabulary`** are in
+      `audit.md`: (a) **30 of 57 games have no test that presses an arrow key** —
+      named — and the note that `input-parity.test.ts` now presses one for all 57
+      through a real `Midend`, which is what gives that rename a net; (b) the
+      first-arrow-press split, **47 reveal-and-move / 5 reveal-only / 4
+      direct-action / 1 ignored**, with the five named.
+- [x] 2.3 **Keyboard**: 56 OK, 1 BROKEN (Loopy). Every one of the 56 has a
+      keyboard-only sequence that *commits a move*, not merely a cursor that
+      moves. Keypad bindings checked as a convenience route, not the only one; no
+      new findings.
+- [x] 2.4 Every cell recorded in `audit.md` with its verdict; the one exemption
+      list entry (Loopy) carries its reason there, in the guard, and in the
+      `loopy` spec.
+- [x] 2.5 Browser pass (Chrome, `playwright-cli`), chosen for gesture variety:
+      Pegs mouse drag, Pegs **touch press-hold-drag** (the repaired gesture,
+      verified in both directions), Flip held tap, and Mines + Pattern as the
+      "must not change the other modes" control.
 
 ## 3. Extend the guards
 
-- [ ] 3.1 Gesture-level touch equivalence for every registered game that handles
-      drags: press → drag → release from a finger does what the same sequence
-      does from a mouse.
-- [ ] 3.2 A long-press case: a press delivered as `RIGHT_BUTTON` by
-      `detectSecondaryButton` does not break a game whose gesture is a drag.
-- [ ] 3.3 Keyboard reachability: every game either handles cursor input or is on
-      an explicit exemption list with its reason. The list is the point — it makes
-      "no keyboard" a decision rather than an oversight.
-- [ ] 3.4 Prove each new guard fails: break one game deliberately per guard,
-      watch it go red, revert. A guard that has never failed may not work.
+- [x] 3.1 Gesture-level touch equivalence for every registered game.
+- [x] 3.2 The long-press case, as the `ignoresSecondaryButton` biconditional —
+      sharper than "does the promoted gesture still work", which is unanswerable
+      because a right-button eraser correctly does nothing on a fresh board.
+- [x] 3.3 Keyboard reachability, with the exemption list and the
+      commits-a-move half.
+- [x] 3.4 **Every new guard proved to fail**, by breaking the thing it guards and
+      watching it go red:
+      - remove the midend's `MOD_STYLUS` strip → **12 games** red on gesture
+        equivalence (the nine-game shipped defect plus three later ports);
+      - flip `ignoresSecondaryButton` on Mines and off Pegs → both red, plus the
+        roll-up;
+      - take Loopy off `NO_KEYBOARD` → red, plus the list check;
+      - disable Flip's select handling → red on commits-a-move;
+      - add a bogus key to Solo's panel → red on panel reachability.
 
-- [x] 3.5 **Emittable-key guard — built 2026-08-26**,
-      `src/engine/emittable-keys.test.ts`: no game may compare a button against
-      a control code `puzzleKeyMap` cannot produce, and no game may declare a
-      private copy of one. Proved to fail (restoring Unruly's `button === 8`
-      reds it, naming file and line).
+      **One breakage did *not* fire, and that was a hole in my guard, not a
+      false alarm**: deleting a `requestKeys` hook outright passed, because the
+      panel-count floor sat comfortably below the population. A game that *loses*
+      its keypad makes every one of its on-screen keys unreachable at once — the
+      largest version of the defect — and it was the one thing the sweep could
+      not see. The floor is now at the population.
+- [x] 3.5 **Emittable-key guard widened**, and it found a live defect the
+      previous sweep had missed: **Unruly's erase key was still dead.** Its gate
+      called `isEraseKey`, so `DELETE` passed, reached a `switch (button)` whose
+      only erase label was `case 8`, matched nothing and fell through. Fixed, and
+      anchored by a behavioural test in `unruly.test.ts` (proved to fail).
 
-      **It found a dead binding in fourteen of the fifty-seven games** — Ascent
-      (×2), Boats, Bricks, Clusters, Filling (×2), Group, Guess, Pearl,
-      Rectangles, Rome, Slant, Sticks, Subsets (×2), Undead (×2), Unruly — every
-      one of which every behavioural instrument in D2 scores as OK. See D2's
-      third clause for why a source scan and not a sweep.
+      Two widenings: `switch (button) { case <code>: }` is now scanned by walking
+      each switch's body by brace depth; and **the on-screen panel is a second
+      emitter**, so the emittable set is computed **per game** rather than as a
+      union — `clearKey`'s button 8 reaches Abcd and does not reach Unruly, which
+      is exactly what made Unruly's `case 8` dead. The test previously asserted
+      that 8 could not be sent at all, which was false about the frontend as a
+      whole.
 
-      **The count matters more than the list**: this is a quarter of the
-      collection, found in one pass by an instrument nobody had built, against a
-      trap that has been written up in the playbook for months. It is the
-      strongest available argument for this audit's central claim — that a
-      per-game obligation without a mechanical check is live for every game
-      nobody has thought about lately.
-
-      Fixed in the same pass via new shared `isEraseKey`/`isCancelKey` in
-      `engine/pointer.ts`, rather than fourteen more copies of the two codes.
-
-      **What it does not yet cover, and should:** it scans numeric literals in
-      the shape `button === <n>` plus `const NAME = <n>` declarations — the two
-      shapes that have actually shipped the bug. It cannot see a code reached
-      through a lookup table or `String.fromCharCode` (Sokoban's
-      `DIGIT_DIRECTIONS` is the live example). Widening it is a task for this
-      audit, and the vacuity assertions it already carries are the model —
-      *count what you looked at*; the first cut of its key-map parser was wrong
-      and those assertions are what said so.
-
-- [ ] 3.6 The neighbouring gap the above exposes: nothing checks the **reverse**
-      direction — a key `puzzleKeyMap` sends that no game consumes is harmless,
-      but a key a *player* would expect (Home/End from a numpad with Num Lock
-      off) reaching nothing is not. Decide whether that is in scope; it is the
-      difference between "the wiring is connected" and "the input is reachable",
-      which is D1's actual bar.
+      The lookup-table shape (`String.fromCharCode(button)`, Sokoban's
+      `DIGIT_DIRECTIONS`) was checked and left: its keys are all printable, so
+      every one is emittable through the char-code fallback, and no game reaches
+      a control code that way.
+- [x] 3.6 **The reverse direction is in scope, and it is now a guard**: every
+      button `requestKeys` returns must be one the game consumes. One finding
+      (Seismic's 6–9), filed. This is D1's actual bar — "the input is reachable"
+      rather than "the wiring is connected".
 
 ## 4. Fix and file (D4)
 
-- [ ] 4.1 Fix inline: local fixes with no product decision in them.
-- [ ] 4.2 File separately: anything needing an interaction designed. Each gets a
-      scaffolded change with the finding quoted, not a TODO.
-- [ ] 4.3 **Force the Loopy decision** (D5): EXEMPT with the reason written into
-      the `loopy` spec and its help page, or BROKEN with a change filed. Not
-      undecided.
-- [ ] 4.4 Every fix must be shown not to change what the *other* modes do.
+- [x] 4.1 Fixed inline: the seven-game long-press defect (one layer down, as one
+      flag with a consumer, not seven copies of a workaround); Unruly's dead
+      erase key.
+- [x] 4.2 Filed with the finding quoted, not a TODO:
+      **`add-loopy-keyboard-control`** and **`size-seismic-keypad-to-its-boards`**.
+- [x] 4.3 **Loopy decision forced: BROKEN, not EXEMPT.** The bar is maximum
+      parity and Slide's precedent is three weeks old; an exemption would be
+      claiming a puzzle may ship keyboard-less, which nobody decided. Recorded in
+      the `loopy` spec, in the guard's exemption list with its reason, and in
+      `help/games/loopy.md`.
+- [x] 4.4 Every fix shown not to change the other modes: Mines and Pattern keep
+      their promotion in the browser; the whole gesture-equivalence and
+      press-level sweeps stay green; `contract-surface.test.ts` and
+      `puzzle-hint-stepper.test.ts` follow the renamed relay.
 
-## 4b. One finding handed over from `audit-vestigial-contract-surface` (2026-08-21)
+## 4b. The finding handed over from `audit-vestigial-contract-surface`
 
-- [ ] 4b.1 **`Game.needsRightButton` has eighteen implementers and no reader.**
-      That audit swept every optional `Game` member for implementers *and*
-      consumers; this is the one that has the first and not the second. The
-      midend forwards it into `PuzzleStaticAttributes` and the shell carries it
-      to `Puzzle.needsRightButton`, and there the trail stops — the only site
-      that ever considered branching on it, `view-interactive.ts`'s
-      `handleContextMenu`, says in a comment why it doesn't ("some puzzles,
-      e.g. Tracks, say they don't *need* the right button, even though they can
-      *use* it"), and the secondary-action affordance upstream's
-      `REQUIRE_RBUTTON` existed to gate is offered to every game
-      unconditionally anyway (long-press / two-finger-tap, global settings).
+- [x] 4b.1 **`Game.needsRightButton` removed**, with all eighteen declarations
+      and both relay hops; `contract-surface.test.ts`'s `NO_CONSUMER` list is now
+      empty. Replaced by `Game.ignoresSecondaryButton`, which
+      `view-interactive.ts` really reads.
 
-      It was **not** deleted, for two reasons this audit is the right place to
-      weigh. First, the proposal already asks for the control it is half of:
-      *"a game cannot tell the frontend 'I have no secondary button, do not
-      long-press me'"* — that is `needsRightButton`, inverted, and Slide's
-      `asPrimary` fold is the per-game workaround for its absence. Second, the
-      eighteen declarations are upstream knowledge with no C build left to
-      re-derive them from. So: **give it a consumer or remove it and the
-      eighteen declarations together** — but not leave it as surface that reads
-      as a capability and is not one. Its doc comment in `game.ts` now says so
-      and names this task.
+      **It is not that flag inverted**, and the audit is what could tell:
+      `REQUIRE_RBUTTON` means "unplayable without a secondary button" and the
+      control needed here means "has no secondary meaning at all". Those differ
+      on the largest group — Tracks *uses* the button without *needing* it — so
+      inverting would have suppressed a promotion Tracks handles correctly. Nor
+      is the upstream knowledge lost in any sense that matters: the new guard
+      derives each game's relationship with the secondary button from its own
+      behaviour on every run.
 
 ## 5. Specs, docs and close-out
 
-- [ ] 5.1 `ts-engine`: MODIFIED "Touch equivalence is guarded for every registered
-      game" → gesture-level; ADDED keyboard reachability.
-- [ ] 5.2 Per-game specs: any game whose requirement says "mouse only" is either
-      corrected or has its exemption reason written in.
-- [ ] 5.3 `docs/games/input.md`: fold whatever the sweep teaches back into the
-      traps list — it is a live wiki, and this change is exactly the kind of
-      thing that should update it. **Two of its four traps were already
-      corrected on 2026-08-26** (§3.8a's `MOD_NUM_KEYPAD` claim was false; the
-      cancel-key trap was understated at two games and is seven) — so read the
-      traps as claims to *re-verify against the frontend*, not as findings to
-      act on. A trap paragraph nobody has checked is exactly as reliable as a
-      guard nobody has seen fail.
-- [ ] 5.4 Help pages: where a game's controls differ by mode, `help/games/<id>.md`
-      says so. `help/features.md` already documents the touch affordances.
-- [ ] 5.5 `openspec validate audit-input-mode-parity --strict`.
-- [ ] 5.6 Owner acceptance before archiving.
+- [x] 5.1 `ts-engine`: five ADDED requirements (gesture-level touch guarding, the
+      no-secondary-meaning control, the gesture layer's own tests, keyboard
+      reachability, on-screen key reachability, the panel as a second emitter)
+      and one MODIFIED — the stylus requirement's *"Pattern is the only such
+      game"*, false since Loopy landed, with the lesson attached: **a count in a
+      spec is a fact that goes stale silently.**
+- [x] 5.2 Per-game specs: `loopy`'s "played with mouse or stylus clicks only —
+      it has no keyboard input" was the collection's one normative statement of a
+      mode gap, and it stated it as a fact rather than a defect. Rewritten to
+      record it as an open defect naming the change that owns it. No other game's
+      spec claims a mode it does not have.
+- [x] 5.3 `docs/games/input.md` updated as a live wiki: the five automatic
+      sweeps and what each will tell you, what no sweep can tell you, the
+      probe-writing rule the four false convictions produced, the
+      `ignoresSecondaryButton` resolution, the `switch`/panel widenings, the
+      panel-sizing rule, and a re-verified checklist. The two traps corrected on
+      2026-08-26 were re-read against the frontend rather than trusted.
+- [x] 5.4 Help: `features.md` names the seven puzzles where the long-press and
+      two-finger gestures are now switched off and says what that buys;
+      `games/loopy.md` says how Loopy *is* played and that the keyboard is not
+      yet there.
+- [x] 5.5 `openspec validate --all --strict` — 80 passed, 0 failed.
+- [ ] 5.6 Owner acceptance. **Player-visible**, so this one is genuinely yours:
+      the seven games' touch feel (a held finger now presses instead of doing
+      nothing), Unruly's erase key, and the two filed decisions.

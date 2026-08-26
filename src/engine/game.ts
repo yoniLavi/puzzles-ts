@@ -228,27 +228,33 @@ export interface Game<
    * the `M`/`m` key in `interpretMove`; the app shell surfaces a toolbar button
    * (gated on this) that injects that key. Defaults to false (no button). */
   readonly canMarkAll?: boolean;
-  /** The game genuinely needs a right (secondary) button to be playable —
-   * upstream's `REQUIRE_RBUTTON` flag. Pattern marks empty cells only with
-   * the right button, so a touch frontend must surface a secondary-action
-   * affordance. Defaults to false.
+  /**
+   * The game has **no meaning for the secondary button at all**, so the
+   * frontend must not manufacture one: `view-interactive.ts` skips
+   * `detectSecondaryButton` entirely for such a game, and a finger that rests
+   * before it drags stays a left press.
    *
-   * **Eighteen games declare this and nothing reads it**
-   * (`audit-vestigial-contract-surface`). The midend forwards it to
-   * `PuzzleStaticAttributes` and the app shell carries it as far as
-   * `Puzzle.needsRightButton`, where the trail ends: the one site that
-   * considered branching on it — `view-interactive.ts`'s `handleContextMenu` —
-   * says in a comment why it does not, and the affordance upstream wanted it
-   * for is offered to *every* game unconditionally (long-press and
-   * two-finger-tap, configurable globally in settings).
+   * Without it, a touch player's press is promoted to `RIGHT_BUTTON` after a
+   * 350 ms hold — and a game that never tests `RIGHT_BUTTON` then simply drops
+   * the whole gesture. That is not a hypothetical: "press, pause to aim, then
+   * drag" *is* a press that stays put, so Pegs' drag died precisely when the
+   * player stopped to think, and a Flip tap held a beat too long did nothing.
+   * Seven games were in that state when `audit-input-mode-parity` swept the
+   * collection (Cube, Fifteen, Filling, Flip, Flood, Pegs, Sokoban).
    *
-   * It is kept rather than deleted because `audit-input-mode-parity` is
-   * already asking for the control this is half of — "a game cannot tell the
-   * frontend *I have no secondary button, do not long-press me*" — and the
-   * eighteen declarations are upstream knowledge that no longer has a C build
-   * to be re-derived from. That audit owns the decision: give it a consumer,
-   * or remove it and the declarations together. */
-  readonly needsRightButton?: boolean;
+   * **Exactly guarded, so it cannot drift**: `input-parity.test.ts` asserts the
+   * biconditional — a game declares this **iff** it consumes `RIGHT_BUTTON`
+   * nowhere on a real board. Do not set it to suppress an affordance you merely
+   * dislike; the sweep will convict the declaration on the day the game grows a
+   * secondary meaning.
+   *
+   * This replaces upstream's `REQUIRE_RBUTTON` (`needsRightButton`), which
+   * eighteen games declared and nothing ever read. It is not that flag
+   * inverted: the third category is real and is the largest — Tracks *uses* the
+   * right button without *needing* it, so inverting `REQUIRE_RBUTTON` would
+   * have suppressed a promotion Tracks handles correctly.
+   */
+  readonly ignoresSecondaryButton?: boolean;
   /**
    * The game wants to know that a press came from a finger or a pen, and will
    * handle the `MOD_STYLUS` bit itself. Defaults to false, and **should stay

@@ -17,7 +17,7 @@ const ATTRS: PuzzleStaticAttributes = {
   canFindMistakes: false,
   hasReference: false,
   canMarkAll: false,
-  needsRightButton: false,
+  ignoresSecondaryButton: false,
   isTimed: false,
   wantsStatusbar: true,
 };

@@ -584,8 +584,6 @@ export const crossingGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
-  // Upstream's REQUIRE_RBUTTON: pencil mode has no other pointer affordance.
-  needsRightButton: true,
 
   defaultParams,
   presets,

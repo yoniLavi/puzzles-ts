@@ -366,6 +366,9 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
+  // Flipping a cell is the only gesture; the secondary button has no meaning,
+  // so a touch player's held press must not be promoted into one.
+  ignoresSecondaryButton: true,
   preferredTileSize: PREFERRED_TILE_SIZE,
 
   defaultParams(): FlipParams {

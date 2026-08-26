@@ -283,7 +283,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       canFindMistakes: this.game.findMistakes !== undefined,
       hasReference: this.game.reference !== undefined,
       canMarkAll: this.game.canMarkAll ?? false,
-      needsRightButton: this.game.needsRightButton ?? false,
+      ignoresSecondaryButton: this.game.ignoresSecondaryButton ?? false,
       isTimed: this.game.isTimed,
       wantsStatusbar: this.game.wantsStatusbar,
     };

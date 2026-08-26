@@ -98,7 +98,7 @@ export class Puzzle {
       canFindMistakes,
       hasReference,
       canMarkAll,
-      needsRightButton,
+      ignoresSecondaryButton,
       isTimed,
       wantsStatusbar,
     }: PuzzleStaticAttributes,
@@ -118,7 +118,7 @@ export class Puzzle {
     this.canFindMistakes = canFindMistakes;
     this.hasReference = hasReference;
     this.canMarkAll = canMarkAll;
-    this.needsRightButton = needsRightButton;
+    this.ignoresSecondaryButton = ignoresSecondaryButton;
     this.isTimed = isTimed;
     this.wantsStatusbar = wantsStatusbar;
   }
@@ -224,7 +224,7 @@ export class Puzzle {
   public readonly canFindMistakes: boolean;
   public readonly hasReference: boolean;
   public readonly canMarkAll: boolean;
-  public readonly needsRightButton: boolean;
+  public readonly ignoresSecondaryButton: boolean;
   public readonly isTimed: boolean;
   public readonly wantsStatusbar: boolean;
 

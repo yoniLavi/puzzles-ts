@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { BACKSPACE, CURSOR_LEFT, CURSOR_RIGHT, DELETE } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import {
   type Cell,
@@ -193,6 +194,29 @@ describe("moves", () => {
     const b = executeMove(a, { type: "place", x: 1, y: 2, value: ONE });
     expect(b.grid[2 * p.w2 + 1]).toBe(ONE);
     expect(a.grid[2 * p.w2 + 1]).toBe(EMPTY);
+  });
+
+  it("clears a cell with either erase key", () => {
+    // `DELETE` (127) is what the keyboard sends for Backspace/Delete/Clear;
+    // `BACKSPACE` (8) is what a keypad's Clear key would send. `decideValue`
+    // used to list only 8, while `interpretMove`'s gate called `isEraseKey`,
+    // so 127 was admitted and then matched nothing — the erase key looked
+    // wired at every level and did nothing at the last one.
+    const ds = unrulyGame.newDrawState(blank());
+    unrulyGame.setTileSize?.(ds, 32);
+    for (const erase of [BACKSPACE, DELETE]) {
+      const state = executeMove(blank(), { type: "place", x: 0, y: 0, value: ONE });
+      const ui = unrulyGame.newUi(state);
+      unrulyGame.interpretMove(state, ui, ds, { x: 0, y: 0 }, CURSOR_RIGHT);
+      unrulyGame.interpretMove(state, ui, ds, { x: 0, y: 0 }, CURSOR_LEFT);
+      const move = unrulyGame.interpretMove(state, ui, ds, { x: 0, y: 0 }, erase);
+      expect(move, `erase key ${erase} produced no move`).toMatchObject({
+        type: "place",
+        x: 0,
+        y: 0,
+        value: EMPTY,
+      });
+    }
   });
 
   it("rejects placing on an immutable cell", () => {

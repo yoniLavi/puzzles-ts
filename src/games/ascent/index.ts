@@ -398,7 +398,6 @@ export const ascentGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
-  needsRightButton: true,
   preferredTileSize: 48,
 
   defaultParams,

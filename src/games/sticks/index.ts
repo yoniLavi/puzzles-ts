@@ -541,7 +541,6 @@ export const sticksGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
-  needsRightButton: true,
 
   defaultParams,
   presets,

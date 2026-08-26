@@ -39,19 +39,40 @@ carries either a defect or an explicitly recorded exemption — never an
 unexamined gap. The precedent for why this is not paranoia:
 `fix-touch-input-stylus-modifier` found **nine of the then thirty-two ported
 games completely deaf to touch**, discovered by an owner bug report rather than
-a test. The collection-wide sweep establishing this bar for every game × every
-mode is the active change
-[`audit-input-mode-parity`](../../openspec/changes/audit-input-mode-parity/proposal.md);
-until it lands, the per-game obligations in this guide are what stand between a
-port and the same silent failure.
+a test.
 
-What is already guarded automatically:
-[`engine/touch-input.test.ts`](../../src/engine/touch-input.test.ts) sweeps
-**every registered game** through a real `Midend`, asserting a touch press does
-exactly what the same mouse press does — comparing the press's *effect* on the
-board, not merely whether it was consumed. Your game is covered the day it is
-registered. If it fails, your `interpretMove` is comparing a raw button
-somewhere.
+**Five sweeps guard it automatically, all through the live registry and a real
+`Midend`, so your game is covered the day it is registered.** You do not have to
+remember they exist; you do have to know what they will tell you.
+
+- [`touch-input.test.ts`](../../src/engine/touch-input.test.ts) — a touch
+  **press** does exactly what the same mouse press does, comparing the press's
+  *effect* on the board. If it fails, your `interpretMove` is comparing a raw
+  button somewhere.
+- [`input-parity.test.ts`](../../src/engine/input-parity.test.ts) — four more:
+  the same equivalence for a whole **press → drag → release gesture**; the
+  `ignoresSecondaryButton` biconditional (§ "A touch hold arrives as the right
+  button"); **keyboard reachability**, which asks not only whether a cursor key
+  is consumed but whether any keyboard-only sequence *commits a move*; and
+  **on-screen key reachability**, the reverse direction (§ "The on-screen
+  keypad").
+- [`emittable-keys.test.ts`](../../src/engine/emittable-keys.test.ts) — the
+  source scan for a key that can never fire (§ "The numeric keypad never
+  arrives").
+
+**What no sweep can tell you** is whether the resulting gesture is *usable* —
+hit targets big enough for a fingertip, a cursor a player can see, a panel
+offering the keys the game wants. Those need the browser, and the audit that
+built these guards was explicit that the sweep is the net and the browser pass
+is what catches what the net's mesh is shaped to miss.
+
+**On writing a probe of your own**, if you ever extend one of these: ask *was the
+button consumed*, never *did the board change*. A behavioural probe over generic
+geometry can only observe the latter, and there are many innocent reasons for it
+— a right-button eraser has nothing to erase on a fresh board, a Clear key on an
+empty cell is a legitimate no-op, and Fifteen's gap starts in the corner where
+two of the four arrows correctly do nothing. Each of those convicted an innocent
+game while `audit-input-mode-parity` was being written.
 
 ## The numeric keypad never arrives
 
@@ -115,10 +136,20 @@ Two things generalise past keys here, and both cost this project real defects:
   the layer below before writing the same fix an eighth time.
 - **A trap that has bitten seven times deserves a mechanical check, not a
   paragraph.** [`emittable-keys.test.ts`](../../src/engine/emittable-keys.test.ts)
-  reads the codes `puzzleKeyMap` can actually produce and the codes the game
+  reads the codes the frontend can actually produce and the codes the game
   sources actually test, and fails on a test with no producer. It is a source
   scan on purpose: what is being asserted is that no behaviour exists, which no
   behavioural test can see — a game handed `8` directly handles it perfectly.
+- **Two things that scan misses, both found by widening it, one of them live.**
+  A **`switch (button) { case 8: }`** is a comparison the regex cannot see, and
+  Unruly carried one through the very sweep that fixed fourteen games: its gate
+  called `isEraseKey`, so `DELETE` passed the gate, reached the switch, matched
+  nothing and fell through to `default` — wired at every level, dead at the last
+  one. A `case` cannot call a predicate, so spell **both** codes
+  (`case BACKSPACE: case DELETE:`; exemplar `subsets/index.ts`). And **the
+  on-screen panel is a second emitter**: `clearKey`'s button is `8`, so the
+  emittable set is computed **per game** — 8 reaches Abcd, which offers it, and
+  reaches Unruly not at all.
 
 ## Touch is stripped for you
 
@@ -133,8 +164,12 @@ So the contract is deliberately inverted from upstream
 `interpretMove`**, and a game that genuinely gives touch its own behaviour
 opts in with `Game.wantsStylusModifier` — see its doc comment in
 [`engine/game.ts`](../../src/engine/game.ts) for the full rationale. Pattern
-and Loopy are the only games that ask (each cycles a cell's state on a tap,
-having no right button to cycle with).
+and Loopy are the games that ask (each cycles a cell's or an edge's state on a
+tap, having no right button to cycle with). Note what happened to the previous
+sentence here, because it is a shape worth recognising: the `ts-engine` spec said
+"Pattern is the only such game", and that quietly became false the day Loopy
+landed. **A count is a fact that goes stale silently** — name the members
+instead.
 
 **Tell:** writing `button & 0x0800` by hand — you want the flag instead. The
 collection-wide guard (§ "The input-parity bar") catches a raw-button
@@ -151,14 +186,28 @@ follow suit.
 aim.** "Press, pause a moment to decide, then drag" is *exactly* a press that
 stays put — so the gesture dies only on touch, and only for the player who
 stopped to think. Inertia's swipe (hold the ball, drag out the direction, let
-go) hit this.
+go) hit this, and so did **seven more games**: Cube, Fifteen, Filling, Flip,
+Flood, Pegs and Sokoban, of which Pegs and Filling are entirely press-and-drag.
+Confirmed in Chrome — a Pegs jump held 600 ms before the drag left the board
+bit-identical.
 
-Two resolutions, by whether the game uses the secondary button:
+Three resolutions, by whether the game uses the secondary button:
 
-- **No secondary meaning → fold right onto left** at the top of
-  `interpretMove`, so the gesture works whichever button the long-press
-  detector decided it saw. One line; exemplar `asPrimary()` in
-  [`inertia/index.ts`](../../src/games/inertia/index.ts).
+- **No secondary meaning at all → declare `Game.ignoresSecondaryButton`**, and
+  the view skips `detectSecondaryButton` for your game entirely: no promotion,
+  and the press delivered immediately rather than held for the detection window.
+  This is the right answer whenever it applies, because it fixes the problem
+  where it is rather than teaching every game to survive it.
+
+  **You do not get to choose freely.** `input-parity.test.ts` asserts the
+  biconditional — you declare it *iff* your `interpretMove` consumes
+  `RIGHT_BUTTON` nowhere on a real board — so it cannot be forgotten by a new
+  game or left behind by a game that grows a secondary meaning. It is **not**
+  upstream's `REQUIRE_RBUTTON` inverted: a game may *use* the secondary button
+  without *needing* it (Tracks), and that third group is the largest.
+- **Secondary meaning, but the promoted gesture should do the primary thing →
+  fold right onto left** at the top of `interpretMove`. One line; exemplar
+  `asPrimary()` in [`inertia/index.ts`](../../src/games/inertia/index.ts).
 - **Secondary is meaningful → continue the drag on the button class, not the
   press button.** A drag keyed off `isMouseDrag`/`isMouseRelease` (rather than
   the exact press code) lets a long-press that arrived as `RIGHT_BUTTON` start
@@ -176,6 +225,14 @@ Two resolutions, by whether the game uses the secondary button:
 
 **Tell:** a drag lifecycle that matches `LEFT_DRAG` specifically where
 `isMouseDrag` is meant — it strands the touch player whose press was promoted.
+
+**The detector itself is tested** ([`utils/touch.test.ts`](../../src/utils/touch.test.ts)),
+which it was not for a long time: a per-game guard proves your game copes with
+the decision, never that the decision was right, and those are two different
+guarantees. Read it before changing the timings — the 350 ms window, the 8 px
+radius, and the second finger's *timer reset* (which makes the worst case twice
+the hold time) are each asserted, and `unhandledEvent` is what stops a tap faster
+than the detection round trip from losing its release.
 
 ## The board keeps the keyboard after a control
 
@@ -453,6 +510,18 @@ Normative: the on-screen-keys requirement in
 - **Test it tier-1.** Pin the returned `KeyLabel[]` for representative params
   in the game's test file; assert the `digitKeys` rollover and any per-game
   quirk.
+- **Every key you offer must reach you.** `input-parity.test.ts` sweeps each
+  returned button over a real board and fails on one `interpretMove` never
+  consumes — the *reverse* of the emittable-key scan, and the difference between
+  "the wiring is connected" and "the input is reachable". A dead panel key is not
+  a cosmetic surplus: on touch this panel is the only way to type, so it is a
+  control that does nothing when pressed.
+- **Size the panel to the boards you generate, not to the format.** Seismic is
+  the live counter-example: it offers `1`–`9` because the *format* admits regions
+  up to nine, while the generator's size distribution tops out at five — so four
+  keys are inert on every board anybody plays (`size-seismic-keypad-to-its-boards`).
+  `requestKeys` takes params and cannot see the board, so this is a judgement you
+  make once, at the panel, and revisit when the generator changes.
 
 Exemplars: the five digit games (`solo`/`keen`/`towers`/`unequal`/`filling`)
 and Undead.
@@ -464,9 +533,13 @@ and Undead.
 - [ ] No binding on `MOD_NUM_KEYPAD | …` or a bare character literal without
       checking what `puzzleKeyMap` delivers; bare digits accepted where the
       keypad was a route to an input.
-- [ ] Press-and-drag gestures survive a 350 ms hold (fold to primary, or key
-      the drag off the button class).
-- [ ] A keyboard-only player can play to completion, or the exemption is
-      recorded with its reason.
-- [ ] Keypad games implement `requestKeys` and pin it tier-1.
+- [ ] No control code compared bare — including inside a `switch (button)`.
+      `isEraseKey` / `isCancelKey`, or both `case` labels.
+- [ ] Press-and-drag gestures survive a 350 ms hold — declare
+      `ignoresSecondaryButton` if the secondary button means nothing to you, else
+      fold to primary or key the drag off the button class.
+- [ ] A keyboard-only player can play to completion — not merely move a cursor —
+      or the exemption is recorded with its reason, in the spec.
+- [ ] Keypad games implement `requestKeys`, pin it tier-1, and offer no key the
+      game cannot accept on a board it generates.
 - [ ] Pointer coordinates rounded at the boundary if state stores pixels.

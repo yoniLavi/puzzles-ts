@@ -889,7 +889,6 @@ export const groupGame: Game<
   canSolve: true,
   canFormatAsText: true,
   canMarkAll: true,
-  needsRightButton: true,
 
   defaultParams,
   presets,

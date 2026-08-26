@@ -250,7 +250,6 @@ export const minesGame: Game<
   isTimed: true,
   canSolve: true,
   canFormatAsText: true,
-  needsRightButton: true,
   preferredTileSize: PREFERRED_TILE_SIZE,
 
   defaultParams,

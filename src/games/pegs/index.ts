@@ -1053,6 +1053,10 @@ export const pegsGame: Game<PegsParams, PegsState, PegsMove, PegsUi, PegsDrawSta
   isTimed: false,
   canSolve: false,
   canFormatAsText: true,
+  // The whole game is one press-and-drag, and the secondary button has no
+  // meaning — so promoting a held press was silently destroying the gesture of
+  // any touch player who paused to pick a landing square.
+  ignoresSecondaryButton: true,
 
   defaultParams,
   presets,

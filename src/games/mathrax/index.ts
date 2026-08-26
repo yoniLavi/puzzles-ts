@@ -425,9 +425,6 @@ export const mathraxGame: Game<
   canSolve: true,
   canFormatAsText: false,
   canMarkAll: true,
-  // Upstream `REQUIRE_RBUTTON`: the right button is pencil mode, so a touch
-  // frontend must surface a secondary-action affordance.
-  needsRightButton: true,
 
   defaultParams,
   presets,

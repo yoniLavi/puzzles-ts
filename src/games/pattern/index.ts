@@ -389,7 +389,6 @@ export const patternGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
-  needsRightButton: true,
   // Pattern is the one game that wants the raw MOD_STYLUS bit: with no right
   // button to hand, a touch press cycles the cell through its three states
   // instead of just filling it. Every other game lets the midend strip it.

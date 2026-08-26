@@ -503,9 +503,6 @@ export const spokesGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
-  // Upstream `REQUIRE_RBUTTON`: the right button places the "ruled out" marks,
-  // so a touch frontend must surface a secondary-action affordance.
-  needsRightButton: true,
 
   defaultParams,
   presets,

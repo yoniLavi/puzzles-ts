@@ -547,6 +547,9 @@ export const fifteenGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
+  // Sliding a tile is the only gesture; the secondary button has no meaning,
+  // so a touch player's held press must not be promoted into one.
+  ignoresSecondaryButton: true,
 
   defaultParams,
   presets,

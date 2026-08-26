@@ -359,10 +359,19 @@ export class PuzzleViewInteractive extends PuzzleView {
       button = swapButtons(button);
     }
 
+    // A game with no secondary meaning must not have one manufactured for it.
+    // The detector promotes a finger that stays within 8 px for 350 ms to
+    // `RIGHT_BUTTON`, and "press, pause to aim, then drag" is exactly such a
+    // press — so for a game that never tests `RIGHT_BUTTON` the promotion drops
+    // the whole gesture, only on touch, and only for the player who stopped to
+    // think. Skipping detection also delivers the press immediately instead of
+    // holding it for the detection window.
+    const secondary = !this.puzzle.ignoresSecondaryButton;
+
     // event may be mutated after this await
     const { isSecondary, unhandledEvent } = await detectSecondaryButton(event, {
-      longPress: this.longPress,
-      twoFingerTap: this.twoFingerTap,
+      longPress: this.longPress && secondary,
+      twoFingerTap: this.twoFingerTap && secondary,
       holdTime: this.secondaryButtonHoldTime,
       dragThreshold: this.secondaryButtonDragThreshold,
     });
@@ -492,10 +501,12 @@ export class PuzzleViewInteractive extends PuzzleView {
     // response arrives too late for handlePointerDown to set up the
     // pointerTracking object before handleContextMenu is called.
     //
-    // TODO: Cancel contextmenu only if the puzzle wants the right button:
-    //   if (this.puzzle?.needsRightButton) ...
-    // Unfortunately, some puzzles (e.g., Tracks) say they don't *need*
-    // the right button, even though they can *use* it.
+    // Cancelling only for a puzzle that wants the right button would need a
+    // flag saying so, and `Game.ignoresSecondaryButton` is not it: it marks the
+    // games with no secondary meaning *at all*, and everything else — whether
+    // the button is essential (Pattern) or merely available (Tracks) — wants
+    // the menu suppressed alike. Suppressing for the seven that ignore it costs
+    // them nothing, since a right-click there does nothing either way.
     //
     // Cancel contextmenu unconditionally for all puzzles:
     event.preventDefault();

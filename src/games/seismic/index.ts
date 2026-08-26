@@ -366,9 +366,6 @@ export const seismicGame: Game<
   canSolve: true,
   canFormatAsText: true,
   canMarkAll: true,
-  // The right button is pencil mode, so a touch frontend must surface a
-  // secondary-action affordance.
-  needsRightButton: true,
 
   defaultParams,
   presets,

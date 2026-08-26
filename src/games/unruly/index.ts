@@ -20,8 +20,10 @@ import {
 } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
+  BACKSPACE,
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  DELETE,
   gridCursorMove,
   isCursorMove,
   isEraseKey,
@@ -85,7 +87,12 @@ function decideValue(button: number, current: Cell): Cell | null {
     case 48: // '0'
     case 50: // '2'
       return ZERO;
-    case 8: // backspace
+    // Both erase codes, spelled out because a `case` cannot call `isEraseKey`.
+    // The gate in `interpretMove` calls it, so `DELETE` (127) passed the gate,
+    // reached here and fell straight through to `default` — the erase key read
+    // as wired at every level and was dead at the last one.
+    case BACKSPACE:
+    case DELETE:
     case MIDDLE_BUTTON:
       return EMPTY;
     case CURSOR_SELECT2:

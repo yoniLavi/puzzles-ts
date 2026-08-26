@@ -433,7 +433,6 @@ export const romeGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: false,
-  needsRightButton: true,
 
   defaultParams,
   presets,

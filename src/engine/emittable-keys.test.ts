@@ -37,9 +37,13 @@
  * See docs/games/input.md § "The numeric keypad never arrives".
  */
 
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import { registerAllGames } from "../games/index.ts";
 import { BACKSPACE, DELETE, ESCAPE } from "./pointer.ts";
-import { PuzzleButton } from "./types.ts";
+import { getTsGame, registeredGameIds } from "./registry.ts";
+import { type KeyLabel, PuzzleButton } from "./types.ts";
+
+beforeAll(registerAllGames);
 
 /**
  * Sources as text, via Vite's `import.meta.glob` rather than `node:fs` —
@@ -73,6 +77,36 @@ const pointerSource: string = Object.values(
     eager: true,
   }),
 )[0];
+
+/**
+ * Every code the **on-screen key panel** can deliver, read from the live
+ * registry. `puzzle-keys` sends a `KeyLabel.button` straight to
+ * `Puzzle.processKey`, so the panel is a second emitter and the key map is not
+ * the whole frontend — a distinction this test originally got wrong, asserting
+ * that 8 could not be sent while twelve games' `clearKey` was sending it.
+ *
+ * Derived rather than listed, so a game that adds a bespoke key is covered on
+ * the day it registers.
+ */
+function panelCodesByGame(): Map<string, Set<number>> {
+  const byGame = new Map<string, Set<number>>();
+  for (const id of registeredGameIds()) {
+    const game = getTsGame(id) as
+      | { requestKeys?: (p: unknown) => KeyLabel[]; defaultParams: () => unknown }
+      | undefined;
+    if (!game?.requestKeys) continue;
+    byGame.set(
+      id,
+      new Set(game.requestKeys(game.defaultParams()).map((k) => k.button)),
+    );
+  }
+  return byGame;
+}
+
+/** `../games/unruly/index.ts` → `unruly`. */
+function gameIdOf(path: string): string {
+  return /\/games\/([^/]+)\//.exec(path)?.[1] ?? "";
+}
 
 /**
  * Every code `puzzleKeyMap` can deliver, read **from the frontend source**
@@ -121,19 +155,74 @@ function gameSources(): { path: string; text: string }[] {
 const COMPARISON =
   /\b(?:button|btn|raw|rawButton|key)\s*===?\s*(0x[0-9a-fA-F]+|\d+)\b/g;
 
+/**
+ * The second shape, and it shipped a live defect that the first could not see.
+ *
+ * `switch (button) { case 8: … }` compares a button against a control code
+ * exactly as `button === 8` does, and the regex above matches neither the
+ * `switch` header nor the `case`. Unruly's `decideValue` carried `case 8:` for
+ * months *after* the collection-wide erase-key sweep had "fixed" it — its
+ * `interpretMove` gate called `isEraseKey`, so `DELETE` (127) passed the gate,
+ * reached the switch, matched nothing and fell through to `default`. The erase
+ * key read as wired at every level and was dead at the last one.
+ *
+ * A `case` cannot call a predicate, so the correct form spells both codes
+ * (`case BACKSPACE: case DELETE:` — exemplar `subsets/index.ts`). This finds
+ * the ones that spell only one, by scanning the body of each `switch` whose
+ * subject is a button for numeric `case` labels.
+ */
+function switchCases(text: string): { line: number; code: number; src: string }[] {
+  const out: { line: number; code: number; src: string }[] = [];
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (!/switch\s*\(\s*(?:button|btn|raw|rawButton|key)\s*\)/.test(lines[i])) continue;
+    // Walk to the closing brace by depth, so a nested block cannot end it early.
+    let depth = 0;
+    for (let j = i; j < lines.length; j++) {
+      for (const ch of lines[j]) {
+        if (ch === "{") depth++;
+        else if (ch === "}") depth--;
+      }
+      if (j > i) {
+        const m = /^\s*case\s+(0x[0-9a-fA-F]+|\d+)\s*:/.exec(lines[j]);
+        if (m) out.push({ line: j + 1, code: Number(m[1]), src: lines[j].trim() });
+      }
+      if (depth <= 0 && j > i) break;
+    }
+  }
+  return out;
+}
+
 describe("no game tests a button this frontend cannot send", () => {
-  const emittable = emittableCodes();
+  const emittableFromKeyMap = emittableCodes();
+  const panels = panelCodesByGame();
+  /**
+   * What can reach *this* game. The keyboard half is the same for everyone; the
+   * panel half is not — `clearKey`'s button 8 reaches Abcd, which puts it on
+   * its keypad, and reaches Unruly not at all, because Unruly has no keypad.
+   * Taking the union across the collection instead would have excused exactly
+   * the defect this scan exists to find.
+   */
+  const emittable = (path: string) =>
+    new Set([...emittableFromKeyMap, ...(panels.get(gameIdOf(path)) ?? [])]);
   const sources = gameSources();
 
   it("reads a plausible key map and a plausible set of game sources", () => {
     // The vacuity guard, and it has already earned its place: the first cut of
     // the parser read only bare numbers, missed every `PuzzleButton.NAME`
     // entry, and this assertion is what said so.
-    expect(emittable.size).toBeGreaterThanOrEqual(8);
-    expect(emittable).toContain(DELETE);
-    expect(emittable).toContain(ESCAPE);
-    expect(emittable).toContain(PuzzleButton.CURSOR_UP);
+    expect(emittableFromKeyMap.size).toBeGreaterThanOrEqual(8);
+    expect(emittableFromKeyMap).toContain(DELETE);
+    expect(emittableFromKeyMap).toContain(ESCAPE);
+    expect(emittableFromKeyMap).toContain(PuzzleButton.CURSOR_UP);
     expect(sources.length).toBeGreaterThan(200);
+    // …and the panel half, which would otherwise contribute nothing silently
+    // if the registry were empty at collection time. The path→id mapping is
+    // asserted too: a glob whose shape changed would key every lookup on `""`
+    // and quietly hand every game an empty panel.
+    expect(panels.size).toBeGreaterThanOrEqual(12);
+    expect(gameIdOf("../games/unruly/index.ts")).toBe("unruly");
+    expect(new Set(sources.map((f) => gameIdOf(f.path))).size).toBeGreaterThan(50);
   });
 
   it("finds the comparisons it claims to check", () => {
@@ -149,23 +238,54 @@ describe("no game tests a button this frontend cannot send", () => {
   it("has no comparison against an unsendable control code", () => {
     const dead: string[] = [];
     for (const { path, text } of sources) {
+      const reachable = emittable(path);
       const lines = text.split("\n");
       lines.forEach((line, i) => {
         for (const [, literal] of line.matchAll(COMPARISON)) {
           const code = Number(literal);
           // Printable ASCII always reaches games via the char-code fallback.
           if (code >= 32 && code <= 126) continue;
-          if (emittable.has(code)) continue;
+          if (reachable.has(code)) continue;
           dead.push(`${path}:${i + 1}  ${line.trim()}`);
         }
       });
+      for (const { line, code, src } of switchCases(text)) {
+        if (code >= 32 && code <= 126) continue;
+        if (reachable.has(code)) continue;
+        dead.push(`${path}:${line}  ${src}`);
+      }
     }
 
-    // `BACKSPACE` (8) is the code this catches in practice: upstream's `'\b'`,
-    // which `puzzleKeyMap` never sends. Accept it *only* through `isEraseKey` /
-    // `isCancelKey`, which pair it with `DELETE` — never as a bare comparison.
-    expect(emittable.has(BACKSPACE)).toBe(false);
+    // **The keyboard cannot send 8; a keypad game's own panel can.**
+    // `puzzleKeyMap` maps Backspace to 127, so a keyboard player never produces
+    // upstream's `'\b'` — but `key-labels.ts`'s `clearKey` carries `button: 8`,
+    // and on touch that panel is the only clear route there is. So the code is
+    // reachable in Abcd, which offers it, and unreachable in Unruly, which has
+    // no panel at all — which is why the set above is per-game and not a union
+    // over the collection. A game with both meanings still wants `isEraseKey` /
+    // `isCancelKey`, since a bare comparison is half-wired whichever half it
+    // picks.
+    expect(emittableFromKeyMap.has(BACKSPACE)).toBe(false);
+    expect(emittable("../games/abcd/index.ts").has(BACKSPACE)).toBe(true);
+    expect(emittable("../games/unruly/index.ts").has(BACKSPACE)).toBe(false);
     expect(dead).toEqual([]);
+  });
+
+  it("finds the switch-on-button cases it claims to check", () => {
+    // Vacuity for the second shape, on the same terms as the first: five games
+    // switch on a button, and if that stops being true this scan has gone
+    // stale rather than the collection having become clean.
+    const subjects = sources.filter((f) =>
+      /switch\s*\(\s*(?:button|btn|raw|rawButton|key)\s*\)/.test(f.text),
+    );
+    expect(subjects.length).toBeGreaterThanOrEqual(5);
+    // Three numeric labels survive the fix that motivated this scan — Unruly's
+    // `'0'`, `'1'`, `'2'`, which are printable and therefore fine. The floor is
+    // what is actually there rather than a round number, because a floor set
+    // above the population is a test that fails for being right.
+    expect(sources.flatMap((f) => switchCases(f.text)).length).toBeGreaterThanOrEqual(
+      3,
+    );
   });
 
   it("writes the named buttons by name, not as magic numbers", () => {
@@ -181,7 +301,7 @@ describe("no game tests a button this frontend cannot send", () => {
       text.split("\n").forEach((line, i) => {
         for (const [, literal] of line.matchAll(COMPARISON)) {
           const code = Number(literal);
-          if (code >= 0x200 && emittable.has(code))
+          if (code >= 0x200 && emittableFromKeyMap.has(code))
             magic.push(`${path}:${i + 1}  ${line.trim()}`);
         }
       });

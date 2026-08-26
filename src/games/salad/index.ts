@@ -394,7 +394,6 @@ export const saladGame: Game<
   canSolve: true,
   canFormatAsText: true,
   canMarkAll: true, // handles 'M' (markAll) in interpretMove
-  needsRightButton: true, // upstream REQUIRE_RBUTTON: pencil marks need it
 
   defaultParams,
   presets,

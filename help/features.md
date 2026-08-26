@@ -58,6 +58,11 @@ The other options can be configured in the
 <command-link command="settings:mouse">preferences</command-link>,
 where you can also adjust the detection time and audio feedback.
 
+**In puzzles that have no use for a right-click, these gestures are switched
+off** — Cube, Fifteen, Filling, Flip, Flood, Pegs and Sokoban. There, holding
+your finger still simply presses; you can rest a finger on a peg while you decide
+where to jump it, and the drag still works when you move.
+
 ## Right drag with a mouse {#right-drag}
 
 If you are using a mouse, puzzles will ignore attempts to click and drag

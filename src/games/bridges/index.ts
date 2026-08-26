@@ -573,7 +573,6 @@ export const bridgesGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
-  needsRightButton: true,
   preferredTileSize: PREFERRED_TILE_SIZE,
 
   defaultParams,

@@ -249,6 +249,9 @@ export const floodGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
+  // Choosing a colour is the only gesture; the secondary button has no
+  // meaning, so a touch player's held press must not be promoted into one.
+  ignoresSecondaryButton: true,
 
   defaultParams,
   presets,

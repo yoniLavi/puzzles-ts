@@ -26,10 +26,13 @@
  *    game object), so a game is enrolled the day it is registered;
  *  - *consumers* come from the **TypeScript AST** of every non-game module, not
  *    from a grep. A grep for the member name is the instrument error this whole
- *    audit is about: `needsRightButton` has eighteen implementers and its only
- *    textual hit outside the games is a *commented-out* line proposing to read
- *    it. A comment is not a consumer, and a property-access node cannot be one
- *    by accident.
+ *    audit is about: upstream's `REQUIRE_RBUTTON` flag reached eighteen games
+ *    here, and its only textual hit outside them was a *commented-out* line
+ *    proposing to read it — a grep would have scored it consumed, and this
+ *    check is what carried it as a managed finding until
+ *    `audit-input-mode-parity` replaced it with a flag the view really reads.
+ *    A comment is not a consumer, and a property-access node cannot be one by
+ *    accident.
  *
  * Both derivations carry a floor, because a sweep that silently matched nothing
  * reports success (`grid.test.ts`'s `d.edges.length === d.order`,
@@ -115,11 +118,12 @@ const STATIC_ATTRIBUTES = staticAttributeFields();
  * the field it is assigned to, when the access is the whole of the assigned
  * value (optionally with a `?? default` / `|| default` on it).
  *
- * Copying `game.needsRightButton` into a field also called `needsRightButton`
- * is not consumption, it is postage. Without this distinction the check passes
- * on exactly the member that motivated it: `Midend.getStaticProperties` relays
- * the flag into `PuzzleStaticAttributes`, the `Puzzle` constructor relays that
- * into a field, and nothing ever branches on it. A relay into a *differently*
+ * Copying `game.ignoresSecondaryButton` into a field of the same name is not
+ * consumption, it is postage. Without this distinction the check passes on
+ * exactly the shape that motivated it: `Midend.getStaticProperties` relays a
+ * flag into `PuzzleStaticAttributes`, the `Puzzle` constructor relays that into
+ * a field, and only the third hop decides anything — so a flag nothing branches
+ * on looks identical to one that matters. A relay into a *differently*
  * named field is a real read — `canHint: this.game.hint !== undefined` is the
  * engine deciding something — so the names have to match.
  */
@@ -192,7 +196,7 @@ function propertyReads(): {
     const src = ts.createSourceFile(path, text, ts.ScriptTarget.ESNext, true);
     const visit = (node: ts.Node): void => {
       if (ts.isPropertyAccessExpression(node)) {
-        // A write is not a read. `this.needsRightButton = needsRightButton` in
+        // A write is not a read. `this.canMarkAll = canMarkAll` in
         // the `Puzzle` constructor is the far end of the relay, and counting
         // its left-hand side would let a value that is only ever stored look
         // like a value something uses.
@@ -244,15 +248,7 @@ const TEST_ONLY_CONSUMER: Record<string, string> = {
  * An entry here is a **finding under management**, not an exemption — adding one
  * without an owning change is the thing this file exists to prevent.
  */
-const NO_CONSUMER: Record<string, string> = {
-  needsRightButton:
-    "Eighteen implementers, no reader: the midend forwards it to " +
-    "`PuzzleStaticAttributes` and the shell carries it to " +
-    "`Puzzle.needsRightButton`, where the trail ends. Kept rather than deleted " +
-    "because `audit-input-mode-parity` task 4b.1 owns the decision — it is " +
-    "already asking for the per-game secondary-button control this is half of, " +
-    "and there is no C build left to re-derive the eighteen declarations from.",
-};
+const NO_CONSUMER: Record<string, string> = {};
 
 // --- the guards ------------------------------------------------------------
 

@@ -687,7 +687,6 @@ export const dominosaGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
-  needsRightButton: true, // upstream REQUIRE_RBUTTON (barrier edges)
 
   defaultParams,
   presets,

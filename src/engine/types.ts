@@ -183,7 +183,10 @@ export interface PuzzleStaticAttributes {
    * button. */
   hasReference: boolean;
   // TODO: canFormatAsTextEver: boolean;
-  needsRightButton: boolean;
+  /** The game has no meaning for the secondary button, so the view must not
+   * synthesise one from a long press or a two-finger tap — see
+   * `Game.ignoresSecondaryButton`. */
+  ignoresSecondaryButton: boolean;
   isTimed: boolean;
   wantsStatusbar: boolean;
 }

@@ -489,7 +489,6 @@ export const clustersGame: Game<
   isTimed: false,
   canSolve: true,
   canFormatAsText: true,
-  needsRightButton: true,
 
   defaultParams,
   presets,
