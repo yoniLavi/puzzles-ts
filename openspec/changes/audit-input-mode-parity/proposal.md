@@ -42,11 +42,20 @@ every one of its event helpers, so no touch path is exercised there either.
 them.** Playbook §3.8a–d each records a trap that "has already cost this project a
 shipped bug", and each imposes a per-game obligation that a port has to remember:
 
-- **§3.8a** — this frontend never sets `MOD_NUM_KEYPAD`, so an upstream binding
-  testing `MOD_NUM_KEYPAD | '7'` is a **key that can never fire**, in the C too,
-  so it never showed as a parity difference. It bit hardest where the keypad was
-  the *only* route to an input: Inertia's diagonal moves were literally
+- **§3.8a** — a **key that can never fire**, because nothing upstream of the
+  game emits the code it tests. Inertia's diagonal moves were keypad-only and so
   unreachable for a keyboard-only player.
+
+  **Corrected 2026-08-26, and the correction is the more useful finding.** This
+  bullet used to say the frontend "never sets `MOD_NUM_KEYPAD`". It does — from
+  `event.location === 3`, since the initial webapp version. Cube ships a
+  *passing* test asserting `MOD_NUM_KEYPAD | 0x38` steers the cube, and Bricks
+  calls the bit load-bearing. **An audit that had acted on this bullet would
+  have deleted working code as dead**, which is the precise inverse of the
+  defect it was written to catch, and is why D2's "check the instrument" now has
+  a third clause. The real gap is narrower: a numpad key only arrives as a digit
+  with Num Lock *on*, and a laptop may have no numpad, so a keypad binding must
+  never be the only route to an input.
 - **§3.8c** — `detectSecondaryButton` delivers a finger that stays within 8px for
   350ms as `RIGHT_BUTTON`. That kills **any press-and-drag gesture**, because
   "press, pause to aim, then drag" is exactly a press that stays put — so the
@@ -65,15 +74,24 @@ per-game workaround for a missing per-game control, and its `design.md` says so.
 Whether that control should exist is a question this audit is well placed to
 answer, having looked at every game that would use it.
 
-**On the keyboard side the picture is better than expected and has two holes.**
-Of 57 games, 53 have a real movable cursor (Palisade and Separate get theirs
-through `border-grid.ts`, so a sweep reading only `index.ts` would wrongly
-convict them), and three are direct-action arrow games where no select key is
-wanted (Cube, Fifteen, Sokoban). The holes are **Slide** — a select key bound
-only to walking a Solve route, no cursor — and **Loopy**, which has nothing.
-Both say so normatively in their own specs. Slide is being closed by
-`add-slide-keyboard-control`; Loopy is open, and whether a puzzle *may* ship
+**On the keyboard side the picture is better than expected and now has one
+hole.** Of 57 games, 53 have a real movable cursor (Palisade and Separate get
+theirs through `border-grid.ts`, so a sweep reading only `index.ts` would
+wrongly convict them), and three are direct-action arrow games where no select
+key is wanted (Cube, Fifteen, Sokoban). **Slide is closed**
+(`2026-08-26-add-slide-keyboard-control`) and its spec's "no keyboard cursor"
+sentence is gone, so a sweep must read the *live* specs rather than this
+paragraph. **Loopy** is the remaining hole, and whether a puzzle *may* ship
 without keyboard play is a collection-wide policy call, not a per-game one.
+
+**But "has a cursor" was the wrong question to have been counting.** That survey
+asked which games handle cursor *input*; it could not see whether the keys a
+game tests are keys the frontend *sends*. **Fourteen of the fifty-seven** had a
+binding that could never fire, and every one would have been scored OK — see
+the §3.8a bullet below and task 3.5. A quarter of the collection, against a trap
+this playbook has documented for months, is the sharpest form of this proposal's
+own thesis: a per-game obligation with no mechanical check is live everywhere
+nobody has looked lately.
 
 **A related question the sweep should answer rather than assume**: 45 of 57 games
 declare no `requestKeys`, so they put no keys on the on-screen keyboard. For a

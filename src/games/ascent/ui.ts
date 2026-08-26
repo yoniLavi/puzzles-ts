@@ -19,6 +19,7 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
+  isEraseKey,
   isMouseDown,
   isMouseDrag,
   LEFT_BUTTON,
@@ -734,7 +735,7 @@ export function interpretAscentMove(
   if (isMouseDown(button) && (gx < 0 || gy < 0 || gx >= w || gy >= h)) uiClear(ui);
 
   /* Enter/Backspace when not typing emulates a mouse click. */
-  if (button === 8 && ui.typingCell === CELL_NONE) button = CURSOR_SELECT2;
+  if (isEraseKey(button) && ui.typingCell === CELL_NONE) button = CURSOR_SELECT2;
   if (
     isCursorSelect(button) &&
     ui.cshow === CSHOW_KEYBOARD &&
@@ -775,7 +776,7 @@ export function interpretAscentMove(
   }
 
   /* Backspace while typing */
-  if (button === 8 && ui.typingCell !== CELL_NONE) {
+  if (isEraseKey(button) && ui.typingCell !== CELL_NONE) {
     ui.typingNumber = Math.trunc(ui.typingNumber / 10);
     if (ui.typingNumber === 0) ui.typingCell = CELL_NONE;
     return UI_UPDATE;

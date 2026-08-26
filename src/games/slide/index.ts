@@ -36,6 +36,7 @@ import {
   CURSOR_SELECT2,
   cursorDelta,
   gridCursorMove,
+  isCancelKey,
   isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
@@ -121,12 +122,6 @@ function isStepKey(button: number): boolean {
   return (
     button === CURSOR_SELECT || button === CURSOR_SELECT2 || button === 0x20 // ' '
   );
-}
-
-/** Escape (27) or Delete/Backspace/Clear (127, which is what `puzzleKeyMap`
- * sends for all three) — the collection's "put it back down" keys. */
-function isCancelKey(button: number): boolean {
-  return button === 27 || button === 127;
 }
 
 /**

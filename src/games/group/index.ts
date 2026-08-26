@@ -55,15 +55,12 @@ import {
   CURSOR_SELECT2,
   gridCursorMove,
   isCursorMove,
+  isEraseKey,
+  isMouseDown,
+  isMouseDrag,
+  isMouseRelease,
   LEFT_BUTTON,
-  LEFT_DRAG,
-  LEFT_RELEASE,
-  MIDDLE_BUTTON,
-  MIDDLE_DRAG,
-  MIDDLE_RELEASE,
   RIGHT_BUTTON,
-  RIGHT_DRAG,
-  RIGHT_RELEASE,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -120,15 +117,6 @@ import {
   validateDesc,
   validateParams,
 } from "./state.ts";
-
-const BACKSPACE = 8;
-
-const isMouseDown = (b: number): boolean =>
-  b === LEFT_BUTTON || b === MIDDLE_BUTTON || b === RIGHT_BUTTON;
-const isMouseDrag = (b: number): boolean =>
-  b === LEFT_DRAG || b === MIDDLE_DRAG || b === RIGHT_DRAG;
-const isMouseRelease = (b: number): boolean =>
-  b === LEFT_RELEASE || b === MIDDLE_RELEASE || b === RIGHT_RELEASE;
 
 function presets(): PresetMenu<GroupParams> {
   return {
@@ -311,10 +299,10 @@ function interpretMove(
     ui.hshow &&
     ((isChar(button) && fromChar(button, state.id) <= w) ||
       button === CURSOR_SELECT2 ||
-      button === BACKSPACE)
+      isEraseKey(button))
   ) {
     let n = fromChar(button, state.id);
-    if (button === CURSOR_SELECT2 || button === BACKSPACE) n = 0;
+    if (button === CURSOR_SELECT2 || isEraseKey(button)) n = 0;
 
     const cells: { x: number; y: number }[] = [];
     for (let i = 0; i < ui.odn; i++) {

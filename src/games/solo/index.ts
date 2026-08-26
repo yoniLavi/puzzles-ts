@@ -59,6 +59,7 @@ import {
   CURSOR_SELECT2,
   CURSOR_UP,
   isCursorMove,
+  isEraseKey,
   LEFT_BUTTON,
   RIGHT_BUTTON,
   stripModifiers,
@@ -276,7 +277,7 @@ function interpretMove(
   else if (button >= 97 && button <= 122 && button - 97 + 10 <= cr)
     n = button - 97 + 10;
   else if (button >= 65 && button <= 90 && button - 65 + 10 <= cr) n = button - 65 + 10;
-  else if (button === CURSOR_SELECT2 || button === 8 || button === 127) n = 0;
+  else if (button === CURSOR_SELECT2 || isEraseKey(button)) n = 0;
 
   if (ui.hshow && n >= 0) {
     const i = ui.hy * cr + ui.hx;

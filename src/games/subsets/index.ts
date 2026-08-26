@@ -32,9 +32,12 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import {
+  BACKSPACE,
   CURSOR_SELECT,
   CURSOR_SELECT2,
   cursorDelta,
+  DELETE,
+  isEraseKey,
   isMouseDown,
   LEFT_BUTTON,
   MIDDLE_BUTTON,
@@ -87,8 +90,6 @@ import {
   validateDesc,
   validateParams,
 } from "./state.ts";
-
-const BACKSPACE = 8;
 
 function newUi(_state: SubsetsState): SubsetsUi {
   return { cx: 0, cy: 0, cshow: false, highlightSet: null, highlightCell: null };
@@ -197,7 +198,7 @@ function interpretMove(
 
   // --- pick the targeted slot (cursor select or pointer) --------------------
   const isSelect =
-    button === CURSOR_SELECT || button === CURSOR_SELECT2 || button === BACKSPACE;
+    button === CURSOR_SELECT || button === CURSOR_SELECT2 || isEraseKey(button);
 
   let gx: number;
   let gy: number;
@@ -242,7 +243,9 @@ function interpretMove(
         oldtype === "unknown" ? "cleared" : oldtype === "cleared" ? "known" : "unknown";
       break;
     case MIDDLE_BUTTON:
+    // Both erase codes, spelled out because a `case` cannot call `isEraseKey`.
     case BACKSPACE:
+    case DELETE:
       newtype = "unknown";
       break;
     default:

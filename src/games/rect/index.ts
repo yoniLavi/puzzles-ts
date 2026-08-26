@@ -16,6 +16,8 @@ import { atof, dimensionParamConfig, formatG } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  gridCursorMove,
+  isCancelKey,
   isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
@@ -132,24 +134,19 @@ function resetUi(ui: RectUi): void {
 /** Upstream `move_cursor` (misc.c): clamp-move the cursor; a first press only
  * reveals it. Returns whether the UI changed. */
 function moveCursor(ui: RectUi, button: number, w: number, h: number): boolean {
-  let dx = 0;
-  let dy = 0;
-  if (button === 0x0209)
-    dy = -1; // CURSOR_UP
-  else if (button === 0x020a)
-    dy = 1; // CURSOR_DOWN
-  else if (button === 0x020c)
-    dx = 1; // CURSOR_RIGHT
-  else if (button === 0x020b) dx = -1; // CURSOR_LEFT
-  const ox = ui.cursorX;
-  const oy = ui.cursorY;
-  ui.cursorX = Math.min(Math.max(ui.cursorX + dx, 0), w - 1);
-  ui.cursorY = Math.min(Math.max(ui.cursorY + dy, 0), h - 1);
+  const moved = gridCursorMove(button, ui.cursorX, ui.cursorY, w, h);
+  if (moved) {
+    ui.cursorX = moved.x;
+    ui.cursorY = moved.y;
+  }
   if (!ui.cursorVisible) {
     ui.cursorVisible = true;
     return true;
   }
-  return ui.cursorX !== ox || ui.cursorY !== oy;
+  // `gridCursorMove` returns null exactly when the move was a clamped no-op,
+  // which is the same question the old hand-written before/after comparison
+  // was asking.
+  return moved !== null;
 }
 
 function interpretMove(
@@ -208,10 +205,8 @@ function interpretMove(
       startdrag = true;
       active = true;
     }
-  } else if (button === 8 || button === 27 || button === 127) {
-    // Backspace / Escape: cancel. 127 is what `puzzleKeyMap` sends for
-    // Backspace; upstream's own `'\b'` (8) is kept because it costs nothing,
-    // but on its own it was a key that could never fire.
+  } else if (isCancelKey(button)) {
+    // Backspace / Escape: cancel.
     if (!ui.cursorDragging) {
       ui.cursorVisible = false;
     } else {

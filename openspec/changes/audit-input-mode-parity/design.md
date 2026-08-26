@@ -38,6 +38,31 @@ press works, not that the game is playable — the §3.8c trap breaks the *drag*
 while leaving the press intact, so a game can pass the current sweep and still be
 unusable with a finger.
 
+**And a third, found the hard way on 2026-08-26: no behavioural sweep of any
+depth can see a key the frontend never sends.** Feed `interpretMove` the button
+`8` and a game testing `button === 8` handles it perfectly — through a real
+`Midend`, at any tier. The defect is not in the game; it is that nothing
+upstream of it emits `8`, because `puzzleKeyMap` sends `127` for Backspace. That
+is invisible to the instrument this design chose, and it had shipped in **fourteen
+of the fifty-seven games** — a quarter of the collection, found in one pass by a
+check nobody had built, against a trap the playbook has carried for months.
+Ascent's cost a keyboard player any way to correct a typo mid-number.
+
+The check that sees it is a **source scan**, not a behavioural test, and that
+follows from what is being asserted: *that no behaviour exists*. Read the codes
+`puzzleKeyMap` can produce, read the codes the game sources compare against,
+fail on a comparison with no producer. Built and green as
+`src/engine/emittable-keys.test.ts`; task 3.5 is what remains.
+
+**The same instrument check applies to this document.** The §3.8a bullet in the
+proposal asserted that `MOD_NUM_KEYPAD` is never set. It is set, and always has
+been — an audit acting on that sentence would have deleted Cube's and Bricks'
+*working, tested* keypad bindings as dead code. So: **before convicting a
+binding, check what the frontend does, in the frontend, not in the playbook.**
+Two of this repo's four documented input traps turned out to be misstated when
+somebody finally looked, which is the same lesson `docs/test-strength.md` §7
+records about measurements.
+
 So: derive coverage mechanically *through the registry and the real `Midend`*
 (the existing guard's own method — it works on a game the day it is registered,
 without anybody remembering), and confirm a sample by hand in the browser. The
@@ -75,6 +100,21 @@ the audit should not let one stand in for the other.
 evidence for this phase (owner directive, 2026-07-28) and "WebKit untested" is
 not an open gap.
 
+**Two operational notes for whoever does the browser pass**, both of which cost
+this project time on 2026-08-26 and neither of which is guessable:
+
+- **The colour-scheme setting defaults to `"light"`, not `"system"`**, so
+  Playwright's `emulateMedia({colorScheme:'dark'})` does nothing — the media
+  query is never consulted. `localStorage.colorScheme` is only an early-paint
+  mirror. The setting lives in IndexedDB: database `PuzzleAppData`, store
+  `settings`, record `puzzle-common`, field `data.colorScheme`. Write it, then
+  reload, then confirm `document.documentElement.className` contains `wa-dark`
+  *before* screenshotting anything.
+- **A keypress sent immediately after `page.goto` is swallowed** by the focus
+  redirect. Send a throwaway key or wait before concluding that the first press
+  did nothing — an input sweep is precisely the activity that would misread it
+  as a defect.
+
 ## D4. Fix inline, or file — the split
 
 `audit-author-known-issues` is the precedent: it fixed three live defects in the
@@ -88,15 +128,29 @@ fixes whose only risk is regressing another mode, which the guard now covers.
 **File separately** when a new interaction has to be *designed* — Loopy's missing
 keyboard is not a binding, it is "where does a cursor live on eighteen different
 tilings", which is a change of its own with its own design. Slide is the worked
-example of that shape and is already filed.
+example of that shape, and it is now **done and archived**
+(`2026-08-26-add-slide-keyboard-control`), so it is a reference rather than a
+dependency.
 
 The distinction is not size, it is whether anybody has to make a product
 decision.
 
+**A third case, which neither branch handles and which this audit will meet
+again: N games sharing one defect usually means the layer below is wrong.** The
+dead-Escape finding presented as three per-game bugs and D4 as written would
+have filed three per-game fixes; the actual repair was one line in
+`view-interactive.ts`, and fixing it per-game would have left three files each
+testing a code nothing sends. Likewise the seven dead erase keys were not seven
+bugs but one missing shared predicate — now `isEraseKey`/`isCancelKey` in
+`engine/pointer.ts`. **So before recording the second instance of a finding, ask
+what would have to be true for both, and fix that instead.** This is where
+`needsRightButton` (task 4b.1) most likely lands too: eighteen games declaring
+a capability nothing reads is not eighteen findings.
+
 ## D5. Loopy is the interesting policy question
 
-Loopy and Slide are the two games whose specs normatively say they have no
-keyboard. Slide is being fixed. Loopy's input is per-*edge* across eighteen
+Loopy is now the **only** game whose spec normatively says it has no keyboard —
+Slide's sentence went with `2026-08-26-add-slide-keyboard-control`. Loopy's input is per-*edge* across eighteen
 tilings including aperiodic ones, so "move the cursor to the next edge" has no
 canonical meaning — upstream gives it no keyboard either (checked against
 `loopy.c` in the sibling clone: **zero** `CURSOR_` references, so the port

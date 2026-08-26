@@ -48,16 +48,10 @@ import {
   CURSOR_SELECT2,
   CURSOR_UP,
   isCursorMove,
-  LEFT_BUTTON,
-  LEFT_DRAG,
-  LEFT_RELEASE,
-  MIDDLE_BUTTON,
-  MIDDLE_DRAG,
-  MIDDLE_RELEASE,
+  isMouseDown,
+  isMouseDrag,
+  isMouseRelease,
   MOD_SHFT,
-  RIGHT_BUTTON,
-  RIGHT_DRAG,
-  RIGHT_RELEASE,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
@@ -95,13 +89,6 @@ const TAB = 9;
  * scratch grid). Upstream's bound is INT_MAX/3; a few thousand is plenty
  * and keeps the O(E²) crossing scan responsive. */
 const MAX_POINTS = 2000;
-
-const isMouseDown = (b: number): boolean =>
-  b === LEFT_BUTTON || b === MIDDLE_BUTTON || b === RIGHT_BUTTON;
-const isMouseDrag = (b: number): boolean =>
-  b === LEFT_DRAG || b === MIDDLE_DRAG || b === RIGHT_DRAG;
-const isMouseRelease = (b: number): boolean =>
-  b === LEFT_RELEASE || b === MIDDLE_RELEASE || b === RIGHT_RELEASE;
 
 /** Nearest vertex within `DRAG_THRESHOLD` pixels of `(x,y)`, or -1
  * (upstream `point_under_mouse`). */

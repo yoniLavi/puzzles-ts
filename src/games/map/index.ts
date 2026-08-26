@@ -19,6 +19,7 @@ import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
@@ -81,16 +82,16 @@ function newState(p: MapParams, desc: string): MapState {
 
 // --- cursor ----------------------------------------------------------
 
-/** Upstream `move_cursor` (no wrap): clamp-move; always sets the position. */
+/** Upstream `move_cursor` (no wrap): clamp-move; always sets the position —
+ * which is `gridCursorMove` plus the documented `?? { x, y }` idiom for games
+ * that want a position back even when the edge clamped the move. */
 function moveCursor(ui: MapUi, button: number, w: number, h: number): void {
-  let dx = 0;
-  let dy = 0;
-  if (button === 0x0209) dy = -1;
-  else if (button === 0x020a) dy = 1;
-  else if (button === 0x020c) dx = 1;
-  else if (button === 0x020b) dx = -1;
-  ui.curX = Math.min(Math.max(ui.curX + dx, 0), w - 1);
-  ui.curY = Math.min(Math.max(ui.curY + dy, 0), h - 1);
+  const moved = gridCursorMove(button, ui.curX, ui.curY, w, h) ?? {
+    x: ui.curX,
+    y: ui.curY,
+  };
+  ui.curX = moved.x;
+  ui.curY = moved.y;
 }
 
 // --- moves -----------------------------------------------------------

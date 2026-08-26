@@ -46,6 +46,47 @@ export function isMouseRelease(button: number): boolean {
   return button >= LEFT_RELEASE && button <= RIGHT_RELEASE;
 }
 
+// --- the erase and cancel keys -------------------------------------
+
+/** Upstream's `'\b'`. **This frontend never sends it** — see {@link isEraseKey}. */
+export const BACKSPACE = 8;
+/** Escape, delivered whenever no pointer gesture is in flight (`app-shell` spec,
+ * "Escape reaches the puzzle when there is no gesture to cancel"). */
+export const ESCAPE = 27;
+/** What `puzzleKeyMap` actually sends for Backspace, Delete **and** Clear. */
+export const DELETE = 127;
+
+/**
+ * **"Rub this out"** — clear a cell, delete a typed digit.
+ *
+ * Shared because getting it wrong is invisible and has happened seven times.
+ * Upstream writes `button == '\b'`, and a faithful transcription is a **key that
+ * can never fire**: this frontend maps Backspace to `127`, not `8`. Ascent,
+ * Clusters, Sticks and Unruly each shipped an `8`-only test — Ascent's cost a
+ * keyboard player any way to correct a typo mid-number — and Pearl and
+ * Rectangles the same in their cancel arms.
+ *
+ * Both codes are accepted: `8` costs nothing and keeps upstream's binding true
+ * for any frontend that does send it. The point is that no game decides this
+ * again from memory (docs/games/input.md § "The numeric keypad never arrives").
+ */
+export function isEraseKey(button: number): boolean {
+  return button === BACKSPACE || button === DELETE;
+}
+
+/**
+ * **"Put it back down"** — abandon a drag or a keyboard selection, without
+ * erasing anything.
+ *
+ * The erase keys plus Escape. A game with both an erase and a cancel meaning
+ * tests them in separate branches; a game with only one of them uses only that
+ * predicate. Exemplars: `slide` (cancel a keyboard grab), `pearl` and `rect`
+ * (abandon a drag).
+ */
+export function isCancelKey(button: number): boolean {
+  return button === ESCAPE || isEraseKey(button);
+}
+
 // --- keyboard modifier masks (upstream puzzles.h) ------------------
 
 /** Set by the frontend on a press/drag/release that came from a finger or a

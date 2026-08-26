@@ -15,17 +15,17 @@ import type { Game, SolveResult, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
+  CURSOR_DOWN,
+  CURSOR_LEFT,
+  CURSOR_RIGHT,
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  CURSOR_UP,
   isCursorMove,
-  LEFT_BUTTON,
-  LEFT_DRAG,
-  LEFT_RELEASE,
-  MIDDLE_BUTTON,
-  MIDDLE_DRAG,
-  MIDDLE_RELEASE,
+  isMouseDown,
+  isMouseDrag,
+  isMouseRelease,
   RIGHT_BUTTON,
-  RIGHT_DRAG,
   RIGHT_RELEASE,
   stripModifiers,
 } from "../../engine/pointer.ts";
@@ -98,13 +98,6 @@ function newUi(_state: TracksState): TracksUi {
     cursorActive: false,
   };
 }
-
-const isMouseDown = (b: number) =>
-  b === LEFT_BUTTON || b === MIDDLE_BUTTON || b === RIGHT_BUTTON;
-const isMouseDrag = (b: number) =>
-  b === LEFT_DRAG || b === MIDDLE_DRAG || b === RIGHT_DRAG;
-const isMouseRelease = (b: number) =>
-  b === LEFT_RELEASE || b === MIDDLE_RELEASE || b === RIGHT_RELEASE;
 
 /** A single square-flip move (upstream `square_flip_str` — a toggle). */
 function squareFlipMove(
@@ -233,8 +226,8 @@ function interpretMove(
   }
 
   if (isCursorMove(button)) {
-    const dx = button === 0x020b ? -1 : button === 0x020c ? 1 : 0; // CURSOR_LEFT/RIGHT
-    const dy = button === 0x020a ? 1 : button === 0x0209 ? -1 : 0; // CURSOR_DOWN/UP
+    const dx = button === CURSOR_LEFT ? -1 : button === CURSOR_RIGHT ? 1 : 0;
+    const dy = button === CURSOR_DOWN ? 1 : button === CURSOR_UP ? -1 : 0;
     if (!ui.cursorActive) {
       ui.cursorActive = true;
       return UI_UPDATE;

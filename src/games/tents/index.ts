@@ -19,16 +19,12 @@ import {
   CURSOR_SELECT2,
   gridCursorMove,
   isCursorMove,
+  isMouseDrag,
+  isMouseRelease,
   LEFT_BUTTON,
-  LEFT_DRAG,
-  LEFT_RELEASE,
-  MIDDLE_DRAG,
-  MIDDLE_RELEASE,
   MOD_CTRL,
   MOD_SHFT,
   RIGHT_BUTTON,
-  RIGHT_DRAG,
-  RIGHT_RELEASE,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
@@ -91,11 +87,6 @@ function newUi(_state: TentsState): TentsUi {
     cursorVisible: false,
   };
 }
-
-const isMouseDrag = (b: number) =>
-  b === LEFT_DRAG || b === MIDDLE_DRAG || b === RIGHT_DRAG;
-const isMouseRelease = (b: number) =>
-  b === LEFT_RELEASE || b === MIDDLE_RELEASE || b === RIGHT_RELEASE;
 
 function interpretMove(
   state: TentsState,

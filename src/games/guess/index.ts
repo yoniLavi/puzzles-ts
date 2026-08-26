@@ -19,6 +19,7 @@ import {
   CURSOR_SELECT2,
   gridCursorMove,
   isCursorMove,
+  isEraseKey,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
@@ -363,11 +364,7 @@ function interpretMove(
     if (ui.pegCur + 1 < npegs + (ui.markable ? 1 : 0)) ui.pegCur++;
     return UI_UPDATE;
   }
-  if (
-    button === 0x44 ||
-    button === 0x64 ||
-    button === 0x08 /* 'D' | 'd' | backspace */
-  ) {
+  if (button === 0x44 || button === 0x64 || isEraseKey(button) /* 'D' | 'd' */) {
     if (!ui.displayCur || ui.currPegs[ui.pegCur] !== 0) {
       ui.displayCur = true;
       setPeg(params, ui, ui.pegCur, 0);

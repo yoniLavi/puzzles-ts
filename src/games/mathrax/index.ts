@@ -33,6 +33,7 @@ import {
   CURSOR_SELECT2,
   gridCursorMove,
   isCursorMove,
+  isEraseKey,
   LEFT_BUTTON,
   RIGHT_BUTTON,
   stripModifiers,
@@ -212,12 +213,11 @@ function interpretMove(
     return UI_UPDATE;
   }
 
-  // Digit entry / clear. `CURSOR_SELECT2` is the space bar; `8`/`127` are
-  // backspace and delete (upstream binds only `'\b'`, but the web frontend
-  // delivers Delete as 127 and there is nothing else it could mean here).
+  // Digit entry / clear. `CURSOR_SELECT2` is the space bar; `isEraseKey` is
+  // backspace/delete (upstream binds only `'\b'`, which this frontend never
+  // sends — see `engine/pointer.ts`).
   const isDigit = button >= 49 && button <= 57; // '1'..'9'
-  const isClear =
-    button === CURSOR_SELECT2 || button === 8 || button === 127 || button === 48;
+  const isClear = button === CURSOR_SELECT2 || isEraseKey(button) || button === 48;
   if (ui.cshow && (isDigit || isClear)) {
     const c = isDigit ? button - 48 : 0;
     const i = ui.hy * o + ui.hx;

@@ -19,6 +19,7 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   cursorDelta,
+  isCancelKey,
   isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
@@ -231,10 +232,8 @@ function interpretMove(
     }
   }
 
-  if (button === 27 || button === 8 || button === 127) {
-    // Escape / backspace: cancel a drag. 127 is what `puzzleKeyMap` sends for
-    // Backspace; upstream's own `'\b'` (8) is kept because it costs nothing,
-    // but on its own it was a key that could never fire.
+  if (isCancelKey(button)) {
+    // Escape / backspace: cancel a drag.
     if (ui.ndragcoords >= 0) {
       ui.ndragcoords = -1;
       return UI_UPDATE;

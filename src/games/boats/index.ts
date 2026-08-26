@@ -43,6 +43,7 @@ import {
   CURSOR_SELECT2,
   gridCursorMove,
   isCursorMove,
+  isEraseKey,
   isMouseDown,
   isMouseDrag,
   isMouseRelease,
@@ -121,8 +122,6 @@ import {
   WATER,
 } from "./state.ts";
 import { adjustShips, validateState } from "./validate.ts";
-
-const BACKSPACE = 8;
 
 function presets(): PresetMenu<BoatsParams> {
   return {
@@ -241,7 +240,7 @@ function interpretMove(
 
   if (
     ui.cursor &&
-    (button === CURSOR_SELECT || button === CURSOR_SELECT2 || button === BACKSPACE)
+    (button === CURSOR_SELECT || button === CURSOR_SELECT2 || isEraseKey(button))
   ) {
     const x = ui.cx;
     const y = ui.cy;

@@ -31,6 +31,7 @@ import {
   CURSOR_SELECT2,
   gridCursorMove,
   isCursorMove,
+  isEraseKey,
   LEFT_BUTTON,
   RIGHT_BUTTON,
   stripModifiers,
@@ -106,11 +107,6 @@ function presets(): PresetMenu<SeismicParams> {
 }
 
 // --- input -----------------------------------------------------------------
-
-/** ASCII backspace and delete. Upstream binds only `'\b'`, but the web frontend
- * delivers Delete as 127 and there is nothing else it could mean here. */
-const BACKSPACE = 8;
-const DELETE = 127;
 
 function interpretMove(
   state: SeismicState,
@@ -195,11 +191,7 @@ function interpretMove(
   }
 
   const isDigit = button >= 0x31 && button <= 0x39; // '1'..'9'
-  const isClear =
-    button === CURSOR_SELECT2 ||
-    button === BACKSPACE ||
-    button === DELETE ||
-    button === 0x30; // '0'
+  const isClear = button === CURSOR_SELECT2 || isEraseKey(button) || button === 0x30;
   if (ui.cshow && (isDigit || isClear)) {
     const n = isDigit ? button - 0x30 : 0;
     const i = ui.hy * w + ui.hx;

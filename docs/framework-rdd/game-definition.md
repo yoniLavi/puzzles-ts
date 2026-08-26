@@ -72,6 +72,61 @@ suppression stays local, as today.
 player-reachable action is still reachable from all three input modes or the
 gap is declared (and surfaces in the conformance report, not in silence).
 
+### What has already been lifted, and what is deliberately still waiting
+
+> This subsection is **not** fiction: it records a survey run on 2026-08-26 of
+> what input logic could move to shared code *today*, against the criterion
+> [`engine/border-grid.ts`](../../src/engine/border-grid.ts) states — not "is
+> this the same text" but **"would a change here have to happen in every copy at
+> once?"** It is here rather than in `docs/games/` because it is the evidence
+> for the gesture table's economics, and because the "declined" half is the part
+> a future session most needs, so it is not re-proposed each time.
+
+**Lifted, because each is one *frontend fact* with N restatements** — the class
+where a copy is not merely redundant but silently wrong the day the fact moves:
+
+| Fact | Was | Now |
+| --- | --- | --- |
+| Which codes mean erase / cancel | 14 of 57 games, most of them **dead** (`8`, which this frontend never sends) | `isEraseKey` / `isCancelKey` |
+| Which codes are a mouse press / drag / release | 5 games kept private copies after 27 others were consolidated | `isMouseDown` and siblings, now guarded |
+| Whether Escape reaches a game at all | swallowed by the shell; three games' cancel arms unreachable | delivered as `27` (`app-shell` spec) |
+
+Guarded by [`emittable-keys.test.ts`](../../src/engine/emittable-keys.test.ts),
+which derives both lists from source — `puzzleKeyMap`'s codes and `pointer.ts`'s
+exports — so a helper added to the framework is enforced the day it lands. That
+is the "contracts are enforced by machines" principle applied to input, and it
+is available *without* the framework existing.
+
+**Declined for now, with reasons, because they are not that class:**
+
+- **Digit parsing** (`button >= 49 && button <= 57`, `button - 48`; 11 games).
+  Looks identical, is not one fact: `'0'.charCodeAt(0)` cannot drift, and every
+  caller differs in the part that matters — the bound (`<= w`, `< n`,
+  `<= ncolours`), the offset convention, and whether `0` clears or means ten.
+  A shared helper would save a line and leave the decisions untouched. **This is
+  a shape for the gesture table to own** (`digits(1..w) → move`), not a helper.
+- **Cursor visibility** — the reveal-on-arrow / hide-on-press idiom, in **42 of
+  57 games under six different field names** (`hshow`, `cshow`, `curVisible`,
+  `cursorVisible`, `cursor`, `displayCur`). This is the collection's largest
+  input duplication and the clearest thing the framework should own. It is
+  declined *today* because extracting it by hand is a 42-game `Ui` rename with
+  no correctness payoff — the idiom is stable, so no copy is at risk of going
+  wrong. The win arrives only when the framework assembles `interpretMove` and
+  games stop naming the field at all. **Do not do this as a standalone
+  refactor**; it is the gesture table's first customer and its best argument.
+- **The Latin-family highlight-then-type flow** (Solo, Keen, Towers, Mathrax,
+  Unequal, Seismic, Group, Salad). Genuinely similar and genuinely divergent —
+  sticky pencil, mark-all semantics, and what a re-press of the held digit does
+  differ per game and are *player-visible*. `border-grid.ts` is the precedent
+  for how to do this right when it is done: extract the mechanic the player
+  operates, leave every game its own move type and its own semantics.
+
+The pattern across all three declines: **a shared helper is right when the thing
+shared is a fact, and a framework is right when the thing shared is a shape.**
+Helpers were the correct tool for the first table and are the wrong tool for the
+second — which is the case for the gesture table, made from measurements rather
+than from taste.
+
 ## Solving, hinting, generating
 
 **You declare:** the technique ladder (or a planner, or a bespoke loop with

@@ -24,6 +24,7 @@ import {
   CURSOR_SELECT2,
   gridCursorMove,
   isCursorMove,
+  isEraseKey,
   LEFT_BUTTON,
   RIGHT_BUTTON,
   stripModifiers,
@@ -82,7 +83,6 @@ function newUi(_state: SlantState): SlantUi {
 // Keyboard char codes handled directly.
 const KEY_BACKSLASH = 92;
 const KEY_SLASH = 47;
-const KEY_BACKSPACE = 8;
 
 /** Cycle a square's value: left-click runs blank→`\`→`/`→blank
  * ("clockwise"), right-click the reverse. */
@@ -152,7 +152,7 @@ function interpretMove(
     return UI_UPDATE;
   }
 
-  if (button === KEY_BACKSLASH || button === KEY_SLASH || button === KEY_BACKSPACE) {
+  if (button === KEY_BACKSLASH || button === KEY_SLASH || isEraseKey(button)) {
     const x = ui.cx;
     const y = ui.cy;
     const v: Slash = button === KEY_BACKSLASH ? -1 : button === KEY_SLASH ? 1 : 0;

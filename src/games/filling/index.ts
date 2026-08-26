@@ -24,8 +24,10 @@ import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
+  ESCAPE,
   gridCursorMove,
   isCursorMove,
+  isEraseKey,
   LEFT_BUTTON,
   LEFT_DRAG,
   stripModifiers,
@@ -61,9 +63,6 @@ import {
   validateDesc,
   validateParams,
 } from "./state.ts";
-
-const ESCAPE = 27;
-const BACKSPACE = 8;
 
 function newUi(_state: FillingState): FillingUi {
   return { sel: null, cx: 0, cy: 0, curVisible: false, keydragging: false };
@@ -154,9 +153,9 @@ function interpretMove(
     return UI_UPDATE;
   }
 
-  // A digit (backspace ≡ '0') fills the selection, or the cursor cell.
+  // A digit (an erase key ≡ '0') fills the selection, or the cursor cell.
   let key = button;
-  if (key === BACKSPACE) key = 48; // '0'
+  if (isEraseKey(key)) key = 48; // '0'
   if (key < 48 || key > 57) return null; // not a digit → unused
   const value = key - 48;
   if (value > (w === 2 && h === 2 ? 3 : Math.max(w, h))) return null;

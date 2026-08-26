@@ -37,7 +37,9 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
+  DELETE,
   isCursorMove,
+  isEraseKey,
   LEFT_BUTTON,
   RIGHT_BUTTON,
   stripModifiers,
@@ -136,7 +138,6 @@ const KEY_1 = 49;
 const KEY_2 = 50;
 const KEY_3 = 51;
 const KEY_0 = 48;
-const KEY_BACKSPACE = 8;
 
 function presets(): PresetMenu<UndeadParams> {
   return {
@@ -195,7 +196,9 @@ function interpretMove(
     const xi = xinfo[ui.hx + ui.hy * stride];
     if (xi >= 0 && !common.fixed[xi]) {
       let ccLocal = cc;
-      if (ccLocal >= 0 && state.guess[xi] === 1 << ccLocal) ccLocal = 127; // already there → delete
+      // Already there → treat as a delete. `DELETE` is being used as a
+      // sentinel value here, not as a button the frontend sent.
+      if (ccLocal >= 0 && state.guess[xi] === 1 << ccLocal) ccLocal = DELETE;
       const place = (monster: number): UndeadMove | null | UiUpdate => {
         if (!ui.hcursor) ui.hshow = false;
         if (state.guess[xi] === monster) return ui.hcursor ? null : UI_UPDATE;
@@ -212,8 +215,8 @@ function interpretMove(
         button === KEY_e ||
         button === CURSOR_SELECT2 ||
         button === KEY_0 ||
-        button === KEY_BACKSPACE ||
-        ccLocal === 127
+        isEraseKey(button) ||
+        ccLocal === DELETE
       ) {
         if (!ui.hcursor) ui.hshow = false;
         if (state.guess[xi] === MON_NONE && state.pencils[xi] === 0)
@@ -260,7 +263,7 @@ function interpretMove(
         button === KEY_e ||
         button === CURSOR_SELECT2 ||
         button === KEY_0 ||
-        button === KEY_BACKSPACE
+        isEraseKey(button)
       ) {
         if (state.pencils[xi] === 0) return ui.hcursor ? null : UI_UPDATE;
         move = { type: "clear", cell: xi };

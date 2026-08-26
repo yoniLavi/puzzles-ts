@@ -61,6 +61,7 @@ import {
   CURSOR_SELECT2,
   CURSOR_UP,
   isCursorMove,
+  isEraseKey,
   LEFT_BUTTON,
   MOD_CTRL,
   MOD_SHFT,
@@ -308,7 +309,7 @@ function interpretMove(
   }
 
   const isDigit = button >= 48 && button <= 57 && button - 48 <= w;
-  const isClear = button === CURSOR_SELECT2 || button === 8 || button === 127;
+  const isClear = button === CURSOR_SELECT2 || isEraseKey(button);
   if (ui.hshow && (isDigit || isClear)) {
     const n = isClear ? 0 : button - 48;
     const i = ui.hy * w + ui.hx;

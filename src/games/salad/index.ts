@@ -32,6 +32,7 @@ import {
   CURSOR_SELECT2,
   gridCursorMove,
   isCursorMove,
+  isEraseKey,
   LEFT_BUTTON,
   MIDDLE_BUTTON,
   RIGHT_BUTTON,
@@ -112,7 +113,7 @@ function presets(): PresetMenu<SaladParams> {
  * secondary-select key and **Space** (which `docs/salad.md` documents as a
  * clear but the C never wired up) are fork additions — see `design.md`. */
 function isClearKey(button: number): boolean {
-  return button === 8 || button === 127 || button === 32 || button === CURSOR_SELECT2;
+  return isEraseKey(button) || button === 32 || button === CURSOR_SELECT2;
 }
 
 /** The symbol a key stands for, or `null` when it names none. Upstream accepts

@@ -24,6 +24,7 @@ import {
   CURSOR_SELECT2,
   gridCursorMove,
   isCursorMove,
+  isEraseKey,
   LEFT_BUTTON,
   MIDDLE_BUTTON,
   RIGHT_BUTTON,
@@ -151,7 +152,7 @@ function interpretMove(
     ui.cursor &&
     (button === CURSOR_SELECT ||
       button === CURSOR_SELECT2 ||
-      button === 8 ||
+      isEraseKey(button) ||
       button === 48 ||
       button === 49 ||
       button === 50);

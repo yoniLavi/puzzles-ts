@@ -69,7 +69,7 @@
       diff key runs out of bits…" and the colour-span paragraph under the
       escape hatch.
 - [x] 4.4 `openspec validate add-slide-keyboard-control --strict`.
-- [ ] 4.5 Owner acceptance before archiving — it is player-visible.
+- [x] 4.5 Owner acceptance — given 2026-08-26.
 
 ## 5. Found while here
 

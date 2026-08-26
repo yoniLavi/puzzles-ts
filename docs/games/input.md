@@ -55,21 +55,28 @@ somewhere.
 
 ## The numeric keypad never arrives
 
-**This web frontend does not set `MOD_NUM_KEYPAD` — bind the bare digits too.**
-The view's `puzzleKeyMap` handles arrows/select/delete and then falls through
-to "any single character → its char code", so a number-pad `7` reaches
-`interpretMove` as the plain character `'7'`, never as `MOD_NUM_KEYPAD | '7'`.
-An upstream binding that tests the modified form is a **key that can never
-fire** — and the C build had the identical dead binding, so it never showed as
-a parity difference either.
+**A keypad binding must never be the only route to an input — bind the bare
+digits too.** This section said for a long time that "this web frontend does not
+set `MOD_NUM_KEYPAD`". **That was false**, and worth stating plainly because the
+wrong reason is more dangerous than no reason: `view-interactive.ts` sets the
+bit from `event.location === 3`, and has since the initial webapp version, so
+`MOD_NUM_KEYPAD | '7'` *does* fire. Cube ships a passing test asserting exactly
+that, and Bricks' comment calls the bit "load-bearing for the diagonals" — an
+audit acting on the old sentence would have deleted working code as dead.
 
-It bites hardest where the keypad is the *only* route to an input: Inertia's
-four diagonal moves are keypad-or-mouse upstream, so a keyboard-only player
-literally could not make them. Accept the bare digits as well as the modified
-ones (`stripModifiers(button)`, then look the character up) whenever the game
-binds no other meaning to those digits — a deliberate divergence that costs
-nothing and restores the input. Exemplar:
-[`inertia/index.ts`](../../src/games/inertia/index.ts) (`DIGIT_DIRECTIONS`).
+The real gap is narrower and still real. A numpad key only arrives as a **digit
+when Num Lock is on**: with it off, numpad 7 is `event.key === "Home"`, which
+`puzzleKeyMap` does not carry and the char-code fallback rejects for being
+longer than one character. And a laptop keyboard may have no numpad at all. So
+the keypad is a *convenience route*, never the only one.
+
+It bit hardest where it was the only one: Inertia's four diagonal moves are
+keypad-or-mouse upstream, so a keyboard-only player literally could not make
+them. Accept the bare digits as well as the modified ones (`stripModifiers`,
+then look the character up) whenever the game binds no other meaning to those
+digits. Exemplar: [`inertia/index.ts`](../../src/games/inertia/index.ts)
+(`DIGIT_DIRECTIONS`); guarded by
+[`emittable-keys.test.ts`](../../src/engine/emittable-keys.test.ts).
 
 **The same trap, one layer up: a whole feature can hang off a character this
 frontend never sends.** Upstream binds Slide's route-walking to
@@ -85,20 +92,33 @@ frontend does send (keeping the literal too costs nothing). Exemplars:
 [`slide/index.ts`](../../src/games/slide/index.ts) (`isStepKey`);
 Inertia's route-following accepts `CURSOR_SELECT`/`CURSOR_SELECT2`.
 
-**The cancel keys are the same trap, and were dead until `add-slide-keyboard-control`.**
-Upstream's "put it back down" arm tests Escape (27) and `'\b'` (8). This
-frontend sends **127** for Backspace, Delete *and* Clear — never 8 — and it used
-to swallow Escape whole rather than forwarding it. Pearl and Rectangles each
-shipped a `button === 27 || button === 8` arm in which *neither* code could ever
-arrive. Escape now reaches games as 27 whenever no pointer gesture is in flight
-(`app-shell` spec, "Escape reaches the puzzle when there is no gesture to
-cancel"), so **test `27` and `127`** — keeping `8` costs nothing.
+**The erase and cancel keys were the worst instance: fourteen of the
+fifty-seven games.** Upstream writes `button == '\b'` (8) to rub something out,
+and pairs it with Escape (27) to abandon a drag. This frontend sends **127** for
+Backspace, Delete *and* Clear — never 8 — and it used to swallow Escape whole
+rather than forwarding it. Ascent (twice; one of them the only way to correct a
+typo mid-number), Boats, Bricks, Clusters, Filling, Group, Guess, Rome, Slant,
+Sticks, Subsets, Undead and Unruly shipped a dead erase key, and Pearl and
+Rectangles a cancel arm in which *neither* code could arrive.
 
-Note the shape of that fix, because it generalises past keys: the dead binding
-was in the *games*, but the repair was in the **frontend**, and repairing only
-the games would have left three of them each accepting a code nothing sends.
-When a per-game obligation keeps being got wrong, check whether the layer below
-is the thing that is wrong.
+**Never write the codes again.** [`engine/pointer.ts`](../../src/engine/pointer.ts)
+exports `isEraseKey` (8 | 127) and `isCancelKey` (27 | 8 | 127); a game with both
+meanings tests them in separate branches. Escape reaches games as 27 whenever no
+pointer gesture is in flight (`app-shell` spec, "Escape reaches the puzzle when
+there is no gesture to cancel").
+
+Two things generalise past keys here, and both cost this project real defects:
+
+- **The repair belonged one layer down.** The dead bindings were in the games,
+  but fixing them per-game would have left seven files each carefully testing a
+  code nothing sends. When a per-game obligation keeps being got wrong, suspect
+  the layer below before writing the same fix an eighth time.
+- **A trap that has bitten seven times deserves a mechanical check, not a
+  paragraph.** [`emittable-keys.test.ts`](../../src/engine/emittable-keys.test.ts)
+  reads the codes `puzzleKeyMap` can actually produce and the codes the game
+  sources actually test, and fails on a test with no producer. It is a source
+  scan on purpose: what is being asserted is that no behaviour exists, which no
+  behavioural test can see — a game handed `8` directly handles it perfectly.
 
 ## Touch is stripped for you
 
@@ -175,6 +195,19 @@ that opens a menu (the menu needs the focus) and a keyboard activation of a
 button (that player is in the tab order deliberately).
 
 ## Keyboard cursors
+
+**Never restate anything `pointer.ts` exports.** Not the button codes, not the
+predicates, not a locally-named copy — and not a magic number where a named
+button exists (`button === 0x0209` is `CURSOR_UP` with the name hidden in a
+comment, where no rename can reach it). This is enforced, not requested:
+[`emittable-keys.test.ts`](../../src/engine/emittable-keys.test.ts) derives the
+export list from `pointer.ts` itself and fails on any game-local declaration
+that shadows one, so a helper added there is guarded on the day it lands.
+
+The rule earns its strictness from history: `isMouseDown` and its two siblings
+were promoted after **27** ports had each written their own, five games still
+had theirs afterwards, and every dead-key defect in this collection began life
+as a local copy of a frontend fact.
 
 **Use the shared helpers for the common shape; keep policy local.**
 [`engine/pointer.ts`](../../src/engine/pointer.ts) provides:

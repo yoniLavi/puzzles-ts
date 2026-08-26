@@ -31,6 +31,7 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
+  isEraseKey,
   isMouseDown,
   isMouseDrag,
   isMouseRelease,
@@ -95,8 +96,6 @@ import {
 const KEY_0 = 48;
 const KEY_1 = 49;
 const KEY_2 = 50;
-const KEY_BACKSPACE = 8;
-const KEY_DELETE = 127;
 
 // Numpad-flagged keys (the web frontend sets MOD_NUM_KEYPAD for the numpad).
 const NK = (ch: number): number => MOD_NUM_KEYPAD | ch;
@@ -258,8 +257,7 @@ function interpretMove(
     ui.cshow &&
     (button === CURSOR_SELECT ||
       button === CURSOR_SELECT2 ||
-      button === KEY_BACKSPACE ||
-      button === KEY_DELETE ||
+      isEraseKey(button) ||
       button === KEY_0 ||
       button === KEY_1 ||
       button === KEY_2)

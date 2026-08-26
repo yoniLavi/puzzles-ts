@@ -26,8 +26,8 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   cursorDelta,
+  isMouseDown,
   LEFT_BUTTON,
-  MIDDLE_BUTTON,
   MOD_SHFT,
   RIGHT_BUTTON,
   stripModifiers,
@@ -83,10 +83,6 @@ export interface RangeMistake {
 
 function newUi(_state: RangeState): RangeUi {
   return { r: 0, c: 0, cursorShow: false };
-}
-
-function isMouseDown(button: number): boolean {
-  return button === LEFT_BUTTON || button === MIDDLE_BUTTON || button === RIGHT_BUTTON;
 }
 
 /** The mark a cell becomes under a forward (right) or backward (left)

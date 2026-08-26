@@ -30,6 +30,7 @@ import {
   CURSOR_UP,
   gridCursorMove,
   isCursorMove,
+  isEraseKey,
   isMouseDrag,
   isMouseRelease,
   LEFT_BUTTON,
@@ -134,8 +135,6 @@ const DIGIT_DIRS: Readonly<Record<number, RomeDir>> = {
   54: FM_RIGHT, // '6'
 };
 
-const BACKSPACE = 8;
-
 /** Upstream `FROMCOORD`: C integer division, which **truncates toward zero**,
  * so a pixel inside the two-pixel border maps to row/column 0 rather than to
  * -1. `Math.trunc`, not the shared `fromCoord`'s floor (same idiom as Sticks). */
@@ -226,7 +225,7 @@ function interpretMove(
         ui.kmode = KEYMODE_MOVE;
         return { kind: pencil ? "pencil" : "place", x, y, dir };
       }
-      if (button === BACKSPACE) {
+      if (isEraseKey(button)) {
         ui.kmode = KEYMODE_MOVE;
         return { kind: "place", x, y, dir: null };
       }

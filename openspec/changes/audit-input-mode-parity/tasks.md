@@ -20,9 +20,12 @@
       sequences, long-press-as-`RIGHT_BUTTON` (§3.8c), two-finger tap, and any
       game whose gesture needs a pause mid-press.
 - [ ] 2.3 **Keyboard**: can each game be played to completion with no pointer?
-      Include the §3.8a keypad trap — a binding testing `MOD_NUM_KEYPAD | digit`
-      can never fire here, so check for bare-digit fallbacks wherever the keypad
-      is the only route to an input.
+      For the keypad, check for bare-digit fallbacks wherever the keypad is the
+      only route to an input — **not** because `MOD_NUM_KEYPAD | digit` cannot
+      fire (it can, and Cube and Bricks depend on it — see the corrected §3.8a
+      bullet), but because a numpad key only arrives as a digit with Num Lock on
+      and a laptop may have no numpad. Convicting a keypad binding as dead would
+      break working, tested code.
 - [ ] 2.4 Record every cell in `audit.md` with verdict OK / BROKEN / EXEMPT (D1),
       and for EXEMPT, the reason — which then has to go in the spec, not just the
       table.
@@ -43,6 +46,44 @@
       "no keyboard" a decision rather than an oversight.
 - [ ] 3.4 Prove each new guard fails: break one game deliberately per guard,
       watch it go red, revert. A guard that has never failed may not work.
+
+- [x] 3.5 **Emittable-key guard — built 2026-08-26**,
+      `src/engine/emittable-keys.test.ts`: no game may compare a button against
+      a control code `puzzleKeyMap` cannot produce, and no game may declare a
+      private copy of one. Proved to fail (restoring Unruly's `button === 8`
+      reds it, naming file and line).
+
+      **It found a dead binding in fourteen of the fifty-seven games** — Ascent
+      (×2), Boats, Bricks, Clusters, Filling (×2), Group, Guess, Pearl,
+      Rectangles, Rome, Slant, Sticks, Subsets (×2), Undead (×2), Unruly — every
+      one of which every behavioural instrument in D2 scores as OK. See D2's
+      third clause for why a source scan and not a sweep.
+
+      **The count matters more than the list**: this is a quarter of the
+      collection, found in one pass by an instrument nobody had built, against a
+      trap that has been written up in the playbook for months. It is the
+      strongest available argument for this audit's central claim — that a
+      per-game obligation without a mechanical check is live for every game
+      nobody has thought about lately.
+
+      Fixed in the same pass via new shared `isEraseKey`/`isCancelKey` in
+      `engine/pointer.ts`, rather than fourteen more copies of the two codes.
+
+      **What it does not yet cover, and should:** it scans numeric literals in
+      the shape `button === <n>` plus `const NAME = <n>` declarations — the two
+      shapes that have actually shipped the bug. It cannot see a code reached
+      through a lookup table or `String.fromCharCode` (Sokoban's
+      `DIGIT_DIRECTIONS` is the live example). Widening it is a task for this
+      audit, and the vacuity assertions it already carries are the model —
+      *count what you looked at*; the first cut of its key-map parser was wrong
+      and those assertions are what said so.
+
+- [ ] 3.6 The neighbouring gap the above exposes: nothing checks the **reverse**
+      direction — a key `puzzleKeyMap` sends that no game consumes is harmless,
+      but a key a *player* would expect (Home/End from a numpad with Num Lock
+      off) reaching nothing is not. Decide whether that is in scope; it is the
+      difference between "the wiring is connected" and "the input is reachable",
+      which is D1's actual bar.
 
 ## 4. Fix and file (D4)
 
@@ -85,9 +126,14 @@
       game" → gesture-level; ADDED keyboard reachability.
 - [ ] 5.2 Per-game specs: any game whose requirement says "mouse only" is either
       corrected or has its exemption reason written in.
-- [ ] 5.3 `docs/games/input.md § "The on-screen keypad": fold whatever the sweep
-      teaches back into the traps list — it is a live wiki, and this change is
-      exactly the kind of thing that should update it.
+- [ ] 5.3 `docs/games/input.md`: fold whatever the sweep teaches back into the
+      traps list — it is a live wiki, and this change is exactly the kind of
+      thing that should update it. **Two of its four traps were already
+      corrected on 2026-08-26** (§3.8a's `MOD_NUM_KEYPAD` claim was false; the
+      cancel-key trap was understated at two games and is seven) — so read the
+      traps as claims to *re-verify against the frontend*, not as findings to
+      act on. A trap paragraph nobody has checked is exactly as reliable as a
+      guard nobody has seen fail.
 - [ ] 5.4 Help pages: where a game's controls differ by mode, `help/games/<id>.md`
       says so. `help/features.md` already documents the touch affordances.
 - [ ] 5.5 `openspec validate audit-input-mode-parity --strict`.

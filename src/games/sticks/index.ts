@@ -33,6 +33,7 @@ import {
   CURSOR_SELECT2,
   gridCursorMove,
   isCursorMove,
+  isEraseKey,
   isMouseDown,
   isMouseDrag,
   isMouseRelease,
@@ -295,7 +296,7 @@ function interpretMove(
     ui.cursor &&
     (button === CURSOR_SELECT ||
       button === CURSOR_SELECT2 ||
-      button === 8 /* backspace */ ||
+      isEraseKey(button) ||
       button === 48 /* '0' */ ||
       button === 49 /* '1' */ ||
       button === 50) /* '2' */
