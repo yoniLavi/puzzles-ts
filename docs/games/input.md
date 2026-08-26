@@ -219,11 +219,22 @@ as a local copy of a frontend fact.
   clamped-edge no-op, so `?? { x, y }` reproduces the "always returns a
   position" shape.
 
-Per-game policy stays per-game, deliberately: which `Ui` field holds the
-cursor, `changed`-tracking, the "first arrow-press only reveals the cursor"
-idiom, and the `null`-vs-`UI_UPDATE` return. A non-trivial traversal — a
-half-grid cursor, corner-skipping, lock modes, paint-while-traversing —
-keeps its own logic (built on `cursorDelta` if that helps). Palisade and
+**What is per-game here is being narrowed, on purpose.** This section used to
+say that "which `Ui` field holds the cursor, `changed`-tracking, the first-arrow-
+press idiom, and the `null`-vs-`UI_UPDATE` return" all stay per-game,
+deliberately. Only the last sentence of that was ever a real design choice: the
+rest is **one concept spelled six ways** (`hshow`, `cshow`, `curVisible`,
+`cursorVisible`, `cursor`, `displayCur`, across 42 of 57 games), which is not an
+idiom but six things to learn. Unifying it is scoped by
+`unify-keyboard-cursor-ui`; until that lands, **match the nearest neighbour
+rather than inventing a seventh name**, and do not read the old sentence as
+licence to differ.
+
+What genuinely stays per-game is a *traversal* that is not a bounded grid step —
+a half-grid cursor, corner-skipping, lock modes, paint-while-traversing — which
+keeps its own logic (built on `cursorDelta` if that helps). Note the shape of
+that split: a game may legitimately want the cursor to *move* differently; no
+game has ever wanted to *name* it differently. Palisade and
 Separate get their half-grid cursor through
 [`engine/border-grid.ts`](../../src/engine/border-grid.ts), so a sweep reading
 only a game's `index.ts` would wrongly convict them of having none.

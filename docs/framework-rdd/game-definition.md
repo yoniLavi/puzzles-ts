@@ -97,35 +97,63 @@ exports — so a helper added to the framework is enforced the day it lands. Tha
 is the "contracts are enforced by machines" principle applied to input, and it
 is available *without* the framework existing.
 
-**Declined for now, with reasons, because they are not that class:**
+**To abstract, not to leave alone.** An earlier draft of this section declined
+the first two below on the grounds that the idiom is stable and unifying it
+would be churn without a correctness payoff. **That reasoning is retired** — see
+the README, "The order of work". The churn *is* step 1, and the test is not
+whether unifying is disruptive but whether we positively believe the concern
+should be free to differ between games. For these, we do not:
 
+- **The keyboard cursor's `Ui` contract** — one concept, **42 of 57 games, six
+  field names** (`hshow`, `cshow`, `curVisible`, `cursorVisible`, `cursor`,
+  `displayCur`), and per-game answers to questions that have no per-game reason:
+  where the position lives, whether the first arrow press reveals *or*
+  reveals-and-moves, and whether a clamped no-op returns `null` or `UI_UPDATE`.
+  The core is already identical everywhere — `gridCursorMove` → assign → reveal
+  → `UI_UPDATE` — and what genuinely differs (Tents painting while it moves,
+  Boats filling a line as it goes) reads the position before and after, so it
+  survives the unification untouched. Verified safe: Net serialises its cursor,
+  but through an `encodeUi` **function** that emits `C<x>,<y>`, so the wire
+  format does not know the field's name. This is the collection's largest input
+  duplication and it should simply go.
 - **Digit parsing** (`button >= 49 && button <= 57`, `button - 48`; 11 games).
-  Looks identical, is not one fact: `'0'.charCodeAt(0)` cannot drift, and every
-  caller differs in the part that matters — the bound (`<= w`, `< n`,
-  `<= ncolours`), the offset convention, and whether `0` clears or means ten.
-  A shared helper would save a line and leave the decisions untouched. **This is
-  a shape for the gesture table to own** (`digits(1..w) → move`), not a helper.
-- **Cursor visibility** — the reveal-on-arrow / hide-on-press idiom, in **42 of
-  57 games under six different field names** (`hshow`, `cshow`, `curVisible`,
-  `cursorVisible`, `cursor`, `displayCur`). This is the collection's largest
-  input duplication and the clearest thing the framework should own. It is
-  declined *today* because extracting it by hand is a 42-game `Ui` rename with
-  no correctness payoff — the idiom is stable, so no copy is at risk of going
-  wrong. The win arrives only when the framework assembles `interpretMove` and
-  games stop naming the field at all. **Do not do this as a standalone
-  refactor**; it is the gesture table's first customer and its best argument.
+  Splits cleanly rather than being declined: *"is this a digit key and which
+  digit"* is one fact and belongs in `pointer.ts`; the **bound** (`<= w`,
+  `< n`, `<= ncolours`) and whether `0` clears or means ten are real per-game
+  answers and stay. The gesture table's `digits(1..w) → move` is the end state;
+  the helper is the step that gets there without waiting for it.
 - **The Latin-family highlight-then-type flow** (Solo, Keen, Towers, Mathrax,
-  Unequal, Seismic, Group, Salad). Genuinely similar and genuinely divergent —
-  sticky pencil, mark-all semantics, and what a re-press of the held digit does
-  differ per game and are *player-visible*. `border-grid.ts` is the precedent
-  for how to do this right when it is done: extract the mechanic the player
-  operates, leave every game its own move type and its own semantics.
+  Unequal, Seismic, Group, Salad) — the one where the caution still applies, and
+  for the right reason rather than the retired one: sticky pencil, mark-all
+  semantics and what a re-press of the held digit does are **player-visible**
+  and deliberately differ. So the mechanic is shared and the semantics are not,
+  exactly as [`border-grid.ts`](../../src/engine/border-grid.ts) did it — extract
+  what the player operates, leave every game its own move type and its own
+  answers.
 
-The pattern across all three declines: **a shared helper is right when the thing
-shared is a fact, and a framework is right when the thing shared is a shape.**
-Helpers were the correct tool for the first table and are the wrong tool for the
-second — which is the case for the gesture table, made from measurements rather
-than from taste.
+**And one found by re-reading the guides for the retired excuse**, which is
+worth noting as a method: grepping `docs/games/` for "stays per-game" and
+"keeps its own" turned up the same drift a third time, outside input entirely.
+
+- **The completion vocabulary on `State`.** `winFlash` encodes the whole win-
+  flash convention, and 45 games hand-write `flashLength` anyway. Of those,
+  **eight reproduce `winFlash`'s condition verbatim**, and about six more write
+  the same logic against a differently-spelled flag — `usedSolve`, `hasCheated`,
+  `wasSolved`, `solved` — for two concepts *every* game has. The guide had
+  blessed exactly this ("a game with different flag names keeps its own
+  `flashLength`"), and the helper was built to read the flags "structurally",
+  i.e. to work around the drift rather than fix it. **A framework cannot derive
+  Check & Save, the status bar, the win flash and the difficulty contract from a
+  concept each game names differently.** Genuinely bespoke celebrations are a
+  real minority and keep their own hook: Samegame flashes on "impossible" too,
+  Flood on won *and* lost, Ascent scales the duration by board size.
+
+**The distinction that survives**, and the only one that should be argued from:
+*a shared helper is right when the thing shared is a fact; a framework is right
+when the thing shared is a shape; and something stays per-game only when we can
+say what a game would legitimately want to do differently.* "It would touch a
+lot of files" is a measure of how much the abstraction is worth, not an argument
+against it.
 
 ## Solving, hinting, generating
 

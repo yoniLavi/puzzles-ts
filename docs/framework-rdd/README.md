@@ -31,6 +31,43 @@ honest difficulty, endless procedural generation, offline PWA — are exactly
 the differentiators against the games being reimplemented, and the framework
 is what makes them per-game freebies instead of per-game projects.
 
+## The order of work: refactor first, then build
+
+**This is a deep refactoring of the existing 57 games, done *before* the new
+ones start** — not a greenfield framework the old games migrate to at their
+leisure, and not something the first new game bootstraps. The sequence is
+deliberate and it is the whole plan (owner, 2026-08-26):
+
+1. **Refactor the collection into the framework.** The 57 games are the only
+   body of evidence for what a puzzle game actually needs; a framework designed
+   without running them through it is a guess.
+2. **The refactored games become the examples.** A new game is written by
+   reading the nearest existing one, so the examples are the real interface —
+   every accidental difference between two games that mean the same thing is a
+   fork in the road for whoever reads them next, and a wrong turn that gets
+   copied.
+3. **Then build many, many new games** against a framework and a corpus that
+   already agree with each other.
+
+**What this implies, and it overrides a habit the guides had grown:**
+*"it is a clean idiom, and unifying it would be churn"* **is not a reason to
+leave the same concern implemented five ways.** That reasoning was correct
+while the collection was a port being verified against an oracle, and it is
+wrong now: the churn is the point of step 1, and an idiom repeated with six
+different field names is not clean, it is six things to learn.
+
+The bar for leaving something per-game is therefore **not** "would unifying it
+be disruptive" but:
+
+> **Do we positively believe this *should* be free to differ between games?**
+
+Narration wording, deduction logic, a game's own clue semantics and any
+genuinely player-visible choice — yes, and the framework must never take those.
+A field name, a bookkeeping convention, the shape of a loop every game writes
+identically — no. If the only argument for keeping it per-game is that changing
+it would touch a lot of files, **it should be abstracted**, and the number of
+files is a measure of how much the abstraction is worth.
+
 So, concretely: **implementing and maintaining most types of puzzle game with
 as little per-game machinery as the game's own logic permits — and no less.** The
 "no less" is load-bearing: the framework never contorts a game to fit a

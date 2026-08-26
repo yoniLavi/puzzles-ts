@@ -332,9 +332,23 @@ animation").
 [`flash.ts`](../../src/engine/flash.ts) (`winFlash`) encodes the convention
 — flash exactly `flashTime` on a fresh, un-cheated unsolved→solved
 transition — for every game whose state carries structural
-`completed`/`cheated` flags. A game with differently-named flags or a bespoke
-flash condition (Palisade, Mosaic, Flip's solve celebration) keeps its own
-`flashLength`; the shared helper's doc comment lists them.
+`completed`/`cheated` flags.
+
+**"Differently-named flags" is not a reason to keep your own `flashLength`,
+and this guide used to say it was.** Measured 2026-08-26: of the 45 games with
+a hand-written `flashLength`, **eight write `winFlash`'s condition verbatim**
+and about six more write the same logic against a differently-spelled flag —
+`usedSolve`, `hasCheated`, `wasSolved`, `solved` — for concepts every game
+shares. That is one vocabulary spelled five ways, and the helper was built to
+work *around* the drift rather than the drift being fixed. Neither the name nor
+the copy is a design choice; see `docs/framework-rdd/README.md`, "The order of
+work". Scoped by `unify-cross-game-vocabulary`.
+
+A **genuinely bespoke flash condition** does keep its own `flashLength`, and
+these are the real ones: more than one flashing outcome (Samegame flashes on
+"impossible" too, Flood on won *and* lost), a duration that is not `FLASH_TIME`
+(Ascent scales it by board size, Pegs uses two frames), or a condition that is
+not "became solved" at all (Mosaic, Palisade, Flip's solve celebration).
 
 **Flash isolation is a midend concern the games inherited the hard way**:
 Flip's solve celebration once fired on every animated move because the midend

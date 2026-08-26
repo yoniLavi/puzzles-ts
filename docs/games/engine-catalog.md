@@ -350,11 +350,14 @@ tiles are interchangeable). Consumers: Sixteen, Netslide.
 ### `pointer.ts` — button codes and cursor helpers
 
 Button constants, `stripModifiers(button)` (never redeclare `MOD_MASK`),
-`isCursorMove`, and `gridCursorMove(button, x, y, w, h, wrap?)` — the bounded
-(or toroidal) cursor clamp; `?? { x, y }` reproduces the "always returns a
-position" shape while per-game policy stays local. A non-trivial traversal
-(half-grid cursor, lock modes) keeps its own logic. Discipline:
-[`input.md`](./input.md).
+`isCursorMove`, `gridCursorMove(button, x, y, w, h, wrap?)` — the bounded (or
+toroidal) cursor clamp; `?? { x, y }` reproduces the "always returns a position"
+shape — plus `isEraseKey`/`isCancelKey` and the `BACKSPACE`/`DELETE`/`ESCAPE`
+codes. **Never restate any of it locally**, including a magic number where a
+named button exists; `emittable-keys.test.ts` enforces that from `pointer.ts`'s
+own export list. A non-trivial *traversal* (half-grid cursor, lock modes) keeps
+its own logic; the cursor's `Ui` **naming** does not and is being unified
+(`unify-keyboard-cursor-ui`). Discipline: [`input.md`](./input.md).
 
 ### `params.ts` — param-string decoding + config helpers
 
@@ -394,9 +397,11 @@ no render snapshot moves.
 ### `flash.ts` — the win-celebration convention
 
 `winFlash(from, to, flashTime)`: flash exactly once on a fresh, un-cheated
-unsolved→solved transition. Reads `completed`/`cheated` structurally; a game
-with different flag names or a bespoke celebration keeps its own
-`flashLength`.
+unsolved→solved transition. Reads `completed`/`cheated` structurally. **Only a
+genuinely different celebration keeps its own `flashLength`** — more than one
+flashing outcome, a non-`FLASH_TIME` duration, or a condition that is not
+"became solved". A *differently-named flag* is not one of those: 14 of the 45
+hand-written ones are `winFlash` in disguise (`unify-cross-game-vocabulary`).
 
 ### `pencil-indicator.ts` — the pencil-mode glyph
 
