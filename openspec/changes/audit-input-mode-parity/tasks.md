@@ -19,6 +19,15 @@
 - [ ] 2.2 **Touch**: press (already guarded), and then what is not — drag
       sequences, long-press-as-`RIGHT_BUTTON` (§3.8c), two-finger tap, and any
       game whose gesture needs a pause mid-press.
+- [ ] 2.3a **Two outputs this sweep owes its successor**, because
+      `unify-cross-game-vocabulary` is sequenced *after* this change and would
+      otherwise rebuild them: (a) which games' tests actually press an arrow key
+      — that change's task 0.1, and the only thing that makes a
+      behaviour-preserving rename's green suite mean anything; (b) which games
+      reveal-only on the first arrow press versus reveal-and-move, with a count.
+      The second is a finding of this audit, not a decision to be taken inside a
+      rename.
+
 - [ ] 2.3 **Keyboard**: can each game be played to completion with no pointer?
       For the keypad, check for bare-digit fallbacks wherever the keypad is the
       only route to an input — **not** because `MOD_NUM_KEYPAD | digit` cannot

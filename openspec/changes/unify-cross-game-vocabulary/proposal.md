@@ -74,6 +74,31 @@ the difficulty contract from a concept each game names differently.
   `encodeUi` *function* emitting `C<x>,<y>`, so the wire format does not know
   the field's name. State flag renames are internal for the same reason: saves
   replay a move log.
+- **Ordering: this change waits for `audit-input-mode-parity`** (asked and
+  answered 2026-08-26). The audit is measurement and this is a ~50-file
+  mechanical edit, and three things follow from that order:
+
+  1. Renaming code whose behaviour is not yet verified **entangles "the rename
+     preserved behaviour" with "the behaviour was already wrong"**, and a green
+     suite cannot separate them afterwards.
+  2. The audit's keyboard sweep *is* this change's task 0.1 — which games' tests
+     actually press an arrow key — at collection scale. Running this first means
+     building that instrument twice.
+  3. The reveal-only vs reveal-and-move inconsistency (§3, the only
+     player-visible part) is exactly what the audit is built to surface. It
+     should reach the owner as a measured finding with a count, not as a
+     decision buried inside a rename.
+
+  **No dependency runs the other way**, which was worth checking rather than
+  assuming: the audit's instrument is deliberately *behavioural* — "derive
+  coverage mechanically through the registry, not by grepping `index.ts`",
+  because shared helpers make source-grepping under-report — so a unified field
+  name would not improve it.
+
+  Accepted cost: `audit.md`'s file/line references rot when this change renames
+  things. The verdicts survive a behaviour-preserving rename, and the audit
+  archives anyway.
+
 - **Not in this change**: the gesture table, and the Latin-family
   highlight-then-type flow. The latter is genuinely divergent where it counts —
   sticky pencil, mark-all semantics, what a re-press of the held digit does are
