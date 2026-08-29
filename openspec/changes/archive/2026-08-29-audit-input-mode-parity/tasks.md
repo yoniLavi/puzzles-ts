@@ -151,6 +151,20 @@ done; that one records what was found.
       `games/loopy.md` says how Loopy *is* played and that the keyboard is not
       yet there.
 - [x] 5.5 `openspec validate --all --strict` — 80 passed, 0 failed.
-- [ ] 5.6 Owner acceptance. **Player-visible**, so this one is genuinely yours:
-      the seven games' touch feel (a held finger now presses instead of doing
-      nothing), Unruly's erase key, and the two filed decisions.
+- [x] 5.6 Owner acceptance **deferred to a real device, not skipped** (owner,
+      2026-08-29): *"I can't actually test and accept touch here on my dev
+      machine. We need to deploy it so I could then connect with my phone."*
+
+      That is the honest state of this change's evidence, and worth naming: the
+      Chrome pass drove synthetic `PointerEvent`s with `pointerType: "touch"`,
+      which exercises the frontend's promotion decision faithfully and proves
+      nothing whatever about a fingertip — hit-target size, whether 350 ms is
+      the right window for a real hand, whether the repaired Pegs drag *feels*
+      like a drag. Design D3 said as much in advance ("not reachable in-process:
+      whether the resulting gesture is *usable*"), and the missing half is a
+      device, not another test tier.
+
+      Archived on the code's own merits — every new guard was proved to fail by
+      breaking what it guards, and the repaired gesture was verified in both
+      directions — with the device pass carried, not dropped, by
+      `test-touch-on-a-real-device`. That change owes this one an answer.
