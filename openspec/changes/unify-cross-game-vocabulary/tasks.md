@@ -197,6 +197,45 @@ invasive enough to want the eye:
 | Magnets | Solve | board fills, end dialog appears, **no win flash** — the half the `solved`→`cheated` rename could have inverted |
 | Range | solved by walking the hint plan | **"Solved!"** with the flash playing — `winFlash` still fires on an un-cheated win |
 
+## 8b. Owner decisions, taken after the first pass (2026-08-31)
+
+- [x] 8b.1 **The save envelope's `usedSolve` is now `cheated`, and old saves
+      still load.** Owner: *"ok to invalidate old saves (unless there is an easy
+      way to just fix them in flight)."* There is: `decodeSave` is the single
+      choke point, so `v: 1` is lifted to `v: 2` by renaming one key before
+      validation. The validator then describes only the current shape and cannot
+      drift into blessing both. Four tests cover it, including that the retired
+      key is *gone* rather than carried alongside, and that a `v: 1` save with a
+      missing or malformed flag is still rejected — the upgrade must not
+      manufacture a `cheated` out of nothing.
+- [x] 8b.2 **Palisade and Separate now use `winFlash` — by `winFlash` adopting
+      *their* rule, not the reverse.** Revisiting the "owner-requested
+      divergence" found it was a **bug fix** (`8bc695c`, owner-reported: using
+      Solve, unmarking some walls and re-solving by hand produced no
+      celebration), and that commit says generalising it was **deferred**. So
+      Palisade was right and the other twenty-five were lagging.
+      - The shared rule now suppresses the Solve **move** (where `cheated` flips
+        false→true), not a cheated **board**. That is strictly additive: it never
+        removes a flash, and the only case it changes is the one the player
+        reported.
+      - **It had no test coverage at all**, which is why every suite stayed green
+        through the rule change. `flash.test.ts` now pins it, proven by
+        restoring the old condition and watching it go red.
+      - **The remaining gap is upstream of the flash and is honestly still
+        deferred**: reaching the case needs `completed` recomputed each move, and
+        a source scan shows almost every game sets it true and never back.
+        Palisade and Separate recompute. Un-latching the rest changes `status()`,
+        and with it the end-of-game dialog and the clock — per-game work, not a
+        sweep, exactly as `8bc695c` judged.
+      - *Instrument note*: a first probe reported "45 games recompute, 0 latch"
+        and was discarded. It Solved, then **undid**, and undo restores an
+        earlier *state object* — whose `completed` was false whether the game
+        latches or not. It measured "does undo go backwards", which is trivially
+        true for all 57.
+- [x] 8b.3 Both re-anchored `feedback-probe` cases re-run and still caught:
+      `save.ts` 5/5, `midend.ts` 21/21. Re-anchoring alone would only have
+      proved the case still *applies*, not that it still fails.
+
 ## 8. Found on the way — handed off, not fixed here
 
 - **The move-count completion family disagrees with itself.** Fifteen, Sixteen,
@@ -206,11 +245,20 @@ invasive enough to want the eye:
   cannot, so they are not interchangeable, and nothing above them can read the
   four the same way. Naming is unified; the *type* is the next question, and it
   is a change of its own rather than a rename.
-- **The midend's `usedSolve` is the last holdout, and it is the owner's call.**
-  Every game now says `cheated`; the midend's own flag still says `usedSolve`
-  because it is written into the save envelope, so renaming it invalidates every
-  saved game. That is a player-visible compatibility break, which this change
-  does not take unilaterally.
+- ~~The midend's `usedSolve` is the last holdout~~ — **settled in §8b.1**: it is
+  `cheated`, and `v: 1` saves are upgraded on read rather than discarded.
+- **Mines' Solve never marks the board won.** It reveals the whole grid and sets
+  the cheat flag, but leaves `completed` false, so `status()` stays `"ongoing"`
+  and the player gets no end-of-game state. Byte-identical either side of this
+  change and faithful to `mines.c`, so it is a finding rather than a regression —
+  but it is why the legacy-save test asserts *fidelity* (restore reports what
+  the save reported) rather than a hard-coded `"solved-with-help"`.
+- **Two `feedback-probe` runs at once corrupt each other**, and the second one's
+  "anchor not found" points at a line that is sitting right there in git. The
+  probe edits engine source in place and restores in a `finally`; a second run
+  reads its baseline mid-plant. It happened here, and because the change was
+  already `git add`ed, the plant sat in the working tree beside staged work.
+  Written up in `docs/test-strength.md` § 2a.
 - **The one-off verification instruments are deliberately not committed.** The
   token-identity check compared the working tree against the pre-sweep `HEAD`;
   once the sweep is committed that baseline is gone, so a committed copy would

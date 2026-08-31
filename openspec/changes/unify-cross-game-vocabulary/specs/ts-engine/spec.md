@@ -2,6 +2,57 @@
 
 ## MODIFIED Requirements
 
+### Requirement: The engine uses a clean TS-native save format
+
+The midend SHALL serialise and restore a game using a clean,
+versioned TypeScript-native format (a version-tagged envelope carrying
+the puzzle id, parameters, game id, the move list, timer elapsed, and
+checkpoints). Restoration SHALL reconstruct history by replaying the
+saved moves. The format SHALL NOT be required to be compatible with
+the C `midend_serialise` format, and loading a pre-pivot C-format save
+SHALL NOT be required (consistent with the `ts-migration` decision
+that old saves and pre-pivot shared IDs are expendable). Saving and
+restoring SHALL round-trip: a restored game SHALL have the same state
+and history as the saved game.
+
+The envelope SHALL spell the solver-was-used flag as every game's state spells
+it (see "One completion vocabulary across games"), so that one word means one
+thing from a game's state through to the saved bytes.
+
+**A version bump SHALL come with an upgrade, not a rejection**, whenever the
+older shape carries the same facts: the decoder SHALL lift an older envelope to
+the current shape before validating it, so an existing save keeps working. The
+validator SHALL then describe only the current shape, so it cannot drift into
+blessing both. An envelope the decoder cannot lift — a *future* version, or an
+older one whose fields are missing or malformed — SHALL still be rejected.
+
+#### Scenario: Save/restore round-trips
+
+- **WHEN** a TS-engine game is saved and then restored from that data
+- **THEN** the restored game has identical state, move history, and
+  redo availability
+- **AND** the saved payload carries a format version field
+
+#### Scenario: C-format save is not required to load
+
+- **WHEN** a payload produced by the pre-pivot C-serialisation path is
+  presented to the TS midend
+- **THEN** the midend is NOT required to load it
+- **AND** this is not treated as a defect
+
+#### Scenario: An older envelope is upgraded, not discarded
+
+- **WHEN** a save written under the previous envelope version is loaded
+- **THEN** it is lifted to the current shape and restores normally
+- **AND** the retired field name is gone from the result rather than carried
+  alongside the new one
+
+#### Scenario: An envelope that cannot be lifted is still rejected
+
+- **WHEN** the payload names a version the decoder does not know, or an older
+  version whose fields are missing or of the wrong type
+- **THEN** decoding fails
+
 ### Requirement: The engine provides a shared cursor button-to-delta helper
 
 The engine SHALL provide `cursorDelta(button: number): { dx: number; dy: number }
@@ -121,9 +172,20 @@ Every game's state SHALL express "the player has solved this" and "a solver was
 used" under the same two names, so that the engine can derive from them rather
 than sniffing each game's spelling.
 
-Any game whose win celebration is the collection's convention — flash once, on a
-fresh un-cheated unsolved→solved transition — SHALL use the shared helper rather
-than restating the condition. A game MAY keep its own celebration hook, but only
+The convention SHALL be: flash once when a **player move** brings the board into
+a solved state. What is suppressed is the Solve *command* — the move on which
+"a solver was used" flips false→true — and **not** a board that has ever been
+cheated. A player who uses Solve, unmakes some of it, and finishes by hand has
+won; the record that they used the solver survives in the status bar and in the
+midend's solved-with-help status, which is where it belongs.
+
+Whether a game can reach that case is the game's own business: it requires
+"solved" to be **recomputed** on each move rather than latched once. A game that
+latches it simply never presents the case, and the shared helper SHALL behave
+for it exactly as the stricter condition did.
+
+Any game whose win celebration is that convention SHALL use the shared helper
+rather than restating the condition. A game MAY keep its own celebration hook, but only
 for a genuine difference: more than one flashing outcome, a duration that is not
 the shared one, a condition that is not "became solved", or a completion that is
 not a flag at all. **A differently spelled flag SHALL NOT be a reason to keep
@@ -147,6 +209,17 @@ a vocabulary sweep.
 - **WHEN** a game's win flash is the collection's convention
 - **THEN** it calls the shared helper, and contains no hand-written copy of the
   transition condition
+
+#### Scenario: A manual completion after a Solve still celebrates
+
+- **WHEN** a player uses Solve, unmakes part of it, and completes the board by
+  hand, in a game that recomputes rather than latches "solved"
+- **THEN** the flash plays, and the solver-was-used record is unaffected
+
+#### Scenario: The Solve command itself does not celebrate
+
+- **WHEN** the Solve command completes the board
+- **THEN** no flash plays
 
 #### Scenario: A genuine celebration keeps its own hook
 

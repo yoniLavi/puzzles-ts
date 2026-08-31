@@ -27,11 +27,14 @@
  * either of the above from decaying: an entry for a field the game *does* have
  * fails, so the list cannot quietly grow into a blanket.
  *
- * `MinesUi.everCompleted` and the midend's own `usedSolve` are deliberately NOT
- * covered: the first is a `Ui` field meaning "was *ever* won" (it survives an
- * undo, unlike the state's), and the second is a **save-envelope key**, so
- * renaming it would break every existing save — a player-visible change, and
- * therefore the owner's call rather than this change's.
+ * The vocabulary reaches the **saved bytes** too: the envelope's flag is
+ * `cheated`, and a `v: 1` save that spells it `usedSolve` is upgraded on read
+ * rather than discarded (`save.ts`). One word, one meaning, from a game's state
+ * through to the file.
+ *
+ * `MinesUi.everCompleted` is deliberately not covered: it is a `Ui` field
+ * meaning "was *ever* won" — it survives an undo, unlike the state's, and the
+ * two would otherwise read as duplicates sitting next to each other.
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
@@ -156,13 +159,22 @@ describe("one completion vocabulary", () => {
     expect(stale).toEqual([]);
   });
 
-  it("finds no game re-declaring a retired completion spelling", () => {
-    const RETIRED = ["usedSolve", "hasCheated", "wasSolved"];
-    const sources = import.meta.glob<string>("../games/**/*.ts", {
-      query: "?raw",
-      import: "default",
-      eager: true,
-    });
+  it("finds no game or engine module re-declaring a retired spelling", () => {
+    const RETIRED = ["usedSolve", "hasCheated", "wasSolved", "cheating"];
+    // The engine is scanned too, not just the games: the save envelope's flag
+    // is part of this vocabulary, and it was the last holdout.
+    const sources = {
+      ...import.meta.glob<string>("../games/**/*.ts", {
+        query: "?raw",
+        import: "default",
+        eager: true,
+      }),
+      ...import.meta.glob<string>("./*.ts", {
+        query: "?raw",
+        import: "default",
+        eager: true,
+      }),
+    };
     // Vacuity: an unmatched glob yields `{}` and every assertion below passes.
     expect(Object.keys(sources).length).toBeGreaterThan(300);
 

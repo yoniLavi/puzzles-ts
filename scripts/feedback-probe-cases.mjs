@@ -255,8 +255,8 @@ export const MODULES = [
       },
       {
         why: "a solved-with-help game forgets it was solved with help",
-        find: "      usedSolve: this.usedSolve,",
-        replace: "      usedSolve: false,",
+        find: "      cheated: this.cheated,",
+        replace: "      cheated: false,",
       },
       {
         why: "the timer runs during animation but not for a timed game's clock",
@@ -300,8 +300,8 @@ export const MODULES = [
         replace: "    true &&",
       },
       {
-        why: "a future save-format version is accepted as version 1",
-        find: '    v["v"] === 1 &&',
+        why: "a save-format version the decoder cannot read is accepted anyway",
+        find: '    v["v"] === 2 &&',
         replace: "    true &&",
       },
       {

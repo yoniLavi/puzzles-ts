@@ -220,7 +220,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   // background in the `!ds.started` branch (`fix-flip-canvas-reshape`), and the
   // field outlived it by carrying a sentence about who read it
   // (`audit-vestigial-contract-surface` follow-up).
-  private usedSolve = false;
+  private cheated = false;
   /** Last-applied user preference values, keyed by pref `kw`. Retained
    * across new games / loads because the midend recreates `ui` (via
    * `newUi`) on every `startFrom`, which would otherwise reset prefs to
@@ -365,7 +365,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     // game; the game's `!ds.started` branch covers the
     // background/grid setup on its next paint.
     this.drawState = this.freshDrawState(initial);
-    this.usedSolve = false;
+    this.cheated = false;
     this.clearHint();
     this.clearMistakes();
     this.timerElapsed = 0;
@@ -402,7 +402,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     this.moveLog = [];
     this.pos = 0;
     this.game.changedState?.(this.ui, prev, this.state);
-    this.usedSolve = false;
+    this.cheated = false;
     this.clearHint();
     this.clearMistakes();
     this.clearAnimation();
@@ -624,7 +624,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     const result = this.game.solve(this.history[0], this.state, this.aux);
     if (!result.ok) return result.error;
     this.clearHint();
-    this.usedSolve = true;
+    this.cheated = true;
     this.applyMove(result.move);
     return undefined;
   }
@@ -938,7 +938,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    * was used (mirrors midend.c). */
   private currentStatus(): GameStatus {
     const s = this.game.status(this.state);
-    if (s === "solved" && this.usedSolve) return "solved-with-help";
+    if (s === "solved" && this.cheated) return "solved-with-help";
     return s;
   }
 
@@ -1225,7 +1225,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
   saveGame(): Uint8Array<ArrayBuffer> {
     const serMove = this.game.serialiseMove ?? ((m: Move) => m as unknown);
     const envelope: SaveEnvelope = {
-      v: 1,
+      v: 2,
       puzzleId: this.game.id,
       params: this.game.encodeParams(this.params, true),
       desc: this.desc,
@@ -1233,7 +1233,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       moves: this.moveLog.map(serMove),
       pos: this.pos,
       timerElapsed: this.timerElapsed,
-      usedSolve: this.usedSolve,
+      cheated: this.cheated,
       ...(this.game.encodeUi ? { ui: this.game.encodeUi(this.ui) } : {}),
     };
     return encodeSave(envelope);
@@ -1287,7 +1287,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
       return `Could not restore this saved game: ${(e as Error).message}`;
     }
     this.pos = Math.min(env.pos, this.history.length - 1);
-    this.usedSolve = env.usedSolve;
+    this.cheated = env.cheated;
     this.timerElapsed = env.timerElapsed;
     // Restore Ui state the move log cannot reconstruct (Mines' death counter /
     // completion flag), after the replay above — replay goes through

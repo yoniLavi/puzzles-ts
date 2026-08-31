@@ -19,6 +19,7 @@ import {
   FLIP,
   interpretBorderGridInput,
 } from "../../engine/border-grid.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   type HintResult,
@@ -97,22 +98,18 @@ function interpretMove(
 
 // --- flash -----------------------------------------------------------------
 
+// Palisade's flash rule *is* the collection's — `winFlash` adopted it rather
+// than the reverse (`unify-cross-game-vocabulary`). What Palisade still does
+// differently is upstream of the flash: `executeMove` recomputes `completed`
+// every move instead of latching it, so breaking and re-solving a board is a
+// genuine unsolved→solved transition and the celebration fires again.
 function flashLength(
   oldState: PalisadeState,
   newState_: PalisadeState,
   _dir: number,
   _ui: PalisadeUi,
 ): number {
-  // Flash whenever a *player* move brings the board into a solved state —
-  // including a fresh manual completion after a prior Solve (the
-  // owner-requested behaviour). The Solve command itself must not flash;
-  // it's the move where `cheated` flips false→true, so suppress exactly
-  // that transition. (`completed` is recomputed every move — see
-  // `executeMove` — so re-breaking and re-solving is a real transition.)
-  const becameSolved = newState_.completed && !oldState.completed;
-  const thisMoveWasSolve = newState_.cheated && !oldState.cheated;
-  if (becameSolved && !thisMoveWasSolve) return FLASH_TIME;
-  return 0;
+  return winFlash(oldState, newState_, FLASH_TIME);
 }
 
 // --- mistakes --------------------------------------------------------------

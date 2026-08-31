@@ -27,17 +27,88 @@ function driven(game: typeof fakeGame = fakeGame) {
 describe("save codec", () => {
   it("encodes a UTF-8 JSON envelope with a version field", () => {
     const env: SaveEnvelope = {
-      v: 1,
+      v: 2,
       puzzleId: "__fake__",
       params: "t3",
       desc: "g3-7",
       moves: ["inc"],
       pos: 1,
       timerElapsed: 0,
-      usedSolve: false,
+      cheated: false,
     };
     const round = decodeSave(encodeSave(env));
     expect(round).toEqual(env);
+  });
+
+  it("upgrades a v1 save in flight rather than rejecting it", () => {
+    // `v: 1` spelled `cheated` as `usedSolve`. A player's existing save is not
+    // ours to throw away for a rename, and the whole migration is one key.
+    const legacy = {
+      v: 1,
+      puzzleId: "__fake__",
+      params: "t3",
+      desc: "g3-7",
+      moves: ["inc"],
+      pos: 1,
+      timerElapsed: 12,
+      usedSolve: true,
+    };
+    const round = decodeSave(encodeBytes(JSON.stringify(legacy)));
+    expect(round.v).toBe(2);
+    expect(round.cheated).toBe(true);
+    // …and nothing else was disturbed on the way through.
+    expect(round).toEqual({
+      v: 2,
+      puzzleId: "__fake__",
+      params: "t3",
+      desc: "g3-7",
+      moves: ["inc"],
+      pos: 1,
+      timerElapsed: 12,
+      cheated: true,
+    });
+    // The old key is *gone*, not carried alongside: two names for one fact is
+    // the thing this change exists to remove.
+    expect(Object.hasOwn(round, "usedSolve")).toBe(false);
+  });
+
+  it("upgrades a v1 save that also carries the optional fields", () => {
+    const legacy = {
+      v: 1,
+      puzzleId: "__fake__",
+      params: "t3",
+      desc: "g3-7",
+      privDesc: "p3-7",
+      moves: [],
+      pos: 0,
+      timerElapsed: 0,
+      usedSolve: false,
+      ui: "D2C",
+    };
+    const round = decodeSave(encodeBytes(JSON.stringify(legacy)));
+    expect(round.privDesc).toBe("p3-7");
+    expect(round.ui).toBe("D2C");
+    expect(round.cheated).toBe(false);
+  });
+
+  it("rejects a v1 save whose legacy flag is missing or malformed", () => {
+    // The upgrade must not manufacture a `cheated` out of nothing: an absent
+    // or non-boolean `usedSolve` still has to fail the envelope check.
+    for (const bad of [{}, { usedSolve: "true" }]) {
+      const legacy = {
+        v: 1,
+        puzzleId: "__fake__",
+        params: "t3",
+        desc: "g3-7",
+        moves: [],
+        pos: 0,
+        timerElapsed: 0,
+        ...bad,
+      };
+      expect(() => decodeSave(encodeBytes(JSON.stringify(legacy)))).toThrow(
+        /not a recognised TS save envelope/,
+      );
+    }
   });
 
   it("rejects non-JSON (pre-pivot C-format) data", () => {
@@ -64,7 +135,7 @@ describe("save codec", () => {
   // or truncated save and a game state rebuilt from nonsense.
   describe("rejects an envelope with any one field wrong", () => {
     const valid: SaveEnvelope = {
-      v: 1,
+      v: 2,
       puzzleId: "__fake__",
       params: "t3",
       desc: "g3-7",
@@ -72,7 +143,7 @@ describe("save codec", () => {
       moves: ["inc"],
       pos: 1,
       timerElapsed: 0,
-      usedSolve: false,
+      cheated: false,
       ui: "u",
     };
 
@@ -82,8 +153,10 @@ describe("save codec", () => {
     });
 
     const cases: [name: string, corrupt: Record<string, unknown>][] = [
-      ["v is a different version", { v: 2 }],
-      ["v is a string", { v: "1" }],
+      // A *future* version, which we cannot read. `v: 1` is deliberately not
+      // here any more: it is upgraded rather than rejected (see above).
+      ["v is a version we cannot read", { v: 3 }],
+      ["v is a string", { v: "2" }],
       ["v is missing", { v: undefined }],
       ["puzzleId is not a string", { puzzleId: 7 }],
       ["puzzleId is missing", { puzzleId: undefined }],
@@ -94,7 +167,7 @@ describe("save codec", () => {
       ["moves is missing", { moves: undefined }],
       ["pos is not a number", { pos: "1" }],
       ["timerElapsed is not a number", { timerElapsed: null }],
-      ["usedSolve is not a boolean", { usedSolve: "false" }],
+      ["cheated is not a boolean", { cheated: "false" }],
       ["ui is present but not a string", { ui: 0 }],
     ];
 
@@ -192,14 +265,14 @@ describe("Midend save/restore round-trip", () => {
       "an envelope whose params no longer decode",
       () =>
         encodeSave({
-          v: 1,
+          v: 2,
           puzzleId: "__fake__",
           params: "not-params",
           desc: "g3-1",
           moves: [],
           pos: 0,
           timerElapsed: 0,
-          usedSolve: false,
+          cheated: false,
         }),
       /Invalid saved parameters: .*bad params/,
     ],
@@ -220,14 +293,14 @@ describe("Midend save/restore round-trip", () => {
     // puts the midend on a history index that does not exist, where `undo`
     // walks backwards through `undefined` states.
     const env: SaveEnvelope = {
-      v: 1,
+      v: 2,
       puzzleId: "__fake__",
       params: "t9",
       desc: "g9-1",
       moves: ["inc", "inc"],
       pos: 99, // two moves replayed, so the real maximum is 2
       timerElapsed: 0,
-      usedSolve: false,
+      cheated: false,
     };
     const b = driven();
     expect(b.m.loadGame(encodeSave(env))).toBeUndefined();
@@ -253,14 +326,14 @@ describe("Midend save/restore round-trip", () => {
 
   it("refuses a save belonging to a different puzzle", () => {
     const env: SaveEnvelope = {
-      v: 1,
+      v: 2,
       puzzleId: "galaxies",
       params: "t3",
       desc: "g3-1",
       moves: [],
       pos: 0,
       timerElapsed: 0,
-      usedSolve: false,
+      cheated: false,
     };
     const m = new Midend(fakeGame);
     m.setCallbacks(

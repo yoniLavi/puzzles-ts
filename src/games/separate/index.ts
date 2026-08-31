@@ -18,6 +18,7 @@ import {
   DISABLED,
   interpretBorderGridInput,
 } from "../../engine/border-grid.ts";
+import { winFlash } from "../../engine/flash.ts";
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { newCursor, stripModifiers } from "../../engine/pointer.ts";
@@ -90,12 +91,7 @@ function flashLength(
   _dir: number,
   _ui: SeparateUi,
 ): number {
-  // Flash when a *player* move completes the board, but not the Solve command
-  // (the move where `cheated` flips false→true). Mirrors Palisade.
-  const becameSolved = newState_.completed && !oldState.completed;
-  const thisMoveWasSolve = newState_.cheated && !oldState.cheated;
-  if (becameSolved && !thisMoveWasSolve) return FLASH_TIME;
-  return 0;
+  return winFlash(oldState, newState_, FLASH_TIME);
 }
 
 // --- mistakes --------------------------------------------------------------

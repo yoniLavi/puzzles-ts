@@ -12,8 +12,10 @@
  */
 
 export interface SaveEnvelope {
-  /** Format version. Bump when the envelope shape changes. */
-  v: 1;
+  /** Format version. Bump when the envelope shape changes, and teach
+   * {@link decodeSave} to upgrade the old shape — a save a player already has
+   * is not ours to invalidate when the fix is a few lines. */
+  v: 2;
   puzzleId: string;
   /** Fully-encoded game parameters. */
   params: string;
@@ -32,8 +34,10 @@ export interface SaveEnvelope {
   pos: number;
   /** Accumulated timer seconds. */
   timerElapsed: number;
-  /** Whether the solver was used (drives "solved-with-help"). */
-  usedSolve: boolean;
+  /** Whether the solver was used (drives "solved-with-help"). Spelled as every
+   * game's state spells it (`ts-engine`, "One completion vocabulary across
+   * games"); `v: 1` saves called it `usedSolve` and are upgraded on read. */
+  cheated: boolean;
   /** Serialised `Ui` state that must survive a save but cannot be rebuilt by
    * replaying the move log (upstream `encode_ui`; Mines' death counter and
    * completion flag). Present only for a game with an `encodeUi` hook. */
@@ -51,11 +55,29 @@ export function encodeSave(envelope: SaveEnvelope): Uint8Array<ArrayBuffer> {
   return out;
 }
 
+/**
+ * Bring an older envelope up to the current shape, or return it unchanged.
+ *
+ * `v: 1` spelled `cheated` as `usedSolve`. That is the only difference, the two
+ * mean the same thing, and the whole migration is one key — so a save a player
+ * already has keeps working rather than being thrown away for a rename.
+ *
+ * Runs *before* validation, so `isSaveEnvelope` only ever describes the current
+ * shape and cannot drift into blessing both.
+ */
+function upgrade(value: unknown): unknown {
+  if (typeof value !== "object" || value === null) return value;
+  const v = value as Record<string, unknown>;
+  if (v["v"] !== 1) return value;
+  const { usedSolve, ...rest } = v;
+  return { ...rest, v: 2, cheated: usedSolve };
+}
+
 function isSaveEnvelope(value: unknown): value is SaveEnvelope {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
   return (
-    v["v"] === 1 &&
+    v["v"] === 2 &&
     typeof v["puzzleId"] === "string" &&
     typeof v["params"] === "string" &&
     typeof v["desc"] === "string" &&
@@ -65,7 +87,7 @@ function isSaveEnvelope(value: unknown): value is SaveEnvelope {
     Array.isArray(v["moves"]) &&
     typeof v["pos"] === "number" &&
     typeof v["timerElapsed"] === "number" &&
-    typeof v["usedSolve"] === "boolean" &&
+    typeof v["cheated"] === "boolean" &&
     (v["ui"] === undefined || typeof v["ui"] === "string")
   );
 }
@@ -78,8 +100,9 @@ export function decodeSave(data: Uint8Array): SaveEnvelope {
   } catch {
     throw new Error("not valid JSON (likely a pre-pivot C-format save)");
   }
-  if (!isSaveEnvelope(parsed)) {
+  const upgraded = upgrade(parsed);
+  if (!isSaveEnvelope(upgraded)) {
     throw new Error("not a recognised TS save envelope");
   }
-  return parsed;
+  return upgraded;
 }

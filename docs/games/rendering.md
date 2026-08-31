@@ -330,11 +330,24 @@ animation").
 
 **Most win flashes are one shared line.**
 [`flash.ts`](../../src/engine/flash.ts) (`winFlash`) encodes the convention
-— flash exactly `flashTime` on a fresh, un-cheated unsolved→solved
-transition. Every game's state spells the two flags `completed` and `cheated`
+— flash exactly `flashTime` when a **player move** brings the board into a
+solved state. Every game's state spells the two flags `completed` and `cheated`
 (`ts-engine` § "One completion vocabulary across games"), so `winFlash` reads
 them as a contract, and **a differently-spelled flag is not a reason to write
 your own `flashLength`** — it is not a difference a player can see.
+
+**What is suppressed is the Solve *command*, not a cheated *board*.** Solve is
+exactly the move where `cheated` flips false→true. A player who uses Solve,
+unmarks some cells and then finishes by hand has won, and gets the celebration;
+the cheat record lives in the status bar and the midend's "solved with help".
+That rule came from Palisade, which had it right first and reported the bug;
+`winFlash` adopted it rather than the reverse.
+
+Reaching that case needs `completed` **recomputed** each move rather than
+latched once. Almost every game latches it today, so for them this behaves
+exactly as the older, stricter condition did; Palisade and Separate recompute.
+Un-latching the rest changes `status()`, and with it the end-of-game dialog and
+the clock, so it is per-game work rather than a sweep.
 
 Call it:
 
@@ -351,10 +364,9 @@ The four shapes that qualify:
   which is not a win);
 - **a duration that is not the shared one** — Ascent, Net and Netslide scale
   theirs by the board so the animation sweeps it;
-- **a condition that is not "became solved"** — Palisade and Separate flash a
-  manual completion made *after* a Solve (owner-requested), Mosaic reads its own
-  clue counters, Map takes its duration off the `Ui`, Pegs and Sokoban have no
-  cheat flag to test;
+- **a condition that is not "became solved"** — Mosaic reads its own clue
+  counters, Map takes its duration off the `Ui`, Pegs and Sokoban have no cheat
+  flag to test;
 - **`completed` is not a flag** — Fifteen, Sixteen, Twiddle and Slide hold the
   move count they were solved at, frozen so the status bar stops counting.
 

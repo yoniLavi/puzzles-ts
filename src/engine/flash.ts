@@ -18,10 +18,9 @@
  *    (the reveal, which is not a win at all);
  *  - **a duration that is not the shared one** — Ascent, Net and Netslide scale
  *    theirs with the board so the animation sweeps it;
- *  - **a condition that is not "became solved"** — Palisade and Separate flash
- *    a manual completion made *after* a Solve (owner-requested), Mosaic reads
- *    its own clue counters, Map's duration comes off the `Ui`, Pegs and Sokoban
- *    have no cheat flag to test;
+ *  - **a condition that is not "became solved"** — Mosaic reads its own clue
+ *    counters, Map's duration comes off the `Ui`, Pegs and Sokoban have no
+ *    cheat flag to test;
  *  - **`completed` is not a flag** — Fifteen, Sixteen, Twiddle and Slide store
  *    the move count they were solved at, frozen so the status bar stops
  *    counting.
@@ -29,16 +28,38 @@
  * Dominosa is the near-miss worth knowing about: its condition *is* the
  * convention, so it calls this and then does its one extra thing (clearing the
  * hovered-pair highlight) with the answer.
+ *
+ * **The remaining gap is upstream of here.** Almost every game sets `completed`
+ * true and never back, so a solved board stays solved and the re-completion
+ * case above is one it cannot present. Palisade and Separate recompute instead.
+ * Un-latching the rest is per-game work — it changes `status()` too, and with
+ * it the end-of-game dialog and the clock — and is deliberately not bundled
+ * into a vocabulary change.
  */
 
-/** The win-flash duration: `flashTime` on a fresh, un-cheated unsolved→solved
- * transition (a player move that just solved the board), else `0`. */
+/**
+ * The win-flash duration: `flashTime` when a **player move** brings the board
+ * into a solved state, else `0`.
+ *
+ * What is suppressed is the Solve *command*, not a cheated *board* — Solve is
+ * exactly the move where `cheated` flips false→true. The difference is a real
+ * one a player reported: after using Solve, unmarking some walls and re-solving
+ * by hand produced no celebration, because the gate vetoed any board that had
+ * ever been cheated. That is a win, and it flashes. The cheat record survives
+ * where it belongs, in the status bar and the midend's "solved with help".
+ *
+ * Whether a game can *reach* that case is its own business: it needs
+ * `completed` recomputed each move rather than latched once, so that breaking
+ * and re-solving is a genuine unsolved→solved transition. A game that latches
+ * it simply never presents the case, and this behaves for it exactly as the
+ * older, stricter condition did.
+ */
 export function winFlash(
   from: { completed: boolean; cheated: boolean },
   to: { completed: boolean; cheated: boolean },
   flashTime: number,
 ): number {
-  return !from.completed && to.completed && !from.cheated && !to.cheated
-    ? flashTime
-    : 0;
+  const becameSolved = !from.completed && to.completed;
+  const thisMoveWasSolve = to.cheated && !from.cheated;
+  return becameSolved && !thisMoveWasSolve ? flashTime : 0;
 }

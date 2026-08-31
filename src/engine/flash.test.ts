@@ -17,12 +17,27 @@ describe("winFlash", () => {
     expect(winFlash(s(false, false), s(false, false), FLASH)).toBe(0);
   });
 
-  it("does not flash when the solve was reached by cheating (from)", () => {
+  it("does not flash when the board was already solved, by Solve", () => {
     expect(winFlash(s(true, true), s(true, true), FLASH)).toBe(0);
   });
 
-  it("does not flash when the move itself is the cheat (to)", () => {
+  it("does not flash when the move itself is the Solve command", () => {
+    // The suppressed thing is the *move* where `cheated` flips false→true.
     expect(winFlash(s(false, false), s(true, true), FLASH)).toBe(0);
+  });
+
+  it("flashes a manual completion made after a prior Solve", () => {
+    // The case the older, stricter rule got wrong, reported by a player:
+    // use Solve, unmark some cells, solve it by hand — and get no
+    // celebration, because the gate vetoed any board that had *ever* been
+    // cheated rather than the Solve move itself. That is a win.
+    expect(winFlash(s(false, true), s(true, true), FLASH)).toBe(FLASH);
+  });
+
+  it("still does not flash on a move that breaks a solved board", () => {
+    // The other direction of the same transition, cheated or not.
+    expect(winFlash(s(true, false), s(false, false), FLASH)).toBe(0);
+    expect(winFlash(s(true, true), s(false, true), FLASH)).toBe(0);
   });
 
   it("passes the caller's flashTime through", () => {

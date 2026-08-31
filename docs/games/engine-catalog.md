@@ -414,7 +414,15 @@ non-`FLASH_TIME` duration, a condition that is not "became solved", or a
 `completed` that is not a flag (the four move-count games). A
 *differently-named flag* is not one of those, and cannot be: `flash.ts` lists
 every survivor with its reason, and `completion-vocabulary.test.ts` fails the
-build for a re-spelling.
+build for a re-spelling — in the **engine** as well as the games, because the
+save envelope's flag is part of the same vocabulary.
+
+**What is suppressed is the Solve *command*, not a cheated *board*.** A player
+who uses Solve, unmakes part of it and finishes by hand has won, and gets the
+celebration. Reaching that case needs `completed` recomputed each move rather
+than latched; almost every game latches it, so for them this is exactly the
+older, stricter behaviour. Palisade and Separate recompute — the rule came from
+Palisade, which had it right first.
 
 ### `pencil-indicator.ts` — the pencil-mode glyph
 

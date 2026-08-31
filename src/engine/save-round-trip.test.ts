@@ -36,10 +36,12 @@ import {
   CURSOR_SELECT,
   CURSOR_UP,
   LEFT_BUTTON,
+  LEFT_RELEASE,
   RIGHT_BUTTON,
 } from "./pointer.ts";
 import { randomNew } from "./random/index.ts";
 import { getTsGame, registeredGameIds } from "./registry.ts";
+import { encodeSave } from "./save.ts";
 import { RecordingDrawing } from "./testing/recording-drawing.ts";
 
 type AnyGame = Game<unknown, unknown, unknown, unknown, unknown>;
@@ -248,6 +250,88 @@ describe("a save this build cannot play is refused, not half-applied", () => {
         0,
       );
       expect(() => m.saveGame(), `${id}: board no longer saves`).not.toThrow();
+    });
+  }
+});
+
+/**
+ * The `v: 1` → `v: 2` upgrade, end to end and over real saves.
+ *
+ * `save.test.ts` checks the decoder against hand-written envelopes. This checks
+ * the thing a player has: a save produced by really playing a game and using
+ * Solve, rewritten into the shape the old code wrote, and handed to the current
+ * `loadGame`. The flag has to survive, or the restored game silently forgets it
+ * was solved with help.
+ */
+describe("a v1 save still loads", () => {
+  beforeAll(registerAllGames);
+
+  // One per interesting shape: a plain grid game, a game with a private desc
+  // (Mines), the two that recompute `completed`, and the game whose cheat flag
+  // used to be spelled `solved`.
+  const SAMPLE = ["slant", "loopy", "mines", "range", "magnets", "palisade"];
+
+  it("names games that exist", () => {
+    // Vacuity: a typo here would silently check nothing.
+    for (const id of SAMPLE) expect(registeredGameIds()).toContain(id);
+    expect(SAMPLE.length).toBeGreaterThanOrEqual(5);
+  });
+
+  for (const id of SAMPLE) {
+    it(`${id}: restores a v1 save with its cheat record intact`, () => {
+      const game = getTsGame(id) as AnyGame;
+      const params = game.defaultParams();
+      const desc = game.newDesc(params, randomNew(`legacy-${id}`)).desc;
+
+      let playedStatus: string | undefined;
+      const played = midendFor(game);
+      played.setCallbacks(
+        (n) => {
+          if (n.type === "game-state-change") playedStatus = n.status;
+        },
+        () => {},
+        () => {},
+      );
+      played.newGameFromId(`${game.encodeParams(params, true)}:${desc}`);
+      // One real click first — press *and* release, because Mines opens on the
+      // release. Mines needs it (its layout does not exist until the first
+      // click, and Solve refuses before that), and it is what puts a `privDesc`
+      // in the envelope, which is the half of the format this game covers.
+      const size = game.computeSize(params, game.preferredTileSize ?? 32);
+      const cx = Math.floor(size.w / 2);
+      const cy = Math.floor(size.h / 2);
+      played.processInput(cx, cy, LEFT_BUTTON);
+      played.processInput(cx, cy, LEFT_RELEASE);
+      expect(played.solve(), `${id}: Solve refused`).toBeFalsy();
+      const current = JSON.parse(new TextDecoder().decode(played.saveGame()));
+      expect(current.cheated, `${id}: Solve did not set the flag`).toBe(true);
+
+      // Rewrite into the shape the old code wrote: `v: 1`, flag as `usedSolve`.
+      const { cheated, ...rest } = current;
+      const legacy = encodeSave({ ...rest, v: 1, usedSolve: cheated } as never);
+
+      const restored = midendFor(game);
+      let status: string | undefined;
+      restored.setCallbacks(
+        (n) => {
+          if (n.type === "game-state-change") status = n.status;
+        },
+        () => {},
+        () => {},
+      );
+      expect(restored.loadGame(legacy), `${id}: v1 save refused`).toBeFalsy();
+      // The invariant is *fidelity*, not a hard-coded verdict: whatever the
+      // game reported when it was saved, it reports again when restored. That
+      // is the assertion the flag is load-bearing for — and it covers Mines,
+      // whose Solve reveals the board without marking it won (upstream-faithful
+      // and pre-dating this change), so it saves and restores as "ongoing".
+      expect(status, `${id}: status changed across a v1 restore`).toBe(playedStatus);
+
+      // And what it saves back out is clean v2 — the old key gone, not carried.
+      const again = JSON.parse(new TextDecoder().decode(restored.saveGame()));
+      expect(again.v).toBe(2);
+      expect(again.cheated).toBe(true);
+      expect(Object.hasOwn(again, "usedSolve")).toBe(false);
     });
   }
 });

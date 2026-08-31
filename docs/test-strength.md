@@ -177,6 +177,19 @@ rate itself stays ungated, because a gated feedback number invites tests written
 against the number. When it fails, re-anchor on surrounding text — and take the
 prompt to decide whether the case still states the defect it claims to.
 
+**Never run two probes at once, and read "anchor not found" with that in mind.**
+A run *edits engine source in place* and restores it in a `finally` (and on
+`SIGINT`), which is safe for one run and unsafe for two: the second reads its
+baseline while the first has a defect planted, and then either restores the
+mutation as if it were the original or reports an anchor missing from a line
+that is sitting right there in git. Both happened here in one sitting — an
+argument-less invocation (which means *all eighteen modules*, twenty minutes)
+left running behind a filtered one. The tell is that the quoted anchor **does**
+match the committed file: check `git diff` on the probed module before believing
+the anchor drifted, because what you are looking at may be the other run's
+planted defect. Being mid-edit makes this worse rather than better — anything
+already `git add`ed stays staged while the working tree carries the plant.
+
 ---
 
 ## 3. Writing a test that discriminates
