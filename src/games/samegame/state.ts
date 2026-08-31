@@ -23,7 +23,7 @@ export interface SamegameState {
   /** Colour per cell in row-major order; `0` is empty, `1..ncols` a colour. */
   readonly tiles: readonly number[];
   readonly score: number;
-  readonly complete: boolean;
+  readonly completed: boolean;
   /** No two orthogonally-adjacent tiles share a colour (no move remains).
    * NOT a loss — upstream treats it as rescuable by Undo (design D8). */
   readonly impossible: boolean;
@@ -456,7 +456,7 @@ export function newState(p: SamegameParams, desc: string): SamegameState {
     scoresub: p.scoresub,
     tiles,
     score: 0,
-    complete: false,
+    completed: false,
     impossible: false,
   };
 }
@@ -529,7 +529,7 @@ export function check(
  * no-moves-left (`impossible`) position is NOT a loss — it is rescuable by
  * Undo (design D8), so this never returns `"lost"`. */
 export function status(state: SamegameState): GameStatus {
-  return state.complete ? "solved" : "ongoing";
+  return state.completed ? "solved" : "ongoing";
 }
 
 export function textFormat(state: SamegameState): string {

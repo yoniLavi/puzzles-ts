@@ -632,7 +632,7 @@ describe("netslide rendering", () => {
     const wonByPlaying = { ...s, tiles: hexGrid(aux), completed: 9, moveCount: 9 };
     expect(netslideGame.flashLength?.(s, wonByPlaying, 1, ui)).toBeGreaterThan(0);
 
-    const wonBySolving = { ...wonByPlaying, usedSolve: true };
+    const wonBySolving = { ...wonByPlaying, cheated: true };
     expect(netslideGame.flashLength?.(s, wonBySolving, 1, ui)).toBe(0);
   });
 

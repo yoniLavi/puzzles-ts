@@ -93,7 +93,7 @@ export function executeMove(state: SixteenState, move: SixteenMove): SixteenStat
     return {
       ...state,
       tiles,
-      usedSolve: true,
+      cheated: true,
       completed: state.moveCount + 1,
       moveCount: state.moveCount + 1,
     };
@@ -1022,7 +1022,7 @@ function drawRecessedBorder(
 // --- status bar -------------------------------------------------------
 
 function statusbarText(state: SixteenState, _ui: SixteenUi): string {
-  if (state.usedSolve) {
+  if (state.cheated) {
     return `Moves since auto-solve: ${state.moveCount - state.completed}`;
   }
   const prefix = state.completed ? "COMPLETED! " : "";
@@ -1436,16 +1436,10 @@ export const sixteenGame: Game<
     }
     return ANIM_TIME;
   },
-  flashLength: (oldState, newState) => {
-    if (
-      !oldState.completed &&
-      newState.completed &&
-      !oldState.usedSolve &&
-      !newState.usedSolve
-    )
-      return 2 * FLASH_FRAME;
-    return 0;
-  },
+  // Not `winFlash`: `completed` here is the move count, not a flag — see
+  // Fifteen's note.
+  flashLength: (a, b) =>
+    !a.completed && b.completed && !a.cheated && !b.cheated ? 2 * FLASH_FRAME : 0,
 };
 
 registerGame(sixteenGame);

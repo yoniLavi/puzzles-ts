@@ -11,6 +11,7 @@
 
 import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
+import { winFlash } from "../../engine/flash.ts";
 import type {
   Game,
   HintResult,
@@ -580,18 +581,15 @@ function flashLength(
   _dir: number,
   ui: DominosaUi,
 ): number {
-  if (
-    !oldState.completed &&
-    newState_.completed &&
-    !oldState.cheated &&
-    !newState_.cheated
-  ) {
+  const flash = winFlash(oldState, newState_, FLASH_TIME);
+  // Dominosa's only difference from the convention: the win clears the
+  // hovered-pair highlight, so the celebration is not drawn under it.
+  if (flash) {
     ui.highlight1 = -1;
     ui.highlight2 = -1;
     ui.highlightPair = null;
-    return FLASH_TIME;
   }
-  return 0;
+  return flash;
 }
 
 // --- reference aid ----------------------------------------------------------

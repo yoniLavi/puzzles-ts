@@ -316,7 +316,7 @@ export function executeMove(state: PearlState, move: PearlMove): PearlState {
 
   for (const op of move.ops) {
     if (op.kind === "solve") {
-      (ret as { usedSolve: boolean }).usedSolve = true;
+      (ret as { cheated: boolean }).cheated = true;
       continue;
     }
     if (op.kind === "hint") {

@@ -20,7 +20,7 @@ export interface SixteenState {
   readonly tiles: Int32Array;
   /** 0 = ongoing; >0 = move count at which the puzzle was completed */
   readonly completed: number;
-  readonly usedSolve: boolean;
+  readonly cheated: boolean;
   readonly moveCount: number;
   readonly moveTarget: number;
   /** dx+dy of the last move, used for animation direction */
@@ -129,7 +129,7 @@ export function newState(p: SixteenParams, desc: string): SixteenState {
     n,
     tiles,
     completed: 0,
-    usedSolve: false,
+    cheated: false,
     moveCount: 0,
     moveTarget: p.movetarget,
     lastMovementSense: 0,

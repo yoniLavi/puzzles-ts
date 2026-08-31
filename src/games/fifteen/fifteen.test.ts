@@ -186,7 +186,7 @@ describe("Fifteen slide moves", () => {
 // --- solve ------------------------------------------------------------
 
 describe("Fifteen solve", () => {
-  it("snaps to the solved board and sets usedSolve", () => {
+  it("snaps to the solved board and sets cheated", () => {
     const rng = randomNew("solve-test");
     const state = newState({ w: 4, h: 4 }, newDesc({ w: 4, h: 4 }, rng).desc);
     const result = fifteenGame.solve?.(state, state);
@@ -194,7 +194,7 @@ describe("Fifteen solve", () => {
     if (!result?.ok) throw new Error("expected solve");
     const solved = executeMove(state, result.move);
     expect(isCompletedTiles(solved.tiles, solved.n)).toBe(true);
-    expect(solved.usedSolve).toBe(true);
+    expect(solved.cheated).toBe(true);
     expect(solved.gapPos).toBe(solved.n - 1);
   });
 

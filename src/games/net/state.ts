@@ -167,7 +167,7 @@ export type NetMove =
    * explicit op list so replay is deterministic (design D4). No animation. */
   | { type: "jumble"; ops: NetOp[] }
   /** Solve: transform the current grid into the solution. No animation, and
-   * sets `usedSolve`. */
+   * sets `cheated`. */
   | { type: "solve"; ops: NetOp[] };
 
 /* ----------------------------------------------------------------------
@@ -193,7 +193,7 @@ export interface NetState {
   readonly barriers: Uint8Array;
 
   readonly completed: boolean;
-  readonly usedSolve: boolean;
+  readonly cheated: boolean;
 
   /** The tile last rotated and which way, for the rotation animation. `dir` is
    * 0 (no animation — a lock, jumble or solve), +1 (`A`), −1 (`C`) or +2 (`F`).
@@ -242,7 +242,7 @@ export function newState(p: NetParams, desc: string): NetState {
     tiles,
     barriers,
     completed: false,
-    usedSolve: false,
+    cheated: false,
     lastRotateX: 0,
     lastRotateY: 0,
     lastRotateDir: 0,

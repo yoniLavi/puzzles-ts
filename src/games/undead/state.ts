@@ -400,7 +400,7 @@ export interface UndeadState {
   countErrors: Uint8Array;
   /** `2·numPaths` struck-through ("done") flags per edge clue. */
   hintsDone: Uint8Array;
-  solved: boolean;
+  completed: boolean;
   cheated: boolean;
 }
 
@@ -413,7 +413,7 @@ export function cloneState(s: UndeadState): UndeadState {
     hintErrors: s.hintErrors.slice(),
     countErrors: s.countErrors.slice(),
     hintsDone: s.hintsDone.slice(),
-    solved: s.solved,
+    completed: s.completed,
     cheated: s.cheated,
   };
 }
@@ -427,7 +427,7 @@ function blankState(common: UndeadCommon): UndeadState {
     hintErrors: new Uint8Array(2 * common.numPaths),
     countErrors: new Uint8Array(3),
     hintsDone: new Uint8Array(2 * common.numPaths),
-    solved: false,
+    completed: false,
     cheated: false,
   };
 }
@@ -743,7 +743,7 @@ function checkPathSolution(state: UndeadState, p: number): boolean {
 // --- status / text ---------------------------------------------------------
 
 export function status(s: UndeadState): "solved" | "ongoing" {
-  return s.solved ? "solved" : "ongoing";
+  return s.completed ? "solved" : "ongoing";
 }
 
 /** ASCII board, matching `game_text_format`. */

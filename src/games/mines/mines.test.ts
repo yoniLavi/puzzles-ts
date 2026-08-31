@@ -298,8 +298,8 @@ describe("mines supersede + midend", () => {
       h: 3,
       n: 1,
       dead: false,
-      won: false,
-      usedSolve: false,
+      completed: false,
+      cheated: false,
       layout,
       clickedAt: { x: 1, y: 1 },
       grid,
@@ -334,8 +334,8 @@ describe("mines supersede + midend", () => {
       h: 3,
       n: 1,
       dead: false,
-      won: false,
-      usedSolve: false,
+      completed: false,
+      cheated: false,
       layout,
       clickedAt: { x: 1, y: 1 },
       grid,
@@ -367,11 +367,11 @@ describe("mines supersede + midend", () => {
     // Rebuild an explicitly-ongoing board so Solve fills the whole grid.
     const alive: MinesState = {
       ...s,
-      won: false,
+      completed: false,
       grid: new Int8Array(9).fill(COVERED),
     };
     const solved = minesGame.executeMove(alive, { type: "solve" });
-    expect(solved.usedSolve).toBe(true);
+    expect(solved.cheated).toBe(true);
     expect(solved.grid[0]).toBe(-1); // the mine, flagged
     // every non-mine square carries its neighbour count (not covered)
     for (let i = 1; i < 9; i++) expect(solved.grid[i]).toBeGreaterThanOrEqual(0);
@@ -388,14 +388,14 @@ describe("mines supersede + midend", () => {
       h: 3,
       n: 1,
       dead: true,
-      won: false,
-      usedSolve: false,
+      completed: false,
+      cheated: false,
       layout,
       clickedAt: { x: 2, y: 2 },
       grid,
     };
     const solved = minesGame.executeMove(dead, { type: "solve" });
-    expect(solved.usedSolve).toBe(true);
+    expect(solved.cheated).toBe(true);
     expect(solved.grid[0]).toBe(64); // the real mine, revealed
     expect(solved.grid[1]).toBe(66); // the wrong flag, crossed out
   });
@@ -403,13 +403,13 @@ describe("mines supersede + midend", () => {
   it("encodeUi / decodeUi round-trips deaths + completed (design D7)", () => {
     const ui = minesGame.newUi({} as never);
     ui.deaths = 3;
-    ui.completed = true;
+    ui.everCompleted = true;
     const enc = minesGame.encodeUi?.(ui) ?? "";
     expect(enc).toBe("D3C");
     const ui2 = minesGame.newUi({} as never);
     minesGame.decodeUi?.(ui2, enc);
     expect(ui2.deaths).toBe(3);
-    expect(ui2.completed).toBe(true);
+    expect(ui2.everCompleted).toBe(true);
   });
 });
 
@@ -434,8 +434,8 @@ describe("mines chord preview", () => {
       h: 3,
       n: 1,
       dead: false,
-      won: false,
-      usedSolve: false,
+      completed: false,
+      cheated: false,
       layout,
       clickedAt: { x: 1, y: 1 },
       grid,
@@ -498,8 +498,8 @@ describe("mines timer", () => {
       h: 9,
       n: 10,
       dead: false,
-      won: false,
-      usedSolve: false,
+      completed: false,
+      cheated: false,
       layout: pre.layout,
       clickedAt: null,
       grid: new Int8Array(81).fill(COVERED),
@@ -514,7 +514,7 @@ describe("mines timer", () => {
     h.m.timer(1);
     // A win stops it: completed flag set by changedState.
     const wonUi = minesGame.newUi(preState);
-    wonUi.completed = true;
+    wonUi.everCompleted = true;
     expect(minesGame.timingState?.(preState, wonUi)).toBe(false);
   });
 });

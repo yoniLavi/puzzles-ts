@@ -56,7 +56,7 @@ export interface SinglesState {
   /** max(w, h) — the number alphabet size. */
   o: number;
   completed: boolean;
-  usedSolve: boolean;
+  cheated: boolean;
   impossible: boolean;
   /** Immutable per-cell numbers, shared by reference across states. */
   nums: Int8Array;
@@ -141,7 +141,7 @@ export function makeState(w: number, h: number, nums: Int8Array): SinglesState {
     n: w * h,
     o: Math.max(w, h),
     completed: false,
-    usedSolve: false,
+    cheated: false,
     impossible: false,
     nums,
     flags: new Uint8Array(w * h),
@@ -155,7 +155,7 @@ export function cloneState(s: SinglesState): SinglesState {
     n: s.n,
     o: s.o,
     completed: s.completed,
-    usedSolve: s.usedSolve,
+    cheated: s.cheated,
     impossible: s.impossible,
     nums: s.nums, // immutable, shared
     flags: s.flags.slice(),

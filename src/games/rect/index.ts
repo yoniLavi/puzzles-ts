@@ -10,6 +10,7 @@
  * (local no-op suppression — no state-string undo).
  */
 
+import { winFlash } from "../../engine/flash.ts";
 import type { Game, SolveResult, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { atof, dimensionParamConfig, formatG } from "../../engine/params.ts";
@@ -351,12 +352,7 @@ function flashLength(
   _dir: number,
   _ui: RectUi,
 ): number {
-  return !oldState.completed &&
-    newState_.completed &&
-    !oldState.cheated &&
-    !newState_.cheated
-    ? FLASH_TIME
-    : 0;
+  return winFlash(oldState, newState_, FLASH_TIME);
 }
 
 function statusbarText(s: RectState, ui: RectUi): string {

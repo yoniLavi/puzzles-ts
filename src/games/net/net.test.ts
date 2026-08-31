@@ -250,7 +250,7 @@ describe("moves", () => {
     const solved = netGame.executeMove(state, result.move);
     expect(isComplete(solved)).toBe(true);
     expect(solved.completed).toBe(true);
-    expect(solved.usedSolve).toBe(true);
+    expect(solved.cheated).toBe(true);
     expect(Array.from(solved.tiles).every((t) => t & LOCKED)).toBe(true);
   });
 

@@ -98,7 +98,7 @@ describe("net render", () => {
   it("Solve is not celebrated with a flash", () => {
     const { state, solveMove } = board(P5, "render-noflash");
     const solved = netGame.executeMove(state, solveMove);
-    // usedSolve suppresses the completion flash.
+    // cheated suppresses the completion flash.
     expect(netGame.flashLength?.(state, solved, 1, newUi(solved))).toBe(0);
   });
 });

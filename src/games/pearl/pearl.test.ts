@@ -187,7 +187,7 @@ describe("pearl input + executeMove", () => {
     if (!res?.ok) return;
     const done = executeMove(state, res.move);
     expect(done.completed).toBe(true);
-    expect(done.usedSolve).toBe(true);
+    expect(done.cheated).toBe(true);
     // No celebration flash after Solve.
     expect(pearlGame.flashLength?.(state, done, 0, pearlGame.newUi(state))).toBe(0);
   });

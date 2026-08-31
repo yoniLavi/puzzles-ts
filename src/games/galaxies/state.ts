@@ -71,7 +71,7 @@ export interface GalaxiesState {
    * treat as read-only. */
   dots: DotPos[];
   completed: boolean;
-  usedSolve: boolean;
+  cheated: boolean;
   /** Difficulty diagnosis cached by the statusbar (constant given the
    * dot configuration); `-1` until first computed. Mutable by
    * convention only — written once, read many. Mirrors upstream's
@@ -124,7 +124,7 @@ export function blankGame(w: number, h: number): GalaxiesState {
     nassoc,
     dots: [],
     completed: false,
-    usedSolve: false,
+    cheated: false,
     cdiff: -1,
   };
 }
@@ -142,7 +142,7 @@ export function cloneState(s: GalaxiesState): GalaxiesState {
     nassoc: new Int16Array(s.nassoc),
     dots: s.dots.slice(),
     completed: s.completed,
-    usedSolve: s.usedSolve,
+    cheated: s.cheated,
     cdiff: s.cdiff,
   };
 }

@@ -214,7 +214,7 @@ describe("Mosaic moves", () => {
     const s = newState(P3, ALL_BLACK_DESC);
     // 9 cells all marked: 0xff 0x80.
     const solved = executeMove(s, { type: "solve", solution: "ff80" });
-    expect(solved.cheating).toBe(true);
+    expect(solved.cheated).toBe(true);
     expect(solved.notCompletedClues).toBe(0);
     for (let i = 0; i < 9; i++) {
       expect(solved.cells[i] & 3).toBe(STATE_MARKED);

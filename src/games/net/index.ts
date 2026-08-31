@@ -122,7 +122,7 @@ function executeMove(s: NetState, m: NetMove): NetState {
   let lastRotateX = 0;
   let lastRotateY = 0;
   let lastRotateDir = 0;
-  let usedSolve = s.usedSolve;
+  let cheated = s.cheated;
 
   switch (m.type) {
     case "rotate": {
@@ -143,7 +143,7 @@ function executeMove(s: NetState, m: NetMove): NetState {
     case "jumble":
     case "solve": {
       for (const o of m.ops) applyOp(next.tiles, s.w, o);
-      if (m.type === "solve") usedSolve = true;
+      if (m.type === "solve") cheated = true;
       break;
     }
     default:
@@ -152,7 +152,7 @@ function executeMove(s: NetState, m: NetMove): NetState {
 
   const tiled: NetState = {
     ...next,
-    usedSolve,
+    cheated,
     lastRotateX,
     lastRotateY,
     lastRotateDir,
@@ -394,7 +394,7 @@ function decodeUi(ui: NetUi, encoded: string): void {
 function statusbarText(s: NetState, ui: NetUi): string {
   let text = "";
   let complete = false;
-  if (s.usedSolve) {
+  if (s.cheated) {
     text = "Auto-solved. ";
     complete = true;
   } else if (s.completed) {
@@ -510,7 +510,7 @@ export const netGame: Game<NetParams, NetState, NetMove, NetUi, NetDrawState> = 
 
   flashLength: (a, b) => {
     // Flash on completion, unless it was auto-solved.
-    if (a.completed || !b.completed || a.usedSolve || b.usedSolve) return 0;
+    if (a.completed || !b.completed || a.cheated || b.cheated) return 0;
     const size = Math.max(b.w, b.h);
     return FLASH_FRAME * (size + 4);
   },

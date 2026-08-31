@@ -14,6 +14,7 @@
 
 import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   type HintResult,
@@ -455,9 +456,7 @@ function flashLength(
   _dir: number,
   _ui: ClustersUi,
 ): number {
-  if (!from.completed && to.completed && !from.cheated && !to.cheated)
-    return FLASH_TIME;
-  return 0;
+  return winFlash(from, to, FLASH_TIME);
 }
 
 /** Clusters' difficulty contract (`engine/difficulty.ts`). `solveGame` returns

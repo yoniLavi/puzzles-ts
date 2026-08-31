@@ -110,7 +110,7 @@ describe("tents completion (executeMove)", () => {
     for (let i = 0; i < p.w * p.h; i++) if (soln[i] === TENT) tents.push(i);
     const done = executeMove(state, { type: "solve", tents });
     expect(done.completed).toBe(true);
-    expect(done.usedSolve).toBe(true);
+    expect(done.cheated).toBe(true);
   });
 
   it("an all-non-tent board is not complete", () => {

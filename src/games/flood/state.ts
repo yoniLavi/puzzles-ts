@@ -33,7 +33,7 @@ export interface FloodState {
   readonly grid: Uint8Array;
   readonly moves: number;
   readonly movelimit: number;
-  readonly complete: boolean;
+  readonly completed: boolean;
   /** Set when the auto-solver was used (drives the status-bar prefix). */
   readonly cheated: boolean;
 }
@@ -178,7 +178,7 @@ export function newState(p: FloodParams, desc: string): FloodState {
     grid,
     moves: 0,
     movelimit,
-    complete: false,
+    completed: false,
     cheated: false,
   };
 }
@@ -190,7 +190,7 @@ export function newState(p: FloodParams, desc: string): FloodState {
  * the grid is one colour — completing *over* the limit is still a
  * defeat, exactly as upstream); else ongoing. */
 export function status(state: FloodState): GameStatus {
-  if (state.complete && state.moves <= state.movelimit) return "solved";
+  if (state.completed && state.moves <= state.movelimit) return "solved";
   if (state.moves >= state.movelimit) return "lost";
   return "ongoing";
 }

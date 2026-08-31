@@ -63,7 +63,7 @@ function applyFill(state: FloodState, colour: number): FloodState {
   const queue = new Int32Array(state.w * state.h);
   fill(state.w, state.h, grid, FILLX, FILLY, colour, queue);
   const moves = state.moves + 1;
-  return { ...state, grid, moves, complete: completed(grid) };
+  return { ...state, grid, moves, completed: completed(grid) };
 }
 
 export function executeMove(state: FloodState, move: FloodMove): FloodState {
@@ -71,7 +71,7 @@ export function executeMove(state: FloodState, move: FloodMove): FloodState {
     // Snap to solved: run the solver from here and apply every fill
     // (design D5). Upstream stores a path instead; our `hint()` gives the
     // step-by-step experience, so Solve just completes the board.
-    if (state.complete) throw new Error("Puzzle is already solved");
+    if (state.completed) throw new Error("Puzzle is already solved");
     const moves = solveMoves(state.w, state.h, state.grid, state.colours);
     const grid = Uint8Array.from(state.grid);
     const queue = new Int32Array(state.w * state.h);
@@ -80,7 +80,7 @@ export function executeMove(state: FloodState, move: FloodMove): FloodState {
       ...state,
       grid,
       moves: state.moves + moves.length,
-      complete: true,
+      completed: true,
       cheated: true,
     };
   }
@@ -91,7 +91,7 @@ export function executeMove(state: FloodState, move: FloodMove): FloodState {
     move.colour < 0 ||
     move.colour >= state.colours ||
     move.colour === corner ||
-    state.complete
+    state.completed
   ) {
     throw new Error(`Illegal flood fill with colour ${move.colour}`);
   }
@@ -155,7 +155,7 @@ function interpretMove(
     colour = state.grid[ty * w + tx];
   }
 
-  if (colour >= 0 && !state.complete) {
+  if (colour >= 0 && !state.completed) {
     return { type: "fill", colour };
   }
   return uiUpdated ? UI_UPDATE : null;
@@ -166,7 +166,7 @@ function interpretMove(
 function statusbarText(state: FloodState, _ui: FloodUi): string {
   // Faithful port of upstream's status string assembly.
   let prefix: string;
-  if (state.complete && state.moves <= state.movelimit) {
+  if (state.completed && state.moves <= state.movelimit) {
     prefix = state.cheated ? "Auto-solved. " : "COMPLETED! ";
   } else if (state.moves >= state.movelimit) {
     prefix = "FAILED! ";
@@ -186,7 +186,7 @@ function statusbarText(state: FloodState, _ui: FloodUi): string {
  * hint banner populated through an auto-hint run, matching the other
  * solver-backed ports. */
 function hint(state: FloodState): HintResult<FloodMove> {
-  if (state.complete) return { ok: false, error: "Already solved" };
+  if (state.completed) return { ok: false, error: "Already solved" };
   const moves = solveMoves(state.w, state.h, state.grid, state.colours);
   if (moves.length === 0) return { ok: false, error: "No helpful hint found" };
 
@@ -295,7 +295,7 @@ export const floodGame: Game<
   status,
 
   solve(_orig, curr) {
-    if (curr.complete) return { ok: false, error: "Puzzle is already solved" };
+    if (curr.completed) return { ok: false, error: "Puzzle is already solved" };
     return { ok: true, move: { type: "solve" as const } };
   },
 

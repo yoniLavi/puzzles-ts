@@ -12,6 +12,7 @@
  */
 
 import type { DifficultyContract } from "../../engine/difficulty.ts";
+import { winFlash } from "../../engine/flash.ts";
 import type { Game, GamePref, SolveResult, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -287,12 +288,7 @@ function flashLength(
   _dir: number,
   _ui: PearlUi,
 ): number {
-  return !oldState.completed &&
-    newState.completed &&
-    !oldState.usedSolve &&
-    !newState.usedSolve
-    ? FLASH_TIME
-    : 0;
+  return winFlash(oldState, newState, FLASH_TIME);
 }
 
 function solve(

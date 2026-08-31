@@ -12,6 +12,7 @@
  */
 
 import { rejectMove } from "../../engine/assert-never.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   type HintResult,
@@ -189,10 +190,10 @@ function executeMove(state: RangeState, move: RangeMove): RangeState {
     next.grid[cell] = cellValueToGrid(value);
   }
   if (move.solve) {
-    next.hasCheated = true;
-    next.wasSolved = true;
-  } else if (!next.wasSolved) {
-    next.wasSolved = !findErrors(next.grid, next.w, next.h);
+    next.cheated = true;
+    next.completed = true;
+  } else if (!next.completed) {
+    next.completed = !findErrors(next.grid, next.w, next.h);
   }
   return next;
 }
@@ -432,7 +433,7 @@ function buildHighlightsInner(
 }
 
 function hint(state: RangeState): HintResult<RangeMove, RangeHint> {
-  if (state.wasSolved) return { ok: false, error: "This board is already solved." };
+  if (state.completed) return { ok: false, error: "This board is already solved." };
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
@@ -477,8 +478,7 @@ function flashLength(
   _dir: number,
   _ui: RangeUi,
 ): number {
-  if (!from.wasSolved && to.wasSolved && !to.hasCheated) return FLASH_TIME;
-  return 0;
+  return winFlash(from, to, FLASH_TIME);
 }
 
 export const rangeGame: Game<

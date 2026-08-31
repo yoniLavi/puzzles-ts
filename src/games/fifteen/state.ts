@@ -25,7 +25,7 @@ export interface FifteenState {
   readonly completed: number;
   /** Set by Solve; suppresses the completion flash and switches the
    * status bar to "Moves since auto-solve". */
-  readonly usedSolve: boolean;
+  readonly cheated: boolean;
   readonly moveCount: number;
 }
 
@@ -135,7 +135,7 @@ export function newState(p: FifteenParams, desc: string): FifteenState {
     tiles,
     gapPos,
     completed: 0,
-    usedSolve: false,
+    cheated: false,
     moveCount: 0,
   };
 }

@@ -36,7 +36,7 @@ function solvedState(w: number, h: number): SixteenState {
     n,
     tiles,
     completed: 0,
-    usedSolve: false,
+    cheated: false,
     moveCount: 0,
     moveTarget: 0,
     lastMovementSense: 0,
@@ -264,7 +264,7 @@ describe("Sixteen move execution", () => {
     const move: SixteenMove = { type: "solve" };
     const result = executeMove(s, move);
     expect(Array.from(result.tiles)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    expect(result.usedSolve).toBe(true);
+    expect(result.cheated).toBe(true);
     expect(result.completed).toBeGreaterThan(0);
   });
 
@@ -423,7 +423,7 @@ describe("Sixteen hint", () => {
       n: 16,
       tiles: new Int32Array([3, 4, 1, 8, 5, 6, 2, 7, 9, 10, 11, 12, 13, 14, 15, 16]),
       completed: 0,
-      usedSolve: false,
+      cheated: false,
       moveCount: 0,
       moveTarget: 0,
       lastMovementSense: 0,
@@ -455,7 +455,7 @@ describe("Sixteen hint", () => {
       n,
       tiles,
       completed: 0,
-      usedSolve: false,
+      cheated: false,
       moveCount: 0,
       moveTarget: 0,
       lastMovementSense: 0,
@@ -526,7 +526,7 @@ describe("Sixteen hint", () => {
         23, 24, 25,
       ]),
       completed: 0,
-      usedSolve: false,
+      cheated: false,
       moveCount: 0,
       moveTarget: 0,
       lastMovementSense: 0,
@@ -565,7 +565,7 @@ describe("Sixteen hint", () => {
         23, 10, 25,
       ]),
       completed: 0,
-      usedSolve: false,
+      cheated: false,
       moveCount: 34,
       moveTarget: 0,
       lastMovementSense: 0,
@@ -610,7 +610,7 @@ describe("Sixteen hint", () => {
         23, 10, 25,
       ]),
       completed: 0,
-      usedSolve: false,
+      cheated: false,
       moveCount: 34,
       moveTarget: 0,
       lastMovementSense: 0,
@@ -668,7 +668,7 @@ describe("Sixteen hint", () => {
         13, 14, 15, 16,
       ]),
       completed: 0,
-      usedSolve: false,
+      cheated: false,
       moveCount: 0,
       moveTarget: 0,
       lastMovementSense: 0,
@@ -784,7 +784,7 @@ describe("Sixteen hint", () => {
       n: 16,
       tiles,
       completed: 0,
-      usedSolve: false,
+      cheated: false,
       moveCount: 16,
       moveTarget: 0,
       lastMovementSense: 0,
@@ -804,7 +804,7 @@ describe("Sixteen hint", () => {
       n: 9,
       tiles,
       completed: 0,
-      usedSolve: false,
+      cheated: false,
       moveCount: 0,
       moveTarget: 0,
       lastMovementSense: 0,
@@ -845,7 +845,7 @@ describe("Sixteen hint", () => {
       n: 9,
       tiles,
       completed: 0,
-      usedSolve: false,
+      cheated: false,
       moveCount: 0,
       moveTarget: 0,
       lastMovementSense: 0,

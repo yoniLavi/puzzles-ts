@@ -10,6 +10,7 @@
 
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { Dsf } from "../../engine/dsf.ts";
+import { winFlash } from "../../engine/flash.ts";
 import type {
   Game,
   HintResult,
@@ -162,12 +163,7 @@ function flashLength(
   _dir: number,
   _ui: SlantUi,
 ): number {
-  return !oldState.completed &&
-    newState_.completed &&
-    !oldState.usedSolve &&
-    !newState_.usedSolve
-    ? FLASH_TIME
-    : 0;
+  return winFlash(oldState, newState_, FLASH_TIME);
 }
 
 function solve(

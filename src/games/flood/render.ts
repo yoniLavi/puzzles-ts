@@ -215,7 +215,7 @@ export function redraw(
   let flashframe = -1;
   let victory = false;
   if (flashTime > 0) {
-    victory = state.complete;
+    victory = state.completed;
     const frame = victory ? VICTORY_FLASH_FRAME : DEFEAT_FLASH_FRAME;
     flashframe = Math.floor(flashTime / frame);
   }
@@ -232,7 +232,7 @@ export function redraw(
   const showSoln =
     activeHint !== undefined &&
     activeHint.move.type === "fill" &&
-    !state.complete &&
+    !state.completed &&
     state.grid[FILLY * w + FILLX] !== activeHint.move.colour;
   if (showSoln && activeHint?.move.type === "fill") {
     solnmove = activeHint.move.colour;

@@ -358,7 +358,7 @@ function executeMove(s: GalaxiesState, move: GalaxiesMove): GalaxiesState {
 
   const next = cloneState(s);
   for (const op of move.ops) applyOp(next, op, move.solving);
-  if (move.solving) next.usedSolve = true;
+  if (move.solving) next.cheated = true;
   if (checkComplete(next, false).complete) next.completed = true;
   // Difficulty is constant over the lifetime of the puzzle (it
   // depends only on the dot layout). Preserve the cached value
@@ -1014,7 +1014,7 @@ function statusbarText(s: GalaxiesState, _ui: GalaxiesUi): string {
   }
   const diffWord = DIFF_NAMES[cd] ?? "Unknown";
   if (s.completed) {
-    return s.usedSolve
+    return s.cheated
       ? `Auto-solved. Difficulty ${diffWord}.`
       : `COMPLETED! Difficulty ${diffWord}.`;
   }
@@ -1241,7 +1241,7 @@ export const galaxiesGame: Game<
     return 0;
   },
   flashLength(oldState, newState): number {
-    if (!oldState.completed && newState.completed && !newState.usedSolve) {
+    if (!oldState.completed && newState.completed && !newState.cheated) {
       return 3 * FLASH_TIME;
     }
     return 0;

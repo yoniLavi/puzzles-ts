@@ -27,6 +27,7 @@
 
 import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   type HintResult,
@@ -597,9 +598,7 @@ function hintKeepTrack(
 }
 
 function flashLength(from: BoatsState, to: BoatsState): number {
-  return !from.completed && to.completed && !from.cheated && !to.cheated
-    ? FLASH_TIME
-    : 0;
+  return winFlash(from, to, FLASH_TIME);
 }
 
 // --- params UI -------------------------------------------------------------

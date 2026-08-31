@@ -183,7 +183,7 @@ describe("undead executeMove", () => {
     for (let i = 0; i < placements.length; i++) {
       s = undeadGame.executeMove(s, { type: "set", cell: i, monster: placements[i] });
     }
-    expect(s.solved).toBe(true);
+    expect(s.completed).toBe(true);
     expect(undeadGame.status(s)).toBe("solved");
   });
 

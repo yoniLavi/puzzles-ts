@@ -171,7 +171,7 @@ describe("slant errors and completion", () => {
     }
     s = applyAll(s, moves);
     expect(s.completed).toBe(true);
-    expect(s.usedSolve).toBe(false);
+    expect(s.cheated).toBe(false);
     // Clearing a square afterwards keeps the latched flag.
     s = executeMove(s, set(0, 0, 0));
     expect(s.completed).toBe(true);
@@ -383,8 +383,8 @@ describe("slant solve + findMistakes", () => {
     if (r?.ok) {
       const done = executeMove(s, r.move);
       expect(done.completed).toBe(true);
-      expect(done.usedSolve).toBe(true);
-      // usedSolve suppresses the win flash.
+      expect(done.cheated).toBe(true);
+      // cheated suppresses the win flash.
       expect(slantGame.flashLength?.(s, done, 1, ui())).toBe(0);
     }
   });

@@ -10,6 +10,7 @@
  */
 
 import type { DifficultyContract } from "../../engine/difficulty.ts";
+import { winFlash } from "../../engine/flash.ts";
 import type { Game, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -149,20 +150,6 @@ function interpretMove(
   if (flags[idx] & GS_SET) return { type: "flag", idx, mode: "notneutral" };
   if (flags[idx] & GS_NOTNEUTRAL) return { type: "flag", idx, mode: "empty" };
   return { type: "flag", idx, mode: "neutral" };
-}
-
-function flashLength(
-  oldState: MagnetsState,
-  newState_: MagnetsState,
-  _dir: number,
-  _ui: MagnetsUi,
-): number {
-  return !oldState.completed &&
-    newState_.completed &&
-    !oldState.solved &&
-    !newState_.solved
-    ? FLASH_TIME
-    : 0;
 }
 
 const CHAR2GRID = (c: string): number =>
@@ -312,7 +299,7 @@ export const magnetsGame: Game<
   redraw: (dr, ds, prev, s, dir, ui, animTime, flashTime, _hint, mistakes) =>
     redraw(dr, ds, prev, s, dir, ui, animTime, flashTime, mistakes),
 
-  flashLength,
+  flashLength: (from, to) => winFlash(from, to, FLASH_TIME),
 };
 
 registerGame(magnetsGame);

@@ -67,7 +67,7 @@ describe("hint", () => {
       cur = rangeGame.executeMove(cur, step.move);
     }
     expect(findErrors(cur.grid, cur.w, cur.h)).toBe(false);
-    expect(cur.wasSolved).toBe(true);
+    expect(cur.completed).toBe(true);
   });
 
   it("gives every step visible evidence (an area to shade or a black to ring)", () => {

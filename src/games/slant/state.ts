@@ -52,7 +52,7 @@ export interface SlantState {
    * not an error; the fade-grounded pref renders it dimmed. */
   readonly grounded: Uint8Array;
   readonly completed: boolean;
-  readonly usedSolve: boolean;
+  readonly cheated: boolean;
 }
 
 /** A `set` writes one square (the C `\`/`/`/`C` move letters); a `solve`
@@ -202,7 +202,7 @@ export function newState(p: SlantParams, desc: string): SlantState {
     vertexErrors: new Uint8Array(W * H),
     grounded: new Uint8Array(w * h),
     completed: false,
-    usedSolve: false,
+    cheated: false,
   };
 }
 
@@ -330,7 +330,7 @@ export function computeErrors(
 export function executeMove(state: SlantState, move: SlantMove): SlantState {
   const { w, h } = state;
   const soln = Int8Array.from(state.soln);
-  let usedSolve = state.usedSolve;
+  let cheated = state.cheated;
 
   if (move.type === "solve") {
     if (move.grid.length !== w * h) throw new Error("Bad solve grid");
@@ -339,7 +339,7 @@ export function executeMove(state: SlantState, move: SlantMove): SlantState {
       if (c !== "\\" && c !== "/") throw new Error("Bad solve grid");
       soln[i] = c === "\\" ? -1 : 1;
     }
-    usedSolve = true;
+    cheated = true;
   } else if (move.type === "set") {
     const { x, y, v } = move;
     if (x < 0 || x >= w || y < 0 || y >= h) throw new Error("Move out of bounds");
@@ -358,7 +358,7 @@ export function executeMove(state: SlantState, move: SlantMove): SlantState {
     vertexErrors: errors.vertexErrors,
     grounded: errors.grounded,
     completed: errors.complete || state.completed,
-    usedSolve,
+    cheated,
   };
 }
 

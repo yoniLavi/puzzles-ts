@@ -13,6 +13,7 @@
 
 import { assertNever, rejectMove } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
+import { winFlash } from "../../engine/flash.ts";
 import type {
   HintResult,
   HintStep,
@@ -197,7 +198,7 @@ function executeMove(state: LightupState, move: LightupMove): LightupState {
       assertNever(op.kind, `lightup: executeMove op at (${op.x},${op.y})`);
     }
   }
-  if (move.solve) next.usedSolve = true;
+  if (move.solve) next.cheated = true;
   if (gridCorrect(next)) next.completed = true;
   return next;
 }
@@ -491,9 +492,7 @@ function flashLength(
   _dir: number,
   _ui: LightupUi,
 ): number {
-  if (!from.completed && to.completed && !from.usedSolve && !to.usedSolve)
-    return FLASH_TIME;
-  return 0;
+  return winFlash(from, to, FLASH_TIME);
 }
 
 /** Light Up's difficulty contract (`engine/difficulty.ts`). `puzzleIsGood` is

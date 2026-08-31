@@ -214,7 +214,7 @@ describe("Twiddle moves", () => {
     expect(isComplete(s.numbers, s.orient, 9, false)).toBe(true);
   });
 
-  it("solve snaps to ascending, clears orientation, sets usedSolve", () => {
+  it("solve snaps to ascending, clears orientation, sets cheated", () => {
     const p = params({ orientable: true });
     const s = stateFromNumbers(
       p,
@@ -224,7 +224,7 @@ describe("Twiddle moves", () => {
     const solved = twiddleGame.executeMove(s, { type: "solve" });
     expect(Array.from(solved.numbers)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     expect(Array.from(solved.orient)).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    expect(solved.usedSolve).toBe(true);
+    expect(solved.cheated).toBe(true);
     expect(solved.completed).toBe(1);
     // No completion flash after a solve.
     expect(twiddleGame.flashLength?.(s, solved, 1, twiddleGame.newUi(s))).toBe(0);

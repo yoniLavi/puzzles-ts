@@ -25,6 +25,7 @@ import {
   playerEntryColour,
 } from "../../engine/colour/palette.ts";
 import { groupDiagonal } from "../../engine/colour/palette-games.ts";
+import { winFlash } from "../../engine/flash.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import { drawHintOrdinal } from "../../engine/hint-ordinal.ts";
@@ -597,6 +598,5 @@ export function redraw(
 }
 
 export function flashLength(a: GroupState, b: GroupState): number {
-  if (!a.completed && b.completed && !a.cheated && !b.cheated) return FLASH_TIME;
-  return 0;
+  return winFlash(a, b, FLASH_TIME);
 }

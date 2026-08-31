@@ -65,7 +65,7 @@ export function executeMove(s: SignpostState, move: SignpostMove): SignpostState
       for (let i = 0; i < ret.n; i++) {
         if (ret.next[i] !== -1) ret.prev[ret.next[i]] = i;
       }
-      ret.usedSolve = true;
+      ret.cheated = true;
       break;
     }
     default:

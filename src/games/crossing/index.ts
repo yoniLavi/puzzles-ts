@@ -17,6 +17,7 @@ import {
   keepCandidateHintTrack,
   refreshCandidateHintStep,
 } from "../../engine/candidate-hint.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   type HintResult,
@@ -572,9 +573,7 @@ function refreshHintStep(
 }
 
 function flashLength(from: CrossingState, to: CrossingState): number {
-  return !from.completed && to.completed && !from.cheated && !to.cheated
-    ? FLASH_TIME
-    : 0;
+  return winFlash(from, to, FLASH_TIME);
 }
 
 export const crossingGame: Game<

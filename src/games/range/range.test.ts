@@ -27,7 +27,7 @@ function cellPoint(r: number, c: number): Point {
 }
 
 function makeState(w: number, h: number, grid: number[]): RangeState {
-  return { w, h, grid: Int8Array.from(grid), hasCheated: false, wasSolved: false };
+  return { w, h, grid: Int8Array.from(grid), cheated: false, completed: false };
 }
 
 const ds = { tilesize: TS } as never;
@@ -120,7 +120,7 @@ describe("executeMove", () => {
     // The board as dealt already has the clue's run satisfied (empties
     // count as white), so it is solved immediately on any confirming move.
     const after = rangeGame.executeMove(st, { sets: [{ r: 0, c: 0, value: "white" }] });
-    expect(after.wasSolved).toBe(true);
+    expect(after.completed).toBe(true);
     expect(rangeGame.status(after)).toBe("solved");
     expect(
       rangeGame.flashLength?.(st, after, 1, { cursor: newCursor() }),
@@ -136,7 +136,7 @@ describe("solve + findMistakes", () => {
     expect(res?.ok).toBe(true);
     if (!res?.ok) return;
     const solved = rangeGame.executeMove(st, res.move);
-    expect(solved.hasCheated).toBe(true);
+    expect(solved.cheated).toBe(true);
     // every non-clue cell is now decided
     for (const v of solved.grid) expect(v).not.toBe(EMPTY);
     expect(rangeGame.status(solved)).toBe("solved");

@@ -98,7 +98,7 @@ function executeMove(s: NetslideState, m: NetslideMove): NetslideState {
     return {
       ...cloneState(s),
       tiles: Uint8Array.from(m.tiles),
-      usedSolve: true,
+      cheated: true,
       completed: 1,
       moveCount: 1,
       // Upstream leaves the previous move's line here, so Solve animates a
@@ -317,7 +317,7 @@ export const netslideGame: Game<
     );
     const total = s.w * s.h;
 
-    let text = s.usedSolve
+    let text = s.cheated
       ? `Moves since auto-solve: ${s.moveCount - s.completed}`
       : `${s.completed ? "COMPLETED! " : ""}Moves: ${s.completed || s.moveCount}`;
     if (s.movetarget) text += ` (target ${s.movetarget})`;
@@ -334,7 +334,7 @@ export const netslideGame: Game<
   animLength: () => ANIM_TIME,
 
   flashLength: (a, b) => {
-    if (a.completed || !b.completed || a.usedSolve || b.usedSolve) return 0;
+    if (a.completed || !b.completed || a.cheated || b.cheated) return 0;
     // The flash ripples outward from the centre, so it must run long enough to
     // reach the furthest corner and then finish that tile's four frames.
     const reach = Math.max(b.cx + 1, b.cy + 1, b.w - b.cx, b.h - b.cy);

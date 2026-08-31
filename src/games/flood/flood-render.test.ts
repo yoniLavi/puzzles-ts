@@ -108,7 +108,7 @@ describe("Flood redraw", () => {
       { w: 5, h: 5, colours: 6, leniency: 0 },
       `${"0".repeat(25)},9`,
     );
-    const state: FloodState = { ...base, complete: true, moves: 3 };
+    const state: FloodState = { ...base, completed: true, moves: 3 };
     const ds = freshDs(state);
     const { dr, ops } = recordingDrawing();
     // flashTime / VICTORY_FLASH_FRAME(0.03) ≈ 4 → cells within manhattan

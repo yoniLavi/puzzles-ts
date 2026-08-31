@@ -52,19 +52,47 @@
       picker rather than a board — the same shape in a different space, so it
       takes the same shape.
 
-## 2. The completion vocabulary (~14 games)
+## 2. The completion vocabulary (23 games renamed, 25 adopted `winFlash`)
 
-- [ ] 2.1 Rename to `completed` / `cheated` on `State` wherever a game spells
-      them otherwise (`usedSolve`, `hasCheated`, `wasSolved`, `solved`,
-      `complete`).
-- [ ] 2.2 Adopt `winFlash` in every game whose `flashLength` then reduces to it
-      — the eight verbatim copies plus whatever 2.1 unlocks.
-- [ ] 2.3 Confirm the genuinely bespoke ones are untouched and say why in each:
-      Samegame (also flashes "impossible"), Flood (won *and* lost), Ascent
-      (duration scales with board size), Pegs (two frames), Mosaic, Palisade,
-      Flip's solve celebration.
-- [ ] 2.4 Check no per-game spec states a renamed flag normatively; if one does,
-      it needs a delta.
+- [x] 2.1 Renamed to `completed` / `cheated` on `State`. The population was
+      larger and stranger than the proposal's: `usedSolve` in **14** games
+      (fifteen galaxies lightup mines net netslide pearl signpost singles slant
+      **sixteen** tents tracks twiddle), `hasCheated`+`wasSolved` in Range,
+      `complete` in Flood and Samegame, `solved` in Loopy and Undead, `won` in
+      Mines — **and `cheating` in Mosaic, a tenth spelling the guard found after
+      the sweep, not before it.**
+      - **Magnets spelled `cheated` as `solved`.** Loopy and Undead spell
+        `completed` that way. One word, opposite meanings, in three games.
+      - Mines' `Ui.completed` became `everCompleted`: it means "was *ever* won,
+        so the clock stays stopped", survives an undo, and would now read as a
+        duplicate of the state's.
+      - The **midend's** `usedSolve` is untouched, and deliberately: it is a
+        save-envelope key, so renaming it breaks every existing save. That is a
+        player-visible compatibility break and therefore the owner's call.
+- [x] 2.2 25 games adopted `winFlash`, matched on their *normalised* body rather
+      than their text — the same condition was written six ways. Four games that
+      omitted `!from.cheated` were adopted too: `cheated` is monotone in every
+      game that has it, so `!to.cheated` already implies it.
+- [x] 2.3 The bespoke celebrations are untouched, each with its reason recorded
+      in `flash.ts`. Two came out differently from the proposal's guesses:
+      - **Palisade and Separate are owner-requested divergences** — they flash a
+        manual completion made *after* a Solve, which is a different condition,
+        not a different spelling. The matcher left them alone and reading them
+        found the decision.
+      - **Fifteen, Sixteen, Twiddle and Slide** hold `completed` as a *number* —
+        the move count they were solved at, frozen so the status bar stops
+        counting. The name is unified; the type is a real difference. (Their two
+        sentinels disagree — `0` vs `-1` for "ongoing" — which is a follow-up,
+        not this change.)
+      - Dominosa is the near-miss: its condition *is* the convention, so it now
+        calls `winFlash` and uses the answer to also clear its hover highlight.
+- [x] 2.4 **Four per-game specs did state a renamed flag normatively**, and got
+      `MODIFIED` deltas: `fifteen` and `twiddle` (`usedSolve`, in a requirement
+      *and* inside a scenario), `range` (`hasCheated`/`wasSolved`, across two
+      requirements), `mosaic` (`cheating`). Unruly's mention is prose ("without
+      cheating") and needs nothing. Each delta reproduces every surviving
+      scenario, and each was written against the requirement that actually holds
+      the sentence — grepped first, per the `AGENTS.md` hazard note.
 
 ## 3. The first-arrow-press unification (player-visible)
 

@@ -69,7 +69,7 @@ function blankState(w = 4, h = 4, type = 0): LoopyState {
     lines,
     lineErrors: new Uint8Array(grid.numEdges),
     exactlyOneLoop: false,
-    solved: false,
+    completed: false,
     cheated: false,
   };
 }
@@ -324,7 +324,7 @@ describe("completion and error highlighting", () => {
     const looped = closeSmallestLoop(s);
     expect(looped.exactlyOneLoop).toBe(true);
     // No clues at all, so a single closed loop satisfies everything.
-    expect(looped.solved).toBe(true);
+    expect(looped.completed).toBe(true);
     expect([...looped.lineErrors]).toEqual(new Array(s.grid.numEdges).fill(0));
   });
 
@@ -334,7 +334,7 @@ describe("completion and error highlighting", () => {
     s.clues[8] = 3;
     const looped = closeSmallestLoop(s);
     expect(looped.exactlyOneLoop).toBe(true);
-    expect(looped.solved).toBe(false);
+    expect(looped.completed).toBe(false);
   });
 
   it("highlights every YES edge at a vertex of degree 3", () => {
@@ -349,7 +349,7 @@ describe("completion and error highlighting", () => {
     });
     for (const j of [0, 1, 2]) expect(next.lineErrors[dot.edges[j].index]).toBe(1);
     expect(next.exactlyOneLoop).toBe(false);
-    expect(next.solved).toBe(false);
+    expect(next.completed).toBe(false);
   });
 
   it("leaves the largest component alone and reddens the rest", () => {
@@ -394,13 +394,13 @@ describe("completion and error highlighting", () => {
   it("keeps `solved` sticky across an undo, as upstream does", () => {
     const s = blankState();
     const looped = closeSmallestLoop(s);
-    expect(looped.solved).toBe(true);
+    expect(looped.completed).toBe(true);
     // Reopening the loop does not un-win the game: `solved` is only ever set.
     const reopened = loopyGame.executeMove(looped, {
       kind: "set",
       ops: [{ edge: s.grid.faces[0].edges[0]?.index ?? 0, state: LINE_UNKNOWN }],
     });
-    expect(reopened.solved).toBe(true);
+    expect(reopened.completed).toBe(true);
     expect(reopened.exactlyOneLoop).toBe(false);
   });
 });
@@ -459,7 +459,7 @@ describe("solver", () => {
     expect(result?.ok).toBe(true);
     if (!result?.ok) return;
     const solved = loopyGame.executeMove(s, result.move);
-    expect(solved.solved).toBe(true);
+    expect(solved.completed).toBe(true);
     expect(solved.cheated).toBe(true);
     // Solve leaves nothing undecided.
     expect([...solved.lines].every((l) => l !== LINE_UNKNOWN)).toBe(true);

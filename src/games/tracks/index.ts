@@ -11,6 +11,7 @@
  */
 
 import type { DifficultyContract } from "../../engine/difficulty.ts";
+import { winFlash } from "../../engine/flash.ts";
 import type { Game, SolveResult, UiUpdate } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
@@ -271,9 +272,7 @@ function flashLength(
   _dir: number,
   _ui: TracksUi,
 ): number {
-  return !oldState.completed && newState_.completed && !newState_.usedSolve
-    ? FLASH_TIME
-    : 0;
+  return winFlash(oldState, newState_, FLASH_TIME);
 }
 
 function solve(

@@ -53,7 +53,7 @@ export interface MosaicState {
   readonly board: MosaicBoard;
   /** Per-cell mark + overlay flags (STATE_*). Cloned per move. */
   readonly cells: Uint8Array;
-  readonly cheating: boolean;
+  readonly cheated: boolean;
   /** Shown clues not yet flagged SOLVED; 0 means the board is complete. */
   readonly notCompletedClues: number;
 }
@@ -204,7 +204,7 @@ export function newState(p: MosaicParams, desc: string): MosaicState {
     height: p.height,
     board,
     cells: new Uint8Array(size),
-    cheating: false,
+    cheated: false,
     notCompletedClues,
   };
 }
@@ -295,7 +295,7 @@ export function executeMove(state: MosaicState, move: MosaicMove): MosaicState {
       }
     }
     if (loc < size) throw new Error("Bad solve bitmap");
-    return { ...state, cells, cheating: true, notCompletedClues: 0 };
+    return { ...state, cells, cheated: true, notCompletedClues: 0 };
   }
 
   const inBounds = (x: number, y: number) =>
@@ -351,7 +351,7 @@ export function status(state: MosaicState): GameStatus {
 
 export function statusbarText(state: MosaicState, _ui: MosaicUi): string {
   if (state.notCompletedClues === 0) {
-    return state.cheating ? "Auto solved" : "COMPLETED!";
+    return state.cheated ? "Auto solved" : "COMPLETED!";
   }
   return `Clues left: ${state.notCompletedClues}`;
 }

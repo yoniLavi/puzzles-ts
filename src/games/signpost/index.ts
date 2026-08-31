@@ -11,6 +11,7 @@
  */
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
+import { winFlash } from "../../engine/flash.ts";
 import type { GamePref } from "../../engine/game.ts";
 import {
   fromCoord as fromCoordE,
@@ -411,8 +412,7 @@ function newDrawState(s: SignpostState): SignpostDrawState {
 }
 
 function flashLength(a: SignpostState, b: SignpostState): number {
-  if (!a.completed && b.completed && !b.usedSolve) return FLASH_SPIN;
-  return 0;
+  return winFlash(a, b, FLASH_SPIN);
 }
 
 // --- register --------------------------------------------------------

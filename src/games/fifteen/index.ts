@@ -95,7 +95,7 @@ export function executeMove(state: FifteenState, move: FifteenMove): FifteenStat
       ...state,
       tiles,
       gapPos: n - 1,
-      usedSolve: true,
+      cheated: true,
       completed: 1,
       moveCount: 1,
     };
@@ -406,7 +406,7 @@ function redraw(
 // --- status bar -------------------------------------------------------
 
 function statusbarText(state: FifteenState, _ui: FifteenUi): string {
-  if (state.usedSolve) {
+  if (state.cheated) {
     return `Moves since auto-solve: ${state.moveCount - state.completed}`;
   }
   const prefix = state.completed ? "COMPLETED! " : "";
@@ -587,16 +587,11 @@ export const fifteenGame: Game<
   redraw,
 
   animLength: () => ANIM_TIME,
-  flashLength: (oldState, newState) => {
-    if (
-      !oldState.completed &&
-      newState.completed &&
-      !oldState.usedSolve &&
-      !newState.usedSolve
-    )
-      return 2 * FLASH_FRAME;
-    return 0;
-  },
+  // Not `winFlash`: Fifteen's `completed` is the move count it was solved at,
+  // frozen so the status bar stops counting, not a flag. Sixteen, Twiddle and
+  // Slide hold the same shape for the same reason.
+  flashLength: (a, b) =>
+    !a.completed && b.completed && !a.cheated && !b.cheated ? 2 * FLASH_FRAME : 0,
 };
 
 registerGame(fifteenGame);

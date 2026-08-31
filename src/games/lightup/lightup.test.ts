@@ -376,7 +376,7 @@ describe("lightup solve", () => {
     expect(me.solve()).toBeUndefined();
     const st = (me as unknown as { state: LightupState }).state;
     expect(st.completed).toBe(true);
-    expect(st.usedSolve).toBe(true);
+    expect(st.cheated).toBe(true);
   });
 
   it("solve() recovers from a wrong mid-game position", () => {

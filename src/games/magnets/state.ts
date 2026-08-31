@@ -87,7 +87,7 @@ export interface MagnetsState {
   /** `2·(w+h)` clue-grey toggles, cloned per move. */
   readonly countsDone: Uint8Array;
   readonly completed: boolean;
-  readonly solved: boolean;
+  readonly cheated: boolean;
 }
 
 export type MagnetsMove =
@@ -333,7 +333,7 @@ export function newState(p: MagnetsParams, desc: string): MagnetsState {
     flags: r.flags,
     countsDone: new Uint8Array(2 * (w + h)),
     completed: false,
-    solved: false,
+    cheated: false,
   };
 }
 
@@ -518,7 +518,7 @@ export function executeMove(state: MagnetsState, move: MagnetsMove): MagnetsStat
     }
   };
 
-  let solved = next.solved;
+  let cheated = next.cheated;
   switch (move.type) {
     case "set":
     case "flag": {
@@ -534,7 +534,7 @@ export function executeMove(state: MagnetsState, move: MagnetsMove): MagnetsStat
       break;
     }
     case "solve": {
-      solved = true;
+      cheated = true;
       for (let i = 0; i < wh; i++) {
         if (dominoes[i] === i) continue;
         grid[i] = move.solution[i];
@@ -548,7 +548,7 @@ export function executeMove(state: MagnetsState, move: MagnetsMove): MagnetsStat
   }
 
   const complete = checkCompletion(next) === 1;
-  return { ...next, solved, completed: next.completed || complete };
+  return { ...next, cheated, completed: next.completed || complete };
 }
 
 export function status(state: MagnetsState): GameStatus {

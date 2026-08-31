@@ -179,14 +179,14 @@ export function executeMove(state: SamegameState, move: SamegameMove): SamegameS
   const score = state.score + npoints(state.scoresub, n);
   snuggle(tiles, w, h); // shift blanks down and to the left
   const { complete, impossible } = check(tiles, w, h);
-  return { ...state, tiles, score, complete, impossible };
+  return { ...state, tiles, score, completed: complete, impossible };
 }
 
 // --- status bar -------------------------------------------------------
 
 function statusbarText(state: SamegameState, ui: SamegameUi): string {
   const score = `Score: ${state.score}`;
-  if (state.complete) return `COMPLETE! ${score}`;
+  if (state.completed) return `COMPLETE! ${score}`;
   if (state.impossible) return `Cannot move! ${score}`;
   if (ui.nselected)
     return `${score}  Selected: ${ui.nselected} (${npoints(state.scoresub, ui.nselected)})`;
@@ -202,7 +202,7 @@ function flashLength(
   _ui: SamegameUi,
 ): number {
   if (
-    (!oldState.complete && newState.complete) ||
+    (!oldState.completed && newState.completed) ||
     (!oldState.impossible && newState.impossible)
   )
     return 2 * FLASH_FRAME;

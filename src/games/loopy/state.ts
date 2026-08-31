@@ -51,7 +51,7 @@ export interface LoopyState {
   /** The YES edges form exactly one loop and nothing else. Varies the
    * semantics of clue highlighting at display time — see `render.ts`. */
   exactlyOneLoop: boolean;
-  solved: boolean;
+  completed: boolean;
   cheated: boolean;
 }
 
@@ -65,7 +65,7 @@ export function cloneState(s: LoopyState): LoopyState {
     lines: s.lines.slice(),
     lineErrors: s.lineErrors.slice(),
     exactlyOneLoop: s.exactlyOneLoop,
-    solved: s.solved,
+    completed: s.completed,
     cheated: s.cheated,
   };
 }
@@ -228,7 +228,7 @@ export function newState(p: LoopyParams, desc: string): LoopyState {
     lines,
     lineErrors: new Uint8Array(grid.numEdges),
     exactlyOneLoop: false,
-    solved: false,
+    completed: false,
     cheated: false,
   };
 }

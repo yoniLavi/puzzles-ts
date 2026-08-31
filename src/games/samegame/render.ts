@@ -250,7 +250,7 @@ export function redraw(
         ui.cursor.visible &&
         ui.cursor.x === x &&
         ui.cursor.y === y &&
-        !(state.complete || state.impossible)
+        !(state.completed || state.impossible)
       )
         tile |= TILE_HASSEL;
 

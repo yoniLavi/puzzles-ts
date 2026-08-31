@@ -22,6 +22,7 @@
 
 import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   type HintResult,
@@ -592,9 +593,7 @@ function flashLength(
   _dir: number,
   _ui: SubsetsUi,
 ): number {
-  if (!from.completed && to.completed && !from.cheated && !to.cheated)
-    return FLASH_TIME;
-  return 0;
+  return winFlash(from, to, FLASH_TIME);
 }
 
 /** The cross-game difficulty contract (`add-game-difficulty-contract`): declaring

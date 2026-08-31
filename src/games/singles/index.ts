@@ -12,6 +12,7 @@
 
 import { assertNever, rejectMove } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   type HintResult,
@@ -207,7 +208,7 @@ function executeMove(state: SinglesState, move: SinglesMove): SinglesState {
     else if (value === "circle") next.flags[i] |= F_CIRCLE;
     else if (value !== "empty") assertNever(value, `singles: executeMove (${x},${y})`);
   }
-  if (move.solve) next.usedSolve = true;
+  if (move.solve) next.cheated = true;
   if (checkComplete(next, CC_MARK_ERRORS)) next.completed = true;
   return next;
 }
@@ -521,8 +522,7 @@ function flashLength(
   _dir: number,
   _ui: SinglesUi,
 ): number {
-  if (!from.completed && to.completed && !to.usedSolve) return FLASH_TIME;
-  return 0;
+  return winFlash(from, to, FLASH_TIME);
 }
 
 /** Singles' difficulty contract (`engine/difficulty.ts`). `solveSpecific`

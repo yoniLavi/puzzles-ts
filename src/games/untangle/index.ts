@@ -33,6 +33,7 @@ import { rejectMove } from "../../engine/assert-never.ts";
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import { BLUE, BLUE_WASH, GREY, ORANGE, WHITE } from "../../engine/colour/colours.ts";
 import { ERROR, INK, PAPER } from "../../engine/colour/palette.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   parseConfigInt,
@@ -456,8 +457,7 @@ export const untangleGame: Game<
     ui.animLength = len;
     return len;
   },
-  flashLength: (a, b) =>
-    !a.completed && b.completed && !a.cheated && !b.cheated ? FLASH_TIME : 0,
+  flashLength: (a, b) => winFlash(a, b, FLASH_TIME),
 
   // --- preferences (the engine prefs hook; first consumer) -----------
   prefs: [

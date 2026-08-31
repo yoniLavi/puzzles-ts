@@ -40,7 +40,7 @@ export interface SignpostState {
   h: number;
   n: number;
   completed: boolean;
-  usedSolve: boolean;
+  cheated: boolean;
   impossible: boolean;
   /** Arrow direction (0..7) per cell — set from the desc, never changed
    * by play (the generator mutates its own working boards). */
@@ -117,7 +117,7 @@ export function blankState(params: SignpostParams): SignpostState {
     h,
     n,
     completed: false,
-    usedSolve: false,
+    cheated: false,
     impossible: false,
     dirs: new Int8Array(n),
     nums: new Int32Array(n),
@@ -136,7 +136,7 @@ export function cloneState(s: SignpostState): SignpostState {
     h: s.h,
     n: s.n,
     completed: s.completed,
-    usedSolve: s.usedSolve,
+    cheated: s.cheated,
     impossible: s.impossible,
     dirs: new Int8Array(s.dirs),
     nums: new Int32Array(s.nums),
@@ -154,7 +154,7 @@ export function cloneState(s: SignpostState): SignpostState {
  * `updateNumbers` before any read. */
 export function assignStateInto(dst: SignpostState, src: SignpostState): void {
   dst.completed = src.completed;
-  dst.usedSolve = src.usedSolve;
+  dst.cheated = src.cheated;
   dst.impossible = src.impossible;
   dst.dirs.set(src.dirs);
   dst.nums.set(src.nums);
@@ -186,7 +186,7 @@ export function blankInto(s: SignpostState): void {
   s.prev.fill(-1);
   s.numsi.fill(-1);
   s.completed = false;
-  s.usedSolve = false;
+  s.cheated = false;
   s.impossible = false;
   s.dsf.reinit();
 }

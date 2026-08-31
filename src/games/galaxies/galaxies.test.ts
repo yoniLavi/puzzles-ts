@@ -95,7 +95,7 @@ describe("Galaxies game flow", () => {
     if (!result?.ok) return;
     const next = galaxiesGame.executeMove(init, result.move);
     expect(galaxiesGame.status(next)).toBe("solved");
-    expect(next.usedSolve).toBe(true);
+    expect(next.cheated).toBe(true);
   });
 
   it("validateDesc rejects an unparseable desc", () => {

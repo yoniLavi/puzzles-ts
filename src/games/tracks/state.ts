@@ -93,7 +93,7 @@ export interface TracksState {
   /** Per-clue error flag (length w + h), recomputed each move. */
   readonly numErrors: Uint8Array;
   readonly completed: boolean;
-  readonly usedSolve: boolean;
+  readonly cheated: boolean;
 }
 
 /** One flag change: set/clear a track/no-track flag on a square or one of its
@@ -432,7 +432,7 @@ export function newState(p: TracksParams, desc: string): TracksState {
     numbers: { numbers: b.numbers, rowS: b.rowS, colS: b.colS },
     numErrors: b.numErrors,
     completed: false,
-    usedSolve: false,
+    cheated: false,
   };
 }
 

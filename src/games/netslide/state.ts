@@ -207,7 +207,7 @@ export interface NetslideState {
 
   /** Move count at which the game was completed; 0 while unsolved. */
   readonly completed: number;
-  readonly usedSolve: boolean;
+  readonly cheated: boolean;
   readonly moveCount: number;
 
   /** The line last slid, for the slide animation: at most one of these is a
@@ -283,7 +283,7 @@ export function newState(p: NetslideParams, desc: string): NetslideState {
     tiles,
     barriers,
     completed: 0,
-    usedSolve: false,
+    cheated: false,
     moveCount: 0,
     lastMoveRow: -1,
     lastMoveCol: -1,

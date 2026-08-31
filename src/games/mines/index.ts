@@ -224,7 +224,7 @@ function openSquare(state: MinesState, x: number, y: number): void {
   }
   if (ncovered === nmines) {
     for (let i = 0; i < w * h; i++) if (state.grid[i] < 0) state.grid[i] = FLAG;
-    state.won = true;
+    state.completed = true;
   }
 }
 
@@ -321,8 +321,8 @@ export const minesGame: Game<
       h: p.h,
       n: p.n,
       dead: false,
-      won: false,
-      usedSolve: false,
+      completed: false,
+      cheated: false,
       layout,
       clickedAt: null,
       grid: new Int8Array(p.w * p.h).fill(COVERED),
@@ -338,7 +338,7 @@ export const minesGame: Game<
       validradius: 0,
       flashIsDeath: false,
       deaths: 0,
-      completed: false,
+      everCompleted: false,
       cursor: newCursor(),
     };
   },
@@ -347,7 +347,7 @@ export const minesGame: Game<
     decodeUi(ui, encoded);
   },
   changedState(ui: MinesUi, _old: MinesState | null, newState: MinesState): void {
-    if (newState.won) ui.completed = true;
+    if (newState.completed) ui.everCompleted = true;
   },
 
   interpretMove(
@@ -358,7 +358,7 @@ export const minesGame: Game<
     button: number,
   ): MinesMove | null | UiUpdate {
     const { w, h } = s;
-    if (s.dead || s.won) return null; // no further moves permitted
+    if (s.dead || s.completed) return null; // no further moves permitted
 
     const tileSize = ds.tileSize;
     const border = borderFor(tileSize);
@@ -545,7 +545,7 @@ export const minesGame: Game<
           }
         }
       }
-      ret.usedSolve = true;
+      ret.cheated = true;
       return ret;
     }
     if (m.type !== "ops") return assertNever(m, "mines: executeMove");
@@ -608,7 +608,7 @@ export const minesGame: Game<
     // Death is NOT a loss (the player will undo); only a genuine win is
     // reported, and the midend upgrades it to "solved-with-help" if the Solve
     // button was used (mines.c game_status:3322).
-    return s.won ? "solved" : "ongoing";
+    return s.completed ? "solved" : "ongoing";
   },
 
   statusbarText(s: MinesState, ui: MinesUi): string {
@@ -626,8 +626,8 @@ export const minesGame: Game<
     let sb: string;
     if (s.dead) {
       sb = "DEAD!";
-    } else if (s.won) {
-      sb = s.usedSolve ? "Auto-solved." : "COMPLETED!";
+    } else if (s.completed) {
+      sb = s.cheated ? "Auto-solved." : "COMPLETED!";
     } else {
       sb = `Marked: ${markers} / ${mines}`;
       const safeClosed = closed - mines;
@@ -662,13 +662,13 @@ export const minesGame: Game<
   },
 
   flashLength(a: MinesState, b: MinesState, dir: number, ui: MinesUi): number {
-    if (a.usedSolve || b.usedSolve) return 0;
-    if (dir > 0 && !a.dead && !a.won) {
+    if (a.cheated || b.cheated) return 0;
+    if (dir > 0 && !a.dead && !a.completed) {
       if (b.dead) {
         ui.flashIsDeath = true;
         return 3 * FLASH_FRAME;
       }
-      if (b.won) {
+      if (b.completed) {
         ui.flashIsDeath = false;
         return 2 * FLASH_FRAME;
       }
@@ -679,7 +679,7 @@ export const minesGame: Game<
   timingState(s: MinesState, ui: MinesUi): boolean {
     // The clock stops before the first click, after death, after a win, and
     // once the game has ever been completed (mines.c game_timing_state:3332).
-    return !(s.dead || s.won || ui.completed || !s.layout.mines);
+    return !(s.dead || s.completed || ui.everCompleted || !s.layout.mines);
   },
 
   colours(defaultBackground: Colour): Colour[] {

@@ -211,7 +211,7 @@ function flashLength(
   _ui: MosaicUi,
 ): number {
   if (
-    !oldState.cheating &&
+    !oldState.cheated &&
     oldState.notCompletedClues > 0 &&
     newState_.notCompletedClues === 0
   ) {

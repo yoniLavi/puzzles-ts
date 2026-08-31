@@ -180,7 +180,7 @@ export function executeMove(from: TwiddleState, move: TwiddleMove): TwiddleState
       ...from,
       numbers,
       orient,
-      usedSolve: true,
+      cheated: true,
       completed: 1,
       moveCount: 1,
     };
@@ -217,7 +217,7 @@ export function executeMove(from: TwiddleState, move: TwiddleMove): TwiddleState
 // --- status bar -------------------------------------------------------
 
 function statusbarText(state: TwiddleState, _ui: TwiddleUi): string {
-  if (state.usedSolve) {
+  if (state.cheated) {
     return `Moves since auto-solve: ${state.moveCount - state.completed}`;
   }
   const prefix = state.completed ? "COMPLETED! " : "";
@@ -324,16 +324,10 @@ export const twiddleGame: Game<
   redraw,
 
   animLength: (_a, b) => animLength(b.n),
-  flashLength: (oldState, newState_) => {
-    if (
-      !oldState.completed &&
-      newState_.completed &&
-      !oldState.usedSolve &&
-      !newState_.usedSolve
-    )
-      return 2 * FLASH_FRAME;
-    return 0;
-  },
+  // Not `winFlash`: `completed` here is the move count, not a flag — see
+  // Fifteen's note.
+  flashLength: (a, b) =>
+    !a.completed && b.completed && !a.cheated && !b.cheated ? 2 * FLASH_FRAME : 0,
 };
 
 registerGame(twiddleGame);

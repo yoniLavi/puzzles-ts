@@ -130,7 +130,7 @@ export function newDesc(p: LoopyParams, rng: RandomState): { desc: string } {
       lines: new Uint8Array(grid.numEdges),
       lineErrors: new Uint8Array(grid.numEdges),
       exactlyOneLoop: false,
-      solved: false,
+      completed: false,
       cheated: false,
     };
 
@@ -157,7 +157,7 @@ function generateOnGrid(state: LoopyState, p: LoopyParams, rng: RandomState): vo
     state.lines.fill(LINE_UNKNOWN);
     state.lineErrors.fill(0);
     state.exactlyOneLoop = false;
-    state.solved = false;
+    state.completed = false;
     state.cheated = false;
 
     // A fully-clued board is always solvable in principle, but not necessarily

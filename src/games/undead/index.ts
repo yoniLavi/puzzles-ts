@@ -14,6 +14,7 @@
 
 import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   type HintResult,
@@ -388,9 +389,9 @@ function executeMove(state: UndeadState, move: UndeadMove): UndeadState {
   }
 
   const correct = recomputeErrors(next);
-  if (correct && !solver) next.solved = true;
+  if (correct && !solver) next.completed = true;
   if (solver) {
-    next.solved = true;
+    next.completed = true;
     next.cheated = true;
   }
   return next;
@@ -776,7 +777,7 @@ function hint(
   _aux?: string,
   _ui?: UndeadUi,
 ): HintResult<UndeadMove, UndeadHint> {
-  if (state.solved) return { ok: false, error: "This board is already solved." };
+  if (state.completed) return { ok: false, error: "This board is already solved." };
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
@@ -877,8 +878,7 @@ function refreshHintStep(
 }
 
 function flashLength(from: UndeadState, to: UndeadState): number {
-  if (!from.solved && to.solved && !from.cheated && !to.cheated) return FLASH_TIME;
-  return 0;
+  return winFlash(from, to, FLASH_TIME);
 }
 
 /** Undead's difficulty contract (`engine/difficulty.ts`).

@@ -70,8 +70,8 @@ export interface MinesState {
   h: number;
   n: number;
   dead: boolean;
-  won: boolean;
-  usedSolve: boolean;
+  completed: boolean;
+  cheated: boolean;
   /** Shared by reference across every clone (design D1). */
   layout: MineLayout;
   /** Where the first click landed, recorded on the *state* on the first open
@@ -94,8 +94,10 @@ export interface MinesUi {
   flashIsDeath: boolean;
   /** Persistent death counter, survives undo and a save (design D7). */
   deaths: number;
-  /** Set once the game was ever won; stops the clock permanently (design D3). */
-  completed: boolean;
+  /** Set once the game was ever won; stops the clock permanently (design D3).
+   * Distinct from `MinesState.completed`, which is *currently* won: this one
+   * survives an undo, and is what `encodeUi` persists as the `C` flag. */
+  everCompleted: boolean;
   cursor: GridCursor;
 }
 
@@ -350,8 +352,8 @@ export function cloneState(s: MinesState): MinesState {
     h: s.h,
     n: s.n,
     dead: s.dead,
-    won: s.won,
-    usedSolve: s.usedSolve,
+    completed: s.completed,
+    cheated: s.cheated,
     layout: s.layout, // shared by reference — design D1
     clickedAt: s.clickedAt,
     grid: new Int8Array(s.grid),
@@ -363,14 +365,14 @@ export function cloneState(s: MinesState): MinesState {
 /** `D<deaths>` optionally followed by `C` (completed) — the only two ui
  * fields upstream preserves across a save (design D7). */
 export function encodeUi(ui: MinesUi): string {
-  return `D${ui.deaths}${ui.completed ? "C" : ""}`;
+  return `D${ui.deaths}${ui.everCompleted ? "C" : ""}`;
 }
 
 export function decodeUi(ui: MinesUi, encoded: string): void {
   const m = /^D(\d+)(C?)/.exec(encoded);
   if (!m) return;
   ui.deaths = Number(m[1]);
-  if (m[2] === "C") ui.completed = true;
+  if (m[2] === "C") ui.everCompleted = true;
 }
 
 // re-export so index.ts and the differential can build the preliminary desc

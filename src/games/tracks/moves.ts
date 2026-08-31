@@ -178,6 +178,6 @@ export function executeMove(state: TracksState, move: TracksMove): TracksState {
     sflags: b.sflags,
     numErrors: b.numErrors,
     completed,
-    usedSolve: state.usedSolve || isSolve,
+    cheated: state.cheated || isSolve,
   };
 }

@@ -37,8 +37,8 @@ export interface RangeState {
   h: number;
   /** Clue (> 0) / BLACK / WHITE / EMPTY per cell, row-major. */
   grid: Int8Array;
-  hasCheated: boolean;
-  wasSolved: boolean;
+  cheated: boolean;
+  completed: boolean;
 }
 
 export type RangeCellValue = "black" | "white" | "empty";
@@ -52,7 +52,6 @@ export interface RangeMove {
 }
 
 export interface RangeUi {
-  /** Cursor position. */
   /** Range speaks `(r, c)` everywhere else — its grid is row-major and its
    * `idx`/`outOfBounds` take the row first. The cursor is the collection's
    * `(x, y)`, so `cursor.x` is this game's `c` and `cursor.y` its `r`. */
@@ -202,7 +201,7 @@ export function newState(p: RangeParams, desc: string): RangeState {
       j++;
     }
   }
-  return { w: p.w, h: p.h, grid, hasCheated: false, wasSolved: false };
+  return { w: p.w, h: p.h, grid, cheated: false, completed: false };
 }
 
 export function cloneState(s: RangeState): RangeState {
@@ -210,7 +209,7 @@ export function cloneState(s: RangeState): RangeState {
 }
 
 export function status(s: RangeState): GameStatus {
-  return s.wasSolved ? "solved" : "ongoing";
+  return s.completed ? "solved" : "ongoing";
 }
 
 // --- text format -----------------------------------------------------------

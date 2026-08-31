@@ -205,7 +205,7 @@ export interface PearlState {
   /** Error flags per cell (R|U|L|D bits | ERROR_CLUE). */
   readonly errors: Uint8Array;
   readonly completed: boolean;
-  readonly usedSolve: boolean;
+  readonly cheated: boolean;
 }
 
 export function newState(p: PearlParams, desc: string): PearlState {
@@ -231,7 +231,7 @@ export function newState(p: PearlParams, desc: string): PearlState {
     marks: new Uint8Array(sz),
     errors: new Uint8Array(sz),
     completed: false,
-    usedSolve: false,
+    cheated: false,
   };
 }
 
@@ -244,7 +244,7 @@ export function cloneState(s: PearlState): PearlState {
     marks: s.marks.slice(),
     errors: s.errors.slice(),
     completed: s.completed,
-    usedSolve: s.usedSolve,
+    cheated: s.cheated,
   };
 }
 

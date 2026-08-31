@@ -61,7 +61,7 @@ export interface TentsState {
   /** Per-cell BLANK/TREE/TENT/NONTENT, cloned per move. */
   readonly grid: Int8Array;
   readonly completed: boolean;
-  readonly usedSolve: boolean;
+  readonly cheated: boolean;
 }
 
 /** A `cells` batch is the C `B`/`T`/`N` compound (one gesture's edits);
@@ -255,7 +255,7 @@ export function decodeDesc(
 
 export function newState(p: TentsParams, desc: string): TentsState {
   const { grid, numbers } = decodeDesc(p, desc);
-  return { w: p.w, h: p.h, numbers, grid, completed: false, usedSolve: false };
+  return { w: p.w, h: p.h, numbers, grid, completed: false, cheated: false };
 }
 
 // --- completion check (upstream execute_move tail) ------------------------
@@ -348,10 +348,10 @@ export function checkCompletion(
 export function executeMove(state: TentsState, move: TentsMove): TentsState {
   const { w, h } = state;
   const grid = Int8Array.from(state.grid);
-  let usedSolve = state.usedSolve;
+  let cheated = state.cheated;
 
   if (move.type === "solve") {
-    usedSolve = true;
+    cheated = true;
     for (let i = 0; i < w * h; i++) if (grid[i] !== TREE) grid[i] = NONTENT;
     for (const idx of move.tents) {
       if (idx < 0 || idx >= w * h || grid[idx] === TREE)
@@ -369,7 +369,7 @@ export function executeMove(state: TentsState, move: TentsMove): TentsState {
   }
 
   const completed = state.completed || checkCompletion(w, h, grid, state.numbers);
-  return { ...state, grid, completed, usedSolve };
+  return { ...state, grid, completed, cheated };
 }
 
 // --- status / text -------------------------------------------------------

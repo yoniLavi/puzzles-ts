@@ -15,6 +15,7 @@
 
 import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
+import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
   type SolveResult,
@@ -394,9 +395,7 @@ function flashLength(
   _dir: number,
   _ui: RomeUi,
 ): number {
-  if (!from.completed && to.completed && !from.cheated && !to.cheated)
-    return FLASH_TIME;
-  return 0;
+  return winFlash(from, to, FLASH_TIME);
 }
 
 // --- the game ---------------------------------------------------------------

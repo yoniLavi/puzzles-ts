@@ -71,7 +71,7 @@ export interface LightupState {
   lights: Int16Array;
   flags: Uint8Array;
   completed: boolean;
-  usedSolve: boolean;
+  cheated: boolean;
 }
 
 /** One toggle, exactly upstream's `L`/`I` move atoms (both are toggles;
@@ -369,7 +369,7 @@ export function emptyState(p: LightupParams): LightupState {
     lights: new Int16Array(p.w * p.h),
     flags: new Uint8Array(p.w * p.h),
     completed: false,
-    usedSolve: false,
+    cheated: false,
   };
 }
 

@@ -33,7 +33,7 @@ export interface TwiddleState {
   readonly completed: number;
   /** Set by Solve; suppresses the completion flash and switches the
    * status bar to "Moves since auto-solve". */
-  readonly usedSolve: boolean;
+  readonly cheated: boolean;
   readonly moveCount: number;
   readonly movetarget: number;
   /** Top-left corner + direction of the last rotation, for animation
@@ -314,7 +314,7 @@ export function newState(p: TwiddleParams, desc: string): TwiddleState {
     numbers,
     orient,
     completed: 0,
-    usedSolve: false,
+    cheated: false,
     moveCount: 0,
     movetarget: p.movetarget,
     lastX: -1,
