@@ -6,9 +6,10 @@
  * targeted assertions survive a careless `-u`).
  */
 import { describe, expect, it } from "vitest";
+import { CURSOR_RIGHT, CURSOR_SELECT2 } from "../../engine/pointer.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { tracksGame } from "./index.ts";
-import { COL_ERROR } from "./render.ts";
+import { COL_CURSOR, COL_ERROR } from "./render.ts";
 import type { TracksMove, TracksParams } from "./state.ts";
 
 const P: TracksParams = { w: 6, h: 6, diff: 0, singleOnes: true };
@@ -41,5 +42,36 @@ describe("Tracks render scenarios", () => {
     expect(recording.ops.some((o) => o.op === "rect" && o.colour === COL_ERROR)).toBe(
       true,
     );
+  });
+
+  it("one arrow press draws the cursor a step along, not where it started", () => {
+    // The player-visible half of `unify-cross-game-vocabulary`: Tracks used to
+    // spend the first press revealing the cursor in place. Tracks is the
+    // interesting case because its cursor walks a HALF grid and skips square
+    // corners, so "moved by one" is not "moved by one tile" — the frame is
+    // what settles whether the shared rule and the bespoke traversal compose.
+    // The cursor is an outline, drawn as four thin `COL_CURSOR` rects.
+    const frame = (presses: number[]) =>
+      renderScenario({ game: tracksGame, id: ID, presses })
+        .recording.ops.filter((o) => o.op === "rect" && o.colour === COL_CURSOR)
+        .map((o) => JSON.stringify(o));
+
+    const first = frame([CURSOR_RIGHT]);
+    // An outline is four rects; the frame carries a couple more in the same
+    // colour, so the count is a floor rather than an equality — what the test
+    // turns on is that the *set* of them differs.
+    expect(
+      first.length,
+      "the cursor outline is drawn after one press",
+    ).toBeGreaterThanOrEqual(4);
+
+    // Where it would have been had the press only revealed it: select reveals
+    // without moving, so this is the frame the old behaviour produced.
+    const revealOnly = frame([CURSOR_SELECT2]);
+    expect(first).not.toEqual(revealOnly);
+
+    // …and a second press moves it again, so the first was not a one-off.
+    const second = frame([CURSOR_RIGHT, CURSOR_RIGHT]);
+    expect(second).not.toEqual(first);
   });
 });

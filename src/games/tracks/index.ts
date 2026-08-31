@@ -29,6 +29,7 @@ import {
   newCursor,
   RIGHT_BUTTON,
   RIGHT_RELEASE,
+  showCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -228,10 +229,9 @@ function interpretMove(
   if (isCursorMove(button)) {
     const dx = button === CURSOR_LEFT ? -1 : button === CURSOR_RIGHT ? 1 : 0;
     const dy = button === CURSOR_DOWN ? 1 : button === CURSOR_UP ? -1 : 0;
-    if (!ui.cursor.visible) {
-      ui.cursor.visible = true;
-      return UI_UPDATE;
-    }
+    // Reveal *and* move in one press, as every other game does. The traversal
+    // itself stays Tracks': half-grid coordinates, skipping square corners.
+    showCursor(ui.cursor);
     ui.cursor.x += dx;
     ui.cursor.y += dy;
     if (ui.cursor.x % 2 === 0 && ui.cursor.y % 2 === 0) {

@@ -96,11 +96,28 @@
 
 ## 3. The first-arrow-press unification (player-visible)
 
-- [ ] 3.1 Find every game that reveals-only, and change it to reveal-and-move.
-- [ ] 3.2 **Its own commit**, separable from §1 and §2, so it can be reverted
-      alone.
-- [ ] 3.3 Tier 2.5 on the games whose behaviour moves: the frame after one arrow
-      press from a fresh board.
+- [x] 3.1 The audit's five reproduce exactly — **pearl, range, signpost,
+      sixteen, tracks** — and all five now reveal-and-move. 51 of 57 games have
+      a cursor and every one of them now moves on the first press; the other six
+      (cube, fifteen, inertia, loopy, sokoban, untangle) have no cursor to move.
+      - **Three of the five kept a narrower reveal-only case, and should have.**
+        Pearl's *modified* arrow marks a line, Range's *shifted* arrow dots the
+        cells it passes, and Sixteen's arrow **is a slide** in its locked and
+        modified modes. A first press must not move the board out from under a
+        player who cannot yet see where it would act, so those still reveal.
+        The unification is about the arrow that only moves a cursor.
+- [x] 3.2 Its own commit, separable from §1 and §2.
+- [x] 3.3 Two nets, because the five games' own suites **all stayed green** when
+      the behaviour changed — nothing anywhere asserted it:
+      - a collection-wide behavioural guard in `cursor-vocabulary.test.ts`, over
+        every game with a cursor, which is the level the question lives at;
+      - a tier-2.5 *frame* check on Tracks, the hardest case (its cursor walks a
+        half grid and skips square corners, so "moved by one" is not "moved by
+        one tile"). Both proven to fail by restoring the old behaviour.
+      - Reaching that frame needed a new `presses` option on the shared
+        `renderScenario` harness: a keyboard cursor is `Ui` state, so no `Move`
+        can put it anywhere, and "the frame after one arrow press" was a frame
+        the harness could not reach at all.
 - [ ] 3.4 Owner acceptance — this is the one part a player can feel.
 
 ## 4. Guards against re-drift

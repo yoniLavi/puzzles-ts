@@ -30,7 +30,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { registerAllGames } from "../games/index.ts";
 import type { Game } from "./game.ts";
-import { newCursor } from "./pointer.ts";
+import { CURSOR_RIGHT, newCursor } from "./pointer.ts";
 import { randomNew } from "./random/index.ts";
 import { getTsGame, registeredGameIds } from "./registry.ts";
 
@@ -97,6 +97,44 @@ describe("one keyboard-cursor vocabulary", () => {
     // Vacuity again, from the other side: a structural check that finds no
     // cursors at all would pass silently.
     expect(withCursor).toBeGreaterThanOrEqual(45);
+  });
+
+  it("reveals and moves on one arrow press, in every game with a cursor", () => {
+    // The player-visible half of the contract, and the one that had no net at
+    // all: five games (Pearl, Range, Signpost, Sixteen, Tracks) spent the first
+    // press on the reveal, and every one of their suites stayed green when that
+    // was changed. Nothing below any individual game could see it, because the
+    // question is only interesting across the collection.
+    const stalled: string[] = [];
+    let checked = 0;
+    for (const { id, ui } of uis()) {
+      const cursor = ui[CURSOR_FIELD];
+      if (!isCursorShaped(cursor)) continue;
+      const c = cursor as { x: number; y: number; visible: boolean };
+      const game = getTsGame(id) as AnyGame;
+      const params = game.defaultParams();
+      const desc = game.newDesc(params, randomNew(`cursor-vocab-${id}`)).desc;
+      const state = game.newState(params, desc);
+      const ds = game.newDrawState?.(state) as Record<string, number> | undefined;
+      // Both spellings are in use across the collection's draw states.
+      if (ds && "tilesize" in ds) ds["tilesize"] = game.preferredTileSize ?? 32;
+      if (ds && "tileSize" in ds) ds["tileSize"] = game.preferredTileSize ?? 32;
+
+      const before = { ...c };
+      expect(before.visible, `${id} starts with a hidden cursor`).toBe(false);
+      game.interpretMove(state, ui, ds, { x: 0, y: 0 }, CURSOR_RIGHT);
+      checked++;
+      const moved = c.x !== before.x || c.y !== before.y;
+      if (!moved) {
+        stalled.push(
+          `${id}: one arrow press revealed the cursor without moving it ` +
+            `(${before.x},${before.y}) → (${c.x},${c.y})`,
+        );
+      }
+    }
+    expect(stalled).toEqual([]);
+    // Vacuity: a loop that skipped every game would report health.
+    expect(checked).toBeGreaterThanOrEqual(45);
   });
 
   it("finds no game re-declaring a retired cursor spelling", () => {

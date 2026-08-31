@@ -29,9 +29,11 @@ import {
   MIDDLE_RELEASE,
   MOD_CTRL,
   MOD_SHFT,
+  moveCursor,
   newCursor,
   RIGHT_BUTTON,
   RIGHT_RELEASE,
+  showCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -177,9 +179,10 @@ function interpretMove(
   if (isMouseRelease) release = true;
 
   if (isCursorMove(button)) {
-    if (!ui.cursor.visible) {
-      ui.cursor.visible = true;
-    } else if (control || shift) {
+    // A *modified* arrow marks a line, which is too much to do to a player who
+    // cannot yet see where the cursor is — so that one still only reveals.
+    if (control || shift) {
+      if (showCursor(ui.cursor)) return UI_UPDATE;
       if (ui.ndragcoords > 0) return null;
       ui.ndragcoords = -1;
       const move = markInDirection(
@@ -197,14 +200,9 @@ function interpretMove(
         }
       }
       return move;
-    } else {
-      const d = cursorDelta(button);
-      if (d) {
-        ui.cursor.x = Math.max(0, Math.min(w - 1, ui.cursor.x + d.dx));
-        ui.cursor.y = Math.max(0, Math.min(h - 1, ui.cursor.y + d.dy));
-      }
-      if (ui.ndragcoords >= 0) updateUiDrag(state, ui, ui.cursor.x, ui.cursor.y);
     }
+    moveCursor(ui.cursor, button, w, h);
+    if (ui.ndragcoords >= 0) updateUiDrag(state, ui, ui.cursor.x, ui.cursor.y);
     return UI_UPDATE;
   }
 

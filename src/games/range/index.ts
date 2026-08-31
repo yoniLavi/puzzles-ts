@@ -30,8 +30,10 @@ import {
   isMouseDown,
   LEFT_BUTTON,
   MOD_SHFT,
+  moveCursor,
   newCursor,
   RIGHT_BUTTON,
+  showCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -139,13 +141,12 @@ function interpretMove(
 
   const delta = cursorDelta(button);
   if (delta) {
-    if (!ui.cursor.visible) {
-      ui.cursor.visible = true;
-      return UI_UPDATE;
-    }
     const dr = delta.dy;
     const dc = delta.dx;
     if (shift) {
+      // A shifted arrow *dots* the cells it passes, which is too much to do to
+      // a player who cannot yet see the cursor — that one still only reveals.
+      if (showCursor(ui.cursor)) return UI_UPDATE;
       const preR = ui.cursor.y;
       const preC = ui.cursor.x;
       const doPre = grid[idx(preR, preC, w)] === EMPTY;
@@ -160,10 +161,10 @@ function interpretMove(
       if (doPost) sets.push({ r: ui.cursor.y, c: ui.cursor.x, value: "white" });
       return sets.length > 0 ? { sets } : UI_UPDATE;
     }
-    if (!outOfBounds(ui.cursor.y + dr, ui.cursor.x + dc, w, h)) {
-      ui.cursor.y += dr;
-      ui.cursor.x += dc;
-    }
+    // Reveal *and* move in one press, as the rest of the collection does. The
+    // grid is `w × h` in (x, y); the cursor is too, transposed from Range's
+    // own `(r, c)` at the boundary.
+    moveCursor(ui.cursor, button, w, h);
     return UI_UPDATE;
   }
 

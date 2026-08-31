@@ -28,6 +28,7 @@ import {
   MOD_SHFT,
   newCursor,
   RIGHT_BUTTON,
+  showCursor,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import {
@@ -161,12 +162,13 @@ function interpretMove(
 
   // Cursor movement.
   if (isCursorMove(rawButton) || pad) {
-    if (!ui.cursor.visible) {
-      ui.cursor.visible = true;
-      return UI_UPDATE;
-    }
-
     if (control || shift || ui.curMode !== CursorMode.Unlocked) {
+      // In these modes the arrow *is* a slide, so a hidden cursor still only
+      // reveals: a first press must not move the board out from under a player
+      // who cannot yet see where it would act. The unlocked mode below is the
+      // plain cursor walk, and reveals and moves in one press like every other
+      // game's (`ts-engine`, "One keyboard-cursor vocabulary across games").
+      if (showCursor(ui.cursor)) return UI_UPDATE;
       if (
         ui.cursor.x < 0 ||
         ui.cursor.x >= state.w ||

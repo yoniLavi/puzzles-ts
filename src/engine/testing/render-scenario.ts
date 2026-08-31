@@ -72,6 +72,21 @@ export interface RenderScenario<Params, State, Move, Ui, DrawState, Mistake> {
   /** Frontend default background fed to the game's palette. Defaults to
    * {@link DEFAULT_BACKGROUND}. */
   defaultBackground?: Colour;
+  /**
+   * Buttons to send through `Midend.processInput` before capture, at `at`
+   * (default the origin) — the way to reach a frame that only *input* produces.
+   *
+   * `moves` is the right tool for reaching a board state and stays the default:
+   * it needs no coordinate arithmetic and cannot be broken by a layout change.
+   * But a keyboard cursor is `Ui` state, not board state, so no `Move` can put
+   * it anywhere — and "the frame after one arrow press" was therefore a frame
+   * this harness could not reach at all. Pointer buttons work here too; prefer
+   * `moves` for those unless the *coordinates* are what is under test.
+   */
+  presses?: readonly number[];
+  /** Where {@link presses} land. Defaults to `{ x: 0, y: 0 }`, which is what a
+   * keyboard press wants (the coordinates are ignored). */
+  at?: { x: number; y: number };
 }
 
 export interface RenderResult<Params, State, Move, Ui, DrawState> {
@@ -106,6 +121,11 @@ export function renderScenario<Params, State, Move, Ui, DrawState, Mistake>(
   if (err) throw new Error(`renderScenario: invalid id "${id}": ${err}`);
 
   if (moves && moves.length > 0) midend.playMoves(moves);
+
+  if (scenario.presses) {
+    const at = scenario.at ?? { x: 0, y: 0 };
+    for (const button of scenario.presses) midend.processInput(at.x, at.y, button);
+  }
 
   if (scenario.selectReference !== undefined)
     midend.selectReference(scenario.selectReference);

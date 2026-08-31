@@ -28,11 +28,11 @@ import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  cursorDelta,
   isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
+  moveCursor,
   newCursor,
   RIGHT_BUTTON,
   RIGHT_DRAG,
@@ -179,21 +179,7 @@ function interpretMove(
   const ts = ds.tileSize;
 
   if (isCursorMove(button)) {
-    const delta = cursorDelta(button);
-    if (!delta) return null;
-    let changed = false;
-    if (!ui.cursor.visible) {
-      ui.cursor.visible = true;
-      changed = true;
-    } else {
-      const nx = Math.max(0, Math.min(w - 1, ui.cursor.x + delta.dx));
-      const ny = Math.max(0, Math.min(h - 1, ui.cursor.y + delta.dy));
-      if (nx !== ui.cursor.x || ny !== ui.cursor.y) {
-        ui.cursor.x = nx;
-        ui.cursor.y = ny;
-        changed = true;
-      }
-    }
+    const changed = moveCursor(ui.cursor, button, w, h);
     if (ui.dragging) {
       ui.dx = coord(ui.cursor.x, ts) + ts / 2;
       ui.dy = coord(ui.cursor.y, ts) + ts / 2;
