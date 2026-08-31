@@ -13,7 +13,15 @@ is not a cosmetic surplus — it is a control that does nothing when pressed.
 
 The requirement is on the *relationship*, not on a number: whichever bound the
 generator's distribution has, the panel SHALL match it, and widening one SHALL
-widen the other.
+widen the other. The panel SHALL therefore **derive** that bound from the
+generator's own size distribution rather than restate it as a literal — a
+restated bound is what produced this defect, when the generator's distribution
+changed and a hand-written copy three files away had no way to hear about it.
+
+The bound the panel derives from SHALL be the **generator's**, not the format's.
+The two differ (the format admits up to nine in Seismic mode; the generator
+produces at most five), they are adjacent enough to be confused, and the panel
+confused them.
 
 #### Scenario: No offered digit is unreachable
 

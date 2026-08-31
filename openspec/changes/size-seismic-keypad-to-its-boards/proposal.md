@@ -44,10 +44,13 @@ other.
   is an engine-contract change, not a Seismic change — which makes it the
   expensive option and possibly the right one if a second game ever wants it.
 
-Recommendation: **size it to the generator**, and widen it again if and when the
-distribution widens. The import case is hypothetical and recoverable (the
-keyboard still sends the digit); the inert keys are certain and are in front of
-every touch player.
+**Decided 2026-08-31: size it to the generator** — see `design.md`, which also
+records the two things that changed the shape of the answer. The bound is
+**structural, not empirical** (no region above 5 is constructible, so this is
+not a seeding accident), and the fix is **not** `digitKeys(5)`: the real defect
+is that `requestKeys` inlines a copy of the *format* bound where the *generator*
+bound was wanted, so the number must be **derived** or it will go stale again the
+next time the distribution moves.
 
 ## Impact
 

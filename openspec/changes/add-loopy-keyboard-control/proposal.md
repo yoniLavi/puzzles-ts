@@ -16,12 +16,17 @@ reason: the standing bar is maximum parity between mouse, touch and keyboard
 (owner directive, 2026-08-03), and an unexamined gap is not an exemption.
 
 **It is filed rather than fixed inline because it is a design, not a binding**
-(`audit-input-mode-parity` design D4). Loopy's input is per-**edge** across
-eighteen tilings, several of them aperiodic, so "move the cursor to the next
-edge" has no canonical meaning: an edge has no row, no column and no fixed number
-of neighbours, and on a Penrose patch it has no consistent orientation either.
-Somebody has to decide what an arrow key *means* there, and that is a product
-decision this change owns.
+(`audit-input-mode-parity` design D4). Loopy's input is per-**edge**, so an edge
+has no row and no column to arrow between, and the number of edges meeting at a
+vertex is not fixed. Somebody has to decide what an arrow key *means* there.
+
+**And the difficulty is not where this proposal first put it.** It named the
+aperiodic tilings, which turns out to be exactly backwards: measured across all
+23 presets, around three quarters of the vertices on Hats and Spectres have
+degree 2 — the most forgiving case there is — while the **triangular** grid puts
+six edges at one vertex against four arrow keys. The rule in `design.md` is
+shaped by that, and the reachability hole it closes is on the triangular grid,
+not on a Penrose patch.
 
 **Slide is the worked precedent** (`2026-08-26-add-slide-keyboard-control`), and
 its lesson transfers: do not model the keyboard as a second way to do the thing,
@@ -31,23 +36,19 @@ needs is a cursor that can select the same edges, not a second input path.
 
 ## What Changes
 
-- **Design what an arrow key means on an edge**, once, for all eighteen tilings —
-  this is the whole difficulty and should be settled in `design.md` before code.
-  The obvious candidates, each with a real cost:
-  - **cursor on a dot, arrows pick a direction** — an edge is then (dot,
-    direction), which is how upstream's *other* loop games think, and it degrades
-    gracefully on an irregular tiling because a dot always has *some* set of
-    incident edges. Costs: the mapping from four arrow keys to N incident edges
-    needs a rule, and on a Penrose patch N varies.
-  - **cursor on an edge, arrows step to a geometric neighbour** — fewer keys per
-    move, but "the edge to the right of this edge" is ill-defined exactly where
-    the game is most interesting.
-  - **cursor on a face, arrows walk faces, a select cycles its edges** — cheap on
-    a square grid and poor on a tiling with twelve-sided faces.
-- **Bind select and erase to the same three-state cycle the stylus already
-  reaches** — Loopy sets `wantsStylusModifier` precisely so one tap can reach all
-  three edge states, and the keyboard has the same problem and can borrow the
-  same answer.
+- **Design what an arrow key means on an edge** — **settled 2026-08-31, see
+  `design.md`**, on measured evidence rather than taste. Dot degree was swept
+  across all 23 presets: it **never exceeds 6**, and the aperiodic tilings are
+  the *easy* case (~75% degree-2 dots), not the feared one. The cursor is a
+  **dot**; an arrow picks the incident edge nearest in angle, and a repeat press
+  takes the next — which is what makes edge coverage provable, because plain
+  angular-nearest strands an edge on the triangular grid from **both** its
+  endpoints.
+- **Bind Enter and Space to the left and right mouse buttons.** Note the
+  correction this makes to the original plan: it assumed the keyboard would need
+  the three-state cycle the stylus needs. It does not — `wantsStylusModifier`
+  exists because a *finger* has no second button, and a keyboard has two keys,
+  so it mirrors the mouse directly.
 - **Render the cursor**, on every tiling, including the aperiodic ones. Loopy's
   renderer draws edges from grid geometry rather than from a lattice, so the
   cursor has to be drawn the same way.

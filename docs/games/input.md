@@ -516,12 +516,17 @@ Normative: the on-screen-keys requirement in
   "the wiring is connected" and "the input is reachable". A dead panel key is not
   a cosmetic surplus: on touch this panel is the only way to type, so it is a
   control that does nothing when pressed.
-- **Size the panel to the boards you generate, not to the format.** Seismic is
-  the live counter-example: it offers `1`–`9` because the *format* admits regions
-  up to nine, while the generator's size distribution tops out at five — so four
-  keys are inert on every board anybody plays (`size-seismic-keypad-to-its-boards`).
-  `requestKeys` takes params and cannot see the board, so this is a judgement you
-  make once, at the panel, and revisit when the generator changes.
+- **Size the panel to the boards you generate, not to the format — and
+  *derive* the bound rather than writing it.** Seismic is the live
+  counter-example, and the interesting half is not the wrong number: it offers
+  `1`–`9` because `requestKeys` inlines a copy of the *format* bound
+  (`maxRegionSize`, 9 in Seismic mode) where the *generator* bound was wanted
+  (its size distribution tops out at 5), so four keys are inert on every board
+  anybody plays. The copy went stale the day `replace-seismic-region-generator`
+  changed the distribution, because a hand-written literal three files away had
+  no way to hear about it. `requestKeys` takes params and cannot see the board,
+  so the bound is a judgement made once — make it a *derived* one
+  (`size-seismic-keypad-to-its-boards`).
 
 Exemplars: the five digit games (`solo`/`keen`/`towers`/`unequal`/`filling`)
 and Undead.
