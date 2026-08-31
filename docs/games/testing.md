@@ -41,10 +41,11 @@ state matches — pinned by a recorded first-hit (see "Right-sizing the gate").
 
 **The default for any highlight / overlay / animation-frame work.**
 [`render-scenario.ts`](../../src/engine/testing/render-scenario.ts) exposes
-`renderScenario({ game, id, moves?, settle?, showHint?, hintUntil?,
-showMistakes? })`: it drives a real `Midend` to a target frame by replaying game
-`Move`s directly (no pointer events, no coordinate maths), optionally walks a
-hint plan to the step of interest, then captures `redraw` through the shared
+`renderScenario({ game, id, moves?, presses?, at?, settle?, showHint?,
+hintUntil?, showMistakes? })`: it drives a real `Midend` to a target frame by
+replaying game `Move`s directly (no pointer events, no coordinate maths),
+optionally walks a hint plan to the step of interest, then captures `redraw`
+through the shared
 [`recording-drawing.ts`](../../src/engine/testing/recording-drawing.ts).
 
 - **Assert what matters with targeted op checks** — these are the real
@@ -58,6 +59,15 @@ hint plan to the step of interest, then captures `redraw` through the shared
   ([`svg-drawing.ts`](../../src/engine/testing/svg-drawing.ts)) renders the
   record as a z-ordered SVG for the rare frame that needs eyeballing — keep it
   out of committed tests.
+
+**`moves` reaches a board state; `presses` reaches a `Ui` state.** `moves` stays
+the default — no coordinates, nothing a layout change can break. But a keyboard
+cursor lives on the `Ui`, so **no `Move` can put it anywhere**, and "the frame
+after one arrow press" was a frame this harness could not reach at all until
+`presses` (a list of buttons sent through `Midend.processInput`, at `at`,
+default the origin — a keyboard press ignores the coordinates). Pointer buttons
+work through it too; prefer `moves` for those unless the *coordinates* are what
+is under test. Exemplar: `tracks-render-scenario.test.ts`'s cursor frame.
 
 **On an animated game, `moves` lands you on animation frame *zero*, not the
 settled frame.** The move armed an animation, so the previous state is still on

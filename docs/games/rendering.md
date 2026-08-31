@@ -331,24 +331,36 @@ animation").
 **Most win flashes are one shared line.**
 [`flash.ts`](../../src/engine/flash.ts) (`winFlash`) encodes the convention
 — flash exactly `flashTime` on a fresh, un-cheated unsolved→solved
-transition — for every game whose state carries structural
-`completed`/`cheated` flags.
+transition. Every game's state spells the two flags `completed` and `cheated`
+(`ts-engine` § "One completion vocabulary across games"), so `winFlash` reads
+them as a contract, and **a differently-spelled flag is not a reason to write
+your own `flashLength`** — it is not a difference a player can see.
 
-**"Differently-named flags" is not a reason to keep your own `flashLength`,
-and this guide used to say it was.** Measured 2026-08-26: of the 45 games with
-a hand-written `flashLength`, **eight write `winFlash`'s condition verbatim**
-and about six more write the same logic against a differently-spelled flag —
-`usedSolve`, `hasCheated`, `wasSolved`, `solved` — for concepts every game
-shares. That is one vocabulary spelled five ways, and the helper was built to
-work *around* the drift rather than the drift being fixed. Neither the name nor
-the copy is a design choice; see `docs/framework-rdd/README.md`, "The order of
-work". Scoped by `unify-cross-game-vocabulary`.
+Call it:
+
+```ts
+flashLength: (a, b) => winFlash(a, b, FLASH_TIME),
+```
 
 A **genuinely bespoke flash condition** does keep its own `flashLength`, and
-these are the real ones: more than one flashing outcome (Samegame flashes on
-"impossible" too, Flood on won *and* lost), a duration that is not `FLASH_TIME`
-(Ascent scales it by board size, Pegs uses two frames), or a condition that is
-not "became solved" at all (Mosaic, Palisade, Flip's solve celebration).
+`flash.ts` lists every survivor with its reason so the list cannot quietly grow.
+The four shapes that qualify:
+
+- **more than one flashing outcome** — Samegame (won *and* stuck), Flood (won
+  *and* lost), Inertia (died *and* collected the last gem), Blackbox (a reveal,
+  which is not a win);
+- **a duration that is not the shared one** — Ascent, Net and Netslide scale
+  theirs by the board so the animation sweeps it;
+- **a condition that is not "became solved"** — Palisade and Separate flash a
+  manual completion made *after* a Solve (owner-requested), Mosaic reads its own
+  clue counters, Map takes its duration off the `Ui`, Pegs and Sokoban have no
+  cheat flag to test;
+- **`completed` is not a flag** — Fifteen, Sixteen, Twiddle and Slide hold the
+  move count they were solved at, frozen so the status bar stops counting.
+
+Dominosa is the near-miss worth knowing: its *condition* is the convention, so
+it calls `winFlash` and then does its one extra thing (clearing the hovered-pair
+highlight) with the answer, rather than restating the condition to get there.
 
 **Flash isolation is a midend concern the games inherited the hard way**:
 Flip's solve celebration once fired on every animated move because the midend

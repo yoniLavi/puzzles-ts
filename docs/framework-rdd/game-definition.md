@@ -104,18 +104,19 @@ the README, "The order of work". The churn *is* step 1, and the test is not
 whether unifying is disruptive but whether we positively believe the concern
 should be free to differ between games. For these, we do not:
 
-- **The keyboard cursor's `Ui` contract** — one concept, **42 of 57 games, six
-  field names** (`hshow`, `cshow`, `curVisible`, `cursorVisible`, `cursor`,
-  `displayCur`), and per-game answers to questions that have no per-game reason:
-  where the position lives, whether the first arrow press reveals *or*
-  reveals-and-moves, and whether a clamped no-op returns `null` or `UI_UPDATE`.
-  The core is already identical everywhere — `gridCursorMove` → assign → reveal
-  → `UI_UPDATE` — and what genuinely differs (Tents painting while it moves,
-  Boats filling a line as it goes) reads the position before and after, so it
-  survives the unification untouched. Verified safe: Net serialises its cursor,
-  but through an `encodeUi` **function** that emits `C<x>,<y>`, so the wire
-  format does not know the field's name. This is the collection's largest input
-  duplication and it should simply go.
+- **The keyboard cursor's `Ui` contract** — ~~one concept, 42 of 57 games, six
+  field names~~ **DONE, and it was worse than surveyed**: fifty games, *ten*
+  spellings of the flag and eight of the position, plus two games (Ascent, Rome)
+  hiding "is it shown" inside a mode enum. Shipped as
+  `unify-cross-game-vocabulary`; the live rules are
+  [`docs/games/input.md`](../games/input.md) § "Keyboard cursors" and
+  `engine/pointer.ts`'s `GridCursor`. **What the survey got right is worth
+  keeping as method**: what genuinely differs (Tents painting while it moves,
+  Boats filling a line) reads the position either side of the move and survived
+  untouched, and the save-format worry was unfounded for the reason predicted —
+  Net's `encodeUi` emits `C<x>,<y>`, so the wire format never knew the field's
+  name. What it got *wrong* is instructive too: it assumed the six names were
+  the population, and counting them was how four more were missed.
 - **Digit parsing** (`button >= 49 && button <= 57`, `button - 48`; 11 games).
   Splits cleanly rather than being declined: *"is this a digit key and which
   digit"* is one fact and belongs in `pointer.ts`; the **bound** (`<= w`,
@@ -135,18 +136,21 @@ should be free to differ between games. For these, we do not:
 worth noting as a method: grepping `docs/games/` for "stays per-game" and
 "keeps its own" turned up the same drift a third time, outside input entirely.
 
-- **The completion vocabulary on `State`.** `winFlash` encodes the whole win-
-  flash convention, and 45 games hand-write `flashLength` anyway. Of those,
-  **eight reproduce `winFlash`'s condition verbatim**, and about six more write
-  the same logic against a differently-spelled flag — `usedSolve`, `hasCheated`,
-  `wasSolved`, `solved` — for two concepts *every* game has. The guide had
-  blessed exactly this ("a game with different flag names keeps its own
-  `flashLength`"), and the helper was built to read the flags "structurally",
-  i.e. to work around the drift rather than fix it. **A framework cannot derive
-  Check & Save, the status bar, the win flash and the difficulty contract from a
-  concept each game names differently.** Genuinely bespoke celebrations are a
-  real minority and keep their own hook: Samegame flashes on "impossible" too,
-  Flood on won *and* lost, Ascent scales the duration by board size.
+- **The completion vocabulary on `State`.** ~~45 games hand-write
+  `flashLength`; eight reproduce `winFlash`'s condition verbatim and about six
+  more write it against a differently-spelled flag.~~ **DONE** as
+  `unify-cross-game-vocabulary`; the live rules are
+  [`docs/games/rendering.md`](../games/rendering.md) § "Animation and flash" and
+  `engine/flash.ts`, which now lists every game that keeps its own hook with the
+  reason. The survey's argument stands and is the reason to do the next one:
+  **a framework cannot derive Check & Save, the status bar, the win flash and
+  the difficulty contract from a concept each game names differently.**
+
+  Two findings the survey could not have had, both from doing it:
+  **Magnets spelled `cheated` as `solved`** — the word Loopy and Undead used for
+  `completed`, so one word meant opposite things in three games; and the survey
+  counted 14 restatements where there were 25, because it counted *spellings*
+  rather than measuring the population.
 
 **The distinction that survives**, and the only one that should be argued from:
 *a shared helper is right when the thing shared is a fact; a framework is right

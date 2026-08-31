@@ -350,14 +350,24 @@ tiles are interchangeable). Consumers: Sixteen, Netslide.
 ### `pointer.ts` — button codes and cursor helpers
 
 Button constants, `stripModifiers(button)` (never redeclare `MOD_MASK`),
-`isCursorMove`, `gridCursorMove(button, x, y, w, h, wrap?)` — the bounded (or
-toroidal) cursor clamp; `?? { x, y }` reproduces the "always returns a position"
-shape — plus `isEraseKey`/`isCancelKey` and the `BACKSPACE`/`DELETE`/`ESCAPE`
-codes. **Never restate any of it locally**, including a magic number where a
-named button exists; `emittable-keys.test.ts` enforces that from `pointer.ts`'s
-own export list. A non-trivial *traversal* (half-grid cursor, lock modes) keeps
-its own logic; the cursor's `Ui` **naming** does not and is being unified
-(`unify-keyboard-cursor-ui`). Discipline: [`input.md`](./input.md).
+`isEraseKey`/`isCancelKey` and the `BACKSPACE`/`DELETE`/`ESCAPE` codes.
+
+**The keyboard cursor lives here too, and every game holds one.** `GridCursor`
+(`x`, `y`, `visible`) under `ui.cursor`, built by `newCursor(x?, y?, visible?)`
+and driven by `moveCursor(cursor, button, w, h, wrap?)` — reveal *and* move in
+one press, returning whether anything changed — plus `showCursor`/`hideCursor`.
+`isCursorMove`, `cursorDelta` and the position-only `gridCursorMove` remain for
+a bespoke traversal.
+
+**Never restate any of it locally**, including a magic number where a named
+button exists: `emittable-keys.test.ts` enforces that from `pointer.ts`'s own
+export list — which is how nine games' private `moveCursor` (four of them
+byte-identical) were found the day the shared one landed — and
+`cursor-vocabulary.test.ts` fails the build for a cursor held under any other
+field, finding it structurally rather than by name. A non-trivial *traversal*
+(half-grid, lock modes, corner-skipping) still keeps its own logic, and so does
+whatever a game does *while* the cursor moves; only the noun is shared.
+Discipline: [`input.md`](./input.md).
 
 ### `params.ts` — param-string decoding + config helpers
 
@@ -397,11 +407,14 @@ no render snapshot moves.
 ### `flash.ts` — the win-celebration convention
 
 `winFlash(from, to, flashTime)`: flash exactly once on a fresh, un-cheated
-unsolved→solved transition. Reads `completed`/`cheated` structurally. **Only a
-genuinely different celebration keeps its own `flashLength`** — more than one
-flashing outcome, a non-`FLASH_TIME` duration, or a condition that is not
-"became solved". A *differently-named flag* is not one of those: 14 of the 45
-hand-written ones are `winFlash` in disguise (`unify-cross-game-vocabulary`).
+unsolved→solved transition. Every game's state spells the flags `completed` and
+`cheated`, so this reads them as a contract. **Only a genuinely different
+celebration keeps its own `flashLength`** — more than one flashing outcome, a
+non-`FLASH_TIME` duration, a condition that is not "became solved", or a
+`completed` that is not a flag (the four move-count games). A
+*differently-named flag* is not one of those, and cannot be: `flash.ts` lists
+every survivor with its reason, and `completion-vocabulary.test.ts` fails the
+build for a re-spelling.
 
 ### `pencil-indicator.ts` — the pencil-mode glyph
 

@@ -161,12 +161,24 @@
 
 ## 6. Docs and specs
 
-- [ ] 6.1 `ts-engine`: ADDED requirements for the cursor `Ui` contract and the
-      completion vocabulary.
-- [ ] 6.2 `docs/games/input.md` and `engine-catalog.md`: the interim "match the
-      nearest neighbour" note becomes the settled rule.
-- [ ] 6.3 `docs/games/rendering.md`: the `winFlash` section loses its interim
-      framing once §2 lands.
-- [ ] 6.4 `docs/framework-rdd/game-definition.md`: move what shipped out of the
-      survey and into the real guides, per the fiction-quarantine rule.
-- [ ] 6.5 `openspec validate unify-cross-game-vocabulary --strict`.
+- [x] 6.1 `ts-engine`: two ADDED requirements (the cursor `Ui` contract, the
+      completion vocabulary) **and one MODIFIED** — the cursor-delta requirement
+      normatively said "the *first arrow-press only reveals the cursor* idiom …
+      SHALL stay in each game", which §3 makes false. Found by grepping the live
+      spec rather than by assuming the additions were enough.
+- [x] 6.2 `docs/games/input.md` — the interim "match the nearest neighbour
+      rather than inventing a seventh name" is replaced by the settled rule,
+      including the *action-arrow* exception and the two games that keep an
+      extra flag beside the cursor. `engine-catalog.md`'s `pointer.ts` entry
+      now leads with the cursor rather than the button codes.
+- [x] 6.3 `docs/games/rendering.md`: the interim framing is gone, replaced by
+      the four shapes that qualify for a bespoke hook and by Dominosa as the
+      worked near-miss.
+- [x] 6.4 `docs/framework-rdd/game-definition.md`: both shipped items struck
+      through and repointed at the live guides. Each keeps **what the survey got
+      right or wrong**, which is the part worth carrying: the save-format worry
+      was unfounded for exactly the predicted reason, and both counts were low
+      because the survey counted *spellings* rather than measuring a population.
+- [x] 6.5 `openspec validate unify-cross-game-vocabulary --strict` — valid.
+- [x] 6.6 `docs/games/testing.md`: the new `presses` option, with the reason it
+      exists (`moves` reaches a board state, `presses` reaches a `Ui` state).

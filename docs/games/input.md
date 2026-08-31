@@ -266,35 +266,62 @@ were promoted after **27** ports had each written their own, five games still
 had theirs afterwards, and every dead-key defect in this collection began life
 as a local copy of a frontend fact.
 
-**Use the shared helpers for the common shape; keep policy local.**
-[`engine/pointer.ts`](../../src/engine/pointer.ts) provides:
+**One cursor, one name, one field.** Every game holds its keyboard cursor as
+`ui.cursor`, an [`engine/pointer.ts`](../../src/engine/pointer.ts) `GridCursor`
+(`x`, `y`, `visible`). Build it with `newCursor(x?, y?, visible?)` and drive it
+with:
 
-- `cursorDelta(button)` — button → unit grid delta, `null` for non-cursor keys;
-- `isCursorMove(button)` — the four-direction range check;
-- `gridCursorMove(button, x, y, w, h, wrap?)` — the bounded (or toroidal)
-  cursor clamp. It returns `null` on a non-cursor button **and** on a
-  clamped-edge no-op, so `?? { x, y }` reproduces the "always returns a
-  position" shape.
+- `moveCursor(cursor, button, w, h, wrap?)` — **reveal and move in one press**,
+  returning whether anything changed. `false` means a non-cursor button, or a
+  clamped edge press on an already-visible cursor: return `null` rather than
+  `UI_UPDATE` for a press that did nothing.
+- `showCursor(cursor)` / `hideCursor(cursor)` — reveal in place (a select press,
+  or an arrow the game treats as an *action*), and hide (a pointer took over).
+  Both return whether they changed anything, which is usually the `UI_UPDATE`
+  answer too.
 
-**What is per-game here is being narrowed, on purpose.** This section used to
-say that "which `Ui` field holds the cursor, `changed`-tracking, the first-arrow-
-press idiom, and the `null`-vs-`UI_UPDATE` return" all stay per-game,
-deliberately. Only the last sentence of that was ever a real design choice: the
-rest is **one concept spelled six ways** (`hshow`, `cshow`, `curVisible`,
-`cursorVisible`, `cursor`, `displayCur`, across 42 of 57 games), which is not an
-idiom but six things to learn. Unifying it is scoped by
-`unify-keyboard-cursor-ui`; until that lands, **match the nearest neighbour
-rather than inventing a seventh name**, and do not read the old sentence as
-licence to differ.
+The lower-level pieces are still there for a bespoke traversal: `cursorDelta`
+(button → unit delta), `isCursorMove` (the four-direction range check), and
+`gridCursorMove` (the position-only clamp, `null` on a no-op).
+
+**Do not invent a second name for any of it.** `cursor-vocabulary.test.ts`
+fails the build for a cursor held anywhere but `ui.cursor`, and it finds one
+*structurally* — by its shape, read off `newCursor()` — so an eleventh spelling
+is caught as surely as the ten that were there before
+`unify-cross-game-vocabulary`.
 
 What genuinely stays per-game is a *traversal* that is not a bounded grid step —
 a half-grid cursor, corner-skipping, lock modes, paint-while-traversing — which
-keeps its own logic (built on `cursorDelta` if that helps). Note the shape of
-that split: a game may legitimately want the cursor to *move* differently; no
-game has ever wanted to *name* it differently. Palisade and
-Separate get their half-grid cursor through
-[`engine/border-grid.ts`](../../src/engine/border-grid.ts), so a sweep reading
-only a game's `index.ts` would wrongly convict them of having none.
+keeps its own logic (built on `cursorDelta` if that helps), and whatever the
+game does *while* the cursor moves. Note the shape of that split: a game may
+legitimately want the cursor to *move* differently, and to *do* something as it
+moves; no game has ever wanted to *name* it differently. Tents paints the cells
+it passes and Boats drags a fill, both by reading `ui.cursor` either side of a
+`moveCursor` call. Palisade and Separate get their half-grid cursor through
+[`engine/border-grid.ts`](../../src/engine/border-grid.ts) (whose own
+`moveBorderCursor` is named apart from the shared helper because a step there
+crosses *half* a cell), so a sweep reading only a game's `index.ts` would
+wrongly convict them of having none.
+
+**The first arrow press reveals *and* moves, everywhere**, so a keyboard player
+never spends a press on the reveal. `moveCursor` does that for you; the guard is
+collection-wide, in `cursor-vocabulary.test.ts`.
+
+The one exception, and it is a rule rather than a per-game licence: **an arrow
+that is itself an action still only reveals on the first press.** Pearl's
+modified arrow marks a line, Range's shifted arrow dots the cells it passes, and
+Sixteen's arrow *is* a slide in its locked and modified modes — a first press
+must not move the board out from under a player who cannot yet see where it
+would act. Each of those calls `showCursor` and returns early on that path only;
+the plain arrow beside it reveals and moves like everyone else's.
+
+**Two games keep something extra beside the cursor, and both are worth copying
+rather than re-deriving.** Ascent draws a mouse hover differently from a
+keyboard cursor, so it carries `cursorFromMouse` alongside `cursor.visible` and
+reads the pair back through two named predicates. Rome's `kmode` says what the
+cursor is *armed for* (move / place / pencil) and no longer doubles as whether
+it is shown. In both, the shared part is the noun and the game's part is the
+verb.
 
 A cursor move that changes only `Ui` returns `UI_UPDATE` (the midend redraws,
 notifies, and records no history entry) — the contract is in
