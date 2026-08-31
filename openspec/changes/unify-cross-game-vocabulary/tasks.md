@@ -182,3 +182,38 @@
 - [x] 6.5 `openspec validate unify-cross-game-vocabulary --strict` — valid.
 - [x] 6.6 `docs/games/testing.md`: the new `presses` option, with the reason it
       exists (`moves` reaches a board state, `presses` reaches a `Ui` state).
+
+## 7. Owner acceptance evidence (browser, Chrome via `playwright-cli`)
+
+The suite cannot say a frame composited correctly, and three of these edits were
+invasive enough to want the eye:
+
+| Game | What was checked | Result |
+|---|---|---|
+| Tracks | one arrow press from a fresh board | cursor appears **one half-step right**, on the edge — reveal-and-move, with the corner-skipping traversal intact |
+| Range | one `ArrowDown` | the highlight moves down a **row**, so the `(r, c)` ↔ `(x, y)` transpose is the right way round |
+| Ascent | two arrow presses | the green corner-bracket **keyboard** cursor draws, so the `cshow` tri-state split kept the device distinction |
+| Rome | arrow, then Enter | grey (armed to *move*) then white (armed to *place*) — the `kmode` three-way split renders correctly |
+| Magnets | Solve | board fills, end dialog appears, **no win flash** — the half the `solved`→`cheated` rename could have inverted |
+| Range | solved by walking the hint plan | **"Solved!"** with the flash playing — `winFlash` still fires on an un-cheated win |
+
+## 8. Found on the way — handed off, not fixed here
+
+- **The move-count completion family disagrees with itself.** Fifteen, Sixteen,
+  Twiddle and Slide all hold `completed` as the move count they were solved at,
+  and use **two different sentinels for "ongoing"**: `0` in the first three,
+  `-1` in Slide. Slide's can represent "solved in zero moves" and the others'
+  cannot, so they are not interchangeable, and nothing above them can read the
+  four the same way. Naming is unified; the *type* is the next question, and it
+  is a change of its own rather than a rename.
+- **The midend's `usedSolve` is the last holdout, and it is the owner's call.**
+  Every game now says `cheated`; the midend's own flag still says `usedSolve`
+  because it is written into the save envelope, so renaming it invalidates every
+  saved game. That is a player-visible compatibility break, which this change
+  does not take unilaterally.
+- **The one-off verification instruments are deliberately not committed.** The
+  token-identity check compared the working tree against the pre-sweep `HEAD`;
+  once the sweep is committed that baseline is gone, so a committed copy would
+  be a recipe that fails on its first step. What it *established* is recorded in
+  §5, and rebuilding it for the next sweep is a page of code, most of which
+  would have to be rewritten for a different vocabulary anyway.
