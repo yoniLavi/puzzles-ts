@@ -32,6 +32,7 @@ import {
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
+  newCursor,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
@@ -142,9 +143,7 @@ function newState(p: SignpostParams, desc: string): SignpostState {
 
 function newUi(_state: SignpostState): SignpostUi {
   return {
-    cx: 0,
-    cy: 0,
-    cshow: false,
+    cursor: newCursor(),
     dragging: false,
     dragIsFrom: false,
     sx: 0,
@@ -161,7 +160,7 @@ function changedState(
   next: SignpostState,
 ): void {
   if (oldState && !oldState.completed && next.completed) {
-    ui.cshow = false;
+    ui.cursor.visible = false;
     ui.dragging = false;
   }
 }
@@ -182,50 +181,50 @@ function interpretMove(
     const delta = cursorDelta(button);
     if (!delta) return null;
     let changed = false;
-    if (!ui.cshow) {
-      ui.cshow = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       changed = true;
     } else {
-      const nx = Math.max(0, Math.min(w - 1, ui.cx + delta.dx));
-      const ny = Math.max(0, Math.min(h - 1, ui.cy + delta.dy));
-      if (nx !== ui.cx || ny !== ui.cy) {
-        ui.cx = nx;
-        ui.cy = ny;
+      const nx = Math.max(0, Math.min(w - 1, ui.cursor.x + delta.dx));
+      const ny = Math.max(0, Math.min(h - 1, ui.cursor.y + delta.dy));
+      if (nx !== ui.cursor.x || ny !== ui.cursor.y) {
+        ui.cursor.x = nx;
+        ui.cursor.y = ny;
         changed = true;
       }
     }
     if (ui.dragging) {
-      ui.dx = coord(ui.cx, ts) + ts / 2;
-      ui.dy = coord(ui.cy, ts) + ts / 2;
+      ui.dx = coord(ui.cursor.x, ts) + ts / 2;
+      ui.dy = coord(ui.cursor.y, ts) + ts / 2;
     }
     return changed || ui.dragging ? UI_UPDATE : null;
   }
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (!ui.cshow) {
-      ui.cshow = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     if (ui.dragging) {
       ui.dragging = false;
-      if (ui.sx === ui.cx && ui.sy === ui.cy) return UI_UPDATE;
+      if (ui.sx === ui.cursor.x && ui.sy === ui.cursor.y) return UI_UPDATE;
       const m = ui.dragIsFrom
-        ? linkIfValid(s, ui.sx, ui.sy, ui.cx, ui.cy)
-        : linkIfValid(s, ui.cx, ui.cy, ui.sx, ui.sy);
+        ? linkIfValid(s, ui.sx, ui.sy, ui.cursor.x, ui.cursor.y)
+        : linkIfValid(s, ui.cursor.x, ui.cursor.y, ui.sx, ui.sy);
       return m ?? UI_UPDATE;
     }
     ui.dragging = true;
-    ui.sx = ui.cx;
-    ui.sy = ui.cy;
-    ui.dx = coord(ui.cx, ts) + ts / 2;
-    ui.dy = coord(ui.cy, ts) + ts / 2;
+    ui.sx = ui.cursor.x;
+    ui.sy = ui.cursor.y;
+    ui.dx = coord(ui.cursor.x, ts) + ts / 2;
+    ui.dy = coord(ui.cursor.y, ts) + ts / 2;
     ui.dragIsFrom = button === CURSOR_SELECT;
     return UI_UPDATE;
   }
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
-    if (ui.cshow) {
-      ui.cshow = false;
+    if (ui.cursor.visible) {
+      ui.cursor.visible = false;
       ui.dragging = false;
     }
     const x = fromCoord(p.x, ts);
@@ -243,7 +242,7 @@ function interpretMove(
     ui.sy = y;
     ui.dx = p.x;
     ui.dy = p.y;
-    ui.cshow = false;
+    ui.cursor.visible = false;
     return UI_UPDATE;
   }
 
@@ -261,12 +260,12 @@ function interpretMove(
   }
 
   // 'x' / 'X' key: unlink at the cursor.
-  if ((button === 120 || button === 88) && ui.cshow) {
-    const si = ui.cy * w + ui.cx;
+  if ((button === 120 || button === 88) && ui.cursor.visible) {
+    const si = ui.cursor.y * w + ui.cursor.x;
     if (s.prev[si] === -1 && s.next[si] === -1) return UI_UPDATE;
     return button === 120
-      ? { type: "unlinkNext", x: ui.cx, y: ui.cy }
-      : { type: "unlinkPrev", x: ui.cx, y: ui.cy };
+      ? { type: "unlinkNext", x: ui.cursor.x, y: ui.cursor.y }
+      : { type: "unlinkPrev", x: ui.cursor.x, y: ui.cursor.y };
   }
 
   return null;

@@ -645,9 +645,9 @@ describe("seismic input", () => {
         LEFT_BUTTON,
       ),
     ).toBe(UI_UPDATE);
-    expect(ui.cshow).toBe(true);
-    expect(ui.hx).toBe(cell.x);
-    expect(ui.hy).toBe(cell.y);
+    expect(ui.cursor.visible).toBe(true);
+    expect(ui.cursor.x).toBe(cell.x);
+    expect(ui.cursor.y).toBe(cell.y);
 
     expect(
       seismicGame.interpretMove(
@@ -697,10 +697,10 @@ describe("seismic input", () => {
     const size = state.dsf.size(cell.i);
     expect(size).toBeLessThan(9);
 
-    ui.cshow = true;
+    ui.cursor.visible = true;
     ui.ckey = true;
-    ui.hx = cell.x;
-    ui.hy = cell.y;
+    ui.cursor.x = cell.x;
+    ui.cursor.y = cell.y;
     expect(
       seismicGame.interpretMove(
         state,
@@ -732,10 +732,10 @@ describe("seismic input", () => {
       n: 1,
       pencil: false,
     });
-    ui.cshow = true;
+    ui.cursor.visible = true;
     ui.ckey = true;
-    ui.hx = cell.x;
-    ui.hy = cell.y;
+    ui.cursor.x = cell.x;
+    ui.cursor.y = cell.y;
     expect(
       seismicGame.interpretMove(
         next,
@@ -761,7 +761,7 @@ describe("seismic input", () => {
       pixel(given % state.w, (given / state.w) | 0),
       LEFT_BUTTON,
     );
-    expect(ui.cshow).toBe(false);
+    expect(ui.cursor.visible).toBe(false);
   });
 
   it("toggles sticky pencil mode on a right click", () => {
@@ -777,7 +777,7 @@ describe("seismic input", () => {
       RIGHT_BUTTON,
     );
     expect(ui.cpencil).toBe(true);
-    expect(ui.cshow).toBe(true);
+    expect(ui.cursor.visible).toBe(true);
     seismicGame.interpretMove(
       state,
       ui,
@@ -1147,7 +1147,7 @@ describe("seismic rendering", () => {
     // A 9 is enterable there — `interpretMove` caps entry at the region size.
     const state = newState(p, desc);
     const ui = newUi(state);
-    ui.cshow = true;
+    ui.cursor.visible = true;
     ui.ckey = true;
     ui.cpencil = true;
     const move = seismicGame.interpretMove(

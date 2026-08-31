@@ -301,11 +301,11 @@ export function redraw(
   }
 
   const flash = flashTime > 0 && (Math.floor(flashTime / FLASH_FRAME) & 1) === 1;
-  const cshow = ui.cshow && flashTime <= 0;
-  const cx = ((ui.cx + 1) / 3) | 0;
-  const cy = ((ui.cy + 1) / 3) | 0;
-  const cdx = ((ui.cx + 1) % 3) - 1;
-  const cdy = ((ui.cy + 1) % 3) - 1;
+  const cshow = ui.cursor.visible && flashTime <= 0;
+  const cx = ((ui.cursor.x + 1) / 3) | 0;
+  const cy = ((ui.cursor.y + 1) / 3) | 0;
+  const cdx = ((ui.cursor.x + 1) % 3) - 1;
+  const cdy = ((ui.cursor.y + 1) % 3) - 1;
 
   const thick = ts <= 80 ? 2 : 4;
   const radius = ts / 3.5;

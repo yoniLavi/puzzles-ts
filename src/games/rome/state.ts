@@ -31,6 +31,7 @@
 import { Dsf } from "../../engine/dsf.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- cell bit-field (upstream values, verbatim) -----------------------------
@@ -139,7 +140,6 @@ export type RomeMove =
 
 // --- ui ---------------------------------------------------------------------
 
-export const KEYMODE_OFF = 0;
 export const KEYMODE_MOVE = 1;
 export const KEYMODE_PLACE = 2;
 export const KEYMODE_PENCIL = 3;
@@ -151,9 +151,10 @@ export const MOUSEMODE_PENCIL = 2;
 export interface RomeUi {
   /** Highlighted square — the keyboard cursor, and the grabbed square during
    * a mouse drag. */
-  hx: number;
-  hy: number;
-  /** `KEYMODE_*`: off / cursor visible / armed to place / armed to pencil. */
+  cursor: GridCursor;
+  /** `KEYMODE_*`: what the keyboard cursor is armed for — plain movement,
+   * placing an arrow, or pencilling one. Whether the cursor is *shown* is
+   * `cursor.visible`, like every other game's. */
   kmode: number;
   /** `MOUSEMODE_*`: the in-flight drag's mode, `OFF` when idle. */
   mmode: number;

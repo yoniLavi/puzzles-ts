@@ -1,3 +1,4 @@
+import type { GridCursor } from "../../engine/pointer.ts";
 /**
  * Types and pure state helpers for Singles (Hitori) — port of the
  * state/codec parts of `singles.c`.
@@ -73,9 +74,7 @@ export interface SinglesMove {
 }
 
 export interface SinglesUi {
-  cx: number;
-  cy: number;
-  cshow: boolean;
+  cursor: GridCursor;
   showBlackNums: boolean;
 }
 

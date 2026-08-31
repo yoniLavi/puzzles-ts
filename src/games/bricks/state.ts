@@ -19,6 +19,7 @@
  */
 
 import type { PresetMenu } from "../../engine/game.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- cell bit-field (upstream values) ---------------------------------------
@@ -99,9 +100,7 @@ export type BricksMove =
 
 export interface BricksUi {
   /** Keyboard cursor visible + position. */
-  cshow: boolean;
-  cx: number;
-  cy: number;
+  cursor: GridCursor;
   /** The colour the in-flight drag paints (`F_SHADE`/`F_UNSHADE`/`F_EMPTY`,
    * or 0 when no drag is active). */
   dragtype: number;

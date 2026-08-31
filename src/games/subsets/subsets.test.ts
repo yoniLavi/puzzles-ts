@@ -411,13 +411,13 @@ describe("subsets input", () => {
     const state = newState(PARAMS, FIX.desc);
     const ui = newUi();
     expect(press(state, ui, CURSOR_RIGHT, 0, 0)).toBe(UI_UPDATE);
-    expect(ui.cshow).toBe(true);
-    expect(ui.cx).toBe(1);
+    expect(ui.cursor.visible).toBe(true);
+    expect(ui.cursor.x).toBe(1);
     // The next step crosses the gap column (2) straight to column 3.
     expect(press(state, ui, CURSOR_RIGHT, 0, 0)).toBe(UI_UPDATE);
-    expect(ui.cx).toBe(3);
+    expect(ui.cursor.x).toBe(3);
     expect(press(state, ui, CURSOR_DOWN, 0, 0)).toBe(UI_UPDATE);
-    expect(ui.cy).toBe(1);
+    expect(ui.cursor.y).toBe(1);
 
     // Cursor now on cell (1,0)'s slot (0,1) = letter 2.
     const pos = 1;
@@ -445,8 +445,8 @@ describe("subsets input", () => {
     const state = newState(PARAMS, FIX.desc);
     const ui = newUi();
     for (let k = 0; k < 20; k++) press(state, ui, CURSOR_RIGHT, 0, 0);
-    expect(ui.cx).toBe(10); // last slot column of the 0..10 virtual grid
-    expect(ui.cx % 3).not.toBe(2);
+    expect(ui.cursor.x).toBe(10); // last slot column of the 0..10 virtual grid
+    expect(ui.cursor.x % 3).not.toBe(2);
   });
 });
 

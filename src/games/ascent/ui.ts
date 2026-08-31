@@ -19,6 +19,8 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
+  type GridCursor,
+  hideCursor,
   isEraseKey,
   isMouseDown,
   isMouseDrag,
@@ -28,6 +30,7 @@ import {
   MIDDLE_BUTTON,
   MIDDLE_DRAG,
   MOD_NUM_KEYPAD,
+  newCursor,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
@@ -62,9 +65,21 @@ import {
 export const TARGET_SHOW = 0x1;
 export const TARGET_CONNECTED = 0x2;
 
-export const CSHOW_NONE = 0;
-export const CSHOW_KEYBOARD = 1;
-export const CSHOW_MOUSE = 2;
+/** Whether the cursor is shown lives on `ui.cursor`, like every other game's.
+ * What Ascent keeps beyond that is *which device* revealed it: a mouse hover
+ * and a keyboard cursor are drawn differently, and a player can see the
+ * difference — so `cursorFromMouse` is the game's own verb over the shared
+ * noun. These two read the pair back as the states the code reasons in. */
+export const keyboardCursor = (ui: AscentUi): boolean =>
+  ui.cursor.visible && !ui.cursorFromMouse;
+export const mouseCursor = (ui: AscentUi): boolean =>
+  ui.cursor.visible && ui.cursorFromMouse;
+
+/** Reveal the cursor as a keyboard cursor (`false`) or a mouse hover (`true`). */
+export function revealCursor(ui: AscentUi, fromMouse: boolean): void {
+  ui.cursor.visible = true;
+  ui.cursorFromMouse = fromMouse;
+}
 
 const DRAG_RADIUS = 0.6;
 
@@ -82,11 +97,12 @@ export interface AscentUi {
   nexthints: Int32Array;
   s: number;
 
-  cshow: number;
+  cursor: GridCursor;
+  /** Whether the visible cursor is a mouse hover rather than a keyboard
+   * cursor — see {@link keyboardCursor} / {@link mouseCursor}. */
+  cursorFromMouse: boolean;
   typingCell: number;
   typingNumber: number;
-  cx: number;
-  cy: number;
 
   doubleclickCell: number;
   dragx: number;
@@ -116,11 +132,10 @@ export function newAscentUi(state: AscentState): AscentUi {
     prevhints: new Int32Array(s),
     nexthints: new Int32Array(s),
     s,
-    cshow: CSHOW_NONE,
+    cursor: newCursor(),
+    cursorFromMouse: false,
     typingCell: CELL_NONE,
     typingNumber: 0,
-    cx: 0,
-    cy: 0,
     doubleclickCell: -1,
     dragx: -1,
     dragy: -1,
@@ -133,8 +148,8 @@ export function newAscentUi(state: AscentState): AscentUi {
   for (; i < s; i++) {
     if (state.grid[i] !== NUMBER_BOUND) break;
   }
-  ui.cx = i % w;
-  ui.cy = Math.trunc(i / w);
+  ui.cursor.x = i % w;
+  ui.cursor.y = Math.trunc(i / w);
 
   updatePositions(ui.positions, state.grid, s);
   updatePathHints(ui.prevhints, ui.nexthints, state);
@@ -431,7 +446,7 @@ function mouseClick(
     ) {
       ui.held = i;
       uiSeek(ui, state);
-      ui.cshow = CSHOW_NONE;
+      hideCursor(ui.cursor);
       return null;
     }
     /* Place the next number */
@@ -467,7 +482,7 @@ function mouseClick(
         if (edge !== placedNum && ui.positions[edge] >= 0) ui.held = ui.positions[edge];
       }
       uiSeek(ui, state);
-      if (!keyboard) ui.cshow = CSHOW_NONE;
+      if (!keyboard) hideCursor(ui.cursor);
       return move;
     }
     /* Keyboard-drag a path line */
@@ -479,9 +494,9 @@ function mouseClick(
     /* Highlight an empty cell */
     if (n === NUMBER_EMPTY && button === LEFT_BUTTON) {
       uiClear(ui);
-      ui.cx = i % w;
-      ui.cy = Math.trunc(i / w);
-      ui.cshow = keyboard ? CSHOW_KEYBOARD : CSHOW_MOUSE;
+      ui.cursor.x = i % w;
+      ui.cursor.y = Math.trunc(i / w);
+      revealCursor(ui, !keyboard);
       ui.held = i;
       ui.select = NUMBER_EMPTY;
       ui.dir = 0;
@@ -492,7 +507,7 @@ function mouseClick(
     if (!ui.dir && validatePathMove(i, state, ui)) {
       const move: AscentMove = { kind: "line", from: i, to: ui.held, erase: false };
       ui.held = i;
-      ui.cshow = CSHOW_NONE;
+      hideCursor(ui.cursor);
       return move;
     }
     return null;
@@ -557,7 +572,7 @@ function mouseClick(
     ui.dragx = ui.dragy = -1;
     if (ui.doubleclickCell === i) {
       uiClear(ui);
-      if (ui.cshow === CSHOW_MOUSE) ui.cshow = CSHOW_NONE;
+      if (mouseCursor(ui)) hideCursor(ui.cursor);
     } else if (
       n === NUMBER_EMPTY &&
       isNumberEdge(ui.select) &&
@@ -667,7 +682,7 @@ export function interpretAscentMove(
   }
 
   if (isMouseDown(button)) {
-    ui.cshow = CSHOW_NONE;
+    hideCursor(ui.cursor);
     finishTyping = true;
   }
 
@@ -682,9 +697,9 @@ export function interpretAscentMove(
   }
 
   if (isHexagonal(state.mode)) {
-    if (button === CURSOR_UP && ui.cy > 0 && (ui.cy & 1) === 0)
+    if (button === CURSOR_UP && ui.cursor.y > 0 && (ui.cursor.y & 1) === 0)
       button = MOD_NUM_KEYPAD | 0x39; // '9'
-    else if (button === CURSOR_DOWN && ui.cy < h - 1 && ui.cy & 1)
+    else if (button === CURSOR_DOWN && ui.cursor.y < h - 1 && ui.cursor.y & 1)
       button = MOD_NUM_KEYPAD | 0x31; // '1'
     else if (button === (MOD_NUM_KEYPAD | 0x37))
       button = CURSOR_UP; // '7'
@@ -712,21 +727,22 @@ export function interpretAscentMove(
   }
 
   if (dirx || diry) {
-    ui.cshow = CSHOW_KEYBOARD;
-    ui.cx += dirx;
-    ui.cy += diry;
-    ui.cx = Math.max(0, Math.min(ui.cx, w - 1));
-    ui.cy = Math.max(0, Math.min(ui.cy, h - 1));
+    revealCursor(ui, false);
+    ui.cursor.x += dirx;
+    ui.cursor.y += diry;
+    ui.cursor.x = Math.max(0, Math.min(ui.cursor.x, w - 1));
+    ui.cursor.y = Math.max(0, Math.min(ui.cursor.y, h - 1));
 
     if (state.mode === MODE_HEXAGON) {
       const center = Math.trunc(h / 2);
-      if (ui.cy < center) ui.cx = Math.max(ui.cx, center - ui.cy);
-      else ui.cx = Math.min(ui.cx, w - 1 + center - ui.cy);
+      if (ui.cursor.y < center)
+        ui.cursor.x = Math.max(ui.cursor.x, center - ui.cursor.y);
+      else ui.cursor.x = Math.min(ui.cursor.x, w - 1 + center - ui.cursor.y);
     }
     if (state.mode === MODE_HONEYCOMB) {
-      const extra = (h | ui.cy) & 1 ? 0 : 1;
-      ui.cx = Math.min(ui.cx, w - Math.trunc(ui.cy / 2) - 1);
-      ui.cx = Math.max(ui.cx, Math.trunc((h - ui.cy) / 2) - extra);
+      const extra = (h | ui.cursor.y) & 1 ? 0 : 1;
+      ui.cursor.x = Math.min(ui.cursor.x, w - Math.trunc(ui.cursor.y / 2) - 1);
+      ui.cursor.x = Math.max(ui.cursor.x, Math.trunc((h - ui.cursor.y) / 2) - extra);
     }
 
     finishTyping = true;
@@ -736,16 +752,12 @@ export function interpretAscentMove(
 
   /* Enter/Backspace when not typing emulates a mouse click. */
   if (isEraseKey(button) && ui.typingCell === CELL_NONE) button = CURSOR_SELECT2;
-  if (
-    isCursorSelect(button) &&
-    ui.cshow === CSHOW_KEYBOARD &&
-    ui.typingCell === CELL_NONE
-  ) {
+  if (isCursorSelect(button) && keyboardCursor(ui) && ui.typingCell === CELL_NONE) {
     ret = mouseClick(
       state,
       ui,
-      ui.cx,
-      ui.cy,
+      ui.cursor.x,
+      ui.cursor.y,
       button === CURSOR_SELECT ? LEFT_BUTTON : RIGHT_BUTTON,
       true,
     );
@@ -753,8 +765,8 @@ export function interpretAscentMove(
       ret = mouseClick(
         state,
         ui,
-        ui.cx,
-        ui.cy,
+        ui.cursor.x,
+        ui.cursor.y,
         button === CURSOR_SELECT ? LEFT_RELEASE : RIGHT_RELEASE,
         true,
       );
@@ -762,8 +774,8 @@ export function interpretAscentMove(
   if (isCursorSelect(button)) finishTyping = true;
 
   /* Typing a number */
-  if (button >= 0x30 && button <= 0x39 && ui.cshow) {
-    const i = ui.cy * w + ui.cx;
+  if (button >= 0x30 && button <= 0x39 && ui.cursor.visible) {
+    const i = ui.cursor.y * w + ui.cursor.x;
     if (state.immutable[i]) return null;
     if (ui.typingCell === CELL_NONE && state.grid[i] !== NUMBER_EMPTY) return null;
     let num = ui.typingNumber;
@@ -804,7 +816,7 @@ export function interpretAscentMove(
     ui.typingCell = CELL_NONE;
     ui.typingNumber = 0;
 
-    if (ui.cshow === CSHOW_MOUSE && ui.cy * w + ui.cx === i) {
+    if (mouseCursor(ui) && ui.cursor.y * w + ui.cursor.x === i) {
       ui.held = i;
       ui.dir =
         num < state.last && ui.positions[num + 1] === CELL_NONE

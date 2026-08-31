@@ -22,6 +22,7 @@ import {
 import { fillingCorrect, fillingCursor } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { FillingHint } from "./index.ts";
 import {
@@ -266,9 +267,7 @@ export function redrawFilling(
   _dir: number,
   ui: {
     sel: Set<number> | null;
-    cx: number;
-    cy: number;
-    curVisible: boolean;
+    cursor: GridCursor;
   },
   _animTime: number,
   flashTime: number,
@@ -372,7 +371,8 @@ export function redrawFilling(
         else if (!hasEmptyNeighbour.has(dsf.canonify(i))) flags |= ERROR_BG;
       }
 
-      if (ui.curVisible && x === ui.cx && y === ui.cy) flags |= CURSOR_SQ;
+      if (ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y)
+        flags |= CURSOR_SQ;
 
       // Outer-edge borders are independent of the interior border flag.
       if (x === 0) flags |= BORDER_L;

@@ -349,7 +349,7 @@ describe("netslide input", () => {
 
   it("walks the cursor round the ring, never stopping on an un-slidable line", () => {
     const ui = newUi(s);
-    expect(ui.curVisible).toBe(false);
+    expect(ui.cursor.visible).toBe(false);
 
     // Walk further than one full circuit, so every arrow position is visited.
     for (let i = 0; i < 2 * (s.w + s.h) + 3; i++) {
@@ -360,12 +360,12 @@ describe("netslide input", () => {
         { x: 0, y: 0 },
         CURSOR_RIGHT,
       );
-      expect(ui.curVisible).toBe(true);
+      expect(ui.cursor.visible).toBe(true);
       // Never parked beside the centre column or the centre row...
-      expect(ui.curX === s.cx && ui.curY >= 0 && ui.curY < s.h).toBe(false);
-      expect(ui.curY === s.cy && ui.curX >= 0 && ui.curX < s.w).toBe(false);
+      expect(ui.cursor.x === s.cx && ui.cursor.y >= 0 && ui.cursor.y < s.h).toBe(false);
+      expect(ui.cursor.y === s.cy && ui.cursor.x >= 0 && ui.cursor.x < s.w).toBe(false);
       // ...and never off the ring.
-      expect(() => c2pos(s.w, s.h, ui.curX, ui.curY)).not.toThrow();
+      expect(() => c2pos(s.w, s.h, ui.cursor.x, ui.cursor.y)).not.toThrow();
     }
   });
 
@@ -398,7 +398,7 @@ describe("netslide input", () => {
       { x: 0, y: 0 },
       CURSOR_SELECT,
     );
-    expect(ui.curVisible).toBe(true);
+    expect(ui.cursor.visible).toBe(true);
     expect(move).not.toMatchObject({ type: "slide" });
   });
 

@@ -849,7 +849,7 @@ export function redraw(
 
   const flash = flashTime > 0 ? Math.floor(flashTime / FLASH_FRAME) % 3 : -1;
   // Upstream hides the selection while the win flash runs.
-  const cshow = ui.cshow && flashTime === 0;
+  const cshow = ui.cursor.visible && flashTime === 0;
 
   // Live errors: which runs read as no listed number, spread over their cells.
   const { done, runErrs } = validateBoard(puzzle, state.grid);
@@ -903,7 +903,7 @@ export function redraw(
   // The two runs through the selected cell: the one being filled, and the one
   // crossing it. The crossing run is washed so that the second colour used for
   // its clues in the list below has something to point at.
-  const selCell = cshow && !ui.cpencil ? ui.cy * w + ui.cx : -1;
+  const selCell = cshow && !ui.cpencil ? ui.cursor.y * w + ui.cursor.x : -1;
   const activeRun =
     selCell < 0
       ? -1
@@ -957,7 +957,7 @@ export function redraw(
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
-      const here = cshow && ui.cx === x && ui.cy === y;
+      const here = cshow && ui.cursor.x === x && ui.cursor.y === y;
       let flags = 0;
       if (here && ui.cpencil) flags |= DF_PENCIL;
       else if (here && ui.ckey) flags |= DF_KEYCUR;
@@ -1027,7 +1027,15 @@ export function redraw(
       // clue, and the tie is settled by how much of each is already written,
       // not by the fill direction. Duplicating that rule here is exactly how
       // the two would drift apart.)
-      const r = runForNumber(puzzle, state.grid, placed, ui.cx, ui.cy, l, ui.dir);
+      const r = runForNumber(
+        puzzle,
+        state.grid,
+        placed,
+        ui.cursor.x,
+        ui.cursor.y,
+        l,
+        ui.dir,
+      );
       if (r >= 0) return runs[r].horizontal ? 0 : 5;
       return 4;
     }

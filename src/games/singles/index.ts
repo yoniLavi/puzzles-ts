@@ -29,6 +29,7 @@ import {
   isCursorMove,
   LEFT_BUTTON,
   MIDDLE_BUTTON,
+  newCursor,
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
@@ -104,7 +105,7 @@ function presets(): {
 }
 
 function newUi(_state: SinglesState): SinglesUi {
-  return { cx: 0, cy: 0, cshow: false, showBlackNums: false };
+  return { cursor: newCursor(), showBlackNums: false };
 }
 
 function changedState(
@@ -112,7 +113,7 @@ function changedState(
   oldState: SinglesState | null,
   newSt: SinglesState,
 ): void {
-  if (oldState && !oldState.completed && newSt.completed) ui.cshow = false;
+  if (oldState && !oldState.completed && newSt.completed) ui.cursor.visible = false;
 }
 
 function inGrid(s: SinglesState, x: number, y: number): boolean {
@@ -133,15 +134,15 @@ function interpretMove(
   if (isCursorMove(button)) {
     const delta = cursorDelta(button);
     if (!delta) return null;
-    const ox = ui.cx;
-    const oy = ui.cy;
-    ui.cx = (((ui.cx + delta.dx) % w) + w) % w;
-    ui.cy = (((ui.cy + delta.dy) % h) + h) % h;
-    if (!ui.cshow) {
-      ui.cshow = true;
+    const ox = ui.cursor.x;
+    const oy = ui.cursor.y;
+    ui.cursor.x = (((ui.cursor.x + delta.dx) % w) + w) % w;
+    ui.cursor.y = (((ui.cursor.y + delta.dy) % h) + h) % h;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
-    return ui.cx !== ox || ui.cy !== oy ? UI_UPDATE : null;
+    return ui.cursor.x !== ox || ui.cursor.y !== oy ? UI_UPDATE : null;
   }
 
   let x: number;
@@ -149,9 +150,9 @@ function interpretMove(
   let action: "none" | "black" | "circle" | "ui" = "none";
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    x = ui.cx;
-    y = ui.cy;
-    if (!ui.cshow) ui.cshow = true;
+    x = ui.cursor.x;
+    y = ui.cursor.y;
+    if (!ui.cursor.visible) ui.cursor.visible = true;
     action = button === CURSOR_SELECT ? "black" : "circle";
   } else if (
     button === LEFT_BUTTON ||
@@ -163,8 +164,8 @@ function interpretMove(
     const fromCoord = (v: number): number => Math.floor((v - border + ts) / ts) - 1;
     x = fromCoord(p.x);
     y = fromCoord(p.y);
-    if (ui.cshow) {
-      ui.cshow = false;
+    if (ui.cursor.visible) {
+      ui.cursor.visible = false;
       action = "ui";
     }
     if (!inGrid(state, x, y)) {

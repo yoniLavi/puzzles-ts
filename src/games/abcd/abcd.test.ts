@@ -254,10 +254,10 @@ describe("abcd moves through a Midend", () => {
     setTileSize(ds, ts);
     const at = (s: AbcdState, x: number, y: number): AbcdUi => {
       const ui = newUi(s);
-      ui.hshow = true;
+      ui.cursor.visible = true;
       ui.hcursor = true;
-      ui.hx = x;
-      ui.hy = y;
+      ui.cursor.x = x;
+      ui.cursor.y = y;
       return ui;
     };
     const KEY_A = 97; // 'a' — letter 0
@@ -404,19 +404,19 @@ describe("abcd input (interpretMove)", () => {
 
     // Left-click selects a cell for ink.
     abcdGame.interpretMove(st, ui, ds, centre(p, 2, 3), LEFT_BUTTON);
-    expect(ui.hshow).toBe(true);
+    expect(ui.cursor.visible).toBe(true);
     expect(ui.hpencil).toBe(false);
-    expect([ui.hx, ui.hy]).toEqual([2, 3]);
+    expect([ui.cursor.x, ui.cursor.y]).toEqual([2, 3]);
 
     // Right-click toggles pencil mode ON and moves the highlight onto the cell.
     abcdGame.interpretMove(st, ui, ds, centre(p, 1, 1), RIGHT_BUTTON);
     expect(ui.hpencil).toBe(true);
-    expect([ui.hx, ui.hy]).toEqual([1, 1]);
+    expect([ui.cursor.x, ui.cursor.y]).toEqual([1, 1]);
 
     // A left-click on a new cell keeps pencil mode ON (sticky).
     abcdGame.interpretMove(st, ui, ds, centre(p, 0, 0), LEFT_BUTTON);
     expect(ui.hpencil).toBe(true);
-    expect([ui.hx, ui.hy]).toEqual([0, 0]);
+    expect([ui.cursor.x, ui.cursor.y]).toEqual([0, 0]);
 
     // Right-click again toggles pencil mode OFF (stays on until right-clicked again).
     abcdGame.interpretMove(st, ui, ds, centre(p, 0, 0), RIGHT_BUTTON);
@@ -424,7 +424,7 @@ describe("abcd input (interpretMove)", () => {
 
     // A left-click on the already-highlighted cell deselects it.
     abcdGame.interpretMove(st, ui, ds, centre(p, 0, 0), LEFT_BUTTON);
-    expect(ui.hshow).toBe(false);
+    expect(ui.cursor.visible).toBe(false);
   });
 
   it("a letter key on a selected cell emits an enter move", () => {
@@ -441,7 +441,7 @@ describe("abcd input (interpretMove)", () => {
       y: 0,
       letter: 2,
     });
-    ui.hshow = true;
+    ui.cursor.visible = true;
     expect(abcdGame.interpretMove(st, ui, ds, { x: 0, y: 0 }, 51)).toEqual({
       type: "enter",
       x: 0,
@@ -539,9 +539,9 @@ describe("abcd render", () => {
   it("paints a cursor highlight and pencil marks in a direct redraw", () => {
     const st = newState(P(5, 5, 4), newAbcdDesc(P(5, 5, 4), randomNew("r-cur")).desc);
     const ui = newUi(st);
-    ui.hshow = true;
-    ui.hx = 2;
-    ui.hy = 2;
+    ui.cursor.visible = true;
+    ui.cursor.x = 2;
+    ui.cursor.y = 2;
     const withMark = abcdGame.executeMove(st, {
       type: "pencil",
       x: 2,
@@ -567,7 +567,7 @@ describe("abcd render", () => {
     const render = (hpencil: boolean): RecordingDrawing => {
       const ui = newUi(st);
       ui.hpencil = hpencil;
-      ui.hshow = hpencil;
+      ui.cursor.visible = hpencil;
       const ds = newDrawState(st);
       setTileSize(ds, abcdGame.preferredTileSize ?? 36);
       const dr = new RecordingDrawing(palette);

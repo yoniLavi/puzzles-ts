@@ -437,8 +437,8 @@ describe("spokes input", () => {
     // The first arrow press reveals the cursor and steps it onto hub (0,0)'s
     // right-hand spoke slot.
     expect(press(state, ui, CURSOR_RIGHT, hub(0, 0))).toBe(UI_UPDATE);
-    expect(ui.cshow).toBe(true);
-    expect(ui.cx).toBe(1);
+    expect(ui.cursor.visible).toBe(true);
+    expect(ui.cursor.x).toBe(1);
 
     expect(press(state, ui, CURSOR_SELECT, hub(0, 0))).toEqual({
       kind: "set",
@@ -457,7 +457,7 @@ describe("spokes input", () => {
   it("does nothing when the cursor sits on a hub rather than a spoke", () => {
     const state = newState(FIX, FIX_DESC);
     const ui = newUi();
-    ui.cshow = true;
+    ui.cursor.visible = true;
     expect(press(state, ui, CURSOR_SELECT, hub(0, 0))).toBe(UI_UPDATE);
   });
 });
@@ -642,8 +642,8 @@ describe("spokes rendering", () => {
   it("draws the keyboard cursor brackets", () => {
     const state = newState(FIX, FIX_DESC);
     const ui = newUi();
-    ui.cshow = true;
-    ui.cx = 1;
+    ui.cursor.visible = true;
+    ui.cursor.x = 1;
 
     const palette = spokesGame.colours(DEFAULT_BACKGROUND);
     const ds = newDrawState(state);

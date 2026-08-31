@@ -208,7 +208,7 @@ describe("rect input → moves", () => {
   it("first arrow press only reveals the cursor", () => {
     const st = newState(P(), "zw");
     const ui = rectGame.newUi(st);
-    expect(ui.cursorVisible).toBe(false);
+    expect(ui.cursor.visible).toBe(false);
     rectGame.interpretMove(
       st,
       ui,
@@ -216,7 +216,7 @@ describe("rect input → moves", () => {
       { x: 0, y: 0 },
       CURSOR_UP,
     );
-    expect(ui.cursorVisible).toBe(true);
+    expect(ui.cursor.visible).toBe(true);
   });
 });
 

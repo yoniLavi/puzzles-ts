@@ -1,4 +1,5 @@
 import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { permParity } from "../../engine/shuffle.ts";
 
@@ -38,9 +39,7 @@ export enum CursorMode {
 }
 
 export interface SixteenUi {
-  curX: number;
-  curY: number;
-  curVisible: boolean;
+  cursor: GridCursor;
   curMode: CursorMode;
   dragging?: boolean;
   dragStartX?: number;

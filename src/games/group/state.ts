@@ -20,6 +20,8 @@
  * in the solution `aux` string, never in the desc.
  */
 
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- difficulty ------------------------------------------------------------
@@ -219,10 +221,9 @@ export function cloneState(s: GroupState): GroupState {
 // --- ui --------------------------------------------------------------------
 
 export interface GroupUi {
-  /** Primary highlighted square (through `sequence`), valid iff `hshow`. */
-  hx: number;
-  hy: number;
-  /** `hx,hy` *before* mapping through `sequence`. */
+  /** Primary highlighted square, through `sequence`; shown iff `visible`. */
+  cursor: GridCursor;
+  /** The cursor position *before* mapping through `sequence`. */
   ohx: number;
   ohy: number;
   /** Diagonal multifill run starting at `ohx,ohy`: for `0<=i<odn`, the square is
@@ -232,8 +233,6 @@ export interface GroupUi {
   odn: number;
   /** The current highlight is a pencil-mark highlight (vs a real one). */
   hpencil: boolean;
-  /** Whether the highlight is shown at all (cursor keys keep it up). */
-  hshow: boolean;
   /** Whether the highlight is a keyboard cursor (survives keypresses, allowed
    * on immutable squares). */
   hcursor: boolean;
@@ -248,15 +247,13 @@ export interface GroupUi {
 
 export function newUi(_state: GroupState): GroupUi {
   return {
-    hx: 0,
-    hy: 0,
+    cursor: newCursor(),
     ohx: 0,
     ohy: 0,
     odx: 0,
     ody: 0,
     odn: 0,
     hpencil: false,
-    hshow: false,
     hcursor: false,
     drag: 0,
     dragnum: 0,

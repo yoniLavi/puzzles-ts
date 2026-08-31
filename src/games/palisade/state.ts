@@ -16,6 +16,7 @@
 import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // The edge bit encoding, direction tables and bounds test are shared with the
@@ -76,9 +77,7 @@ export interface PalisadeUi {
   /** Half-grid cursor coordinates: (0,0) is the top-left grid corner,
    * (1,1) the centre of the top-left cell; odd/even distinguishes
    * centre/edge/corner. Range [1, 2w-1] × [1, 2h-1]. */
-  x: number;
-  y: number;
-  show: boolean;
+  cursor: GridCursor;
 }
 
 export interface PalisadeMistake {

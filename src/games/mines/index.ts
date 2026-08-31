@@ -55,6 +55,7 @@ import {
   MIDDLE_BUTTON,
   MIDDLE_DRAG,
   MIDDLE_RELEASE,
+  newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
@@ -338,9 +339,7 @@ export const minesGame: Game<
       flashIsDeath: false,
       deaths: 0,
       completed: false,
-      curX: 0,
-      curY: 0,
-      curVisible: false,
+      cursor: newCursor(),
     };
   },
   encodeUi,
@@ -412,38 +411,38 @@ export const minesGame: Game<
     };
 
     if (isCursorMove(button)) {
-      const wasVisible = ui.curVisible;
-      const moved = gridCursorMove(button, ui.curX, ui.curY, w, h);
-      const ox = ui.curX;
-      const oy = ui.curY;
+      const wasVisible = ui.cursor.visible;
+      const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, w, h);
+      const ox = ui.cursor.x;
+      const oy = ui.cursor.y;
       if (moved) {
-        ui.curX = moved.x;
-        ui.curY = moved.y;
+        ui.cursor.x = moved.x;
+        ui.cursor.y = moved.y;
       }
       if (!wasVisible) {
-        ui.curVisible = true;
+        ui.cursor.visible = true;
         return UI_UPDATE;
       }
-      return ui.curX !== ox || ui.curY !== oy ? UI_UPDATE : null;
+      return ui.cursor.x !== ox || ui.cursor.y !== oy ? UI_UPDATE : null;
     }
 
     if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-      const v = s.grid[ui.curY * w + ui.curX];
-      if (!ui.curVisible) {
-        ui.curVisible = true;
+      const v = s.grid[ui.cursor.y * w + ui.cursor.x];
+      if (!ui.cursor.visible) {
+        ui.cursor.visible = true;
         return UI_UPDATE;
       }
       if (button === CURSOR_SELECT2) {
         if (v !== COVERED && v !== FLAG) return null;
-        return { type: "ops", ops: [{ op: "F", x: ui.curX, y: ui.curY }] };
+        return { type: "ops", ops: [{ op: "F", x: ui.cursor.x, y: ui.cursor.y }] };
       }
       // CURSOR_SELECT behaves as LEFT_BUTTON on a single square.
       if (v === COVERED || v === QUERY) {
-        if (s.layout.mines?.[ui.curY * w + ui.curX]) ui.deaths++;
-        return { type: "ops", ops: [{ op: "O", x: ui.curX, y: ui.curY }] };
+        if (s.layout.mines?.[ui.cursor.y * w + ui.cursor.x]) ui.deaths++;
+        return { type: "ops", ops: [{ op: "O", x: ui.cursor.x, y: ui.cursor.y }] };
       }
-      cx = ui.curX;
-      cy = ui.curY;
+      cx = ui.cursor.x;
+      cy = ui.cursor.y;
       ui.validradius = 1;
       return uncover();
     }
@@ -476,7 +475,7 @@ export const minesGame: Game<
       // number (1) and opens a covered square (0), preview or no preview.
       if (button === LEFT_BUTTON) ui.validradius = onNumber ? 1 : 0;
       else if (button === MIDDLE_BUTTON) ui.validradius = 1;
-      ui.curVisible = false;
+      ui.cursor.visible = false;
       return UI_UPDATE;
     }
 

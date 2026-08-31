@@ -593,7 +593,7 @@ export function redrawBridges(
           idata |= DI_COL_WARNING;
         else idata |= DI_COL_NORMAL;
 
-        if (ui.curVisible && ui.curX === is.x && ui.curY === is.y)
+        if (ui.cursor.visible && ui.cursor.x === is.x && ui.cursor.y === is.y)
           idata |= DI_BG_CURSOR;
         else if (v & G_MARK) idata |= DI_BG_MARK;
         // Fork aid: auto-grey a satisfied island (visual only — no lock).

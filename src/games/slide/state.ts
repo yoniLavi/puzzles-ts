@@ -31,6 +31,8 @@
 import { Dsf } from "../../engine/dsf.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- the board alphabet -----------------------------------------------
@@ -252,9 +254,7 @@ export interface SlideUi {
    * first cursor key, and hidden again by any pointer press — the collection's
    * idiom (Flip, Mosaic). While a block is grabbed the cursor rides *with* it,
    * staying on the square the block was picked up by. */
-  cursorX: number;
-  cursorY: number;
-  cursorVisible: boolean;
+  cursor: GridCursor;
 }
 
 export function newUi(state: SlideState): SlideUi {
@@ -265,9 +265,7 @@ export function newUi(state: SlideState): SlideUi {
     grabOffsetX: -1,
     grabOffsetY: -1,
     reachable: new Uint8Array(state.w * state.h),
-    cursorX: 0,
-    cursorY: 0,
-    cursorVisible: false,
+    cursor: newCursor(),
   };
 }
 
@@ -283,7 +281,7 @@ export function cancelGrab(ui: SlideUi): void {
 
 /** The cell the cursor sits on, as a flat board index. */
 export function cursorPos(ui: SlideUi, w: number): number {
-  return ui.cursorY * w + ui.cursorX;
+  return ui.cursor.y * w + ui.cursor.x;
 }
 
 // --- moves ------------------------------------------------------------

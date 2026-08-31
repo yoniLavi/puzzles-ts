@@ -13,6 +13,7 @@
  */
 
 import { obfuscateBitmap } from "../../engine/obfuscate.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import {
   type RandomState,
   randomStateDecode,
@@ -95,9 +96,7 @@ export interface MinesUi {
   deaths: number;
   /** Set once the game was ever won; stops the clock permanently (design D3). */
   completed: boolean;
-  curX: number;
-  curY: number;
-  curVisible: boolean;
+  cursor: GridCursor;
 }
 
 /** One elementary grid operation in a move. `F` toggles a flag, `O` opens

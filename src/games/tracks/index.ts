@@ -25,6 +25,7 @@ import {
   isMouseDown,
   isMouseDrag,
   isMouseRelease,
+  newCursor,
   RIGHT_BUTTON,
   RIGHT_RELEASE,
   stripModifiers,
@@ -93,9 +94,7 @@ function newUi(_state: TracksState): TracksUi {
     dragEy: -1,
     clickx: 0,
     clicky: 0,
-    curx: 1,
-    cury: 1,
-    cursorActive: false,
+    cursor: newCursor(1, 1),
   };
 }
 
@@ -169,7 +168,7 @@ function interpretMove(
   const gy = fromCoord(p.y);
 
   if (isMouseDown(button)) {
-    ui.cursorActive = false;
+    ui.cursor.visible = false;
     ui.dragging = false;
     if (!inGrid(state, gx, gy)) {
       ui.dragSx = ui.dragSy = -1;
@@ -190,13 +189,13 @@ function interpretMove(
   }
 
   if (isMouseDrag(button)) {
-    ui.cursorActive = false;
+    ui.cursor.visible = false;
     updateUiDrag(state, ui, gx, gy);
     return UI_UPDATE;
   }
 
   if (isMouseRelease(button)) {
-    ui.cursorActive = false;
+    ui.cursor.visible = false;
     if (ui.dragging && (ui.dragSx !== ui.dragEx || ui.dragSy !== ui.dragEy)) {
       const dragged = copyAndApplyDrag(board, ui);
       const move = moveDiff(board, dragged, false);
@@ -228,31 +227,31 @@ function interpretMove(
   if (isCursorMove(button)) {
     const dx = button === CURSOR_LEFT ? -1 : button === CURSOR_RIGHT ? 1 : 0;
     const dy = button === CURSOR_DOWN ? 1 : button === CURSOR_UP ? -1 : 0;
-    if (!ui.cursorActive) {
-      ui.cursorActive = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
-    ui.curx += dx;
-    ui.cury += dy;
-    if (ui.curx % 2 === 0 && ui.cury % 2 === 0) {
+    ui.cursor.x += dx;
+    ui.cursor.y += dy;
+    if (ui.cursor.x % 2 === 0 && ui.cursor.y % 2 === 0) {
       // Skip square corners: only centres and edges are selectable.
-      ui.curx += dx;
-      ui.cury += dy;
+      ui.cursor.x += dx;
+      ui.cursor.y += dy;
     }
-    ui.curx = Math.min(Math.max(ui.curx, 1), 2 * w - 1);
-    ui.cury = Math.min(Math.max(ui.cury, 1), 2 * h - 1);
+    ui.cursor.x = Math.min(Math.max(ui.cursor.x, 1), 2 * w - 1);
+    ui.cursor.y = Math.min(Math.max(ui.cursor.y, 1), 2 * h - 1);
     return UI_UPDATE;
   }
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (!ui.cursorActive) {
-      ui.cursorActive = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
-    if (ui.curx % 2 === 0 && ui.cury % 2 === 0) return UI_UPDATE; // corner
-    const cgx = Math.floor(ui.curx / 2);
-    const cgy = Math.floor(ui.cury / 2);
-    const direction = ui.curx % 2 === 0 ? L : ui.cury % 2 === 0 ? U : 0;
+    if (ui.cursor.x % 2 === 0 && ui.cursor.y % 2 === 0) return UI_UPDATE; // corner
+    const cgx = Math.floor(ui.cursor.x / 2);
+    const cgy = Math.floor(ui.cursor.y / 2);
+    const direction = ui.cursor.x % 2 === 0 ? L : ui.cursor.y % 2 === 0 ? U : 0;
     const notrack = button === CURSOR_SELECT2;
     if (direction && uiCanFlipEdge(board, cgx, cgy, direction, notrack)) {
       return edgeFlipMove(board, cgx, cgy, direction, notrack);

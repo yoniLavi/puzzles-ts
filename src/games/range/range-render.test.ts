@@ -5,6 +5,7 @@
 // reviewable text diff.
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
+import { newCursor } from "../../engine/pointer.ts";
 import { expectRing, isThin, markSides } from "../../engine/testing/mark-shape.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
@@ -43,7 +44,7 @@ function renderState(
   return rec;
 }
 
-const noCursor: RangeUi = { r: 0, c: 0, cursorShow: false };
+const noCursor: RangeUi = { cursor: newCursor() };
 
 function makeState(w: number, h: number, grid: number[]): RangeState {
   return { w, h, grid: Int8Array.from(grid), hasCheated: false, wasSolved: false };

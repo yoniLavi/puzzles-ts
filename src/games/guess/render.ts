@@ -480,7 +480,7 @@ export function redraw(
   // The colour bar.
   for (let i = 0; i < ncolours; i++) {
     let val = i + 1;
-    if (ui.displayCur && ui.colourCur === i) val |= PEG_CURSOR;
+    if (ui.cursor.visible && ui.cursor.y === i) val |= PEG_CURSOR;
     if (ui.showLabels) val |= PEG_HOLD;
     if (ds.coloursCache.pegs[i] !== val) {
       drawPeg(dr, ds, colX(ds), colY(ds, i), false, ui.showLabels, i + 1);
@@ -508,7 +508,7 @@ export function redraw(
       s.nextGo,
       { pegs: ui.currPegs, feedback: [] },
       ui.holds,
-      ui.displayCur ? ui.pegCur : -1,
+      ui.cursor.visible ? ui.cursor.x : -1,
       false,
       ui.showLabels,
     );
@@ -518,7 +518,7 @@ export function redraw(
       s.nextGo,
       null,
       true,
-      ui.displayCur && ui.pegCur === s.params.npegs,
+      ui.cursor.visible && ui.cursor.x === s.params.npegs,
       ui.markable,
     );
   }

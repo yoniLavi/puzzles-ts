@@ -287,8 +287,8 @@ describe("lightup input", () => {
         CURSOR_RIGHT,
       ),
     ).toBe(UI_UPDATE);
-    expect(u.cursorShow).toBe(true);
-    expect(u.x).toBe(1);
+    expect(u.cursor.visible).toBe(true);
+    expect(u.cursor.x).toBe(1);
     expect(
       lightupGame.interpretMove(
         state(),
@@ -308,7 +308,7 @@ describe("lightup input", () => {
         CURSOR_SELECT,
       ),
     ).toBeNull();
-    u.x = 0;
+    u.cursor.x = 0;
     expect(
       lightupGame.interpretMove(
         state(),
@@ -332,7 +332,7 @@ describe("lightup input", () => {
 
   it("hiding the cursor via a pointer no-op is a UI update", () => {
     const u = ui();
-    u.cursorShow = true;
+    u.cursor.visible = true;
     // Click on a black square: no move, but the cursor hides — repaint.
     expect(
       lightupGame.interpretMove(
@@ -343,7 +343,7 @@ describe("lightup input", () => {
         LEFT_BUTTON,
       ),
     ).toBe(UI_UPDATE);
-    expect(u.cursorShow).toBe(false);
+    expect(u.cursor.visible).toBe(false);
   });
 });
 

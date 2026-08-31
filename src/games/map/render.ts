@@ -134,8 +134,8 @@ export function regionFromCoords(
 export function regionFromUiCursor(map: MapData, ui: MapUi): number {
   return regionFromLogicalCoords(
     map,
-    ui.curX,
-    ui.curY,
+    ui.cursor.x,
+    ui.cursor.y,
     epsilonX(ui.curLastmove),
     epsilonY(ui.curLastmove),
   );
@@ -485,7 +485,7 @@ export function redraw(
     }
 
   // Floating drag/cursor blob.
-  if (ui.dragColour > -2 || ui.curVisible) {
+  if (ui.dragColour > -2 || ui.cursor.visible) {
     let bg: number;
     let iscur = false;
     if (ui.dragColour >= 0) bg = COL_0 + ui.dragColour;
@@ -499,9 +499,9 @@ export function redraw(
 
     let cursorX: number;
     let cursorY: number;
-    if (ui.curVisible) {
-      cursorX = coord(ui.curX, ts) + Math.floor(ts / 2) + epsilonX(ui.curLastmove);
-      cursorY = coord(ui.curY, ts) + Math.floor(ts / 2) + epsilonY(ui.curLastmove);
+    if (ui.cursor.visible) {
+      cursorX = coord(ui.cursor.x, ts) + Math.floor(ts / 2) + epsilonX(ui.curLastmove);
+      cursorY = coord(ui.cursor.y, ts) + Math.floor(ts / 2) + epsilonY(ui.curLastmove);
     } else {
       cursorX = ui.dragx;
       cursorY = ui.dragy;

@@ -336,7 +336,7 @@ export function redraw(
       f |= wrong[i] << DS_XSHIFT;
       if (state.errors[i] & ERROR_CLUE) f |= DS_ERROR_CLUE;
       f |= flashing;
-      if (ui.cursorActive && x === ui.curx && y === ui.cury) f |= DS_CURSOR;
+      if (ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y) f |= DS_CURSOR;
 
       if (f !== ds.lflags[i] || force) {
         ds.lflags[i] = f;

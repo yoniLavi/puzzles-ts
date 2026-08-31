@@ -31,6 +31,7 @@ import {
   MOD_CTRL,
   MOD_SHFT,
   MOD_STYLUS,
+  newCursor,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
@@ -87,9 +88,7 @@ function newUi(_state: PatternState): PatternUi {
     drag: 0,
     release: 0,
     state: GRID_UNKNOWN,
-    curX: 0,
-    curY: 0,
-    curVisible: false,
+    cursor: newCursor(),
   };
 }
 
@@ -136,7 +135,7 @@ function interpretMove(
     }
     ui.dragStartX = ui.dragEndX = x;
     ui.dragStartY = ui.dragEndY = y;
-    ui.curVisible = false;
+    ui.cursor.visible = false;
     return UI_UPDATE;
   }
 
@@ -193,39 +192,42 @@ function interpretMove(
 
   // --- keyboard cursor movement (paints while Ctrl/Shift held) ---
   if (isCursorMove(button)) {
-    const ox = ui.curX;
-    const oy = ui.curY;
-    const wasVisible = ui.curVisible;
-    const moved = gridCursorMove(button, ui.curX, ui.curY, w, h);
+    const ox = ui.cursor.x;
+    const oy = ui.cursor.y;
+    const wasVisible = ui.cursor.visible;
+    const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, w, h);
     if (moved) {
-      ui.curX = moved.x;
-      ui.curY = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
-    ui.curVisible = true;
+    ui.cursor.visible = true;
     const ret = moved || !wasVisible ? UI_UPDATE : null;
     if (!control && !shift) return ret;
 
     const newstate: GridVal = control ? (shift ? GRID_UNKNOWN : GRID_FULL) : GRID_EMPTY;
-    if (grid[oy * w + ox] === newstate && grid[ui.curY * w + ui.curX] === newstate) {
+    if (
+      grid[oy * w + ox] === newstate &&
+      grid[ui.cursor.y * w + ui.cursor.x] === newstate
+    ) {
       return ret;
     }
     return {
       type: "fill",
       value: newstate,
-      x: Math.min(ox, ui.curX),
-      y: Math.min(oy, ui.curY),
-      w: Math.abs(ox - ui.curX) + 1,
-      h: Math.abs(oy - ui.curY) + 1,
+      x: Math.min(ox, ui.cursor.x),
+      y: Math.min(oy, ui.cursor.y),
+      w: Math.abs(ox - ui.cursor.x) + 1,
+      h: Math.abs(oy - ui.cursor.y) + 1,
     };
   }
 
   // --- cursor select: cycle the current cell ---
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (!ui.curVisible) {
-      ui.curVisible = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
-    const curr = grid[ui.curY * w + ui.curX];
+    const curr = grid[ui.cursor.y * w + ui.cursor.x];
     const newstate: GridVal =
       button === CURSOR_SELECT2
         ? curr === GRID_UNKNOWN
@@ -238,7 +240,14 @@ function interpretMove(
           : curr === GRID_FULL
             ? GRID_EMPTY
             : GRID_UNKNOWN;
-    return { type: "fill", value: newstate, x: ui.curX, y: ui.curY, w: 1, h: 1 };
+    return {
+      type: "fill",
+      value: newstate,
+      x: ui.cursor.x,
+      y: ui.cursor.y,
+      w: 1,
+      h: 1,
+    };
   }
 
   return null;

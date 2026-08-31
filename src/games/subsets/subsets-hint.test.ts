@@ -12,7 +12,7 @@
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { Midend } from "../../engine/index.ts";
-import { CURSOR_DOWN, LEFT_BUTTON } from "../../engine/pointer.ts";
+import { CURSOR_DOWN, LEFT_BUTTON, newCursor } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
@@ -710,7 +710,7 @@ describe("reference-aid rendering (tier 2.5)", () => {
     const rec = new RecordingDrawing(palette);
     const ds = newDrawState(state);
     setTileSize(ds, 36);
-    const ui = { cx: 0, cy: 0, cshow: false, highlightSet: pick, highlightCell: null };
+    const ui = { cursor: newCursor(), highlightSet: pick, highlightCell: null };
     redraw(rec, ds, null, state, 0, ui, 0, 0, undefined, undefined);
     expect(rec.ops.some((o) => o.op === "rect" && o.colour === COL_HINT_SPOT)).toBe(
       true,

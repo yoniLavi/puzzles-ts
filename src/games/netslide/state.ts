@@ -14,6 +14,7 @@ import {
   CURSOR_LEFT,
   CURSOR_RIGHT,
   CURSOR_UP,
+  newCursor,
 } from "../../engine/pointer.ts";
 import {
   addBorderBarriers,
@@ -97,6 +98,7 @@ export interface NetslideParams {
 export { atof, formatG } from "../../engine/params.ts";
 
 import { atof, formatG } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 
 export function defaultParams(): NetslideParams {
   return { w: 3, h: 3, wrapping: false, barrierProbability: 1, movetarget: 0 };
@@ -456,11 +458,9 @@ export function c2diff(
 export interface NetslideUi {
   /** The border-arrow cell the keyboard cursor is on — always a ring
    * position, never a grid cell. */
-  curX: number;
-  curY: number;
-  curVisible: boolean;
+  cursor: GridCursor;
 }
 
 export function newUi(_s: NetslideState): NetslideUi {
-  return { curX: 0, curY: -1, curVisible: false };
+  return { cursor: newCursor(0, -1) };
 }

@@ -347,7 +347,7 @@ export function redraw(
     let n = shown[i];
     if (flash && (n & COL_MASK) === F_SHADE) n = F_EMPTY;
     if (errorFlags) n |= errorFlags[i];
-    if (ui.cshow && ui.cx === x && ui.cy === y) n |= FE_CURSOR;
+    if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y) n |= FE_CURSOR;
     if (i === hintTarget) n |= HINT_TARGET;
     else if (hintEvid?.has(i)) n |= HINT_EVID;
 

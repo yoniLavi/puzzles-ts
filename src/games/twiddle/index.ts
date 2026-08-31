@@ -24,6 +24,7 @@ import {
   LEFT_BUTTON,
   MOD_MASK,
   MOD_NUM_KEYPAD,
+  newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -79,7 +80,7 @@ const KEY_D = 0x44;
 // --- ui ---------------------------------------------------------------
 
 function newUi(_state: TwiddleState): TwiddleUi {
-  return { curX: 0, curY: 0, curVisible: false };
+  return { cursor: newCursor() };
 }
 
 // --- input ------------------------------------------------------------
@@ -102,13 +103,19 @@ function interpretMove(
   // Cursor movement over the (w-n+1) × (h-n+1) rotation-origin space.
   // No toroidal wrap; the origin space is clamped.
   if (isCursorMove(button)) {
-    const moved = gridCursorMove(button, ui.curX, ui.curY, w - n + 1, h - n + 1);
-    const changed = moved !== null || !ui.curVisible;
+    const moved = gridCursorMove(
+      button,
+      ui.cursor.x,
+      ui.cursor.y,
+      w - n + 1,
+      h - n + 1,
+    );
+    const changed = moved !== null || !ui.cursor.visible;
     if (moved) {
-      ui.curX = moved.x;
-      ui.curY = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
-    ui.curVisible = true;
+    ui.cursor.visible = true;
     return changed ? UI_UPDATE : null;
   }
 
@@ -118,16 +125,16 @@ function interpretMove(
     const x = fromCoord(p.x - ((n - 1) * ts) / 2, ts);
     const y = fromCoord(p.y - ((n - 1) * ts) / 2, ts);
     if (x < 0 || x > w - n || y < 0 || y > h - n) return null;
-    ui.curVisible = false;
+    ui.cursor.visible = false;
     return rotateMove(x, y, button === LEFT_BUTTON ? 1 : -1);
   }
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (!ui.curVisible) {
-      ui.curVisible = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
-    return rotateMove(ui.curX, ui.curY, button === CURSOR_SELECT2 ? -1 : 1);
+    return rotateMove(ui.cursor.x, ui.cursor.y, button === CURSOR_SELECT2 ? -1 : 1);
   }
 
   // Corner-rotation keys and numpad rotations. Each targets a fixed

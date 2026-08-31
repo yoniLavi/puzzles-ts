@@ -38,6 +38,7 @@ import {
   LEFT_BUTTON,
   MOD_CTRL,
   MOD_SHFT,
+  newCursor,
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
@@ -95,7 +96,7 @@ export interface ClustersMistake {
 }
 
 function newUi(_state: ClustersState): ClustersUi {
-  return { cx: 0, cy: 0, cursor: false, dragType: -1, drag: [] };
+  return { cursor: newCursor(), dragType: -1, drag: [] };
 }
 
 /** The `paint` letter → fill mapping (upstream 'A'=red, 'B'=blue, 'C'=clear),
@@ -118,8 +119,8 @@ function interpretMove(
   const ts = ds.tilesize;
   const b = border(ts);
 
-  let hx = ui.cx;
-  let hy = ui.cy;
+  let hx = ui.cursor.x;
+  let hy = ui.cursor.y;
 
   if (isMouseDown(button)) {
     ui.dragType = -1;
@@ -132,7 +133,7 @@ function interpretMove(
     if (p.x >= b && gx < w && p.y >= b && gy < h) {
       hx = gx;
       hy = gy;
-      ui.cursor = false;
+      ui.cursor.visible = false;
     } else {
       return null;
     }
@@ -140,20 +141,20 @@ function interpretMove(
 
   // --- keyboard cursor movement (paints with Shift/Ctrl held) ---
   if (isCursorMove(button)) {
-    const ox = ui.cx;
-    const oy = ui.cy;
-    const moved = gridCursorMove(button, ui.cx, ui.cy, w, h);
+    const ox = ui.cursor.x;
+    const oy = ui.cursor.y;
+    const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, w, h);
     if (moved) {
-      ui.cx = moved.x;
-      ui.cy = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
-    ui.cursor = true;
+    ui.cursor.visible = true;
 
     if (shift || control) {
       // Shift = red ('A'), Ctrl = blue ('B'), Shift+Ctrl = clear ('C').
       const fill: ClustersFill = shift && control ? 0 : control ? F_COLOR_1 : F_COLOR_0;
       const i1 = oy * w + ox;
-      const i2 = ui.cy * w + ui.cx;
+      const i2 = ui.cursor.y * w + ui.cursor.x;
       // Skip a given, and any cell already in the target state (no-op).
       const inert = (i: number): boolean =>
         !!(grid[i] & F_SINGLE) ||
@@ -207,7 +208,7 @@ function interpretMove(
 
   // --- keyboard place-one at the cursor ---
   if (
-    ui.cursor &&
+    ui.cursor.visible &&
     (button === CURSOR_SELECT ||
       button === CURSOR_SELECT2 ||
       isEraseKey(button) ||

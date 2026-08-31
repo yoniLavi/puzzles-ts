@@ -294,7 +294,7 @@ export function redraw(
 
       if (flash) f |= DS_FLASH;
       if (state.impossible) f |= DS_IMPOSSIBLE;
-      if (ui.cshow && x === ui.cx && y === ui.cy) f |= DS_CURSOR;
+      if (ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y) f |= DS_CURSOR;
       if (state.flags[i] & F_BLACK) {
         f |= DS_BLACK;
         if (ui.showBlackNums) f |= DS_BLACK_NUM;

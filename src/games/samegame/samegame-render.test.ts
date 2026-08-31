@@ -5,6 +5,7 @@
 // (COL_IMPOSSIBLE).
 import { describe, expect, it } from "vitest";
 import type { GameDrawing } from "../../engine/game.ts";
+import { newCursor } from "../../engine/pointer.ts";
 import { newDrawState, redraw, type SamegameDrawState, setTileSize } from "./render.ts";
 import {
   newState,
@@ -62,9 +63,7 @@ function emptyUi(state: SamegameState): SamegameUi {
   return {
     selected: new Array<boolean>(state.w * state.h).fill(false),
     nselected: 0,
-    xsel: 0,
-    ysel: 0,
-    displaySel: false,
+    cursor: newCursor(),
   };
 }
 

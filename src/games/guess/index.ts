@@ -17,12 +17,13 @@ import { parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  gridCursorMove,
   isCursorMove,
   isEraseKey,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
+  moveCursor,
+  newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -66,9 +67,7 @@ function newUi(state: GuessState): GuessUi {
     params: p,
     currPegs: new Array(p.npegs).fill(0),
     holds: new Array(p.npegs).fill(false),
-    colourCur: 0,
-    pegCur: 0,
-    displayCur: false,
+    cursor: newCursor(),
     markable: false,
     dragCol: 0,
     dragX: 0,
@@ -100,7 +99,7 @@ function changedState(
     }
   }
   ui.markable = isMarkable(newState_.params, ui.currPegs);
-  if (!ui.markable && ui.pegCur === npegs) ui.pegCur = 0;
+  if (!ui.markable && ui.cursor.x === npegs) ui.cursor.x = 0;
 }
 
 function setPeg(params: GuessParams, ui: GuessUi, peg: number, col: number): void {
@@ -197,47 +196,19 @@ function computeHint(state: GuessState, ui: GuessUi): void {
     // A compatible guess: install it in the working row.
     for (let i = 0; i < npegs; i++) ui.currPegs[i] = hint[i];
     ui.markable = true;
-    ui.pegCur = npegs;
-    ui.displayCur = true;
+    ui.cursor.x = npegs;
+    ui.cursor.visible = true;
     return;
   }
 
   // No combination is compatible (only reachable with a corrupted
   // solution). Fiddle the UI to signal futility, mirroring upstream.
-  if (!ui.displayCur) ui.displayCur = true;
-  else if (npegs === 1) ui.displayCur = false;
-  else ui.pegCur = (ui.pegCur + 1) % npegs;
+  if (!ui.cursor.visible) ui.cursor.visible = true;
+  else if (npegs === 1) ui.cursor.visible = false;
+  else ui.cursor.x = (ui.cursor.x + 1) % npegs;
 }
 
 // --- cursor movement (upstream move_cursor) ---------------------------
-
-/** Move the peg/colour cursor (no wrap; clamp). Returns `UI_UPDATE`
- * when the cursor became visible or moved, else `null`.
- *
- * The peg axis is the grid's x (clamped to `maxPeg`), the colour axis its
- * y (clamped to `maxColour`); `gridCursorMove` owns the clamp and returns
- * `null` for a no-op against an edge, which we keep as a position hold so
- * the `displayCur` reveal still fires. */
-function moveCursor(
-  button: number,
-  ui: GuessUi,
-  maxPeg: number,
-  maxColour: number,
-): UiUpdate | null {
-  if (!isCursorMove(button)) return null;
-
-  const moved = gridCursorMove(button, ui.pegCur, ui.colourCur, maxPeg, maxColour);
-  if (moved) {
-    ui.pegCur = moved.x;
-    ui.colourCur = moved.y;
-  }
-
-  if (!ui.displayCur) {
-    ui.displayCur = true;
-    return UI_UPDATE;
-  }
-  return moved ? UI_UPDATE : null;
-}
 
 // --- input ------------------------------------------------------------
 
@@ -323,7 +294,7 @@ function interpretMove(
     }
     ui.dragCol = 0;
     ui.dragOpeg = -1;
-    ui.displayCur = false;
+    ui.cursor.visible = false;
     return UI_UPDATE;
   }
   if (button === RIGHT_BUTTON) {
@@ -341,41 +312,42 @@ function interpretMove(
 
   // --- keyboard ---
   if (isCursorMove(button)) {
+    // The peg axis is the cursor's x, the colour axis its y.
     const maxcur = npegs + (ui.markable ? 1 : 0);
-    return moveCursor(button, ui, maxcur, ncolours);
+    return moveCursor(ui.cursor, button, maxcur, ncolours) ? UI_UPDATE : null;
   }
   if (button === 0x68 || button === 0x48 || button === 0x3f /* 'h' | 'H' | '?' */) {
     computeHint(from, ui);
     return UI_UPDATE;
   }
   if (button === CURSOR_SELECT) {
-    ui.displayCur = true;
-    if (ui.pegCur === npegs) return buildGuessMove(ui);
-    setPeg(params, ui, ui.pegCur, ui.colourCur + 1);
+    ui.cursor.visible = true;
+    if (ui.cursor.x === npegs) return buildGuessMove(ui);
+    setPeg(params, ui, ui.cursor.x, ui.cursor.y + 1);
     return UI_UPDATE;
   }
   if (
     ((button >= 0x31 && button <= 0x30 + ncolours) ||
       (button === 0x30 && ncolours === 10)) &&
-    ui.pegCur < npegs
+    ui.cursor.x < npegs
   ) {
-    ui.displayCur = true;
-    setPeg(params, ui, ui.pegCur, button === 0x30 ? 10 : button - 0x30);
-    if (ui.pegCur + 1 < npegs + (ui.markable ? 1 : 0)) ui.pegCur++;
+    ui.cursor.visible = true;
+    setPeg(params, ui, ui.cursor.x, button === 0x30 ? 10 : button - 0x30);
+    if (ui.cursor.x + 1 < npegs + (ui.markable ? 1 : 0)) ui.cursor.x++;
     return UI_UPDATE;
   }
   if (button === 0x44 || button === 0x64 || isEraseKey(button) /* 'D' | 'd' */) {
-    if (!ui.displayCur || ui.currPegs[ui.pegCur] !== 0) {
-      ui.displayCur = true;
-      setPeg(params, ui, ui.pegCur, 0);
+    if (!ui.cursor.visible || ui.currPegs[ui.cursor.x] !== 0) {
+      ui.cursor.visible = true;
+      setPeg(params, ui, ui.cursor.x, 0);
       return UI_UPDATE;
     }
     return null;
   }
   if (button === CURSOR_SELECT2) {
-    if (ui.pegCur === npegs) return null;
-    ui.displayCur = true;
-    ui.holds[ui.pegCur] = !ui.holds[ui.pegCur];
+    if (ui.cursor.x === npegs) return null;
+    ui.cursor.visible = true;
+    ui.holds[ui.cursor.x] = !ui.holds[ui.cursor.x];
     return UI_UPDATE;
   }
   return null;

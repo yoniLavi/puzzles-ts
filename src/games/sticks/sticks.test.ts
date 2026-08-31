@@ -414,12 +414,12 @@ describe("sticks input", () => {
     const ui = newUi();
     // Arrow to make the cursor visible.
     expect(press(state, ui, CURSOR_RIGHT, 0, 0)).toBe(UI_UPDATE);
-    const i = ui.cy * 4 + ui.cx;
+    const i = ui.cursor.y * 4 + ui.cursor.x;
     if (state.grid[i] & F_BLOCK) {
       // Fixture-dependent guard: step once more if we landed on a wall.
       press(state, ui, CURSOR_RIGHT, 0, 0);
     }
-    const j = ui.cy * 4 + ui.cx;
+    const j = ui.cursor.y * 4 + ui.cursor.x;
     const move = press(state, ui, CURSOR_SELECT, 0, 0);
     expect(move).toEqual({ kind: "set", changes: [{ index: j, line: "ver" }] });
     const after = sticksGame.executeMove(state, move as SticksMove);
@@ -436,8 +436,8 @@ describe("sticks input", () => {
     const state = newState(FIX_PARAMS, FIX.desc);
     const ui = newUi();
     press(state, ui, CURSOR_RIGHT, 0, 0); // reveal cursor at (0,0)... may move
-    const ox = ui.cx;
-    const oy = ui.cy;
+    const ox = ui.cursor.x;
+    const oy = ui.cursor.y;
     const move = press(state, ui, CURSOR_RIGHT | MOD_SHFT, 0, 0);
     // Shift+horizontal-arrow paints vertical lines on both cells (upstream
     // mapping); black or already-set cells are skipped.
@@ -445,7 +445,7 @@ describe("sticks input", () => {
       const set = move as Extract<SticksMove, { kind: "set" }>;
       for (const ch of set.changes) {
         expect(ch.line).toBe("ver");
-        expect([oy * 4 + ox, ui.cy * 4 + ui.cx]).toContain(ch.index);
+        expect([oy * 4 + ox, ui.cursor.y * 4 + ui.cursor.x]).toContain(ch.index);
       }
     }
   });

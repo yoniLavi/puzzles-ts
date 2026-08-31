@@ -247,9 +247,9 @@ export function redraw(
         tile |= TILE_JOINDIAG;
       // Hide the keyboard cursor on a finished (complete/impossible) board.
       if (
-        ui.displaySel &&
-        ui.xsel === x &&
-        ui.ysel === y &&
+        ui.cursor.visible &&
+        ui.cursor.x === x &&
+        ui.cursor.y === y &&
         !(state.complete || state.impossible)
       )
         tile |= TILE_HASSEL;

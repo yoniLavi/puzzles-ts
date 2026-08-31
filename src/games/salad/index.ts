@@ -139,7 +139,7 @@ function interpretMove(
   const button = stripModifiers(rawButton);
   const gx = fromCoord(p.x, ts);
   const gy = fromCoord(p.y, ts);
-  const pos = ui.hx + o * ui.hy;
+  const pos = ui.cursor.x + o * ui.cursor.y;
 
   if (gx >= 0 && gx < o && gy >= 0 && gy < o) {
     const i = gy * o + gx;
@@ -156,30 +156,33 @@ function interpretMove(
         if (newpencil) {
           ui.hpencil = !ui.hpencil;
           if (selectable && state.grid[i] === 0) {
-            ui.hx = gx;
-            ui.hy = gy;
-            ui.hshow = true;
+            ui.cursor.x = gx;
+            ui.cursor.y = gy;
+            ui.cursor.visible = true;
           }
-        } else if (selectable && !(ui.hshow && ui.hx === gx && ui.hy === gy)) {
-          ui.hx = gx;
-          ui.hy = gy;
-          ui.hshow = true;
+        } else if (
+          selectable &&
+          !(ui.cursor.visible && ui.cursor.x === gx && ui.cursor.y === gy)
+        ) {
+          ui.cursor.x = gx;
+          ui.cursor.y = gy;
+          ui.cursor.visible = true;
         } else {
-          ui.hshow = false;
+          ui.cursor.visible = false;
         }
       } else if (
         selectable &&
-        (!ui.hshow ||
+        (!ui.cursor.visible ||
           (newpencil ? !ui.hpencil : ui.hpencil) ||
-          ui.hx !== gx ||
-          ui.hy !== gy)
+          ui.cursor.x !== gx ||
+          ui.cursor.y !== gy)
       ) {
-        ui.hx = gx;
-        ui.hy = gy;
+        ui.cursor.x = gx;
+        ui.cursor.y = gy;
         ui.hpencil = newpencil;
-        ui.hshow = true;
+        ui.cursor.visible = true;
       } else {
-        ui.hshow = false;
+        ui.cursor.visible = false;
       }
       ui.hcursor = false;
       return UI_UPDATE;
@@ -192,35 +195,38 @@ function interpretMove(
       else if (state.holes[i] === CIRCLE && state.grid[i] === 0) value = "cross";
       else if (state.holes[i] === CROSS) value = "clear";
       if (value !== null) {
-        ui.hshow = false;
+        ui.cursor.visible = false;
         return { type: "set", x: gx, y: gy, value };
       }
     }
   }
 
   if (isCursorMove(button)) {
-    const moved = gridCursorMove(button, ui.hx, ui.hy, o, o);
+    const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, o, o);
     if (moved) {
-      ui.hx = moved.x;
-      ui.hy = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
-    ui.hshow = true;
+    ui.cursor.visible = true;
     ui.hcursor = true;
     return UI_UPDATE;
   }
 
-  if (ui.hshow && button === CURSOR_SELECT) {
+  if (ui.cursor.visible && button === CURSOR_SELECT) {
     ui.hpencil = !ui.hpencil;
     ui.hcursor = true;
     return UI_UPDATE;
   }
 
-  if (ui.hshow && (state.gridclues[pos] === 0 || state.gridclues[pos] === CIRCLE)) {
+  if (
+    ui.cursor.visible &&
+    (state.gridclues[pos] === 0 || state.gridclues[pos] === CIRCLE)
+  ) {
     const type = ui.hpencil ? "pencil" : "set";
     /** Upstream: a mouse-driven real entry drops the highlight afterwards. */
     const commit = (value: SaladEntry): SaladMove => {
-      if (!ui.hcursor && !ui.hpencil) ui.hshow = false;
-      return { type, x: ui.hx, y: ui.hy, value };
+      if (!ui.hcursor && !ui.hpencil) ui.cursor.visible = false;
+      return { type, x: ui.cursor.x, y: ui.cursor.y, value };
     };
 
     const symbol = symbolFor(button);

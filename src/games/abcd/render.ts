@@ -502,7 +502,7 @@ export function redraw(
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
       let fs = 0;
-      if (ui.hshow && ui.hx === x && ui.hy === y)
+      if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y)
         fs |= ui.hpencil ? DF_PENCIL : DF_CURSOR;
       if (adjErr[i]) fs |= DF_ERR;
 

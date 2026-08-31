@@ -1,3 +1,5 @@
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 /**
  * Spokes — types, the hub/spoke model, and the description codec.
  *
@@ -498,12 +500,10 @@ export interface SpokesUi {
   dragEnd: number;
   drag: SpokesDrag;
   /** Whether the keyboard cursor is visible. */
-  cshow: boolean;
+  cursor: GridCursor;
   /** Cursor position on the `(3w−2) × (3h−2)` half-grid: a hub sits on a
    * sub-cell ≡ 0 (mod 3), and the two between each pair of hubs are that
    * pair's direction pickers. */
-  cx: number;
-  cy: number;
   /** Fork aid: grey out a hub once its spoke count matches its clue. Visual
    * only — a satisfied hub stays fully editable. */
   markSatisfied: boolean;
@@ -514,9 +514,7 @@ export function newUi(): SpokesUi {
     dragStart: -1,
     dragEnd: -1,
     drag: "none",
-    cshow: false,
-    cx: 0,
-    cy: 0,
+    cursor: newCursor(),
     markSatisfied: true,
   };
 }

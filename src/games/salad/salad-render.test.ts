@@ -9,6 +9,7 @@
  * `__snapshots__/*.snap`.
  */
 import { describe, expect, it } from "vitest";
+import { newCursor } from "../../engine/pointer.ts";
 import { expectRing, isThin, markSides } from "../../engine/testing/mark-shape.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import {
@@ -305,7 +306,7 @@ function paint(
 describe("salad Ui-driven frames", () => {
   it("fills the selected square, and shows a corner triangle in pencil mode", () => {
     const s = newState(LETTERS_P, LETTERS_DESC);
-    const ui = { ...newUi(s), hshow: true, hx: 1, hy: 2 };
+    const ui = { ...newUi(s), cursor: newCursor(1, 2, true) };
 
     const ink = paint(s, ui);
     expect(

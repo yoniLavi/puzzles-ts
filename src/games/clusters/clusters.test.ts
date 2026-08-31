@@ -11,6 +11,7 @@ import {
   CURSOR_SELECT,
   LEFT_BUTTON,
   LEFT_RELEASE,
+  newCursor,
   RIGHT_BUTTON,
   RIGHT_RELEASE,
 } from "../../engine/pointer.ts";
@@ -64,7 +65,7 @@ function makeState(w: number, h: number, grid: number[]): ClustersState {
 }
 
 function newUi(): ClustersUi {
-  return { cx: 0, cy: 0, cursor: false, dragType: -1, drag: [] };
+  return { cursor: newCursor(), dragType: -1, drag: [] };
 }
 
 /** Simulate a full mouse click (press then release) and return the committed

@@ -302,7 +302,7 @@ export function redraw(
       if (preview !== undefined) tile = preview;
 
       if (flash) tile &= ~(F_HOR | F_VER);
-      const cursor = ui.cursor && ui.cx === x && ui.cy === y;
+      const cursor = ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y;
       // A previewed (uncommitted) cell suppresses its error highlight — the
       // committed grid is what the error check ran on.
       const error = preview === undefined && (errorSet?.has(i) ?? false);

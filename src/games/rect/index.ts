@@ -16,12 +16,13 @@ import { atof, dimensionParamConfig, formatG } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  gridCursorMove,
   isCancelKey,
   isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
+  moveCursor,
+  newCursor,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
@@ -112,9 +113,7 @@ function newUi(_state: RectState): RectUi {
     y1: -1,
     x2: -1,
     y2: -1,
-    cursorX: 0,
-    cursorY: 0,
-    cursorVisible: false,
+    cursor: newCursor(),
     cursorDragging: false,
   };
 }
@@ -129,24 +128,6 @@ function resetUi(ui: RectUi): void {
   ui.x2 = -1;
   ui.y2 = -1;
   ui.dragged = false;
-}
-
-/** Upstream `move_cursor` (misc.c): clamp-move the cursor; a first press only
- * reveals it. Returns whether the UI changed. */
-function moveCursor(ui: RectUi, button: number, w: number, h: number): boolean {
-  const moved = gridCursorMove(button, ui.cursorX, ui.cursorY, w, h);
-  if (moved) {
-    ui.cursorX = moved.x;
-    ui.cursorY = moved.y;
-  }
-  if (!ui.cursorVisible) {
-    ui.cursorVisible = true;
-    return true;
-  }
-  // `gridCursorMove` returns null exactly when the move was a clamped no-op,
-  // which is the same question the old hand-written before/after comparison
-  // was asking.
-  return moved !== null;
 }
 
 function interpretMove(
@@ -171,30 +152,30 @@ function interpretMove(
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
     if (ui.dragStartX >= 0 && ui.cursorDragging) resetUi(ui);
     startdrag = true;
-    ui.cursorVisible = false;
+    ui.cursor.visible = false;
     ui.cursorDragging = false;
     active = true;
     erasing = button === RIGHT_BUTTON;
   } else if (button === LEFT_RELEASE || button === RIGHT_RELEASE) {
-    if (ui.cursorVisible) {
-      ui.cursorVisible = false;
+    if (ui.cursor.visible) {
+      ui.cursor.visible = false;
       active = true;
     }
     enddrag = true;
     erasing = button === RIGHT_RELEASE;
   } else if (isCursorMove(button)) {
-    const changed = moveCursor(ui, button, w, h);
+    const changed = moveCursor(ui.cursor, button, w, h);
     active = true;
     if (!ui.cursorDragging || !changed) return changed ? UI_UPDATE : null;
-    [xc, yc] = coordRound(ui.cursorX + 0.5, ui.cursorY + 0.5);
+    [xc, yc] = coordRound(ui.cursor.x + 0.5, ui.cursor.y + 0.5);
   } else if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
     // Ignore a keyboard drag start while a mouse drag is in progress.
     if (ui.dragStartX >= 0 && !ui.cursorDragging) return null;
-    if (!ui.cursorVisible) {
-      ui.cursorVisible = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
-    [xc, yc] = coordRound(ui.cursorX + 0.5, ui.cursorY + 0.5);
+    [xc, yc] = coordRound(ui.cursor.x + 0.5, ui.cursor.y + 0.5);
     erasing = button === CURSOR_SELECT2;
     if (ui.cursorDragging) {
       ui.cursorDragging = false;
@@ -208,7 +189,7 @@ function interpretMove(
   } else if (isCancelKey(button)) {
     // Backspace / Escape: cancel.
     if (!ui.cursorDragging) {
-      ui.cursorVisible = false;
+      ui.cursor.visible = false;
     } else {
       resetUi(ui);
       ui.cursorDragging = false;

@@ -52,7 +52,6 @@ import {
   FM_RIGHT,
   FM_UP,
   KEYMODE_MOVE,
-  KEYMODE_OFF,
   presets,
   type RomeMove,
   type RomeParams,
@@ -398,7 +397,7 @@ describe("input", () => {
     const ui = newUi();
     romeGame.interpretMove(st, ui, ds, cellPoint(0, 0), CURSOR_RIGHT);
     romeGame.interpretMove(st, ui, ds, cellPoint(0, 0), CURSOR_DOWN);
-    expect([ui.hx, ui.hy]).toEqual([1, 1]);
+    expect([ui.cursor.x, ui.cursor.y]).toEqual([1, 1]);
     expect(ui.kmode).toBe(KEYMODE_MOVE);
 
     romeGame.interpretMove(st, ui, ds, cellPoint(0, 0), CURSOR_SELECT);
@@ -455,7 +454,7 @@ describe("input", () => {
   it("ignores a direct key press before the cursor has been shown", () => {
     const st = board(3, 3, EMPTY_3);
     const ui = newUi();
-    expect(ui.kmode).toBe(KEYMODE_OFF);
+    expect(ui.cursor.visible).toBe(false);
     expect(romeGame.interpretMove(st, ui, ds, cellPoint(0, 0), 56)).toBeNull();
   });
 });

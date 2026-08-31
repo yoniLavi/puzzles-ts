@@ -412,7 +412,8 @@ export function redraw(
       }
       tile |= flash;
       if (immutable[i]) tile |= FF_IMMUTABLE;
-      if (ui.cursor && ui.cx === x && ui.cy === y) tile |= FF_CURSOR;
+      if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y)
+        tile |= FF_CURSOR;
       if (mistakeSet?.has(i)) tile |= FF_MISTAKE;
       // Hint overlay (target > ring > sibling-area; area only on empty cells).
       if (i === hintTarget) {

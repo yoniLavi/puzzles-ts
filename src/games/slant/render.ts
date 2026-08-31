@@ -438,7 +438,7 @@ export function redraw(
           todraw[ti(x, y + 1)] |= ERR_T_L | ERR_C_TL;
         }
       }
-      if (ui.cursorVisible && ui.cx === x && ui.cy === y) {
+      if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y) {
         todraw[ti(x, y)] |= CURSOR;
       }
     }

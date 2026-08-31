@@ -28,6 +28,7 @@ import {
   MIDDLE_RELEASE,
   MOD_CTRL,
   MOD_SHFT,
+  newCursor,
   RIGHT_BUTTON,
   RIGHT_RELEASE,
   stripModifiers,
@@ -91,9 +92,7 @@ function newUi(state: PearlState): PearlUi {
     ndragcoords: -1,
     clickx: 0,
     clicky: 0,
-    curx: 0,
-    cury: 0,
-    cursorActive: false,
+    cursor: newCursor(),
     guiStyle: GUI_MASYU,
   };
 }
@@ -156,7 +155,7 @@ function interpretMove(
     button === LEFT_RELEASE || button === MIDDLE_RELEASE || button === RIGHT_RELEASE;
 
   if (isMouseDown) {
-    ui.cursorActive = false;
+    ui.cursor.visible = false;
     if (!inGrid(state, gx, gy)) {
       ui.ndragcoords = -1;
       return UI_UPDATE;
@@ -177,48 +176,48 @@ function interpretMove(
   if (isMouseRelease) release = true;
 
   if (isCursorMove(button)) {
-    if (!ui.cursorActive) {
-      ui.cursorActive = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
     } else if (control || shift) {
       if (ui.ndragcoords > 0) return null;
       ui.ndragcoords = -1;
       const move = markInDirection(
         state,
-        ui.curx,
-        ui.cury,
+        ui.cursor.x,
+        ui.cursor.y,
         KEY_DIRECTION(button),
         control !== 0,
       );
       if (control && !shift && move !== UI_UPDATE) {
         const d = cursorDelta(button);
         if (d) {
-          ui.curx = Math.max(0, Math.min(w - 1, ui.curx + d.dx));
-          ui.cury = Math.max(0, Math.min(h - 1, ui.cury + d.dy));
+          ui.cursor.x = Math.max(0, Math.min(w - 1, ui.cursor.x + d.dx));
+          ui.cursor.y = Math.max(0, Math.min(h - 1, ui.cursor.y + d.dy));
         }
       }
       return move;
     } else {
       const d = cursorDelta(button);
       if (d) {
-        ui.curx = Math.max(0, Math.min(w - 1, ui.curx + d.dx));
-        ui.cury = Math.max(0, Math.min(h - 1, ui.cury + d.dy));
+        ui.cursor.x = Math.max(0, Math.min(w - 1, ui.cursor.x + d.dx));
+        ui.cursor.y = Math.max(0, Math.min(h - 1, ui.cursor.y + d.dy));
       }
-      if (ui.ndragcoords >= 0) updateUiDrag(state, ui, ui.curx, ui.cury);
+      if (ui.ndragcoords >= 0) updateUiDrag(state, ui, ui.cursor.x, ui.cursor.y);
     }
     return UI_UPDATE;
   }
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (!ui.cursorActive) {
-      ui.cursorActive = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     if (button === CURSOR_SELECT) {
       if (ui.ndragcoords === -1) {
         ui.ndragcoords = 0;
-        ui.dragcoords[0] = ui.cury * w + ui.curx;
-        ui.clickx = centeredCoord(ui.curx, m);
-        ui.clicky = centeredCoord(ui.cury, m);
+        ui.dragcoords[0] = ui.cursor.y * w + ui.cursor.x;
+        ui.clickx = centeredCoord(ui.cursor.x, m);
+        ui.clicky = centeredCoord(ui.cursor.y, m);
         return UI_UPDATE;
       }
       release = true;

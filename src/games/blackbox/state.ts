@@ -15,6 +15,7 @@
 
 import { bin2hex, hex2bin, obfuscateBitmap } from "../../engine/obfuscate.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomNew, randomUpto } from "../../engine/random/index.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -104,9 +105,7 @@ export interface BlackboxUi {
   flashLaserno: number;
   errors: number;
   newmove: boolean;
-  curX: number;
-  curY: number;
-  curVisible: boolean;
+  cursor: GridCursor;
   /** 0 = never, 1 = always (until release), 2 = only while animating. */
   flashLaser: number;
 }

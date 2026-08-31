@@ -4,6 +4,7 @@
 // outline, the hint SOLNNEXT circle, and victory/defeat flash overlays.
 import { describe, expect, it } from "vitest";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { newCursor } from "../../engine/pointer.ts";
 import { floodGame } from "./index.ts";
 import { type FloodDrawState, redraw } from "./render.ts";
 import { type FloodMove, type FloodState, newState } from "./state.ts";
@@ -44,7 +45,7 @@ function recordingDrawing(): { dr: GameDrawing; ops: Op[] } {
 }
 
 const TS = 32; // sepWidth = 1, cursorInset = 4, both > 0.
-const UI = { cursorVisible: false, cx: 0, cy: 0 };
+const UI = { cursor: newCursor() };
 
 function freshDs(state: FloodState): FloodDrawState {
   const ds = floodGame.newDrawState?.(state) as FloodDrawState;
@@ -83,7 +84,7 @@ describe("Flood redraw", () => {
     const state = newState({ w: 2, h: 2, colours: 3, leniency: 0 }, "0112,9");
     const ds = freshDs(state);
     const { dr, ops } = recordingDrawing();
-    redraw(dr, ds, null, state, 1, { cursorVisible: true, cx: 0, cy: 0 }, 0, 0);
+    redraw(dr, ds, null, state, 1, { cursor: newCursor(0, 0, true) }, 0, 0);
     // The cursor outline is four separator-colour lines.
     expect(ops.filter((o) => o.op === "drawLine" && o.colour === 1).length).toBe(4);
   });

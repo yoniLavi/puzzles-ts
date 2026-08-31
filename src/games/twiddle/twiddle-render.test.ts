@@ -5,6 +5,7 @@
 // (and settles them at animation end), and a completion-flash frame.
 import { describe, expect, it } from "vitest";
 import type { GameDrawing } from "../../engine/game.ts";
+import { newCursor } from "../../engine/pointer.ts";
 import { executeMove, twiddleGame } from "./index.ts";
 import { animLength, COL_HIGHLIGHT, COL_LOWLIGHT } from "./render.ts";
 import { newState, type TwiddleParams, type TwiddleState } from "./state.ts";
@@ -59,7 +60,7 @@ function params(): TwiddleParams {
   return { w: 3, h: 3, n: 2, rowsonly: false, orientable: false, movetarget: 0 };
 }
 
-const UI = { curX: 0, curY: 0, curVisible: false };
+const UI = { cursor: newCursor() };
 
 function fresh(state: TwiddleState) {
   const ds = newDrawState(state);
@@ -151,7 +152,7 @@ describe("Twiddle rendering", () => {
     // Cursor visible at origin (0,0): the region's edge bevels recolour
     // their *outline* to the cursor colours (COL_HIGHCURSOR=6 /
     // COL_LOWCURSOR=7).
-    redraw(dr, ds, null, state, 0, { curX: 0, curY: 0, curVisible: true }, 0, 0);
+    redraw(dr, ds, null, state, 0, { cursor: newCursor(0, 0, true) }, 0, 0);
     expect(
       ops.some((o) => o.op === "drawPolygon" && (o.outline === 6 || o.outline === 7)),
     ).toBe(true);

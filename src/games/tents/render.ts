@@ -492,8 +492,8 @@ export function redraw(
   const mistakeSet = new Set<number>();
   if (mistakes) for (const m of mistakes) mistakeSet.add(m.y * w + m.x);
 
-  const cx = ui.cursorVisible ? ui.cx : -1;
-  const cy = ui.cursorVisible ? ui.cy : -1;
+  const cx = ui.cursor.visible ? ui.cursor.x : -1;
+  const cy = ui.cursor.visible ? ui.cursor.y : -1;
 
   // Draw the grid squares whose packed word changed.
   for (let y = 0; y < h; y++) {

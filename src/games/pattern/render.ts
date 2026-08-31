@@ -379,8 +379,8 @@ export function redraw(
   // onlyBlank fill it will emit), so it never visually clobbers a placed mark.
   const dragOnlyBlank = (x2 > x1 || y2 > y1) && ui.state !== GRID_UNKNOWN;
 
-  const cx = ui.curVisible ? ui.curX : -1;
-  const cy = ui.curVisible ? ui.curY : -1;
+  const cx = ui.cursor.visible ? ui.cursor.x : -1;
+  const cy = ui.cursor.visible ? ui.cursor.y : -1;
 
   // Invert filled cells twice during the completion flash (upstream).
   const flashing =

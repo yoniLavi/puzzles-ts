@@ -19,6 +19,7 @@ import { Dsf } from "../../engine/dsf.ts";
 import { findLoops } from "../../engine/findloop.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- difficulty (upstream DIFFLIST: Easy, Tricky, Hard) -------------------
@@ -120,9 +121,7 @@ export interface TracksUi {
   clickx: number;
   clicky: number;
   /** Keyboard cursor over the half-size grid (0..2w, 0..2h). */
-  curx: number;
-  cury: number;
-  cursorActive: boolean;
+  cursor: GridCursor;
 }
 
 /** A player mark that contradicts the unique solution (Check & Save). */

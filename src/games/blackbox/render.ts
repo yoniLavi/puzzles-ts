@@ -167,7 +167,8 @@ function drawArenaTile(
   const dx = todraw(ds, gx);
   const dy = todraw(ds, gy);
 
-  if (ui.curVisible && ui.curX === gx && ui.curY === gy) gsTile |= FLAG_CURSOR;
+  if (ui.cursor.visible && ui.cursor.x === gx && ui.cursor.y === gy)
+    gsTile |= FLAG_CURSOR;
 
   if (gsTile !== dsTile || gs.reveal !== ds.reveal || force) {
     const bg = gs.reveal ? COL_BACKGROUND : gsTile & BALL_LOCK ? COL_LOCK : COL_COVER;
@@ -267,7 +268,8 @@ function drawLaserTile(
   const flash = (gsTile & LASER_FLASHED) !== 0;
 
   gsTile |= wrong | omitted;
-  if (ui.curVisible && ui.curX === gx && ui.curY === gy) gsTile |= FLAG_CURSOR;
+  if (ui.cursor.visible && ui.cursor.x === gx && ui.cursor.y === gy)
+    gsTile |= FLAG_CURSOR;
 
   if (gsTile !== dsTile || force) {
     dr.drawRect(rect(dx, dy, ts, ts), COL_BACKGROUND);
@@ -380,7 +382,9 @@ export function redraw(
   const b0 = todraw(ds, 0);
   if (canReveal(state)) {
     const outline =
-      ui.curVisible && ui.curX === 0 && ui.curY === 0 ? COL_CURSOR : COL_BALL;
+      ui.cursor.visible && ui.cursor.x === 0 && ui.cursor.y === 0
+        ? COL_CURSOR
+        : COL_BALL;
     dr.clip(rect(b0 - 1, b0 - 1, ts + 1, ts + 1));
     dr.drawCircle(
       pt(b0 + ds.crad - 1, b0 + ds.crad - 1),

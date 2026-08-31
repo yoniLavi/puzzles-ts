@@ -516,7 +516,7 @@ export function redraw(
         (ui.drag === 6 && ui.dragnum === sx)
       ) {
         tile |= DF_HIGHLIGHT;
-      } else if (ui.hshow) {
+      } else if (ui.cursor.visible) {
         let highlight = false;
         if (ui.odn > 1) {
           const i = Math.abs(x - ui.ohx);
@@ -528,7 +528,7 @@ export function redraw(
           )
             highlight = true;
         } else {
-          highlight = ui.hx === sx && ui.hy === sy;
+          highlight = ui.cursor.x === sx && ui.cursor.y === sy;
         }
         if (highlight) tile |= ui.hpencil ? DF_HIGHLIGHT_PENCIL : DF_HIGHLIGHT;
       }

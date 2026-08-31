@@ -24,6 +24,8 @@
 
 import { Dsf } from "../../engine/dsf.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 
 // --- difficulty ------------------------------------------------------------
 
@@ -300,10 +302,8 @@ export type SeismicMove =
 
 export interface SeismicUi {
   /** Highlighted cell. */
-  hx: number;
-  hy: number;
+  cursor: GridCursor;
   /** Whether the highlight is shown at all. */
-  cshow: boolean;
   /** Whether the highlight was last moved by the keyboard (upstream keeps the
    * cursor visible after a keyboard entry, but hides it after a mouse one). */
   ckey: boolean;
@@ -316,9 +316,7 @@ export interface SeismicUi {
 
 export function newUi(_state: SeismicState): SeismicUi {
   return {
-    hx: 0,
-    hy: 0,
-    cshow: false,
+    cursor: newCursor(),
     ckey: false,
     cpencil: false,
     pencilSticky: true,

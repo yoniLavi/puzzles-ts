@@ -27,6 +27,7 @@ import {
   gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
+  newCursor,
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
@@ -91,7 +92,7 @@ const KEY_I_LOWER = "i".charCodeAt(0);
 const KEY_I_UPPER = "I".charCodeAt(0);
 
 function newUi(_state: LightupState): LightupUi {
-  return { x: 0, y: 0, cursorShow: false, drawBlobsWhenLit: true };
+  return { cursor: newCursor(), drawBlobsWhenLit: true };
 }
 
 function changedState(
@@ -99,7 +100,7 @@ function changedState(
   _old: LightupState | null,
   next: LightupState,
 ): void {
-  if (next.completed) ui.cursorShow = false;
+  if (next.completed) ui.cursor.visible = false;
 }
 
 function interpretMove(
@@ -120,8 +121,8 @@ function interpretMove(
   let nullret: null | UiUpdate = null;
 
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
-    if (ui.cursorShow) nullret = UI_UPDATE;
-    ui.cursorShow = false;
+    if (ui.cursor.visible) nullret = UI_UPDATE;
+    ui.cursor.visible = false;
     const ts = ds.tilesize;
     cx = fromCoord(p.x, ts);
     cy = fromCoord(p.y, ts);
@@ -132,25 +133,25 @@ function interpretMove(
     button === KEY_I_LOWER ||
     button === KEY_I_UPPER
   ) {
-    if (ui.cursorShow) {
+    if (ui.cursor.visible) {
       // Cursor-effect operations only apply to a visible cursor.
-      cx = ui.x;
-      cy = ui.y;
+      cx = ui.cursor.x;
+      cy = ui.cursor.y;
       action = button === CURSOR_SELECT ? "light" : "impossible";
     } else {
-      ui.cursorShow = true;
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
   } else if (isCursorMove(button)) {
     // Upstream `move_cursor`: move (clamped), reveal if hidden; a
     // clamped-edge no-op with a visible cursor is no effect.
-    const pos = gridCursorMove(button, ui.x, ui.y, w, h);
+    const pos = gridCursorMove(button, ui.cursor.x, ui.cursor.y, w, h);
     if (pos) {
-      ui.x = pos.x;
-      ui.y = pos.y;
+      ui.cursor.x = pos.x;
+      ui.cursor.y = pos.y;
     }
-    if (!ui.cursorShow) {
-      ui.cursorShow = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     return pos ? UI_UPDATE : null;

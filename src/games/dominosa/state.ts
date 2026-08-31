@@ -13,6 +13,7 @@
  */
 
 import type { PresetMenu } from "../../engine/game.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 
 // --- combinatorial helpers (upstream TRI / DCOUNT / DINDEX macros) ----------
 
@@ -273,9 +274,7 @@ export type DominosaMove =
 
 export interface DominosaUi {
   /** Half-grid cursor position (`0…2w−2` × `0…2h−2`). */
-  curX: number;
-  curY: number;
-  cursorVisible: boolean;
+  cursor: GridCursor;
   /** The two value-highlight slots (a face number, or −1 for empty). */
   highlight1: number;
   highlight2: number;

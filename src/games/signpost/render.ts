@@ -402,7 +402,7 @@ export function redrawSignpost(
       let f = 0;
       let dirp = -1;
 
-      if (ui.cshow && x === ui.cx && y === ui.cy) f |= F_CUR;
+      if (ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y) f |= F_CUR;
 
       if (ui.dragging) {
         if (x === ui.sx && y === ui.sy) {

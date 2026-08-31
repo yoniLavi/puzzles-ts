@@ -246,7 +246,7 @@ function setDrawFlags(
   ds: SaladDrawState,
   ui: SaladUi,
   s: SaladState,
-  hshow: boolean,
+  cursorShown: boolean,
 ): void {
   const o = s.order;
   const nums = s.nums;
@@ -272,7 +272,8 @@ function setDrawFlags(
     for (let y = 0; y < o; y++) {
       const i = y * o + x;
       let f = 0;
-      if (hshow && ui.hx === x && ui.hy === y) f |= ui.hpencil ? FD_PENCIL : FD_CURSOR;
+      if (cursorShown && ui.cursor.x === x && ui.cursor.y === y)
+        f |= ui.hpencil ? FD_PENCIL : FD_CURSOR;
 
       const d = s.grid[i];
       if (
@@ -540,10 +541,10 @@ export function redraw(
   const thick = ts <= 21 ? 1 : 2.5;
 
   let flash = -1;
-  let hshow = ui.hshow;
+  let cursorShown = ui.cursor.visible;
   if (flashTime > 0) {
     flash = Math.floor(flashTime / FLASH_FRAME) % 3;
-    hshow = false;
+    cursorShown = false;
   }
 
   if (!ds.started) {
@@ -552,7 +553,7 @@ export function redraw(
     dr.drawUpdate({ x: 0, y: 0, w: size.w, h: size.h });
   }
 
-  setDrawFlags(ds, ui, s, hshow);
+  setDrawFlags(ds, ui, s, cursorShown);
   const flags = ds.gridfs;
   ds.wrong.packCells(mistakes, (x, y) => y * o + x);
 

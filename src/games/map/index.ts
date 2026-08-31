@@ -19,11 +19,11 @@ import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
+  moveCursor,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
@@ -78,20 +78,6 @@ function newState(p: MapParams, desc: string): MapState {
     completed: false,
     cheated: false,
   };
-}
-
-// --- cursor ----------------------------------------------------------
-
-/** Upstream `move_cursor` (no wrap): clamp-move; always sets the position —
- * which is `gridCursorMove` plus the documented `?? { x, y }` idiom for games
- * that want a position back even when the edge clamped the move. */
-function moveCursor(ui: MapUi, button: number, w: number, h: number): void {
-  const moved = gridCursorMove(button, ui.curX, ui.curY, w, h) ?? {
-    x: ui.curX,
-    y: ui.curY,
-  };
-  ui.curX = moved.x;
-  ui.curY = moved.y;
 }
 
 // --- moves -----------------------------------------------------------
@@ -152,16 +138,15 @@ function interpretMove(
   }
 
   if (isCursorMove(button)) {
-    moveCursor(ui, button, w, h);
-    ui.curVisible = true;
+    moveCursor(ui.cursor, button, w, h);
     ui.curMoved = true;
     ui.curLastmove = button;
     return UI_UPDATE;
   }
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (!ui.curVisible) {
-      ui.curVisible = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     if (ui.dragColour === -2) {
@@ -199,7 +184,7 @@ function interpretMove(
     }
     ui.dragx = point.x;
     ui.dragy = point.y;
-    ui.curVisible = false;
+    ui.cursor.visible = false;
     return UI_UPDATE;
   }
 

@@ -198,7 +198,7 @@ export function redraw(
   const radius = Math.floor(diameter / 2);
 
   const flash = flashTime > 0 && (Math.floor(flashTime / FLASH_FRAME) & 1) === 1;
-  const cshow = ui.cshow && flashTime <= 0;
+  const cshow = ui.cursor.visible && flashTime <= 0;
   const firstDraw = !ds.started;
 
   // Live error verdicts and the tally, recomputed pure from the committed
@@ -270,9 +270,9 @@ export function redraw(
 
   // The cursor's cell and slot (virtual slot coords -> cell + slot index).
   const curCell = cshow
-    ? Math.floor(ui.cy / (ch + 1)) * w + Math.floor(ui.cx / (cw + 1))
+    ? Math.floor(ui.cursor.y / (ch + 1)) * w + Math.floor(ui.cursor.x / (cw + 1))
     : -1;
-  const curSlot = cshow ? (ui.cy % (ch + 1)) * cw + (ui.cx % (cw + 1)) : -1;
+  const curSlot = cshow ? (ui.cursor.y % (ch + 1)) * cw + (ui.cursor.x % (cw + 1)) : -1;
 
   // --- letter slots ---------------------------------------------------------
   for (let y = 0; y < h; y++) {

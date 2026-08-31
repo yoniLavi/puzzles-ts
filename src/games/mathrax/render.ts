@@ -395,7 +395,12 @@ export function redraw(
       let fs = state.flags[i];
 
       if (flashTime > 0 && (x + y) % 3 === flash) fs |= FD_FLASH;
-      if (flashTime === 0 && ui.cshow && ui.hx === x && ui.hy === y)
+      if (
+        flashTime === 0 &&
+        ui.cursor.visible &&
+        ui.cursor.x === x &&
+        ui.cursor.y === y
+      )
         fs |= ui.cpencil ? FD_PENCIL : FD_CURSOR;
 
       const tile = state.grid[i] | (state.marks[i] << 4) | (fs << 14);

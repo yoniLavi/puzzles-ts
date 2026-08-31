@@ -821,7 +821,7 @@ export function redraw(
   const mainpos = dsf.canonify(mainanchor);
   const grabpos = ui.grabCurrpos > 0 ? dsf.canonify(ui.grabCurrpos) : -1;
   const solvepos = solvesrc >= 0 ? dsf.canonify(solvesrc) : -1;
-  const cursor = ui.cursorVisible ? cursorPos(ui, w) : -1;
+  const cursor = ui.cursor.visible ? cursorPos(ui, w) : -1;
 
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {

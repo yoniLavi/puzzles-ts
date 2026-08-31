@@ -155,16 +155,16 @@ function interpretMove(
       // Sticky pencil mode (fork): a left-click only moves the highlight and
       // keeps the current mode; upstream (sticky off) reverts to real entry.
       if (
-        ui.hshow &&
-        ui.hx === gx &&
-        ui.hy === gy &&
+        ui.cursor.visible &&
+        ui.cursor.x === gx &&
+        ui.cursor.y === gy &&
         (ui.pencilSticky || !ui.hpencil)
       ) {
-        ui.hshow = false;
+        ui.cursor.visible = false;
       } else {
-        ui.hx = gx;
-        ui.hy = gy;
-        ui.hshow = true;
+        ui.cursor.x = gx;
+        ui.cursor.y = gy;
+        ui.cursor.visible = true;
         if (!ui.pencilSticky) ui.hpencil = false;
       }
       ui.hcursor = false;
@@ -176,21 +176,26 @@ function interpretMove(
         // highlight onto a cell that can actually take a mark.
         ui.hpencil = !ui.hpencil;
         if (!filled) {
-          ui.hx = gx;
-          ui.hy = gy;
-          ui.hshow = true;
+          ui.cursor.x = gx;
+          ui.cursor.y = gy;
+          ui.cursor.visible = true;
         }
       } else {
         // Upstream: select this cell for a pencil mark (or deselect a repeat).
-        if (!ui.hshow || !ui.hpencil || ui.hx !== gx || ui.hy !== gy) {
-          ui.hx = gx;
-          ui.hy = gy;
+        if (
+          !ui.cursor.visible ||
+          !ui.hpencil ||
+          ui.cursor.x !== gx ||
+          ui.cursor.y !== gy
+        ) {
+          ui.cursor.x = gx;
+          ui.cursor.y = gy;
           ui.hpencil = true;
-          ui.hshow = true;
+          ui.cursor.visible = true;
         } else {
-          ui.hshow = false;
+          ui.cursor.visible = false;
         }
-        if (filled) ui.hshow = false;
+        if (filled) ui.cursor.visible = false;
       }
       ui.hcursor = false;
       return UI_UPDATE;
@@ -198,42 +203,42 @@ function interpretMove(
   }
 
   if (isCursorMove(button)) {
-    const moved = gridCursorMove(button, ui.hx, ui.hy, p.w, p.h);
+    const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, p.w, p.h);
     if (moved) {
-      ui.hx = moved.x;
-      ui.hy = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
-    ui.hshow = ui.hcursor = true;
+    ui.cursor.visible = ui.hcursor = true;
     return UI_UPDATE;
   }
 
-  if (ui.hshow && button === CURSOR_SELECT) {
+  if (ui.cursor.visible && button === CURSOR_SELECT) {
     ui.hpencil = !ui.hpencil;
     ui.hcursor = true;
     return UI_UPDATE;
   }
 
   // Enter or clear a letter.
-  const letter = ui.hshow ? keyLetter(button, n) : undefined;
+  const letter = ui.cursor.visible ? keyLetter(button, n) : undefined;
   if (letter !== undefined) {
     // In pencil mode a filled square can't be changed.
-    if (ui.hpencil && state.grid[ui.hy * w + ui.hx] !== EMPTY) return null;
+    if (ui.hpencil && state.grid[ui.cursor.y * w + ui.cursor.x] !== EMPTY) return null;
 
     // Suppress an entry that would change nothing, so it costs no undo step
     // (upstream's own `/* TODO Prevent operations which do nothing */`, which
     // its `interpret_move` never got to). Locally decided, as the playbook
     // requires — never by comparing serialised states.
-    if (!ui.hpencil && noOpEntry(state, ui.hx, ui.hy, letter)) return null;
+    if (!ui.hpencil && noOpEntry(state, ui.cursor.x, ui.cursor.y, letter)) return null;
 
     const move: AbcdMove =
       letter === null
-        ? { type: "enter", x: ui.hx, y: ui.hy, letter: null }
+        ? { type: "enter", x: ui.cursor.x, y: ui.cursor.y, letter: null }
         : ui.hpencil
-          ? { type: "pencil", x: ui.hx, y: ui.hy, letter }
-          : { type: "enter", x: ui.hx, y: ui.hy, letter };
+          ? { type: "pencil", x: ui.cursor.x, y: ui.cursor.y, letter }
+          : { type: "enter", x: ui.cursor.x, y: ui.cursor.y, letter };
 
     // Hide the mouse cursor after an entry (keyboard/pencil cursors persist).
-    if (!ui.hcursor && !ui.hpencil) ui.hshow = false;
+    if (!ui.hcursor && !ui.hpencil) ui.cursor.visible = false;
     return move;
   }
 
@@ -327,14 +332,14 @@ function changedState(ui: AbcdUi, oldSt: AbcdState | null, newSt: AbcdState): vo
   const w = newSt.params.w;
   // Cancel a pencil highlight on a square that just got filled (undo/redo/solve).
   if (
-    ui.hshow &&
+    ui.cursor.visible &&
     ui.hpencil &&
     !ui.hcursor &&
-    newSt.grid[ui.hy * w + ui.hx] !== EMPTY
+    newSt.grid[ui.cursor.y * w + ui.cursor.x] !== EMPTY
   ) {
-    ui.hshow = false;
+    ui.cursor.visible = false;
   }
-  if (oldSt && !oldSt.completed && newSt.completed) ui.hshow = false;
+  if (oldSt && !oldSt.completed && newSt.completed) ui.cursor.visible = false;
 }
 
 function solve(

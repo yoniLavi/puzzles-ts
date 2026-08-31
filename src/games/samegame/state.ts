@@ -1,4 +1,5 @@
 import { parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -42,9 +43,7 @@ export interface SamegameUi {
   /** Per-cell selected flag, length `w*h`. */
   selected: boolean[];
   nselected: number;
-  xsel: number;
-  ysel: number;
-  displaySel: boolean;
+  cursor: GridCursor;
 }
 
 // --- scoring ----------------------------------------------------------

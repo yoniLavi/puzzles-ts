@@ -244,9 +244,9 @@ describe("bricks input", () => {
     const state = newState(FIX_PARAMS, FIX.desc);
     const ui = bricksGame.newUi(state);
     const { col, row, i } = firstBlank(state);
-    ui.cshow = true;
-    ui.cx = col;
-    ui.cy = row;
+    ui.cursor.visible = true;
+    ui.cursor.x = col;
+    ui.cursor.y = row;
     const move = press(state, ui, 49 /* '1' */, 0, 0); // shade
     expect(move).toMatchObject({ kind: "paint", cells: [{ index: i, to: "shade" }] });
     // A '1' on an already-shaded cell is a no-op.

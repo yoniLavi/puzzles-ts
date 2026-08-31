@@ -365,14 +365,14 @@ export function redraw(
   // The completion flash runs a three-phase diagonal wave; the cursor is hidden
   // while it plays.
   const flash = flashTime > 0 ? Math.floor(flashTime / FLASH_FRAME) % 3 : -1;
-  const cshow = flashTime > 0 ? false : ui.cshow;
+  const cshow = flashTime > 0 ? false : ui.cursor.visible;
 
   ds.wrong.packCells(mistakes, (x, y) => y * w + x);
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
-      const highlighted = cshow && ui.hx === x && ui.hy === y;
+      const highlighted = cshow && ui.cursor.x === x && ui.cursor.y === y;
       const pencilCursor = highlighted && ui.cpencil;
 
       let colour: number;

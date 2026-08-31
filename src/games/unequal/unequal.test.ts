@@ -296,9 +296,9 @@ describe("unequal interpretMove", () => {
       center(x, y),
       LEFT_BUTTON,
     );
-    ui.hshow = true;
-    ui.hx = x;
-    ui.hy = y;
+    ui.cursor.visible = true;
+    ui.cursor.x = x;
+    ui.cursor.y = y;
     const move = unequalGame.interpretMove?.(
       st,
       ui,

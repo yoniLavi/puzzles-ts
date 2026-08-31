@@ -603,7 +603,12 @@ export function redraw(
       const tx = BORDER + x * ts;
       const ty = BORDER + y * ts;
 
-      if (flashTime === 0 && ui.cursor && ui.cx === x && ui.cy === y)
+      if (
+        flashTime === 0 &&
+        ui.cursor.visible &&
+        ui.cursor.x === x &&
+        ui.cursor.y === y
+      )
         cellFlags[i] |= FD_CURSOR;
       else cellFlags[i] &= ~FD_CURSOR;
 

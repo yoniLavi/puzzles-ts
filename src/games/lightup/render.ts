@@ -156,7 +156,7 @@ function tileFlags(
   let ret = 0;
 
   if (flashing) ret |= DF_FLASH;
-  if (ui.cursorShow && x === ui.x && y === ui.y) ret |= DF_CURSOR;
+  if (ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y) ret |= DF_CURSOR;
 
   if (flags & F_BLACK) {
     ret |= DF_BLACK;

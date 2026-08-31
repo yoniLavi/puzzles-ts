@@ -175,7 +175,7 @@ describe("Flip interpretMove", () => {
       0x0200,
     );
     expect(m).toEqual({ kind: "flip", x: 2, y: 1 });
-    expect(ui.cursorVisible).toBe(false);
+    expect(ui.cursor.visible).toBe(false);
   });
 
   it("left-click outside the grid is a UI update, not a move", () => {
@@ -204,8 +204,8 @@ describe("Flip interpretMove", () => {
         0x0200 + 12,
       ),
     ).toBe(UI_UPDATE); // CURSOR_RIGHT
-    expect(ui.cx).toBe(1);
-    expect(ui.cursorVisible).toBe(true);
+    expect(ui.cursor.x).toBe(1);
+    expect(ui.cursor.visible).toBe(true);
     const m = flipGame.interpretMove(
       s,
       ui,

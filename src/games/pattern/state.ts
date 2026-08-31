@@ -13,6 +13,7 @@
 import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- cell values (upstream #defines) -------------------------------------
@@ -88,9 +89,7 @@ export interface PatternUi {
   drag: number;
   release: number;
   state: GridVal;
-  curX: number;
-  curY: number;
-  curVisible: boolean;
+  cursor: GridCursor;
 }
 
 /** A player-marked cell whose `Full`/`Empty` value contradicts the unique

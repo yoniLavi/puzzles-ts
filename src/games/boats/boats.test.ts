@@ -429,7 +429,7 @@ describe("boats input", () => {
     const ui = newUi();
 
     expect(press(state, ui, 0, 0, CURSOR_RIGHT)).toBe(UI_UPDATE);
-    expect([ui.cx, ui.cy, ui.cursor]).toEqual([1, 0, true]);
+    expect([ui.cursor.x, ui.cursor.y, ui.cursor.visible]).toEqual([1, 0, true]);
 
     const place = press(state, ui, 0, 0, CURSOR_SELECT) as BoatsMove;
     state = boatsGame.executeMove(state, place);

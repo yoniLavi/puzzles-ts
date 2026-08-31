@@ -17,14 +17,17 @@ import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  gridCursorMove,
+  hideCursor,
   isCursorMove,
   isMouseDrag,
   isMouseRelease,
   LEFT_BUTTON,
   MOD_CTRL,
   MOD_SHFT,
+  moveCursor,
+  newCursor,
   RIGHT_BUTTON,
+  showCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
@@ -82,9 +85,7 @@ function newUi(_state: TentsState): TentsUi {
     dey: -1,
     dragButton: -1,
     dragOk: false,
-    cx: 0,
-    cy: 0,
-    cursorVisible: false,
+    cursor: newCursor(),
   };
 }
 
@@ -111,7 +112,7 @@ function interpretMove(
     ui.dsx = ui.dex = x;
     ui.dsy = ui.dey = y;
     ui.dragOk = true;
-    ui.cursorVisible = false;
+    hideCursor(ui.cursor);
     return UI_UPDATE;
   }
 
@@ -154,16 +155,12 @@ function interpretMove(
   }
 
   if (isCursorMove(button)) {
-    const wasVisible = ui.cursorVisible;
+    // The shared helper carries the cursor; painting the cells it passed over
+    // is Tents' own verb, so it reads the index either side of the move.
+    const idx0 = ui.cursor.x + w * ui.cursor.y;
+    const changed = moveCursor(ui.cursor, button, w, h);
     if (shift || control) {
-      const idx0 = ui.cx + w * ui.cy;
-      const moved = gridCursorMove(button, ui.cx, ui.cy, w, h);
-      if (moved) {
-        ui.cx = moved.x;
-        ui.cy = moved.y;
-      }
-      ui.cursorVisible = true;
-      const idx1 = ui.cx + w * ui.cy;
+      const idx1 = ui.cursor.x + w * ui.cursor.y;
       const cells: { x: number; y: number; v: number }[] = [];
       const idxs = idx0 !== idx1 ? [idx0, idx1] : [idx0];
       for (const i of idxs) {
@@ -172,19 +169,12 @@ function interpretMove(
         }
       }
       if (cells.length) return { type: "cells", cells };
-      return moved || !wasVisible ? UI_UPDATE : null;
     }
-    const moved = gridCursorMove(button, ui.cx, ui.cy, w, h);
-    if (moved) {
-      ui.cx = moved.x;
-      ui.cy = moved.y;
-    }
-    ui.cursorVisible = true;
-    return moved || !wasVisible ? UI_UPDATE : null;
+    return changed ? UI_UPDATE : null;
   }
 
-  if (ui.cursorVisible) {
-    const v = grid[ui.cy * w + ui.cx];
+  if (ui.cursor.visible) {
+    const v = grid[ui.cursor.y * w + ui.cursor.x];
     let rep: number | null = null;
     if (v !== TREE) {
       if (button === CURSOR_SELECT) rep = v === BLANK ? TENT : BLANK;
@@ -194,10 +184,10 @@ function interpretMove(
       else if (button === KEY_B || button === KEY_b) rep = BLANK;
     }
     if (rep !== null) {
-      return { type: "cells", cells: [{ x: ui.cx, y: ui.cy, v: rep }] };
+      return { type: "cells", cells: [{ x: ui.cursor.x, y: ui.cursor.y, v: rep }] };
     }
   } else if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    ui.cursorVisible = true;
+    showCursor(ui.cursor);
     return UI_UPDATE;
   }
 

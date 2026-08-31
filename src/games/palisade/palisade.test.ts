@@ -10,6 +10,7 @@ import {
   initBorders,
 } from "../../engine/border-grid.ts";
 import type { HintStep } from "../../engine/game.ts";
+import { newCursor } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { palisadeGame } from "./index.ts";
 import { deduceForcedEdges, newDesc, solver, solveToBorders } from "./solver.ts";
@@ -215,9 +216,7 @@ describe("palisade win flash", () => {
   });
   const flash = (oldOver: Partial<PalisadeState>, newOver: Partial<PalisadeState>) =>
     palisadeGame.flashLength?.(base(oldOver), base(newOver), 0, {
-      x: 1,
-      y: 1,
-      show: false,
+      cursor: newCursor(1, 1),
     });
 
   it("fires on a fresh manual completion", () => {

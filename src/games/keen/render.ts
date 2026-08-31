@@ -511,7 +511,7 @@ export function redraw(
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
       let tile = state.grid[i] ? state.grid[i] : state.pencil[i] << DF_PENCIL_SHIFT;
-      if (ui.hshow && ui.hx === x && ui.hy === y)
+      if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y)
         tile |= ui.hpencil ? DF_HIGHLIGHT_PENCIL : DF_HIGHLIGHT;
       if (flash) tile |= DF_HIGHLIGHT;
       if (ds.errors[i] & ERR_LATIN) tile |= DF_ERR_LATIN;

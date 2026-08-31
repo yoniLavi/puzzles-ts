@@ -478,7 +478,7 @@ export function redraw(
       let tile = DF_PLAYAREA;
       if (state.grid[y * w + x]) tile |= state.grid[y * w + x];
       else tile |= state.pencil[y * w + x] << DF_PENCIL_SHIFT;
-      if (ui.hshow && ui.hx === x && ui.hy === y)
+      if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y)
         tile |= ui.hpencil ? DF_HIGHLIGHT_PENCIL : DF_HIGHLIGHT;
       if (state.immutable[y * w + x]) tile |= DF_IMMUTABLE;
       if (flash) tile |= DF_HIGHLIGHT;

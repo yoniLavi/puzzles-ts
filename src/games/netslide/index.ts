@@ -152,18 +152,18 @@ function interpretMove(
   const ts = ds.tilesize;
 
   if (isCursorMove(button)) {
-    const diff = c2diff(s.w, s.h, ui.curX, ui.curY, button);
+    const diff = c2diff(s.w, s.h, ui.cursor.x, ui.cursor.y, button);
     if (diff !== 0) {
-      let pos = c2pos(s.w, s.h, ui.curX, ui.curY);
+      let pos = c2pos(s.w, s.h, ui.cursor.x, ui.cursor.y);
       // Step along the ring until we land on a line that can actually be slid.
       do {
         pos += diff;
         const c = pos2c(s.w, s.h, pos);
-        ui.curX = c.cx;
-        ui.curY = c.cy;
-      } while (ui.curX === s.cx || ui.curY === s.cy);
+        ui.cursor.x = c.cx;
+        ui.cursor.y = c.cy;
+      } while (ui.cursor.x === s.cx || ui.cursor.y === s.cy);
     }
-    ui.curVisible = true;
+    ui.cursor.visible = true;
     return UI_UPDATE;
   }
 
@@ -176,15 +176,15 @@ function interpretMove(
     const b = Math.floor((3 * ts) / 4) + 1; // BORDER, NARROW_BORDERS variant
     cx = Math.floor((p.x - (b + 1) + 2 * ts) / ts) - 2;
     cy = Math.floor((p.y - (b + 1) + 2 * ts) / ts) - 2;
-    ui.curVisible = false;
+    ui.cursor.visible = false;
   } else if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (!ui.curVisible) {
+    if (!ui.cursor.visible) {
       // A select with no cursor showing just reveals it.
-      ui.curVisible = true;
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
-    cx = ui.curX;
-    cy = ui.curY;
+    cx = ui.cursor.x;
+    cy = ui.cursor.y;
   } else {
     return null;
   }

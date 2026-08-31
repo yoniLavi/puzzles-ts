@@ -20,7 +20,7 @@ import {
 } from "../../engine/border-grid.ts";
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
-import { stripModifiers } from "../../engine/pointer.ts";
+import { newCursor, stripModifiers } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { Colour, ConfigValues, Point, Size } from "../../engine/types.ts";
 import { newSeparateDesc } from "./generator.ts";
@@ -55,7 +55,7 @@ import {
 // Edge states for the click toggle cycle.
 
 function newUi(_state: SeparateState): SeparateUi {
-  return { x: 1, y: 1, show: false };
+  return { cursor: newCursor(1, 1) };
 }
 
 function paramsOf(state: SeparateState): SeparateParams {

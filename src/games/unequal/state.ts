@@ -1,3 +1,5 @@
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 /**
  * Types and pure state helpers for Unequal — the state/codec parts of
  * `unequal.c`.
@@ -257,10 +259,8 @@ export type UnequalMove =
 // --- ui --------------------------------------------------------------------
 
 export interface UnequalUi {
-  hx: number;
-  hy: number;
+  cursor: GridCursor;
   hpencil: boolean;
-  hshow: boolean;
   hcursor: boolean;
   /** Preference (default off): keep the mouse highlight after a pencil change. */
   pencilKeepHighlight: boolean;
@@ -273,10 +273,8 @@ export interface UnequalUi {
 
 export function newUi(_state: UnequalState): UnequalUi {
   return {
-    hx: 0,
-    hy: 0,
+    cursor: newCursor(),
     hpencil: false,
-    hshow: false,
     hcursor: false,
     pencilKeepHighlight: false,
     pencilSticky: true,

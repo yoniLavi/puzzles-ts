@@ -32,6 +32,7 @@ import {
   LEFT_RELEASE,
   MOD_CTRL,
   MOD_SHFT,
+  newCursor,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
@@ -92,9 +93,7 @@ function newUi(state: BridgesState): BridgesUi {
     dragging: false,
     dragIsNoline: false,
     nlines: 0,
-    curX: first ? first.x : 0,
-    curY: first ? first.y : 0,
-    curVisible: false,
+    cursor: newCursor(first ? first.x : 0, first ? first.y : 0),
     showHints: false,
     autoMark: true,
   };
@@ -252,7 +251,7 @@ function interpretMove(
 
   if (btn === LEFT_BUTTON || btn === RIGHT_BUTTON) {
     if (!s.inGrid(gx, gy)) return null;
-    ui.curVisible = false;
+    ui.cursor.visible = false;
     if (ggrid & G_ISLAND) {
       ui.dragxSrc = gx;
       ui.dragySrc = gy;
@@ -292,15 +291,15 @@ function interpretMove(
   }
 
   if (isCursorMove(btn)) {
-    ui.curVisible = true;
+    ui.cursor.visible = true;
     if (control || shift) {
-      ui.dragxSrc = ui.curX;
-      ui.dragySrc = ui.curY;
+      ui.dragxSrc = ui.cursor.x;
+      ui.dragySrc = ui.cursor.y;
       ui.dragging = true;
       ui.dragIsNoline = !control;
     }
     if (ui.dragging) {
-      const moved = gridCursorMove(btn, ui.curX, ui.curY, s.w, s.h, false);
+      const moved = gridCursorMove(btn, ui.cursor.x, ui.cursor.y, s.w, s.h, false);
       if (!moved) return null;
       const half = Math.trunc(ts / 2);
       updateDragDst(
@@ -325,25 +324,25 @@ function interpretMove(
       for (let dir = 1; ; dir++) {
         let dingrid = false;
         if (orth > dir) continue; // search in an outward cone only
-        let nx = ui.curX + dir * dx + orth * dorthx * orthorder;
-        let ny = ui.curY + dir * dy + orth * dorthy * orthorder;
+        let nx = ui.cursor.x + dir * dx + orth * dorthx * orthorder;
+        let ny = ui.cursor.y + dir * dy + orth * dorthy * orthorder;
         if (s.inGrid(nx, ny)) {
           dingrid = true;
           oingrid = true;
           if (s.gridAt(nx, ny) & G_ISLAND) {
-            ui.curX = nx;
-            ui.curY = ny;
+            ui.cursor.x = nx;
+            ui.cursor.y = ny;
             return UI_UPDATE;
           }
         }
-        nx = ui.curX + dir * dx - orth * dorthx * orthorder;
-        ny = ui.curY + dir * dy - orth * dorthy * orthorder;
+        nx = ui.cursor.x + dir * dx - orth * dorthx * orthorder;
+        ny = ui.cursor.y + dir * dy - orth * dorthy * orthorder;
         if (s.inGrid(nx, ny)) {
           dingrid = true;
           oingrid = true;
           if (s.gridAt(nx, ny) & G_ISLAND) {
-            ui.curX = nx;
-            ui.curY = ny;
+            ui.cursor.x = nx;
+            ui.cursor.y = ny;
             return UI_UPDATE;
           }
         }
@@ -354,20 +353,20 @@ function interpretMove(
   }
 
   if (btn === CURSOR_SELECT || btn === CURSOR_SELECT2) {
-    if (!ui.curVisible) {
-      ui.curVisible = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     if (ui.dragging || btn === CURSOR_SELECT2) {
       // ui_cancel_drag clears dragxDst, so C always toggles the island mark.
       uiCancelDrag(ui);
-      return { ops: [{ op: "M", x: ui.curX, y: ui.curY }] };
+      return { ops: [{ op: "M", x: ui.cursor.x, y: ui.cursor.y }] };
     }
-    const v = s.gridAt(ui.curX, ui.curY);
+    const v = s.gridAt(ui.cursor.x, ui.cursor.y);
     if (v & G_ISLAND) {
       ui.dragging = true;
-      ui.dragxSrc = ui.curX;
-      ui.dragySrc = ui.curY;
+      ui.dragxSrc = ui.cursor.x;
+      ui.dragySrc = ui.cursor.y;
       ui.dragxDst = -1;
       ui.dragyDst = -1;
       // Reached only on a plain CURSOR_SELECT (SELECT2 returned above), so this
@@ -389,8 +388,8 @@ function interpretMove(
     else if (btn >= 0x61 && btn <= 0x66) number = 10 + btn - 0x61;
     else number = 10 + btn - 0x41;
 
-    if (!ui.curVisible) {
-      ui.curVisible = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     let bestX = -1;
@@ -398,9 +397,9 @@ function interpretMove(
     let bestSq = -1;
     for (const is of s.islands) {
       if (is.count !== number) continue;
-      if (is.x === ui.curX && is.y === ui.curY) continue;
-      const ddx = is.x - ui.curX;
-      const ddy = is.y - ui.curY;
+      if (is.x === ui.cursor.x && is.y === ui.cursor.y) continue;
+      const ddx = is.x - ui.cursor.x;
+      const ddy = is.y - ui.cursor.y;
       const sq = ddx * ddx + ddy * ddy;
       if (bestSq === -1 || sq < bestSq) {
         bestX = is.x;
@@ -409,8 +408,8 @@ function interpretMove(
       }
     }
     if (bestX !== -1) {
-      ui.curX = bestX;
-      ui.curY = bestY;
+      ui.cursor.x = bestX;
+      ui.cursor.y = bestY;
       return UI_UPDATE;
     }
     return null;

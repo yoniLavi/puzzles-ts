@@ -4,6 +4,7 @@
 // completion-flash highlight shift, and the cache suppressing unchanged tiles.
 import { describe, expect, it } from "vitest";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { newCursor } from "../../engine/pointer.ts";
 import { type Cell, ONE, ZERO } from "./constants.ts";
 import type { UnrulyHint } from "./index.ts";
 import {
@@ -70,7 +71,7 @@ const TS = 32;
 const P: UnrulyParams = { w2: 6, h2: 6, unique: false, diff: 0 };
 
 function freshUi(): UnrulyUi {
-  return { cx: 0, cy: 0, cursor: false };
+  return { cursor: newCursor() };
 }
 
 function freshDs(state: UnrulyState): UnrulyDrawState {
@@ -164,9 +165,9 @@ describe("Unruly redraw", () => {
     const state = blank();
     const ds = freshDs(state);
     const ui = freshUi();
-    ui.cursor = true;
-    ui.cx = 2;
-    ui.cy = 3;
+    ui.cursor.visible = true;
+    ui.cursor.x = 2;
+    ui.cursor.y = 3;
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, state, 1, ui, 0, 0);
     expect(ops.filter((o) => o.colour === COL_CURSOR).length).toBeGreaterThanOrEqual(4);

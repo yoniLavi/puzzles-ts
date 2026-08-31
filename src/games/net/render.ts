@@ -489,7 +489,7 @@ export function redraw(
         }
       }
 
-      if (ui.curVisible && gx === ui.curX && gy === ui.curY) {
+      if (ui.cursor.visible && gx === ui.cursor.x && gy === ui.cursor.y) {
         td[dsi(ds, dx, dy)] |= TILE_KEYBOARD_CURSOR;
       }
 

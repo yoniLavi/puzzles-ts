@@ -518,18 +518,18 @@ function s2dFlags(
   if (sf & S_CLUE) f |= DS_CLUE;
   if (sf & S_NOTRACK) f |= DS_NOTRACK;
   if (sf & S_TRACK || sECount(b, x, y, 1) > 0) f |= DS_TRACK;
-  if (ui.cursorActive) {
+  if (ui.cursor.visible) {
     if (
-      ui.curx >= x * 2 &&
-      ui.curx <= (x + 1) * 2 &&
-      ui.cury >= y * 2 &&
-      ui.cury <= (y + 1) * 2
+      ui.cursor.x >= x * 2 &&
+      ui.cursor.x <= (x + 1) * 2 &&
+      ui.cursor.y >= y * 2 &&
+      ui.cursor.y <= (y + 1) * 2
     ) {
       f |= DS_CURSOR;
-      if (ui.curx === x * 2) f |= L << DS_CSHIFT;
-      if (ui.curx === (x + 1) * 2) f |= R << DS_CSHIFT;
-      if (ui.cury === y * 2) f |= U << DS_CSHIFT;
-      if (ui.cury === (y + 1) * 2) f |= D << DS_CSHIFT;
+      if (ui.cursor.x === x * 2) f |= L << DS_CSHIFT;
+      if (ui.cursor.x === (x + 1) * 2) f |= R << DS_CSHIFT;
+      if (ui.cursor.y === y * 2) f |= U << DS_CSHIFT;
+      if (ui.cursor.y === (y + 1) * 2) f |= D << DS_CSHIFT;
     }
   }
   return f;

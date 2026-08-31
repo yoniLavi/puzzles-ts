@@ -145,7 +145,7 @@ function interpretMove(
     if (x < 0 || x >= w || y < 0 || y >= h) return null;
     ui.dragStart = y * w + x;
     ui.drag = button === LEFT_BUTTON ? "left" : "right";
-    ui.cshow = false;
+    ui.cursor.visible = false;
   }
 
   if (
@@ -179,13 +179,13 @@ function interpretMove(
     ui.drag = "none";
   }
 
-  if (ui.cshow && (button === CURSOR_SELECT || button === CURSOR_SELECT2)) {
+  if (ui.cursor.visible && (button === CURSOR_SELECT || button === CURSOR_SELECT2)) {
     // The half-grid puts a hub on every third sub-cell and its eight spoke
     // pickers on the ones between, so the cursor already names both ends.
-    const cx = ((ui.cx + 1) / 3) | 0;
-    const cy = ((ui.cy + 1) / 3) | 0;
+    const cx = ((ui.cursor.x + 1) / 3) | 0;
+    const cy = ((ui.cursor.y + 1) / 3) | 0;
     from = cy * w + cx;
-    to = from + ((((ui.cy + 1) % 3) - 1) * w + (((ui.cx + 1) % 3) - 1));
+    to = from + ((((ui.cursor.y + 1) % 3) - 1) * w + (((ui.cursor.x + 1) % 3) - 1));
     drag = button === CURSOR_SELECT ? "left" : "right";
   }
 
@@ -229,13 +229,19 @@ function interpretMove(
   }
 
   if (isCursorMove(button)) {
-    const moved = gridCursorMove(button, ui.cx, ui.cy, w * 3 - 2, h * 3 - 2);
+    const moved = gridCursorMove(
+      button,
+      ui.cursor.x,
+      ui.cursor.y,
+      w * 3 - 2,
+      h * 3 - 2,
+    );
     if (moved) {
-      ui.cx = moved.x;
-      ui.cy = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
-    if (!ui.cshow) {
-      ui.cshow = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     return moved ? UI_UPDATE : null;

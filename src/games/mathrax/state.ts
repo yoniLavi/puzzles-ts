@@ -1,3 +1,5 @@
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 /**
  * Types and pure state helpers for Mathrax — the state/codec parts of
  * `puzzles/unreleased/mathrax.c` (© 2019 Lennard Sprong).
@@ -625,10 +627,8 @@ export type MathraxMove =
 
 export interface MathraxUi {
   /** Highlighted cell. */
-  hx: number;
-  hy: number;
+  cursor: GridCursor;
   /** The highlight is shown. */
-  cshow: boolean;
   /** The highlight was last moved by the keyboard (so a digit entry keeps it). */
   ckey: boolean;
   /** The highlight is in pencil-mark mode. */
@@ -640,9 +640,7 @@ export interface MathraxUi {
 
 export function newUi(_state: MathraxState): MathraxUi {
   return {
-    hx: 0,
-    hy: 0,
-    cshow: false,
+    cursor: newCursor(),
     ckey: false,
     cpencil: false,
     pencilSticky: true,

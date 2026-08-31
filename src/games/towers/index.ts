@@ -65,6 +65,7 @@ import {
   LEFT_BUTTON,
   MOD_CTRL,
   MOD_SHFT,
+  moveCursor,
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
@@ -166,22 +167,6 @@ function inGrid(w: number, x: number, y: number): boolean {
   return x >= 0 && x < w && y >= 0 && y < w;
 }
 
-/** Move the keyboard cursor (clamped); reveal it on first press. Mirrors
- * `move_cursor`: the position moves even on the reveal press. */
-function moveCursor(button: number, ui: TowersUi, w: number): UiUpdate | null {
-  const ox = ui.hx;
-  const oy = ui.hy;
-  if (button === CURSOR_UP) ui.hy = Math.max(ui.hy - 1, 0);
-  else if (button === CURSOR_DOWN) ui.hy = Math.min(ui.hy + 1, w - 1);
-  else if (button === CURSOR_LEFT) ui.hx = Math.max(ui.hx - 1, 0);
-  else if (button === CURSOR_RIGHT) ui.hx = Math.min(ui.hx + 1, w - 1);
-  if (!ui.hshow) {
-    ui.hshow = true;
-    return UI_UPDATE;
-  }
-  return ui.hx !== ox || ui.hy !== oy ? UI_UPDATE : null;
-}
-
 function interpretMove(
   state: TowersState,
   ui: TowersUi,
@@ -239,16 +224,16 @@ function interpretMove(
       // (it only moves the highlight); the mode is toggled by right-click.
       // Non-sticky (upstream): a left-click always reverts to real entry.
       if (
-        tx === ui.hx &&
-        ty === ui.hy &&
-        ui.hshow &&
+        tx === ui.cursor.x &&
+        ty === ui.cursor.y &&
+        ui.cursor.visible &&
         (ui.pencilSticky || !ui.hpencil)
       ) {
-        ui.hshow = false;
+        ui.cursor.visible = false;
       } else {
-        ui.hx = tx;
-        ui.hy = ty;
-        ui.hshow = !state.immutable[ty * w + tx];
+        ui.cursor.x = tx;
+        ui.cursor.y = ty;
+        ui.cursor.visible = !state.immutable[ty * w + tx];
         if (!ui.pencilSticky) ui.hpencil = false;
       }
       ui.hcursor = false;
@@ -261,21 +246,26 @@ function interpretMove(
         // pencil mark, so selecting it would just be confusing.
         ui.hpencil = !ui.hpencil;
         if (state.grid[ty * w + tx] === 0) {
-          ui.hx = tx;
-          ui.hy = ty;
-          ui.hshow = true;
+          ui.cursor.x = tx;
+          ui.cursor.y = ty;
+          ui.cursor.visible = true;
         }
       } else if (state.grid[ty * w + tx] === 0) {
-        if (tx === ui.hx && ty === ui.hy && ui.hshow && ui.hpencil) {
-          ui.hshow = false;
+        if (
+          tx === ui.cursor.x &&
+          ty === ui.cursor.y &&
+          ui.cursor.visible &&
+          ui.hpencil
+        ) {
+          ui.cursor.visible = false;
         } else {
           ui.hpencil = true;
-          ui.hx = tx;
-          ui.hy = ty;
-          ui.hshow = true;
+          ui.cursor.x = tx;
+          ui.cursor.y = ty;
+          ui.cursor.visible = true;
         }
       } else {
-        ui.hshow = false;
+        ui.cursor.visible = false;
       }
       ui.hcursor = false;
       return UI_UPDATE;
@@ -288,8 +278,8 @@ function interpretMove(
 
   if (isCursorMove(button)) {
     if (shiftOrCtrl) {
-      let cx = ui.hx;
-      let cy = ui.hy;
+      let cx = ui.cursor.x;
+      let cy = ui.cursor.y;
       if (button === CURSOR_LEFT) cx = -1;
       else if (button === CURSOR_RIGHT) cx = w;
       else if (button === CURSOR_UP) cy = -1;
@@ -299,10 +289,10 @@ function interpretMove(
       return null;
     }
     ui.hcursor = true;
-    return moveCursor(button, ui, w);
+    return moveCursor(ui.cursor, button, w, w) ? UI_UPDATE : null;
   }
 
-  if (ui.hshow && button === CURSOR_SELECT) {
+  if (ui.cursor.visible && button === CURSOR_SELECT) {
     ui.hpencil = !ui.hpencil;
     ui.hcursor = true;
     return UI_UPDATE;
@@ -310,9 +300,9 @@ function interpretMove(
 
   const isDigit = button >= 48 && button <= 57 && button - 48 <= w;
   const isClear = button === CURSOR_SELECT2 || isEraseKey(button);
-  if (ui.hshow && (isDigit || isClear)) {
+  if (ui.cursor.visible && (isDigit || isClear)) {
     const n = isClear ? 0 : button - 48;
-    const i = ui.hy * w + ui.hx;
+    const i = ui.cursor.y * w + ui.cursor.x;
 
     // Can't pencil-mark a filled square; can't touch an immutable one.
     if (ui.hpencil && state.grid[i]) return null;
@@ -321,18 +311,26 @@ function interpretMove(
     // No-op: setting a square to what it already holds (and no pencil marks).
     if ((!ui.hpencil || n === 0) && state.grid[i] === n && state.pencil[i] === 0) {
       if (!ui.hcursor) {
-        ui.hshow = false;
+        ui.cursor.visible = false;
         return UI_UPDATE;
       }
       return null;
     }
 
     const pencil = ui.hpencil && n > 0;
-    if (!ui.hcursor && !(ui.hpencil && ui.pencilKeepHighlight)) ui.hshow = false;
+    if (!ui.hcursor && !(ui.hpencil && ui.pencilKeepHighlight))
+      ui.cursor.visible = false;
     // Auto-pencil applies only to a real placement, not a pencil toggle.
     return pencil
-      ? { type: "set", x: ui.hx, y: ui.hy, n, pencil }
-      : { type: "set", x: ui.hx, y: ui.hy, n, pencil, autoElim: ui.autoPencil };
+      ? { type: "set", x: ui.cursor.x, y: ui.cursor.y, n, pencil }
+      : {
+          type: "set",
+          x: ui.cursor.x,
+          y: ui.cursor.y,
+          n,
+          pencil,
+          autoElim: ui.autoPencil,
+        };
   }
 
   // 'M' / 'm': fill all pencil marks, then (on a fully-noted board) clean the
@@ -413,8 +411,13 @@ function changedState(
   newSt: TowersState,
 ): void {
   const w = newSt.w;
-  if (ui.hshow && ui.hpencil && !ui.hcursor && newSt.grid[ui.hy * w + ui.hx] !== 0) {
-    ui.hshow = false;
+  if (
+    ui.cursor.visible &&
+    ui.hpencil &&
+    !ui.hcursor &&
+    newSt.grid[ui.cursor.y * w + ui.cursor.x] !== 0
+  ) {
+    ui.cursor.visible = false;
   }
 }
 

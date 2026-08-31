@@ -5,9 +5,10 @@ import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
+  moveCursor,
+  newCursor,
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
@@ -50,9 +51,7 @@ function newUi(state: SamegameState): SamegameUi {
   return {
     selected: new Array<boolean>(state.w * state.h).fill(false),
     nselected: 0,
-    xsel: 0,
-    ysel: 0,
-    displaySel: false,
+    cursor: newCursor(),
   };
 }
 
@@ -113,27 +112,6 @@ function selMovedesc(ui: SamegameUi): SamegameMove {
   return { type: "remove", tiles };
 }
 
-/** Wrapping keyboard cursor (upstream `move_cursor(..., wrap=true)`). */
-function moveCursor(
-  ui: SamegameUi,
-  button: number,
-  w: number,
-  h: number,
-): UiUpdate | null {
-  // Cursor wraps toroidally on this board.
-  const moved = gridCursorMove(button, ui.xsel, ui.ysel, w, h, true);
-  const changed = moved !== null;
-  if (moved) {
-    ui.xsel = moved.x;
-    ui.ysel = moved.y;
-  }
-  if (!ui.displaySel) {
-    ui.displaySel = true;
-    return UI_UPDATE;
-  }
-  return changed ? UI_UPDATE : null;
-}
-
 // --- input ------------------------------------------------------------
 
 function interpretMove(
@@ -149,17 +127,18 @@ function interpretMove(
   let ty: number;
 
   if (button === RIGHT_BUTTON || button === LEFT_BUTTON) {
-    ui.displaySel = false;
+    ui.cursor.visible = false;
     const ts = ds.tilesize;
     const bd = Math.floor(ts / 2);
     tx = fromCoord(p.x, ts, bd);
     ty = fromCoord(p.y, ts, bd);
   } else if (isCursorMove(button)) {
-    return moveCursor(ui, button, w, h);
+    // The cursor wraps toroidally on this board.
+    return moveCursor(ui.cursor, button, w, h, true) ? UI_UPDATE : null;
   } else if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    ui.displaySel = true;
-    tx = ui.xsel;
-    ty = ui.ysel;
+    ui.cursor.visible = true;
+    tx = ui.cursor.x;
+    ty = ui.cursor.y;
   } else {
     return null;
   }

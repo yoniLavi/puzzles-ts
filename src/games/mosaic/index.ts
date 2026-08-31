@@ -16,6 +16,7 @@ import {
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
+  newCursor,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
@@ -64,9 +65,7 @@ function newUi(_state: MosaicState): MosaicUi {
     lastX: -1,
     lastY: -1,
     lastState: 0,
-    curX: 0,
-    curY: 0,
-    cursorVisible: false,
+    cursor: newCursor(),
   };
 }
 
@@ -124,7 +123,7 @@ function interpretMove(
   if (isMouseEvent(raw) && (offsetX < 0 || offsetY < 0)) return null;
 
   if (raw === LEFT_BUTTON || raw === RIGHT_BUTTON) {
-    ui.cursorVisible = false;
+    ui.cursor.visible = false;
     if (!inBounds) {
       ui.lastX = -1;
       ui.lastY = -1;
@@ -146,7 +145,7 @@ function interpretMove(
     raw === RIGHT_RELEASE
   ) {
     const isDrag = raw === LEFT_DRAG || raw === RIGHT_DRAG;
-    ui.cursorVisible = false;
+    ui.cursor.visible = false;
     const aligned =
       inBounds &&
       ui.lastX >= 0 &&
@@ -176,26 +175,26 @@ function interpretMove(
   }
 
   if (d) {
-    const moved = gridCursorMove(raw, ui.curX, ui.curY, width, height);
+    const moved = gridCursorMove(raw, ui.cursor.x, ui.cursor.y, width, height);
     if (moved) {
-      ui.curX = moved.x;
-      ui.curY = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
-    ui.cursorVisible = true;
+    ui.cursor.visible = true;
     return UI_UPDATE;
   }
 
   if (raw === CURSOR_SELECT || raw === CURSOR_SELECT2) {
-    if (!ui.cursorVisible) {
-      ui.curX = 0;
-      ui.curY = 0;
-      ui.cursorVisible = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.x = 0;
+      ui.cursor.y = 0;
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     return {
       type: "toggle",
-      x: ui.curX,
-      y: ui.curY,
+      x: ui.cursor.x,
+      y: ui.cursor.y,
       double: raw === CURSOR_SELECT2,
     };
   }

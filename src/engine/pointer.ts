@@ -173,3 +173,69 @@ export function gridCursorMove(
   if (nx === x && ny === y) return null;
   return { x: nx, y: ny };
 }
+
+// --- the shared keyboard cursor --------------------------------------
+
+/**
+ * Where a game's keyboard cursor sits, and whether the player can see it.
+ * One shape for the whole collection, held under `ui.cursor`.
+ *
+ * This is the **noun only**. What a game does while the cursor moves is its own
+ * verb and stays in the game: Tents paints as it traverses, Boats drags a fill
+ * along with it, Ascent remembers whether a mouse or the keyboard revealed it.
+ * A genuinely different traversal — Palisade's and Separate's half-cell
+ * coordinates, a lock mode, obstacle-skipping — likewise stays put; those keep
+ * their own movement and share only the shape.
+ */
+export interface GridCursor {
+  x: number;
+  y: number;
+  visible: boolean;
+}
+
+/** A cursor parked at `(x, y)`, hidden until the player asks for it. */
+export function newCursor(x = 0, y = 0, visible = false): GridCursor {
+  return { x, y, visible };
+}
+
+/**
+ * Move `cursor` by one cursor-direction key on an axis-aligned `w × h` grid,
+ * revealing it in the same press, and report whether anything changed.
+ *
+ * One press both reveals and moves, everywhere, so a keyboard player never
+ * spends a keypress on the reveal (`ts-engine`, "One keyboard-cursor vocabulary
+ * across games"). `wrap` moves toroidally instead of clamping, so an edge press
+ * never no-ops.
+ *
+ * Returns `false` for a non-cursor button, and for a clamped edge press on an
+ * already-visible cursor — the caller's cue to return `null` rather than a
+ * `UI_UPDATE` for a press that did nothing.
+ */
+export function moveCursor(
+  cursor: GridCursor,
+  button: number,
+  w: number,
+  h: number,
+  wrap = false,
+): boolean {
+  const moved = gridCursorMove(button, cursor.x, cursor.y, w, h, wrap);
+  if (!moved) return isCursorMove(button) ? showCursor(cursor) : false;
+  cursor.x = moved.x;
+  cursor.y = moved.y;
+  cursor.visible = true;
+  return true;
+}
+
+/** Reveal `cursor` where it already is. True iff it was hidden. */
+export function showCursor(cursor: GridCursor): boolean {
+  if (cursor.visible) return false;
+  cursor.visible = true;
+  return true;
+}
+
+/** Hide `cursor` — a pointer press took over. True iff it was visible. */
+export function hideCursor(cursor: GridCursor): boolean {
+  if (!cursor.visible) return false;
+  cursor.visible = false;
+  return true;
+}

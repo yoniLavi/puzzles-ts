@@ -4,6 +4,7 @@
 // journey, and every step carries visible evidence. Plus `animLength` for the
 // placement animation.
 import { describe, expect, it } from "vitest";
+import { newCursor } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { type Cell, EMPTY as E, ONE as O, ZERO as Z } from "./constants.ts";
 import { newDesc } from "./generator.ts";
@@ -218,7 +219,7 @@ describe("hintKeepTrack", () => {
 
 describe("animLength", () => {
   const P: UnrulyParams = { w2: 6, h2: 6, unique: false, diff: 0 };
-  const ui = { cx: 0, cy: 0, cursor: false };
+  const ui = { cursor: newCursor() };
   const blank = craft(padTo6([]));
 
   it("animates a single-cell placement", () => {

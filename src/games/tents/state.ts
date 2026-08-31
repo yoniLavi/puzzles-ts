@@ -15,6 +15,7 @@ import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { matching } from "../../engine/latin.ts";
 import { parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- cell values (upstream enum BLANK, TREE, TENT, NONTENT, MAGIC) ---------
@@ -80,9 +81,7 @@ export interface TentsUi {
   dragButton: number;
   /** False once the drag has left the window (cancels on release). */
   dragOk: boolean;
-  cx: number;
-  cy: number;
-  cursorVisible: boolean;
+  cursor: GridCursor;
 }
 
 /** A placed square that contradicts the unique solution (surfaced by Check &

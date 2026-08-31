@@ -11,6 +11,7 @@
  */
 
 import { Dsf } from "../../engine/dsf.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 
 // --- directions ------------------------------------------------------
 
@@ -65,9 +66,7 @@ export type SignpostMistake = { kind: "link"; index: number };
 
 /** Persisted UI: keyboard cursor + drag tracking + the flash preference. */
 export interface SignpostUi {
-  cx: number;
-  cy: number;
-  cshow: boolean;
+  cursor: GridCursor;
   dragging: boolean;
   dragIsFrom: boolean;
   /** Grid coords of the drag start cell. */

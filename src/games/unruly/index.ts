@@ -29,6 +29,7 @@ import {
   isEraseKey,
   LEFT_BUTTON,
   MIDDLE_BUTTON,
+  newCursor,
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
@@ -71,7 +72,7 @@ import {
 } from "./state.ts";
 
 function newUi(_state: UnrulyState): UnrulyUi {
-  return { cx: 0, cy: 0, cursor: false };
+  return { cursor: newCursor() };
 }
 
 function border(ts: number): number {
@@ -120,8 +121,8 @@ function interpretMove(
   const ts = ds.tilesize;
   const b = border(ts);
 
-  let hx = ui.cx;
-  let hy = ui.cy;
+  let hx = ui.cursor.x;
+  let hy = ui.cursor.y;
   let nullret: null | UiUpdate = null;
 
   const isMouse =
@@ -133,8 +134,8 @@ function interpretMove(
     if (p.x >= b && gx < w2 && p.y >= b && gy < h2 && gx >= 0 && gy >= 0) {
       hx = gx;
       hy = gy;
-      if (ui.cursor) {
-        ui.cursor = false;
+      if (ui.cursor.visible) {
+        ui.cursor.visible = false;
         nullret = UI_UPDATE;
       }
     } else {
@@ -145,18 +146,18 @@ function interpretMove(
   // Keyboard cursor movement (clamped, no wrap). An edge no-op leaves
   // (cx, cy) but still reveals the cursor and repaints, as before.
   if (isCursorMove(button)) {
-    const moved = gridCursorMove(button, ui.cx, ui.cy, w2, h2);
+    const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, w2, h2);
     if (moved) {
-      ui.cx = moved.x;
-      ui.cy = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
-    ui.cursor = true;
+    ui.cursor.visible = true;
     return UI_UPDATE;
   }
 
   // Placement: a marking key while the cursor is shown, or any mouse click.
   const isKeyPlace =
-    ui.cursor &&
+    ui.cursor.visible &&
     (button === CURSOR_SELECT ||
       button === CURSOR_SELECT2 ||
       isEraseKey(button) ||

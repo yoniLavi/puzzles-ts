@@ -297,7 +297,7 @@ export function redraw(
       if (y + 1 < h) c |= corners[(y + 1) * w + x] << 12;
       if (x + 1 < w && y + 1 < h) c |= corners[(y + 1) * w + (x + 1)] << 14;
       if (state.correct[y * w + x] && !flashTime) c |= F_CORRECT;
-      if (ui.cursorVisible && ui.cursorX === x && ui.cursorY === y) c |= F_CURSOR;
+      if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y) c |= F_CURSOR;
 
       let mistake = 0;
       if (wrongH[y * w + x]) mistake |= M_TOP;

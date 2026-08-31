@@ -404,12 +404,12 @@ export function redraw(
 
       if (flashTime !== 0) c |= DF_FLASH;
 
-      if (ui.cursorVisible) {
-        const curx = ui.curX - (2 * x - 1);
-        const cury = ui.curY - (2 * y - 1);
+      if (ui.cursor.visible) {
+        const curx = ui.cursor.x - (2 * x - 1);
+        const cury = ui.cursor.y - (2 * y - 1);
         if (curx >= 0 && curx < 3 && cury >= 0 && cury < 3) {
           c |= DF_CURSOR | (curx * DF_CURSOR_XBASE) | (cury * DF_CURSOR_YBASE);
-          if ((ui.curX ^ ui.curY) & 1) c |= DF_CURSOR_USEFUL;
+          if ((ui.cursor.x ^ ui.cursor.y) & 1) c |= DF_CURSOR_USEFUL;
         }
       }
 

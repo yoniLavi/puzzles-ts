@@ -28,13 +28,16 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   CURSOR_UP,
-  gridCursorMove,
+  hideCursor,
   isCursorMove,
   isEraseKey,
   isMouseDrag,
   isMouseRelease,
   LEFT_BUTTON,
+  moveCursor,
+  newCursor,
   RIGHT_BUTTON,
+  showCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
@@ -72,7 +75,6 @@ import {
   FM_RIGHT,
   FM_UP,
   KEYMODE_MOVE,
-  KEYMODE_OFF,
   KEYMODE_PENCIL,
   KEYMODE_PLACE,
   MOUSEMODE_OFF,
@@ -111,9 +113,8 @@ function newState(p: RomeParams, desc: string): RomeState {
 
 function newUi(_state: RomeState): RomeUi {
   return {
-    hx: 0,
-    hy: 0,
-    kmode: KEYMODE_OFF,
+    cursor: newCursor(),
+    kmode: KEYMODE_MOVE,
     mmode: MOUSEMODE_OFF,
     mdir: EMPTY,
     // Upstream defaults: highlight the squares that reach a goal (a genuinely
@@ -156,32 +157,26 @@ function interpretMove(
   // The highlighted square, captured up front exactly as upstream does: a
   // cursor move below updates `ui`, but every move emitted this call is about
   // the square that was highlighted on entry.
-  const x = ui.hx;
-  const y = ui.hy;
+  const x = ui.cursor.x;
+  const y = ui.cursor.y;
   const here = grid[y * w + x];
 
   if (ui.mmode === MOUSEMODE_OFF) {
-    if (
-      isCursorMove(button) &&
-      (ui.kmode === KEYMODE_OFF || ui.kmode === KEYMODE_MOVE)
-    ) {
-      const moved = gridCursorMove(button, ui.hx, ui.hy, w, h);
-      if (moved) {
-        ui.hx = moved.x;
-        ui.hy = moved.y;
-      }
-      ui.kmode = KEYMODE_MOVE;
+    if (isCursorMove(button) && ui.kmode === KEYMODE_MOVE) {
+      moveCursor(ui.cursor, button, w, h);
       return UI_UPDATE;
     }
 
     // Enter arms (or disarms) arrow placement.
     if (button === CURSOR_SELECT && !(here & FM_FIXED)) {
+      showCursor(ui.cursor);
       ui.kmode = ui.kmode !== KEYMODE_PLACE ? KEYMODE_PLACE : KEYMODE_MOVE;
       return UI_UPDATE;
     }
 
     // Space arms pencil mode on an empty square...
     if (button === CURSOR_SELECT2 && here === EMPTY && ui.kmode !== KEYMODE_PLACE) {
+      showCursor(ui.cursor);
       ui.kmode = ui.kmode !== KEYMODE_PENCIL ? KEYMODE_PENCIL : KEYMODE_MOVE;
       return UI_UPDATE;
     }
@@ -218,7 +213,7 @@ function interpretMove(
     }
 
     // Type a direction directly, in whichever mode the cursor is in.
-    if (ui.kmode !== KEYMODE_OFF && !(here & FM_FIXED)) {
+    if (ui.cursor.visible && !(here & FM_FIXED)) {
       const pencil = ui.kmode === KEYMODE_PENCIL;
       const dir = DIGIT_DIRS[button];
       if (dir !== undefined) {
@@ -238,9 +233,10 @@ function interpretMove(
       if (gx < 0 || gx >= w || gy < 0 || gy >= h) return null;
       if (grid[gy * w + gx] & FM_FIXED) return null;
 
-      ui.hx = gx;
-      ui.hy = gy;
-      ui.kmode = KEYMODE_OFF;
+      ui.cursor.x = gx;
+      ui.cursor.y = gy;
+      hideCursor(ui.cursor);
+      ui.kmode = KEYMODE_MOVE;
       ui.mmode = button === LEFT_BUTTON ? MOUSEMODE_PLACE : MOUSEMODE_PENCIL;
       ui.mdir = EMPTY;
       return UI_UPDATE;

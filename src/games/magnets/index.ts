@@ -19,6 +19,7 @@ import {
   gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
+  newCursor,
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
@@ -65,7 +66,7 @@ import {
 } from "./state.ts";
 
 function newUi(_state: MagnetsState): MagnetsUi {
-  return { curX: 0, curY: 0, cursorVisible: false };
+  return { cursor: newCursor() };
 }
 
 function changedState(
@@ -73,7 +74,7 @@ function changedState(
   oldState: MagnetsState | null,
   newState_: MagnetsState,
 ): void {
-  if (oldState && !oldState.completed && newState_.completed) ui.cursorVisible = false;
+  if (oldState && !oldState.completed && newState_.completed) ui.cursor.visible = false;
 }
 
 const CYCLE_MAGNET = 0;
@@ -97,23 +98,23 @@ function interpretMove(
   let nullret: null | UiUpdate = null;
 
   if (isCursorMove(button)) {
-    const wasVisible = ui.cursorVisible;
-    const moved = gridCursorMove(button, ui.curX, ui.curY, w, h);
+    const wasVisible = ui.cursor.visible;
+    const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, w, h);
     if (moved) {
-      ui.curX = moved.x;
-      ui.curY = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
-    ui.cursorVisible = true;
+    ui.cursor.visible = true;
     return moved || !wasVisible ? UI_UPDATE : null;
   }
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (!ui.cursorVisible) {
-      ui.cursorVisible = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     action = button === CURSOR_SELECT ? CYCLE_MAGNET : CYCLE_NEUTRAL;
-    gx = ui.curX;
-    gy = ui.curY;
+    gx = ui.cursor.x;
+    gy = ui.cursor.y;
   } else if (
     gx >= 0 &&
     gx < w &&
@@ -121,8 +122,8 @@ function interpretMove(
     gy < h &&
     (button === LEFT_BUTTON || button === RIGHT_BUTTON)
   ) {
-    if (ui.cursorVisible) {
-      ui.cursorVisible = false;
+    if (ui.cursor.visible) {
+      ui.cursor.visible = false;
       nullret = UI_UPDATE;
     }
     action = button === LEFT_BUTTON ? CYCLE_MAGNET : CYCLE_NEUTRAL;

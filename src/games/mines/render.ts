@@ -305,8 +305,8 @@ export function redraw(
     ds.started = true;
   }
 
-  const cursorX = ui.curVisible ? ui.curX : -1;
-  const cursorY = ui.curVisible ? ui.curY : -1;
+  const cursorX = ui.cursor.visible ? ui.cursor.x : -1;
+  const cursorY = ui.cursor.visible ? ui.cursor.y : -1;
   const cmoved = cursorX !== ds.curX || cursorY !== ds.curY;
 
   for (let y = 0; y < ds.h; y++) {

@@ -39,6 +39,7 @@ import {
   MOD_CTRL,
   MOD_NUM_KEYPAD,
   MOD_SHFT,
+  newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
@@ -106,9 +107,7 @@ function newUi(state: BricksState): BricksUi {
   let i = 0;
   while (i < s && state.grid[i] === F_BOUND) i++;
   return {
-    cshow: false,
-    cx: i % state.w,
-    cy: (i / state.w) | 0,
+    cursor: newCursor(i % state.w, (i / state.w) | 0),
     dragtype: 0,
     drag: [],
   };
@@ -136,8 +135,10 @@ function interpretMove(
 
   // Moving up/down across the shear alternates orthogonal and diagonal;
   // numpad 7/3 become straight up/down.
-  if (button === CURSOR_UP && ui.cy > 0 && (ui.cy & 1) === 0) button = NK(57);
-  else if (button === CURSOR_DOWN && ui.cy < h - 1 && ui.cy & 1) button = NK(49);
+  if (button === CURSOR_UP && ui.cursor.y > 0 && (ui.cursor.y & 1) === 0)
+    button = NK(57);
+  else if (button === CURSOR_DOWN && ui.cursor.y < h - 1 && ui.cursor.y & 1)
+    button = NK(49);
   else if (button === NK(55)) button = CURSOR_UP;
   else if (button === NK(51)) button = CURSOR_DOWN;
 
@@ -162,21 +163,21 @@ function interpretMove(
   }
 
   if (dx || dy) {
-    const hx = ui.cx;
-    const hy = ui.cy;
-    ui.cshow = true;
-    ui.cx = Math.max(0, Math.min(ui.cx + dx, w - 1));
-    ui.cy = Math.max(0, Math.min(ui.cy + dy, h - 1));
+    const hx = ui.cursor.x;
+    const hy = ui.cursor.y;
+    ui.cursor.visible = true;
+    ui.cursor.x = Math.max(0, Math.min(ui.cursor.x + dx, w - 1));
+    ui.cursor.y = Math.max(0, Math.min(ui.cursor.y + dy, h - 1));
 
     // Clamp into the hexagon's row bounds.
-    const extra = (h | ui.cy) & 1 ? 0 : 1;
-    ui.cx = Math.min(ui.cx, w - ((ui.cy / 2) | 0) - 1);
-    ui.cx = Math.max(ui.cx, (((h - ui.cy) / 2) | 0) - extra);
+    const extra = (h | ui.cursor.y) & 1 ? 0 : 1;
+    ui.cursor.x = Math.min(ui.cursor.x, w - ((ui.cursor.y / 2) | 0) - 1);
+    ui.cursor.x = Math.max(ui.cursor.x, (((h - ui.cursor.y) / 2) | 0) - extra);
 
     if (shift || control) {
       const to = shift && control ? "empty" : control ? "shade" : "unshade";
       const i1 = hy * w + hx;
-      const i2 = ui.cy * w + ui.cx;
+      const i2 = ui.cursor.y * w + ui.cursor.x;
       const isNoop = (i: number): boolean => {
         const c = grid[i] & COL_MASK;
         return (
@@ -200,8 +201,8 @@ function interpretMove(
   const px = pt.x - ox - gy * (ts >> 1);
   const gx = px < 0 ? -1 : (px / ts) | 0;
 
-  let hx = ui.cx;
-  let hy = ui.cy;
+  let hx = ui.cursor.x;
+  let hy = ui.cursor.y;
 
   if (isMouseDown(button)) {
     ui.dragtype = 0;
@@ -212,7 +213,7 @@ function interpretMove(
     if (gx >= 0 && gx < w && gy >= 0 && gy < h) {
       hx = gx;
       hy = gy;
-      ui.cshow = false;
+      ui.cursor.visible = false;
     } else {
       return null;
     }
@@ -254,7 +255,7 @@ function interpretMove(
 
   // --- keyboard place-one at the cursor ------------------------------------
   if (
-    ui.cshow &&
+    ui.cursor.visible &&
     (button === CURSOR_SELECT ||
       button === CURSOR_SELECT2 ||
       isEraseKey(button) ||
@@ -262,7 +263,7 @@ function interpretMove(
       button === KEY_1 ||
       button === KEY_2)
   ) {
-    const i = ui.cy * w + ui.cx;
+    const i = ui.cursor.y * w + ui.cursor.x;
     const old = grid[i] & COL_MASK;
     if (!old) return null; // a clue or bound cell — nothing to set
 

@@ -21,6 +21,7 @@ import {
   isCursorMove,
   LEFT_BUTTON,
   LEFT_RELEASE,
+  newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -70,9 +71,7 @@ function newUi(_state: BlackboxState): BlackboxUi {
     flashLaserno: LASER_EMPTY,
     errors: 0,
     newmove: false,
-    curX: 1,
-    curY: 1,
-    curVisible: false,
+    cursor: newCursor(1, 1),
     flashLaser: 0,
   };
 }
@@ -121,11 +120,11 @@ function interpretMove(
     // edge no-op keeps (curX, curY) but still reveals + repaints, as before.
     const { x: cx, y: cy } = gridCursorMove(
       button,
-      ui.curX,
-      ui.curY,
+      ui.cursor.x,
+      ui.cursor.y,
       state.w + 2,
       state.h + 2,
-    ) ?? { x: ui.curX, y: ui.curY };
+    ) ?? { x: ui.cursor.x, y: ui.cursor.y };
     if (
       (cx === 0 && cy === 0 && !canReveal(state)) ||
       (cx === 0 && cy === state.h + 1) ||
@@ -133,9 +132,9 @@ function interpretMove(
       (cx === state.w + 1 && cy === state.h + 1)
     )
       return null; // disallow moving the cursor to a corner
-    ui.curX = cx;
-    ui.curY = cy;
-    ui.curVisible = true;
+    ui.cursor.x = cx;
+    ui.cursor.y = cy;
+    ui.cursor.visible = true;
     return UI_UPDATE;
   }
 
@@ -144,19 +143,19 @@ function interpretMove(
     const ts = tileSizeOf(ds);
     gx = fromDraw(p.x, ts);
     gy = fromDraw(p.y, ts);
-    ui.curVisible = false;
+    ui.cursor.visible = false;
     wouldflash = 1;
   } else if (button === LEFT_RELEASE) {
     ui.flashLaser = 0;
     return UI_UPDATE;
   } else if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (ui.curVisible) {
-      gx = ui.curX;
-      gy = ui.curY;
+    if (ui.cursor.visible) {
+      gx = ui.cursor.x;
+      gy = ui.cursor.y;
       ui.flashLaser = 0;
       wouldflash = 2;
     } else {
-      ui.curVisible = true;
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     effective = button === CURSOR_SELECT2 ? RIGHT_BUTTON : LEFT_BUTTON;
@@ -219,9 +218,9 @@ function interpretMove(
     }
     case "reveal":
       if (!canReveal(state)) return null;
-      if (ui.curVisible) {
-        ui.curX = 1;
-        ui.curY = 1;
+      if (ui.cursor.visible) {
+        ui.cursor.x = 1;
+        ui.cursor.y = 1;
       }
       move = { type: "reveal" };
       break;

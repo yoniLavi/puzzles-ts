@@ -35,12 +35,12 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   cursorDelta,
-  gridCursorMove,
   isCancelKey,
   isCursorMove,
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
+  moveCursor,
   RIGHT_BUTTON,
   RIGHT_DRAG,
   RIGHT_RELEASE,
@@ -176,8 +176,8 @@ function interpretMove(
     // anywhere that is not a block puts down whatever the keyboard was
     // holding. Without that, a keyboard grab would survive under a pointer and
     // the next `LEFT_DRAG` would fling it at the pointer.
-    const hadUi = ui.grabbed || ui.cursorVisible;
-    ui.cursorVisible = false;
+    const hadUi = ui.grabbed || ui.cursor.visible;
+    ui.cursor.visible = false;
     if (
       !grabBlockAt(state, ui, fromCoord(p.x, ts, BORDER), fromCoord(p.y, ts, BORDER))
     ) {
@@ -213,12 +213,12 @@ function interpretMove(
     return { kind: "move", from, to: step.to };
   }
 
-  if (isCursorMove(button)) return moveCursor(state, ui, button);
+  if (isCursorMove(button)) return moveSlideCursor(state, ui, button);
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    ui.cursorVisible = true;
+    ui.cursor.visible = true;
     if (ui.grabbed) return releaseGrab(ui);
-    grabBlockAt(state, ui, ui.cursorX, ui.cursorY);
+    grabBlockAt(state, ui, ui.cursor.x, ui.cursor.y);
     return UI_UPDATE; // an empty square grabs nothing, but still reveals the cursor
   }
 
@@ -227,13 +227,13 @@ function interpretMove(
       // Hand the block back, and the cursor with it: it has been riding the
       // block, so leaving it where the abandoned journey ended would strand it
       // somewhere the player never chose.
-      ui.cursorX = (ui.grabAnchor % w) + ui.grabOffsetX;
-      ui.cursorY = Math.floor(ui.grabAnchor / w) + ui.grabOffsetY;
+      ui.cursor.x = (ui.grabAnchor % w) + ui.grabOffsetX;
+      ui.cursor.y = Math.floor(ui.grabAnchor / w) + ui.grabOffsetY;
       cancelGrab(ui);
       return UI_UPDATE;
     }
-    if (ui.cursorVisible) {
-      ui.cursorVisible = false;
+    if (ui.cursor.visible) {
+      ui.cursor.visible = false;
       return UI_UPDATE;
     }
     return null;
@@ -256,20 +256,14 @@ function interpretMove(
  * keyboard that cannot reach a cell the drag can reach is the same defect D1
  * rejected the free cursor for.
  */
-function moveCursor(state: SlideState, ui: SlideUi, button: number): null | UiUpdate {
+function moveSlideCursor(
+  state: SlideState,
+  ui: SlideUi,
+  button: number,
+): null | UiUpdate {
   const { w, h } = state;
 
-  if (!ui.grabbed) {
-    const moved = gridCursorMove(button, ui.cursorX, ui.cursorY, w, h);
-    if (moved) {
-      ui.cursorX = moved.x;
-      ui.cursorY = moved.y;
-    }
-    // The first press reveals *and* moves, as Flip and Mosaic do.
-    const revealed = !ui.cursorVisible;
-    ui.cursorVisible = true;
-    return moved || revealed ? UI_UPDATE : null;
-  }
+  if (!ui.grabbed) return moveCursor(ui.cursor, button, w, h) ? UI_UPDATE : null;
 
   const delta = cursorDelta(button);
   if (!delta) return null;
@@ -280,8 +274,8 @@ function moveCursor(state: SlideState, ui: SlideUi, button: number): null | UiUp
   if (!ui.reachable[anchor]) return null; // outside the set: nothing moves
 
   ui.grabCurrpos = anchor;
-  ui.cursorX = ax + ui.grabOffsetX;
-  ui.cursorY = ay + ui.grabOffsetY;
+  ui.cursor.x = ax + ui.grabOffsetX;
+  ui.cursor.y = ay + ui.grabOffsetY;
   return UI_UPDATE;
 }
 

@@ -177,7 +177,7 @@ function interpretMove(
       ui.dragOk = true;
       ui.dsx = ui.dex = gx;
       ui.dsy = ui.dey = gy;
-      ui.cursor = false;
+      ui.cursor.visible = false;
       return UI_UPDATE;
     }
   }
@@ -212,24 +212,24 @@ function interpretMove(
   }
 
   if (isCursorMove(button)) {
-    const fromX = ui.cx;
-    const fromY = ui.cy;
-    const moved = gridCursorMove(button, ui.cx, ui.cy, w, h);
+    const fromX = ui.cursor.x;
+    const fromY = ui.cursor.y;
+    const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, w, h);
     if (moved) {
-      ui.cx = moved.x;
-      ui.cy = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
-    ui.cursor = true;
+    ui.cursor.visible = true;
 
     // Hold Ctrl (boats), Shift (water) or both (clear) to fill as you move.
     if (rawButton & (MOD_CTRL | MOD_SHFT)) {
       const to: BoatsFill =
         rawButton & MOD_CTRL ? (rawButton & MOD_SHFT ? "-" : "B") : "W";
       const from: BoatsFillFrom = to === "-" ? "*" : "-";
-      const x0 = Math.min(fromX, ui.cx);
-      const x1 = Math.max(fromX, ui.cx);
-      const y0 = Math.min(fromY, ui.cy);
-      const y1 = Math.max(fromY, ui.cy);
+      const x0 = Math.min(fromX, ui.cursor.x);
+      const x1 = Math.max(fromX, ui.cursor.x);
+      const y0 = Math.min(fromY, ui.cursor.y);
+      const y1 = Math.max(fromY, ui.cursor.y);
 
       if (fillChangesAnything(state, x0, y0, x1, y1, from, to))
         return { kind: "fill", x0, y0, x1, y1, from, to };
@@ -239,11 +239,11 @@ function interpretMove(
   }
 
   if (
-    ui.cursor &&
+    ui.cursor.visible &&
     (button === CURSOR_SELECT || button === CURSOR_SELECT2 || isEraseKey(button))
   ) {
-    const x = ui.cx;
-    const y = ui.cy;
+    const x = ui.cursor.x;
+    const y = ui.cursor.y;
     const from = fillOf(state.grid[y * w + x]);
     let to: BoatsFill = "-";
     if (button === CURSOR_SELECT && from === "-") to = "B";

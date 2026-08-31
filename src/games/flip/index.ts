@@ -26,11 +26,13 @@ import {
   type UiUpdate,
 } from "../../engine/index.ts";
 import { parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   cursorDelta,
   LEFT_BUTTON,
+  newCursor,
 } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { SortedMultiset } from "../../engine/sorted-multiset.ts";
@@ -65,9 +67,7 @@ export type FlipMove =
   | { kind: "solve"; mask: number[] };
 
 export interface FlipUi {
-  cx: number;
-  cy: number;
-  cursorVisible: boolean;
+  cursor: GridCursor;
 }
 
 export interface FlipDrawState {
@@ -505,7 +505,7 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
   },
 
   newUi(): FlipUi {
-    return { cx: 0, cy: 0, cursorVisible: false };
+    return { cursor: newCursor() };
   },
 
   newDrawState(s): FlipDrawState {
@@ -541,11 +541,11 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
       if (button === LEFT_BUTTON) {
         tx = fromCoord(point.x);
         ty = fromCoord(point.y);
-        ui.cursorVisible = false;
+        ui.cursor.visible = false;
       } else {
-        tx = ui.cx;
-        ty = ui.cy;
-        ui.cursorVisible = true;
+        tx = ui.cursor.x;
+        ty = ui.cursor.y;
+        ui.cursor.visible = true;
       }
       if (tx >= 0 && tx < w && ty >= 0 && ty < h) {
         const i = ty * w + tx;
@@ -565,12 +565,12 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
     const d = cursorDelta(button);
     if (!d) return null;
 
-    const nx = Math.min(w - 1, Math.max(0, ui.cx + d.dx));
-    const ny = Math.min(h - 1, Math.max(0, ui.cy + d.dy));
-    const changed = nx !== ui.cx || ny !== ui.cy || !ui.cursorVisible;
-    ui.cx = nx;
-    ui.cy = ny;
-    ui.cursorVisible = true;
+    const nx = Math.min(w - 1, Math.max(0, ui.cursor.x + d.dx));
+    const ny = Math.min(h - 1, Math.max(0, ui.cursor.y + d.dy));
+    const changed = nx !== ui.cursor.x || ny !== ui.cursor.y || !ui.cursor.visible;
+    ui.cursor.x = nx;
+    ui.cursor.y = ny;
+    ui.cursor.visible = true;
     return changed ? UI_UPDATE : null;
   },
 
@@ -841,7 +841,7 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
         else if (fd === flashFrame - 1) v &= ~1;
       }
       if (!s.hintsActive) v &= ~2;
-      if (ui.cursorVisible && ui.cx === x && ui.cy === y) v |= 4;
+      if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y) v |= 4;
 
       const vv = animating && prev && (s.grid[i] ^ prev.grid[i]) & ~2 ? 255 : v;
       if (ds.tiles[i] === 255 || vv === 255 || ds.tiles[i] !== vv) {

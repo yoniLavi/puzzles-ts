@@ -373,7 +373,7 @@ export function redraw(
       // preview, not the committed state the error check ran on.
       const error =
         !(dragSet?.has(i) && !(grid[i] & F_SINGLE)) && (errorSet?.has(i) ?? false);
-      const cursor = ui.cursor && ui.cx === x && ui.cy === y;
+      const cursor = ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y;
 
       const packed = (tile & 0x7) | (error ? F_ERR : 0) | (cursor ? F_CUR : 0);
       if (ds.cache[i] !== packed || ds.hint.stale(i)) {

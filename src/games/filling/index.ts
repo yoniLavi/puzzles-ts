@@ -30,6 +30,7 @@ import {
   isEraseKey,
   LEFT_BUTTON,
   LEFT_DRAG,
+  newCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
@@ -65,7 +66,7 @@ import {
 } from "./state.ts";
 
 function newUi(_state: FillingState): FillingUi {
-  return { sel: null, cx: 0, cy: 0, curVisible: false, keydragging: false };
+  return { sel: null, cursor: newCursor(), keydragging: false };
 }
 
 function changedState(
@@ -81,7 +82,7 @@ function changedState(
 /** Add the cursor cell to the selection (if it isn't a clue). */
 function selectCursor(ui: FillingUi, state: FillingState): void {
   if (!ui.sel) ui.sel = new Set();
-  const i = ui.cy * state.w + ui.cx;
+  const i = ui.cursor.y * state.w + ui.cursor.x;
   if (!state.clues[i]) ui.sel.add(i);
 }
 
@@ -106,24 +107,24 @@ function interpretMove(
       if (!ui.sel) ui.sel = new Set();
       if (!clues[ty * w + tx]) ui.sel.add(ty * w + tx);
     }
-    ui.curVisible = false;
+    ui.cursor.visible = false;
     return UI_UPDATE;
   }
 
   if (isCursorMove(button)) {
-    ui.curVisible = true;
-    const moved = gridCursorMove(button, ui.cx, ui.cy, w, h);
+    ui.cursor.visible = true;
+    const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, w, h);
     if (moved) {
-      ui.cx = moved.x;
-      ui.cy = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
     if (ui.keydragging) selectCursor(ui, state);
     return UI_UPDATE;
   }
 
   if (button === CURSOR_SELECT) {
-    if (!ui.curVisible) {
-      ui.curVisible = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     ui.keydragging = !ui.keydragging;
@@ -132,13 +133,13 @@ function interpretMove(
   }
 
   if (button === CURSOR_SELECT2) {
-    if (!ui.curVisible) {
-      ui.curVisible = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     if (!ui.sel) ui.sel = new Set();
     ui.keydragging = false;
-    const ci = ui.cy * w + ui.cx;
+    const ci = ui.cursor.y * w + ui.cursor.x;
     if (!clues[ci]) {
       if (ui.sel.has(ci)) ui.sel.delete(ci);
       else ui.sel.add(ci);
@@ -165,7 +166,7 @@ function interpretMove(
   for (let i = 0; i < sz; i++) {
     const targeted =
       (ui.sel?.has(i) ?? false) ||
-      (!ui.sel && ui.curVisible && ui.cy * w + ui.cx === i);
+      (!ui.sel && ui.cursor.visible && ui.cursor.y * w + ui.cursor.x === i);
     if (!targeted) continue;
     if (clues[i] !== 0) continue; // cursor may rest on a clue
     if (board[i] !== value) cells.push(i);

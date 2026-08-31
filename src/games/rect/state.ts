@@ -14,6 +14,7 @@
 
 import type { PresetMenu } from "../../engine/game.ts";
 import { atof, formatG, parseLeadingInt } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 
 export interface RectParams {
   w: number;
@@ -69,9 +70,7 @@ export interface RectUi {
   y1: number;
   x2: number;
   y2: number;
-  cursorX: number;
-  cursorY: number;
-  cursorVisible: boolean;
+  cursor: GridCursor;
   cursorDragging: boolean;
 }
 

@@ -3,6 +3,7 @@ import { TEN, TEN_NAMES } from "../../engine/colour/colours.ts";
 import { INK } from "../../engine/colour/palette.ts";
 import { drawRecessedBorder as drawBevel, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import { fill } from "./solver.ts";
 import {
@@ -271,7 +272,7 @@ export function redraw(
       if (x === 0 || y === h - 1 || grid[pos + w - 1] !== grid[pos]) tile |= CORNER_DL;
       if (x === w - 1 || y === h - 1 || grid[pos + w + 1] !== grid[pos])
         tile |= CORNER_DR;
-      if (ui.cursorVisible && ui.cx === x && ui.cy === y) tile |= CURSOR;
+      if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y) tile |= CURSOR;
       if (flashframe >= 0 && !victory && flashframe !== 1) tile |= BADFLASH;
 
       if (ds.grid[pos] !== tile) {
@@ -285,7 +286,5 @@ export function redraw(
 /** Minimal shape `redraw` reads from the UI (kept structural so the
  * render module needn't import the full `FloodUi`). */
 interface FloodUiLike {
-  cursorVisible: boolean;
-  cx: number;
-  cy: number;
+  cursor: GridCursor;
 }

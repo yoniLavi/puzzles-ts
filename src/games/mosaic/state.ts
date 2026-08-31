@@ -8,6 +8,7 @@
 import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- cell-state flags (upstream `enum cell_state`) ----------------------
@@ -79,9 +80,7 @@ export interface MosaicUi {
   lastX: number;
   lastY: number;
   lastState: number;
-  curX: number;
-  curY: number;
-  cursorVisible: boolean;
+  cursor: GridCursor;
 }
 
 /** A determined cell whose mark contradicts the deduced solution. */

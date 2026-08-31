@@ -41,6 +41,7 @@ import {
   isMouseDown,
   LEFT_BUTTON,
   MIDDLE_BUTTON,
+  newCursor,
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
@@ -92,7 +93,7 @@ import {
 } from "./state.ts";
 
 function newUi(_state: SubsetsState): SubsetsUi {
-  return { cx: 0, cy: 0, cshow: false, highlightSet: null, highlightCell: null };
+  return { cursor: newCursor(), highlightSet: null, highlightCell: null };
 }
 
 /** The cell whose inspect icon a pointer is over, or null. The icon is a badge
@@ -186,12 +187,13 @@ function interpretMove(
     // column between cell blocks; gaps never touch the clamped edges, so
     // this always terminates.
     do {
-      ui.cx = Math.max(0, Math.min(gw - 1, ui.cx + delta.dx));
-      ui.cy = Math.max(0, Math.min(gh - 1, ui.cy + delta.dy));
-      ui.cshow = true;
-    } while (ui.cx % (cw + 1) === cw || ui.cy % (ch + 1) === ch);
+      ui.cursor.x = Math.max(0, Math.min(gw - 1, ui.cursor.x + delta.dx));
+      ui.cursor.y = Math.max(0, Math.min(gh - 1, ui.cursor.y + delta.dy));
+      ui.cursor.visible = true;
+    } while (ui.cursor.x % (cw + 1) === cw || ui.cursor.y % (ch + 1) === ch);
     // Reverse aid: the cursor cell's still-possible sets light up in the tally.
-    ui.highlightCell = Math.floor(ui.cy / (ch + 1)) * w + Math.floor(ui.cx / (cw + 1));
+    ui.highlightCell =
+      Math.floor(ui.cursor.y / (ch + 1)) * w + Math.floor(ui.cursor.x / (cw + 1));
     ui.highlightSet = null;
     return UI_UPDATE;
   }
@@ -202,9 +204,9 @@ function interpretMove(
 
   let gx: number;
   let gy: number;
-  if (isSelect && ui.cshow) {
-    gx = ui.cx;
-    gy = ui.cy;
+  if (isSelect && ui.cursor.visible) {
+    gx = ui.cursor.x;
+    gy = ui.cursor.y;
   } else if (!isMouseDown(button) || p.x < ts / 2 || p.y < ts / 2) {
     return null;
   } else {
@@ -253,7 +255,7 @@ function interpretMove(
   }
 
   if (oldtype === newtype) return null;
-  if (isMouseDown(button)) ui.cshow = false;
+  if (isMouseDown(button)) ui.cursor.visible = false;
 
   return { kind: "set", type: newtype, pos, bit: num };
 }

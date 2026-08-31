@@ -40,8 +40,8 @@ import {
 } from "./state.ts";
 import {
   type AscentUi,
-  CSHOW_KEYBOARD,
-  CSHOW_MOUSE,
+  keyboardCursor,
+  mouseCursor,
   TARGET_SHOW,
   validatePathMove,
 } from "./ui.ts";
@@ -342,10 +342,10 @@ function displayNumber(i: number, ui: AscentUi, state: AscentState): number {
       n =
         ui.select >= 0 && ui.positions[ui.select] === -1
           ? ui.select
-          : ui.cshow === CSHOW_KEYBOARD
+          : keyboardCursor(ui)
             ? NUMBER_MOVE
             : NUMBER_EMPTY;
-    else if (ui.cshow === CSHOW_KEYBOARD) n |= NUMBER_FLAG_MOVE;
+    else if (keyboardCursor(ui)) n |= NUMBER_FLAG_MOVE;
   }
 
   if (
@@ -360,8 +360,9 @@ function displayNumber(i: number, ui: AscentUi, state: AscentState): number {
     n = numberEdge(ui.select);
 
   if (state.path && state.path[i] & (1 << findDirection(i, ui.held, w, movement))) {
-    if (n === NUMBER_MOVE) n = ui.cy * w + ui.cx === i ? NUMBER_CLEAR : NUMBER_EMPTY;
-    else if (n >= 0 && n & NUMBER_FLAG_MOVE && ui.cy * w + ui.cx === i)
+    if (n === NUMBER_MOVE)
+      n = ui.cursor.y * w + ui.cursor.x === i ? NUMBER_CLEAR : NUMBER_EMPTY;
+    else if (n >= 0 && n & NUMBER_FLAG_MOVE && ui.cursor.y * w + ui.cursor.x === i)
       n = NUMBER_CLEAR;
     else if (n >= 0) n &= ~NUMBER_FLAG_MOVE;
   }
@@ -450,7 +451,7 @@ export function redrawAscent(
 
   const oldNextTarget = ui.nextTargetMode & TARGET_SHOW ? ui.nextTarget : NUMBER_EMPTY;
   const oldPrevTarget = ui.prevTargetMode & TARGET_SHOW ? ui.prevTarget : NUMBER_EMPTY;
-  const cursorCell = ui.cshow === CSHOW_KEYBOARD ? ui.cy * w + ui.cx : -1;
+  const cursorCell = keyboardCursor(ui) ? ui.cursor.y * w + ui.cursor.x : -1;
 
   /* Invalidate cells whose contents/path/hints/overlays changed. */
   for (let i = 0; i < w * h; i++) {
@@ -520,7 +521,7 @@ export function redrawAscent(
             ? COL_HIGHLIGHT
             : ui.held === i ||
                 ui.typingCell === i ||
-                (ui.cshow === CSHOW_MOUSE && ui.cy * w + ui.cx === i)
+                (mouseCursor(ui) && ui.cursor.y * w + ui.cursor.x === i)
               ? COL_LOWLIGHT
               : oldNextTarget >= 0 && positions[oldNextTarget] === i
                 ? COL_HIGHLIGHT

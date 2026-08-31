@@ -1,4 +1,5 @@
 import { parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import type { GameStatus } from "../../engine/types.ts";
 import { choosemove, completed, fill, SolverScratch } from "./solver.ts";
@@ -44,9 +45,7 @@ export interface FloodState {
 export type FloodMove = { type: "fill"; colour: number } | { type: "solve" };
 
 export interface FloodUi {
-  cursorVisible: boolean;
-  cx: number;
-  cy: number;
+  cursor: GridCursor;
 }
 
 // --- params -----------------------------------------------------------

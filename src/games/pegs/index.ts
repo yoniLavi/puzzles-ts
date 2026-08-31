@@ -27,6 +27,7 @@ import {
   type UiUpdate,
 } from "../../engine/index.ts";
 import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -34,6 +35,7 @@ import {
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
+  newCursor,
 } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import { SortedMultiset } from "../../engine/sorted-multiset.ts";
@@ -98,9 +100,7 @@ export interface PegsUi {
   dx: number;
   dy: number;
   /** Keyboard cursor position. */
-  curX: number;
-  curY: number;
-  curVisible: boolean;
+  cursor: GridCursor;
   /** When true, next cursor-move attempts a jump. */
   curJumping: boolean;
 }
@@ -506,9 +506,7 @@ function newUi(state: PegsState): PegsUi {
           sy: 0,
           dx: 0,
           dy: 0,
-          curX: x,
-          curY: y,
-          curVisible: false,
+          cursor: newCursor(x, y),
           curJumping: false,
         };
       }
@@ -521,9 +519,7 @@ function newUi(state: PegsState): PegsUi {
     sy: 0,
     dx: 0,
     dy: 0,
-    curX: 0,
-    curY: 0,
-    curVisible: false,
+    cursor: newCursor(),
     curJumping: false,
   };
 }
@@ -553,7 +549,7 @@ function interpretMove(
         ui.sy = ty;
         ui.dx = p.x;
         ui.dy = p.y;
-        ui.curVisible = false;
+        ui.cursor.visible = false;
         ui.curJumping = false;
         return UI_UPDATE;
       }
@@ -600,24 +596,24 @@ function interpretMove(
     const { dx: ddx, dy: ddy } = cursorMove;
     if (!ui.curJumping) {
       // Normal cursor movement: try to move, skip OBST cells.
-      const cx = ui.curX;
-      const cy = ui.curY;
+      const cx = ui.cursor.x;
+      const cy = ui.cursor.y;
       const nx = cx + ddx;
       const ny = cy + ddy;
       if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
         const v = s.grid[ny * w + nx];
         if (v === GRID_HOLE || v === GRID_PEG) {
-          ui.curX = nx;
-          ui.curY = ny;
+          ui.cursor.x = nx;
+          ui.cursor.y = ny;
         }
       }
-      ui.curVisible = true;
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
 
     // Jumping mode: attempt a jump in the given direction.
-    const mx = ui.curX + ddx;
-    const my = ui.curY + ddy;
+    const mx = ui.cursor.x + ddx;
+    const my = ui.cursor.y + ddy;
     const jx = mx + ddx;
     const jy = my + ddy;
 
@@ -630,12 +626,12 @@ function interpretMove(
       s.grid[my * w + mx] === GRID_PEG &&
       s.grid[jy * w + jx] === GRID_HOLE
     ) {
-      ui.curX = jx;
-      ui.curY = jy;
+      ui.cursor.x = jx;
+      ui.cursor.y = jy;
       return {
         type: "jump",
-        sx: ui.curX - 2 * ddx,
-        sy: ui.curY - 2 * ddy,
+        sx: ui.cursor.x - 2 * ddx,
+        sy: ui.cursor.y - 2 * ddy,
         tx: jx,
         ty: jy,
       };
@@ -644,15 +640,15 @@ function interpretMove(
   }
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (!ui.curVisible) {
-      ui.curVisible = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     if (ui.curJumping) {
       ui.curJumping = false;
       return UI_UPDATE;
     }
-    if (s.grid[ui.curY * w + ui.curX] === GRID_PEG) {
+    if (s.grid[ui.cursor.y * w + ui.cursor.x] === GRID_PEG) {
       ui.curJumping = true;
       return UI_UPDATE;
     }
@@ -1012,7 +1008,7 @@ function redraw(
       if (ui.dragging && ui.sx === x && ui.sy === y && v === GRID_PEG) {
         v = GRID_HOLE;
       }
-      if (ui.curVisible && ui.curX === x && ui.curY === y) {
+      if (ui.cursor.visible && ui.cursor.x === x && ui.cursor.y === y) {
         v += ui.curJumping ? GRID_JUMPING : GRID_CURSOR;
       }
       if (v !== GRID_OBST && (bgColour !== ds.bgColour || v !== ds.grid[y * w + x])) {

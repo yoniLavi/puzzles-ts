@@ -26,6 +26,7 @@ import {
   MOD_MASK,
   MOD_NUM_KEYPAD,
   MOD_SHFT,
+  newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -141,9 +142,7 @@ export function executeMove(state: SixteenState, move: SixteenMove): SixteenStat
 
 function newUi(_state: SixteenState): SixteenUi {
   return {
-    curX: 0,
-    curY: 0,
-    curVisible: false,
+    cursor: newCursor(),
     curMode: CursorMode.Unlocked,
   };
 }
@@ -162,91 +161,106 @@ function interpretMove(
 
   // Cursor movement.
   if (isCursorMove(rawButton) || pad) {
-    if (!ui.curVisible) {
-      ui.curVisible = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
 
     if (control || shift || ui.curMode !== CursorMode.Unlocked) {
-      if (ui.curX < 0 || ui.curX >= state.w || ui.curY < 0 || ui.curY >= state.h)
+      if (
+        ui.cursor.x < 0 ||
+        ui.cursor.x >= state.w ||
+        ui.cursor.y < 0 ||
+        ui.cursor.y >= state.h
+      )
         return null;
 
       const { x: nx, y: ny } = gridCursorMove(
         rawButton | pad,
-        ui.curX,
-        ui.curY,
+        ui.cursor.x,
+        ui.cursor.y,
         state.w,
         state.h,
         false,
-      ) ?? { x: ui.curX, y: ui.curY };
+      ) ?? { x: ui.cursor.x, y: ui.cursor.y };
       const { x: nwx, y: nwy } = gridCursorMove(
         rawButton | pad,
-        ui.curX,
-        ui.curY,
+        ui.cursor.x,
+        ui.cursor.y,
         state.w,
         state.h,
         true,
-      ) ?? { x: ui.curX, y: ui.curY };
+      ) ?? { x: ui.cursor.x, y: ui.cursor.y };
 
       let move: SixteenMove;
       if (nx !== nwx) {
         move = {
           type: "slide",
           axis: "row",
-          index: ui.curY,
-          delta: nx > ui.curX ? 1 : -1,
+          index: ui.cursor.y,
+          delta: nx > ui.cursor.x ? 1 : -1,
         };
       } else if (ny !== nwy) {
         move = {
           type: "slide",
           axis: "column",
-          index: ui.curX,
-          delta: ny > ui.curY ? 1 : -1,
+          index: ui.cursor.x,
+          delta: ny > ui.cursor.y ? 1 : -1,
         };
-      } else if (nx === ui.curX) {
-        move = { type: "slide", axis: "column", index: ui.curX, delta: ny - ui.curY };
+      } else if (nx === ui.cursor.x) {
+        move = {
+          type: "slide",
+          axis: "column",
+          index: ui.cursor.x,
+          delta: ny - ui.cursor.y,
+        };
       } else {
-        move = { type: "slide", axis: "row", index: ui.curY, delta: nx - ui.curX };
+        move = {
+          type: "slide",
+          axis: "row",
+          index: ui.cursor.y,
+          delta: nx - ui.cursor.x,
+        };
       }
 
       if (control || (!shift && ui.curMode === CursorMode.LockTile)) {
-        ui.curX = nwx;
-        ui.curY = nwy;
+        ui.cursor.x = nwx;
+        ui.cursor.y = nwy;
       }
 
       return move;
     } else {
       const { x: nx, y: ny } = gridCursorMove(
         rawButton | pad,
-        ui.curX + 1,
-        ui.curY + 1,
+        ui.cursor.x + 1,
+        ui.cursor.y + 1,
         state.w + 2,
         state.h + 2,
         false,
-      ) ?? { x: ui.curX + 1, y: ui.curY + 1 };
+      ) ?? { x: ui.cursor.x + 1, y: ui.cursor.y + 1 };
 
       if (nx === 0 && ny === 0) {
-        const t = ui.curX;
-        ui.curX = ui.curY;
-        ui.curY = t;
+        const t = ui.cursor.x;
+        ui.cursor.x = ui.cursor.y;
+        ui.cursor.y = t;
       } else if (nx === 0 && ny === state.h + 1) {
-        const t = ui.curX;
-        ui.curX = state.h - 1 - ui.curY;
-        ui.curY = state.h - 1 - t;
+        const t = ui.cursor.x;
+        ui.cursor.x = state.h - 1 - ui.cursor.y;
+        ui.cursor.y = state.h - 1 - t;
       } else if (nx === state.w + 1 && ny === 0) {
-        const t = ui.curX;
-        ui.curX = state.w - 1 - ui.curY;
-        ui.curY = state.w - 1 - t;
+        const t = ui.cursor.x;
+        ui.cursor.x = state.w - 1 - ui.cursor.y;
+        ui.cursor.y = state.w - 1 - t;
       } else if (nx === state.w + 1 && ny === state.h + 1) {
-        const t = ui.curX;
-        ui.curX = state.w - state.h + ui.curY;
-        ui.curY = state.h - state.w + t;
+        const t = ui.cursor.x;
+        ui.cursor.x = state.w - state.h + ui.cursor.y;
+        ui.cursor.y = state.h - state.w + t;
       } else {
-        ui.curX = nx - 1;
-        ui.curY = ny - 1;
+        ui.cursor.x = nx - 1;
+        ui.cursor.y = ny - 1;
       }
 
-      ui.curVisible = true;
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
   }
@@ -323,7 +337,7 @@ function interpretMove(
     const ts = ds.tilesize;
     cx = fromCoord(p.x, ts);
     cy = fromCoord(p.y, ts);
-    ui.curVisible = false;
+    ui.cursor.visible = false;
 
     if (
       rawButton === LEFT_BUTTON &&
@@ -344,15 +358,15 @@ function interpretMove(
       return UI_UPDATE;
     }
   } else if (rawButton === CURSOR_SELECT || rawButton === CURSOR_SELECT2) {
-    if (ui.curVisible) {
+    if (ui.cursor.visible) {
       if (
-        ui.curX === -1 ||
-        ui.curX === state.w ||
-        ui.curY === -1 ||
-        ui.curY === state.h
+        ui.cursor.x === -1 ||
+        ui.cursor.x === state.w ||
+        ui.cursor.y === -1 ||
+        ui.cursor.y === state.h
       ) {
-        cx = ui.curX;
-        cy = ui.curY;
+        cx = ui.cursor.x;
+        cy = ui.cursor.y;
       } else {
         const m =
           rawButton === CURSOR_SELECT2 ? CursorMode.LockPosition : CursorMode.LockTile;
@@ -360,7 +374,7 @@ function interpretMove(
         return UI_UPDATE;
       }
     } else {
-      ui.curVisible = true;
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
   } else {
@@ -508,9 +522,9 @@ function redraw(
   // Cursor.
   let curX = -1,
     curY = -1;
-  if (ui.curVisible) {
-    curX = ui.curX;
-    curY = ui.curY;
+  if (ui.cursor.visible) {
+    curX = ui.cursor.x;
+    curY = ui.cursor.y;
   }
 
   // Hint arrow highlight.

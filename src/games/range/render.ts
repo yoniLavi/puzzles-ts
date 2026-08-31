@@ -264,7 +264,7 @@ export function redraw(
       const value = grid[i];
       const error = errors[i];
       const mistake = mistakeSet?.has(i) ?? false;
-      const cursor = ui.cursorShow && r === ui.r && c === ui.c;
+      const cursor = ui.cursor.visible && r === ui.cursor.y && c === ui.cursor.x;
       const hintKind: HintKind =
         i === hintTarget ? 1 : hintBlackSet?.has(i) ? 4 : hintAreaSet?.has(i) ? 3 : 0;
       const clueRef = i === hintClue;

@@ -60,7 +60,6 @@ import {
   FM_LEFT,
   FM_RIGHT,
   FM_UP,
-  KEYMODE_OFF,
   KEYMODE_PENCIL,
   KEYMODE_PLACE,
   MOUSEMODE_PENCIL,
@@ -242,15 +241,14 @@ export function redraw(
   const ts = ds.tilesize;
   const { w, h, grid, marks, regions } = state;
 
-  // Upstream copies `kmode` into a local and forces it off while the win
-  // animation runs — the *displayed* cursor goes away, but `ui.kmode` still
-  // feeds the cell value (and so the cache key), so both are kept apart here
-  // exactly as in the C.
+  // The win animation hides the *displayed* cursor while leaving `ui.cursor`
+  // alone, because the cursor still feeds the cell value and so the cache key.
+  // Upstream keeps the two apart the same way, through a local copy.
   let flash = -1;
-  let kmode = ui.kmode;
+  let cursorShown = ui.cursor.visible;
   if (flashTime > 0) {
     flash = Math.floor(flashTime / FLASH_FRAME) % 3;
-    kmode = KEYMODE_OFF;
+    cursorShown = false;
   }
 
   if (!ds.started) {
@@ -280,7 +278,7 @@ export function redraw(
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i1 = y * w + x;
-      const onHighlight = ui.hx === x && ui.hy === y;
+      const onHighlight = ui.cursor.x === x && ui.cursor.y === y;
       let c = grid[i1];
       let p = marks[i1];
 
@@ -291,7 +289,7 @@ export function redraw(
         if (ui.mdir !== EMPTY) p ^= ui.mdir;
         else p |= FD_ENTRY;
       }
-      if (ui.kmode !== KEYMODE_OFF && onHighlight) {
+      if (ui.cursor.visible && onHighlight) {
         c |=
           ui.kmode === KEYMODE_PLACE
             ? FD_PLACE
@@ -325,8 +323,8 @@ export function redraw(
               : grid[i1] & FE_BOUNDS
                 ? COL_ERRORBG
                 : COL_BACKGROUND;
-        if (kmode !== KEYMODE_OFF && onHighlight) {
-          colour = kmode === KEYMODE_PLACE ? COL_HIGHLIGHT : COL_LOWLIGHT;
+        if (cursorShown && onHighlight) {
+          colour = ui.kmode === KEYMODE_PLACE ? COL_HIGHLIGHT : COL_LOWLIGHT;
         }
       } else {
         colour =
@@ -354,7 +352,7 @@ export function redraw(
       const midX = BORDER + x * ts + Math.floor(ts / 2);
       const midY = BORDER + y * ts + Math.floor(ts / 2);
 
-      if (kmode === KEYMODE_PENCIL && onHighlight) {
+      if (cursorShown && ui.kmode === KEYMODE_PENCIL && onHighlight) {
         dr.drawText(
           { x: midX, y: midY },
           {

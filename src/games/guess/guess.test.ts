@@ -170,7 +170,7 @@ describe("hint (compute_hint)", () => {
 describe("interpretMove keyboard", () => {
   it("number keys place a peg and advance the cursor", () => {
     const { state, ui } = freshGame();
-    ui.displayCur = true;
+    ui.cursor.visible = true;
     const r = guessGame.interpretMove(
       state,
       ui,
@@ -180,7 +180,7 @@ describe("interpretMove keyboard", () => {
     );
     expect(r).toBeTruthy();
     expect(ui.currPegs[0]).toBe(3);
-    expect(ui.pegCur).toBe(1);
+    expect(ui.cursor.x).toBe(1);
   });
 
   it("submit is offered only for a markable row", () => {
@@ -188,8 +188,8 @@ describe("interpretMove keyboard", () => {
     // Fill all pegs → markable; move cursor to submit position.
     for (let i = 0; i < state.params.npegs; i++) ui.currPegs[i] = 1;
     ui.markable = true;
-    ui.pegCur = state.params.npegs;
-    ui.displayCur = true;
+    ui.cursor.x = state.params.npegs;
+    ui.cursor.visible = true;
     const r = guessGame.interpretMove(
       state,
       ui,

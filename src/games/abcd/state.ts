@@ -1,3 +1,5 @@
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 /**
  * Types and pure state helpers for ABCD — the state/codec parts of
  * `unreleased/abcd.c` (Lennard Sprong, 2011).
@@ -413,12 +415,10 @@ export type AbcdMove =
 
 export interface AbcdUi {
   /** Cursor position. */
-  hx: number;
-  hy: number;
+  cursor: GridCursor;
   /** Cursor is in pencil-mark mode. */
   hpencil: boolean;
   /** Cursor is currently shown. */
-  hshow: boolean;
   /** Cursor came from the keyboard (so it survives an entry). */
   hcursor: boolean;
   /** Preference (default on, the fork's shared convention): right-click toggles
@@ -430,10 +430,8 @@ export interface AbcdUi {
 
 export function newUi(_state: AbcdState): AbcdUi {
   return {
-    hx: 0,
-    hy: 0,
+    cursor: newCursor(),
     hpencil: false,
-    hshow: false,
     hcursor: false,
     pencilSticky: true,
   };

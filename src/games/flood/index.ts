@@ -15,6 +15,7 @@ import {
   gridCursorMove,
   isCursorMove,
   LEFT_BUTTON,
+  newCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -100,7 +101,7 @@ export function executeMove(state: FloodState, move: FloodMove): FloodState {
 // --- UI / input -------------------------------------------------------
 
 function newUi(_state: FloodState): FloodUi {
-  return { cursorVisible: false, cx: FILLX, cy: FILLY };
+  return { cursor: newCursor(FILLX, FILLY) };
 }
 
 function interpretMove(
@@ -120,21 +121,21 @@ function interpretMove(
     const ts = ds.tilesize;
     tx = fromCoordE(p.x, ts, Math.floor(ts / 2));
     ty = fromCoordE(p.y, ts, Math.floor(ts / 2));
-    if (ui.cursorVisible) {
-      ui.cursorVisible = false;
+    if (ui.cursor.visible) {
+      ui.cursor.visible = false;
       uiUpdated = true;
     }
   } else if (isCursorMove(raw)) {
-    const moved = gridCursorMove(raw, ui.cx, ui.cy, w, h);
+    const moved = gridCursorMove(raw, ui.cursor.x, ui.cursor.y, w, h);
     if (moved) {
-      ui.cx = moved.x;
-      ui.cy = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
-    ui.cursorVisible = true;
+    ui.cursor.visible = true;
     return UI_UPDATE;
   } else if (raw === CURSOR_SELECT) {
-    tx = ui.cx;
-    ty = ui.cy;
+    tx = ui.cursor.x;
+    ty = ui.cursor.y;
   } else if (raw === CURSOR_SELECT2) {
     // Upstream advances the stored solver path here; we have none
     // (design D2), so this is a no-op.

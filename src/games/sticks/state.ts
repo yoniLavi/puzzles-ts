@@ -12,6 +12,7 @@
  */
 
 import type { PresetMenu } from "../../engine/game.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import { SYMM_MAX, SYMM_ROT2, SYMM_ROT4 } from "../../engine/symmetric-blacks.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -61,9 +62,7 @@ export type SticksDragType = "none" | "start" | "line" | "clear";
 
 export interface SticksUi {
   /** Keyboard cursor. */
-  cx: number;
-  cy: number;
-  cursor: boolean;
+  cursor: GridCursor;
   /** Bounding box of the pointer positions seen since the drag last
    * committed a cell — the axis test that decides the drag orientation. */
   minX: number;

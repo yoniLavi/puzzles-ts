@@ -11,6 +11,7 @@
  */
 
 import type { PresetMenu } from "../../engine/game.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import {
   SYMM_MAX,
   SYMM_REF4,
@@ -89,9 +90,7 @@ export interface LightupMove {
 }
 
 export interface LightupUi {
-  x: number;
-  y: number;
-  cursorShow: boolean;
+  cursor: GridCursor;
   /** Pref: draw the impossible-mark blob even on a lit square. */
   drawBlobsWhenLit: boolean;
 }

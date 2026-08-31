@@ -15,6 +15,7 @@ import {
   CURSOR_RIGHT,
   CURSOR_SELECT,
   LEFT_BUTTON,
+  newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
@@ -385,9 +386,9 @@ describe("crossing input", () => {
     const ui = newUi();
     const c = cellCentre(ox, oy);
     expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
-    expect(ui).toMatchObject({ cx: ox, cy: oy, cshow: true, cpencil: false });
+    expect(ui).toMatchObject({ cursor: newCursor(ox, oy, true), cpencil: false });
     expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
-    expect(ui.cshow).toBe(false);
+    expect(ui.cursor.visible).toBe(false);
   });
 
   it("never selects a wall", () => {
@@ -396,7 +397,7 @@ describe("crossing input", () => {
     const wall = state.puzzle.walls.indexOf(1);
     const c = cellCentre(wall % 5, Math.floor(wall / 5));
     expect(press(state, ui, LEFT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
-    expect(ui.cshow).toBe(false);
+    expect(ui.cursor.visible).toBe(false);
   });
 
   it("right-click toggles the sticky pencil mode (the fork default)", () => {
@@ -407,7 +408,7 @@ describe("crossing input", () => {
     const c = cellCentre(open % 5, Math.floor(open / 5));
 
     expect(press(state, ui, RIGHT_BUTTON, c.x, c.y)).toBe(UI_UPDATE);
-    expect(ui).toMatchObject({ cpencil: true, cshow: true });
+    expect(ui).toMatchObject({ cpencil: true, cursor: { visible: true } });
     // A left-click elsewhere keeps pencil mode on.
     const other = cellCentre(
       state.puzzle.walls.lastIndexOf(0) % 5,
@@ -427,16 +428,16 @@ describe("crossing input", () => {
     const open = state.puzzle.walls.indexOf(0);
     const c = cellCentre(open % 5, Math.floor(open / 5));
     press(state, ui, RIGHT_BUTTON, c.x, c.y);
-    expect(ui).toMatchObject({ cpencil: true, cshow: true });
+    expect(ui).toMatchObject({ cpencil: true, cursor: { visible: true } });
     press(state, ui, RIGHT_BUTTON, c.x, c.y);
-    expect(ui.cshow).toBe(false);
+    expect(ui.cursor.visible).toBe(false);
   });
 
   it("arrow keys move the cursor and Enter toggles ink/pencil", () => {
     const state = newState(P5, FIX.desc);
     const ui = newUi();
     expect(press(state, ui, CURSOR_RIGHT, 0, 0)).toBe(UI_UPDATE);
-    expect(ui).toMatchObject({ cx: 1, cy: 0, cshow: true, ckey: true });
+    expect(ui).toMatchObject({ cursor: newCursor(1, 0, true), ckey: true });
     expect(press(state, ui, CURSOR_SELECT, 0, 0)).toBe(UI_UPDATE);
     expect(ui.cpencil).toBe(true);
   });
@@ -463,9 +464,9 @@ describe("crossing input", () => {
       y: oy,
       digit: 5,
     });
-    ui.cx = ox;
-    ui.cy = oy;
-    ui.cshow = true;
+    ui.cursor.x = ox;
+    ui.cursor.y = oy;
+    ui.cursor.visible = true;
     expect(press(filled, ui, 0x35, 0, 0)).toBeNull();
     expect(press(state, ui, 8, 0, 0)).toBeNull();
   });
@@ -529,7 +530,7 @@ describe("crossing cursor auto-advance", () => {
     const { x, y, len } = acrossRun();
     const c = cellCentre(x, y);
     press(state, ui, LEFT_BUTTON, c.x, c.y);
-    expect(ui).toMatchObject({ cx: x, cy: y, dir: "across" });
+    expect(ui).toMatchObject({ cursor: { x: x, y: y }, dir: "across" });
 
     for (let k = 0; k < len - 1; k++) {
       expect(press(state, ui, 0x31 + k, 0, 0)).toMatchObject({
@@ -538,11 +539,11 @@ describe("crossing cursor auto-advance", () => {
       });
       // The selection advanced one cell and stayed visible, so the next digit
       // lands where the player can see it (upstream hid it after a mouse entry).
-      expect(ui).toMatchObject({ cx: x + k + 1, cy: y, cshow: true });
+      expect(ui).toMatchObject({ cursor: newCursor(x + k + 1, y, true) });
     }
     // At the end of the run it holds position rather than wrapping or leaving it.
     press(state, ui, 0x39, 0, 0);
-    expect(ui).toMatchObject({ cx: x + len - 1, cy: y });
+    expect(ui.cursor).toMatchObject({ x: x + len - 1, y: y });
   });
 
   it("does not advance on a clear, on a pencil mark, or with the pref off", () => {
@@ -558,18 +559,18 @@ describe("crossing cursor auto-advance", () => {
     const clearing = newUi();
     press(filled, clearing, LEFT_BUTTON, c.x, c.y);
     press(filled, clearing, 8, 0, 0); // Backspace
-    expect(clearing).toMatchObject({ cx: x, cy: y });
+    expect(clearing.cursor).toMatchObject({ x: x, y: y });
 
     const state = newState(P5, FIX.desc);
     const pencil = newUi();
     press(state, pencil, RIGHT_BUTTON, c.x, c.y);
     press(state, pencil, 0x33, 0, 0);
-    expect(pencil).toMatchObject({ cx: x, cy: y });
+    expect(pencil.cursor).toMatchObject({ x: x, y: y });
 
     const off = { ...newUi(), autoAdvance: false };
     press(state, off, LEFT_BUTTON, c.x, c.y);
     press(state, off, 0x31, 0, 0);
-    expect(off).toMatchObject({ cx: x, cy: y });
+    expect(off.cursor).toMatchObject({ x: x, y: y });
   });
 
   it("clicking the selected cell again flips across/down at a crossing", () => {
@@ -593,7 +594,7 @@ describe("crossing cursor auto-advance", () => {
     press(state, ui, LEFT_BUTTON, c.x, c.y);
     expect(ui.dir).not.toBe(first);
     // Toggling keeps the cell selected — it is a mode change, not a deselect.
-    expect(ui.cshow).toBe(true);
+    expect(ui.cursor.visible).toBe(true);
     press(state, ui, LEFT_BUTTON, c.x, c.y);
     expect(ui.dir).toBe(first);
   });
@@ -622,7 +623,7 @@ describe("crossing cursor auto-advance", () => {
     // Down is only kept where the cell can actually be filled downwards.
     expect(["down", "across"]).toContain(ui.dir);
     const puzzle = state.puzzle;
-    const i = ui.cy * 5 + ui.cx;
+    const i = ui.cursor.y * 5 + ui.cursor.x;
     if (puzzle.downRun[i] >= 0) expect(ui.dir).toBe("down");
   });
 });
@@ -717,7 +718,7 @@ describe("crossing number-list placement", () => {
     expect(move).toMatchObject({ kind: "place", number });
     expect(ui.heldNumber).toBeNull();
     // The cell stays selected, so typing carries on from where the clue landed.
-    expect(ui).toMatchObject({ cshow: true, cx: cells[0] % 5 });
+    expect(ui.cursor).toMatchObject({ visible: true, x: cells[0] % 5 });
   });
 
   it("will not place a clue already used in another run", () => {
@@ -853,9 +854,7 @@ describe("crossing number-list placement", () => {
     expect(cell).toBeGreaterThanOrEqual(0);
     const ui: CrossingUi = {
       ...newUi(),
-      cshow: true,
-      cx: cell % 5,
-      cy: Math.floor(cell / 5),
+      cursor: newCursor(cell % 5, Math.floor(cell / 5), true),
       dir: "across",
     };
     const activeLen = puzzle.runs[puzzle.acrossRun[cell]].cells.length;
@@ -897,9 +896,7 @@ describe("crossing number-list placement", () => {
     }
     const dr = paintWith(state, {
       ...newUi(),
-      cshow: true,
-      cx: cell % 5,
-      cy: Math.floor(cell / 5),
+      cursor: newCursor(cell % 5, Math.floor(cell / 5), true),
     });
 
     /** The rgb() string the renderer actually emitted for a palette index. */
@@ -936,9 +933,7 @@ describe("crossing number-list placement", () => {
     }
     const base: CrossingUi = {
       ...newUi(),
-      cshow: true,
-      cx: cell % 5,
-      cy: Math.floor(cell / 5),
+      cursor: newCursor(cell % 5, Math.floor(cell / 5), true),
     };
     const listColoured = (ui: CrossingUi): boolean =>
       paintWith(state, ui).ops.some(
@@ -1220,9 +1215,7 @@ describe("crossing rendering", () => {
 
     const selected = {
       ...newUi(),
-      cshow: true,
-      cx: open % 5,
-      cy: Math.floor(open / 5),
+      cursor: newCursor(open % 5, Math.floor(open / 5), true),
     };
     // Its own colour, NOT the bevel highlight: the highlight is mkhighlight's
     // near-white and the dark-mode pass inverts it, so the one square that should

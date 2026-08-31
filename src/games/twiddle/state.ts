@@ -1,4 +1,5 @@
 import { parseDimensions, parseLeadingInt } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 
 // --- types -----------------------------------------------------------
@@ -52,9 +53,7 @@ export type TwiddleMove =
 
 export interface TwiddleUi {
   /** Cursor position in the `(w-n+1) × (h-n+1)` rotation-origin space. */
-  curX: number;
-  curY: number;
-  curVisible: boolean;
+  cursor: GridCursor;
 }
 
 // --- params ----------------------------------------------------------

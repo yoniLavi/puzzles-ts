@@ -42,6 +42,7 @@ import {
   MIDDLE_BUTTON,
   MOD_CTRL,
   MOD_SHFT,
+  newCursor,
   RIGHT_BUTTON,
   RIGHT_RELEASE,
   stripModifiers,
@@ -95,9 +96,7 @@ import {
 
 function newUi(_state: SticksState): SticksUi {
   return {
-    cx: 0,
-    cy: 0,
-    cursor: false,
+    cursor: newCursor(),
     minX: 0,
     minY: 0,
     maxX: 0,
@@ -132,18 +131,18 @@ function interpretMove(
   const fromC = (v: number): number => Math.trunc((v - b) / ts);
   const dragDelta = ts * 0.4;
 
-  if (isMouseDown(button) || isMouseDrag(button)) ui.cursor = false;
+  if (isMouseDown(button) || isMouseDrag(button)) ui.cursor.visible = false;
 
   // --- keyboard cursor movement (draws across two cells with Shift/Ctrl) ---
   if (isCursorMove(button)) {
-    const ox = ui.cx;
-    const oy = ui.cy;
-    const moved = gridCursorMove(button, ui.cx, ui.cy, w, h);
+    const ox = ui.cursor.x;
+    const oy = ui.cursor.y;
+    const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, w, h);
     if (moved) {
-      ui.cx = moved.x;
-      ui.cy = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
-    ui.cursor = true;
+    ui.cursor.visible = true;
 
     if (shift || control) {
       const horizontalArrow = button === CURSOR_LEFT || button === CURSOR_RIGHT;
@@ -158,7 +157,7 @@ function interpretMove(
               ? "ver"
               : "hor";
       const i1 = oy * w + ox;
-      const i2 = ui.cy * w + ui.cx;
+      const i2 = ui.cursor.y * w + ui.cursor.x;
       const inert = (i: number): boolean =>
         !!(grid[i] & F_BLOCK) ||
         (line === "hor" && !!(grid[i] & F_HOR)) ||
@@ -293,7 +292,7 @@ function interpretMove(
 
   // --- keyboard place-one at the cursor ------------------------------------
   if (
-    ui.cursor &&
+    ui.cursor.visible &&
     (button === CURSOR_SELECT ||
       button === CURSOR_SELECT2 ||
       isEraseKey(button) ||
@@ -301,7 +300,7 @@ function interpretMove(
       button === 49 /* '1' */ ||
       button === 50) /* '2' */
   ) {
-    const i = ui.cy * w + ui.cx;
+    const i = ui.cursor.y * w + ui.cursor.x;
     if (grid[i] & F_BLOCK) return null;
     const old = grid[i];
     let line: SticksLine = "none";

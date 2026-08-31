@@ -24,6 +24,8 @@
 import type { NoteEncoding } from "../../engine/candidate-hint.ts";
 import { type RowColRegion, rowColRegions } from "../../engine/latin-hint.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 
 // --- difficulty ------------------------------------------------------------
 
@@ -314,10 +316,8 @@ export function needsPencilFill(b: {
 // --- ui --------------------------------------------------------------------
 
 export interface SaladUi {
-  hx: number;
-  hy: number;
+  cursor: GridCursor;
   hpencil: boolean;
-  hshow: boolean;
   hcursor: boolean;
   /** Preference (default on, fork divergence): right-click toggles a *sticky*
    * pencil mode — once on, left-clicks keep entering pencil marks until
@@ -328,10 +328,8 @@ export interface SaladUi {
 
 export function newUi(_state: SaladState): SaladUi {
   return {
-    hx: 0,
-    hy: 0,
+    cursor: newCursor(),
     hpencil: false,
-    hshow: false,
     hcursor: false,
     pencilSticky: true,
   };

@@ -14,6 +14,8 @@
 
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseLeadingInt } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 import type { MapData } from "./map-data.ts";
 
 // --- difficulty ------------------------------------------------------
@@ -155,10 +157,8 @@ export interface MapUi {
   dragx: number;
   dragy: number;
 
-  curX: number;
-  curY: number;
+  cursor: GridCursor;
   curLastmove: number;
-  curVisible: boolean;
   curMoved: boolean;
 
   // preferences (design D7)
@@ -174,10 +174,8 @@ export function newUi(_state: MapState): MapUi {
     dragPencil: 0,
     dragx: -1,
     dragy: -1,
-    curX: 0,
-    curY: 0,
+    cursor: newCursor(),
     curLastmove: 0,
-    curVisible: false,
     curMoved: false,
     flashType: FLASH_CYCLIC,
     showNumbers: false,

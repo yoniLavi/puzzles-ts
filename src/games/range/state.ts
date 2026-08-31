@@ -12,6 +12,7 @@
 
 import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- cell sentinels --------------------------------------------------------
@@ -52,9 +53,10 @@ export interface RangeMove {
 
 export interface RangeUi {
   /** Cursor position. */
-  r: number;
-  c: number;
-  cursorShow: boolean;
+  /** Range speaks `(r, c)` everywhere else — its grid is row-major and its
+   * `idx`/`outOfBounds` take the row first. The cursor is the collection's
+   * `(x, y)`, so `cursor.x` is this game's `c` and `cursor.y` its `r`. */
+  cursor: GridCursor;
 }
 
 export function cellValueToGrid(v: RangeCellValue): number {

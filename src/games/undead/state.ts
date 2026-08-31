@@ -1,3 +1,5 @@
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 /**
  * Types and pure state helpers for Undead ("Haunted Mirror Mazes") — the
  * state/codec parts of `undead.c`.
@@ -461,9 +463,7 @@ export const COUNT_STYLE_REMAINING_TOTAL = 3;
 export const N_COUNT_STYLE = 4;
 
 export interface UndeadUi {
-  hx: number;
-  hy: number;
-  hshow: boolean;
+  cursor: GridCursor;
   hpencil: boolean;
   hcursor: boolean;
   /** Preference (`monsters`): false → pictures, true → letters. Also toggled by
@@ -481,9 +481,7 @@ export interface UndeadUi {
 
 export function newUi(_state: UndeadState): UndeadUi {
   return {
-    hx: 0,
-    hy: 0,
-    hshow: false,
+    cursor: newCursor(),
     hpencil: false,
     hcursor: false,
     ascii: false,

@@ -52,15 +52,12 @@ import {
   stickyPencilPref,
 } from "../../engine/pencil-prefs.ts";
 import {
-  CURSOR_DOWN,
-  CURSOR_LEFT,
-  CURSOR_RIGHT,
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  CURSOR_UP,
   isCursorMove,
   isEraseKey,
   LEFT_BUTTON,
+  moveCursor,
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
@@ -179,22 +176,6 @@ function inGrid(cr: number, x: number, y: number): boolean {
   return x >= 0 && x < cr && y >= 0 && y < cr;
 }
 
-/** Move the keyboard cursor (clamped); reveal it on first press. Mirrors
- * `move_cursor`: the position moves even on the reveal press. */
-function moveCursor(button: number, ui: SoloUi, cr: number): UiUpdate | null {
-  const ox = ui.hx;
-  const oy = ui.hy;
-  if (button === CURSOR_UP) ui.hy = Math.max(ui.hy - 1, 0);
-  else if (button === CURSOR_DOWN) ui.hy = Math.min(ui.hy + 1, cr - 1);
-  else if (button === CURSOR_LEFT) ui.hx = Math.max(ui.hx - 1, 0);
-  else if (button === CURSOR_RIGHT) ui.hx = Math.min(ui.hx + 1, cr - 1);
-  if (!ui.hshow) {
-    ui.hshow = true;
-    return UI_UPDATE;
-  }
-  return ui.hx !== ox || ui.hy !== oy ? UI_UPDATE : null;
-}
-
 function interpretMove(
   state: SoloState,
   ui: SoloUi,
@@ -216,18 +197,18 @@ function interpretMove(
       // (upstream) reverts to real entry. A click on a given cell hides the
       // highlight (can't be edited).
       if (state.immutable[ty * cr + tx]) {
-        ui.hshow = false;
+        ui.cursor.visible = false;
       } else if (
-        tx === ui.hx &&
-        ty === ui.hy &&
-        ui.hshow &&
+        tx === ui.cursor.x &&
+        ty === ui.cursor.y &&
+        ui.cursor.visible &&
         (ui.pencilSticky || !ui.hpencil)
       ) {
-        ui.hshow = false;
+        ui.cursor.visible = false;
       } else {
-        ui.hx = tx;
-        ui.hy = ty;
-        ui.hshow = true;
+        ui.cursor.x = tx;
+        ui.cursor.y = ty;
+        ui.cursor.visible = true;
         if (!ui.pencilSticky) ui.hpencil = false;
       }
       ui.hcursor = false;
@@ -239,21 +220,26 @@ function interpretMove(
         // highlight onto an empty cell — a filled/given cell can't take a mark.
         ui.hpencil = !ui.hpencil;
         if (state.grid[ty * cr + tx] === 0) {
-          ui.hx = tx;
-          ui.hy = ty;
-          ui.hshow = true;
+          ui.cursor.x = tx;
+          ui.cursor.y = ty;
+          ui.cursor.visible = true;
         }
       } else if (state.grid[ty * cr + tx] === 0) {
-        if (tx === ui.hx && ty === ui.hy && ui.hshow && ui.hpencil) {
-          ui.hshow = false;
+        if (
+          tx === ui.cursor.x &&
+          ty === ui.cursor.y &&
+          ui.cursor.visible &&
+          ui.hpencil
+        ) {
+          ui.cursor.visible = false;
         } else {
           ui.hpencil = true;
-          ui.hx = tx;
-          ui.hy = ty;
-          ui.hshow = true;
+          ui.cursor.x = tx;
+          ui.cursor.y = ty;
+          ui.cursor.visible = true;
         }
       } else {
-        ui.hshow = false;
+        ui.cursor.visible = false;
       }
       ui.hcursor = false;
       return UI_UPDATE;
@@ -262,10 +248,10 @@ function interpretMove(
 
   if (isCursorMove(button)) {
     ui.hcursor = true;
-    return moveCursor(button, ui, cr);
+    return moveCursor(ui.cursor, button, cr, cr) ? UI_UPDATE : null;
   }
 
-  if (ui.hshow && button === CURSOR_SELECT) {
+  if (ui.cursor.visible && button === CURSOR_SELECT) {
     ui.hpencil = !ui.hpencil;
     ui.hcursor = true;
     return UI_UPDATE;
@@ -279,8 +265,8 @@ function interpretMove(
   else if (button >= 65 && button <= 90 && button - 65 + 10 <= cr) n = button - 65 + 10;
   else if (button === CURSOR_SELECT2 || isEraseKey(button)) n = 0;
 
-  if (ui.hshow && n >= 0) {
-    const i = ui.hy * cr + ui.hx;
+  if (ui.cursor.visible && n >= 0) {
+    const i = ui.cursor.y * cr + ui.cursor.x;
 
     // Can't overwrite a given (reachable only via the cursor).
     if (state.immutable[i]) return null;
@@ -291,17 +277,25 @@ function interpretMove(
     // cell) with no pencil marks to wipe.
     if ((!ui.hpencil || n === 0) && state.grid[i] === n && state.pencil[i] === 0) {
       if (!ui.hcursor) {
-        ui.hshow = false;
+        ui.cursor.visible = false;
         return UI_UPDATE;
       }
       return null;
     }
 
     const pencil = ui.hpencil && n > 0;
-    if (!ui.hcursor && !(ui.hpencil && ui.pencilKeepHighlight)) ui.hshow = false;
+    if (!ui.hcursor && !(ui.hpencil && ui.pencilKeepHighlight))
+      ui.cursor.visible = false;
     return pencil
-      ? { type: "set", x: ui.hx, y: ui.hy, n, pencil }
-      : { type: "set", x: ui.hx, y: ui.hy, n, pencil, autoElim: ui.autoPencil };
+      ? { type: "set", x: ui.cursor.x, y: ui.cursor.y, n, pencil }
+      : {
+          type: "set",
+          x: ui.cursor.x,
+          y: ui.cursor.y,
+          n,
+          pencil,
+          autoElim: ui.autoPencil,
+        };
   }
 
   // 'M' / 'm': fill all pencil marks, then (on a fully-noted board) clean the

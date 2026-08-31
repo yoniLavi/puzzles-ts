@@ -628,8 +628,8 @@ export function redraw(
   // The cursor and hint arrows: repaint the ones that were lit and the ones that
   // now are. The arrows sit in the gutter, which no tile repaint reaches, so
   // this is their whole cache.
-  const curX = ui.curVisible ? ui.curX : -1;
-  const curY = ui.curVisible ? ui.curY : -1;
+  const curX = ui.cursor.visible ? ui.cursor.x : -1;
+  const curY = ui.cursor.visible ? ui.cursor.y : -1;
   if (
     curX !== ds.curX ||
     curY !== ds.curY ||

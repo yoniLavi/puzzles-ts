@@ -182,17 +182,22 @@ function interpretMove(
       const cx = state.sequence[tx];
       const cy = state.sequence[ty];
       if (button === LEFT_BUTTON) {
-        if (cx === ui.hx && cy === ui.hy && ui.hshow && !ui.hpencil) {
-          ui.hshow = false;
+        if (
+          cx === ui.cursor.x &&
+          cy === ui.cursor.y &&
+          ui.cursor.visible &&
+          !ui.hpencil
+        ) {
+          ui.cursor.visible = false;
         } else {
-          ui.hx = cx;
-          ui.hy = cy;
+          ui.cursor.x = cx;
+          ui.cursor.y = cy;
           ui.ohx = otx;
           ui.ohy = oty;
           ui.odx = 0;
           ui.ody = 0;
           ui.odn = 1;
-          ui.hshow = !state.immutable[cy * w + cx];
+          ui.cursor.visible = !state.immutable[cy * w + cx];
           ui.hpencil = false;
         }
         ui.hcursor = false;
@@ -201,21 +206,26 @@ function interpretMove(
       if (button === RIGHT_BUTTON) {
         // Pencil-mode highlighting for non-filled squares only.
         if (state.grid[cy * w + cx] === 0) {
-          if (cx === ui.hx && cy === ui.hy && ui.hshow && ui.hpencil) {
-            ui.hshow = false;
+          if (
+            cx === ui.cursor.x &&
+            cy === ui.cursor.y &&
+            ui.cursor.visible &&
+            ui.hpencil
+          ) {
+            ui.cursor.visible = false;
           } else {
             ui.hpencil = true;
-            ui.hx = cx;
-            ui.hy = cy;
+            ui.cursor.x = cx;
+            ui.cursor.y = cy;
             ui.ohx = otx;
             ui.ohy = oty;
             ui.odx = 0;
             ui.ody = 0;
             ui.odn = 1;
-            ui.hshow = true;
+            ui.cursor.visible = true;
           }
         } else {
-          ui.hshow = false;
+          ui.cursor.visible = false;
         }
         ui.hcursor = false;
         return UI_UPDATE;
@@ -258,8 +268,8 @@ function interpretMove(
 
   if (isCursorMove(button)) {
     // The cursor moves in display space; hx/hy track the element there.
-    let cx = state.sequence.indexOf(ui.hx);
-    let cy = state.sequence.indexOf(ui.hy);
+    let cx = state.sequence.indexOf(ui.cursor.x);
+    let cy = state.sequence.indexOf(ui.cursor.y);
     if (cx < 0) cx = 0;
     if (cy < 0) cy = 0;
     const moved = gridCursorMove(button, cx, cy, w, w, false);
@@ -267,9 +277,9 @@ function interpretMove(
       cx = moved.x;
       cy = moved.y;
     }
-    ui.hx = state.sequence[cx];
-    ui.hy = state.sequence[cy];
-    ui.hshow = true;
+    ui.cursor.x = state.sequence[cx];
+    ui.cursor.y = state.sequence[cy];
+    ui.cursor.visible = true;
     ui.hcursor = true;
     ui.ohx = cx;
     ui.ohy = cy;
@@ -279,7 +289,7 @@ function interpretMove(
     return UI_UPDATE;
   }
 
-  if (ui.hshow && button === CURSOR_SELECT) {
+  if (ui.cursor.visible && button === CURSOR_SELECT) {
     ui.hpencil = !ui.hpencil;
     ui.hcursor = true;
     return UI_UPDATE;
@@ -296,7 +306,7 @@ function interpretMove(
     );
 
   if (
-    ui.hshow &&
+    ui.cursor.visible &&
     ((isChar(button) && fromChar(button, state.id) <= w) ||
       button === CURSOR_SELECT2 ||
       isEraseKey(button))
@@ -321,7 +331,8 @@ function interpretMove(
     const type = ui.hpencil && n > 0 ? "pencil" : "set";
     // Hide a mouse-generated highlight after a keypress, unless a pencil change
     // and the keep-highlight preference is set.
-    if (!ui.hcursor && !(ui.hpencil && ui.pencilKeepHighlight)) ui.hshow = false;
+    if (!ui.hcursor && !(ui.hpencil && ui.pencilKeepHighlight))
+      ui.cursor.visible = false;
     return { type, cells, n };
   }
 
@@ -422,11 +433,16 @@ function changedState(
   const w = newState.w;
 
   // Cancel a pencil highlight on a square that just became filled.
-  if (ui.hshow && ui.hpencil && !ui.hcursor && newState.grid[ui.hy * w + ui.hx] !== 0) {
-    ui.hshow = false;
+  if (
+    ui.cursor.visible &&
+    ui.hpencil &&
+    !ui.hcursor &&
+    newState.grid[ui.cursor.y * w + ui.cursor.x] !== 0
+  ) {
+    ui.cursor.visible = false;
   }
 
-  if (ui.hshow && ui.odn > 1 && oldState) {
+  if (ui.cursor.visible && ui.odn > 1 && oldState) {
     // Reordering within a multifill selection cancels it entirely.
     for (let i = 0; i < ui.odn; i++) {
       if (
@@ -435,18 +451,19 @@ function changedState(
         oldState.sequence[ui.ohy + i * ui.ody] !==
           newState.sequence[ui.ohy + i * ui.ody]
       ) {
-        ui.hshow = false;
+        ui.cursor.visible = false;
         break;
       }
     }
   } else if (
-    ui.hshow &&
-    (newState.sequence[ui.ohx] !== ui.hx || newState.sequence[ui.ohy] !== ui.hy)
+    ui.cursor.visible &&
+    (newState.sequence[ui.ohx] !== ui.cursor.x ||
+      newState.sequence[ui.ohy] !== ui.cursor.y)
   ) {
     // Reordering the row/column of the selection moves the selection with it.
     for (let i = 0; i < w; i++) {
-      if (newState.sequence[i] === ui.hx) ui.ohx = i;
-      if (newState.sequence[i] === ui.hy) ui.ohy = i;
+      if (newState.sequence[i] === ui.cursor.x) ui.ohx = i;
+      if (newState.sequence[i] === ui.cursor.y) ui.ohy = i;
     }
   }
 }

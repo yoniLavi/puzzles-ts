@@ -15,6 +15,7 @@
  */
 
 import type { PresetMenu } from "../../engine/game.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- difficulty --------------------------------------------------------------
@@ -112,9 +113,7 @@ export type SubsetsMove =
 export interface SubsetsUi {
   /** Keyboard cursor in virtual slot coordinates over the
    * `w·(cw+1)-1 × h·(ch+1)-1` grid (gap rows/columns are skipped). */
-  cx: number;
-  cy: number;
-  cshow: boolean;
+  cursor: GridCursor;
   /** Reference-aid spotlight: a set-value clicked in the tally band, whose
    * still-legal placements light up on the grid (`null` = none). Player aid,
    * never persisted. Mutually exclusive with {@link highlightCell}. */

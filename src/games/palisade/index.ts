@@ -28,7 +28,7 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
-import { stripModifiers } from "../../engine/pointer.ts";
+import { newCursor, stripModifiers } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { Colour, ConfigValues, Point, Size } from "../../engine/types.ts";
 import {
@@ -68,7 +68,7 @@ import {
 // Edge states for the click toggle cycle.
 
 function newUi(_state: PalisadeState): PalisadeUi {
-  return { x: 1, y: 1, show: false };
+  return { cursor: newCursor(1, 1) };
 }
 
 function paramsOf(state: PalisadeState): PalisadeParams {

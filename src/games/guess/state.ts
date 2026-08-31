@@ -8,6 +8,7 @@
  */
 
 import { bin2hex, hex2bin, obfuscateBitmap } from "../../engine/obfuscate.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomUpto } from "../../engine/random/index.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
@@ -65,12 +66,11 @@ export interface GuessUi {
   currPegs: number[];
   /** Live holds, length `npegs`. */
   holds: boolean[];
-  /** Up-down colour-picker cursor, `0..ncolours-1`. */
-  colourCur: number;
-  /** Left-right peg-picker cursor, `0..npegs` (`npegs` = the submit
-   * position). */
-  pegCur: number;
-  displayCur: boolean;
+  /** The picker cursor: `x` is the left-right peg position, `0..npegs`
+   * (`npegs` = the submit button); `y` is the up-down colour, `0..ncolours-1`.
+   * It runs over the picker rather than a board, but it is the same cursor the
+   * rest of the collection has, so it is the same shape. */
+  cursor: GridCursor;
   markable: boolean;
   /** `0` = not dragging, else a colour `1..ncolours`. */
   dragCol: number;

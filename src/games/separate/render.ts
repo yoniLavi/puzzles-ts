@@ -292,10 +292,10 @@ export function redraw(
 
       if (validRoot.get(blackDsf.canonify(i))) flags |= F_CORRECT;
 
-      if (ui.show) {
+      if (ui.cursor.visible) {
         for (let u = 0; u < 3; u++) {
           for (let v = 0; v < 3; v++) {
-            if (ui.x === 2 * c + u && ui.y === 2 * r + v)
+            if (ui.cursor.x === 2 * c + u && ui.cursor.y === 2 * r + v)
               flags |= CONTAINS_CURSOR(1 << (3 * u + v));
           }
         }
@@ -326,5 +326,5 @@ export function redraw(
     }
   }
 
-  if (ui.show) drawCursor(dr, ts, ui.x, ui.y);
+  if (ui.cursor.visible) drawCursor(dr, ts, ui.cursor.x, ui.cursor.y);
 }

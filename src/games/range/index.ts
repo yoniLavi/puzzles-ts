@@ -29,6 +29,7 @@ import {
   isMouseDown,
   LEFT_BUTTON,
   MOD_SHFT,
+  newCursor,
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
@@ -82,7 +83,7 @@ export interface RangeMistake {
 }
 
 function newUi(_state: RangeState): RangeUi {
-  return { r: 0, c: 0, cursorShow: false };
+  return { cursor: newCursor() };
 }
 
 /** The mark a cell becomes under a forward (right) or backward (left)
@@ -112,12 +113,12 @@ function interpretMove(
   const shift = !!(rawButton & MOD_SHFT);
   const button = stripModifiers(rawButton);
 
-  if ((button === CURSOR_SELECT || button === CURSOR_SELECT2) && !ui.cursorShow) {
+  if ((button === CURSOR_SELECT || button === CURSOR_SELECT2) && !ui.cursor.visible) {
     return null;
   }
 
-  let r = ui.r;
-  let c = ui.c;
+  let r = ui.cursor.y;
+  let c = ui.cursor.x;
 
   if (isMouseDown(button)) {
     const ts = ds.tilesize;
@@ -126,9 +127,9 @@ function interpretMove(
     r = fromCoord(p.y + ts) - 1;
     c = fromCoord(p.x + ts) - 1;
     if (outOfBounds(r, c, w, h)) return null;
-    ui.r = r;
-    ui.c = c;
-    ui.cursorShow = false;
+    ui.cursor.y = r;
+    ui.cursor.x = c;
+    ui.cursor.visible = false;
   }
 
   let forwards: boolean | null = null;
@@ -137,30 +138,30 @@ function interpretMove(
 
   const delta = cursorDelta(button);
   if (delta) {
-    if (!ui.cursorShow) {
-      ui.cursorShow = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
     const dr = delta.dy;
     const dc = delta.dx;
     if (shift) {
-      const preR = ui.r;
-      const preC = ui.c;
+      const preR = ui.cursor.y;
+      const preC = ui.cursor.x;
       const doPre = grid[idx(preR, preC, w)] === EMPTY;
-      if (outOfBounds(ui.r + dr, ui.c + dc, w, h)) {
+      if (outOfBounds(ui.cursor.y + dr, ui.cursor.x + dc, w, h)) {
         return doPre ? { sets: [{ r: preR, c: preC, value: "white" }] } : null;
       }
-      ui.r += dr;
-      ui.c += dc;
-      const doPost = grid[idx(ui.r, ui.c, w)] === EMPTY;
+      ui.cursor.y += dr;
+      ui.cursor.x += dc;
+      const doPost = grid[idx(ui.cursor.y, ui.cursor.x, w)] === EMPTY;
       const sets: RangeMove["sets"] = [];
       if (doPre) sets.push({ r: preR, c: preC, value: "white" });
-      if (doPost) sets.push({ r: ui.r, c: ui.c, value: "white" });
+      if (doPost) sets.push({ r: ui.cursor.y, c: ui.cursor.x, value: "white" });
       return sets.length > 0 ? { sets } : UI_UPDATE;
     }
-    if (!outOfBounds(ui.r + dr, ui.c + dc, w, h)) {
-      ui.r += dr;
-      ui.c += dc;
+    if (!outOfBounds(ui.cursor.y + dr, ui.cursor.x + dc, w, h)) {
+      ui.cursor.y += dr;
+      ui.cursor.x += dc;
     }
     return UI_UPDATE;
   }

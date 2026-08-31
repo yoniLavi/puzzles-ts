@@ -63,6 +63,7 @@ import {
   LEFT_BUTTON,
   MOD_CTRL,
   MOD_SHFT,
+  moveCursor,
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
@@ -159,21 +160,6 @@ function inGrid(o: number, x: number, y: number): boolean {
   return x >= 0 && x < o && y >= 0 && y < o;
 }
 
-/** Move the keyboard cursor (clamped); reveal it on first press. */
-function moveCursor(button: number, ui: UnequalUi, o: number): UiUpdate | null {
-  const ox = ui.hx;
-  const oy = ui.hy;
-  if (button === CURSOR_UP) ui.hy = Math.max(ui.hy - 1, 0);
-  else if (button === CURSOR_DOWN) ui.hy = Math.min(ui.hy + 1, o - 1);
-  else if (button === CURSOR_LEFT) ui.hx = Math.max(ui.hx - 1, 0);
-  else if (button === CURSOR_RIGHT) ui.hx = Math.min(ui.hx + 1, o - 1);
-  if (!ui.hshow) {
-    ui.hshow = true;
-    return UI_UPDATE;
-  }
-  return ui.hx !== ox || ui.hy !== oy ? UI_UPDATE : null;
-}
-
 function interpretMove(
   state: UnequalState,
   ui: UnequalUi,
@@ -213,16 +199,16 @@ function interpretMove(
       // Sticky pencil: a left-click keeps the current mode (only moves the
       // highlight); non-sticky reverts to real entry (upstream).
       if (
-        tx === ui.hx &&
-        ty === ui.hy &&
-        ui.hshow &&
+        tx === ui.cursor.x &&
+        ty === ui.cursor.y &&
+        ui.cursor.visible &&
         (ui.pencilSticky || !ui.hpencil)
       ) {
-        ui.hshow = false;
+        ui.cursor.visible = false;
       } else {
-        ui.hx = tx;
-        ui.hy = ty;
-        ui.hshow = !state.immutable[ty * o + tx];
+        ui.cursor.x = tx;
+        ui.cursor.y = ty;
+        ui.cursor.visible = !state.immutable[ty * o + tx];
         if (!ui.pencilSticky) ui.hpencil = false;
       }
       ui.hcursor = false;
@@ -232,20 +218,21 @@ function interpretMove(
     if (ui.pencilSticky) {
       ui.hpencil = !ui.hpencil;
       if (state.grid[ty * o + tx] === 0) {
-        ui.hx = tx;
-        ui.hy = ty;
-        ui.hshow = true;
+        ui.cursor.x = tx;
+        ui.cursor.y = ty;
+        ui.cursor.visible = true;
       }
     } else if (state.grid[ty * o + tx] === 0) {
-      if (tx === ui.hx && ty === ui.hy && ui.hshow && ui.hpencil) ui.hshow = false;
+      if (tx === ui.cursor.x && ty === ui.cursor.y && ui.cursor.visible && ui.hpencil)
+        ui.cursor.visible = false;
       else {
         ui.hpencil = true;
-        ui.hx = tx;
-        ui.hy = ty;
-        ui.hshow = true;
+        ui.cursor.x = tx;
+        ui.cursor.y = ty;
+        ui.cursor.visible = true;
       }
     } else {
-      ui.hshow = false;
+      ui.cursor.visible = false;
     }
     ui.hcursor = false;
     return UI_UPDATE;
@@ -255,22 +242,23 @@ function interpretMove(
     if (shiftOrCtrl) {
       // Toggle the spent state of the clue between the cursor cell and the cell
       // the arrow points to.
-      let nx = ui.hx;
-      let ny = ui.hy;
+      let nx = ui.cursor.x;
+      let ny = ui.cursor.y;
       if (button === CURSOR_LEFT) nx = Math.max(nx - 1, 0);
       else if (button === CURSOR_RIGHT) nx = Math.min(nx + 1, o - 1);
       else if (button === CURSOR_UP) ny = Math.max(ny - 1, 0);
       else if (button === CURSOR_DOWN) ny = Math.min(ny + 1, o - 1);
-      ui.hshow = true;
+      ui.cursor.visible = true;
       ui.hcursor = true;
 
       let i = 0;
       for (; i < 4; i++) {
-        if (nx === ui.hx + ADJTHAN[i].dx && ny === ui.hy + ADJTHAN[i].dy) break;
+        if (nx === ui.cursor.x + ADJTHAN[i].dx && ny === ui.cursor.y + ADJTHAN[i].dy)
+          break;
       }
       if (i === 4) return UI_UPDATE; // not a single step in a clue direction
 
-      const here = state.clueFlags[ui.hy * o + ui.hx];
+      const here = state.clueFlags[ui.cursor.y * o + ui.cursor.x];
       const there = state.clueFlags[ny * o + nx];
       if (!(here & ADJTHAN[i].f || there & ADJTHAN[i].fo)) return UI_UPDATE; // no clue
 
@@ -279,14 +267,19 @@ function interpretMove(
           ? ADJTHAN[i].dx >= 0 && ADJTHAN[i].dy >= 0
           : (here & ADJTHAN[i].f) !== 0;
       return self
-        ? { type: "spent", x: ui.hx, y: ui.hy, flag: adjToSpent(ADJTHAN[i].f) }
+        ? {
+            type: "spent",
+            x: ui.cursor.x,
+            y: ui.cursor.y,
+            flag: adjToSpent(ADJTHAN[i].f),
+          }
         : { type: "spent", x: nx, y: ny, flag: adjToSpent(ADJTHAN[i].fo) };
     }
     ui.hcursor = true;
-    return moveCursor(button, ui, o);
+    return moveCursor(ui.cursor, button, o, o) ? UI_UPDATE : null;
   }
 
-  if (ui.hshow && button === CURSOR_SELECT) {
+  if (ui.cursor.visible && button === CURSOR_SELECT) {
     ui.hpencil = !ui.hpencil;
     ui.hcursor = true;
     return UI_UPDATE;
@@ -300,25 +293,33 @@ function interpretMove(
     );
 
   const n = c2n(button, o);
-  if (ui.hshow && n >= 0 && n <= o) {
-    const i = ui.hy * o + ui.hx;
+  if (ui.cursor.visible && n >= 0 && n <= o) {
+    const i = ui.cursor.y * o + ui.cursor.x;
     if (state.immutable[i]) return null; // can't edit a given
     if (ui.hpencil && state.grid[i] > 0) return null; // can't pencil a filled cell
 
     // No-op: setting a cell to what it already holds (and no pencil marks).
     if ((!ui.hpencil || n === 0) && state.grid[i] === n && state.pencil[i] === 0) {
       if (!ui.hcursor) {
-        ui.hshow = false;
+        ui.cursor.visible = false;
         return UI_UPDATE;
       }
       return null;
     }
 
     const pencil = ui.hpencil && n > 0;
-    if (!ui.hcursor && !(ui.hpencil && ui.pencilKeepHighlight)) ui.hshow = false;
+    if (!ui.hcursor && !(ui.hpencil && ui.pencilKeepHighlight))
+      ui.cursor.visible = false;
     return pencil
-      ? { type: "set", x: ui.hx, y: ui.hy, n, pencil }
-      : { type: "set", x: ui.hx, y: ui.hy, n, pencil, autoElim: ui.autoPencil };
+      ? { type: "set", x: ui.cursor.x, y: ui.cursor.y, n, pencil }
+      : {
+          type: "set",
+          x: ui.cursor.x,
+          y: ui.cursor.y,
+          n,
+          pencil,
+          autoElim: ui.autoPencil,
+        };
   }
 
   return null;
@@ -388,8 +389,13 @@ function changedState(
   newSt: UnequalState,
 ): void {
   const o = newSt.order;
-  if (ui.hshow && ui.hpencil && !ui.hcursor && newSt.grid[ui.hy * o + ui.hx] !== 0) {
-    ui.hshow = false;
+  if (
+    ui.cursor.visible &&
+    ui.hpencil &&
+    !ui.hcursor &&
+    newSt.grid[ui.cursor.y * o + ui.cursor.x] !== 0
+  ) {
+    ui.cursor.visible = false;
   }
 }
 

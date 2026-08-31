@@ -10,6 +10,7 @@ import {
   LEFT_BUTTON,
   LEFT_DRAG,
   LEFT_RELEASE,
+  newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { mosaicGame } from "./index.ts";
@@ -38,7 +39,7 @@ const ALL_BLACK_DESC = "464696464";
 const P3 = { width: 3, height: 3, aggressive: true };
 
 function freshUi(): MosaicUi {
-  return { lastX: -1, lastY: -1, lastState: 0, curX: 0, curY: 0, cursorVisible: false };
+  return { lastX: -1, lastY: -1, lastState: 0, cursor: newCursor() };
 }
 
 describe("Mosaic params", () => {
@@ -334,8 +335,8 @@ describe("Mosaic input mapping", () => {
     expect(mosaicGame.interpretMove(s, ui, ds, { x: 0, y: 0 }, CURSOR_RIGHT)).toBe(
       UI_UPDATE,
     );
-    expect(ui.curX).toBe(1);
-    expect(ui.cursorVisible).toBe(true);
+    expect(ui.cursor.x).toBe(1);
+    expect(ui.cursor.visible).toBe(true);
     expect(mosaicGame.interpretMove(s, ui, ds, { x: 0, y: 0 }, CURSOR_SELECT)).toEqual({
       type: "toggle",
       x: 1,
@@ -357,7 +358,7 @@ describe("Mosaic input mapping", () => {
     expect(mosaicGame.interpretMove(s, ui, ds, { x: 0, y: 0 }, CURSOR_SELECT)).toBe(
       UI_UPDATE,
     );
-    expect(ui.cursorVisible).toBe(true);
+    expect(ui.cursor.visible).toBe(true);
   });
 
   it("freezes everything but cursor movement after completion", () => {

@@ -13,6 +13,7 @@ import {
   CURSOR_RIGHT,
   CURSOR_SELECT,
   LEFT_BUTTON,
+  newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
@@ -503,11 +504,11 @@ describe("mathrax input", () => {
     expect(press(st, ui, LEFT_BUTTON, centre(empty % o, (empty / o) | 0))).toBe(
       UI_UPDATE,
     );
-    expect(ui.cshow).toBe(true);
-    expect(ui).toMatchObject({ hx: empty % o, hy: (empty / o) | 0 });
+    expect(ui.cursor.visible).toBe(true);
+    expect(ui.cursor).toMatchObject({ x: empty % o, y: (empty / o) | 0 });
 
     press(st, ui, LEFT_BUTTON, centre(given % o, (given / o) | 0));
-    expect(ui.cshow).toBe(false);
+    expect(ui.cursor.visible).toBe(false);
   });
 
   it("enters a digit, and suppresses re-entering the same one", () => {
@@ -537,7 +538,7 @@ describe("mathrax input", () => {
     press(st, ui, LEFT_BUTTON, centre(x, y)); // re-show the highlight
     // Re-entering 3 changes nothing, so it produces no move.
     expect(press(after, ui, "3".charCodeAt(0))).toBe(UI_UPDATE);
-    expect(ui.cshow).toBe(false);
+    expect(ui.cursor.visible).toBe(false);
   });
 
   it("refuses a digit above the grid order, and refuses to edit a given", () => {
@@ -549,9 +550,9 @@ describe("mathrax input", () => {
     expect(press(st, ui, "9".charCodeAt(0))).toBeNull(); // o is 5
 
     const given = [...st.flags].findIndex((f) => f & F_IMMUTABLE);
-    ui.cshow = true;
-    ui.hx = given % o;
-    ui.hy = (given / o) | 0;
+    ui.cursor.visible = true;
+    ui.cursor.x = given % o;
+    ui.cursor.y = (given / o) | 0;
     expect(press(st, ui, "1".charCodeAt(0))).toBeNull();
   });
 
@@ -582,10 +583,10 @@ describe("mathrax input", () => {
     const ui = newUi(st);
     const o = FIX_PARAMS.o;
     const given = [...st.flags].findIndex((f) => f & F_IMMUTABLE);
-    ui.cshow = true;
+    ui.cursor.visible = true;
     ui.cpencil = true;
-    ui.hx = given % o;
-    ui.hy = (given / o) | 0;
+    ui.cursor.x = given % o;
+    ui.cursor.y = (given / o) | 0;
     expect(press(st, ui, "2".charCodeAt(0))).toBeNull();
   });
 
@@ -593,9 +594,9 @@ describe("mathrax input", () => {
     const st = newState(FIX_PARAMS, FIX.desc);
     const ui = newUi(st);
     expect(press(st, ui, CURSOR_RIGHT)).toBe(UI_UPDATE);
-    expect(ui).toMatchObject({ hx: 1, hy: 0, cshow: true, ckey: true });
+    expect(ui).toMatchObject({ cursor: newCursor(1, 0, true), ckey: true });
     press(st, ui, CURSOR_DOWN);
-    expect(ui).toMatchObject({ hx: 1, hy: 1 });
+    expect(ui.cursor).toMatchObject({ x: 1, y: 1 });
     expect(press(st, ui, CURSOR_SELECT)).toBe(UI_UPDATE);
     expect(ui.cpencil).toBe(true);
   });

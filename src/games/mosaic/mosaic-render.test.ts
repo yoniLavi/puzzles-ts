@@ -5,6 +5,7 @@
 // suppressing unchanged tiles.
 import { describe, expect, it } from "vitest";
 import type { GameDrawing } from "../../engine/game.ts";
+import { newCursor } from "../../engine/pointer.ts";
 import {
   COL_BLANK,
   COL_CURSOR,
@@ -58,7 +59,7 @@ const P3 = { width: 3, height: 3, aggressive: true };
 const ALL_BLACK_DESC = "464696464";
 
 function freshUi(): MosaicUi {
-  return { lastX: -1, lastY: -1, lastState: 0, curX: 0, curY: 0, cursorVisible: false };
+  return { lastX: -1, lastY: -1, lastState: 0, cursor: newCursor() };
 }
 
 function freshDs(state: MosaicState): MosaicDrawState {
@@ -142,9 +143,9 @@ describe("Mosaic redraw", () => {
     const state = newState(P3, ALL_BLACK_DESC);
     const ds = freshDs(state);
     const ui = freshUi();
-    ui.cursorVisible = true;
-    ui.curX = 1;
-    ui.curY = 1;
+    ui.cursor.visible = true;
+    ui.cursor.x = 1;
+    ui.cursor.y = 1;
     const { dr, ops } = recordingDrawing();
     redraw(dr, ds, null, state, 1, ui, 0, 0);
     expect(ops.filter((o) => o.colour === COL_CURSOR).length).toBeGreaterThanOrEqual(4);

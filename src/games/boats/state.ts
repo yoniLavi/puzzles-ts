@@ -22,6 +22,8 @@
  */
 
 import { parseLeadingInt } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 
 // --- difficulty ------------------------------------------------------------
 
@@ -342,9 +344,7 @@ export type BoatsMove =
  * log, and a drag is never half-committed.
  */
 export interface BoatsUi {
-  cx: number;
-  cy: number;
-  cursor: boolean;
+  cursor: GridCursor;
   /** `""` when no drag has started. */
   dragFrom: BoatsFillFrom | "";
   dragTo: BoatsFill | "";
@@ -358,9 +358,7 @@ export interface BoatsUi {
 
 export function newUi(): BoatsUi {
   return {
-    cx: 0,
-    cy: 0,
-    cursor: false,
+    cursor: newCursor(),
     dragFrom: "",
     dragTo: "",
     dragOk: false,

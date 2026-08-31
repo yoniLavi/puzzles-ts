@@ -1,3 +1,4 @@
+import type { GridCursor } from "../../engine/pointer.ts";
 /**
  * Types and pure state helpers for Bridges (Hashiwokakero).
  *
@@ -221,9 +222,7 @@ export interface BridgesUi {
   dragging: boolean;
   dragIsNoline: boolean;
   nlines: number;
-  curX: number;
-  curY: number;
-  curVisible: boolean;
+  cursor: GridCursor;
   showHints: boolean;
   /** Fork aid: auto-grey an island whose bridge-count is met (purely visual —
    * does NOT lock its bridges, unlike a manual mark). Default on. */

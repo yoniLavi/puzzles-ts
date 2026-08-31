@@ -190,8 +190,8 @@ function interpretMove(
   let action: Action = "none";
 
   if (button === LEFT_BUTTON || button === MIDDLE_BUTTON || button === RIGHT_BUTTON) {
-    if (ui.curVisible) {
-      ui.curVisible = false;
+    if (ui.cursor.visible) {
+      ui.cursor.visible = false;
       nullret = UI_UPDATE;
     }
 
@@ -244,8 +244,8 @@ function interpretMove(
     button === CURSOR_SELECT ||
     button === CURSOR_SELECT2
   ) {
-    tx = ui.curX;
-    ty = ui.curY;
+    tx = ui.cursor.x;
+    ty = ui.cursor.y;
     if (button === 0x61 || button === 0x41 || button === CURSOR_SELECT) {
       action = "rotateLeft";
     } else if (button === 0x73 || button === 0x53 || button === CURSOR_SELECT2) {
@@ -255,7 +255,7 @@ function interpretMove(
     } else {
       action = "rotate180";
     }
-    ui.curVisible = true;
+    ui.cursor.visible = true;
   } else if (button === 0x6a || button === 0x4a) {
     action = "jumble";
   } else {
@@ -301,10 +301,10 @@ function interpretMove(
     ui.cy = o.y;
   }
   if (action === "moveCursor") {
-    const o = offset(ui.curX, ui.curY, dirBit, s.w, s.h);
-    ui.curX = o.x;
-    ui.curY = o.y;
-    ui.curVisible = true;
+    const o = offset(ui.cursor.x, ui.cursor.y, dirBit, s.w, s.h);
+    ui.cursor.x = o.x;
+    ui.cursor.y = o.y;
+    ui.cursor.visible = true;
   }
   return UI_UPDATE;
 }

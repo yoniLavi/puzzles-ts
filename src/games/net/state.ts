@@ -10,6 +10,8 @@
  */
 
 import { parseLeadingInt } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 import { type RandomState, randomNew } from "../../engine/random/index.ts";
 import {
   addBorderBarriers,
@@ -295,9 +297,7 @@ export interface NetUi {
   cx: number;
   cy: number;
   /** The keyboard cursor. */
-  curX: number;
-  curY: number;
-  curVisible: boolean;
+  cursor: GridCursor;
   /** Highlight loops that involve unlocked squares (the one preference). */
   unlockedLoops: boolean;
   /** The jumble RNG — seeded fresh from entropy, never serialised. The
@@ -324,9 +324,7 @@ export function newUi(s: NetState): NetUi {
     orgY: 0,
     cx: Math.floor(s.w / 2),
     cy: Math.floor(s.h / 2),
-    curX: Math.floor(s.w / 2),
-    curY: Math.floor(s.h / 2),
-    curVisible: false,
+    cursor: newCursor(Math.floor(s.w / 2), Math.floor(s.h / 2)),
     unlockedLoops: true,
     rs: randomNew(entropySeed()),
   };

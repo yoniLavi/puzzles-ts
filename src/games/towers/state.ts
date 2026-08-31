@@ -1,3 +1,5 @@
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 /**
  * Types and pure state helpers for Towers (Skyscrapers) — the state/codec
  * parts of `towers.c`.
@@ -205,10 +207,8 @@ export type TowersMove =
 // --- ui --------------------------------------------------------------------
 
 export interface TowersUi {
-  hx: number;
-  hy: number;
+  cursor: GridCursor;
   hpencil: boolean;
-  hshow: boolean;
   hcursor: boolean;
   /** Preference: 3D tower rendering (vs flat 2D digits). Default on. */
   threeD: boolean;
@@ -227,10 +227,8 @@ export interface TowersUi {
 
 export function newUi(_state: TowersState): TowersUi {
   return {
-    hx: 0,
-    hy: 0,
+    cursor: newCursor(),
     hpencil: false,
-    hshow: false,
     hcursor: false,
     threeD: true,
     pencilKeepHighlight: false,

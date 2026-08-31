@@ -787,10 +787,10 @@ describe("slide keyboard control", () => {
 
   /** Walk the cursor to `(x, y)` from wherever it is, one press per cell. */
   function cursorTo(s: SlideState, ui: SlideUi, x: number, y: number) {
-    while (ui.cursorX < x) press(s, ui, CURSOR_RIGHT);
-    while (ui.cursorX > x) press(s, ui, CURSOR_LEFT);
-    while (ui.cursorY < y) press(s, ui, CURSOR_DOWN);
-    while (ui.cursorY > y) press(s, ui, CURSOR_UP);
+    while (ui.cursor.x < x) press(s, ui, CURSOR_RIGHT);
+    while (ui.cursor.x > x) press(s, ui, CURSOR_LEFT);
+    while (ui.cursor.y < y) press(s, ui, CURSOR_DOWN);
+    while (ui.cursor.y > y) press(s, ui, CURSOR_UP);
   }
 
   /**
@@ -837,7 +837,7 @@ describe("slide keyboard control", () => {
     expect(press(s, ui, CURSOR_UP)).toBeNull();
     expect(ui.grabCurrpos).toBe(held);
     expect(ui.grabbed).toBe(true);
-    expect([ui.cursorX, ui.cursorY]).toEqual([3, 1]);
+    expect([ui.cursor.x, ui.cursor.y]).toEqual([3, 1]);
   });
 
   it("hands the block back on Escape, and the cursor with it", () => {
@@ -852,8 +852,8 @@ describe("slide keyboard control", () => {
     expect(ui.grabbed).toBe(false);
     // The cursor rode the block, so it comes back with it rather than being
     // stranded where the abandoned journey ended.
-    expect([ui.cursorX, ui.cursorY]).toEqual([3, 1]);
-    expect(ui.cursorVisible).toBe(true);
+    expect([ui.cursor.x, ui.cursor.y]).toEqual([3, 1]);
+    expect(ui.cursor.visible).toBe(true);
   });
 
   it("treats a select back at the start as putting the block down, not a move", () => {
@@ -878,24 +878,24 @@ describe("slide keyboard control", () => {
     // Right is blocked by the 1×1 at (3,1); down is the way this block goes.
     press(s, ui, CURSOR_DOWN);
     expect(ui.grabCurrpos).toBe(idx(1, 2));
-    expect([ui.cursorX, ui.cursorY]).toEqual([2, 3]);
+    expect([ui.cursor.x, ui.cursor.y]).toEqual([2, 3]);
   });
 
   it("reveals the cursor on the first press and moves it in the same press", () => {
     // Flip and Mosaic both move-and-reveal rather than spending a press on the
     // reveal alone; Slide follows them.
     const { s, ui } = scenario();
-    expect(ui.cursorVisible).toBe(false);
+    expect(ui.cursor.visible).toBe(false);
     expect(press(s, ui, CURSOR_RIGHT)).toBe(UI_UPDATE);
-    expect(ui.cursorVisible).toBe(true);
-    expect([ui.cursorX, ui.cursorY]).toEqual([1, 0]);
+    expect(ui.cursor.visible).toBe(true);
+    expect([ui.cursor.x, ui.cursor.y]).toEqual([1, 0]);
   });
 
   it("clamps the cursor to the board and repaints nothing at a held edge", () => {
     const { s, ui } = scenario();
     press(s, ui, CURSOR_RIGHT); // reveals, and moves off (0,0)
     press(s, ui, CURSOR_LEFT);
-    expect([ui.cursorX, ui.cursorY]).toEqual([0, 0]);
+    expect([ui.cursor.x, ui.cursor.y]).toEqual([0, 0]);
     expect(press(s, ui, CURSOR_LEFT)).toBeNull();
     expect(press(s, ui, CURSOR_UP)).toBeNull();
   });
@@ -905,7 +905,7 @@ describe("slide keyboard control", () => {
     cursorTo(s, ui, 4, 3); // empty floor
     expect(press(s, ui, CURSOR_SELECT)).toBe(UI_UPDATE);
     expect(ui.grabbed).toBe(false);
-    expect(ui.cursorVisible).toBe(true);
+    expect(ui.cursor.visible).toBe(true);
   });
 
   it("hides the cursor and drops a keyboard grab when a pointer takes over", () => {
@@ -918,7 +918,7 @@ describe("slide keyboard control", () => {
 
     expect(pointer(s, ui, at(4, 3), LEFT_BUTTON)).toBe(UI_UPDATE); // empty floor
     expect(ui.grabbed).toBe(false);
-    expect(ui.cursorVisible).toBe(false);
+    expect(ui.cursor.visible).toBe(false);
     expect(pointer(s, ui, at(1, 3), LEFT_DRAG)).toBeNull();
   });
 
@@ -973,8 +973,8 @@ describe("slide keyboard control", () => {
 
     slideGame.changedState?.(ui, s, s);
     expect(ui.grabbed).toBe(false);
-    expect(ui.cursorVisible).toBe(true);
-    expect([ui.cursorX, ui.cursorY]).toEqual([1, 1]);
+    expect(ui.cursor.visible).toBe(true);
+    expect([ui.cursor.x, ui.cursor.y]).toEqual([1, 1]);
   });
 
   /**

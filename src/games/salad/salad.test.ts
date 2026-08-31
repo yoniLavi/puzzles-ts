@@ -495,9 +495,9 @@ describe("salad input", () => {
         LEFT_BUTTON,
       ),
     ).toBeTruthy();
-    expect(ui.hshow).toBe(true);
-    expect(ui.hx).toBe(1);
-    expect(ui.hy).toBe(2);
+    expect(ui.cursor.visible).toBe(true);
+    expect(ui.cursor.x).toBe(1);
+    expect(ui.cursor.y).toBe(2);
     expect(
       saladGame.interpretMove(
         s,
@@ -616,8 +616,8 @@ describe("salad input", () => {
       { x: 0, y: 0 },
       CURSOR_RIGHT,
     );
-    expect(ui.hx).toBe(1);
-    expect(ui.hshow).toBe(true);
+    expect(ui.cursor.x).toBe(1);
+    expect(ui.cursor.visible).toBe(true);
     saladGame.interpretMove(
       s,
       ui,
@@ -682,7 +682,7 @@ describe("salad input", () => {
     const ui = newUi(s);
     // Cell 4 (x=4, y=0) carries a given digit.
     saladGame.interpretMove(s, ui, sizedDrawState(saladGame, s), at(4, 0), LEFT_BUTTON);
-    expect(ui.hshow).toBe(false);
+    expect(ui.cursor.visible).toBe(false);
     expect(
       saladGame.interpretMove(
         s,

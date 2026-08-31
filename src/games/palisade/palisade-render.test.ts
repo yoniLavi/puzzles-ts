@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 import { BORDER } from "../../engine/border-grid.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
+import { newCursor } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import {
   COL_CORRECT,
@@ -59,7 +60,7 @@ const TS = 48;
 const P = { w: 5, h: 5, k: 5 };
 
 function freshUi(): PalisadeUi {
-  return { x: 1, y: 1, show: false };
+  return { cursor: newCursor(1, 1) };
 }
 
 function freshDs(state: PalisadeState): PalisadeDrawState {
@@ -183,9 +184,9 @@ describe("Palisade redraw", () => {
   it("draws the cursor outline when shown", () => {
     const state = makeState();
     const ui = freshUi();
-    ui.show = true;
-    ui.x = 1;
-    ui.y = 2; // a left-border position
+    ui.cursor.visible = true;
+    ui.cursor.x = 1;
+    ui.cursor.y = 2; // a left-border position
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(state), null, state, 0, ui, 0, 0);
     expect(ops.some((o) => o.op === "drawLine" && o.colour === COL_GRID)).toBe(true);

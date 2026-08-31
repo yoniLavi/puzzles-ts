@@ -194,7 +194,7 @@ describe("pattern moves and completion", () => {
         CURSOR_SELECT,
       ),
     ).toBe(UI_UPDATE);
-    expect(ui.curVisible).toBe(true);
+    expect(ui.cursor.visible).toBe(true);
     // Second select cycles the (0,0) cell UNKNOWN → FULL.
     const move = patternGame.interpretMove(
       st,

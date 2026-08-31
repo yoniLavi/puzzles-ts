@@ -39,6 +39,7 @@ import {
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
+import { type GridCursor, newCursor } from "../../engine/pointer.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {
   CELL_MIRROR_L,
@@ -143,9 +144,7 @@ export interface UndeadDrawState {
   hintsDone: Uint8Array;
   countErrors: Uint8Array;
   countPlaced: Int32Array;
-  hx: number;
-  hy: number;
-  hshow: boolean;
+  cursor: GridCursor;
   hpencil: boolean;
   hflash: boolean;
   ascii: boolean;
@@ -181,9 +180,7 @@ export function newDrawState(state: UndeadState): UndeadDrawState {
     hintsDone: new Uint8Array(2 * common.numPaths),
     countErrors: new Uint8Array(3),
     countPlaced: new Int32Array(3),
-    hx: 0,
-    hy: 0,
-    hshow: false,
+    cursor: newCursor(),
     hpencil: false,
     hflash: false,
     ascii: false,
@@ -507,7 +504,7 @@ function drawCellBackground(
 ): void {
   const ts = ds.tilesize;
   const { dx, dy } = cellCentre(ds, x, y);
-  const hon = ui.hshow && x === ui.hx && y === ui.hy;
+  const hon = ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y;
   // A hint background overrides the cursor highlight (the hint is what to act on).
   const bg = hintBg >= 0 ? hintBg : hon && !ui.hpencil ? COL_HIGHLIGHT : COL_BACKGROUND;
   dr.drawRect(
@@ -859,9 +856,9 @@ export function redraw(
   }
 
   const hchanged =
-    ds.hx !== ui.hx ||
-    ds.hy !== ui.hy ||
-    ds.hshow !== ui.hshow ||
+    ds.cursor.x !== ui.cursor.x ||
+    ds.cursor.y !== ui.cursor.y ||
+    ds.cursor.visible !== ui.cursor.visible ||
     ds.hpencil !== ui.hpencil;
   const changedAscii = ds.ascii !== ui.ascii;
   if (changedAscii) ds.ascii = ui.ascii;
@@ -938,7 +935,11 @@ export function redraw(
       const c = common.grid[xy];
 
       let stale = !ds.started || ds.hflash !== hflash || changedAscii;
-      if (hchanged && ((x === ui.hx && y === ui.hy) || (x === ds.hx && y === ds.hy)))
+      if (
+        hchanged &&
+        ((x === ui.cursor.x && y === ui.cursor.y) ||
+          (x === ds.cursor.x && y === ds.cursor.y))
+      )
         stale = true;
       if (xi >= 0 && state.guess[xi] !== ds.monsters[xi]) {
         stale = true;
@@ -1023,9 +1024,9 @@ export function redraw(
     ds.pencilModeShown = ui.hpencil;
   }
 
-  ds.hx = ui.hx;
-  ds.hy = ui.hy;
-  ds.hshow = ui.hshow;
+  ds.cursor.x = ui.cursor.x;
+  ds.cursor.y = ui.cursor.y;
+  ds.cursor.visible = ui.cursor.visible;
   ds.hpencil = ui.hpencil;
   ds.hflash = hflash;
   ds.countStyle = ui.countStyle;

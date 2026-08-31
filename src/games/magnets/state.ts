@@ -12,6 +12,7 @@
 import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- cell values (upstream: EMPTY == NEUTRAL) -----------------------------
@@ -96,9 +97,7 @@ export type MagnetsMove =
   | { type: "solve"; solution: readonly number[] };
 
 export interface MagnetsUi {
-  curX: number;
-  curY: number;
-  cursorVisible: boolean;
+  cursor: GridCursor;
 }
 
 /** A player cell whose set value contradicts the unique solution. */

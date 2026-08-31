@@ -26,6 +26,7 @@ import {
   CURSOR_SELECT2,
   CURSOR_UP,
   LEFT_BUTTON,
+  newCursor,
   RIGHT_BUTTON,
 } from "./pointer.ts";
 
@@ -35,7 +36,9 @@ const grid = (w: number, h: number, borders?: Uint8Array): BorderGridState => ({
   h,
   borders: borders ?? initBorders(w, h),
 });
-const ui = (x = 1, y = 1, show = false): BorderGridUi => ({ x, y, show });
+const ui = (x = 1, y = 1, show = false): BorderGridUi => ({
+  cursor: newCursor(x, y, show),
+});
 
 /** Centre of the edge between cell (x,y) and its neighbour in direction dir. */
 const edgeMidpoint = (x: number, y: number, dir: number) => {
@@ -151,9 +154,9 @@ describe("pointerEdge", () => {
     const p = edgeMidpoint(1, 1, 1);
     pointerEdge(s, u, p.x, p.y, TS, true);
     // Half-cell coordinates: the edge right of cell (1,1) is at x = 2*1+1+1 = 4.
-    expect(u.x).toBe(4);
-    expect(u.y).toBe(3);
-    expect(u.show).toBe(false);
+    expect(u.cursor.x).toBe(4);
+    expect(u.cursor.y).toBe(3);
+    expect(u.cursor.visible).toBe(false);
   });
 });
 
@@ -161,7 +164,7 @@ describe("selectEdge", () => {
   it("the first press only reveals a hidden cursor", () => {
     const u = ui(2, 3, false);
     expect(selectEdge(grid(3, 3), u, false)).toBe("ui");
-    expect(u.show).toBe(true);
+    expect(u.cursor.visible).toBe(true);
   });
 
   it("does nothing on a corner or a tile centre", () => {
@@ -196,7 +199,7 @@ describe("interpretBorderGridInput", () => {
 
     const u = ui(3, 3, true);
     expect(interpretBorderGridInput(s, u, p, CURSOR_UP, TS)).toBe("ui");
-    expect(u.y).toBe(2);
+    expect(u.cursor.y).toBe(2);
 
     expect(interpretBorderGridInput(s, ui(2, 3, true), p, CURSOR_SELECT, TS)).toEqual([
       { x: 1, y: 1, flag: BORDER(3) },
@@ -228,8 +231,8 @@ describe("interpretBorderGridInput", () => {
     const u = ui(3, 3, true);
     for (let i = 0; i < 10; i++)
       interpretBorderGridInput(s, u, { x: 0, y: 0 }, key, TS);
-    expect(u[axis]).toBe(limit);
+    expect(u.cursor[axis]).toBe(limit);
     // The other axis did not drift while this one was clamped.
-    expect(u[axis === "x" ? "y" : "x"]).toBe(3);
+    expect(u.cursor[axis === "x" ? "y" : "x"]).toBe(3);
   });
 });

@@ -12,6 +12,7 @@
 import { assertNever } from "../../engine/assert-never.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 import {
   type Cell,
@@ -59,9 +60,7 @@ export type UnrulyMove =
   | { type: "solve"; grid: string };
 
 export interface UnrulyUi {
-  cx: number;
-  cy: number;
-  cursor: boolean;
+  cursor: GridCursor;
 }
 
 /** A player-placed cell whose colour contradicts the unique solution

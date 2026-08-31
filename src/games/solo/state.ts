@@ -21,6 +21,8 @@
  */
 
 import { Dsf } from "../../engine/dsf.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 
 // --- difficulty (standard axis) --------------------------------------------
 // solo_diffchars "tbiaeu"; the public encoding writes `d<char>` (dt = default,
@@ -865,10 +867,8 @@ export type SoloMove =
 // --- ui --------------------------------------------------------------------
 
 export interface SoloUi {
-  hx: number;
-  hy: number;
+  cursor: GridCursor;
   hpencil: boolean;
-  hshow: boolean;
   hcursor: boolean;
   /** Pref (default off, upstream `PREF_PENCIL_KEEP_HIGHLIGHT`). */
   pencilKeepHighlight: boolean;
@@ -880,10 +880,8 @@ export interface SoloUi {
 
 export function newUi(_state: SoloState): SoloUi {
   return {
-    hx: 0,
-    hy: 0,
+    cursor: newCursor(),
     hpencil: false,
-    hshow: false,
     hcursor: false,
     pencilKeepHighlight: false,
     pencilSticky: true,

@@ -13,6 +13,7 @@
 
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- difficulty -------------------------------------------------------------
@@ -83,9 +84,7 @@ export type ClustersMove =
 
 export interface ClustersUi {
   /** Keyboard cursor. */
-  cx: number;
-  cy: number;
-  cursor: boolean;
+  cursor: GridCursor;
   /** The accreting paint drag (the shared accreting-drag model, also used by
    * bricks/sticks). `dragType` is `-1` when no drag is active, else the
    * {@link ClustersFill} being painted; `drag` accretes the cell indices the

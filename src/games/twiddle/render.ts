@@ -345,8 +345,8 @@ export function redraw(
   const { w, h, n } = state;
   const hw = highlightWidth(ts);
 
-  const cx = ui.curVisible ? ui.curX : -n;
-  const cy = ui.curVisible ? ui.curY : -n;
+  const cx = ui.cursor.visible ? ui.cursor.x : -n;
+  const cy = ui.cursor.visible ? ui.cursor.y : -n;
   const cmoved = cx !== ds.curX || cy !== ds.curY;
 
   let bgcolour = COL_BACKGROUND;

@@ -38,6 +38,7 @@ import {
   type UiUpdate,
 } from "../../engine/index.ts";
 import { dimensionParamConfig, parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -46,6 +47,7 @@ import {
   isMouseRelease,
   LEFT_BUTTON,
   LEFT_RELEASE,
+  newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
@@ -182,9 +184,7 @@ export interface GalaxiesUi {
   pressY: number;
   pressPending: boolean;
   /** Keyboard cursor grid coords. */
-  curX: number;
-  curY: number;
-  curVisible: boolean;
+  cursor: GridCursor;
 }
 
 export type { GalaxiesDrawState, GalaxiesState };
@@ -553,7 +553,7 @@ function interpretMove(
   // records as fatal to exactly this gesture. Right-button drags keep
   // working unchanged.
   if (button === LEFT_BUTTON || button === RIGHT_BUTTON) {
-    ui.curVisible = false;
+    ui.cursor.visible = false;
     ui.pressX = x;
     ui.pressY = y;
     ui.pressPending = true;
@@ -619,16 +619,16 @@ function interpretMove(
 
   const cursorMove = cursorDelta(button);
   if (cursorMove) {
-    let nx = ui.curX + cursorMove.dx;
-    let ny = ui.curY + cursorMove.dy;
+    let nx = ui.cursor.x + cursorMove.dx;
+    let ny = ui.cursor.y + cursorMove.dy;
     if (nx < 1) nx = 1;
     if (ny < 1) ny = 1;
     if (nx > s.sx - 2) nx = s.sx - 2;
     if (ny > s.sy - 2) ny = s.sy - 2;
-    const changed = nx !== ui.curX || ny !== ui.curY || !ui.curVisible;
-    ui.curX = nx;
-    ui.curY = ny;
-    ui.curVisible = true;
+    const changed = nx !== ui.cursor.x || ny !== ui.cursor.y || !ui.cursor.visible;
+    ui.cursor.x = nx;
+    ui.cursor.y = ny;
+    ui.cursor.visible = true;
     if (ui.dragging && ui.dragToDot) {
       // The cursor is picking the *dot*: take it when it lands on a legal
       // one, drop the pick when it moves off (the preview then shows
@@ -640,19 +640,19 @@ function interpretMove(
       ui.dotx = onDot ? nx : -1;
       ui.doty = onDot ? ny : -1;
     } else if (ui.dragging) {
-      ui.targetX = ui.curX;
-      ui.targetY = ui.curY;
+      ui.targetX = ui.cursor.x;
+      ui.targetY = ui.cursor.y;
     }
     return changed ? UI_UPDATE : null;
   }
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (!ui.curVisible) {
-      ui.curVisible = true;
+    if (!ui.cursor.visible) {
+      ui.cursor.visible = true;
       return UI_UPDATE;
     }
-    const cx = ui.curX;
-    const cy = ui.curY;
+    const cx = ui.cursor.x;
+    const cy = ui.cursor.y;
     if (ui.dragging) {
       // In a cell→dot drag the cursor is picking the *dot*, so the tile to
       // commit is the pinned target, not wherever the cursor now sits.
@@ -1137,9 +1137,7 @@ export const galaxiesGame: Game<
       pressX: 0,
       pressY: 0,
       pressPending: false,
-      curX: 1,
-      curY: 1,
-      curVisible: false,
+      cursor: newCursor(1, 1),
     };
   },
 

@@ -14,6 +14,7 @@ import {
   type HintStep,
 } from "../../engine/index.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GalaxiesHint } from "./hint.ts";
 import type { GalaxiesMove } from "./index.ts";
 import { legalDotsFor, okToAddAssocWithOpposite } from "./moves.ts";
@@ -722,9 +723,7 @@ export function redraw(
     srcx: number;
     srcy: number;
     showDragCandidates: boolean;
-    curX: number;
-    curY: number;
-    curVisible: boolean;
+    cursor: GridCursor;
   },
   _animTime: number,
   flashTime: number,
@@ -800,7 +799,7 @@ export function redraw(
   // paint their clipped share of it — each through its own 3x3 subcell
   // block, exactly as the dots do.
   const halfGridCursor =
-    ui.curVisible && spaceTypeAt(ui.curX, ui.curY) !== SpaceType.Tile;
+    ui.cursor.visible && spaceTypeAt(ui.cursor.x, ui.cursor.y) !== SpaceType.Tile;
   ds.overlay.clear();
 
   // The candidate rings of a cell→dot drag. Recomputed from the current
@@ -887,9 +886,9 @@ export function redraw(
 
       // Cursor on tile.
       if (
-        ui.curVisible &&
-        ui.curX === 2 * x + 1 &&
-        ui.curY === 2 * y + 1 &&
+        ui.cursor.visible &&
+        ui.cursor.x === 2 * x + 1 &&
+        ui.cursor.y === 2 * y + 1 &&
         !(sFlags & F_DOT)
       ) {
         flags |= DRAW_CURSOR;
@@ -919,8 +918,8 @@ export function redraw(
       // above; a vertex or edge cursor rides the overlay sidecar so the tile
       // that painted it is the tile that erases it.
       if (halfGridCursor) {
-        const cdx = ui.curX - 2 * x;
-        const cdy = ui.curY - 2 * y;
+        const cdx = ui.cursor.x - 2 * x;
+        const cdy = ui.cursor.y - 2 * y;
         if (cdx >= 0 && cdx <= 2 && cdy >= 0 && cdy <= 2) {
           ds.overlay.add(cacheI, cursorBit(cdx, cdy));
         }

@@ -2,28 +2,55 @@
 
 ## 0. Before touching anything
 
-- [ ] 0.1 **Check what the existing suites actually cover.** The cursor renames
-      are behaviour-preserving by construction, so a green suite is only
-      evidence where the suite presses an arrow key. Count the games whose tests
-      exercise a cursor; for the rest, the shape check is the evidence and the
-      task list must say so rather than implying coverage.
-- [ ] 0.2 Re-measure the three populations rather than trusting this change's
-      numbers — they were taken on 2026-08-26 and games move.
+- [x] 0.1 **Check what the existing suites actually cover.** Answered by
+      `audit-input-mode-parity`'s `audit.md` §2.3a(a) and *not* re-measured:
+      **27 games' tests press an arrow key, 30 do not**. The thirty have no
+      per-game net under the rename — `input-parity.test.ts` presses cursor keys
+      for all 57 through a real `Midend`, which is a collection-wide net but not
+      a per-game one, so §5's shape check is the evidence for those.
+- [x] 0.2 Re-measure the three populations. **Both numbers in the proposal were
+      low**, and the re-measure changed the work:
+      - *Cursor*: **50 games, not 42**. The proposal counted six spellings of
+        the visibility flag; the `Ui` dump found four more nobody had listed
+        (`cursor`, `cursorShow`, `show`, `displaySel`) plus **Rome**, which had
+        a cursor and *no* visibility flag, and **Ascent** and **Rome**, which
+        hid visibility inside a mode enum.
+      - *Completion*: `usedSolve` is **14 games, not the five implied** — and
+        **Magnets spells `cheated` as `solved`**, the same word Loopy and Undead
+        use for `completed`. A sweep that renamed by name would have inverted it.
+      - Six games' **DrawState** caches the same three values under a second
+        spelling (`hshow`/`curVisible`); leaving those would have been half a
+        unification, so they move too.
 
-## 1. The cursor `Ui` contract (~42 games)
+## 1. The cursor `Ui` contract (50 games)
 
-- [ ] 1.1 `GridCursor` + `newCursor`/`moveCursor`/`hideCursor` in
-      `engine/pointer.ts`, per design D2. Keep it to the noun: no painting, no
-      per-game verbs.
-- [ ] 1.2 Convert two games first and *stop* — one plain (Slant), one that does
-      something while moving (Tents). If the second one fights the helper, the
-      helper is wrong; fix it before converting forty more.
-- [ ] 1.3 Convert the rest, gate between batches, not at the end.
-- [ ] 1.4 Renderers read the cursor through the same field; sweep `render.ts`
-      alongside each game rather than after.
-- [ ] 1.5 Leave the genuinely different traversals alone — half-grid (Palisade,
-      Separate, via `border-grid.ts`), corner-skipping (Tracks), lock modes.
-      They keep their own logic; only the *naming* is in scope.
+- [x] 1.1 `GridCursor` + `newCursor`/`moveCursor`/`showCursor`/`hideCursor` in
+      `engine/pointer.ts`, per design D2. Kept to the noun. `moveCursor` returns
+      *whether anything changed*, which turned out to be exactly the
+      `moved || !wasVisible` predicate eight games had written by hand.
+- [x] 1.2 Converted Slant (plain) and Tents (paints while moving) first. Tents
+      did **not** fight the helper — it got *shorter*, because its two arrow
+      branches differed only in the painting and merged once the movement was
+      shared. The helper's shape is right.
+- [x] 1.3 Converted the rest in five gated batches. Ascent and Rome by hand
+      (see 1.6), Range by hand (its cursor is transposed — `(r, c)` is
+      `(y, x)`), Palisade/Separate through `border-grid.ts`.
+- [x] 1.4 Renderers swept alongside each game, plus the six DrawState caches.
+- [x] 1.5 Genuinely different traversals kept: `border-grid.ts`'s half-cell walk
+      (renamed `moveBorderCursor` so it no longer shadows the shared helper),
+      Slide's grabbed-anchor walk (`moveSlideCursor`, whose *ungrabbed* half
+      collapsed onto the shared one).
+- [x] 1.6 **Two games held visibility inside a mode enum, and both were split.**
+      Ascent's `cshow` was `NONE`/`KEYBOARD`/`MOUSE`: the device distinction is
+      real and a player can see it, so it survives as `cursorFromMouse` with two
+      predicates, while "is it shown" moved to `cursor.visible`. Rome's `kmode`
+      had a fourth state `KEYMODE_OFF` doing the same double duty; it is gone,
+      and `kmode` is now purely what the cursor is *armed for*.
+- [x] 1.7 **Nine games had a private `moveCursor`, four of them byte-identical.**
+      Keen/Solo/Towers/Unequal differed only in the name of the bound; Map, Rect,
+      Samegame and Guess collapsed too. Guess's cursor runs over the peg/colour
+      picker rather than a board — the same shape in a different space, so it
+      takes the same shape.
 
 ## 2. The completion vocabulary (~14 games)
 
@@ -50,19 +77,42 @@
 
 ## 4. Guards against re-drift
 
-- [ ] 4.1 Extend `emittable-keys.test.ts`'s derived approach: a game declaring
-      its own cursor-visibility field, or its own spelling of `cheated`, fails.
-      Derive the vocabulary from the engine, never a hand-written list.
-- [ ] 4.2 Prove each guard fails before trusting it.
-- [ ] 4.3 Vacuity: assert how many games were looked at.
+- [x] 4.1 `src/engine/cursor-vocabulary.test.ts`. Its strongest check is
+      **structural, with no name matching at all**: the cursor's field names are
+      read off `newCursor()` itself, every game's real `newUi()` output is
+      walked, and any property with that shape must be called `cursor`. A source
+      pattern over the eight retired spellings sits beside it and is labelled as
+      the weaker, list-shaped half. `emittable-keys.test.ts` already covers the
+      helper-shadowing half, derived from `pointer.ts`'s export list — adding
+      four exports there enrolled all 57 games the same day, and it named the
+      nine private `moveCursor`s of task 1.7 immediately.
+- [x] 4.2 Both new assertions proven to fail: renaming Slant's `Ui.cursor` to
+      `slantCursor` fails the structural check by name-of-file-and-field, and
+      re-adding a `cshow: boolean` fails the pattern check. The retired-spelling
+      check **failed on first run against a real leftover** — Salad's renderer
+      still took an `hshow: boolean` parameter.
+- [x] 4.3 Vacuity, both directions: the games walked must equal the registry
+      size, *and* at least 45 of them must actually have yielded a cursor —
+      a structural check that finds none would otherwise report health.
 
 ## 5. Verify the bulk edit by shape
 
-- [ ] 5.1 `scripts/check-rename-shape.mjs`, plus the manual "every changed line
-      is one of these kinds, now read the exceptions" grep. A green suite is not
-      the check for a mechanical sweep this wide.
-- [ ] 5.2 For the pure renames, assert the stronger property: every line removed
-      appears verbatim at the destination modulo the rename.
+- [x] 5.1 Diff-shape classification over all 3547 changed lines: every one is a
+      named kind or lands in a residue that is printed in full and read. The
+      residue was dominated by biome reflows, which is why 5.2 exists.
+- [x] 5.2 The stronger property, and the one that mattered: both revisions are
+      normalised by mapping **every** spelling of the cursor onto three tokens
+      and dropping comments, imports and whitespace, then compared. 122 of 188
+      files are token-identical — *proved* pure renames, which no amount of
+      green suite establishes. Every one of the other 66 was read; all are
+      inline `newUi` literals, biome trailing commas, Range's deliberate
+      transpose, or a rewrite named in this task list. Proven to fail by
+      planting a one-token logic change in an otherwise-pure file.
+- [x] 5.3 **Why the suite could not be the check here.** The first sweep
+      renamed an unrelated `interface Sq { cx, cy }` in Flip's generator *and*
+      all its uses. That compiles, and all 7596 tests pass. The fix was to scope
+      the declaration rewrite to `*Ui` interfaces, which restores `tsc` as a
+      complete net — a stray `a.cursor.y` then has no declaration to match.
 
 ## 6. Docs and specs
 

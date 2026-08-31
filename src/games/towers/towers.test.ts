@@ -420,7 +420,7 @@ describe("towers sticky pencil mode", () => {
     // Left-click a different cell → still in pencil mode (only the highlight moved).
     towersGame.interpretMove(st, ui, ds, center(b.x, b.y), LEFT_BUTTON);
     expect(ui.hpencil).toBe(true);
-    expect([ui.hx, ui.hy]).toEqual([b.x, b.y]);
+    expect([ui.cursor.x, ui.cursor.y]).toEqual([b.x, b.y]);
     // A digit now writes a pencil mark, not a real entry.
     const m = towersGame.interpretMove(st, ui, ds, center(b.x, b.y), 49 /* '1' */);
     expect(m).toEqual({ type: "set", x: b.x, y: b.y, n: 1, pencil: true });
@@ -445,8 +445,8 @@ describe("towers sticky pencil mode", () => {
     // stays on the empty cell A (the filled cell is not selected/restyled).
     towersGame.interpretMove(filled, ui, ds, center(b.x, b.y), RIGHT_BUTTON);
     expect(ui.hpencil).toBe(false);
-    expect([ui.hx, ui.hy]).toEqual([a.x, a.y]);
-    expect(ui.hshow).toBe(true);
+    expect([ui.cursor.x, ui.cursor.y]).toEqual([a.x, a.y]);
+    expect(ui.cursor.visible).toBe(true);
   });
 
   it("sticky off: a left-click reverts to real entry (upstream behaviour)", () => {
@@ -467,7 +467,7 @@ describe("towers render", () => {
       const st = newState(RENDER.p, RENDER.desc);
       const ui = newUi(st);
       ui.hpencil = hpencil;
-      ui.hshow = hpencil;
+      ui.cursor.visible = hpencil;
       const ds = newDrawState(st);
       setTileSize(ds, ts);
       const dr = new RecordingDrawing(palette);

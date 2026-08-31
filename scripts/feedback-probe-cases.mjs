@@ -392,8 +392,8 @@ export const MODULES = [
       },
       {
         why: "the cursor is not clamped, so it walks off the grid",
-        find: "  ui.x = clamp(ui.x + d.dx, 1, 2 * w - 1);",
-        replace: "  ui.x = ui.x + d.dx;",
+        find: "  ui.cursor.x = clamp(ui.cursor.x + d.dx, 1, 2 * w - 1);",
+        replace: "  ui.cursor.x = ui.cursor.x + d.dx;",
       },
     ],
   },

@@ -12,6 +12,7 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   LEFT_BUTTON,
+  newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
@@ -61,9 +62,7 @@ const P22 = { w: 2, h: 2, diff: DIFF_EASY };
 
 function ui(over: Partial<SlantUi> = {}): SlantUi {
   return {
-    cx: 0,
-    cy: 0,
-    cursorVisible: false,
+    cursor: newCursor(),
     swapButtons: false,
     fadeGrounded: false,
     ...over,
@@ -254,7 +253,7 @@ describe("slant input", () => {
         LEFT_BUTTON,
       ),
     ).toBe(null);
-    const u = ui({ cursorVisible: true });
+    const u = ui({ cursor: newCursor(0, 0, true) });
     slantGame.interpretMove(
       state,
       u,
@@ -262,7 +261,7 @@ describe("slant input", () => {
       centre(0, 0),
       LEFT_BUTTON,
     );
-    expect(u.cursorVisible).toBe(false);
+    expect(u.cursor.visible).toBe(false);
   });
 
   it("cursor keys reveal and move the cursor", () => {
@@ -276,7 +275,7 @@ describe("slant input", () => {
         CURSOR_RIGHT,
       ),
     ).toBe(UI_UPDATE);
-    expect(u).toMatchObject({ cx: 1, cy: 0, cursorVisible: true });
+    expect(u.cursor).toEqual({ x: 1, y: 0, visible: true });
     // Clamped at the edge, still a UI update.
     expect(
       slantGame.interpretMove(
@@ -287,7 +286,7 @@ describe("slant input", () => {
         CURSOR_RIGHT,
       ),
     ).toBe(UI_UPDATE);
-    expect(u.cx).toBe(1);
+    expect(u.cursor.x).toBe(1);
     expect(
       slantGame.interpretMove(
         state,
@@ -297,7 +296,7 @@ describe("slant input", () => {
         CURSOR_LEFT,
       ),
     ).toBe(UI_UPDATE);
-    expect(u.cx).toBe(0);
+    expect(u.cursor.x).toBe(0);
   });
 
   it("select reveals the cursor first, then cycles", () => {
@@ -311,7 +310,7 @@ describe("slant input", () => {
         CURSOR_SELECT,
       ),
     ).toBe(UI_UPDATE);
-    expect(u.cursorVisible).toBe(true);
+    expect(u.cursor.visible).toBe(true);
     expect(
       slantGame.interpretMove(
         state,
@@ -333,7 +332,7 @@ describe("slant input", () => {
   });
 
   it("direct keys place at the cursor; a no-op returns null", () => {
-    const u = ui({ cx: 1, cy: 0, cursorVisible: true });
+    const u = ui({ cursor: newCursor(1, 0, true) });
     expect(
       slantGame.interpretMove(
         state,

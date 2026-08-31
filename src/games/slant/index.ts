@@ -22,11 +22,14 @@ import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
-  gridCursorMove,
+  hideCursor,
   isCursorMove,
   isEraseKey,
   LEFT_BUTTON,
+  moveCursor,
+  newCursor,
   RIGHT_BUTTON,
+  showCursor,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -72,9 +75,7 @@ import {
 
 function newUi(_state: SlantState): SlantUi {
   return {
-    cx: 0,
-    cy: 0,
-    cursorVisible: false,
+    cursor: newCursor(),
     swapButtons: false,
     fadeGrounded: false,
   };
@@ -118,7 +119,7 @@ function interpretMove(
     const x = fromCoord(p.x);
     const y = fromCoord(p.y);
     if (x < 0 || y < 0 || x >= w || y >= h) return null;
-    ui.cursorVisible = false;
+    hideCursor(ui.cursor);
     return {
       type: "set",
       x,
@@ -128,12 +129,9 @@ function interpretMove(
   }
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (!ui.cursorVisible) {
-      ui.cursorVisible = true;
-      return UI_UPDATE;
-    }
-    const x = ui.cx;
-    const y = ui.cy;
+    if (showCursor(ui.cursor)) return UI_UPDATE;
+    const x = ui.cursor.x;
+    const y = ui.cursor.y;
     return {
       type: "set",
       x,
@@ -143,18 +141,13 @@ function interpretMove(
   }
 
   if (isCursorMove(button)) {
-    const moved = gridCursorMove(button, ui.cx, ui.cy, w, h);
-    if (moved) {
-      ui.cx = moved.x;
-      ui.cy = moved.y;
-    }
-    ui.cursorVisible = true;
+    moveCursor(ui.cursor, button, w, h);
     return UI_UPDATE;
   }
 
   if (button === KEY_BACKSLASH || button === KEY_SLASH || isEraseKey(button)) {
-    const x = ui.cx;
-    const y = ui.cy;
+    const x = ui.cursor.x;
+    const y = ui.cursor.y;
     const v: Slash = button === KEY_BACKSLASH ? -1 : button === KEY_SLASH ? 1 : 0;
     if (state.soln[y * w + x] === v) return null; // no effect
     return { type: "set", x, y, v };

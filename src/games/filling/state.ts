@@ -14,6 +14,7 @@ import { assertNever } from "../../engine/assert-never.ts";
 import { Dsf } from "../../engine/dsf.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 export const EMPTY = 0;
@@ -49,9 +50,7 @@ export type FillingMove =
 export interface FillingUi {
   /** Currently-selected cell indices, or null for no selection. */
   sel: Set<number> | null;
-  cx: number;
-  cy: number;
-  curVisible: boolean;
+  cursor: GridCursor;
   keydragging: boolean;
 }
 

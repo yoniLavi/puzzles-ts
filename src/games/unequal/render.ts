@@ -34,6 +34,7 @@ import {
   OverlaySidecar,
 } from "../../engine/overlay-sidecar.ts";
 import { drawPencilGlyph } from "../../engine/pencil-indicator.ts";
+import { type GridCursor, newCursor } from "../../engine/pointer.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import type { UnequalMove } from "./state.ts";
 import {
@@ -156,9 +157,7 @@ export interface UnequalDrawState {
   wrong: OverlaySidecar;
   /** `order²` scratch error flags, refilled each redraw by `checkComplete`. */
   errFlags: Int32Array;
-  hx: number;
-  hy: number;
-  hshow: boolean;
+  cursor: GridCursor;
   hpencil: boolean;
   hflash: boolean;
   /** Whether the pencil-mode indicator was on last frame (fork addition). */
@@ -181,9 +180,7 @@ export function newDrawState(state: UnequalState): UnequalDrawState {
     hint: new OverlaySidecar(o * o),
     wrong: new OverlaySidecar(o * o),
     errFlags: new Int32Array(o * o),
-    hx: 0,
-    hy: 0,
-    hshow: false,
+    cursor: newCursor(),
     hpencil: false,
     hflash: false,
     pencilModeShown: false,
@@ -412,7 +409,7 @@ function drawCell(
   const o = state.order;
   const ox = coord(x, ts);
   const oy = coord(y, ts);
-  const hon = ui.hshow && x === ui.hx && y === ui.hy;
+  const hon = ui.cursor.visible && x === ui.cursor.x && y === ui.cursor.y;
 
   // Hint overlay (docs/games/hints.md § "The element-type colour legend"): both
   // cell-level marks are read in `redraw`, which rings the target and outlines
@@ -588,9 +585,9 @@ export function redraw(
   ds.wrong.packCells(mistakes, index);
 
   const hchanged =
-    ds.hx !== ui.hx ||
-    ds.hy !== ui.hy ||
-    ds.hshow !== ui.hshow ||
+    ds.cursor.x !== ui.cursor.x ||
+    ds.cursor.y !== ui.cursor.y ||
+    ds.cursor.visible !== ui.cursor.visible ||
     ds.hpencil !== ui.hpencil;
 
   for (let x = 0; x < o; x++) {
@@ -605,7 +602,11 @@ export function redraw(
       const pencil = num === 0 ? state.pencil[i] : 0;
 
       let stale = !ds.started || hflash !== ds.hflash;
-      if (hchanged && ((x === ui.hx && y === ui.hy) || (x === ds.hx && y === ds.hy)))
+      if (
+        hchanged &&
+        ((x === ui.cursor.x && y === ui.cursor.y) ||
+          (x === ds.cursor.x && y === ds.cursor.y))
+      )
         stale = true;
       if (ds.nums[i] !== num) stale = true;
       if (ds.flags[i] !== flags) stale = true;
@@ -664,9 +665,9 @@ export function redraw(
     ds.pencilModeShown = ui.hpencil;
   }
 
-  ds.hx = ui.hx;
-  ds.hy = ui.hy;
-  ds.hshow = ui.hshow;
+  ds.cursor.x = ui.cursor.x;
+  ds.cursor.y = ui.cursor.y;
+  ds.cursor.visible = ui.cursor.visible;
   ds.hpencil = ui.hpencil;
   ds.hflash = hflash;
   ds.started = true;

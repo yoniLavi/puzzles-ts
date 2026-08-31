@@ -223,11 +223,11 @@ export function redraw(
       if (x === width) cell |= DRAWFLAG_MARGIN_R;
       if (y === height) cell |= DRAWFLAG_MARGIN_D;
       if (flashing) cell ^= STATE_BLANK | STATE_MARKED;
-      if (ui.cursorVisible) {
-        if (ui.curX === x && ui.curY === y) cell |= DRAWFLAG_CURSOR;
-        if (ui.curX === x - 1 && ui.curY === y) cell |= DRAWFLAG_CURSOR_L;
-        if (ui.curX === x && ui.curY === y - 1) cell |= DRAWFLAG_CURSOR_U;
-        if (ui.curX === x - 1 && ui.curY === y - 1) cell |= DRAWFLAG_CURSOR_UL;
+      if (ui.cursor.visible) {
+        if (ui.cursor.x === x && ui.cursor.y === y) cell |= DRAWFLAG_CURSOR;
+        if (ui.cursor.x === x - 1 && ui.cursor.y === y) cell |= DRAWFLAG_CURSOR_L;
+        if (ui.cursor.x === x && ui.cursor.y === y - 1) cell |= DRAWFLAG_CURSOR_U;
+        if (ui.cursor.x === x - 1 && ui.cursor.y === y - 1) cell |= DRAWFLAG_CURSOR_UL;
       }
       if (mistakeSet?.has(y * width + x) && inBounds) cell |= DRAWFLAG_MISTAKE;
 

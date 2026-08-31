@@ -693,7 +693,7 @@ export function redraw(
       const d = state.grid[cell];
       let hl = 0;
       if (flash) hl = HL_SOLID;
-      if (x === ui.hx && y === ui.hy && ui.hshow)
+      if (x === ui.cursor.x && y === ui.cursor.y && ui.cursor.visible)
         hl = ui.hpencil ? HL_PENCIL : HL_SOLID;
 
       if (d) {

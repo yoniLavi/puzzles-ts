@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LEFT_BUTTON, RIGHT_BUTTON } from "../../engine/pointer.ts";
+import { LEFT_BUTTON, newCursor, RIGHT_BUTTON } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import type { Point } from "../../engine/types.ts";
 import { type RangeMistake, rangeGame } from "./index.ts";
@@ -74,7 +74,7 @@ describe("desc codec", () => {
 describe("interpretMove cycling", () => {
   it("left-button cycles empty -> black -> white -> empty", () => {
     let st = makeState(3, 1, [0, 0, 0]);
-    const ui: RangeUi = { r: 0, c: 0, cursorShow: false };
+    const ui: RangeUi = { cursor: newCursor() };
     for (const expected of [BLACK, WHITE, EMPTY]) {
       const mv = rangeGame.interpretMove(st, ui, ds, cellPoint(0, 0), LEFT_BUTTON);
       st = rangeGame.executeMove(st, mv as RangeMove);
@@ -84,7 +84,7 @@ describe("interpretMove cycling", () => {
 
   it("right-button cycles empty -> white -> black -> empty", () => {
     let st = makeState(3, 1, [0, 0, 0]);
-    const ui: RangeUi = { r: 0, c: 0, cursorShow: false };
+    const ui: RangeUi = { cursor: newCursor() };
     for (const expected of [WHITE, BLACK, EMPTY]) {
       const mv = rangeGame.interpretMove(st, ui, ds, cellPoint(0, 0), RIGHT_BUTTON);
       st = rangeGame.executeMove(st, mv as RangeMove);
@@ -94,7 +94,7 @@ describe("interpretMove cycling", () => {
 
   it("treats clue cells as inert", () => {
     const st = makeState(3, 1, [2, 0, 0]);
-    const ui: RangeUi = { r: 0, c: 0, cursorShow: false };
+    const ui: RangeUi = { cursor: newCursor() };
     expect(
       rangeGame.interpretMove(st, ui, ds, cellPoint(0, 0), LEFT_BUTTON),
     ).toBeNull();
@@ -123,7 +123,7 @@ describe("executeMove", () => {
     expect(after.wasSolved).toBe(true);
     expect(rangeGame.status(after)).toBe("solved");
     expect(
-      rangeGame.flashLength?.(st, after, 1, { r: 0, c: 0, cursorShow: false }),
+      rangeGame.flashLength?.(st, after, 1, { cursor: newCursor() }),
     ).toBeGreaterThan(0);
   });
 });

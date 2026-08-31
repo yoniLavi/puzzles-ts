@@ -22,6 +22,8 @@
  */
 
 import { parseLeadingInt } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 
 // --- params ----------------------------------------------------------------
 
@@ -669,10 +671,8 @@ export type CrossingMove =
 
 export interface CrossingUi {
   /** Selected cell. */
-  cx: number;
-  cy: number;
+  cursor: GridCursor;
   /** The selection is shown. */
-  cshow: boolean;
   /** The selection takes pencil marks rather than ink. */
   cpencil: boolean;
   /** The selection came from the keyboard, so it survives an entry. */
@@ -709,9 +709,7 @@ export interface CrossingUi {
 
 export function newUi(_state: CrossingState): CrossingUi {
   return {
-    cx: 0,
-    cy: 0,
-    cshow: false,
+    cursor: newCursor(),
     cpencil: false,
     ckey: false,
     dir: "across",

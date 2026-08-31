@@ -13,6 +13,8 @@
  */
 
 import { Dsf } from "../../engine/dsf.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
+import { newCursor } from "../../engine/pointer.ts";
 
 // --- difficulty ------------------------------------------------------------
 
@@ -512,10 +514,8 @@ export type KeenMove =
 // --- ui --------------------------------------------------------------------
 
 export interface KeenUi {
-  hx: number;
-  hy: number;
+  cursor: GridCursor;
   hpencil: boolean;
-  hshow: boolean;
   hcursor: boolean;
   /** Preference (default off, upstream `PREF_PENCIL_KEEP_HIGHLIGHT`): keep the
    * mouse highlight after a pencil-mark change. */
@@ -529,10 +529,8 @@ export interface KeenUi {
 
 export function newUi(_state: KeenState): KeenUi {
   return {
-    hx: 0,
-    hy: 0,
+    cursor: newCursor(),
     hpencil: false,
-    hshow: false,
     hcursor: false,
     pencilKeepHighlight: false,
     pencilSticky: true,

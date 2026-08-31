@@ -15,6 +15,7 @@ import { Dsf } from "../../engine/dsf.ts";
 import { findLoops } from "../../engine/findloop.ts";
 import type { PresetMenu } from "../../engine/game.ts";
 import { parseDimensions } from "../../engine/params.ts";
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 // --- difficulty (upstream DIFFLIST: Easy, Hard) ---------------------------
@@ -62,9 +63,7 @@ export type SlantMove =
   | { type: "solve"; grid: string };
 
 export interface SlantUi {
-  cx: number;
-  cy: number;
-  cursorVisible: boolean;
+  cursor: GridCursor;
   /** Pref: swap which click direction cycles `\`-first vs `/`-first. */
   swapButtons: boolean;
   /** Pref: dim diagonals connected to the border (they can never loop). */

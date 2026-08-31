@@ -130,20 +130,20 @@ function interpretMove(
       // highlight and keeps the current mode; upstream (sticky off) reverts to
       // real entry.
       if (
-        ui.cshow &&
-        ui.hx === gx &&
-        ui.hy === gy &&
+        ui.cursor.visible &&
+        ui.cursor.x === gx &&
+        ui.cursor.y === gy &&
         (ui.pencilSticky || !ui.cpencil)
       ) {
-        ui.cshow = false;
+        ui.cursor.visible = false;
       } else {
-        ui.hx = gx;
-        ui.hy = gy;
-        ui.cshow = true;
+        ui.cursor.x = gx;
+        ui.cursor.y = gy;
+        ui.cursor.visible = true;
         if (!ui.pencilSticky) ui.cpencil = false;
       }
       // A given can't be edited, so never leave it highlighted.
-      if (flags[i] & FM_FIXED) ui.cshow = false;
+      if (flags[i] & FM_FIXED) ui.cursor.visible = false;
       ui.ckey = false;
       return UI_UPDATE;
     }
@@ -154,21 +154,26 @@ function interpretMove(
         // cell that can actually take a mark.
         ui.cpencil = !ui.cpencil;
         if (grid[i] === 0) {
-          ui.hx = gx;
-          ui.hy = gy;
-          ui.cshow = true;
+          ui.cursor.x = gx;
+          ui.cursor.y = gy;
+          ui.cursor.visible = true;
         }
       } else {
-        if (!ui.cshow || !ui.cpencil || ui.hx !== gx || ui.hy !== gy) {
-          ui.hx = gx;
-          ui.hy = gy;
+        if (
+          !ui.cursor.visible ||
+          !ui.cpencil ||
+          ui.cursor.x !== gx ||
+          ui.cursor.y !== gy
+        ) {
+          ui.cursor.x = gx;
+          ui.cursor.y = gy;
           ui.cpencil = true;
-          ui.cshow = true;
+          ui.cursor.visible = true;
         } else {
-          ui.cshow = false;
+          ui.cursor.visible = false;
         }
         // A cell that already holds a number can't take a mark.
-        if (grid[i] !== 0) ui.cshow = false;
+        if (grid[i] !== 0) ui.cursor.visible = false;
       }
       ui.ckey = false;
       return UI_UPDATE;
@@ -176,15 +181,18 @@ function interpretMove(
   }
 
   if (isCursorMove(button)) {
-    const moved = gridCursorMove(button, ui.hx, ui.hy, w, h) ?? { x: ui.hx, y: ui.hy };
-    ui.hx = moved.x;
-    ui.hy = moved.y;
-    ui.cshow = true;
+    const moved = gridCursorMove(button, ui.cursor.x, ui.cursor.y, w, h) ?? {
+      x: ui.cursor.x,
+      y: ui.cursor.y,
+    };
+    ui.cursor.x = moved.x;
+    ui.cursor.y = moved.y;
+    ui.cursor.visible = true;
     ui.ckey = true;
     return UI_UPDATE;
   }
 
-  if (ui.cshow && button === CURSOR_SELECT) {
+  if (ui.cursor.visible && button === CURSOR_SELECT) {
     ui.cpencil = !ui.cpencil;
     ui.ckey = true;
     return UI_UPDATE;
@@ -192,9 +200,9 @@ function interpretMove(
 
   const isDigit = button >= 0x31 && button <= 0x39; // '1'..'9'
   const isClear = button === CURSOR_SELECT2 || isEraseKey(button) || button === 0x30;
-  if (ui.cshow && (isDigit || isClear)) {
+  if (ui.cursor.visible && (isDigit || isClear)) {
     const n = isDigit ? button - 0x30 : 0;
-    const i = ui.hy * w + ui.hx;
+    const i = ui.cursor.y * w + ui.cursor.x;
 
     // Entry is capped at the cell's region size — the interface simply refuses a
     // number the region could never hold (upstream's stated design choice).
@@ -206,8 +214,8 @@ function interpretMove(
     if (flags[i] & FM_FIXED) return null;
 
     // A mouse-driven entry puts the highlight away; a keyboard one keeps it.
-    if (!ui.ckey && !ui.cpencil) ui.cshow = false;
-    return { type: "set", x: ui.hx, y: ui.hy, n, pencil: ui.cpencil };
+    if (!ui.ckey && !ui.cpencil) ui.cursor.visible = false;
+    return { type: "set", x: ui.cursor.x, y: ui.cursor.y, n, pencil: ui.cpencil };
   }
 
   // 'M' / 'm': fill every empty cell's notes with its region's candidates.

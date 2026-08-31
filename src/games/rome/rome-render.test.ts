@@ -6,6 +6,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { Midend } from "../../engine/midend.ts";
+import { newCursor } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
@@ -244,8 +245,16 @@ describe("highlight preferences", () => {
 describe("cursor and drag", () => {
   it("distinguishes the armed-to-place cursor from the armed-to-pencil one", () => {
     const state = board(3, 3, `${ALL_WALLS_3},i`);
-    const place = frame(state, { ...newUi(), hx: 1, hy: 1, kmode: KEYMODE_PLACE }).dr;
-    const pencil = frame(state, { ...newUi(), hx: 1, hy: 1, kmode: KEYMODE_PENCIL }).dr;
+    const place = frame(state, {
+      ...newUi(),
+      cursor: newCursor(1, 1, true),
+      kmode: KEYMODE_PLACE,
+    }).dr;
+    const pencil = frame(state, {
+      ...newUi(),
+      cursor: newCursor(1, 1, true),
+      kmode: KEYMODE_PENCIL,
+    }).dr;
     expect(place.ops.some((o) => o.op === "rect" && o.colour === COL_HIGHLIGHT)).toBe(
       true,
     );
@@ -260,8 +269,7 @@ describe("cursor and drag", () => {
     const state = board(3, 3, `${ALL_WALLS_3},i`);
     const ui: RomeUi = {
       ...newUi(),
-      hx: 1,
-      hy: 1,
+      cursor: newCursor(1, 1),
       mmode: MOUSEMODE_PLACE,
       mdir: FM_DOWN,
     };
@@ -275,8 +283,7 @@ describe("cursor and drag", () => {
     const state = board(3, 3, `${ALL_WALLS_3},i`);
     const ui: RomeUi = {
       ...newUi(),
-      hx: 1,
-      hy: 1,
+      cursor: newCursor(1, 1),
       mmode: MOUSEMODE_PLACE,
       mdir: EMPTY,
     };
@@ -313,7 +320,11 @@ describe("completion flash", () => {
 
   it("hides the keyboard cursor while the board celebrates", () => {
     const state = board(3, 3, `${ALL_WALLS_3},i`);
-    const ui: RomeUi = { ...newUi(), hx: 1, hy: 1, kmode: KEYMODE_PENCIL };
+    const ui: RomeUi = {
+      ...newUi(),
+      cursor: newCursor(1, 1, true),
+      kmode: KEYMODE_PENCIL,
+    };
     expect(frame(state, ui, 0.65).dr.ops.some((o) => o.op === "text")).toBe(false);
   });
 });

@@ -388,8 +388,8 @@ export function redraw(
   const mistakeSet = new Set<number>();
   if (mistakes) for (const m of mistakes) mistakeSet.add(m.y * w + m.x);
 
-  const cx = ui.cursorVisible ? ui.curX : -1;
-  const cy = ui.cursorVisible ? ui.curY : -1;
+  const cx = ui.cursor.visible ? ui.cursor.x : -1;
+  const cy = ui.cursor.visible ? ui.cursor.y : -1;
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {

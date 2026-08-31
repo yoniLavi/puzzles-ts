@@ -212,8 +212,8 @@ describe("Flood input mapping", () => {
     const fresh = floodGame.newUi(state);
     const r = floodGame.interpretMove(state, fresh, ds, { x: 0, y: 0 }, CURSOR_RIGHT);
     expect(r).toBe(UI_UPDATE);
-    expect(fresh.cx).toBe(1);
-    expect(fresh.cursorVisible).toBe(true);
+    expect(fresh.cursor.x).toBe(1);
+    expect(fresh.cursor.visible).toBe(true);
   });
 
   it("fills the cursor cell on select when it differs", () => {

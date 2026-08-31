@@ -29,6 +29,7 @@ import {
   CURSOR_SELECT,
   CURSOR_SELECT2,
   cursorDelta,
+  type GridCursor,
   LEFT_BUTTON,
   RIGHT_BUTTON,
 } from "./pointer.ts";
@@ -90,14 +91,14 @@ export interface BorderGridState {
   borders: ArrayLike<number>;
 }
 
-/** The cursor state this mechanic maintains. Coordinates are in HALF-cells:
- * `(2x+1, 2y+1)` is the centre of cell `(x,y)`, so an even coordinate names an
- * edge and both-even names a corner. That is what lets one cursor address cells
- * and the edges between them without a second state variable. */
+/** The cursor state this mechanic maintains: the collection's shared
+ * {@link GridCursor}, but read in HALF-cells — `(2x+1, 2y+1)` is the centre of
+ * cell `(x,y)`, so an even coordinate names an edge and both-even a corner.
+ * That is what lets one cursor address cells and the edges between them without
+ * a second state variable, and it is why the traversal below is this module's
+ * own rather than `pointer.ts`'s `moveCursor`. */
 export interface BorderGridUi {
-  x: number;
-  y: number;
-  show: boolean;
+  cursor: GridCursor;
 }
 
 /** One cell's worth of bits to toggle. An edge always produces two of these —
@@ -157,14 +158,14 @@ export function pointerEdge(
   for (; dir < 4 && BORDER(dir) !== possible; dir++);
   if (dir === 4) return null; // defensive: see above, unreachable
 
-  ui.x = clamp(2 * gx + 1 + DX[dir], 1, 2 * w - 1);
-  ui.y = clamp(2 * gy + 1 + DY[dir], 1, 2 * h - 1);
+  ui.cursor.x = clamp(2 * gx + 1 + DX[dir], 1, 2 * w - 1);
+  ui.cursor.y = clamp(2 * gy + 1 + DY[dir], 1, 2 * h - 1);
 
   const hx = gx + DX[dir];
   const hy = gy + DY[dir];
   if (outOfBounds(hx, hy, w, h)) return null;
 
-  ui.show = false;
+  ui.cursor.visible = false;
 
   const i = gy * w + gx;
   const cur =
@@ -186,16 +187,18 @@ export function pointerEdge(
   ];
 }
 
-/** Move the half-cell cursor by one step, clamped inside the grid. */
-export function moveCursor(
+/** Move the half-cell cursor by one step, clamped inside the grid. Named apart
+ * from `pointer.ts`'s `moveCursor` because the traversal genuinely differs: a
+ * step here crosses half a cell, from an edge to a centre or back. */
+export function moveBorderCursor(
   ui: BorderGridUi,
   d: { dx: number; dy: number },
   w: number,
   h: number,
 ): void {
-  ui.show = true;
-  ui.x = clamp(ui.x + d.dx, 1, 2 * w - 1);
-  ui.y = clamp(ui.y + d.dy, 1, 2 * h - 1);
+  ui.cursor.visible = true;
+  ui.cursor.x = clamp(ui.cursor.x + d.dx, 1, 2 * w - 1);
+  ui.cursor.y = clamp(ui.cursor.y + d.dy, 1, 2 * h - 1);
 }
 
 /**
@@ -212,17 +215,17 @@ export function selectEdge(
   isSelect2: boolean,
 ): BorderGridInput {
   const { w, borders } = state;
-  const px = ui.x % 2;
-  const py = ui.y % 2;
-  const gx = Math.floor(ui.x / 2);
-  const gy = Math.floor(ui.y / 2);
+  const px = ui.cursor.x % 2;
+  const py = ui.cursor.y % 2;
+  const gx = Math.floor(ui.cursor.x / 2);
+  const gy = Math.floor(ui.cursor.y / 2);
   const dir = px === 0 ? 3 : 0; // left : up
   const hx = gx + DX[dir];
   const hy = gy + DY[dir];
   const i = gy * w + gx;
 
-  if (!ui.show) {
-    ui.show = true;
+  if (!ui.cursor.visible) {
+    ui.cursor.visible = true;
     return "ui";
   }
   if (px === py) return null; // a corner or centre: no edge
@@ -318,7 +321,7 @@ export function interpretBorderGridInput(
 
   const d = cursorDelta(button);
   if (d) {
-    moveCursor(ui, d, state.w, state.h);
+    moveBorderCursor(ui, d, state.w, state.h);
     return "ui";
   }
 

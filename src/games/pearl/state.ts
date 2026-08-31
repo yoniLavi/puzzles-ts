@@ -253,6 +253,7 @@ export function inGrid(s: { w: number; h: number }, x: number, y: number): boole
   return x >= 0 && x < s.w && y >= 0 && y < s.h;
 }
 
+import type { GridCursor } from "../../engine/pointer.ts";
 import type { GameStatus } from "../../engine/types.ts";
 
 export function status(s: PearlState): GameStatus {
@@ -287,9 +288,7 @@ export interface PearlUi {
   ndragcoords: number;
   clickx: number;
   clicky: number;
-  curx: number;
-  cury: number;
-  cursorActive: boolean;
+  cursor: GridCursor;
   /** GUI_MASYU (0) or GUI_LOOPY (1); driven by the `appearance` pref. */
   guiStyle: number;
 }

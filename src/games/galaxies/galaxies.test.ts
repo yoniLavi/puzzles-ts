@@ -345,7 +345,7 @@ describe("Galaxies interpretMove", () => {
       PuzzleButton.CURSOR_UP,
     );
     expect(r).toBe(UI_UPDATE);
-    expect(ui.curVisible).toBe(true);
+    expect(ui.cursor.visible).toBe(true);
   });
 });
 
@@ -694,9 +694,9 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
 
     // A vertical edge at doubled (2,1): the two tiles it separates each
     // paint their clipped half.
-    ui.curVisible = true;
-    ui.curX = 2;
-    ui.curY = 1;
+    ui.cursor.visible = true;
+    ui.cursor.x = 2;
+    ui.cursor.y = 1;
     const at1 = recordingDrawing();
     galaxiesRedraw(at1.dr, ds, null, s, 1, ui, 0, 0);
     expect(cursorRects(at1).length).toBeGreaterThan(0);
@@ -704,7 +704,7 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
 
     // Move two subcells right, onto the next vertical edge. The vacated
     // tiles must repaint — and that repaint must contain no cursor.
-    ui.curX = 6;
+    ui.cursor.x = 6;
     const at2 = recordingDrawing();
     galaxiesRedraw(at2.dr, ds, null, s, 1, ui, 0, 0);
     const vacated = [tileRect(0, 0), tileRect(1, 0)];
@@ -717,7 +717,7 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
     expect(cursorRects(at2)).toHaveLength(2);
 
     // Hide the cursor: the last pair repaints clean and nothing remains.
-    ui.curVisible = false;
+    ui.cursor.visible = false;
     const gone = recordingDrawing();
     galaxiesRedraw(gone.dr, ds, null, s, 1, ui, 0, 0);
     expect(gone.ops.filter((o) => o.op === "clip")).toHaveLength(2);
@@ -950,16 +950,16 @@ describe("Galaxies association gestures (left button, and cell→dot)", () => {
 
   it("the keyboard reaches the cell→dot gesture too", () => {
     const { s, ui } = board();
-    ui.curVisible = true;
-    ui.curX = 1;
-    ui.curY = 3; // tile (0,1)
+    ui.cursor.visible = true;
+    ui.cursor.x = 1;
+    ui.cursor.y = 3; // tile (0,1)
     expect(move(s, ui, 0, 0, CURSOR_SELECT)).toBe(UI_UPDATE);
     expect(ui.dragToDot).toBe(true);
     expect(ui.dotx).toBe(-1); // nothing picked until the cursor lands on one
     // Walk the cursor onto the dot at (3,3).
     move(s, ui, 0, 0, PuzzleButton.CURSOR_RIGHT);
     move(s, ui, 0, 0, PuzzleButton.CURSOR_RIGHT);
-    expect([ui.curX, ui.curY]).toEqual([3, 3]);
+    expect([ui.cursor.x, ui.cursor.y]).toEqual([3, 3]);
     expect([ui.dotx, ui.doty]).toEqual([3, 3]);
     expect(move(s, ui, 0, 0, CURSOR_SELECT)).toEqual({
       ops: [{ kind: "assoc", x: 1, y: 3, ax: 3, ay: 3 }],

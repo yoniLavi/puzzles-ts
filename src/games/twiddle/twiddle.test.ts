@@ -287,8 +287,8 @@ describe("Twiddle input", () => {
       CURSOR_LEFT,
     );
     expect(m1).toBe(UI_UPDATE);
-    expect(ui.curVisible).toBe(true);
-    expect(ui.curX).toBe(0);
+    expect(ui.cursor.visible).toBe(true);
+    expect(ui.cursor.x).toBe(0);
     // Right moves to 1 (origin space is (w-n+1)=3 wide: 0..2).
     twiddleGame.interpretMove(
       s,
@@ -297,14 +297,14 @@ describe("Twiddle input", () => {
       { x: 0, y: 0 },
       CURSOR_RIGHT,
     );
-    expect(ui.curX).toBe(1);
+    expect(ui.cursor.x).toBe(1);
   });
 
   it("select rotates at the cursor once visible", () => {
     const ui = twiddleGame.newUi(s);
-    ui.curVisible = true;
-    ui.curX = 1;
-    ui.curY = 0;
+    ui.cursor.visible = true;
+    ui.cursor.x = 1;
+    ui.cursor.y = 0;
     expect(
       twiddleGame.interpretMove(
         s,
@@ -336,7 +336,7 @@ describe("Twiddle input", () => {
         CURSOR_SELECT,
       ),
     ).toBe(UI_UPDATE);
-    expect(ui.curVisible).toBe(true);
+    expect(ui.cursor.visible).toBe(true);
   });
 
   it("maps the corner letter keys", () => {

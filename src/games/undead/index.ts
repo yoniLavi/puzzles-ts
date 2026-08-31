@@ -192,15 +192,15 @@ function interpretMove(
   const xinfo = common.xinfo;
 
   // Real-entry mode: highlight shown, not pencilling.
-  if (ui.hshow && !ui.hpencil) {
-    const xi = xinfo[ui.hx + ui.hy * stride];
+  if (ui.cursor.visible && !ui.hpencil) {
+    const xi = xinfo[ui.cursor.x + ui.cursor.y * stride];
     if (xi >= 0 && !common.fixed[xi]) {
       let ccLocal = cc;
       // Already there → treat as a delete. `DELETE` is being used as a
       // sentinel value here, not as a button the frontend sent.
       if (ccLocal >= 0 && state.guess[xi] === 1 << ccLocal) ccLocal = DELETE;
       const place = (monster: number): UndeadMove | null | UiUpdate => {
-        if (!ui.hcursor) ui.hshow = false;
+        if (!ui.hcursor) ui.cursor.visible = false;
         if (state.guess[xi] === monster) return ui.hcursor ? null : UI_UPDATE;
         return { type: "set", cell: xi, monster };
       };
@@ -218,7 +218,7 @@ function interpretMove(
         isEraseKey(button) ||
         ccLocal === DELETE
       ) {
-        if (!ui.hcursor) ui.hshow = false;
+        if (!ui.hcursor) ui.cursor.visible = false;
         if (state.guess[xi] === MON_NONE && state.pencils[xi] === 0)
           return ui.hcursor ? null : UI_UPDATE;
         return { type: "clear", cell: xi };
@@ -228,28 +228,28 @@ function interpretMove(
 
   // Keyboard cursor movement.
   if (isCursorMove(button)) {
-    if (ui.hx === 0 && ui.hy === 0) {
-      ui.hx = 1;
-      ui.hy = 1;
-    } else if (button === CURSOR_UP) ui.hy -= ui.hy > 1 ? 1 : 0;
-    else if (button === CURSOR_DOWN) ui.hy += ui.hy < h ? 1 : 0;
-    else if (button === CURSOR_RIGHT) ui.hx += ui.hx < w ? 1 : 0;
-    else if (button === CURSOR_LEFT) ui.hx -= ui.hx > 1 ? 1 : 0;
-    ui.hshow = true;
+    if (ui.cursor.x === 0 && ui.cursor.y === 0) {
+      ui.cursor.x = 1;
+      ui.cursor.y = 1;
+    } else if (button === CURSOR_UP) ui.cursor.y -= ui.cursor.y > 1 ? 1 : 0;
+    else if (button === CURSOR_DOWN) ui.cursor.y += ui.cursor.y < h ? 1 : 0;
+    else if (button === CURSOR_RIGHT) ui.cursor.x += ui.cursor.x < w ? 1 : 0;
+    else if (button === CURSOR_LEFT) ui.cursor.x -= ui.cursor.x > 1 ? 1 : 0;
+    ui.cursor.visible = true;
     ui.hcursor = true;
     return UI_UPDATE;
   }
 
   // Select toggles pencil mode.
-  if (ui.hshow && button === CURSOR_SELECT) {
+  if (ui.cursor.visible && button === CURSOR_SELECT) {
     ui.hpencil = !ui.hpencil;
     ui.hcursor = true;
     return UI_UPDATE;
   }
 
   // Pencil-entry mode.
-  if (ui.hshow && ui.hpencil) {
-    const xi = xinfo[ui.hx + ui.hy * stride];
+  if (ui.cursor.visible && ui.hpencil) {
+    const xi = xinfo[ui.cursor.x + ui.cursor.y * stride];
     if (xi >= 0 && !common.fixed[xi]) {
       let move: UndeadMove | null = null;
       if (button === KEY_G || button === KEY_g || button === KEY_1 || cc === 0)
@@ -271,7 +271,7 @@ function interpretMove(
       if (move) {
         if (!ui.hcursor && !(ui.hpencil && ui.pencilKeepHighlight)) {
           ui.hpencil = false;
-          ui.hshow = false;
+          ui.cursor.visible = false;
         }
         return move;
       }
@@ -285,16 +285,16 @@ function interpretMove(
       const g = state.guess[xi];
       if (button === LEFT_BUTTON) {
         if (
-          gx === ui.hx &&
-          gy === ui.hy &&
-          ui.hshow &&
+          gx === ui.cursor.x &&
+          gy === ui.cursor.y &&
+          ui.cursor.visible &&
           (ui.pencilSticky || !ui.hpencil)
         ) {
-          ui.hshow = false;
+          ui.cursor.visible = false;
         } else {
-          ui.hx = gx;
-          ui.hy = gy;
-          ui.hshow = true;
+          ui.cursor.x = gx;
+          ui.cursor.y = gy;
+          ui.cursor.visible = true;
           if (!ui.pencilSticky) ui.hpencil = false;
         }
         ui.hcursor = false;
@@ -304,34 +304,34 @@ function interpretMove(
         if (ui.pencilSticky) {
           ui.hpencil = !ui.hpencil;
           if (g === MON_NONE) {
-            ui.hx = gx;
-            ui.hy = gy;
-            ui.hshow = true;
+            ui.cursor.x = gx;
+            ui.cursor.y = gy;
+            ui.cursor.visible = true;
           }
           ui.hcursor = false;
           return UI_UPDATE;
         }
         // Non-sticky (upstream): right-click an empty cell enters pencil mode.
         if (!ui.hpencil && g === MON_NONE) {
-          ui.hshow = true;
+          ui.cursor.visible = true;
           ui.hpencil = true;
           ui.hcursor = false;
-          ui.hx = gx;
-          ui.hy = gy;
+          ui.cursor.x = gx;
+          ui.cursor.y = gy;
           return UI_UPDATE;
         }
-        if (gx === ui.hx && gy === ui.hy && ui.hshow) {
-          ui.hshow = false;
+        if (gx === ui.cursor.x && gy === ui.cursor.y && ui.cursor.visible) {
+          ui.cursor.visible = false;
           ui.hpencil = false;
           ui.hcursor = false;
           return UI_UPDATE;
         }
         if (g === MON_NONE) {
-          ui.hshow = true;
+          ui.cursor.visible = true;
           ui.hpencil = true;
           ui.hcursor = false;
-          ui.hx = gx;
-          ui.hy = gy;
+          ui.cursor.x = gx;
+          ui.cursor.y = gy;
           return UI_UPDATE;
         }
       }
@@ -401,12 +401,13 @@ function changedState(
   _old: UndeadState | null,
   newSt: UndeadState,
 ): void {
-  if (ui.hshow && ui.hpencil && !ui.hcursor) {
+  if (ui.cursor.visible && ui.hpencil && !ui.hcursor) {
     const stride = newSt.common.w + 2;
-    const xi = newSt.common.xinfo[ui.hx + ui.hy * stride];
+    const xi = newSt.common.xinfo[ui.cursor.x + ui.cursor.y * stride];
     if (xi >= 0) {
       const g = newSt.guess[xi];
-      if (g === MON_GHOST || g === MON_VAMPIRE || g === MON_ZOMBIE) ui.hshow = false;
+      if (g === MON_GHOST || g === MON_VAMPIRE || g === MON_ZOMBIE)
+        ui.cursor.visible = false;
     }
   }
 }

@@ -28,6 +28,7 @@ import {
   isCursorMove,
   LEFT_BUTTON,
   MOD_NUM_KEYPAD,
+  newCursor,
   RIGHT_BUTTON,
 } from "../../engine/pointer.ts";
 import type { RandomState } from "../../engine/random/index.ts";
@@ -85,9 +86,7 @@ import {
 
 function newUi(_state: DominosaState): DominosaUi {
   return {
-    curX: 0,
-    curY: 0,
-    cursorVisible: false,
+    cursor: newCursor(),
     highlight1: -1,
     highlight2: -1,
     highlightPair: null,
@@ -166,26 +165,33 @@ function interpretMove(
     if (button === RIGHT_BUTTON && (state.grid[d1] !== d1 || state.grid[d2] !== d2))
       return dismissRef ? UI_UPDATE : null;
 
-    ui.cursorVisible = false;
+    ui.cursor.visible = false;
     return button === RIGHT_BUTTON
       ? { type: "edge", d1, d2 }
       : { type: "domino", d1, d2 };
   }
 
   if (isCursorMove(button)) {
-    const moved = gridCursorMove(button, ui.curX, ui.curY, 2 * w - 1, 2 * h - 1);
+    const moved = gridCursorMove(
+      button,
+      ui.cursor.x,
+      ui.cursor.y,
+      2 * w - 1,
+      2 * h - 1,
+    );
     if (moved) {
-      ui.curX = moved.x;
-      ui.curY = moved.y;
+      ui.cursor.x = moved.x;
+      ui.cursor.y = moved.y;
     }
-    ui.cursorVisible = true;
+    ui.cursor.visible = true;
     return UI_UPDATE;
   }
 
   if (button === CURSOR_SELECT || button === CURSOR_SELECT2) {
-    if (!((ui.curX ^ ui.curY) & 1)) return null; // need exactly one dimension odd
-    const d1 = Math.floor(ui.curY / 2) * w + Math.floor(ui.curX / 2);
-    const d2 = Math.floor((ui.curY + 1) / 2) * w + Math.floor((ui.curX + 1) / 2);
+    if (!((ui.cursor.x ^ ui.cursor.y) & 1)) return null; // need exactly one dimension odd
+    const d1 = Math.floor(ui.cursor.y / 2) * w + Math.floor(ui.cursor.x / 2);
+    const d2 =
+      Math.floor((ui.cursor.y + 1) / 2) * w + Math.floor((ui.cursor.x + 1) / 2);
     if (button === CURSOR_SELECT2 && (state.grid[d1] !== d1 || state.grid[d2] !== d2))
       return null;
     return button === CURSOR_SELECT2
