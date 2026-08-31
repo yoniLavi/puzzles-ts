@@ -196,6 +196,7 @@ invasive enough to want the eye:
 | Rome | arrow, then Enter | grey (armed to *move*) then white (armed to *place*) — the `kmode` three-way split renders correctly |
 | Magnets | Solve | board fills, end dialog appears, **no win flash** — the half the `solved`→`cheated` rename could have inverted |
 | Range | solved by walking the hint plan | **"Solved!"** with the flash playing — `winFlash` still fires on an un-cheated win |
+| Palisade | Solve, then break a wall, then restore it by hand | Solve: no celebration. The manual re-completion **does** celebrate — the rule §8b.2 moved into `winFlash`, end to end |
 
 ## 8b. Owner decisions, taken after the first pass (2026-08-31)
 
