@@ -25,5 +25,4 @@
 - [x] 4.1 Proved the gate skips on a documentation-only staged set, and still
       runs everything when one source file joins it.
 - [x] 4.2 Full `npm run gate` green (unset env — the whole gate, as CI runs it).
-- [ ] 4.3 Owner acceptance: this changes what a commit is checked against, which
-      is theirs to judge even though CI still backstops it. Then archive.
+- [x] 4.3 Owner accepted 2026-09-01. Archived.

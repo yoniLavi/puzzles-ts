@@ -55,7 +55,8 @@ hooks never installed could land breakage on `main` undetected).
 
 The pre-commit gate SHALL run all five checks (`tsc -b --noEmit`, biome,
 `npm run probe -- --verify`, `vitest run`, `vite build`) and block a commit on
-any failure, while being orchestrated to reduce wall-clock: the fast checks
+any failure — with the single documentation-only exception scoped below —
+while being orchestrated to reduce wall-clock: the fast checks
 (`tsc`, then biome, then the probe-anchor check) run first as a fail-fast
 prefix, and the two heavy, mutually-independent checks (`vitest run` and
 `vite build`, which share no inputs or outputs) SHALL run **concurrently**,
@@ -98,6 +99,29 @@ unformatted by touching it:
   only gate a `--no-verify` commit passes through, and the whole-tree pass is
   also what forces a tree-wide reformat when biome itself is upgraded and
   restyles files no single commit touched.
+
+**The heavy checks SHALL likewise be scoped by role, and only for a commit that
+cannot affect them.** The automatic per-commit hook MAY skip `vitest run` and
+`vite build` when **every** staged path is documentation that is neither a test
+input nor a build input; one staged path outside that set SHALL run the whole
+gate. CI and a manual `npm run gate` SHALL run everything, so the branch's
+guarantee is unchanged — the same backstop argument as the biome scope, and
+permitted for the same reason.
+
+The set of skippable paths SHALL be asserted rather than assumed: a test SHALL
+fail if any test, source or build-side module acquires a **read** of a path in
+that set, so the exception stops being safe *and says so* rather than silently
+skipping a check that has become real. That assertion SHALL key on the shape of
+a read and not on the paths' names, since this repo's documentation is cited in
+prose throughout its sources. `help/` SHALL NOT be skippable: it is a
+`vite build` input and `help-coverage.test.ts`'s subject.
+
+Selecting *individual tests* by what a commit changed is a different question
+and is NOT authorised by this requirement. The cross-game guards here reach
+their subjects through `import.meta.glob(..., "?raw")` rather than through
+imports, so a graph-based selection may omit exactly the guards that exist to
+catch a change to one game. Such a scheme SHALL first demonstrate that its
+selection reaches those guards.
 
 No correctness check may be removed, weakened, or moved off the per-commit path
 to buy speed (scoping the hook to staged files is not a weakening — the
@@ -167,6 +191,29 @@ by an environment toggle the hook sets, not by a second copy of the gate.
   smaller corpus and report success — the failure mode this project keeps
   naming, where a silent cap reads as health. Re-anchoring is also the moment a
   human decides whether the case still states the defect it claims to.
+
+#### Scenario: A documentation-only commit skips the heavy checks
+
+- **WHEN** every path staged for a commit is documentation that no test and no
+  build input reads
+- **THEN** the per-commit hook runs the fast prefix and skips `vitest run` and
+  `vite build`
+- **AND** it says so, naming what it skipped and where the full gate still runs
+
+#### Scenario: One source file cancels the exception
+
+- **WHEN** a commit stages documentation together with any other path
+- **THEN** the whole gate runs, because the exception is an all-or-nothing test
+  on the staged set rather than a per-file filter
+
+#### Scenario: A skippable path acquires a reader
+
+- **WHEN** a test, source or build-side module begins reading a path the gate
+  may skip
+- **THEN** a test fails, naming the file and the path
+- **BECAUSE** the exception's whole basis is that those paths reach nothing, and
+  a check skipped for a path that has become real is a dropped check reporting
+  success
 
 ### Requirement: Refactoring metrics are measured on demand and ratcheted in the gate
 
