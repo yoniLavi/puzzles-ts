@@ -46,5 +46,4 @@
 - [x] 4.1 `docs/games/hints.md` § "Refusal wording comes from one module",
       including how to choose between the two mistake messages.
 - [x] 4.2 Full gate green.
-- [ ] 4.3 Owner acceptance — the words a refused hint shows have changed — then
-      archive.
+- [x] 4.3 Owner accepted 2026-09-01, wording as shipped. Archived.
