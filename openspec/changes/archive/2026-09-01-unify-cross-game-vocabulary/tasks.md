@@ -118,7 +118,15 @@
         `renderScenario` harness: a keyboard cursor is `Ui` state, so no `Move`
         can put it anywhere, and "the frame after one arrow press" was a frame
         the harness could not reach at all.
-- [ ] 3.4 Owner acceptance — this is the one part a player can feel.
+- [x] 3.4 **Owner accepted, 2026-09-01**, against the pass in §7 and a walk
+      through the five changed games.
+      - **The action-arrow exception was put to the owner explicitly** and
+        accepted as it stands: in Pearl, Range and Sixteen a *modified* arrow is
+        an action on the board, and its first press on a hidden cursor still
+        only reveals. It is a kept inconsistency, surfaced as one rather than
+        buried, because the owner's standing preference is consistency unless
+        there is a strong reason — and "a player cannot see where the action
+        would land" is the reason.
 
 ## 4. Guards against re-drift
 

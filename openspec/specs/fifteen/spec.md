@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change add-fifteen-ts-port. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Fifteen game implements the Game interface
 
 The engine SHALL provide a registered `fifteen` game implementing
@@ -42,7 +44,7 @@ tile in that direction). `executeMove` SHALL be pure (returning a new state):
 a slide shifts every tile on the line between the old and new gap one cell
 toward the old gap, incrementing the move count once per shifted tile and
 recording completion when the solved arrangement is first reached; a solve
-SHALL replace the grid with the solved permutation, set `usedSolve`, and
+SHALL replace the grid with the solved permutation, set `cheated`, and
 suppress the completion flash.
 
 #### Scenario: A slide shifts a line of tiles into the gap
@@ -62,7 +64,7 @@ suppress the completion flash.
 #### Scenario: Solve snaps to the solved board
 
 - **WHEN** the solve move executes
-- **THEN** the new state is the solved permutation with `usedSolve` set, and
+- **THEN** the new state is the solved permutation with `cheated` set, and
   the completion flash is suppressed on the following redraw
 
 ### Requirement: Fifteen offers a greedy full-solution hint plan
@@ -142,4 +144,3 @@ background for two frames. The status bar SHALL show the move count, a
 - **THEN** the moving tiles are drawn at coordinates interpolated between their
   old and new cells, settling exactly on their destination cells at animation
   end
-

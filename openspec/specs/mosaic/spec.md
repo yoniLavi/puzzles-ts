@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change add-mosaic-ts-port. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Mosaic game implements the Game interface
 
 The engine SHALL provide a registered `mosaic` game implementing
@@ -119,12 +121,17 @@ cursor with select/select2 SHALL mirror the click behaviours.
 ### Requirement: Mosaic solves and checks mistakes against the deduced solution
 
 The Solve command SHALL run the deductive solver on the clue board and apply
-the full solution (cells flagged solved, `cheating` set, status bar reading
+the full solution (cells flagged solved, `cheated` set, status bar reading
 `Auto solved`), failing with an error when deduction cannot complete the
 board. `findMistakes` SHALL return every cell the player has determined
 whose mark contradicts the deduced solution, rendered as an error-coloured
 outline overlay, and SHALL return no mistakes when deduction stalls or the
 marks are consistent.
+
+Mosaic keeps its own `flashLength` rather than the shared `winFlash`, and the
+reason is a real one rather than a spelling: its completion is
+`notCompletedClues === 0`, a counter it maintains for its own rendering, not a
+separate flag.
 
 #### Scenario: Solve completes the board
 
@@ -138,4 +145,3 @@ marks are consistent.
   Check & Save runs
 - **THEN** `findMistakes` returns that cell
 - **AND** a correctly-marked board returns no mistakes
-

@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change add-range-ts-port. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Range game implements the Game interface
 
 The engine SHALL provide a registered `range` game implementing
@@ -39,8 +41,8 @@ as an explicit separator where two clues or a clue and a run would otherwise
 merge, exactly as upstream. `validateDesc` SHALL reject any other character,
 any clue outside `1 .. w + h - 1`, and any desc whose decoded cell count
 differs from `w * h`. `newState` SHALL parse the desc into the grid with clue
-cells holding their value and every other cell `EMPTY`, `hasCheated` and
-`wasSolved` both false.
+cells holding their value and every other cell `EMPTY`, `cheated` and
+`completed` both false.
 
 #### Scenario: A description round-trips
 
@@ -102,13 +104,18 @@ cell-sets, or an error when the board contains a contradiction.
 
 A `RangeMove` SHALL be a list of cell-sets (each painting a cell black, white,
 or empty) plus an optional solve flag (upstream's `S`, marking the state
-cheated and solved). `executeMove` SHALL be pure, throw on an out-of-bounds or
-clue-cell target, and — unless the solve flag is set — recompute `wasSolved`
+cheated and completed). `executeMove` SHALL be pure, throw on an out-of-bounds
+or clue-cell target, and — unless the solve flag is set — recompute `completed`
 as the absence of errors after applying the sets. Left-button / select on a
 non-clue cell SHALL cycle empty → black → white → empty; right-button /
 select2 SHALL cycle empty → white → black → empty; a clue cell SHALL be
 inert. A keyboard cursor SHALL move within the grid, and shift + a cursor
 direction SHALL place a white dot on the vacated and/or entered empty cells.
+
+Range's grid is row-major and its own helpers take `(r, c)`. The keyboard
+cursor is nevertheless the collection's shared `(x, y)` shape, so `cursor.x` is
+this game's column and `cursor.y` its row — the one place in the collection
+where the two conventions meet, and therefore the one place it is worth saying.
 
 #### Scenario: Left and right cycle in opposite directions
 
@@ -126,7 +133,7 @@ direction SHALL place a white dot on the vacated and/or entered empty cells.
 #### Scenario: Completing the board is detected
 
 - **WHEN** a move paints the final black square of the unique solution
-- **THEN** `findErrors` reports no error, `wasSolved` becomes true, `status`
+- **THEN** `findErrors` reports no error, `completed` becomes true, `status`
   returns `"solved"`, and a flash plays
 
 ### Requirement: Range highlights errors live and checks mistakes against the solution
@@ -252,4 +259,3 @@ a render concern.
   visible white cells or the cells a cut would disconnect
 - **THEN** those undecided premise cells are shaded `COL_HINT_CELL`, distinct
   from both the target and any cited black square
-

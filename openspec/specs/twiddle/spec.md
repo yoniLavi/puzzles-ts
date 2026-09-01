@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change add-twiddle-ts-port. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Twiddle game implements the Game interface
 
 The engine SHALL provide a registered `twiddle` game implementing
@@ -58,7 +60,7 @@ be pure (returning a new state): a rotation turns the `n×n` block 90° in `dir`
 (advancing tile orientations when `orientable`), increments the move count, and
 records completion when the solved arrangement is first reached; a solve SHALL
 replace the grid with the solved arrangement, clear orientations, set
-`usedSolve`, and suppress the completion flash.
+`cheated`, and suppress the completion flash.
 
 #### Scenario: A rotation turns the block and is reversible
 
@@ -84,7 +86,7 @@ replace the grid with the solved arrangement, clear orientations, set
 
 - **WHEN** the solve move executes
 - **THEN** the new state is the solved arrangement with cleared orientations and
-  `usedSolve` set, and the completion flash is suppressed on the following redraw
+  `cheated` set, and the completion flash is suppressed on the following redraw
 
 ### Requirement: Twiddle renders tiles, cursor, rotation animation, and flash
 
@@ -121,4 +123,3 @@ after a solve.
 - **WHEN** the board reaches the solved arrangement by a player rotation
 - **THEN** the redraw flashes the background for the flash duration
 - **AND** when the board is solved via the solve move, no flash occurs
-
