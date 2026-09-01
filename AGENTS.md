@@ -130,6 +130,21 @@ tool does and generalising it to what the tool does is the same error aimed at a
 package. When you find yourself building a workaround layer, an override of
 generated content, or a guard that a guard survived, check the version first.
 
+**A scan that keys on a name finds only the games that were named that way.**
+The most common instrument failure here is not a wrong unit but a wrong *key*:
+a sweep matches `hint` and never sees `netslideHint`; it matches `findMistakes`
+and never sees `findBoatsMistakes`; it looks for a call to `solve*` and misses
+`findUndeadSolution` and `fullSolve`. Each time the sweep reports a census of
+the whole collection with games silently absent from every figure — and the
+errors run both ways, so one such scan inflated a phrasing count while another
+convicted three games of a defect none of them had. **Key on the shape**
+(`{ ok: false, error: <literal> }` wherever it appears, a `?` on an interface
+member, a rect that is thick in both directions), accept the superset that
+gives you, and *classify* what it catches instead of narrowing the scan — the
+narrowing is the error. **And when the population is small enough to read,
+read it**: fourteen function bodies cost less than the two heuristics that
+lied about them.
+
 **Don't repoint a dead recipe — retire it.** When an instruction has gone stale,
 fixing the one part you noticed is the worst available outcome: every *other*
 line is equally dead, so the result looks maintained and fails on its first step.

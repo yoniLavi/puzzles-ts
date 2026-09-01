@@ -710,9 +710,17 @@ opposite responses. That is unteachable if the wording changes between games.
 `FIX_MISTAKES_FIRST` promises a highlight, so emit it only under a
 `findMistakes(state).length > 0` guard. Where the board is inconsistent but no
 single entry is provably wrong — or where the game's `findMistakes` is a *rule
-validator* that cannot see a wrong-but-legal entry, as in Bricks and Subsets —
-the honest message is `CONTRADICTION_UNLOCALISED`, which asks the player to undo
-rather than pointing at a highlight that never comes.
+validator* that cannot see a wrong-but-legal entry — the honest message is
+`CONTRADICTION_UNLOCALISED`, which asks the player to undo rather than pointing
+at a highlight that never comes.
+
+**Which of the two you need is decided by your own `findMistakes`, so read it
+rather than copying a neighbour.** A game whose `findMistakes` re-solves the
+clues and compares already catches a wrong-but-legal entry, and needs no second
+check; a rule validator does not, and its `hint` must make that check itself
+before deducing onward from a doomed board. Every game that needs the second
+check has one — verified by reading all of them, not by grepping for a name,
+which got the answer wrong twice (see AGENTS.md, "A scan that keys on a name").
 
 ## Refusal couples to the mistake overlay
 
