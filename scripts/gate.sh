@@ -135,6 +135,40 @@ else
   NICE_TESTS=""
 fi
 
+# --- 1d. Documentation-only commits skip the heavy branches. ---
+#
+# The fast prefix above costs ~28s (tsgo 5s, biome 2s, openspec 1s, probe 0s,
+# and the build 20s); `vitest run` is the other eight to ten minutes, and it ran
+# in full for a commit touching one markdown file.
+#
+# **Scoped by role, exactly as the biome step is.** Only the automatic
+# per-commit hook takes this path (it sets GATE_PRECOMMIT=1); CI and a manual
+# `npm run gate` always run everything, so nothing reaches `main` without the
+# full gate having seen it. That is the same backstop argument as `biome ci`,
+# and it is why this narrows a *commit's* cost without narrowing what protects
+# the branch.
+#
+# **The allowlist is provable, and it is proved.** These paths are read by no
+# test and are not build inputs — `openspec/` is already covered by the
+# `validate --all --strict` above, and `docs/` and `AGENTS.md` are read by
+# nothing at all. `src/gate-scope.test.ts` asserts that, by scanning for any
+# glob or file read naming them, so the day a test starts reading `docs/` this
+# path stops being safe *and says so*. `help/` is deliberately absent: it is
+# both a `vite build` input and `help-coverage.test.ts`'s subject.
+#
+# Anything outside the list — one `src/` file, one `help/` page, one licence —
+# and the whole gate runs. The default is "run everything"; this is the
+# exception, and it fails closed.
+if [ "${GATE_PRECOMMIT:-}" = "1" ]; then
+  staged=$(git diff --cached --name-only --diff-filter=ACMR)
+  if [ -n "$staged" ] && ! printf '%s\n' "$staged" |
+    grep -qvE '^(docs/|openspec/|AGENTS\.md$|CLAUDE\.md$|CREDITS\.md$|README\.md$|LICENSE\.md$)'; then
+    echo "✓ documentation-only commit — skipping vitest and vite build."
+    echo "  (CI runs the full gate on push; \`npm run gate\` runs it here.)"
+    exit 0
+  fi
+fi
+
 # --- 2. Heavy checks, concurrently. ---
 vitest_rc=0
 build_rc=0

@@ -4,7 +4,14 @@
 # fail-fast prefix), then `vitest run` ∥ `vite build` concurrently, failing the
 # commit if either fails.
 #
-# GATE_BIOME_STAGED=1 scopes the biome check to the staged files (a commit can
-# only unformat a file it touches); CI and manual `npm run gate` leave it unset
-# and check the whole tree as the backstop. See scripts/gate.sh.
-GATE_BIOME_STAGED=1 sh scripts/gate.sh
+# Two env vars scope this run by role, and both rely on CI as the backstop:
+#
+#   GATE_BIOME_STAGED=1  biome checks only the staged files (a commit can only
+#                        unformat a file it touches).
+#   GATE_PRECOMMIT=1     a commit touching only documentation (docs/, openspec/,
+#                        AGENTS.md and friends — never help/, which is a build
+#                        input) skips vitest and vite build.
+#
+# CI and a manual `npm run gate` leave both unset and run everything, so nothing
+# reaches `main` without the full gate having seen it. See scripts/gate.sh.
+GATE_BIOME_STAGED=1 GATE_PRECOMMIT=1 sh scripts/gate.sh

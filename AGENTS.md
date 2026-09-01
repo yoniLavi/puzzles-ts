@@ -374,6 +374,24 @@ Tracked via **openspec**, pinned as a devDependency at `1.10.0` so the CLI's ver
 
 *There is no `openspec/OPENSPEC_AGENTS.md` any more, and no rename dance.* Versions before 1.0 generated an `openspec/AGENTS.md` that collided with this project's own, so it was renamed on every `openspec update` and a managed block in this file pointed at the renamed copy. 1.x stops generating it — the instructions ship as skills — so the collision, the rename and the managed block are all gone. That closes a "Known unresolved question" by removal rather than by the configurable filename it was hoping for.
 
+**A decision or a follow-up is persisted by committing it to this repo, or it
+did not happen.** Saying it in a reply, noting what you would "want to carry
+into the next session", or filing it in an agent's own memory are all the same
+thing: a wish. The next session starts from the repo. So a follow-up you found
+becomes a scaffolded change under `openspec/changes/`, a rule you established
+goes in this file in the present tense, and a *how* goes in the relevant
+`docs/games/` guide — before the session ends, in a commit. **If it is not worth
+a commit, it was not worth reporting as a finding**; say plainly that you
+looked and found nothing, which is a result, rather than leaving a hint that
+someone else is supposed to act on.
+
+Two corollaries. **Verify a follow-up before filing one** — an audit proposed on
+an unchecked suspicion costs the next reader a full investigation to discover
+there was no defect, and this repo has produced a fictional three-game defect
+from exactly that (see "A scan that keys on a name"). And **never cite an
+agent-private note to the owner**: they cannot read it, and referring to one as
+though it were a shared artifact misreports the work as tracked when it is not.
+
 **One openspec change per coherent unit of work** — the TS midend is one change; each game port is one change; a cross-game feature (quick-save) is one change. Bundle only when several items share genuinely identical `design.md` reasoning (e.g. three trivially-similar small games after the pattern is well-trodden); keep separate when an item has its own non-obvious decisions. A game port that ships its C deletion does both in the one change.
 
 **Don't wait for proposal approval before implementing.** openspec's generic workflow has an approval gate between proposal and implementation; in this project that gate is **off by default**. Scaffold the change, then keep going into the implementation in the same session.
