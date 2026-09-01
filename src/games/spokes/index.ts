@@ -32,6 +32,12 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { fromCoord } from "../../engine/geometry.ts";
+import {
+  ALREADY_SOLVED,
+  FIX_MISTAKES_FIRST,
+  NO_DEDUCTION_LEFT,
+  PUZZLE_NOT_REASONABLE,
+} from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -413,7 +419,7 @@ function stepsOfFiring(f: SpokesFiring): HintStep<SpokesMove, SpokesHint>[] {
 }
 
 function hint(state: SpokesState): HintResult<SpokesMove, SpokesHint> {
-  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
 
   // A hint off a contradictory board would present a "forced" move that only
   // follows from the player's own error, so refuse and light up the offenders
@@ -421,17 +427,16 @@ function hint(state: SpokesState): HintResult<SpokesMove, SpokesHint> {
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
-      error:
-        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+      error: FIX_MISTAKES_FIRST,
     };
   }
   if (!solveFromClues(state)) {
-    return { ok: false, error: "This puzzle's solution can't be determined." };
+    return { ok: false, error: PUZZLE_NOT_REASONABLE };
   }
 
   const plan = deduceSpokesPlan(cloneBoard(state));
   if (plan.length === 0) {
-    return { ok: false, error: "No further move can be deduced from this position." };
+    return { ok: false, error: NO_DEDUCTION_LEFT };
   }
   return { ok: true, steps: plan.flatMap((f) => stepsOfFiring(f)) };
 }

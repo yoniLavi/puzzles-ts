@@ -19,6 +19,11 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import {
+  ALREADY_SOLVED,
+  FIX_MISTAKES_FIRST,
+  NO_DEDUCTION_LEFT,
+} from "../../engine/hint-refusal.ts";
 import { digitKeys } from "../../engine/key-labels.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
@@ -252,18 +257,17 @@ function narrate(reason: FillingHintReason, count: number): string {
 
 function hint(state: FillingState): HintResult<FillingMove, FillingHint> {
   if (state.completed) {
-    return { ok: false, error: "This board is already solved." };
+    return { ok: false, error: ALREADY_SOLVED };
   }
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
-      error:
-        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+      error: FIX_MISTAKES_FIRST,
     };
   }
   const plan = deduceHintPlan(state.board, state.w, state.h);
   if (plan.length === 0) {
-    return { ok: false, error: "No further move can be deduced from this position." };
+    return { ok: false, error: NO_DEDUCTION_LEFT };
   }
   const steps: HintStep<FillingMove, FillingHint>[] = plan.map((m) => ({
     move: { type: "set", cells: m.cells, value: m.value },

@@ -25,6 +25,12 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { fromCoord } from "../../engine/geometry.ts";
+import {
+  ALREADY_SOLVED,
+  CONTRADICTION_UNLOCALISED,
+  FIX_MISTAKES_FIRST,
+  NO_DEDUCTION_LEFT,
+} from "../../engine/hint-refusal.ts";
 import type { OrderedCell } from "../../engine/overlay-sidecar.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
@@ -403,12 +409,11 @@ function buildHighlights(d: ClustersDeduction, w: number): ClustersHintHighlight
 }
 
 function hint(state: ClustersState): HintResult<ClustersMove, ClustersHintHighlights> {
-  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
-      error:
-        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+      error: FIX_MISTAKES_FIRST,
     };
   }
   const plan = deduceHintPlan(state.grid, state.w, state.h);
@@ -418,12 +423,11 @@ function hint(state: ClustersState): HintResult<ClustersMove, ClustersHintHighli
   if (plan.verdict === INVALID) {
     return {
       ok: false,
-      error:
-        "These colours lead to a contradiction — a tile on the board must be wrong. Undo, or clear the tiles you are unsure of.",
+      error: CONTRADICTION_UNLOCALISED,
     };
   }
   if (plan.verdict !== COMPLETE || plan.deductions.length === 0) {
-    return { ok: false, error: "No further move can be deduced from this position." };
+    return { ok: false, error: NO_DEDUCTION_LEFT };
   }
   const steps: HintStep<ClustersMove, ClustersHintHighlights>[] = plan.deductions.map(
     (d) => ({

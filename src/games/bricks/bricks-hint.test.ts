@@ -7,6 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
+import { CONTRADICTION_UNLOCALISED } from "../../engine/hint-refusal.ts";
 import { expectRing } from "../../engine/testing/mark-shape.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import cReference from "./__fixtures__/bricks-c-reference.json" with { type: "json" };
@@ -307,7 +308,10 @@ describe("bricks hint — refusals", () => {
     g[cell] = F_UNSHADE;
     const r = bricksGame.hint?.({ ...st, grid: g });
     expect(r?.ok).toBe(false);
-    if (r?.ok === false) expect(r.error).toMatch(/solution|wrong position/i);
+    // The *unlocalised* refusal, not the "fix the highlighted mistakes" one:
+    // Bricks' `findMistakes` is a rule validator and cannot see this mark, so
+    // a message promising a highlight would promise one that never appears.
+    if (r?.ok === false) expect(r.error).toBe(CONTRADICTION_UNLOCALISED);
   });
 });
 

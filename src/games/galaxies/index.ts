@@ -27,6 +27,7 @@ import {
   galaxiesGrid,
 } from "../../engine/colour/palette-games.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
+import { ALREADY_SOLVED, FIX_MISTAKES_FIRST } from "../../engine/hint-refusal.ts";
 import {
   type Game,
   type HintResult,
@@ -899,12 +900,11 @@ function findMistakes(s: GalaxiesState): readonly GalaxiesMistake[] {
  * player is looking at, not about the deduction.
  */
 function hint(s: GalaxiesState): HintResult<GalaxiesMove, GalaxiesHint> {
-  if (s.completed) return { ok: false, error: "This board is already solved." };
+  if (s.completed) return { ok: false, error: ALREADY_SOLVED };
   if (findMistakes(s).length > 0) {
     return {
       ok: false,
-      error:
-        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+      error: FIX_MISTAKES_FIRST,
     };
   }
   const steps = galaxiesHintSteps(s);

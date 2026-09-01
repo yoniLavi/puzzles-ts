@@ -11,6 +11,7 @@ import type {
   UiUpdate,
 } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
+import { ALREADY_SOLVED, NO_MOVE_WORTH_MAKING } from "../../engine/hint-refusal.ts";
 import { workingOn } from "../../engine/hint-vocab.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
@@ -477,7 +478,7 @@ function narrateFifteenStep(
  * player deviates (see `hintKeepTrack`). */
 function hint(state: FifteenState): HintResult<FifteenMove, FifteenHintHighlights> {
   if (isCompletedTiles(state.tiles, state.n)) {
-    return { ok: false, error: "Already solved" };
+    return { ok: false, error: ALREADY_SOLVED };
   }
 
   const steps: HintStep<FifteenMove, FifteenHintHighlights>[] = [];
@@ -510,7 +511,7 @@ function hint(state: FifteenState): HintResult<FifteenMove, FifteenHintHighlight
     if (homedGoal) goal = null;
   }
 
-  if (steps.length === 0) return { ok: false, error: "No helpful hint found" };
+  if (steps.length === 0) return { ok: false, error: NO_MOVE_WORTH_MAKING };
   return { ok: true, steps };
 }
 

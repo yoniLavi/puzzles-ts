@@ -26,6 +26,11 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import {
+  ALREADY_SOLVED,
+  FIX_MISTAKES_FIRST,
+  NO_DEDUCTION_LEFT,
+} from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_LEFT,
@@ -457,20 +462,19 @@ function narrate(firing: SticksFiring, state: SticksState, continues: boolean): 
 }
 
 function hint(state: SticksState): HintResult<SticksMove, SticksHint> {
-  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   // A wrong line makes every deduction from here worthless, so refuse and let
   // the midend light the offenders through findMistakes (§4).
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
-      error:
-        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+      error: FIX_MISTAKES_FIRST,
     };
   }
 
   const plan = deduceSticksPlan(state);
   if (plan.length === 0) {
-    return { ok: false, error: "No next move can be deduced from this position." };
+    return { ok: false, error: NO_DEDUCTION_LEFT };
   }
 
   const steps: HintStep<SticksMove, SticksHint>[] = [];

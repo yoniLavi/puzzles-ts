@@ -11,6 +11,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { UI_UPDATE } from "../../engine/game.ts";
+import { CONTRADICTION_UNLOCALISED } from "../../engine/hint-refusal.ts";
 import { Midend } from "../../engine/index.ts";
 import { CURSOR_DOWN, LEFT_BUTTON, newCursor } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
@@ -377,7 +378,7 @@ describe("hint", () => {
     const res = subsetsGame.hint?.(wrong);
     expect(res?.ok).toBe(false);
     if (res?.ok !== false) return;
-    expect(res.error).toContain("contradicts the solution");
+    expect(res.error).toBe(CONTRADICTION_UNLOCALISED);
   });
 });
 

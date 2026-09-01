@@ -12,6 +12,7 @@ import type {
 } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
 import { coord as coordE, fromCoord as fromCoordE } from "../../engine/geometry.ts";
+import { ALREADY_SOLVED, NO_MOVE_WORTH_MAKING } from "../../engine/hint-refusal.ts";
 import { HINT_SETTING_UP, workingOn } from "../../engine/hint-vocab.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
@@ -1065,7 +1066,7 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   for (let i = 0; i < n; i++) {
     if (tiles[i] !== i + 1) outOfPlace++;
   }
-  if (outOfPlace === 0) return { ok: false, error: "Already solved" };
+  if (outOfPlace === 0) return { ok: false, error: ALREADY_SOLVED };
 
   // Every legal move: a slide of any line by any distance. A slide by any
   // distance is a *single* move — the same granularity as a player's drag and
@@ -1150,7 +1151,7 @@ function hint(state: SixteenState): HintResult<SixteenMove, SixteenHintHighlight
   lastHintEngagedFallback = plan.usedExactSearch;
   const path = plan.moves;
   if (path.length === 0) {
-    return { ok: false, error: "No helpful hint found" };
+    return { ok: false, error: NO_MOVE_WORTH_MAKING };
   }
 
   // Narrate each step against the simulated board it applies to: the

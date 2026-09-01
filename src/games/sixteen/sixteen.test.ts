@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ALREADY_SOLVED } from "../../engine/hint-refusal.ts";
 import type { GameDrawing, HintStep } from "../../engine/index.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import {
@@ -309,7 +310,7 @@ describe("Sixteen hint", () => {
     const s = solvedState(4, 4);
     const result = sixteenGame.hint?.(s);
     expect(result?.ok).toBe(false);
-    if (result && !result.ok) expect(result.error).toBe("Already solved");
+    if (result && !result.ok) expect(result.error).toBe(ALREADY_SOLVED);
   });
 
   it("returns a non-empty plan of slide moves for an unsolved state", () => {

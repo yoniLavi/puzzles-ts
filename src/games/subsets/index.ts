@@ -33,6 +33,12 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import {
+  ALREADY_SOLVED,
+  CONTRADICTION_UNLOCALISED,
+  FIX_MISTAKES_FIRST,
+  NO_DEDUCTION_LEFT,
+} from "../../engine/hint-refusal.ts";
+import {
   BACKSPACE,
   CURSOR_SELECT,
   CURSOR_SELECT2,
@@ -523,12 +529,11 @@ function stepsForFiring(
 }
 
 function hint(state: SubsetsState): HintResult<SubsetsMove, SubsetsHintHighlights> {
-  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
-      error:
-        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+      error: FIX_MISTAKES_FIRST,
     };
   }
 
@@ -549,8 +554,7 @@ function hint(state: SubsetsState): HintResult<SubsetsMove, SubsetsHintHighlight
         if (playerKnows !== solutionHas) {
           return {
             ok: false,
-            error:
-              "One of your marks contradicts the solution — check your work, or clear the marks you are unsure of.",
+            error: CONTRADICTION_UNLOCALISED,
           };
         }
       }
@@ -561,12 +565,11 @@ function hint(state: SubsetsState): HintResult<SubsetsMove, SubsetsHintHighlight
   if (plan.status === "invalid") {
     return {
       ok: false,
-      error:
-        "These marks lead to a contradiction — one must be wrong. Undo, or clear the marks you are unsure of.",
+      error: CONTRADICTION_UNLOCALISED,
     };
   }
   if (plan.deductions.length === 0) {
-    return { ok: false, error: "No further move can be deduced from this position." };
+    return { ok: false, error: NO_DEDUCTION_LEFT };
   }
 
   const steps = plan.deductions.flatMap((d) => stepsForFiring(state, d));

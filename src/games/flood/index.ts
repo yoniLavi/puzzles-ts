@@ -8,6 +8,7 @@ import {
   type UiUpdate,
 } from "../../engine/game.ts";
 import { fromCoord as fromCoordE } from "../../engine/geometry.ts";
+import { ALREADY_SOLVED, NO_MOVE_WORTH_MAKING } from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -186,9 +187,9 @@ function statusbarText(state: FloodState, _ui: FloodUi): string {
  * hint banner populated through an auto-hint run, matching the other
  * solver-backed ports. */
 function hint(state: FloodState): HintResult<FloodMove> {
-  if (state.completed) return { ok: false, error: "Already solved" };
+  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   const moves = solveMoves(state.w, state.h, state.grid, state.colours);
-  if (moves.length === 0) return { ok: false, error: "No helpful hint found" };
+  if (moves.length === 0) return { ok: false, error: NO_MOVE_WORTH_MAKING };
 
   const steps: HintStep<FloodMove>[] = [];
   for (const colour of moves) {

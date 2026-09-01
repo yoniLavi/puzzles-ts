@@ -28,6 +28,11 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import {
+  ALREADY_SOLVED,
+  FIX_MISTAKES_FIRST,
+  NO_DEDUCTION_LEFT,
+} from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import { newCursor, stripModifiers } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
@@ -249,15 +254,14 @@ function buildStep(
  * sweep) form one multi-leg journey; distinct firings stay separate
  * hints. */
 function hint(state: PalisadeState): HintResult<PalisadeMove, PalisadeHint> {
-  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   if (findMistakes(state).length > 0)
     return {
       ok: false,
-      error: "There's a mistake on the board — fix it before asking for a hint.",
+      error: FIX_MISTAKES_FIRST,
     };
   const forced = deduceForcedEdges(paramsOf(state), state.clues, state.borders);
-  if (forced.length === 0)
-    return { ok: false, error: "I can't find a deduction from here." };
+  if (forced.length === 0) return { ok: false, error: NO_DEDUCTION_LEFT };
 
   // Split the flat, discovery-ordered list into contiguous runs of one
   // firing (a firing's surviving edges stay contiguous after dedup), and

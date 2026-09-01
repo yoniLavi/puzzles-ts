@@ -688,6 +688,32 @@ clue-strike step lies within that step's shaded `area`
 (`towers-hint.test.ts` "clue-strike marks never bleed outside the narrated
 clue's line").
 
+## Refusal wording comes from one module
+
+**Never write a refusal message.** Import it from
+[`src/engine/hint-refusal.ts`](../../src/engine/hint-refusal.ts):
+`ALREADY_SOLVED`, `FIX_MISTAKES_FIRST`, `NO_DEDUCTION_LEFT`,
+`CONTRADICTION_UNLOCALISED`, `NO_MOVE_WORTH_MAKING` and friends. The two-line
+opening most deductive games want is `commonHintRefusal(completed, mistakes)`.
+
+`hint-refusal.test.ts` enforces it in both directions — a new phrasing fails,
+and so does an inlined copy of an approved one. A game that genuinely should
+read differently adds itself to that test's `EXCEPTIONS` with the reason;
+Untangle and Inertia are the two that qualify today, and both qualify because
+naming their specific dead end *is* the hint's value.
+
+The reason this is a rule: `help/features.md` §Hints teaches "there is a mistake
+on the board" and "deduction has run out" as a pair, because they call for
+opposite responses. That is unteachable if the wording changes between games.
+
+**Pick the mistake message by whether anything will actually be highlighted.**
+`FIX_MISTAKES_FIRST` promises a highlight, so emit it only under a
+`findMistakes(state).length > 0` guard. Where the board is inconsistent but no
+single entry is provably wrong — or where the game's `findMistakes` is a *rule
+validator* that cannot see a wrong-but-legal entry, as in Bricks and Subsets —
+the honest message is `CONTRADICTION_UNLOCALISED`, which asks the player to undo
+rather than pointing at a highlight that never comes.
+
 ## Refusal couples to the mistake overlay
 
 A hint refused because the board is wrong lights up the same overlay **Check &

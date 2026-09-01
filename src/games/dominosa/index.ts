@@ -21,6 +21,12 @@ import type {
   UiUpdate,
 } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
+import {
+  ALREADY_SOLVED,
+  FIX_MISTAKES_FIRST,
+  NO_DEDUCTION_LEFT,
+  PUZZLE_NOT_REASONABLE,
+} from "../../engine/hint-refusal.ts";
 import { parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -403,11 +409,11 @@ function narrateBarrier(
 }
 
 function hint(state: DominosaState): HintResult<DominosaMove, DominosaHint> {
-  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
-      error: "There's a mistake on the board — fix it before asking for a hint.",
+      error: FIX_MISTAKES_FIRST,
     };
   }
   const { numbers, params } = state;
@@ -419,7 +425,7 @@ function hint(state: DominosaState): HintResult<DominosaMove, DominosaHint> {
   if (solveNumbers(n, numbers, DIFFCOUNT).result !== 1) {
     return {
       ok: false,
-      error: "This board doesn't have a unique solution to reason about.",
+      error: PUZZLE_NOT_REASONABLE,
     };
   }
 
@@ -480,8 +486,7 @@ function hint(state: DominosaState): HintResult<DominosaMove, DominosaHint> {
     }
   }
 
-  if (steps.length === 0)
-    return { ok: false, error: "I can't find a deduction from here." };
+  if (steps.length === 0) return { ok: false, error: NO_DEDUCTION_LEFT };
   return { ok: true, steps };
 }
 

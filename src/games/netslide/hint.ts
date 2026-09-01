@@ -23,6 +23,7 @@
  */
 
 import type { HintResult, HintStep, HintTrackVerdict } from "../../engine/game.ts";
+import { ALREADY_SOLVED, NO_MOVE_WORTH_MAKING } from "../../engine/hint-refusal.ts";
 import { HINT_SETTING_UP } from "../../engine/hint-vocab.ts";
 import {
   planSlides,
@@ -348,7 +349,7 @@ export function netslideHint(
   const { w, h } = s;
   const n = w * h;
 
-  if (isComplete(s)) return { ok: false, error: "Already solved" };
+  if (isComplete(s)) return { ok: false, error: ALREADY_SOLVED };
 
   // The finished grid to aim at: the generator's, when the game came with one,
   // and otherwise recovered from the board itself (a game arriving as a shared
@@ -429,7 +430,7 @@ export function netslideHint(
   });
 
   if (plan.moves.length === 0) {
-    return { ok: false, error: "No helpful hint found" };
+    return { ok: false, error: NO_MOVE_WORTH_MAKING };
   }
 
   return { ok: true, steps: narratePlan(s, target, plan.moves) };

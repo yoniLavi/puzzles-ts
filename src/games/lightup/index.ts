@@ -21,6 +21,11 @@ import type {
   SolveResult,
 } from "../../engine/game.ts";
 import { type Game, UI_UPDATE, type UiUpdate } from "../../engine/game.ts";
+import {
+  ALREADY_SOLVED,
+  FIX_MISTAKES_FIRST,
+  NO_DEDUCTION_LEFT_TRIAL_AND_ERROR,
+} from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig, parseConfigInt } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -410,12 +415,11 @@ function buildStep(f: LightupFiring): HintStep<LightupMove, LightupHint> {
 }
 
 function hint(state: LightupState): HintResult<LightupMove, LightupHint> {
-  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
-      error:
-        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+      error: FIX_MISTAKES_FIRST,
     };
   }
   const plan = deduceHintPlan(state);
@@ -424,8 +428,7 @@ function hint(state: LightupState): HintResult<LightupMove, LightupHint> {
     // deduction-complete by generation): refuse honestly at the guess point.
     return {
       ok: false,
-      error:
-        "No further move can be deduced from this position — this board needs trial and error from here.",
+      error: NO_DEDUCTION_LEFT_TRIAL_AND_ERROR,
     };
   }
   return { ok: true, steps: plan.map(buildStep) };

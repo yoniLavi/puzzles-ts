@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { HintStep } from "../../engine/game.ts";
+import { ALREADY_SOLVED } from "../../engine/hint-refusal.ts";
 import { Midend } from "../../engine/midend.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
@@ -198,7 +199,7 @@ describe("netslide hint", () => {
 
     const res = hintOf(finished, aux);
     expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.error).toBe("Already solved");
+    if (!res.ok) expect(res.error).toBe(ALREADY_SOLVED);
   });
 
   it("works on a board with no `aux` at all, like Solve does", () => {

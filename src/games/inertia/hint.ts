@@ -31,6 +31,7 @@
  */
 
 import type { HintResult, HintStep, HintTrackVerdict } from "../../engine/game.ts";
+import { ALREADY_SOLVED, NO_MOVE_WORTH_MAKING } from "../../engine/hint-refusal.ts";
 import { solveRoute, unreachableGems } from "./solver.ts";
 import {
   type InertiaMove,
@@ -325,7 +326,7 @@ function firstLegOf(s: InertiaState, route: readonly number[]): number[] | null 
 export function hint(
   state: InertiaState,
 ): HintResult<InertiaMove, InertiaHintHighlights> {
-  if (state.gems === 0) return { ok: false, error: "Already solved" };
+  if (state.gems === 0) return { ok: false, error: ALREADY_SOLVED };
   if (state.dead) {
     return {
       ok: false,
@@ -382,7 +383,7 @@ export function hint(
     s = leg.after;
   }
 
-  if (steps.length === 0) return { ok: false, error: "No helpful hint found" };
+  if (steps.length === 0) return { ok: false, error: NO_MOVE_WORTH_MAKING };
   return { ok: true, steps };
 }
 

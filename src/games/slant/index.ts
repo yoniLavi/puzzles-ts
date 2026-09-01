@@ -19,6 +19,11 @@ import type {
   UiUpdate,
 } from "../../engine/game.ts";
 import { UI_UPDATE } from "../../engine/game.ts";
+import {
+  ALREADY_SOLVED,
+  FIX_MISTAKES_FIRST,
+  NO_DEDUCTION_LEFT,
+} from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -401,16 +406,16 @@ function buildHighlights(
 }
 
 function hint(state: SlantState): HintResult<SlantMove, SlantHint> {
-  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
-      error: "There's a mistake on the board — fix it before asking for a hint.",
+      error: FIX_MISTAKES_FIRST,
     };
   }
   const plan = deduceHintPlan(state.w, state.h, state.clues, state.soln);
   if (plan.length === 0) {
-    return { ok: false, error: "I can't find a deduction from here." };
+    return { ok: false, error: NO_DEDUCTION_LEFT };
   }
   const steps: HintStep<SlantMove, SlantHint>[] = [];
   for (const firing of plan) {

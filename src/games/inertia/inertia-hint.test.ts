@@ -4,6 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { ALREADY_SOLVED } from "../../engine/hint-refusal.ts";
 import { Midend } from "../../engine/index.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
@@ -371,7 +372,7 @@ describe("inertia hint is a nudge; only Solve is a commitment", () => {
   it("refuses when the board is solved", () => {
     const s = play(stateOf(["Sgs"]), E);
     expect(s.gems).toBe(0);
-    expect(hint(s)).toEqual({ ok: false, error: "Already solved" });
+    expect(hint(s)).toEqual({ ok: false, error: ALREADY_SOLVED });
   });
 });
 

@@ -22,6 +22,11 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import {
+  ALREADY_SOLVED,
+  FIX_MISTAKES_FIRST,
+  NO_DEDUCTION_LEFT,
+} from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_SELECT,
@@ -434,17 +439,16 @@ function buildHighlightsInner(
 }
 
 function hint(state: RangeState): HintResult<RangeMove, RangeHint> {
-  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
-      error:
-        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+      error: FIX_MISTAKES_FIRST,
     };
   }
   const plan = deduceHintPlan(state.grid, state.w, state.h);
   if (plan.length === 0) {
-    return { ok: false, error: "No further move can be deduced from this position." };
+    return { ok: false, error: NO_DEDUCTION_LEFT };
   }
   const steps: HintStep<RangeMove, RangeHint>[] = plan.map((m) => {
     const value = gridValueToCell(m.value);

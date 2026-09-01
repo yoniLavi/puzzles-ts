@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ALREADY_SOLVED } from "../../engine/hint-refusal.ts";
 import {
   CURSOR_DOWN,
   CURSOR_LEFT,
@@ -425,7 +426,7 @@ describe("Fifteen hint", () => {
   it("reports no plan on an already-solved board", () => {
     expect(fifteenGame.hint?.(solvedState(4, 4))).toEqual({
       ok: false,
-      error: "Already solved",
+      error: ALREADY_SOLVED,
     });
   });
 

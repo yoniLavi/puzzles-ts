@@ -24,6 +24,13 @@ import {
   UI_UPDATE,
   type UiUpdate,
 } from "../../engine/game.ts";
+import {
+  ALREADY_SOLVED,
+  CONTRADICTION_UNLOCALISED,
+  FIX_MISTAKES_FIRST,
+  NO_DEDUCTION_LEFT,
+  PUZZLE_NOT_REASONABLE,
+} from "../../engine/hint-refusal.ts";
 import { dimensionParamConfig } from "../../engine/params.ts";
 import {
   CURSOR_DOWN,
@@ -429,12 +436,11 @@ function narrate(
 }
 
 function hint(state: BricksState): HintResult<BricksMove, BricksHint> {
-  if (state.completed) return { ok: false, error: "This board is already solved." };
+  if (state.completed) return { ok: false, error: ALREADY_SOLVED };
   if (findMistakes(state).length > 0) {
     return {
       ok: false,
-      error:
-        "Fix the highlighted mistakes first — a hint can't deduce from a wrong board.",
+      error: FIX_MISTAKES_FIRST,
     };
   }
   const { w, h, grid } = state;
@@ -444,22 +450,21 @@ function hint(state: BricksState): HintResult<BricksMove, BricksHint> {
   // mark, so guard here rather than deduce onward from a doomed position.
   const sol = grid.slice();
   if (solveGame(sol, w, h, DIFF_TRICKY, true, true) !== "complete") {
-    return { ok: false, error: "This puzzle's solution can't be determined." };
+    return { ok: false, error: PUZZLE_NOT_REASONABLE };
   }
   for (let i = 0; i < w * h; i++) {
     const pc = grid[i] & COL_MASK;
     if ((pc === F_SHADE || pc === F_UNSHADE) && pc !== (sol[i] & COL_MASK)) {
       return {
         ok: false,
-        error:
-          "One of your marked cells doesn't match the solution — undo and rethink; a hint can't help from a wrong position.",
+        error: CONTRADICTION_UNLOCALISED,
       };
     }
   }
 
   const plan = deduceBricksPlan(grid, w, h);
   if (plan.length === 0) {
-    return { ok: false, error: "No next move can be deduced from this position." };
+    return { ok: false, error: NO_DEDUCTION_LEFT };
   }
   const steps: HintStep<BricksMove, BricksHint>[] = plan.map((m) => {
     // One value, read by both the sentence and the frame — the narration must

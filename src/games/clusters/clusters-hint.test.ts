@@ -16,6 +16,7 @@
  * from `engine/testing/hint-games.ts` enrollment, not here.
  */
 import { describe, expect, it } from "vitest";
+import { CONTRADICTION_UNLOCALISED } from "../../engine/hint-refusal.ts";
 import { Midend } from "../../engine/midend.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
@@ -272,7 +273,7 @@ describe("hint", () => {
     const res = clustersGame.hint?.(wrong);
     expect(res?.ok).toBe(false);
     if (res?.ok !== false) return;
-    expect(res.error).toContain("contradiction");
+    expect(res.error).toBe(CONTRADICTION_UNLOCALISED);
   });
 });
 
