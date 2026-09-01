@@ -25,7 +25,7 @@ import { defineConfig } from "vitest/config";
  * box is dedicated and wall clock is what matters.
  */
 function maxWorkers(): number {
-  const override = Number(process.env.VITEST_MAX_WORKERS);
+  const override = Number(process.env["VITEST_MAX_WORKERS"]);
   if (Number.isInteger(override) && override > 0) return override;
   return Math.max(2, availableParallelism() - 2);
 }

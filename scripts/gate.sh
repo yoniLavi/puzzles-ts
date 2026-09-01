@@ -61,6 +61,15 @@ sh "$(dirname -- "$0")/reap-orphaned-workers.sh" || true
 # what a type error is. `typescript` (5.x) is still installed — see the madge
 # section of metrics.sh for the ten packages that need its programmatic API.
 npx tsgo -b --noEmit
+# The build-side TypeScript — `vite.config.ts`, `vitest.config.ts`,
+# `vite-plugins/` and the advisory checks under `scripts/checks/` — is a second
+# project because it runs in Node, and `tsconfig.json` is deliberately
+# browser-shaped (`"types": []`, DOM lib). It is NOT optional: the file that
+# renders every help page and static entry went unchecked while it sat outside
+# `include`, and the first pass over it found a dead `output.validate` (a rollup
+# option rolldown neither declares nor reads) and a `defineConfig` overload
+# failure. Same strictness, different runtime.
+npx tsgo --noEmit -p tsconfig.node.json
 
 # Biome checks lint rules AND formatting AND import order in one read-only pass
 # (the `check`/`ci` form — not `lint`, which misses formatting; not

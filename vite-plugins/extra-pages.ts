@@ -32,7 +32,30 @@ const PLUGIN_ID = "extra-pages";
 const escapeHtml = Handlebars.Utils.escapeExpression;
 
 export type TransformAddWatchFile = (absolutePath: string) => void;
-export type TransformData = Record<string, unknown>;
+
+/**
+ * The bag a transform pipeline passes along, open by design so a transform can
+ * add whatever the template needs.
+ *
+ * The five keys the pipeline itself gives meaning to are **declared**, not left
+ * to the index signature: they are the contract `ExtraPagesSet.transforms`
+ * documents in prose — the first transform receives `sourceFile`, `source` and
+ * `urlPathname`, and the last must return `html` — and a declared key is one a
+ * typo cannot invent. They stay `unknown`, because a transform may legitimately
+ * put anything there and every reader already narrows with `String(...)`.
+ */
+export type TransformData = {
+  /** Absolute path to the source file. Absent for a virtual page. */
+  sourceFile?: unknown;
+  /** Source file content, as read. */
+  source?: unknown;
+  /** Pathname portion of the requested url, e.g. `puzzles/1.html`. */
+  urlPathname?: unknown;
+  /** The html to serve — what the last transform in a pipeline must produce. */
+  html?: unknown;
+  /** The dev server's original request url, where it differs from the page's. */
+  originalUrl?: unknown;
+} & Record<string, unknown>;
 export type Transform = (
   this: MinimalPluginContextWithoutEnvironment,
   data: TransformData,

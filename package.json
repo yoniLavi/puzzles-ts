@@ -10,7 +10,7 @@
     "format": "biome format --write .",
     "lint": "biome lint .",
     "check": "biome check --write .",
-    "typecheck": "tsgo -b --noEmit",
+    "typecheck": "tsgo -b --noEmit && tsgo --noEmit -p tsconfig.node.json",
     "pretest": "sh scripts/reap-orphaned-workers.sh",
     "test": "vitest",
     "pretest:run": "sh scripts/reap-orphaned-workers.sh",

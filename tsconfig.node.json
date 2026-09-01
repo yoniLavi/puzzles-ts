@@ -1,0 +1,22 @@
+{
+  /* The build-side TypeScript: the vite config, the plugins it loads, the vitest
+     configs, and the advisory checks under `scripts/checks/`.
+
+     These run in Node, not the browser, so they cannot share the app's config:
+     `tsconfig.json` deliberately sets `"types": []` and a DOM lib to keep the
+     app inside a browser-shaped type world, and that posture is load-bearing —
+     several tests read source through `import.meta.glob` rather than `node:fs`
+     specifically to stay inside it. Handing this tree `@types/node` would end
+     that. So the split is by runtime, and the strictness is identical. */
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    /* `vite/client` because the advisory checks under `scripts/checks/` import
+       `src/` modules and run through Vite's transform, so `import.meta.env` and
+       `?raw` imports must resolve here exactly as they do for the app. */
+    "types": ["node", "vite/client"],
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["vite.config.ts", "vitest.config.ts", "vite-plugins", "scripts/checks"]
+}

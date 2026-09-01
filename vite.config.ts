@@ -15,12 +15,32 @@ import {
   renderMarkdown,
 } from "./vite-plugins/extra-pages.ts";
 
+/**
+ * `esbuild.supported` is forwarded by Vite but absent from its type.
+ *
+ * Vite 8's `ESBuildOptions` narrows esbuild's own transform options and drops
+ * `supported`, while the implementation still spreads it into what it hands the
+ * transformer — it builds `supported: { ...defaultEsbuildSupported,
+ * ...esbuildOptions.supported }` out of `config.esbuild`. So the option set
+ * below is live, and the type is merely narrower than the behaviour.
+ *
+ * Declared rather than cast: asserting the whole `esbuild` object would stop
+ * checking every *other* key in it, and the gap is one property. If a future
+ * Vite declares `supported` itself with a different shape, this conflicts
+ * loudly, which is the outcome to want.
+ */
+declare module "vite" {
+  interface ESBuildOptions {
+    supported?: Record<string, boolean>;
+  }
+}
+
 type Env = Record<string, string>;
 type Headers = Record<string, string>;
 
 function getGitSha(env: Env): string {
-  return env.VITE_GIT_SHA
-    ? env.VITE_GIT_SHA
+  return env["VITE_GIT_SHA"]
+    ? env["VITE_GIT_SHA"]
     : child.execSync("git rev-parse HEAD").toString().trim();
 }
 
@@ -71,8 +91,8 @@ function securityHeaders(options: {
     "frame-ancestors": "'none'",
   };
 
-  if (env.VITE_SENTRY_DSN) {
-    const sentryDsnOrigin = new URL(env.VITE_SENTRY_DSN).origin;
+  if (env["VITE_SENTRY_DSN"]) {
+    const sentryDsnOrigin = new URL(env["VITE_SENTRY_DSN"]).origin;
     csp["connect-src"] += ` ${sentryDsnOrigin}`;
 
     // Provide Sentry with high-entropy UA versions
@@ -83,8 +103,8 @@ function securityHeaders(options: {
       .join(", ");
   }
 
-  if (env.VITE_CSP_REPORT_URI) {
-    let cspReportUri = env.VITE_CSP_REPORT_URI;
+  if (env["VITE_CSP_REPORT_URI"]) {
+    let cspReportUri = env["VITE_CSP_REPORT_URI"];
     if (
       cspReportUri.includes("sentry_key") &&
       !cspReportUri.includes("sentry_release")
@@ -227,11 +247,11 @@ export default defineConfig(async ({ command, mode }) => {
     cspHashSrc(noModuleHeadScript),
   ];
 
-  let canonicalBaseUrl = env.VITE_CANONICAL_BASE_URL;
+  let canonicalBaseUrl = env["VITE_CANONICAL_BASE_URL"];
   if (canonicalBaseUrl && !canonicalBaseUrl.endsWith("/")) {
     canonicalBaseUrl += "/";
   }
-  const analytics_html = env.VITE_ANALYTICS_BLOCK;
+  const analytics_html = env["VITE_ANALYTICS_BLOCK"];
   const commonTemplateData = {
     preflightSrc,
     analytics_html,
@@ -262,7 +282,6 @@ export default defineConfig(async ({ command, mode }) => {
               return "sentry";
             }
           },
-          validate: true,
         },
       },
       sourcemap: true,
@@ -278,10 +297,10 @@ export default defineConfig(async ({ command, mode }) => {
     },
     define: {
       "import.meta.env.VITE_CANONICAL_BASE_URL": JSON.stringify(
-        env.VITE_CANONICAL_BASE_URL ?? "",
+        env["VITE_CANONICAL_BASE_URL"] ?? "",
       ),
       "import.meta.env.VITE_APP_VERSION": JSON.stringify(
-        env.VITE_APP_VERSION ?? defaultAppVersion(env),
+        env["VITE_APP_VERSION"] ?? defaultAppVersion(env),
       ),
       "import.meta.env.VITE_SENTRY_FILTER_APPLICATION_ID": JSON.stringify(
         sentryFilterApplicationId,
@@ -429,7 +448,7 @@ export default defineConfig(async ({ command, mode }) => {
       VitePWA({
         injectRegister: null, // registered in main.ts
         manifest: {
-          name: env.VITE_APP_NAME || "Puzzles web app",
+          name: env["VITE_APP_NAME"] || "Puzzles web app",
           short_name: "Puzzles",
           background_color: "#e8f3ff", // --wa-color-brand-fill-quiet (page bg)
           theme_color: "#d1e8ff", // --wa-color-brand-fill-normal (app bar)
