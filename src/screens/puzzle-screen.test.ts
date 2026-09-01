@@ -149,7 +149,12 @@ describe("puzzle-screen: Check-&-Save command", () => {
     expect(quickSave).toHaveBeenCalledOnce();
     // Success is a transient toast, not a modal alert.
     expect(showToast).toHaveBeenCalledOnce();
-    expect(showToast.mock.calls[0]?.[0]).toMatchObject({ label: "Checkpoint saved" });
+    // The label reports the check as well as the save: "did the board survive?"
+    // is what the player pressed the button to find out, and it is the half
+    // they cannot see for themselves. "Checkpoint" is the history panel's word.
+    expect(showToast.mock.calls[0]?.[0]).toMatchObject({
+      label: "No mistakes — quick-saved",
+    });
     expect(showAlert).not.toHaveBeenCalled();
   });
 
@@ -180,6 +185,9 @@ describe("puzzle-screen: Check-&-Save command", () => {
     await host.commandMap["check-and-save"].call(host);
     expect(findMistakes).not.toHaveBeenCalled();
     expect(quickSave).toHaveBeenCalledOnce();
+    // No check ran, so the label claims none — the adaptive half of the same
+    // predicate the button's own label uses.
+    expect(showToast.mock.calls[0]?.[0]).toMatchObject({ label: "Quick-saved" });
   });
 
   it("Cmd/Ctrl+S routes to Check-&-Save and suppresses the browser default", async () => {

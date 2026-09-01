@@ -12,20 +12,30 @@ import type { Puzzle } from "./puzzle.ts";
 /**
  * Combined Check-&-Save. On a game with mistake-checking, validate first
  * and quick-save only a provably-clean board; on mistakes, leave the
- * previous checkpoint intact and report them (the engine has already
+ * previous quick-save intact and report them (the engine has already
  * highlighted them) via an interrupting modal. On a game without
  * mistake-checking, this is a plain quick-save. Success is confirmed with
  * a non-blocking toast, never a modal.
+ *
+ * **"Checkpoint" is the history panel's word and only its word.** This is the
+ * one-slot quick-save; the panel's numbered, rewindable checkpoints are a
+ * different feature, and a player who reads `help/features.md` §Checkpoints and
+ * then meets this toast was being told two things about one word.
+ *
+ * The success label reports the *check*, not only the save, where there was one
+ * to run: a player who pressed "Check and save" asked whether the board is
+ * still sound, and the answer is the part they cannot see for themselves.
  */
 export async function checkAndSave(puzzle: Puzzle): Promise<void> {
-  if (puzzle.canFindMistakes) {
+  const checked = puzzle.canFindMistakes;
+  if (checked) {
     const n = await puzzle.findMistakes();
     if (n > 0) {
       await showAlert({
         label: "Not saved",
         message: `${n} mistake${n === 1 ? "" : "s"} found — the problem ${
           n === 1 ? "cell is" : "cells are"
-        } highlighted. Fix ${n === 1 ? "it" : "them"} before saving a checkpoint.`,
+        } highlighted. Fix ${n === 1 ? "it" : "them"} before quick-saving.`,
         type: "warning",
         lightDismiss: true,
       });
@@ -34,7 +44,7 @@ export async function checkAndSave(puzzle: Puzzle): Promise<void> {
   }
   await savedGames.quickSave(puzzle);
   showToast({
-    label: "Checkpoint saved",
+    label: checked ? "No mistakes — quick-saved" : "Quick-saved",
     message: "Use Quick-load to return here.",
     type: "success",
   });
@@ -61,7 +71,7 @@ export async function quickLoadPuzzle(puzzle: Puzzle): Promise<void> {
   } else {
     showToast({
       label: "Quick-save restored",
-      message: "Back to your saved checkpoint.",
+      message: "Back to your saved position.",
       type: "success",
     });
   }

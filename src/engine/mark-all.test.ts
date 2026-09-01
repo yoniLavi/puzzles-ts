@@ -16,9 +16,10 @@
  * only says *where* its notes live — so a new game with a Mark-all press joins by
  * adding one row.
  */
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { abcdGame } from "../games/abcd/index.ts";
 import { groupGame } from "../games/group/index.ts";
+import { registerAllGames } from "../games/index.ts";
 import { keenGame } from "../games/keen/index.ts";
 import { mathraxGame } from "../games/mathrax/index.ts";
 import { saladGame } from "../games/salad/index.ts";
@@ -29,8 +30,13 @@ import { undeadGame } from "../games/undead/index.ts";
 import { unequalGame } from "../games/unequal/index.ts";
 import { UI_UPDATE } from "./game.ts";
 import { randomNew } from "./random/index.ts";
+import { getTsGame, registeredGameIds } from "./registry.ts";
 import { type AnyGame, firstLeaf } from "./testing/hint-games.ts";
 import { sizedDrawState } from "./testing/sized-draw-state.ts";
+
+// Registers every ported game; `beforeAll` re-runs it in case a sibling file
+// reset the shared registry under `isolate: false`.
+beforeAll(registerAllGames);
 
 /** Where a game keeps its pencil marks, and how many array slots one cell owns
  * (ABCD's notes are a candidate *cube*: `n` contiguous slots per cell — see its
@@ -59,10 +65,24 @@ const MARK_ALL_GAMES: Row[] = [
 ];
 
 it("every game offering the press is enrolled here", () => {
-  // A game that ships `canMarkAll` without a row above would be unguarded.
-  for (const { name, game } of MARK_ALL_GAMES) {
-    expect(game.canMarkAll, `${name} does not offer a Mark-all press`).toBe(true);
-  }
+  /*
+   * **Both directions, and both derived from the registry.** The miss worth
+   * catching is a game that ships `canMarkAll` with no row here, because that
+   * game is silently unguarded by every property below — and it is precisely the
+   * game a loop over `MARK_ALL_GAMES` never visits. An enrolment check that
+   * reads only the enrolment list is a statement about the list, not about the
+   * collection.
+   */
+  const offering = registeredGameIds()
+    .filter((id) => getTsGame(id)?.canMarkAll === true)
+    .sort();
+  // Vacuity: an empty registry would make both comparisons below trivially true.
+  expect(offering.length).toBeGreaterThan(5);
+
+  const enrolled = MARK_ALL_GAMES.map((r) => r.name).sort();
+  expect(enrolled, "a game ships Mark-all with no row here — it is unguarded").toEqual(
+    offering,
+  );
 });
 
 /** Press `M` — ASCII **77**, exactly what the toolbar button injects

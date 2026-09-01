@@ -1,121 +1,139 @@
 # Tasks — document-hint-feature
 
 > These pages are **product**, not reference. Read the existing
-> [`help/features.md`](../../../help/features.md) first and match it: seven
-> sections, second person, `::icon::` glyph references, `<command-link>` for
-> anything reachable from preferences, and an anchor (`{#name}`) on every
-> heading because other pages link to them.
+> [`help/features.md`](../../../help/features.md) first and match it: second
+> person, `::icon::` glyph references, `<command-link>` for anything reachable
+> from preferences, and an anchor (`{#name}`) on every heading because other
+> pages link to them.
 
-## 1. Settle the two decisions first (they change what gets written)
+## 1. The two decisions (both settled — see design)
 
-- [x] 1.1 **The "checkpoint" collision** (design D2) — **settled by the owner,
-      2026-08-12: rename the toast.** "Checkpoint" then means one thing
-      everywhere. The string is in `src/puzzle/quick-save-actions.ts` and
-      `puzzle-screen.test.ts` already asserts the success path, so the rename
-      has a test to follow it. Do it *with* the prose, so the page and the app
-      land in step.
-- [ ] 1.2 **What the coverage guard derives its feature list from** (design D1):
-      anchors alone, the game hooks, or the command map. Recommendation is the
-      hooks driving an anchor check. Decide before writing the prose, because
-      the anchors are the contract.
+- [x] 1.1 **The "checkpoint" collision** (design D2) — settled by the owner,
+      2026-08-12: rename, so "checkpoint" means one thing everywhere. Scope is
+      **all four** strings in `src/puzzle/quick-save-actions.ts`, not the toast
+      label alone. Done *with* the prose, so the page and the app land in step.
+- [x] 1.2 **What the coverage guard derives from** (design D1) — the game
+      hooks, made fail-closed via the optional-`Game`-member classification,
+      plus the derived populations and the glyph resolution. Decided before the
+      prose, because the anchors are the contract.
 
 ## 2. Write the hint section
 
-- [ ] 2.1 `## Hints {#hints}` in `help/features.md`. Lead with what makes it
-      *this* fork's hint: it explains **why** a move is forced, not just which
-      move. Upstream's returns one move with no explanation; that difference is
-      the reason the section exists.
-- [ ] 2.2 The **stepper rhythm** — first press shows the step (highlight only,
-      the move is still yours to make), a second press with nothing done in
-      between applies that one step and stops. Any action in between re-arms the
-      show. Source: `add-hint-button-stepper`, orchestrated in
-      [`src/puzzle/puzzle.ts`](../../../src/puzzle/puzzle.ts).
-- [ ] 2.3 **Auto-Hint** — the toolbar play/pause that rolls continuously, one
-      second per step (floored by the move's own animation). It stops on
-      "Solved!" and on a refusal.
-- [ ] 2.4 **Refusal** — a hint asked on a board that contradicts its clues
-      refuses *and lights the offending squares*, because deducing from a wrong
-      position would mislead. This is the behaviour a player is most likely to
-      meet without warning and least likely to interpret correctly.
-- [ ] 2.5 **The colour legend, once** (design D3, and `ts-engine`'s
-      "element-type colour legend"): blue is the square the hint is acting on;
-      the wash is what it is reasoning *from*. Do not name colours the player
-      cannot rely on across games, and do not let colour be the only cue in the
-      wording.
-- [ ] 2.6 State the **rule** that governs which puzzles have a hint — a
-      deductive puzzle whose reasoning the game can narrate — and **name no
-      games** (design D3).
-- [ ] 2.7 **The other refusal: deduction running out.** A hint can also stop
-      because nothing further *follows* — distinct from the mistake refusal in
-      2.4, and the player has no way to tell them apart without being told.
-      Say what to do instead (checkpoint, try it, undo; or Solve). Galaxies is
-      the first game to phrase this refusal deliberately
-      (`add-galaxies-hint`); the wording here should generalise, since any
-      game with an Unreasonable tier can reach it.
+- [x] 2.1 `## Hints {#hints}` in `help/features.md`, leading with what makes it
+      *this* fork's hint: it explains **why** a move is forced, not just which.
+- [x] 2.2 The **stepper rhythm** — show, then apply, with any intervening action
+      re-arming the show. Verified in the browser: press one leaves `totalMoves`
+      at 0, press two takes it to 1, and a press after an undo does not apply.
+- [x] 2.3 **Auto-Hint** — the toolbar play/pause, a second a step, floored by
+      each move's own animation, stopping on solved and on a refusal.
+- [x] 2.4 **Refusal on a contradictory board** — it refuses *and lights the
+      offending squares*. Written to generalise, because it is the **midend**
+      that does this on every refusal path (`computeHintPlan` → `findMistakes`),
+      not three games' individual wording.
+- [x] 2.5 **The legend, once — shape first** (design D4): ring beside the
+      content for what the hint acts on, outline (or shade) for the evidence,
+      small ordinals for a chain's order and no arrows. Colour named only as a
+      secondary cue.
+- [x] 2.6 The **rule** governing which puzzles have a hint, naming no games.
+- [x] 2.7 **The other refusal: deduction running out**, distinguished from 2.4
+      and cross-linked to §Difficulty.
 
 ## 2a. Say what "Unreasonable" promises
 
-> Owner request, 2026-08-11, out of `add-galaxies-hint` acceptance. The rule
-> the collection actually holds: **if a board requires *guessing* rather than
-> *checking*, its tier is named Unreasonable** — and no other tier name may.
-> Nothing player-facing says this, so the name reads as bravado rather than as
-> the contract it is.
+> Owner request, 2026-08-11, out of `add-galaxies-hint` acceptance. The rule the
+> collection holds, now normative in `ts-engine`: **a tier whose boards can
+> require Search is named `Unreasonable`, and no other tier name may be.**
 
-- [ ] 2a.1 A `## Difficulty {#difficulty}` section in `help/features.md`
-      (there is none today) stating the contract in the player's terms: on
-      every other tier, pure deduction is enough to finish; on an
-      **Unreasonable** board you may reach a position where it is not, and the
-      way on is to try something and be ready to take it back.
-- [ ] 2a.2 Tie it to the hint: on such a board the hint will **say** it has run
-      out rather than guess for you, because a guess is not a technique it
-      could teach. Cross-link 2.7.
-- [ ] 2a.3 Name the mechanics that make trial-and-error survivable — the
-      checkpoint slot and undo — and link §Checking / §Checkpoints.
-- [ ] 2a.4 **Do not name the games.** The set is derivable
-      (`difficulty.tiers` per game) and hand-listing it in prose rots; the same
-      rule as 2.6. If a coverage guard can assert "every tier named
-      Unreasonable is described by this section", say so in design instead.
+- [x] 2a.1 `## Difficulty {#difficulty}` states the contract in the player's
+      terms. Avoids "guessing versus checking", superseded by
+      `audit-guessing-tier-names` D9 (design D4).
+- [x] 2a.2 Tied to the hint: on such a board it says it has run out rather than
+      guessing for you.
+- [x] 2a.3 Names undo, the saved position and checkpoints as what makes
+      trial-and-error cheap, linking §Checking and §Checkpoints.
+- [x] 2a.4 **No games named.** The guard asserts the section exists for as long
+      as any game declares the tier, and reports the count (13) itself.
 
 ## 3. Write the checking section
 
-- [ ] 3.1 `## Checking your work {#checking}` covering mistake highlighting
-      (`findMistakes`): what it proves (this entry contradicts the unique
-      solution) and what it does *not* (a missing entry is incomplete, never a
-      mistake).
-- [ ] 3.2 **Check & Save / Quick-save + Quick-load**, including the adaptive
-      button label and — the part with a real consequence — that a mistake
-      **hard-blocks** the save and leaves the previous checkpoint intact.
-      Cmd/Ctrl+S too.
-- [ ] 3.3 Apply the 1.1 decision so the page and the app use one word for one
-      thing.
-- [ ] 3.4 Cross-link: §Checkpoints ↔ §Checking, and the hint refusal ↔ mistake
-      highlighting (they are the same overlay, which is worth the player
-      knowing).
+- [x] 3.1 `## Checking your work {#checking}`: what the highlighting proves,
+      what it does not (missing is not mistaken), and that it is **ephemeral** —
+      the midend drops it on the next transition.
+- [x] 3.2 **Check & save / Quick-save + Quick-load**, the adaptive label, the
+      **hard block** that leaves the previous save intact, and Cmd/Ctrl+S.
+      Verified in the browser on a board with two deliberate mistakes.
+- [x] 3.3 Applied 1.1: all four strings renamed, and the success toast now
+      confirms the *check* on a checking game ("No mistakes — quick-saved") —
+      the flagged extra line in design D2. `puzzle-screen.test.ts` asserts both
+      labels.
+- [x] 3.4 Cross-links: §Checkpoints ↔ §Checking, and the hint refusal ↔ the
+      mistake overlay (they are the same overlay).
+
+## 3a. The two remaining fork controls
+
+- [x] 3a.1 `## Filling in all the pencil marks {#mark-all}`. Corrected against
+      the code while writing: the press is **adaptive**, not a blanket fill — it
+      fills only squares with no marks and never resets a narrowed one, and in
+      nine of the ten games a further press strikes out what is now impossible.
+- [x] 3a.2 `## The reference panel {#reference}`, including that closing the
+      panel deliberately keeps the highlight, and how to clear it.
 
 ## 4. The guard
 
-- [ ] 4.1 Extend `src/help-coverage.test.ts` per the 1.2 decision. Derive from
-      the app, not a hand-written list (design D1).
-- [ ] 4.2 **Prove it fails.** Delete a section locally, watch it go red, restore.
-      A guard never shown to fail is not known to work — the finding
-      `add-game-difficulty-contract` recorded when its first sampling guard
-      silently did nothing.
-- [ ] 4.3 Carry a **vacuity guard** ("the file was found, the pattern matched"),
-      as the three existing blocks in that file already do. A check that
-      silently inspects nothing reports success.
-- [ ] 4.4 Do **not** write the check as a grep for a spelling. The repo has hit
-      that shape six times; aim it at the resolved structure, not at one way of
-      writing a reference (design D1).
+- [x] 4.1 **Classification.** `src/help-coverage.test.ts` reads every optional
+      `Game` member off the `game.ts` AST and requires each to be classified
+      `features § anchor` / `upstream` / `internal`. Unclassified fails; a
+      classified anchor the page does not define fails; a classification naming
+      a member the contract no longer has fails.
+- [x] 4.2 **Derived populations.** §Right mouse's seven-game list is asserted
+      equal to `ignoresSecondaryButton`; any game whose `difficulty.tiers` names
+      `Unreasonable` requires `{#difficulty}`.
+- [x] 4.3 **Glyph resolution.** Landed in `vite-plugins/extra-pages.ts`, not in
+      the test, and the design note says why: **Vitest stubs every CSS import to
+      the empty string**, `?raw` included, so the test cannot read `help.css` at
+      all — its own vacuity guard convicted the first attempt. The plugin can,
+      it already holds the icon name, and it is where the TODO asking for this
+      check was written; `vite build` is in the pre-commit gate. The TODO is
+      deleted. Seven new `.icon-*` rules added. What stays in the test is the
+      direction needing no stylesheet: help glyphs vs the app's icon names.
+- [x] 4.4 **Proved each fails.** Deleted `{#hints}` → red; added an unclassified
+      optional member to `Game` → red; dropped Sokoban from the §Right mouse
+      list → red; renamed `{#difficulty}` → red (reporting "13 games"); a
+      `::hint-probe::` glyph → `vite build` failed with the plugin's message;
+      renamed an app icon → red. All restored.
+- [x] 4.5 **Vacuity guards** on every derivation: the member list is non-empty
+      and contains `hint`, the anchor set is non-empty, both populations are
+      non-empty, the pages were found and the glyph pattern matched. The
+      stylesheet one lives in the plugin (`no .icon-* rules found` throws).
+- [x] 4.6 No check is a grep for a spelling: each aims at a resolved structure —
+      an anchor, a flag, an AST member, a CSS rule.
+- [x] 4.7 Retired the dead recipe in `src/icons.ts` ("Sync changes to
+      `logicalIconNames` in `vite-extra-pages.ts`" — neither the symbol nor the
+      filename exists anywhere in the repo), replaced with the coupling that is
+      real and now enforced.
+
+## 4a. Found on the way
+
+- [x] 4a.1 `src/engine/mark-all.test.ts`'s enrolment check asserted that every
+      **listed** game declares `canMarkAll` — a statement about the list, which
+      could not fail for the miss its own comment described (a game declaring
+      the flag with no row, therefore unguarded by every property in the file).
+      Now derived from the registry in both directions, with a vacuity floor;
+      both failure directions proved.
 
 ## 5. Close out
 
-- [ ] 5.1 Confirm no per-game page needs a matching edit — a game whose hint
-      introduces vocabulary fixes its own page in its own change, and Sticks
-      already did (`add-sticks-hint` §6.2).
-- [ ] 5.2 Read the two new sections **against the running app**, clicking each
-      control as the prose describes it. Every sentence about a control is a
-      claim; the ones about the stepper's second press and the hard-blocked save
-      are the ones most likely to be subtly wrong.
-- [ ] 5.3 Full gate green (`vite build` renders the help pages, so a malformed
-      `<command-link>` or a broken anchor fails there, not in vitest).
-- [ ] 5.4 Owner acceptance, then archive.
+- [x] 5.1 `help/differences.md`: hints and mistake checking added to the list of
+      changes affecting all puzzles — the flagship divergence was missing from
+      the page whose whole job is listing divergences — and the Light Up bullet
+      now points at §Difficulty instead of re-explaining the tier locally.
+- [x] 5.2 Per-game pages checked, and two needed the matching edit: `galaxies.md`
+      said "save a checkpoint" for the one-slot save (the word this change gave
+      back to the history panel), and both it and `bricks.md` explained the
+      `Unreasonable` promise locally, so both now link the shared section.
+- [x] 5.3 Read against the running app, clicking each control: the stepper's two
+      beats and its re-arm, the blocked save (modal, previous save intact, cells
+      lit), both toasts' new wording, Quick-load, Mark-all as an undoable move,
+      and every glyph on the rendered page resolving to a real image.
+- [ ] 5.4 Full gate green.
+- [ ] 5.5 Owner acceptance, then archive.

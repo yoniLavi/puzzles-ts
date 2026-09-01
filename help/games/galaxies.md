@@ -55,9 +55,9 @@ that finish the puzzle.
 Every hint is a deduction you could have made from what is on the board.
 On an **Unreasonable** board there may come a point where no deduction is
 left and the only way on is to try something and see whether it works —
-that is what the difficulty name means. The hint says so rather than
-guessing for you: save a checkpoint, try it, and undo if it breaks. (Or
-use **Solve**, if you would rather see the answer.)
+that is what [the difficulty name means](../features#difficulty). The hint
+says so rather than guessing for you: save your position, try it, and undo
+if it breaks. (Or use **Solve**, if you would rather see the answer.)
 
 A hint is refused while anything on the board contradicts the solution.
 The offending squares and lines light up instead, exactly as they do

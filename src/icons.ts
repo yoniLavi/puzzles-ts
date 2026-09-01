@@ -68,8 +68,11 @@ type IconMap = Readonly<Record<string, string>>;
  */
 // biome-ignore format: leave all keys as strings
 const defaultIcons: IconMap = {
-  // IMPORTANT: Sync changes to logicalIconNames in vite-extra-pages.ts
-  //            (only necessary for icons used in help docs).
+  // An icon named by a help page (`::hint::`) is drawn from a `--icon` rule in
+  // `src/css/help.css`, not from this map — the help is static markdown and
+  // never loads this module. A name with no rule there renders as empty space,
+  // silently, so `help-coverage.test.ts` holds the two together: adding a glyph
+  // to a help page means adding its rule, pointed at the same import as here.
   // general
   "back-to-catalog": boxesIcon,
   "check-and-save": bookmarkCheckIcon,

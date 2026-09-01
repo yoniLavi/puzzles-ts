@@ -119,7 +119,19 @@ table.puzzles-list td:not(:last-child) {
   white-space: nowrap;
 }
 
-/* Icon images */
+/* Icon images.
+ *
+ * A `::name::` in a help page renders `<span class="icon icon-name">`, and the
+ * glyph is this `--icon` rule. There is no fallback: a name with no rule here
+ * renders as empty space, silently, at build time and at run time alike — so
+ * `help-coverage.test.ts` holds every glyph the help names to this block.
+ *
+ * The names are the app's own logical icon names (`src/icons.ts`), and the
+ * targets are its imports, so a help glyph and the toolbar button it describes
+ * are the same picture. */
+.icon-check-and-save {
+  --icon: url(/node_modules/lucide-static/icons/bookmark-check.svg);
+}
 .icon-checkpoint-remove {
   --icon: url(/node_modules/lucide-static/icons/trash-2.svg);
 }
@@ -141,6 +153,9 @@ table.puzzles-list td:not(:last-child) {
 .icon-game-in-progress {
   --icon: url(/node_modules/lucide-static/icons/play.svg);
 }
+.icon-hint {
+  --icon: url(/node_modules/lucide-static/icons/lightbulb.svg);
+}
 .icon-history {
   --icon: url(/node_modules/lucide-static/icons/history.svg);
 }
@@ -156,11 +171,20 @@ table.puzzles-list td:not(:last-child) {
 .icon-load-game {
   --icon: url(/node_modules/lucide-static/icons/upload.svg);
 }
+.icon-mark-all {
+  --icon: url(/node_modules/lucide-static/icons/grid-3x3.svg);
+}
 .icon-mouse-left-button {
   --icon: url(/src/assets/mouse-left-button.svg);
 }
 .icon-mouse-right-button {
   --icon: url(/src/assets/mouse-right-button.svg);
+}
+.icon-pause {
+  --icon: url(/node_modules/lucide-static/icons/pause.svg);
+}
+.icon-play {
+  --icon: url(/node_modules/lucide-static/icons/play.svg);
 }
 .icon-puzzle-type {
   --icon: url(/node_modules/lucide-static/icons/swatch-book.svg);
@@ -168,11 +192,17 @@ table.puzzles-list td:not(:last-child) {
 .icon-redo {
   --icon: url(/node_modules/lucide-static/icons/redo-2.svg);
 }
+.icon-reference {
+  --icon: url(/node_modules/lucide-static/icons/list-checks.svg);
+}
 .icon-save-game {
   --icon: url(/node_modules/lucide-static/icons/download.svg);
 }
 .icon-share {
   --icon: url(/node_modules/lucide-static/icons/share-2.svg);
+}
+.icon-show-solution {
+  --icon: url(/node_modules/lucide-static/icons/sparkles.svg);
 }
 .icon-undo {
   --icon: url(/node_modules/lucide-static/icons/undo-2.svg);

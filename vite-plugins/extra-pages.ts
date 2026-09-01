@@ -780,6 +780,40 @@ export const extraPages = (options: ExtraPagesPluginOptions = {}): Plugin => {
  * Adds 'html' and 'body' (both set to rendered markdown)
  * and 'title' (first H1 in markdown) to the output data.
  */
+/**
+ * The stylesheet a help glyph's picture actually comes from. A `::name::` in a
+ * page renders `<span class="icon icon-name">`, and `--icon` on `.icon-name` is
+ * the only thing that puts an image there — the app's own icon map
+ * (`src/icons.ts`) is never loaded by a help page.
+ */
+const HELP_STYLESHEET = "src/css/help.css";
+
+/** The `.icon-*` rules `help.css` defines, read once per build. Lazily, because
+ * `renderMarkdown` is constructed before a build begins. */
+let helpIconRules: Set<string> | undefined;
+
+/**
+ * The names `help.css` defines a picture for.
+ *
+ * This is the check the `TODO` here asked for, and it belongs at build time
+ * rather than in a test: an unresolved class renders as **empty space**, with no
+ * error from markdown-it, from Vite, or from the browser, so nothing downstream
+ * would ever report it. `vite build` is in the pre-commit gate, so failing here
+ * fails the commit. (The paired test in `src/help-coverage.test.ts` cannot do
+ * it: Vitest stubs every CSS import to the empty string, `?raw` included.)
+ */
+function definedHelpIcons(): Set<string> {
+  if (helpIconRules) return helpIconRules;
+  const css = fs.readFileSync(HELP_STYLESHEET, "utf8");
+  const names = [...css.matchAll(/^\.icon-([a-z0-9-]+)\s*\{/gm)].map((m) => m[1]);
+  if (names.length === 0) {
+    // A rule pattern that stopped matching would wave every glyph through.
+    throw new Error(`${PLUGIN_ID}: no \`.icon-*\` rules found in ${HELP_STYLESHEET}`);
+  }
+  helpIconRules = new Set(names);
+  return helpIconRules;
+}
+
 export const renderMarkdown = (
   config?: MarkdownItPresetName | MarkdownItOptions,
 ): Transform => {
@@ -801,7 +835,13 @@ export const renderMarkdown = (
         throw new Error(`Invalid empty icon name in: '${raw}'`);
       }
       const iconClass = `icon-${iconName}`;
-      // TODO: search for iconClass in help.css; error if not found
+      if (!definedHelpIcons().has(iconName)) {
+        throw new Error(
+          `${PLUGIN_ID}: help page uses '::${iconName}::' but ${HELP_STYLESHEET} ` +
+            `defines no '.${iconClass}' rule — it would render as blank space. ` +
+            `Add the rule, pointing at the same icon 'src/icons.ts' uses.`,
+        );
+      }
       const label = parts.length > 0 ? parts.join("|").trim() : "";
       const aria = label
         ? `role="img" aria-label="${escapeHtml(label)}"`
