@@ -135,5 +135,6 @@
       beats and its re-arm, the blocked save (modal, previous save intact, cells
       lit), both toasts' new wording, Quick-load, Mark-all as an undoable move,
       and every glyph on the rendered page resolving to a real image.
-- [ ] 5.4 Full gate green.
-- [ ] 5.5 Owner acceptance, then archive.
+- [x] 5.4 Full gate green (`a45c473`: 7626 tests, `vite build` in the hook).
+- [x] 5.5 Owner accepted 2026-09-01, with the design D2 extra line (the toast
+      reporting the check) kept as written. Archived.
