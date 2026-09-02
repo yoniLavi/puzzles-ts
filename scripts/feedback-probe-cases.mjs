@@ -58,36 +58,40 @@ export const MODULES = [
         replace: "      if (true) continue;",
       },
       {
-        // EQUIVALENT. `row`/`col` are read in exactly one place — `diffSimple`'s
-        // `if (!this.row[...])` guard, which skips an `elim` sweep over a line
-        // whose digit is already placed. Run anyway, that sweep finds `m === 1`
-        // at the placed cell, sees `grid[y*o+x]` already set, and returns 0. So
-        // the ledger is a *scan-skipping optimisation* with no observable
-        // behaviour of its own, and a test asserting `row[...] === 1` would be
-        // asserting the mechanism rather than any claim the module makes.
+        // Was EQUIVALENT while the ledger was a scan-skipping optimisation
+        // (`diffSimple` skips a line whose digit is placed; run anyway, the
+        // sweep places nothing). `add-latin-repeats-support` made it
+        // load-bearing: for the repeated symbol the row count is what decides
+        // when the line is full and the symbol is struck from the rest of it,
+        // so a count that never grows leaves every hole line unstruck.
         within: "LatinSolver.place",
-        why: "placing a digit no longer marks its row as satisfied (ledger is a scan-skipping optimisation)",
-        equivalent: true,
-        find: "    this.row[y * o + n - 1] = 1;",
-        replace: "    this.row[y * o + n - 1] = 0;",
+        why: "placing a symbol no longer counts towards its row, so a repeated symbol's line is never struck once full",
+        find: "    const inRow = ++this.row[y * s + n - 1];",
+        replace: "    const inRow = this.row[y * s + n - 1];",
       },
       {
         within: "LatinSolver.cubepos",
         why: "the candidate cube is indexed transposed (x and y swapped)",
-        find: "    return (x * this.o + y) * this.o + n - 1;",
-        replace: "    return (y * this.o + x) * this.o + n - 1;",
+        find: "    return (x * this.o + y) * this.symbols + n - 1;",
+        replace: "    return (y * this.o + x) * this.symbols + n - 1;",
       },
       {
         within: "LatinSolver.elim",
-        why: "elimination fires on two remaining candidates, not one",
-        find: "    if (m === 1) {",
-        replace: "    if (m === 2) {",
+        why: "elimination fires with one candidate too many left (two for a digit, times+1 for the repeated symbol)",
+        find: "    if (m === need) {",
+        replace: "    if (m === need + 1) {",
       },
       {
         within: "LatinSolver.elim",
-        why: "a cell with no candidates left is not reported as a contradiction",
-        find: "    } else if (m === 0) {\n      return -1;",
-        replace: "    } else if (m === 0) {\n      return 0;",
+        why: "a cell with no candidates left (or a line short of its repeated symbol) is not reported as a contradiction",
+        find: "    } else if (m < need) {\n      return -1;",
+        replace: "    } else if (m < need) {\n      return 0;",
+      },
+      {
+        within: "LatinSolver.elim",
+        why: "the repeated symbol is placed as soon as one cell can take it, instead of once exactly `times` can",
+        find: "    const need = positional ? this.multiplicity(1 + (start % s)) : 1;",
+        replace: "    const need = 1;",
       },
       {
         within: "LatinSolver.set",

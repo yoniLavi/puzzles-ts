@@ -2,24 +2,27 @@
  * Salad's explained hint — a **candidate-elimination** plan
  * (docs/games/hints.md § "Candidate-elimination games").
  *
- * Salad is the first candidate game whose value set is not uniform: its
- * `order − nums` hole symbols are interchangeable, so in the *cube* they are
- * perfectly Latin while on the *player's board* they collapse into one
- * "might be empty" X mark and, once settled, into an empty-square marker. The
- * consequences run through this whole file, so they are worth stating once:
+ * Salad is the first candidate game whose value set is not uniform: the cube
+ * reasons about the empty square as a symbol with a multiplicity (`solver.ts`,
+ * `holeSymbol`), while on the *player's board* that symbol is one "might be
+ * empty" X mark and, once settled, an empty-square marker rather than an entry.
+ * The consequences run through this whole file, so they are worth stating once:
  *
- * 1. **A square's emptiness is a marker, never a placement.** The cube never
- *    collapses on a hole square (nothing decides *which* hole symbol sits
- *    there), so there is no naked single for "empty". A cross/ball is reached by
- *    Salad's own hole deductions, and is emitted as a marker step whose *why* is
- *    re-derived from the board the player can see (§9.3a's rule, applied to
- *    markers): a line's counts first, then a note collapse, and only then the
- *    honest weaker "taking this row and column together" arm.
- * 2. **Only the border deduction needs to be recorded.** Salad's sync and count
- *    deductions write markers, not candidates, so their conclusions are
- *    re-derived above rather than recorded; the recorder is threaded through the
- *    ABC End View border scan alone (`solver.ts`), which is also the one Salad
- *    deduction that strikes candidates the player holds notes for.
+ * 1. **A square's emptiness is taught as a marker, not as a note strike.** The
+ *    cube does place the hole symbol, and does strike it — but the player
+ *    settles a square with a cross or a ball, so a cross/ball is emitted as a
+ *    marker step whose *why* is re-derived from the board the player can see
+ *    (§9.3a's rule, applied to markers): a line's counts first, then a note
+ *    collapse, and only then the honest weaker "taking this row and column
+ *    together" arm, which is the cube's own verdict read back as markers. The
+ *    cube's eliminations *of* the hole symbol are dropped from the strike walk
+ *    for the same reason: teaching one fact twice, as an X-mark strike and then
+ *    as the marker it amounts to, would be noise.
+ * 2. **Only the border deduction needs to be recorded.** The generic rungs
+ *    record their placements and strikes through the shared solver; the
+ *    recorder is threaded through the ABC End View border scan alone
+ *    (`solver.ts`), which is the one Salad deduction that strikes candidates the
+ *    player holds notes for.
  * 3. **The walk terminates on {@link latinholesCheck}, not "the grid is full".**
  *    A solved board legitimately leaves `order − nums` squares per line blank
  *    (the port's finding F3), so a fill-the-grid loop would never end.
@@ -48,6 +51,7 @@ import {
 } from "../../engine/candidate-hint.ts";
 import type { DeductionRecord } from "../../engine/deduction-record.ts";
 import type { HintResult, HintStep, HintTrackVerdict } from "../../engine/game.ts";
+import type { LatinRepeatReason } from "../../engine/latin.ts";
 import {
   type ForcingLink,
   forcingChainArea,
@@ -111,7 +115,11 @@ export type SaladReason =
   /** The shared solver's forcing chain, with the chain it followed — the same
    * shape `latin.ts` records, so the numbered squares and the case-split
    * narration come for free. */
-  | { kind: "forcing"; chain: ForcingLink[]; shares: "row" | "col" };
+  | { kind: "forcing"; chain: ForcingLink[]; shares: "row" | "col" }
+  /** The cube's own "this line has all its empty squares" strike of the hole
+   * symbol. Recorded, and narratable, but the strike walk drops hole-symbol
+   * strikes (file header, point 1), so it is reached only if that changes. */
+  | LatinRepeatReason;
 
 /** What a Salad hint step draws (docs/games/hints.md § "The element-type colour legend"'s element legend):
  * `area` is the deduction's evidence, `targets` the squares it acts on, `marks`
@@ -227,6 +235,16 @@ export function narrate(
       return `Working through this square's row and column together, this square cannot be one of the empty ones — so it holds a ${noun}, even though we don't know which yet.`;
     case "circleXNote":
       return `These squares are now known to hold a ${noun}, so we must cross out their empty-square marks.`;
+    case "repeatFull": {
+      const axis = reason.line === "row" ? "row" : "column";
+      const has =
+        reason.times === 1
+          ? "its one empty square"
+          : reason.times === 2
+            ? "both of its empty squares"
+            : `all ${reason.times} of its empty squares`;
+      return `This ${axis} already has ${has}, so this square cannot be empty — we must cross out its empty-square mark.`;
+    }
     default:
       return narrateLatinReason(reason, ns, vocab);
   }
@@ -305,11 +323,10 @@ function startWorking(s: SaladState): Working {
 /**
  * The grid the *placement* window is judged against — `firstUnreflectedPlaceIndex`
  * and `nextPlace`'s "is this cell decided yet?". Salad is the first game where
- * that differs from the symbol grid: the cube places one of its interchangeable
- * hole symbols in a square the player settles with an empty-square marker, and
- * that square's grid entry stays blank for ever, so judging by `grid` alone would
- * leave the op permanently unreflected and wall off every strike recorded after
- * it.
+ * that differs from the symbol grid: the cube places its hole symbol in a square
+ * the player settles with an empty-square marker, and that square's grid entry
+ * stays blank for ever, so judging by `grid` alone would leave the op permanently
+ * unreflected and wall off every strike recorded after it.
  */
 function placedProbe(w: Working): Uint8Array {
   const out = Uint8Array.from(w.grid);
@@ -692,11 +709,11 @@ function buildSteps(
       }
     }
 
-    // 4. The next teachable elimination. Hole-symbol eliminations are dropped:
-    //    an individual hole symbol has no note of its own (the X mark stands for
-    //    all of them at once), so there is nothing on screen to cross out — but
-    //    hole *placements* are kept, because they still bound the window of
-    //    strikes whose premise the board already supports.
+    // 4. The next teachable elimination. Strikes *of* the hole symbol are
+    //    dropped — the same fact reaches the player as a marker step (file
+    //    header, point 1), and teaching it twice would be noise — but hole
+    //    *placements* are kept, because they still bound the window of strikes
+    //    whose premise the board already supports.
     const probe = placedProbe(w);
     const ops = rec.ops as SaladOp[];
     const strikeOps = ops.filter((op) => op.kind === "place" || op.n <= nums);

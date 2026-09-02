@@ -193,11 +193,9 @@ describe("salad solver", () => {
       const s = newState(f.p, f.desc);
       const board = scratchBoard(s);
       expect(saladSolve(board, DIFF_EASY)).toBe(true);
-      // Every line ends up with exactly `nums` symbols; the rest are holes.
-      // A hole square is left as either 0 or a pseudo-symbol above `nums` —
-      // *which* of those the solver lands on is genuinely undetermined (the
-      // hole symbols are interchangeable), which is exactly why upstream's
-      // acceptance test is `latinholes_check` and not the solver's verdict.
+      // Every line ends up with exactly `nums` symbols; the rest are holes,
+      // which the solver leaves as its hole symbol (`nums + 1`) and marks as
+      // crosses — the acceptance test is `latinholesCheck`, as upstream's.
       const o = f.p.order;
       for (let y = 0; y < o; y++) {
         let filled = 0;

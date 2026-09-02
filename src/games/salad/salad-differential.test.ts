@@ -6,9 +6,18 @@
  * while the puzzle still solves by pure deduction at the target difficulty — so
  * the published description depends on the solver's verdict on every
  * intermediate board. One byte-match assertion therefore validates the
- * generator's RNG draw order, the solver's exact deductive power (including the
- * pseudo-Latin hole translation and the ABC End View border rule) and the
- * run-length codec, all at once.
+ * generator's RNG draw order, the solver's exact deductive power (the ABC End
+ * View border rule, and the generic cube's reasoning about the empty square)
+ * and the run-length codec, all at once.
+ *
+ * **It also proved a rewrite.** `add-latin-repeats-support` replaced upstream's
+ * hole translation — a full order-`o` square whose surplus symbols mean "empty",
+ * plus a sync/count layer between the two views — with a cube that carries the
+ * empty square as a repeated symbol. Every one of these 28 descriptions stayed
+ * byte-identical across that rewrite, which is the strongest available statement
+ * that the two encodings are deductively equivalent on every intermediate board
+ * the generator asked about. Retiring this file was the plan; keeping it was the
+ * finding.
  *
  * **`upstreamLooseGate` is set here and nowhere else.** The shipped generator
  * rejects a board that the tier below already solves, which upstream never

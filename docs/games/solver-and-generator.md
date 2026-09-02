@@ -723,12 +723,28 @@ Working rules, each earned:
   upstream applies those in. It is deliberately **not** re-applied inside the
   recursion (faithful to the C) — sound only for a game that never recurses,
   so check your recursion setting before relying on it.
-- **A pseudo-Latin game's solved grid is not a full square, and that is
-  correct.** Salad treats symbols above `nums` as holes; *which*
-  interchangeable hole symbol lands where is genuinely undetermined, so the
-  cube never collapses on those cells. The acceptance test is upstream's
-  hole-aware check, never "the grid is full" — expect a full-square assertion
-  to fail with nothing wrong ([`salad/solver.ts`](../../src/games/salad/solver.ts)).
+- **A pseudo-Latin game declares its repeated symbol; it does not fake it.**
+  Salad's empty square appears `order − nums` times per line, and the cube is
+  told so — `LatinSolverConfig.repeats: { times }` makes the **last** symbol
+  (`o − times + 1`, Salad's `holeSymbol(nums) = nums + 1`) repeat. From there
+  the generic rungs reason about it with its multiplicity: positional
+  elimination places it when exactly `times` cells of a line can still take it,
+  placing it strikes the line only once the line's count is full (recorded as
+  `repeatFull`, kept apart from `LatinReason` so the Latin-square games' exhaustive
+  narrations are not asked about a case they cannot meet), set elimination runs
+  the multiplicity-aware `setGeneral`, and forcing chains never link through it.
+  A **cross** is the hole symbol placed, a **ball** the hole symbol struck, and
+  the marker array is read back off the final cube (`cubeOut`) —
+  [`salad/solver.ts`](../../src/games/salad/solver.ts) is the consumer. Two
+  things to know before touching it: **the extension is inert when not
+  declared** (`symbols = o`, every multiplicity 1, every path reduces to the C's
+  — the family's byte-match differentials are the proof, and
+  `latin-repeats.test.ts` pins the shape), and a consumer with exactly *one*
+  empty per line (`nums = order − 1`) needs no declaration at all, because a
+  once-per-line symbol is just a symbol. Upstream's alternative — a full square
+  whose surplus symbols are reinterpreted as holes, with a translation layer
+  between the two views — is what `add-latin-repeats-support` retired; its
+  author had called it "fairly messy" and asked for exactly this.
 - **Three generator shapes in the family.** (1) Towers *derives* every clue
   from the full square, then removes. (2) Unequal (and Solo) greedily
   *assemble* clues onto a blank board, reading the solver's

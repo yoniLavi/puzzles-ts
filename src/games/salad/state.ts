@@ -160,10 +160,11 @@ export function validateParams(p: SaladParams, _full: boolean): string | null {
  * `game_state` they touch. {@link SaladState} satisfies it structurally, so a
  * cloned state can be handed straight to the solver.
  *
- * `grid` holds the working symbols in the *order-`o`* alphabet while the solver
- * runs: the pseudo-Latin trick (see `solver.ts`) makes symbols above `nums`
- * mean "hole", so a solved `grid` cell may exceed `nums` and `holes` is what
- * says which. Player entries are always `1..nums`.
+ * `grid` holds the working symbols in the `1..nums + 1` alphabet while the
+ * solver runs: `nums + 1` is the cube's symbol for an empty square (see
+ * `solver.ts`, `holeSymbol`), so a solved `grid` cell may be one past `nums`,
+ * and every reader of a solved grid tests `<= nums`. Player entries are always
+ * `1..nums`.
  */
 export interface SaladBoard {
   readonly order: number;

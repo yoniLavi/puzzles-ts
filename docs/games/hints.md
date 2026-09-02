@@ -2500,14 +2500,16 @@ conclusion is often not a placement at all. Five points a game shaped like it
 will hit:
 
 1. **Find where the game's values *are* uniform, and put the collapse only at
-   the edge.** Salad fakes "some squares stay empty" with a complete
-   order-`o` square whose symbols above `nums` are holes — so **in the cube
-   the holes are perfectly Latin**, and only the *player-facing projection* is
-   many-to-one. That observation is what kept the abstraction small: a
-   proposed `valuesFor(bit)` collapse arm found **no consumer**, because a
-   shared helper only ever asks "which note bit does this *placed* value
-   occupy?" — and no hole symbol is ever placed on the player's grid. **Look
-   for the uniform view before generalising the helper.**
+   the edge.** In Salad's cube the empty square is one symbol like any other
+   — the cube's repeated symbol, `nums + 1` (`solver.ts`, `holeSymbol`) — so
+   **in the cube every value is a value**, and only the *player-facing
+   projection* differs: that symbol is an X note while undecided and a
+   cross/ball marker once settled, never an entry in the grid. That
+   observation is what kept the abstraction small: a proposed
+   `valuesFor(bit)` collapse arm found **no consumer**, because a shared helper
+   only ever asks "which note bit does this *placed* value occupy?" — and the
+   hole symbol is never placed on the player's grid. **Look for the uniform
+   view before generalising the helper.**
 2. **A conclusion that writes no value into the grid is a fourth move
    shape.** Salad settles a square's *emptiness* with a marker
    (`set { value: "cross" | "circle" }`) — neither a placement nor a strike.

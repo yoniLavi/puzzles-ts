@@ -2,34 +2,43 @@
  * Salad's solver — a consumer of the shared Latin framework
  * ([`engine/latin.ts`](../../engine/latin.ts)), per docs/games/solver-and-generator.md § "The Latin family".
  *
- * **The pseudo-Latin-square trick.** Salad wants "each of `nums` symbols once
- * per line, the rest of the line empty", which is not a Latin square. Upstream
- * fakes it with a *complete* order-`o` square whose symbols above `nums` are
- * reinterpreted as **holes** — since a full square places each of the `o`
- * symbols once per line, exactly `o − nums` squares per line become holes for
- * free. That is why the shared `latinSolver` cube and `latinGenerate` are used
- * unchanged: the "empty" symbol is just symbols `nums+1..o` collapsed together.
+ * **The empty square is a symbol of the cube.** Salad wants "each of `nums`
+ * symbols once per line, the other `order − nums` squares empty" — a
+ * *pseudo*-Latin square. The cube expresses that directly: it is told its last
+ * symbol, {@link holeSymbol} (`nums + 1`), repeats `order − nums` times per line
+ * (`LatinRepeats`), and from there every generic deduction reasons about "the
+ * empty square" as a value with a multiplicity — placed when exactly that many
+ * cells of a line can still be empty, struck from a line once it holds all its
+ * empties, weighed correctly by set elimination, never used as a forcing-chain
+ * link. Upstream instead fakes the rule with a *full* order-`o` square whose
+ * symbols above `nums` are reinterpreted as holes, and its solver spends its
+ * time translating between the two views ("fairly messy", its author says in
+ * `docs/salad.md`, wishing for exactly this support). That translation layer —
+ * `latinholes_solver_sync`, `_count`, `_place_cross`, `_place_circle` — is gone;
+ * what it computed by hand, the cube now knows.
  *
- * The salad-specific deductions therefore spend their time **translating**
- * between the two views: {@link latinholesSolverSync} reads the cube and writes
- * the `holes` map ("no candidate ≤ nums survives here, so this is a hole"),
- * while `placeCross`/`placeCircle` push a known marker back into the cube. The
- * board's author calls this machinery "fairly messy" in
- * `puzzles/unreleased/docs/salad.md`, and wishes for first-class Latin-squares-
- * with-repeats support upstream; that is a framework project, not a port, so
- * this reproduces the workaround (see the change's `design.md`).
+ * The player's two markers map onto the cube in one line each: a **cross**
+ * (known empty) is the hole symbol *placed*; a **ball** (known to hold a symbol,
+ * which one unknown) is the hole symbol *struck*. The `holes` array on a board
+ * is the player-facing record of those two facts and is read back off the cube
+ * after a solve ({@link markersFromCube}).
  *
- * Two difficulties, both **guess-free**: upstream passes
- * `diff_recursive = DIFF_IMPOSSIBLE`, so `latinSolver` never recurses at either
- * tier. Normal (`DIFF_EASY`) is these deductions plus the generic positional /
- * numeric elimination; Extreme (`DIFF_HARD`) adds the generic set-elimination
- * and forcing-chain techniques (upstream gives Extreme no salad-specific
- * user-solver of its own).
+ * What stays Salad's own is the ABC End View border deduction
+ * ({@link saladLettersSolverDir}), which reads the cube for "known empty" /
+ * "known filled" where it used to read the marker array.
+ *
+ * Two difficulties, both **guess-free**: `diffRecursive = DIFF_IMPOSSIBLE`, so
+ * the cube never recurses at either tier. Normal (`DIFF_EASY`) is the border
+ * deduction plus the generic positional / numeric elimination — which, with the
+ * hole a real symbol, now includes "only these `k` squares can be empty" and
+ * "this line already has its `k` empties"; Extreme (`DIFF_HARD`) adds the
+ * generic set elimination and forcing chains.
  */
 
 import type { DeductionRecord } from "../../engine/deduction-record.ts";
 import {
   DIFF_IMPOSSIBLE,
+  type LatinRepeats,
   LatinSolver,
   type LatinSolverConfig,
   latinSolver,
@@ -48,111 +57,67 @@ import {
   scratchBoard,
 } from "./state.ts";
 
-// --- the hole ↔ candidate translation --------------------------------------
+// --- the hole as a cube symbol ---------------------------------------------
 
-/**
- * Upstream `latinholes_solver_sync`: for every square with no marker yet, ask
- * the cube whether it can still take a symbol (`≤ nums`) and whether it can
- * still be a hole (`> nums`). Whichever is impossible settles the square.
- */
-function latinholesSolverSync(solver: LatinSolver, b: SaladBoard): number {
-  const o = solver.o;
-  const nums = b.nums;
-  if (nums === o) return 0;
+/** The cube's symbol for an empty square: one past the last real symbol. This
+ * is also the value a solved working `grid` holds in an empty square, which is
+ * why every reader of a solved grid tests `<= nums`. */
+export function holeSymbol(nums: number): number {
+  return nums + 1;
+}
 
-  let nchanged = 0;
+/** How the cube is told about the empty squares. With exactly one empty square
+ * per line (`nums = order − 1`) the hole is an ordinary once-per-line symbol
+ * and needs no declaration. */
+function repeatsFor(b: SaladBoard): LatinRepeats | undefined {
+  const times = b.order - b.nums;
+  return times >= 2 ? { times } : undefined;
+}
+
+/** Known empty: the hole symbol is *placed* here. */
+function isKnownHole(solver: LatinSolver, i: number, hole: number): boolean {
+  return solver.grid[i] === hole;
+}
+
+/** Known to hold a symbol (a ball, or a placed symbol): the hole is struck. */
+function isKnownFilled(
+  solver: LatinSolver,
+  x: number,
+  y: number,
+  hole: number,
+): boolean {
+  return !solver.cubeGet(x, y, hole);
+}
+
+/** A cross: the square is empty, so the hole symbol goes here. A cross where
+ * the cube has already ruled the hole out is a contradiction; emptying the cell
+ * of every candidate is how the cube is told, and `elim` reports it. */
+function placeCross(solver: LatinSolver, b: SaladBoard, x: number, y: number): void {
+  const hole = holeSymbol(b.nums);
+  if (solver.grid[y * b.order + x] !== 0) return;
+  if (solver.cubeGet(x, y, hole)) solver.place(x, y, hole);
+  else
+    for (let n = 1; n <= solver.symbols; n++) solver.cube[solver.cubepos(x, y, n)] = 0;
+}
+
+/** A ball: the square holds *some* symbol, so it is not the hole. */
+function placeCircle(solver: LatinSolver, b: SaladBoard, x: number, y: number): void {
+  solver.cube[solver.cubepos(x, y, holeSymbol(b.nums))] = 0;
+}
+
+/** Read the two markers back off a finished cube into `holes`: a placed hole is
+ * a cross, a struck hole a ball. `cube` is the solver's final candidate cube
+ * (`cubeOut`), laid out with `symbols` values per cell. */
+function markersFromCube(b: SaladBoard, grid: Uint8Array, cube: Uint8Array): void {
+  const o = b.order;
+  const hole = holeSymbol(b.nums);
+  const symbols = hole;
   for (let i = 0; i < o * o; i++) {
-    if (b.holes[i]) continue;
     const x = i % o;
     const y = (i / o) | 0;
-
-    let match = false;
-    for (let n = 0; n < nums; n++) if (solver.cubeGet(x, y, n + 1)) match = true;
-    if (!match) {
-      nchanged++;
-      b.holes[i] = CROSS;
-      continue;
-    }
-
-    match = false;
-    for (let n = nums; n < o; n++) if (solver.cubeGet(x, y, n + 1)) match = true;
-    if (!match) {
-      nchanged++;
-      b.holes[i] = CIRCLE;
-    }
+    if (grid[i] === hole) b.holes[i] = CROSS;
+    else if (!cube[(x * o + y) * symbols + hole - 1]) b.holes[i] = CIRCLE;
   }
-  return nchanged;
-}
-
-/** Upstream `latinholes_solver_place_cross`: a known-empty square can hold no
- * symbol, so strike every candidate `1..nums` from it. */
-function placeCross(solver: LatinSolver, b: SaladBoard, x: number, y: number): number {
-  let nchanged = 0;
-  for (let n = 0; n < b.nums; n++) {
-    const pos = solver.cubepos(x, y, n + 1);
-    if (!solver.cube[pos]) continue;
-    solver.cube[pos] = 0;
-    nchanged++;
-  }
-  return nchanged;
-}
-
-/** Upstream `latinholes_solver_place_circle`: a known-filled square cannot be a
- * hole, so strike every hole symbol `nums+1..o` from it. */
-function placeCircle(solver: LatinSolver, b: SaladBoard, x: number, y: number): number {
-  let nchanged = 0;
-  for (let n = b.nums; n < solver.o; n++) {
-    const pos = solver.cubepos(x, y, n + 1);
-    if (!solver.cube[pos]) continue;
-    solver.cube[pos] = 0;
-    nchanged++;
-  }
-  return nchanged;
-}
-
-/**
- * Upstream `latinholes_solver_count`: per row and column, once `order − nums`
- * crosses are known every other square must be filled; once `nums` circles are
- * known every other square must be empty.
- */
-function latinholesSolverCount(solver: LatinSolver, b: SaladBoard): number {
-  const o = solver.o;
-  const nums = b.nums;
-  let nchanged = 0;
-  let x = 0;
-  let y = 0;
-
-  for (let dir = 0; dir < 2; dir++) {
-    for (let i = 0; i < o; i++) {
-      if (dir) x = i;
-      else y = i;
-
-      let holecount = 0;
-      let circlecount = 0;
-      for (let j = 0; j < o; j++) {
-        if (dir) y = j;
-        else x = j;
-        if (b.holes[y * o + x] === CROSS) holecount++;
-        if (b.holes[y * o + x] === CIRCLE) circlecount++;
-      }
-
-      if (holecount === o - nums) {
-        for (let j = 0; j < o; j++) {
-          if (dir) y = j;
-          else x = j;
-          if (!b.holes[y * o + x]) nchanged += placeCircle(solver, b, x, y);
-        }
-      } else if (circlecount === nums) {
-        for (let j = 0; j < o; j++) {
-          if (dir) y = j;
-          else x = j;
-          if (!b.holes[y * o + x]) nchanged += placeCross(solver, b, x, y);
-        }
-      }
-    }
-  }
-
-  return nchanged;
 }
 
 // --- the ABC End View border deduction -------------------------------------
@@ -191,7 +156,10 @@ export type BorderReason =
  * - **Past the clue's reach**, the clue symbol itself can no longer appear. The
  *   reach is `order − nums` squares (the most holes a line can hold), shortened
  *   by every hole already confirmed *beyond* that distance, and cut short
- *   outright by a confirmed circle.
+ *   outright by a confirmed ball.
+ *
+ * "Known hole" and "known ball" are read off the cube — a placed hole symbol, a
+ * struck one — where upstream read its marker array.
  */
 function saladLettersSolverDir(
   solver: LatinSolver,
@@ -206,6 +174,7 @@ function saladLettersSolverDir(
 
   const o = solver.o;
   const nums = b.nums;
+  const hole = holeSymbol(nums);
   const rec = solver.recorder;
   let nchanged = 0;
 
@@ -213,7 +182,7 @@ function saladLettersSolverDir(
   // line may still contain, minus the holes already confirmed out of range.
   let maxdist = o - nums;
   for (let i = si + di * (o - nums); i !== ei; i += di) {
-    if (b.holes[i] === CROSS) maxdist--;
+    if (isKnownHole(solver, i, hole)) maxdist--;
   }
 
   let dist = 0;
@@ -253,7 +222,7 @@ function saladLettersSolverDir(
       }
     }
 
-    if (b.holes[i] !== CROSS) found = true;
+    if (!isKnownHole(solver, i, hole)) found = true;
 
     if (outofrange) {
       const pos = solver.cubepos(x, y, clue);
@@ -282,7 +251,7 @@ function saladLettersSolverDir(
     }
     dist++;
 
-    if (b.holes[i] === CIRCLE) {
+    if (isKnownFilled(solver, x, y, hole)) {
       if (!outofrange) circleAt = i;
       outofrange = true;
     } else if (dist > maxdist) {
@@ -314,27 +283,18 @@ function saladLettersSolver(solver: LatinSolver, b: SaladBoard): number {
   return nchanged;
 }
 
-/** Upstream `salad_solver_easy`: the whole salad-specific rung. On the hint path
- * each of its three deductions returns separately, for the group-per-firing
- * reason above. */
+/** Salad's own rung: the border deduction, in ABC End View mode. Number Ball has
+ * nothing of its own left — its balls and crosses are cube facts, and the hole
+ * deductions upstream wrote by hand are the cube's generic ones now. */
 function saladSolverEasy(solver: LatinSolver, b: SaladBoard): number {
-  const recording = solver.recorder !== undefined;
-  let nchanged = latinholesSolverSync(solver, b);
-  if (nchanged && recording) return nchanged;
-  if (b.mode === GAMEMODE_LETTERS) {
-    const n = saladLettersSolver(solver, b);
-    nchanged += n;
-    if (n && recording) return nchanged;
-  }
-  nchanged += latinholesSolverCount(solver, b);
-  return nchanged;
+  return b.mode === GAMEMODE_LETTERS ? saladLettersSolver(solver, b) : 0;
 }
 
 // --- the driver ------------------------------------------------------------
 
 /** Seed the cube with the fixed grid clues — a symbol placement, or the
- * ball/cross constraints that place no digit and so cannot travel through the
- * seeded grid (this is why `latinSolver` grew its `seed` hook). */
+ * ball/cross constraints, which place no *real* symbol and so cannot travel
+ * through the seeded grid (this is why `latinSolver` grew its `seed` hook). */
 function seedGridClues(solver: LatinSolver, b: SaladBoard): void {
   const o = b.order;
   for (let i = 0; i < o * o; i++) {
@@ -343,7 +303,7 @@ function seedGridClues(solver: LatinSolver, b: SaladBoard): void {
     const y = (i / o) | 0;
     if (clue === CROSS) placeCross(solver, b, x, y);
     else if (clue === CIRCLE) placeCircle(solver, b, x, y);
-    else if (clue) solver.place(x, y, clue);
+    else if (clue && solver.grid[i] === 0) solver.place(x, y, clue);
   }
 }
 
@@ -362,19 +322,48 @@ function seedMarkers(solver: LatinSolver, b: SaladBoard): void {
   }
 }
 
+/** The shared config for a solve at `maxdiff` over `b`, seeded by `seed`. */
+function configFor(
+  b: SaladBoard,
+  maxdiff: number,
+  seed: (solver: LatinSolver) => void,
+  cubeOut: Uint8Array,
+): LatinSolverConfig<SaladBoard> {
+  return {
+    repeats: repeatsFor(b),
+    maxdiff,
+    diffSimple: DIFF_EASY,
+    diffSet0: DIFF_HARD,
+    diffSet1: DIFF_HARD,
+    diffForcing: DIFF_HARD,
+    // Never recurse: both tiers are pure deduction (the guess-free policy).
+    diffRecursive: DIFF_IMPOSSIBLE,
+    usersolvers: [saladSolverEasy, null],
+    // Salad has no whole-grid post-check beyond `latinholesCheck`.
+    valid: () => true,
+    ctx: b,
+    seed,
+    cubeOut,
+  };
+}
+
+/** The final candidate cube's size for `b` — `order² × symbols`. */
+function cubeSize(b: SaladBoard): number {
+  return b.order * b.order * holeSymbol(b.nums);
+}
+
 /** What one recording run of the solver saw, from the player's board forward. */
 export interface SaladDeductions {
   /** Every candidate cleared / cell placed, in solver order, each carrying the
-   * reason that forced it. Values run over the *whole* order-`o` alphabet, so an
-   * op with `n > nums` concerns one of the interchangeable hole symbols and has
-   * no player-visible note (see `hint.ts`). */
+   * reason that forced it. Values run over `1..nums + 1`: an op with
+   * `n === nums + 1` concerns the empty-square symbol, whose player-visible
+   * note is the X mark (see `hint.ts` for which of those the plan teaches). */
   ops: DeductionRecord[];
   /** The marker array at the deduction fixpoint: which squares are forced empty
-   * ({@link CROSS}) or forced to hold a symbol ({@link CIRCLE}). Salad's hole
-   * deductions write markers rather than candidates, so this — not `ops` — is
-   * where "this square must be empty" shows up. */
+   * ({@link CROSS}) or forced to hold a symbol ({@link CIRCLE}), read back off
+   * the cube. */
   holes: Uint8Array;
-  /** The grid at the fixpoint, for the same reason. */
+  /** The grid at the fixpoint, holes as {@link holeSymbol}. */
   grid: Uint8Array;
 }
 
@@ -384,8 +373,7 @@ export interface SaladDeductions {
  * pass `diffRecursive = DIFF_IMPOSSIBLE`, so there is nothing to cap.
  *
  * The generator/solve path never sets `cfg.recorder`, so every reason allocation
- * and record threaded through the deductions above is inert there — proved by the
- * 28-fixture byte-match differential staying green unedited.
+ * and record threaded through the deductions above is inert there.
  */
 export function recordSaladDeductions(b: SaladBoard, maxdiff: number): SaladDeductions {
   const o = b.order;
@@ -393,24 +381,15 @@ export function recordSaladDeductions(b: SaladBoard, maxdiff: number): SaladDedu
   const holes = b.holes.slice();
   const work: SaladBoard = { ...b, grid, holes };
   const ops: DeductionRecord[] = [];
+  const cube = new Uint8Array(cubeSize(b));
 
   const cfg: LatinSolverConfig<SaladBoard> = {
-    maxdiff,
-    diffSimple: DIFF_EASY,
-    diffSet0: DIFF_HARD,
-    diffSet1: DIFF_HARD,
-    diffForcing: DIFF_HARD,
-    diffRecursive: DIFF_IMPOSSIBLE,
-    usersolvers: [saladSolverEasy, null],
-    valid: () => true,
-    ctx: work,
-    seed: (solver) => {
-      seedMarkers(solver, work);
-    },
+    ...configFor(work, maxdiff, (solver) => seedMarkers(solver, work), cube),
     recorder: (rec) => ops.push(rec),
     budgetLabel: "salad hint",
   };
   latinSolver(grid, o, cfg);
+  markersFromCube(work, grid, cube);
 
   return { ops, holes, grid };
 }
@@ -422,50 +401,75 @@ export function recordSaladDeductions(b: SaladBoard, maxdiff: number): SaladDedu
  * clues (play).
  *
  * `DIFF_HOLESONLY` is the Number Ball generator's quality gate rather than a
- * playable tier: run only the two hole deductions to a fixpoint and report
- * whether *every* hole fell out with no number entered.
+ * playable tier: reason about the empty squares alone — where the hole symbol
+ * must go and where it cannot — and report whether *every* hole fell out with
+ * no number entered. A board that passes never made the player think about a
+ * number's position, which is the concept the mode exists for.
  */
 export function saladSolve(b: SaladBoard, maxdiff: number): boolean {
   const o = b.order;
   const o2 = o * o;
+  const hole = holeSymbol(b.nums);
 
   if (maxdiff === DIFF_HOLESONLY) {
-    const solver = new LatinSolver(o);
+    const solver = new LatinSolver(o, repeatsFor(b));
     solver.alloc(b.grid);
     seedGridClues(solver, b);
-
-    let nchanged = 1;
-    while (nchanged) {
-      nchanged = latinholesSolverSync(solver, b) + latinholesSolverCount(solver, b);
-    }
-
+    holesOnlyFixpoint(solver, hole);
     let holes = 0;
-    for (let i = 0; i < o2; i++) if (b.holes[i] === CROSS) holes++;
+    for (let i = 0; i < o2; i++) if (b.grid[i] === hole) holes++;
     return holes === (o - b.nums) * o;
   }
 
-  const cfg: LatinSolverConfig<SaladBoard> = {
-    maxdiff,
-    diffSimple: DIFF_EASY,
-    diffSet0: DIFF_HARD,
-    diffSet1: DIFF_HARD,
-    diffForcing: DIFF_HARD,
-    // Never recurse: both tiers are pure deduction (the guess-free policy).
-    diffRecursive: DIFF_IMPOSSIBLE,
-    usersolvers: [saladSolverEasy, null],
-    // Salad has no whole-grid post-check beyond `latinholesCheck` below.
-    valid: () => true,
-    ctx: b,
-    seed: (solver) => {
-      seedGridClues(solver, b);
-    },
-  };
-  latinSolver(b.grid, o, cfg);
+  const cube = new Uint8Array(cubeSize(b));
+  latinSolver(
+    b.grid,
+    o,
+    configFor(b, maxdiff, (solver) => seedGridClues(solver, b), cube),
+  );
+  markersFromCube(b, b.grid, cube);
 
   // Upstream discards the difficulty `latin_solver_main` reports and asks only
   // whether the board came out complete and legal — which, with recursion
   // disabled, is exactly "pure deduction finished it", hence unique.
   return latinholesCheck(b);
+}
+
+/**
+ * The hole-only deductions to a fixpoint: a line with exactly its quota of
+ * possible empties has them all (positional elimination on the hole symbol,
+ * whose placement strikes the line once full), and a square that can hold
+ * nothing *but* the hole is empty. Never places a real symbol — that is the
+ * whole point of the gate.
+ */
+function holesOnlyFixpoint(solver: LatinSolver, hole: number): void {
+  const o = solver.o;
+  const s = solver.symbols;
+  for (;;) {
+    let changed = 0;
+    for (let y = 0; y < o; y++) {
+      if (solver.row[y * s + hole - 1] < solver.times) {
+        if (solver.elim(solver.cubepos(0, y, hole), o * s) > 0) changed++;
+      }
+    }
+    for (let x = 0; x < o; x++) {
+      if (solver.col[x * s + hole - 1] < solver.times) {
+        if (solver.elim(solver.cubepos(x, 0, hole), s) > 0) changed++;
+      }
+    }
+    for (let i = 0; i < o * o; i++) {
+      if (solver.grid[i] !== 0) continue;
+      const x = i % o;
+      const y = (i / o) | 0;
+      let real = 0;
+      for (let n = 1; n < hole; n++) if (solver.cubeGet(x, y, n)) real++;
+      if (real === 0 && solver.cubeGet(x, y, hole)) {
+        solver.place(x, y, hole);
+        changed++;
+      }
+    }
+    if (!changed) return;
+  }
 }
 
 // --- Check & Save ----------------------------------------------------------
@@ -504,7 +508,7 @@ export function saladFindMistakes(s: SaladState): SaladMistake[] {
     if (clue && clue !== CIRCLE) continue;
 
     // The solution's value here: a symbol `1..nums`, or 0 for a hole (the
-    // pseudo-Latin square's symbols above `nums`).
+    // cube's hole symbol, `nums + 1`).
     const soln = board.grid[i] <= nums ? board.grid[i] : 0;
     const x = i % o;
     const y = (i / o) | 0;

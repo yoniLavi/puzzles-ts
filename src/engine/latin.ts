@@ -18,6 +18,26 @@
  * numeric values so a game's `ret <= diff` / `ret != diff` comparisons port
  * verbatim. Scratch buffers are owned by the solver instance (GC, no
  * new_scratch/free_scratch); recursion allocates a sub-solver per guess.
+ *
+ * ## A symbol that may repeat (this fork's extension)
+ *
+ * A *pseudo*-Latin puzzle — Salad, where `order − nums` squares per line are
+ * empty — has one symbol that appears a stated number of times per line
+ * rather than once. Upstream fakes it with a full square whose surplus symbols
+ * are reinterpreted as holes, which works but leaves the solver reasoning about
+ * *which* interchangeable hole symbol sits where, a question the puzzle never
+ * asks; the natural deductions about "the empty square" cannot be written
+ * against that encoding. So the cube can be told, via {@link LatinRepeats},
+ * that its **last** symbol appears `times` times per line: the cube then has
+ * `symbols = o − times + 1` distinct values, `cubepos` strides by `symbols`,
+ * positional elimination places the repeated symbol when exactly `times`
+ * candidate cells remain, placing it strikes the rest of the line only once the
+ * line's count is full, set elimination generalises to multiplicities
+ * ({@link LatinSolver.setGeneral}), and forcing chains never link through it
+ * (a link relies on the value appearing once). **Every one of those paths
+ * reduces to the C's when no repeat is declared** — `symbols = o`, every
+ * multiplicity 1 — and the Latin family's byte-match differentials are the
+ * proof that it does.
  */
 
 import { type DeductionRung, runDeductionFixpoint } from "./deduction-fixpoint.ts";
@@ -73,6 +93,34 @@ export type LatinReason =
   /** A forcing-chain elimination, with the chain it actually followed. */
   | { kind: "forcing"; chain: ForcingLink[]; shares: "row" | "col" };
 
+/**
+ * The one reason only a solver with {@link LatinRepeats} ever records: the
+ * repeated symbol `n` has been placed all `times` times in this line, so it is
+ * ruled out of the rest of the line — the multiplicity analogue of `dup`, which
+ * names one placement where here it is the count that forces. Kept apart from
+ * {@link LatinReason} so the Latin-square games, whose narrations switch over
+ * that union exhaustively, are not asked to narrate a case they cannot meet; a
+ * repeats consumer adds it to its own reason union.
+ */
+export interface LatinRepeatReason {
+  kind: "repeatFull";
+  n: number;
+  line: "row" | "col";
+  index: number;
+  times: number;
+}
+
+/**
+ * One symbol that may appear more than once per line — what a pseudo-Latin
+ * puzzle needs (Salad's empty square). The repeated symbol is always the
+ * **last** one, `symbols = o − times + 1`, so a consumer's real symbols keep
+ * their `1..k` numbering and the repeat sits one past them.
+ */
+export interface LatinRepeats {
+  /** How many times the last symbol appears in each row and each column. */
+  times: number;
+}
+
 /** One cell of a forcing chain, and the value the chain gives it.
  *
  * `chain[0]` is the **origin**: a two-candidate cell, carrying the candidate it
@@ -99,14 +147,21 @@ export type {
 
 export class LatinSolver {
   readonly o: number;
-  /** `o³` possibility bitmap; `cube[cubepos(x,y,n)]` truthy ⇒ digit `n` is
-   * still possible at `(x, y)`. */
+  /** Distinct symbols: `o` for a Latin square, `o − times + 1` with a repeat. */
+  readonly symbols: number;
+  /** The repeated symbol (always `symbols`), or `0` when there is none. */
+  readonly repeat: number;
+  /** How many times {@link repeat} appears per line (`1` when there is none). */
+  readonly times: number;
+  /** `o²·symbols` possibility bitmap; `cube[cubepos(x,y,n)]` truthy ⇒ symbol
+   * `n` is still possible at `(x, y)`. */
   readonly cube: Uint8Array;
   /** `o²` result grid (0 = blank); written back to the caller's array. */
   grid: Uint8Array;
-  /** `o²`; `row[y·o + n−1]` set once digit `n` is placed in row `y`. */
+  /** `o·symbols`; `row[y·symbols + n−1]` counts placements of `n` in row `y`
+   * (0 or 1 for an ordinary symbol; up to `times` for the repeated one). */
   readonly row: Uint8Array;
-  /** `o²`; `col[x·o + n−1]` set once digit `n` is placed in column `x`. */
+  /** `o·symbols`; the column counterpart of {@link row}. */
   readonly col: Uint8Array;
 
   // Scratch buffers for set elimination / forcing chains (instance-owned).
@@ -131,12 +186,27 @@ export class LatinSolver {
    * record of one firing shares a `group`. */
   group = 0;
 
-  constructor(o: number) {
+  constructor(o: number, repeats?: LatinRepeats) {
     this.o = o;
-    this.cube = new Uint8Array(o * o * o);
+    if (repeats) {
+      if (!(repeats.times >= 2 && repeats.times <= o)) {
+        throw new Error(
+          `latin: a repeated symbol must appear 2..${o} times, not ${repeats.times}`,
+        );
+      }
+      this.times = repeats.times;
+      this.symbols = o - repeats.times + 1;
+      this.repeat = this.symbols;
+    } else {
+      this.times = 1;
+      this.symbols = o;
+      this.repeat = 0;
+    }
+    const s = this.symbols;
+    this.cube = new Uint8Array(o * o * s);
     this.grid = new Uint8Array(o * o);
-    this.row = new Uint8Array(o * o);
-    this.col = new Uint8Array(o * o);
+    this.row = new Uint8Array(o * s);
+    this.col = new Uint8Array(o * s);
     this.sGrid = new Uint8Array(o * o);
     this.sRowidx = new Uint8Array(o);
     this.sColidx = new Uint8Array(o);
@@ -147,7 +217,12 @@ export class LatinSolver {
   }
 
   cubepos(x: number, y: number, n: number): number {
-    return (x * this.o + y) * this.o + n - 1;
+    return (x * this.o + y) * this.symbols + n - 1;
+  }
+
+  /** How many times symbol `n` appears in each line. */
+  multiplicity(n: number): number {
+    return n === this.repeat ? this.times : 1;
   }
   cubeGet(x: number, y: number, n: number): boolean {
     return this.cube[this.cubepos(x, y, n)] !== 0;
@@ -179,11 +254,26 @@ export class LatinSolver {
    * implies are recorded as `dup` strikes so a hint can teach them too. */
   place(x: number, y: number, n: number, reason?: unknown): void {
     const o = this.o;
+    const s = this.symbols;
     const rec = this.recorder;
     if (rec && reason !== undefined) {
       rec({ kind: "place", x, y, n, reason, group: this.group });
     }
-    for (let i = 1; i <= o; i++) if (i !== n) this.cube[this.cubepos(x, y, i)] = 0;
+    for (let i = 1; i <= s; i++) if (i !== n) this.cube[this.cubepos(x, y, i)] = 0;
+    this.grid[y * o + x] = n;
+    const inRow = ++this.row[y * s + n - 1];
+    const inCol = ++this.col[x * s + n - 1];
+
+    if (n === this.repeat) {
+      // The repeated symbol leaves the rest of its line alone until the line
+      // holds all `times` of it; then it is struck from every other cell. An
+      // ordinary symbol is the `times = 1` case of the same rule, but keeps the
+      // `dup` reason below because its narration names the one placement.
+      if (inRow === this.times) this.strikeRepeatFromLine(x, y, n, "row");
+      if (inCol === this.times) this.strikeRepeatFromLine(x, y, n, "col");
+      return;
+    }
+
     for (let i = 0; i < o; i++) {
       if (i === y) continue;
       const pos = this.cubepos(x, i, n);
@@ -214,9 +304,36 @@ export class LatinSolver {
       }
       this.cube[pos] = 0;
     }
-    this.grid[y * o + x] = n;
-    this.row[y * o + n - 1] = 1;
-    this.col[x * o + n - 1] = 1;
+  }
+
+  /** The repeated symbol's line is full: strike it from every cell of the line
+   * that does not hold it. */
+  private strikeRepeatFromLine(
+    x: number,
+    y: number,
+    n: number,
+    line: "row" | "col",
+  ): void {
+    const o = this.o;
+    const rec = this.recorder;
+    const index = line === "row" ? y : x;
+    for (let i = 0; i < o; i++) {
+      const cx = line === "row" ? i : x;
+      const cy = line === "row" ? y : i;
+      if (this.grid[cy * o + cx] === n) continue;
+      const pos = this.cubepos(cx, cy, n);
+      if (rec && this.cube[pos]) {
+        rec({
+          kind: "elim",
+          x: cx,
+          y: cy,
+          n,
+          reason: { kind: "repeatFull", n, line, index, times: this.times },
+          group: this.group,
+        });
+      }
+      this.cube[pos] = 0;
+    }
   }
 
   /** Positional/numeric elimination over the cube slice `start, start+step,
@@ -224,24 +341,37 @@ export class LatinSolver {
    * report a contradiction. */
   elim(start: number, step: number): number {
     const o = this.o;
+    const s = this.symbols;
+    // A numeric slice (`step === 1`) runs over a cell's `symbols` candidates; a
+    // positional slice runs over a line's `o` cells for one symbol — and for
+    // the repeated symbol, "exactly one place left" is "exactly `times` left".
+    const positional = step !== 1;
+    const len = positional ? o : s;
+    const need = positional ? this.multiplicity(1 + (start % s)) : 1;
     let m = 0;
     let fpos = -1;
-    for (let i = 0; i < o; i++) {
+    for (let i = 0; i < len; i++) {
       if (this.cube[start + i * step]) {
         fpos = start + i * step;
         m++;
       }
     }
-    if (m === 1) {
-      const n = 1 + (fpos % o);
-      let y = (fpos / o) | 0;
-      const x = (y / o) | 0;
-      y %= o;
-      if (!this.grid[y * o + x]) {
-        this.place(x, y, n, this.recorder ? { kind: "single" } : undefined);
-        return 1;
+    if (m === need) {
+      let placed = 0;
+      for (let i = 0; i < len; i++) {
+        fpos = start + i * step;
+        if (!this.cube[fpos]) continue;
+        const n = 1 + (fpos % s);
+        const rest = (fpos / s) | 0;
+        const y = rest % o;
+        const x = (rest / o) | 0;
+        if (!this.grid[y * o + x]) {
+          this.place(x, y, n, this.recorder ? { kind: "single" } : undefined);
+          placed++;
+        }
       }
-    } else if (m === 0) {
+      if (placed > 0) return 1;
+    } else if (m < need) {
       return -1;
     }
     return 0;
@@ -374,6 +504,7 @@ export class LatinSolver {
    * generator and solve paths are untouched. */
   forcing(): number {
     const o = this.o;
+    const s = this.symbols;
     const number = this.sGrid; // reused as the BFS "other candidate" map
     const neighbours = this.sNeighbours;
     const bfsqueue = this.sBfsqueue;
@@ -383,7 +514,7 @@ export class LatinSolver {
       for (let x = 0; x < o; x++) {
         let count = 0;
         let t = 0;
-        for (let n = 1; n <= o; n++) {
+        for (let n = 1; n <= s; n++) {
           if (this.cubeGet(x, y, n)) {
             count++;
             t += n;
@@ -391,8 +522,12 @@ export class LatinSolver {
         }
         if (count !== 2) continue;
 
-        for (let n = 1; n <= o; n++) {
+        for (let n = 1; n <= s; n++) {
           if (!this.cubeGet(x, y, n)) continue;
+          // Every link of a chain — "this cell takes `currn`, so its neighbour
+          // in the line cannot" — relies on `currn` appearing once per line, so
+          // the repeated symbol can neither start a chain nor carry one.
+          if (n === this.repeat) continue;
           const orign = n;
           number.fill(o + 1, 0, o * o);
           let head = 0;
@@ -406,6 +541,9 @@ export class LatinSolver {
             const yy = (xx / o) | 0;
             xx %= o;
             const currn = number[yy * o + xx];
+            // A cell whose forced value is the repeated symbol ends the chain
+            // there: that value does not exclude itself from the line.
+            if (currn === this.repeat) continue;
 
             let nn = 0;
             for (let yt = 0; yt < o; yt++) neighbours[nn++] = yt * o + xx;
@@ -420,7 +558,7 @@ export class LatinSolver {
 
               let cc = 0;
               let tt = 0;
-              for (let m = 1; m <= o; m++) {
+              for (let m = 1; m <= s; m++) {
                 if (this.cubeGet(xt, yt, m)) {
                   cc++;
                   tt += m;
@@ -475,18 +613,19 @@ export class LatinSolver {
   /** Looped positional + numeric elimination (the "simple" difficulty). */
   diffSimple(): number {
     const o = this.o;
+    const s = this.symbols;
     for (let y = 0; y < o; y++) {
-      for (let n = 1; n <= o; n++) {
-        if (!this.row[y * o + n - 1]) {
-          const ret = this.elim(this.cubepos(0, y, n), o * o);
+      for (let n = 1; n <= s; n++) {
+        if (this.row[y * s + n - 1] < this.multiplicity(n)) {
+          const ret = this.elim(this.cubepos(0, y, n), o * s);
           if (ret !== 0) return ret;
         }
       }
     }
     for (let x = 0; x < o; x++) {
-      for (let n = 1; n <= o; n++) {
-        if (!this.col[x * o + n - 1]) {
-          const ret = this.elim(this.cubepos(x, 0, n), o);
+      for (let n = 1; n <= s; n++) {
+        if (this.col[x * s + n - 1] < this.multiplicity(n)) {
+          const ret = this.elim(this.cubepos(x, 0, n), s);
           if (ret !== 0) return ret;
         }
       }
@@ -503,31 +642,176 @@ export class LatinSolver {
   }
 
   /** Looped set elimination; `extreme` enables the harder single-number
-   * (row-vs-column) variant. */
+   * (row-vs-column) variant. With a repeated symbol the multiplicity-aware
+   * {@link setGeneral} runs instead of the C's `set`, over the same matrices. */
   diffSet(extreme: boolean): number {
     const o = this.o;
+    const s = this.symbols;
+    if (this.repeat) return this.diffSetGeneral(extreme);
     if (!extreme) {
       for (let y = 0; y < o; y++) {
-        const ret = this.set(this.cubepos(0, y, 1), o * o, 1);
+        const ret = this.set(this.cubepos(0, y, 1), o * s, 1);
         if (ret !== 0) return ret;
       }
       for (let x = 0; x < o; x++) {
-        const ret = this.set(this.cubepos(x, 0, 1), o, 1);
+        const ret = this.set(this.cubepos(x, 0, 1), s, 1);
         if (ret !== 0) return ret;
       }
     } else {
-      for (let n = 1; n <= o; n++) {
-        const ret = this.set(this.cubepos(0, 0, n), o * o, o);
+      for (let n = 1; n <= s; n++) {
+        const ret = this.set(this.cubepos(0, 0, n), o * s, s);
         if (ret !== 0) return ret;
+      }
+    }
+    return 0;
+  }
+
+  /** The three set-elimination sweeps of {@link diffSet}, through
+   * {@link setGeneral}: per row and per column the cells × symbols matrix (a
+   * cell takes one symbol, a symbol fills `multiplicity` cells); per symbol the
+   * columns × rows matrix (the symbol appears `multiplicity` times in each). */
+  private diffSetGeneral(extreme: boolean): number {
+    const o = this.o;
+    const s = this.symbols;
+    const one = (): number[] => new Array(o).fill(1);
+    const bySymbol = (): number[] => {
+      const out: number[] = [];
+      for (let n = 1; n <= s; n++) out.push(this.multiplicity(n));
+      return out;
+    };
+    if (!extreme) {
+      for (let y = 0; y < o; y++) {
+        const ret = this.setGeneral(o, s, one(), bySymbol(), (x, k) =>
+          this.cubepos(x, y, k + 1),
+        );
+        if (ret !== 0) return ret;
+      }
+      for (let x = 0; x < o; x++) {
+        const ret = this.setGeneral(o, s, one(), bySymbol(), (y, k) =>
+          this.cubepos(x, y, k + 1),
+        );
+        if (ret !== 0) return ret;
+      }
+    } else {
+      for (let n = 1; n <= s; n++) {
+        const m = this.multiplicity(n);
+        const ret = this.setGeneral(
+          o,
+          o,
+          new Array(o).fill(m),
+          new Array(o).fill(m),
+          (x, y) => this.cubepos(x, y, n),
+        );
+        if (ret !== 0) return ret;
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * Set elimination with multiplicities — the theorem behind {@link set},
+   * stated so a repeated symbol fits it.
+   *
+   * The `rows × cols` 0/1 matrix `at(i, j)` says whether row `i` may still pair
+   * with column `j`; in the solution row `i` pairs exactly `demand[i]` times and
+   * column `j` exactly `supply[j]` times (totals equal). For a subset `R` of
+   * rows, every one of its pairings lands in `N(R)`, the columns some row of `R`
+   * still admits. If `N(R)` can supply exactly what `R` demands, then every
+   * pairing into `N(R)` comes from `R`, so any row *outside* `R` loses its
+   * candidates in `N(R)`; if `N(R)` supplies less than `R` demands, the position
+   * is contradictory. Column subsets are the same argument transposed, and
+   * with every multiplicity 1 both collapse to the classic hidden/naked set —
+   * the zero-rectangle `set` searches for.
+   *
+   * Subsets are enumerated outright: the matrices here are at most `o × o`
+   * with `o ≤ 9`, and only a consumer with a repeat pays for it.
+   */
+  setGeneral(
+    rows: number,
+    cols: number,
+    demand: readonly number[],
+    supply: readonly number[],
+    at: (i: number, j: number) => number,
+  ): number {
+    const cube = this.cube;
+    const rec = this.recorder;
+    const strike = (pos: number): void => {
+      if (rec) {
+        const s = this.symbols;
+        const n = 1 + (pos % s);
+        const rest = (pos / s) | 0;
+        rec({
+          kind: "elim",
+          x: (rest / this.o) | 0,
+          y: rest % this.o,
+          n,
+          reason: { kind: "set" },
+          group: this.group,
+        });
+      }
+      cube[pos] = 0;
+    };
+
+    // One pass over row subsets, one over column subsets; `side` names which
+    // index runs along the subset.
+    for (const side of ["rows", "cols"] as const) {
+      const nSub = side === "rows" ? rows : cols;
+      const nOther = side === "rows" ? cols : rows;
+      const want = side === "rows" ? demand : supply;
+      const give = side === "rows" ? supply : demand;
+      const live = (a: number, b: number): boolean =>
+        cube[side === "rows" ? at(a, b) : at(b, a)] !== 0;
+
+      for (let mask = 1; mask < 1 << nSub; mask++) {
+        // Skip singletons and the full set: a singleton is `elim`'s job, and the
+        // full set's neighbourhood is everything.
+        const size = popcount(mask);
+        if (size < 2 || size >= nSub) continue;
+        let demanded = 0;
+        for (let a = 0; a < nSub; a++) if (mask & (1 << a)) demanded += want[a];
+        let neighbourhood = 0;
+        let supplied = 0;
+        for (let b = 0; b < nOther; b++) {
+          for (let a = 0; a < nSub; a++) {
+            if (mask & (1 << a) && live(a, b)) {
+              neighbourhood |= 1 << b;
+              supplied += give[b];
+              break;
+            }
+          }
+        }
+        if (supplied < demanded) return -1;
+        if (supplied !== demanded) continue;
+        let progress = false;
+        for (let a = 0; a < nSub; a++) {
+          if (mask & (1 << a)) continue;
+          for (let b = 0; b < nOther; b++) {
+            if (neighbourhood & (1 << b) && live(a, b)) {
+              strike(side === "rows" ? at(a, b) : at(b, a));
+              progress = true;
+            }
+          }
+        }
+        if (progress) return 1;
       }
     }
     return 0;
   }
 }
 
+/** Number of set bits in a small non-negative integer. */
+function popcount(v: number): number {
+  let c = 0;
+  for (let m = v; m; m &= m - 1) c++;
+  return c;
+}
+
 /** Optional per-recursion context cloning (upstream `ctxnew`/`ctxfree`). Most
  * games (Towers) share one immutable ctx and omit it. */
 export interface LatinSolverConfig<Ctx> {
+  /** Declare the last symbol as repeating `times` per line (a pseudo-Latin
+   * puzzle). Leave unset for a Latin square; see {@link LatinRepeats}. */
+  repeats?: LatinRepeats;
   maxdiff: number;
   diffSimple: number;
   diffSet0: number;
@@ -645,12 +929,13 @@ function latinSolverRecurse<Ctx>(
 ): number {
   const o = solver.o;
   let best = -1;
-  let bestcount = o + 1;
+  const s = solver.symbols;
+  let bestcount = s + 1;
   for (let y = 0; y < o; y++) {
     for (let x = 0; x < o; x++) {
       if (!solver.grid[y * o + x]) {
         let count = 0;
-        for (let n = 1; n <= o; n++) if (solver.cubeGet(x, y, n)) count++;
+        for (let n = 1; n <= s; n++) if (solver.cubeGet(x, y, n)) count++;
         if (count < bestcount) {
           bestcount = count;
           best = y * o + x;
@@ -664,7 +949,7 @@ function latinSolverRecurse<Ctx>(
   const y = (best / o) | 0;
   const x = best % o;
   const list: number[] = [];
-  for (let n = 1; n <= o; n++) if (solver.cubeGet(x, y, n)) list.push(n);
+  for (let n = 1; n <= s; n++) if (solver.cubeGet(x, y, n)) list.push(n);
 
   const ingrid = solver.grid.slice();
   let diff = DIFF_IMPOSSIBLE; // no solution found yet
@@ -674,7 +959,7 @@ function latinSolverRecurse<Ctx>(
     outgrid[y * o + x] = guess;
 
     const newctx = cfg.ctxNew ? cfg.ctxNew(cfg.ctx) : cfg.ctx;
-    const sub = new LatinSolver(o);
+    const sub = new LatinSolver(o, cfg.repeats);
     let ret: number;
     if (sub.alloc(outgrid)) {
       ret = latinSolverTop(sub, {
@@ -717,7 +1002,7 @@ export function latinSolver<Ctx>(
   o: number,
   cfg: LatinSolverConfig<Ctx>,
 ): number {
-  const solver = new LatinSolver(o);
+  const solver = new LatinSolver(o, cfg.repeats);
   if (!solver.alloc(grid)) {
     if (cfg.cubeOut) cfg.cubeOut.set(solver.cube);
     return DIFF_IMPOSSIBLE;

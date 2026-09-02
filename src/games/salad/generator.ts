@@ -1,22 +1,27 @@
 /**
  * Salad's generator — `latinGenerate` plus solver-gated clue removal.
  *
- * Both modes build a complete order-`o` Latin square, reinterpret its symbols
- * above `nums` as holes (the pseudo-Latin trick — see `solver.ts`), turn that
- * into a full clue set, and then remove clues one at a time in a shuffled
- * order, keeping each removal only while the puzzle still solves by pure
- * deduction at the target difficulty. Because every removal is gated on the
- * solver's verdict, the published description depends on the solver's answer to
- * every intermediate board — which is exactly what makes the byte-match
- * differential (docs/games/solver-and-generator.md § "Solver-gated generation") validate generator, solver and codec at once.
+ * Both modes build a complete order-`o` Latin square (the shared RNG-faithful
+ * `latinGenerate`), read its symbols above `nums` as the empty squares — a
+ * cheap way to draw a random pseudo-Latin solution with exactly `o − nums`
+ * empties per line — turn that into a full clue set, and then remove clues one
+ * at a time in a shuffled order, keeping each removal only while the puzzle
+ * still solves by pure deduction at the target difficulty. Because every
+ * removal is gated on the solver's verdict, the published description depends
+ * on the solver's answer to every intermediate board — which is exactly what
+ * makes the byte-match differential (docs/games/solver-and-generator.md § "Solver-gated generation") validate generator, solver and codec at once,
+ * and what let it prove that the solver's rewrite onto the repeated-symbol cube
+ * (`solver.ts`) is deductively equivalent to upstream's hole translation.
  *
  * Two upstream quality rules are reproduced verbatim:
  *
  * - **Number Ball** throws the whole puzzle away when every hole can be placed
  *   without entering a single number (`DIFF_HOLESONLY`) — such a board never
  *   exercises the concept. Its author notes in `docs/salad.md` that this mode
- *   still "doesn't create puzzles that make good use of the concept"; improving
- *   that is a generator redesign, out of scope for the port (`design.md`).
+ *   still "doesn't create puzzles that make good use of the concept"; the
+ *   solver can now reason about the empties directly, which is the prerequisite
+ *   he named, but a better *generator* for the mode is still a redesign nobody
+ *   has made (`add-latin-repeats-support`, tasks).
  * - **ABC End View** below 8×8 forces an *empty* grid (border clues only), and
  *   simply retries when that is not solvable.
  */
