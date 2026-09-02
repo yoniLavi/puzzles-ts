@@ -235,9 +235,9 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
         ],
       },
     ),
-    darkMode: {
-      paletteOverrides: { 2: 0.6 }, // darken line-unknown
-    },
+    // The undecided and ruled-out edges take their dark values from the shared
+    // palette (`lineMaybeColour` / `lineNoColour`); the `{ 2: 0.6 }` multiplier
+    // that lived here darkened an already-dark inversion into invisibility.
   },
   magnets: {
     describeConfig: configFormatter(
@@ -341,10 +341,8 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{width} x {height}, regions of size {region-size}",
     ),
-    darkMode: {
-      // Palisade grid/clue/line-yes all share palette index 2
-      paletteOverrides: { 3: 0.6 }, // darken line-maybe
-    },
+    // Palisade grid/clue/line-yes all share palette index 2; the undecided line
+    // (index 3) takes its dark value from the shared `lineMaybeColour`.
   },
   pattern: {
     describeConfig: configFormatter("{width}x{height}"),
@@ -408,11 +406,8 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   separate: {
     describeConfig: configFormatter("{width}x{height}, {letters} letters"),
-    darkMode: {
-      // Separate shares Palisade's palette: grid/letter/wall on index 2,
-      // line-maybe on index 3.
-      paletteOverrides: { 3: 0.6 }, // darken line-maybe
-    },
+    // Separate shares Palisade's palette: grid/letter/wall on index 2, and the
+    // undecided line on index 3 takes its dark value from `lineMaybeColour`.
   },
   signpost: {
     describeConfig: configFormatter(

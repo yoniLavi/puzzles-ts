@@ -105,4 +105,11 @@
       travel key are gone. Tests, help, spec and guide follow the walk model;
       the coverage test asserts the walk alone on 22 presets and walk plus aim
       on the 23rd.
-- [ ] 4.6 Owner acceptance of the revised scheme.
+- [x] 4.6 Owner acceptance of the revised scheme: "accepted in general", with
+      two usability findings, both fixed: the cursor's disc clipped on a
+      boundary dot (Loopy's border was the dot radius alone; it is now the
+      larger of the dot radius and the disc radius, so the disc and a boundary
+      edge's halo fit), and in dark mode the undecided and ruled-out edges were
+      nearly invisible (the shared `lineMaybeColour` / `lineNoColour` now author
+      their dark values; the `{ n: 0.6 }` multipliers Loopy, Palisade and
+      Separate carried in `augmentation.ts` are gone). Both checked in Chrome.

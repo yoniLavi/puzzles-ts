@@ -42,7 +42,7 @@
  */
 
 import type { Colour } from "../types.ts";
-import { divide, scale } from "./colour-token.ts";
+import { divide, scale, token } from "./colour-token.ts";
 import {
   BLUE,
   BLUE_WASH,
@@ -314,12 +314,19 @@ export function highlightWash(background: Colour): Colour {
  *
  * A background-toned olive — the background's own brightness with blue removed,
  * so it reads as a *marked* edge without competing with a real line. All three
- * games also carry the identical `paletteOverrides: { n: 0.6 }` dark-mode patch,
- * which is the strongest available evidence that they are one role: three
- * independent ports converged on both the colour and its correction.
+ * games once carried the identical `paletteOverrides: { n: 0.6 }` dark-mode
+ * patch, which was the strongest available evidence that they are one role:
+ * three independent ports converged on both the colour and its correction.
+ *
+ * **The dark value is authored here, not derived.** Derivation inverts the
+ * olive's lightness and lands near the dark background, and the inherited
+ * `0.6` multiplier then darkened *that* — the owner's playtest found the
+ * undecided edges "almost invisible" on a dark board. A muted amber, clearly
+ * above a near-black background and clearly below ink, is what the role wants
+ * there; the three games' multipliers are gone.
  */
 export function lineMaybeColour(background: Colour): Colour {
-  return [0.9 * background[0], 0.9 * background[1], 0];
+  return token([0.9 * background[0], 0.9 * background[1], 0], [0.62, 0.54, 0.18]);
 }
 
 /**
@@ -332,9 +339,14 @@ export function lineMaybeColour(background: Colour): Colour {
  * mark exists only to record that they decided it. Three independent ports wrote
  * the identical `background × 0.9`, which is the audit's convergence test passing
  * about as cleanly as it can.
+ *
+ * **The dark value is authored**, as {@link lineMaybeColour}'s is: a tenth off
+ * a near-black background is nothing, so the derived value made a ruled-out
+ * edge indistinguishable from no edge at all. A dim grey, a step above the
+ * board and well below ink, keeps the "recorded, not present" reading.
  */
 export function lineNoColour(background: Colour): Colour {
-  return scale(background, 0.9);
+  return token(scale(background, 0.9), [0.3, 0.3, 0.3]);
 }
 
 /**

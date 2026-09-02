@@ -108,7 +108,9 @@ const cursorDiscRadius = (tileSize: number): number =>
  * convention `Drawing` expects) and gives the dot exactly the room it needs.
  */
 export function border(tileSize: number): number {
-  return Math.ceil(dotRadius(tileSize));
+  // Wide enough for the keyboard cursor's disc on a boundary dot, and for its
+  // halo on a boundary edge — the dot radius alone (1–3 px) clipped both.
+  return Math.ceil(Math.max(dotRadius(tileSize), cursorDiscRadius(tileSize)));
 }
 
 export interface LoopyDrawState {
