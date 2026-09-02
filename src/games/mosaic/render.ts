@@ -6,15 +6,8 @@
  * last thirds of the flash.
  */
 
-import {
-  BLACK,
-  GREY,
-  PINK_WASH,
-  TEAL_BOLD,
-  TEAL_WASH,
-  WHITE,
-} from "../../engine/colour/colours.ts";
-import { ERROR } from "../../engine/colour/palette.ts";
+import { BLACK, TEAL_BOLD, TEAL_WASH, WHITE } from "../../engine/colour/colours.ts";
+import { CURSOR, clueDoneColour, ERROR } from "../../engine/colour/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {
@@ -51,9 +44,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_GRID] = TEAL_BOLD;
   out[COL_MARKED] = BLACK;
   out[COL_BLANK] = WHITE;
-  out[COL_TEXT_SOLVED] = GREY;
+  out[COL_TEXT_SOLVED] = clueDoneColour(defaultBackground);
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = PINK_WASH;
+  out[COL_CURSOR] = CURSOR;
   return out;
 }
 

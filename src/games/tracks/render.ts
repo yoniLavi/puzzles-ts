@@ -11,13 +11,13 @@
  */
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BROWN } from "../../engine/colour/colours.ts";
+import { BROWN, GREY } from "../../engine/colour/colours.ts";
 import {
   CURSOR,
   DRAG_ADD,
   DRAG_REMOVE,
   ERROR,
-  GRID_MID,
+  FLASH,
   INK,
   PAPER,
 } from "../../engine/colour/palette.ts";
@@ -71,17 +71,22 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_TRACK_BACKGROUND] = highlight;
+  // Kept a derivation: the grid sits between the board and the track bed drawn
+  // in its highlight, and the rails below are grey, which a grey grid would be.
   out[COL_GRID] = tracksGrid(background, highlight);
   out[COL_TRACK_CLUE] = INK;
-  out[COL_TRACK] = GRID_MID;
+  // The rails are grey; that is the colour, not a grid role.
+  out[COL_TRACK] = GREY;
   out[COL_CLUE] = INK;
   out[COL_CURSOR] = CURSOR;
+  // White behind a red clue digit, so the red pops; a red wash would sit red
+  // under red.
   out[COL_ERROR_BACKGROUND] = PAPER;
   out[COL_SLEEPER] = BROWN;
   out[COL_ERROR] = ERROR;
   out[COL_DRAGON] = DRAG_ADD;
   out[COL_DRAGOFF] = DRAG_REMOVE;
-  out[COL_FLASH] = PAPER;
+  out[COL_FLASH] = FLASH;
   return out;
 }
 

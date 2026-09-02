@@ -11,7 +11,9 @@
  * no `mkhighlightSpecific` is needed).
  */
 
+import { PURPLE } from "../../engine/colour/colours.ts";
 import {
+  correctRegionColour,
   ERROR_WASH,
   HINT_ACTION,
   HINT_EVIDENCE,
@@ -19,7 +21,6 @@ import {
   INK,
   playerEntryColour,
 } from "../../engine/colour/palette.ts";
-import { fillingCorrect, fillingCursor } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
@@ -54,10 +55,11 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = bg;
   out[COL_GRID] = INK;
   out[COL_HIGHLIGHT] = highlightWash(bg);
-  out[COL_CORRECT] = fillingCorrect(bg);
+  out[COL_CORRECT] = correctRegionColour(bg);
   out[COL_ERROR] = ERROR_WASH;
   out[COL_USER] = playerEntryColour(bg);
-  out[COL_CURSOR] = fillingCursor(bg);
+  // Not `CURSOR`: green is the player's own digits.
+  out[COL_CURSOR] = PURPLE;
   out[COL_HINT] = HINT_ACTION;
   // Filling's evidence is **outlined rather than washed**, and it is the game
   // where that call is least obvious, so here is the reason.

@@ -110,6 +110,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   // action again: this deduction genuinely has three parts and the middle one is
   // the interesting one, so it keeps a hue of its own.
   out[COL_HINT_SPOT] = GREEN;
+  // Where a clicked set already *sits* (reference aid): its own hue, distinct
+  // from the green "could still go here" spotlight it is shown beside.
   out[COL_HINT_PLACED] = ORANGE;
   return out;
 }

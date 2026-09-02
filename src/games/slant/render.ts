@@ -14,12 +14,14 @@
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import {
   ERROR,
+  GRID_MID,
   HINT_ACTION,
   HINT_BLACKREF,
   HINT_EVIDENCE,
+  highlightWash,
   INK,
 } from "../../engine/colour/palette.ts";
-import { slantGrid, slantGrounded } from "../../engine/colour/palette-games.ts";
+import { slantGrounded } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Colour, Size } from "../../engine/types.ts";
@@ -45,22 +47,23 @@ export const COL_ERROR = 5;
 export const COL_CURSOR = 6;
 export const COL_FILLEDSQUARE = 7;
 export const COL_GROUNDED = 8;
-// Fork hint palette, appended past the upstream enum so slant's dark-mode
-// overrides (indices 1/8) never touch these.
+// Fork hint palette, appended past the upstream enum.
 export const COL_HINT = 9; // forced square(s), ringed on their own border
 export const COL_HINT_CELL = 10; // evidence area, outlined
 export const COL_HINT_REF = 11; // a cited filled anchor (a doubled ring)
 
 export function colours(defaultBackground: Colour): Colour[] {
-  const { background, highlight } = mkhighlight(defaultBackground);
+  const { background } = mkhighlight(defaultBackground);
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
-  out[COL_GRID] = slantGrid(background);
+  out[COL_GRID] = GRID_MID;
   out[COL_INK] = INK;
   out[COL_SLANT1] = INK;
   out[COL_SLANT2] = INK;
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = highlight; // a background highlight, per game_mkhighlight
+  // A tile fill under the slash: the "you are here" wash, not the green mark
+  // (palette.ts, `CURSOR`), as Rectangles' is.
+  out[COL_CURSOR] = highlightWash(background);
   out[COL_FILLEDSQUARE] = background;
   out[COL_GROUNDED] = slantGrounded(background);
   out[COL_HINT] = HINT_ACTION;

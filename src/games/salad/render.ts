@@ -16,11 +16,12 @@
  */
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { GREEN_BOLD, GREEN_WASH } from "../../engine/colour/colours.ts";
+import { GREEN_WASH } from "../../engine/colour/colours.ts";
 import {
   ERROR,
   HINT_ACTION,
   HINT_EVIDENCE,
+  highlightWash,
   INK,
   PAPER,
   PENCIL_BODY,
@@ -87,6 +88,9 @@ export const COL_HINT = 19;
  * — **and** a forcing chain's ordinal, one index because the number indexes the
  * evidence. */
 export const COL_HINT_CELL = 20;
+/** Fork addition: the keyboard cursor's cell fill. Upstream used the bevel
+ * lowlight, a tint of the board. */
+export const COL_CURSOR = 21;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
@@ -101,10 +105,14 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_I_BALL] = INK;
   out[COL_I_BALLBG] = PAPER;
   out[COL_I_HOLE] = INK;
+  // The player's letter, ball ring and cross are one meaning — "you put this
+  // here", against the given ones in ink — drawn in the entry green.
   out[COL_G_NUM] = playerEntryColour(background);
-  out[COL_G_BALL] = GREEN_BOLD;
+  out[COL_G_BALL] = playerEntryColour(background);
+  out[COL_G_HOLE] = playerEntryColour(background);
+  // The inside of the player's ball: the entry green as a fill, where a given
+  // ball's inside is paper. No role covers an entry *fill*, so the named wash.
   out[COL_G_BALLBG] = GREEN_WASH;
-  out[COL_G_HOLE] = GREEN_BOLD;
   out[COL_E_BORDERCLUE] = ERROR;
   out[COL_E_NUM] = ERROR;
   out[COL_E_HOLE] = ERROR;
@@ -117,6 +125,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   // lightness it stops reading as a mark at all. `HINT_EVIDENCE` covers the
   // chain ordinal too; see its doc comment for why they are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
+  // A cell fill under the letter and notes: the "you are here" wash the Latin
+  // family draws its cursor cell with (palette.ts, `CURSOR`).
+  out[COL_CURSOR] = highlightWash(background);
   return out;
 }
 
@@ -338,7 +349,7 @@ function drawBall(
             : COL_G_BALLBG;
   } else {
     // Letters mode draws the ball "transparent" over whatever is behind it.
-    bg = flags & FD_CURSOR ? COL_LOWLIGHT : COL_BACKGROUND;
+    bg = flags & FD_CURSOR ? COL_CURSOR : COL_BACKGROUND;
   }
   const colour = s.gridclues[i] ? COL_I_BALL : COL_G_BALL;
 

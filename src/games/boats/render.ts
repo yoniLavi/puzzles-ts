@@ -33,9 +33,11 @@
  * (docs/games/rendering.md § "The palette: three layers, meaning first").
  */
 
-import { BLUE_WASH, GREEN, GREY_BOLD, GREY_WASH } from "../../engine/colour/colours.ts";
+import { BLUE_WASH, GREEN, GREY_BOLD } from "../../engine/colour/colours.ts";
 import {
+  clueDoneColour,
   ERROR,
+  ERROR_TEXT,
   HINT_ACTION,
   HINT_EVIDENCE,
   INK,
@@ -114,19 +116,22 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_GRID] = INK;
+  // Not `CURSOR`: green is the fleet panel's unplaced ships. The ring sits
+  // inside the cell on its fill, and a ship's fill *is* ink, so it swaps to
+  // paper there.
   out[COL_CURSOR_A] = INK;
-  out[COL_CURSOR_B] = PAPER;
+  out[COL_CURSOR_B] = PAPER; // on a ship cell, whose fill is ink
   out[COL_WATER] = BLUE_WASH;
   out[COL_SHIP_CLUE] = GREY_BOLD;
   out[COL_SHIP_GUESS] = INK;
   out[COL_SHIP_ERROR] = ERROR;
   out[COL_SHIP_FLEET] = GREEN;
-  out[COL_SHIP_FLEET_DONE] = GREY_WASH;
+  out[COL_SHIP_FLEET_DONE] = clueDoneColour(defaultBackground);
   out[COL_SHIP_FLEET_STRIPE] = INK;
   out[COL_COUNT] = INK;
   out[COL_COUNT_ERROR] = ERROR;
   out[COL_COLLISION_ERROR] = ERROR;
-  out[COL_COLLISION_TEXT] = PAPER;
+  out[COL_COLLISION_TEXT] = ERROR_TEXT;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;

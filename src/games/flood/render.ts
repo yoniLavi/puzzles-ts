@@ -1,6 +1,5 @@
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { TEN, TEN_NAMES } from "../../engine/colour/colours.ts";
-import { INK } from "../../engine/colour/palette.ts";
+import { BLACK, TEN, TEN_NAMES } from "../../engine/colour/colours.ts";
 import { drawRecessedBorder as drawBevel, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import type { GridCursor } from "../../engine/pointer.ts";
@@ -50,7 +49,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
-  out[COL_SEPARATOR] = INK;
+  // `BLACK`, not `INK`: the line between two tiles is drawn against the
+  // tiles, not the board, and stays black under both schemes.
+  out[COL_SEPARATOR] = BLACK;
   for (let i = 0; i < 10; i++) out[COL_1 + i] = TEN[i];
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;

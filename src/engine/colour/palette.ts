@@ -107,6 +107,18 @@ export const UNDECIDED: Colour = GREY;
  * says why at the assignment. The audit found seventeen games with seventeen
  * deliberately different cursors and read that as seventeen decisions; it is
  * really one decision plus a handful of collisions, and this is the one decision.
+ *
+ * Two corollaries, from the sweep that brought the seventeen down:
+ *
+ * - **This is a *mark*** — a ring, an outline, a line, a disc. A cursor that
+ *   *fills a cell under the cell's own content* (Solo's family, Bridges,
+ *   Mathrax, Magnets, Pearl) is {@link highlightWash}, the "you are here"
+ *   wash, because a saturated green fill under a digit or a pearl shouts and
+ *   hides what it is pointing at.
+ * - **When green is spent, the second choice is `PURPLE`** — Spokes, Pegs,
+ *   Filling, Sticks, Subsets all answer the same collision the same way, so a
+ *   purple cursor reads as "the cursor, on a board that uses green" rather than
+ *   as a sixth colour to learn.
  */
 export const CURSOR: Colour = GREEN;
 
@@ -335,20 +347,43 @@ export function lineMaybeColour(background: Colour): Colour {
  * sibling of {@link lineMaybeColour}, and used by the same three games (Loopy's
  * `COL_FAINT`, Palisade's and Separate's `COL_LINE_NO`).
  *
- * A tenth off the background rather than a colour of its own, because a ruled-out
- * edge should read as *board* — the player has decided nothing is there, and the
- * mark exists only to record that they decided it. Three independent ports wrote
- * the identical `background × 0.9`, which is the audit's convergence test passing
- * about as cleanly as it can.
+ * A mid grey in both schemes: clearly a step off the board, clearly not ink.
+ * Three independent ports wrote `background × 0.9` — a tenth off the board, so
+ * that a ruled-out edge would read as *board* — and the owner's playtest found
+ * exactly that: on a dark board the edge could not be told from no edge, which
+ * matters most to a keyboard player, whose cursor walks the edges and needs to
+ * see where they are. Disabled still has to be *discernible*.
  *
- * **The dark value is authored**, as {@link lineMaybeColour}'s is: a tenth off
- * a near-black background is nothing, so the derived value made a ruled-out
- * edge indistinguishable from no edge at all. A dim grey, a step above the
- * board and well below ink, keeps the "recorded, not present" reading.
+ * Both values are authored rather than taken from the grey scale's named steps,
+ * because neither step fits: `GREY`'s dark base (L 0.44) sits a tenth above the
+ * board and is the faintness being fixed, and `GREY_BOLD` (L 0.84) is nearly
+ * ink. The light value stays a function of the board so it tracks a lighter or
+ * darker host; the dark value is a fixed mid grey. Both clear the
+ * `correctRegionColour` fill Palisade and Separate paint under a finished
+ * region, so a ruled-out edge across a completed region still shows.
  */
 export function lineNoColour(background: Colour): Colour {
-  return token(scale(background, 0.9), [0.3, 0.3, 0.3]);
+  return token(scale(background, 0.6), [0.5, 0.5, 0.5]);
 }
+
+// --- the solved flash ---------------------------------------------------
+
+/**
+ * **Solved** — the fill or line colour a board flashes to when the player
+ * completes it. One role for the thirteen games that flash to white: the six
+ * that wrote `PAPER` and the seven that wrote `mkhighlight`'s highlight were one
+ * convention seen through the raw-versus-shifted background split, since the
+ * highlight of a shifted white *is* pure white. Singles, Mathrax and Range,
+ * which flashed to the lowlight, join it: a solved board lights up rather than
+ * dims.
+ *
+ * {@link PAPER} rather than {@link WHITE}: the flash is *maximum contrast
+ * against the surface*, so it inverts with the scheme and stays a visible step
+ * off the board. A game whose flash is an animation rather than a colour — a
+ * bevel wave, a state swap, a colour cycle — does not use this; a game whose
+ * flash is a wash under text (Solo's family) uses {@link highlightWash}.
+ */
+export const FLASH: Colour = PAPER;
 
 /**
  * **This clue is used up** — a row count, column count or clue number the board

@@ -82,9 +82,6 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   bricks: {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Normal|Tricky}"),
-    darkMode: {
-      paletteOverrides: { 0: [0.4, 0, 0], 2: [0.6, 0, 0] }, // bg, no-brick
-    },
   },
   bridges: {
     describeConfig: configFormatter(
@@ -147,7 +144,8 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       },
     ),
     darkMode: {
-      paletteOverrides: { 1: false }, // keep black lines between regions
+      // The separator between regions is `BLACK`, a pinned token, so it needs
+      // no override to stay black.
       paletteSwaps: [[12, 13]], // 3D
     },
   },
@@ -155,9 +153,6 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{width}x{height} {difficulty:Normal|Unreasonable}",
     ),
-    darkMode: {
-      paletteOverrides: { 6: 0.8 }, // edges
-    },
   },
   group: {
     describeConfig: configFormatter(
@@ -205,9 +200,6 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
         },
       },
     ),
-    darkMode: {
-      paletteOverrides: { 2: [0.5, 0, 0], 3: [0.95, 0, 0] }, // black, white
-    },
   },
   loopy: {
     describeConfig: configFormatter(
@@ -283,7 +275,6 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       "{width}x{height}, {mines} mines{ensure-solubility:, risky|}",
     ),
     darkMode: {
-      paletteOverrides: { 0: [0.2, 0, 0], 14: 0.8 }, // bg, white flag base
       paletteSwaps: [
         [0, 1], // cleared/uncleared background
         [16, 17], // 3D edges
@@ -364,8 +355,8 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   range: {
     describeConfig: configFormatter("{width}x{height}"),
-    // Range reuses palette colors: black = text = grid.
-    // Strict inverted dark mode is fine. (You place white squares rather than black.)
+    // A shaded square is a pinned `BLACK` piece and a known-white cell a pinned
+    // `WHITE` one; ink, grid and the flash adapt with the scheme.
   },
   rect: {
     describeConfig: configFormatter(
@@ -488,9 +479,6 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
 
       return `${dimensions} ${fullDifficulty}${isX ? " X" : ""}${symmetryDescription}`;
     },
-    darkMode: {
-      paletteOverrides: { 2: 0.8 }, // darken grid
-    },
   },
   spokes: {
     describeConfig: configFormatter("{width}x{height} {difficulty:Easy|Tricky|Hard}"),
@@ -558,7 +546,8 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
       paletteSwaps: [
         [2, 4], // highlight/lowlight 3D
         [3, 5], // gentle highlight/lowlight
-        [6, 7], // highcursor/lowcursor
+        // Indices 6 and 7 (the two cursor slots) both hold `CURSOR` now, so
+        // they need no swap.
       ],
     },
   },
@@ -574,10 +563,9 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
     describeConfig: configFormatter(
       "{width}x{height} {difficulty:Trivial|Easy|Normal}{unique-rows-and-columns:|, unique}",
     ),
-    darkMode: {
-      // preserve "black" and "white" plus their 3D effects
-      paletteOverrides: { 3: false, 4: false, 5: false, 6: false, 7: false, 8: false },
-    },
+    // The two tile bases author their dark values and `mkhighlightSpecific`
+    // hands that on to each bevel trio, so "black" and "white" and their 3D
+    // effects survive dark mode without a per-index override.
   },
   untangle: {
     describeConfig: configFormatter("{number-of-points} points"),

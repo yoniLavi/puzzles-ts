@@ -271,9 +271,9 @@ function findMistakes(state: LightupState): readonly LightupMistake[] {
 /** Highlight payload for a Light Up hint step. `targets` get the blue
  * `COL_HINT` fill (highlight only — the narration says which mark to
  * place); `area` is the deduction's evidence, shaded light-blue when the
- * square is dark and ringed teal when it is lit (the fill would hide the
+ * square is dark and ringed green when it is lit (the fill would hide the
  * "already lit" premise); `dark` is the unlit square the deduction is
- * about (amber ring); `clue` is the driving clue, whose digit recolours. */
+ * about (violet ring); `clue` is the driving clue, whose digit recolours. */
 export interface LightupHint {
   kind: "light" | "impossible";
   targets: HintCell[];
@@ -379,7 +379,7 @@ function narrate(f: LightupFiring, hl: LightupHint): string {
     }
     case "discountUnlit": {
       // "A bulb *here*" was the reported shape: three marks in view (blue
-      // target, shaded set, amber-ringed dark square) and the vaguest of all
+      // target, shaded set, violet-ringed dark square) and the vaguest of all
       // deictics for the one being acted on.
       //
       // Writing the tie found two further defects in the old sentence, both

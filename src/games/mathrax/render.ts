@@ -23,6 +23,8 @@ import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import {
   ERROR,
   ERROR_WASH,
+  FLASH,
+  highlightWash,
   INK,
   PENCIL_BODY,
   pencilColour,
@@ -72,6 +74,11 @@ export const COL_ERRORBG = 7;
 /** Fork addition, appended past the upstream enum (Mathrax has no dark-mode
  * `paletteOverrides`, so appending is safe): the pencil-mode indicator's body. */
 export const COL_PENCIL_BODY = 8;
+/** Fork additions, likewise appended: the solved flash's cell fill and the
+ * keyboard cursor's cell fill. Upstream drew both with `COL_LOWLIGHT`, which
+ * stays the pencil-corner and cell-outline colour. */
+export const COL_FLASH = 9;
+export const COL_CURSOR = 10;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
@@ -79,6 +86,10 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = background;
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
+  out[COL_FLASH] = FLASH;
+  // A fill *under* the digits, and green is spent on the player's own entries,
+  // so the cursor is the Latin family's "you are here" wash (Solo, Keen, Towers).
+  out[COL_CURSOR] = highlightWash(background);
   out[COL_BORDER] = INK;
   out[COL_GUESS] = playerEntryColour(background);
   out[COL_PENCIL] = pencilColour(background);
@@ -224,7 +235,7 @@ function drawTile(
 
   dr.drawRect(
     { x: tx, y: ty, w: ts, h: ts },
-    fs & (FD_FLASH | FD_CURSOR) ? COL_LOWLIGHT : COL_BACKGROUND,
+    fs & FD_FLASH ? COL_FLASH : fs & FD_CURSOR ? COL_CURSOR : COL_BACKGROUND,
   );
 
   // Pencil-mode highlight: a triangle in the cell's top-left corner.

@@ -32,5 +32,8 @@
 - [x] 3.2 Chrome, dark mode: Loopy and Palisade boards match; Loopy's flash
       visible; a raw-background game with a dark override (Solo, Light Up)
       still reads; ABCD's margin and board one tone.
-- [ ] 3.3 Owner acceptance of the dark-mode change on the 22 raw-background
-      games and the three dual-background games.
+- [x] 3.3 Owner acceptance: shown the dark-mode Loopy board, the owner's only
+      finding was the ruled-out edge's contrast ("It still needs to look
+      disabled, but we need players to be able to discern the edges
+      themselves"), fixed in `reduce-colour-role-variation`, and directed the
+      rest of the colour simplification to proceed on this footing.

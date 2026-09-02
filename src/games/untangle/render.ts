@@ -33,9 +33,8 @@ export const COL_POINT = 5;
 export const COL_DRAGPOINT = 6;
 export const COL_CURSORPOINT = 7;
 export const COL_NEIGHBOUR = 8;
-export const COL_FLASH1 = 9;
-export const COL_FLASH2 = 10;
-export const COL_HINT = 11;
+export const COL_FLASH = 9;
+export const COL_HINT = 10;
 
 const FLASH_TIME = 0.3;
 
@@ -62,10 +61,11 @@ export function redrawUntangle(
   const n = s.n;
   const ts = ds.tileSize;
 
-  // Background colour: steady, or alternating during the completion flash.
+  // Background colour: steady, or blinking to the flash during completion.
   let bg = COL_BACKGROUND;
   if (flashTime > 0) {
-    bg = Math.trunc((flashTime * 4) / FLASH_TIME) % 2 === 0 ? COL_FLASH1 : COL_FLASH2;
+    bg =
+      Math.trunc((flashTime * 4) / FLASH_TIME) % 2 === 0 ? COL_FLASH : COL_BACKGROUND;
   }
 
   // Recompute every vertex's pixel position, noting whether any moved.

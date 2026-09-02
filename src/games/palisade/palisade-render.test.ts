@@ -9,6 +9,7 @@ import { newCursor } from "../../engine/pointer.ts";
 import { randomNew } from "../../engine/random/index.ts";
 import {
   COL_CORRECT,
+  COL_CURSOR,
   COL_ERROR,
   COL_GRID,
   COL_HINT,
@@ -189,6 +190,6 @@ describe("Palisade redraw", () => {
     ui.cursor.y = 2; // a left-border position
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(state), null, state, 0, ui, 0, 0);
-    expect(ops.some((o) => o.op === "drawLine" && o.colour === COL_GRID)).toBe(true);
+    expect(ops.some((o) => o.op === "drawLine" && o.colour === COL_CURSOR)).toBe(true);
   });
 });

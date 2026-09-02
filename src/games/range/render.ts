@@ -1,23 +1,28 @@
 /**
  * Range rendering — port of `draw_cell` / `game_redraw` in `range.c`: a
  * per-cell diffed loop drawing a grid-outlined tile (black fill for a
- * black square, lowlight under the cursor or the completion flash,
- * otherwise the background), a small centred dot for a white mark, and
- * the clue number. Rule violations are recomputed every frame via
+ * black square, the flash fill on completion, white for a known-white
+ * cell, otherwise the background), corner brackets under the keyboard
+ * cursor, a small centred dot for a white mark, and the clue number. Rule violations are recomputed every frame via
  * `findErrors` and drawn in the error colour — Range highlights errors
  * live, which is upstream behaviour, not the fork's Check & Save.
  */
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import {
+  BLACK as BLACK_PIECE,
+  WHITE as WHITE_PIECE,
+} from "../../engine/colour/colours.ts";
+import {
+  CURSOR,
   ERROR,
+  FLASH,
   HINT_ACTION,
   HINT_BLACKREF,
   HINT_EVIDENCE,
   INK,
-  PAPER,
 } from "../../engine/colour/palette.ts";
-import { drawRectOutline } from "../../engine/draw.ts";
+import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Colour, Size } from "../../engine/types.ts";
@@ -39,26 +44,38 @@ export const FLASH_TIME = 0.7;
 // --- palette (upstream COL_* enum) -----------------------------------------
 
 export const COL_BACKGROUND = 0; // an undecided (EMPTY) cell — a soft grey
-export const COL_GRID = 1; // == COL_BLACK == COL_TEXT == COL_USER
+/** Grid lines, and the ink of a glyph on an undecided cell. Upstream aliases
+ * COL_BLACK, COL_TEXT and COL_USER onto this slot; the black square is split
+ * off into {@link COL_BLACK} because it is a *piece*, not ink. */
+export const COL_GRID = 1;
 export const COL_ERROR = 2;
-export const COL_LOWLIGHT = 3; // == COL_CURSOR
+export const COL_FLASH = 3; // upstream's COL_LOWLIGHT slot: the solved flash
 export const COL_HINT = 4; // the cell the displayed hint forces — ringed
 export const COL_HINT_CELL = 5; // the deduction's premise/area cells — outlined
 export const COL_WHITEBG = 6; // a known-white cell: a clue or the player's white mark
 export const COL_HINT_BLACKREF = 7; // a cited decided-black premise (teal ring)
+// Appended past the upstream enum (Range has no index-keyed dark overrides).
+export const COL_CURSOR = 8; // the keyboard cursor, upstream's COL_LOWLIGHT alias
+/** A shaded square — and the ink of the dot or digit on a known-white cell,
+ * which sits on {@link COL_WHITEBG}'s pinned white and so must be pinned too. */
+export const COL_BLACK = 9;
 
 export function colours(defaultBackground: Colour): Colour[] {
-  const { background, lowlight } = mkhighlight(defaultBackground);
+  const { background } = mkhighlight(defaultBackground);
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
   out[COL_GRID] = INK;
   out[COL_ERROR] = ERROR;
-  out[COL_LOWLIGHT] = lowlight;
+  out[COL_FLASH] = FLASH;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
-  // Pure white — `mkhighlight` has shifted COL_BACKGROUND off pure white,
-  // so a known-white cell reads as visibly white against undecided cells.
-  out[COL_WHITEBG] = PAPER;
+  // A known-white cell *is* white and a shaded square *is* black — pieces, not
+  // contrast — so both are pinned and survive the dark scheme un-inverted.
+  // `mkhighlight` has shifted COL_BACKGROUND off pure white, so a known-white
+  // cell still reads as visibly white against undecided cells.
+  out[COL_WHITEBG] = WHITE_PIECE;
+  out[COL_BLACK] = BLACK_PIECE;
+  out[COL_CURSOR] = CURSOR;
   // Cited decided-black premise ring — the cross-game "a shaded black square is
   // the reason" hue (matches Singles' COL_HINT_BLACKREF), distinct from the blue
   // target fill so premise and move don't read as the same colour.
@@ -141,27 +158,31 @@ function drawCell(
   const ty = y + Math.floor(ts / 2);
   const dotsz = Math.floor((ts + 9) / 10);
 
-  // Fill precedence: a black square keeps its identity; the cursor/flash
-  // overlay is a lowlight; a known-white cell (clue or white mark) is pure
-  // white; an undecided cell is the soft-grey background. No hint role appears
-  // here — the target is ringed and the evidence outlined, below. A Range
-  // premise area reaches along a clue's arms and takes in the clue cell itself,
-  // so it is not the all-undecided region it looks like: it carries the digit
-  // the deduction is counting with.
+  // Fill precedence: a black square keeps its identity; the solved flash is a
+  // fill; a known-white cell (clue or white mark) is pure white; an undecided
+  // cell is the soft-grey background. The cursor is corner brackets, not a
+  // fill, so a clue cell under it keeps its white and its digit keeps its ink.
+  // No hint role appears here — the target is ringed and the evidence
+  // outlined, below. A Range premise area reaches along a clue's arms and takes
+  // in the clue cell itself, so it is not the all-undecided region it looks
+  // like: it carries the digit the deduction is counting with.
   const fill =
     value === BLACK
       ? error
         ? COL_ERROR
-        : COL_GRID
-      : flash || cursor
-        ? COL_LOWLIGHT
+        : COL_BLACK
+      : flash
+        ? COL_FLASH
         : value === WHITE || value > 0
           ? COL_WHITEBG
           : COL_BACKGROUND;
+  // A glyph on the pinned-white cell is pinned black; anywhere else it is ink.
+  const glyph = fill === COL_WHITEBG ? COL_BLACK : COL_GRID;
 
   drawRectOutline(dr, x, y, ts + 1, ts + 1, COL_GRID);
   dr.drawRect({ x: x + 1, y: y + 1, w: ts - 1, h: ts - 1 }, fill);
   if (error) drawRectOutline(dr, x + 1, y + 1, ts - 1, ts - 1, COL_ERROR);
+  if (cursor) drawRectCorners(dr, tx, ty, Math.floor((ts * 3) / 10), COL_CURSOR);
 
   // The evidence area's outline and the acted-on cell's ring, on the cell's own
   // border. The evidence first, so a cell that is both keeps the target's mark.
@@ -195,7 +216,7 @@ function drawCell(
         w: dotsz,
         h: dotsz,
       },
-      error ? COL_ERROR : COL_GRID,
+      error ? COL_ERROR : glyph,
     );
   } else if (value > 0) {
     dr.drawText(
@@ -206,7 +227,7 @@ function drawCell(
         fontType: "variable",
         size: Math.floor((ts * 3) / 5),
       },
-      error ? COL_ERROR : clueRef ? COL_HINT : COL_GRID,
+      error ? COL_ERROR : clueRef ? COL_HINT : glyph,
       String(value),
     );
   }

@@ -24,15 +24,15 @@
 
 import { BLUE, PURPLE } from "../../engine/colour/colours.ts";
 import {
+  correctRegionColour,
   ERROR,
+  FLASH,
   GRID_DARK,
   HELD,
   HINT_ACTION,
   HINT_EVIDENCE,
   INK,
-  PAPER,
 } from "../../engine/colour/palette.ts";
-import { spokesSatisfied } from "../../engine/colour/palette-games.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { OverlaySidecar } from "../../engine/overlay-sidecar.ts";
@@ -80,7 +80,7 @@ export const COL_BORDER = 1;
 export const COL_HOLDING = 2;
 export const COL_LINE = 3;
 export const COL_MARK = 4;
-/** Upstream's white; here it survives only as the completion-flash colour —
+/** Upstream's white; here it survives only as the completion-flash rim —
  * see {@link COL_SATISFIED} for why it no longer fills a finished hub. */
 export const COL_DONE = 5;
 export const COL_ERROR = 6;
@@ -93,9 +93,10 @@ export const COL_CURSOR = 7;
  * Upstream nominally has this cue already (it fills such a hub with pure white)
  * but it is invisible in practice: against a near-white light-mode background
  * it is barely a shade, and in dark mode `puzzle-view.ts` hands the game *pure
- * white* as its background, so the "highlight" is exactly the background. A
- * clear step down from the background reads in both modes, since the dark-mode
- * adaptation inverts grey lightness about the real background.
+ * white* as its background, so the "highlight" is exactly the background. The
+ * shared completed-region shade is a clear step down from the background and
+ * reads in both modes, since the dark-mode adaptation inverts grey lightness
+ * about the real background.
  */
 export const COL_SATISFIED = 8;
 /** The forced spoke(s) of the displayed hint — drawn like a line, at hint
@@ -105,10 +106,6 @@ export const COL_HINT = 9;
 /** A ring around each evidence hub the hint reasons over (a light blue, the
  * cross-game "shade the evidence" colour — docs/games/testing.md § "Seed-deterministic, never clock-gated"). */
 export const COL_HINT_CELL = 10;
-
-/** How far {@link COL_SATISFIED} steps away from the background. Large enough
- * to read at a glance across a board, small enough to keep the black clue digit
- * and the spoke dots legible on top of it. */
 
 /**
  * Upstream takes the frontend background as-is (no `game_mkhighlight`) and
@@ -126,10 +123,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_HOLDING] = HELD;
   out[COL_LINE] = INK;
   out[COL_MARK] = BLUE;
-  out[COL_DONE] = PAPER;
+  out[COL_DONE] = FLASH;
   out[COL_ERROR] = ERROR;
+  // Purple, because Spokes has spent the usual two: green is a held hub and
+  // blue a ruled-out spoke.
   out[COL_CURSOR] = PURPLE;
-  out[COL_SATISFIED] = spokesSatisfied(defaultBackground);
+  // "This hub is complete" is the same cue as a finished region elsewhere.
+  out[COL_SATISFIED] = correctRegionColour(defaultBackground);
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;

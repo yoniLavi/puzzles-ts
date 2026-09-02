@@ -17,11 +17,20 @@
  * lit from the wrong side in dark mode only.
  */
 import { describe, expect, it } from "vitest";
-import { resolvePalette } from "../engine/colour/colour-mkhighlight.ts";
+import {
+  mkhighlightBackground,
+  resolvePalette,
+} from "../engine/colour/colour-mkhighlight.ts";
 import { darkValue } from "../engine/colour/colour-token.ts";
+import { correctRegionColour, lineNoColour } from "../engine/colour/palette.ts";
 import { getTsGame } from "../engine/registry.ts";
 import type { Colour, PuzzleId } from "../engine/types.ts";
-import { colourToOKLCH, type OKLCH, oklchToColour } from "../utils/color.ts";
+import {
+  colourToOKLCH,
+  darkModeColor,
+  type OKLCH,
+  oklchToColour,
+} from "../utils/color.ts";
 import { puzzleAugmentations } from "./augmentation.ts";
 import { darkModePalette } from "./dark-palette.ts";
 import "../games/index.ts";
@@ -94,6 +103,36 @@ describe("dark-mode palette swaps", () => {
     const without = darkModePalette(light, {}, {}, DARK_BG_L);
     expect(withSwap[a]).toEqual(without[b]);
     expect(withSwap[b]).toEqual(without[a]);
+  });
+});
+
+describe("the ruled-out edge", () => {
+  it("is discernible, and apart from a finished region, in both schemes", () => {
+    // The owner's playtest: on a dark board the ruled-out edge could not be
+    // told from no edge, which a keyboard player walking the edges needs most.
+    // "Disabled" still has to be seen. Measured in OKLCH lightness against the
+    // board every game paints (the host shifted off white) in each scheme,
+    // through the same adaptation the app applies. Lives here rather than in
+    // the engine's palette test because the dark half needs `utils/color.ts`,
+    // which the engine may not import.
+    const L = (c: Colour) => colourToOKLCH(c)[0];
+    const dark = (c: Colour) =>
+      darkValue(c) ?? oklchToColour(darkModeColor(colourToOKLCH(c), DARK_BG_L));
+    for (const host of [[0.827, 0.827, 0.827] as Colour, DARK_INPUT]) {
+      const board = mkhighlightBackground(host);
+      const ruledOut = lineNoColour(board);
+      const finished = correctRegionColour(board);
+      // Light: a clear step below the board, well above ink.
+      expect(L(board) - L(ruledOut)).toBeGreaterThan(0.2);
+      expect(L(ruledOut)).toBeGreaterThan(0.4);
+      expect(Math.abs(L(ruledOut) - L(finished))).toBeGreaterThan(0.08);
+      // Dark: the value the playtest rejected sat 0.08 above the board; this
+      // one sits at least twice that, and stays below ink (L 1).
+      const darkBoard = L(dark(board));
+      expect(L(dark(ruledOut)) - darkBoard).toBeGreaterThan(0.16);
+      expect(L(dark(ruledOut))).toBeLessThan(0.85);
+      expect(Math.abs(L(dark(ruledOut)) - L(dark(finished)))).toBeGreaterThan(0.08);
+    }
   });
 });
 

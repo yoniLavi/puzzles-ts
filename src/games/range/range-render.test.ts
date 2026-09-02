@@ -11,6 +11,7 @@ import { RecordingDrawing } from "../../engine/testing/recording-drawing.ts";
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { type RangeHint, rangeGame } from "./index.ts";
 import {
+  COL_BLACK,
   COL_ERROR,
   COL_GRID,
   COL_HINT,
@@ -115,12 +116,13 @@ describe("live error highlight", () => {
 });
 
 describe("white dot", () => {
-  it("draws a small grid-coloured dot for a white mark", () => {
-    // A white (dotted) cell draws a centred dot rect in COL_GRID.
+  it("draws a small black dot for a white mark", () => {
+    // A white (dotted) cell draws a centred dot rect in COL_BLACK — pinned, like
+    // the white cell it sits on.
     const recWhite = renderState(makeState(3, 1, [WHITE, EMPTY, EMPTY]), noCursor);
     const recEmpty = renderState(makeState(3, 1, [EMPTY, EMPTY, EMPTY]), noCursor);
     const dots = (rec: RecordingDrawing) =>
-      rec.ops.filter((o) => o.op === "rect" && o.colour === COL_GRID && o.w < 32)
+      rec.ops.filter((o) => o.op === "rect" && o.colour === COL_BLACK && o.w < 32)
         .length;
     expect(dots(recWhite)).toBeGreaterThan(dots(recEmpty));
   });

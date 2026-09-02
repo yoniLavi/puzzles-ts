@@ -14,7 +14,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 0,
     "x2": 384,
@@ -24,7 +24,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 0,
     "x2": 384,
@@ -34,7 +34,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 0,
     "x2": 384,
@@ -44,7 +44,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 0,
     "x2": 384,
@@ -54,7 +54,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 0,
     "x2": 384,
@@ -64,7 +64,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 0,
     "x2": 384,
@@ -74,7 +74,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 0,
     "x2": 384,
@@ -84,7 +84,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 0,
     "x2": 384,
@@ -94,7 +94,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 0,
     "x2": 384,
@@ -104,7 +104,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 0,
     "x2": 384,
@@ -114,7 +114,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 0,
     "x2": 384,
@@ -124,7 +124,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 0,
     "x2": 0,
@@ -134,7 +134,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 32,
     "x2": 32,
@@ -144,7 +144,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 64,
     "x2": 64,
@@ -154,7 +154,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 96,
     "x2": 96,
@@ -164,7 +164,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 128,
     "x2": 128,
@@ -174,7 +174,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 160,
     "x2": 160,
@@ -184,7 +184,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 192,
     "x2": 192,
@@ -194,7 +194,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 224,
     "x2": 224,
@@ -204,7 +204,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 256,
     "x2": 256,
@@ -214,7 +214,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 288,
     "x2": 288,
@@ -224,7 +224,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 320,
     "x2": 320,
@@ -234,7 +234,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 352,
     "x2": 352,
@@ -244,7 +244,7 @@ exports[`Sokoban render > draws grid lines, walls and the player on a generated 
   {
     "colour": 7,
     "op": "line",
-    "rgb": "rgb(168, 168, 168)",
+    "rgb": "rgb(128, 128, 128)",
     "thickness": 1,
     "x1": 384,
     "x2": 384,

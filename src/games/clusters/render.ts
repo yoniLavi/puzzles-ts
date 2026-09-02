@@ -94,11 +94,16 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_1_DOT] = PAPER;
   out[COL_ERROR] = ERROR;
   out[COL_CURSOR] = CURSOR;
+  // Not `HINT_ACTION`: blue is `COL_1`, a rule of the game — see `COL_HINT`'s
+  // declaration.
   out[COL_HINT] = PURPLE;
   // The chain is outlined rather than washed, so it takes the mark form of the
   // evidence role. `HINT_EVIDENCE` covers the chain ordinal too; see its doc
   // comment for why the index and the thing it indexes are one role.
   out[COL_HINT_CELL] = HINT_EVIDENCE;
+  // A third hint premise no shared role names — the tile the refuted colouring
+  // would break — in the one strong accent the board and the two hint marks
+  // leave free.
   out[COL_HINT_DANGER] = ORANGE;
   return out;
 }

@@ -16,10 +16,11 @@
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import { BLACK, GREEN, PURPLE, TEAL } from "../../engine/colour/colours.ts";
 import {
+  DRAG_ADD,
   ERROR,
+  FLASH,
   HINT_ACTION,
   INK,
-  PAPER,
   wallColour,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
@@ -53,22 +54,25 @@ export const COL_MINE = 6;
 export const COL_GEM = 7;
 export const COL_WALL = 8;
 export const COL_HINT = 9;
-/** Appended past the C enum: the arrow the player is aiming with a swipe. It is
- * deliberately NOT `COL_HINT` yellow — the route arrow means "the solver says
- * go this way", and this one means "you are about to go this way", and a player
- * with a route installed sees both in turn. */
+/** Appended past the C enum: the arrow the player is aiming with a swipe — the
+ * aim drag's preview, "let go and you go this way". The route arrow (`COL_HINT`)
+ * means "the solver says go this way"; only one of the two is ever drawn, since
+ * aiming replaces the route arrow until the swipe is released. */
 export const COL_AIM = 10;
 /** Appended: the ring round the gem a hint is going for. The hint's two roles
  * get two colours, each with a cue of its own (docs/games/hints.md § "The element-type colour legend") — the
- * direction is a yellow *arrow* (`COL_HINT`, the route arrow's own shape and
+ * direction is a blue *arrow* (`COL_HINT`, the route arrow's own shape and
  * colour: both mean "the solver says go this way"), and the subgoal gem is a
  * violet *ring*. The app's dark-mode `paletteOverrides` for inertia touch only
  * index 6, so appending past the C enum is safe. */
 export const COL_HINT_GOAL = 11;
+/** Appended: the solved flash's tile fill. Its own slot because `COL_HIGHLIGHT`
+ * is also the wall bevel and the mine's glint, which do not flash. */
+export const COL_FLASH = 12;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  const ret: Colour[] = new Array(12);
+  const ret: Colour[] = new Array(13);
 
   ret[COL_BACKGROUND] = background;
   ret[COL_HIGHLIGHT] = highlight;
@@ -80,8 +84,11 @@ export function colours(defaultBackground: Colour): Colour[] {
   ret[COL_GEM] = TEAL;
   ret[COL_WALL] = wallColour(background, highlight);
   ret[COL_HINT] = HINT_ACTION;
-  ret[COL_AIM] = PAPER;
+  ret[COL_AIM] = DRAG_ADD;
+  // A third hint cue, the subgoal: neither the action (the blue arrow) nor
+  // evidence, so no hint role names it; purple is the hue the board has not spent.
   ret[COL_HINT_GOAL] = PURPLE;
+  ret[COL_FLASH] = FLASH;
 
   return ret;
 }
@@ -153,7 +160,7 @@ function drawTile(dr: GameDrawing, ts: number, x: number, y: number, v: number):
   const tx = coord(x, ts);
   const ty = coord(y, ts);
   const bg =
-    v & FLASH_DEAD ? COL_DEAD_PLAYER : v & FLASH_WIN ? COL_HIGHLIGHT : COL_BACKGROUND;
+    v & FLASH_DEAD ? COL_DEAD_PLAYER : v & FLASH_WIN ? COL_FLASH : COL_BACKGROUND;
   const cell = v & ~(FLASH_DEAD | FLASH_WIN | HINT_GOAL);
   const hw = highlightWidth(ts);
 

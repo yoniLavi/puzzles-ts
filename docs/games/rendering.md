@@ -408,13 +408,28 @@ from it. Three layers, three import paths, and which one you reach for is the
 decision:
 
 - [`engine/colour/palette.ts`](../../src/engine/colour/palette.ts) — **the
-  meanings**, and your default: `ERROR`, `HINT_ACTION`, `HINT_FILL`,
-  `HINT_EVIDENCE`, `CURSOR`, `HELD`, `DRAG_ADD`/`DRAG_REMOVE`, `UNDECIDED`,
-  `GRID_MID`, `GRID_DARK`, `PENCIL_BODY`, `INK`, `PAPER`, plus the
-  background-derived functions (`pencilColour`, `playerEntryColour`,
+  meanings**, and your default: `ERROR`, `ERROR_TEXT`, `ERROR_WASH`,
+  `HINT_ACTION`, `HINT_EVIDENCE`, `HINT_EVIDENCE_WASH`,
+  `HINT_BLACKREF`/`HINT_WHITEREF`, `CURSOR`, `HELD`, `DRAG_ADD`/`DRAG_REMOVE`,
+  `FLASH`, `UNDECIDED`, `GRID_MID`, `GRID_DARK`, `PENCIL_BODY`, `INK`, `PAPER`,
+  plus the background-derived functions (`pencilColour`, `playerEntryColour`,
   `highlightWash`, `lineMaybeColour`, `lineNoColour`, `clueDoneColour`,
   `wallColour`, `correctRegionColour`). Each is a *reference* to a named
   colour, so restyling red restyles every meaning built on red.
+
+  Three of these are worth naming by the mistake they replace. **The
+  cursor** is `CURSOR` when it is a *mark* (a ring, outline, line or disc);
+  a cursor that *fills a cell under the cell's content* is `highlightWash`,
+  the "you are here" wash Solo's family draws with; and when the board has
+  spent green, the collection's second choice is `PURPLE`, so a purple cursor
+  reads as "the cursor, on a board that uses green" rather than as a new
+  colour — the doc on `CURSOR` says why. **"This clue is
+  done"** is `clueDoneColour` for retired *text* and `correctRegionColour` for
+  a completed *fill* — five games once encoded it five ways, from `INK` (Loopy,
+  which made the distinction invisible) to a bespoke `bg × 0.85`. **The solved
+  flash** is `FLASH` wherever a board flashes to a fill or line colour; a bevel
+  wave, a state swap or a colour cycle is an animation, not a colour, and keeps
+  its own mechanism.
 - [`engine/colour/colours.ts`](../../src/engine/colour/colours.ts) — **the
   palette itself**: twelve names, most at three intensities (base, `_WASH`,
   `_BOLD`), plus the distinguishability sets (`TEN`, `TEN_NAMES`,
@@ -437,7 +452,11 @@ would do, the next scheme has to rediscover that this green was a cursor.
 **The escape hatch is real but narrow, and it is where sprawl grows back.** A
 game whose board has *spent* the default may pick a different named colour
 (Spokes' cursor is `PURPLE` because green is a held hub and blue a ruled-out
-spoke). **Say why, at the assignment, in one line.** Before
+spoke). **Say why, at the assignment, in one line** — on the assignment line
+or the line above it, which is where
+[`palette-departures.test.ts`](../../src/engine/colour/palette-departures.test.ts)
+looks: for every slot whose name says cursor, held, drag or hint, it requires
+the role or a comment, and fails on a bare departure. Before
 `consolidate-colour-palette` there were 190 named colours and seventeen
 cursors; the seventeen read as seventeen decisions and were one decision plus
 collisions. If nothing in the palette fits, that is an exception recorded in

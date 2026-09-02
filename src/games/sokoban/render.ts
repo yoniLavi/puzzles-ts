@@ -13,7 +13,13 @@
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import { BROWN, GREEN } from "../../engine/colour/colours.ts";
-import { INK, PAPER, wallColour } from "../../engine/colour/palette.ts";
+import {
+  FLASH,
+  GRID_MID,
+  INK,
+  PAPER,
+  wallColour,
+} from "../../engine/colour/palette.ts";
 import { sokobanPit } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Colour, Size } from "../../engine/types.ts";
@@ -56,7 +62,10 @@ const COL_OUTLINE = 8;
 const COL_HIGHLIGHT = 9;
 const COL_LOWLIGHT = 10;
 const COL_WALL = 11;
-const NCOLOURS = 12;
+/** Appended past the upstream enum, which flashed the floor to its own bevel
+ * highlight; the index-keyed swap above never reaches it. */
+const COL_FLASH = 12;
+const NCOLOURS = 13;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
@@ -67,12 +76,14 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_OUTLINE] = INK;
   out[COL_PLAYER] = GREEN;
   out[COL_BARREL] = BROWN;
-  out[COL_TARGET] = [...lowlight];
+  // A target disc: sunk into the floor, in the floor's own shadow.
+  out[COL_TARGET] = lowlight;
   out[COL_PIT] = sokobanPit(lowlight);
   out[COL_DEEP_PIT] = INK;
   out[COL_TEXT] = PAPER;
-  out[COL_GRID] = [...lowlight];
+  out[COL_GRID] = GRID_MID;
   out[COL_WALL] = wallColour(background, highlight);
+  out[COL_FLASH] = FLASH;
   return out;
 }
 
@@ -122,7 +133,7 @@ function drawTile(
   const ts = ds.tilesize;
   const tx = coord(x, ts);
   const ty = coord(y, ts);
-  const bg = packed & FLASH_BIT ? COL_HIGHLIGHT : COL_BACKGROUND;
+  const bg = packed & FLASH_BIT ? COL_FLASH : COL_BACKGROUND;
   const v = packed & 0xff;
 
   dr.clip({ x: tx + 1, y: ty + 1, w: ts - 1, h: ts - 1 });

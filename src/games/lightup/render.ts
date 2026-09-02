@@ -13,16 +13,16 @@
  * (black) and 3 (light).
  */
 
-import { ORANGE, YELLOW_WASH } from "../../engine/colour/colours.ts";
+import { BLACK, WHITE, YELLOW_WASH } from "../../engine/colour/colours.ts";
 import {
+  CURSOR,
   ERROR_WASH,
+  GRID_MID,
   HINT_ACTION,
   HINT_BLACKREF,
   HINT_EVIDENCE_WASH,
-  INK,
-  PAPER,
+  HINT_WHITEREF,
 } from "../../engine/colour/palette.ts";
-import { lightupCursor, lightupGrid } from "../../engine/colour/palette-games.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
@@ -57,16 +57,17 @@ export const COL_CURSOR = 6;
 // of a driving clue recolours COL_HINT (the Pattern clue↔move tie).
 export const COL_HINT = 7; // forced cell(s), blue fill (highlight only)
 export const COL_HINT_CELL = 8; // evidence: the shade on a *dark* square
-export const COL_HINT_LITREF = 9; // cited lit/bulb premise (teal ring)
-export const COL_HINT_DARKREF = 10; // the unlit square a deduction is about (amber ring)
+export const COL_HINT_LITREF = 9; // cited lit/bulb premise (green ring)
+export const COL_HINT_DARKREF = 10; // the unlit square a deduction is about (violet ring)
 
 export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
   const out: Colour[] = [];
   out[COL_BACKGROUND] = bg;
-  out[COL_GRID] = lightupGrid(bg);
-  out[COL_BLACK] = INK;
-  out[COL_LIGHT] = PAPER;
+  out[COL_GRID] = GRID_MID;
+  // Pinned: a wall *is* black and a bulb *is* white, in either scheme.
+  out[COL_BLACK] = BLACK;
+  out[COL_LIGHT] = WHITE;
   // The **wash** step, not plain yellow: a lit square is a large fill with
   // bulbs and clue digits drawn on top of it, and its job is to read as *the
   // board, lit* rather than as an object placed on the board. Plain yellow is a
@@ -74,11 +75,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   // the regression `hand-author-dark-palette` F1 found in Slide's target zone.
   out[COL_LIT] = YELLOW_WASH;
   out[COL_ERROR] = ERROR_WASH;
-  out[COL_CURSOR] = lightupCursor(bg);
+  out[COL_CURSOR] = CURSOR;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE_WASH;
   out[COL_HINT_LITREF] = HINT_BLACKREF;
-  out[COL_HINT_DARKREF] = ORANGE;
+  // The unlit square is the *empty* reference cell, so it takes the white-ref
+  // premise colour (Pattern's and Singles' empty reference is the same violet).
+  out[COL_HINT_DARKREF] = HINT_WHITEREF;
   return out;
 }
 
@@ -112,8 +115,8 @@ const DF_WRONG = 512;
 const DF_BLOBS_PREF = 1024;
 // Fork additions: the displayed hint step, in the key so hint changes repaint.
 const DF_HINT_TARGET = 2048; // forced cell — blue COL_HINT fill
-const DF_HINT_AREA = 4096; // evidence — shade when dark, teal ring when lit
-const DF_HINT_DARKREF = 8192; // the unlit square the deduction is about — amber ring
+const DF_HINT_AREA = 4096; // evidence — shade when dark, green ring when lit
+const DF_HINT_DARKREF = 8192; // the unlit square the deduction is about — violet ring
 const DF_HINT_CLUE = 16384; // driving clue — digit recoloured
 
 export interface LightupDrawState {
@@ -222,7 +225,7 @@ function tileRedraw(
     // the role doing its job: the premise there is that the square is **not
     // lit**, which a teal shade preserves — it is not yellow — where a *lit*
     // evidence square's premise is the yellow itself, so that one keeps its
-    // colour and takes a teal ring instead.
+    // colour and takes a green ring instead.
     const fill =
       dsFlags & DF_HINT_AREA && !(dsFlags & DF_LIT)
         ? COL_HINT_CELL

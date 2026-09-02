@@ -6,10 +6,8 @@
  * `twiddle.c`'s `game_redraw` / `draw_tile` / `rotate` / `highlight_colour`.
  */
 
-import { INK } from "../../engine/colour/palette.ts";
+import { CURSOR, INK } from "../../engine/colour/palette.ts";
 import {
-  twiddleCursorHigh,
-  twiddleCursorLow,
   twiddleGentleHighlight,
   twiddleGentleLowlight,
 } from "../../engine/colour/palette-games.ts";
@@ -479,7 +477,7 @@ function clampColour(c: Colour): Colour {
 }
 
 /** Build the Twiddle palette from a base background + highlight/lowlight
- * (the gentle bevels and the red-tinged cursor colours). */
+ * (the gentle bevels and the cursor). */
 export function buildColours(bg: Colour, hi: Colour, lo: Colour): Colour[] {
   const out: Colour[] = new Array(NCOLOURS);
   out[COL_BACKGROUND] = bg;
@@ -488,7 +486,11 @@ export function buildColours(bg: Colour, hi: Colour, lo: Colour): Colour[] {
   out[COL_HIGHLIGHT_GENTLE] = clampColour(twiddleGentleHighlight(bg));
   out[COL_LOWLIGHT] = lo;
   out[COL_LOWLIGHT_GENTLE] = clampColour(twiddleGentleLowlight(bg));
-  out[COL_HIGHCURSOR] = clampColour(twiddleCursorHigh(bg));
-  out[COL_LOWCURSOR] = clampColour(twiddleCursorLow(bg));
+  // The cursor is the *outline* of the bevel triangles along the block's
+  // edges, over their ordinary fill — a line, so one authored colour serves
+  // both the lit and the shaded sides. Two slots survive because the dark-mode
+  // swap table keys them by index.
+  out[COL_HIGHCURSOR] = CURSOR;
+  out[COL_LOWCURSOR] = CURSOR;
   return out;
 }

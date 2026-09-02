@@ -332,7 +332,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
     "r": 6,
   },
   {
-    "colour": 11,
+    "colour": 10,
     "op": "line",
     "rgb": "rgb(232, 139, 33)",
     "thickness": 2,
@@ -344,7 +344,7 @@ exports[`Untangle render scenarios > hint frame: a COL_HINT line + destination m
   {
     "cx": 50,
     "cy": 301,
-    "fill": 11,
+    "fill": 10,
     "fillRgb": "rgb(232, 139, 33)",
     "op": "circle",
     "outline": 4,
@@ -659,7 +659,7 @@ exports[`Untangle render scenarios > mid-drag frame: the grabbed vertex renders 
     "cx": 190,
     "cy": 63,
     "fill": 6,
-    "fillRgb": "rgb(255, 255, 255)",
+    "fillRgb": "rgb(33, 167, 73)",
     "op": "circle",
     "outline": 4,
     "outlineRgb": "rgb(0, 0, 0)",

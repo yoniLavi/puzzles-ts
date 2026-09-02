@@ -15,14 +15,14 @@
  */
 
 import {
-  CURSOR,
   correctRegionColour,
   DRAG_ADD,
   DRAG_REMOVE,
   ERROR,
+  GRID_MID,
+  highlightWash,
   INK,
 } from "../../engine/colour/palette.ts";
-import { rectGrid } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Colour, Rect, Size } from "../../engine/types.ts";
 import { gridDrawRect } from "./moves.ts";
@@ -53,13 +53,15 @@ export function colours(defaultBackground: Colour): Colour[] {
   const bg = defaultBackground;
   const out: Colour[] = [];
   out[COL_BACKGROUND] = bg;
-  out[COL_GRID] = rectGrid(bg);
+  out[COL_GRID] = GRID_MID;
   out[COL_DRAG] = DRAG_ADD;
   out[COL_DRAGERASE] = DRAG_REMOVE;
   out[COL_CORRECT] = correctRegionColour(bg);
   out[COL_LINE] = INK;
   out[COL_TEXT] = INK;
-  out[COL_CURSOR] = CURSOR;
+  // A cell fill under the cell's clue: the "you are here" wash, not the green
+  // mark (palette.ts, `CURSOR`).
+  out[COL_CURSOR] = highlightWash(bg);
   out[COL_MISTAKE] = ERROR;
   return out;
 }

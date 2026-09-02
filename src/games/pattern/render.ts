@@ -8,7 +8,7 @@
  */
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLACK, GREY, WHITE } from "../../engine/colour/colours.ts";
+import { BLACK, WHITE } from "../../engine/colour/colours.ts";
 import {
   CURSOR,
   ERROR,
@@ -71,7 +71,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_TEXT] = INK;
   out[COL_FULL] = BLACK;
   out[COL_EMPTY] = WHITE;
-  out[COL_CURSOR_GUIDE] = GREY;
+  // The clue numbers of the cursor's own row and column: the cursor, projected
+  // into the margin, so it takes the cursor's colour rather than a grey of its own.
+  out[COL_CURSOR_GUIDE] = CURSOR;
   out[COL_CURSOR] = CURSOR;
   out[COL_ERROR] = ERROR;
   out[COL_HINT] = HINT_ACTION;
@@ -425,7 +427,7 @@ export function redraw(
   }
 
   // Recolour clue numbers: red on a contradicting completed line, else the
-  // cursor-guide grey for the cursor's row/column, else plain text.
+  // cursor guide for the cursor's row/column, else plain text.
   for (let i = 0; i < w + h; i++) {
     let colour = lineHasError(state, i) ? COL_ERROR : COL_TEXT;
     if (colour === COL_TEXT && ((cx >= 0 && i === cx) || (cy >= 0 && i === cy + w))) {

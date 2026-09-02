@@ -270,53 +270,6 @@ describe("Galaxies rendering", () => {
   });
 });
 
-describe("Galaxies palette: mkhighlight background shift", () => {
-  it("a near-white host background produces a visibly off-white COL_BACKGROUND, distinct from COL_WHITEBG", () => {
-    // Reproduces the 2026-05-23 owner-reported bug: closing a region
-    // produced no visible colour change because COL_BACKGROUND was
-    // identical to COL_WHITEBG (both pure white). The mkhighlight
-    // background shift (misc.c lines 232-288) is the C engine's fix;
-    // we must apply the same shift here.
-    const palette = galaxiesGame.colours([1, 1, 1]);
-    const bg = palette[0]; // COL_BACKGROUND
-    const whiteBg = palette[1]; // COL_WHITEBG
-    expect(whiteBg).toEqual([1, 1, 1]);
-    // The shifted background must be visibly darker than white.
-    const distance = Math.sqrt(
-      (bg[0] - whiteBg[0]) ** 2 + (bg[1] - whiteBg[1]) ** 2 + (bg[2] - whiteBg[2]) ** 2,
-    );
-    expect(distance).toBeGreaterThan(0.25);
-  });
-
-  it("a mid-grey host background passes through unchanged (no shift needed)", () => {
-    const palette = galaxiesGame.colours([0.5, 0.5, 0.5]);
-    expect(palette[0][0]).toBeCloseTo(0.5);
-    expect(palette[0][1]).toBeCloseTo(0.5);
-    expect(palette[0][2]).toBeCloseTo(0.5);
-  });
-
-  it("IEEE-drift white from oklchToColour round-trip still produces a grey background, not out-of-gamut pink", () => {
-    // The puzzle-view's `oklchToColour([bgl, 0, 0])` round-trip on a
-    // pure-white host returns [1+e, 1-e, 1+e] with ~1e-15 drift.
-    // Without the epsilon in mkhighlight, `dw` is ~1e-15 and
-    // `colourMix(white, out, K/dw)` overflows to ~2.89e14, shifting
-    // the bg wildly past white into out-of-gamut pink. Bug surfaced
-    // 2026-05-23.
-    const drifted: [number, number, number] = [
-      1.0000000000000009, 0.9999999999999997, 1.0000000000000004,
-    ];
-    const bg = galaxiesGame.colours(drifted)[0];
-    expect(bg[0]).toBeCloseTo(5 / 6, 3);
-    expect(bg[1]).toBeCloseTo(5 / 6, 3);
-    expect(bg[2]).toBeCloseTo(5 / 6, 3);
-    // And critically: each component is in [0, 1] (no out-of-gamut).
-    for (const c of bg) {
-      expect(c).toBeGreaterThanOrEqual(0);
-      expect(c).toBeLessThanOrEqual(1);
-    }
-  });
-});
-
 describe("Galaxies button code stability", () => {
   it("shared button consts still match PuzzleButton", () => {
     expect(PuzzleButton.LEFT_BUTTON).toBe(0x0200);

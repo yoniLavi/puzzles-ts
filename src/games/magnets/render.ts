@@ -17,7 +17,13 @@
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import { BLUE, GREEN, RED } from "../../engine/colour/colours.ts";
-import { CURSOR, clueDoneColour, ERROR, INK } from "../../engine/colour/palette.ts";
+import {
+  clueDoneColour,
+  ERROR,
+  FLASH,
+  highlightWash,
+  INK,
+} from "../../engine/colour/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Colour, Size } from "../../engine/types.ts";
 import {
@@ -59,14 +65,18 @@ export const COL_NOT = 10;
 export const COL_MISTAKE = 11;
 
 export function colours(defaultBackground: Colour): Colour[] {
-  const { background, highlight, lowlight } = mkhighlight(defaultBackground);
+  const { background, lowlight } = mkhighlight(defaultBackground);
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
-  out[COL_HIGHLIGHT] = highlight;
+  // The slot's only use is the solved flash's tile fill; nothing bevels with it.
+  out[COL_HIGHLIGHT] = FLASH;
   out[COL_LOWLIGHT] = lowlight;
   out[COL_TEXT] = INK;
   out[COL_ERROR] = ERROR;
-  out[COL_CURSOR] = CURSOR;
+  // The cursor is a tile *fill* under the tile's own content, so it is the
+  // "you are here" wash Solo's family uses, not the green mark — which would
+  // in any case vanish on a neutral tile, whose fill is green.
+  out[COL_CURSOR] = highlightWash(background);
   out[COL_DONE] = clueDoneColour(background);
   out[COL_NEUTRAL] = GREEN;
   out[COL_NEGATIVE] = INK;

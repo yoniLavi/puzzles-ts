@@ -241,9 +241,9 @@ describe("Pegs colours", () => {
     expect(palette[0][2]).toBeLessThan(1);
   });
 
-  it("has 5 colours", () => {
+  it("has 6 colours: upstream's five plus the held-peg ring", () => {
     const palette = G.colours([0.9, 0.9, 0.9]);
-    expect(palette.length).toBe(5);
+    expect(palette.length).toBe(6);
   });
 });
 

@@ -62,6 +62,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_GRID] = INK;
+  // A placed stick is a bar filling a fifth of its cell — a piece, not a glyph,
+  // so the named green rather than the entry green a digit takes.
   out[COL_LINE] = GREEN;
   out[COL_NUMBER] = PAPER;
   out[COL_ERROR] = ERROR;

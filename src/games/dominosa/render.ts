@@ -18,9 +18,9 @@ import {
   HINT_ACTION,
   HINT_EVIDENCE,
   INK,
+  lineNoColour,
   PAPER,
 } from "../../engine/colour/palette.ts";
-import { dominosaEdge } from "../../engine/colour/palette-games.ts";
 import { drawRectCorners } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { HintMarks, type MarkBand, type MarkCell } from "../../engine/hint-mark.ts";
@@ -70,7 +70,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_DOMINO] = INK;
   out[COL_DOMINOCLASH] = RED_BOLD;
   out[COL_DOMINOTEXT] = PAPER;
-  out[COL_EDGE] = dominosaEdge(background);
+  // A barrier edge is "no domino crosses here" — the player ruling an edge
+  // out, which is what Loopy's and Palisade's ruled-out edges mean.
+  out[COL_EDGE] = lineNoColour(background);
   out[COL_HIGHLIGHT_1] = RED;
   out[COL_HIGHLIGHT_2] = GREEN;
   out[COL_MISTAKE] = ERROR;

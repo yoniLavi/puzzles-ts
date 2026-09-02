@@ -16,7 +16,8 @@
 
 import { rejectMove } from "../../engine/assert-never.ts";
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLUE, BLUE_WASH } from "../../engine/colour/colours.ts";
+import { BLUE, PURPLE } from "../../engine/colour/colours.ts";
+import { HELD } from "../../engine/colour/palette.ts";
 import {
   coord as coordE,
   fromCoord as fromCoordE,
@@ -59,6 +60,9 @@ const COL_HIGHLIGHT = 1;
 const COL_LOWLIGHT = 2;
 const COL_PEG = 3;
 const COL_CURSOR = 4;
+/** Appended past the C enum: the ring round a peg the keyboard has picked up
+ * to jump with, which upstream drew in the cursor colour. */
+const COL_HELD = 5;
 
 // --- board types -----------------------------------------------------
 
@@ -782,7 +786,16 @@ function colours(defaultBackground: Colour): Colour[] {
     lowlight: lo,
   } = mkhighlight(defaultBackground);
 
-  return [bg, hi, lo, BLUE, BLUE_WASH];
+  // The cursor paints the whole cursor cell — the peg under it, or the hole
+  // under it, which upstream showed as a raised bevel instead.
+  return [
+    bg, // COL_BACKGROUND
+    hi, // COL_HIGHLIGHT
+    lo, // COL_LOWLIGHT
+    BLUE, // COL_PEG — the piece's own colour, as upstream paints it
+    PURPLE, // COL_CURSOR — not CURSOR: green is the held ring; purple as Spokes
+    HELD, // COL_HELD — a peg picked up to jump with
+  ];
 }
 
 // --- computeSize / setTileSize ---------------------------------------
@@ -853,11 +866,13 @@ function drawTile(
   // drag sprite's flush TILESIZE blitter off the tile it has to erase.
   const half = Math.floor(ts / 2);
   if (v === GRID_HOLE) {
-    const bg = cursor ? COL_HIGHLIGHT : COL_LOWLIGHT;
+    const bg = cursor ? COL_CURSOR : COL_LOWLIGHT;
     dr.drawCircle({ x: x + half, y: y + half }, Math.floor(ts / 4), bg, bg);
   } else if (v === GRID_PEG) {
-    const outerBg = cursor || jumping ? COL_CURSOR : COL_PEG;
-    const innerBg = !cursor || jumping ? COL_PEG : COL_CURSOR;
+    // Under the cursor the whole peg takes the cursor colour; picked up to
+    // jump, it keeps its own colour inside a held ring.
+    const outerBg = cursor ? COL_CURSOR : jumping ? COL_HELD : COL_PEG;
+    const innerBg = cursor ? COL_CURSOR : COL_PEG;
     dr.drawCircle({ x: x + half, y: y + half }, Math.floor(ts / 3), outerBg, outerBg);
     dr.drawCircle({ x: x + half, y: y + half }, Math.floor(ts / 4), innerBg, innerBg);
   }

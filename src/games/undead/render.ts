@@ -16,14 +16,14 @@
  * separate Check & Save mistake overlay.
  */
 
-import { TEAL_BOLD } from "../../engine/colour/colours.ts";
 import {
   clueDoneColour,
   ERROR,
+  FLASH,
   HINT_ACTION,
+  HINT_EVIDENCE,
   highlightWash,
   INK,
-  PAPER,
   PENCIL_BODY,
 } from "../../engine/colour/palette.ts";
 import {
@@ -100,20 +100,17 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_TEXT] = INK;
   out[COL_ERROR] = ERROR;
   out[COL_HIGHLIGHT] = highlightWash(bg);
-  out[COL_FLASH] = PAPER;
+  out[COL_FLASH] = FLASH;
   out[COL_GHOST] = undeadGhost(bg);
   out[COL_ZOMBIE] = undeadZombie(bg);
   out[COL_VAMPIRE] = undeadVampire(bg);
   out[COL_DONE] = clueDoneColour(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_ACTION;
-  // Both hint marks are outlines on the cell's border, so both take a **strong**
+  // Both hint marks are outlines on the cell's border, so both take a strong
   // colour: a wash is sized to be read *through*, an outline is read *against*.
-  // Teal's **bold** step, not its base: the bold step is the one defined as
-  // "dark in light mode, light in dark mode", so it stands off the board by a
-  // similar margin in both schemes, where the base sits at one lightness under
-  // either and comes out soft on a pale board and bright on a dark one.
-  out[COL_HINT_CELL] = TEAL_BOLD;
+  // See `HINT_EVIDENCE` for why the role is teal's bold step.
+  out[COL_HINT_CELL] = HINT_EVIDENCE;
   return out;
 }
 

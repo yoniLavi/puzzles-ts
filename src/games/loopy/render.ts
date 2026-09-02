@@ -32,11 +32,12 @@
 
 import {
   CURSOR,
+  clueDoneColour,
   ERROR,
+  FLASH,
   INK,
   lineMaybeColour,
   lineNoColour,
-  PAPER,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Grid, GridType } from "../../engine/grid/index.ts";
@@ -211,9 +212,12 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_FOREGROUND] = INK;
   out[COL_LINEUNKNOWN] = lineMaybeColour(defaultBackground);
-  out[COL_HIGHLIGHT] = PAPER;
+  out[COL_HIGHLIGHT] = FLASH;
   out[COL_MISTAKE] = ERROR;
-  out[COL_SATISFIED] = INK;
+  // A deliberate, player-visible aid: upstream drew a satisfied clue in the
+  // same black as an open one, so the slot's distinction never reached the
+  // screen. Greying it back retires the clue the way Magnets and Towers do.
+  out[COL_SATISFIED] = clueDoneColour(defaultBackground);
   out[COL_FAINT] = lineNoColour(defaultBackground);
   out[COL_CURSOR] = CURSOR;
   return out;

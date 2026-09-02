@@ -15,9 +15,11 @@
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import {
   ERROR,
+  FLASH,
   GRID_MID,
   HINT_ACTION,
   HINT_EVIDENCE,
+  highlightWash,
   INK,
   PENCIL_BODY,
   pencilColour,
@@ -78,6 +80,11 @@ export const COL_HINT = 9; // the acted-on cell's ring (drawn in redraw's last b
 /** The driving clue's cells, outlined (same block), **and** a forcing chain's
  * ordinal — one index, because the number indexes the evidence. */
 export const COL_HINT_CELL = 10;
+/** The solved flash — upstream flashed to the bevel highlight. */
+export const COL_FLASH = 11;
+/** The keyboard cursor: the cell's fill (or its pencil-mode corner triangle).
+ * Upstream drew it in the bevel highlight. */
+export const COL_CURSOR = 12;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
@@ -91,6 +98,12 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL] = pencilColour(bg);
   out[COL_HIGHLIGHT] = highlight;
   out[COL_LOWLIGHT] = lowlight;
+  out[COL_FLASH] = FLASH;
+  // The cursor is a wash under the cell's digit and pencil marks, not a mark
+  // beside them, so it takes the "you are here" wash the Latin family shares
+  // (Solo, Keen, Towers, Undead) rather than the green line cursor: green is
+  // the player's own digits here, and a fill has to keep them legible.
+  out[COL_CURSOR] = highlightWash(bg);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_HINT] = HINT_ACTION;
   // Both hint marks are outlines drawn beside the cell, so both take a strong
@@ -417,13 +430,13 @@ function drawCell(
   // the digits it is talking about. What is left here is `struck`, the set of
   // candidates this firing rules out, drawn crossed through among the marks.
   const struck = hint >> 2; // bit (2 + n) ⇒ candidate n struck
-  let bg = hflash ? COL_HIGHLIGHT : COL_BACKGROUND;
-  if (hon && !ui.hpencil) bg = COL_HIGHLIGHT;
+  let bg = hflash ? COL_FLASH : COL_BACKGROUND;
+  if (hon && !ui.hpencil) bg = COL_CURSOR;
 
   // Clear the square.
   dr.drawRect({ x: ox, y: oy, w: ts, h: ts }, bg);
 
-  // Pencil-mode highlight: a top-left triangle.
+  // Pencil-mode cursor: a top-left triangle.
   if (hon && ui.hpencil) {
     dr.drawPolygon(
       [
@@ -431,8 +444,8 @@ function drawCell(
         { x: ox + Math.floor(ts / 2), y: oy },
         { x: ox, y: oy + Math.floor(ts / 2) },
       ],
-      COL_HIGHLIGHT,
-      COL_HIGHLIGHT,
+      COL_CURSOR,
+      COL_CURSOR,
     );
   }
 

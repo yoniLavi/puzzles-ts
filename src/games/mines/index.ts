@@ -17,18 +17,13 @@ import {
   BLUE,
   BLUE_BOLD,
   GREEN,
+  GREY,
   PINK,
   RED,
   RED_BOLD,
   TEAL,
 } from "../../engine/colour/colours.ts";
-import {
-  ERROR,
-  ERROR_WASH,
-  GRID_MID,
-  INK,
-  PAPER,
-} from "../../engine/colour/palette.ts";
+import { ERROR, ERROR_WASH, INK, PAPER } from "../../engine/colour/palette.ts";
 import {
   minesLowlight,
   minesUnclearedFace,
@@ -698,7 +693,7 @@ export const minesGame: Game<
     ret[COL_5] = RED_BOLD;
     ret[COL_6] = TEAL;
     ret[COL_7] = INK;
-    ret[COL_8] = GRID_MID;
+    ret[COL_8] = GREY;
     ret[COL_MINE] = BLACK;
     ret[COL_BANG] = ERROR;
     ret[COL_CROSS] = ERROR;

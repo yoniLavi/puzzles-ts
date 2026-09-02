@@ -12,20 +12,17 @@
  */
 
 import { assertNever, rejectMove } from "../../engine/assert-never.ts";
-import { mkhighlightBackground } from "../../engine/colour/colour-mkhighlight.ts";
 import { PURPLE } from "../../engine/colour/colours.ts";
 import {
   CURSOR,
   DRAG_ADD,
   ERROR,
+  GRID_MID,
   HINT_EVIDENCE,
   INK,
   PAPER,
 } from "../../engine/colour/palette.ts";
-import {
-  galaxiesBlackRegion,
-  galaxiesGrid,
-} from "../../engine/colour/palette-games.ts";
+import { galaxiesBlackRegion } from "../../engine/colour/palette-games.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { ALREADY_SOLVED, FIX_MISTAKES_FIRST } from "../../engine/hint-refusal.ts";
 import {
@@ -1184,21 +1181,17 @@ export const galaxiesGame: Game<
   statusbarText,
 
   colours(defaultBackground: Colour): Colour[] {
-    // Apply upstream's `game_mkhighlight` background adjustment BEFORE
-    // Galaxies' palette overrides: if the host background is too close
-    // to pure white, shift it away so `COL_WHITEBG` (pure white below)
-    // is visibly brighter than the background. Without this step a
-    // white-themed host renders `COL_BACKGROUND === COL_WHITEBG` and a
-    // closed white region disappears into the page — exactly the bug
-    // owner reported on 2026-05-23. Mirrors `misc.c` lines 232-288.
-    const bg = mkhighlightBackground([...defaultBackground]);
+    // The background arrives already shifted off pure white (the midend's
+    // `resolvePalette`), so `COL_WHITEBG` below is visibly brighter than it
+    // and a closed white region never disappears into the page.
+    const bg = defaultBackground;
     const ret = new Array<Colour>(NCOLOURS);
     ret[COL_BACKGROUND] = bg;
     ret[COL_WHITEBG] = PAPER;
     ret[COL_BLACKBG] = galaxiesBlackRegion(bg);
     ret[COL_WHITEDOT] = PAPER;
     ret[COL_BLACKDOT] = INK;
-    ret[COL_GRID] = galaxiesGrid(bg);
+    ret[COL_GRID] = GRID_MID;
     ret[COL_EDGE] = INK;
     ret[COL_ARROW] = INK;
     // Both transient affordances are *authored* colours rather than

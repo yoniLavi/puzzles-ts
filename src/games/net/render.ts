@@ -13,8 +13,8 @@
  */
 
 import { BLUE, RED, TEAL } from "../../engine/colour/colours.ts";
-import { ERROR, INK } from "../../engine/colour/palette.ts";
-import { netBorder, netLocked } from "../../engine/colour/palette-games.ts";
+import { CURSOR, ERROR, GRID_MID, INK } from "../../engine/colour/palette.ts";
+import { netLocked } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
 import {
@@ -47,6 +47,11 @@ export const COL_ENDPOINT = 4;
 export const COL_POWERED = 5;
 export const COL_BARRIER = 6;
 export const COL_ERR = 7;
+/** Appended past the C enum (Net has no dark-mode `paletteOverrides`, so nothing
+ * addresses a slot by number): the keyboard cursor's ring. Upstream drew it in
+ * the locked tint, or the board on a locked tile — a tint of the board either
+ * way, which is the one thing a cursor must not be. */
+export const COL_CURSOR = 8;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
@@ -56,8 +61,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_BARRIER] = RED;
   out[COL_ERR] = ERROR;
   out[COL_ENDPOINT] = BLUE;
-  out[COL_BORDER] = netBorder(defaultBackground);
+  out[COL_BORDER] = GRID_MID;
   out[COL_LOCKED] = netLocked(defaultBackground);
+  out[COL_CURSOR] = CURSOR;
   return out;
 }
 
@@ -232,7 +238,7 @@ function drawTile(
 
   // Keyboard cursor: an inset ring.
   if (tile & TILE_KEYBOARD_CURSOR) {
-    const cursorcol = tile & TILE_LOCKED ? COL_BACKGROUND : COL_LOCKED;
+    const cursorcol = COL_CURSOR;
     const insetOuter = Math.floor(ts / 8);
     const insetInner = insetOuter + lt;
     dr.drawRect(

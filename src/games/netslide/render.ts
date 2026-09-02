@@ -13,12 +13,14 @@
  */
 
 import { BLUE, RED, TEAL } from "../../engine/colour/colours.ts";
-import { HINT_ACTION, INK } from "../../engine/colour/palette.ts";
 import {
-  netslideBorder,
-  netslideFlashing,
-  netslideLowlight,
-} from "../../engine/colour/palette-games.ts";
+  CURSOR,
+  FLASH,
+  GRID_MID,
+  HINT_ACTION,
+  INK,
+} from "../../engine/colour/palette.ts";
+import { netslideLowlight } from "../../engine/colour/palette-games.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
 import { drawMarkSides, MARK_ALL } from "../../engine/hint-mark.ts";
 import type { Colour, Point, Size } from "../../engine/types.ts";
@@ -73,6 +75,9 @@ export const COL_TEXT = 8;
  * dark-mode `paletteOverrides` — nothing addresses a palette slot by number
  * (docs/games/rendering.md § "The palette: three layers, meaning first"). */
 export const COL_HINT = 9;
+/** Likewise appended: the keyboard cursor's gutter arrow, which upstream drew
+ * in the powered-wire colour. */
+export const COL_CURSOR = 10;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
@@ -81,8 +86,8 @@ export function colours(defaultBackground: Colour): Colour[] {
   // paint (upstream's `frontend_default_colour` versus `game_mkhighlight` is not
   // a distinction a port gets to keep).
   out[COL_BACKGROUND] = defaultBackground;
-  out[COL_FLASHING] = netslideFlashing(defaultBackground);
-  out[COL_BORDER] = netslideBorder(defaultBackground);
+  out[COL_FLASHING] = FLASH;
+  out[COL_BORDER] = GRID_MID;
   out[COL_WIRE] = INK;
   out[COL_ENDPOINT] = BLUE;
   out[COL_POWERED] = TEAL;
@@ -93,6 +98,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   // game and should read the same way. Black wires and cyan powered wires both
   // stay legible on it.
   out[COL_HINT] = HINT_ACTION;
+  out[COL_CURSOR] = CURSOR;
   return out;
 }
 
@@ -584,7 +590,7 @@ function arrowFill(
   hintX: number,
   hintY: number,
 ): number {
-  if (cx === curX && cy === curY) return COL_POWERED;
+  if (cx === curX && cy === curY) return COL_CURSOR;
   if (cx === hintX && cy === hintY) return COL_HINT;
   return COL_LOWLIGHT;
 }

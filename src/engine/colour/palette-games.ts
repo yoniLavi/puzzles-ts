@@ -6,8 +6,9 @@
  * [`palette.ts`](./palette.ts); read those first. What lands *here* is the
  * remainder: a colour that has **no value to author** because it is a function —
  * of the host background, of the game's own bevel, or of another colour.
- * Signpost's grid is `background / 1.3` and means "the board, stepped down just
- * enough to separate squares"; there is no scheme in which that is a constant.
+ * Signpost's dimmed arrow is a tenth of the way from the board toward the ink
+ * and means "where the arrow would be"; there is no scheme in which that is a
+ * constant.
  *
  * This is not filing. `puzzle-view.ts` hands the engine **pure white** as the
  * background in dark mode, precisely because games derive colours by scaling the
@@ -27,7 +28,7 @@
  *
  * Two rules still hold for what remains:
  *
- * - **every export is prefixed with its game's id** — `signpostGrid`,
+ * - **every export is prefixed with its game's id** — `signpostArrowDim`,
  *   `UNRULY_BLACK`. `palette-source.test.ts` derives each game's allowed colours
  *   from that prefix, so the prefix is load-bearing, not decoration;
  * - **an absolute value here is an exception and says why.** There are two, both
@@ -95,14 +96,6 @@ export const SIGNPOST_NUMBER_SET_MID = token(
   mix(SIGNPOST_REGION_BACKGROUNDS[0], BLUE_BOLD, 0.3),
 );
 
-/** Signpost's grid lines: the board's own brightness, stepped down just enough
- * to separate squares without drawing a line the eye follows. */
-export const signpostGrid = (background: Colour): Colour => divide(background, 1.3);
-
-/** Signpost's keyboard cursor: half the board's brightness — dark enough to find
- * on any of the sixteen region backgrounds. */
-export const signpostCursor = (background: Colour): Colour => divide(background, 2);
-
 /** Signpost's dimmed arrow background: a tenth of the way from the board toward
  * the arrow, so a square with no chain still shows where its arrow would be. */
 export const signpostArrowDim = (background: Colour): Colour =>
@@ -160,9 +153,6 @@ export const abcdBorderLetter = (outerBackground: Colour): Colour => [
 
 // --- blackbox -----------------------------------------------------------
 
-/** The grid inside the box: a tenth off the board, present but not drawn. */
-export const blackboxGrid = (background: Colour): Colour => scale(background, 0.9);
-
 /** **This square is locked** — a deduction you have committed to and asked the
  * game to hold, a third of the way down from the board. */
 export const blackboxLock = (background: Colour): Colour => scale(background, 0.7);
@@ -174,20 +164,6 @@ export const blackboxCover = (background: Colour): Colour => scale(background, 0
 
 // --- bridges ------------------------------------------------------------
 
-/** Bridges' grid: halfway between the board and its own bevel lowlight, so it
- * separates cells without reading as a drawn line. */
-export const bridgesGrid = (background: Colour, lowlight: Colour): Colour =>
-  mix(lowlight, background, 0.5);
-
-/** Bridges' cursor: the board with its red channel pushed up and the other two
- * pulled down — a warm tint of whatever the board is, rather than a fixed pink,
- * so it stays a *tint* on any host. */
-export const bridgesCursor = (background: Colour): Colour => [
-  Math.min(background[0] * 1.4, 1),
-  background[1] * 0.8,
-  background[2] * 0.8,
-];
-
 // --- crossing -----------------------------------------------------------
 
 /** **Not placed yet** — a ghosted word, light enough to read as provisional and
@@ -196,19 +172,7 @@ export const crossingGhost = (background: Colour): Colour => scale(background, 0
 
 // --- dominosa -----------------------------------------------------------
 
-/** The line between two halves of a laid domino: two-thirds of the board, so a
- * domino reads as one piece with a seam rather than as two cells. */
-export const dominosaEdge = (background: Colour): Colour => fraction(background, 2, 3);
-
 // --- filling ------------------------------------------------------------
-
-/** **This region is the right size** — Filling's local completion feedback. A
- * tenth off the board: enough to see a finished region at a glance, little
- * enough that most of the board being finished is not a wall of grey. */
-export const fillingCorrect = (background: Colour): Colour => scale(background, 0.9);
-
-/** Filling's keyboard cursor: half the board. */
-export const fillingCursor = (background: Colour): Colour => scale(background, 0.5);
 
 // --- flip ---------------------------------------------------------------
 
@@ -216,18 +180,12 @@ export const fillingCursor = (background: Colour): Colour => scale(background, 0
  * board's brightness. */
 export const flipWrongFace = (background: Colour): Colour => divide(background, 3);
 
-/** Flip's grid, and the diagonal marks drawn in the same shade. */
-export const flipGrid = (background: Colour): Colour => divide(background, 1.5);
-
 // --- galaxies -----------------------------------------------------------
 
 /** **This region is black** — one of Galaxies' two region fills, at three tenths
  * of the board so a black region reads as filled without becoming ink. */
 export const galaxiesBlackRegion = (background: Colour): Colour =>
   scale(background, 0.3);
-
-/** Galaxies' grid: a fifth off the board. */
-export const galaxiesGrid = (background: Colour): Colour => scale(background, 0.8);
 
 // Galaxies' cursor was `bridgesCursor(background)` — the same warm tint of the
 // board, arrived at independently in both ports from the same upstream idiom.
@@ -244,34 +202,18 @@ export const groupDiagonal = (background: Colour): Colour => scale(background, 0
 
 // --- lightup ------------------------------------------------------------
 
-/** Light Up's grid: two-thirds of the board. */
-export const lightupGrid = (background: Colour): Colour => divide(background, 1.5);
-
-/** Light Up's keyboard cursor: half the board. */
-export const lightupCursor = (background: Colour): Colour => divide(background, 2);
-
 // --- net / netslide -----------------------------------------------------
-
-/** Net's tile borders: half the board. */
-export const netBorder = (background: Colour): Colour => scale(background, 0.5);
 
 /** **This tile is locked** — you have decided its orientation and asked the game
  * to hold it. Between the board and its border, so a locked tile reads as
  * settled rather than as marked. */
 export const netLocked = (background: Colour): Colour => scale(background, 0.75);
 
-/** The shade Netslide flashes the board with on a win. */
-export const netslideFlashing = (background: Colour): Colour => scale(background, 0.75);
-/** @see netBorder */
-export const netslideBorder = (background: Colour): Colour => scale(background, 0.5);
 /** Netslide's bevel lowlight — it takes the host background as-is rather than
  * through `mkhighlight`, so it derives its own. */
 export const netslideLowlight = (background: Colour): Colour => scale(background, 0.8);
 
 // --- rect ---------------------------------------------------------------
-
-/** Rectangles' grid: half the board. */
-export const rectGrid = (background: Colour): Colour => scale(background, 0.5);
 
 // --- rome ---------------------------------------------------------------
 
@@ -284,9 +226,6 @@ export const romeGoalBackground = (background: Colour): Colour => [
 ];
 
 // --- slant --------------------------------------------------------------
-
-/** Slant's grid: three-tenths off the board. */
-export const slantGrid = (background: Colour): Colour => scale(background, 0.7);
 
 /** **This end of the line is anchored** — a segment already connected to a
  * clue, shaded a fifth off the board. */
@@ -414,10 +353,6 @@ export const soloKiller = (background: Colour): Colour => [
 
 // --- spokes -------------------------------------------------------------
 
-/** **This hub has all its spokes** — a small step off the board, because a
- * satisfied hub should stop asking for attention without disappearing. */
-export const spokesSatisfied = (background: Colour): Colour => scale(background, 0.85);
-
 // --- tracks -------------------------------------------------------------
 
 /** Tracks' grid: halfway between the board and its highlight, because the track
@@ -435,18 +370,6 @@ export const twiddleGentleHighlight = (background: Colour): Colour =>
 /** @see twiddleGentleHighlight */
 export const twiddleGentleLowlight = (background: Colour): Colour =>
   scale(background, 0.9);
-
-/** Twiddle's cursor bevel pair — the board tinted red, and the same tint at 60%
- * for the shaded side, so the cursor is a *bevelled* block like everything else
- * rather than a flat overlay. */
-export const twiddleCursorHigh = (background: Colour): Colour => [
-  background[0],
-  background[1] * 0.5,
-  background[2] * 0.5,
-];
-/** @see twiddleCursorHigh */
-export const twiddleCursorLow = (background: Colour): Colour =>
-  scale(twiddleCursorHigh(background), 0.6);
 
 // --- undead -------------------------------------------------------------
 
@@ -494,6 +417,6 @@ export const undeadVampire = (background: Colour): Colour => [
  * [`colour-mkhighlight.ts`](./colour-mkhighlight.ts)'s business, not with a
  * colour anybody names.
  */
-export const UNRULY_BLACK = token([0.2, 0.2, 0.2]);
+export const UNRULY_BLACK = token([0.2, 0.2, 0.2], [0.2, 0.2, 0.2]);
 /** @see UNRULY_BLACK */
-export const UNRULY_WHITE = token([0.95, 0.95, 0.95]);
+export const UNRULY_WHITE = token([0.95, 0.95, 0.95], [0.95, 0.95, 0.95]);

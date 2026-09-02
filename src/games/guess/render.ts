@@ -236,9 +236,12 @@ export function colours(defaultBackground: Colour): Colour[] {
   for (let i = 0; i < 10; i++) ret[COL_1 + i] = TEN[i];
 
   ret[COL_FRAME] = INK;
+  // Not `CURSOR`: the cursor rings pegs of all ten hues, green among them.
   ret[COL_CURSOR] = INK;
-  // The win flash and the held-peg slot are washes, not pegs: they sit
-  // *behind* a peg and must not be mistaken for one of the ten.
+  // Guess has no solved flash; upstream's `COL_FLASH` slot lights the feedback
+  // holes of a row that is ready to mark. It and the held-peg slot are washes,
+  // not pegs (so not `HELD`, whose green is one of the ten): they sit *behind*
+  // a peg and must not be mistaken for one.
   ret[COL_FLASH] = TEAL_WASH;
   ret[COL_HOLD] = PINK_WASH;
   ret[COL_CORRECTPLACE] = BLACK;

@@ -5,16 +5,14 @@
  * the generator/solver only, so this uses idiomatic rounding.
  */
 
-import { BLUE_BOLD, GREEN } from "../../engine/colour/colours.ts";
-import { ERROR, INK } from "../../engine/colour/palette.ts";
+import { BLUE_BOLD, PURPLE } from "../../engine/colour/colours.ts";
+import { ERROR, GRID_MID, HELD, INK } from "../../engine/colour/palette.ts";
 import {
   SIGNPOST_NUMBER_SET_MID,
   SIGNPOST_ON_REGION_FAINT,
   SIGNPOST_ON_REGION_MID,
   SIGNPOST_REGION_BACKGROUNDS,
   signpostArrowDim,
-  signpostCursor,
-  signpostGrid,
   signpostWashedRegion,
 } from "../../engine/colour/palette-games.ts";
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
@@ -84,21 +82,22 @@ export function buildPalette(
 ): Colour[] {
   const ret: Colour[] = new Array(COL_X0 + NBACKGROUNDS);
 
-  ret[COL_BACKGROUND] = [...background];
-  ret[COL_HIGHLIGHT] = [...highlight];
-  ret[COL_LOWLIGHT] = [...lowlight];
+  ret[COL_BACKGROUND] = background;
+  ret[COL_HIGHLIGHT] = highlight;
+  ret[COL_LOWLIGHT] = lowlight;
 
   ret[COL_NUMBER] = INK;
   ret[COL_ARROW] = INK;
-  ret[COL_CURSOR] = signpostCursor(background);
-  ret[COL_GRID] = signpostGrid(background);
+  // Purple, because Signpost has spent the usual two: green is the arrow you
+  // are dragging from (and a region wash), blue the fixed numbers.
+  ret[COL_CURSOR] = PURPLE;
+  ret[COL_GRID] = GRID_MID;
   // **This square's number is fixed** — a clue you were given, or one the
   // chain has forced, as opposed to one still floating.
   ret[COL_NUMBER_SET] = BLUE_BOLD;
   ret[COL_NUMBER_SET_MID] = SIGNPOST_NUMBER_SET_MID;
   ret[COL_ERROR] = ERROR;
-  // **You are dragging from here** — where an in-progress link starts.
-  ret[COL_DRAG_ORIGIN] = GREEN;
+  ret[COL_DRAG_ORIGIN] = HELD;
   ret[COL_ARROW_BG_DIM] = signpostArrowDim(background);
 
   for (let c = 0; c < NBACKGROUNDS; c++) {

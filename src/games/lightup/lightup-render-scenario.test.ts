@@ -1,7 +1,7 @@
 /**
  * Tier-2.5 render scenarios for the Light Up hint: drive a real Midend to
  * a displayed hint step and capture `redraw`. Targeted op assertions (the
- * blue `COL_HINT` targets, the `COL_HINT_CELL` evidence shade, the amber
+ * blue `COL_HINT` targets, the `COL_HINT_CELL` evidence shade, the violet
  * dark-square ring) plus one snapshot so a render regression is a
  * reviewable text diff (`vitest -u` re-baselines an intended change; the
  * targeted assertions survive a careless `-u`).
@@ -66,7 +66,7 @@ describe("Light Up hint render scenarios", () => {
     expect(recording.ops).toMatchSnapshot();
   });
 
-  it("forcedLight frame: corridor shaded, dark square ringed amber, one blue target", () => {
+  it("forcedLight frame: corridor shaded, dark square ringed violet, one blue target", () => {
     const { recording, hint } = renderScenario({
       game: lightupGame,
       id: boardId(EASY, "lrs-easy-0"),
@@ -84,8 +84,8 @@ describe("Light Up hint render scenarios", () => {
     const h = hl(hint);
     expect(h?.dark).toBeDefined();
     // One ringed target; corridor evidence cues (shade on a dark square,
-    // teal ring on a lit one — this frame's corridor is fully lit/crossed,
-    // so at least one of the two cues must appear); the amber ring.
+    // green ring on a lit one — this frame's corridor is fully lit/crossed,
+    // so at least one of the two cues must appear); the violet ring.
     expectRing(recording.ops, COL_HINT);
     expect(
       recording.ops.some(
@@ -115,7 +115,7 @@ describe("Light Up hint render scenarios", () => {
     expectRing(recording.ops, COL_HINT, h?.targets.length);
   });
 
-  it("discount frame: the dark square rings amber over its shaded rule-out set", () => {
+  it("discount frame: the dark square rings violet over its shaded rule-out set", () => {
     // lrs-tricky-1's plan contains a discountUnlit firing.
     const { recording, hint } = renderScenario({
       game: lightupGame,

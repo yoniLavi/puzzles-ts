@@ -25,7 +25,9 @@ import {
   mkhighlight,
 } from "../../engine/colour/colour-mkhighlight.ts";
 import {
+  CURSOR,
   ERROR,
+  FLASH,
   HINT_ACTION,
   HINT_EVIDENCE,
   INK,
@@ -60,13 +62,17 @@ export const COL_ERROR = 5;
 export const COL_HINT = 6; // every edge the deduction forces this step (blue)
 export const COL_HINT_CELL = 7; // referenced-cell outline, inset inside the cell
 export const COL_CORRECT = 8; // a completed, correct region (shared grey shade)
+/** The keyboard cursor's box, which upstream drew in the grid's own ink. Appended
+ * past the C enum; Palisade has no dark-mode `paletteOverrides`. */
+export const COL_CURSOR = 9;
 
 export function colours(defaultBackground: Colour): Colour[] {
-  const { background, highlight } = mkhighlight(defaultBackground);
+  const { background } = mkhighlight(defaultBackground);
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
-  out[COL_FLASH] = highlight;
+  out[COL_FLASH] = FLASH;
   out[COL_GRID] = INK;
+  out[COL_CURSOR] = CURSOR;
   out[COL_ERROR] = ERROR;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
@@ -222,10 +228,10 @@ function drawCursor(dr: GameDrawing, ts: number, curX: number, curY: number): vo
   const ox = centerX - Math.floor(cw / 2);
   const oy = centerY - Math.floor(ch / 2);
   // Outline (draw_rect_outline): four 1-px edges.
-  dr.drawLine({ x: ox, y: oy }, { x: ox + cw, y: oy }, COL_GRID, 1);
-  dr.drawLine({ x: ox + cw, y: oy }, { x: ox + cw, y: oy + ch }, COL_GRID, 1);
-  dr.drawLine({ x: ox + cw, y: oy + ch }, { x: ox, y: oy + ch }, COL_GRID, 1);
-  dr.drawLine({ x: ox, y: oy + ch }, { x: ox, y: oy }, COL_GRID, 1);
+  dr.drawLine({ x: ox, y: oy }, { x: ox + cw, y: oy }, COL_CURSOR, 1);
+  dr.drawLine({ x: ox + cw, y: oy }, { x: ox + cw, y: oy + ch }, COL_CURSOR, 1);
+  dr.drawLine({ x: ox + cw, y: oy + ch }, { x: ox, y: oy + ch }, COL_CURSOR, 1);
+  dr.drawLine({ x: ox, y: oy + ch }, { x: ox, y: oy }, COL_CURSOR, 1);
   dr.drawUpdate({ x: ox, y: oy, w: cw + 1, h: ch + 1 });
 }
 

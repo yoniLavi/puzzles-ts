@@ -5,6 +5,7 @@ import {
   mkhighlightBackground,
   mkhighlightSpecific,
 } from "./colour-mkhighlight.ts";
+import { darkValue, token } from "./colour-token.ts";
 
 /**
  * The exact inline derivation Pegs and Sixteen carried before the
@@ -128,6 +129,22 @@ describe("mkhighlightSpecific", () => {
     // The base is pushed darker so highlight/lowlight stay in gamut.
     expect(base[0]).toBeLessThan(COL_0[0]);
     expect(base[0]).toBeCloseTo(1 - Math.sqrt(3) / 6 / Math.sqrt(3), 6);
+  });
+
+  it("hands a base's authored dark value on to the trio built from it", () => {
+    // Unruly's tiles must not invert. The base carries that decision as a token
+    // and the trio derived from it must carry it too, or the pieces are three
+    // untagged arrays adapted by calculation — which is what a six-index
+    // `false` override in augmentation.ts used to paper over.
+    const pinned = token([0.2, 0.2, 0.2], [0.2, 0.2, 0.2]);
+    const trio = mkhighlightSpecific(pinned);
+    const plain = mkhighlightSpecific([0.2, 0.2, 0.2]);
+    expect([...trio.base]).toEqual([...plain.base]);
+    expect(darkValue(trio.base)).toEqual(plain.base);
+    expect(darkValue(trio.highlight)).toEqual(plain.highlight);
+    expect(darkValue(trio.lowlight)).toEqual(plain.lowlight);
+    // A base with no dark value hands on none: the trio stays calculable.
+    expect(darkValue(plain.highlight)).toBeUndefined();
   });
 
   it("does not shift a base comfortably inside the gamut (dark COL_1)", () => {

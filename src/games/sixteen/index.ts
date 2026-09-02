@@ -479,13 +479,14 @@ function computeSize(p: SixteenParams, ts: number): Size {
 }
 
 function colours(defaultBackground: Colour): Colour[] {
-  const {
-    background: bg,
-    highlight: hi,
-    lowlight: lo,
-  } = mkhighlight(defaultBackground);
-
-  return [bg, INK, hi, lo, HINT_ACTION];
+  const { background, highlight, lowlight } = mkhighlight(defaultBackground);
+  const out: Colour[] = [];
+  out[COL_BACKGROUND] = background;
+  out[COL_TEXT] = INK;
+  out[COL_HIGHLIGHT] = highlight;
+  out[COL_LOWLIGHT] = lowlight;
+  out[COL_HINT] = HINT_ACTION;
+  return out;
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: redraw with mid-slide interpolation: every tile can be in one of several animation phases.

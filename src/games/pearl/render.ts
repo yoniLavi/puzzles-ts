@@ -10,7 +10,8 @@
  * cache mirrors upstream's `lflags`; the `findMistakes` wrong-edge overlay
  * rides its own bit field in that word so it is part of the diff key
  * (docs/games/rendering.md § "The tile cache and the diff key"). The palette is index-for-index with the C colour enum
- * (dark-mode `paletteOverrides` in augmentation.ts target indices 0/3/4).
+ * (Pearl's one dark-mode `paletteOverrides` entry in augmentation.ts targets
+ * index 0, the board).
  */
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
@@ -19,8 +20,9 @@ import {
   DRAG_ADD,
   DRAG_REMOVE,
   ERROR,
+  FLASH,
   GRID_DARK,
-  PAPER,
+  highlightWash,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Colour, Size } from "../../engine/types.ts";
@@ -49,7 +51,6 @@ export const FLASH_TIME = 0.5;
 export const COL_BACKGROUND = 0;
 export const COL_HIGHLIGHT = 1;
 export const COL_LOWLIGHT = 2;
-export const COL_CURSOR_BACKGROUND = COL_LOWLIGHT;
 export const COL_BLACK = 3;
 export const COL_WHITE = 4;
 export const COL_ERROR = 5;
@@ -58,6 +59,10 @@ export const COL_FLASH = 7;
 export const COL_DRAGON = 8;
 export const COL_DRAGOFF = 9;
 export const COL_MISTAKE = 10; // appended past the C enum (findMistakes overlay)
+/** The keyboard cursor's cell fill — upstream aliased it to `COL_LOWLIGHT`, a
+ * tint of the board. Appended; Pearl's dark-mode `paletteOverrides` touch only
+ * index 0. */
+export const COL_CURSOR_BACKGROUND = 11;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
@@ -69,10 +74,13 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_WHITE] = WHITE;
   out[COL_GRID] = GRID_DARK;
   out[COL_ERROR] = ERROR;
-  out[COL_FLASH] = PAPER;
+  out[COL_FLASH] = FLASH;
   out[COL_DRAGON] = DRAG_ADD;
   out[COL_DRAGOFF] = DRAG_REMOVE;
   out[COL_MISTAKE] = ERROR;
+  // A whole-cell fill under the pearls and lines: the "you are here" wash
+  // Solo's family uses, not the green mark, which as a cell fill would shout.
+  out[COL_CURSOR_BACKGROUND] = highlightWash(background);
   return out;
 }
 

@@ -12,12 +12,8 @@
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
 import { GREEN, RED } from "../../engine/colour/colours.ts";
-import { ERROR, INK } from "../../engine/colour/palette.ts";
-import {
-  blackboxCover,
-  blackboxGrid,
-  blackboxLock,
-} from "../../engine/colour/palette-games.ts";
+import { ERROR, GRID_MID, INK } from "../../engine/colour/palette.ts";
+import { blackboxCover, blackboxLock } from "../../engine/colour/palette-games.ts";
 import { drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Colour, Point, Rect, Size } from "../../engine/types.ts";
@@ -114,11 +110,14 @@ export function colours(defaultBackground: Colour): Colour[] {
   ret[COL_BALL] = INK;
   ret[COL_WRONG] = ERROR;
   ret[COL_BUTTON] = GREEN;
+  // Not `CURSOR`: green is spent on the reveal button and the fired laser's
+  // text, and the cursor rings both.
   ret[COL_CURSOR] = RED;
-  ret[COL_GRID] = blackboxGrid(bg);
+  ret[COL_GRID] = GRID_MID;
   ret[COL_LOCK] = blackboxLock(bg);
   ret[COL_COVER] = blackboxCover(bg);
   ret[COL_TEXT] = INK;
+  // The laser you just fired, lit up for a beat — not the solved flash.
   ret[COL_FLASHTEXT] = GREEN;
   return ret;
 }

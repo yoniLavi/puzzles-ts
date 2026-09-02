@@ -19,8 +19,13 @@
  */
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { ERROR_WASH, HELD, INK } from "../../engine/colour/palette.ts";
-import { bridgesCursor, bridgesGrid } from "../../engine/colour/palette-games.ts";
+import {
+  ERROR_WASH,
+  GRID_MID,
+  HELD,
+  highlightWash,
+  INK,
+} from "../../engine/colour/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
 import type { Colour } from "../../engine/types.ts";
 import {
@@ -140,7 +145,7 @@ export function computeSize(
 
 export function colours(defaultBackground: Colour): Colour[] {
   const { background, highlight, lowlight } = mkhighlight(defaultBackground);
-  // COL_HINT = COL_LOWLIGHT; COL_GRID = (HINT + BACKGROUND) / 2; COL_MARK = HIGHLIGHT.
+  // COL_HINT = COL_LOWLIGHT; COL_MARK = HIGHLIGHT.
   return [
     background, // COL_BACKGROUND
     INK, // COL_FOREGROUND
@@ -148,10 +153,13 @@ export function colours(defaultBackground: Colour): Colour[] {
     lowlight, // COL_LOWLIGHT
     HELD, // COL_SELECTED
     highlight, // COL_MARK (= HIGHLIGHT)
-    lowlight, // COL_HINT (= LOWLIGHT)
-    bridgesGrid(background, lowlight), // COL_GRID
+    lowlight, // COL_HINT (= LOWLIGHT): upstream's "possible bridge" line, a bevel shade, not a hint-system mark
+    GRID_MID, // COL_GRID
     ERROR_WASH, // COL_WARNING (also the mistake overlay colour)
-    bridgesCursor(background), // COL_CURSOR
+    // COL_CURSOR — not `CURSOR`: green is the island a bridge is being drawn
+    // from, and the cursor *fills* the island under its clue digit, which is
+    // the "you are here" wash Solo's family draws its cursor cell with.
+    highlightWash(background),
   ];
 }
 

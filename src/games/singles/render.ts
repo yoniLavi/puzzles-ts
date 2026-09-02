@@ -1,7 +1,7 @@
 /**
  * Singles (Hitori) rendering — port of `game_redraw` / `tile_redraw` in
  * `singles.c`. A per-tile diffed loop draws a grid-outlined tile (black or
- * error fill for a blackened cell, lowlight under the completion flash,
+ * error fill for a blackened cell, the flash fill on completion,
  * otherwise the background), a circle ring for a white mark, the cell
  * number (always for a white cell; on a black cell only when the
  * show-black-numbers preference is on), cursor corner brackets, and a red
@@ -10,16 +10,17 @@
  */
 
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { GREY, ORANGE } from "../../engine/colour/colours.ts";
+import { BLACK, GREY, ORANGE, WHITE } from "../../engine/colour/colours.ts";
 import {
   CURSOR,
   ERROR,
+  FLASH,
+  GRID_MID,
   HINT_ACTION,
   HINT_BLACKREF,
   HINT_EVIDENCE,
   HINT_WHITEREF,
   INK,
-  PAPER,
 } from "../../engine/colour/palette.ts";
 import { drawRectCorners, drawRectOutline } from "../../engine/draw.ts";
 import type { GameDrawing, HintStep } from "../../engine/game.ts";
@@ -41,8 +42,11 @@ export const FLASH_TIME = 0.7;
 // --- palette (index-for-index with the upstream COL_* enum) ----------------
 
 export const COL_BACKGROUND = 0;
-export const COL_UNUSED1 = 1;
-export const COL_LOWLIGHT = 2;
+/** Upstream's COL_HIGHLIGHT slot, which it never draws. Here: the ink of a
+ * white cell's number and circle — split from {@link COL_BLACK}, which is a
+ * piece and stays black in the dark scheme where ink inverts. */
+export const COL_TEXT = 1;
+export const COL_FLASH = 2; // upstream's COL_LOWLIGHT slot: the solved flash
 export const COL_BLACK = 3;
 export const COL_WHITE = 4;
 export const COL_BLACKNUM = 5;
@@ -61,19 +65,24 @@ export const COL_HINT_BLACKREF = 12; // a cited shaded (black) premise (teal rin
 export const COL_HINT_WHITEREF = 13; // a cited ringed-white premise (violet ring)
 
 export function colours(defaultBackground: Colour): Colour[] {
-  const { background, lowlight } = mkhighlight(defaultBackground);
+  const { background } = mkhighlight(defaultBackground);
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
-  out[COL_UNUSED1] = INK;
-  out[COL_LOWLIGHT] = lowlight;
-  out[COL_BLACK] = INK;
-  out[COL_WHITE] = PAPER;
+  out[COL_TEXT] = INK;
+  out[COL_FLASH] = FLASH;
+  // A shaded cell *is* black: a piece, pinned in both schemes, not ink.
+  out[COL_BLACK] = BLACK;
+  // Its white counterpart, likewise pinned. The renderer never draws it — a
+  // white cell shows the board — but the slot keeps the upstream index.
+  out[COL_WHITE] = WHITE;
   out[COL_BLACKNUM] = GREY;
-  out[COL_GRID] = lowlight; // COL_GRID == COL_LOWLIGHT
+  out[COL_GRID] = GRID_MID;
   out[COL_CURSOR] = CURSOR;
   out[COL_ERROR] = ERROR;
   out[COL_HINT] = HINT_ACTION;
   out[COL_HINT_CELL] = HINT_EVIDENCE;
+  // A third hint part with its own hue: the corner cell a corner deduction keeps
+  // white, which is neither the acted-on cell (blue) nor the evidence (teal).
   out[COL_HINT_STRAND] = ORANGE;
   out[COL_HINT_BLACKREF] = HINT_BLACKREF;
   out[COL_HINT_WHITEREF] = HINT_WHITEREF;
@@ -156,8 +165,8 @@ function tileRedraw(
     tcol = COL_BLACKNUM;
     dnum = !!(f & DS_BLACK_NUM);
   } else {
-    bg = f & DS_FLASH ? COL_LOWLIGHT : COL_BACKGROUND;
-    tcol = f & DS_ERROR ? COL_ERROR : COL_BLACK;
+    bg = f & DS_FLASH ? COL_FLASH : COL_BACKGROUND;
+    tcol = f & DS_ERROR ? COL_ERROR : COL_TEXT;
     dnum = true;
   }
 

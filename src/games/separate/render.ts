@@ -27,6 +27,7 @@ import {
 } from "../../engine/colour/colour-mkhighlight.ts";
 import {
   ERROR,
+  FLASH,
   INK,
   lineMaybeColour,
   lineNoColour,
@@ -56,10 +57,10 @@ export const COL_ERROR = 5;
 export const COL_CORRECT = 6; // a completed, correct region (shared grey shade)
 
 export function colours(defaultBackground: Colour): Colour[] {
-  const { background, highlight } = mkhighlight(defaultBackground);
+  const { background } = mkhighlight(defaultBackground);
   const out: Colour[] = [];
   out[COL_BACKGROUND] = background;
-  out[COL_FLASH] = highlight;
+  out[COL_FLASH] = FLASH;
   out[COL_GRID] = INK;
   out[COL_ERROR] = ERROR;
   out[COL_CORRECT] = correctRegionColour(background);

@@ -16,6 +16,7 @@
  * shifting the background wildly past white into out-of-gamut pink.
  */
 import type { Colour } from "../types.ts";
+import { darkValue, token } from "./colour-token.ts";
 
 const K = Math.sqrt(3) / 6;
 
@@ -156,6 +157,28 @@ export function correctRegionColour(background: Colour): Colour {
 }
 
 export function mkhighlightSpecific(base: Colour): {
+  base: Colour;
+  highlight: Colour;
+  lowlight: Colour;
+} {
+  const light = mkhighlightSpecificValue(base);
+  const darkBase = darkValue(base);
+  if (!darkBase) return light;
+  // A base that authors its dark value (Unruly's near-black and near-white
+  // tiles, which must not invert) hands that decision on to the trio built
+  // from it: each member's dark value is the same derivation applied to the
+  // dark base. Without this the trio would be three untagged arrays, adapted
+  // by calculation, and the pieces would swap colours in dark mode — which is
+  // what a six-index `false` override in `augmentation.ts` used to prevent.
+  const dark = mkhighlightSpecificValue(darkBase);
+  return {
+    base: token(light.base, dark.base),
+    highlight: token(light.highlight, dark.highlight),
+    lowlight: token(light.lowlight, dark.lowlight),
+  };
+}
+
+function mkhighlightSpecificValue(base: Colour): {
   base: Colour;
   highlight: Colour;
   lowlight: Colour;

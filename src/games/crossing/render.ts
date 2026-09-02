@@ -31,16 +31,15 @@ import {
   mkhighlightSpecific,
 } from "../../engine/colour/colour-mkhighlight.ts";
 import {
-  BLUE,
   BLUE_BOLD,
   GREEN,
   GREEN_BOLD,
   ORANGE_BOLD,
-  PURPLE_WASH,
 } from "../../engine/colour/colours.ts";
 import {
   ERROR,
   GRID_DARK,
+  highlightWash,
   INK,
   PAPER,
   PENCIL_BODY,
@@ -142,9 +141,12 @@ export const COL_RUNTEXT = 19;
  * defined as "brightest" has that problem, because brightest is relative to the
  * scheme; only an authored colour is prominent in both.
  *
- * Purple because Crossing has spent the alternatives: blue and amber are the two
- * run directions, green is the hint, red is an error. The wash step, because a
- * held clue previews a ghosted digit on this square and has to stay readable.
+ * `highlightWash`, the collection's "type here" wash (Solo's family): a step
+ * *down* from the board survives the dark-mode pass, where a step up inverts.
+ * A wash rather than a hue, because a held clue previews a ghosted digit on
+ * this square and has to stay readable — and every hue is spoken for here
+ * anyway: blue and amber are the two run directions, green is the hint, red is
+ * an error.
  */
 export const COL_SELECTED = 20;
 export const NCOLOURS = 21;
@@ -169,7 +171,9 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_PENCIL] = pencilColour(background);
   out[COL_PENCIL_BODY] = PENCIL_BODY;
   out[COL_GHOST] = crossingGhost(background);
-  out[COL_HELD] = BLUE;
+  // Not `HELD`: green is the hint, and blue would say "across" round a down
+  // clue. Held is a box, not a colour — see `COL_HELD`'s declaration.
+  out[COL_HELD] = INK;
   // **One colour per direction**, on the board and in the clue list alike.
   //
   // These four slots used to be two shades of each hue: a wash under the board's
@@ -199,7 +203,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_DOWN] = ORANGE_BOLD;
   out[COL_DOWNFIT] = ORANGE_BOLD;
   out[COL_RUNTEXT] = PAPER;
-  out[COL_SELECTED] = PURPLE_WASH;
+  out[COL_SELECTED] = highlightWash(background);
   // The hint pair — a **deliberate departure** from the collection's blue
   // `COL_HINT` (documented in the change's design.md). Crossing has already
   // spent blue: `COL_ACROSS` means "this is a horizontal run", and the
@@ -216,7 +220,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   // board and a bright one on a dark board, which `colour-dark-check` measures.
   // The target keeps the base, as the emphatic end of its own hue.
   out[COL_HINT] = GREEN;
-  out[COL_HINT_CELL] = GREEN_BOLD;
+  out[COL_HINT_CELL] = GREEN_BOLD; // the evidence outline, per the note above
   return out;
 }
 

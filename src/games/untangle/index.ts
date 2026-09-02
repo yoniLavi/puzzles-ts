@@ -31,8 +31,8 @@
 
 import { rejectMove } from "../../engine/assert-never.ts";
 import { mkhighlight } from "../../engine/colour/colour-mkhighlight.ts";
-import { BLUE, BLUE_WASH, GREY, ORANGE, WHITE } from "../../engine/colour/colours.ts";
-import { ERROR, INK, PAPER } from "../../engine/colour/palette.ts";
+import { BLUE, BLUE_WASH, ORANGE, PURPLE } from "../../engine/colour/colours.ts";
+import { ERROR, FLASH, HELD, INK } from "../../engine/colour/palette.ts";
 import { winFlash } from "../../engine/flash.ts";
 import {
   type Game,
@@ -494,7 +494,9 @@ export const untangleGame: Game<
   // --- rendering -----------------------------------------------------
   colours: (defaultBackground: Colour): Colour[] => {
     const { background, lowlight } = mkhighlight(defaultBackground);
-    // Index-for-index with the upstream COL_* enum (untangle.c:57).
+    // Index-for-index with the upstream COL_* enum (untangle.c:57) up to the
+    // flash, whose two colours (a grey and a white the board alternated
+    // between) fold into one: the board blinks between itself and the flash.
     return [
       lowlight, // 0 COL_SYSBACKGROUND (dead space, darker)
       background, // 1 COL_BACKGROUND (play area)
@@ -502,12 +504,15 @@ export const untangleGame: Game<
       ERROR, // 3 COL_CROSSEDLINE
       INK, // 4 COL_OUTLINE
       BLUE, // 5 COL_POINT
-      WHITE, // 6 COL_DRAGPOINT
-      GREY, // 7 COL_CURSORPOINT
-      BLUE_WASH, // 8 COL_NEIGHBOUR
-      GREY, // 9 COL_FLASH1
-      PAPER, // 10 COL_FLASH2
-      ORANGE, // 11 COL_HINT
+      HELD, // 6 COL_DRAGPOINT — the vertex you have picked up
+      // 7 COL_CURSORPOINT. Purple, because the board has spent the usual two:
+      // green is the held vertex (the cursor's own next state), blue a vertex.
+      PURPLE,
+      BLUE_WASH, // 8 COL_NEIGHBOUR — the vertices joined to the held one
+      FLASH, // 9 COL_FLASH
+      // 10 COL_HINT. Orange rather than the hint blue: the vertices are blue,
+      // and the hint is a line and a marker among them.
+      ORANGE,
     ];
   },
   computeSize: (p: UntangleParams, tileSize: number): Size => {

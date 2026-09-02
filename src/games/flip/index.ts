@@ -13,8 +13,8 @@
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
-import { CURSOR, HINT_ACTION, PAPER } from "../../engine/colour/palette.ts";
-import { flipGrid, flipWrongFace } from "../../engine/colour/palette-games.ts";
+import { CURSOR, GRID_MID, HINT_ACTION, PAPER } from "../../engine/colour/palette.ts";
+import { flipWrongFace } from "../../engine/colour/palette-games.ts";
 import {
   dimensionParamConfig,
   fromCoord as fromCoordE,
@@ -753,10 +753,12 @@ export const flipGame: Game<FlipParams, FlipState, FlipMove, FlipUi, FlipDrawSta
   colours(defaultBackground): Colour[] {
     const bg = defaultBackground;
     const ret: Colour[] = new Array(NCOLOURS);
-    ret[COL_BACKGROUND] = [...bg];
+    ret[COL_BACKGROUND] = bg;
     ret[COL_WRONG] = flipWrongFace(bg);
     ret[COL_RIGHT] = PAPER;
-    ret[COL_GRID] = flipGrid(bg);
+    // The mid step, not the dark one: the diagonal marks sit on both the
+    // paper face and the dark face, and only a mid grey shows on each.
+    ret[COL_GRID] = GRID_MID;
     ret[COL_DIAG] = ret[COL_GRID];
     ret[COL_HINT] = HINT_ACTION;
     ret[COL_CURSOR] = CURSOR;
