@@ -114,7 +114,11 @@
       and the predecessor's issue tracker, with a vacuity count. Proved to fail:
       a reverted byline and a reintroduced `medmunds/puzzles-web/issues` each
       went red before restoring.
-- [ ] 5.2 Read the rendered About dialog and front page in Chrome (per
-      `playwright-cli`), not the diff — this is wording about people's names.
-- [ ] 5.3 Gate green; `openspec validate claim-project-authorship --strict`.
-- [ ] 5.4 Owner acceptance **on the wording**, then archive.
+- [x] 5.2 Read in Chrome (per `playwright-cli`), not the diff: the front page
+      (header with the new mark, intro), a puzzle page's title and description,
+      the help index, and the About dialog with its Credits and Privacy panels.
+- [x] 5.3 Gate green on every commit; `openspec validate --strict` clean.
+- [x] 5.4 Owner acceptance on the wording (2026-09-02/03, over four rounds:
+      the name, the intro, the voice/logo/privacy rewrite, "maintained by" and
+      the hint paragraph). The visual redesign the owner raised at acceptance
+      is its own change, `design-front-page-and-chrome`.
