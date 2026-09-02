@@ -2,9 +2,9 @@
 
 A progressive web app (PWA) of [Simon Tatham's Portable Puzzle
 Collection][sgt-puzzles], plus additional puzzles from Lennard Sprong's
-[puzzles-unreleased][puzzles-unreleased], by Yoni Lavi: all 57 games
-implemented natively in TypeScript, with hints that explain the next move
-rather than just showing it.
+[puzzles-unreleased][puzzles-unreleased], maintained by Yoni Lavi: all 57
+games implemented natively in TypeScript, with hints that explain the next
+move rather than just showing it.
 
 It is a fork of Mike Edmunds' [puzzles-web][puzzles-web], which adapted the
 upstream C collection to the browser through WebAssembly. This project

@@ -20,7 +20,8 @@ nothing generated, anywhere in the tree.**
 - **The product is Hintful Puzzles; the repository is `puzzles-ts`.** The name,
   the tagline and the support links have one source, `src/project-identity.ts`,
   read by the About dialog, the PWA manifest, the page templates and the home
-  screen. The app presents itself as by Yoni Lavi and credits its lineage in
+  screen. The app presents itself as **maintained by** Yoni Lavi (never "by":
+the puzzles are other people's designs) and credits its lineage in
   order (Simon Tatham, Lennard Sprong, Mike Edmunds' `puzzles-web`, then this
   project) **in the About dialog, and nowhere else**: the header, the page
   titles and the help pages speak in this project's own voice and name no

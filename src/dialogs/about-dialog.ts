@@ -224,7 +224,7 @@ export function aboutBlurb() {
     <p>
       <strong translate="no">${APP_NAME}</strong> is a collection of logic
       puzzles with hints that explain the next move,
-      by&nbsp;<span translate="no">Yoni&nbsp;Lavi</span>.
+      maintained&nbsp;by&nbsp;<span translate="no">Yoni&nbsp;Lavi</span>.
     </p>
     <p>
       It is a native TypeScript implementation of

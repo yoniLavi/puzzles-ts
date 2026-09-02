@@ -54,6 +54,7 @@ shell it ships.
 
 ## This project
 
-Hintful Puzzles — the TypeScript engine and games, and the hints, mistake
-checking and play aids built on them — is by Yoni Lavi. See `git log` for the
-contribution history.
+Hintful Puzzles is maintained by Yoni Lavi, who wrote the TypeScript engine
+and game implementations and the hints, mistake checking and play aids built
+on them. The puzzles themselves are the designs of the people credited above.
+See `git log` for the contribution history.

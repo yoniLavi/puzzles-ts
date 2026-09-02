@@ -48,9 +48,10 @@ function hrefsIn(el: HTMLElement): string[] {
 }
 
 describe("the About dialog presents this project's authorship and lineage", () => {
-  it("names the author and the product in the opening blurb", () => {
+  it("names the maintainer and the product in the opening blurb", () => {
     expect(panelText).toContain(APP_NAME);
-    expect(panelText).toContain("Yoni Lavi");
+    // "maintained by", not "by": the puzzles themselves are not his (owner).
+    expect(panelText).toMatch(/maintained by Yoni Lavi/);
   });
 
   it("describes a native TypeScript implementation, not a WebAssembly adaptation", () => {

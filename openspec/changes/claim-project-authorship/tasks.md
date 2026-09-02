@@ -23,7 +23,8 @@
 
 ## 2. About dialog (`src/dialogs/about-dialog.ts`)
 
-- [x] 2.1 Rewrite the opening blurb: authored by Yoni Lavi; lineage in order
+- [x] 2.1 Rewrite the opening blurb: maintained by Yoni Lavi (owner: never
+      "by", which would claim the puzzles themselves); lineage in order
       (Simon Tatham → Lennard Sprong → Mike Edmunds' puzzles-web); described as
       a native TypeScript implementation, not a WASM adaptation.
 - [x] 2.2 Give Mike Edmunds a first-class Credits entry naming him as the author

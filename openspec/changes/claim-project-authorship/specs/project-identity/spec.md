@@ -89,8 +89,10 @@ identifying measurement MUST change the notes in the same change.
 
 ### Requirement: The app presents its own authorship and its lineage in order
 
-The player-facing surfaces SHALL present this project as its own work, authored
-by Yoni Lavi, and SHALL name the lineage it stands on in chronological order:
+The player-facing surfaces SHALL present this project as its own work,
+**maintained by** Yoni Lavi — never "by", which would claim the puzzles
+themselves, and those are other people's designs — and SHALL name the lineage
+it stands on in chronological order:
 Simon Tatham's Portable Puzzle Collection, Lennard Sprong's `puzzles-unreleased`
 additions, Mike Edmunds' `puzzles-web` PWA shell, then this project.
 
@@ -113,7 +115,7 @@ reassigns a personal statement to whoever holds the repository next.
 #### Scenario: The About dialog names the author and the lineage
 
 - **WHEN** a player opens the About dialog
-- **THEN** the project is presented as authored by Yoni Lavi
+- **THEN** the project is presented as maintained by Yoni Lavi
 - **AND** Simon Tatham, Lennard Sprong and Mike Edmunds are each credited, with
   Mike Edmunds identified as the author of `puzzles-web`
 - **AND** no first-person statement is attributed to nobody
