@@ -41,6 +41,17 @@
  * catching it. `--verify` runs that check alone, in well under a second, and is
  * what a reader should run first after touching any of these modules.
  *
+ * **The anchor is scoped to the declaration the case names**, not to the file.
+ * Each case carries `within` — the function, `Class.method`, class or
+ * module-level constant it perturbs — and `find` must match exactly once inside
+ * that declaration's span (`feedback-probe-locate.mjs` finds it without a
+ * parser, by brace-matching from the declaration). File-wide uniqueness made a
+ * case breakable by any unrelated edit that grew a similar-looking line
+ * elsewhere in the module — a `snapshot()` listing the same field names as the
+ * save envelope blocked a commit that had not touched what either case probed —
+ * and that cost rises with exactly the refactoring `AGENTS.md` now asks for.
+ * The strictness is unchanged; only the search space is.
+ *
  * **And a walk that finds too few engine test files aborts the run**, for the
  * same reason pointed the other way: the anchors check that the *code* is still
  * where a case says it is, and say nothing about whether the right *tests* were
@@ -80,6 +91,7 @@ import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { MODULES } from "./feedback-probe-cases.mjs";
+import { locateDeclaration } from "./feedback-probe-locate.mjs";
 
 /** A mutated solver can loop for ever; a timeout counts as caught, as Stryker
  * scores it — the test run did not come back clean. */
@@ -224,18 +236,48 @@ function testsFor(mod, files) {
   return tests;
 }
 
-/** Apply one case, or throw. Throwing is the point: see the header. */
-function applyCase(source, probe, where) {
-  const hits = source.split(probe.find).length - 1;
+/**
+ * Apply one case, or throw. Throwing is the point: see the header.
+ *
+ * The anchor is matched **within the declaration the case names** (`within`:
+ * a function, `Class.method`, class or module-level constant, located by
+ * `feedback-probe-locate.mjs`), not within the whole file. That is what keeps
+ * an unrelated edit elsewhere in the module — a second method listing the same
+ * field names at the same indentation — from breaking a case that never
+ * touched it; a case's `why` is already a claim about one function, and the
+ * anchor is scoped the same way. The strictness is unchanged: missing or
+ * ambiguous within that span still aborts, and so does a case without a
+ * location or one whose location cannot be found.
+ */
+export function applyCase(source, probe, where) {
+  if (!probe.within) {
+    throw new Error(
+      `${where}: case has no \`within\` — name the function or method it perturbs.`,
+    );
+  }
+  let span;
+  try {
+    span = locateDeclaration(source, probe.within);
+  } catch (e) {
+    throw new Error(`${where}: ${e instanceof Error ? e.message : e}`);
+  }
+  const body = source.slice(span.start, span.end);
+  const hits = body.split(probe.find).length - 1;
   if (hits !== 1) {
     throw new Error(
-      `${where}: anchor ${hits === 0 ? "not found" : `found ${hits}× (must be unique)`}\n` +
+      `${where}: anchor ${hits === 0 ? "not found" : `found ${hits}× (must be unique)`} ` +
+        `within ${probe.within}\n` +
         `  ${JSON.stringify(probe.find)}\n` +
-        `  Re-anchor it on surrounding text. An edit that does not apply reports SURVIVED.`,
+        `  Re-anchor it on surrounding text, or name the function it now lives in. ` +
+        "An edit that does not apply reports SURVIVED.",
     );
   }
   if (probe.find === probe.replace) throw new Error(`${where}: no-op case`);
-  return source.replace(probe.find, probe.replace);
+  return (
+    source.slice(0, span.start) +
+    body.replace(probe.find, probe.replace) +
+    source.slice(span.end)
+  );
 }
 
 function runTests(tests) {
@@ -248,7 +290,15 @@ function runTests(tests) {
       env: { ...process.env, CI: "1" },
     },
   );
-  if (r.error?.code === "ETIMEDOUT" || r.signal) return "timeout";
+  if (r.error?.code === "ETIMEDOUT" || r.signal) {
+    // The timeout killed the vitest runner, not its fork workers: a worker
+    // mid-computation reparents to init and spins a core for ever, and every
+    // later case then runs slower — and times out more — on the same box. The
+    // repo's reaper exists for exactly this; run it now rather than leaving
+    // the leak for the next `npm test` to find.
+    spawnSync("sh", ["scripts/reap-orphaned-workers.sh"], { stdio: "inherit" });
+    return "timeout";
+  }
   return r.status === 0 ? "survived" : "caught";
 }
 
@@ -285,8 +335,17 @@ function main() {
   );
   if (verifyOnly) return;
 
+  // Restore **only the module that currently holds a plant** — never every
+  // module from its start-of-run copy. A run takes 30–45 minutes, and an edit
+  // made to a not-yet-probed (or already-probed) module during that time is
+  // legitimate; a blanket restore in `finally` silently reverted a session's
+  // worth of `latin.ts` edits once, because it wrote back the copy it had read
+  // an hour earlier. Only the planted module is ever dirty, so only it needs
+  // putting back.
+  let planted = null;
   const restore = () => {
-    for (const [file, source] of sources) writeFileSync(file, source);
+    if (planted) writeFileSync(planted, sources.get(planted));
+    planted = null;
   };
   process.on("SIGINT", () => {
     restore();
@@ -304,9 +363,10 @@ function main() {
       let caught = 0;
       let scored = 0;
       for (const probe of mod.cases) {
+        planted = mod.module;
         writeFileSync(mod.module, applyCase(source, probe, mod.module));
         const verdict = runTests(tests);
-        writeFileSync(mod.module, source);
+        restore();
         if (probe.equivalent) {
           // Expected to survive: the case was argued behaviour-preserving. If
           // it is now *caught*, the argument has expired — the code changed

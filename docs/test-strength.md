@@ -129,9 +129,27 @@ The §2 loop, as a committed corpus rather than a thing you retype. Runner:
 
 ```sh
 npm run probe -- --verify        # every anchor still applies, ~0.2 s
-npm run probe                    # all 173 cases, ~30 min
+npm run probe                    # all 174 cases, 30–45 min
 npm run probe -- latin midend    # substring-filtered
 ```
+
+**A case is anchored *within a named declaration*, not within its file.** Each
+case carries `within` — the function, `Class.method`, class or module-level
+constant it perturbs — and its `find` must match exactly once inside that
+declaration's span, which
+[`scripts/feedback-probe-locate.mjs`](../scripts/feedback-probe-locate.mjs)
+finds without a parser (line-start shapes, then brace-matching with strings and
+comments skipped). When you add a case, name the function it lives in; when a
+refactor moves a probed line into a different function, the anchor check names
+the declaration it looked in, and re-pointing `within` is the fix. A name
+declared twice in the file — two classes with a `merge()` — must be qualified
+(`Dsf.merge`); the locator aborts rather than choosing. Why the scope: with
+file-wide uniqueness, a `Midend.snapshot()` that listed the same field names as
+the save envelope blocked a commit that had not touched what either case
+probed, and that collateral grows with exactly the refactoring `AGENTS.md`
+asks for. The strictness did not change — only the search space did — and the
+migration was checked by planting every case both ways and comparing the
+sources byte for byte.
 
 Each case is a **real defect with a sentence naming it** — not "conditional
 flipped" but *"a placed digit is no longer ruled out of its column"* — applied to
@@ -176,6 +194,15 @@ reads as health, on a diagnostic nobody runs for twenty minutes at a time. The
 rate itself stays ungated, because a gated feedback number invites tests written
 against the number. When it fails, re-anchor on surrounding text — and take the
 prompt to decide whether the case still states the defect it claims to.
+
+**A run restores only the module it currently has planted.** It used to put
+*every* probed module back from the copy it read at start, in its `finally` —
+which, forty minutes into a run, silently reverted a session's worth of edits
+to a module the run had long finished with. Editing a not-yet-probed or
+already-probed module during a run is now safe; the one module with a plant in
+it is the one to leave alone (and `git diff src/engine` names it). `--verify`
+during a run still reads the plant as an anchor mismatch on that module, for
+the reason the next paragraph gives.
 
 **Never run two probes at once, and read "anchor not found" with that in mind.**
 A run *edits engine source in place* and restores it in a `finally` (and on

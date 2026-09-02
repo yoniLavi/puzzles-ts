@@ -17,8 +17,14 @@
  *
  * Three rules the corpus follows, each of which took a mistake to learn:
  *
- * 1. **Anchors are unique or the run aborts.** An edit that silently does not
- *    apply reports SURVIVED, which reads exactly like a finding.
+ * 1. **Anchors are unique *within the declaration the case names*, or the run
+ *    aborts.** Each case carries `within` — the function, `Class.method`, class
+ *    or module-level constant it perturbs (`feedback-probe-locate.mjs` finds
+ *    the span without a parser) — and `find` must match exactly once inside
+ *    it. An edit that silently does not apply reports SURVIVED, which reads
+ *    exactly like a finding. Scoping the search to the declaration is what
+ *    keeps an unrelated edit elsewhere in the module from breaking a case that
+ *    never touched it; the `why` was always a claim about one function.
  * 2. **No RNG draw-order cases.** Reordering a shuffle or a comparator changes
  *    *which boards exist*, which is a differential's guarantee by design, not a
  *    local test's. Probing for it here would manufacture "findings" that the
@@ -46,6 +52,7 @@ export const MODULES = [
     module: "src/engine/latin.ts",
     cases: [
       {
+        within: "LatinSolver.place",
         why: "a placed digit is no longer ruled out of the rest of its column",
         find: "      if (i === x) continue;",
         replace: "      if (true) continue;",
@@ -58,73 +65,87 @@ export const MODULES = [
         // the ledger is a *scan-skipping optimisation* with no observable
         // behaviour of its own, and a test asserting `row[...] === 1` would be
         // asserting the mechanism rather than any claim the module makes.
+        within: "LatinSolver.place",
         why: "placing a digit no longer marks its row as satisfied (ledger is a scan-skipping optimisation)",
         equivalent: true,
         find: "    this.row[y * o + n - 1] = 1;",
         replace: "    this.row[y * o + n - 1] = 0;",
       },
       {
+        within: "LatinSolver.cubepos",
         why: "the candidate cube is indexed transposed (x and y swapped)",
         find: "    return (x * this.o + y) * this.o + n - 1;",
         replace: "    return (y * this.o + x) * this.o + n - 1;",
       },
       {
+        within: "LatinSolver.elim",
         why: "elimination fires on two remaining candidates, not one",
         find: "    if (m === 1) {",
         replace: "    if (m === 2) {",
       },
       {
+        within: "LatinSolver.elim",
         why: "a cell with no candidates left is not reported as a contradiction",
         find: "    } else if (m === 0) {\n      return -1;",
         replace: "    } else if (m === 0) {\n      return 0;",
       },
       {
+        within: "LatinSolver.set",
         why: "set elimination's over-count check no longer reports a contradiction",
         find: "        if (rows > n - count) return -1;",
         replace: "        if (rows > n - count) return 0;",
       },
       {
+        within: "LatinSolver.forcing",
         why: "forcing chains start from three-candidate cells instead of two",
         find: "        if (count !== 2) continue;",
         replace: "        if (count !== 3) continue;",
       },
       {
+        within: "latinSolverTop",
         why: "a second solution is graded as solvable instead of ambiguous",
         find: "    else if (nsol > 1) diff = DIFF_AMBIGUOUS;",
         replace: "    else if (nsol > 1) diff = cfg.diffRecursive;",
       },
       {
+        within: "finish",
         why: "the game's own validity check on a completed grid is skipped",
         find: "    !cfg.valid(solver, cfg.ctx)",
         replace: "    !true",
       },
       {
+        within: "latinSolverTop",
         why: "an unfilled cell no longer marks the solve unfinished",
         find: "        if (!solver.grid[y * o + x]) diff = DIFF_UNFINISHED;",
         replace: "        if (false) diff = DIFF_UNFINISHED;",
       },
       {
+        within: "latinGenerate",
         why: "the generator lets a row reuse a digit already in its column",
         find: "      for (let k = 0; k < i; k++) present[sq[row[k] * o + j] - 1] = 1;",
         replace:
           "      for (let k = 0; k < i - 1; k++) present[sq[row[k] * o + j] - 1] = 1;",
       },
       {
+        within: "latinGenerateRect",
         why: "a w×h rectangle is cropped from a min(w,h)-square, overrunning it",
         find: "  const o = Math.max(w, h);\n  const latin = latinGenerate(o, rs);",
         replace: "  const o = Math.min(w, h);\n  const latin = latinGenerate(o, rs);",
       },
       {
+        within: "latinSolver",
         why: "the seed hook (Salad's ball/cross clues) never runs",
         find: "  cfg.seed?.(solver);",
         replace: "  void cfg.seed;",
       },
       {
+        within: "latinSolver",
         why: "the final candidate cube is not written back to cubeOut",
         find: "  if (cfg.cubeOut) cfg.cubeOut.set(solver.cube);\n  return ret;",
         replace: "  return ret;",
       },
       {
+        within: "latinSolver",
         why: "an inconsistent set of givens is graded solvable, not impossible",
         find: "  if (!solver.alloc(grid)) {",
         replace: "  if (false) {",
@@ -136,31 +157,37 @@ export const MODULES = [
     module: "src/engine/grid/index.ts",
     cases: [
       {
+        within: "gridNew",
         why: "the cairo tiling is unreachable through the dispatch",
         find: '    case "cairo":\n      return gridNewCairo(width, height);\n',
         replace: "",
       },
       {
+        within: "gridNew",
         why: "kites and kagome are dispatched to each other",
         find: '    case "kites":\n      return gridNewKites(width, height);',
         replace: '    case "kites":\n      return gridNewKagome(width, height);',
       },
       {
+        within: "gridNew",
         why: "a malformed or missing description reaches the generators unchecked",
         find: "  assertGridDescValid(type, width, height, desc);",
         replace: "  void assertGridDescValid;",
       },
       {
+        within: "gridNew",
         why: "triangular ignores its version flag, so old game IDs rebuild wrong",
         find: "      return gridNewTriangular(width, height, desc);",
         replace: "      return gridNewTriangular(width, height, null);",
       },
       {
+        within: "gridNew",
         why: "Penrose P2 (kite/dart) builds the P3 (rhomb) tiling",
         find: '      return gridNewPenrose("p2", width, height, desc as string);',
         replace: '      return gridNewPenrose("p3", width, height, desc as string);',
       },
       {
+        within: "gridComputeSize",
         why: "the promised extent is computed with width and height swapped",
         find: "  return gridSizeFor(type, width, height);",
         replace: "  return gridSizeFor(type, height, width);",
@@ -172,18 +199,21 @@ export const MODULES = [
     module: "src/engine/midend.ts",
     cases: [
       {
+        within: "Midend.newGameFromId",
         why: "an undecodable params string in a game ID is accepted silently",
         find: "      params = this.game.decodeParams(paramsStr);\n    } catch (e) {\n      return `Invalid parameters: ${(e as Error).message}`;",
         replace:
           "      params = this.game.decodeParams(paramsStr);\n    } catch {\n      return undefined;",
       },
       {
+        within: "Midend.setParams",
         why: "an undecodable params string from the Custom dialog is accepted silently",
         find: "      decoded = this.game.decodeParams(params);\n    } catch (e) {\n      return `Invalid parameters: ${(e as Error).message}`;",
         replace:
           "      decoded = this.game.decodeParams(params);\n    } catch {\n      return undefined;",
       },
       {
+        within: "Midend.newGameFromId",
         why: "a game ID whose params fail validation is accepted",
         find: "    const pErr = this.game.validateParams(params, generating);\n    if (pErr) return pErr;",
         replace:
@@ -193,92 +223,110 @@ export const MODULES = [
         // `bound-abcd-generable-sizes` D4: this argument was a literal `true`,
         // which made `full` dead across sixteen games that gate a bound on it —
         // a generation-only bound also refused an already-described board.
+        within: "Midend.newGameFromId",
         why: "a generation-only param bound also rejects a game ID that carries its desc",
         find: '    const generating = id[sep] === "#";',
         replace: "    const generating = true;",
       },
       {
+        within: "Midend.loadGame",
         why: "a corrupt save is loaded instead of refused",
         find: "      return `Could not read save: ${(e as Error).message}`;",
         replace: "      return undefined;",
       },
       {
+        within: "Midend.loadGame",
         why: "a save whose params no longer decode is loaded anyway",
         find: "      return `Invalid saved parameters: ${(e as Error).message}`;",
         replace: "      return undefined;",
       },
       {
+        within: "Midend.loadGame",
         why: "a save from a different puzzle is loaded into this game",
         find: '      return `Save is for "${env.puzzleId}", not "${this.game.id}"`;',
         replace: "      return undefined;",
       },
       {
+        within: "Midend.solve",
         why: "Solve on a game without a solver reports success instead of refusing",
         find: '      return "This game does not support solving";',
         replace: "      return undefined;",
       },
       {
+        within: "Midend.computeHintPlan",
         why: "Hint on a game without hints reports success instead of refusing",
         find: '      return "This game does not support hints";',
         replace: "      return undefined;",
       },
       {
+        within: "Midend.commitMove",
         why: "a new move after an undo no longer truncates the redo branch",
         find: "    this.history = this.history.slice(0, this.pos + 1);\n    this.moveLog = this.moveLog.slice(0, this.pos);",
         replace:
           "    this.history = this.history.slice();\n    this.moveLog = this.moveLog.slice();",
       },
       {
+        within: "Midend.undo",
         why: "undo walks off the start of history instead of stopping at state 0",
         find: "    if (this.pos === 0) return;",
         replace: "    if (this.pos < 0) return;",
       },
       {
+        within: "Midend.redo",
         why: "redo runs past the end of history",
         find: "    if (this.pos >= this.history.length - 1) return;",
         replace: "    if (this.pos >= this.history.length) return;",
       },
       {
+        within: "Midend.commitMove",
         why: "undo/restart adopt a superseded desc, un-generating Mines' first click",
         find: "    this.applySupersede();\n    this.game.changedState?.(this.ui, prev, next);",
         replace: "    this.game.changedState?.(this.ui, prev, next);",
       },
       {
+        within: "Midend.loadGame",
         why: "a loaded save's undo position is not clamped to the replayed history",
         find: "    this.pos = Math.min(env.pos, this.history.length - 1);",
         replace: "    this.pos = env.pos;",
       },
       {
+        within: "Midend.saveGame",
         why: "the save omits the timer, so a loaded game restarts its clock",
         find: "      timerElapsed: this.timerElapsed,",
         replace: "      timerElapsed: 0,",
       },
       {
+        within: "Midend.saveGame",
         why: "a solved-with-help game forgets it was solved with help",
         find: "      cheated: this.cheated,",
         replace: "      cheated: false,",
       },
       {
+        within: "Midend.syncTimer",
         why: "the timer runs during animation but not for a timed game's clock",
         find: "    const want = this.timedClockActive() || this.animating;",
         replace: "    const want = this.animating;",
       },
       {
+        within: "Midend.preferredSize",
         why: "preferredSize ignores the game's preferred tile size",
         find: "    return this.game.computeSize(this.params, this.preferredTileSize);",
         replace: "    return this.game.computeSize(this.params, 1);",
       },
       {
+        within: "Midend.getColourPalette",
         why: "getColourPalette swallows the frontend's background, flattening every derived colour",
         find: "    return this.game.colours(defaultBackground);",
         replace: "    return this.game.colours([1, 1, 1]);",
       },
       {
+        within: "Midend.darkPalette",
         why: "darkPalette claims an authored dark value for every colour, defeating per-token authoring",
         find: "      const dark = colour && darkValue(colour);",
         replace: "      const dark = colour;",
       },
       {
+        within: "Midend.delete",
         why: "a deleted midend keeps its callbacks and goes on emitting to a torn-down adapter",
         find: "    this.notify = undefined;\n    this.notifyTimer = undefined;",
         replace: "    void this.notify;",
@@ -290,26 +338,31 @@ export const MODULES = [
     module: "src/engine/save.ts",
     cases: [
       {
+        within: "isSaveEnvelope",
         why: "a save whose undo position is not a number is accepted",
         find: '    typeof v["pos"] === "number" &&',
         replace: "    true &&",
       },
       {
+        within: "isSaveEnvelope",
         why: "a save whose move list is not an array is accepted",
         find: '    Array.isArray(v["moves"]) &&',
         replace: "    true &&",
       },
       {
+        within: "isSaveEnvelope",
         why: "a save-format version the decoder cannot read is accepted anyway",
         find: '    v["v"] === 2 &&',
         replace: "    true &&",
       },
       {
+        within: "isSaveEnvelope",
         why: "a non-string ui blob is accepted and handed to the game's decoder",
         find: '    (v["ui"] === undefined || typeof v["ui"] === "string")',
         replace: "    true",
       },
       {
+        within: "decodeSave",
         why: "a pre-pivot C-format save is silently treated as an empty game",
         find: '    throw new Error("not valid JSON (likely a pre-pivot C-format save)");',
         replace: "    return { v: 1 };",
@@ -321,27 +374,32 @@ export const MODULES = [
     module: "src/engine/dsf.ts",
     cases: [
       {
+        within: "Dsf.merge",
         why: "merge picks the smaller class as the root, breaking root identity",
         find: "    if (this.classSize[ra] > this.classSize[rb]) {",
         replace: "    if (this.classSize[ra] < this.classSize[rb]) {",
       },
       {
+        within: "Dsf.merge",
         why: "a merge of two already-equivalent elements double-counts the size",
         find: "    if (ra === rb) return;",
         replace: "    if (false) return;",
       },
       {
+        within: "Dsf.merge",
         why: "class sizes stop accumulating, so every class reports size 1",
         find: "      this.classSize[ra] += this.classSize[rb];",
         replace: "      this.classSize[ra] += 0;",
       },
       {
+        within: "Dsf",
         why: "reinit leaves the old class sizes behind",
         find: "  /** Restore the singleton partition (every element its own root). */\n  reinit(): void {\n    for (let i = 0; i < this.parent.length; i++) {\n      this.parent[i] = i;\n      this.classSize[i] = 1;",
         replace:
           "  /** Restore the singleton partition (every element its own root). */\n  reinit(): void {\n    for (let i = 0; i < this.parent.length; i++) {\n      this.parent[i] = i;",
       },
       {
+        within: "Dsf.size",
         why: "size() reports the queried element's own count, not its root's",
         find: "    return this.classSize[this.canonify(i)];",
         replace: "    return this.classSize[i];",
@@ -353,16 +411,19 @@ export const MODULES = [
     module: "src/engine/border-grid.ts",
     cases: [
       {
+        within: "outOfBounds",
         why: "the y axis is not bounds-checked, so a click above the grid wraps",
         find: "  return x < 0 || x >= w || y < 0 || y >= h;",
         replace: "  return x < 0 || x >= w;",
       },
       {
+        within: "clamp",
         why: "clamp lets a value below the low bound through",
         find: "  v < lo ? lo : v > hi ? hi : v;",
         replace: "  v > hi ? hi : v;",
       },
       {
+        within: "margin",
         why: "the half-tile margin is dropped, shifting every hit-test by half a cell",
         find: "export const margin = (ts: number): number => Math.floor(ts / 2);",
         replace: "export const margin = (ts: number): number => 0;",
@@ -375,22 +436,26 @@ export const MODULES = [
         // defensive, not a corner rejection. The comment used to say a corner
         // or centre click "means nothing", which the module's own
         // tie-break-at-a-tile-centre test already contradicted.
+        within: "pointerEdge",
         why: "the unreachable not-exactly-one-edge guard (a click always resolves to one edge)",
         equivalent: true,
         find: "  if (dir === 4) return null; // defensive: see above, unreachable",
         replace: "  if (dir === 4) dir = 0;",
       },
       {
+        within: "pointerEdge",
         why: "a click on the outer border toggles a border with no neighbour",
         find: "  if (outOfBounds(hx, hy, w, h)) return null;",
         replace: "  if (false) return null;",
       },
       {
+        within: "pointerEdge",
         why: "a toggle is applied to this cell but not mirrored on its neighbour",
         find: "    ((gdiff >> dir) << FLIP(dir)) | ((gdiff >> (dir + 4)) << (FLIP(dir) + 4));",
         replace: "    0;",
       },
       {
+        within: "moveBorderCursor",
         why: "the cursor is not clamped, so it walks off the grid",
         find: "  ui.cursor.x = clamp(ui.cursor.x + d.dx, 1, 2 * w - 1);",
         replace: "  ui.cursor.x = ui.cursor.x + d.dx;",
@@ -402,36 +467,43 @@ export const MODULES = [
     module: "src/engine/deduction-fixpoint.ts",
     cases: [
       {
+        within: "runDeductionFixpoint",
         why: "the grade regresses when a hard rung unlocks an easier one",
         find: "        grade = Math.max(grade, r);",
         replace: "        grade = r;",
       },
       {
+        within: "runDeductionFixpoint",
         why: "the ladder does not restart from the top after a rung fires",
         find: "        fired = true;\n        break;",
         replace: "        fired = true;",
       },
       {
+        within: "runDeductionFixpoint",
         why: "a rung's contradiction is treated as no progress",
         find: "      if (ret < 0) return { grade, impossible: true };",
         replace: "      if (ret < 0) continue;",
       },
       {
+        within: "runDeductionFixpoint",
         why: "the difficulty cap is ignored, so every board is graded at the top rung",
         find: "  const cap = opts.maxRung ?? rungs.length - 1;",
         replace: "  const cap = rungs.length - 1;",
       },
       {
+        within: "runDeductionFixpoint",
         why: "baseGrade is ignored, so an unfired ladder grades 0 instead of its floor",
         find: "  let grade = baseGrade;",
         replace: "  let grade = 0;",
       },
       {
+        within: "runDeductionFixpoint",
         why: "the solved early-out never fires, so a rung runs on a finished board",
         find: "    if (solved?.()) break;",
         replace: "    void solved;",
       },
       {
+        within: "runDeductionFixpoint",
         why: "the recording-path step budget is never ticked, so a runaway hangs",
         find: "    budget?.tick();",
         replace: "    void budget;",
@@ -448,21 +520,25 @@ export const MODULES = [
     module: "src/engine/wires.ts",
     cases: [
       {
+        within: "rot",
         why: "rotation by n quarter-turns drops the wrap, losing arms off the top",
         find: "export function rot(x: number, n: number): number {",
         replace: "export function rot(x: number, n: number): number {\n  n = 0;",
       },
       {
+        within: "growSpanningTree",
         why: "the spanning tree may close a loop by growing into a used tile",
         find: "      if (tiles[y3 * w + x3]) continue; // already used — would make a loop",
         replace: "      if (false) continue;",
       },
       {
+        within: "growSpanningTree",
         why: "on a non-wrapping grid the frontier steps off the top edge",
         find: "        if (d === U && y2 === 0) continue;",
         replace: "        if (false) continue;",
       },
       {
+        within: "opposite",
         why: "opposite() returns the arm itself, so connections match one-sided",
         find: "export function opposite(x: number): number {",
         replace: "export function opposite(x: number): number {\n  return x;",
@@ -474,12 +550,14 @@ export const MODULES = [
     module: "src/engine/divvy.ts",
     cases: [
       {
+        within: "divvyRectangle",
         why: "a region may be grown past its target size",
         find: "export function divvyRectangle(w: number, h: number, k: number, rng: RandomState): Dsf {",
         replace:
           "export function divvyRectangle(w: number, h: number, k: number, rng: RandomState): Dsf {\n  k = k + 1;",
       },
       {
+        within: "addremcommon",
         why: "the connectivity check that keeps every region 4-connected always passes",
         find: "  const neighbours = new Int32Array(8);\n  for (let dir = 0; dir < 8; dir++) {",
         replace:
@@ -492,6 +570,7 @@ export const MODULES = [
     module: "src/engine/symmetric-blacks.ts",
     cases: [
       {
+        within: "placeSymmetricBlacks",
         why: "4-fold rotation places only the 2-fold image, breaking the symmetry",
         find: "    case SYMM_ROT4:",
         replace: "    case SYMM_MAX:",
@@ -509,33 +588,39 @@ export const MODULES = [
     module: "src/engine/params.ts",
     cases: [
       {
+        within: "parseDimensions",
         why: "a bare square params form (`7`) parses its height as 0 instead of 7",
         find: "  return { w, h: w, next: wParse.next };",
         replace: "  return { w, h: 0, next: wParse.next };",
       },
       {
+        within: "parseDimensions",
         why: "the dimension parser consumes the `x` separator as part of the height",
         find: "    const hParse = parseLeadingInt(s, wParse.next + 1);",
         replace: "    const hParse = parseLeadingInt(s, wParse.next);",
       },
       {
+        within: "parseLeadingInt",
         why: "`next` stops at the dimensions' start, so every trailing suffix is re-parsed",
         find: '  return {\n    value: Number.parseInt(s.slice(start, i) || "0", 10),\n    next: i,\n  };',
         replace:
           '  return {\n    value: Number.parseInt(s.slice(start, i) || "0", 10),\n    next: start,\n  };',
       },
       {
+        within: "atof",
         why: "a non-numeric custom-params field yields NaN, which slips past every bound check",
         find: "export function atof(s: string): number {\n  const value = Number.parseFloat(s);\n  return Number.isNaN(value) ? 0 : value;",
         replace:
           "export function atof(s: string): number {\n  const value = Number.parseFloat(s);\n  return value;",
       },
       {
+        within: "formatG",
         why: "a float param is encoded with full double precision, so it re-reads as a different number",
         find: "  return stripTrailingZeros(value.toFixed(Math.max(0, 5 - exponent)));",
         replace: "  return String(value);",
       },
       {
+        within: "formatG",
         why: "%g never switches to exponential notation, so a tiny value encodes as 0.000000",
         find: "  if (exponent < -4 || exponent >= 6) {",
         replace: "  if (false) {",
@@ -547,16 +632,19 @@ export const MODULES = [
     module: "src/engine/colour/colour-mkhighlight.ts",
     cases: [
       {
+        within: "mkhighlightBackground",
         why: "a near-white background is not shifted, so its highlight bevel vanishes",
         find: "  const dw = colourDistance(out, white);\n  if (dw < K) {",
         replace: "  const dw = colourDistance(out, white);\n  if (false) {",
       },
       {
+        within: "mkhighlightBackground",
         why: "a near-black background is not shifted, so its lowlight bevel vanishes",
         find: "  const db = colourDistance(out, black);\n  if (db < K) {",
         replace: "  const db = colourDistance(out, black);\n  if (false) {",
       },
       {
+        within: "mkhighlightBackground",
         why: "the exact-white epsilon is dropped, so K/dw overflows and shifts the background past white",
         find: "    if (dw < EPS) out = colourMix(white, black, K / Math.sqrt(3));\n    else out = colourMix(white, out, K / dw);",
         replace: "    out = colourMix(white, out, K / dw);",
@@ -569,12 +657,14 @@ export const MODULES = [
         // Swept 9,261 backgrounds over the whole RGB cube at 1/20 steps: the
         // adjusted background was within K of white or black **zero** times.
         // Class (b) — unreachable in practice, so record it and keep the code.
+        within: "mkhighlight",
         why: "the highlight's saturate-to-white arm (an unreachable float-drift guard)",
         equivalent: true,
         find: "  const highlight: Colour = dw < K ? [1, 1, 1] : colourMix(bg, white, K / dw);",
         replace: "  const highlight: Colour = colourMix(bg, white, K / dw);",
       },
       {
+        within: "correctRegionColour",
         why: "the completed-region shade equals the background, so a correct region reads as unfilled",
         find: "  return [background[0] * 0.75, background[1] * 0.75, background[2] * 0.75];",
         replace: "  return [background[0], background[1], background[2]];",
@@ -586,32 +676,38 @@ export const MODULES = [
     module: "src/engine/findloop.ts",
     cases: [
       {
+        within: "findLoops",
         why: "a back-edge to an ancestor is not recorded, so no loop is ever found",
         find: "          shallowestReachable[u] = Math.min(shallowestReachable[u], depth[w]);\n          anyLoop = true;",
         replace: "          void depth[w];",
       },
       {
+        within: "findLoops",
         why: "reachability is not folded into the parent, so every edge above a loop reads as a bridge",
         find: "        shallowestReachable[parent[u]] = Math.min(\n          shallowestReachable[parent[u]],\n          shallowestReachable[u],\n        );",
         replace: "        void shallowestReachable[u];",
       },
       {
+        within: "findLoops",
         why: "subtree sizes stop accumulating, so a bridge reports 1 vertex on its far side",
         find: "        subtreeSize[parent[u]] += subtreeSize[u];",
         replace: "        subtreeSize[parent[u]] += 0;",
       },
       {
+        within: "findLoops.isBridge",
         why: "isBridge is only checked one way round, so half the queries answer null",
         find: "      const backward = isBridgeOneWay(w, u);",
         replace: "      const backward = null;",
       },
       {
+        within: "findLoops.isBridge",
         why: "isBridge reports the two sides swapped",
         find: "        return { uVertices: backward.vVertices, vVertices: backward.uVertices };",
         replace:
           "        return { uVertices: backward.uVertices, vVertices: backward.vVertices };",
       },
       {
+        within: "findLoops",
         why: "the edge back to the parent is followed, so every tree edge looks like a loop",
         find: "        if (w === parent[u]) continue;",
         replace: "        if (false) continue;",
@@ -628,154 +724,184 @@ export const MODULES = [
     module: "src/engine/candidate-hint.ts",
     cases: [
       {
+        within: "candidateHint",
         why: "a hint deduces from a board with known mistakes instead of refusing",
         find: "  if (findMistakes(state).length > 0) {",
         replace: "  if (false) {",
       },
       {
+        within: "candidateHint",
         why: "with no ui the plan folds the trivial eliminations away instead of teaching them",
         find: "  const autoClean = ui?.autoPencil ?? false;",
         replace: "  const autoClean = ui?.autoPencil ?? true;",
       },
       {
+        within: "joinNums",
         why: "a two-value list narrates as “1, 2” with no “and”",
         find: "  if (ns.length === 2) return `${ns[0]} and ${ns[1]}`;",
         replace: "  if (ns.length === 2) return `${ns[0]}, ${ns[1]}`;",
       },
       {
+        within: "nakedSingle",
         why: "a cell with two candidates left is announced as a forced single",
         find: "    if ((pencil[i] & (pencil[i] - 1)) !== 0) continue; // more than one bit set",
         replace: "    if (false) continue; // more than one bit set",
       },
       {
+        within: "nakedSingle",
         why: "a filled cell's stale notes are announced as the next placement",
         find: "    if (grid[i] !== 0 || pencil[i] === 0) continue;",
         replace: "    if (pencil[i] === 0) continue;",
       },
       {
+        within: "nextStrike",
         why: "strikes are taught from past the next placement, so the premise the player's board shows is gone",
         find: "  const lim = firstUnreflectedPlaceIndex(ops, opts?.placed ?? grid, w);",
         replace: "  const lim = ops.length;",
       },
       {
+        within: "nextStrike",
         why: "a strike is taught on a cell the player has already filled",
         find: "    grid[op.y * w + op.x] === 0 &&\n    (pencil[op.y * w + op.x] & bit(op.n)) !== 0 &&",
         replace: "    (pencil[op.y * w + op.x] & bit(op.n)) !== 0 &&",
       },
       {
+        within: "nextStrike",
         why: "a strike is taught on a candidate the player has already crossed out",
         find: "    (pencil[op.y * w + op.x] & bit(op.n)) !== 0 &&",
         replace: "    true &&",
       },
       {
+        within: "nextStrike",
         why: "placement bookkeeping is taught as if it were a deduction technique",
         find: '    (op.reason as { kind?: string }).kind !== "dup";',
         replace: "    true;",
       },
       {
+        within: "nextStrike",
         why: "a fully-struck firing ends the search instead of advancing to the next live one",
         find: "    if (live.length === 0) continue;",
         replace: "    if (live.length === 0) return null;",
       },
       {
+        within: "nextPlace",
         why: "a placement the player has already made is offered again as the next move",
         find: '    if (op.kind === "place" && placed[op.y * w + op.x] === 0) return op;',
         replace: '    if (op.kind === "place") return op;',
       },
       {
+        within: "regionDuplicateMarks",
         why: "the placed cell itself is offered as a candidate to cross out",
         find: "      if (j === home || seen.has(j)) continue;",
         replace: "      if (seen.has(j)) continue;",
       },
       {
+        within: "regionDuplicateMarks",
         why: "a cell reachable through two of the cell's regions is struck twice",
         find: "      const j = region.cells[i];\n      if (j === home || seen.has(j)) continue;",
         replace: "      const j = region.cells[i];\n      if (j === home) continue;",
       },
       {
+        within: "obviousCandidateMarks",
         why: "the mistaken-board guard goes, so a cell can be emptied of every note and the cleanup oscillates",
         find: "      removable &= removable - 1;",
         replace: "      removable &= removable;",
       },
       {
+        within: "obviousCandidateMarks",
         why: "the cleanup never strikes the top candidate",
         find: "  const values = enc?.values ?? w;",
         replace: "  const values = enc?.values ?? w - 1;",
       },
       {
+        within: "adaptiveMarkAll",
         why: "a press on a fully-cleaned board adds an empty undo entry instead of doing nothing",
         find: "  if (marks.length === 0) return null;",
         replace:
           '  if (marks.length === 0) return { type: "pencilStrike", marks } as unknown as M;',
       },
       {
+        within: "lazyPopulate.ensure",
         why: "the working fill overwrites notes the player narrowed, so the plan teaches strikes on candidates no longer on their board",
         find: "      for (let i = 0; i < w * w; i++) if (!wGrid[i] && wPen[i] === 0) wPen[i] = all;",
         replace: "      for (let i = 0; i < w * w; i++) if (!wGrid[i]) wPen[i] = all;",
       },
       {
+        within: "lazyPopulate",
         why: "an already-noted board still opens with a redundant “pencil everything in” step",
         find: "  let populated = !anyEmptyLacksNotes(state.grid, state.pencil, w);",
         replace: "  let populated = false;",
       },
       {
+        within: "lazyPopulate.ensure",
         why: "the populate fill omits the top candidate, so no elimination of it is ever taught",
         find: "      const all = (1 << (w + 1)) - (1 << 1);",
         replace: "      const all = (1 << w) - (1 << 1);",
       },
       {
+        within: "emitObviousCleanStep",
         why: "the cleanup's marks are not applied to the working notes, so the plan re-teaches strikes it already made",
         find: "  for (const m of obvious) pencil[m.y * w + m.x] &= ~bit(m.n);",
         replace: "  for (const m of obvious) void m;",
       },
       {
+        within: "emitObviousCleanStep",
         why: "“fill, then clear the obvious ones” splits into two hints instead of one journey",
         find: '    prev !== undefined && dialect.read(prev.move)?.type === "pencilAll";',
         replace: "    false;",
       },
       {
+        within: "emitObviousCleanStep",
         why: "the builder is told a cleanup step was emitted when there was nothing obvious to clear",
         find: "  if (obvious.length === 0) return false;",
         replace: "  if (obvious.length === 0) return true;",
       },
       {
+        within: "populateStep",
         why: "the populate opener paints a board mark, breaking the one step allowed to paint nothing",
         find: "    highlights: { area: [], targets: [], marks: [] } as unknown as H,",
         replace:
           "    highlights: { area: [{ x: 0, y: 0 }], targets: [], marks: [] } as unknown as H,",
       },
       {
+        within: "keepCandidateHintTrack",
         why: "a toggle that would re-add an absent candidate counts as following the strike",
         find: '    if (!(pencil[pm.y * w + pm.x] & bit(pm.n))) return "off";',
         replace: "    if (false) return null as never;",
       },
       {
+        within: "keepCandidateHintTrack",
         why: "striking an unrelated candidate counts as following the strike step",
         find: '    if (hit < 0) return "off"; // touched a non-target candidate',
         replace: '    if (false) return "off"; // touched a non-target candidate',
       },
       {
+        within: "keepCandidateHintTrack",
         why: "a shrunk strike keeps highlighting the cell whose candidate the player just crossed out",
         find: "        targets: remaining.map((k) => ({ x: k.x, y: k.y })),",
         replace: "        targets: sm.marks.map((k) => ({ x: k.x, y: k.y })),",
       },
       {
+        within: "refreshCandidateHintStep",
         why: "a stored mark on a cell that has since been filled is still displayed",
         find: "      ({ x, y, n }) => grid[y * w + x] === 0 && (pencil[y * w + x] & bit(n)) !== 0,",
         replace: "      ({ x, y, n }) => (pencil[y * w + x] & bit(n)) !== 0,",
       },
       {
+        within: "refreshCandidateHintStep",
         why: "the populate step stays displayed after every empty cell already has notes",
         find: "    return anyEmptyLacksNotes(grid, pencil, w) ? step : null;",
         replace: "    return step;",
       },
       {
+        within: "adapterOf",
         why: "a game's own move dialect is ignored in favour of the type-keyed default",
         find: "  return adapter ?? (typeKeyedCandidateMoves as unknown as CandidateMoveAdapter<M>);",
         replace:
           "  return typeKeyedCandidateMoves as unknown as CandidateMoveAdapter<M>;",
       },
       {
+        within: "populateText",
         why: "the populate opener says “cell” for a game whose board positions are squares",
         find:
           "  return `Start by pencilling in every candidate ${noun} in each empty ${cell}, " +
@@ -796,41 +922,49 @@ export const MODULES = [
     module: "src/engine/slide-planner.ts",
     cases: [
       {
+        within: "toroidalDist",
         why: "distance is measured the long way round, ignoring the wrap",
         find: "  return Math.min(d, len - d);",
         replace: "  return d;",
       },
       {
+        within: "slidePieces",
         why: "a row's pieces slide the opposite way to the move's delta",
         find: "      const from = (((x - delta) % w) + w) % w;",
         replace: "      const from = (((x + delta) % w) + w) % w;",
       },
       {
+        within: "slidePieces",
         why: "a column's pieces slide the opposite way to the move's delta",
         find: "      const from = (((y - delta) % h) + h) % h;",
         replace: "      const from = (((y + delta) % h) + h) % h;",
       },
       {
+        within: "slidePieces",
         why: "cells outside the slid line are not carried over, so the rest of the board is blanked",
         find: "  dest.set(src);",
         replace: "  void src;",
       },
       {
+        within: "makeKeyFn",
         why: "the board key is one bit too narrow, so two different boards can key alike",
         find: "  while (1 << bits <= maxValue) bits++;",
         replace: "  while (1 << bits < maxValue) bits++;",
       },
       {
+        within: "makeKeyFn",
         why: "packed cells overlap in the key, so distinct boards collide and get pruned as visited",
         find: "      packed |= arr[i] << (k * bits);",
         replace: "      packed |= arr[i] << k;",
       },
       {
+        within: "invert",
         why: "the backward search's edges are not reversed, so its half of the path runs the wrong way",
         find: "  return { ...m, delta: -m.delta };",
         replace: "  return { ...m };",
       },
       {
+        within: "bidirectionalPlan",
         why: "sliding the same line twice running is pruned, so any path needing a double slide is missed",
         find: "    return m.index === prev.index && m.delta === -prev.delta;",
         replace: "    return m.index === prev.index;",
@@ -849,6 +983,7 @@ export const MODULES = [
         // other-side depth. That balance is a property of these move sets, not
         // of the algorithm, which is why the code stays as it is — and why the
         // harness flagging this case as CAUGHT would mean the argument expired.
+        within: "bidirectionalPlan",
         why: "the first meet in a level is taken rather than the cheapest, so the “shortest” path can be one move too long",
         equivalent: true,
         find:
@@ -859,6 +994,7 @@ export const MODULES = [
           "          if (other && bestMeet === null) {",
       },
       {
+        within: "planSlides",
         why: "a board that is already finished is reported as a partial plan",
         find: "    return { moves: [], reachedGoal: true, usedExactSearch: false };",
         replace:
@@ -873,42 +1009,50 @@ export const MODULES = [
         // condition is weaker than the goal board) is covered by the test above
         // it. The default stays because it is what makes `isGoal` optional at
         // all; asserting it would mean asserting a board that cannot occur.
+        within: "planSlides",
         why: "the default goal test never fires, so every plan on a game without one is partial",
         equivalent: true,
         find: "  const isGoal = p.isGoal ?? ((board: Int32Array) => arrayToKey(board) === goalKey);",
         replace: "  const isGoal = p.isGoal ?? ((): boolean => false);",
       },
       {
+        within: "planSlides",
         why: "the exact search runs up front for a game that asked to keep it in reserve",
         find: '  if (exact?.when === "first") {',
         replace: '  if (exact?.when === "no-progress") {',
       },
       {
+        within: "planSlides",
         why: "the queue forgets a newly-cheaper f, so nodes below the current minimum are never popped",
         find: "    if (node.f < minF) minF = node.f;",
         replace: "    if (false) minF = node.f;",
       },
       {
+        within: "planSlides",
         why: "the partial plan is routed to the worst board the search saw rather than the best",
         find: "    if (curr.h < bestNode.h) bestNode = curr;",
         replace: "    if (curr.h > bestNode.h) bestNode = curr;",
       },
       {
+        within: "planSlides",
         why: "the game's veto on the opening move is applied at every depth, not just the first",
         find: "      if (curr.g === 0 && p.rejectFirstMove?.(move)) continue;",
         replace: "      if (p.rejectFirstMove?.(move)) continue;",
       },
       {
+        within: "planSlides",
         why: "the search is greedy best-first rather than A*, so moves already spent stop counting",
         find: "        f: nextG + nextH,",
         replace: "        f: nextH,",
       },
       {
+        within: "planSlides",
         why: "the no-progress gate is inverted, spending the exact search exactly where it is not needed",
         find: "  const noProgress = bestNode.move === null;",
         replace: "  const noProgress = bestNode.move !== null;",
       },
       {
+        within: "planSlides",
         why: "a plan that fell back from the exact search reports the search was never engaged",
         find:
           "    usedExactSearch = true;\n" +
@@ -923,11 +1067,13 @@ export const MODULES = [
           "    }",
       },
       {
+        within: "planSlides",
         why: "the forward path is handed back leaf-first, so the plan plays in reverse",
         find: "    return path.reverse();",
         replace: "    return path;",
       },
       {
+        within: "bidirectionalPlan",
         why: "the bidirectional path's forward half is not reversed before its backward half is appended",
         find: "    path.reverse();",
         replace: "    void path;",
@@ -955,11 +1101,13 @@ export const MODULES = [
     module: "src/engine/loopgen.ts",
     cases: [
       {
+        within: "faceColour",
         why: "the infinite exterior reads as inside, so the boundary is drawn round the wrong side",
         find: "  return f === null ? FACE_BLACK : board[f.index];",
         replace: "  return f === null ? FACE_WHITE : board[f.index];",
       },
       {
+        within: "canColourFace",
         why: "a face need not touch its own colour, so a region can start anywhere and the loop breaks into pieces",
         find: "  if (!foundSame) return false;",
         replace: "  if (false) return false;",
@@ -978,17 +1126,20 @@ export const MODULES = [
         // byte-identical colourings throughout. The sweep's own sensitivity was
         // checked first: changing the random-flip pass's acceptance moves 1,310
         // of those 1,319 rows.
+        within: "canColourFace",
         why: "a colouring with fewer than two transitions is allowed, so a face can be walled off inside the wrong region",
         equivalent: true,
         find: "  return transitions === 2;",
         replace: "  return transitions <= 2;",
       },
       {
+        within: "canColourFace",
         why: "the transition walk stops at two rather than past them, so a four-transition face passes the test",
         find: "        if (transitions > 2) break;",
         replace: "        if (transitions >= 2) break;",
       },
       {
+        within: "generateLoop",
         why: "no face is seeded white, so there is no inside and no boundary at all",
         find: "  board[randomUpto(rng, numFaces)] = FACE_WHITE;",
         replace: "  board[randomUpto(rng, numFaces)] = FACE_BLACK;",
@@ -1003,6 +1154,7 @@ export const MODULES = [
         // leave faces grey, and the harness reporting this case as CAUGHT is how
         // that would announce itself. Loopy's generator also throws outright on a
         // grey face, so the consumer side is guarded independently.
+        within: "generateLoop",
         why: "colouring stops as soon as either list empties, leaving faces grey",
         equivalent: true,
         find: "    if (cLight === 0 && cDark === 0) break; // no more faces we can use",
@@ -1010,31 +1162,37 @@ export const MODULES = [
           "    if (cLight === 0 || cDark === 0) break; // no more faces we can use",
       },
       {
+        within: "generateLoop",
         why: "a face just coloured stays in the other candidate list and can be coloured again",
         find: "    lightable.delete(i);\n    darkable.delete(i);",
         replace: "    lightable.delete(i);",
       },
       {
+        within: "generateLoop",
         why: "colourability is recomputed for the already-coloured neighbours instead of the grey ones",
         find: "        if (faceColour(board, f) !== FACE_GREY) continue;",
         replace: "        if (faceColour(board, f) === FACE_GREY) continue;",
       },
       {
+        within: "generateLoop",
         why: "tendrils grow from faces with two opposite neighbours, not one, so a flip can cut the loop",
         find: "        } else if (faceNumNeighbours(board, face, opp) === 1) {",
         replace: "        } else if (faceNumNeighbours(board, face, opp) === 2) {",
       },
       {
+        within: "generateLoop",
         why: "a face tried tentatively for the bias is left coloured, so later candidates are scored against a dirty board",
         find: "        board[fi] = FACE_GREY;\n        bias(board, fi); // let bias know we put it back",
         replace: "        bias(board, fi); // let bias know we put it back",
       },
       {
+        within: "generateLoop",
         why: "the bias is not told the tentative colour was taken back, so its incremental state drifts",
         find: "        bias(board, fi); // let bias know we put it back",
         replace: "        void fi; // let bias know we put it back",
       },
       {
+        within: "generateLoop",
         why: "the bias is never told which face was actually committed",
         find: "    if (bias) bias(board, i); // notify bias of the change",
         replace: "    void i; // notify bias of the change",
@@ -1051,56 +1209,67 @@ export const MODULES = [
     module: "src/engine/grid/grid-geometry.ts",
     cases: [
       {
+        within: "pointLineDistance",
         why: "perpendicular distance is left as twice the triangle area, so edge length skews which edge a click picks",
         find: "  return det / Math.sqrt(sq(ax - bx) + sq(ay - by));",
         replace: "  return det;",
       },
       {
+        within: "gridNearestEdge",
         why: "an edge the click is off the far end of is eligible again",
         find: "    if (a2 >= e2 + b2) continue;",
         replace: "    if (false) continue;",
       },
       {
+        within: "gridNearestEdge",
         why: "an edge the click is off the near end of is eligible again",
         find: "    if (b2 >= e2 + a2) continue;",
         replace: "    if (false) continue;",
       },
       {
+        within: "gridNearestEdge",
         why: "the half-edge-length cut goes, so a click anywhere off the board still toggles an edge",
         find: "    if (4 * sq(dist) > e2) continue;",
         replace: "    if (false) continue;",
       },
       {
+        within: "gridNearestEdge",
         why: "an exact tie goes to the highest-index edge, so a click on a vertex toggles a different one",
         find: "    if (bestEdge === null || dist < bestDistance) {",
         replace: "    if (bestEdge === null || dist <= bestDistance) {",
       },
       {
+        within: "gridFindIncentre",
         why: "the incentre is recomputed on every request rather than read from the face",
         find: "  if (f.hasIncentre) return;",
         replace: "  if (false) return;",
       },
       {
+        within: "gridFindIncentre",
         why: "the incentre is computed but never marked cached",
         find: "  f.hasIncentre = true;",
         replace: "  f.hasIncentre = false;",
       },
       {
+        within: "gridFindIncentre",
         why: "the incentre's x is stored with the C's `(int)(v + 0.5)`, which truncates toward zero and so misplaces a clue digit by up to a unit on the negative coordinates a grid mostly has",
         find: "  f.ix = Math.round(xBest);",
         replace: "  f.ix = Math.trunc(xBest + 0.5);",
       },
       {
+        within: "gridFindIncentre",
         why: "a face with no interior point found silently reports the origin instead of failing",
         find: "  if (!(bestDist > 0)) {",
         replace: "  if (false) {",
       },
       {
+        within: "pointInFace",
         why: "the crossing test's y interval is open at both ends, so a vertex on the ray is miscounted",
         find: "    if ((y >= ys && y < ye) || (y >= ye && y < ys)) {",
         replace: "    if ((y > ys && y < ye) || (y > ye && y < ys)) {",
       },
       {
+        within: "pointInFace",
         why: "the crossing test's denominator is left negative, flipping the inequality on downward edges",
         find: "      if (denom < 0) {\n        num = -num;\n        denom = -denom;\n      }",
         replace:
@@ -1114,17 +1283,20 @@ export const MODULES = [
         // question. The direction is worth naming in the doc comment — it is how
         // a reader checks the tie handling — but it is not a decision the result
         // depends on.
+        within: "pointInFace",
         why: "the ray is cast to the left instead of the right, inverting inside and outside",
         equivalent: true,
         find: "      if ((x - xs) * denom >= (y - ys) * num) inside = !inside;",
         replace: "      if ((x - xs) * denom <= (y - ys) * num) inside = !inside;",
       },
       {
+        within: "minSquaredDistanceToBoundary",
         why: "the distance to the boundary takes the furthest corner rather than the nearest",
         find: "    if (mindist > dist) mindist = dist;",
         replace: "    if (mindist < dist) mindist = dist;",
       },
       {
+        within: "minSquaredDistanceToBoundary",
         why: "an edge whose perpendicular foot lies outside the segment still counts, understating the room available",
         find: "    if (pde > 0 && pde < ede) {",
         replace: "    if (true) {",
@@ -1141,12 +1313,14 @@ export const MODULES = [
       // subset skipped. Their being *caught* would mean a candidate now survives
       // vetting, which is the thing worth hearing about.
       {
+        within: "solveQuadraticPoints",
         why: "a quadratic with no real root yields NaN candidate points instead of none",
         equivalent: true,
         find: "  if (!(disc >= 0)) return [];",
         replace: "  if (false) return [];",
       },
       {
+        within: "solve2x2Matrix",
         why: "a singular 2x2 system is inverted anyway, so three collinear dots yield an infinite candidate",
         equivalent: true,
         find: "  const det = mx[0] * mx[3] - mx[1] * mx[2];\n  if (det === 0) return null;",
@@ -1154,12 +1328,14 @@ export const MODULES = [
           "  const det = mx[0] * mx[3] - mx[1] * mx[2];\n  if (false) return null;",
       },
       {
+        within: "solve3x3Matrix",
         why: "a singular 3x3 system is inverted anyway, so three parallel edges yield an infinite candidate",
         equivalent: true,
         find: "  if (det === 0) return null;\n\n  const inv = [",
         replace: "  if (false) return null;\n\n  const inv = [",
       },
       {
+        within: "gridFindIncentre",
         why: "the 3-subset enumeration never starts at a vertex, so vertex-led candidate points are missed",
         find: "  for (let i = 0; i + 2 < 2 * order; i++) {",
         replace: "  for (let i = 0; i + 2 < order; i++) {",
@@ -1171,21 +1347,25 @@ export const MODULES = [
     module: "src/engine/grid/grid-core.ts",
     cases: [
       {
+        within: "makeConsistent",
         why: "two faces sharing a dot pair get two edges instead of one shared edge",
         find: "      const found = edgeByDots.get(key);",
         replace: "      const found = undefined;",
       },
       {
+        within: "makeConsistent",
         why: "the edge dedup key collides, so unrelated dot pairs share an edge",
         find: "      const key = lo * numDots + hi;",
         replace: "      const key = lo + hi;",
       },
       {
+        within: "makeConsistent",
         why: "a dot's degree is counted from one endpoint only, halving its edge list",
         find: "    e.dot1.order++;\n    e.dot2.order++;",
         replace: "    e.dot1.order++;",
       },
       {
+        within: "makeConsistent",
         why: "the anticlockwise walk is dropped, so a boundary dot's face list stays half-empty",
         find: "    // clockwise search",
         replace: "    if (d.order > 0) continue;\n    // clockwise search",
