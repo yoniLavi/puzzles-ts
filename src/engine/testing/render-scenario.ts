@@ -158,7 +158,9 @@ export function renderScenario<Params, State, Move, Ui, DrawState, Mistake>(
   // is the settled frame.
   if (scenario.settle) midend.timer(SETTLE_SECONDS);
 
-  const palette = game.colours(defaultBackground);
+  // Through the midend, so the recording resolves indices against the same
+  // board the app paints (the host background shifted off the extremes).
+  const palette = midend.getColourPalette(defaultBackground);
   const recording = new RecordingDrawing(palette);
   midend.redraw(recording);
 

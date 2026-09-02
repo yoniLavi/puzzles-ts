@@ -22,7 +22,7 @@
  * ## Colours
  *
  * The palette is upstream's, index for index, derived from the host
- * background with no luminance adjustment: `puzzle-view.ts` hands the game
+ * background with no luminance adjustment: `puzzle-view.ts` hands the engine
  * pure white in dark mode precisely so `background × 0.95` derivations still
  * work, then adapts the returned palette itself (docs/games/rendering.md § "The palette: three layers, meaning first").
  */

@@ -17,6 +17,7 @@
  * lit from the wrong side in dark mode only.
  */
 import { describe, expect, it } from "vitest";
+import { resolvePalette } from "../engine/colour/colour-mkhighlight.ts";
 import { darkValue } from "../engine/colour/colour-token.ts";
 import { getTsGame } from "../engine/registry.ts";
 import type { Colour, PuzzleId } from "../engine/types.ts";
@@ -27,15 +28,16 @@ import "../games/index.ts";
 
 /** The lightness a dark-mode board background sits at, per `utils/color.ts`. */
 const DARK_BG_L = 0.2;
-/** What `puzzle-view.ts` hands a game in dark mode, and why: games derive
+/** What `puzzle-view.ts` hands the engine in dark mode, and why: games derive
  * colours by scaling the background down, so the palette is generated light and
- * inverted afterwards. */
+ * inverted afterwards. (`resolvePalette` shifts it off pure white before the
+ * game sees it, exactly as the midend does.) */
 const DARK_INPUT = oklchToColour([1, 0, 0]);
 
 function schemes(id: PuzzleId): { light: OKLCH[]; dark: OKLCH[] } {
   const game = getTsGame(id);
   if (!game) throw new Error(`${id} is not registered`);
-  const rgb = game.colours(DARK_INPUT);
+  const rgb = resolvePalette(game, DARK_INPUT);
   const light = rgb.map(colourToOKLCH);
   const authored: Record<number, Colour> = {};
   rgb.forEach((c, i) => {

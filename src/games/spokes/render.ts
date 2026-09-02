@@ -112,10 +112,12 @@ export const COL_HINT_CELL = 10;
 
 /**
  * Upstream takes the frontend background as-is (no `game_mkhighlight`) and
- * hard-codes the rest. Deliberately *not* luminance-adjusted for dark mode:
- * `puzzle-view.ts` passes pure white as the background there and adapts the
- * whole returned palette itself, so a second adaptation here would fight the
- * layer that owns the concern (docs/games/rendering.md § "The palette: three layers, meaning first").
+ * hard-codes the rest; here the background arrives already shifted off the
+ * extremes by `resolvePalette`, the same board every game paints. Deliberately
+ * *not* luminance-adjusted for dark mode: `puzzle-view.ts` passes pure white
+ * as the background there and adapts the whole returned palette itself, so a
+ * second adaptation here would fight the layer that owns the concern
+ * (docs/games/rendering.md § "The palette: three layers, meaning first").
  */
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];

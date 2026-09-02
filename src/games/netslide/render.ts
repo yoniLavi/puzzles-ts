@@ -76,8 +76,10 @@ export const COL_HINT = 9;
 
 export function colours(defaultBackground: Colour): Colour[] {
   const out: Colour[] = [];
-  // Netslide takes the frontend background as-is (upstream calls
-  // `frontend_default_colour` directly, not `game_mkhighlight`).
+  // The board is the background as handed in: `resolvePalette` has already
+  // shifted it off the extremes, so this is the same tone `mkhighlight` games
+  // paint (upstream's `frontend_default_colour` versus `game_mkhighlight` is not
+  // a distinction a port gets to keep).
   out[COL_BACKGROUND] = defaultBackground;
   out[COL_FLASHING] = netslideFlashing(defaultBackground);
   out[COL_BORDER] = netslideBorder(defaultBackground);

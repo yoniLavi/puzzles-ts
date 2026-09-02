@@ -320,8 +320,8 @@ export const MODULES = [
       {
         within: "Midend.getColourPalette",
         why: "getColourPalette swallows the frontend's background, flattening every derived colour",
-        find: "    return this.game.colours(defaultBackground);",
-        replace: "    return this.game.colours([1, 1, 1]);",
+        find: "    return resolvePalette(this.game, defaultBackground);",
+        replace: "    return resolvePalette(this.game, [1, 1, 1]);",
       },
       {
         within: "Midend.darkPalette",

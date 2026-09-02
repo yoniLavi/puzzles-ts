@@ -34,11 +34,12 @@
  * A role is a named colour when its job is to be unmistakable regardless of the
  * board, and a **function of the frontend background** when it must stay legible
  * *against* the board. That second form is not a stylistic preference:
- * `puzzle-view.ts` hands a game **pure white** as its default background in dark
- * mode (precisely because upstream games derive colours as `background × 0.9`) and
- * adapts the returned palette afterwards — so a fixed pale colour that reads
- * correctly in light mode can land on top of the background in dark mode. Spokes
- * shipped exactly that bug with a pure-white `COL_DONE`.
+ * `puzzle-view.ts` hands the engine **pure white** as the default background in
+ * dark mode (precisely because upstream games derive colours as `background × 0.9`),
+ * `resolvePalette` shifts it to a light grey so every game's board sits at one
+ * tone, and the returned palette is adapted afterwards — so a fixed pale colour
+ * that reads correctly in light mode can land on top of the background in dark
+ * mode. Spokes shipped exactly that bug with a pure-white `COL_DONE`.
  */
 
 import type { Colour } from "../types.ts";

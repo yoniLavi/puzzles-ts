@@ -468,9 +468,10 @@ picks a colour by where it sits in one scheme's ordering.
 `palette-games.ts`** — never open-coded `bg[0] * 0.9` in the game, which is
 the same colour decision written as arithmetic somewhere no scheme can reach.
 The derived form matters more than it looks:
-[`puzzle/components/view.ts`](../../src/puzzle/components/view.ts) hands a
-game **pure white** as its background in dark mode (so `background × 0.9`
-derivations keep working) and adapts the returned palette itself — so a
+[`puzzle/components/view.ts`](../../src/puzzle/components/view.ts) hands the
+engine **pure white** as the background in dark mode (so `background × 0.9`
+derivations keep working; `resolvePalette` shifts it to a light grey before
+any game sees it) and adapts the returned palette itself — so a
 colour that must stay legible against the board has to be a *function of the
 background*, and an absolute colour should be a *named* one (a named colour
 authors both schemes; a derivation handed pure white authors neither).
@@ -512,6 +513,22 @@ not the fifth.
 silently mis-targets them. Keep `colours()` index-for-index with the upstream
 enum. Exemplar: [`unruly/render.ts`](../../src/games/unruly/render.ts).
 
+### Every board is one tone
+
+**The background your `colours()` receives is already the board.** The
+midend's
+[`resolvePalette`](../../src/engine/colour/colour-mkhighlight.ts) shifts the
+host background off pure white and pure black (`mkhighlightBackground`) once,
+before any game sees it, so every game paints the same board tone whether
+its C called `game_mkhighlight` or took `frontend_default_colour` raw.
+Assign `out[COL_BACKGROUND] = defaultBackground` and call `mkhighlight` only
+when you want the bevel trio — it re-derives the identical background, the
+shift being exactly idempotent. Before this, the collection was split 22/30
+along that C distinction, invisibly in light mode and loudly in dark, where
+Loopy's board resolved to `#161616` and Palisade's to `#3c3c3c` and every
+raw-background game's white flash landed on its own board.
+`board-background.test.ts` holds every registered game to one board.
+
 ### Highlights from a fixed base
 
 **Highlight/lowlight from a fixed base colour needs `mkhighlightSpecific`,
@@ -537,8 +554,10 @@ only undecided cells grey. Exemplar:
 
 **A "highlight" upstream draws as pure white may be invisible here — check
 both schemes.** Spokes' satisfied-hub fill read as nothing in light mode and
-as *literally the background* in dark mode, because `view.ts` hands the game
-pure white there. A cue that has to be seen must be a clear step **away**
+as *literally the background* in dark mode, because `view.ts` handed the game
+pure white there (the engine now shifts it first — see "Every board is one
+tone" — but a pure-white cue is still only a sixth of the range above the
+board). A cue that has to be seen must be a clear step **away**
 from the background (`defaultBackground × 0.85` is enough; greys survive the
 dark-mode adaptation because it inverts lightness about the real background).
 When a game's own colour nearly equals its background, fix it, don't preserve
@@ -566,12 +585,16 @@ and prioritise it below flash/hint fills. Exemplars:
 **Don't make a colour derivation luminance-aware in the game.** `colours()`
 never sees a dark background: `view.ts` passes pure white precisely because
 puzzles multiply the background down, then adapts the whole returned palette
-in OKLCH with per-puzzle overrides from `augmentation.ts`. A luminance test
-in a game is dead code, and a second adaptation fights the layer that owns
-the concern. Derive exactly as upstream does and record why there is no
-divergence (this overturned a written design decision on
-`add-loopy-ts-port`). Exemplar:
-[`loopy/render.ts`](../../src/games/loopy/render.ts).
+in OKLCH — a token's authored dark value first, calculation otherwise, with
+per-puzzle overrides from `augmentation.ts` on top. A luminance test in a
+game is dead code, and a second adaptation fights the layer that owns the
+concern. Derive exactly as upstream does, and when the derived dark value is
+wrong (Loopy's undecided edge inverted to near-invisible), **author the dark
+value on the shared role** with `token(light, dark)` rather than patching the
+game — that fixed Loopy, Palisade and Separate at once and retired the three
+identical `{ n: 0.6 }` overrides they carried. Exemplar:
+[`loopy/render.ts`](../../src/games/loopy/render.ts), and
+`lineMaybeColour` in [`palette.ts`](../../src/engine/colour/palette.ts).
 
 ### What enforces the palette rules
 

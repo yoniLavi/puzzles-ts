@@ -186,26 +186,22 @@ function canvasSize(type: GridType, w: number, h: number, tileSize: number): Siz
 }
 
 /**
- * The palette, index-for-index with the `loopy.c` colour enum — and
- * value-for-value identical to upstream's.
+ * The palette, index-for-index with the `loopy.c` colour enum. Every value is
+ * a shared role: the undecided and ruled-out edges are `lineMaybeColour` and
+ * `lineNoColour`, which Palisade and Separate draw with too, and the board
+ * itself is whatever `resolvePalette` hands every game — upstream's
+ * `frontend_default_colour` taken raw, which is why Loopy's dark board once
+ * differed from Palisade's, is no longer a choice a game makes.
  *
- * `COL_FAINT` and `COL_LINEUNKNOWN` are derived by multiplying the background
- * by 0.9, which only ever moves *towards black*. Upstream flags that this
- * fails on a dark host, where the faint lines sink into the background, and
- * declines to fix it (`loopy.c:1046-1049`: *"Except if the background is
- * pretty dark already; then it ought to be a bit lighter. Oy vey."*).
- *
- * **That is not this fork's problem to solve here, and adapting for it in this
- * function would actively break dark mode.** `puzzle-view.ts` deliberately
- * hands every game a *light* background — in dark mode it passes pure white
- * (`oklchToColour([1, 0, 0])`) precisely because "puzzles often generate
- * colors by multiplying the background by a factor < 1.0 ... generates
- * near-blacks for dark ones" — then inverts and adapts the whole returned
- * palette in OKLCH, with per-puzzle `darkMode.paletteOverrides` from
- * `augmentation.ts` for anything the generic adaptation gets wrong. So this
- * function is *required* to derive against a light background; a second,
- * game-level adaptation would fight the one a layer up. Dark-mode tuning for
- * Loopy belongs in `augmentation.ts`, not here.
+ * `COL_FAINT` and `COL_LINEUNKNOWN` derive from the background by moving
+ * *towards black*. Upstream flags that this fails on a dark host and declines
+ * to fix it (`loopy.c:1046-1049`: *"Except if the background is pretty dark
+ * already; then it ought to be a bit lighter. Oy vey."*). **Do not adapt for it
+ * here**: `colours()` never sees a dark background — `puzzle-view.ts` hands the
+ * engine pure white in dark mode and adapts the returned palette in OKLCH — and
+ * the two roles carry their own authored dark values, so the "oy vey" case is
+ * answered in the palette, once, for all three games
+ * (docs/games/rendering.md § "Dark mode is the app's concern").
  *
  * (`COL_LINEUNKNOWN`'s blue component is zeroed rather than scaled, which is
  * what makes it a yellow rather than a grey.)

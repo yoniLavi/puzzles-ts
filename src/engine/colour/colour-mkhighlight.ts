@@ -99,6 +99,31 @@ export function mkhighlight(defaultBackground: Colour): {
 }
 
 /**
+ * **The board every game paints sits at the same tone.** A game's `colours()`
+ * is handed the host background already shifted off pure white and pure black
+ * by {@link mkhighlightBackground}, and this is the one place that hands it.
+ *
+ * Without this, the collection split in two along a line nobody had drawn: the
+ * thirty games whose C called `game_mkhighlight` shifted the background
+ * themselves, and the twenty-two whose C took `frontend_default_colour` as-is
+ * did not. In light mode the host sits just outside the shift's reach and the
+ * two halves agreed; in dark mode, where the frontend hands pure white and the
+ * shift always fires, Loopy's board resolved to `#161616` and Palisade's to
+ * `#3c3c3c`, and every raw-background game's white flash landed exactly on its
+ * own board. Shifting once here, before any game sees the value, makes the
+ * board tone a property of the collection rather than of which C function a
+ * port happened to mirror — and a game that calls `mkhighlight` itself gets the
+ * identical trio, because the shift is exactly idempotent (a shifted background
+ * is exactly K from the extreme, and the shift fires only strictly inside K).
+ */
+export function resolvePalette(
+  game: { colours(defaultBackground: Colour): Colour[] },
+  hostBackground: Colour,
+): Colour[] {
+  return game.colours(mkhighlightBackground(hostBackground));
+}
+
+/**
  * Faithful port of `misc.c`'s `game_mkhighlight_specific`: derive a
  * highlight (toward white) and lowlight (toward black) from an
  * **arbitrary base colour**, each a distance `K` from the base.

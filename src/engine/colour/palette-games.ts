@@ -9,9 +9,10 @@
  * Signpost's grid is `background / 1.3` and means "the board, stepped down just
  * enough to separate squares"; there is no scheme in which that is a constant.
  *
- * This is not filing. `puzzle-view.ts` hands a game **pure white** as its
+ * This is not filing. `puzzle-view.ts` hands the engine **pure white** as the
  * background in dark mode, precisely because games derive colours by scaling the
- * board down, and adapts the returned palette afterwards. A derivation therefore
+ * board down (`resolvePalette` shifts it to a light grey before a game sees it),
+ * and adapts the returned palette afterwards. A derivation therefore
  * tracks the scheme for free, and freezing one into a value is how a subtle tint
  * of the board becomes a bright patch on it.
  *

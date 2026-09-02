@@ -442,8 +442,10 @@ export class PuzzleView extends SignalWatcher(LitElement) {
     //   backgrounds. Instead, give the puzzle a gray background of equivalent
     //   lightness (working in OKLCH space) and then colorize it later.
     const [bgl, bgc, bgh] = bglch;
+    // In dark mode, generate from pure white; the engine shifts it off the
+    // extreme before any game sees it (`resolvePalette`).
     const defaultBackgroundColour = isDarkMode
-      ? oklchToColour([1, 0, 0]) // generate from pure white in dark mode
+      ? oklchToColour([1, 0, 0])
       : oklchToColour([bgl, 0, 0]);
     const paletteRGB = await this.puzzle.getColourPalette(defaultBackgroundColour);
     let palette = paletteRGB.map(colourToOKLCH);

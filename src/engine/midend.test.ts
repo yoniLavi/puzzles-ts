@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { mkhighlightBackground } from "./colour/colour-mkhighlight.ts";
 import { token } from "./colour/colour-token.ts";
 import {
   type FakeDrawState,
@@ -409,13 +410,16 @@ describe("Midend palette + teardown (adapter-facing)", () => {
     colours: (bg: Colour) => [bg, token([0, 0, 0], [1, 1, 1]), [0.5, 0.5, 0.5]],
   } as unknown as typeof fakeGame;
 
-  it("getColourPalette passes the frontend's background through to the game", () => {
+  it("getColourPalette hands the game the frontend's background, shifted off the extremes", () => {
     // The background is an *input*: a game derives washes from it (the dark
     // scheme relies on that, passing pure white so `background × 0.9` still
-    // works), so swallowing it would silently flatten every derived colour.
+    // works), so swallowing it would silently flatten every derived colour. It
+    // arrives shifted off pure white/black (`resolvePalette`), so every game
+    // paints one board tone; a mid-range colour passes through untouched.
     const m = new Midend(withPalette);
     expect(m.getColourPalette([0.2, 0.4, 0.6])[0]).toEqual([0.2, 0.4, 0.6]);
-    expect(m.getColourPalette([1, 1, 1])[0]).toEqual([1, 1, 1]);
+    expect(m.getColourPalette([1, 1, 1])[0]).toEqual(mkhighlightBackground([1, 1, 1]));
+    expect(m.getColourPalette([1, 1, 1])[0][0]).toBeLessThan(1);
   });
 
   it("darkPalette reports only the indices whose token authored a dark value", () => {

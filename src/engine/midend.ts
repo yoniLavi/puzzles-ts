@@ -14,6 +14,7 @@
  * never need to erase generics (no `any`).
  */
 
+import { resolvePalette } from "./colour/colour-mkhighlight.ts";
 import { darkValue } from "./colour/colour-token.ts";
 import {
   type ActiveHint,
@@ -1114,8 +1115,12 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
     }
   }
 
+  /** The game's palette against `defaultBackground` — the host's colour, which
+   * `resolvePalette` shifts off the extremes before the game sees it, so every
+   * game's board sits at one tone whether or not its own `colours()` calls
+   * `mkhighlight`. */
   getColourPalette(defaultBackground: Colour): Colour[] {
-    return this.game.colours(defaultBackground);
+    return resolvePalette(this.game, defaultBackground);
   }
 
   /**
@@ -1138,7 +1143,7 @@ export class Midend<Params, State, Move, Ui, DrawState> implements EngineCore {
    */
   darkPalette(defaultBackground: Colour): Record<number, Colour> {
     const out: Record<number, Colour> = {};
-    this.game.colours(defaultBackground).forEach((colour, i) => {
+    resolvePalette(this.game, defaultBackground).forEach((colour, i) => {
       const dark = colour && darkValue(colour);
       if (dark) out[i] = [...dark] as Colour;
     });
