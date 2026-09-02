@@ -5888,7 +5888,7 @@ exports[`hint rendering (tier 2.5) > a hidden-single hint frame spotlights the s
 ]
 `;
 
-exports[`hint rendering (tier 2.5) > an arrow hint frame paints the COL_HINT target slot and the COL_HINT_CELL neighbour 1`] = `
+exports[`hint rendering (tier 2.5) > an arrow hint frame paints the COL_HINT target slot and the COL_HINT_CELL neighbor 1`] = `
 [
   {
     "color": 0,

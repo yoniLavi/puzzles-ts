@@ -109,7 +109,7 @@ describe("Mosaic redraw", () => {
     ).toBe(true);
   });
 
-  it("recolours marked and blank tiles, with solved/error text colours", () => {
+  it("recolors marked and blank tiles, with solved/error text colors", () => {
     let state = newState(P3, "000000000");
     // Blank (0,0) → its clue gets closer to solved; mark (1,1) → errors.
     state = executeMove(state, { type: "toggle", x: 1, y: 1, double: false });
@@ -124,7 +124,7 @@ describe("Mosaic redraw", () => {
     expect(ops.some((o) => o.op === "drawText" && o.color === COL_ERROR)).toBe(true);
   });
 
-  it("greys out a solved clue's text", () => {
+  it("grays out a solved clue's text", () => {
     let state = newState(P3, ALL_BLACK_DESC);
     for (let y = 0; y < 3; y++) {
       for (let x = 0; x < 3; x++) {
@@ -139,7 +139,7 @@ describe("Mosaic redraw", () => {
     expect(texts.every((o) => o.color === COL_TEXT_SOLVED)).toBe(true);
   });
 
-  it("draws cursor edges in the cursor colour", () => {
+  it("draws cursor edges in the cursor color", () => {
     const state = newState(P3, ALL_BLACK_DESC);
     const ds = freshDs(state);
     const ui = freshUi();
@@ -173,7 +173,7 @@ describe("Mosaic redraw", () => {
     expect(second.ops.filter((o) => body(o) && o.color === COL_MARKED).length).toBe(9);
   });
 
-  it("outlines mistake cells in the error colour", () => {
+  it("outlines mistake cells in the error color", () => {
     let state = newState(P3, ALL_BLACK_DESC);
     state = executeMove(state, { type: "toggle", x: 1, y: 0, double: true }); // blank = wrong
     const ds = freshDs(state);

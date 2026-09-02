@@ -327,7 +327,7 @@ function narrate(
       // only neighbors are the two sides, so shading the side diagonal
       // would strand the corner white — the same box-in argument as corner3.
       const n = numAt(reason.block[0]);
-      return `This corner ${n} matches both its neighbours, so keeping it white would shade them both and box it in — the corner and the ${n} diagonally inside must both be shaded.`;
+      return `This corner ${n} matches both its neighbors, so keeping it white would shade them both and box it in — the corner and the ${n} diagonally inside must both be shaded.`;
     }
     case "corner3": {
       // Branch A shades the corner itself; branch B shades the inner cell
@@ -336,7 +336,7 @@ function narrate(
       const m = numAt(reason.matched[1]);
       const t = numAt(targets[0]);
       return targets.some((tg) => sameCell(tg, reason.corner))
-        ? `This corner ${t} matches both its neighbouring ${m}s; keeping it white would shade them both, leaving the corner boxed in — so the ${t} must be shaded.`
+        ? `This corner ${t} matches both its neighboring ${m}s; keeping it white would shade them both, leaving the corner boxed in — so the ${t} must be shaded.`
         : `This inner ${t} matches the two ${m}s flanking the corner ${numAt(reason.corner)}; keeping it white would shade them both, leaving the corner boxed in — so the ${t} must be shaded.`;
     }
     case "corner2": {
@@ -392,7 +392,7 @@ function narrate(
         : `This ${t} shares a line with the ringed white ${t}, which already uses that number — so this copy must be shaded.`;
     }
     case "boxedIn":
-      return `This ${numAt(targets[0])} is the ringed white square's only unshaded neighbour left, so it must be white to avoid sealing that square off.`;
+      return `This ${numAt(targets[0])} is the ringed white square's only unshaded neighbor left, so it must be white to avoid sealing that square off.`;
     case "split":
       return `Shading this ${numAt(targets[0])} would split the white region in two, so it must be white to keep it connected.`;
   }

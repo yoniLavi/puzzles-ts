@@ -18,5 +18,5 @@ Right-click in a square and then type a letter to add or remove the
 monster as a pencil mark, indicating monsters that you think
 *might* go in that square.
 
-Left-click on a clue to mark it as done (grey it out). To unmark a
+Left-click on a clue to mark it as done (gray it out). To unmark a
 clue as done, left-click on it again.

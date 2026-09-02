@@ -207,10 +207,10 @@ export function decodeParams(s: string): GuessParams {
 
 export function validateParams(p: GuessParams, _full: boolean): string | null {
   if (p.ncolors < 2 || p.npegs < 2) return "Trivial solutions are uninteresting";
-  if (p.ncolors > MAXCOLORS) return "Too many colours";
+  if (p.ncolors > MAXCOLORS) return "Too many colors";
   if (p.nguesses < 1) return "Must have at least one guess";
   if (!p.allowMultiple && p.ncolors < p.npegs) {
-    return "Disallowing multiple colours requires at least as many colours as pegs";
+    return "Disallowing multiple colors requires at least as many colors as pegs";
   }
   return null;
 }

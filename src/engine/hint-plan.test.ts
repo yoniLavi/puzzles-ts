@@ -64,7 +64,7 @@ describe("deduceHintPlan", () => {
     expect(st).toBe("unfinished");
   });
 
-  it("honours the plan cap, and reports `incomplete` rather than the capped board's status", () => {
+  it("honors the plan cap, and reports `incomplete` rather than the capped board's status", () => {
     // Deliberately a board the loop *could* finish: the cap must win, and the
     // reported status must not claim the plan ran to completion.
     const board: Toy = [null, null, null, null, null];

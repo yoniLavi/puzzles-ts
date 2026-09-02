@@ -111,7 +111,7 @@ describe("Unruly redraw", () => {
     expect(ops.some((o) => o.op === "drawRect" && o.color === 1)).toBe(true);
   });
 
-  it("fills one (black) and zero (white) tiles with their colours", () => {
+  it("fills one (black) and zero (white) tiles with their colors", () => {
     let state = blank();
     state = place(state, 1, 1, ONE);
     state = place(state, 2, 2, ZERO);
@@ -136,7 +136,7 @@ describe("Unruly redraw", () => {
     ).toBeGreaterThanOrEqual(4);
   });
 
-  it("marks the count `!` when a row exceeds its colour target", () => {
+  it("marks the count `!` when a row exceeds its color target", () => {
     // 4 ones in a 6-wide row (target 3) → the row's ones count is exceeded.
     let state = blank();
     state = place(state, 0, 0, ONE);
@@ -161,7 +161,7 @@ describe("Unruly redraw", () => {
     expect(ops.some((o) => o.color === COL_1 + 2)).toBe(true);
   });
 
-  it("draws the cursor outline in the cursor colour", () => {
+  it("draws the cursor outline in the cursor color", () => {
     const state = blank();
     const ds = freshDs(state);
     const ui = freshUi();
@@ -185,7 +185,7 @@ describe("Unruly redraw", () => {
     expect(ops.some((o) => body(o) && o.color === COL_0_HIGHLIGHT)).toBe(true);
   });
 
-  it("outlines mistake cells in the error colour", () => {
+  it("outlines mistake cells in the error color", () => {
     // A single placed cell (no live 3-in-a-row / count error), flagged as a
     // mistake → only the four inset outline strips are error-colored.
     let state = blank();
@@ -197,7 +197,7 @@ describe("Unruly redraw", () => {
     expect(errorRects.length).toBe(4);
   });
 
-  it("grows the new colour from the centre during a placement animation", () => {
+  it("grows the new color from the center during a placement animation", () => {
     const prev = blank();
     const state = place(prev, 0, 0, ONE);
     const ds = freshDs(state);
@@ -218,7 +218,7 @@ describe("Unruly redraw", () => {
     expect(grow.length).toBe(1);
   });
 
-  it("settles to the plain new colour once the animation ends (prev null)", () => {
+  it("settles to the plain new color once the animation ends (prev null)", () => {
     const prev = blank();
     const state = place(prev, 0, 0, ONE);
     const ds = freshDs(state);

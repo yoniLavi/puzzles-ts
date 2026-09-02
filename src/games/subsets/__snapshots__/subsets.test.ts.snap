@@ -2910,7 +2910,7 @@ exports[`subsets rendering (tier 2.5) > completion flash: slots blink to the inn
 ]
 `;
 
-exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement draws in the error colour 1`] = `
+exports[`subsets rendering (tier 2.5) > mistake frame: a duplicated placement draws in the error color 1`] = `
 [
   {
     "color": 0,

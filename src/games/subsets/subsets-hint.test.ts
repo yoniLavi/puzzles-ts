@@ -413,7 +413,7 @@ describe("hintKeepTrack", () => {
 });
 
 describe("highlights", () => {
-  it("arrows point at a neighbour cell; a collapse points at tally sets", () => {
+  it("arrows point at a neighbor cell; a collapse points at tally sets", () => {
     const arrow = findFiring((d) => d.reason.kind === "arrowKnown");
     const collapse = findFiring((d) => d.reason.kind === "collapse");
     expect(arrow).not.toBeNull();
@@ -611,7 +611,7 @@ describe("hint rendering (tier 2.5)", () => {
     return null;
   }
 
-  it("an arrow hint frame paints the COL_HINT target slot and the COL_HINT_CELL neighbour", () => {
+  it("an arrow hint frame paints the COL_HINT target slot and the COL_HINT_CELL neighbor", () => {
     let seed: string | null = null;
     for (let s = 0; s < 40 && !seed; s++) {
       const d = deduceHintPlan(gen(`render-${s}`)).deductions[0];

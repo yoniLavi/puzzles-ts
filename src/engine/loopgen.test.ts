@@ -90,7 +90,7 @@ function loopStats(w: number, h: number, seed: string) {
 }
 
 describe("generateLoop", () => {
-  it("colours every face and leaves one single closed loop", () => {
+  it("colors every face and leaves one single closed loop", () => {
     for (const seed of ["loop-a", "loop-b", "loop-c"]) {
       const s = loopStats(8, 8, seed);
       expect(s.anyGray).toBe(false);
@@ -105,7 +105,7 @@ describe("generateLoop", () => {
     }
   });
 
-  it("is reproducible: the same seed yields the same colouring", () => {
+  it("is reproducible: the same seed yields the same coloring", () => {
     const a = loopStats(9, 9, "repro");
     const b = loopStats(9, 9, "repro");
     expect(Array.from(a.board)).toEqual(Array.from(b.board));
@@ -132,7 +132,7 @@ describe("the bias protocol", () => {
     return { calls, board, numFaces: g.numFaces };
   }
 
-  it("takes back every tentative colouring, and says so", () => {
+  it("takes back every tentative coloring, and says so", () => {
     // The contract is "tentative set → restore → notify-commit", which is what
     // lets a bias keep incremental state instead of rescanning the board. Two
     // ways to break it look identical from here and are equally fatal: leaving

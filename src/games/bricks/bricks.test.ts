@@ -213,7 +213,7 @@ describe("bricks input", () => {
     expect(next.grid[i]).toBe(F_SHADE);
   });
 
-  it("a drag paints every crossed cell with one colour", () => {
+  it("a drag paints every crossed cell with one color", () => {
     const state = newState(FIX_PARAMS, FIX.desc);
     const ui = bricksGame.newUi(state);
     // Find two horizontally-adjacent blank cells.

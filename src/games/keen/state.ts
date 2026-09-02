@@ -330,7 +330,7 @@ export function validateDesc(p: KeenParams, desc: string): string | null {
     } else if (ch === undefined || ch === "") {
       return "Too few clues for block structure";
     } else {
-      return "Unrecognised clue type";
+      return "Unrecognized clue type";
     }
     i++;
     while (i < desc.length && desc[i] >= "0" && desc[i] <= "9") i++;

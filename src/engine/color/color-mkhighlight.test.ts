@@ -46,9 +46,9 @@ function previousInlineDerivation(defaultBackground: Color): {
 /** Backgrounds far enough from both extremes that the old inline code
  * took its correct (upstream-matching) branches. */
 const MID_RANGE_BACKGROUNDS: [string, Color][] = [
-  ["mid grey", [0.5, 0.5, 0.5]],
+  ["mid gray", [0.5, 0.5, 0.5]],
   ["typical dark host background", [0.13, 0.14, 0.16]],
-  ["saturated colour", [0.2, 0.4, 0.8]],
+  ["saturated color", [0.2, 0.4, 0.8]],
 ];
 
 /** Backgrounds whose adjusted form sits at (or a hair inside) K of an
@@ -158,7 +158,7 @@ describe("mkhighlightSpecific", () => {
   it.each([
     ["near-white", COL_0],
     ["dark", COL_1],
-    ["mid grey", [0.5, 0.5, 0.5] as Color],
+    ["mid gray", [0.5, 0.5, 0.5] as Color],
   ])("stays in gamut for the %s base", (_name, base) => {
     const r = mkhighlightSpecific(base);
     for (const c of [r.base, r.highlight, r.lowlight]) {
@@ -169,7 +169,7 @@ describe("mkhighlightSpecific", () => {
     }
   });
 
-  it("equals mkhighlight on a mid-grey base modulo the base-vs-background shift", () => {
+  it("equals mkhighlight on a mid-gray base modulo the base-vs-background shift", () => {
     // For a mid-gray base neither pass shifts, so specific's highlight/lowlight
     // match mkhighlight's (which also doesn't shift mid gray).
     const gray: Color = [0.5, 0.5, 0.5];

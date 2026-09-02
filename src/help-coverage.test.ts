@@ -44,16 +44,16 @@ const pageIds = Object.keys(helpPages).map(
 );
 
 describe("help page coverage", () => {
-  it("has a help page for every catalogued puzzle", () => {
+  it("has a help page for every cataloged puzzle", () => {
     const known = new Set(pageIds);
     const missing = puzzleIds.filter((id) => !known.has(id));
     expect(missing, "add help/games/<puzzleId>.md for each").toEqual([]);
   });
 
-  it("has no help page for an uncatalogued game", () => {
+  it("has no help page for an uncataloged game", () => {
     const known = new Set<string>(puzzleIds);
     const orphaned = pageIds.filter((id) => !known.has(id));
-    expect(orphaned, "help/games/<id>.md names no catalogued game").toEqual([]);
+    expect(orphaned, "help/games/<id>.md names no cataloged game").toEqual([]);
   });
 
   it("is not vacuous — the glob found the pages", () => {
@@ -72,12 +72,12 @@ describe("the Included puzzles page lists the whole collection", () => {
     ...puzzlesPage.matchAll(/^\|\s*\[[^\]]+]\(\.\.\/([a-z0-9]+)\)/gm),
   ].map((m) => m[1]);
 
-  it("lists every catalogued puzzle", () => {
+  it("lists every cataloged puzzle", () => {
     const known = new Set(listed);
     expect(puzzleIds.filter((id) => !known.has(id))).toEqual([]);
   });
 
-  it("lists nothing that is not a catalogued puzzle", () => {
+  it("lists nothing that is not a cataloged puzzle", () => {
     const known = new Set<string>(puzzleIds);
     expect(listed.filter((id) => !known.has(id))).toEqual([]);
   });

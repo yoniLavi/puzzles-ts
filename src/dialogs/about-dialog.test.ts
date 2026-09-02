@@ -115,7 +115,7 @@ describe("licenseTextToHTML — plain text (upstream and dependency notices)", (
     expect(el.textContent).toContain("# Not a heading here");
   });
 
-  it("still splits paragraphs and honours the label", () => {
+  it("still splits paragraphs and honors the label", () => {
     const el = renderLicense(PLAIN, "Some Dependency");
     expect(el.querySelectorAll("p")).toHaveLength(2);
     expect(el.querySelector("p")?.textContent).toContain("Some Dependency");

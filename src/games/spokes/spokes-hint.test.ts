@@ -251,7 +251,7 @@ describe("hints only rule out a spoke when it helps a hub still needing lines", 
 
 // --- one firing is one journey ----------------------------------------------
 
-describe("a saturated hub is one multi-leg journey, one colour", () => {
+describe("a saturated hub is one multi-leg journey, one color", () => {
   it("emits every forced spoke as continuation legs sharing one highlight", () => {
     // A saturation firing forcing more than one spoke.
     let found: { state: SpokesState; firing: SpokesFiring } | null = null;

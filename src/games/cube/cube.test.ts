@@ -324,7 +324,7 @@ describe("cube input", () => {
     );
   });
 
-  it("rolls toward a left-click's bearing from the square centre", () => {
+  it("rolls toward a left-click's bearing from the square center", () => {
     const { state, ui, ds } = interiorCube();
     // Square 5 center in pixels: x*gs+ox, y*gs+oy.
     const sq = state.grid[5];
@@ -338,7 +338,7 @@ describe("cube input", () => {
     expect(click(0, -40)).toEqual({ dir: "U" });
   });
 
-  it("ignores a dead-centre click and unhandled buttons", () => {
+  it("ignores a dead-center click and unhandled buttons", () => {
     const { state, ui, ds } = interiorCube();
     const sq = state.grid[5];
     const cx = Math.trunc(sq.x * ds.gridscale) + ds.ox;

@@ -43,8 +43,8 @@ function resolve(fn: Function, background: Color, highlight: Color): Color {
     : (fn as (b: Color) => Color)(background);
 }
 
-describe("the shared colour vocabulary", () => {
-  it("defines every meaning in terms of a named colour", () => {
+describe("the shared color vocabulary", () => {
+  it("defines every meaning in terms of a named color", () => {
     // The whole point of the two layers. A meaning that held its own value would
     // be a color decision wearing a role's name — which is what ~170 of the ~190
     // tokens this change deleted actually were.
@@ -69,7 +69,7 @@ describe("the shared colour vocabulary", () => {
       if (exempt.has(color)) continue;
       expect(
         palette.has(color),
-        `${name} holds a colour value instead of referencing one from colors.ts`,
+        `${name} holds a color value instead of referencing one from colors.ts`,
       ).toBe(true);
     }
   });
@@ -163,7 +163,7 @@ describe("the shared colour vocabulary", () => {
     for (const resolveScheme of [(c: Color) => c, inDark]) {
       const action = colorToOKLCH(resolveScheme(roles.HINT_ACTION));
       const wash = roles.HINT_EVIDENCE_WASH;
-      expect(action[1], `${key(wash)} vs the action colour`).toBeGreaterThan(
+      expect(action[1], `${key(wash)} vs the action color`).toBeGreaterThan(
         colorToOKLCH(resolveScheme(wash))[1] * 2,
       );
     }

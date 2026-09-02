@@ -415,9 +415,9 @@ describe("slant solve + findMistakes", () => {
   });
 });
 
-describe("slant generator (behavioural)", () => {
+describe("slant generator (behavioral)", () => {
   it("generates uniquely-solvable boards at the target difficulty", () => {
-    const rng = randomNew("slant-behavioural");
+    const rng = randomNew("slant-behavioral");
     for (const diff of [DIFF_EASY, DIFF_HARD]) {
       const p = { w: 6, h: 6, diff };
       const { desc } = newDesc(p, rng);
@@ -471,7 +471,7 @@ describe("slant rendering", () => {
     expect(recording.ops).toMatchSnapshot();
   });
 
-  it("renders the mistake overlay in error colour", () => {
+  it("renders the mistake overlay in error color", () => {
     const wrong0 = FIXTURE.aux[0] === "\\" ? 1 : -1;
     const { recording, mistakeCount } = renderScenario({
       game: slantGame,

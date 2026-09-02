@@ -1,9 +1,9 @@
 # Unruly
 
-Colour every square either black or white, in such a way that:
+Color every square either black or white, in such a way that:
 
 - no three consecutive squares, horizontally or vertically, are
-  the same colour
+  the same color
 - each row and column contains the same number of black and white
   squares.
 

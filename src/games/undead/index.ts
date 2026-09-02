@@ -470,7 +470,7 @@ function findMistakes(state: UndeadState): readonly UndeadMistake[] {
 // --- hint ------------------------------------------------------------------
 
 const POPULATE_TEXT =
-  "Start by pencilling every monster into each empty cell, so the eliminations that follow have something to cross out.";
+  "Start by penciling every monster into each empty cell, so the eliminations that follow have something to cross out.";
 
 const isSingleton = (v: number): boolean =>
   v === MON_GHOST || v === MON_VAMPIRE || v === MON_ZOMBIE;

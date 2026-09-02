@@ -641,7 +641,7 @@ function buildSteps(
     steps.push(
       populateStep<SaladMove, SaladHint>(
         { type: "pencilAll" },
-        `Start by pencilling in every candidate ${vocab.noun} in each empty square that hasn't any yet, so the eliminations that follow have something to cross out.`,
+        `Start by penciling in every candidate ${vocab.noun} in each empty square that hasn't any yet, so the eliminations that follow have something to cross out.`,
       ),
     );
     populated = true;

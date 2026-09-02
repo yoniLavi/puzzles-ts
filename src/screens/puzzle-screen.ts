@@ -974,7 +974,7 @@ export class PuzzleScreen extends SignalWatcher(Screen) {
        * conditions mirror reference-panel.ts's :host media query: a side dock by
        * default, a bottom sheet on a narrow viewport OR in "horizontal"
        * orientation (short landscape, where a side dock would shove the board
-       * off-centre against the toolbar column). */
+       * off-center against the toolbar column). */
       main.reference-open {
         padding-inline-end: min(340px, 42vw);
       }

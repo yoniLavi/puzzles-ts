@@ -28,7 +28,7 @@ describe("rect render scenarios", () => {
     expect(recording.ops).toMatchSnapshot();
   });
 
-  it("solved frame: grey correct fill covers the board", () => {
+  it("solved frame: gray correct fill covers the board", () => {
     // Build the solve move from the same id's board.
     const { desc } = newDesc(P, randomNew("rect-scenario"));
     const st = newState(P, desc);

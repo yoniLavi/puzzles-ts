@@ -142,7 +142,7 @@ describe("magnets moves + findMistakes", () => {
     expect(s.grid[partner]).toBe(POSITIVE);
   });
 
-  it("clue-done toggle greys a clue and does not affect completion", () => {
+  it("clue-done toggle grays a clue and does not affect completion", () => {
     const p = P(6, 5, DIFF_EASY);
     const { desc } = newMagnetsDesc(p, randomNew("clue"));
     let s = newState(p, desc);

@@ -6,7 +6,7 @@ const hex = (b: Uint8Array): string =>
   Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
 
 describe("shaCopy", () => {
-  it("forks a partially-hashed state that finalises independently", () => {
+  it("forks a partially-hashed state that finalizes independently", () => {
     // The `final = base` pattern from misc.c's obfuscate_bitmap: hash a
     // common prefix once, then finalize two independent continuations.
     const base = shaInit();

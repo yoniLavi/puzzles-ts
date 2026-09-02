@@ -84,7 +84,7 @@ describe("desc", () => {
     expect(status(s)).toBe("ongoing");
   });
 
-  it("honours allowMultiple=false (no repeated colour in the solution)", () => {
+  it("honors allowMultiple=false (no repeated color in the solution)", () => {
     const p = {
       ncolors: 6,
       npegs: 4,
@@ -143,7 +143,7 @@ describe("markPegs (Knuth feedback)", () => {
     expect(feedback.filter((f) => f === FEEDBACK_CORRECTCOLOR)).toHaveLength(0);
   });
 
-  it("scores a colour present but wholly misplaced as white only", () => {
+  it("scores a color present but wholly misplaced as white only", () => {
     // solution 1 2 3 4; guess 2 1 4 3 → 0 place, 4 color.
     const { feedback, ncPlace } = markPegs([2, 1, 4, 3], [1, 2, 3, 4], ncolors);
     expect(ncPlace).toBe(0);
@@ -171,7 +171,7 @@ describe("isMarkable", () => {
     expect(isMarkable(p, [1, 0, 0, 0])).toBe(true);
   });
 
-  it("allowMultiple=false rejects repeated colours", () => {
+  it("allowMultiple=false rejects repeated colors", () => {
     const p = { ...base, allowMultiple: false };
     expect(isMarkable(p, [1, 2, 2, 3])).toBe(false);
     expect(isMarkable(p, [1, 2, 3, 4])).toBe(true);

@@ -14,7 +14,7 @@ const PALETTE: Color[] = [
 ];
 
 describe("RecordingDrawing", () => {
-  it("captures each primitive with rounded coords and resolved colours", () => {
+  it("captures each primitive with rounded coords and resolved colors", () => {
     const dr = new RecordingDrawing(PALETTE);
     dr.startDraw(); // bookkeeping: ignored
     dr.drawRect({ x: 1.4, y: 2.6, w: 3.2, h: 4.8 }, 2);

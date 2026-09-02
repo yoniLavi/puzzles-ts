@@ -26,9 +26,9 @@ The direction is set by the arrow key you last used, and by the square you selec
 
 The number list is an input surface, not just a reference. Click a number to pick it up and every run that can still take it is previewed; click one of those runs to write the whole number in at once. If a square is already selected, clicking a number that fits one of its runs places it straight away.
 
-Across and down runs are drawn in two different colours, and each number in the list is written in the colour of the run a click would send it to — so the list always tells you where the number is going. Numbers already written into the grid stay distinguishable from ones that simply don't fit the square you have selected.
+Across and down runs are drawn in two different colors, and each number in the list is written in the color of the run a click would send it to — so the list always tells you where the number is going. Numbers already written into the grid stay distinguishable from ones that simply don't fit the square you have selected.
 
-Both the auto-advance and the two clue-list aids — highlighting the runs through the selected cell, and colouring the list by where each number could go — can be switched off in the game's preferences.
+Both the auto-advance and the two clue-list aids — highlighting the runs through the selected cell, and coloring the list by where each number could go — can be switched off in the game's preferences.
 
 ## Crossing parameters
 

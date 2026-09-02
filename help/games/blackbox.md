@@ -1,7 +1,7 @@
 # Black Box
 
 Determine where the hidden balls are in the box, by observing the
-behaviour of light beams fired into the box from the sides.
+behavior of light beams fired into the box from the sides.
 
 Click in a square around the edge of the box to send a beam into the
 box. Possible results are 'H' (the beam hit a ball dead-on and

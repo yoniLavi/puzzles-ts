@@ -1562,7 +1562,7 @@ exports[`salad hint frames > outlines the run a clue's symbol is confined to, an
 ]
 `;
 
-exports[`salad hint frames > previews a holds-a-symbol marker as a ball in the hint colour 1`] = `
+exports[`salad hint frames > previews a holds-a-symbol marker as a ball in the hint color 1`] = `
 [
   {
     "color": 0,
@@ -4912,7 +4912,7 @@ exports[`salad hint frames > previews a placement as its own symbol, and strikes
 ]
 `;
 
-exports[`salad hint frames > previews an empty-square marker as a cross in the hint colour 1`] = `
+exports[`salad hint frames > previews an empty-square marker as a cross in the hint color 1`] = `
 [
   {
     "color": 0,

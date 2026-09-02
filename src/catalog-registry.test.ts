@@ -21,12 +21,12 @@ beforeAll(registerAllGames);
  * `index.ts`) with this test holding them together.
  */
 describe("catalog and registry", () => {
-  it("registers a game for every catalogued puzzle", () => {
+  it("registers a game for every cataloged puzzle", () => {
     const missing = puzzleIds.filter((id) => !hasTsGame(id));
     expect(missing).toEqual([]);
   });
 
-  it("catalogues every registered game", () => {
+  it("catalogs every registered game", () => {
     const known = new Set(puzzleIds);
     const uncataloged = registeredGameIds().filter((id) => !known.has(id));
     expect(uncataloged).toEqual([]);

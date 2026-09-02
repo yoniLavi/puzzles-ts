@@ -449,7 +449,7 @@ describe("towers sticky pencil mode", () => {
     expect(ui.cursor.visible).toBe(true);
   });
 
-  it("sticky off: a left-click reverts to real entry (upstream behaviour)", () => {
+  it("sticky off: a left-click reverts to real entry (upstream behavior)", () => {
     const { st, ui, ds, a, b } = setup();
     ui.pencilSticky = false;
     towersGame.interpretMove(st, ui, ds, center(a.x, a.y), RIGHT_BUTTON);

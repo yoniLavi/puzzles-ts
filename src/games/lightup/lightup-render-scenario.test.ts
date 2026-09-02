@@ -36,7 +36,7 @@ const hl = (step: HintStep<unknown> | undefined): LightupHint | undefined =>
   step?.highlights as LightupHint | undefined;
 
 describe("Light Up hint render scenarios", () => {
-  it("opener frame: grouped ringed targets, recoloured clue digit, board intact", () => {
+  it("opener frame: grouped ringed targets, recolored clue digit, board intact", () => {
     // lrs-easy-0's opener is a clueSaturated firing forcing three bulbs.
     const { recording, hint, size } = renderScenario({
       game: lightupGame,

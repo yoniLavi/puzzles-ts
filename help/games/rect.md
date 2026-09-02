@@ -5,6 +5,6 @@ so that each rectangle contains exactly one numbered square and its
 area is equal to the number written in that square.
 
 Click and drag from one grid corner to another, or from one square
-centre to another, to draw a rectangle. You can also drag along a
+center to another, to draw a rectangle. You can also drag along a
 grid line to just draw a line at a time, or just click on a single
 grid edge to draw or erase it.

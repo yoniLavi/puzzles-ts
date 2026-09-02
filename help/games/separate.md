@@ -8,7 +8,7 @@ four-square regions, each holding one A, one B, one C and one D.
 
 Click on a grid edge to mark it as a division between regions (black),
 and again to return to marking it as undecided (yellow). Right-click on
-a grid edge to mark it as definitely not a division (faint grey), and
+a grid edge to mark it as definitely not a division (faint gray), and
 again to mark it as undecided again. The arrow keys move a cursor over
 the edges of the grid; Enter marks the edge as a division, and Space
 marks it as definitely not one.

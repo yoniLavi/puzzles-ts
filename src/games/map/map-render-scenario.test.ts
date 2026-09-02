@@ -36,7 +36,7 @@ describe("map render scenarios", () => {
     expect(recording.ops).toMatchSnapshot();
   });
 
-  it("error frame: two same-coloured adjacent regions draw a red diamond", () => {
+  it("error frame: two same-colored adjacent regions draw a red diamond", () => {
     // Color a blank region the same as an adjacent clue → adjacency error.
     const { desc } = newMapDesc(P, randomNew(SEED));
     const st = mapGame.newState(P, desc) as MapState;

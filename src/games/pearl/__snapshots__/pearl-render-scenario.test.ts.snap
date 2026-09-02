@@ -1518,7 +1518,7 @@ exports[`Pearl render scenarios > opener frame draws black and white pearls as c
 ]
 `;
 
-exports[`Pearl render scenarios > the loopy appearance draws centre-dot grid instead of a black border 1`] = `
+exports[`Pearl render scenarios > the loopy appearance draws center-dot grid instead of a black border 1`] = `
 [
   {
     "h": 31,

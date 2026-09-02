@@ -201,7 +201,7 @@ class SavedGames {
       // startup. Dropping it means the next visit just deals a fresh board.
       const isUnplayable =
         error.includes("pre-pivot C-format") ||
-        error.includes("not a recognised TS save envelope") ||
+        error.includes("not a recognized TS save envelope") ||
         error.includes("Could not restore this saved game") ||
         error.includes("Could not read save");
       if (isUnplayable) {

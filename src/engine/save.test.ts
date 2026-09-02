@@ -106,7 +106,7 @@ describe("save codec", () => {
         ...bad,
       };
       expect(() => decodeSave(encodeBytes(JSON.stringify(legacy)))).toThrow(
-        /not a recognised TS save envelope/,
+        /not a recognized TS save envelope/,
       );
     }
   });
@@ -118,7 +118,7 @@ describe("save codec", () => {
 
   it("rejects JSON that is not a save envelope", () => {
     expect(() => decodeSave(encodeBytes('{"hello":1}'))).toThrow(
-      /not a recognised TS save envelope/,
+      /not a recognized TS save envelope/,
     );
   });
 
@@ -178,7 +178,7 @@ describe("save codec", () => {
           if (v === undefined) delete (env as Record<string, unknown>)[k];
         }
         expect(() => decodeSave(encodeBytes(JSON.stringify(env)))).toThrow(
-          /not a recognised TS save envelope/,
+          /not a recognized TS save envelope/,
         );
       });
     }
@@ -196,7 +196,7 @@ describe("save codec", () => {
         expect(
           () => decodeSave(encodeBytes(text)),
           `${text} should not decode as an envelope`,
-        ).toThrow(/not a recognised TS save envelope/);
+        ).toThrow(/not a recognized TS save envelope/);
       }
     });
   });
@@ -259,7 +259,7 @@ describe("Midend save/restore round-trip", () => {
     [
       "JSON that is not a save envelope",
       () => encodeBytes(JSON.stringify({ hello: 1 })),
-      /Could not read save: .*not a recognised TS save envelope/,
+      /Could not read save: .*not a recognized TS save envelope/,
     ],
     [
       "an envelope whose params no longer decode",

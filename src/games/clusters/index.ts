@@ -342,14 +342,14 @@ function narrate(d: ClustersDeduction): string {
     // consequences (never nested), shown statically as the marked cells.
     const end =
       at.kind === "dotOvercount"
-        ? "the ringed dot would touch a second tile of its own colour"
+        ? "the ringed dot would touch a second tile of its own color"
         : at.cell === d.index
           ? at.kind === "surrounded"
             ? `this very cell would be sealed off from every ${t} tile`
             : `this very cell could no longer touch two ${t} tiles`
           : at.kind === "surrounded"
-            ? "the ringed tile would be sealed off from its own colour"
-            : "the ringed tile could no longer touch two of its own colour";
+            ? "the ringed tile would be sealed off from its own color"
+            : "the ringed tile could no longer touch two of its own color";
     // The chain's break is adjacent to the *last forced cell*, not to the
     // target, so the neighbor relation above is unavailable here. What ties
     // the three marks together instead is that the chain runs **from** this
@@ -378,20 +378,20 @@ function narrate(d: ClustersDeduction): string {
 
   if (at.cell === d.index) {
     if (at.kind === "surrounded") {
-      return `Every neighbour of this cell is ${f}. A ${t} tile here could never touch another ${t} tile — so it must be ${f}.`;
+      return `Every neighbor of this cell is ${f}. A ${t} tile here could never touch another ${t} tile — so it must be ${f}.`;
     }
     // reachTwo at the cell itself (an empty cell is never a dot). Count- and
     // edge-neutral: at a corner the board edge does part of the hemming, and
     // "at most one" stays honest when one open neighbor remains.
-    return `If this cell were ${t}, at most one neighbour could ever match it — and every plain tile must touch two of its colour. So it must be ${f}.`;
+    return `If this cell were ${t}, at most one neighbor could ever match it — and every plain tile must touch two of its color. So it must be ${f}.`;
   }
   if (at.kind === "dotOvercount") {
-    return `A dot touches exactly one tile of its own colour, and the ringed ${t} dot beside this cell already touches its one. A ${t} here would give it a second — so this cell must be ${f}.`;
+    return `A dot touches exactly one tile of its own color, and the ringed ${t} dot beside this cell already touches its one. A ${t} here would give it a second — so this cell must be ${f}.`;
   }
   if (at.kind === "surrounded") {
-    return `Painting this cell ${t} would seal its ringed ${f} neighbour off from every other ${f} tile — it could never join a cluster. So this cell must be ${f}.`;
+    return `Painting this cell ${t} would seal its ringed ${f} neighbor off from every other ${f} tile — it could never join a cluster. So this cell must be ${f}.`;
   }
-  return `If this cell were ${t}, its ringed ${f} neighbour could never touch two ${f} tiles — and every plain tile needs two of its colour. So this cell must be ${f}.`;
+  return `If this cell were ${t}, its ringed ${f} neighbor could never touch two ${f} tiles — and every plain tile needs two of its color. So this cell must be ${f}.`;
 }
 
 function buildHighlights(d: ClustersDeduction, w: number): ClustersHintHighlights {

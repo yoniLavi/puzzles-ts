@@ -127,9 +127,9 @@ it("measures dark mode", () => {
     );
   }
 
-  lines.push("\n## Colours that change their relationship to the board\n");
+  lines.push("\n## Colors that change their relationship to the board\n");
   lines.push(
-    "A colour within 0.15 lightness of the board in light mode should stay close",
+    "A color within 0.15 lightness of the board in light mode should stay close",
     "to it in dark mode, and one far from it should stay far. Listed: every entry",
     "whose distance-from-background moves by more than 0.25.\n",
     "A row marked **swap** is one of a `paletteSwaps` pair, and for those this",
@@ -170,7 +170,7 @@ it("measures dark mode", () => {
     });
   }
   lines.push(
-    `\n**${violations} colours** move their relationship to the board` +
+    `\n**${violations} colors** move their relationship to the board` +
       ` (${swapRows} of them across a role swap, which this measurement cannot read).\n`,
   );
   writeFileSync(OUT, `${lines.join("\n")}\n`);

@@ -143,7 +143,7 @@ describe("Twiddle rendering", () => {
     );
   });
 
-  it("draws cursor-coloured edges around the cursor region", () => {
+  it("draws cursor-colored edges around the cursor region", () => {
     const state = solved3x3();
     const ds = fresh(state);
     redraw(recordingDrawing().dr, ds, null, state, 0, UI, 0, 0);

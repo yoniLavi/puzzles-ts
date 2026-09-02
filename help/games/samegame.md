@@ -1,11 +1,11 @@
 # Same Game
 
 Try to empty the playing area completely, by removing connected
-groups of two or more squares of the same colour. Then try to score
+groups of two or more squares of the same color. Then try to score
 as much as possible, by removing large groups at a time instead of
 small ones.
 
-Click on a coloured square to highlight the rest of its connected
+Click on a colored square to highlight the rest of its connected
 group. The status line will print the number of squares selected,
 and the score you would gain by removing them. Click again to remove
 the group; other squares will fall down to fill the space, and if

@@ -254,7 +254,7 @@ describe("planSlides", () => {
     expect(distance(apply(start, W, H, plan.moves))).toBeLessThan(distance(start));
   });
 
-  it("honours a game's own goal test, which may be weaker than the goal board", () => {
+  it("honors a game's own goal test, which may be weaker than the goal board", () => {
     // A game whose win condition is satisfied by more boards than the one the
     // planner is aimed at (Netslide: *any* arrangement that powers every tile,
     // not only the one the generator drew) must be able to stop the moment it

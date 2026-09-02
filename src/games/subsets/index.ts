@@ -389,7 +389,7 @@ function narrateExclusion(ex: CollapseExclusion, n: number): string {
       ? ` For instance, ${label} can't go here — the horseshoe to the highlighted cell needs ${lettersOf(b.letters, n)} present.`
       : ` For instance, ${label} can't go here — the horseshoe to the highlighted cell won't allow ${lettersOf(b.letters, n)}.`;
   }
-  return ` For instance, ${label} can't go here — with no horseshoe to the highlighted neighbour, neither set may contain the other, but ${label} would.`;
+  return ` For instance, ${label} can't go here — with no horseshoe to the highlighted neighbor, neither set may contain the other, but ${label} would.`;
 }
 
 /** The action a leg makes, lowercase: "mark A present" / "clear B". */

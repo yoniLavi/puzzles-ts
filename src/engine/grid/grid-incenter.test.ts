@@ -147,7 +147,7 @@ function gridFor(type: GridType, w: number, h: number): Grid {
   }
   for (let s = 0; s < 40; s++) {
     try {
-      return gridNew(type, w, h, gridNewDesc(type, w, h, randomNew(`incentre-${s}`)));
+      return gridNew(type, w, h, gridNewDesc(type, w, h, randomNew(`incenter-${s}`)));
     } catch {
       // Degenerate patch for this seed; try the next.
     }
@@ -210,22 +210,22 @@ describe("gridFindIncenter", () => {
           // the boundary (a point exactly on a side admits no circle).
           expect(
             insidePolygon(poly, face.ix, face.iy),
-            `${label} face ${face.index}: incentre (${face.ix}, ${face.iy}) is outside its face`,
+            `${label} face ${face.index}: incenter (${face.ix}, ${face.iy}) is outside its face`,
           ).toBe(true);
           expect(
             got,
-            `${label} face ${face.index}: incentre (${face.ix}, ${face.iy}) is on the boundary`,
+            `${label} face ${face.index}: incenter (${face.ix}, ${face.iy}) is on the boundary`,
           ).toBeGreaterThan(0);
 
           // (2) the circle it admits is as large as the lattice allows.
           expect(
             best - got,
-            `${label} face ${face.index}: incentre (${face.ix}, ${face.iy}) admits ` +
+            `${label} face ${face.index}: incenter (${face.ix}, ${face.iy}) admits ` +
               `r=${got.toFixed(3)}, but some integer point of the face admits ${best.toFixed(3)}`,
           ).toBeLessThanOrEqual(MAX_RADIUS_SHORTFALL);
           expect(
             got / best,
-            `${label} face ${face.index}: incentre (${face.ix}, ${face.iy}) admits ` +
+            `${label} face ${face.index}: incenter (${face.ix}, ${face.iy}) admits ` +
               `only ${((got / best) * 100).toFixed(1)}% of the achievable radius`,
           ).toBeGreaterThan(MIN_RADIUS_RATIO);
 
@@ -309,7 +309,7 @@ describe("gridFindIncenter", () => {
       ];
     }
 
-    it("places the incentre inside an L-shape, where the centroid falls outside", () => {
+    it("places the incenter inside an L-shape, where the centroid falls outside", () => {
       // An L: a 60x20 arm along the top and a 20x60 arm down the left.
       const ring: Ring = [
         [0, 0],
@@ -332,7 +332,7 @@ describe("gridFindIncenter", () => {
       expect(inscribedRadius(ring, face.ix, face.iy)).toBeGreaterThan(9.5);
     });
 
-    it("places the incentre inside a chevron, where the centroid falls outside", () => {
+    it("places the incenter inside a chevron, where the centroid falls outside", () => {
       // An arrowhead pointing down: a deep reflex vertex at the top middle.
       const ring: Ring = [
         [0, 0],
@@ -377,14 +377,14 @@ describe("gridFindIncenter", () => {
   });
 
   describe("simple shapes with a known answer", () => {
-    it("finds the centre of a square cell", () => {
+    it("finds the center of a square cell", () => {
       const g = gridNew("square", 3, 3);
       // Square tiles are 20 units; face 4 is the middle cell, (20,20)-(40,40).
       gridFindIncenter(g.faces[4]);
       expect([g.faces[4].ix, g.faces[4].iy]).toEqual([30, 30]);
     });
 
-    it("finds the classical incentre of every face of a honeycomb", () => {
+    it("finds the classical incenter of every face of a honeycomb", () => {
       // A regular hexagon's incenter is its center, so every face's incenter
       // must admit a circle of the hexagon's apothem.
       const g = gridNew("honeycomb", 3, 3);

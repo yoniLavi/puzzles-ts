@@ -45,14 +45,14 @@ describe("assertNever", () => {
 
   it("throws naming the context and the value", () => {
     const foreign = { kind: "hexagon" } as unknown as Shape;
-    expect(() => area(foreign)).toThrow('test: area: unrecognised {"kind":"hexagon"}');
+    expect(() => area(foreign)).toThrow('test: area: unrecognized {"kind":"hexagon"}');
   });
 
   it("still refuses at runtime when the compile-time arm is missing", () => {
     // The companion to the `@ts-expect-error` above: the unhandled member is a
     // type error *and* a refusal, not one or the other.
     expect(() => incompleteArea({ kind: "square", side: 3 })).toThrow(
-      /test: incompleteArea: unrecognised/,
+      /test: incompleteArea: unrecognized/,
     );
   });
 });
@@ -60,7 +60,7 @@ describe("assertNever", () => {
 describe("rejectMove", () => {
   it("reads the same as assertNever, for a move type with nothing to narrow", () => {
     expect(() => rejectMove({ ops: null }, "map: executeMove")).toThrow(
-      'map: executeMove: unrecognised {"ops":null}',
+      'map: executeMove: unrecognized {"ops":null}',
     );
   });
 
@@ -71,10 +71,10 @@ describe("rejectMove", () => {
     const circular: Record<string, unknown> = {};
     circular["self"] = circular;
     expect(() => rejectMove(circular, "x: executeMove")).toThrow(
-      "x: executeMove: unrecognised [object Object]",
+      "x: executeMove: unrecognized [object Object]",
     );
     expect(() => rejectMove(undefined, "x: executeMove")).toThrow(
-      "x: executeMove: unrecognised undefined",
+      "x: executeMove: unrecognized undefined",
     );
   });
 
@@ -87,7 +87,7 @@ describe("rejectMove", () => {
     } catch (e) {
       message = (e as Error).message;
     }
-    expect(message.startsWith("solo: executeMove: unrecognised {")).toBe(true);
+    expect(message.startsWith("solo: executeMove: unrecognized {")).toBe(true);
     expect(message.endsWith("…")).toBe(true);
     expect(message.length).toBeLessThan(300);
   });

@@ -306,7 +306,7 @@ describe("salad moves", () => {
     expect(d.marks[5]).toBe(0);
   });
 
-  it("a pencilled circle toggles the real marker without emptying the square", () => {
+  it("a penciled circle toggles the real marker without emptying the square", () => {
     const s = newState(LETTERS.p, LETTERS.desc);
     const a = saladGame.executeMove(s, { type: "pencil", x: 2, y: 2, value: "circle" });
     expect(a.holes[10]).toBe(CIRCLE);

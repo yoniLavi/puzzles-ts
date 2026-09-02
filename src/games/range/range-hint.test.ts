@@ -20,7 +20,7 @@ function fromSeed(params: string, seed: string): RangeState {
 }
 
 describe("deduceHintPlan", () => {
-  it("records an adjacency reason for a black cell's neighbour", () => {
+  it("records an adjacency reason for a black cell's neighbor", () => {
     // 3x3, center black, no clues — adjacency forces the 4 neighbors white.
     const grid = Int8Array.from([
       EMPTY,

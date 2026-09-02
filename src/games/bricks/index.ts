@@ -402,14 +402,14 @@ function narrate(
       // than its 0 shaded neighbors" came out of the running app on the opener
       // board and is nonsense — a 0 allows none at all.
       return n === 0
-        ? "The ringed 0 beside this cell allows no shaded neighbours at all — so this cell must stay clear."
-        : `Shading this cell would give the ringed ${n} beside it more than its ${n} shaded neighbour${n === 1 ? "" : "s"} — so it must stay clear.`;
+        ? "The ringed 0 beside this cell allows no shaded neighbors at all — so this cell must stay clear."
+        : `Shading this cell would give the ringed ${n} beside it more than its ${n} shaded neighbor${n === 1 ? "" : "s"} — so it must stay clear.`;
     }
     case "strandSupport":
       return "The shaded brick above rests only on this cell — clearing it would leave that brick with nothing beneath it, so it must be shaded.";
     case "undercount": {
       const n = clueVal(reason.clue);
-      return `The ringed ${n} beside this cell still needs more shaded neighbours, and this is one of the last cells that can supply one — clearing it would put ${n} out of reach, so it must be shaded.`;
+      return `The ringed ${n} beside this cell still needs more shaded neighbors, and this is one of the last cells that can supply one — clearing it would put ${n} out of reach, so it must be shaded.`;
     }
     case "localBreak": {
       // The direct rung's *unclassified* case: one color placed, one validator

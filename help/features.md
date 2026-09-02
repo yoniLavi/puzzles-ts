@@ -119,7 +119,7 @@ they're worth learning once.
 Some puzzles need to point at two kinds of evidence at once — a filled square
 and an empty one, say — and mark them differently from each other. The
 explanation always names what it's pointing at, so you never have to go by
-colour alone.
+color alone.
 
 ### When there's no hint to give {#hint-refusals}
 

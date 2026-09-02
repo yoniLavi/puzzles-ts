@@ -99,17 +99,17 @@ export function validateParams(p: SamegameParams, _full: boolean): string | null
   if (p.w < 1 || p.h < 1) return "Width and height must both be positive";
   if (p.w > Number.MAX_SAFE_INTEGER / p.h)
     return "Width times height must not be unreasonably large";
-  if (p.ncols > 9) return "Maximum of 9 colours";
+  if (p.ncols > 9) return "Maximum of 9 colors";
   if (p.soluble) {
-    if (p.ncols < 3) return "Number of colours must be at least three";
+    if (p.ncols < 3) return "Number of colors must be at least three";
     if (p.w * p.h <= 1) return "Grid area must be greater than 1";
   } else {
-    if (p.ncols < 2) return "Number of colours must be at least three";
+    if (p.ncols < 2) return "Number of colors must be at least three";
     // Need at least two of each color for theoretical solubility.
     if (p.w * p.h < p.ncols * 2)
-      return "Too many colours makes given grid size impossible";
+      return "Too many colors makes given grid size impossible";
   }
-  if (p.scoresub < 1 || p.scoresub > 2) return "Scoring system not recognised";
+  if (p.scoresub < 1 || p.scoresub > 2) return "Scoring system not recognized";
   return null;
 }
 
@@ -121,7 +121,7 @@ export function presets() {
     h: number,
     ncols: number,
   ): { title: string; params: SamegameParams } => ({
-    title: `${w}x${h}, ${ncols} colours`,
+    title: `${w}x${h}, ${ncols} colors`,
     params: { w, h, ncols, scoresub: 2, soluble: true },
   });
   return {
@@ -433,7 +433,7 @@ export function validateDesc(p: SamegameParams, desc: string): string | null {
     if (cell < area - 1 && desc[i] !== ",") return "Expected comma after number";
     if (cell === area - 1 && i < desc.length) return "Excess junk at end of string";
     const num = Number.parseInt(desc.slice(start, i), 10);
-    if (num < 0 || num > p.ncols) return "Colour out of range";
+    if (num < 0 || num > p.ncols) return "Color out of range";
     if (desc[i] === ",") i++;
   }
   return null;

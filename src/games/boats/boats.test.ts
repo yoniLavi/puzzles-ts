@@ -460,7 +460,7 @@ describe("boats input", () => {
 });
 
 describe("boats moves", () => {
-  it("leaves a segment vague until its neighbours decide the shape", () => {
+  it("leaves a segment vague until its neighbors decide the shape", () => {
     const p = params();
     let state = newState(p, "1,1,1,1,1,1,1,1,1,1,1,1,");
     const apply = (m: BoatsMove) => {

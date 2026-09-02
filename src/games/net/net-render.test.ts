@@ -78,7 +78,7 @@ describe("net render", () => {
     );
   });
 
-  it("a locked tile is drawn on the locked-grey background", () => {
+  it("a locked tile is drawn on the locked-gray background", () => {
     const { id } = board(P5, "render-locked");
     const lock: NetMove = { type: "lock", x: 2, y: 2 };
     const { recording } = renderScenario({ game: netGame, id, moves: [lock] });

@@ -535,7 +535,7 @@ describe("boats hint — rendering", () => {
     });
   }
 
-  it.each(TIERS)("paints the %s hint's targets in the hint colour", (preset) => {
+  it.each(TIERS)("paints the %s hint's targets in the hint color", (preset) => {
     const result = frame(preset, true);
     const hl = result.hint?.highlights as BoatsHint | undefined;
     expect(hl?.targets.length).toBeGreaterThan(0);
@@ -557,7 +557,7 @@ describe("boats hint — rendering", () => {
     throw new Error("no tier's opening hint carried evidence");
   });
 
-  it("paints no hint colour at all when no hint is displayed", () => {
+  it("paints no hint color at all when no hint is displayed", () => {
     const result = frame(0, false);
     expect(usesColor(result.recording.ops, COL_HINT)).toBe(false);
     expect(usesColor(result.recording.ops, COL_HINT_CELL)).toBe(false);

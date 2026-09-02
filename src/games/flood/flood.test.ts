@@ -34,7 +34,7 @@ describe("Flood params", () => {
     expect(decodeParams("12x12c6m5")).toEqual(p);
   });
 
-  it("decodes a bare W as a square board with default colours/leniency", () => {
+  it("decodes a bare W as a square board with default colors/leniency", () => {
     expect(decodeParams("12")).toEqual({ w: 12, h: 12, colors: 6, leniency: 5 });
   });
 
@@ -126,7 +126,7 @@ describe("Flood fill move", () => {
     expect(state.moves).toBe(0);
   });
 
-  it("rejects a fill with the current corner colour", () => {
+  it("rejects a fill with the current corner color", () => {
     const p: FloodParams = { w: 3, h: 3, colors: 3, leniency: 0 };
     const state = newState(p, "011000222,9");
     expect(() => executeMove(state, { type: "fill", color: 0 })).toThrow();
@@ -181,7 +181,7 @@ describe("Flood input mapping", () => {
   const ds = floodGame.newDrawState?.(state) ?? null;
   if (ds) floodGame.setTileSize?.(ds, 32);
 
-  it("maps a left-click on a different-colour cell to a fill", () => {
+  it("maps a left-click on a different-color cell to a fill", () => {
     const fresh = floodGame.newUi(state);
     // Cell (1,0) holds color 1; border = ts/2 = 16, ts = 32, so x in
     // [48,80) maps to column 1, y in [16,48) to row 0.
@@ -195,7 +195,7 @@ describe("Flood input mapping", () => {
     expect(move).toEqual({ type: "fill", color: 1 });
   });
 
-  it("ignores a left-click on a same-colour (corner) cell", () => {
+  it("ignores a left-click on a same-color (corner) cell", () => {
     const fresh = floodGame.newUi(state);
     // Cell (0,0) is the corner color 0.
     const move = floodGame.interpretMove(
@@ -231,7 +231,7 @@ describe("Flood input mapping", () => {
 });
 
 describe("Flood text format", () => {
-  it("emits colour chars per row", () => {
+  it("emits color chars per row", () => {
     const p: FloodParams = { w: 3, h: 2, colors: 3, leniency: 0 };
     const state = newState(p, "012210,9");
     expect(textFormat(state)).toBe("012\n210\n");

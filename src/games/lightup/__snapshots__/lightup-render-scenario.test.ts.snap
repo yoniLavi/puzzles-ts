@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Light Up hint render scenarios > opener frame: grouped ringed targets, recoloured clue digit, board intact 1`] = `
+exports[`Light Up hint render scenarios > opener frame: grouped ringed targets, recolored clue digit, board intact 1`] = `
 [
   {
     "color": 0,

@@ -127,7 +127,7 @@ describe("pointerEdge", () => {
     expect(pointerEdge(grid(3, 3), ui(), -50, -50, TS, true)).toBeNull();
   });
 
-  it("breaks the tie toward the down edge at an exact tile centre", () => {
+  it("breaks the tie toward the down edge at an exact tile center", () => {
     // Not a rejection. At the exact center both axes are equidistant, so each
     // `<` test is false: the left and up bits go first, then left|right go
     // again, leaving down. Pinned because a center click is a genuinely
@@ -167,7 +167,7 @@ describe("selectEdge", () => {
     expect(u.cursor.visible).toBe(true);
   });
 
-  it("does nothing on a corner or a tile centre", () => {
+  it("does nothing on a corner or a tile center", () => {
     // Both coordinates odd = a tile center; both even = a corner. The mechanic
     // rejects each because `px === py`.
     expect(selectEdge(grid(3, 3), ui(3, 3, true), false)).toBeNull();

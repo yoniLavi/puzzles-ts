@@ -360,7 +360,7 @@ describe("sticks hint — render frames (tier 2.5)", () => {
     });
   }
 
-  it("never draws the forced line in the placed-line colour", () => {
+  it("never draws the forced line in the placed-line color", () => {
     // §5.1: the hint shows where and which, it does not perform the move. On a
     // fresh board no line is placed, so any COL_LINE bar would be a preview.
     const { id } = board(SEED_FOR.tooLong);

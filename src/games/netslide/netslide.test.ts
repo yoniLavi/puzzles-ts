@@ -265,7 +265,7 @@ describe("netslide generator", () => {
     }
   });
 
-  it("honours an explicit shuffle target and reports it", () => {
+  it("honors an explicit shuffle target and reports it", () => {
     const p = { ...EASY_5x5, movetarget: 12 };
     const s = newState(p, newDesc(p, randomNew("target")).desc);
     expect(netslideGame.statusbarText?.(s, newUi(s))).toContain("(target 12)");
@@ -318,7 +318,7 @@ describe("netslide input", () => {
     expect(at(RIGHT_BUTTON)).toEqual({ type: "slide", axis: "row", index: 0, dir: -1 });
   });
 
-  it("refuses the centre row and column, which cannot be slid", () => {
+  it("refuses the center row and column, which cannot be slid", () => {
     const ui = newUi(s);
     const click = (cx: number, cy: number) =>
       netslideGame.interpretMove(
@@ -636,7 +636,7 @@ describe("netslide rendering", () => {
     expect(netslideGame.flashLength?.(s, wonBySolving, 1, ui)).toBe(0);
   });
 
-  it("paints the flash outward from the centre, a ring at a time", () => {
+  it("paints the flash outward from the center, a ring at a time", () => {
     // Reach a genuinely-won board *by playing*: scramble the solution with one
     // slide, then play its reverse. (A Solve move is deliberately not
     // celebrated, so it could never drive this frame.)

@@ -73,7 +73,7 @@ describe("dark-mode palette swaps", () => {
     expect(new Set(PAIRS.map(([id]) => id)).size).toBeGreaterThanOrEqual(3);
   });
 
-  it.each(PAIRS)("%s swaps two real, different colours (%i, %i)", (id, a, b) => {
+  it.each(PAIRS)("%s swaps two real, different colors (%i, %i)", (id, a, b) => {
     // What can be checked without knowing a game's palette LAYOUT. An index past
     // the end of the palette leaves `undefined` in it, which reaches the canvas
     // as a color it silently refuses; a pair naming two equal lightnesses is a

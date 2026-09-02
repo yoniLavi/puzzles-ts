@@ -187,7 +187,7 @@ export function gridFindIncenter(f: GridFace): void {
   }
 
   if (!(bestDist > 0)) {
-    throw new Error(`gridFindIncentre: no interior point found for face ${f.index}`);
+    throw new Error(`gridFindIncenter: no interior point found for face ${f.index}`);
   }
 
   f.hasIncenter = true;

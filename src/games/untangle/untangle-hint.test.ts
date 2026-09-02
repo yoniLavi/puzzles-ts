@@ -77,7 +77,7 @@ describe("Untangle hint heuristic", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("spreads the final layout out (does not collapse to the centre)", () => {
+  it("spreads the final layout out (does not collapse to the center)", () => {
     // Regression for the barycentric-collapse complaint: the spread-aware
     // planner's untangled layout should occupy a healthy fraction of the
     // play box, not shrink to a knot in the middle. Measure the final

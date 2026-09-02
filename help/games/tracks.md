@@ -9,7 +9,7 @@ Left-click on an edge between two squares to add a track segment between
 the two squares. Right-click on an edge to add a cross on the edge,
 indicating no track is possible there.
 
-Left-click in a square to add a colour indicator showing that you know the
+Left-click in a square to add a color indicator showing that you know the
 square must contain a track, even if you don't know which edges it crosses
 yet. Right-click in a square to add a cross indicating it contains no
 track segment.

@@ -45,7 +45,7 @@ describe("parseDimensions", () => {
     expect("4x4m10"[dims.next]).toBe("m");
   });
 
-  it("honours a non-zero start offset", () => {
+  it("honors a non-zero start offset", () => {
     // e.g. a game that consumed a leading kind-letter first.
     expect(parseDimensions("c3x3", 1)).toEqual({ w: 3, h: 3, next: 4 });
   });

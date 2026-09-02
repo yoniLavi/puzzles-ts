@@ -61,7 +61,7 @@ describe("direction algebra", () => {
     }
   });
 
-  it("turns each single direction into its neighbour, anticlockwise on screen", () => {
+  it("turns each single direction into its neighbor, anticlockwise on screen", () => {
     // y grows downward, so "anticlockwise" is R -> U -> L -> D -> R.
     expect([R, U, L, D].map(anticlockwise)).toEqual([U, L, D, R]);
     expect([R, U, L, D].map(clockwise)).toEqual([D, R, U, L]);

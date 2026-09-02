@@ -122,7 +122,7 @@ describe("region outlines", () => {
     expect(merged.h).toBe(separate.h);
   });
 
-  it("floods the grid colour once, on the first frame only", () => {
+  it("floods the grid color once, on the first frame only", () => {
     const state = board(3, 3, `${ALL_WALLS_3},i`);
     const ds = newDrawState(state);
     setTileSize(ds, TS);
@@ -149,7 +149,7 @@ describe("board contents", () => {
     expect(ops).toMatchSnapshot();
   });
 
-  it("draws a player's own arrow in the guess colour, not the clue colour", () => {
+  it("draws a player's own arrow in the guess color, not the clue color", () => {
     const state = board(3, 3, `${ALL_WALLS_3},i`);
     const placed = romeGame.executeMove(state, {
       kind: "place",

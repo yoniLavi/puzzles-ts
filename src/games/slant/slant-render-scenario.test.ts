@@ -24,7 +24,7 @@ const hl = (step: HintStep<unknown> | undefined): SlantHint | undefined =>
   step?.highlights as SlantHint | undefined;
 
 describe("Slant hint render scenarios", () => {
-  it("opener frame: ringed target(s), recoloured clue digit, board intact", () => {
+  it("opener frame: ringed target(s), recolored clue digit, board intact", () => {
     const { recording, hint, size } = renderScenario({
       game: slantGame,
       id: boardId({ w: 5, h: 5, diff: DIFF_EASY }, "srs-easy-0"),

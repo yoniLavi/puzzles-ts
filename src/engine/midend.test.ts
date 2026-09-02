@@ -410,7 +410,7 @@ describe("Midend palette + teardown (adapter-facing)", () => {
     colors: (bg: Color) => [bg, token([0, 0, 0], [1, 1, 1]), [0.5, 0.5, 0.5]],
   } as unknown as typeof fakeGame;
 
-  it("getColourPalette hands the game the frontend's background, shifted off the extremes", () => {
+  it("getColorPalette hands the game the frontend's background, shifted off the extremes", () => {
     // The background is an *input*: a game derives washes from it (the dark
     // scheme relies on that, passing pure white so `background × 0.9` still
     // works), so swallowing it would silently flatten every derived color. It

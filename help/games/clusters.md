@@ -23,8 +23,8 @@ These parameters are available from the ‘Custom…’ option on the ‘Type’
 	<dt>Difficulty</dt>
 	<dd>
 		<p>Controls how deeply you have to reason. Both settings always have exactly one solution, and neither ever needs a guess.</p>
-		<p><em>Easy</em> puzzles can be finished a square at a time: for each empty square, one of the two colours breaks a rule outright, so the other one is forced.</p>
-		<p><em>Tricky</em> puzzles need at least one step where that is not enough, and you must suppose a colour, follow the squares it forces, and find the contradiction further along. Tricky boards are guaranteed to need this at least once — a board an Easy player could finish is not offered as Tricky.</p>
+		<p><em>Easy</em> puzzles can be finished a square at a time: for each empty square, one of the two colors breaks a rule outright, so the other one is forced.</p>
+		<p><em>Tricky</em> puzzles need at least one step where that is not enough, and you must suppose a color, follow the squares it forces, and find the contradiction further along. Tricky boards are guaranteed to need this at least once — a board an Easy player could finish is not offered as Tricky.</p>
 	</dd>
 </dl>
 

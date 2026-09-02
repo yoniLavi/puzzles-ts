@@ -172,7 +172,7 @@ describe("Twiddle doRotate", () => {
     for (const i of [2, 5, 6, 7, 8]) expect(orient[i]).toBe(0);
   });
 
-  it("advances the centre tile's orientation for odd n", () => {
+  it("advances the center tile's orientation for odd n", () => {
     const nums = Int32Array.from(Array.from({ length: 9 }, (_, i) => i + 1));
     const orient = new Uint8Array(9);
     doRotate(nums, orient, 3, 3, 3, true, 0, 0, 1);
@@ -247,7 +247,7 @@ describe("Twiddle input", () => {
     Array.from({ length: 16 }, (_, i) => ((i + 3) % 16) + 1),
   );
 
-  it("maps a centred click to the region whose centre it lands in", () => {
+  it("maps a centered click to the region whose center it lands in", () => {
     // Tile size 48, border 24. A click at the center of the region whose
     // top-left is (1,1): block center is at coord(1)+ts = 24+48+24 = ... use
     // the region-center pixel. Region (1,1) spans tiles (1,1)-(2,2); its

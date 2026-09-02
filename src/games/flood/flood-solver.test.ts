@@ -36,7 +36,7 @@ describe("Flood solver completeness", () => {
 });
 
 describe("Flood look-ahead", () => {
-  it("a single choosemove is one of the playable colours", () => {
+  it("a single choosemove is one of the playable colors", () => {
     const p: FloodParams = { w: 4, h: 4, colors: 4, leniency: 0 };
     const { desc } = newDesc(p, randomNew("lookahead"));
     const state = newState(p, desc);

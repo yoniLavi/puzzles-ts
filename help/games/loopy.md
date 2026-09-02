@@ -7,7 +7,7 @@ the loop.
 Click on a grid edge to mark it as part of the loop (black), and
 again to return to marking it as undecided (yellow). Right-click on
 a grid edge to mark it as definitely not part of the loop (faint
-grey), and again to mark it as undecided again.
+gray), and again to mark it as undecided again.
 
 On a touch screen, tapping an edge cycles it through all three states,
 so you never need a second button.

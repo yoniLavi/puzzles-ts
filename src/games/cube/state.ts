@@ -101,7 +101,7 @@ export function decodeParams(s: string): CubeParams {
 }
 
 export function validateParams(p: CubeParams, _full: boolean): string | null {
-  if (p.solid < 0 || p.solid >= SOLIDS.length) return "Unrecognised solid type";
+  if (p.solid < 0 || p.solid >= SOLIDS.length) return "Unrecognized solid type";
   if (p.d1 < 0 || p.d2 < 0) return "Grid dimensions may not be negative";
 
   const solid = SOLIDS[p.solid];

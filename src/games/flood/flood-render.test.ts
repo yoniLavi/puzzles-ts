@@ -54,7 +54,7 @@ function freshDs(state: FloodState): FloodDrawState {
 }
 
 describe("Flood redraw", () => {
-  it("paints play-colour tiles and a recessed bevel on first draw", () => {
+  it("paints play-color tiles and a recessed bevel on first draw", () => {
     const state = newState({ w: 2, h: 2, colors: 3, leniency: 0 }, "0112,9");
     const ds = freshDs(state);
     const { dr, ops } = recordingDrawing();
@@ -120,7 +120,7 @@ describe("Flood redraw", () => {
     expect(playColors.size).toBeGreaterThan(1);
   });
 
-  it("blinks the board to the separator colour on a defeat flash", () => {
+  it("blinks the board to the separator color on a defeat flash", () => {
     const base = newState({ w: 3, h: 3, colors: 3, leniency: 0 }, "012120201,1");
     // Lost: moves at the limit, not complete.
     const state: FloodState = { ...base, moves: 1 };

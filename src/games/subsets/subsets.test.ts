@@ -164,7 +164,7 @@ describe("subsets params", () => {
     expect(ids.size).toBe(DIFF_NAMES.length);
   });
 
-  it("rejects an unrecognised difficulty char rather than silently downgrading", () => {
+  it("rejects an unrecognized difficulty char rather than silently downgrading", () => {
     expect(validateParams(decodeParams("4x4n4dz"), true)).toBe(
       "Unknown difficulty rating",
     );
@@ -622,7 +622,7 @@ describe("subsets rendering (tier 2.5)", () => {
     expect(result.recording.ops).toMatchSnapshot();
   });
 
-  it("mistake frame: a duplicated placement draws in the error colour", () => {
+  it("mistake frame: a duplicated placement draws in the error color", () => {
     const solution = fixtureSolution();
     const start = newState(PARAMS, FIX.desc);
     const blank = start.immutable.indexOf(0);

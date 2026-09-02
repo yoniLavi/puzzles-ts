@@ -782,7 +782,7 @@ describe("a game's own move dialect", () => {
     });
   });
 
-  it("lets emitObviousCleanStep recognise a populate step spelled its way", () => {
+  it("lets emitObviousCleanStep recognize a populate step spelled its way", () => {
     const grid = Int8Array.from([1, 0, 0, 0]);
     const both = bitFrom1(1) | bitFrom1(2);
     const pencil = Int32Array.from([0, both, both, both]);

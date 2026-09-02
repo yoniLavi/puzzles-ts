@@ -83,7 +83,7 @@ describe("Fifteen midend lifecycle", () => {
     expect(h.status()?.statusBarText).toContain("Moves: 1");
   });
 
-  it("surfaces a hint and renders it with the hint colour", () => {
+  it("surfaces a hint and renders it with the hint color", () => {
     // hint() returns undefined on success.
     expect(h.m.hint()).toBeUndefined();
     const { dr, ops } = recordingDrawing();

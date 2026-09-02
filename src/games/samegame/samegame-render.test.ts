@@ -76,7 +76,7 @@ describe("Same Game redraw", () => {
     expect(ops.filter((o) => o.op === "drawPolygon").length).toBe(2);
   });
 
-  it("fills the gap between same-colour neighbours (a seamless join)", () => {
+  it("fills the gap between same-color neighbors (a seamless join)", () => {
     // Two color-1 tiles side by side: the left tile joins right, so it
     // paints a full-TILE_SIZE-wide rect in its color (COL_1 = 1).
     const state = mkState("1,1");
@@ -105,7 +105,7 @@ describe("Same Game redraw", () => {
     expect(ops.some((o) => o.op === "drawRect" && o.color === 11)).toBe(true);
   });
 
-  it("recolours tile innards to COL_IMPOSSIBLE on a stuck board", () => {
+  it("recolors tile innards to COL_IMPOSSIBLE on a stuck board", () => {
     const state: SamegameState = { ...mkState("1,2"), impossible: true };
     const { dr, ops } = recordingDrawing();
     redraw(dr, freshDs(state), null, state, 1, emptyUi(state), 0, 0);

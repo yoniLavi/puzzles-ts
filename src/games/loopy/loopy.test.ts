@@ -316,7 +316,7 @@ describe("completion and error highlighting", () => {
     return next;
   }
 
-  it("recognises exactly one loop, and wins only when the clues agree", () => {
+  it("recognizes exactly one loop, and wins only when the clues agree", () => {
     const s = blankState();
     const looped = closeSmallestLoop(s);
     expect(looped.exactlyOneLoop).toBe(true);

@@ -26,7 +26,6 @@
  */
 import { execFileSync } from "node:child_process";
 import { lstatSync, readdirSync, readFileSync } from "node:fs";
-import { isScript, segments } from "./spelling-strings.mjs";
 import { QUOTATIONS, SCAN } from "./spelling-table.mjs";
 
 /** Fewer scanned files than this is a broken listing, not a clean tree. */
@@ -43,12 +42,8 @@ const FLOOR = 900;
  * this change's own pending directory, whose proposal quotes the
  * stems it removes — that last entry is dead once `adopt-american-spelling`
  * is archived, and may be deleted then.
- *
- * `help/` is excluded only until the second phase lands the player-facing
- * words; see `spelling-strings.mjs`.
  */
 const EXCLUDED = [
-  /^help\//,
   /^openspec\/changes\/archive\//,
   /^openspec\/postmortems\//,
   /^openspec\/changes\/adopt-american-spelling\//,
@@ -91,18 +86,10 @@ let scanned = 0;
 for (const file of files) {
   const text = readFileSync(file, "utf8");
   scanned++;
-  const parts = isScript(file) ? segments(text) : [{ text, kind: "code" }];
-  let offset = 0;
-  for (const part of parts) {
-    if (part.kind === "code") {
-      for (const m of part.text.matchAll(SCAN)) {
-        const at = offset + m.index;
-        if (allowed(file, text, at)) continue;
-        const line = text.slice(0, at).split("\n").length;
-        hits.push(`${file}:${line}: ${tokenAt(text, at)}`);
-      }
-    }
-    offset += part.text.length;
+  for (const m of text.matchAll(SCAN)) {
+    if (allowed(file, text, m.index)) continue;
+    const line = text.slice(0, m.index).split("\n").length;
+    hits.push(`${file}:${line}: ${tokenAt(text, m.index)}`);
   }
 }
 

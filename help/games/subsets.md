@@ -15,9 +15,9 @@ To play with a keyboard, use the arrow keys to move the cursor. Press Enter to p
 
 ### Where can this go?
 
-The tally band beside the grid works in both directions. Click a set in the tally and every cell it could still legally go in is spotlighted; if it's already placed, the cell it lives in is shown in a different colour. Going the other way, the inspect badge above a cell — or simply moving the keyboard cursor onto it — highlights every set that cell could still hold.
+The tally band beside the grid works in both directions. Click a set in the tally and every cell it could still legally go in is spotlighted; if it's already placed, the cell it lives in is shown in a different color. Going the other way, the inspect badge above a cell — or simply moving the keyboard cursor onto it — highlights every set that cell could still hold.
 
-The answers come from what's visible on the board: the cell's own marks, the horseshoes to its decided neighbours, and the rule that each set appears once. Nothing is read off the solution, so the aid can't do the deducing for you.
+The answers come from what's visible on the board: the cell's own marks, the horseshoes to its decided neighbors, and the rule that each set appears once. Nothing is read off the solution, so the aid can't do the deducing for you.
 
 ## Subsets parameters
 

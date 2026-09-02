@@ -307,7 +307,7 @@ describe("slide drag frame", () => {
     expect(pieceFillColor(ops, 1, 1)).toBeUndefined();
   });
 
-  it("lights up an ordinary block in its own held colour", () => {
+  it("lights up an ordinary block in its own held color", () => {
     const me = newBoard();
     capture(me);
     me.processInput(...at(3, 1), LEFT_BUTTON);
@@ -315,7 +315,7 @@ describe("slide drag frame", () => {
     expect(pieceFillColor(capture(me), 4, 3)).toBe(COL_GRABBED);
   });
 
-  it("puts the block back to its committed colour on release", () => {
+  it("puts the block back to its committed color on release", () => {
     const me = midDrag();
     me.processInput(...at(2, 1), LEFT_RELEASE);
     const ops = capture(me);
@@ -572,7 +572,7 @@ describe("slide completion flash", () => {
     return capture(me);
   }
 
-  it("recolours the floor while flashing, and moves between phases", () => {
+  it("recolors the floor while flashing, and moves between phases", () => {
     // FLASH_INTERVAL is 0.1s and the flash alternates high/low each interval,
     // so 0.05s and 0.15s are different phases. Asserting *two* phases is what
     // proves the animation is moving; a snapshot alone would not (playbook

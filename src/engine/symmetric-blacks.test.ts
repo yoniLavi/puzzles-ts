@@ -156,7 +156,7 @@ describe("guards and bounds", () => {
 });
 
 describe("odd dimensions — where the region overlaps its own copy", () => {
-  it("includes the centre row in the region, so it can be blackened at all", () => {
+  it("includes the center row in the region, so it can be blackened at all", () => {
     // The degree-2 region is `floor(h/2) + hodd` rows. Drop the `+ hodd` and the
     // center row falls out of both the region *and* the mirror copy's range —
     // leaving it permanently white, which at 100% is unmistakable.
@@ -164,14 +164,14 @@ describe("odd dimensions — where the region overlaps its own copy", () => {
     expect(countBlack(grid)).toBe(49);
   });
 
-  it("SYMM_REF2 still mirrors, with the centre row its own reflection", () => {
+  it("SYMM_REF2 still mirrors, with the center row its own reflection", () => {
     const H = 7;
     const { at } = place(7, H, 40, SYMM_REF2);
     for (let y = 0; y < H; y++)
       for (let x = 0; x < 7; x++) expect(at(x, y)).toBe(at(x, H - 1 - y));
   });
 
-  it("SYMM_ROT4 on an odd square gives the centre its own extra draw", () => {
+  it("SYMM_ROT4 on an odd square gives the center its own extra draw", () => {
     // Upstream's fix-up: the quarter-turn copy never writes the middle cell, so
     // it is decided by one further `randomUpto(rs, 100) <= blackpc` draw.
     const center = (pc: number, seed: string) =>
@@ -188,7 +188,7 @@ describe("odd dimensions — where the region overlaps its own copy", () => {
     expect(center(0, "odd-0")).toBe(false);
   });
 
-  it("SYMM_ROT4 on an odd square is still quarter-turn symmetric off-centre", () => {
+  it("SYMM_ROT4 on an odd square is still quarter-turn symmetric off-center", () => {
     const { at } = place(7, 7, 40, SYMM_ROT4);
     for (let y = 0; y < 7; y++)
       for (let x = 0; x < 7; x++) {

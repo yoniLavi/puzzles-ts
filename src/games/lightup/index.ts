@@ -362,20 +362,20 @@ function narrate(f: LightupFiring, hl: LightupHint): string {
       const { n } = f.reason;
       if (n === 0) {
         return many
-          ? "The highlighted clue is 0: no bulb may sit beside it. So its free neighbours must all be crossed out."
-          : "The highlighted clue is 0: no bulb may sit beside it. So its free neighbour must be crossed out.";
+          ? "The highlighted clue is 0: no bulb may sit beside it. So its free neighbors must all be crossed out."
+          : "The highlighted clue is 0: no bulb may sit beside it. So its free neighbor must be crossed out.";
       }
       const bulbs = n === 1 ? "its bulb (ringed)" : `all ${n} of its bulbs (ringed)`;
       return many
-        ? `The highlighted clue already has ${bulbs}. No more may sit beside it — so its remaining free neighbours must all be crossed out.`
-        : `The highlighted clue already has ${bulbs}. No more may sit beside it — so its remaining free neighbour must be crossed out.`;
+        ? `The highlighted clue already has ${bulbs}. No more may sit beside it — so its remaining free neighbors must all be crossed out.`
+        : `The highlighted clue already has ${bulbs}. No more may sit beside it — so its remaining free neighbor must be crossed out.`;
     }
     case "clueSaturated": {
       const { need } = f.reason;
       if (need === 1) {
-        return "The highlighted clue still needs 1 more bulb and has exactly 1 free neighbour left — so that neighbour must be a bulb.";
+        return "The highlighted clue still needs 1 more bulb and has exactly 1 free neighbor left — so that neighbor must be a bulb.";
       }
-      return `The highlighted clue still needs ${need} more bulbs and has exactly ${need} free neighbours left — so every one of them must be a bulb.`;
+      return `The highlighted clue still needs ${need} more bulbs and has exactly ${need} free neighbors left — so every one of them must be a bulb.`;
     }
     case "discountUnlit": {
       // "A bulb *here*" was the reported shape: three marks in view (blue

@@ -249,7 +249,7 @@ function narrate(reason: FillingHintReason, count: number): string {
     case "blocked":
       return `The outlined region of ${reason.n} has only this one empty square to grow into.`;
     case "lonely":
-      return "No neighbouring region can grow to include this square, so it can only be a 1.";
+      return "No neighboring region can grow to include this square, so it can only be a 1.";
     case "bitmap":
       return `No other number can go here — each would touch an equal number or leave a region short of its size — so it must be a ${reason.n}.`;
   }

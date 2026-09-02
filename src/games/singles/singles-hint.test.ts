@@ -73,7 +73,7 @@ describe("deduceHintPlan records the deduction reason", () => {
     expect(plan.some((m) => m.reason.kind === "corner3")).toBe(true);
   });
 
-  it("corner2: two matching numbers in a 2x2 corner force a neighbour white", () => {
+  it("corner2: two matching numbers in a 2x2 corner force a neighbor white", () => {
     const s = craft(2, 2, [1, 1, 2, 3]);
     const plan = deduceHintPlan(s);
     expect(plan.some((m) => m.reason.kind === "corner2")).toBe(true);

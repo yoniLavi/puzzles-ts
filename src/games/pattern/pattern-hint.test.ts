@@ -74,7 +74,7 @@ describe("pattern hint — plan correctness", () => {
     }
   });
 
-  it("each firing is single-colour (black overlaps, white gaps)", () => {
+  it("each firing is single-color (black overlaps, white gaps)", () => {
     for (const seed of SEEDS) {
       const plan = deduceHintPlan(freshBoard(seed));
       for (const m of plan) {
@@ -165,7 +165,7 @@ describe("pattern hint — narration", () => {
   });
 });
 
-describe("pattern hint — colour legend", () => {
+describe("pattern hint — color legend", () => {
   it("target / black-ref / white-ref roles are disjoint", () => {
     for (const seed of SEEDS) {
       const res = doHint(freshBoard(seed));
@@ -181,7 +181,7 @@ describe("pattern hint — colour legend", () => {
     }
   });
 
-  it("a cited ref is an actually-placed mark of its own colour", () => {
+  it("a cited ref is an actually-placed mark of its own color", () => {
     // Rings must sit on decided cells (their color is the evidence), never on
     // an undecided cell or a forced target.
     for (const seed of SEEDS) {

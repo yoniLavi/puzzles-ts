@@ -160,7 +160,7 @@ describe("singles render", () => {
     expect(recording.ops).toMatchSnapshot();
   });
 
-  it("renders a Check & Save mistake in the error colour", () => {
+  it("renders a Check & Save mistake in the error color", () => {
     const p: SinglesParams = { w: 5, h: 5, diff: "easy" };
     const { desc } = newSinglesDesc(p, randomNew("render-mistake"));
     const sol = makeState(p.w, p.h, newState(p, desc).nums);

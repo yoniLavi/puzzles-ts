@@ -179,7 +179,7 @@ export function validateDesc(p: PatternParams, desc: string): string | null {
     } else if (last === "\0" || last === ",") {
       if (i + 1 < nlines) return "too few row/column specifications";
     } else {
-      return "unrecognised character in game specification";
+      return "unrecognized character in game specification";
     }
   }
 
@@ -196,7 +196,7 @@ export function validateDesc(p: PatternParams, desc: string): string | null {
         if (len < 25 && i < p.w * p.h) i++;
         if (i > p.w * p.h) return "too much data in clue-squares section";
       } else {
-        return "unrecognised character in clue-squares section";
+        return "unrecognized character in clue-squares section";
       }
     }
     if (pos < desc.length) return "too much data in clue-squares section";

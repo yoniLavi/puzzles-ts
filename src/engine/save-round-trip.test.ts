@@ -225,7 +225,7 @@ describe("a save this build cannot play is refused, not half-applied", () => {
       // loose form here passed for all three, which is what let the silent camp
       // exist; the strict form is the guarantee.
       expect(err, `${id}: a foreign move in the log was not refused`).toMatch(
-        new RegExp(`^Could not restore this saved game: ${id}: .*unrecognised`),
+        new RegExp(`^Could not restore this saved game: ${id}: .*unrecognized`),
       );
 
       // Refused ⇒ rewound to the saved game's OPENING position: a real board

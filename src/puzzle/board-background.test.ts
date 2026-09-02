@@ -35,7 +35,7 @@ function boardOf(id: string, host: Color): Color {
   if (!game) throw new Error(`${id} is not registered`);
   const index = puzzleAugmentations[id as PuzzleId]?.paletteBgIndex ?? 0;
   const color = resolvePalette(game, host)[index];
-  if (!color) throw new Error(`${id} has no colour at its board index ${index}`);
+  if (!color) throw new Error(`${id} has no color at its board index ${index}`);
   return color;
 }
 

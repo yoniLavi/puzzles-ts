@@ -374,17 +374,17 @@ export class Puzzle {
   }
 
   public undo(): Promise<void> {
-    this.stopAutoHint("Cancelled by manual move");
+    this.stopAutoHint("Canceled by manual move");
     return this.enqueueInput(() => this.workerPuzzle.undo());
   }
 
   public redo(): Promise<void> {
-    this.stopAutoHint("Cancelled by manual move");
+    this.stopAutoHint("Canceled by manual move");
     return this.enqueueInput(() => this.workerPuzzle.redo());
   }
 
   public async solve(): Promise<string | undefined> {
-    this.stopAutoHint("Cancelled by manual move");
+    this.stopAutoHint("Canceled by manual move");
     return this.workerPuzzle.solve();
   }
 
@@ -412,7 +412,7 @@ export class Puzzle {
     // solved", …) is surfaced in the same transient banner the auto-hint flow
     // uses (the midend also lights up any mistakes behind the message) and
     // never arms.
-    this.stopAutoHint("Cancelled by manual move");
+    this.stopAutoHint("Canceled by manual move");
     const err = await this.workerPuzzle.hint();
     if (err) {
       this.setAutoHintMessage(err, true);
@@ -496,12 +496,12 @@ export class Puzzle {
   }
 
   public processKey(key: number): Promise<boolean> {
-    this.stopAutoHint("Cancelled by manual move");
+    this.stopAutoHint("Canceled by manual move");
     return this.enqueueInput(() => this.workerPuzzle.processKey(key));
   }
 
   public processMouse({ x, y }: Point, button: number): Promise<boolean> {
-    this.stopAutoHint("Cancelled by manual move");
+    this.stopAutoHint("Canceled by manual move");
     return this.enqueueInput(() => this.workerPuzzle.processMouse({ x, y }, button));
   }
 

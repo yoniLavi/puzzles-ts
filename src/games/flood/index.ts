@@ -94,7 +94,7 @@ export function executeMove(state: FloodState, move: FloodMove): FloodState {
     move.color === corner ||
     state.completed
   ) {
-    throw new Error(`Illegal flood fill with colour ${move.color}`);
+    throw new Error(`Illegal flood fill with color ${move.color}`);
   }
   return applyFill(state, move.color);
 }
@@ -195,7 +195,7 @@ function hint(state: FloodState): HintResult<FloodMove> {
   for (const color of moves) {
     steps.push({
       move: { type: "fill", color },
-      explanation: `Fill with ${COLOR_NAMES[color] ?? `colour ${color}`}`,
+      explanation: `Fill with ${COLOR_NAMES[color] ?? `color ${color}`}`,
     });
   }
   return { ok: true, steps };

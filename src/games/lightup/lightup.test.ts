@@ -484,7 +484,7 @@ describe("lightup rendering", () => {
     );
   });
 
-  it("bulbs lighting each other draw in the error colour", () => {
+  it("bulbs lighting each other draw in the error color", () => {
     const { recording } = renderScenario({
       game: lightupGame,
       id: EASY_ID,

@@ -231,7 +231,7 @@ function executeMove(s: MapState, m: MapMove): MapState {
     } else if (op.op === "pencil") {
       // pencil toggle — illegal on a colored region (upstream returns NULL).
       if (ret.coloring[op.region] >= 0)
-        throw new Error("map: pencil on a coloured region");
+        throw new Error("map: pencil on a colored region");
       ret.pencil[op.region] ^= 1 << op.bit;
     } else {
       return assertNever(op, "map: executeMove");

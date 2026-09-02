@@ -388,7 +388,7 @@ export function obviousCandidateMarks(
  * ("penciling every monster into…") is structurally different and stays
  * game-local. */
 export function populateText(noun: string, cell = "cell"): string {
-  return `Start by pencilling in every candidate ${noun} in each empty ${cell}, so the eliminations that follow have something to cross out.`;
+  return `Start by penciling in every candidate ${noun} in each empty ${cell}, so the eliminations that follow have something to cross out.`;
 }
 
 /** Narration for the obvious-cleanup step, parameterized by the game's noun,

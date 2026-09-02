@@ -1,6 +1,6 @@
 # Mosaic
 
-Colour every square either black or white.
+Color every square either black or white.
 Each number indicates how many black squares are in the 3×3 square
 surrounding the number – *including* the clue square
 itself.

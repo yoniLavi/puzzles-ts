@@ -56,7 +56,7 @@ function describe(value: unknown): string {
  * Spell it as the dispatch site — `"abcd: executeMove"`.
  */
 export function assertNever(value: never, context: string): never {
-  throw new Error(`${context}: unrecognised ${describe(value)}`);
+  throw new Error(`${context}: unrecognized ${describe(value)}`);
 }
 
 /**
@@ -69,5 +69,5 @@ export function assertNever(value: never, context: string): never {
  * they are looking at.
  */
 export function rejectMove(move: unknown, context: string): never {
-  throw new Error(`${context}: unrecognised ${describe(move)}`);
+  throw new Error(`${context}: unrecognized ${describe(move)}`);
 }

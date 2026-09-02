@@ -1,6 +1,6 @@
 # Pearl
 
-Draw a single closed loop by connecting together the centres of
+Draw a single closed loop by connecting together the centers of
 adjacent grid squares, so that some squares end up as corners, some as
 straights (horizontal or vertical), and some may be empty. Every
 square containing a black circle must be a corner not connected

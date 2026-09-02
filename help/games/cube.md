@@ -6,7 +6,7 @@ time, in as few moves as possible.
 
 Use the arrow keys to roll the cube, or click the mouse where you
 want it to roll towards. After every roll, the grid square and cube
-face that you brought into contact swap their colours, so that a
+face that you brought into contact swap their colors, so that a
 non-blue cube face can pick up a blue square, but a blue face rolled
 on to a non-blue square puts it down again.
 

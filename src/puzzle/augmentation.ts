@@ -137,7 +137,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   flood: {
     describeConfig: configFormatter(
-      "{width}x{height}, {colors} colours{extra-moves-permitted}",
+      "{width}x{height}, {colors} colors{extra-moves-permitted}",
       {
         "extra-moves-permitted": (value) =>
           Number(value) > 0 ? `, ${value} extra moves` : "",
@@ -161,7 +161,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   guess: {
     describeConfig: configFormatter(
-      "{pegs-per-guess}x{guesses}, {colors} colours{allow-blanks:| + blank}{allow-duplicates:, no duplicates|}",
+      "{pegs-per-guess}x{guesses}, {colors} colors{allow-blanks:| + blank}{allow-duplicates:, no duplicates|}",
     ),
   },
   inertia: {
@@ -384,7 +384,7 @@ export const puzzleAugmentations: Record<PuzzleId, PuzzleAugmentations> = {
   },
   samegame: {
     describeConfig: configFormatter(
-      "{width}x{height}, {no-of-colours} colours{ensure-solubility:, ambiguous|}{scoring-system:, alt. scoring|}",
+      "{width}x{height}, {no-of-colors} colors{ensure-solubility:, ambiguous|}{scoring-system:, alt. scoring|}",
     ),
     darkMode: {
       paletteSwaps: [[12, 13]], // 3D

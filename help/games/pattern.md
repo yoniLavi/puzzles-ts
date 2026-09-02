@@ -7,6 +7,6 @@ runs of black squares.
 Left-click in a square to mark it black; right-click (or hold Ctrl
 while left-clicking) to mark it white. Click and drag along a row or
 column to mark multiple squares black or white at once. Middle-click
-(or hold Shift while left-clicking) to return a square to grey
+(or hold Shift while left-clicking) to return a square to gray
 (meaning undecided): dragging like that can erase a whole rectangle,
 not just a row or column.

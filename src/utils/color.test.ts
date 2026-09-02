@@ -56,7 +56,7 @@ describe("dark-mode adaptation preserves the relationship to the background", ()
     expect(darkL(text) - BGL).toBeGreaterThan(0.4);
   });
 
-  it("treats a chromatic colour the same way it treats a grey", () => {
+  it("treats a chromatic color the same way it treats a gray", () => {
     // The actual defect was the SPLIT: grays went through an
     // inversion relative to the background, chromatic colors through a
     // background-blind compression. Same lightness in must give same lightness
@@ -74,7 +74,7 @@ describe("dark-mode adaptation preserves the relationship to the background", ()
     expect(c).toBeLessThanOrEqual(0.25);
   });
 
-  it("never returns a colour darker than the background", () => {
+  it("never returns a color darker than the background", () => {
     // bgl is the floor: a color below it would be invisible on the board.
     for (const l of [0, 0.25, 0.5, 0.75, 1]) {
       expect(darkL([l, 0.15, GREEN])).toBeGreaterThanOrEqual(BGL);
@@ -92,7 +92,7 @@ describe("dark-mode adaptation preserves the relationship to the background", ()
     }
   });
 
-  it("puts a light-mode background-coloured cell at the dark background", () => {
+  it("puts a light-mode background-colored cell at the dark background", () => {
     // The game is handed pure white in dark mode, so its own background arrives
     // as L=1 and must come back as the board color itself.
     expect(darkL([1, 0, 0])).toBeCloseTo(BGL, 5);
@@ -117,7 +117,7 @@ describe("dark-mode adaptation preserves the relationship to the background", ()
     expect(String(oklchToCSSColor(dark(white)))).not.toContain("NaN");
   });
 
-  it("yields a resolvable CSS colour for every reachable lightness", () => {
+  it("yields a resolvable CSS color for every reachable lightness", () => {
     // The general form: no input a palette can hold may produce a color string
     // a canvas will refuse. Sweeping the sRGB extremes and their neighborhood
     // is cheap and covers the drift band on both sides of both endpoints.

@@ -4,7 +4,7 @@ Draw lines along grid edges so as to divide the grid up into connected
 regions of squares.
 
 Every region should have two-way rotational symmetry, should contain
-exactly one dot which is in its centre, and should contain no lines
+exactly one dot which is in its center, and should contain no lines
 separating two of its own squares from each other. A region satisfying
 all of these requirements will be automatically highlighted.
 
@@ -34,13 +34,13 @@ an arrow, or to start and finish a drag.
 
 **Hint** explains the next step rather than simply making it. Most of
 what it says is about the arrows: the square whose dot the deduction
-settles is filled in the hint's colour, and the dot itself is ringed in
-the same colour. The square opposite the dot — which gets its arrow at
+settles is filled in the hint's color, and the dot itself is ringed in
+the same color. The square opposite the dot — which gets its arrow at
 the same time, as always — is only outlined, since it comes along rather
 than being what the hint is telling you about. Squares the argument
 reasons *from* — how far a galaxy can still stretch, the piece that has
 been cut off from its dot, the partner across a dot — are shaded in a
-second colour, so you can see the reason as well as read it.
+second color, so you can see the reason as well as read it.
 
 One of the things it looks for is the same thing the drag rings show
 you: when only one dot could possibly own a square — every other dot
@@ -48,7 +48,7 @@ would need the square opposite it to be off the board or on top of
 another dot — that square is settled, and dragging from it will ring
 exactly one dot.
 
-Once two neighbouring squares are settled on different dots, the hint
+Once two neighboring squares are settled on different dots, the hint
 asks for the line between them, and it is those lines, not the arrows,
 that finish the puzzle.
 

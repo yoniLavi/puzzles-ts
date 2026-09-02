@@ -130,7 +130,7 @@ if (offScope.length) {
   for (const f of offScope) console.log(`  ${f}`);
   console.log(
     "\n  Each of these changed for a reason other than the move. That may be\n" +
-      "  deliberate — or it may be a rewriter normalising something it was not\n" +
+      "  deliberate — or it may be a rewriter normalizing something it was not\n" +
       "  asked to touch, which is how seven extensionless specifiers silently\n" +
       "  gained `.ts` in `group-crowded-source-directories`.",
   );

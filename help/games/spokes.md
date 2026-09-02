@@ -18,7 +18,7 @@ You can also use the keyboard. Use the arrow keys to move the cursor on top of a
 
 Because a diagonal line visibly blocks the other diagonal of the same square, drawing one rules its crossing out for you, and erasing the line takes that mark away again. While the line stands, the crossing can't be toggled by hand.
 
-A hub is greyed out once it carries as many lines as its number asks for. That's a visual reminder only — the hub stays fully editable — and it can be switched off in the game's preferences.
+A hub is grayed out once it carries as many lines as its number asks for. That's a visual reminder only — the hub stays fully editable — and it can be switched off in the game's preferences.
 
 ## Spokes parameters
 

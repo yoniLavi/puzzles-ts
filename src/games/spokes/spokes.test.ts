@@ -657,7 +657,7 @@ describe("spokes rendering", () => {
     ).toBe(8);
   });
 
-  it("greys out a hub once its spoke count meets its clue", () => {
+  it("grays out a hub once its spoke count meets its clue", () => {
     // Hub 0 in the fixture has clue 1, so one line satisfies it — and its
     // partner at the far end of that line does not become satisfied by it.
     const { recording } = renderScenario({
@@ -671,14 +671,14 @@ describe("spokes rendering", () => {
     ).toBe(true);
   });
 
-  it("leaves every hub ungreyed on an untouched board", () => {
+  it("leaves every hub ungrayed on an untouched board", () => {
     const { recording } = renderScenario({ game: spokesGame, id: FIX_ID });
     expect(
       recording.ops.some((o) => o.op === "circle" && o.fill === COL_SATISFIED),
     ).toBe(false);
   });
 
-  it("drops the grey when the preference is off", () => {
+  it("drops the gray when the preference is off", () => {
     const state = newState(FIX, FIX_DESC);
     const ui = newUi();
     ui.markSatisfied = false;

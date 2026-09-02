@@ -227,7 +227,7 @@ describe("separate render scenarios", () => {
     expect(validRects).toBe(P5.k);
   });
 
-  it("paints a findMistakes edge in the error colour", () => {
+  it("paints a findMistakes edge in the error color", () => {
     const desc = newSeparateDesc(P5, randomNew("sep-render-mistake")).desc;
     const letters = newState(P5, desc).letters;
     const { recording, mistakeCount } = renderScenario({

@@ -48,7 +48,7 @@ describe("populateCell", () => {
   // 3×3 image: top row black, rest white.
   const image = Uint8Array.from([1, 1, 1, 0, 0, 0, 0, 0, 0]);
 
-  it("counts the clipped 3×3 neighbourhood including the cell", () => {
+  it("counts the clipped 3×3 neighborhood including the cell", () => {
     expect(populateCell(3, 3, image, 0, 0).clue).toBe(2); // (0,0),(1,0) black
     expect(populateCell(3, 3, image, 1, 0).clue).toBe(3); // whole top row
     expect(populateCell(3, 3, image, 1, 1).clue).toBe(3);
@@ -74,7 +74,7 @@ describe("populateCell", () => {
 });
 
 describe("solveCell / solveCheck / solveGameActual", () => {
-  it("a full clue marks its whole neighbourhood", () => {
+  it("a full clue marks its whole neighborhood", () => {
     const sol = {
       cell: new Uint8Array(9),
       solved: new Uint8Array(9),
@@ -138,7 +138,7 @@ describe("solveCell / solveCheck / solveGameActual", () => {
 });
 
 describe("startPointCheck", () => {
-  it("honours the upstream scan-size quirk", () => {
+  it("honors the upstream scan-size quirk", () => {
     const image = new Uint8Array(9); // all white → every cell empty
     const cells = genCellsFromImage(3, 3, image);
     expect(startPointCheck(cells, 4)).toBe(true);

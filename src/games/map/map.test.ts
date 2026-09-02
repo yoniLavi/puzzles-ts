@@ -160,7 +160,7 @@ describe("map desc validation", () => {
 describe("map executeMove", () => {
   const p: MapParams = { w: 12, h: 10, n: 12, diff: DIFF_NORMAL };
 
-  it("colours a region and clears its pencil", () => {
+  it("colors a region and clears its pencil", () => {
     const { state } = makeGame(p, "exec-1");
     const blank = firstBlank(state);
     let s = cloneState(state);
@@ -171,7 +171,7 @@ describe("map executeMove", () => {
     expect(s.pencil[blank]).toBe(0);
   });
 
-  it("toggles a pencil bit and rejects pencilling a coloured region", () => {
+  it("toggles a pencil bit and rejects penciling a colored region", () => {
     const { state } = makeGame(p, "exec-2");
     const blank = firstBlank(state);
     let s = mapGame.executeMove(state, {
@@ -200,7 +200,7 @@ describe("map executeMove", () => {
     expect(mapGame.status(done)).toBe("solved");
   });
 
-  it("does not complete a partially-coloured board", () => {
+  it("does not complete a partially-colored board", () => {
     const { state, aux } = makeGame(p, "exec-4");
     const sol = solutionFromAux(aux, p.n);
     const blank = firstBlank(state);
@@ -216,7 +216,7 @@ describe("map executeMove", () => {
 describe("map interpretMove", () => {
   const p: MapParams = { w: 12, h: 10, n: 12, diff: DIFF_NORMAL };
 
-  it("press picks up a region's colour, release drops it", () => {
+  it("press picks up a region's color, release drops it", () => {
     const { state } = makeGame(p, "input-1");
     const ui = newUi(state);
     const ds = newDrawState(state);
@@ -301,7 +301,7 @@ describe("map interpretMove", () => {
 describe("map solve + findMistakes", () => {
   const p: MapParams = { w: 12, h: 10, n: 12, diff: DIFF_NORMAL };
 
-  it("solve (re-derived) colours every region correctly", () => {
+  it("solve (re-derived) colors every region correctly", () => {
     const { state, aux } = makeGame(p, "solve-1");
     const sol = solutionFromAux(aux, p.n);
     const res = mapGame.solve?.(state, state, undefined);
@@ -322,7 +322,7 @@ describe("map solve + findMistakes", () => {
     for (let i = 0; i < p.n; i++) expect(done.coloring[i]).toBe(sol[i]);
   });
 
-  it("flags a region coloured against the unique solution", () => {
+  it("flags a region colored against the unique solution", () => {
     const { state, aux } = makeGame(p, "mistake-1");
     const sol = solutionFromAux(aux, p.n);
     const blank = firstBlank(state);
@@ -334,7 +334,7 @@ describe("map solve + findMistakes", () => {
     expect(mistakes.some((m) => m.region === blank)).toBe(true);
   });
 
-  it("reports no mistakes on a correctly-coloured partial board", () => {
+  it("reports no mistakes on a correctly-colored partial board", () => {
     const { state, aux } = makeGame(p, "mistake-2");
     const sol = solutionFromAux(aux, p.n);
     const blank = firstBlank(state);

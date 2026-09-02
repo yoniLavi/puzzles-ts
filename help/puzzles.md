@@ -31,7 +31,7 @@ The puzzles in this collection are listed below. (Click the name to play.)
 | [Map](../map)            | [help](map)      |                                                                                 |
 | [Mathrax](../mathrax)    | [help](mathrax)  |                                                                                 |
 | [Mines](../mines)        | [help](mines)    | Minesweeper                                                                     |
-| [Mosaic](../mosaic)      | [help](mosaic)   | ArtMosaico, Cuenta y Sombrea, Komsu Karala, Majipiku, Voisimage, etc.           |
+| [Mosaic](../mosaic)      | [help](mosaic)   | ArtMosaico, Cuenta y Sombera, Komsu Karala, Majipiku, Voisimage, etc.           |
 | [Net](../net)            | [help](net)      | FreeNet, NetWalk                                                                |
 | [Netslide](../netslide)  | [help](netslide) |                                                                                 |
 | [Palisade](../palisade)  | [help](palisade) | Five Cells                                                                      |

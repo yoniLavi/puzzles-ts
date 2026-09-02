@@ -72,7 +72,7 @@ describe("bridges desc codec", () => {
     expect(encodeGame(state)).toBe(desc);
   });
 
-  it("finds orthogonal neighbours across empty cells", () => {
+  it("finds orthogonal neighbors across empty cells", () => {
     const state = newStateFromDesc(p3, desc);
     expect(state.islandAt(0, 0)?.nislands).toBe(2);
   });
@@ -206,7 +206,7 @@ describe("bridges solve + findMistakes", () => {
 describe("bridges auto-mark aid", () => {
   const p3 = { ...BRIDGES_PRESETS[0], w: 3, h: 3 };
 
-  it("greys a satisfied island only when the pref is on, without locking it", () => {
+  it("grays a satisfied island only when the pref is on, without locking it", () => {
     const s0 = newStateFromDesc(p3, "1a1f"); // two count-1 islands
     // One bridge satisfies both count-1 islands.
     const s1 = bridgesGame.executeMove(s0, {

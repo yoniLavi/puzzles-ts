@@ -47,7 +47,7 @@ function addFullClues(state: LoopyState, rng: RandomState): void {
     const c2 = color(e.face2?.index ?? null);
     // Also a check that the loop generator left no face uncolored.
     if (c1 === FACE_GRAY || c2 === FACE_GRAY) {
-      throw new Error("loopy: generateLoop left a face grey");
+      throw new Error("loopy: generateLoop left a face gray");
     }
     if (c1 !== c2) {
       if (e.face1) state.clues[e.face1.index]++;
@@ -116,7 +116,7 @@ export function newDesc(p: LoopyParams, rng: RandomState): { desc: string } {
   // Only these tilings' descriptions consume randomness, so only for these can
   // a fresh draw produce a different grid to try.
   const gridVaries = (APERIODIC_GRID_TYPES as readonly GridType[]).includes(type);
-  const patch = retryLimit("loopy: unfavourable grid patch", gridVaries ? 10 : 1);
+  const patch = retryLimit("loopy: unfavorable grid patch", gridVaries ? 10 : 1);
 
   for (;;) {
     patch();

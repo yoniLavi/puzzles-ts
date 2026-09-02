@@ -386,7 +386,7 @@ describe("slide solver", () => {
     );
   });
 
-  it("honours a move limit, and still finds a solution exactly at it", () => {
+  it("honors a move limit, and still finds a solution exactly at it", () => {
     const { board, forcefield } = fixtureBoard();
     expect(solveBoard(FW, FH, board, forcefield, 2, 1, 2).moves).toBe(2);
     expect(solveBoard(FW, FH, board, forcefield, 2, 1, 1).moves).toBe(-1);
@@ -962,7 +962,7 @@ describe("slide keyboard control", () => {
     expect(ui.grabAnchor).toBe(idx(3, 1));
   });
 
-  it("keeps the cursor when a grab is cancelled under it", () => {
+  it("keeps the cursor when a grab is canceled under it", () => {
     // The grab dies with the board it was computed against; the cursor is a
     // position on a grid whose size has not changed, so it survives. Losing it
     // here would read to a keyboard player as a dropped keypress.

@@ -232,8 +232,8 @@ export const samegameGame: Game<
   paramConfig: [
     ...dimensionParamConfig<SamegameParams>(),
     {
-      kw: "no-of-colours",
-      name: "No. of colours",
+      kw: "no-of-colors",
+      name: "No. of colors",
       type: "string",
       get: (p) => String(p.ncols),
       set: (p, v) => {
@@ -263,7 +263,7 @@ export const samegameGame: Game<
     },
   ],
   describeParams: (p) => ({
-    "no-of-colours": String(p.ncols),
+    "no-of-colors": String(p.ncols),
     // C_CHOICES `selected = scoresub - 1` (0 = "(n-1)^2", 1 = "(n-2)^2").
     "scoring-system": p.scoresub - 1,
     "ensure-solubility": p.soluble,

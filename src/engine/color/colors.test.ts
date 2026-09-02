@@ -38,7 +38,7 @@ function distance(a: OKLCH, b: OKLCH): number {
 const light = (c: Color): OKLCH => colorToOKLCH(c);
 const dark = (c: Color): OKLCH => {
   const d = darkValue(c);
-  if (!d) throw new Error("a named colour must author its dark value");
+  if (!d) throw new Error("a named color must author its dark value");
   return colorToOKLCH(d);
 };
 
@@ -63,8 +63,8 @@ const named: [string, Color][] = Object.entries(colors).filter(
 
 const label = (want: [string, Color][]): [string, Color][] => want;
 
-describe("the named colours", () => {
-  it("converts OKLCH the same way the app's colour library does", () => {
+describe("the named colors", () => {
+  it("converts OKLCH the same way the app's color library does", () => {
     // `colors.ts` inlines the OKLab matrices rather than importing colorjs,
     // because it is reached from the puzzle worker. That is only safe while the
     // two agree, so pin it: every color in the table, round-tripped back to
@@ -87,14 +87,14 @@ describe("the named colours", () => {
     }
   });
 
-  it("gives every colour a value in every scheme", () => {
+  it("gives every color a value in every scheme", () => {
     // A named color with no authored dark value would be adapted by calculation,
     // and calculation is exactly what cannot preserve a set's separation.
     for (const [name, c] of named)
       expect(darkValue(c), `${name} has no dark value`).toBeDefined();
   });
 
-  it("names each colour once", () => {
+  it("names each color once", () => {
     // Two names for one value are two names for one color, which is the
     // duplication this table exists to remove.
     //
@@ -170,7 +170,7 @@ describe("the named colours", () => {
     }
   });
 
-  it("keeps a colour's own intensities apart", () => {
+  it("keeps a color's own intensities apart", () => {
     // A wash that reads as the color, or a bold that reads as the base, is an
     // intensity nobody can use.
     for (const base of [
@@ -195,7 +195,7 @@ describe("the named colours", () => {
     }
   });
 
-  it("keeps a colour inside its own name", () => {
+  it("keeps a color inside its own name", () => {
     // A search that maximizes separation will buy it with anything not nailed
     // down, and the first thing it reached for was yellow's lightness: dark
     // YELLOW came out at 0.95 with half the chroma it can carry, which is a
@@ -214,7 +214,7 @@ describe("the named colours", () => {
     };
     for (const [name, [lo, hi]] of Object.entries(bounds)) {
       const c = named.find(([n]) => n === name)?.[1];
-      if (!c) throw new Error(`${name} is not a named colour`);
+      if (!c) throw new Error(`${name} is not a named color`);
       for (const [scheme, resolve] of [
         ["light", light],
         ["dark", dark],

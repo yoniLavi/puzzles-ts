@@ -233,7 +233,7 @@ describe("salad hint frames", () => {
     );
   });
 
-  it("previews an empty-square marker as a cross in the hint colour", () => {
+  it("previews an empty-square marker as a cross in the hint color", () => {
     const { recording, hint } = hintFrame(
       NUMBERS_ID,
       /so every other square in it must be empty|must be empty\.$/,
@@ -248,7 +248,7 @@ describe("salad hint frames", () => {
     expect(recording.ops).toMatchSnapshot();
   });
 
-  it("previews a holds-a-symbol marker as a ball in the hint colour", () => {
+  it("previews a holds-a-symbol marker as a ball in the hint color", () => {
     const { recording, hint } = hintFrame(
       NUMBERS_ID,
       /must hold a number|holds a number/,

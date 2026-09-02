@@ -51,7 +51,7 @@ function makeState(w: number, h: number, grid: number[]): RangeState {
   return { w, h, grid: Int8Array.from(grid), cheated: false, completed: false };
 }
 
-describe("hint colour legend", () => {
+describe("hint color legend", () => {
   it("rings a cited black premise in COL_HINT_BLACKREF, distinct from the COL_HINT target", () => {
     // The adjacency deduction shape: a black square (the premise) at the center
     // forces a neighbor white (the target). The element-type legend must draw

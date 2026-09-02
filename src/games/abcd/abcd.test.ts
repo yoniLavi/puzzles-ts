@@ -479,7 +479,7 @@ describe("abcd findMistakes", () => {
 });
 
 describe("abcd textFormat", () => {
-  it("renders a labelled ASCII board and reflects an entered letter", () => {
+  it("renders a labeled ASCII board and reflects an entered letter", () => {
     const p = P(5, 5, 4);
     const st = newState(p, newAbcdDesc(p, randomNew("txt-1")).desc);
     const withA = abcdGame.executeMove(st, { type: "enter", x: 0, y: 0, letter: 0 });

@@ -107,7 +107,7 @@ describe("desc codec", () => {
     expect(validateDesc(p, "a")).toMatch(/short/i);
   });
 
-  it("parses clues as immutable cells of the right colour", () => {
+  it("parses clues as immutable cells of the right color", () => {
     // Hand-place a ONE at index 0 and a ZERO at index 1, then round-trip.
     const p = params(6, 6, DIFF_TRIVIAL);
     const s = p.w2 * p.h2;

@@ -151,7 +151,7 @@ export function checkCaches(ss: SolverState): void {
       else if (line === LINE_NO) no++;
     }
     if (yes !== ss.dotYesCount[i] || no !== ss.dotNoCount[i]) {
-      throw new Error(`loopy solver: dot ${i} cache desynchronised`);
+      throw new Error(`loopy solver: dot ${i} cache desynchronized`);
     }
   }
   for (let i = 0; i < g.numFaces; i++) {
@@ -166,7 +166,7 @@ export function checkCaches(ss: SolverState): void {
       else if (line === LINE_NO) no++;
     }
     if (yes !== ss.faceYesCount[i] || no !== ss.faceNoCount[i]) {
-      throw new Error(`loopy solver: face ${i} cache desynchronised`);
+      throw new Error(`loopy solver: face ${i} cache desynchronized`);
     }
   }
 }

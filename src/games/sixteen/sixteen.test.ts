@@ -295,8 +295,8 @@ describe("Sixteen move execution", () => {
 
 // --- colors ----------------------------------------------------------
 
-describe("Sixteen colours", () => {
-  it("returns 5 colours from the game (including hint)", () => {
+describe("Sixteen colors", () => {
+  it("returns 5 colors from the game (including hint)", () => {
     const bg: [number, number, number] = [0.9, 0.9, 0.9];
     const palette = sixteenGame.colors(bg);
     expect(palette).toHaveLength(5);
@@ -1206,7 +1206,7 @@ describe("the hint marks while the hinted slide animates", () => {
     );
     expect(
       fills.length,
-      "the hinted tile is not painted in the hint colour",
+      "the hinted tile is not painted in the hint color",
     ).toBeGreaterThan(0);
     for (const f of fills) {
       expect({ x: f.x, y: f.y }).toEqual({ x: ex, y: ey });

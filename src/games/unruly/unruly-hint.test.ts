@@ -45,7 +45,7 @@ const padTo6 = (top: Cell[][]): Cell[][] => {
 };
 
 describe("deduceHintPlan — per-technique reasons", () => {
-  it("threes: two same-colour cells force the third opposite", () => {
+  it("threes: two same-color cells force the third opposite", () => {
     const plan = deduceHintPlan(craft(padTo6([[O, O, E, E, E, E]])));
     expect(plan[0].reason.kind).toBe("threes");
     expect(plan[0].value).toBe(Z);

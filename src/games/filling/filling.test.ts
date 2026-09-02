@@ -108,7 +108,7 @@ describe("filling generator + solver", () => {
 });
 
 describe("filling completion", () => {
-  it("recognises a full correct grid", () => {
+  it("recognizes a full correct grid", () => {
     expect(isComplete([1, 2, 2], 3, 1)).toBe(true);
     expect(isComplete([1, 2, 0], 3, 1)).toBe(false); // empty cell
     expect(isComplete([1, 1, 2], 3, 1)).toBe(false); // wrong region size

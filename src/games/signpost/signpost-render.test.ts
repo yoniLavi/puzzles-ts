@@ -42,7 +42,7 @@ describe("Signpost render scenarios", () => {
     expect(recording.ops).toMatchSnapshot();
   });
 
-  it("mistake overlay: a wrong link recolours a number COL_ERROR", () => {
+  it("mistake overlay: a wrong link recolors a number COL_ERROR", () => {
     const p: SignpostParams = { w: 5, h: 5, forceCornerStart: true };
     // Find a seed + a legal-but-wrong link from the '1' cell.
     let scenarioId = "";

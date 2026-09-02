@@ -185,7 +185,7 @@ export function validateDesc(p: PearlParams, desc: string): string | null {
     const ch = desc[i];
     if (ch >= "a" && ch <= "z") sizeSoFar += ch.charCodeAt(0) - 97 + 1;
     else if (ch === "B" || ch === "W") sizeSoFar++;
-    else return "unrecognised character in string";
+    else return "unrecognized character in string";
   }
   if (sizeSoFar > total) return "string too long";
   if (sizeSoFar < total) return "string too short";

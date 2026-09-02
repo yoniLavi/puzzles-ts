@@ -110,7 +110,7 @@ describe("TsWorkerPuzzle — decodeCustomParams", () => {
     expect(worker.decodeCustomParams("5x5c3s2r")).toEqual({
       width: "5",
       height: "5",
-      "no-of-colours": "3",
+      "no-of-colors": "3",
       "scoring-system": 1,
       "ensure-solubility": false,
     });

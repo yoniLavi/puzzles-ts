@@ -88,7 +88,7 @@ describe("bricks hint — Easy-tier reason classification", () => {
     });
   });
 
-  it("an over-filled clue forces a neighbour clear", () => {
+  it("an over-filled clue forces a neighbor clear", () => {
     // Clue 0 at (0,0); shading its neighbor would give it a shaded cell.
     const { g, w, h } = grid([
       ["0", ".", "."],
@@ -112,7 +112,7 @@ describe("bricks hint — Easy-tier reason classification", () => {
     });
   });
 
-  it("a clue that can no longer reach its count forces a neighbour shaded", () => {
+  it("a clue that can no longer reach its count forces a neighbor shaded", () => {
     // Clue 1 at (0,0); its only other neighbor is unshaded, so the target
     // must supply the shade.
     const { g, w, h } = grid([

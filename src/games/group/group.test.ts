@@ -241,7 +241,7 @@ describe("findMistakes", () => {
 });
 
 describe("rendering smoke", () => {
-  it("draws without throwing and the palette has all colours", () => {
+  it("draws without throwing and the palette has all colors", () => {
     const p = P(6, DIFF_NORMAL, true);
     const rng = randomNew("render");
     const { desc } = newGameDesc(p, rng);

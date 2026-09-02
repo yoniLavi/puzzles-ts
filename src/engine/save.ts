@@ -102,7 +102,7 @@ export function decodeSave(data: Uint8Array): SaveEnvelope {
   }
   const upgraded = upgrade(parsed);
   if (!isSaveEnvelope(upgraded)) {
-    throw new Error("not a recognised TS save envelope");
+    throw new Error("not a recognized TS save envelope");
   }
   return upgraded;
 }

@@ -290,7 +290,7 @@ export function validateDesc(p: InertiaParams, desc: string): string | null {
     if (c === START_CHAR) {
       starts++;
     } else if (charToCell(c) === null) {
-      return "Unrecognised character in game description";
+      return "Unrecognized character in game description";
     } else if (c === CELL_CHARS[GEM]) {
       gems++;
     }

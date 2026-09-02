@@ -221,7 +221,7 @@ describe("difficulty tiers", () => {
 });
 
 describe("desc codec", () => {
-  it("round-trips a hand-built dot grid (colour asymmetry)", () => {
+  it("round-trips a hand-built dot grid (color asymmetry)", () => {
     // 3x3: a red dot (F_COLOR_0|F_SINGLE) at 0, a blue dot at 4.
     const grid = new Uint8Array(9);
     grid[0] = F_COLOR_0 | F_SINGLE;
@@ -333,7 +333,7 @@ describe("interpretMove", () => {
     expect(move.cells.every((c) => c.fill === F_COLOR_1)).toBe(true);
   });
 
-  it("keyboard cursor places a colour and suppresses a no-op", () => {
+  it("keyboard cursor places a color and suppresses a no-op", () => {
     const st = makeState(2, 1, [0, 0]);
     const ui = newUi();
     // Reveal the cursor with a move, then Enter cycles empty→blue.

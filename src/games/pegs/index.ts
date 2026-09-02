@@ -749,7 +749,7 @@ function deserializeMove(raw: unknown): PegsMove {
   // where a foreign move is caught — before `executeMove` ever sees it. Same
   // message shape as every other game's refusal, and `raw` rather than `s`,
   // which renders an object as the useless "[object Object]".
-  if (!match) rejectMove(raw, "pegs: deserialiseMove");
+  if (!match) rejectMove(raw, "pegs: deserializeMove");
   return {
     type: "jump",
     sx: Number.parseInt(match[1], 10),

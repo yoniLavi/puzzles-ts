@@ -151,13 +151,13 @@ describe("a hint marks beside the content, never behind it", () => {
         const fills = solidFills(ops, target, cell);
         expect(
           fills,
-          `${id} fills a cell with its hint-target colour: ${JSON.stringify(fills[0])}`,
+          `${id} fills a cell with its hint-target color: ${JSON.stringify(fills[0])}`,
         ).toHaveLength(0);
         if (typeof evidence === "number" && !EVIDENCE_WASH_GAMES.has(id)) {
           const washes = solidFills(ops, evidence, cell);
           expect(
             washes,
-            `${id} washes a cell with its evidence colour, and is not on the wash list: ${JSON.stringify(washes[0])}`,
+            `${id} washes a cell with its evidence color, and is not on the wash list: ${JSON.stringify(washes[0])}`,
           ).toHaveLength(0);
         }
       }

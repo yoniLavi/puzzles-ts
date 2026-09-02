@@ -659,7 +659,7 @@ export const crossingGame: Game<
   prefs: [
     {
       kw: "fit-highlight",
-      name: "Colour the clue list by where each number could go from the selected cell",
+      name: "Color the clue list by where each number could go from the selected cell",
       type: "boolean",
       get: (ui) => ui.fitHighlight,
       set: (ui, v) => {

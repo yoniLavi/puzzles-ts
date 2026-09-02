@@ -166,7 +166,7 @@ describe("Galaxies game flow", () => {
     expect(s0.flags[idx(s0, ex, ey)] & 2).toBeFalsy(); // original unchanged
   });
 
-  it("save round-trip via the Game's serialiseMove/deserialiseMove defaults", () => {
+  it("save round-trip via the Game's serializeMove/deserializeMove defaults", () => {
     const p: GalaxiesParams = { w: 3, h: 3, diff: GalaxiesDiff.Normal };
     const rng = randomNew("save-rt");
     const { desc } = galaxiesGame.newDesc(p, rng);
@@ -303,7 +303,7 @@ describe("Galaxies interpretMove", () => {
 });
 
 describe("Galaxies solver: hand-crafted small positions", () => {
-  it("a too-small puzzle with one dot at the centre is trivially solvable", () => {
+  it("a too-small puzzle with one dot at the center is trivially solvable", () => {
     // 3x3 with a dot at (3,3) — every tile is associated with that
     // dot trivially.
     const s = blankGame(3, 3);
@@ -453,7 +453,7 @@ describe("Galaxies findMistakes", () => {
     expect(ops.some((o) => o.op === "drawRect" && o.color === COL_MISTAKE)).toBe(true);
   });
 
-  it("recolours a flagged wall on a board that was already drawn", () => {
+  it("recolors a flagged wall on a board that was already drawn", () => {
     // Paint twice (docs/games/rendering.md § "Prove the overlay repaints"): a Check & Save changes no tile value, so
     // this frame only repaints if the wall overlay is part of the cache-miss
     // test. A cold-frame test cannot see that — every cell misses on frame 1
@@ -531,7 +531,7 @@ describe("Galaxies drag preview (discrete snapped target)", () => {
     return { x: c * TILE + BORDER, y: r * TILE + BORDER };
   }
 
-  it("paints the snapped target and its mirror in the drag colour, erases both when the target moves, and leaves nothing after the drag", () => {
+  it("paints the snapped target and its mirror in the drag color, erases both when the target moves, and leaves nothing after the drag", () => {
     const { s, ui, ds } = twoDotBoard();
     const cold = recordingDrawing();
     galaxiesRedraw(cold.dr, ds, null, s, 1, ui, 0, 0);
@@ -830,7 +830,7 @@ describe("Galaxies association gestures (left button, and cell→dot)", () => {
     });
   });
 
-  it("a press that ends far away commits nothing (the cancelled-pointer path)", () => {
+  it("a press that ends far away commits nothing (the canceled-pointer path)", () => {
     // view-interactive.ts's cancelPointerTracking synthesizes a drag and a
     // release at (-100, -100) when the pointer leaves the canvas mid-press.
     // Measuring the release against the press pixel is what stops that
@@ -1158,7 +1158,7 @@ describe("Galaxies association legality is sound", () => {
     );
   });
 
-  it("refuses a cell no galaxy centred on that dot could reach", () => {
+  it("refuses a cell no galaxy centered on that dot could reach", () => {
     // The owner's 2026-08-08 report, reduced. A 5×1 strip: dots at the
     // center tile (5,1) and on the edge between (1,1) and (3,1), i.e. at
     // (2,1). The edge dot owns both tiles it separates, so the center dot's

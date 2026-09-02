@@ -8,4 +8,4 @@ its edges drawn in.
 Click on a grid edge to mark it as a division between regions (black),
 and again to return to marking it as undecided (yellow). Right-click
 on a grid edge to mark it as definitely not part of the loop (faint
-grey), and again to mark it as undecided again.
+gray), and again to mark it as undecided again.

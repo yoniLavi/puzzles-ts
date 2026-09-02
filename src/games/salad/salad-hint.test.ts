@@ -108,7 +108,7 @@ describe("salad hint — the three signature techniques", () => {
     ).toBe(true);
   });
 
-  it("narrates the hole/symbol synchronisation as a note collapse", () => {
+  it("narrates the hole/symbol synchronization as a note collapse", () => {
     const texts = ["s1", "s2"].flatMap((s) => walk(LETTERS, s).texts);
     expect(
       texts.some((t) =>
@@ -123,7 +123,7 @@ describe("salad hint — the three signature techniques", () => {
     // The standing bar: no "just because" fallback (docs/games/solver-and-generator.md § "Guess-free generation"). Every
     // narration must match one of the arms the game knows how to say.
     const KNOWN =
-      /(sees [A-C1-9] first|empty squares?, so every other|so every other square in it must be empty|empty-square mark is the only one left|no (letter|number) can still go here|cannot be one of the empty ones|cross out their empty-square marks|ruled out in this square|can go in only this square|together, only|There's already|fixed set of|Following a chain|Start by pencilling|Now clear the easy ones)/;
+      /(sees [A-C1-9] first|empty squares?, so every other|so every other square in it must be empty|empty-square mark is the only one left|no (letter|number) can still go here|cannot be one of the empty ones|cross out their empty-square marks|ruled out in this square|can go in only this square|together, only|There's already|fixed set of|Following a chain|Start by penciling|Now clear the easy ones)/;
     for (const p of [LETTERS, NUMBERS, { ...LETTERS, diff: DIFF_HARD }]) {
       for (const t of walk(p, "bar-1").texts) {
         expect(t, `unnamed technique: ${t}`).toMatch(KNOWN);

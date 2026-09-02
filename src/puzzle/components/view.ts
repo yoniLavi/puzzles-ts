@@ -518,7 +518,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         /* For sizing the loadingIndicator */
         position: relative;
 
-        /* Centre the board, statusbar, and hint banner within the content
+        /* Center the board, statusbar, and hint banner within the content
          * box. The banner's readable min-width (see .hint-banner) can make
          * the content wider than the board on small puzzles; without this the
          * board would sit left-aligned against that wider banner. */
@@ -546,7 +546,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
          * so the content box never resizes as hints toggle. max-width 100%
          * caps it to the container on narrow viewports (the text wraps
          * within); a long hint may grow taller (extra lines) — that's fine.
-         * Centred so the board sits centred when the reserved banner is wider
+         * Centered so the board sits centered when the reserved banner is wider
          * than it. */
         max-width: 100%;
         margin-inline: auto;
@@ -559,7 +559,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         line-height: 1.4;
         /* Always reserve one line of space so the puzzle does not jump
          * vertically when a hint message appears or disappears (the
-         * content area is centred, so any height change reflows it). */
+         * content area is centered, so any height change reflows it). */
         box-sizing: border-box;
         min-height: calc(1.4em + var(--spacing));
       }
@@ -568,7 +568,7 @@ export class PuzzleView extends SignalWatcher(LitElement) {
         display: inline-block;
         animation: hintFadeIn 0.15s ease-out;
         /* Make the hint sentence selectable/copyable as text. Without this it
-         * inherits the puzzle area's non-selectable behaviour and a copy grabs
+         * inherits the puzzle area's non-selectable behavior and a copy grabs
          * the canvas image instead of the words. */
         -webkit-user-select: text;
         -moz-user-select: text;

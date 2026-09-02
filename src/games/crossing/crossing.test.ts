@@ -923,7 +923,7 @@ describe("crossing number-list placement", () => {
     }
   });
 
-  it("keeps the board wash and the list colouring on separate preferences", () => {
+  it("keeps the board wash and the list coloring on separate preferences", () => {
     const state = newState(P5, FIX.desc);
     const puzzle = state.puzzle;
     let cell = -1;
@@ -1291,7 +1291,7 @@ describe("crossing rendering", () => {
     expect(litCells(0.7)).not.toEqual(litCells(0.3));
   });
 
-  it("paints entered digits on one neutral tile, not nine colours", () => {
+  it("paints entered digits on one neutral tile, not nine colors", () => {
     // The per-digit colors upstream drew were a leftover from a scrapped
     // drag-and-drop design; its author asked for them to go.
     const withDigits = solutionMoves()

@@ -116,7 +116,7 @@ export function gridValidateDesc(
  */
 function gridValidateDescTriangular(desc: string | null): string | null {
   if (desc === null || desc === "0") return null;
-  return "Unrecognised grid description.";
+  return "Unrecognized grid description.";
 }
 
 /**

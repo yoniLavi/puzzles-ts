@@ -1,12 +1,12 @@
 # Guess
 
-Try to guess the hidden combination of colours. You will be given
+Try to guess the hidden combination of colors. You will be given
 limited information about each guess you make, enabling you to
 refine the next guess.
 
-Drag from the colours on the left into the topmost unfilled row to
+Drag from the colors on the left into the topmost unfilled row to
 make a guess; then click on the small circles to submit that guess.
 The small circles give you your feedback: black pegs indicate how
-many of the colours you guessed were the right colour in the right
+many of the colors you guessed were the right color in the right
 place, and white pegs indicate how many of the rest were the right
-colours but in the wrong place.
+colors but in the wrong place.

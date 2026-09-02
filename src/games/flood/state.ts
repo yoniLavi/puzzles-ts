@@ -89,7 +89,7 @@ export function validateParams(p: FloodParams, _full: boolean): string | null {
   if (p.w * p.h < 2) return "Grid must contain at least two squares";
   if (p.w < 1 || p.h < 1) return "Width and height must be at least one";
   if (p.colors < 3 || p.colors > MAXCOLORS)
-    return `Must have between 3 and ${MAXCOLORS} colours`;
+    return `Must have between 3 and ${MAXCOLORS} colors`;
   if (p.leniency < 0) return "Leniency must be non-negative";
   return null;
 }
@@ -112,8 +112,8 @@ export function presets() {
       p(12, 12, 6, 0, "12x12 Hard"),
       p(16, 16, 6, 2, "16x16 Medium"),
       p(16, 16, 6, 0, "16x16 Hard"),
-      p(12, 12, 3, 0, "12x12, 3 colours"),
-      p(12, 12, 4, 0, "12x12, 4 colours"),
+      p(12, 12, 3, 0, "12x12, 3 colors"),
+      p(12, 12, 4, 0, "12x12, 4 colors"),
     ],
   };
 }
@@ -151,7 +151,7 @@ export function validateDesc(p: FloodParams, desc: string): string | null {
     if (ch === undefined) return "Not enough data in grid description";
     const c = decodeColorChar(ch);
     if (c < 0) return "Bad character in grid description";
-    if (c >= MAXCOLORS) return "Colour out of range in grid description";
+    if (c >= MAXCOLORS) return "Color out of range in grid description";
   }
   if (desc[i] !== ",") return "Expected ',' after grid description";
   i++;

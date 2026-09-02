@@ -712,7 +712,7 @@ describe("inertia rendering", () => {
     );
   });
 
-  it("draws the aim arrow, in its own colour, while a swipe is held", () => {
+  it("draws the aim arrow, in its own color, while a swipe is held", () => {
     // Tier 2 (a recording drawing straight into `redraw`): the aim arrow lives
     // on the Ui, and `renderScenario` deliberately replays moves rather than
     // pointer events, so there is no swipe for it to drive.

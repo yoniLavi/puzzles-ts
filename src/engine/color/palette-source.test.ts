@@ -129,7 +129,7 @@ const BACKGROUND_CHANNEL =
  * that actually starts an import, so prose naming the module is still fine. */
 const COMBINATOR_IMPORT = /^import[^;]*from\s+"[^"]*color-token\.ts"/m;
 
-describe("a game contains no colour value", () => {
+describe("a game contains no color value", () => {
   const sources = gameSources();
 
   it("finds the game sources at all", () => {
@@ -141,7 +141,7 @@ describe("a game contains no colour value", () => {
     const stripped = code(src);
     const allowed = NOT_COLORS[rel] ?? [];
 
-    it(`${rel} writes no colour literal`, () => {
+    it(`${rel} writes no color literal`, () => {
       const found = [...stripped.matchAll(COLOR_LITERAL)].map((m) => {
         const line = stripped.slice(0, m.index).split("\n").length;
         return { text: src.split("\n")[line - 1].trim(), line };
@@ -151,28 +151,28 @@ describe("a game contains no colour value", () => {
       );
       expect(
         offending.map((f) => `${rel}:${f.line}  ${f.text}`),
-        "a colour belongs in the token table (palette.ts / palette-games.ts) " +
+        "a color belongs in the token table (palette.ts / palette-games.ts) " +
           "under a name that says what it means; add it there and reference it. " +
-          "If this really is not a colour, declare it in NOT_COLOURS with a reason",
+          "If this really is not a color, declare it in NOT_COLORS with a reason",
       ).toEqual([]);
     });
 
-    it(`${rel} derives no colour from the background`, () => {
+    it(`${rel} derives no color from the background`, () => {
       const line = stripped
         .split("\n")
         .findIndex((l) => BACKGROUND_CHANNEL.test(l) && !l.includes("..."));
       expect(
         line < 0 ? null : `${rel}:${line + 1}  ${src.split("\n")[line].trim()}`,
-        "a colour defined relative to the board is still a colour decision: " +
+        "a color defined relative to the board is still a color decision: " +
           "give it a name in palette-games.ts as a function of the background, " +
           "and call that",
       ).toBeNull();
     });
 
-    it(`${rel} does not combine colours itself`, () => {
+    it(`${rel} does not combine colors itself`, () => {
       expect(
         COMBINATOR_IMPORT.test(src) ? rel : null,
-        "mix/scale/divide/fraction build one colour out of others, which is the " +
+        "mix/scale/divide/fraction build one color out of others, which is the " +
           "token table's job — put the combination there under a name",
       ).toBeNull();
     });
@@ -256,7 +256,7 @@ describe("a per-game token belongs to the game it names", () => {
  * meaning in `palette.ts` is defined over it, or one of the sets in `colors.ts`
  * itself gathers it up (`RED` is in `TEN`, which is what Flood imports).
  */
-it("declares no named colour nothing can show", () => {
+it("declares no named color nothing can show", () => {
   const imported = (src: string): string[] => {
     const m = /import\s*\{([^}]*)\}\s*from\s*"[^"]*colors\.ts"/.exec(src);
     return m

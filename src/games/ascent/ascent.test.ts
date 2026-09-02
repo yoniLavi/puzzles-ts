@@ -143,7 +143,7 @@ describe("ascent solve + completion", () => {
 });
 
 describe("ascent hexagonal hit-testing (design F7)", () => {
-  it("a click at each hex cell centre resolves to that cell", () => {
+  it("a click at each hex cell center resolves to that cell", () => {
     const p = mk(7, 7, 1, MODE_HEXAGON);
     const { desc } = newAscentDesc(p, randomNew("hex-hit"));
     const state = newAscentState(p, desc);

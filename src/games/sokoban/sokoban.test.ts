@@ -145,7 +145,7 @@ describe("Sokoban desc codec", () => {
     expect(validateDesc(p5, "w6ubtw2s3w2s3z6")).toMatch(/Invalid character/);
   });
 
-  it("validateDesc accepts pits, deep pits and labelled barrels (hand IDs)", () => {
+  it("validateDesc accepts pits, deep pits and labeled barrels (hand IDs)", () => {
     // A labeled barrel 'A' and a pit 'p' — the random generator never emits
     // these, but hand-authored level IDs use them (design D7).
     expect(validateDesc(p5, "w6uAtw2p3w2s3w6")).toBeNull();

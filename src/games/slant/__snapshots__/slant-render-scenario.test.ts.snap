@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Slant hint render scenarios > opener frame: ringed target(s), recoloured clue digit, board intact 1`] = `
+exports[`Slant hint render scenarios > opener frame: ringed target(s), recolored clue digit, board intact 1`] = `
 [
   {
     "color": 0,

@@ -117,9 +117,15 @@ one commit. Phase 2 is player-visible text (design D5), a second commit.
       as the encoded string. Not persisted.
 - [x] 7.3 `colours` (Flood, Guess) and the `{colours}` placeholders renamed in
       phase 1 (identifier-shaped); `no-of-colours` with its label in phase 2.
-- [ ] 7.4 Sweep `help/`, the string literals in `src/` and `scripts/`, and the
-      test names whose snapshots key on them.
-- [ ] 7.5 Delete `spelling-strings.mjs` and the guard's string skip; drop
-      `help/` from the exclusions.
+- [x] 7.4 Swept: 173 files, 369 line pairs — 30 help pages (54 lines), the
+      string literals in `src/` and `scripts/`, six snapshot files whose keys
+      are test names, and `metrics/color-inventory.md` regenerated once more
+      for its title. Fold proof empty; `tsc`, the probe anchors and 42
+      targeted test files (the snapshot owners, the narration guards, the
+      catalog and config tests) green before the gate.
+- [x] 7.5 `spelling-strings.mjs` deleted; the guard scans whole files and
+      `help/` (1028 files, up from 964).
 - [ ] 7.6 Owner acceptance: read a help page, a catalog card, the Samegame
-      custom dialog and a Map hint in the running app.
+      custom dialog and a Map hint in the running app. **The change stays
+      pending until then; archive on acceptance**, and delete the guard's
+      exclusion for this change's directory in the same commit (task 6.5).

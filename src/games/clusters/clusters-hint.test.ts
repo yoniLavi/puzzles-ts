@@ -125,7 +125,7 @@ describe("deduceHintPlan", () => {
     }
   });
 
-  it("a surrounded-at-target firing really has every neighbour the forced colour", () => {
+  it("a surrounded-at-target firing really has every neighbor the forced color", () => {
     const hit = findDeduction(
       (d) =>
         d.reason.kind === "direct" &&
@@ -139,7 +139,7 @@ describe("deduceHintPlan", () => {
     }
   });
 
-  it("a reachTwo-at-target firing: the refuted colour really cannot reach two", () => {
+  it("a reachTwo-at-target firing: the refuted color really cannot reach two", () => {
     const hit = findDeduction(
       (d) =>
         d.reason.kind === "direct" &&
@@ -220,7 +220,7 @@ describe("hint", () => {
       const secondMark = hl.danger !== undefined || hl.chain.length > 0;
       if (secondMark) {
         expect(
-          /beside this cell|its ringed \w+ neighbour|from it/.test(step.explanation),
+          /beside this cell|its ringed \w+ neighbor|from it/.test(step.explanation),
           `${step.explanation} — a second mark is shown but "this cell" is not tied to it`,
         ).toBe(true);
       }
@@ -294,7 +294,7 @@ describe("hintKeepTrack", () => {
     ).toBe("completed");
   });
 
-  it("drops the plan on the wrong colour, wrong cell, or a multi-cell drag", () => {
+  it("drops the plan on the wrong color, wrong cell, or a multi-cell drag", () => {
     expect(
       track?.({ kind: "paint", cells: [{ index: 5, fill: F_COLOR_1 }] }, step, state),
     ).toBe("off");
@@ -345,7 +345,7 @@ describe("hint rendering (tier 2.5)", () => {
   // board contradicted the sentence. Nothing failed, because an index is not a
   // color. `color-collide.test.ts` had been reporting the pair all along and
   // is advisory. This is the non-proxy form.
-  it("every hint role is a colour the board does not already use", () => {
+  it("every hint role is a color the board does not already use", () => {
     const palette = clustersGame.colors([1, 1, 1]);
     const key = (i: number) => palette[i].join(",");
     const roles = [COL_HINT, COL_HINT_CELL, COL_HINT_DANGER];
@@ -353,7 +353,7 @@ describe("hint rendering (tier 2.5)", () => {
       for (const tile of [COL_0, COL_1]) {
         expect(
           key(role),
-          `hint role ${role} is the same colour as tile ${tile}`,
+          `hint role ${role} is the same color as tile ${tile}`,
         ).not.toBe(key(tile));
       }
     }

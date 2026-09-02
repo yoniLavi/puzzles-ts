@@ -91,7 +91,7 @@ describe("Galaxies desc encode/decode", () => {
 });
 
 describe("checkComplete", () => {
-  it("trivially complete: a single-dot puzzle with the dot at centre", () => {
+  it("trivially complete: a single-dot puzzle with the dot at center", () => {
     // 3x3 with one white dot at the center (3,3). Outer border edges
     // are already set; no interior edges means everything is one
     // region centered on (3,3), which is symmetric.

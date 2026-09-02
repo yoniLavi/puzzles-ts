@@ -202,7 +202,7 @@ describe("Pegs moves", () => {
   });
 });
 
-describe("Pegs move serialisation", () => {
+describe("Pegs move serialization", () => {
   it("round-trips a jump move", () => {
     const move: PegsMove = { type: "jump", sx: 3, sy: 5, tx: 3, ty: 7 };
     const raw = G.serializeMove?.(move);
@@ -210,7 +210,7 @@ describe("Pegs move serialisation", () => {
     expect(restored).toEqual(move);
   });
 
-  it("rejects invalid serialised move", () => {
+  it("rejects invalid serialized move", () => {
     expect(() => G.deserializeMove?.("invalid")).toThrow();
   });
 });
@@ -231,8 +231,8 @@ describe("Pegs text format", () => {
   });
 });
 
-describe("Pegs colours", () => {
-  it("uses mkhighlightBackground for the background colour", () => {
+describe("Pegs colors", () => {
+  it("uses mkhighlightBackground for the background color", () => {
     const bg: [number, number, number] = [1, 1, 1]; // near-white
     const palette = G.colors(bg);
     // Background should be shifted away from pure white.
@@ -241,7 +241,7 @@ describe("Pegs colours", () => {
     expect(palette[0][2]).toBeLessThan(1);
   });
 
-  it("has 6 colours: upstream's five plus the held-peg ring", () => {
+  it("has 6 colors: upstream's five plus the held-peg ring", () => {
     const palette = G.colors([0.9, 0.9, 0.9]);
     expect(palette.length).toBe(6);
   });

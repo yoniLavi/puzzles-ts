@@ -112,14 +112,14 @@ export const puzzleCatalog = {
   flood: {
     name: "Flood",
     description: "Flood-filling puzzle",
-    objective: "Turn the grid the same colour in as few flood fills as possible.",
+    objective: "Turn the grid the same color in as few flood fills as possible.",
     collection: "original",
   },
   galaxies: {
     name: "Galaxies",
     description: "Symmetric polyomino puzzle",
     objective:
-      "Divide the grid into rotationally symmetric regions each centred on a dot.",
+      "Divide the grid into rotationally symmetric regions each centered on a dot.",
     collection: "original",
   },
   group: {
@@ -131,7 +131,7 @@ export const puzzleCatalog = {
   guess: {
     name: "Guess",
     description: "Combination-guessing puzzle",
-    objective: "Guess the hidden combination of colours.",
+    objective: "Guess the hidden combination of colors.",
     collection: "original",
   },
   inertia: {
@@ -166,8 +166,8 @@ export const puzzleCatalog = {
   },
   map: {
     name: "Map",
-    description: "Map-colouring puzzle",
-    objective: "Colour the map so that adjacent regions are never the same colour.",
+    description: "Map-coloring puzzle",
+    objective: "Color the map so that adjacent regions are never the same color.",
     collection: "original",
   },
   mathrax: {
@@ -255,7 +255,7 @@ export const puzzleCatalog = {
   samegame: {
     name: "Same Game",
     description: "Block-clearing puzzle",
-    objective: "Clear the grid by removing touching groups of the same colour squares.",
+    objective: "Clear the grid by removing touching groups of the same color squares.",
     collection: "original",
   },
   seismic: {

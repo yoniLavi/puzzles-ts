@@ -4,12 +4,12 @@ Rotate square sections of the grid to arrange the squares into
 numerical order starting from the top left.
 
 In the basic game, you rotate a 2×2 square section. Left-click
-in the centre of that section (i.e. on a corner point between four
+in the center of that section (i.e. on a corner point between four
 squares) to rotate the whole section anticlockwise. Right-click to
 rotate the section clockwise.
 
 When you master the basic game, go to the Type menu to try it with
 larger rotating groups (for a 3×3 group you must click in the
-centre of a square to rotate the block around it). Or select the
+center of a square to rotate the block around it). Or select the
 'orientable' mode in which every square must end up the right way
 round as well as in the right place. Or both!

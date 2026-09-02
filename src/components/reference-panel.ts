@@ -155,7 +155,7 @@ export class ReferencePanel extends SignalWatcher(LitElement) {
 
     /* Bottom sheet when there isn't room to dock beside the board: a narrow
      * viewport, OR the app's "horizontal" orientation (short landscape, where a
-     * side dock would squeeze the board off-centre against the toolbar column).
+     * side dock would squeeze the board off-center against the toolbar column).
      * The landscape-short half mirrors the --app-orientation:horizontal query in
      * common.css, and the puzzle-screen reserved-padding rule matches it. */
     @media (max-width: 640px), (orientation: landscape) and (max-height: 40rem) {

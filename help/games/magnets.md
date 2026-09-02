@@ -13,5 +13,5 @@ magnet (the + is placed in the end you click). Right-click to toggle
 between empty, neutral, and a ?? mark indicating that you're sure
 it's a magnet but don't yet know which way round it goes.
 
-Left-click a clue to mark it as done (grey it out). To unmark a clue
+Left-click a clue to mark it as done (gray it out). To unmark a clue
 as done, left-click it again.

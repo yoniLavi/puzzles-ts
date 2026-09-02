@@ -1,6 +1,6 @@
 # Range
 
-Colour some squares black, so as to meet the following conditions:
+Color some squares black, so as to meet the following conditions:
 
 - No two black squares are orthogonally adjacent.
 - No group of white squares is separated from the rest of the grid by
@@ -12,5 +12,5 @@ Colour some squares black, so as to meet the following conditions:
   direction there must be one white square and then a black one beyond
   it.)
 
-Left-click to colour a square black. Right-click to mark a square
+Left-click to color a square black. Right-click to mark a square
 with a dot, if you know it should not be black.

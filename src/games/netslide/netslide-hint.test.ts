@@ -348,14 +348,14 @@ describe("netslide hint narration", () => {
     expect(seen, "no plan in 40 boards ever moved a tile off a frozen line").toBe(true);
   });
 
-  it("never calls the source the centre, and never says a tile belongs twice", () => {
+  it("never calls the source the center, and never says a tile belongs twice", () => {
     // "Center" is a claim the hint has not checked: the source sits at ⌊w/2⌋,
     // ⌊h/2⌋, so on the 4×4 it is row 3, column 3 — visibly not the center. And a
     // sentence that says a tile "belongs beside the source" and then ", where it
     // belongs" reads as a stutter.
     for (const { steps } of narrationCorpus()) {
       for (const step of steps) {
-        expect(step.explanation).not.toMatch(/centre|center|middle/i);
+        expect(step.explanation).not.toMatch(/center|center|middle/i);
         expect(step.explanation.match(/belongs/g)?.length ?? 0).toBeLessThan(2);
       }
     }
