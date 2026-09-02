@@ -4,7 +4,7 @@ import { customElement } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import type { FavoriteChangeEvent } from "../components/catalog-card.ts";
 import rawHomeScreenCSS from "../css/home-screen.css?inline";
-import { APP_NAME } from "../project-identity.ts";
+import { APP_NAME, APP_TAGLINE } from "../project-identity.ts";
 import { puzzleDataMap, puzzleIds } from "../puzzle/catalog.ts";
 import { puzzlePageUrl } from "../routing.ts";
 import { savedGames } from "../store/saved-games.ts";
@@ -67,8 +67,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
       <div class="title">
         <h1 translate="no">${APP_NAME}</h1>
       </div>
-      <div class="subtitle">from Simon&nbsp;Tatham’s
-        portable&nbsp;puzzle&nbsp;collection and&nbsp;more</div>
+      <div class="subtitle">${APP_TAGLINE}</div>
 
       <div class="controls">
         <wa-dropdown>
@@ -99,8 +98,7 @@ export class HomeScreen extends SignalWatcher(Screen) {
           ${this.renderOptionsMenuContent()}
         </wa-dropdown>
       </div>
-      <div class="subtitle">from Simon&nbsp;Tatham’s
-        portable&nbsp;puzzle&nbsp;collection and more</div>
+      <div class="subtitle">${APP_TAGLINE}</div>
 
       <div class="controls">
         <wa-button href="help/" appearance="plain" variant="brand">${

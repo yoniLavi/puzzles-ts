@@ -58,6 +58,40 @@
       no trackers" promise, which nothing in the licenses requires and which
       the owner declined to be bound by.
 
+## 3b. Our own voice, our own logo, real privacy notes (owner, 2026-09-02)
+
+- [x] 3b.1 `APP_TAGLINE` in `src/project-identity.ts` ("logic puzzles with
+      hints that explain why") replaces "from Simon Tatham's portable puzzle
+      collection and more" in the header (template and Lit, both layouts) and
+      in the page title. The lineage moves to the About dialog and the help
+      index, where a credit belongs.
+- [x] 3b.2 Every player-facing surface rewritten in this project's words, with
+      nothing inherited verbatim from puzzles-web: the front page (title, meta
+      description, noscript, footer), the puzzle page title, description and
+      noscript, `unsupported.html`, `public/404.html`, `help/index.md`,
+      `help/differences.md`, `help/install.md`, `help/puzzles.md`'s intro and
+      trademark note, `help/_game.html.hbs`'s footer, and the sections of
+      `help/features.md` that were puzzles-web's (keyboard, right-click by
+      touch, right-drag, checkpoints, autosave, sharing, saving). The sections
+      this project wrote (hints, checking, difficulty, mark-all, reference) were
+      already its own. The 57 per-game pages keep upstream's wording on purpose.
+- [x] 3b.3 Logo review: the favicon was Lucide's stock "boxes" icon (ISC), the
+      same one puzzles-web ships — not a trademark, but not ours and not
+      distinct. Replaced with this project's own mark, a puzzle grid with one
+      cell lit, in `public/favicon.svg` (the source of every generated PWA
+      icon). The remaining SVGs under `src/assets/` are Lucide-derived
+      depictions of browser controls (Edge's "app available", Firefox's "add to
+      taskbar") and mouse buttons — openly licensed glyphs, not logos. No
+      third-party logo ships.
+- [x] 3b.4 `src/assets/privacy.html` rewritten from the development placeholder
+      to real notes: no personal information collected or stored; games and
+      settings stay in the browser; any measurement is anonymous and aggregate
+      with no cookies or client-side identifier; crash reports (where a build
+      enables them) carry the error and the app/browser/screen, with personal
+      information disabled — bound to `sendDefaultPii: false` in
+      `src/utils/sentry.ts`. `deploy-the-web-app` task 2.4 now reads as
+      "keep these true", not "write them".
+
 ## 4. Consistency
 
 - [x] 4.1 `LICENSE.md` and `CREDITS.md` name the product beside the repository

@@ -1,6 +1,7 @@
-# Included puzzles
+# All the puzzles
 
-The puzzles in this collection are listed below. (Click the name to play.)
+Every puzzle in Hintful Puzzles, with a link to play it and a link to its
+instructions. The last column names puzzles you may know it as elsewhere.
 
 <!-- this table is manually generated for now -->
 
@@ -67,11 +68,11 @@ The puzzles in this collection are listed below. (Click the name to play.)
 {.puzzles-list}
 
 
-<small>* In some regions, names of similar/related puzzles may be trademarks 
-belonging to others. Use of a trademarked name here does not
-imply affiliation or endorsement by its owner.</small> {#tm}
+<small>* Some of these names are trademarks of their owners in some
+countries. Naming a puzzle here implies no affiliation with, or endorsement
+by, whoever owns the name.</small> {#tm}
 
-<small>In the United States (where this site originates),
+<small>In the United States,
 BATTLESHIP® and MASTERMIND® are registered trademarks of HASBRO INC.;
 HIDATO® is a registered trademark of DOO-BEE TOYS & GAMES LTD;
 KENKEN® is a registered trademark of KENKEN PUZZLE LLC;

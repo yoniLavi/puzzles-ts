@@ -21,6 +21,13 @@ export const APP_NAME = "Hintful Puzzles";
 /** The short label for a home-screen icon, where the full name would wrap. */
 export const APP_SHORT_NAME = "Hintful";
 
+/**
+ * The line under the name, and the page title's other half. It says what the
+ * collection is and what sets it apart, and it names no other project: the
+ * lineage is credited in the About dialog, where a credit belongs.
+ */
+export const APP_TAGLINE = "logic puzzles with hints that explain why";
+
 /** Source code. */
 export const REPO_URL = "https://github.com/yoniLavi/puzzles-ts";
 

@@ -28,6 +28,65 @@ screen's header — so that a rename is one edit and the copies cannot drift.
 - **THEN** the dialog title and the manifest show that name
 - **AND** the license panel still labels the MIT notice with the project name
 
+### Requirement: Player-facing text is this project's own, and the lineage is credited in one place
+
+Every sentence a player reads outside the per-game help pages — the front
+page, the page titles and descriptions, the help site's own pages, the
+unsupported-browser and not-found pages, the privacy notes — SHALL be this
+project's own writing, in its own voice. Text inherited from `puzzles-web`
+SHALL NOT survive verbatim on those surfaces. The per-game pages under
+`help/games/` are excluded on purpose: they keep upstream's wording, which the
+`help` convention already governs.
+
+The header and the page titles SHALL describe the product (a tagline from
+`src/project-identity.ts`) and SHALL name no other project. The lineage is
+credited in the About dialog and in the help pages that explain the
+collection's origin, where a credit belongs; a header that names a predecessor
+presents the app as that predecessor's.
+
+The logo SHALL be this project's own drawing, held in `public/favicon.svg`
+(the single source of every generated PWA icon), and the app SHALL ship no
+third-party logo. Icons that depict a browser's own controls in the install
+instructions are drawn from an openly licensed icon set and are not logos.
+
+#### Scenario: The header speaks for the product
+
+- **WHEN** a player reads the front page header or a page title
+- **THEN** it shows the product name and the tagline
+- **AND** it names no other project or person
+
+#### Scenario: Inherited copy is gone
+
+- **WHEN** the front page, the help site's own pages, the unsupported-browser
+  page and the not-found page are compared with `puzzles-web`'s
+- **THEN** no paragraph is shared verbatim
+
+### Requirement: The privacy notes describe what the app does with a player's data
+
+The About dialog's Privacy panel SHALL state, truthfully for the build a player
+is using, that the app collects and stores no personal information; that games,
+saves, checkpoints and preferences live in the player's own browser storage and
+are never sent anywhere; that any usage measurement the app may perform counts
+anonymous aggregate actions only, with no personal information and no cookies
+or other client-side identifier; and that crash reporting, where a build has it
+switched on, sends the error and the app, browser and screen it happened on,
+with personal information disabled in the reporting.
+
+The notes SHALL NOT be a development placeholder, and SHALL NOT promise more
+than the code keeps: the crash-report description is bound to `sendDefaultPii:
+false` in `src/utils/sentry.ts`, and the measurement description is bound to
+whatever analytics block a deployment injects — a deployment that adds
+identifying measurement MUST change the notes in the same change.
+
+#### Scenario: A player reads the privacy notes
+
+- **WHEN** a player opens the About dialog's Privacy panel
+- **THEN** it says no personal information is collected or stored
+- **AND** it says their games and settings stay on their device
+- **AND** it says any measurement is anonymous and aggregate, with no cookies
+  or client-side identifier
+- **AND** it describes crash reports as carrying no identity or game data
+
 ### Requirement: The app presents its own authorship and its lineage in order
 
 The player-facing surfaces SHALL present this project as its own work, authored

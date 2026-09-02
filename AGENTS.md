@@ -17,15 +17,22 @@ nothing generated, anywhere in the tree.**
 - **Help** is this project's own markdown under `help/` — one directory, one
   format, one page per game in `help/games/`. The MIT notices are `licenses/`,
   and the two unbuilt `unfinished/` C files live with the changes that read them.
-- **The product is Hintful Puzzles; the repository is `puzzles-ts`.** The name
-  and the support links have one source, `src/project-identity.ts`, read by the
-  About dialog, the PWA manifest, the front page template and the home screen.
-  The app presents itself as by Yoni Lavi and credits its lineage in order
-  (Simon Tatham, Lennard Sprong, Mike Edmunds' `puzzles-web`, then this
-  project). **Support links point home; attribution links point outward by
-  design** — a link that exists to credit puzzles-web keeps pointing at it.
-  `src/project-identity.test.ts` reads the rendered About dialog and scans the
-  other surfaces for the retired name and the predecessor's issue tracker.
+- **The product is Hintful Puzzles; the repository is `puzzles-ts`.** The name,
+  the tagline and the support links have one source, `src/project-identity.ts`,
+  read by the About dialog, the PWA manifest, the page templates and the home
+  screen. The app presents itself as by Yoni Lavi and credits its lineage in
+  order (Simon Tatham, Lennard Sprong, Mike Edmunds' `puzzles-web`, then this
+  project) **in the About dialog, and nowhere else**: the header, the page
+  titles and the help pages speak in this project's own voice and name no
+  other project, and every player-facing sentence outside the per-game help is
+  this project's own writing rather than text inherited from puzzles-web. The
+  per-game pages under `help/games/` keep upstream's wording on purpose.
+  **Support links point home; attribution links point outward by design** — a
+  link that exists to credit puzzles-web keeps pointing at it. The logo
+  (`public/favicon.svg`, the source of every generated PWA icon) is this
+  project's own drawing; no third-party logo ships. `src/project-identity.test.ts`
+  reads the rendered About dialog and scans the other surfaces for the retired
+  name and the predecessor's issue tracker.
 
 The authoritative statement of the migration approach is the `ts-migration`
 capability spec (`openspec/specs/ts-migration/spec.md`); this section is the

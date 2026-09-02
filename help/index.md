@@ -1,18 +1,17 @@
 # Hintful Puzzles
 
-This is a collection of single player puzzle games, adapted from
-[Simon Tatham’s Portable Puzzle Collection][sgt-puzzles]
-and Lennard Sprong’s [puzzles-unreleased][puzzles-unreleased] additions,
-with hints that explain the next move rather than just showing it.
+Fifty-seven logic puzzles to play in your browser, with hints that explain the
+next move rather than just making it. Most of the puzzles come from
+[Simon Tatham’s Portable Puzzle Collection][sgt-puzzles]; thirteen more are
+Lennard Sprong’s [additions][puzzles-unreleased] to it.
 
-Read more about:
+* [Features](features) every puzzle shares: hints, checking your work,
+  checkpoints, and playing by touch
+* [Installing](install) the app to play offline
+* [Puzzles](puzzles): the full list, with the names you may know them by
+* [Differences](differences) from Simon Tatham’s original collection
 
-* [Features](features) of this web adaptation
-* [Installing](install) the web app for offline use
-* [Puzzles](puzzles) included in the collection
-* [Differences](differences) from the original portable puzzle collection
-
-Every puzzle has its own help page describing how to play it — reach it from
+Every puzzle has its own help page describing how to play it. Reach it from
 the [Puzzles](puzzles) list, or from the game menu while you are playing.
 
 [puzzles-unreleased]: https://github.com/x-sheep/puzzles-unreleased

@@ -38,17 +38,19 @@
       cache-control rules too, not only the CSP** — `/assets/*` and
       `/preflight/*` are `immutable` for a year and the HTML is not, and getting
       that backwards ships a stale app that will not update.
-- [ ] 2.4 **Write the privacy policy before the first public URL.** The About
-      dialog's Privacy panel (`src/assets/privacy.html`) is puzzles-web's
-      development placeholder: it tells the reader "No privacy policy is
-      available" and that "the developer has forgotten to provide their own".
-      Found by `claim-project-authorship` (2026-09-02), which left it alone
-      because the text depends on what the deployment actually does — Sentry
-      (if `VITE_SENTRY_DSN` is set), any analytics block, and whatever host
-      logging exists — none of which is decided until here. The owner has
-      deliberately kept ads and analytics open as options (the front page no
-      longer promises their absence), so the policy must state what is true on
-      the day rather than promise a stance.
+- [ ] 2.4 **Keep the privacy notes true for the deployed build.** The About
+      dialog's Privacy panel (`src/assets/privacy.html`, written by
+      `claim-project-authorship`, 2026-09-02) promises: no personal information
+      collected or stored; games and settings stay in the browser; any
+      measurement is anonymous and aggregate with no cookies or client-side
+      identifier; crash reports carry the error and the app/browser/screen with
+      personal information disabled. Each deploy-time choice here is bound to
+      one of those sentences — `VITE_SENTRY_DSN` to the crash-report paragraph
+      (`sendDefaultPii: false` must stay), `VITE_ANALYTICS_BLOCK` to the
+      measurement paragraph (an analytics vendor that sets a cookie or an
+      identifier breaks it), and host logging to "stored nowhere else". Check
+      each against the notes and amend the notes in the same change if a choice
+      contradicts them.
 
 ## 3. Fix what the inherited config assumes
 

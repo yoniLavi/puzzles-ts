@@ -1,76 +1,61 @@
-# Web common features
+# Features every puzzle shares
 
-This web adaptation of the portable puzzle collection has several features 
-to help it work better in a web browser and on a variety of different
-screen sizes and input devices.
+The puzzles differ; the app around them is the same. This page covers what
+every puzzle gets from it: hints that explain, checking your work, saving and
+checkpoints, and playing by touch, mouse or keyboard on any size of screen.
 
-In addition to the features listed below, many (though not all) of the
-[common features][sgt-common] of Simon Tatham's original desktop collection
-are available here too. That manual describes his desktop builds rather than
-this app, so where the two disagree, this help is the one that describes what
-you are using.
+Simon Tatham’s manual for the original collection describes his desktop
+builds, and much of its [common features][sgt-common] chapter applies here
+too. Where the two disagree, this page describes the app you are using.
 
 ## On-screen keyboard {#virtual-keyboard}
 
-For puzzles where you need to enter numbers or use other keys to solve the
-puzzle (like Solo and Keen), this app will show an on-screen "virtual keyboard" 
-allowing use on touch screens.
+Puzzles you solve by typing, such as Solo and Keen, show an on-screen keypad
+so they can be played by touch.
 
-If you have a physical keyboard and want to save screen space, you can turn
-off the virtual keyboard in the
+If you have a real keyboard and would rather have the screen space, turn the
+keypad off in the
 <command-link command="settings:appearance">preferences</command-link>.
 
-## Right mouse button on touch devices {#right-mouse}
+## Right-clicking on a touch screen {#right-mouse}
 
-Many puzzles need both the left and right mouse buttons. If you're using a touch
-screen, you have a few options when a puzzle's help says to "right-click":
+Many puzzles use both mouse buttons. When a puzzle’s help says “right-click”
+and you are playing by touch, you have four ways to do it:
 
-* **Tap multiple times.** In many puzzles, this will cycle through the left-click
-  state on first tap, the right-click state on second tap, and back to the 
-  "neutral" state (for puzzles that have that) on the third tap.
+* **Tap again.** In many puzzles, tapping cycles a square: the first tap does
+  what a left-click does, the second what a right-click does, and a third (in
+  puzzles that have a neutral state) clears it.
 
-* **Long press** (hold) is treated as a right-click. To right-drag, continue 
-  to hold your finger down and move it in the desired direction.
+* **Long press.** Holding a finger down counts as a right-click. To right-drag,
+  keep holding and move.
 
-* **Two-finger tap** is also treated as a right-click. The two fingers don't 
-  have to hit at exactly the same time. You might find it easier to put the 
-  first finger down where you want to right-click, then very quickly tap and
-  release another finger, anywhere convenient. (If you're a piano player, this 
-  is a little like a grace note. Or really, a mordent but holding the main note 
-  while striking the other key.)
+* **Two-finger tap.** A second finger, anywhere on the screen, turns a touch
+  into a right-click. The fingers need not land together: put the first where
+  you want to click, then tap and release the second. To right-drag, lift the
+  second finger and move the first.
 
-  To right-drag, keep the first finger down and move it after lifting the other 
-  finger. 
+* **The ::mouse-left-button|left-click::/::mouse-right-button|right-click::
+  toggle.** A button that decides what a plain tap means. It is hidden by
+  default; turn it on in the
+  <command-link command="settings:mouse">preferences</command-link>. Set to
+  right-click, it also inverts the long press and the two-finger tap to mean
+  *left*-click, and it swaps the buttons of a mouse or trackpad the same way.
 
-* **::mouse-left-button|left-click::/::mouse-right-button|right-click:: toggle.**
-  This is a button that lets you control whether tapping on the puzzle means 
-  left-click or right-click. The mouse button toggle isn't normally shown; 
-  you can turn it on in the 
-  <command-link command="settings:mouse">preferences</command-link>.
-
-  When set to right-click on tap, the long press and two-finger tap gestures 
-  are inverted to mean *left*-click. (The mouse button toggle swaps the primary 
-  and secondary buttons or gestures for *any* input device, so it can be used 
-  with a regular mouse or trackpad too.)
-
-Tapping multiple times is always available (for puzzles that support it). 
-The other options can be configured in the 
-<command-link command="settings:mouse">preferences</command-link>,
-where you can also adjust the detection time and audio feedback.
+Tapping again is always available where a puzzle supports it. The others can be
+tuned or turned off in the
+<command-link command="settings:mouse">preferences</command-link>, along with
+the hold time and the audio feedback.
 
 **In puzzles that have no use for a right-click, these gestures are switched
 off** — Cube, Fifteen, Filling, Flip, Flood, Pegs and Sokoban. There, holding
 your finger still simply presses; you can rest a finger on a peg while you decide
 where to jump it, and the drag still works when you move.
 
-## Right drag with a mouse {#right-drag}
+## Right-dragging with a mouse {#right-drag}
 
-If you are using a mouse, puzzles will ignore attempts to click and drag
-with the right mouse button. (This is a browser limitation. Right-click still 
-works, just not right-drag.)
-
-When a puzzle's help says to "right-drag" you can instead hold down <kbd>Ctrl</kbd> 
-and then click and drag with the left mouse button.
+Browsers don’t let a page see a drag made with the right mouse button, so where
+a puzzle’s help says “right-drag”, hold <kbd>Ctrl</kbd> and drag with the left
+button instead. A plain right-click works as usual.
 
 ## Hints {#hints}
 
@@ -236,96 +221,79 @@ to clear it.
 
 ## Checkpoints {#checkpoints}
 
-This app allows you to save multiple "checkpoints" within a game and return 
-to them later. Checkpoints can be helpful on an [Unreasonable](#difficulty)
-board, where you may have to try a line out and take it back. They're
-essentially a shortcut for repeatedly pressing Undo.
+A checkpoint marks a position in your move history so you can come back to it:
+a shortcut for a long run of Undo. They earn their keep on an
+[Unreasonable](#difficulty) board, where you may have to try a line and take it
+back.
 
-Checkpoints live in your move history and you can hold several at once. If you
-want just one position to come back to, and to have the board checked before it
-is saved, that's the separate [saved position](#checking) instead.
+You can hold several checkpoints at once. If you want a single position to
+return to, and the board checked before it is kept, that is the separate
+[saved position](#checking).
 
-To create a checkpoint at the current move, open the ::history:: history 
-panel (near the undo/redo buttons) and choose *Save checkpoint.* You can then
-continue trying to solve the puzzle. If you later find you've gone down the 
-wrong path, rewind to your checkpoint by selecting it in the history panel.
+To set one, open the ::history:: history panel (beside undo and redo) and
+choose *Save checkpoint*, then carry on. If the line doesn’t work out, pick the
+checkpoint in the panel to rewind to it.
 
-After going back to a checkpoint, you can use ::undo:: undo and ::redo:: redo 
-to explore around it. Once you make a new move, though, all history past that 
-point is erased—including any later checkpoints. If you change your mind about
-going back to a checkpoint (*before* making a new move), choose *Last move* 
-in the history panel to redo all the way back to the end.
+Back at a checkpoint, ::undo:: undo and ::redo:: redo still walk the history
+around it. Your first new move, though, discards everything after that point,
+later checkpoints included; if you change your mind before making one, *Last
+move* in the panel redoes all the way to the end. A checkpoint you no longer
+want goes with its ::checkpoint-remove:: delete button.
 
-If you decide you no longer want a checkpoint, use the 
-::checkpoint-remove:: delete button next to it.
-
-::experimental:: Checkpoints are an experimental feature, currently unique to
-this adaptation. They are likely to change somewhat in future updates.
+::experimental:: Checkpoints are experimental and may change shape.
 
 ## Autosave {#autosave}
 
-This app automatically saves the current game in progress for each puzzle
-and resumes it when you return to that puzzle later. This can be helpful if you
-accidentally navigate your browser away from the puzzle page while playing.
-(Or if the puzzle app crashes due to a bug.)
+Each puzzle keeps your game in progress and resumes it when you come back,
+whether you closed the tab, wandered off, or hit a bug. Starting a new game, or
+choosing another variation or difficulty in the ::puzzle-type:: type menu,
+replaces it.
 
-The autosave for a puzzle is reset whenever you start a new game or select 
-a different variation or difficulty level in the ::puzzle-type:: type menu.
+On the home screen, a puzzle with a game in progress wears a
+::game-in-progress:: triangle on its icon.
 
-On the home screen, a puzzle's icon will show a ::game-in-progress:: triangle
-when there is an autosaved game for that puzzle.
-
-To clear all autosaved games for all puzzles, open the 
+To discard every game in progress, open the
 <command-link command="settings:data">preferences</command-link> and choose
 *Clear data… Delete games in progress.*
 
-## Sharing games {#sharing}
+## Sharing a game {#sharing}
 
-You can <command-link command="share:link">share</command-link> the puzzle 
-you're playing with others. Choose *::share:: Share…* from the game menu, then:
+*::share:: Share…* in the game menu (or
+<command-link command="share:link">here</command-link>) offers:
 
-* **This specific game** links to the exact game you're playing. 
-  (At the start of the game, not any progress you've made toward solving it. 
-  To capture the current state [export a save file](#saved-games)
-  or copy as text instead.)
+* **This specific game**: a link to the game you are playing, as it was dealt.
+  It doesn’t carry your progress; for that,
+  [export a save file](#saved-games) or copy as text.
 
-* **This puzzle type** links to the current ::puzzle-type:: puzzle type—the
-  size and difficulty level and any other options. Opening the link will 
-  start a new, random game of that type. This can be handy for sharing
-  custom puzzle types.
-  
-* **Copy as text** provides an ASCII rendering of the current puzzle state,
-  which you can paste into a forum or email for discussion. (You'll want 
-  to use a fixed width font, e.g., "format as code.")
+* **This puzzle type**: a link to the current ::puzzle-type:: type, meaning the
+  size, difficulty and any other options. Opening it deals a new random game
+  of that type, which makes it the way to pass on a custom type.
 
-  Not all puzzles support copying as text, and those that do may call for 
-  a bit of creative interpretation.
+* **Copy as text**: the board as plain characters, for pasting into a forum
+  post or a message. Use a fixed-width font (“format as code”). Not every
+  puzzle can do this, and some of the renderings take a little imagination.
 
-* **Game ID** and **random seed** can be used with other portable puzzle
-  collection apps. See 
-  [*Specifying games with the game ID*][sgt-gameid] in Simon Tatham's manual.
+* **Game ID** and **random seed**: for use with other apps that play the same
+  collection. Simon Tatham’s manual explains the format under
+  [*Specifying games with the game ID*][sgt-gameid]. To open an ID or seed you
+  were given, use <command-link command="enter-gameid">*Enter ID/seed*</command-link>
+  in the game menu.
 
-  If you have a specific game ID or random seed from another app, load it 
-  using <command-link command="enter-gameid">*Enter ID/seed*</command-link> 
-  on the game menu.
+For puzzles that exist on Simon Tatham’s website, the share dialog also links
+the same game there, which is handy for comparing behavior when something
+looks wrong.
 
-For puzzles available on Simon Tatham's official Portable Puzzle Collection
-website, the share dialog also includes game ID and random seed links to that.
-(These are mainly useful for comparing buggy behavior observed in this app.)
+## Saving, loading, exporting and importing {#saved-games}
 
-## Saving, loading, exporting and importing games {#saved-games}
+*::save-game:: Save…* in the game menu keeps the whole game, undo history and
+[checkpoints](#checkpoints) included, and *::load-game:: Load…* brings it back.
+Saved games stay on your device, in your browser’s storage.
 
-You can save the entire state of a game—including the undo history and any
-saved [checkpoints](#checkpoints)—by choosing *::save-game:: Save…* in the game 
-menu. Then choose *::load-game:: Load…* to restore it later.
-Saved games are kept on your device, in your web browser's storage. 
+*Export…* in the save dialog writes a file you can move to another app that
+plays the collection, or attach to a bug report; *Import…* in the load dialog
+reads one in. (Exported files leave checkpoints behind for now.)
 
-To create a file you can use with a different portable puzzle collection app
-(or include in a bug report), click the *Export…* button in the save dialog. 
-There’s a corresponding *Import…* button in the load dialog for bringing in
-external files. (Exported files do not currently include checkpoints.)
-
-To delete all saved games for all puzzles, open the
+To delete every saved game, open the
 <command-link command="settings:data">preferences</command-link> and choose
 *Clear data… Delete saved games.*
 

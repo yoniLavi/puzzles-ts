@@ -22,8 +22,9 @@
  */
 import { render } from "lit";
 import { beforeAll, describe, expect, it } from "vitest";
+import privacyHtml from "./assets/privacy.html?raw";
 import { aboutBlurb, credits } from "./dialogs/about-dialog.ts";
-import { APP_NAME, ISSUES_URL, REPO_URL } from "./project-identity.ts";
+import { APP_NAME, APP_TAGLINE, ISSUES_URL, REPO_URL } from "./project-identity.ts";
 
 const PUZZLES_WEB = "https://github.com/medmunds/puzzles-web";
 
@@ -101,18 +102,20 @@ describe("the About dialog presents this project's authorship and lineage", () =
   });
 });
 
+/** Every surface a player reads, plus the code that keeps the promises. */
+const sources = import.meta.glob<string>(
+  [
+    "./**/*.ts",
+    "../templates/*.hbs",
+    "../help/**/*.md",
+    "../vite.config.ts",
+    "../README.md",
+    "../unsupported.html",
+  ],
+  { query: "?raw", import: "default", eager: true },
+);
+
 describe("no other surface still carries the predecessor's identity", () => {
-  const sources = import.meta.glob<string>(
-    [
-      "./**/*.ts",
-      "../templates/*.hbs",
-      "../help/**/*.md",
-      "../vite.config.ts",
-      "../README.md",
-      "../unsupported.html",
-    ],
-    { query: "?raw", import: "default", eager: true },
-  );
   const thisFile = "./project-identity.test.ts";
 
   it("scanned the whole app surface", () => {
@@ -149,6 +152,48 @@ describe("no other surface still carries the predecessor's identity", () => {
     expect(template).toMatch(/<title>\{\{ appName \}\}/);
     const config = sources["../vite.config.ts"];
     expect(config).toMatch(/appName: APP_NAME/);
+    expect(config).toMatch(/tagline: APP_TAGLINE/);
     expect(config).toMatch(/name: env\["VITE_APP_NAME"\] \|\| APP_NAME/);
+  });
+
+  it("lets the header and page titles speak for the product, naming no one else", () => {
+    // The tagline is the header's second line and the title's other half; the
+    // lineage is credited in the About dialog, not the masthead.
+    expect(APP_TAGLINE).not.toMatch(/Tatham|Sprong|Edmunds|puzzles-web/);
+    for (const file of [
+      "../templates/index.html.hbs",
+      "../templates/puzzle.html.hbs",
+    ]) {
+      expect(sources[file], `${file} names no other project`).not.toMatch(
+        /Tatham|Sprong|Edmunds|puzzles-web|portable puzzle collection/i,
+      );
+    }
+    expect(sources["../templates/index.html.hbs"]).toMatch(/\{\{ tagline \}\}/);
+    expect(sources["./screens/home-screen.ts"]).toMatch(/\$\{APP_TAGLINE\}/);
+    expect(sources["./screens/home-screen.ts"]).not.toMatch(/Tatham/);
+  });
+});
+
+describe("the privacy notes say what the app does with a player's data", () => {
+  const text = privacyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+
+  it("is not the development placeholder", () => {
+    expect(text).not.toMatch(/placeholder|forgotten|No privacy policy/i);
+  });
+
+  it("makes each of the four promises", () => {
+    expect(text).toMatch(/no personal information is collected or stored/i);
+    expect(text).toMatch(
+      /your own browser’s storage, on your device, and are never sent/i,
+    );
+    expect(text).toMatch(/anonymous actions only/i);
+    expect(text).toMatch(/no cookies and no identifier/i);
+    expect(text).toMatch(/does not include your identity, your games/i);
+  });
+
+  it("keeps the crash-report promise bound to the code that keeps it", () => {
+    // The notes say personal information is switched off in the reporting.
+    // This is the line that makes it so.
+    expect(sources["./utils/sentry.ts"]).toMatch(/sendDefaultPii: false/);
   });
 });

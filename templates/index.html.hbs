@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ appName }}&thinsp;&ndash;&thinsp;from Simon Tatham’s portable puzzle collection and more, with hints that explain</title>
-    <meta name="description" content="Over fifty logic puzzles and games you can play in your web browser, for free, with hints that explain the next move.">
+    <title>{{ appName }}&thinsp;&ndash;&thinsp;{{ tagline }}</title>
+    <meta name="description" content="Fifty-seven free logic puzzles to play in your browser, with hints that explain the next move instead of just making it. Works offline, with touch, mouse or keyboard.">
     <meta name="application-name" content="{{ appName }}">
   {{#if canonicalUrl}}
     <link rel="canonical" href="{{ canonicalUrl }}">
@@ -23,8 +23,7 @@
         <div class="title">
           <h1 translate="no">{{ appName }}</h1>
         </div>
-        <div class="subtitle">from Simon&nbsp;Tatham’s
-          portable&nbsp;puzzle&nbsp;collection and&nbsp;more</div>
+        <div class="subtitle">{{ tagline }}</div>
         <div class="controls">
           <a class="help-button" href="help/">
             <img src="/node_modules/lucide-static/icons/circle-question-mark.svg" alt="">Help</a>
@@ -32,7 +31,7 @@
       </header>
 
       <section slot="intro">
-        <p>Over fifty logic puzzles, free to play in your browser, with endless
+        <p>Fifty-seven logic puzzles, free to play in your browser, with endless
           randomly generated games at several difficulty levels. Works with
           touch, mouse or keyboard, and <a href="help/install">offline</a>.</p>
 
@@ -50,18 +49,17 @@
 
       <noscript>
         <section class="warning">
-          ⚠️ The puzzles are implemented in JavaScript.
-          To play them, you will need to enable JavaScript in your browser.
+          ⚠️ {{ appName }} needs JavaScript. Turn it on in your browser to play.
         </section>
       </noscript>
 
       <footer slot="footer">
-        <div>Credits, privacy info, copyright notices and licenses are in the
-          <a href="{{ repoUrl }}">source code</a>
+        <div>Credits, licenses and the privacy notes are in the
+          <a href="{{ repoUrl }}">source code</a>.
         </div>
-        <div><small>In some countries, names of similar/related puzzles may be
-          trademarks belonging to others. Use here does not imply affiliation
-          or endorsement by their owners.</small></div>
+        <div><small>Some puzzles are known elsewhere by names that are
+          trademarks of their owners. Naming them here implies no affiliation
+          or endorsement.</small></div>
       </footer>
     </home-screen>
     {{{ analytics_html }}}

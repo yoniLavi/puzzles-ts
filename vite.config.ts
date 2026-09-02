@@ -8,7 +8,12 @@ import { visualizer } from "rollup-plugin-visualizer";
 import { build, defineConfig, loadEnv, type UserConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import Sitemap from "vite-plugin-sitemap";
-import { APP_NAME, APP_SHORT_NAME, REPO_URL } from "./src/project-identity.ts";
+import {
+  APP_NAME,
+  APP_SHORT_NAME,
+  APP_TAGLINE,
+  REPO_URL,
+} from "./src/project-identity.ts";
 import { puzzleIds, puzzleCatalog as puzzles } from "./src/puzzle/catalog-data.ts";
 import {
   extraPages,
@@ -255,6 +260,7 @@ export default defineConfig(async ({ command, mode }) => {
   const analytics_html = env["VITE_ANALYTICS_BLOCK"];
   const commonTemplateData = {
     appName: APP_NAME,
+    tagline: APP_TAGLINE,
     repoUrl: REPO_URL,
     preflightSrc,
     analytics_html,

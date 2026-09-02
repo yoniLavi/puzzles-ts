@@ -32,7 +32,7 @@ const helpPages = import.meta.glob<string>("../help/games/*.md", {
   eager: true,
 });
 
-// The hand-maintained "Included puzzles" table, whose rows link `../<puzzleId>`.
+// The hand-maintained "All the puzzles" table, whose rows link `../<puzzleId>`.
 const puzzlesPage = import.meta.glob<string>("../help/puzzles.md", {
   query: "?raw",
   import: "default",
@@ -61,7 +61,7 @@ describe("help page coverage", () => {
   });
 });
 
-describe("the Included puzzles page lists the whole collection", () => {
+describe("the All-the-puzzles page lists the whole collection", () => {
   // `help/puzzles.md` says of itself "this table is manually generated for now",
   // and a hand-maintained list of 57 games with nothing checking it drifted
   // exactly as you would expect: it was missing six — crossing, group, seismic,

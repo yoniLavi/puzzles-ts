@@ -1,82 +1,71 @@
 # Installing
 
-This web adaptation of the portable puzzle collection can be installed 
-for offline use, so you don't need to have an internet connection to play. 
+Hintful Puzzles can be installed as an app, so it opens from its own icon and
+works with no internet connection.
 
-The exact steps to install the app can vary: look for your web browser below. 
-And if the app doesn't open automatically after installing, be sure to launch 
-it at least once while you're still online so it can download everything needed. 
+How you install depends on your browser; find yours below. Whichever way you
+install, open the app once while you are still online, so it can fetch
+everything it needs for later.
 
-(The installed app still runs in your web browser under the hood. It doesn't
-have access to your files or anything else on your device. For technical details
-of how this is possible, see Mozilla's [*What is a progressive web app?*][pwa-guide].)
+(An installed web app still runs inside your browser. It has no access to your
+files or to anything else on your device. Mozilla’s
+[*What is a progressive web app?*][pwa-guide] explains the mechanism.)
 
 ## Android (Chrome) {#android}
 
-Tap the ::ellipsis-vertical|three-dots:: menu near the address bar and choose
-*::install-desktop:: Add to Home screen*.
+Tap the ::ellipsis-vertical|three-dots:: menu by the address bar and choose
+*::install-desktop:: Add to Home screen*. A banner offering to install also
+appears briefly on your first visit; tapping that works too.
 
-(Or click the "Install app" banner that appears briefly when you first arrive 
-at this website.)
-
-Other Android web browsers often have similar steps, but if you get stuck see
-the tips for [other browsers](#other) below.
+Other Android browsers have similar steps; if yours is different, see
+[other browsers](#other) below.
 
 ## iOS (Safari) {#ios}
 
-Tap the ::ios-share:: share icon next to the address bar, scroll down through
-the sharing options and choose *Add to Home Screen ::ios-add-to-home-screen::.*
+Tap the ::ios-share:: share icon by the address bar, scroll through the sharing
+options and choose *Add to Home Screen ::ios-add-to-home-screen::*.
 
-The same steps often work in other iOS web browsers, but if not try installing
-from Safari.
+Other iOS browsers usually offer the same, and if one doesn’t, install from
+Safari.
 
 ## Chrome desktop {#chrome-desktop}
 
-Click the *::install-desktop:: Install app* icon that appears in the address bar.
+Click the *::install-desktop:: Install app* icon in the address bar.
 
 ## Firefox desktop (Windows) {#firefox-desktop}
 
-On Windows, click the *::firefox-web-apps:: Add tab to taskbar* (web apps) icon 
-that appears in the address bar.
+Click the *::firefox-web-apps:: Add tab to taskbar* icon in the address bar.
 
-On other platforms, Firefox does not yet support web apps. You can enable 
-[offline use](#offline-in-browser) without installing, or if you have Chrome 
-or Safari use one of them to install the puzzles as an app.
+Firefox on other platforms doesn’t install web apps yet. You can still
+[play offline without installing](#offline-in-browser), or install from Chrome
+or Safari instead.
 
 ## Microsoft Edge (Windows) {#edge-desktop}
 
-Click the *::edge-app-available:: App available* icon that appears in the address bar.
-
-(Or click the ::ellipsis|three-dots:: menu at the top right, choose
-*More tools,* then *Apps,* and then *Install.*)
+Click the *::edge-app-available:: App available* icon in the address bar, or
+open the ::ellipsis|three-dots:: menu, then *More tools*, *Apps*, *Install*.
 
 ## Safari desktop (macOS) {#safari-desktop}
 
-Click the ::ios-share:: share icon next to the address bar and choose
-*Add to Dock.*
+Click the ::ios-share:: share icon by the address bar and choose *Add to Dock*.
 
-## Installing from other browsers {#other}
+## Other browsers {#other}
 
-If your browser isn't listed above, look for a command called something like 
-“add to home screen” or “install app.” 
+Look for a command named something like “add to home screen” or “install
+app”. Failing that, a web search for your browser’s name plus “install PWA”
+finds the steps: “Samsung Internet install PWA”, for example, finds them for
+a Samsung phone’s built-in browser. (PWA, progressive web app, is the
+technical name for this kind of installable website.)
 
-It might help to search the web for the browser or device name and "install 
-PWA." For example, a web search for "Samsung Internet install PWA" will find 
-instructions for installing from a Samsung mobile device's built-in web browser.
+## Playing offline without installing {#offline-in-browser}
 
-(PWA stands for progressive web app, the technical term for how this app is 
-distributed.)
+Installing is the better way. But if your browser can’t install web apps, you
+can still play offline: in the
+<command-link command="settings:advanced">preferences</command-link>, turn on
+*Allow offline use* under *Advanced*.
 
-## Using offline without installing {#offline-in-browser}
-
-Installing the puzzles as an app is preferred. But if your browser doesn't 
-support web apps, you can still use the puzzles offline. In the puzzles'
-<command-link command="settings:advanced">preferences</command-link>,
-enable *Allow offline use* in the *Advanced* section.
-
-This approach doesn't give you an app icon. To get to the puzzles offline, open 
-your browser (dismiss any complaints about no internet connection) and navigate 
-to the puzzles page. It's helpful to create a bookmark (favorite site) for the
-puzzles while you're still online.
+You get no app icon this way. To play offline, open your browser, ignore its
+complaint about having no connection, and go to the puzzles’ address. A
+bookmark made while you are online makes that easy.
 
 [pwa-guide]: https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/What_is_a_progressive_web_app
