@@ -7,7 +7,9 @@ readable reference and dev-time differential check (not a byte-oracle),
 the per-game hybrid with per-game C deletion, a clean TS save format,
 and the explicit stance that deliberate divergence from upstream is the
 goal. `AGENTS.md` is the readable summary; this spec is the contract.
+
 ## Requirements
+
 ### Requirement: Migration proceeds top-down, product-value first
 
 The TypeScript migration SHALL proceed top-down: the TS midend and a
@@ -174,7 +176,7 @@ SHALL move to a committed TypeScript source, since it existed only in the CMake
 files being deleted.
 
 `puzzles/` SHALL NOT survive the migration. Retirement leaves it holding only
-the MIT `LICENSE` notices and the upstream-authored help sources the app serves;
+the MIT `LICENCE` notices and the upstream-authored help sources the app serves;
 each of those then goes where its role says it belongs, and the directory is
 deleted. **No C source and no build system SHALL remain in the repository's
 working tree** at any point after retirement.
@@ -186,7 +188,8 @@ working tree** at any point after retirement.
 - The upstream MIT notices SHALL live in `licenses/`, byte-identical to what
   each upstream project ships. What they cover after the migration is the whole
   of `src/engine/` and `src/games/` and the served help sources, so they are not a subdirectory's
-  concern.
+  concern. (Upstream names its file `LICENCE`; the directory and file names
+  here are this project's, spelled its way, and the bytes inside are not.)
 
 A C source kept as a **reading reference** for scaffolded future work SHALL live
 with the change that reads it (`openspec/changes/<change>/reference/`), not in
@@ -508,4 +511,3 @@ games independently.
 - **WHEN** a generator tests a candidate against the tier below
 - **THEN** the solver's scratch state carries nothing from any previous candidate
 - **AND** the probe leaves no state that changes the next candidate's outcome
-

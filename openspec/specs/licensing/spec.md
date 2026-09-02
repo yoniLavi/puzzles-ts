@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change add-layered-license-and-credits. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Layered top-level LICENSE.md
 
 The top-level `LICENSE.md` file SHALL credit, in chronological order, the layers
@@ -22,10 +24,12 @@ below the layered copyright lines and apply to every layer.
 
 Upstream notices SHALL live in `licenses/`, one file per upstream project, each
 byte-identical to what that project ships, with a README recording what each one
-covers. They SHALL NOT live inside a subdirectory of the source tree they once
-accompanied: after the migration what they cover is the whole of `src/engine/` and `src/games/`
-and the served help sources, and `puzzles/` — the tree that held them — no longer
-exists.
+covers. The directory and file names are this project's and follow its spelling
+convention; the contents are the upstream projects' words and SHALL NOT be
+edited, which a rename does not do. They SHALL NOT live inside a subdirectory of
+the source tree they once accompanied: after the migration what they cover is
+the whole of `src/engine/` and `src/games/` and the served help sources, and
+`puzzles/` — the tree that held them — no longer exists.
 
 The notices SHALL remain reachable from the app: the About dialog `?raw`-imports
 each one and shows it to players, so they are live build inputs and moving one
@@ -54,6 +58,12 @@ without repointing that import breaks the production build.
 - **WHEN** a player opens the About dialog
 - **THEN** the upstream notices are rendered from the files in `licenses/`
 
+#### Scenario: Renaming a notice file leaves its bytes alone
+
+- **WHEN** a notice file or the directory holding it is renamed
+- **THEN** the file's content hash before and after the rename is identical
+- **AND** the About dialog's `?raw` imports are repointed in the same commit
+
 ### Requirement: CREDITS.md file thanking lineage
 
 The repository SHALL contain a top-level `CREDITS.md` file that thanks upstream Simon Tatham + contributors and the medmunds/puzzles-web project, with links to both source repositories.
@@ -63,4 +73,3 @@ The repository SHALL contain a top-level `CREDITS.md` file that thanks upstream 
 - **WHEN** a reader opens `CREDITS.md`
 - **THEN** the file thanks Simon Tatham + upstream puzzles contributors and links to the upstream repository
 - **AND** it thanks Mike Edmunds and links to puzzles-web
-

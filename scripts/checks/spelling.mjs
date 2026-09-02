@@ -25,7 +25,7 @@
  * Usage: `node scripts/checks/spelling.mjs`. Exit 1 on any report.
  */
 import { execFileSync } from "node:child_process";
-import { lstatSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
 import { QUOTATIONS, SCAN } from "./spelling-table.mjs";
 
 /** Fewer scanned files than this is a broken listing, not a clean tree. */
@@ -37,16 +37,12 @@ const FLOOR = 900;
  * else's words (the two MIT notices; the upstream C kept as reading
  * references under a change's `reference/`; the lockfile); generated output
  * that its generator, not this guard, keeps honest (`metrics/`,
- * `__snapshots__`); the spelling tooling itself, whose table must name every
- * British stem to fold it and whose comments explain them by example; and
- * this change's own pending directory, whose proposal quotes the
- * stems it removes — that last entry is dead once `adopt-american-spelling`
- * is archived, and may be deleted then.
+ * `__snapshots__`); and the spelling tooling itself, whose table must name
+ * every British stem to fold it and whose comments explain them by example.
  */
 const EXCLUDED = [
   /^openspec\/changes\/archive\//,
   /^openspec\/postmortems\//,
-  /^openspec\/changes\/adopt-american-spelling\//,
   /^licenses\/(sgt-puzzles|puzzles-unreleased)-LICENSE$/,
   /^metrics\//,
   /^package-lock\.json$/,
@@ -56,11 +52,13 @@ const EXCLUDED = [
   /\.(png|ico|jpg|jpeg|webp|woff2?)$/,
 ];
 
-// A symlink (`CLAUDE.md` → `AGENTS.md`) is its target, already listed once.
+// A symlink (`CLAUDE.md` → `AGENTS.md`) is its target, already listed once; a
+// listed file that is gone from the working tree (deleted, not yet staged —
+// what `openspec archive` leaves behind) is not part of the tree being checked.
 const files = execFileSync("git", ["ls-files", "-z"], { encoding: "utf8" })
   .split("\0")
   .filter((f) => f && !EXCLUDED.some((re) => re.test(f)))
-  .filter((f) => !lstatSync(f).isSymbolicLink());
+  .filter((f) => existsSync(f) && !lstatSync(f).isSymbolicLink());
 
 const ARCHIVE_IDS = readdirSync("openspec/changes/archive").map((d) =>
   d.replace(/^\d{4}-\d{2}-\d{2}-/, ""),

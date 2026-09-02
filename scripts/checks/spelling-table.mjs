@@ -352,6 +352,14 @@ export const RULES = [
 export const QUOTATIONS = {
   behaviour: ["src/utils/sentry.ts", "AGENTS.md", "openspec/specs/repo-layout/spec.md"],
   midend_colours: ["openspec/specs/repo-layout/spec.md"],
+  // Upstream names its notice file `LICENCE`; ours are `*-LICENSE`, and the
+  // token is matched whole, so `sgt-puzzles-LICENCE` would still be reported.
+  LICENCE: ["openspec/specs/ts-migration/spec.md"],
+  // The spelling requirement names two former identifiers as examples of
+  // what the substring scan catches — the one place the rule quotes its
+  // own subject.
+  ncolours: ["openspec/specs/repo-layout/spec.md"],
+  colourToOKLCH: ["openspec/specs/repo-layout/spec.md"],
   game_colours: [
     "AGENTS.md",
     "openspec/specs/repo-layout/spec.md",

@@ -103,8 +103,9 @@ one commit. Phase 2 is player-visible text (design D5), a second commit.
 - [x] 6.4a `build-pipeline` — MODIFIED the gate requirement: six checks, the
       spelling guard in the fast prefix ahead of the documentation-only
       shortcut, one added scenario.
-- [ ] 6.5 After the archive: the modified requirements read correctly and the
-      guard is green over `openspec/specs/`.
+- [x] 6.5 After the archive: `openspec validate --all --strict` green and the
+      guard green over `openspec/specs/` with the pending-directory exclusion
+      removed.
 
 ## 7. Phase 2 — words a player reads (design D5, D10)
 
@@ -125,7 +126,6 @@ one commit. Phase 2 is player-visible text (design D5), a second commit.
       catalog and config tests) green before the gate.
 - [x] 7.5 `spelling-strings.mjs` deleted; the guard scans whole files and
       `help/` (1028 files, up from 964).
-- [ ] 7.6 Owner acceptance: read a help page, a catalog card, the Samegame
-      custom dialog and a Map hint in the running app. **The change stays
-      pending until then; archive on acceptance**, and delete the guard's
-      exclusion for this change's directory in the same commit (task 6.5).
+- [x] 7.6 Owner acceptance, 2026-09-02: "it's hereby accepted, so archive and
+      push." Archived; the guard's exclusion for this change's directory
+      deleted in the same commit (task 6.5).

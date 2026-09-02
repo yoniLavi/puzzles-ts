@@ -53,14 +53,15 @@ hooks never installed could land breakage on `main` undetected).
 
 ### Requirement: The pre-commit gate minimizes wall-clock without dropping checks
 
-The pre-commit gate SHALL run all five checks (`tsc -b --noEmit`, biome,
-`npm run probe -- --verify`, `vitest run`, `vite build`) and block a commit on
-any failure — with the single documentation-only exception scoped below —
-while being orchestrated to reduce wall-clock: the fast checks
-(`tsc`, then biome, then the probe-anchor check) run first as a fail-fast
-prefix, and the two heavy, mutually-independent checks (`vitest run` and
-`vite build`, which share no inputs or outputs) SHALL run **concurrently**,
-making the gate's wall-clock ~max(vitest, build) rather than their sum.
+The pre-commit gate SHALL run all six checks (`tsc -b --noEmit`, biome,
+`npm run probe -- --verify`, the spelling guard, `vitest run`, `vite build`) and
+block a commit on any failure — with the single documentation-only exception
+scoped below — while being orchestrated to reduce wall-clock: the fast checks
+(`tsc`, then biome, then the probe-anchor check, then the spelling guard) run
+first as a fail-fast prefix, and the two heavy, mutually-independent checks
+(`vitest run` and `vite build`, which share no inputs or outputs) SHALL run
+**concurrently**, making the gate's wall-clock ~max(vitest, build) rather than
+their sum.
 
 The probe-anchor check (`scripts/feedback-probe.mjs --verify`, **0.02–0.03 s**
 user CPU measured over three runs — `npm run probe -- --verify` is ~0.2 s, which
@@ -80,6 +81,13 @@ That distinction is the whole of it, and it is load-bearing in both directions:
   invites tests written against the number rather than against behavior, which
   the `repo-layout` requirement it serves explicitly forbids. A survivor is a
   finding to read; only a case that no longer applies is a failure.
+
+The spelling guard (`scripts/checks/spelling.mjs`, ~1 s) scans every tracked
+file outside the record and other people's words for a British stem, per the
+`repo-layout` spelling requirement. It SHALL run in the fast prefix, ahead of
+the documentation-only shortcut, because the shortcut skips `vitest run` and a
+test may not read `docs/` or `openspec/` at all — so a vitest guard would be
+blind to exactly the commits most likely to reintroduce a British spelling.
 
 The gate's biome step SHALL check formatting and import order as well as lint
 rules (the read-only form of `biome check`), so a file that is lint-clean but
@@ -214,6 +222,13 @@ by an environment toggle the hook sets, not by a second copy of the gate.
 - **BECAUSE** the exception's whole basis is that those paths reach nothing, and
   a check skipped for a path that has become real is a dropped check reporting
   success
+
+#### Scenario: A documentation-only commit is still spell-checked
+
+- **WHEN** a commit stages only `docs/`, `openspec/` or the root agent files,
+  and one of them carries a British spelling outside an allowance
+- **THEN** the spelling guard fails in the fast prefix and blocks the commit,
+  before the documentation-only shortcut is reached
 
 ### Requirement: Refactoring metrics are measured on demand and ratcheted in the gate
 
