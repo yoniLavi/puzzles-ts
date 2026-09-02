@@ -24,8 +24,14 @@ dot degree, i.e. how many edges meet at a vertex:
 
 Two facts fall out, and neither was obvious in advance:
 
-1. **Degree never exceeds 6**, on any tiling. The arrow→edge mapping is
-   therefore a choice among at most six candidates, not an open-ended one.
+1. **Degree is small — at most 6 in this sweep** — on every tiling, so the
+   arrow→edge mapping is a choice among a handful of candidates, not an
+   open-ended one. *Correction at implementation (2026-09-02):* the sweep above
+   used one seed per preset, and the coverage proof in `loopy-keyboard.test.ts`
+   found a **degree-7** dot on Penrose (rhombs) with another seed. Nothing
+   below depends on the number — the rule is stated in terms of degree, and the
+   test asserts "small" (≤ 8) rather than six — but it is a reminder that a
+   one-seed sweep measures that seed.
 2. **The aperiodic tilings are the *easy* case, not the hard one.** Roughly
    three quarters of the dots on Hats and Spectres have degree 2 — a vertex
    sitting mid-run between two edges, where any sane rule does the obvious
@@ -123,6 +129,24 @@ advances **one dot per press, never running along the forced path** (Slide's
 "one cell per press, not slide-to-the-end" — sliding as far as the rule allows
 cannot stop where the player needs to stop); and un-drawing must stay easy, so
 an arrow back followed by Enter has to toggle the same edge off.
+
+**Settled at implementation (2026-09-02) — both, and here is why both.**
+Auto-advance alone leaves a keyboard player with no way to *get somewhere*
+without drawing: starting a second run of the loop on the far side of a 15×15
+board would mean drawing a path across it and erasing it again. So the travel
+key exists too, and the "no spare key" objection dissolves once the key is a
+*modified* arrow: **Shift+arrow walks one dot along the arrow's first-ranked
+edge without touching the board.** Shift-modified arrows are already a
+collection idiom (Pearl marks a line with one), the frontend delivers them
+(`MOD_SHFT`), and the coverage test asserts every dot on every preset is
+reachable by travel alone. Auto-advance keeps the drawn edge *chosen* (it is
+incident to the new dot too) and forgets which arrow chose it, so Enter-Enter
+undraws, an arrow back followed by Enter undraws, and the next arrow ranks
+afresh from the new dot. A cross (Space) and a clear (Backspace) never move the
+cursor. The erase key is bound as the middle button — D3 named only Enter and
+Space, but the input audit's parity bar names erase and cancel too, and a clear
+that has to be spelled "Enter twice" or "Space twice" depending on the edge's
+state is worse than a key. Escape hides the cursor, as everywhere.
 
 ## D5. The acceptance test is written first, and it is a coverage proof
 

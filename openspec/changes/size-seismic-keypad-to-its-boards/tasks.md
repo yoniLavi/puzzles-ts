@@ -10,21 +10,26 @@
       caps growth at `drawRegionSize`, whose maximum is 5 in both modes, so no
       larger region is *constructible*. The stranded-pocket case is not an
       exception; a pocket is the next iteration of the same loop.
-- [ ] 1.3 Implement per `design.md` **D3** — and note this is not `digitKeys(5)`:
-      - [ ] export `maxGeneratedRegionSize(mode)` from `generator.ts`, computed
-            as `Math.max(...)` over the distribution rather than written as `5`;
-      - [ ] have `requestKeys` call it, deleting the inline
-            `p.mode === MODE_TECTONIC ? 5 : 9`, which is a copy of
-            `maxRegionSize` — the *format* bound — where the *generator* bound
-            was wanted, and is how this defect arose in the first place;
-      - [ ] assert `maxGeneratedRegionSize(mode) <= maxRegionSize(mode)`, which
-            also gives `maxRegionSize` the production-adjacent reader it has
-            been missing (`design.md` D4).
-- [ ] 1.4 **Empty the `INERT_PANEL_KEYS` entry for `seismic` in
-      `src/engine/input-parity.test.ts`.** That list is a finding under
-      management, not an exemption; leaving the entry behind after the fix turns
-      it into one.
-- [ ] 1.5 Pin the returned `KeyLabel[]` for both modes tier-1, per
-      `docs/games/input.md` § "The on-screen keypad".
-- [ ] 1.6 `seismic` spec: state what the keypad is sized to and why.
-- [ ] 1.7 `openspec validate size-seismic-keypad-to-its-boards --strict`.
+- [x] 1.3 Implemented per `design.md` **D3** (2026-09-02):
+      - [x] `maxGeneratedRegionSize(mode)` exported from `generator.ts`, as
+            `Math.max(...SEISMIC_REGION_SIZES)` in Seismic mode and the same
+            `TECTONIC_REGION_SIZE` constant `drawRegionSize` draws in Tectonic —
+            both bounds read the value the generator actually uses;
+      - [x] `requestKeys` calls it; the inline `MODE_TECTONIC ? 5 : 9` is gone;
+      - [x] `seismic.test.ts` asserts `maxGeneratedRegionSize(mode) <=
+            maxRegionSize(mode)` for both modes, and the structural sweep now
+            checks every generated region against the *generated* bound as well
+            as the format one.
+- [x] 1.4 `INERT_PANEL_KEYS` is empty; the comment says why it is meant to stay
+      so. `input-parity.test.ts` green with Seismic on the sweep.
+- [x] 1.5 Pinned literally for both modes (`["1".."5","Clear"]`). **Proved it
+      fails**: widening the distribution to `[2,3,3,4,4,5,6]` turns the pin red
+      with a `"6"` in the received panel; restored.
+- [x] 1.6 `seismic` spec: the ADDED requirement states the relationship; a
+      **MODIFIED** delta on "Seismic input, note-taking and completion" replaces
+      its "(five numbers in Tectonic, nine in Seismic)" sentence, which would
+      otherwise have contradicted it one requirement above. Grepped the live
+      spec first; the sentence lives in that requirement and nowhere else.
+- [x] 1.7 `openspec validate size-seismic-keypad-to-its-boards --strict` — valid.
+- [x] 1.8 `docs/games/input.md` § "The on-screen keypad": the Seismic bullet now
+      reads as the worked example rather than the open counter-example.

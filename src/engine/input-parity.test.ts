@@ -84,13 +84,11 @@ const REGISTERED = registeredGameIds();
  * for months.
  */
 const NO_KEYBOARD: Record<string, string> = {
-  loopy:
-    "Input is per-EDGE across eighteen tilings including aperiodic ones, so " +
-    "'move the cursor to the next edge' has no canonical meaning and needs an " +
-    "interaction designed rather than a binding added. Upstream gives it no " +
-    "keyboard either (zero `CURSOR_` references in loopy.c), so the port " +
-    "inherited the absence rather than choosing it. Scoped by " +
-    "`add-loopy-keyboard-control`; recorded in the `loopy` spec.",
+  // Empty, and meant to stay so: every game in the collection has a keyboard.
+  // Loopy was the last entry — its input is per-edge across eighteen tilings,
+  // so it needed an interaction designed rather than a binding added
+  // (`add-loopy-keyboard-control`: the cursor is a dot, an arrow picks one of
+  // its edges). A game added here must record its reason in its own spec too.
 };
 
 /** One board per game, built once — the generators are the expensive part. */
@@ -136,12 +134,10 @@ const LEFT: [number, number, number] = [LEFT_BUTTON, LEFT_DRAG, LEFT_RELEASE];
  * is the thing this list exists to prevent.
  */
 const INERT_PANEL_KEYS: Record<string, string[]> = {
-  // Seismic caps entry at the pressed cell's region size, and this fork's
-  // generator draws region sizes from `[2,3,3,4,4,5]` — so no board it can
-  // produce, at any preset, has a region big enough for 6..9. The panel is
-  // sized to what the *format* admits (`maxRegionSize`), not to what the
-  // generator makes. Owned by `size-seismic-keypad-to-its-boards`.
-  seismic: ["6 (button 54)", "7 (button 55)", "8 (button 56)", "9 (button 57)"],
+  // Empty, and meant to stay so. Seismic sat here once, offering four digits
+  // no generated region could hold, because its keypad copied the *format*
+  // bound where the *generator* bound was wanted; it now derives the keypad
+  // from the generator (`maxGeneratedRegionSize`).
 };
 
 describe("a gesture from a finger does what the same gesture from a mouse does", () => {

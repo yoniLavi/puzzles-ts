@@ -46,7 +46,7 @@ import type {
   Point,
   Size,
 } from "../../engine/types.ts";
-import { newSeismicDesc } from "./generator.ts";
+import { maxGeneratedRegionSize, newSeismicDesc } from "./generator.ts";
 import {
   colours,
   computeSize,
@@ -425,7 +425,10 @@ export const seismicGame: Game<
   findMistakes,
   // Tectonic's regions are always five cells, so five is the widest number it
   // can ever want; Seismic allows regions up to nine.
-  requestKeys: (p): KeyLabel[] => digitKeys(p.mode === MODE_TECTONIC ? 5 : 9),
+  // Sized to what the generator *makes*, not to what the format admits: entry
+  // is capped at the cell's region size, so a digit no region can hold is a
+  // button that does nothing — and on touch the panel is the only way to type.
+  requestKeys: (p): KeyLabel[] => digitKeys(maxGeneratedRegionSize(p.mode)),
   textFormat,
 
   prefs: [stickyPencilPref<SeismicUi>()],

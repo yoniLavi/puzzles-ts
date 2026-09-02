@@ -283,12 +283,36 @@ export function maxRegionSize(mode: number): number {
  */
 const SEISMIC_REGION_SIZES: readonly number[] = [2, 3, 3, 4, 4, 5];
 
-/** The size to aim for next. Tectonic wants fives (upstream realises 63.5% of
- * them, and five-cell regions are what the puzzle is called after); it still
- * gets a tail of smaller regions from pockets, exactly as upstream does. */
+/** Tectonic wants fives (upstream realises 63.5% of them, and five-cell regions
+ * are what the puzzle is called after); it still gets a tail of smaller regions
+ * from pockets, exactly as upstream does. */
+const TECTONIC_REGION_SIZE = 5;
+
+/** The size to aim for next. */
 function drawRegionSize(mode: number, rng: RandomState): number {
-  if (mode === MODE_TECTONIC) return 5;
+  if (mode === MODE_TECTONIC) return TECTONIC_REGION_SIZE;
   return SEISMIC_REGION_SIZES[randomUpto(rng, SEISMIC_REGION_SIZES.length)];
+}
+
+/**
+ * The largest region the generator can **produce** in a mode — as distinct from
+ * {@link maxRegionSize}, the largest the *format* admits. The two differ in
+ * Seismic mode (5 against 9), and the difference is player-visible: entry is
+ * capped at the pressed cell's region size, so a digit above this bound is
+ * inert on every board the app can make. `requestKeys` sizes the on-screen
+ * keypad from here for exactly that reason.
+ *
+ * Derived from the distribution rather than written as a number, because
+ * {@link growRegions} caps every region at `drawRegionSize`'s result — no larger
+ * region is constructible, and a pocket is simply the next draw — so this
+ * cannot disagree with the array it reads. Widen the distribution and the
+ * keypad widens with it. (An earlier inline literal in `requestKeys` copied the
+ * format bound instead, and went stale the day the distribution moved.)
+ */
+export function maxGeneratedRegionSize(mode: number): number {
+  return mode === MODE_TECTONIC
+    ? TECTONIC_REGION_SIZE
+    : Math.max(...SEISMIC_REGION_SIZES);
 }
 
 /**

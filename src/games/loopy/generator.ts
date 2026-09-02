@@ -126,6 +126,8 @@ export function newDesc(p: LoopyParams, rng: RandomState): { desc: string } {
       grid,
       gridDesc,
       gridType: p.type,
+      w: p.w,
+      h: p.h,
       clues: new Int8Array(grid.numFaces),
       lines: new Uint8Array(grid.numEdges),
       lineErrors: new Uint8Array(grid.numEdges),

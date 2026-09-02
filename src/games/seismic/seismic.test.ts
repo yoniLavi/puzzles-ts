@@ -20,7 +20,7 @@ import {
 import { renderScenario } from "../../engine/testing/render-scenario.ts";
 import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import cReference from "./__fixtures__/seismic-c-reference.json" with { type: "json" };
-import { maxRegionSize, newSeismicDesc } from "./generator.ts";
+import { maxGeneratedRegionSize, maxRegionSize, newSeismicDesc } from "./generator.ts";
 import { seismicGame } from "./index.ts";
 import {
   COL_BORDER,
@@ -505,7 +505,12 @@ describe("seismic constructive generator", () => {
         const label = `${MODE_NAMES[p.mode]} ${p.w}x${p.h} d${p.diff} ${seed}`;
 
         for (const [, cells] of regionsOf(solved)) {
-          // No region may exceed what its mode's numbers can fill.
+          // No region may exceed what the generator says it produces — the
+          // bound the on-screen keypad is sized to — nor, a fortiori, what its
+          // mode's numbers can fill.
+          expect(cells.length, label).toBeLessThanOrEqual(
+            maxGeneratedRegionSize(p.mode),
+          );
           expect(cells.length, label).toBeLessThanOrEqual(maxRegionSize(p.mode));
 
           // Connected: a flood fill from one cell reaches the whole region.
@@ -936,27 +941,31 @@ describe("seismic moves", () => {
 });
 
 describe("seismic keypad", () => {
-  it("offers nine digits in Seismic mode and five in Tectonic", () => {
-    expect((seismicGame.requestKeys?.(PRESETS[4]) ?? []).map((k) => k.label)).toEqual([
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-      "7",
-      "8",
-      "9",
-      "Clear",
-    ]);
-    expect((seismicGame.requestKeys?.(PRESETS[5]) ?? []).map((k) => k.label)).toEqual([
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "Clear",
-    ]);
+  // The generator may not make a region its mode's numbers cannot fill. This
+  // is the format bound's one production-adjacent reader: its job is to bound
+  // the generator bound, and this is where it does it.
+  it("the generator's bound never exceeds the format's, in either mode", () => {
+    for (const mode of [MODE_SEISMIC, MODE_TECTONIC]) {
+      expect(maxGeneratedRegionSize(mode)).toBeGreaterThan(0);
+      expect(maxGeneratedRegionSize(mode)).toBeLessThanOrEqual(maxRegionSize(mode));
+    }
+  });
+
+  // Pinned literally, per docs/games/input.md § "The on-screen keypad". Both
+  // modes offer five: the panel is sized to the largest region the generator
+  // produces, not to the nine the Seismic format admits — a digit no board can
+  // hold is a button that does nothing, and on touch the panel is the only way
+  // to type. Widening `SEISMIC_REGION_SIZES` is meant to fail this test.
+  it("offers exactly the digits a generated board can accept, in both modes", () => {
+    expect(PRESETS[4].mode).toBe(MODE_SEISMIC);
+    expect(PRESETS[5].mode).toBe(MODE_TECTONIC);
+    const five = ["1", "2", "3", "4", "5", "Clear"];
+    expect((seismicGame.requestKeys?.(PRESETS[4]) ?? []).map((k) => k.label)).toEqual(
+      five,
+    );
+    expect((seismicGame.requestKeys?.(PRESETS[5]) ?? []).map((k) => k.label)).toEqual(
+      five,
+    );
   });
 });
 

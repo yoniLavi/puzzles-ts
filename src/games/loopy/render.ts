@@ -31,6 +31,7 @@
  */
 
 import {
+  CURSOR,
   ERROR,
   INK,
   lineMaybeColour,
@@ -38,10 +39,11 @@ import {
   PAPER,
 } from "../../engine/colour/palette.ts";
 import type { GameDrawing } from "../../engine/game.ts";
-import type { Grid } from "../../engine/grid/index.ts";
+import type { Grid, GridType } from "../../engine/grid/index.ts";
 import { gridComputeSize, gridFindIncentre } from "../../engine/grid/index.ts";
 import type { Colour, Size } from "../../engine/types.ts";
-import { gridTypeOf, type LoopyParams } from "./params.ts";
+import type { LoopyCursor } from "./cursor.ts";
+import { gridTypeOf, LOOPY_GRIDS, type LoopyParams } from "./params.ts";
 import {
   faceOrder,
   LINE_NO,
@@ -61,6 +63,8 @@ export const COL_HIGHLIGHT = 3;
 export const COL_MISTAKE = 4;
 export const COL_SATISFIED = 5;
 export const COL_FAINT = 6;
+/** The keyboard cursor — this fork's addition; upstream has no cursor here. */
+export const COL_CURSOR = 7;
 
 /**
  * The subset of the game UI the renderer reads. The full `LoopyUi` lives in
@@ -68,6 +72,7 @@ export const COL_FAINT = 6;
  */
 export interface LoopyRenderUi {
   drawFaintLines: boolean;
+  cursor: LoopyCursor;
 }
 
 /** Per-edge draw key: the line state, or this sentinel when the edge is part
@@ -80,6 +85,13 @@ const clamp = (lo: number, v: number, hi: number): number =>
 const dotRadius = (tileSize: number): number => clamp(1, (tileSize * 2.5) / 32, 3);
 const lineThickness = (tileSize: number): number => clamp(1, (tileSize * 3) / 32, 3);
 const faintLineThickness = (tileSize: number): number => clamp(0.5, tileSize / 24, 1.5);
+/** The cursor's halo under its chosen edge: three line-widths, so the edge's own
+ * colour reads on top of it with a clear margin either side. */
+const cursorHaloThickness = (tileSize: number): number => 3 * lineThickness(tileSize);
+/** The disc under the cursor's dot: comfortably larger than the dot, and never
+ * so large it reads as a face marking. */
+const cursorDiscRadius = (tileSize: number): number =>
+  clamp(4, 2 * dotRadius(tileSize) + 2, 9);
 
 /**
  * The gutter around the board, in pixels.
@@ -150,7 +162,18 @@ export function setTileSize(ds: LoopyDrawState, tileSize: number): void {
 }
 
 export function computeSize(p: LoopyParams, tileSize: number): Size {
-  const g = gridComputeSize(gridTypeOf(p), p.w, p.h);
+  return canvasSize(gridTypeOf(p), p.w, p.h, tileSize);
+}
+
+/**
+ * The canvas a `type`/`w`/`h` board is given, from the tiling's **nominal**
+ * extent. {@link redraw} paints its background to exactly this, not to the
+ * built grid's own extent: an aperiodic patch is trimmed and can come out
+ * narrower than nominal, and the difference is otherwise never painted — it
+ * showed as a black strip down the right of a Hats board.
+ */
+function canvasSize(type: GridType, w: number, h: number, tileSize: number): Size {
+  const g = gridComputeSize(type, w, h);
   const b = border(tileSize);
   // Multiply before dividing, to minimise rounding error on the integer
   // division (upstream's note).
@@ -194,6 +217,7 @@ export function colours(defaultBackground: Colour): Colour[] {
   out[COL_MISTAKE] = ERROR;
   out[COL_SATISFIED] = INK;
   out[COL_FAINT] = lineNoColour(defaultBackground);
+  out[COL_CURSOR] = CURSOR;
   return out;
 }
 
@@ -258,7 +282,6 @@ export function redraw(
 ): void {
   const g = s.grid;
   const ts = ds.tileSize;
-  const b = border(ts);
 
   // Clue colouring. `clueError` and `clueSatisfied` are what the C diffs to
   // decide whether a face needs repainting; here they are simply the key that
@@ -292,14 +315,34 @@ export function redraw(
     buckets.get(lineColour(key, ds.flashing))?.push(i);
   }
 
-  const w = Math.round(((g.highestX - g.lowestX) * ts) / g.tileSize) + 2 * b + 1;
-  const h = Math.round(((g.highestY - g.lowestY) * ts) / g.tileSize) + 2 * b + 1;
+  // The whole canvas, from the nominal extent — not the built grid's, which a
+  // trimmed aperiodic patch undershoots (see `canvasSize`).
+  const { w, h } = canvasSize(LOOPY_GRIDS[s.gridType].type, s.w, s.h, ts);
 
   // The game paints its own background; the engine emits no pixels of its own
   // (`fix-flip-canvas-reshape`). Every frame is a full repaint, so this both
   // establishes the background on the first draw and erases the previous frame
   // on every later one.
   dr.drawRect({ x: 0, y: 0, w, h }, COL_BACKGROUND);
+
+  // The keyboard cursor, drawn from grid geometry like everything else, so it
+  // works on a Penrose patch as on squares. Two marks: a halo under the chosen
+  // edge, painted *before* the edges so the edge's own colour stays legible on
+  // top of it (the state is what the player is about to change, so it must be
+  // readable), and a disc under the cursor's dot, painted before the dots for
+  // the same reason. Both take the collection-wide cursor colour.
+  const cursor = ui.cursor;
+  if (cursor.visible && cursor.edge >= 0) {
+    const e = g.edges[cursor.edge];
+    const [x1, y1] = toScreen(g, ts, e.dot1.x, e.dot1.y);
+    const [x2, y2] = toScreen(g, ts, e.dot2.x, e.dot2.y);
+    dr.drawLine(
+      { x: x1, y: y1 },
+      { x: x2, y: y2 },
+      COL_CURSOR,
+      cursorHaloThickness(ts),
+    );
+  }
 
   for (let i = 0; i < g.numFaces; i++) {
     const n = s.clues[i];
@@ -332,6 +375,12 @@ export function redraw(
       const [x2, y2] = toScreen(g, ts, e.dot2.x, e.dot2.y);
       dr.drawLine({ x: x1, y: y1 }, { x: x2, y: y2 }, colour, thickness);
     }
+  }
+
+  if (cursor.visible) {
+    const d = g.dots[cursor.dot];
+    const [x, y] = toScreen(g, ts, d.x, d.y);
+    dr.drawCircle({ x, y }, cursorDiscRadius(ts), COL_CURSOR, COL_CURSOR);
   }
 
   for (let i = 0; i < g.numDots; i++) {

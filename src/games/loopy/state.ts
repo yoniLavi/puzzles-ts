@@ -42,6 +42,12 @@ export interface LoopyState {
   /** Loopy's grid-type index (not `GridType`) — needed by `textFormat`, which
    * only supports the square lattice. */
   readonly gridType: number;
+  /** The params' nominal size. The renderer needs it because the canvas is
+   * sized from the *nominal* extent (`computeSize`) while the built grid can
+   * be narrower — an aperiodic patch is trimmed — and a background painted to
+   * the grid's own extent leaves the difference unpainted. */
+  readonly w: number;
+  readonly h: number;
   /** One clue per face, or {@link NO_CLUE}. */
   readonly clues: Int8Array;
   /** One {@link LineState} per edge. */
@@ -61,6 +67,8 @@ export function cloneState(s: LoopyState): LoopyState {
     grid: s.grid,
     gridDesc: s.gridDesc,
     gridType: s.gridType,
+    w: s.w,
+    h: s.h,
     clues: s.clues.slice(),
     lines: s.lines.slice(),
     lineErrors: s.lineErrors.slice(),
@@ -224,6 +232,8 @@ export function newState(p: LoopyParams, desc: string): LoopyState {
     grid,
     gridDesc,
     gridType: p.type,
+    w: p.w,
+    h: p.h,
     clues: decodeClues(clueDesc, grid.numFaces),
     lines,
     lineErrors: new Uint8Array(grid.numEdges),

@@ -1122,7 +1122,7 @@ exports[`Loopy render scenarios: every tiling draws its whole grid > dodecagonal
 [
   {
     "colour": 0,
-    "h": 384,
+    "h": 383,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
     "w": 489,
@@ -2924,7 +2924,7 @@ exports[`Loopy render scenarios: every tiling draws its whole grid > great-hexag
 [
   {
     "colour": 0,
-    "h": 464,
+    "h": 463,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
     "w": 492,
@@ -5105,7 +5105,7 @@ exports[`Loopy render scenarios: every tiling draws its whole grid > hats 1`] = 
     "h": 295,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
-    "w": 329,
+    "w": 343,
     "x": 0,
     "y": 0,
   },
@@ -7985,7 +7985,7 @@ exports[`Loopy render scenarios: every tiling draws its whole grid > honeycomb 1
     "h": 210,
     "op": "rect",
     "rgb": "rgb(211, 211, 211)",
-    "w": 178,
+    "w": 177,
     "x": 0,
     "y": 0,
   },

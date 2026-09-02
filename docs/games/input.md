@@ -359,6 +359,53 @@ The concrete rules that fell out, each of which had a wrong answer available:
   to build. Make the same journey both ways and compare the move, the board and
   the move count.
 
+### Giving a geometric game a keyboard
+
+A game whose input is **per-edge on an arbitrary tiling** has no cell for a
+cursor to sit on and no row or column for an arrow to step along. Loopy is the
+worked example ([`loopy/cursor.ts`](../../src/games/loopy/cursor.ts),
+[`loopy-keyboard.test.ts`](../../src/games/loopy/loopy-keyboard.test.ts));
+normative: the `loopy` spec, "Loopy is playable from the keyboard alone". What
+generalised:
+
+- **Put the cursor on the thing every tiling has.** Every dot has a ring of
+  incident edges, and the grid already supplies it in clockwise order
+  (`GridDot.edges`). A cursor on a *face* would need "cycle its twelve sides";
+  one on an *edge* would need "the edge to the right of this edge", which is
+  ill-defined exactly where the game is interesting. Reach an edge as
+  (dot, direction) — which is also how a player draws a loop.
+- **Rank, don't pick — and let a repeat press take the next.** An arrow ranks
+  the dot's edges by angular distance and the first press takes the nearest;
+  pressing the same arrow again advances. The repeat is the whole point:
+  plain nearest-with-tie-break strands an edge on the triangular grid from
+  *both* endpoints (six edges at 60° against four arrows at 90° tie), and the
+  same tie recurs at the other end. With the repeat every edge has *some* rank
+  for *every* arrow, so coverage is guaranteed by construction and **proven by
+  walking every preset** rather than argued per tiling — and the proof is what
+  turned up a degree-7 dot the one-seed design sweep had missed.
+- **Reset the repeat when the arrow changes or the cursor moves**, or the
+  second press of a fresh direction skips an edge.
+- **The cursor's shape is the game's when the noun genuinely differs.** Loopy
+  holds `{ dot, edge, arrow, visible }` under `ui.cursor` — the collection's one
+  *name* — rather than the engine's `GridCursor`, because its position is a dot
+  index and an arrow press chooses rather than moves. `cursor-vocabulary.test.ts`
+  finds cursors by the grid-cell *shape* and so does not see it; the game's own
+  test guards it. Do not fake an `(x, y)` to satisfy the guard.
+- **Two select keys mirror two buttons; there is no stylus cycle on a keyboard.**
+  Enter is the left button, Space the right, the erase key the middle. The
+  three-state cycle exists because a finger has no second button; a keyboard
+  has three, so it does not need one. Route all of them through the *same*
+  function the pointer arm calls (`setEdge`), so autofollow applies identically.
+- **Give the player a way to travel that is not drawing.** Auto-advance (a
+  drawn line carries the cursor to its far dot) makes tracing fast but cannot
+  get a player across the board without marking it. A *modified* arrow
+  (Shift) that walks one dot without touching the board is the spare key
+  `Tab` is not; assert every dot is reachable by travel alone.
+- **Draw the cursor from geometry.** A disc under the dot and a halo under
+  the chosen edge, each painted *beneath* what it highlights so the edge's
+  state stays legible; a tier-2.5 capture on an aperiodic tiling pins where
+  they land.
+
 ## Drag models
 
 Three distinct drag shapes recur across the collection. Pick by what the
@@ -544,16 +591,21 @@ Normative: the on-screen-keys requirement in
   a cosmetic surplus: on touch this panel is the only way to type, so it is a
   control that does nothing when pressed.
 - **Size the panel to the boards you generate, not to the format — and
-  *derive* the bound rather than writing it.** Seismic is the live
-  counter-example, and the interesting half is not the wrong number: it offers
-  `1`–`9` because `requestKeys` inlines a copy of the *format* bound
-  (`maxRegionSize`, 9 in Seismic mode) where the *generator* bound was wanted
-  (its size distribution tops out at 5), so four keys are inert on every board
-  anybody plays. The copy went stale the day `replace-seismic-region-generator`
-  changed the distribution, because a hand-written literal three files away had
-  no way to hear about it. `requestKeys` takes params and cannot see the board,
-  so the bound is a judgement made once — make it a *derived* one
-  (`size-seismic-keypad-to-its-boards`).
+  *derive* the bound rather than writing it.** Seismic is the worked example
+  ([`seismic/generator.ts`](../../src/games/seismic/generator.ts)
+  `maxGeneratedRegionSize`): its format admits digits to 9 but its region-size
+  distribution tops out at 5, and entry is capped at the cell's region size, so
+  a `1`–`9` panel had four keys that were inert on every board anybody played.
+  The interesting half is not the wrong number but how it arose — `requestKeys`
+  inlined a copy of the *format* bound where the *generator* bound was wanted,
+  and the copy went stale the day the distribution moved, because a literal
+  three files away had no way to hear about it. So the keypad now reads a bound
+  *computed from the distribution* (`Math.max(...)` over the array, never a
+  restated `5`), the structural test asserts every generated region fits it, and
+  the format bound's only job is to bound the generator bound. `requestKeys`
+  takes params and cannot see the board, so this is a judgement made once — make
+  it a derived one, and pin the resulting `KeyLabel[]` so widening the
+  distribution *fails a test* rather than silently widening the panel.
 
 Exemplars: the five digit games (`solo`/`keen`/`towers`/`unequal`/`filling`)
 and Undead.

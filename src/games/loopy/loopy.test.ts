@@ -60,11 +60,12 @@ function blankState(w = 4, h = 4, type = 0): LoopyState {
   );
   const lines = new Uint8Array(grid.numEdges);
   lines.fill(LINE_UNKNOWN);
-  void p;
   return {
     grid,
     gridDesc: desc,
     gridType: type,
+    w: p.w,
+    h: p.h,
     clues: new Int8Array(grid.numFaces).fill(NO_CLUE),
     lines,
     lineErrors: new Uint8Array(grid.numEdges),
@@ -276,14 +277,10 @@ describe("input", () => {
       s.lines[junction.edges[2].index] = LINE_NO;
       s.lines[junction.edges[3].index] = LINE_NO;
 
-      const fixed = autofollowEdges(
-        s,
-        { drawFaintLines: true, autofollow: AF_FIXED },
-        junction.edges[0],
-      );
+      const fixed = autofollowEdges(s, { autofollow: AF_FIXED }, junction.edges[0]);
       const adaptive = autofollowEdges(
         s,
-        { drawFaintLines: true, autofollow: AF_ADAPTIVE },
+        { autofollow: AF_ADAPTIVE },
         junction.edges[0],
       );
       expect(fixed.has(junction.edges[1].index)).toBe(false);

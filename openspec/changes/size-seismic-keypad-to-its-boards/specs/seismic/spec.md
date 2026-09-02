@@ -35,3 +35,34 @@ confused them.
 - **WHEN** the generator's region-size distribution is changed to admit a larger
   region
 - **THEN** the keypad admits the corresponding digits
+
+## MODIFIED Requirements
+
+### Requirement: Seismic input, note-taking and completion
+
+Seismic SHALL be played with the Solo control scheme: a left-click or the cursor
+keys select a cell for number entry, a right-click selects a cell for pencil
+marks, and a mode toggle switches between entering numbers and pencil marks. A
+digit SHALL be entered only when it does not exceed the selected cell's region
+size, SHALL NOT change a fixed clue, and SHALL be a no-op when it would not change
+the cell. The game SHALL offer an on-screen keypad sized to the largest region
+the generator produces in the mode (see "The on-screen keypad offers only digits
+a board can accept") plus a clear key, a mark-all action that fills every empty
+cell with all of its region's candidates, a sticky pencil mode preference, and a
+pencil-mode indicator.
+
+Rendering SHALL draw the region boundaries, the placed numbers, and the pencil
+marks, SHALL highlight a duplicate-in-region or a keep-apart violation in an error
+colour as it is entered, and SHALL flash on completion. There SHALL be no move
+animation.
+
+#### Scenario: A digit above the region size is rejected
+
+- **WHEN** the player types a digit larger than the selected cell's region size
+- **THEN** the board is unchanged
+
+#### Scenario: Completing the grid wins
+
+- **WHEN** the last cell is filled so that every region and keep-apart rule is
+  satisfied
+- **THEN** the game is reported solved and flashes

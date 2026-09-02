@@ -8,37 +8,59 @@
  * spectres — and the renderer has no per-tiling code at all, because every
  * geometric difference comes out of `grid.ts`.
  *
- * **Mouse only.** Upstream gives Loopy no keyboard cursor and no drag, so
- * `gridNearestEdge` is the entire input path: left cycles an edge towards YES,
- * right towards NO, middle clears. Loopy does genuinely read `MOD_STYLUS`, and
- * `wantsStylusModifier` is set for it — see {@link nextLineState}.
+ * **Two ways to reach an edge, one way to set it.** A pointer reaches an edge
+ * by `gridNearestEdge`; the keyboard reaches one as (dot, direction) through
+ * the cursor in `cursor.ts`. Both then go through {@link setEdge}, so a
+ * keyboard selection *is* the click on that edge — autofollow included — rather
+ * than a second input model beside it. Left / Enter cycles an edge towards
+ * YES, right / Space towards NO, middle / Backspace clears. Loopy does
+ * genuinely read `MOD_STYLUS`, and `wantsStylusModifier` is set for it — see
+ * {@link nextLineState}; the keyboard has two keys and needs no such cycle.
+ *
+ * Upstream gives Loopy no keyboard at all (`loopy.c` has no `CURSOR_`
+ * reference), so the keyboard here is this fork's design, not a port.
  *
  * The port is split across `params.ts`, `state.ts`, `dlines.ts`, `solver.ts`,
- * `generator.ts`, `grid-build.ts` and `render.ts`; this file is the `Game` glue
- * plus input handling.
+ * `generator.ts`, `grid-build.ts`, `cursor.ts` and `render.ts`; this file is
+ * the `Game` glue plus input handling.
  */
 
 import { assertNever } from "../../engine/assert-never.ts";
 import type { DifficultyContract } from "../../engine/difficulty.ts";
 import { winFlash } from "../../engine/flash.ts";
-import type {
-  Game,
-  GameDrawing,
-  GamePref,
-  SolveResult,
-  UiUpdate,
+import {
+  type Game,
+  type GameDrawing,
+  type GamePref,
+  type SolveResult,
+  UI_UPDATE,
+  type UiUpdate,
 } from "../../engine/game.ts";
-import type { GridDot, GridEdge } from "../../engine/grid/index.ts";
+import type { Grid, GridDot, GridEdge } from "../../engine/grid/index.ts";
 import { gridNearestEdge } from "../../engine/grid/index.ts";
 import {
+  CURSOR_SELECT,
+  CURSOR_SELECT2,
+  isCancelKey,
+  isCursorMove,
+  isEraseKey,
+  isMouseDown,
   LEFT_BUTTON,
   MIDDLE_BUTTON,
+  MOD_SHFT,
   MOD_STYLUS,
   RIGHT_BUTTON,
   stripModifiers,
 } from "../../engine/pointer.ts";
 import { registerGame } from "../../engine/registry.ts";
 import type { Point } from "../../engine/types.ts";
+import {
+  edgesByDirection,
+  farDot,
+  type LoopyCursor,
+  newLoopyCursor,
+  nextEdgeFor,
+} from "./cursor.ts";
 import { newDesc } from "./generator.ts";
 import {
   DIFF_MAX,
@@ -102,13 +124,19 @@ export interface LoopyUi {
   drawFaintLines: boolean;
   /** {@link AF_OFF} / {@link AF_FIXED} / {@link AF_ADAPTIVE}. */
   autofollow: number;
+  /** The keyboard cursor: a dot and one of its incident edges (`cursor.ts`). */
+  cursor: LoopyCursor;
 }
 
-function newUi(_state: LoopyState): LoopyUi {
+function newUi(state: LoopyState): LoopyUi {
   // Upstream also consults `LOOPY_FAINT_LINES` / `LOOPY_AUTOFOLLOW` environment
   // variables here (`legacy_prefs_override`), a pre-preferences-dialog relic
   // with no meaning in a browser. Dropped; the prefs below are the whole story.
-  return { drawFaintLines: true, autofollow: AF_OFF };
+  return {
+    drawFaintLines: true,
+    autofollow: AF_OFF,
+    cursor: newLoopyCursor(state.grid),
+  };
 }
 
 const prefs: GamePref<LoopyUi>[] = [
@@ -195,7 +223,7 @@ export function nextLineState(
  */
 export function autofollowEdges(
   state: LoopyState,
-  ui: LoopyUi,
+  ui: Pick<LoopyUi, "autofollow">,
   clicked: GridEdge,
 ): Set<number> {
   const edges = new Set<number>([clicked.index]);
@@ -234,28 +262,21 @@ export function autofollowEdges(
   return edges;
 }
 
-function interpretMove(
+/**
+ * The one "set this edge" implementation: what pressing `button` on `e` does,
+ * autofollow included. The pointer arm and the keyboard arm of
+ * {@link interpretMove} differ only in where `e` comes from, which is what
+ * makes a keyboard selection the *same* move as the click on that edge rather
+ * than a parallel path that agrees with it today (the Slide rule — see
+ * docs/games/input.md § "Giving a drag game a keyboard").
+ */
+function setEdge(
   state: LoopyState,
   ui: LoopyUi,
-  ds: LoopyDrawState,
-  p: Point,
-  rawButton: number,
-): LoopyMove | null | UiUpdate {
-  const g = state.grid;
-  const tileSize = ds.tileSize;
-  const stylus = (rawButton & MOD_STYLUS) !== 0;
-  const button = stripModifiers(rawButton);
-
-  // Screen coordinates to grid coordinates. `Math.trunc`, not `Math.floor`:
-  // this mirrors C's integer division, which rounds towards zero, and grid
-  // coordinates are genuinely negative for several tilings (and for any click
-  // in the border), where the two disagree.
-  const gx = Math.trunc(((p.x - border(tileSize)) * g.tileSize) / tileSize) + g.lowestX;
-  const gy = Math.trunc(((p.y - border(tileSize)) * g.tileSize) / tileSize) + g.lowestY;
-
-  const e = gridNearestEdge(g, gx, gy);
-  if (e === null) return null;
-
+  e: GridEdge,
+  button: number,
+  stylus: boolean,
+): LoopyMove | null {
   const newLine = nextLineState(button, state.lines[e.index], stylus);
   if (newLine === null) return null;
 
@@ -268,6 +289,107 @@ function interpretMove(
     kind: "set",
     ops: [...edges].map((edge) => ({ edge, state: newLine })),
   };
+}
+
+/** The edge nearest a pointer position, or `null` off the grid. */
+function edgeAt(g: Grid, tileSize: number, p: Point): GridEdge | null {
+  // Screen coordinates to grid coordinates. `Math.trunc`, not `Math.floor`:
+  // this mirrors C's integer division, which rounds towards zero, and grid
+  // coordinates are genuinely negative for several tilings (and for any click
+  // in the border), where the two disagree.
+  const gx = Math.trunc(((p.x - border(tileSize)) * g.tileSize) / tileSize) + g.lowestX;
+  const gy = Math.trunc(((p.y - border(tileSize)) * g.tileSize) / tileSize) + g.lowestY;
+  return gridNearestEdge(g, gx, gy);
+}
+
+/** The pointer button a select key stands for: Enter is the left button, Space
+ * the right, Backspace/Delete the middle. The keyboard has all three, so it
+ * mirrors the mouse directly; the stylus's three-state cycle is a *touch*
+ * affordance, for a finger with no second button. */
+function buttonForKey(button: number): number | null {
+  if (button === CURSOR_SELECT) return LEFT_BUTTON;
+  if (button === CURSOR_SELECT2) return RIGHT_BUTTON;
+  if (isEraseKey(button)) return MIDDLE_BUTTON;
+  return null;
+}
+
+function interpretMove(
+  state: LoopyState,
+  ui: LoopyUi,
+  ds: LoopyDrawState,
+  p: Point,
+  rawButton: number,
+): LoopyMove | null | UiUpdate {
+  const g = state.grid;
+  const stylus = (rawButton & MOD_STYLUS) !== 0;
+  const shift = (rawButton & MOD_SHFT) !== 0;
+  const button = stripModifiers(rawButton);
+  const cursor = ui.cursor;
+
+  if (isMouseDown(button)) {
+    // A pointer press takes the board over: the cursor goes away, and a click
+    // that sets nothing still has to repaint if it hid one.
+    const hadCursor = cursor.visible;
+    cursor.visible = false;
+    const e = edgeAt(g, ds.tileSize, p);
+    const move = e === null ? null : setEdge(state, ui, e, button, stylus);
+    if (move !== null) return move;
+    return hadCursor ? UI_UPDATE : null;
+  }
+
+  if (isCursorMove(button)) {
+    const dot = g.dots[cursor.dot];
+    if (shift) {
+      // Travel: walk to the far end of the edge that best continues this way,
+      // touching nothing. One dot per press, so the player can stop anywhere.
+      const e = edgesByDirection(dot, button)?.[0];
+      if (e === undefined) return null;
+      moveCursorAlong(cursor, dot, e);
+      return UI_UPDATE;
+    }
+    // Pick an edge: the nearest in this direction, or — on a repeat of the
+    // same arrow — the next one round (`cursor.ts` on why the repeat matters).
+    const e = nextEdgeFor(cursor, dot, button);
+    if (e === null) return null;
+    cursor.edge = e.index;
+    cursor.arrow = button;
+    cursor.visible = true;
+    return UI_UPDATE;
+  }
+
+  const asButton = buttonForKey(button);
+  if (asButton !== null) {
+    const revealed = !cursor.visible;
+    cursor.visible = true;
+    if (cursor.edge < 0) return revealed ? UI_UPDATE : null; // nothing chosen yet
+    const e = g.edges[cursor.edge];
+    const move = setEdge(state, ui, e, asButton, false);
+    if (move === null) return revealed ? UI_UPDATE : null;
+    // Drawing a line carries the cursor to the edge's far end, so tracing a
+    // loop is one Enter per edge; anything else leaves it where it is, so the
+    // same key again undoes the mark just made. The drawn edge stays chosen,
+    // which is what makes Enter-Enter a clean undraw too.
+    if (move.ops[0].state === LINE_YES) moveCursorAlong(cursor, g.dots[cursor.dot], e);
+    return move;
+  }
+
+  if (isCancelKey(button)) {
+    if (!cursor.visible) return null;
+    cursor.visible = false;
+    return UI_UPDATE;
+  }
+
+  return null;
+}
+
+/** Carry the cursor over `e` to its far dot, keeping `e` chosen (it is incident
+ * to the new dot too) and forgetting which arrow chose it, so the next arrow
+ * press ranks afresh from the new dot rather than continuing an old cycle. */
+function moveCursorAlong(cursor: LoopyCursor, from: GridDot, e: GridEdge): void {
+  cursor.dot = farDot(e, from).index;
+  cursor.edge = e.index;
+  cursor.arrow = 0;
+  cursor.visible = true;
 }
 
 function executeMove(state: LoopyState, move: LoopyMove): LoopyState {
