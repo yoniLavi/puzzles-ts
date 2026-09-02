@@ -38,6 +38,17 @@
       cache-control rules too, not only the CSP** — `/assets/*` and
       `/preflight/*` are `immutable` for a year and the HTML is not, and getting
       that backwards ships a stale app that will not update.
+- [ ] 2.4 **Write the privacy policy before the first public URL.** The About
+      dialog's Privacy panel (`src/assets/privacy.html`) is puzzles-web's
+      development placeholder: it tells the reader "No privacy policy is
+      available" and that "the developer has forgotten to provide their own".
+      Found by `claim-project-authorship` (2026-09-02), which left it alone
+      because the text depends on what the deployment actually does — Sentry
+      (if `VITE_SENTRY_DSN` is set), any analytics block, and whatever host
+      logging exists — none of which is decided until here. The owner has
+      deliberately kept ads and analytics open as options (the front page no
+      longer promises their absence), so the policy must state what is true on
+      the day rather than promise a stance.
 
 ## 3. Fix what the inherited config assumes
 
