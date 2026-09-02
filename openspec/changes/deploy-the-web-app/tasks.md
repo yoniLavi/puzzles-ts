@@ -24,7 +24,9 @@
       changes an output:
       - [ ] `VITE_CANONICAL_BASE_URL` — without it **no `sitemap.xml` and no
             `robots.txt` are emitted at all**; the plugin is skipped.
-      - [ ] `VITE_APP_NAME` — or the installed PWA is called "Puzzles web app".
+      - [ ] `VITE_APP_NAME` — optional: the default is the product name from
+            `src/project-identity.ts` ("Hintful Puzzles"), so set it only to
+            brand a deployment differently.
       - [ ] `VITE_GIT_SHA` / `VITE_APP_VERSION` — so a report from a phone names
             a build.
       - [ ] `VITE_SENTRY_DSN` — a real decision, not a checkbox: it widens

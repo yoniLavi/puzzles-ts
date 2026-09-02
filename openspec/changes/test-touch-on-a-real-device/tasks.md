@@ -61,8 +61,9 @@ Record what works **before** deciding what to add. Whether more is needed is a
 finding here, not a premise.
 
 - [ ] 4.1 **Install** to the home screen, and launch from that icon. Check the
-      name (it is `VITE_APP_NAME`, which `deploy-the-web-app` sets — otherwise
-      it installs as "Puzzles web app") and the icon.
+      name (it should install as "Hintful Puzzles", short label "Hintful", from
+      `src/project-identity.ts`, unless `deploy-the-web-app` sets
+      `VITE_APP_NAME`) and the icon.
 - [ ] 4.2 **Offline.** Turn the network off and open the app cold. Then start a
       new game offline, and reload mid-game.
 - [ ] 4.3 **Update flow.** `registerType: "prompt"` — deploy a second build and

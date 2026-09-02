@@ -9,6 +9,7 @@ import {
 import { query } from "lit/decorators/query.js";
 import { customElement, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
+import { APP_NAME, ISSUES_URL, REPO_URL } from "../project-identity.ts";
 import { cssNative, cssWATweaks } from "../utils/css.ts";
 
 // Register components
@@ -25,22 +26,19 @@ import unreleasedLicenseText from "../../licenses/puzzles-unreleased-LICENSE?raw
 import puzzlesLicenseText from "../../licenses/sgt-puzzles-LICENSE?raw";
 import privacyHtml from "../assets/privacy.html?raw";
 
-// The name of this repo's project (which is covered by its LICENSE)
-const repoName = "Puzzles web app";
-// The (potentially branded) name of the PWA built from this repo
-const appName = import.meta.env.VITE_APP_NAME || repoName;
+// A deployment may brand the PWA differently from the project (the name the
+// LICENSE covers); the project name is what the license panel labels.
+const appName = import.meta.env.VITE_APP_NAME || APP_NAME;
 const appVersion = import.meta.env.VITE_APP_VERSION || "(development build)";
 
+// Attribution links: each points at the project it credits, by design.
 const sgtPuzzlesLink = "https://www.chiark.greenend.org.uk/~sgtatham/puzzles/";
 const unreleasedPuzzlesLink = "https://github.com/x-sheep/puzzles-unreleased";
+const puzzlesWebLink = "https://github.com/medmunds/puzzles-web";
 const androidAppLink =
   "https://play.google.com/store/apps/details?id=name.boyle.chris.sgtpuzzles";
 const iOSAppLink = "https://apps.apple.com/in/app/puzzles-reloaded/id6504365885";
 // const iOSOldAppLink = "https://apps.apple.com/us/app/simon-tathams-puzzles/id622220631";
-
-const repoLink = "https://github.com/medmunds/puzzles-web";
-const forumLink = "https://github.com/medmunds/puzzles-web/discussions";
-const issuesLink = "https://github.com/medmunds/puzzles-web/issues";
 
 // Form of dependencies.json
 interface DependencyInfo {
@@ -211,6 +209,88 @@ export function licenseTextToHTML(
   return html`<div class="license-text" translate="no">${result}</div>`;
 }
 
+function offsiteLink(link: string, text?: string | TemplateResult) {
+  return html`<a href=${link} target="_blank">${text ?? link}</a>`;
+}
+
+/**
+ * Who made this, what it is, and where its support links go — the
+ * `project-identity` spec's first surface. A plain template, so
+ * `project-identity.test.ts` can render the words without mounting the Web
+ * Awesome dialog around them.
+ */
+export function aboutBlurb() {
+  return html`
+    <p>
+      <strong translate="no">${APP_NAME}</strong> is a collection of logic
+      puzzles with hints that explain the next move,
+      by&nbsp;<span translate="no">Yoni&nbsp;Lavi</span>.
+    </p>
+    <p>
+      It is a native TypeScript implementation of
+      <cite translate="no">Simon&nbsp;Tatham’s
+        Portable&nbsp;Puzzle&nbsp;Collection</cite>
+      and <span translate="no">Lennard&nbsp;Sprong’s</span>
+      <cite translate="no">puzzles-unreleased</cite> additions,
+      grown from <span translate="no">Mike&nbsp;Edmunds’</span>
+      <cite translate="no">puzzles-web</cite>.
+    </p>
+    <p>
+      Version <span class="version">${appVersion}</span>
+    </p>
+    <p>
+      This is open source software. Source code and more on GitHub:
+      ${offsiteLink(REPO_URL, REPO_URL.replace("https://", ""))}
+      - ${offsiteLink(ISSUES_URL, html`bug&nbsp;reports`)}
+    </p>
+  `;
+}
+
+/**
+ * The lineage, in chronological order, then the neighbors whose ideas this app
+ * carries. Every link here is attribution and points at the project it credits.
+ */
+export function credits() {
+  return html`
+    <p>Special thanks to&hellip;</p>
+    <ul role="list">
+      <li><span translate="no">Simon Tatham</span> and all the
+        contributors to the official
+        ${offsiteLink(
+          sgtPuzzlesLink,
+          html`<span translate="no">Portable Puzzle Collection</span>`,
+        )},
+        for over 20 years of fascinating puzzle solving</li>
+      <li><span translate="no">Lennard Sprong</span> for the
+        ${offsiteLink(
+          unreleasedPuzzlesLink,
+          html`<span translate="no">puzzles-unreleased</span>`,
+        )}
+        additions (which actually <em>have</em> been released,
+        at least twice now)</li>
+      <li><span translate="no">Mike Edmunds</span> for
+        ${offsiteLink(puzzlesWebLink, html`<span translate="no">puzzles-web</span>`)},
+        the progressive web app this project forked from: the app shell,
+        offline support and much of the interface began as his work</li>
+      <li><span translate="no">Chris Boyle</span>,
+        <span translate="no">Greg Hewgill</span>
+        and <span translate="no">Kyle Swarner</span> for their fantastic
+        ${offsiteLink(androidAppLink, "Android")} and
+        ${offsiteLink(iOSAppLink, "iOS")} apps,
+        several of whose clever ideas
+        <span translate="no">puzzles-web</span> borrowed and this app
+        keeps</li>
+      <li>${offsiteLink("https://lucide.dev/", html`<span translate="no">Lucide</span>`)}
+        icons and ${offsiteLink(
+          "https://webawesome.com",
+          html`<span translate="no">Web Awesome</span>`,
+        )} UI components</li>
+      <li>All the other open source software that makes this app possible
+        (see the source code link above and the licenses section below)</li>
+    </ul>
+  `;
+}
+
 @customElement("about-dialog")
 export class AboutDialog extends LitElement {
   @query("wa-dialog", true)
@@ -275,59 +355,10 @@ export class AboutDialog extends LitElement {
       <wa-dialog light-dismiss>
         <div slot="label">About ${appName}</div>
         
-        <div class="panel">
-          <p>
-            A web adaptation of
-            <cite translate="no">Simon&nbsp;Tatham’s 
-              Portable&nbsp;Puzzle&nbsp;Collection</cite>
-            and <span translate="no">Lennard&nbsp;Sprong’s</span> 
-            <cite translate="no">puzzles-unreleased</cite> additions,
-            by&nbsp;<span translate="no">Mike&nbsp;Edmunds</span>
-          </p>
-          <p>
-            Version <span class="version">${appVersion}</span>
-          </p>
-          <p>
-            This is open source software. Source code and more on GitHub:
-            ${this.renderOffsiteLink(repoLink, repoLink.replace("https://", ""))}
-            - ${this.renderOffsiteLink(forumLink, html`discussion&nbsp;forums`)}
-            - ${this.renderOffsiteLink(issuesLink, html`bug&nbsp;reports`)}
-          </p>
-        </div>
-        
+        <div class="panel">${aboutBlurb()}</div>
+
         <wa-details id="credits" name="panel" summary="Credits" open>
-          <p>Special thanks to&hellip;</p>
-          <ul role="list">
-            <li><span translate="no">Simon Tatham</span> and all the 
-              contributors to the official
-              ${this.renderOffsiteLink(
-                sgtPuzzlesLink,
-                html`<span translate="no">Portable Puzzle Collection</span>`,
-              )}, 
-              for over 20 years of fascinating puzzle solving</li>
-            <li><span translate="no">Lennard Sprong</span> for the
-              ${this.renderOffsiteLink(
-                unreleasedPuzzlesLink,
-                html`<span translate="no">puzzles-unreleased</span>`,
-              )} 
-              additions (which actually <em>have</em> been released, 
-              at least twice now)</li>
-            <li><span translate="no">Chris Boyle</span>, 
-              <span translate="no">Greg Hewgill</span>
-              and <span translate="no">Kyle Swarner</span> for their fantastic
-              ${this.renderOffsiteLink(androidAppLink, "Android")} and
-              ${this.renderOffsiteLink(iOSAppLink, "iOS")} apps, 
-              from which I’ve freely borrowed several clever ideas</li> 
-            <li>${this.renderOffsiteLink(
-              "https://lucide.dev/",
-              html`<span translate="no">Lucide</span>`,
-            )} icons and ${this.renderOffsiteLink(
-              "https://webawesome.com",
-              html`<span translate="no">Web Awesome</span>`,
-            )} UI components</li>
-            <li>All the other open source software that makes this app possible
-              (see the source code link above and the licenses section below)</li>
-          </ul>
+          ${credits()}
         </wa-details>
         
         <wa-details id="privacy" name="panel" summary="Privacy">
@@ -342,7 +373,7 @@ export class AboutDialog extends LitElement {
           <p>This software is released under the MIT License:</p>
           ${licenseTextToHTML(
             appLicenseText,
-            html`<strong>${repoName /* NOT appName */}</strong><br>`,
+            html`<strong>${APP_NAME /* the project, NOT a deployment's appName */}</strong><br>`,
             { markdown: true },
           )}
 
@@ -375,10 +406,6 @@ export class AboutDialog extends LitElement {
         </wa-details>
       </wa-dialog>
     `;
-  }
-
-  private renderOffsiteLink(link: string, text?: string | TemplateResult) {
-    return html`<a href=${link} target="_blank">${text ?? link}</a>`;
   }
 
   static override styles = [

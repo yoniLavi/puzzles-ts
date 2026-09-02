@@ -1,8 +1,9 @@
-# Puzzles
+# Hintful Puzzles
 
 This is a collection of single player puzzle games, adapted from
 [Simon Tatham’s Portable Puzzle Collection][sgt-puzzles]
-and Lennard Sprong’s [puzzles-unreleased][puzzles-unreleased] additions.
+and Lennard Sprong’s [puzzles-unreleased][puzzles-unreleased] additions,
+with hints that explain the next move rather than just showing it.
 
 Read more about:
 

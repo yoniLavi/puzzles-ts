@@ -1,21 +1,25 @@
-# Puzzles Web App
-
-### ▶ [Play the puzzles][play] in your browser
+# Hintful Puzzles
 
 A progressive web app (PWA) of [Simon Tatham's Portable Puzzle
 Collection][sgt-puzzles], plus additional puzzles from Lennard Sprong's
-[puzzles-unreleased][puzzles-unreleased].
+[puzzles-unreleased][puzzles-unreleased], by Yoni Lavi: all 57 games
+implemented natively in TypeScript, with hints that explain the next move
+rather than just showing it.
 
-It started as a faithful browser adaptation of the upstream C collection
-(compiled to WebAssembly), and is now being **rewritten to native
-TypeScript, top-down**, so that the codebase can grow *beyond* upstream:
-fast iteration on the UI and games, cheap addition of new games, and
-cross-game features upstream doesn't have (quick-save, mistake-checking,
-explained hints, per-game play aids). Targets Baseline 2023; works with
-touch, mouse, and keyboard across screen sizes.
+It is a fork of Mike Edmunds' [puzzles-web][puzzles-web], which adapted the
+upstream C collection to the browser through WebAssembly. This project
+replaced that engine with its own, **rewriting every game in TypeScript,
+top-down**, so that the codebase can grow *beyond* upstream: fast iteration
+on the UI and games, cheap addition of new games, and cross-game features
+upstream doesn't have (quick-save, mistake-checking, explained hints, per-game
+play aids). Targets Baseline 2023; works with touch, mouse, and keyboard
+across screen sizes.
 
-[play]: https://puzzles.twistymaze.com/
+**Not deployed yet.** Until `deploy-the-web-app` lands there is no public URL;
+run it locally with `npm install` and `npm run dev`.
+
 [puzzles-unreleased]: https://github.com/x-sheep/puzzles-unreleased
+[puzzles-web]: https://github.com/medmunds/puzzles-web
 [sgt-puzzles]: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/
 
 ## Status
@@ -33,16 +37,15 @@ save-game / shared-ID compatibility from before the pivot. Going forward,
 game IDs stay stable (the RNG is bit-identical) so shared seeds keep
 reproducing boards.
 
-The code is still rough in places (`package.json` says `0.0.1` — not a
-mistake). The full strategic context lives in [`AGENTS.md`](AGENTS.md);
+The code is still rough in places. The full strategic context lives in
+[`AGENTS.md`](AGENTS.md);
 the authoritative migration rules are the `ts-migration` capability spec
 at [`openspec/specs/ts-migration/spec.md`](openspec/specs/ts-migration/spec.md).
 
 ## Bug reports
 
-If you have a **question** about a puzzle, please use the [*Discussion
-forum*][discussions] rather than a bug report. For a bug, click
-[*Issues*][issues] → *New Issue*. Helpful to include:
+For a bug, or a question about a puzzle, open an [issue][issues]. Helpful to
+include:
 
 * App version (from the *About* box), browser, and device/OS.
 * A screenshot if something looks wrong.
@@ -54,8 +57,7 @@ forum*][discussions] rather than a bug report. For a bug, click
 Simon Tatham's [*How to Report Bugs Effectively*][sgt-bugs] is worth a
 read.
 
-[discussions]: https://github.com/medmunds/puzzles-web/discussions
-[issues]: https://github.com/medmunds/puzzles-web/issues
+[issues]: https://github.com/yoniLavi/puzzles-ts/issues
 [sgt-bugs]: https://www.chiark.greenend.org.uk/~sgtatham/bugs.html
 
 # Technical details

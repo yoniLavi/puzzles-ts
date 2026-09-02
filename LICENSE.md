@@ -1,7 +1,8 @@
 # License
 
-This project (`puzzles-ts`) layers work from four sources, all under the MIT
-License. Copyright is held by the respective contributors of each layer:
+This project (Hintful Puzzles, repository `puzzles-ts`) layers work from four
+sources, all under the MIT License. Copyright is held by the respective
+contributors of each layer:
 
 - Copyright © 2004–2024 Simon Tatham and the upstream Portable Puzzle
   Collection contributors. See

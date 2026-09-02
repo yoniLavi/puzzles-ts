@@ -1,9 +1,9 @@
 # Credits
 
-`puzzles-ts` is a TypeScript port of Simon Tatham's Portable Puzzle
-Collection, building on prior work that made these puzzles available
-on the web. This file is a thank-you to the people whose work this project
-stands on. The legal terms of reuse are in [`LICENSE.md`](./LICENSE.md);
+Hintful Puzzles (repository `puzzles-ts`) is a TypeScript implementation of
+Simon Tatham's Portable Puzzle Collection, building on prior work that made
+these puzzles available on the web. This file is a thank-you to the people
+whose work this project stands on. The legal terms of reuse are in [`LICENSE.md`](./LICENSE.md);
 this file is the graceful gesture.
 
 ## Upstream: Simon Tatham's Portable Puzzle Collection
@@ -54,5 +54,6 @@ shell it ships.
 
 ## This project
 
-The ongoing TypeScript port work in `puzzles-ts` is by Yoni Lavi. See
-`git log` for the contribution history.
+Hintful Puzzles — the TypeScript engine and games, and the hints, mistake
+checking and play aids built on them — is by Yoni Lavi. See `git log` for the
+contribution history.

@@ -8,6 +8,7 @@ import { visualizer } from "rollup-plugin-visualizer";
 import { build, defineConfig, loadEnv, type UserConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import Sitemap from "vite-plugin-sitemap";
+import { APP_NAME, APP_SHORT_NAME, REPO_URL } from "./src/project-identity.ts";
 import { puzzleIds, puzzleCatalog as puzzles } from "./src/puzzle/catalog-data.ts";
 import {
   extraPages,
@@ -253,6 +254,8 @@ export default defineConfig(async ({ command, mode }) => {
   }
   const analytics_html = env["VITE_ANALYTICS_BLOCK"];
   const commonTemplateData = {
+    appName: APP_NAME,
+    repoUrl: REPO_URL,
     preflightSrc,
     analytics_html,
     colorSchemeInitScript,
@@ -448,8 +451,8 @@ export default defineConfig(async ({ command, mode }) => {
       VitePWA({
         injectRegister: null, // registered in main.ts
         manifest: {
-          name: env["VITE_APP_NAME"] || "Puzzles web app",
-          short_name: "Puzzles",
+          name: env["VITE_APP_NAME"] || APP_NAME,
+          short_name: APP_SHORT_NAME,
           background_color: "#e8f3ff", // --wa-color-brand-fill-quiet (page bg)
           theme_color: "#d1e8ff", // --wa-color-brand-fill-normal (app bar)
         },

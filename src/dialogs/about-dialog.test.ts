@@ -43,10 +43,10 @@ describe("licenseTextToHTML — markdown mode (this project's LICENSE.md)", () =
   ].join("\n");
 
   it("drops the level-1 heading and passes its label to the next block", () => {
-    const el = renderLicense(LICENSE_SHAPED, "Puzzles web app", { markdown: true });
+    const el = renderLicense(LICENSE_SHAPED, "Some Project", { markdown: true });
     expect(el.textContent).not.toContain("# License");
     // The label must not be lost just because the block it was aimed at vanished.
-    expect(el.querySelector("p")?.textContent).toContain("Puzzles web app");
+    expect(el.querySelector("p")?.textContent).toContain("Some Project");
   });
 
   it("renders list items, joining wrapped continuation lines", () => {

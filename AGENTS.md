@@ -17,6 +17,15 @@ nothing generated, anywhere in the tree.**
 - **Help** is this project's own markdown under `help/` — one directory, one
   format, one page per game in `help/games/`. The MIT notices are `licenses/`,
   and the two unbuilt `unfinished/` C files live with the changes that read them.
+- **The product is Hintful Puzzles; the repository is `puzzles-ts`.** The name
+  and the support links have one source, `src/project-identity.ts`, read by the
+  About dialog, the PWA manifest, the front page template and the home screen.
+  The app presents itself as by Yoni Lavi and credits its lineage in order
+  (Simon Tatham, Lennard Sprong, Mike Edmunds' `puzzles-web`, then this
+  project). **Support links point home; attribution links point outward by
+  design** — a link that exists to credit puzzles-web keeps pointing at it.
+  `src/project-identity.test.ts` reads the rendered About dialog and scans the
+  other surfaces for the retired name and the predecessor's issue tracker.
 
 The authoritative statement of the migration approach is the `ts-migration`
 capability spec (`openspec/specs/ts-migration/spec.md`); this section is the

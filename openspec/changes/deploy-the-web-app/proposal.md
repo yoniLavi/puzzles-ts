@@ -80,7 +80,8 @@ the headers.
   - `VITE_CANONICAL_BASE_URL` — **without it there is no `sitemap.xml` and no
     `robots.txt`** (the plugin is skipped entirely; `vite.config.ts` says the
     output would be meaningless anyway).
-  - `VITE_APP_NAME` — otherwise the PWA manifest installs as "Puzzles web app".
+  - `VITE_APP_NAME` — optional; the manifest defaults to the product name in
+    `src/project-identity.ts` ("Hintful Puzzles").
   - `VITE_GIT_SHA` / `VITE_APP_VERSION` — so a bug report from a phone names a
     build.
   - `VITE_SENTRY_DSN` — **optional and consequential**: setting it adds the

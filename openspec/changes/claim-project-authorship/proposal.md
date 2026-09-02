@@ -67,40 +67,57 @@ Explicitly **not** in this change:
   still does not edit them.)
 - **Retitling the puzzles themselves**, or any claim over their design.
 
-## Open decisions (owner)
+## Decisions (owner, 2026-09-02)
 
-These are product/identity calls with no technically-correct answer, and the
-work should not guess them:
+These were product/identity calls with no technically-correct answer, so the
+work waited for them rather than guessing:
 
-1. **The name shown to players.** `repoName` is "Puzzles web app" and
-   `package.json` says `puzzles-ts`. Neither reads like a product. Options: keep
-   "Puzzles web app", promote `puzzles-ts`, or a new name.
-2. **Where bug reports and discussion go.** The project **has** a remote —
-   `https://github.com/yoniLavi/puzzles-ts.git` — so the source-code link has an
-   obvious target. What is undecided is whether that repository is public and
-   whether Issues/Discussions are enabled there; a link to a disabled tab is
-   worse than no link. Leaving them on `medmunds/puzzles-web` misroutes reports
-   about code Mike Edmunds did not write.
-3. **The deployment URL.** `README.md`'s "Play the puzzles" points at
-   `puzzles.twistymaze.com`, which is puzzles-web's deployment, not this one's.
-4. **The version string.** `package.json` is `0.0.1` and the README calls that
-   deliberate. "This is a new version" is easier to state with a version that
-   says so.
-5. **`SETTINGS_BACKUP_SCHEMA`** — `src/store/settings.ts` writes
-   `https://twistymaze.com/puzzles/schemas/puzzle-settings-backup-v1.json` into
-   every exported settings backup **and compares it with strict equality on
-   import**. Rebranding it makes every previously exported backup file
-   unimportable. Recommend leaving it alone, or changing it only together with
-   an import path that accepts the old value. This is the one item here with a
-   data-compatibility cost.
+1. **The name shown to players is "Hintful Puzzles"**, short label "Hintful".
+   Chosen over "Puzzles web app" (puzzles-web's own name, so no signal of a new
+   version) and `puzzles-ts` (a codebase name, not a product). The brief was:
+   keep "puzzles" in the name, say something about the hints — the fork's
+   defining feature — and pick a word with no collisions. "Hintful" is a coined
+   word; a web search found no product of that name, while the closer
+   candidates (Hinted, Inkling, Clued In) are each already a daily puzzle game.
+   Domain availability was checked against the registries' RDAP servers with a
+   registered control: `hintfulpuzzles.com`/`.app` and the short `hintful.*`
+   forms under `.click`, `.xyz`, `.games`, `.dev` and others were unregistered
+   on the day; `hintful.com` and `hintful.app` were taken. The **repository
+   stays `puzzles-ts`**: the product and the codebase are different things, and
+   `LICENSE.md` already names the latter. The name has one source,
+   `src/project-identity.ts`.
+2. **Support links point at `github.com/yoniLavi/puzzles-ts`.** The repository
+   is public with Issues enabled and Discussions disabled, so the source and
+   bug-report links point there and **the forum link is dropped** rather than
+   aimed at a disabled tab.
+3. **There is no deployment URL yet.** The app has never been deployed
+   (`deploy-the-web-app` is open), so README's "Play the puzzles" link to
+   puzzles-web's site is removed and replaced by a "not deployed yet; run it
+   locally" note that `deploy-the-web-app` will replace with the real URL.
+4. **`package.json` stays at `0.0.1`.** Players never see it: the About dialog
+   shows a `YYYYMMDD.<sha>` build string derived in `vite.config.ts`. README's
+   "not a mistake" aside is dropped with the migration done; nothing else
+   changes.
+5. **`SETTINGS_BACKUP_SCHEMA` is untouched.** It is written into every exported
+   settings backup and compared with strict equality on import, so renaming it
+   orphans every backup a player has already exported, for no player benefit.
+
+One item was reclassified on inspection: the unsupported-browser page's link to
+`medmunds.github.io/puzzles/` is offered as an *alternative site* for a browser
+this app cannot run on, not as support for this app. It is kept — it is a
+recommendation of someone else's product, which is what a player in that
+position needs.
 
 ## Impact
 
 - Affected specs: new `project-identity` capability (how the app presents its
   authorship and lineage to players); `licensing` unaffected but cross-checked.
-- Affected code: `src/dialogs/about-dialog.ts`, `templates/index.html.hbs`,
-  `unsupported.html`, `README.md`, possibly `package.json`. No engine or game
-  code; no puzzle behavior.
+- Affected code: `src/project-identity.ts` (new: the name and support links,
+  one source), `src/dialogs/about-dialog.ts`, `src/screens/home-screen.ts`,
+  `templates/index.html.hbs`, `vite.config.ts` (the PWA manifest name and the
+  template data), `help/index.md`, `README.md`, `LICENSE.md` and `CREDITS.md`
+  (naming the product beside the repository). No engine or game code; no puzzle
+  behavior. Guarded by `src/project-identity.test.ts`.
 - Risk: low technically, but it is **outward-facing and about people's names**,
   so it is owner-acceptance-gated on the wording, not just on it building.
   Verify by reading the rendered About dialog and front page in the browser, not
