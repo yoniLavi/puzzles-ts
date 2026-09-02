@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change add-salad-ts-port. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Salad game implements the Game interface
 
 The engine SHALL provide `src/games/salad/` implementing the `Game`
@@ -58,11 +60,12 @@ value, or that uses an unknown character, reproducing the upstream messages.
 ### Requirement: Salad ports the solver as a shared Latin-square consumer
 
 Salad SHALL provide a solver built on the shared `engine/latin.ts` framework, adding
-its own deductions: hole-versus-symbol synchronisation, per-line hole and circle
-counting, and — in ABC End View mode — the border-clue deduction. The "some squares
-empty" rule SHALL be realised by treating symbols above `nums` in a full order-`order`
-Latin square as empty squares, so the shared Latin generator and solver cube are
-reused unchanged.
+its own deduction — in ABC End View mode — the border-clue deduction. The "some
+squares empty" rule SHALL be realised by declaring the empty square to the shared
+cube as its repeated symbol (`nums + 1`, appearing `order − nums` times per line),
+so that the cube's own positional, numeric and set eliminations reason about
+empty squares directly; a cross SHALL be that symbol placed and a ball that symbol
+struck, and the board's marker array SHALL be read back off the solved cube.
 
 The solver SHALL provide two difficulties, Normal and Extreme, and both SHALL be
 solvable by pure deduction without guessing. The generator SHALL use the solver to
@@ -222,3 +225,44 @@ it. Exhaustion is a failure a player sees.
 - **THEN** the solver does not reach a solution
 - **AND** solving the same board at Extreme does
 
+### Requirement: Salad reasons about the empty square directly
+
+Salad's solver SHALL express the empty square as a shared-cube symbol carrying a
+per-line multiplicity, rather than translating between holes and candidates at
+the game's edge. The translation layer that stood in for that support SHALL be
+removed.
+
+The empty-square deductions SHALL be the shared cube's own — positional
+elimination with the symbol's multiplicity, the line strike once a line holds
+all its empties, multiplicity-aware set elimination — rather than a hand-written
+sync-and-count layer, and the Number Ball quality gate SHALL ask its question
+("do the holes fall out with no number entered?") of that cube.
+
+The rewrite SHALL be deductively equivalent to upstream's translation layer on
+every board the frozen C reference records, and the byte-match differential
+SHALL be **kept** as the proof: because generation is solver-gated at every clue
+removal, a description that still matches byte for byte means the solver's
+verdict on every intermediate board is unchanged. (The plan was to retire the
+differential and re-found assurance on properties; the finding was that the
+oracle survives, and a surviving oracle is stronger than any property written
+to replace it.)
+
+#### Scenario: The empty square is reasoned about directly
+
+- **WHEN** the solver deduces a placement that turns on where empty squares can
+  and cannot go
+- **THEN** that deduction is expressed over the shared cube's repeatable symbol,
+  with no translation step at the game boundary
+
+#### Scenario: A generated board is uniquely solvable at its stated tier
+
+- **WHEN** a board is generated at any tier
+- **THEN** the solver finds exactly one solution, and finds it at that tier and
+  not at the tier below
+
+#### Scenario: The frozen C descriptions still match byte for byte
+
+- **WHEN** the byte-match differential replays every frozen C fixture against
+  upstream's loose tier gate
+- **THEN** every description is reproduced exactly, and the recorded solver
+  verdicts hold
