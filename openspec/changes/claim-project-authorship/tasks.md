@@ -50,6 +50,13 @@
       puzzles-web; the play link becomes a "not deployed yet" note; bug reports
       go to this repository's Issues; no discussions link.
 - [x] 3.6 `package.json` — unchanged per 0.1 and 0.4.
+- [x] 3.7 The front-page intro is rewritten in this project's own words
+      (owner, 2026-09-02): three short paragraphs — what it is, the hints, and
+      the Sudoku/Mathdoku signposts — and nothing inherited verbatim from
+      puzzles-web. Two inherited lines are removed on purpose: the "actively
+      being developed" warning (every web app is), and the "no upsells, no ads,
+      no trackers" promise, which nothing in the licenses requires and which
+      the owner declined to be bound by.
 
 ## 4. Consistency
 

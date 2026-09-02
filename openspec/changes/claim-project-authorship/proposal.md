@@ -43,7 +43,12 @@ chain; it removes none from the middle of it.**
   `puzzles-web`. The first-person voice in Credits is either re-attributed or
   made authorless.
 - **The front page** (`templates/index.html.hbs`) footer points at this
-  project's repository for credits and licenses.
+  project's repository for credits and licenses, and its intro is rewritten in
+  this project's own words rather than inherited from puzzles-web: shorter,
+  leading with what the app is and what the hints do. It drops the "actively
+  being developed" warning and the "no upsells, no ads, no trackers" promise —
+  the latter at the owner's direction, to keep options open that no license
+  here closes.
 - **The repository / forum / bug-report links** stop pointing at
   `medmunds/puzzles-web`. Currently `about-dialog.ts` (three links),
   `templates/index.html.hbs` (one), `README.md` (two) and `unsupported.html`
