@@ -148,6 +148,31 @@ Space, but the input audit's parity bar names erase and cancel too, and a clear
 that has to be spelled "Enter twice" or "Space twice" depending on the edge's
 state is worse than a key. Escape hides the cursor, as everywhere.
 
+**Revised after the owner's playtest (2026-09-02): arrows walk; Shift aims.**
+The scheme above played correctly and Shift-for-travel was "really
+confusing". The owner proposed the pen model — an arrow *moves* the cursor
+along an edge and that edge becomes the chosen one — and asked whether it had
+a hole. It has exactly one, measured before answering: a walk can only choose
+the edge it walked, so an edge that is never the angularly-nearest choice from
+*either* endpoint is unselectable. Swept over all 23 presets:
+
+| Walk rule | Unreachable edges |
+|---|---|
+| nearest, ties clockwise | 120 / 397 Triangular; 12 / 145 Penrose kite/dart |
+| nearest, **ties in opposite senses for opposite arrows** | 0 Triangular; **9 / 145 Penrose kite/dart** |
+
+The opposite-sense tie-break covers the triangular grid by construction (an
+edge tied at one end is the mirror tie for the opposite arrow at the other end,
+which resolves it the other way); Penrose kite/dart's degree-5 dots at 72°
+leave a residue no tie-break fixes. The owner chose **Shift as "look"**: plain
+arrow walks (nearest edge within 90°, so Up never walks you down); Shift+arrow
+aims without moving, first press nearest, repeat the next round — the D2 rule,
+now the fallback. Enter acts on the edge behind you, so auto-advance is gone
+(you are already at the far end), undraw is walk-back-and-Enter, and there is
+no travel key. `loopy-keyboard.test.ts` asserts the two halves separately —
+the walk alone covers 22 presets, walk plus aim covers the 23rd with the
+residue pinned at ≤ 9 — so it cannot grow silently.
+
 ## D5. The acceptance test is written first, and it is a coverage proof
 
 Because "playable to completion" is exactly the claim this change exists to

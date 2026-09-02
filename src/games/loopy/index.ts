@@ -9,8 +9,8 @@
  * geometric difference comes out of `grid.ts`.
  *
  * **Two ways to reach an edge, one way to set it.** A pointer reaches an edge
- * by `gridNearestEdge`; the keyboard reaches one as (dot, direction) through
- * the cursor in `cursor.ts`. Both then go through {@link setEdge}, so a
+ * by `gridNearestEdge`; the keyboard walks the cursor along one (a plain arrow)
+ * or aims at one without moving (Shift+arrow) — `cursor.ts`. Both then go through {@link setEdge}, so a
  * keyboard selection *is* the click on that edge — autofollow included — rather
  * than a second input model beside it. Left / Enter cycles an edge towards
  * YES, right / Space towards NO, middle / Backspace clears. Loopy does
@@ -55,11 +55,11 @@ import {
 import { registerGame } from "../../engine/registry.ts";
 import type { Point } from "../../engine/types.ts";
 import {
-  edgesByDirection,
   farDot,
   type LoopyCursor,
   newLoopyCursor,
   nextEdgeFor,
+  walkEdge,
 } from "./cursor.ts";
 import { newDesc } from "./generator.ts";
 import {
@@ -340,20 +340,22 @@ function interpretMove(
   if (isCursorMove(button)) {
     const dot = g.dots[cursor.dot];
     if (shift) {
-      // Travel: walk to the far end of the edge that best continues this way,
-      // touching nothing. One dot per press, so the player can stop anywhere.
-      const e = edgesByDirection(dot, button)?.[0];
-      if (e === undefined) return null;
-      moveCursorAlong(cursor, dot, e);
+      // Aim without moving: the nearest edge this way, or — on a repeat of the
+      // same arrow — the next one round. The fallback for the few edges no
+      // walk can select (`cursor.ts`); the first press also reveals the cursor
+      // without acting, as an arrow that is itself an action must.
+      const e = nextEdgeFor(cursor, dot, button);
+      if (e === null) return null;
+      cursor.edge = e.index;
+      cursor.arrow = button;
+      cursor.visible = true;
       return UI_UPDATE;
     }
-    // Pick an edge: the nearest in this direction, or — on a repeat of the
-    // same arrow — the next one round (`cursor.ts` on why the repeat matters).
-    const e = nextEdgeFor(cursor, dot, button);
+    // Walk: one dot along the edge that best continues this way, which becomes
+    // the chosen edge — Enter then marks the line behind you.
+    const e = walkEdge(dot, button);
     if (e === null) return null;
-    cursor.edge = e.index;
-    cursor.arrow = button;
-    cursor.visible = true;
+    moveCursorAlong(cursor, dot, e);
     return UI_UPDATE;
   }
 
@@ -365,11 +367,8 @@ function interpretMove(
     const e = g.edges[cursor.edge];
     const move = setEdge(state, ui, e, asButton, false);
     if (move === null) return revealed ? UI_UPDATE : null;
-    // Drawing a line carries the cursor to the edge's far end, so tracing a
-    // loop is one Enter per edge; anything else leaves it where it is, so the
-    // same key again undoes the mark just made. The drawn edge stays chosen,
-    // which is what makes Enter-Enter a clean undraw too.
-    if (move.ops[0].state === LINE_YES) moveCursorAlong(cursor, g.dots[cursor.dot], e);
+    // The cursor stays put: it is already at the far end of the edge it walked,
+    // so the same key again undoes the mark just made.
     return move;
   }
 

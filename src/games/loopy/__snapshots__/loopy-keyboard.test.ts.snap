@@ -1112,8 +1112,8 @@ exports[`the cursor is drawn, on an aperiodic tiling > draws nothing until the f
     "y2": 316,
   },
   {
-    "cx": 189,
-    "cy": 26,
+    "cx": 205,
+    "cy": 42,
     "fill": 7,
     "fillRgb": "rgb(33, 167, 73)",
     "op": "circle",

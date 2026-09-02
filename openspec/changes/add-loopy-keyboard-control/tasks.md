@@ -95,7 +95,14 @@
       things that generalised, including the one that did not fit the shared
       cursor and why.
 - [x] 4.4 `openspec validate add-loopy-keyboard-control --strict` — valid.
-- [ ] 4.5 **Owner acceptance** — a new control scheme, judged on feel. Two
-      choices in particular are the owner's to overrule: Shift+arrow as the
-      travel key, and auto-advance keeping the drawn edge chosen (so Enter
-      twice undraws) rather than clearing the choice.
+- [x] 4.5 **Owner playtest, 2026-09-02**: "it works, but the shift-arrow is
+      really confusing". Revised to the owner's proposal (design D4, "Revised
+      after the owner's playtest"): **arrows walk** and the edge just walked is
+      the chosen one; **Shift aims** without moving, as the fallback for the
+      nine Penrose kite/dart edges no walk can reach (measured over all 23
+      presets before answering; the opposite-sense tie-break took the
+      triangular grid from 120 stranded edges to none). Auto-advance and the
+      travel key are gone. Tests, help, spec and guide follow the walk model;
+      the coverage test asserts the walk alone on 22 presets and walk plus aim
+      on the 23rd.
+- [ ] 4.6 Owner acceptance of the revised scheme.

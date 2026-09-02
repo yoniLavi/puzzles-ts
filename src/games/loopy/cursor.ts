@@ -16,23 +16,27 @@
  * an edge. It still sits under `ui.cursor`, the collection's one name for the
  * thing (`ts-engine`, "One keyboard-cursor vocabulary across games").
  *
- * ## The arrow rule, and why a repeat press matters
+ * ## Walking, and aiming
  *
- * For the pressed arrow's direction, the dot's incident edges are sorted by
- * angular distance from it. The first press highlights the nearest; **pressing
- * the same arrow again advances to the next** in that order.
+ * A **plain arrow walks**: the cursor moves along the edge that best continues
+ * in that direction ({@link walkEdge} — nearest in angle, within 90°), and the
+ * edge just walked becomes the chosen one, so Enter marks the line behind you
+ * the way a pen inks where it has been. Drawing a loop is one arrow and one
+ * Enter per edge; undrawing is walking back over it and pressing Enter again.
  *
- * The repeat is not a convenience, it is what makes edge coverage provable.
- * Plain angular-nearest has a reachability hole, invisible on the square grid:
- * a triangular dot has six edges at 60° intervals against four arrows at 90°,
- * so the edges at 60° and 120° are *equidistant* from "up", and a deterministic
- * tie-break never selects one of them. The excluded edge sits at the mirrored
- * angle from its *other* endpoint too, so a consistent tie-break can strand an
- * edge from both ends. With the repeat every incident edge has *some* rank for
- * *every* arrow, so every edge is reachable from either endpoint by pressing one
- * arrow at most `degree` times — and once in the common case, since degree 2
- * and 3 dominate every tiling. `loopy-keyboard.test.ts` proves that over all 23
- * presets rather than arguing it per tiling.
+ * A walk can only ever choose the edge it walked, so an edge that is never the
+ * nearest choice from *either* endpoint would be unselectable. Ties break in
+ * opposite senses for opposite arrows ({@link edgesByDirection}), which covers
+ * the triangular grid by construction; the sweep in `loopy-keyboard.test.ts`
+ * then finds every edge of every preset walkable **except nine on Penrose
+ * kite/dart**, whose degree-5 dots at 72° leave an edge that loses the nearest
+ * contest at both ends. For those, **Shift+arrow aims without moving**
+ * ({@link nextEdgeFor}): the first press chooses the nearest edge in that
+ * direction, a repeat of the same arrow the next one round, so every incident
+ * edge has some rank for every arrow and is reachable in at most `degree`
+ * presses. Plain is *go*; Shift is *look*. The test asserts both halves — the
+ * walk alone covers 22 presets, and walk plus aim covers the 23rd — so the
+ * residue cannot grow silently.
  */
 
 import type { Grid, GridDot, GridEdge } from "../../engine/grid/index.ts";
@@ -96,14 +100,22 @@ export function farDot(edge: GridEdge, dot: GridDot): GridDot {
 
 /**
  * `dot`'s incident edges ordered by how well each continues in the arrow's
- * direction: smallest angular distance first. Ties (the triangular grid's 60°
- * pair either side of an arrow) break clockwise, then by edge index, so the
- * order is total and stable — the repeat press relies on that. `null` for a
- * non-arrow button.
+ * direction: smallest angular distance first, then by edge index, so the order
+ * is total and stable — the aiming repeat relies on that.
+ *
+ * **Ties break in opposite senses for opposite arrows**: Up and Right prefer
+ * the clockwise edge, Down and Left the counter-clockwise one. That is what
+ * makes a *walk* cover the triangular grid: an edge tied at 60° either side of
+ * Right from one end sits at the mirror tie either side of Left from its other
+ * end, and Left breaks the tie the other way — so every tied edge is the first
+ * choice from one of its endpoints. (Measured over all 23 presets, the
+ * same-sense tie-break strands 120 of the triangular grid's 397 edges; this
+ * one strands none there.) `null` for a non-arrow button.
  */
 export function edgesByDirection(dot: GridDot, button: number): GridEdge[] | null {
   const v = arrowVector(button);
   if (!v) return null;
+  const clockwise = button === CURSOR_UP || button === CURSOR_RIGHT;
   const ranked = dot.edges.map((e) => {
     const far = farDot(e, dot);
     const ex = far.x - dot.x;
@@ -114,15 +126,41 @@ export function edgesByDirection(dot: GridDot, button: number): GridEdge[] | nul
     return { e, dist: Math.abs(signed), signed };
   });
   ranked.sort(
-    (a, b) => a.dist - b.dist || b.signed - a.signed || a.e.index - b.e.index,
+    (a, b) =>
+      a.dist - b.dist ||
+      (clockwise ? b.signed - a.signed : a.signed - b.signed) ||
+      a.e.index - b.e.index,
   );
   return ranked.map((r) => r.e);
 }
 
+/** How far off an arrow's direction an edge may lie and still be walked. An
+ * edge at 90° or more is another arrow's business: Up never walks you sideways
+ * or down, even at a dot whose only edges go that way. */
+const WALK_CAP = Math.PI / 2;
+
 /**
- * The edge an arrow press highlights: the nearest in that direction, or — when
- * the same arrow chose the current edge — the next one round. Wraps, so
- * pressing an arrow `degree` times visits every incident edge and returns.
+ * The edge a plain arrow **walks**: the nearest in that direction, provided it
+ * lies within {@link WALK_CAP}. `null` when nothing at this dot heads that way.
+ */
+export function walkEdge(dot: GridDot, button: number): GridEdge | null {
+  const v = arrowVector(button);
+  if (!v) return null;
+  const ranked = edgesByDirection(dot, button);
+  const e = ranked?.[0];
+  if (!e) return null;
+  const far = farDot(e, dot);
+  const dot_ = v.dx * (far.x - dot.x) + v.dy * (far.y - dot.y);
+  const len = Math.hypot(far.x - dot.x, far.y - dot.y);
+  return Math.acos(Math.max(-1, Math.min(1, dot_ / len))) < WALK_CAP ? e : null;
+}
+
+/**
+ * The edge a Shift+arrow press **aims at** without moving: the nearest in that
+ * direction, or — when the same arrow chose the current edge — the next one
+ * round. Wraps, so pressing an arrow `degree` times visits every incident edge
+ * and returns. This is the fallback for the few edges no walk can select (see
+ * the module header).
  */
 export function nextEdgeFor(
   cursor: LoopyCursor,

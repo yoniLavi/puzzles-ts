@@ -4,11 +4,14 @@
  * Three kinds of guarantee, in the order they were written:
  *
  * 1. **A coverage proof over all 23 presets** (`add-loopy-keyboard-control`
- *    design D5). The arrow rule in `cursor.ts` claims every edge is reachable
- *    from either endpoint by pressing one arrow at most `degree` times. That is
- *    walked mechanically here, per tiling, rather than argued — and the
- *    triangular case shows *why* the repeat press exists, by exhibiting the
- *    edge that plain angular-nearest strands from both ends.
+ *    design D5). A plain arrow *walks* the cursor along an edge, which becomes
+ *    the chosen one, so an edge no walk ever takes is unselectable; Shift+arrow
+ *    *aims* without moving, as the fallback. The claim is that the walk alone
+ *    covers every edge of 22 presets and walk plus aim covers the 23rd
+ *    (Penrose kite/dart), and that is walked mechanically here per tiling
+ *    rather than argued — the triangular case exhibits the tie the opposite-
+ *    sense tie-break exists for, and the Penrose case pins the residue so it
+ *    cannot grow silently.
  * 2. **Equality, not the new path in isolation** (the Slide lesson). The same
  *    edge is set by keyboard and by pointer and the two moves compared,
  *    autofollow included. A keyboard path asserted alone passes just as happily
@@ -41,11 +44,11 @@ import {
 import { DEFAULT_BACKGROUND } from "../../engine/testing/render-scenario.ts";
 import { sizedDrawState } from "../../engine/testing/sized-draw-state.ts";
 import {
-  edgesByDirection,
   farDot,
   type LoopyCursor,
   newLoopyCursor,
   nextEdgeFor,
+  walkEdge,
 } from "./cursor.ts";
 import { newDesc } from "./generator.ts";
 import { buildLoopyGrid } from "./grid-build.ts";
@@ -71,8 +74,10 @@ import { LINE_NO, LINE_UNKNOWN, LINE_YES, type LoopyState, newState } from "./st
 const ARROWS = [CURSOR_UP, CURSOR_RIGHT, CURSOR_DOWN, CURSOR_LEFT] as const;
 const ESCAPE = 27;
 const BACKSPACE = 127;
-/** `LoopyParams.type` index of the triangular grid, the degree-6 case. */
+/** `LoopyParams.type` indices: the triangular grid (degree 6, the tie case)
+ * and Penrose kite/dart (degree 5 at 72°, the walk's one residue). */
 const TRIANGULAR = 1;
+const PENROSE_KITE_DART = 11;
 
 /** Every preset, both menu levels flattened. */
 function allPresets(): LoopyParams[] {
@@ -86,9 +91,9 @@ function allPresets(): LoopyParams[] {
   return out;
 }
 
-/** Press `arrow` `count` times from a fresh cursor on `dot`, exactly as
- * `interpretMove` would, and return the edge highlighted after each press. */
-function pressesFrom(dot: GridDot, arrow: number, count: number): GridEdge[] {
+/** Aim `arrow` `count` times from a fresh cursor on `dot`, exactly as a
+ * Shift+arrow press would, and return the edge chosen after each press. */
+function aimsFrom(dot: GridDot, arrow: number, count: number): GridEdge[] {
   const cursor: LoopyCursor = { dot: dot.index, edge: -1, arrow: 0, visible: false };
   const seen: GridEdge[] = [];
   for (let i = 0; i < count; i++) {
@@ -101,27 +106,34 @@ function pressesFrom(dot: GridDot, arrow: number, count: number): GridEdge[] {
   return seen;
 }
 
-/** The dots a travel press (Shift+arrow) can reach from the cursor's start. */
-function travelReachable(grid: Grid): Set<number> {
+/** The edges some walk takes, and the dots a walk from the start can reach. */
+function walkCoverage(grid: Grid): { edges: Set<number>; dots: Set<number> } {
+  const edges = new Set<number>();
+  for (const d of grid.dots) {
+    for (const a of ARROWS) {
+      const e = walkEdge(d, a);
+      if (e) edges.add(e.index);
+    }
+  }
   const start = newLoopyCursor(grid).dot;
-  const seen = new Set<number>([start]);
+  const dots = new Set<number>([start]);
   const queue = [start];
   while (queue.length > 0) {
     const d = grid.dots[queue.pop() as number];
     for (const a of ARROWS) {
-      const e = edgesByDirection(d, a)?.[0];
-      if (e === undefined) continue;
+      const e = walkEdge(d, a);
+      if (!e) continue;
       const far = farDot(e, d).index;
-      if (!seen.has(far)) {
-        seen.add(far);
+      if (!dots.has(far)) {
+        dots.add(far);
         queue.push(far);
       }
     }
   }
-  return seen;
+  return { edges, dots };
 }
 
-describe("the arrow rule covers every edge on every tiling (design D5)", () => {
+describe("walking covers every edge, and aiming covers the rest (design D5)", () => {
   const presetList = allPresets();
 
   it("sees all 23 presets", () => {
@@ -129,73 +141,84 @@ describe("the arrow rule covers every edge on every tiling (design D5)", () => {
   });
 
   for (const [i, p] of presetList.entries()) {
-    it(`${encodeParams(p, true)}: every incident edge is reached from every dot, within degree presses`, () => {
+    it(`${encodeParams(p, true)}: every edge is walkable, or aimable where the walk cannot reach`, () => {
       const { grid } = buildLoopyGrid(gridTypeOf(p), p.w, p.h, randomNew(`kb-${i}`));
       expect(grid.numDots).toBeGreaterThan(0);
-      let maxDegree = 0;
-      let unreachableRankZero = 0;
+      const { edges, dots } = walkCoverage(grid);
+      const unwalkable = grid.edges.filter((e) => !edges.has(e.index));
 
+      // Every dot can be walked to from where the cursor starts.
+      expect(dots.size).toBe(grid.numDots);
+
+      // A walk never goes against its arrow: the edge taken lies within 90°.
+      for (const d of grid.dots) {
+        for (const a of ARROWS) {
+          const e = walkEdge(d, a);
+          if (!e) continue;
+          const far = farDot(e, d);
+          const [dx, dy] =
+            a === CURSOR_UP
+              ? [0, -1]
+              : a === CURSOR_DOWN
+                ? [0, 1]
+                : a === CURSOR_LEFT
+                  ? [-1, 0]
+                  : [1, 0];
+          expect(dx * (far.x - d.x) + dy * (far.y - d.y)).toBeGreaterThan(0);
+        }
+      }
+
+      if (p.type === PENROSE_KITE_DART) {
+        // The one tiling with a residue: degree-5 dots at 72° leave an edge
+        // that is not the nearest choice from either end. Pinned, so it can
+        // only shrink — and every one of them is aimable from an endpoint.
+        expect(unwalkable.length).toBeGreaterThan(0);
+        expect(unwalkable.length).toBeLessThanOrEqual(9);
+        for (const e of unwalkable) {
+          const aimable = [e.dot1, e.dot2].some((d) =>
+            ARROWS.some((a) => aimsFrom(d, a, d.edges.length).includes(e)),
+          );
+          expect(aimable).toBe(true);
+        }
+      } else {
+        expect(unwalkable).toEqual([]);
+      }
+
+      // Aiming itself: `degree` presses of one arrow visit each incident edge
+      // exactly once and the next press wraps, from every dot.
       for (const dot of grid.dots) {
         const degree = dot.edges.length;
-        maxDegree = Math.max(maxDegree, degree);
-        expect(degree).toBeGreaterThan(0);
         for (const arrow of ARROWS) {
-          // `degree` presses of one arrow visit each incident edge exactly
-          // once — which is the coverage claim — and the next press wraps.
-          const cycle = pressesFrom(dot, arrow, degree + 1);
+          const cycle = aimsFrom(dot, arrow, degree + 1);
           expect(new Set(cycle.slice(0, degree).map((e) => e.index)).size).toBe(degree);
           expect(cycle[degree]).toBe(cycle[0]);
         }
       }
-
-      // Every edge is reachable from *either* endpoint, and the proof is the
-      // cycle above — so this is the same fact from the edge's side, kept as
-      // the statement the design makes.
-      for (const e of grid.edges) {
-        for (const d of [e.dot1, e.dot2]) {
-          const reached = ARROWS.some((a) =>
-            pressesFrom(d, a, d.edges.length).some((x) => x === e),
-          );
-          expect(reached).toBe(true);
-          // And how many edges would the *first* press alone never choose?
-          const firstOnly = ARROWS.some((a) => pressesFrom(d, a, 1)[0] === e);
-          if (!firstOnly) unreachableRankZero++;
-        }
-      }
-
-      // Degree is small on every tiling, so the "at most degree presses"
-      // bound is a handful. The design's one-seed sweep reported six as the
-      // ceiling; this seed finds a degree-7 dot on Penrose rhombs, which is
-      // why the rule is stated in terms of degree and not of a number.
-      expect(maxDegree).toBeLessThanOrEqual(8);
-
-      // Every dot can be *travelled* to (Shift+arrow walks the first-ranked
-      // edge), so a keyboard player can start a loop anywhere on the board.
-      expect(travelReachable(grid).size).toBe(grid.numDots);
-
-      if (p.type === TRIANGULAR) {
-        // The hole the repeat press closes, exhibited rather than described:
-        // on the triangular grid some (dot, edge) pairs are the first choice
-        // of *no* arrow. Without the repeat those edges would depend on their
-        // other endpoint, and the design shows the same tie recurs there.
-        expect(unreachableRankZero).toBeGreaterThan(0);
-      }
     });
   }
 
-  it("plain angular-nearest strands a triangular edge from both ends — the repeat is not decoration", () => {
+  it("the opposite-sense tie-break is what covers the triangular grid", () => {
+    // Under a same-sense tie-break, an edge tied at 60° either side of Right
+    // from one end sits at the same tie either side of Left from the other, and
+    // both ends resolve it the same way — so a third of the edges are never
+    // walked. Shown by counting what the *shipped* rule leaves: nothing.
     const p = presetList.find((q) => q.type === TRIANGULAR) as LoopyParams;
     const { grid } = buildLoopyGrid(gridTypeOf(p), p.w, p.h, randomNew("kb-tri"));
-    const stranded = grid.edges.filter((e) =>
-      [e.dot1, e.dot2].every((d) => !ARROWS.some((a) => pressesFrom(d, a, 1)[0] === e)),
-    );
-    expect(stranded.length).toBeGreaterThan(0);
-    // ...and every one of them is reached once the repeat is allowed.
-    for (const e of stranded) {
-      expect(
-        ARROWS.some((a) => pressesFrom(e.dot1, a, e.dot1.edges.length).includes(e)),
-      ).toBe(true);
-    }
+    const tied = grid.dots.filter((d) => d.edges.length === 6);
+    expect(tied.length).toBeGreaterThan(0);
+    expect(walkCoverage(grid).edges.size).toBe(grid.numEdges);
+    // ...and Right and Left do break the tie in opposite senses at such a dot.
+    const d = tied[0];
+    const right = walkEdge(d, CURSOR_RIGHT) as GridEdge;
+    const left = walkEdge(d, CURSOR_LEFT) as GridEdge;
+    const cross = (e: GridEdge) => {
+      const f = farDot(e, d);
+      return f.y - d.y; // sign of the vertical component
+    };
+    // Right prefers the clockwise (downward) edge; Left the counter-clockwise
+    // (also downward, from Left's point of view) — i.e. both walks head down,
+    // which is the two tied edges resolving in opposite rotational senses.
+    expect(Math.sign(cross(right))).toBe(Math.sign(cross(left)));
   });
 });
 
@@ -242,7 +265,7 @@ describe("keyboard and pointer are the same move (the Slide rule)", () => {
     it(`sets the same edge to the same state, autofollow ${autofollow ? "on" : "off"}`, () => {
       const byKey = board();
       byKey.ui.autofollow = autofollow;
-      // Right from the top-left dot: the top edge of the top-left face.
+      // Right from the top-left dot walks the top edge of the top-left face.
       expect(press(byKey.s, byKey.ui, byKey.ds, CURSOR_RIGHT)).toBe(UI_UPDATE);
       const e = byKey.s.grid.edges[byKey.ui.cursor.edge];
       const keyMove = press(byKey.s, byKey.ui, byKey.ds, CURSOR_SELECT) as LoopyMove;
@@ -278,10 +301,8 @@ describe("keyboard and pointer are the same move (the Slide rule)", () => {
       [CURSOR_SELECT2, RIGHT_BUTTON, LINE_NO],
       [CURSOR_SELECT2, RIGHT_BUTTON, LINE_UNKNOWN],
     ] as const) {
-      // The cursor may have travelled, so re-aim it at `e` by the arrow that
-      // points back along it; the rule guarantees some arrow does within a
-      // few presses.
-      aimAt(byKey.s, byKey.ui, byKey.ds, e);
+      // A select never moves the cursor, so `e` stays chosen throughout.
+      expect(byKey.ui.cursor.edge).toBe(e.index);
       const k = press(byKey.s, byKey.ui, byKey.ds, key) as LoopyMove;
       const c = click(byClick.s, byClick.ui, byClick.ds, e, button) as LoopyMove;
       expect(k).toEqual(c);
@@ -292,99 +313,76 @@ describe("keyboard and pointer are the same move (the Slide rule)", () => {
   });
 });
 
-/** Arrow the cursor (already on one of `e`'s endpoints) until `e` is chosen. */
-function aimAt(s: LoopyState, ui: LoopyUi, ds: LoopyDrawState, e: GridEdge): void {
-  if (ui.cursor.edge === e.index) return;
-  const d = s.grid.dots[ui.cursor.dot];
-  expect(e.dot1 === d || e.dot2 === d).toBe(true);
-  for (const a of ARROWS) {
-    ui.cursor.arrow = 0;
-    for (let i = 0; i < d.edges.length; i++) {
-      press(s, ui, ds, a);
-      if (ui.cursor.edge === e.index) return;
-    }
-  }
-  throw new Error("aimAt: edge not incident or rule broken");
-}
-
 describe("the cursor", () => {
-  it("starts hidden on the top-left dot, and the first arrow reveals it with an edge chosen", () => {
+  it("starts hidden on the top-left dot; the first arrow reveals it and walks one edge", () => {
     const { s, ui, ds } = board();
     expect(ui.cursor.visible).toBe(false);
     expect(ui.cursor.edge).toBe(-1);
-    const d = s.grid.dots[ui.cursor.dot];
+    const start = s.grid.dots[ui.cursor.dot];
     for (const other of s.grid.dots) {
-      expect(other.y > d.y || (other.y === d.y && other.x >= d.x)).toBe(true);
+      expect(other.y > start.y || (other.y === start.y && other.x >= start.x)).toBe(
+        true,
+      );
     }
     expect(press(s, ui, ds, CURSOR_RIGHT)).toBe(UI_UPDATE);
     expect(ui.cursor.visible).toBe(true);
-    expect(ui.cursor.edge).toBeGreaterThanOrEqual(0);
-    // The chosen edge leaves the cursor's dot heading right.
+    // Moved one dot to the right, and the edge just walked is the chosen one.
+    const here = s.grid.dots[ui.cursor.dot];
+    expect(here.x).toBeGreaterThan(start.x);
+    expect(here.y).toBe(start.y);
     const e = s.grid.edges[ui.cursor.edge];
-    expect(farDot(e, d).x).toBeGreaterThan(d.x);
-    expect(farDot(e, d).y).toBe(d.y);
+    expect(new Set([e.dot1, e.dot2])).toEqual(new Set([start, here]));
   });
 
-  it("repeats an arrow round the incident edges, and a new arrow starts afresh", () => {
+  it("does not walk against the arrow: Up at the top-left corner does nothing", () => {
     const { s, ui, ds } = board();
-    // Walk to an interior dot (degree 4) by drawing: right, Enter advances.
+    expect(press(s, ui, ds, CURSOR_UP)).toBeNull();
+    expect(press(s, ui, ds, CURSOR_LEFT)).toBeNull();
+    expect(ui.cursor.visible).toBe(false);
+  });
+
+  it("Enter marks the edge behind you and stays put; walking back and Enter undraws it", () => {
+    const { s, ui, ds } = board();
     press(s, ui, ds, CURSOR_RIGHT);
-    let st = loopyGame.executeMove(s, press(s, ui, ds, CURSOR_SELECT) as LoopyMove);
-    press(st, ui, ds, CURSOR_DOWN);
-    st = loopyGame.executeMove(st, press(st, ui, ds, CURSOR_SELECT) as LoopyMove);
-    const d = st.grid.dots[ui.cursor.dot];
+    const here = ui.cursor.dot;
+    const e = s.grid.edges[ui.cursor.edge];
+    const draw = press(s, ui, ds, CURSOR_SELECT) as LoopyMove;
+    expect(draw.ops[0]).toEqual({ edge: e.index, state: LINE_YES });
+    const st = loopyGame.executeMove(s, draw);
+    expect(ui.cursor.dot).toBe(here); // no auto-advance: already at the far end
+
+    // Walk back over it: the same edge is chosen again, and Enter clears it.
+    press(st, ui, ds, CURSOR_LEFT);
+    expect(ui.cursor.edge).toBe(e.index);
+    const undraw = press(st, ui, ds, CURSOR_SELECT) as LoopyMove;
+    expect(undraw.ops[0]).toEqual({ edge: e.index, state: LINE_UNKNOWN });
+  });
+
+  it("Shift+arrow aims without moving, and a repeat takes the next edge round", () => {
+    const { s, ui, ds } = board();
+    // Walk to an interior dot (degree 4).
+    press(s, ui, ds, CURSOR_RIGHT);
+    press(s, ui, ds, CURSOR_DOWN);
+    const d = s.grid.dots[ui.cursor.dot];
     expect(d.edges.length).toBe(4);
 
-    ui.cursor.arrow = 0;
     const seen: number[] = [];
     for (let i = 0; i < 4; i++) {
-      press(st, ui, ds, CURSOR_RIGHT);
+      expect(press(s, ui, ds, CURSOR_RIGHT | MOD_SHFT)).toBe(UI_UPDATE);
+      expect(ui.cursor.dot).toBe(d.index); // never moves
       seen.push(ui.cursor.edge);
     }
     expect(new Set(seen).size).toBe(4);
-    press(st, ui, ds, CURSOR_RIGHT);
+    press(s, ui, ds, CURSOR_RIGHT | MOD_SHFT);
     expect(ui.cursor.edge).toBe(seen[0]); // wrapped
 
-    // A different arrow ranks afresh: its first choice, not "next after".
-    press(st, ui, ds, CURSOR_UP);
-    const up = st.grid.edges[ui.cursor.edge];
-    expect(farDot(up, d).y).toBeLessThan(d.y);
-  });
+    // A different arrow aims afresh: its nearest, not "next after".
+    press(s, ui, ds, CURSOR_UP | MOD_SHFT);
+    expect(farDot(s.grid.edges[ui.cursor.edge], d).y).toBeLessThan(d.y);
 
-  it("drawing a line carries the cursor to the far dot; nothing else moves it", () => {
-    const { s, ui, ds } = board();
+    // And a plain arrow after aiming walks, ranking afresh from this dot.
     press(s, ui, ds, CURSOR_RIGHT);
-    const from = ui.cursor.dot;
-    const e = s.grid.edges[ui.cursor.edge];
-    const st = loopyGame.executeMove(s, press(s, ui, ds, CURSOR_SELECT) as LoopyMove);
-    expect(ui.cursor.dot).toBe(farDot(e, s.grid.dots[from]).index);
-    expect(ui.cursor.edge).toBe(e.index); // still chosen, from the other end
-    expect(ui.cursor.arrow).toBe(0); // the next arrow ranks afresh
-
-    // Enter again undraws it, and the cursor stays where it is.
-    const undraw = press(st, ui, ds, CURSOR_SELECT) as LoopyMove;
-    expect(undraw.ops[0]).toEqual({ edge: e.index, state: LINE_UNKNOWN });
-    const st2 = loopyGame.executeMove(st, undraw);
-    expect(ui.cursor.dot).toBe(farDot(e, s.grid.dots[from]).index);
-
-    // A cross does not travel either.
-    const cross = press(st2, ui, ds, CURSOR_SELECT2) as LoopyMove;
-    expect(cross.ops[0].state).toBe(LINE_NO);
-    expect(ui.cursor.dot).toBe(farDot(e, s.grid.dots[from]).index);
-  });
-
-  it("Shift+arrow travels one dot without touching the board", () => {
-    const { s, ui, ds } = board();
-    const from = ui.cursor.dot;
-    expect(press(s, ui, ds, CURSOR_RIGHT | MOD_SHFT)).toBe(UI_UPDATE);
-    expect(ui.cursor.visible).toBe(true);
-    expect(ui.cursor.dot).not.toBe(from);
-    expect(s.grid.dots[ui.cursor.dot].x).toBeGreaterThan(s.grid.dots[from].x);
-    // One dot per press: a second press moves exactly one more.
-    const mid = ui.cursor.dot;
-    press(s, ui, ds, CURSOR_RIGHT | MOD_SHFT);
-    const e = s.grid.edges[ui.cursor.edge];
-    expect(farDot(e, s.grid.dots[ui.cursor.dot])).toBe(s.grid.dots[mid]);
+    expect(s.grid.dots[ui.cursor.dot].x).toBeGreaterThan(d.x);
   });
 
   it("a select with nothing chosen only reveals; Escape hides; a pointer press hides", () => {
@@ -441,8 +439,11 @@ function playToCompletionByKeyboard(type: number, w: number, h: number, seed: st
     const r = press(s, ui, ds, button);
     if (r !== null && r !== UI_UPDATE) s = loopyGame.executeMove(s, r);
   };
+  /** The arrow whose walk from `d` takes `e`, if any. */
+  const arrowFor = (d: GridDot, e: GridEdge) =>
+    ARROWS.find((a) => walkEdge(d, a) === e);
 
-  // Travel to a dot on the loop (BFS over Shift+arrow presses).
+  // Walk to a dot on the loop (BFS over plain arrow presses).
   const onLoop = (d: GridDot) => d.edges.some((e) => yes.has(e.index));
   const start = ui.cursor.dot;
   const prev = new Map<number, [number, number]>(); // dot → [fromDot, arrow]
@@ -455,8 +456,8 @@ function playToCompletionByKeyboard(type: number, w: number, h: number, seed: st
       break;
     }
     for (const a of ARROWS) {
-      const e = edgesByDirection(g.dots[di], a)?.[0];
-      if (e === undefined) continue;
+      const e = walkEdge(g.dots[di], a);
+      if (!e) continue;
       const far = farDot(e, g.dots[di]).index;
       if (far !== start && !prev.has(far)) {
         prev.set(far, [di, a]);
@@ -468,27 +469,21 @@ function playToCompletionByKeyboard(type: number, w: number, h: number, seed: st
   const route: number[] = [];
   for (let d = target; d !== start; d = (prev.get(d) as [number, number])[0])
     route.unshift((prev.get(d) as [number, number])[1]);
-  for (const a of route) key(a | MOD_SHFT);
+  for (const a of route) key(a);
   expect(ui.cursor.dot).toBe(target);
 
-  // Trace the loop: at each dot, arrow until the next loop edge is chosen,
-  // then Enter — which draws it and carries the cursor to its far end.
+  // Trace the loop: at each dot, walk the next loop edge and press Enter —
+  // which marks the line just walked, the pen-behind-you model.
   let drawn = 0;
   let guard = yes.size * 2;
   while (drawn < yes.size && guard-- > 0) {
     const d = g.dots[ui.cursor.dot];
     const next = d.edges.find((e) => yes.has(e.index) && s.lines[e.index] !== LINE_YES);
     expect(next).toBeDefined();
-    let chosen = false;
-    for (const a of ARROWS) {
-      ui.cursor.arrow = 0;
-      for (let i = 0; i < d.edges.length && !chosen; i++) {
-        key(a);
-        if (ui.cursor.edge === (next as GridEdge).index) chosen = true;
-      }
-      if (chosen) break;
-    }
-    expect(chosen).toBe(true);
+    const a = arrowFor(d, next as GridEdge);
+    expect(a).toBeDefined();
+    key(a as number);
+    expect(ui.cursor.edge).toBe((next as GridEdge).index);
     key(CURSOR_SELECT);
     drawn++;
   }
@@ -541,7 +536,7 @@ describe("the cursor is drawn, on an aperiodic tiling", () => {
     ).toEqual(["circle", "line"]);
 
     // Where they land: mirror the cursor at the game level to know which dot
-    // and edge the midend's cursor chose, then check the marks sit on them.
+    // and edge the midend's cursor walked to, then check the marks sit on them.
     const ui = loopyGame.newUi(s);
     const ds = sizedDrawState(loopyGame, s);
     press(s, ui, ds, CURSOR_RIGHT);

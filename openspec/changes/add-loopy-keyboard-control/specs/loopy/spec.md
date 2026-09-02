@@ -20,24 +20,31 @@ its three states, so that a player with no pointer can play a board to
 completion. This holds for **every** tiling Loopy offers, including the aperiodic
 ones.
 
-The cursor SHALL be a **dot**, and an arrow key SHALL choose one of that dot's
-incident edges: the edges are ranked by angular distance from the arrow's
-direction, the first press chooses the nearest, and a repeat of the same arrow
-advances to the next in that order, wrapping. The repeat is what makes coverage
-provable rather than argued per tiling — plain angular-nearest strands an edge
-on the triangular grid from *both* its endpoints, because six edges at 60°
-against four arrows at 90° tie — so every edge SHALL be reachable from either
-endpoint by pressing one arrow at most `degree` times, and that SHALL be proven
-mechanically over every preset rather than assumed.
+The cursor SHALL be a **dot**. A plain arrow SHALL **walk** it one dot along
+the edge that best continues in the arrow's direction — the nearest in angle,
+and only within 90° of the arrow, so an arrow never moves the cursor against
+itself — and the edge just walked SHALL become the chosen edge. Ties SHALL break
+in opposite rotational senses for opposite arrows (Up and Right clockwise,
+Down and Left counter-clockwise), which is what makes every edge of the
+triangular grid walkable: an edge tied at one end is the mirror tie for the
+opposite arrow at the other end, resolved the other way.
+
+A walk can only choose the edge it walked, so a Shift+arrow SHALL **aim**
+without moving: the first press chooses the dot's nearest edge in that
+direction and a repeat of the same arrow the next one round, wrapping, so every
+incident edge is reachable in at most `degree` presses. Coverage SHALL be
+proven mechanically over every preset, in two halves: the walk alone SHALL
+reach every edge of every preset except Penrose kite/dart, whose degree-5 dots
+leave a small residue that no tie-break reaches, and walk plus aim SHALL reach
+every edge of that one, with the residue pinned so it cannot grow.
 
 Enter and Space SHALL be the left and right pointer buttons on the chosen edge,
 and the erase key the middle one; the keyboard has all three and needs no
-three-state cycle, which remains a touch affordance. Drawing a line SHALL carry
-the cursor along it to the far dot, one dot per press, so a loop is traced with
-one Enter per edge, and the drawn edge SHALL stay chosen so the same key again
-undraws it. A modified arrow (Shift) SHALL travel one dot in that direction
-without touching the board. A pointer press SHALL hide the cursor; Escape SHALL
-hide it too.
+three-state cycle, which remains a touch affordance. A select SHALL NOT move
+the cursor — it is already at the far end of the edge it walked — so a loop is
+traced with one arrow and one Enter per edge, and walking back over a drawn
+edge and pressing Enter undraws it. A pointer press SHALL hide the cursor;
+Escape SHALL hide it too.
 
 The keyboard SHALL reach an edge through the same code path a click uses, so that
 the auto-follow preference — which extends a click along a forced path of edges —
@@ -64,12 +71,15 @@ it; `loopy-keyboard.test.ts` guards it instead.
 - **THEN** every edge is reachable, each can be set to line, cross or unknown,
   and the board can be brought to a solved state
 
-#### Scenario: Every edge is reachable within degree presses, on every preset
+#### Scenario: Every edge is walkable, or aimable where the walk cannot reach
 
-- **WHEN** the arrow rule is walked from every dot of every preset's grid
-- **THEN** pressing one arrow `degree` times chooses each incident edge exactly
-  once and the next press wraps, and no dot on any tiling has more than six
-  edges
+- **WHEN** the walk rule is applied from every dot of every preset's grid
+- **THEN** every edge of every preset except Penrose kite/dart is the edge some
+  arrow walks from one of its endpoints, every dot is reachable by walking
+  from the cursor's start, no walk moves against its arrow — and on Penrose
+  kite/dart the unwalkable edges number at most nine and each is aimable from
+  an endpoint, with `degree` aim presses of one arrow visiting each incident
+  edge exactly once
 
 #### Scenario: Auto-follow applies to a keyboard selection
 
@@ -77,11 +87,11 @@ it; `loopy-keyboard.test.ts` guards it instead.
 - **THEN** the forced path is extended exactly as it would be for a click on that
   edge, and the move produced is identical to the click's
 
-#### Scenario: Drawing a line advances the cursor
+#### Scenario: Enter marks the edge behind you and stays put
 
-- **WHEN** Enter sets the chosen edge to a line
-- **THEN** the cursor moves to that edge's far dot with the edge still chosen,
-  and a second Enter clears the edge without moving the cursor
+- **WHEN** an arrow walks the cursor along an edge and Enter is pressed
+- **THEN** that edge becomes a line and the cursor stays on the dot it reached,
+  and walking back over the edge and pressing Enter again clears it
 
 #### Scenario: Loopy leaves the keyboard-exemption list
 

@@ -374,17 +374,27 @@ generalised:
   one on an *edge* would need "the edge to the right of this edge", which is
   ill-defined exactly where the game is interesting. Reach an edge as
   (dot, direction) — which is also how a player draws a loop.
-- **Rank, don't pick — and let a repeat press take the next.** An arrow ranks
-  the dot's edges by angular distance and the first press takes the nearest;
-  pressing the same arrow again advances. The repeat is the whole point:
-  plain nearest-with-tie-break strands an edge on the triangular grid from
-  *both* endpoints (six edges at 60° against four arrows at 90° tie), and the
-  same tie recurs at the other end. With the repeat every edge has *some* rank
-  for *every* arrow, so coverage is guaranteed by construction and **proven by
-  walking every preset** rather than argued per tiling — and the proof is what
-  turned up a degree-7 dot the one-seed design sweep had missed.
-- **Reset the repeat when the arrow changes or the cursor moves**, or the
-  second press of a fresh direction skips an edge.
+- **Arrows walk, and the edge you walked is the one you act on.** The first
+  cut had arrows *choose* an incident edge without moving (with a repeat press
+  taking the next), and a modifier for travel; the owner's playtest found the
+  modifier confusing, and the pen-behind-you model replaced it: a plain arrow
+  moves one dot along the edge that best continues that way (nearest in angle,
+  within 90° so Up never walks you down), and Enter marks the edge behind you.
+  Drawing is walk-Enter-walk-Enter; undrawing is walk back and Enter.
+- **Prove coverage under the walk, then measure the residue and cover it.**
+  A walk can only choose the edge it walked, so an edge that is never the
+  nearest choice from *either* endpoint is unselectable. Break ties in
+  **opposite senses for opposite arrows** (Up/Right clockwise, Down/Left
+  counter-clockwise): an edge tied at one end is the mirror tie for the
+  opposite arrow at the other end, which resolves it the other way — that
+  alone took the triangular grid from 120 stranded edges to none. The sweep
+  over every preset then found exactly one residue, nine edges on Penrose
+  kite/dart (degree-5 dots at 72°), and **Shift+arrow aims without moving**
+  (nearest, repeat takes the next) covers those. The test asserts both halves
+  separately — walk alone on 22 presets, walk plus aim on the 23rd — so the
+  residue is pinned and cannot grow. Plain is *go*, Shift is *look*.
+- **Reset the aim's repeat when the arrow changes or the cursor moves**, or
+  the second press of a fresh direction skips an edge.
 - **The cursor's shape is the game's when the noun genuinely differs.** Loopy
   holds `{ dot, edge, arrow, visible }` under `ui.cursor` — the collection's one
   *name* — rather than the engine's `GridCursor`, because its position is a dot
@@ -396,11 +406,10 @@ generalised:
   three-state cycle exists because a finger has no second button; a keyboard
   has three, so it does not need one. Route all of them through the *same*
   function the pointer arm calls (`setEdge`), so autofollow applies identically.
-- **Give the player a way to travel that is not drawing.** Auto-advance (a
-  drawn line carries the cursor to its far dot) makes tracing fast but cannot
-  get a player across the board without marking it. A *modified* arrow
-  (Shift) that walks one dot without touching the board is the spare key
-  `Tab` is not; assert every dot is reachable by travel alone.
+- **Travel is free once arrows walk.** With the walk model there is no
+  separate travel key and no auto-advance: walking marks nothing until Enter,
+  and the cursor is already at the far end when Enter is pressed. Assert every
+  dot is reachable by walking from the start dot.
 - **Draw the cursor from geometry.** A disc under the dot and a halo under
   the chosen edge, each painted *beneath* what it highlights so the edge's
   state stays legible; a tier-2.5 capture on an aperiodic tiling pins where
